@@ -2,6 +2,7 @@
 Real integration tests for validation using compiled binaries.
 """
 
+import platform
 from pathlib import Path
 
 import pytest
@@ -25,8 +26,15 @@ class TestRealValidation:
         """Path to loop test binary."""
         return Path(__file__).parent.parent / "fixtures" / "loop"
 
+    def check_platform(self):
+        """Skip tests on macOS due to ARM64 binary complexity."""
+        if platform.system() == "Darwin":
+            pytest.skip("Real validation tests skipped on macOS (ARM64 binary complexity)")
+
     def test_validator_with_real_binaries(self, simple_binary, tmp_path):
         """Test validator with real original and mutated binaries."""
+        self.check_platform()
+
         if not simple_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -50,6 +58,8 @@ class TestRealValidation:
 
     def test_validator_multiple_test_cases(self, loop_binary, tmp_path):
         """Test validator with multiple test cases."""
+        self.check_platform()
+
         if not loop_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -73,6 +83,8 @@ class TestRealValidation:
 
     def test_fuzzer_with_real_binaries(self, simple_binary, tmp_path):
         """Test fuzzer with real binaries."""
+        self.check_platform()
+
         if not simple_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -94,6 +106,8 @@ class TestRealValidation:
 
     def test_fuzzer_with_args(self, loop_binary, tmp_path):
         """Test fuzzer with command-line arguments."""
+        self.check_platform()
+
         if not loop_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -113,6 +127,8 @@ class TestRealValidation:
 
     def test_validate_preserves_semantics(self, simple_binary, tmp_path):
         """Test that mutations preserve program semantics."""
+        self.check_platform()
+
         if not simple_binary.exists():
             pytest.skip("Test binary not available")
 

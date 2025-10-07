@@ -70,7 +70,9 @@ class NopInsertionPass(MutationPass):
             random.shuffle(shuffled)
             self.NOP_EQUIVALENTS[arch] = shuffled
 
-    def _generate_jmp_dead_code(self, size: int, bits: int, binary: Binary) -> bytes | None:
+    def _generate_jmp_dead_code(
+        self, size: int, bits: int, binary: Binary, function_addr: int | None = None
+    ) -> bytes | None:
         """
         Generate jmp + dead code pattern (r2morph-STYLE).
 
@@ -81,6 +83,7 @@ class NopInsertionPass(MutationPass):
             size: Total size needed in bytes
             bits: Architecture bits (32 or 64)
             binary: Binary instance for assembling
+            function_addr: Function address for resolving symbolic variables (optional)
 
         Returns:
             Assembled bytes or None if not possible
@@ -137,7 +140,7 @@ class NopInsertionPass(MutationPass):
                 all_bytes = b""
 
                 for inst in instructions:
-                    inst_bytes = binary.assemble(inst)
+                    inst_bytes = binary.assemble(inst, function_addr)
                     if not inst_bytes:
                         all_bytes = None
                         break
@@ -246,7 +249,9 @@ class NopInsertionPass(MutationPass):
 
                         if self.use_creative_nops and random.random() < 0.7:
                             if size in [3, 4, 5] and arch_family == "x86":
-                                jmp_bytes = self._generate_jmp_dead_code(size, bits, binary)
+                                jmp_bytes = self._generate_jmp_dead_code(
+                                    size, bits, binary, func["addr"]
+                                )
                                 if jmp_bytes:
                                     binary.write_bytes(addr, jmp_bytes)
                                     logger.info(
@@ -260,7 +265,7 @@ class NopInsertionPass(MutationPass):
                                 random.shuffle(equivalents)
 
                                 for nop_equiv in equivalents:
-                                    nop_bytes = binary.assemble(nop_equiv)
+                                    nop_bytes = binary.assemble(nop_equiv, func["addr"])
                                     if nop_bytes and len(nop_bytes) <= size:
                                         binary.write_bytes(addr, nop_bytes)
 

@@ -75,52 +75,36 @@ class InstructionSubstitutionPass(MutationPass):
                     "xor eax, eax",
                     "sub eax, eax",
                     "push 0; pop eax",
-                    "pushfd; xor eax, eax; popfd",
-                    "pushfd; sub eax, eax; popfd",
-                    "pushfd; and eax, 0; popfd",
                 ],
                 [
                     "mov ebx, 0",
                     "xor ebx, ebx",
                     "sub ebx, ebx",
                     "push 0; pop ebx",
-                    "pushfd; xor ebx, ebx; popfd",
-                    "pushfd; sub ebx, ebx; popfd",
-                    "pushfd; and ebx, 0; popfd",
                 ],
                 [
                     "mov ecx, 0",
                     "xor ecx, ecx",
                     "sub ecx, ecx",
                     "push 0; pop ecx",
-                    "pushfd; xor ecx, ecx; popfd",
-                    "pushfd; sub ecx, ecx; popfd",
-                    "pushfd; and ecx, 0; popfd",
                 ],
                 [
                     "mov edx, 0",
                     "xor edx, edx",
                     "sub edx, edx",
                     "push 0; pop edx",
-                    "pushfd; xor edx, edx; popfd",
-                    "pushfd; sub edx, edx; popfd",
-                    "pushfd; and edx, 0; popfd",
                 ],
                 [
                     "mov esi, 0",
                     "xor esi, esi",
                     "sub esi, esi",
                     "push 0; pop esi",
-                    "pushfd; xor esi, esi; popfd",
-                    "pushfd; sub esi, esi; popfd",
                 ],
                 [
                     "mov edi, 0",
                     "xor edi, edi",
                     "sub edi, edi",
                     "push 0; pop edi",
-                    "pushfd; xor edi, edi; popfd",
-                    "pushfd; sub edi, edi; popfd",
                 ],
                 [
                     "mov rax, 0",
@@ -172,13 +156,11 @@ class InstructionSubstitutionPass(MutationPass):
                     "mov eax, 1",
                     "push 1; pop eax",
                     "xor eax, eax; inc eax",
-                    "pushfd; xor eax, eax; inc eax; popfd",
                 ],
                 [
                     "mov ebx, 1",
                     "push 1; pop ebx",
                     "xor ebx, ebx; inc ebx",
-                    "pushfd; xor ebx, ebx; inc ebx; popfd",
                 ],
                 [
                     "mov ecx, 1",
@@ -373,7 +355,7 @@ class InstructionSubstitutionPass(MutationPass):
                                 all_bytes = b""
 
                                 for inst in instruction_list:
-                                    inst_bytes = binary.assemble(inst)
+                                    inst_bytes = binary.assemble(inst, func["addr"])
                                     if not inst_bytes:
                                         logger.debug(f"Failed to assemble part: {inst}")
                                         all_bytes = None
@@ -382,7 +364,7 @@ class InstructionSubstitutionPass(MutationPass):
 
                                 new_bytes = all_bytes
                             else:
-                                new_bytes = binary.assemble(chosen)
+                                new_bytes = binary.assemble(chosen, func["addr"])
 
                             if new_bytes:
                                 new_size = len(new_bytes)

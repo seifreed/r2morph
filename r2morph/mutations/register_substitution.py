@@ -69,6 +69,82 @@ class RegisterSubstitutionPass(MutationPass):
         },
     }
 
+    # Register sizes in bits (for x86/x64)
+    REGISTER_SIZES = {
+        # 8-bit registers
+        "al": 8,
+        "bl": 8,
+        "cl": 8,
+        "dl": 8,
+        "ah": 8,
+        "bh": 8,
+        "ch": 8,
+        "dh": 8,
+        "spl": 8,
+        "bpl": 8,
+        "sil": 8,
+        "dil": 8,
+        "r8b": 8,
+        "r9b": 8,
+        "r10b": 8,
+        "r11b": 8,
+        "r12b": 8,
+        "r13b": 8,
+        "r14b": 8,
+        "r15b": 8,
+        # 16-bit registers
+        "ax": 16,
+        "bx": 16,
+        "cx": 16,
+        "dx": 16,
+        "sp": 16,
+        "bp": 16,
+        "si": 16,
+        "di": 16,
+        "r8w": 16,
+        "r9w": 16,
+        "r10w": 16,
+        "r11w": 16,
+        "r12w": 16,
+        "r13w": 16,
+        "r14w": 16,
+        "r15w": 16,
+        # 32-bit registers
+        "eax": 32,
+        "ebx": 32,
+        "ecx": 32,
+        "edx": 32,
+        "esp": 32,
+        "ebp": 32,
+        "esi": 32,
+        "edi": 32,
+        "r8d": 32,
+        "r9d": 32,
+        "r10d": 32,
+        "r11d": 32,
+        "r12d": 32,
+        "r13d": 32,
+        "r14d": 32,
+        "r15d": 32,
+        # 64-bit registers
+        "rax": 64,
+        "rbx": 64,
+        "rcx": 64,
+        "rdx": 64,
+        "rsp": 64,
+        "rbp": 64,
+        "rsi": 64,
+        "rdi": 64,
+        "r8": 64,
+        "r9": 64,
+        "r10": 64,
+        "r11": 64,
+        "r12": 64,
+        "r13": 64,
+        "r14": 64,
+        "r15": 64,
+    }
+
     def __init__(self, config: dict[str, Any] | None = None):
         """
         Initialize register substitution pass.
@@ -157,6 +233,127 @@ class RegisterSubstitutionPass(MutationPass):
                 count += 1
         return count
 
+    def _is_safe_size_extension_substitution(
+        self, disasm: str, orig_reg: str, subst_reg: str
+    ) -> bool:
+        """
+        Check if register substitution is safe for size-extension instructions (movzx, movsx).
+
+        These instructions have size constraints:
+        - movzx eax, al (32-bit dest, 8-bit source) - INVALID: source is part of dest
+        - movzx edx, al (valid - different register families) ✅
+        - movzx al, eax (INVALID - dest smaller than source) ❌
+
+        Args:
+            disasm: Instruction disassembly
+            orig_reg: Original register being replaced
+            subst_reg: Substitute register
+
+        Returns:
+            True if substitution is safe, False otherwise
+        """
+        # Parse the instruction to extract source and destination
+        parts = disasm.split(",")
+        if len(parts) < 2:
+            return False
+
+        # Get destination and source operands
+        dest = parts[0].split()[-1].strip()  # Last word before comma
+        source = parts[1].strip()
+
+        # Get sizes
+        orig_size = self.REGISTER_SIZES.get(orig_reg, 0)
+        subst_size = self.REGISTER_SIZES.get(subst_reg, 0)
+
+        if orig_size == 0 or subst_size == 0:
+            # Unknown register size, be conservative
+            return False
+
+        # For movzx/movsx: both registers must have same size if being substituted
+        # This ensures the instruction semantics remain valid
+        if orig_size != subst_size:
+            logger.debug(
+                f"Skipping {disasm}: {orig_reg}({orig_size}b) -> {subst_reg}({subst_size}b) "
+                f"size mismatch for movzx/movsx"
+            )
+            return False
+
+        # Check if source and dest are from the same register family
+        # e.g., movzx eax, al is problematic (al is part of eax)
+        # This creates register aliasing issues that radare2 cannot assemble
+        register_families = {
+            "a": ["al", "ah", "ax", "eax", "rax"],
+            "b": ["bl", "bh", "bx", "ebx", "rbx"],
+            "c": ["cl", "ch", "cx", "ecx", "rcx"],
+            "d": ["dl", "dh", "dx", "edx", "rdx"],
+        }
+
+        dest_family = None
+        source_family = None
+
+        for family, regs in register_families.items():
+            if dest in regs:
+                dest_family = family
+            if source in regs:
+                source_family = family
+
+        if dest_family and source_family and dest_family == source_family:
+            # Source and dest from same register family - problematic
+            logger.debug(f"Skipping {disasm}: {dest} and {source} from same register family")
+            return False
+
+        # Additionally verify the constraint: destination must be larger than source
+        dest_size = self.REGISTER_SIZES.get(dest, 0)
+        source_size = self.REGISTER_SIZES.get(source, 0)
+
+        if dest_size > 0 and source_size > 0 and dest_size <= source_size:
+            # This would be invalid even without substitution
+            return False
+
+        return True
+
+    def _is_safe_lea_substitution(self, disasm: str, orig_reg: str, subst_reg: str) -> bool:
+        """
+        Check if register substitution is safe for LEA (Load Effective Address).
+
+        LEA calculates an address without dereferencing:
+        - lea rax, [rbx + rcx*4] - rax is destination, rbx/rcx are in calculation
+        - Substituting rax (dest) is SAFE ✅
+        - Substituting rbx or rcx (in calculation) is UNSAFE ❌ (changes address)
+
+        Args:
+            disasm: Instruction disassembly
+            orig_reg: Original register being replaced
+            subst_reg: Substitute register
+
+        Returns:
+            True if substitution is safe, False otherwise
+        """
+        # Parse: "lea dest, [calculation]"
+        parts = disasm.split(",", 1)
+        if len(parts) < 2:
+            return False
+
+        dest = parts[0].split()[-1].strip()
+        calculation_part = parts[1].strip()
+
+        # Check if orig_reg is the destination
+        if orig_reg == dest:
+            # Safe to substitute destination register
+            return True
+
+        # Check if orig_reg is in the calculation (inside brackets)
+        if "[" in calculation_part and "]" in calculation_part:
+            calc_inner = calculation_part.split("[")[1].split("]")[0]
+            if orig_reg in calc_inner:
+                # Unsafe: register is part of address calculation
+                logger.debug(
+                    f"Skipping LEA substitution: {orig_reg} in address calculation of '{disasm}'"
+                )
+                return False
+
+        return True
+
     def apply(self, binary: Binary) -> dict[str, Any]:
         """
         Apply register substitution mutations to the binary.
@@ -220,6 +417,54 @@ class RegisterSubstitutionPass(MutationPass):
                     if orig_reg not in disasm:
                         continue
 
+                    mnemonic = disasm.split()[0] if disasm else ""
+
+                    # Category 1: ALWAYS SKIP - Hardware/semantic restrictions
+                    # These cannot be safely substituted due to hardware constraints
+                    always_skip_mnemonics = [
+                        "xlat",  # Table lookup with implicit AL register
+                        "movabs",  # 64-bit immediate/address - complex syntax issues
+                        "cmovz",
+                        "cmovnz",
+                        "cmove",
+                        "cmovne",  # Conditional moves
+                        "setne",
+                        "sete",
+                        "setz",
+                        "setnz",  # Set byte on condition
+                        "lock",  # Atomic operations prefix
+                        "xadd",  # Atomic exchange-and-add
+                        "cmpxchg",  # Atomic compare-and-exchange
+                    ]
+                    if mnemonic in always_skip_mnemonics:
+                        continue
+
+                    # Category 2: VALIDATE FIRST - Can be resolved with proper checks
+                    # movzx/movsx: Size-extension instructions with manual encoding fallback
+                    if mnemonic in ["movzx", "movsx"]:
+                        if not self._is_safe_size_extension_substitution(
+                            disasm, orig_reg, subst_reg
+                        ):
+                            continue
+
+                    # LEA: Address calculation - only safe if substituting destination
+                    if mnemonic == "lea":
+                        if not self._is_safe_lea_substitution(disasm, orig_reg, subst_reg):
+                            continue
+
+                    # Skip instructions with memory addresses to avoid corrupting them
+                    if "[" in disasm and "]" in disasm:
+                        # Check if register is only in memory operand (skip these)
+                        parts = disasm.split("[")
+                        if len(parts) > 1:
+                            mem_part = parts[1].split("]")[0]
+                            # If register only appears in memory operand, skip
+                            non_mem_part = parts[0] + (
+                                parts[1].split("]")[1] if "]" in parts[1] else ""
+                            )
+                            if orig_reg not in non_mem_part and orig_reg in mem_part:
+                                continue
+
                     new_disasm = disasm.replace(orig_reg, subst_reg)
 
                     addr = insn.get("addr", 0)
@@ -229,7 +474,7 @@ class RegisterSubstitutionPass(MutationPass):
                         continue
 
                     try:
-                        new_bytes = binary.assemble(new_disasm)
+                        new_bytes = binary.assemble(new_disasm, func["addr"])
 
                         if new_bytes:
                             new_size = len(new_bytes)

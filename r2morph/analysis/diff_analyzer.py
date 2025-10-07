@@ -53,6 +53,8 @@ class DiffAnalyzer:
         self.original: Binary | None = None
         self.morphed: Binary | None = None
         self.diff_stats: DiffStats | None = None
+        self._original_path: Path | None = None
+        self._morphed_path: Path | None = None
 
     def compare(self, original_path: Path, morphed_path: Path) -> DiffStats:
         """
@@ -66,6 +68,9 @@ class DiffAnalyzer:
             DiffStats with comparison details
         """
         logger.info(f"Comparing {original_path.name} vs {morphed_path.name}")
+
+        self._original_path = Path(original_path)
+        self._morphed_path = Path(morphed_path)
 
         with Binary(original_path) as orig, Binary(morphed_path) as morph:
             orig.analyze()
@@ -137,22 +142,26 @@ class DiffAnalyzer:
         viz.append("Function Changes:")
         viz.append("-" * 60)
 
-        if self.original and self.morphed:
-            orig_funcs = {f["offset"]: f for f in self.original.get_functions()}
-            morph_funcs = {f["offset"]: f for f in self.morphed.get_functions()}
+        # Reopen binaries if needed
+        if self._original_path and self._morphed_path:
+            with Binary(self._original_path) as orig, Binary(self._morphed_path) as morph:
+                orig.analyze()
+                morph.analyze()
+                orig_funcs = {f.get("offset", f.get("addr", 0)): f for f in orig.get_functions()}
+                morph_funcs = {f.get("offset", f.get("addr", 0)): f for f in morph.get_functions()}
 
-            for addr in orig_funcs:
-                if addr in morph_funcs:
-                    orig_size = orig_funcs[addr].get("size", 0)
-                    morph_size = morph_funcs[addr].get("size", 0)
+                for addr in orig_funcs:
+                    if addr in morph_funcs:
+                        orig_size = orig_funcs[addr].get("size", 0)
+                        morph_size = morph_funcs[addr].get("size", 0)
 
-                    if orig_size != morph_size:
-                        func_name = orig_funcs[addr].get("name", f"0x{addr:x}")
-                        viz.append(
-                            f"  {func_name}: "
-                            f"{orig_size} bytes -> {morph_size} bytes "
-                            f"({morph_size - orig_size:+d})"
-                        )
+                        if orig_size != morph_size:
+                            func_name = orig_funcs[addr].get("name", f"0x{addr:x}")
+                            viz.append(
+                                f"  {func_name}: "
+                                f"{orig_size} bytes -> {morph_size} bytes "
+                                f"({morph_size - orig_size:+d})"
+                            )
 
         viz.append("")
 
@@ -258,8 +267,8 @@ class DiffAnalyzer:
         if not self.original or not self.morphed:
             return 0
 
-        orig_funcs = {f["offset"]: f for f in self.original.get_functions()}
-        morph_funcs = {f["offset"]: f for f in self.morphed.get_functions()}
+        orig_funcs = {f.get("offset", f.get("addr", 0)): f for f in self.original.get_functions()}
+        morph_funcs = {f.get("offset", f.get("addr", 0)): f for f in self.morphed.get_functions()}
 
         changed = 0
 

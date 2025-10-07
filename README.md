@@ -4,6 +4,8 @@ A metamorphic binary transformation engine based on r2pipe and radare2.
 
 [![Python Version](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![codecov](https://codecov.io/gh/seifreed/r2morph/branch/main/graph/badge.svg)](https://codecov.io/gh/seifreed/r2morph)
+[![CI](https://github.com/seifreed/r2morph/workflows/Python%20Package/badge.svg)](https://github.com/seifreed/r2morph/actions)
 [![GitHub issues](https://img.shields.io/github/issues/seifreed/r2morph)](https://github.com/seifreed/r2morph/issues)
 [![GitHub stars](https://img.shields.io/github/stars/seifreed/r2morph)](https://github.com/seifreed/r2morph/stargazers)
 
@@ -12,7 +14,7 @@ A metamorphic binary transformation engine based on r2pipe and radare2.
 
 ---
 
-## 🎯 Overview
+## Overview
 
 **r2morph** is a powerful framework for analyzing and transforming binary executables through semantic-preserving mutations. It leverages radare2 and r2pipe to perform deep binary analysis and apply metamorphic transformations that change the binary signature while maintaining program semantics.
 
@@ -20,13 +22,12 @@ A metamorphic binary transformation engine based on r2pipe and radare2.
 - Security research and malware analysis
 - Evasion technique testing
 - Binary obfuscation research
-- 🛡Defensive security tool development
+- Defensive security tool development
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-### Core Capabilities
 - **Deep Binary Analysis**: Leverage radare2's powerful analysis engine
 - **Metamorphic Transformations**: Apply semantic-preserving code mutations
 - 🏗**Modular Architecture**: Extensible pipeline-based design
@@ -34,20 +35,19 @@ A metamorphic binary transformation engine based on r2pipe and radare2.
 - **Plugin System**: Easy-to-create custom mutation passes
 - **Rich Analytics**: Detailed statistics and reporting
 - **CLI + Python API**: Powerful command-line and programmatic interfaces
-
-### v0.3.0 New Features 🚀
-- ✅ **Validation & Testing**: Automated validation, fuzzing, regression tests
-- ✅ **Relocation Management**: Code cave finding, reference updates
-- ✅ **Anti-Detection Analysis**: Evasion scoring, entropy analysis, similarity hashing
-- ✅ **ARM64/ARM32 Support**: 180+ patterns for ARM architectures
-- ✅ **Advanced Mutations**: Opaque predicates, dead code, control flow flattening
-- ✅ **Platform Support**: Code signing for macOS/Windows, format-specific handlers
-- ✅ **Profile-Guided**: Hot path detection, execution profiling
-- ✅ **Session Management**: Checkpoints, rollback, versioning
+- **Validation & Testing**: Automated validation, fuzzing, regression tests
+- **Relocation Management**: Code cave finding, reference updates
+- **Anti-Detection Analysis**: Evasion scoring, entropy analysis, similarity hashing
+- **ARM64/ARM32 Support**: 180+ patterns for ARM architectures
+- **Advanced Mutations**: Opaque predicates, dead code, control flow flattening
+- **Platform Support**: Code signing for macOS/Windows, format-specific handlers
+- **Profile-Guided**: Hot path detection, execution profiling
+- **Session Management**: Checkpoints, rollback, versioning
+- **Memory-Efficient Mode**: Automatic OOM prevention for large binaries (>50MB)
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Installation
 
@@ -101,12 +101,12 @@ with MorphEngine() as engine:
     result = engine.run()
     engine.save("output.exe")
 
-print(f"✅ Applied {result['total_mutations']} mutations")
+print(f"Applied {result['total_mutations']} mutations")
 ```
 
 ---
 
-## 🔧 Supported Transformations
+## Supported Transformations
 
 ### Basic Mutations
 - **Instruction Substitution**: Replace instructions with semantic equivalents (90+ patterns)
@@ -122,7 +122,7 @@ print(f"✅ Applied {result['total_mutations']} mutations")
 
 ---
 
-## 🎨 Examples
+## Examples
 
 ### Basic Binary Analysis
 
@@ -210,7 +210,33 @@ See the `examples/` directory for complete examples:
 
 ---
 
-## 🏗️ Architecture
+## Memory-Efficient Mode
+
+r2morph automatically detects large binaries and enables memory-efficient mode to prevent OOM crashes:
+
+### Automatic Detection
+- **Triggers**: Binaries >50MB or >3000 functions
+- **Batch Processing**: r2 restarts every 1000 mutations to free memory
+- **Conservative Limits**: Reduced mutations per function (2 instead of 5)
+- **Low-Memory r2 Config**: Disables caching (`bin.cache=false`, `io.cache=false`)
+
+### Example
+```bash
+# Automatically handles large binaries (e.g., Qt6WebEngineCore.dll - 148MB)
+r2morph large_binary.dll morphed.dll
+
+# Output:
+# Large binary detected (147.3 MB, 4261 functions)
+# Enabling memory-efficient mode to prevent OOM crashes
+# Batch checkpoint: 1000 mutations applied. Reloading r2 to free memory...
+```
+
+### Pipeline Integration
+Memory-efficient mode is **100% transparent** - no code changes needed. Just run r2morph normally and it will auto-detect and protect against OOM.
+
+---
+
+## Architecture
 
 ```
 ┌─────────────┐
@@ -301,7 +327,7 @@ r2morph/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 ### Creating a New Mutation Pass
 
@@ -325,13 +351,13 @@ class MyMutation(MutationPass):
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
-## ⚠️ Disclaimer
+## Disclaimer
 
 **This tool is for research and educational purposes only.** Users are responsible for ensuring they have proper authorization before analyzing or modifying any binary. The authors are not responsible for any misuse of this tool.
 

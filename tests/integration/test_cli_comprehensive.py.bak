@@ -1,0 +1,406 @@
+"""
+Comprehensive real tests for CLI module using dataset binaries.
+"""
+
+import shutil
+from pathlib import Path
+
+import pytest
+from typer.testing import CliRunner
+
+from r2morph.cli import app
+
+runner = CliRunner()
+
+
+class TestCLIComprehensive:
+    """Comprehensive tests for CLI."""
+
+    @pytest.fixture
+    def ls_elf(self):
+        """Path to ls ELF binary."""
+        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+
+    @pytest.fixture
+    def ls_macos(self):
+        """Path to ls macOS binary."""
+        return Path(__file__).parent.parent.parent / "dataset" / "ls_macOS"
+
+    @pytest.fixture
+    def pafish_pe(self):
+        """Path to pafish PE binary."""
+        return Path(__file__).parent.parent.parent / "dataset" / "pafish.exe"
+
+    def test_version_command(self):
+        """Test version command."""
+        result = runner.invoke(app, ["version"])
+        assert result.exit_code == 0
+        assert "r2morph" in result.stdout
+        assert "version" in result.stdout
+
+    def test_help_command(self):
+        """Test help command."""
+        result = runner.invoke(app, ["--help"])
+        assert result.exit_code == 0
+        assert "r2morph" in result.stdout
+        assert "Metamorphic binary transformation" in result.stdout
+
+    def test_analyze_command_elf(self, ls_elf, tmp_path):
+        """Test analyze command with ELF binary."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        result = runner.invoke(app, ["analyze", str(ls_elf)])
+
+        assert result.exit_code == 0
+        assert "Binary Analysis" in result.stdout
+        assert "Architecture" in result.stdout
+        assert "Total Functions" in result.stdout
+
+    def test_analyze_command_verbose(self, ls_elf):
+        """Test analyze command with verbose flag."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        result = runner.invoke(app, ["analyze", str(ls_elf), "--verbose"])
+
+        assert result.exit_code == 0
+        assert "Binary Analysis" in result.stdout
+
+    def test_functions_command_elf(self, ls_elf):
+        """Test functions command with ELF binary."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        result = runner.invoke(app, ["functions", str(ls_elf)])
+
+        assert result.exit_code == 0
+        assert "Functions in" in result.stdout
+        assert "Address" in result.stdout
+        assert "Name" in result.stdout
+
+    def test_functions_command_with_limit(self, ls_elf):
+        """Test functions command with custom limit."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        result = runner.invoke(app, ["functions", str(ls_elf), "--limit", "5"])
+
+        assert result.exit_code == 0
+        assert "Functions in" in result.stdout
+
+    def test_functions_command_verbose(self, ls_elf):
+        """Test functions command with verbose flag."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        result = runner.invoke(app, ["functions", str(ls_elf), "-v"])
+
+        assert result.exit_code == 0
+        assert "Functions in" in result.stdout
+
+    def test_morph_command_basic(self, ls_elf, tmp_path):
+        """Test morph command basic usage."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_morphed"
+
+        result = runner.invoke(app, ["morph", str(ls_elf), "-o", str(output_path)])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "Transformation Results" in result.stdout
+        assert "Binary saved to" in result.stdout
+
+    def test_morph_command_nop_only(self, ls_elf, tmp_path):
+        """Test morph command with NOP mutation only."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_nop"
+
+        result = runner.invoke(app, ["morph", str(ls_elf), "-o", str(output_path), "-m", "nop"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "Transformation Results" in result.stdout
+
+    def test_morph_command_multiple_mutations(self, ls_elf, tmp_path):
+        """Test morph command with multiple mutations."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_multi"
+
+        result = runner.invoke(
+            app,
+            [
+                "morph",
+                str(ls_elf),
+                "-o",
+                str(output_path),
+                "-m",
+                "nop",
+                "-m",
+                "substitute",
+                "-m",
+                "register",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "Transformation Results" in result.stdout
+
+    def test_morph_command_aggressive(self, ls_elf, tmp_path):
+        """Test morph command with aggressive mode."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_aggressive"
+
+        result = runner.invoke(app, ["morph", str(ls_elf), "-o", str(output_path), "--aggressive"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "AGGRESSIVE" in result.stdout
+
+    def test_morph_command_force(self, ls_elf, tmp_path):
+        """Test morph command with force mode."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_force"
+
+        result = runner.invoke(app, ["morph", str(ls_elf), "-o", str(output_path), "--force"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_morph_command_verbose(self, ls_elf, tmp_path):
+        """Test morph command with verbose flag."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_verbose"
+
+        result = runner.invoke(app, ["morph", str(ls_elf), "-o", str(output_path), "-v"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_morph_command_expand_mutation(self, ls_elf, tmp_path):
+        """Test morph command with expand mutation."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_expand"
+
+        result = runner.invoke(app, ["morph", str(ls_elf), "-o", str(output_path), "-m", "expand"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_morph_command_block_mutation(self, ls_elf, tmp_path):
+        """Test morph command with block reordering mutation."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_block"
+
+        result = runner.invoke(app, ["morph", str(ls_elf), "-o", str(output_path), "-m", "block"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_morph_command_all_mutations(self, ls_elf, tmp_path):
+        """Test morph command with all mutations."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_all"
+
+        result = runner.invoke(
+            app,
+            [
+                "morph",
+                str(ls_elf),
+                "-o",
+                str(output_path),
+                "-m",
+                "nop",
+                "-m",
+                "substitute",
+                "-m",
+                "register",
+                "-m",
+                "expand",
+                "-m",
+                "block",
+            ],
+        )
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_simple_mode_positional_args(self, ls_elf, tmp_path):
+        """Test simple mode with positional arguments."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        # Copy binary to tmp_path to test simple mode
+        input_copy = tmp_path / "ls_test"
+        shutil.copy(ls_elf, input_copy)
+        output_path = tmp_path / "ls_test_morphed"
+
+        result = runner.invoke(app, [str(input_copy), str(output_path)])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "Simple Mode" in result.stdout
+
+    def test_simple_mode_option_style(self, ls_elf, tmp_path):
+        """Test simple mode with option-style arguments."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_option"
+
+        result = runner.invoke(app, ["-i", str(ls_elf), "-o", str(output_path)])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "Simple Mode" in result.stdout
+
+    def test_simple_mode_aggressive(self, ls_elf, tmp_path):
+        """Test simple mode with aggressive flag."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_simple_aggr"
+
+        result = runner.invoke(app, ["-i", str(ls_elf), "-o", str(output_path), "-a"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+        assert "AGGRESSIVE" in result.stdout
+
+    def test_simple_mode_force(self, ls_elf, tmp_path):
+        """Test simple mode with force flag."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_simple_force"
+
+        result = runner.invoke(app, ["-i", str(ls_elf), "-o", str(output_path), "-f"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_simple_mode_verbose(self, ls_elf, tmp_path):
+        """Test simple mode with verbose flag."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_simple_verbose"
+
+        result = runner.invoke(app, ["-i", str(ls_elf), "-o", str(output_path), "-v"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_simple_mode_debug(self, ls_elf, tmp_path):
+        """Test simple mode with debug flag."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        output_path = tmp_path / "ls_simple_debug"
+
+        result = runner.invoke(app, ["-i", str(ls_elf), "-o", str(output_path), "-d"])
+
+        assert result.exit_code == 0
+        assert output_path.exists()
+
+    def test_simple_mode_default_output(self, ls_elf, tmp_path):
+        """Test simple mode with default output path."""
+        if not ls_elf.exists():
+            pytest.skip("ELF binary not available")
+
+        # Copy binary to tmp_path
+        input_copy = tmp_path / "test_binary"
+        shutil.copy(ls_elf, input_copy)
+
+        result = runner.invoke(app, [str(input_copy)])
+
+        assert result.exit_code == 0
+        # Default output should be input_morphed
+        expected_output = tmp_path / "test_binary_morphed"
+        assert expected_output.exists()
+
+    def test_no_input_shows_usage(self):
+        """Test that no input shows usage information."""
+        result = runner.invoke(app, [])
+
+        assert result.exit_code == 0
+        assert "No input file provided" in result.stdout
+        assert "Usage:" in result.stdout
+
+    def test_analyze_nonexistent_file(self):
+        """Test analyze with nonexistent file."""
+        result = runner.invoke(app, ["analyze", "/nonexistent/file"])
+
+        assert result.exit_code != 0
+
+    def test_functions_nonexistent_file(self):
+        """Test functions with nonexistent file."""
+        result = runner.invoke(app, ["functions", "/nonexistent/file"])
+
+        assert result.exit_code != 0
+
+    def test_morph_nonexistent_file(self, tmp_path):
+        """Test morph with nonexistent file."""
+        output_path = tmp_path / "output"
+        result = runner.invoke(app, ["morph", "/nonexistent/file", "-o", str(output_path)])
+
+        assert result.exit_code != 0
+
+    def test_macos_binary_analyze(self, ls_macos):
+        """Test analyze command with macOS binary."""
+        if not ls_macos.exists():
+            pytest.skip("macOS binary not available")
+
+        result = runner.invoke(app, ["analyze", str(ls_macos)])
+
+        assert result.exit_code == 0
+        assert "Binary Analysis" in result.stdout
+
+    def test_macos_binary_functions(self, ls_macos):
+        """Test functions command with macOS binary."""
+        if not ls_macos.exists():
+            pytest.skip("macOS binary not available")
+
+        result = runner.invoke(app, ["functions", str(ls_macos)])
+
+        assert result.exit_code == 0
+        assert "Functions in" in result.stdout
+
+    def test_pe_binary_analyze(self, pafish_pe):
+        """Test analyze command with PE binary."""
+        if not pafish_pe.exists():
+            pytest.skip("PE binary not available")
+
+        result = runner.invoke(app, ["analyze", str(pafish_pe)])
+
+        assert result.exit_code == 0
+        assert "Binary Analysis" in result.stdout
+
+    def test_pe_binary_functions(self, pafish_pe):
+        """Test functions command with PE binary."""
+        if not pafish_pe.exists():
+            pytest.skip("PE binary not available")
+
+        result = runner.invoke(app, ["functions", str(pafish_pe)])
+
+        assert result.exit_code == 0
+        assert "Functions in" in result.stdout

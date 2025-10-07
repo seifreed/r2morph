@@ -148,11 +148,27 @@ class InstructionExpansionPass(MutationPass):
             new_mnemonic = pattern[0]
             new_operands = []
 
+            # Extract the target register from original instruction
+            target_register = None
+            if len(orig_parts) > 1:
+                # Get first operand (destination register)
+                candidate = orig_parts[1].strip(",").strip()
+
+                # Validation: reject size specifiers and memory operands
+                # Size specifiers like "dword", "qword" appear in instructions like:
+                #   "mov dword [rsp], eax" → parts[1] = "dword"
+                size_specifiers = {"dword", "qword", "byte", "word", "ptr"}
+
+                if candidate and candidate not in size_specifiers and not candidate.startswith("["):
+                    target_register = candidate
+                else:
+                    # Not a valid register operand, skip this expansion
+                    return None
+
             for _i, param in enumerate(pattern[1:], start=1):
                 if param == "reg":
-                    if len(orig_parts) > 1:
-                        reg = orig_parts[1].strip(",")
-                        new_operands.append(reg)
+                    if target_register:
+                        new_operands.append(target_register)
                     else:
                         return None
                 elif param in ["1", "2", "3", "4", "5", "-1"]:
@@ -287,7 +303,7 @@ class InstructionExpansionPass(MutationPass):
                         new_disasm = self._build_instruction_from_pattern(pattern, parts)
 
                         if new_disasm:
-                            new_bytes = binary.assemble(new_disasm)
+                            new_bytes = binary.assemble(new_disasm, func["addr"])
 
                             if new_bytes:
                                 new_size = len(new_bytes)

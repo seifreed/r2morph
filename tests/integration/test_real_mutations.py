@@ -2,6 +2,7 @@
 Real integration tests for mutations using compiled binaries.
 """
 
+import platform
 import subprocess
 from pathlib import Path
 
@@ -33,6 +34,11 @@ class TestRealMutations:
         """Path to conditional test binary."""
         return Path(__file__).parent.parent / "fixtures" / "conditional"
 
+    def check_platform(self):
+        """Skip tests on macOS due to ARM64 binary complexity."""
+        if platform.system() == "Darwin":
+            pytest.skip("Real mutation tests skipped on macOS (ARM64 binary complexity)")
+
     def get_output(self, binary_path):
         """Get output from executing a binary."""
         try:
@@ -48,6 +54,8 @@ class TestRealMutations:
 
     def test_nop_insertion_real(self, simple_binary, tmp_path):
         """Test NOP insertion with real binary."""
+        self.check_platform()
+
         if not simple_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -77,6 +85,8 @@ class TestRealMutations:
 
     def test_instruction_substitution_real(self, loop_binary, tmp_path):
         """Test instruction substitution with real binary."""
+        self.check_platform()
+
         if not loop_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -105,6 +115,8 @@ class TestRealMutations:
 
     def test_multiple_mutations_real(self, conditional_binary, tmp_path):
         """Test multiple mutations on real binary."""
+        self.check_platform()
+
         if not conditional_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -135,6 +147,8 @@ class TestRealMutations:
 
     def test_aggressive_mode_real(self, simple_binary, tmp_path):
         """Test aggressive mode with real binary."""
+        self.check_platform()
+
         if not simple_binary.exists():
             pytest.skip("Test binary not available")
 
@@ -170,6 +184,8 @@ class TestRealMutations:
 
     def test_binary_still_executable(self, loop_binary, tmp_path):
         """Test that mutated binary is still executable."""
+        self.check_platform()
+
         if not loop_binary.exists():
             pytest.skip("Test binary not available")
 

@@ -43,7 +43,16 @@ class TestBinaryValidator:
         validator = BinaryValidator()
         validator.add_test_case(description="Test1")
 
-        result = validator.validate(Path("original.exe"), Path("mutated.exe"))
+        # Create mock paths that have chmod method
+        mock_orig_path = Mock(spec=Path)
+        mock_orig_path.name = "original.exe"
+        mock_orig_path.chmod.return_value = None
+
+        mock_mut_path = Mock(spec=Path)
+        mock_mut_path.name = "mutated.exe"
+        mock_mut_path.chmod.return_value = None
+
+        result = validator.validate(mock_orig_path, mock_mut_path)
 
         assert isinstance(result, ValidationResult)
         assert result.passed is True
@@ -77,12 +86,27 @@ class TestBinaryValidator:
         """Test validation with timeout."""
         import subprocess
 
-        mock_run.side_effect = subprocess.TimeoutExpired("cmd", 5)
+        # First call (original) succeeds, second call (mutated) times out
+        mock_result_orig = Mock()
+        mock_result_orig.returncode = 0
+        mock_result_orig.stdout = b"output"
+        mock_result_orig.stderr = b""
+
+        mock_run.side_effect = [mock_result_orig, subprocess.TimeoutExpired("cmd", 5)]
 
         validator = BinaryValidator(timeout=1)
         validator.add_test_case(description="Test1")
 
-        result = validator.validate(Path("original.exe"), Path("mutated.exe"))
+        # Create mock paths
+        mock_orig_path = Mock(spec=Path)
+        mock_orig_path.name = "original.exe"
+        mock_orig_path.chmod.return_value = None
+
+        mock_mut_path = Mock(spec=Path)
+        mock_mut_path.name = "mutated.exe"
+        mock_mut_path.chmod.return_value = None
+
+        result = validator.validate(mock_orig_path, mock_mut_path)
 
         assert result.passed is False
         assert result.mutated_exitcode == -1

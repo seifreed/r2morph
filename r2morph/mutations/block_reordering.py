@@ -233,7 +233,7 @@ class BlockReorderingPass(MutationPass):
                     target_addr = target_block.get("addr", 0)
 
                     jmp_insn = f"jmp 0x{target_addr:x}"
-                    jmp_bytes = binary.assemble(jmp_insn)
+                    jmp_bytes = binary.assemble(jmp_insn, func["addr"])
 
                     if jmp_bytes and len(jmp_bytes) <= 5:
                         write_addr = addr + size - len(jmp_bytes)
