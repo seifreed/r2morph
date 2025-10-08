@@ -30,7 +30,7 @@ A metamorphic binary transformation engine based on r2pipe and radare2.
 
 - **Deep Binary Analysis**: Leverage radare2's powerful analysis engine
 - **Metamorphic Transformations**: Apply semantic-preserving code mutations
-- 🏗**Modular Architecture**: Extensible pipeline-based design
+- **Modular Architecture**: Extensible pipeline-based design
 - **Multi-Architecture**: Support for PE/ELF/Mach-O on x86/x64/ARM
 - **Plugin System**: Easy-to-create custom mutation passes
 - **Rich Analytics**: Detailed statistics and reporting
