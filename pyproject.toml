@@ -63,6 +63,53 @@ docs = [
     "mkdocs-material>=9.0.0",
     "mkdocstrings[python]>=0.22.0",
 ]
+# Advanced analysis optional dependencies
+enhanced = [
+    # Include all enhanced analysis capabilities
+    "angr>=9.2.0",
+    "z3-solver>=4.12.0",
+    "frida>=16.0.0",
+    "frida-tools>=12.0.0",
+    "triton-library>=1.0.0",
+    "networkx>=3.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+]
+syntia = [
+    "cvc5>=1.0.0",  # SMT solver for Syntia
+    "pysmt>=0.9.0",  # SMT abstraction layer
+    "claripy>=9.2.0",  # Constraint solving for angr
+]
+devirtualization = [
+    "miasm>=0.1.0",  # Additional disassembly framework
+    "unicorn>=2.0.0",  # CPU emulator engine
+    "qiling>=1.4.0",  # Advanced emulation framework
+]
+machine-learning = [
+    "scikit-learn>=1.3.0",  # For pattern recognition
+    "torch>=2.0.0",  # For neural network based analysis
+    "transformers>=4.30.0",  # For advanced semantic analysis
+]
+all = [
+    # Include all optional dependencies
+    "angr>=9.2.0",
+    "z3-solver>=4.12.0",
+    "frida>=16.0.0",
+    "frida-tools>=12.0.0",
+    "triton-library>=1.0.0",
+    "networkx>=3.0",
+    "numpy>=1.24.0",
+    "scipy>=1.10.0",
+    "cvc5>=1.0.0",
+    "pysmt>=0.9.0",
+    "claripy>=9.2.0",
+    "miasm>=0.1.0",
+    "unicorn>=2.0.0",
+    "qiling>=1.4.0",
+    "scikit-learn>=1.3.0",
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+]
 
 [project.scripts]
 r2morph = "r2morph.cli:main"

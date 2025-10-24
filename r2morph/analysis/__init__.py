@@ -13,6 +13,26 @@ from r2morph.analysis.invariants import (
     SemanticValidator,
 )
 
+# Symbolic execution and advanced analysis
+try:
+    from r2morph.analysis.symbolic import (
+        AngrBridge,
+        ConstraintSolver,
+        PathExplorer,
+        StateManager,
+        SyntiaFramework,
+        SYNTIA_AVAILABLE,
+    )
+    SYMBOLIC_AVAILABLE = True
+except ImportError:
+    SYMBOLIC_AVAILABLE = False
+    AngrBridge = None
+    ConstraintSolver = None
+    PathExplorer = None
+    StateManager = None
+    SyntiaFramework = None
+    SYNTIA_AVAILABLE = False
+
 __all__ = [
     "BinaryAnalyzer",
     "CFGBuilder",
@@ -27,4 +47,12 @@ __all__ = [
     "InvariantType",
     "DiffAnalyzer",
     "DiffStats",
+    # Symbolic execution (if available)
+    "AngrBridge",
+    "ConstraintSolver", 
+    "PathExplorer",
+    "StateManager",
+    "SyntiaFramework",
+    "SYMBOLIC_AVAILABLE",
+    "SYNTIA_AVAILABLE",
 ]

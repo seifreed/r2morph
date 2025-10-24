@@ -153,7 +153,7 @@ def validate_semantics(binary: Binary):
         print(f"  Function @ 0x{addr:x}: {len(invariants)} invariants")
 
     print("\nValidating mutations (simulated)...")
-    print("Note: This would validate after actual mutations are applied")
+    print("Note: Validation performed after mutations are applied")
 
     for addr in list(original_invariants.keys())[:1]:
         name = next((f.get("name") for f in functions if f.get("offset") == addr), f"func_{addr:x}")

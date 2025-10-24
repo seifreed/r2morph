@@ -307,7 +307,7 @@ class RegisterSubstitutionPass(MutationPass):
         source_size = self.REGISTER_SIZES.get(source, 0)
 
         if dest_size > 0 and source_size > 0 and dest_size <= source_size:
-            # This would be invalid even without substitution
+            # Invalid operation regardless of substitution
             return False
 
         return True

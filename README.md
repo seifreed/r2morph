@@ -28,11 +28,21 @@ A metamorphic binary transformation engine based on r2pipe and radare2.
 
 ## Key Features
 
+### Core Binary Analysis
 - **Deep Binary Analysis**: Leverage radare2's powerful analysis engine
 - **Metamorphic Transformations**: Apply semantic-preserving code mutations
-- **Modular Architecture**: Extensible pipeline-based design
 - **Multi-Architecture**: Support for PE/ELF/Mach-O on x86/x64/ARM
+- **Modular Architecture**: Extensible pipeline-based design
 - **Plugin System**: Easy-to-create custom mutation passes
+
+### Enhanced Obfuscated Binary Analysis
+- **🔬 Symbolic Execution**: Angr integration for path exploration and constraint solving
+- **⚡ Dynamic Instrumentation**: Frida-based runtime analysis and API monitoring
+- **🤖 AI-Powered Analysis**: Syntia Framework integration for semantic learning
+- **🛡️ Advanced Obfuscation Detection**: VMProtect, Themida, and custom packer detection
+- **🔓 Devirtualization Pipeline**: VM handler analysis and MBA simplification
+
+### Advanced Features
 - **Rich Analytics**: Detailed statistics and reporting
 - **CLI + Python API**: Powerful command-line and programmatic interfaces
 - **Validation & Testing**: Automated validation, fuzzing, regression tests
@@ -67,7 +77,16 @@ sys/install.sh
 #### Install r2morph
 
 ```bash
+# Basic installation
 pip install r2morph
+
+# Enhanced analysis capabilities (recommended for obfuscated binaries)
+pip install "r2morph[enhanced]"
+
+# All optional features
+pip install "r2morph[all]"
+
+# Development installation
 
 git clone https://github.com/seifreed/r2morph.git
 cd r2morph
@@ -103,6 +122,47 @@ with MorphEngine() as engine:
 
 print(f"Applied {result['total_mutations']} mutations")
 ```
+
+### Enhanced Obfuscated Binary Analysis
+
+For sophisticated obfuscated binaries (VMProtect, Themida, etc.):
+
+```python
+from r2morph import Binary
+from r2morph.detection import ObfuscationDetector
+from r2morph.analysis.symbolic import AngrBridge, PathExplorer
+from r2morph.instrumentation import FridaEngine
+from r2morph.devirtualization import VMHandlerAnalyzer, MBASolver
+
+# Comprehensive obfuscated binary analysis
+with Binary("vmprotected.exe") as binary:
+    binary.analyze()
+    
+    # 1. Detect obfuscation techniques
+    detector = ObfuscationDetector()
+    result = detector.analyze_binary(binary)
+    print(f"Packer: {result.packer_detected}")
+    
+    # 2. Symbolic execution for VM handlers
+    if result.vm_detected:
+        angr_bridge = AngrBridge(binary)
+        explorer = PathExplorer(angr_bridge)
+        vm_result = explorer.explore_vm_handlers()
+        
+    # 3. Dynamic instrumentation
+    frida_engine = FridaEngine()
+    runtime_result = frida_engine.instrument_binary("vmprotected.exe")
+    
+    # 4. VM handler analysis and MBA simplification
+    if result.vm_detected:
+        vm_analyzer = VMHandlerAnalyzer(binary)
+        handlers = vm_analyzer.analyze_vm_architecture()
+        
+        mba_solver = MBASolver()
+        simplified = mba_solver.simplify_handlers(handlers)
+```
+
+See [Enhanced Analysis Documentation](docs/enhanced_analysis.md) for detailed usage examples.
 
 ---
 
