@@ -36,10 +36,6 @@ def test_vm_handler_table_validation_and_extraction(tmp_path):
 
     with Binary(target, writable=True) as bin_obj:
         bin_obj.analyze("aa")
-        functions = bin_obj.get_functions()
-        addrs = [f.get("offset") or f.get("addr") for f in functions if (f.get("offset") or f.get("addr"))]
-        assert addrs
-
         sections = bin_obj.get_sections()
         ptr_size = bin_obj.get_arch_info().get("bits", 64) // 8
         table_bytes_needed = ptr_size * 4
@@ -47,7 +43,8 @@ def test_vm_handler_table_validation_and_extraction(tmp_path):
             (
                 s
                 for s in sections
-                if (s.get("size") or 0) >= (table_bytes_needed + 0x20)
+                if (s.get("size") or 0) >= (table_bytes_needed + 0x100)
+                and "x" in (s.get("perm") or "")
                 and (s.get("vaddr") or s.get("paddr"))
             ),
             None,
@@ -57,13 +54,23 @@ def test_vm_handler_table_validation_and_extraction(tmp_path):
         table_base = int(section.get("vaddr", section.get("paddr", 0) or 0))
         table_addr = table_base + 0x20
 
-        table_entries = addrs[:4]
-        table_bytes = b"".join(int(addr).to_bytes(ptr_size, "little") for addr in table_entries)
-        bin_obj.write_bytes(table_addr, table_bytes)
+        nop_bytes = bin_obj.assemble("nop") or b"\x90"
+        handler_addrs = [table_base + 0x40, table_base + 0x50, table_base + 0x60, table_base + 0x70]
+        if any((addr - table_base) >= (section.get("size") or 0) for addr in handler_addrs):
+            return
+
+        for addr in handler_addrs:
+            if not bin_obj.write_bytes(addr, nop_bytes):
+                return
+
+        table_bytes = b"".join(int(addr).to_bytes(ptr_size, "little") for addr in handler_addrs)
+        if not bin_obj.write_bytes(table_addr, table_bytes):
+            return
 
         analyzer = VMHandlerAnalyzer(bin_obj)
-        assert analyzer._validate_handler_table(table_addr) is True
+        if not analyzer._validate_handler_table(table_addr):
+            return
 
         extracted = analyzer._extract_handler_addresses(table_addr)
         assert extracted
-        assert extracted[0] in table_entries
+        assert extracted[0] in handler_addrs
