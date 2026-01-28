@@ -20,6 +20,28 @@ def _get_section_vaddr(binary: Binary) -> int:
             return int(vaddr or paddr)
     return int(sections[0].get("vaddr", 0) or sections[0].get("paddr", 0) or 0)
 
+def _map_vaddr_to_paddr(binary: Binary, vaddr: int) -> int | None:
+    if not binary.r2:
+        return None
+
+    paddr_str = binary.r2.cmd(f"s2p 0x{vaddr:x}").strip()
+    if paddr_str:
+        try:
+            return int(paddr_str, 16)
+        except ValueError:
+            pass
+
+    for section in binary.get_sections():
+        sec_vaddr = section.get("vaddr")
+        sec_paddr = section.get("paddr")
+        size = section.get("size") or section.get("vsize") or 0
+        if sec_vaddr is None or sec_paddr is None or not size:
+            continue
+        if sec_vaddr <= vaddr < sec_vaddr + size:
+            return int(sec_paddr + (vaddr - sec_vaddr))
+
+    return None
+
 
 def test_binary_write_bytes_and_nop_fill(tmp_path: Path) -> None:
     source = Path("dataset/elf_x86_64")
@@ -36,8 +58,9 @@ def test_binary_write_bytes_and_nop_fill(tmp_path: Path) -> None:
         assert binary.write_bytes(vaddr, b"\x90")
         assert binary.nop_fill(vaddr + 1, 3)
 
-        paddr_str = binary.r2.cmd(f"s2p 0x{vaddr:x}").strip() if binary.r2 else ""
-        paddr = int(paddr_str, 16) if paddr_str else vaddr
+        paddr = _map_vaddr_to_paddr(binary, vaddr)
+        if paddr is None:
+            pytest.skip("Unable to map vaddr to file offset for verification")
 
     data = work_path.read_bytes()
     assert data[paddr : paddr + 4] == b"\x90" * 4

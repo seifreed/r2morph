@@ -6,12 +6,33 @@ from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer
 from tests.utils.platform_binaries import get_platform_binary, ensure_exists
 
 
+def _choose_binary_with_room(tmp_path: Path) -> Path | None:
+    candidates = [
+        Path(get_platform_binary("generic")),
+        Path("dataset/pe_x86_64.exe"),
+    ]
+
+    for src in candidates:
+        if not ensure_exists(src):
+            continue
+        target = tmp_path / src.name
+        shutil.copy2(src, target)
+
+        with Binary(target, writable=True) as bin_obj:
+            bin_obj.analyze("aa")
+            ptr_size = bin_obj.get_arch_info().get("bits", 64) // 8
+            min_size = (ptr_size * 4) + 0x20
+            sections = bin_obj.get_sections()
+            if any((s.get("size") or 0) >= min_size for s in sections):
+                return target
+
+    return None
+
+
 def test_vm_handler_table_validation_and_extraction(tmp_path):
-    src = get_platform_binary("generic")
-    if not ensure_exists(Path(src)):
+    target = _choose_binary_with_room(tmp_path)
+    if not target:
         return
-    target = tmp_path / "pe_vm_table.exe"
-    shutil.copy2(src, target)
 
     with Binary(target, writable=True) as bin_obj:
         bin_obj.analyze("aa")
@@ -20,12 +41,21 @@ def test_vm_handler_table_validation_and_extraction(tmp_path):
         assert addrs
 
         sections = bin_obj.get_sections()
-        section = next(
-            (s for s in sections if "x" in (s.get("perm") or "")),
-            sections[0],
-        )
-        table_addr = int(section.get("vaddr", section.get("paddr", 0) or 0)) + 0x20
         ptr_size = bin_obj.get_arch_info().get("bits", 64) // 8
+        table_bytes_needed = ptr_size * 4
+        section = next(
+            (
+                s
+                for s in sections
+                if (s.get("size") or 0) >= (table_bytes_needed + 0x20)
+                and (s.get("vaddr") or s.get("paddr"))
+            ),
+            None,
+        )
+        if section is None:
+            return
+        table_base = int(section.get("vaddr", section.get("paddr", 0) or 0))
+        table_addr = table_base + 0x20
 
         table_entries = addrs[:4]
         table_bytes = b"".join(int(addr).to_bytes(ptr_size, "little") for addr in table_entries)

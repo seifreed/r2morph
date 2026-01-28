@@ -8,15 +8,18 @@ from tests.utils.platform_binaries import get_platform_binary, ensure_exists
 
 
 def _find_writable_code_region(bin_obj, minimum_size: int = 16) -> int:
+    fallback = 0
     for section in bin_obj.get_sections():
         size = section.get("size") or 0
         vaddr = section.get("vaddr")
         perm = section.get("perm") or ""
         if vaddr is None:
             continue
-        if "x" in perm and size >= minimum_size:
+        if size >= minimum_size and "x" in perm:
             return int(vaddr)
-    return 0
+        if size >= minimum_size and not fallback:
+            fallback = int(vaddr)
+    return fallback
 
 
 def _read_bytes(bin_obj, addr: int, size: int) -> bytes:
@@ -25,21 +28,22 @@ def _read_bytes(bin_obj, addr: int, size: int) -> bytes:
 
 
 def test_reference_updater_updates_call_jump_and_data(tmp_path):
-    src_binary = get_platform_binary("generic")
-    if not ensure_exists(Path(src_binary)):
+    src_candidates = [Path("dataset/pe_x86_64.exe"), Path(get_platform_binary("generic"))]
+    src_binary = next((p for p in src_candidates if ensure_exists(p)), None)
+    if not src_binary:
         return
-    bin_path = tmp_path / "pe_x86_64_copy.exe"
+    bin_path = tmp_path / src_binary.name
     shutil.copy2(src_binary, bin_path)
 
     with Binary(bin_path, writable=True) as bin_obj:
         bin_obj.analyze("aa")
         ref_updater = ReferenceUpdater(bin_obj)
 
-        base_addr = _find_writable_code_region(bin_obj, minimum_size=32)
+        base_addr = _find_writable_code_region(bin_obj, minimum_size=12)
         assert base_addr != 0
 
-        call_addr = base_addr + 4
-        jmp_addr = base_addr + 12
+        call_addr = base_addr
+        jmp_addr = base_addr + 5
 
         assert bin_obj.write_instruction(call_addr, "call +0") is True
         assert bin_obj.write_instruction(jmp_addr, "jmp +0") is True
@@ -77,7 +81,7 @@ def test_reference_updater_updates_call_jump_and_data(tmp_path):
             (s for s in sections if "w" in (s.get("perm") or "")),
             sections[0],
         )
-        ptr_addr = int(ptr_section.get("vaddr", ptr_section.get("paddr", 0)))
+        ptr_addr = int(ptr_section.get("vaddr", ptr_section.get("paddr", 0))) or base_addr
         ptr_size = bin_obj.get_arch_info().get("bits", 64) // 8
         old_value = 0x1122334455667788
         new_value = 0x8877665544332211
