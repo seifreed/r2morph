@@ -7,7 +7,7 @@ Detects code invariants that must be preserved during mutations.
 import logging
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List
+from typing import Any
 
 from r2morph.core.binary import Binary
 
@@ -304,7 +304,7 @@ class SemanticValidator:
 
     def batch_validate(
         self, function_addresses: list[int], invariants_map: dict[int, list[Invariant]]
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Validate multiple functions at once.
 

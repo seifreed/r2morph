@@ -9,7 +9,7 @@ and control flow obfuscation patterns.
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Callable
+from typing import Any
 
 try:
     import angr
@@ -20,7 +20,13 @@ except ImportError:
     ANGR_AVAILABLE = False
     angr = None
     SimulationManager = None
-    ExplorationTechnique = None
+
+    # Provide a dummy base class when angr is not available
+    class ExplorationTechnique:
+        """Dummy ExplorationTechnique when angr is not installed."""
+
+        def __init__(self):
+            pass
 
 logger = logging.getLogger(__name__)
 
@@ -38,14 +44,14 @@ class ExplorationStrategy(Enum):
 @dataclass
 class ExplorationResult:
     """Result of path exploration."""
-    
+
     paths_explored: int = 0
     vm_handlers_found: int = 0
     opaque_predicates_found: int = 0
-    interesting_paths: List[Any] = field(default_factory=list)
+    interesting_paths: list[Any] = field(default_factory=list)
     execution_time: float = 0.0
-    constraints_collected: List[Any] = field(default_factory=list)
-    coverage_info: Dict[str, Any] = field(default_factory=dict)
+    constraints_collected: list[Any] = field(default_factory=list)
+    coverage_info: dict[str, Any] = field(default_factory=dict)
 
 
 class VMHandlerDetectionTechnique(ExplorationTechnique):
@@ -60,8 +66,8 @@ class VMHandlerDetectionTechnique(ExplorationTechnique):
     
     def __init__(self):
         super().__init__()
-        self.handler_patterns: Set[int] = set()
-        self.switch_tables: Dict[int, List[int]] = {}
+        self.handler_patterns: set[int] = set()
+        self.switch_tables: dict[int, list[int]] = {}
         
     def step(self, simgr: Any, stash: str = 'active', **kwargs) -> Any:
         """
@@ -140,8 +146,8 @@ class OpaquePredicateDetectionTechnique(ExplorationTechnique):
     
     def __init__(self):
         super().__init__()
-        self.branch_outcomes: Dict[int, List[bool]] = {}
-        self.opaque_candidates: Set[int] = set()
+        self.branch_outcomes: dict[int, list[bool]] = {}
+        self.opaque_candidates: set[int] = set()
         
     def step(self, simgr: Any, stash: str = 'active', **kwargs) -> Any:
         """Custom stepping for opaque predicate detection."""
@@ -198,7 +204,7 @@ class PathExplorer:
             raise ImportError("angr is required for path exploration")
             
         self.angr_bridge = angr_bridge
-        self.exploration_techniques: Dict[ExplorationStrategy, Any] = {}
+        self.exploration_techniques: dict[ExplorationStrategy, Any] = {}
         self._setup_exploration_techniques()
         
     def _setup_exploration_techniques(self):
@@ -206,12 +212,12 @@ class PathExplorer:
         self.exploration_techniques[ExplorationStrategy.VM_HANDLER] = VMHandlerDetectionTechnique()
         self.exploration_techniques[ExplorationStrategy.OPAQUE_PREDICATE] = OpaquePredicateDetectionTechnique()
     
-    def explore_function(self, 
+    def explore_function(self,
                         function_addr: int,
                         strategy: ExplorationStrategy = ExplorationStrategy.GUIDED,
                         max_paths: int = 100,
                         timeout: int = 300,
-                        target_addresses: Optional[List[int]] = None) -> ExplorationResult:
+                        target_addresses: list[int] | None = None) -> ExplorationResult:
         """
         Explore paths in a function using specified strategy.
         
@@ -323,9 +329,9 @@ class PathExplorer:
         
         return result
     
-    def find_vm_handlers(self, 
+    def find_vm_handlers(self,
                         dispatcher_addr: int,
-                        max_handlers: int = 50) -> List[Dict[str, Any]]:
+                        max_handlers: int = 50) -> list[dict[str, Any]]:
         """
         Specialized function to find VM handlers from a dispatcher.
         
@@ -358,7 +364,7 @@ class PathExplorer:
         logger.info(f"Found {len(handlers)} potential VM handlers")
         return handlers
     
-    def detect_opaque_predicates(self, function_addr: int) -> List[Dict[str, Any]]:
+    def detect_opaque_predicates(self, function_addr: int) -> list[dict[str, Any]]:
         """
         Detect opaque predicates in a function.
         

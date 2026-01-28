@@ -7,7 +7,7 @@ Analyzes data flow and dependencies between instructions.
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ class DependencyAnalyzer:
         self.dependencies: list[Dependency] = []
         self.defs: dict[int, InstructionDef] = {}
 
-    def _parse_operands(self, instruction: dict[str, Any]) -> Tuple[Set[str], Set[str]]:
+    def _parse_operands(self, instruction: dict[str, Any]) -> tuple[set[str], set[str]]:
         """
         Parse instruction to extract defined and used registers.
 
@@ -79,7 +79,6 @@ class DependencyAnalyzer:
         uses = set()
 
         disasm = instruction.get("disasm", "").lower()
-        instruction.get("type", "")
 
         parts = disasm.split()
         if len(parts) < 2:

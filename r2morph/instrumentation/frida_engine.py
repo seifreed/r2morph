@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Union
+from typing import Any, Callable
 
 try:
     import frida
@@ -39,9 +39,9 @@ class InstrumentationResult:
     process_id: int = 0
     instrumentation_time: float = 0.0
     api_calls_captured: int = 0
-    memory_dumps: List[Dict[str, Any]] = field(default_factory=list)
-    anti_analysis_detected: List[str] = field(default_factory=list)
-    error_message: Optional[str] = None
+    memory_dumps: list[dict[str, Any]] = field(default_factory=list)
+    anti_analysis_detected: list[str] = field(default_factory=list)
+    error_message: str | None = None
 
 
 class FridaEngine:
@@ -66,14 +66,14 @@ class FridaEngine:
             raise ImportError("Frida is required for dynamic instrumentation. Install with: pip install frida frida-tools")
         
         self.timeout = timeout
-        self.device: Optional[Any] = None
-        self.session: Optional[Any] = None
-        self.scripts: Dict[str, Any] = {}
+        self.device: Any | None = None
+        self.session: Any | None = None
+        self.scripts: dict[str, Any] = {}
         
         # Runtime data collection
-        self.api_calls: List[Dict[str, Any]] = []
-        self.memory_accesses: List[Dict[str, Any]] = []
-        self.anti_analysis_events: List[Dict[str, Any]] = []
+        self.api_calls: list[dict[str, Any]] = []
+        self.memory_accesses: list[dict[str, Any]] = []
+        self.anti_analysis_events: list[dict[str, Any]] = []
         
         # Statistics
         self.stats = {
@@ -83,7 +83,7 @@ class FridaEngine:
             "errors_encountered": 0,
         }
     
-    def initialize(self, device_id: Optional[str] = None) -> bool:
+    def initialize(self, device_id: str | None = None) -> bool:
         """
         Initialize Frida device connection.
         
@@ -107,10 +107,10 @@ class FridaEngine:
             return False
     
     def instrument_binary(self, 
-                         binary_path: Union[str, Path],
+                         binary_path: str | Path,
                          mode: InstrumentationMode = InstrumentationMode.SPAWN,
-                         arguments: Optional[List[str]] = None,
-                         environment: Optional[Dict[str, str]] = None) -> InstrumentationResult:
+                         arguments: list[str] | None = None,
+                         environment: dict[str, str] | None = None) -> InstrumentationResult:
         """
         Instrument a binary for dynamic analysis.
         
@@ -180,8 +180,8 @@ class FridaEngine:
     
     def _spawn_process(self, 
                       binary_path: Path,
-                      arguments: Optional[List[str]] = None,
-                      environment: Optional[Dict[str, str]] = None) -> Optional[int]:
+                      arguments: list[str] | None = None,
+                      environment: dict[str, str] | None = None) -> int | None:
         """Spawn a new process for instrumentation."""
         try:
             spawn_args = [str(binary_path)]
@@ -200,7 +200,7 @@ class FridaEngine:
             logger.error(f"Failed to spawn process: {e}")
             return None
     
-    def _find_and_attach_process(self, process_name: str) -> Optional[int]:
+    def _find_and_attach_process(self, process_name: str) -> int | None:
         """Find and attach to existing process."""
         try:
             processes = self.device.enumerate_processes()
@@ -431,7 +431,7 @@ class FridaEngine:
             logger.error(f"Failed to load script {name}: {e}")
             return False
     
-    def _on_script_message(self, message: Dict[str, Any], data: Any):
+    def _on_script_message(self, message: dict[str, Any], data: Any):
         """Handle messages from Frida scripts."""
         try:
             if message.get('type') == 'send':
@@ -451,7 +451,7 @@ class FridaEngine:
         except Exception as e:
             logger.error(f"Error processing script message: {e}")
     
-    def dump_memory_region(self, address: int, size: int) -> Optional[bytes]:
+    def dump_memory_region(self, address: int, size: int) -> bytes | None:
         """
         Dump memory region from target process.
         
@@ -503,7 +503,7 @@ class FridaEngine:
             logger.error(f"Failed to dump memory: {e}")
             return None
     
-    def get_runtime_statistics(self) -> Dict[str, Any]:
+    def get_runtime_statistics(self) -> dict[str, Any]:
         """Get runtime analysis statistics."""
         return {
             **self.stats,
@@ -522,8 +522,8 @@ class FridaEngine:
             for name, script in self.scripts.items():
                 try:
                     script.unload()
-                except:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to unload script '{name}': {e}")
             
             self.scripts.clear()
             

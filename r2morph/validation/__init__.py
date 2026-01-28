@@ -8,7 +8,7 @@ This module provides comprehensive testing and validation capabilities:
 - Real-world validation suite
 """
 
-from r2morph.validation.fuzzer import MutationFuzzer, FuzzResult, FuzzConfig
+from r2morph.validation.fuzzer import MutationFuzzer, FuzzResult
 from r2morph.validation.regression import RegressionTester, RegressionTest, RegressionResult, RegressionTestFramework
 from r2morph.validation.validator import BinaryValidator, ValidationResult
 from r2morph.validation.benchmark import ValidationFramework, BenchmarkResult, TestSample, PerformanceMetrics, AccuracyMetrics
@@ -20,8 +20,7 @@ __all__ = [
     
     # Fuzzing
     "MutationFuzzer",
-    "FuzzResult", 
-    "FuzzConfig",
+    "FuzzResult",
     
     # Regression Testing
     "RegressionTester",

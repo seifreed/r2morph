@@ -4,7 +4,6 @@ Main relocation manager for handling code movement and reference updates.
 
 import logging
 from dataclasses import dataclass
-from typing import Set
 
 from r2morph.core.binary import Binary
 

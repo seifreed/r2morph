@@ -5,9 +5,15 @@ Binary class for handling binary executables with r2pipe.
 import logging
 import shutil
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import r2pipe
+
+from r2morph.core.constants import BATCH_MUTATION_CHECKPOINT
+
+if TYPE_CHECKING:
+    from r2morph.core.assembly import AssemblyService
+    from r2morph.core.memory_manager import MemoryManager
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +26,8 @@ class Binary:
         path: Path to the binary file
         r2: r2pipe connection instance
         info: Binary metadata from radare2
+        assembly: AssemblyService instance for instruction encoding
+        memory_manager: MemoryManager instance for batch processing
     """
 
     def __init__(self, path: str | Path, flags: list[str] | None = None, writable: bool = False, low_memory: bool = False):
@@ -51,6 +59,26 @@ class Binary:
         self._low_memory = low_memory
         self._functions_cache: list[dict[str, Any]] | None = None
         self._mutation_counter = 0  # Track mutations for batch processing
+
+        # Lazy-loaded services for backwards compatibility
+        self._assembly_service: "AssemblyService | None" = None
+        self._memory_manager: "MemoryManager | None" = None
+
+    @property
+    def assembly(self) -> "AssemblyService":
+        """Get the AssemblyService instance (lazy-loaded)."""
+        if self._assembly_service is None:
+            from r2morph.core.assembly import get_assembly_service
+            self._assembly_service = get_assembly_service()
+        return self._assembly_service
+
+    @property
+    def memory_manager(self) -> "MemoryManager":
+        """Get the MemoryManager instance (lazy-loaded)."""
+        if self._memory_manager is None:
+            from r2morph.core.memory_manager import get_memory_manager
+            self._memory_manager = get_memory_manager()
+        return self._memory_manager
 
     def __enter__(self):
         """Context manager entry."""
@@ -481,14 +509,14 @@ class Binary:
             logger.error(f"Assembly error for '{instruction}': {e}")
             return None
 
-    def track_mutation(self, batch_size: int = 1000):
+    def track_mutation(self, batch_size: int = BATCH_MUTATION_CHECKPOINT):
         """
         Track mutation count and reload r2 periodically for batch processing.
 
         This prevents OOM on large binaries by restarting r2 every N mutations.
 
         Args:
-            batch_size: Number of mutations before reloading r2 (default: 1000)
+            batch_size: Number of mutations before reloading r2 (default: BATCH_MUTATION_CHECKPOINT)
         """
         if not self._low_memory:
             return
@@ -519,11 +547,41 @@ class Binary:
             logger.warning("Binary opened in read-only mode, write may fail")
 
         try:
+            # Prefer r2 write to honor virtual address mappings when available
+            if self.r2:
+                hex_data = data.hex()
+                try:
+                    self.r2.cmd(f"wx {hex_data} @ 0x{address:x}")
+                    verify = self.r2.cmd(f"p8 {len(data)} @ 0x{address:x}").strip().lower()
+                    if verify == hex_data.lower():
+                        self.track_mutation()
+                        return True
+                except Exception:
+                    pass
+
             paddr_result = self.r2.cmd(f"s2p 0x{address:x}")
 
             if not paddr_result or paddr_result.strip() == "":
-                physical_offset = address
-                logger.debug(f"Using address directly as physical offset: 0x{address:x}")
+                physical_offset = None
+                try:
+                    for section in self.get_sections():
+                        vaddr = section.get("vaddr")
+                        paddr = section.get("paddr")
+                        size = section.get("size") or section.get("vsize") or 0
+                        if vaddr is None or paddr is None:
+                            continue
+                        if vaddr <= address < vaddr + size:
+                            physical_offset = int(paddr + (address - vaddr))
+                            logger.debug(
+                                f"Mapped vaddr 0x{address:x} -> section paddr 0x{physical_offset:x}"
+                            )
+                            break
+                except Exception:
+                    physical_offset = None
+
+                if physical_offset is None:
+                    physical_offset = address
+                    logger.debug(f"Using address directly as physical offset: 0x{address:x}")
             else:
                 try:
                     physical_offset = int(paddr_result.strip(), 16)
@@ -611,6 +669,21 @@ class Binary:
             "format": core_info.get("class", "unknown"),
             "machine": core_info.get("machine", "unknown"),
         }
+
+    def get_arch_family(self) -> tuple[str, int]:
+        """
+        Return (arch_family, bits) tuple.
+
+        Normalizes architecture names to families (e.g., x86 and x64 -> x86).
+
+        Returns:
+            Tuple of (arch_family, bits)
+        """
+        info = self.get_arch_info()
+        arch = info.get("arch", "unknown")
+        bits = info.get("bits", 32)
+        family = "x86" if arch in ["x86", "x64"] else arch
+        return family, bits
 
     def is_analyzed(self) -> bool:
         """Check if binary has been analyzed."""

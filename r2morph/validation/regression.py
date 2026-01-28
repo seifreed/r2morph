@@ -12,8 +12,8 @@ import hashlib
 from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, List, Tuple
 from enum import Enum
+from typing import Any
 
 from r2morph.validation.validator import BinaryValidator, ValidationResult
 
@@ -35,8 +35,8 @@ class BaselineResult:
     test_id: str
     test_type: RegressionTestType
     input_hash: str
-    expected_output: Dict[str, Any]
-    performance_baseline: Dict[str, float]
+    expected_output: dict[str, Any]
+    performance_baseline: dict[str, float]
     timestamp: str
     version: str
 
@@ -49,7 +49,7 @@ class RegressionTest:
     binary_path: str
     mutations: list[str]
     test_cases: list[dict[str, Any]]
-    expected_mutations: Optional[int] = None
+    expected_mutations: int | None = None
 
     def to_dict(self) -> dict:
         """Convert to dictionary."""
@@ -81,15 +81,15 @@ class RegressionResult:
         }
 
 
-@dataclass 
+@dataclass
 class NewRegressionResult:
     """Enhanced result of a regression test."""
     test_id: str
     baseline: BaselineResult
-    actual_output: Dict[str, Any]
-    performance_actual: Dict[str, float]
+    actual_output: dict[str, Any]
+    performance_actual: dict[str, float]
     passed: bool
-    issues: List[str]
+    issues: list[str]
     timestamp: str
 
 
@@ -108,8 +108,8 @@ class RegressionTestFramework:
         self.baseline_dir = Path(baseline_dir)
         self.baseline_dir.mkdir(exist_ok=True)
         
-        self.baselines: Dict[str, BaselineResult] = {}
-        self.test_results: List[NewRegressionResult] = []
+        self.baselines: dict[str, BaselineResult] = {}
+        self.test_results: list[NewRegressionResult] = []
         
         # Load existing baselines
         self._load_baselines()
@@ -122,6 +122,14 @@ class RegressionTestFramework:
             try:
                 with open(baseline_file, 'r') as f:
                     data = json.load(f)
+                    test_type = data.get("test_type")
+                    if isinstance(test_type, str):
+                        if test_type.startswith("RegressionTestType."):
+                            test_type = test_type.split(".", 1)[1]
+                        try:
+                            data["test_type"] = RegressionTestType(test_type)
+                        except ValueError:
+                            data["test_type"] = RegressionTestType.DETECTION_ACCURACY
                     baseline = BaselineResult(**data)
                     self.baselines[baseline.test_id] = baseline
                     logger.debug(f"Loaded baseline: {baseline.test_id}")
@@ -134,7 +142,10 @@ class RegressionTestFramework:
         
         try:
             with open(baseline_file, 'w') as f:
-                json.dump(asdict(baseline), f, indent=2, default=str)
+                payload = asdict(baseline)
+                if isinstance(payload.get("test_type"), RegressionTestType):
+                    payload["test_type"] = payload["test_type"].value
+                json.dump(payload, f, indent=2, default=str)
             
             self.baselines[baseline.test_id] = baseline
             logger.info(f"Saved baseline: {baseline.test_id}")
@@ -296,7 +307,7 @@ class RegressionTestFramework:
         self._save_baseline(baseline)
         return baseline
     
-    def run_regression_test(self, test_id: str, binary_path: Optional[str] = None) -> NewRegressionResult:
+    def run_regression_test(self, test_id: str, binary_path: str | None = None) -> NewRegressionResult:
         """
         Run a regression test against an existing baseline.
         
@@ -347,7 +358,7 @@ class RegressionTestFramework:
         self.test_results.append(result)
         return result
     
-    def _run_detection_test(self, binary_path: str) -> Tuple[Dict[str, Any], Dict[str, float]]:
+    def _run_detection_test(self, binary_path: str) -> tuple[dict[str, Any], dict[str, float]]:
         """Run detection accuracy test."""
         from r2morph import Binary
         from r2morph.detection import ObfuscationDetector
@@ -390,7 +401,7 @@ class RegressionTestFramework:
         
         return actual_output, performance_actual
     
-    def _run_api_test(self) -> Tuple[Dict[str, Any], Dict[str, float]]:
+    def _run_api_test(self) -> tuple[dict[str, Any], dict[str, float]]:
         """Run API compatibility test."""
         api_checks = {}
         
@@ -438,7 +449,7 @@ class RegressionTestFramework:
         
         return api_checks, {}  # No performance metrics for API tests
     
-    def _compare_outputs(self, expected: Dict[str, Any], actual: Dict[str, Any], test_type: RegressionTestType) -> List[str]:
+    def _compare_outputs(self, expected: dict[str, Any], actual: dict[str, Any], test_type: RegressionTestType) -> list[str]:
         """Compare expected vs actual outputs."""
         issues = []
         
@@ -483,7 +494,7 @@ class RegressionTestFramework:
         # Direct comparison for other types
         return expected != actual
     
-    def _compare_performance(self, baseline: Dict[str, float], actual: Dict[str, float]) -> List[str]:
+    def _compare_performance(self, baseline: dict[str, float], actual: dict[str, float]) -> list[str]:
         """Compare performance metrics against baseline."""
         issues = []
         
@@ -592,7 +603,7 @@ class RegressionTester:
         binary_path: str,
         mutations: list[str],
         test_cases: list[dict[str, Any]],
-        expected_mutations: Optional[int] = None,
+        expected_mutations: int | None = None,
     ):
         """
         Add a regression test.

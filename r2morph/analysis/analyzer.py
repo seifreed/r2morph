@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, SMALL_FUNCTION_THRESHOLD
 from r2morph.core.function import Function
 from r2morph.core.instruction import Instruction
 
@@ -79,7 +80,7 @@ class BinaryAnalyzer:
         functions = self.get_functions_list()
 
         for func in functions:
-            if func.size < 10:
+            if func.size < MINIMUM_FUNCTION_SIZE:
                 continue
 
             instructions = self.get_instructions_for_function(func.address)
@@ -111,7 +112,7 @@ class BinaryAnalyzer:
         substitutable_mnemonics = ["mov", "add", "sub", "xor", "inc", "dec"]
 
         for func in functions:
-            if func.size < 10:
+            if func.size < MINIMUM_FUNCTION_SIZE:
                 continue
 
             instructions = self.get_instructions_for_function(func.address)
@@ -163,7 +164,7 @@ class BinaryAnalyzer:
             ),
         }
 
-    def identify_hot_functions(self, min_size: int = 50) -> list[Function]:
+    def identify_hot_functions(self, min_size: int = SMALL_FUNCTION_THRESHOLD) -> list[Function]:
         """
         Identify functions suitable for mutation (not too small, not library code).
 

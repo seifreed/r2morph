@@ -6,6 +6,14 @@ import shutil
 from pathlib import Path
 
 import pytest
+import importlib.util
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import Relocation, RelocationManager
@@ -37,7 +45,7 @@ class TestRelocationManagerDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_manager_init(self, ls_elf):
         """Test RelocationManager initialization."""
@@ -132,7 +140,7 @@ class TestReferenceUpdaterDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_reference_types(self):
         """Test all reference types."""
@@ -186,7 +194,7 @@ class TestRelocationManagerAdvanced:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_overlapping_relocations(self, ls_elf):
         """Test handling overlapping relocations."""

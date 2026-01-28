@@ -2,9 +2,16 @@
 Real integration tests for advanced mutation modules.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph import MorphEngine
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
@@ -18,7 +25,7 @@ class TestOpaquePredicates:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_opaque_predicate_pass(self, ls_elf, tmp_path):
         """Test opaque predicate insertion."""
@@ -90,7 +97,7 @@ class TestDeadCodeInjection:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_dead_code_injection(self, ls_elf, tmp_path):
         """Test dead code injection."""
@@ -164,7 +171,7 @@ class TestControlFlowFlattening:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_control_flow_flattening(self, ls_elf, tmp_path):
         """Test control flow flattening."""

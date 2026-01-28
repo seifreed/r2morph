@@ -4,6 +4,8 @@ Mutation passes for binary transformations.
 
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.block_reordering import BlockReorderingPass
+from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
@@ -16,4 +18,6 @@ __all__ = [
     "BlockReorderingPass",
     "RegisterSubstitutionPass",
     "InstructionExpansionPass",
+    "ControlFlowFlatteningPass",
+    "DeadCodeInjectionPass",
 ]

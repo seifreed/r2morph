@@ -23,7 +23,15 @@ class CodeSigner:
         """Initialize code signer."""
         self.platform = platform.system()
 
-    def sign(self, binary_path: Path, identity: str | None = None, adhoc: bool = True) -> bool:
+    def sign(
+        self,
+        binary_path: Path,
+        identity: str | None = None,
+        adhoc: bool = True,
+        entitlements: Path | None = None,
+        hardened: bool = False,
+        timestamp: bool = False,
+    ) -> bool:
         """
         Sign a binary.
 
@@ -36,14 +44,64 @@ class CodeSigner:
             True if successful
         """
         if self.platform == "Darwin":
-            return self._sign_macos(binary_path, identity, adhoc)
+            return self._sign_macos(
+                binary_path,
+                identity,
+                adhoc,
+                entitlements=entitlements,
+                hardened=hardened,
+                timestamp=timestamp,
+            )
         elif self.platform == "Windows":
             return self._sign_windows(binary_path, identity)
         else:
             logger.info("Code signing not required on this platform")
             return True
 
-    def _sign_macos(self, binary_path: Path, identity: str | None, adhoc: bool) -> bool:
+    def check_signature(self, binary_path: Path) -> bool:
+        """Check if a binary's signature is valid."""
+        return self.verify(binary_path)
+
+    def is_signed(self, binary_path: Path) -> bool:
+        """Return True if the binary has a valid signature."""
+        return self.verify(binary_path)
+
+    def needs_signing(self, binary_path: Path) -> bool:
+        """Return True if the binary should be signed for the current platform."""
+        if self.platform == "Darwin":
+            return not self.verify(binary_path)
+        if self.platform == "Windows":
+            return not self.verify(binary_path)
+        return False
+
+    def sign_binary(
+        self,
+        binary_path: Path,
+        identity: str | None = None,
+        adhoc: bool = True,
+        entitlements: Path | None = None,
+        hardened: bool = False,
+        timestamp: bool = False,
+    ) -> bool:
+        """Sign a binary using platform defaults."""
+        return self.sign(
+            binary_path,
+            identity=identity,
+            adhoc=adhoc,
+            entitlements=entitlements,
+            hardened=hardened,
+            timestamp=timestamp,
+        )
+
+    def _sign_macos(
+        self,
+        binary_path: Path,
+        identity: str | None,
+        adhoc: bool,
+        entitlements: Path | None = None,
+        hardened: bool = False,
+        timestamp: bool = False,
+    ) -> bool:
         """
         Sign binary on macOS.
 
@@ -63,6 +121,12 @@ class CodeSigner:
             else:
                 logger.error("Identity required for non-adhoc signing")
                 return False
+            if not timestamp:
+                cmd.append("--timestamp=none")
+            if hardened:
+                cmd += ["--options", "runtime"]
+            if entitlements:
+                cmd += ["--entitlements", str(entitlements)]
 
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
 
@@ -139,7 +203,10 @@ class CodeSigner:
         """Verify macOS code signature."""
         try:
             result = subprocess.run(
-                ["codesign", "-v", str(binary_path)], capture_output=True, text=True, timeout=10
+                ["codesign", "--verify", "--deep", "--strict", str(binary_path)],
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
 
             return result.returncode == 0

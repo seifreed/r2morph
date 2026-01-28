@@ -2,8 +2,6 @@
 Pytest configuration and fixtures.
 """
 
-from unittest.mock import MagicMock
-
 import pytest
 
 
@@ -18,26 +16,6 @@ def sample_binary(tmp_path):
     binary_file = tmp_path / "test_binary"
     binary_file.write_bytes(b"\x7fELF" + b"\x00" * 100)
     return binary_file
-
-
-@pytest.fixture
-def mock_r2():
-    """
-    Create a mock r2pipe instance.
-
-    Returns:
-        MagicMock configured to simulate r2pipe behavior
-    """
-    mock = MagicMock()
-    mock.cmdj.return_value = {
-        "bin": {
-            "arch": "x86",
-            "bits": 64,
-            "endian": "little",
-            "class": "ELF",
-        }
-    }
-    return mock
 
 
 @pytest.fixture

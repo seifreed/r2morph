@@ -2,9 +2,16 @@
 Comprehensive real tests for all analysis modules.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph import MorphEngine
 from r2morph.analysis.analyzer import BinaryAnalyzer
@@ -22,7 +29,7 @@ class TestBinaryAnalyzerComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_get_functions_list(self, ls_elf):
         """Test getting function list."""
@@ -111,7 +118,7 @@ class TestCFGBuilder:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_build_cfg(self, ls_elf):
         """Test building CFG."""
@@ -169,7 +176,7 @@ class TestDependencyAnalyzer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_analyze_dependencies(self, ls_elf):
         """Test analyzing dependencies."""
@@ -197,7 +204,7 @@ class TestDiffAnalyzer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_diff_analyzer(self, ls_elf, tmp_path):
         """Test diff analyzer."""
@@ -284,7 +291,7 @@ class TestInvariantDetector:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_invariant_detector(self, ls_elf):
         """Test invariant detector."""

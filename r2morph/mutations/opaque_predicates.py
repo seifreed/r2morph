@@ -10,6 +10,7 @@ import random
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import OPAQUE_PREDICATE_MIN_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -57,9 +58,8 @@ class OpaquePredicatePass(MutationPass):
 
         for func in functions:
             func_addr = func.get("offset", 0)
-            func.get("name", f"0x{func_addr:x}")
 
-            if func.get("size", 0) < 20:
+            if func.get("size", 0) < OPAQUE_PREDICATE_MIN_FUNCTION_SIZE:
                 continue
 
             mutations = self._insert_opaque_predicates(binary, func)

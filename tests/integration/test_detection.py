@@ -2,9 +2,16 @@
 Real integration tests for detection modules.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph import MorphEngine
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
@@ -19,12 +26,12 @@ class TestEntropyAnalyzer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     @pytest.fixture
-    def pafish_exe(self):
-        """Path to pafish.exe PE binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "pafish.exe"
+    def pe_x86_64_exe(self):
+        """Path to pe_x86_64.exe PE binary."""
+        return Path(__file__).parent.parent.parent / "dataset" / "pe_x86_64.exe"
 
     def test_analyze_file_elf(self, ls_elf):
         """Test entropy analysis on ELF binary."""
@@ -41,13 +48,13 @@ class TestEntropyAnalyzer:
         assert isinstance(result.is_packed, bool)
         assert isinstance(result.analysis, str)
 
-    def test_analyze_file_pe(self, pafish_exe):
+    def test_analyze_file_pe(self, pe_x86_64_exe):
         """Test entropy analysis on PE binary."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
         analyzer = EntropyAnalyzer()
-        result = analyzer.analyze_file(pafish_exe)
+        result = analyzer.analyze_file(pe_x86_64_exe)
 
         assert isinstance(result, EntropyResult)
         assert 0 <= result.overall_entropy <= 8.0
@@ -74,13 +81,13 @@ class TestEntropyAnalyzer:
         assert analyzer.HIGH_ENTROPY_THRESHOLD == 7.0
         assert analyzer.SUSPICIOUS_ENTROPY_THRESHOLD == 6.5
 
-    def test_suspicious_sections(self, pafish_exe):
+    def test_suspicious_sections(self, pe_x86_64_exe):
         """Test detection of suspicious high-entropy sections."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
         analyzer = EntropyAnalyzer()
-        result = analyzer.analyze_file(pafish_exe)
+        result = analyzer.analyze_file(pe_x86_64_exe)
 
         assert isinstance(result.suspicious_sections, list)
         for section in result.suspicious_sections:
@@ -93,7 +100,7 @@ class TestEvasionScorer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_score_mutations(self, ls_elf, tmp_path):
         """Test evasion scoring on mutated binary."""
@@ -177,7 +184,7 @@ class TestSimilarityHasher:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_hasher_initialization(self):
         """Test SimilarityHasher initialization."""

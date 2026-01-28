@@ -1,0 +1,71 @@
+# arm_rules.yaml
+version: "1.0"
+description: "ARM instruction equivalence rules for metamorphic transformation"
+
+equivalence_groups:
+  # Zero register patterns
+  - name: "zero_register"
+    description: "Ways to zero a register"
+    instructions:
+      - "mov {reg}, #0"
+      - "eor {reg}, {reg}, {reg}"
+      - "sub {reg}, {reg}, {reg}"
+      - "and {reg}, {reg}, #0"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+
+  # Move immediate 1 patterns
+  - name: "mov_one"
+    description: "Ways to load 1 into a register"
+    instructions:
+      - "mov {reg}, #1"
+      - "eor {reg}, {reg}, {reg}; add {reg}, {reg}, #1"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+
+  # Increment patterns
+  - name: "increment"
+    description: "Ways to increment a register"
+    instructions:
+      - "add {reg}, {reg}, #1"
+      - "sub {reg}, {reg}, #-1"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+
+  # Decrement patterns
+  - name: "decrement"
+    description: "Ways to decrement a register"
+    instructions:
+      - "sub {reg}, {reg}, #1"
+      - "add {reg}, {reg}, #-1"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+
+  # Test/compare patterns
+  - name: "test_zero"
+    description: "Ways to test if a register is zero"
+    instructions:
+      - "cmp {reg}, #0"
+      - "tst {reg}, {reg}"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+
+  # NOP equivalences
+  - name: "nop_equivalences"
+    description: "Various NOP instruction equivalences"
+    instructions:
+      - "nop"
+      - "mov r0, r0"
+      - "mov r8, r8"
+
+  # Self-move patterns
+  - name: "self_move"
+    description: "Ways to move a register to itself (NOPs)"
+    instructions:
+      - "mov {reg}, {reg}"
+      - "orr {reg}, {reg}, #0"
+      - "add {reg}, {reg}, #0"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+
+  # Logical shift left by 0 (NOP-like)
+  - name: "shift_zero"
+    description: "Shift by zero is a NOP"
+    instructions:
+      - "lsl {reg}, {reg}, #0"
+      - "mov {reg}, {reg}"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]

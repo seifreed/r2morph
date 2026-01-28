@@ -6,6 +6,9 @@ import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+from r2morph.utils.entropy import calculate_file_entropy
+from r2morph.utils.hashing import hash_file
+
 logger = logging.getLogger(__name__)
 
 
@@ -99,14 +102,6 @@ class EvasionScorer:
         Returns:
             Score 0-100
         """
-        import hashlib
-
-        def hash_file(path: Path) -> str:
-            sha256 = hashlib.sha256()
-            with open(path, "rb") as f:
-                sha256.update(f.read())
-            return sha256.hexdigest()
-
         orig_hash = hash_file(original_path)
         morph_hash = hash_file(morphed_path)
 
@@ -128,28 +123,8 @@ class EvasionScorer:
         Returns:
             Score 0-100
         """
-        import math
-        from collections import Counter
-
-        def calc_entropy(path: Path) -> float:
-            with open(path, "rb") as f:
-                data = f.read()
-
-            if not data:
-                return 0.0
-
-            counter = Counter(data)
-            length = len(data)
-
-            entropy = 0.0
-            for count in counter.values():
-                prob = count / length
-                entropy -= prob * math.log2(prob)
-
-            return entropy
-
-        orig_entropy = calc_entropy(original_path)
-        morph_entropy = calc_entropy(morphed_path)
+        orig_entropy = calculate_file_entropy(original_path)
+        morph_entropy = calculate_file_entropy(morphed_path)
 
         diff = abs(orig_entropy - morph_entropy)
 

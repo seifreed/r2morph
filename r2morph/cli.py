@@ -9,7 +9,6 @@ Advanced usage:
 """
 
 from pathlib import Path
-from typing import List, Optional
 
 import typer
 from rich import print as rprint
@@ -18,6 +17,7 @@ from rich.table import Table
 
 from r2morph import __version__
 from r2morph.analysis.analyzer import BinaryAnalyzer
+from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.mutations import (
     BlockReorderingPass,
@@ -111,66 +111,26 @@ def main_callback(
             with MorphEngine() as engine:
                 engine.load_binary(input_file).analyze()
 
+                # Create configuration using factory methods
                 if aggressive:
-                    nop_config = {
-                        "max_nops_per_function": 20,
-                        "probability": 0.95,
-                        "use_creative_nops": True,
-                        "force_different": force,
-                    }
-                    subst_config = {
-                        "max_substitutions_per_function": 30,
-                        "probability": 0.95,
-                        "force_different": force,
-                    }
-                    reg_config = {
-                        "max_substitutions_per_function": 15,
-                        "probability": 0.9,
-                        "force_different": force,
-                    }
-                    exp_config = {
-                        "max_expansions_per_function": 15,
-                        "probability": 0.9,
-                        "force_different": force,
-                    }
-                    block_config = {
-                        "max_reorderings_per_function": 8,
-                        "probability": 0.8,
-                        "force_different": force,
-                    }
+                    config = EngineConfig.create_aggressive()
                 else:
-                    nop_config = {
-                        "max_nops_per_function": 5,
-                        "probability": 0.5,
-                        "use_creative_nops": True,
-                        "force_different": force,
-                    }
-                    subst_config = {
-                        "max_substitutions_per_function": 10,
-                        "probability": 0.7,
-                        "force_different": force,
-                    }
-                    reg_config = {
-                        "max_substitutions_per_function": 5,
-                        "probability": 0.5,
-                        "force_different": force,
-                    }
-                    exp_config = {
-                        "max_expansions_per_function": 5,
-                        "probability": 0.5,
-                        "force_different": force,
-                    }
-                    block_config = {
-                        "max_reorderings_per_function": 3,
-                        "probability": 0.3,
-                        "force_different": force,
-                    }
+                    config = EngineConfig.create_default()
 
-                engine.add_mutation(NopInsertionPass(config=nop_config))
-                engine.add_mutation(InstructionSubstitutionPass(config=subst_config))
-                engine.add_mutation(RegisterSubstitutionPass(config=reg_config))
-                engine.add_mutation(InstructionExpansionPass(config=exp_config))
-                engine.add_mutation(BlockReorderingPass(config=block_config))
+                # Apply force flag if specified
+                if force:
+                    config.force_different = True
+                    config.nop.force_different = True
+                    config.substitution.force_different = True
+                    config.register.force_different = True
+                    config.expansion.force_different = True
+                    config.block.force_different = True
+
+                engine.add_mutation(NopInsertionPass(config=config.nop.to_dict()))
+                engine.add_mutation(InstructionSubstitutionPass(config=config.substitution.to_dict()))
+                engine.add_mutation(RegisterSubstitutionPass(config=config.register.to_dict()))
+                engine.add_mutation(InstructionExpansionPass(config=config.expansion.to_dict()))
+                engine.add_mutation(BlockReorderingPass(config=config.block.to_dict()))
 
                 result = engine.run()
 
@@ -262,7 +222,7 @@ def analyze_enhanced(
     """
     Enhanced analysis for obfuscated binaries (VMProtect, Themida, etc.).
     Requires enhanced dependencies: pip install 'r2morph[enhanced]'
-    
+
     Phase 2 capabilities include:
     - Advanced packer detection (20+ packers)
     - Control Flow Obfuscation simplification
@@ -272,235 +232,39 @@ def analyze_enhanced(
     """
     setup_logging("DEBUG" if verbose else "INFO")
 
-    try:
-        from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass
-        from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, BinaryRewriter
-    except ImportError:
+    from r2morph.analysis.enhanced_analyzer import (
+        EnhancedAnalysisOrchestrator,
+        AnalysisOptions,
+        check_enhanced_dependencies,
+    )
+
+    if not check_enhanced_dependencies():
         console.print("[bold red]Error:[/bold red] Enhanced analysis requires additional dependencies.")
         console.print("Install with: [cyan]pip install 'r2morph[enhanced]'[/cyan]")
         raise typer.Exit(1)
 
     with console.status("[bold green]Analyzing obfuscated binary..."):
         try:
-            from r2morph import Binary
-            
-            with Binary(str(binary)) as bin_obj:
-                bin_obj.analyze()
-                
-                # Step 1: Enhanced Obfuscation Detection
-                detector = ObfuscationDetector()
-                detection_result = detector.analyze_binary(bin_obj)
-                
-                # Display detection results
-                table = Table(title=f"Enhanced Analysis: {binary.name}")
-                table.add_column("Detection", style="cyan")
-                table.add_column("Result", style="green")
-                
-                table.add_row("Packer Detected", detection_result.packer_detected.value if detection_result.packer_detected else "None")
-                table.add_row("VM Protection", "Yes" if detection_result.vm_detected else "No")
-                table.add_row("Anti-Analysis", "Yes" if detection_result.anti_analysis_detected else "No")
-                table.add_row("Control Flow Flattening", "Yes" if detection_result.control_flow_flattened else "No")
-                table.add_row("MBA Detected", "Yes" if detection_result.mba_detected else "No")
-                table.add_row("Confidence Score", f"{detection_result.confidence_score:.2f}")
-                table.add_row("Techniques Found", str(len(detection_result.obfuscation_techniques)))
-                
-                console.print(table)
-                
-                # Extended detection
-                console.print("\n[bold cyan]Extended Detection:[/bold cyan]")
-                
-                # Custom virtualizer detection
-                custom_vm = detector.detect_custom_virtualizer(bin_obj)
-                if custom_vm['detected']:
-                    console.print(f"  🤖 Custom Virtualizer: {custom_vm['vm_type']} ({custom_vm['confidence']:.2f})")
-                
-                # Layer analysis
-                layers = detector.detect_code_packing_layers(bin_obj)
-                if layers['layers_detected'] > 0:
-                    console.print(f"  📚 Packing Layers: {layers['layers_detected']}")
-                
-                # Metamorphic detection
-                metamorphic = detector.detect_metamorphic_engine(bin_obj)
-                if metamorphic['detected']:
-                    console.print(f"  🧬 Metamorphic Engine: {metamorphic['polymorphic_ratio']:.1%}")
-                
-                if detection_result.obfuscation_techniques:
-                    console.print("\n[bold cyan]Obfuscation Techniques:[/bold cyan]")
-                    for i, technique in enumerate(detection_result.obfuscation_techniques[:10], 1):
-                        console.print(f"  {i}. {technique}")
-                    if len(detection_result.obfuscation_techniques) > 10:
-                        console.print(f"  ... and {len(detection_result.obfuscation_techniques) - 10} more")
-                
-                if detect_only:
-                    return
-                
-                # Step 2: Anti-Analysis Bypass
-                if bypass:
-                    console.print("\n[bold yellow]Applying Anti-Analysis Bypass...[/bold yellow]")
-                    bypass_framework = AntiAnalysisBypass()
-                    detected_techniques = bypass_framework.detect_anti_analysis_techniques(bin_obj)
-                    
-                    if detected_techniques:
-                        bypass_result = bypass_framework.apply_comprehensive_bypass(detected_techniques)
-                        console.print(f"✅ Applied {len(bypass_result.techniques_applied)} bypasses")
-                    else:
-                        console.print("✅ No anti-analysis techniques detected")
-                
-                # Step 3: Advanced Analysis
-                analysis_results = {}
-                
-                # Control Flow Obfuscation Simplification
-                if detection_result.control_flow_flattened or devirt:
-                    console.print("\n[bold yellow]Running CFO simplification...[/bold yellow]")
-                    try:
-                        cfo_simplifier = CFOSimplifier(bin_obj)
-                        functions = bin_obj.get_functions()[:5]  # Limit for demo
-                        
-                        total_reduction = 0
-                        for func in functions:
-                            func_addr = func.get('offset', 0)
-                            result = cfo_simplifier.simplify_control_flow(func_addr)
-                            if result.success:
-                                reduction = result.original_complexity - result.simplified_complexity
-                                total_reduction += reduction
-                        
-                        if total_reduction > 0:
-                            console.print(f"✅ CFO simplification: {total_reduction} complexity reduced")
-                        analysis_results['cfo_reduction'] = total_reduction
-                        
-                    except Exception as e:
-                        console.print(f"[yellow]CFO simplification error: {e}[/yellow]")
-                
-                # Iterative Simplification
-                if iterative:
-                    console.print("\n[bold yellow]Running iterative simplification...[/bold yellow]")
-                    try:
-                        from r2morph.devirtualization import SimplificationStrategy
-                        
-                        simplifier = IterativeSimplifier(bin_obj)
-                        result = simplifier.simplify(
-                            strategy=SimplificationStrategy.ADAPTIVE,
-                            max_iterations=5,  # Reduced for demo
-                            timeout=60
-                        )
-                        
-                        if result.success:
-                            console.print(f"✅ Iterative simplification completed:")
-                            console.print(f"   Iterations: {result.metrics.iteration}")
-                            console.print(f"   Complexity reduction: {result.metrics.complexity_reduction:.1%}")
-                            analysis_results['iterative_result'] = result.metrics.__dict__
-                        else:
-                            console.print(f"❌ Iterative simplification failed")
-                    
-                    except Exception as e:
-                        console.print(f"[yellow]Iterative simplification error: {e}[/yellow]")
-                
-                # Symbolic Execution
-                if symbolic and detection_result.vm_detected:
-                    try:
-                        from r2morph.analysis.symbolic import AngrBridge, PathExplorer
-                        console.print("\n[bold yellow]Running symbolic execution...[/bold yellow]")
-                        
-                        angr_bridge = AngrBridge(bin_obj)
-                        if angr_bridge.project:
-                            path_explorer = PathExplorer(angr_bridge)
-                            sym_result = path_explorer.explore_vm_handlers()
-                            if sym_result:
-                                analysis_results['vm_handlers'] = len(sym_result.vm_handlers_found)
-                                console.print(f"✅ Found {len(sym_result.vm_handlers_found)} VM handlers")
-                    except ImportError:
-                        console.print("[yellow]Symbolic execution not available (missing angr)[/yellow]")
-                
-                # Dynamic Instrumentation
-                if dynamic:
-                    try:
-                        from r2morph.instrumentation import FridaEngine
-                        console.print("\n[bold yellow]Setting up dynamic instrumentation...[/bold yellow]")
-                        
-                        frida_engine = FridaEngine()
-                        console.print("✅ Frida engine initialized")
-                    except ImportError:
-                        console.print("[yellow]Dynamic instrumentation not available (missing frida)[/yellow]")
-                
-                # Binary Rewriting
-                if rewrite:
-                    console.print("\n[bold yellow]Performing binary rewriting...[/bold yellow]")
-                    try:
-                        rewriter = BinaryRewriter(bin_obj)
-                        
-                        # Set up output path
-                        if output:
-                            output_path = Path(output) / f"{binary.stem}_rewritten{binary.suffix}"
-                        else:
-                            output_path = binary.parent / f"{binary.stem}_rewritten{binary.suffix}"
-                        
-                        # Add example patches
-                        functions = bin_obj.get_functions()[:3]
-                        patches_added = 0
-                        for func in functions:
-                            func_addr = func.get('offset', 0)
-                            if rewriter.add_patch(func_addr, ["nop"]):
-                                patches_added += 1
-                        
-                        # Perform rewriting
-                        rewrite_result = rewriter.rewrite_binary(str(output_path))
-                        
-                        if rewrite_result.success:
-                            console.print(f"✅ Binary rewritten to {output_path}")
-                            console.print(f"   Patches applied: {rewrite_result.patches_applied}")
-                            analysis_results['rewrite_output'] = str(output_path)
-                        else:
-                            console.print("❌ Binary rewriting failed")
-                    
-                    except Exception as e:
-                        console.print(f"[yellow]Binary rewriting error: {e}[/yellow]")
-                
-                if analysis_results:
-                    console.print("\n[bold cyan]Advanced Analysis Results:[/bold cyan]")
-                    for key, value in analysis_results.items():
-                        console.print(f"  {key}: {value}")
-                
-                # Step 4: Comprehensive Report
-                console.print("\n[bold yellow]Generating comprehensive report...[/bold yellow]")
-                report = detector.get_comprehensive_report(bin_obj)
-                
-                # Save report if output specified
-                if output:
-                    output_dir = Path(output)
-                    output_dir.mkdir(exist_ok=True)
-                    
-                    report_path = output_dir / "analysis_report.json"
-                    with open(report_path, 'w') as f:
-                        import json
-                        json.dump(report, f, indent=2, default=str)
-                    
-                    console.print(f"📊 Report saved to {report_path}")
-                
-                # Step 5: Recommendations
-                console.print("\n[bold cyan]Recommendations:[/bold cyan]")
-                
-                if detection_result.vm_detected:
-                    console.print("  • VM protection detected - use --devirt --iterative for comprehensive analysis")
-                
-                if detection_result.anti_analysis_detected:
-                    console.print("  • Anti-analysis techniques detected - use --bypass --dynamic")
-                
-                if detection_result.mba_detected:
-                    console.print("  • MBA expressions detected - use --iterative for expression simplification")
-                
-                if detection_result.control_flow_flattened:
-                    console.print("  • Control flow flattening detected - use --symbolic --devirt")
-                
-                if layers['layers_detected'] > 1:
-                    console.print("  • Multiple packing layers detected - iterative unpacking recommended")
-                
-                if not any([detection_result.vm_detected, detection_result.anti_analysis_detected, 
-                           detection_result.mba_detected, detection_result.control_flow_flattened]):
-                    console.print("  • Binary appears lightly obfuscated - standard analysis may suffice")
-                
-                console.print(f"\n[bold green]Phase 2 Analysis Complete![/bold green]")
-                if output:
-                    console.print(f"Results saved to: {output}")
+            # Configure analysis options
+            options = AnalysisOptions(
+                verbose=verbose,
+                detect_only=detect_only,
+                symbolic=symbolic,
+                dynamic=dynamic,
+                devirt=devirt,
+                iterative=iterative,
+                rewrite=rewrite,
+                bypass=bypass,
+            )
+
+            # Create and run the orchestrator
+            orchestrator = EnhancedAnalysisOrchestrator(
+                binary_path=binary,
+                output_dir=output,
+                console=console,
+            )
+
+            orchestrator.analyze(options)
 
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
@@ -598,75 +362,35 @@ def morph(
             with MorphEngine() as engine:
                 engine.load_binary(binary).analyze()
 
+                # Create configuration using factory methods
                 if aggressive:
-                    nop_config = {
-                        "max_nops_per_function": 20,
-                        "probability": 0.95,
-                        "use_creative_nops": True,
-                        "force_different": force,
-                    }
-                    subst_config = {
-                        "max_substitutions_per_function": 30,
-                        "probability": 0.95,
-                        "force_different": force,
-                    }
-                    reg_config = {
-                        "max_substitutions_per_function": 15,
-                        "probability": 0.9,
-                        "force_different": force,
-                    }
-                    exp_config = {
-                        "max_expansions_per_function": 15,
-                        "probability": 0.9,
-                        "force_different": force,
-                    }
-                    block_config = {
-                        "max_reorderings_per_function": 8,
-                        "probability": 0.8,
-                        "force_different": force,
-                    }
+                    config = EngineConfig.create_aggressive()
                 else:
-                    nop_config = {
-                        "max_nops_per_function": 5,
-                        "probability": 0.5,
-                        "use_creative_nops": True,
-                        "force_different": force,
-                    }
-                    subst_config = {
-                        "max_substitutions_per_function": 10,
-                        "probability": 0.7,
-                        "force_different": force,
-                    }
-                    reg_config = {
-                        "max_substitutions_per_function": 5,
-                        "probability": 0.5,
-                        "force_different": force,
-                    }
-                    exp_config = {
-                        "max_expansions_per_function": 5,
-                        "probability": 0.5,
-                        "force_different": force,
-                    }
-                    block_config = {
-                        "max_reorderings_per_function": 3,
-                        "probability": 0.3,
-                        "force_different": force,
-                    }
+                    config = EngineConfig.create_default()
+
+                # Apply force flag if specified
+                if force:
+                    config.force_different = True
+                    config.nop.force_different = True
+                    config.substitution.force_different = True
+                    config.register.force_different = True
+                    config.expansion.force_different = True
+                    config.block.force_different = True
 
                 if "nop" in mutations:
-                    engine.add_mutation(NopInsertionPass(config=nop_config))
+                    engine.add_mutation(NopInsertionPass(config=config.nop.to_dict()))
 
                 if "substitute" in mutations:
-                    engine.add_mutation(InstructionSubstitutionPass(config=subst_config))
+                    engine.add_mutation(InstructionSubstitutionPass(config=config.substitution.to_dict()))
 
                 if "register" in mutations:
-                    engine.add_mutation(RegisterSubstitutionPass(config=reg_config))
+                    engine.add_mutation(RegisterSubstitutionPass(config=config.register.to_dict()))
 
                 if "expand" in mutations:
-                    engine.add_mutation(InstructionExpansionPass(config=exp_config))
+                    engine.add_mutation(InstructionExpansionPass(config=config.expansion.to_dict()))
 
                 if "block" in mutations:
-                    engine.add_mutation(BlockReorderingPass(config=block_config))
+                    engine.add_mutation(BlockReorderingPass(config=config.block.to_dict()))
 
                 result = engine.run()
 

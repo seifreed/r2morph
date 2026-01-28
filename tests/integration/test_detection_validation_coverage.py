@@ -6,6 +6,14 @@ import shutil
 from pathlib import Path
 
 import pytest
+import importlib.util
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
 
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
 from r2morph.detection.evasion_scorer import EvasionScorer
@@ -20,7 +28,7 @@ class TestEntropyAnalyzerDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_entropy_analyzer_init(self):
         """Test EntropyAnalyzer initialization."""
@@ -85,7 +93,7 @@ class TestSimilarityHasherDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_similarity_hasher_init(self):
         """Test SimilarityHasher initialization."""
@@ -135,7 +143,7 @@ class TestEvasionScorerDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_evasion_scorer_init(self):
         """Test EvasionScorer initialization."""
@@ -167,7 +175,7 @@ class TestBinaryValidatorDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_validator_init(self):
         """Test BinaryValidator initialization."""

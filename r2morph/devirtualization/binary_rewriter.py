@@ -17,7 +17,7 @@ Key Features:
 import logging
 import struct
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple, Any, Union
+from typing import Any
 from enum import Enum
 from pathlib import Path
 import os
@@ -64,10 +64,10 @@ class CodePatch:
     operation: RewriteOperation
     original_bytes: bytes
     new_bytes: bytes
-    original_instructions: List[str] = field(default_factory=list)
-    new_instructions: List[str] = field(default_factory=list)
+    original_instructions: list[str] = field(default_factory=list)
+    new_instructions: list[str] = field(default_factory=list)
     size_change: int = 0
-    dependencies: List[int] = field(default_factory=list)
+    dependencies: list[int] = field(default_factory=list)
 
 
 @dataclass
@@ -76,7 +76,7 @@ class RelocationEntry:
     address: int
     target: int
     reloc_type: str
-    symbol: Optional[str] = None
+    symbol: str | None = None
     addend: int = 0
 
 
@@ -88,10 +88,10 @@ class RewriteResult:
     patches_applied: int = 0
     relocations_updated: int = 0
     size_change: int = 0
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
     execution_time: float = 0.0
-    integrity_checks: Dict[str, bool] = field(default_factory=dict)
+    integrity_checks: dict[str, bool] = field(default_factory=dict)
 
 
 class BinaryRewriter:
@@ -133,7 +133,7 @@ class BinaryRewriter:
     
     def rewrite_binary(self, 
                       output_path: str,
-                      patches: List[CodePatch] = None,
+                      patches: list[CodePatch] = None,
                       preserve_original: bool = True) -> RewriteResult:
         """
         Rewrite the binary with the specified patches.
@@ -241,7 +241,7 @@ class BinaryRewriter:
     
     def add_patch(self, 
                   address: int,
-                  new_instructions: List[str],
+                  new_instructions: list[str],
                   operation: RewriteOperation = RewriteOperation.INSTRUCTION_REPLACE) -> bool:
         """
         Add a code patch.
@@ -388,7 +388,7 @@ class BinaryRewriter:
             logger.error(f"Code generation initialization failed: {e}")
             return False
     
-    def _validate_patches(self) -> Dict[str, Any]:
+    def _validate_patches(self) -> dict[str, Any]:
         """Validate the patches before applying."""
         result = {
             'valid': True,
@@ -423,7 +423,7 @@ class BinaryRewriter:
         
         return result
     
-    def _plan_rewrite_strategy(self) -> Dict[str, Any]:
+    def _plan_rewrite_strategy(self) -> dict[str, Any]:
         """Plan the rewrite strategy based on patches."""
         strategy = {
             'use_code_caves': False,
@@ -453,7 +453,7 @@ class BinaryRewriter:
         
         return strategy
     
-    def _apply_patches(self, strategy: Dict[str, Any]) -> Dict[str, Any]:
+    def _apply_patches(self, strategy: dict[str, Any]) -> dict[str, Any]:
         """Apply the patches according to the strategy."""
         stats = {
             'patches_applied': 0,
@@ -499,7 +499,7 @@ class BinaryRewriter:
             logger.error(f"Failed to apply patch: {e}")
             return False
     
-    def _update_relocations(self) -> Dict[str, Any]:
+    def _update_relocations(self) -> dict[str, Any]:
         """Update relocation tables after patching."""
         stats = {
             'updated': 0,
@@ -566,7 +566,7 @@ class BinaryRewriter:
             logger.error(f"Failed to write output binary: {e}")
             return False
     
-    def _perform_integrity_checks(self, output_path: str) -> Dict[str, bool]:
+    def _perform_integrity_checks(self, output_path: str) -> dict[str, bool]:
         """Perform integrity checks on the rewritten binary."""
         checks = {
             'file_exists': False,
@@ -614,7 +614,7 @@ class BinaryRewriter:
         except Exception:
             return b'\x00' * size
     
-    def _assemble_instructions(self, instructions: List[str]) -> bytes:
+    def _assemble_instructions(self, instructions: list[str]) -> bytes:
         """Assemble instructions to bytes."""
         try:
             if not self.ks:
@@ -642,7 +642,7 @@ class BinaryRewriter:
         except Exception:
             return True  # Assume valid if can't verify
     
-    def _validate_instructions(self, instructions: List[str]) -> bool:
+    def _validate_instructions(self, instructions: list[str]) -> bool:
         """Validate assembly instructions."""
         try:
             if not self.ks:
@@ -655,7 +655,7 @@ class BinaryRewriter:
         except Exception:
             return False
     
-    def _calculate_address_shifts(self) -> Dict[int, int]:
+    def _calculate_address_shifts(self) -> dict[int, int]:
         """Calculate how addresses shift due to patches."""
         shifts = {}
         
@@ -697,7 +697,7 @@ class BinaryRewriter:
         """Update Mach-O specific metadata."""
         logger.debug("Updating Mach-O metadata")
     
-    def get_rewrite_statistics(self) -> Dict[str, Any]:
+    def get_rewrite_statistics(self) -> dict[str, Any]:
         """Get statistics about the planned rewrite."""
         return {
             'total_patches': len(self.patches),

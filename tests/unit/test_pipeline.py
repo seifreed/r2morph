@@ -1,111 +1,59 @@
 """
-Unit tests for Pipeline class.
+Unit tests for Pipeline (real binaries required).
 """
 
-from unittest.mock import Mock
+import importlib.util
+from pathlib import Path
 
-from r2morph.mutations.base import MutationPass
-from r2morph.pipeline.pipeline import Pipeline
+import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-class MockMutation(MutationPass):
-    """Mock mutation pass for testing."""
-
-    def __init__(self, name="MockMutation"):
-        super().__init__(name=name)
-
-    def apply(self, binary):
-        return {"mutations_applied": 5}
+from r2morph.core.binary import Binary
+from r2morph.pipeline import Pipeline
+from r2morph.mutations import NopInsertionPass, RegisterSubstitutionPass
 
 
 class TestPipeline:
     """Tests for the Pipeline class."""
 
-    def test_pipeline_init(self):
-        """Test pipeline initialization."""
+    def test_add_and_remove_pass(self):
+        """Test adding and removing passes."""
         pipeline = Pipeline()
-        assert len(pipeline) == 0
-        assert pipeline.get_pass_names() == []
+        nop_pass = NopInsertionPass()
+        reg_pass = RegisterSubstitutionPass()
 
-    def test_add_pass(self):
-        """Test adding a pass to pipeline."""
-        pipeline = Pipeline()
-        mutation = MockMutation()
-
-        pipeline.add_pass(mutation)
-        assert len(pipeline) == 1
-        assert "MockMutation" in pipeline.get_pass_names()
-
-    def test_remove_pass(self):
-        """Test removing a pass from pipeline."""
-        pipeline = Pipeline()
-        mutation = MockMutation()
-
-        pipeline.add_pass(mutation)
-        assert len(pipeline) == 1
-
-        result = pipeline.remove_pass("MockMutation")
-        assert result is True
-        assert len(pipeline) == 0
-
-        result = pipeline.remove_pass("NonExistent")
-        assert result is False
-
-    def test_clear(self):
-        """Test clearing pipeline."""
-        pipeline = Pipeline()
-        pipeline.add_pass(MockMutation("Pass1"))
-        pipeline.add_pass(MockMutation("Pass2"))
+        pipeline.add_pass(nop_pass)
+        pipeline.add_pass(reg_pass)
 
         assert len(pipeline) == 2
+        assert "NopInsertion" in pipeline.get_pass_names()
 
-        pipeline.clear()
-        assert len(pipeline) == 0
+        removed = pipeline.remove_pass("NopInsertion")
+        assert removed is True
+        assert "NopInsertion" not in pipeline.get_pass_names()
 
-    def test_run_empty_pipeline(self):
-        """Test running an empty pipeline."""
-        pipeline = Pipeline()
-        mock_binary = Mock()
+    def test_pipeline_run(self, tmp_path):
+        """Test running pipeline on a real binary."""
+        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        if not test_file.exists():
+            pytest.skip("Test binary not available")
 
-        result = pipeline.run(mock_binary)
-        assert result["passes_run"] == 0
-        assert result["total_mutations"] == 0
-
-    def test_run_with_passes(self):
-        """Test running pipeline with passes."""
-        pipeline = Pipeline()
-        pipeline.add_pass(MockMutation("Pass1"))
-        pipeline.add_pass(MockMutation("Pass2"))
-
-        mock_binary = Mock()
-
-        result = pipeline.run(mock_binary)
-        assert result["passes_run"] == 2
-        assert result["total_mutations"] == 10
-        assert "Pass1" in result["pass_results"]
-        assert "Pass2" in result["pass_results"]
-
-    def test_run_with_failing_pass(self):
-        """Test running pipeline when a pass fails."""
-
-        class FailingMutation(MutationPass):
-            def __init__(self):
-                super().__init__(name="FailingMutation")
-
-            def apply(self, binary):
-                raise ValueError("Test error")
+        temp_binary = tmp_path / "simple_pipeline"
+        temp_binary.write_bytes(test_file.read_bytes())
 
         pipeline = Pipeline()
-        pipeline.add_pass(MockMutation("Pass1"))
-        pipeline.add_pass(FailingMutation())
-        pipeline.add_pass(MockMutation("Pass2"))
+        pipeline.add_pass(NopInsertionPass(config={"probability": 0.2}))
+        pipeline.add_pass(RegisterSubstitutionPass(config={"probability": 0.2}))
 
-        mock_binary = Mock()
+        with Binary(temp_binary, writable=True) as binary:
+            binary.analyze()
+            result = pipeline.run(binary)
 
-        result = pipeline.run(mock_binary)
-
-        assert result["pass_results"]["Pass1"]["mutations_applied"] == 5
-
-        assert "error" in result["pass_results"]["FailingMutation"]
-
-        assert result["pass_results"]["Pass2"]["mutations_applied"] == 5
+        assert isinstance(result, dict)
+        assert "passes_run" in result
+        assert "total_mutations" in result

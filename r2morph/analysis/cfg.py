@@ -6,7 +6,7 @@ Provides graph-based representations of program control flow.
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, List, Tuple
+from typing import Any
 
 from r2morph.core.binary import Binary
 
@@ -28,7 +28,7 @@ class BasicBlock:
     size: int
     instructions: list[dict[str, Any]] = field(default_factory=list)
     successors: list[int] = field(default_factory=list)
-    predecessors: List[int] = field(default_factory=list)
+    predecessors: list[int] = field(default_factory=list)
     type: str = "normal"
 
     def __repr__(self) -> str:
@@ -65,7 +65,7 @@ class ControlFlowGraph:
     function_name: str
     entry_block: BasicBlock | None = None
     blocks: dict[int, BasicBlock] = field(default_factory=dict)
-    edges: list[Tuple[int, int]] = field(default_factory=list)
+    edges: list[tuple[int, int]] = field(default_factory=list)
 
     def add_block(self, block: BasicBlock):
         """Add a basic block to the CFG."""

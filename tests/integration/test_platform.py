@@ -2,9 +2,16 @@
 Real integration tests for platform modules.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph import MorphEngine
 from r2morph.mutations import NopInsertionPass
@@ -20,7 +27,7 @@ class TestCodeSigner:
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls_macOS"
+        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
 
     def test_manager_initialization(self):
         """Test CodeSigner initialization."""
@@ -33,9 +40,6 @@ class TestCodeSigner:
             pytest.skip("macOS binary not available")
 
         manager = CodeSigner()
-        if not hasattr(manager, "check_signature"):
-            pytest.skip("check_signature method not implemented")
-
         result = manager.check_signature(ls_macos)
         assert result is not None
 
@@ -45,9 +49,6 @@ class TestCodeSigner:
             pytest.skip("macOS binary not available")
 
         manager = CodeSigner()
-        if not hasattr(manager, "is_signed"):
-            pytest.skip("is_signed method not implemented")
-
         result = manager.is_signed(ls_macos)
         assert isinstance(result, bool)
 
@@ -57,9 +58,6 @@ class TestCodeSigner:
             pytest.skip("macOS binary not available")
 
         manager = CodeSigner()
-        if not hasattr(manager, "needs_signing"):
-            pytest.skip("needs_signing method not implemented")
-
         morphed_path = tmp_path / "ls_morphed"
 
         with MorphEngine() as engine:
@@ -77,9 +75,6 @@ class TestCodeSigner:
             pytest.skip("macOS binary not available")
 
         manager = CodeSigner()
-        if not hasattr(manager, "sign_binary"):
-            pytest.skip("sign_binary method not implemented")
-
         import shutil
 
         test_binary = tmp_path / "test_sign"
@@ -95,7 +90,7 @@ class TestELFHandler:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_handler_initialization(self, ls_elf):
         """Test ELFHandler initialization."""
@@ -111,11 +106,9 @@ class TestELFHandler:
             pytest.skip("ELF binary not available")
 
         handler = ELFHandler(ls_elf)
-        if not hasattr(handler, "is_elf"):
-            pytest.skip("is_elf method not implemented")
-
         result = handler.is_elf()
         assert isinstance(result, bool)
+        assert result is True
 
     def test_get_sections(self, ls_elf):
         """Test getting ELF sections."""
@@ -123,11 +116,9 @@ class TestELFHandler:
             pytest.skip("ELF binary not available")
 
         handler = ELFHandler(ls_elf)
-        if not hasattr(handler, "get_sections"):
-            pytest.skip("get_sections method not implemented")
-
         sections = handler.get_sections()
         assert isinstance(sections, list)
+        assert len(sections) > 0
 
     def test_get_segments(self, ls_elf):
         """Test getting ELF segments."""
@@ -135,11 +126,9 @@ class TestELFHandler:
             pytest.skip("ELF binary not available")
 
         handler = ELFHandler(ls_elf)
-        if not hasattr(handler, "get_segments"):
-            pytest.skip("get_segments method not implemented")
-
         segments = handler.get_segments()
         assert isinstance(segments, list)
+        assert len(segments) > 0
 
     def test_validate_elf(self, ls_elf):
         """Test ELF validation."""
@@ -147,11 +136,9 @@ class TestELFHandler:
             pytest.skip("ELF binary not available")
 
         handler = ELFHandler(ls_elf)
-        if not hasattr(handler, "validate"):
-            pytest.skip("validate method not implemented")
-
         result = handler.validate()
         assert isinstance(result, bool)
+        assert result is True
 
 
 class TestMachOHandler:
@@ -160,7 +147,7 @@ class TestMachOHandler:
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls_macOS"
+        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
 
     def test_handler_initialization(self, ls_macos):
         """Test MachOHandler initialization."""
@@ -176,11 +163,9 @@ class TestMachOHandler:
             pytest.skip("macOS binary not available")
 
         handler = MachOHandler(ls_macos)
-        if not hasattr(handler, "is_macho"):
-            pytest.skip("is_macho method not implemented")
-
         result = handler.is_macho()
         assert isinstance(result, bool)
+        assert result is True
 
     def test_get_load_commands(self, ls_macos):
         """Test getting Mach-O load commands."""
@@ -188,11 +173,9 @@ class TestMachOHandler:
             pytest.skip("macOS binary not available")
 
         handler = MachOHandler(ls_macos)
-        if not hasattr(handler, "get_load_commands"):
-            pytest.skip("get_load_commands method not implemented")
-
         commands = handler.get_load_commands()
         assert isinstance(commands, list)
+        assert len(commands) > 0
 
     def test_get_segments(self, ls_macos):
         """Test getting Mach-O segments."""
@@ -200,11 +183,9 @@ class TestMachOHandler:
             pytest.skip("macOS binary not available")
 
         handler = MachOHandler(ls_macos)
-        if not hasattr(handler, "get_segments"):
-            pytest.skip("get_segments method not implemented")
-
         segments = handler.get_segments()
         assert isinstance(segments, list)
+        assert len(segments) > 0
 
     def test_validate_macho(self, ls_macos):
         """Test Mach-O validation."""
@@ -212,75 +193,66 @@ class TestMachOHandler:
             pytest.skip("macOS binary not available")
 
         handler = MachOHandler(ls_macos)
-        if not hasattr(handler, "validate"):
-            pytest.skip("validate method not implemented")
-
         result = handler.validate()
         assert isinstance(result, bool)
+        assert result is True
 
 
 class TestPEHandler:
     """Tests for PEHandler."""
 
     @pytest.fixture
-    def pafish_exe(self):
-        """Path to pafish.exe PE binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "pafish.exe"
+    def pe_x86_64_exe(self):
+        """Path to pe_x86_64.exe PE binary."""
+        return Path(__file__).parent.parent.parent / "dataset" / "pe_x86_64.exe"
 
-    def test_handler_initialization(self, pafish_exe):
+    def test_handler_initialization(self, pe_x86_64_exe):
         """Test PEHandler initialization."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
-        handler = PEHandler(pafish_exe)
+        handler = PEHandler(pe_x86_64_exe)
         assert handler is not None
 
-    def test_is_pe(self, pafish_exe):
+    def test_is_pe(self, pe_x86_64_exe):
         """Test PE detection."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
-        handler = PEHandler(pafish_exe)
-        if not hasattr(handler, "is_pe"):
-            pytest.skip("is_pe method not implemented")
-
+        handler = PEHandler(pe_x86_64_exe)
         result = handler.is_pe()
 
         assert isinstance(result, bool)
         assert result is True
 
-    def test_get_sections(self, pafish_exe):
+    def test_get_sections(self, pe_x86_64_exe):
         """Test getting PE sections."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
-        handler = PEHandler(pafish_exe)
+        handler = PEHandler(pe_x86_64_exe)
         sections = handler.get_sections()
 
         assert isinstance(sections, list)
+        assert len(sections) > 0
 
-    def test_get_imports(self, pafish_exe):
+    def test_get_imports(self, pe_x86_64_exe):
         """Test getting PE imports."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
-        handler = PEHandler(pafish_exe)
-        if not hasattr(handler, "get_imports"):
-            pytest.skip("get_imports method not implemented")
-
+        handler = PEHandler(pe_x86_64_exe)
         imports = handler.get_imports()
 
         assert isinstance(imports, list)
 
-    def test_validate_pe(self, pafish_exe):
+    def test_validate_pe(self, pe_x86_64_exe):
         """Test PE validation."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
-        handler = PEHandler(pafish_exe)
-        if not hasattr(handler, "validate"):
-            pytest.skip("validate method not implemented")
-
+        handler = PEHandler(pe_x86_64_exe)
         result = handler.validate()
 
         assert isinstance(result, bool)
+        assert result is True

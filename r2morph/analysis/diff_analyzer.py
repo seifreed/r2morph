@@ -2,13 +2,14 @@
 Differential analysis between original and morphed binaries.
 """
 
-import hashlib
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import AVG_INSTRUCTION_SIZE_BYTES
+from r2morph.utils.entropy import calculate_file_entropy
+from r2morph.utils.hashing import hash_file
 
 logger = logging.getLogger(__name__)
 
@@ -192,14 +193,6 @@ class DiffAnalyzer:
         Returns:
             Tuple of (hash1, hash2)
         """
-
-        def hash_file(path: Path) -> str:
-            sha256 = hashlib.sha256()
-            with open(path, "rb") as f:
-                for chunk in iter(lambda: f.read(8192), b""):
-                    sha256.update(chunk)
-            return sha256.hexdigest()
-
         return hash_file(path1), hash_file(path2)
 
     def _count_changed_bytes(self, path1: Path, path2: Path) -> tuple[int, int]:
@@ -238,24 +231,7 @@ class DiffAnalyzer:
         Returns:
             Entropy value (0-8)
         """
-        import math
-        from collections import Counter
-
-        with open(path, "rb") as f:
-            data = f.read()
-
-        if not data:
-            return 0.0
-
-        counter = Counter(data)
-        length = len(data)
-
-        entropy = 0.0
-        for count in counter.values():
-            prob = count / length
-            entropy -= prob * math.log2(prob)
-
-        return entropy
+        return calculate_file_entropy(path)
 
     def _count_changed_functions(self) -> int:
         """
@@ -289,7 +265,7 @@ class DiffAnalyzer:
         if not self.diff_stats:
             return 0
 
-        return self.diff_stats.changed_bytes // 3
+        return self.diff_stats.changed_bytes // AVG_INSTRUCTION_SIZE_BYTES
 
     def generate_report(self, output_file: Path):
         """

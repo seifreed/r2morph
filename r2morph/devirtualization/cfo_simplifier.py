@@ -15,8 +15,8 @@ Key Features:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple, Any
 from enum import Enum
+from typing import Any
 
 try:
     import networkx as nx
@@ -42,12 +42,12 @@ class CFOPattern(Enum):
 class ControlFlowBlock:
     """Represents a basic block in control flow analysis."""
     address: int
-    instructions: List[Dict[str, Any]] = field(default_factory=list)
-    predecessors: Set[int] = field(default_factory=set)
-    successors: Set[int] = field(default_factory=set)
+    instructions: list[dict[str, Any]] = field(default_factory=list)
+    predecessors: set[int] = field(default_factory=set)
+    successors: set[int] = field(default_factory=set)
     is_dispatcher: bool = False
-    dispatcher_state: Optional[int] = None
-    original_target: Optional[int] = None
+    dispatcher_state: int | None = None
+    original_target: int | None = None
 
 
 @dataclass
@@ -55,9 +55,9 @@ class DispatcherInfo:
     """Information about a control flow dispatcher."""
     dispatcher_address: int
     state_variable: str
-    dispatch_table: Dict[int, int] = field(default_factory=dict)
-    entry_blocks: Set[int] = field(default_factory=set)
-    exit_blocks: Set[int] = field(default_factory=set)
+    dispatch_table: dict[int, int] = field(default_factory=dict)
+    entry_blocks: set[int] = field(default_factory=set)
+    exit_blocks: set[int] = field(default_factory=set)
     pattern_confidence: float = 0.0
 
 
@@ -65,14 +65,14 @@ class DispatcherInfo:
 class CFOSimplificationResult:
     """Result of control flow obfuscation simplification."""
     success: bool
-    patterns_detected: List[CFOPattern] = field(default_factory=list)
-    simplified_blocks: Dict[int, ControlFlowBlock] = field(default_factory=dict)
+    patterns_detected: list[CFOPattern] = field(default_factory=list)
+    simplified_blocks: dict[int, ControlFlowBlock] = field(default_factory=dict)
     original_complexity: int = 0
     simplified_complexity: int = 0
-    dispatcher_info: List[DispatcherInfo] = field(default_factory=list)
-    removed_opcodes: List[str] = field(default_factory=list)
+    dispatcher_info: list[DispatcherInfo] = field(default_factory=list)
+    removed_opcodes: list[str] = field(default_factory=list)
     execution_time: float = 0.0
-    warnings: List[str] = field(default_factory=list)
+    warnings: list[str] = field(default_factory=list)
 
 
 class CFOSimplifier:
@@ -245,7 +245,7 @@ class CFOSimplifier:
         except Exception as e:
             logger.error(f"Failed to build CFG: {e}")
     
-    def _detect_obfuscation_patterns(self) -> List[CFOPattern]:
+    def _detect_obfuscation_patterns(self) -> list[CFOPattern]:
         """Detect various control flow obfuscation patterns."""
         patterns = []
         
@@ -543,7 +543,7 @@ class CFOSimplifier:
         except Exception as e:
             logger.error(f"Dispatch target analysis failed: {e}")
     
-    def _reconstruct_control_flow(self, dispatcher: DispatcherInfo) -> List[Tuple[int, int]]:
+    def _reconstruct_control_flow(self, dispatcher: DispatcherInfo) -> list[tuple[int, int]]:
         """Reconstruct original control flow from dispatcher pattern."""
         try:
             reconstructed_edges = []
@@ -600,7 +600,7 @@ class CFOSimplifier:
         except Exception:
             return False
     
-    def _is_opaque_comparison(self, instr: Dict[str, Any]) -> bool:
+    def _is_opaque_comparison(self, instr: dict[str, Any]) -> bool:
         """Check if an instruction represents an opaque comparison."""
         try:
             opcode = instr.get('opcode', '').lower()
@@ -620,7 +620,7 @@ class CFOSimplifier:
         except Exception:
             return False
     
-    def _resolve_jump_target(self, instr: Dict[str, Any]) -> Optional[int]:
+    def _resolve_jump_target(self, instr: dict[str, Any]) -> int | None:
         """Try to resolve indirect jump target."""
         try:
             # Simplified implementation for indirect jump analysis
@@ -644,7 +644,7 @@ class CFOSimplifier:
         except Exception:
             return None
     
-    def _extract_state_value(self, block: ControlFlowBlock) -> Optional[int]:
+    def _extract_state_value(self, block: ControlFlowBlock) -> int | None:
         """Extract state value from a block."""
         try:
             # Look for immediate values in the first few instructions
@@ -665,7 +665,7 @@ class CFOSimplifier:
         except Exception:
             return None
     
-    def _find_state_setters(self, state_value: int, state_variable: str) -> List[int]:
+    def _find_state_setters(self, state_value: int, state_variable: str) -> list[int]:
         """Find blocks that set a specific state value."""
         try:
             setters = []

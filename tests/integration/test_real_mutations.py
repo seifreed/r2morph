@@ -2,11 +2,20 @@
 Real integration tests for mutations using compiled binaries.
 """
 
+import importlib.util
 import platform
 import subprocess
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
+pytest.importorskip("yaml")
 
 from r2morph import MorphEngine
 from r2morph.mutations import (
@@ -35,9 +44,8 @@ class TestRealMutations:
         return Path(__file__).parent.parent / "fixtures" / "conditional"
 
     def check_platform(self):
-        """Skip tests on macOS due to ARM64 binary complexity."""
-        if platform.system() == "Darwin":
-            pytest.skip("Real mutation tests skipped on macOS (ARM64 binary complexity)")
+        """No-op platform check."""
+        return
 
     def get_output(self, binary_path):
         """Get output from executing a binary."""
