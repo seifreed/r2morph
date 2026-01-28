@@ -3,7 +3,6 @@ Real integration tests for mutations using compiled binaries.
 """
 
 import importlib.util
-import platform
 import subprocess
 from pathlib import Path
 
@@ -23,6 +22,7 @@ from r2morph.mutations import (
     NopInsertionPass,
     RegisterSubstitutionPass,
 )
+from tests.utils.platform_binaries import get_platform_binary, ensure_exists
 
 
 class TestRealMutations:
@@ -31,17 +31,17 @@ class TestRealMutations:
     @pytest.fixture
     def simple_binary(self):
         """Path to simple test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "simple"
+        return get_platform_binary("simple")
 
     @pytest.fixture
     def loop_binary(self):
         """Path to loop test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "loop"
+        return get_platform_binary("loop")
 
     @pytest.fixture
     def conditional_binary(self):
         """Path to conditional test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "conditional"
+        return get_platform_binary("conditional")
 
     def check_platform(self):
         """No-op platform check."""
@@ -64,7 +64,7 @@ class TestRealMutations:
         """Test NOP insertion with real binary."""
         self.check_platform()
 
-        if not simple_binary.exists():
+        if not ensure_exists(simple_binary):
             pytest.skip("Test binary not available")
 
         output_path = tmp_path / "simple_nop"
@@ -95,7 +95,7 @@ class TestRealMutations:
         """Test instruction substitution with real binary."""
         self.check_platform()
 
-        if not loop_binary.exists():
+        if not ensure_exists(loop_binary):
             pytest.skip("Test binary not available")
 
         output_path = tmp_path / "loop_subst"
@@ -125,7 +125,7 @@ class TestRealMutations:
         """Test multiple mutations on real binary."""
         self.check_platform()
 
-        if not conditional_binary.exists():
+        if not ensure_exists(conditional_binary):
             pytest.skip("Test binary not available")
 
         output_path = tmp_path / "conditional_multi"
@@ -157,7 +157,7 @@ class TestRealMutations:
         """Test aggressive mode with real binary."""
         self.check_platform()
 
-        if not simple_binary.exists():
+        if not ensure_exists(simple_binary):
             pytest.skip("Test binary not available")
 
         output_path = tmp_path / "simple_aggressive"
@@ -194,7 +194,7 @@ class TestRealMutations:
         """Test that mutated binary is still executable."""
         self.check_platform()
 
-        if not loop_binary.exists():
+        if not ensure_exists(loop_binary):
             pytest.skip("Test binary not available")
 
         output_path = tmp_path / "loop_exec_test"

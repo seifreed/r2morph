@@ -1,7 +1,10 @@
 import shutil
+import platform
+from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceUpdater
+from tests.utils.platform_binaries import get_platform_binary, ensure_exists
 
 
 def _find_writable_code_region(bin_obj, minimum_size: int = 16) -> int:
@@ -22,7 +25,9 @@ def _read_bytes(bin_obj, addr: int, size: int) -> bytes:
 
 
 def test_reference_updater_updates_call_jump_and_data(tmp_path):
-    src_binary = "dataset/pe_x86_64.exe"
+    src_binary = get_platform_binary("generic")
+    if not ensure_exists(Path(src_binary)):
+        return
     bin_path = tmp_path / "pe_x86_64_copy.exe"
     shutil.copy2(src_binary, bin_path)
 

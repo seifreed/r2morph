@@ -11,6 +11,13 @@ def _get_section_vaddr(binary: Binary) -> int:
     sections = binary.get_sections()
     if not sections:
         raise RuntimeError("No sections available")
+    for section in sections:
+        perm = str(section.get("perm") or "").lower()
+        vaddr = section.get("vaddr")
+        paddr = section.get("paddr")
+        size = section.get("size") or section.get("vsize") or 0
+        if size and ("x" in perm or "r" in perm) and (vaddr or paddr):
+            return int(vaddr or paddr)
     return int(sections[0].get("vaddr", 0) or sections[0].get("paddr", 0) or 0)
 
 

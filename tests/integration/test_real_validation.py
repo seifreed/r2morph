@@ -3,7 +3,6 @@ Real integration tests for validation using compiled binaries.
 """
 
 import importlib.util
-import platform
 from pathlib import Path
 
 import pytest
@@ -20,6 +19,7 @@ from r2morph import MorphEngine
 from r2morph.mutations import InstructionSubstitutionPass, NopInsertionPass
 from r2morph.validation.fuzzer import MutationFuzzer
 from r2morph.validation.validator import BinaryValidator
+from tests.utils.platform_binaries import get_platform_binary, ensure_exists
 
 
 class TestRealValidation:
@@ -28,12 +28,12 @@ class TestRealValidation:
     @pytest.fixture
     def simple_binary(self):
         """Path to simple test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "simple"
+        return get_platform_binary("simple")
 
     @pytest.fixture
     def loop_binary(self):
         """Path to loop test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "loop"
+        return get_platform_binary("loop")
 
     def check_platform(self):
         """No-op platform check."""
@@ -43,7 +43,7 @@ class TestRealValidation:
         """Test validator with real original and mutated binaries."""
         self.check_platform()
 
-        if not simple_binary.exists():
+        if not ensure_exists(simple_binary):
             pytest.skip("Test binary not available")
 
         mutated_path = tmp_path / "simple_validated"
@@ -68,7 +68,7 @@ class TestRealValidation:
         """Test validator with multiple test cases."""
         self.check_platform()
 
-        if not loop_binary.exists():
+        if not ensure_exists(loop_binary):
             pytest.skip("Test binary not available")
 
         mutated_path = tmp_path / "loop_validated"
@@ -93,7 +93,7 @@ class TestRealValidation:
         """Test fuzzer with real binaries."""
         self.check_platform()
 
-        if not simple_binary.exists():
+        if not ensure_exists(simple_binary):
             pytest.skip("Test binary not available")
 
         mutated_path = tmp_path / "simple_fuzzed"
@@ -116,7 +116,7 @@ class TestRealValidation:
         """Test fuzzer with command-line arguments."""
         self.check_platform()
 
-        if not loop_binary.exists():
+        if not ensure_exists(loop_binary):
             pytest.skip("Test binary not available")
 
         mutated_path = tmp_path / "loop_fuzzed_args"
@@ -137,7 +137,7 @@ class TestRealValidation:
         """Test that mutations preserve program semantics."""
         self.check_platform()
 
-        if not simple_binary.exists():
+        if not ensure_exists(simple_binary):
             pytest.skip("Test binary not available")
 
         mutated_path = tmp_path / "simple_semantics"

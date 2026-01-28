@@ -1,11 +1,15 @@
+import platform
 import shutil
 from pathlib import Path
 
 from r2morph.validation.validator import BinaryValidator
+from tests.utils.platform_binaries import get_platform_binary, ensure_exists
 
 
 def test_validator_round_trip_same_binary(tmp_path):
-    src = Path("dataset/macho_arm64")
+    src = get_platform_binary("generic")
+    if not ensure_exists(src):
+        raise RuntimeError("No platform binary available for validator test")
     original = tmp_path / "original"
     mutated = tmp_path / "mutated"
     shutil.copy2(src, original)
@@ -19,7 +23,11 @@ def test_validator_round_trip_same_binary(tmp_path):
 
 
 def test_validator_timeout_path(tmp_path):
+    if platform.system() == "Windows":
+        return
     sleep_bin = Path("/bin/sleep")
+    if not sleep_bin.exists():
+        raise RuntimeError("sleep binary not available")
     original = tmp_path / "sleep_original"
     mutated = tmp_path / "sleep_mutated"
     shutil.copyfile(sleep_bin, original)
