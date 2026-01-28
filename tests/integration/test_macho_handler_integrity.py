@@ -45,5 +45,7 @@ def test_codesigner_adhoc_missing_identity():
 
     if platform.system() == "Darwin":
         assert result is False
+    elif platform.system() == "Windows":
+        assert result is False
     else:
         assert result is True

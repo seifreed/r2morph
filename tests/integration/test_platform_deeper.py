@@ -1,3 +1,4 @@
+import platform
 import shutil
 from pathlib import Path
 
@@ -37,6 +38,8 @@ def test_pe_handler_checksum(tmp_path: Path):
 
 
 def test_macho_handler_repair_and_codesign(tmp_path: Path):
+    if platform.system() != "Darwin":
+        return
     binary_path = _copy_binary(tmp_path, Path("dataset/macho_arm64"), "macho_tmp")
     handler = MachOHandler(binary_path)
 

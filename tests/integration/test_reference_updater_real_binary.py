@@ -45,8 +45,10 @@ def test_reference_updater_updates_call_jump_and_data(tmp_path):
         call_addr = base_addr
         jmp_addr = base_addr + 5
 
-        assert bin_obj.write_instruction(call_addr, "call +0") is True
-        assert bin_obj.write_instruction(jmp_addr, "jmp +0") is True
+        call_bytes = b"\xE8\x00\x00\x00\x00"
+        jmp_bytes = b"\xE9\x00\x00\x00\x00"
+        assert bin_obj.write_bytes(call_addr, call_bytes) is True
+        assert bin_obj.write_bytes(jmp_addr, jmp_bytes) is True
 
         call_info = bin_obj.r2.cmdj(f"aoj 1 @ 0x{call_addr:x}") or []
         jmp_info = bin_obj.r2.cmdj(f"aoj 1 @ 0x{jmp_addr:x}") or []

@@ -238,6 +238,7 @@ class VMHandlerAnalyzer:
             ptr_size = arch_info["bits"] // 8
             
             entries = []
+            max_addr = (1 << arch_info["bits"]) - 1 if arch_info["bits"] >= 32 else 0xFFFFFFFF
             for i in range(0, min(256, 64) * ptr_size, ptr_size):  # Check up to 64 entries
                 try:
                     entry_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ {table_addr + i}")
@@ -251,7 +252,7 @@ class VMHandlerAnalyzer:
                     entries.append(entry)
                     
                     # Stop if we hit a clearly invalid address
-                    if entry == 0 or entry > 0x7fffffff:
+                    if entry == 0 or entry > max_addr:
                         break
 
                 except Exception as e:
@@ -306,6 +307,7 @@ class VMHandlerAnalyzer:
             ptr_size = arch_info["bits"] // 8
             
             # Read table entries
+            max_addr = (1 << arch_info["bits"]) - 1 if arch_info["bits"] >= 32 else 0xFFFFFFFF
             for i in range(0, 256 * ptr_size, ptr_size):  # Up to 256 handlers
                 try:
                     entry_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ {table_addr + i}")
@@ -317,7 +319,7 @@ class VMHandlerAnalyzer:
                     entry = int.from_bytes(entry_bytes, 'little')
                     
                     # Stop at null or invalid entries
-                    if entry == 0 or entry > 0x7fffffff:
+                    if entry == 0 or entry > max_addr:
                         break
                     
                     if self._is_valid_code_address(entry):

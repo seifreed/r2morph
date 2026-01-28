@@ -1,6 +1,11 @@
 from pathlib import Path
 
+import importlib.util
+import pytest
 import claripy
+
+if importlib.util.find_spec("angr") is None:
+    pytest.skip("angr not available", allow_module_level=True)
 
 from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import ControlFlowGraph, BasicBlock

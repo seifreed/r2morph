@@ -2,7 +2,14 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.instrumentation.frida_engine import FridaEngine, InstrumentationMode
+from r2morph.instrumentation.frida_engine import (
+    FridaEngine,
+    InstrumentationMode,
+    FRIDA_AVAILABLE,
+)
+
+if not FRIDA_AVAILABLE:
+    pytest.skip("Frida not available", allow_module_level=True)
 
 
 def test_frida_engine_unsupported_mode():

@@ -1,4 +1,9 @@
-from r2morph.instrumentation.frida_engine import FridaEngine
+import pytest
+
+from r2morph.instrumentation.frida_engine import FridaEngine, FRIDA_AVAILABLE
+
+if not FRIDA_AVAILABLE:
+    pytest.skip("Frida not available", allow_module_level=True)
 
 
 def test_frida_engine_on_script_message_types():

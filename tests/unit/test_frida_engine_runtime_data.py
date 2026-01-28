@@ -2,7 +2,10 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.instrumentation.frida_engine import FridaEngine
+from r2morph.instrumentation.frida_engine import FridaEngine, FRIDA_AVAILABLE
+
+if not FRIDA_AVAILABLE:
+    pytest.skip("Frida not available", allow_module_level=True)
 
 
 @pytest.mark.parametrize("msg_type", ["api_call", "anti_debug", "vm_detection", "timing_check", "memory_operation"])

@@ -114,15 +114,17 @@ class ResultCache:
     
     def __init__(self, max_size: int = 1000):
         self.cache: dict[str, Any] = {}
-        self.access_times: dict[str, float] = {}
+        self.access_times: dict[str, int] = {}
         self.max_size = max_size
         self.hits = 0
         self.misses = 0
+        self._access_counter = 0
     
     def get(self, key: str) -> Any | None:
         """Get cached result."""
         if key in self.cache:
-            self.access_times[key] = time.monotonic_ns()
+            self._access_counter += 1
+            self.access_times[key] = self._access_counter
             self.hits += 1
             return self.cache[key]
         
@@ -135,7 +137,8 @@ class ResultCache:
             self._evict_lru()
         
         self.cache[key] = value
-        self.access_times[key] = time.monotonic_ns()
+        self._access_counter += 1
+        self.access_times[key] = self._access_counter
     
     def _evict_lru(self):
         """Evict least recently used item."""

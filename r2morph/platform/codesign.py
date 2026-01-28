@@ -5,6 +5,7 @@ Code signing utilities for different platforms.
 import logging
 import platform
 import subprocess
+import shutil
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -157,6 +158,10 @@ class CodeSigner:
                 logger.warning("No signing identity provided for Windows")
                 return False
 
+            if shutil.which("signtool") is None:
+                logger.warning("signtool not available on PATH")
+                return False
+
             cmd = [
                 "signtool",
                 "sign",
@@ -178,7 +183,7 @@ class CodeSigner:
                 logger.error(f"Signing failed: {result.stderr}")
                 return False
 
-        except subprocess.SubprocessError as e:
+        except (subprocess.SubprocessError, FileNotFoundError) as e:
             logger.error(f"Failed to sign binary: {e}")
             return False
 
@@ -217,6 +222,10 @@ class CodeSigner:
     def _verify_windows(self, binary_path: Path) -> bool:
         """Verify Windows code signature."""
         try:
+            if shutil.which("signtool") is None:
+                logger.warning("signtool not available on PATH")
+                return False
+
             result = subprocess.run(
                 ["signtool", "verify", "/pa", str(binary_path)],
                 capture_output=True,
@@ -226,7 +235,7 @@ class CodeSigner:
 
             return result.returncode == 0
 
-        except subprocess.SubprocessError:
+        except (subprocess.SubprocessError, FileNotFoundError):
             return False
 
     def remove_signature(self, binary_path: Path) -> bool:

@@ -3,6 +3,7 @@ Real integration tests for platform modules.
 """
 
 import importlib.util
+import platform
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,8 @@ class TestCodeSigner:
 
     def test_check_signature(self, ls_macos):
         """Test checking code signature."""
+        if platform.system() != "Darwin":
+            pytest.skip("codesign tests require macOS")
         if not ls_macos.exists():
             pytest.skip("macOS binary not available")
 
@@ -45,6 +48,8 @@ class TestCodeSigner:
 
     def test_is_signed(self, ls_macos):
         """Test checking if binary is signed."""
+        if platform.system() != "Darwin":
+            pytest.skip("codesign tests require macOS")
         if not ls_macos.exists():
             pytest.skip("macOS binary not available")
 
@@ -54,6 +59,8 @@ class TestCodeSigner:
 
     def test_needs_signing(self, ls_macos, tmp_path):
         """Test checking if morphed binary needs signing."""
+        if platform.system() != "Darwin":
+            pytest.skip("codesign tests require macOS")
         if not ls_macos.exists():
             pytest.skip("macOS binary not available")
 
@@ -71,6 +78,8 @@ class TestCodeSigner:
 
     def test_sign_binary(self, ls_macos, tmp_path):
         """Test signing a binary."""
+        if platform.system() != "Darwin":
+            pytest.skip("codesign tests require macOS")
         if not ls_macos.exists():
             pytest.skip("macOS binary not available")
 

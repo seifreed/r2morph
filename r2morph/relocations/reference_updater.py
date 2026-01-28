@@ -66,10 +66,7 @@ class ReferenceUpdater:
             if "rel" in jump_type.lower() or "cjmp" in jump_type.lower():
                 new_offset = new_target - (jump_addr + size)
 
-                if new_offset >= 0:
-                    new_insn = f"{mnemonic} +{new_offset}"
-                else:
-                    new_insn = f"{mnemonic} {new_offset}"
+                new_insn = f"{mnemonic} {new_offset}"
 
                 new_bytes = self.binary.assemble(new_insn)
 
@@ -131,10 +128,7 @@ class ReferenceUpdater:
             if "rel" in call_type.lower() or "call" in call_type.lower():
                 new_offset = new_target - (call_addr + size)
 
-                if new_offset >= 0:
-                    new_insn = f"call +{new_offset}"
-                else:
-                    new_insn = f"call {new_offset}"
+                new_insn = f"call {new_offset}"
 
                 new_bytes = self.binary.assemble(new_insn)
 

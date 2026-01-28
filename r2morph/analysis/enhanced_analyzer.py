@@ -425,8 +425,8 @@ class EnhancedAnalysisOrchestrator:
         self.output_dir.mkdir(exist_ok=True)
         report_path = self.output_dir / "analysis_report.json"
 
-        with open(report_path, 'w') as f:
-            json.dump(report, f, indent=2, default=str)
+        with open(report_path, "w", encoding="utf-8") as f:
+            json.dump(report, f, indent=2, default=str, ensure_ascii=False)
 
         self.console.print(f"Report saved to {report_path}")
         return report_path

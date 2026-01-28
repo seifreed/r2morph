@@ -177,7 +177,7 @@ class DiffAnalyzer:
         result = "\n".join(viz)
 
         if output_file:
-            output_file.write_text(result)
+            output_file.write_text(result, encoding="utf-8")
             logger.info(f"Saved visualization to {output_file}")
 
         return result
@@ -298,5 +298,5 @@ class DiffAnalyzer:
         report.append(self.visualize_changes())
         report.append("\n```\n")
 
-        output_file.write_text("".join(report))
+        output_file.write_text("".join(report), encoding="utf-8")
         logger.info(f"Generated report: {output_file}")
