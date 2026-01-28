@@ -8,7 +8,7 @@ by radare2.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import angr
@@ -57,9 +57,9 @@ class AngrBridge:
             
         self.binary = binary
         self.auto_load_libs = auto_load_libs
-        self._angr_project: Optional[Any] = None
-        self._r2_to_angr_mapping: Dict[int, int] = {}
-        self._angr_to_r2_mapping: Dict[int, int] = {}
+        self._angr_project: Any | None = None
+        self._r2_to_angr_mapping: dict[int, int] = {}
+        self._angr_to_r2_mapping: dict[int, int] = {}
         
     @property
     def angr_project(self) -> Any:
@@ -115,7 +115,7 @@ class AngrBridge:
         
         return any(pattern in func_name.lower() for pattern in excluded_patterns)
     
-    def convert_r2_cfg_to_angr(self, r2_cfg: ControlFlowGraph) -> Optional[Any]:
+    def convert_r2_cfg_to_angr(self, r2_cfg: ControlFlowGraph) -> Any | None:
         """
         Convert r2 CFG to angr CFG format.
         
@@ -156,9 +156,9 @@ class AngrBridge:
                 self._r2_to_angr_mapping[r2_addr] = r2_addr
                 self._angr_to_r2_mapping[r2_addr] = r2_addr
     
-    def create_symbolic_state(self, 
-                            address: int, 
-                            concrete_values: Optional[Dict[str, Any]] = None) -> Optional[Any]:
+    def create_symbolic_state(self,
+                            address: int,
+                            concrete_values: dict[str, Any] | None = None) -> Any | None:
         """
         Create symbolic state for analysis at given address.
         
@@ -205,7 +205,7 @@ class AngrBridge:
             addr = stack_base + offset
             state.memory.store(addr, state.solver.BVS(f"stack_{offset:x}", 64))
     
-    def get_function_boundaries(self, function_addr: int) -> Tuple[int, int]:
+    def get_function_boundaries(self, function_addr: int) -> tuple[int, int]:
         """
         Get function start and end addresses from angr analysis.
         

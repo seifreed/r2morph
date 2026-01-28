@@ -9,7 +9,7 @@ for analyzing obfuscated binaries.
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Callable
+from typing import Any
 import time
 import heapq
 
@@ -76,13 +76,13 @@ class StateManager:
         self.scheduling_strategy = scheduling_strategy
         
         # State storage
-        self.active_states: Dict[int, Any] = {}
-        self.state_metrics: Dict[int, StateMetrics] = {}
-        self.state_priority_queue: List[tuple] = []  # (priority, state_id)
+        self.active_states: dict[int, Any] = {}
+        self.state_metrics: dict[int, StateMetrics] = {}
+        self.state_priority_queue: list[tuple] = []  # (priority, state_id)
         
         # Coverage tracking
-        self.global_coverage: Set[int] = set()
-        self.state_coverage: Dict[int, Set[int]] = {}
+        self.global_coverage: set[int] = set()
+        self.state_coverage: dict[int, set[int]] = {}
         
         # Performance metrics
         self.states_created = 0
@@ -124,10 +124,10 @@ class StateManager:
         logger.debug(f"Added state {state_id} with priority {priority}")
         return state_id
     
-    def get_next_state(self) -> Optional[tuple[int, Any]]:
+    def get_next_state(self) -> tuple[int, Any] | None:
         """
         Get next state for execution based on scheduling strategy.
-        
+
         Returns:
             Tuple of (state_id, state) or None if no states available
         """
@@ -144,8 +144,12 @@ class StateManager:
             return self._get_shallowest_state()
         else:
             return self._get_random_state()
+
+    def get_active_states(self) -> list[Any]:
+        """Return a list of currently active states."""
+        return list(self.active_states.values())
     
-    def _get_highest_priority_state(self) -> Optional[tuple[int, Any]]:
+    def _get_highest_priority_state(self) -> tuple[int, Any] | None:
         """Get state with highest priority."""
         while self.state_priority_queue:
             neg_priority, state_id = heapq.heappop(self.state_priority_queue)
@@ -156,7 +160,7 @@ class StateManager:
                 
         return None
     
-    def _get_best_coverage_state(self) -> Optional[tuple[int, Any]]:
+    def _get_best_coverage_state(self) -> tuple[int, Any] | None:
         """Get state that is likely to increase coverage."""
         best_state_id = None
         best_score = -1
@@ -176,7 +180,7 @@ class StateManager:
             
         return None
     
-    def _get_deepest_state(self) -> Optional[tuple[int, Any]]:
+    def _get_deepest_state(self) -> tuple[int, Any] | None:
         """Get deepest state for depth-first exploration."""
         deepest_id = None
         max_depth = -1
@@ -191,7 +195,7 @@ class StateManager:
             return deepest_id, self.active_states[deepest_id]
         return None
     
-    def _get_shallowest_state(self) -> Optional[tuple[int, Any]]:
+    def _get_shallowest_state(self) -> tuple[int, Any] | None:
         """Get shallowest state for breadth-first exploration."""
         shallowest_id = None
         min_depth = float('inf')
@@ -206,7 +210,7 @@ class StateManager:
             return shallowest_id, self.active_states[shallowest_id]
         return None
     
-    def _get_random_state(self) -> Optional[tuple[int, Any]]:
+    def _get_random_state(self) -> tuple[int, Any] | None:
         """Get random state."""
         import random
         
@@ -215,10 +219,10 @@ class StateManager:
             return state_id, self.active_states[state_id]
         return None
     
-    def update_state_coverage(self, state_id: int, new_blocks: Set[int]):
+    def update_state_coverage(self, state_id: int, new_blocks: set[int]):
         """
         Update coverage information for a state.
-        
+
         Args:
             state_id: State identifier
             new_blocks: Set of newly covered basic blocks
@@ -337,7 +341,7 @@ class StateManager:
             return 0
             
         # Group states by program counter
-        pc_groups: Dict[int, List[int]] = {}
+        pc_groups: dict[int, list[int]] = {}
         
         for state_id, state in self.active_states.items():
             try:
@@ -359,13 +363,13 @@ class StateManager:
         self.states_merged += merged_count
         return merged_count
     
-    def _try_merge_states_at_pc(self, state_ids: List[int]) -> int:
+    def _try_merge_states_at_pc(self, state_ids: list[int]) -> int:
         """
         Try to merge states at the same program counter.
-        
+
         Args:
             state_ids: List of state IDs at same PC
-            
+
         Returns:
             Number of states successfully merged
         """
@@ -394,7 +398,7 @@ class StateManager:
         
         return merged_count
     
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> dict[str, Any]:
         """Get state management statistics."""
         return {
             "active_states": len(self.active_states),

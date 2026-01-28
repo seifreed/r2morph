@@ -3,7 +3,6 @@ Hot path detection for performance-aware mutations.
 """
 
 import logging
-from typing import List
 
 from r2morph.core.binary import Binary
 

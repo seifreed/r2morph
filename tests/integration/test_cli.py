@@ -3,6 +3,8 @@ Integration tests for CLI.
 """
 
 import subprocess
+import sys
+import importlib.util
 from pathlib import Path
 
 import pytest
@@ -20,15 +22,22 @@ except ImportError:
 class TestCLI:
     """Tests for r2morph CLI."""
 
+    @pytest.fixture(autouse=True)
+    def _require_r2pipe(self):
+        if importlib.util.find_spec("r2pipe") is None:
+            pytest.skip("r2pipe not installed")
+        if importlib.util.find_spec("yaml") is None:
+            pytest.skip("pyyaml not installed")
+
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_cli_help(self):
         """Test CLI help command."""
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "--help"],
+            [sys.executable, "-m", "r2morph.cli", "--help"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -40,7 +49,7 @@ class TestCLI:
     def test_cli_version(self):
         """Test CLI version command."""
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "--version"],
+            [sys.executable, "-m", "r2morph.cli", "--version"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -57,7 +66,7 @@ class TestCLI:
 
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "-i",
@@ -78,7 +87,7 @@ class TestCLI:
             pytest.skip("ELF binary not available")
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "analyze", str(ls_elf)],
+            [sys.executable, "-m", "r2morph.cli", "analyze", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -95,7 +104,7 @@ class TestCLI:
 
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "-i",
@@ -120,7 +129,7 @@ class TestCLI:
 
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "-i",
@@ -144,7 +153,7 @@ class TestCLI:
 
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "morph",
@@ -162,7 +171,7 @@ class TestCLI:
         if output_path.exists():
             validate_result = subprocess.run(
                 [
-                    "python3",
+                    sys.executable,
                     "-m",
                     "r2morph.cli",
                     "validate",
@@ -185,7 +194,7 @@ class TestCLI:
 
         subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "morph",
@@ -203,7 +212,7 @@ class TestCLI:
         if output_path.exists():
             diff_result = subprocess.run(
                 [
-                    "python3",
+                    sys.executable,
                     "-m",
                     "r2morph.cli",
                     "diff",

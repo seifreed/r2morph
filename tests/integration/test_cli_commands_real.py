@@ -2,10 +2,17 @@
 Real integration tests for CLI commands using dataset binaries.
 """
 
+import importlib.util
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
 class TestCLICommandsReal:
@@ -14,12 +21,12 @@ class TestCLICommandsReal:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls_macOS"
+        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
 
     def test_simple_mode_basic(self, ls_elf, tmp_path):
         """Test simple mode with basic usage."""
@@ -28,7 +35,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_out"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -42,7 +49,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_verbose"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-v", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-v", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -56,7 +63,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_debug"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-d", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-d", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -70,7 +77,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_force"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-f", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-f", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -84,7 +91,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_all_flags"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-a", "-f", "-v", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-a", "-f", "-v", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -97,7 +104,7 @@ class TestCLICommandsReal:
             pytest.skip("ELF binary not available")
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "analyze", str(ls_elf)],
+            [sys.executable, "-m", "r2morph.cli", "analyze", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -110,7 +117,7 @@ class TestCLICommandsReal:
             pytest.skip("ELF binary not available")
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "functions", str(ls_elf)],
+            [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -123,7 +130,7 @@ class TestCLICommandsReal:
             pytest.skip("ELF binary not available")
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "functions", str(ls_elf), "--limit", "10"],
+            [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf), "--limit", "10"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -138,7 +145,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_morph_out"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -153,7 +160,7 @@ class TestCLICommandsReal:
         output = tmp_path / "ls_all_mut"
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "morph",
@@ -180,7 +187,7 @@ class TestCLICommandsReal:
     def test_version(self):
         """Test version command."""
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "--version"],
+            [sys.executable, "-m", "r2morph.cli", "--version"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -195,7 +202,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_macos_out"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", str(ls_macos), str(output)],
+            [sys.executable, "-m", "r2morph.cli", str(ls_macos), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -208,7 +215,7 @@ class TestCLICommandsReal:
         output = tmp_path / "output"
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", str(nonexistent), str(output)],
+            [sys.executable, "-m", "r2morph.cli", str(nonexistent), str(output)],
             capture_output=True,
             text=True,
             timeout=10,

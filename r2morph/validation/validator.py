@@ -6,7 +6,7 @@ import logging
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +31,18 @@ class ValidationResult:
             f"Output similarity: {self.similarity_score:.1f}%\n"
             f"Errors: {len(self.errors)}"
         )
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize the validation result to a dict."""
+        return {
+            "passed": self.passed,
+            "original_output": self.original_output,
+            "mutated_output": self.mutated_output,
+            "original_exitcode": self.original_exitcode,
+            "mutated_exitcode": self.mutated_exitcode,
+            "errors": list(self.errors),
+            "similarity_score": self.similarity_score,
+        }
 
 
 class BinaryValidator:
@@ -191,7 +203,7 @@ class BinaryValidator:
             return {"stdout": "", "stderr": str(e), "exitcode": -2}
 
     def _calculate_similarity(
-        self, original_outputs: list[dict], mutated_outputs: list[Dict]
+        self, original_outputs: list[dict], mutated_outputs: list[dict]
     ) -> float:
         """
         Calculate similarity percentage between outputs.

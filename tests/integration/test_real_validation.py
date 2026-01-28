@@ -2,10 +2,19 @@
 Real integration tests for validation using compiled binaries.
 """
 
+import importlib.util
 import platform
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
+pytest.importorskip("yaml")
 
 from r2morph import MorphEngine
 from r2morph.mutations import InstructionSubstitutionPass, NopInsertionPass
@@ -27,9 +36,8 @@ class TestRealValidation:
         return Path(__file__).parent.parent / "fixtures" / "loop"
 
     def check_platform(self):
-        """Skip tests on macOS due to ARM64 binary complexity."""
-        if platform.system() == "Darwin":
-            pytest.skip("Real validation tests skipped on macOS (ARM64 binary complexity)")
+        """No-op platform check."""
+        return
 
     def test_validator_with_real_binaries(self, simple_binary, tmp_path):
         """Test validator with real original and mutated binaries."""

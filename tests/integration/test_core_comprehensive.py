@@ -5,6 +5,14 @@ Comprehensive real tests for core modules.
 from pathlib import Path
 
 import pytest
+import importlib.util
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
 
 from r2morph.core.binary import Binary
 from r2morph.core.function import Function
@@ -19,7 +27,7 @@ class TestBinaryComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_binary_context_manager(self, ls_elf):
         """Test binary as context manager."""
@@ -256,7 +264,7 @@ class TestPipelineComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_pipeline_init(self):
         """Test Pipeline initialization."""

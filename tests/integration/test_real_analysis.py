@@ -5,6 +5,14 @@ Real integration tests for analysis modules.
 from pathlib import Path
 
 import pytest
+import importlib.util
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
 
 from r2morph.analysis.analyzer import BinaryAnalyzer
 from r2morph.analysis.cfg import CFGBuilder

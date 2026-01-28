@@ -10,10 +10,10 @@ ARM64_EXPANSION_PATTERNS = {
         ["eor x0, x0, x0", "add x0, x0, #%d"],
     ],
     "add x0, x0, #%d": [
-        ["add x0, x0, #1"] * None,
+        ["add x0, x0, #1"],
     ],
     "sub x0, x0, #%d": [
-        ["sub x0, x0, #1"] * None,
+        ["sub x0, x0, #1"],
     ],
     "nop": [
         ["mov x0, x0"],
@@ -59,10 +59,10 @@ ARM32_EXPANSION_PATTERNS = {
         ["eor r0, r0, r0", "add r0, r0, #%d"],
     ],
     "add r0, r0, #%d": [
-        ["add r0, r0, #1"] * None,
+        ["add r0, r0, #1"],
     ],
     "sub r0, r0, #%d": [
-        ["sub r0, r0, #1"] * None,
+        ["sub r0, r0, #1"],
     ],
     "nop": [
         ["mov r0, r0"],
@@ -116,10 +116,10 @@ ARM_THUMB_EXPANSION_PATTERNS = {
         ["eors r0, r0", "adds r0, #%d"],
     ],
     "adds r0, #%d": [
-        ["adds r0, #1"] * None,
+        ["adds r0, #1"],
     ],
     "subs r0, #%d": [
-        ["subs r0, #1"] * None,
+        ["subs r0, #1"],
     ],
     "nop": [
         ["movs r0, r0"],

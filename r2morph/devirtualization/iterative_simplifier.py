@@ -17,7 +17,7 @@ Key Features:
 import logging
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple, Any, Callable
+from typing import Any
 from enum import Enum
 import concurrent.futures
 from abc import ABC, abstractmethod
@@ -74,26 +74,26 @@ class SimplificationResult:
     """Result of iterative simplification."""
     success: bool
     strategy_used: SimplificationStrategy
-    phases_completed: List[SimplificationPhase] = field(default_factory=list)
+    phases_completed: list[SimplificationPhase] = field(default_factory=list)
     metrics: SimplificationMetrics = field(default_factory=SimplificationMetrics)
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    intermediate_results: Dict[str, Any] = field(default_factory=dict)
-    final_binary: Optional[bytes] = None
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    intermediate_results: dict[str, Any] = field(default_factory=dict)
+    final_binary: bytes | None = None
 
 
 class SimplificationPass(ABC):
     """Abstract base class for simplification passes."""
     
     @abstractmethod
-    def apply(self, binary, context: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+    def apply(self, binary, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """
         Apply the simplification pass.
-        
+
         Args:
             binary: Binary object to simplify
             context: Context information from previous passes
-            
+
         Returns:
             Tuple of (changes_made, updated_context)
         """
@@ -113,7 +113,7 @@ class CFOSimplificationPass(SimplificationPass):
         if CFOSimplifier:
             self.cfo_simplifier = CFOSimplifier()
     
-    def apply(self, binary, context: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+    def apply(self, binary, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """Apply CFO simplification."""
         if not self.cfo_simplifier:
             return False, context
@@ -148,7 +148,7 @@ class MBASimplificationPass(SimplificationPass):
         if MBASolver:
             self.mba_solver = MBASolver()
     
-    def apply(self, binary, context: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+    def apply(self, binary, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """Apply MBA simplification."""
         if not self.mba_solver:
             return False, context
@@ -182,7 +182,7 @@ class VMDevirtualizationPass(SimplificationPass):
         if VMHandlerAnalyzer:
             self.vm_analyzer = VMHandlerAnalyzer(None)
     
-    def apply(self, binary, context: Dict[str, Any]) -> Tuple[bool, Dict[str, Any]]:
+    def apply(self, binary, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """Apply VM devirtualization."""
         if not self.vm_analyzer:
             return False, context
@@ -360,7 +360,7 @@ class IterativeSimplifier:
                 metrics=self.metrics
             )
     
-    def _analyze_binary(self) -> Dict[str, Any]:
+    def _analyze_binary(self) -> dict[str, Any]:
         """Analyze the binary to gather initial information."""
         context = {
             'functions': [],
@@ -385,7 +385,7 @@ class IterativeSimplifier:
         
         return context
     
-    def _preprocess_binary(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _preprocess_binary(self, context: dict[str, Any]) -> dict[str, Any]:
         """Preprocess the binary for simplification."""
         try:
             # Identify obfuscation patterns
@@ -409,7 +409,7 @@ class IterativeSimplifier:
         
         return context
     
-    def _apply_passes_sequential(self, context: Dict[str, Any]) -> bool:
+    def _apply_passes_sequential(self, context: dict[str, Any]) -> bool:
         """Apply simplification passes sequentially."""
         iteration_changes = False
         
@@ -425,7 +425,7 @@ class IterativeSimplifier:
         
         return iteration_changes
     
-    def _apply_passes_parallel(self, context: Dict[str, Any]) -> bool:
+    def _apply_passes_parallel(self, context: dict[str, Any]) -> bool:
         """Apply simplification passes in parallel."""
         iteration_changes = False
         
@@ -450,7 +450,7 @@ class IterativeSimplifier:
         
         return iteration_changes
     
-    def _calculate_complexity(self, context: Dict[str, Any]) -> float:
+    def _calculate_complexity(self, context: dict[str, Any]) -> float:
         """Calculate current complexity metric."""
         try:
             # Simple complexity metric based on various factors
@@ -489,7 +489,7 @@ class IterativeSimplifier:
         
         logger.debug(f"Adjusted convergence threshold to {self.convergence_threshold}")
     
-    def _create_checkpoint(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _create_checkpoint(self, context: dict[str, Any]) -> dict[str, Any]:
         """Create a checkpoint of the current state."""
         return {
             'iteration': self.metrics.iteration,
@@ -498,7 +498,7 @@ class IterativeSimplifier:
             'metrics': self.metrics
         }
     
-    def _update_metrics(self, context: Dict[str, Any]):
+    def _update_metrics(self, context: dict[str, Any]):
         """Update simplification metrics."""
         # Count various improvements
         cfo_results = context.get('cfo_results', [])
@@ -513,7 +513,7 @@ class IterativeSimplifier:
         current = self._calculate_complexity(context)
         self.metrics.complexity_reduction = (initial - current) / initial
     
-    def _optimize_result(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _optimize_result(self, context: dict[str, Any]) -> dict[str, Any]:
         """Perform final optimizations."""
         try:
             # Remove redundant information
@@ -528,7 +528,7 @@ class IterativeSimplifier:
         
         return context
     
-    def _validate_result(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def _validate_result(self, context: dict[str, Any]) -> dict[str, Any]:
         """Validate the simplification result."""
         validation = {
             'valid': True,
@@ -550,7 +550,7 @@ class IterativeSimplifier:
         
         return validation
     
-    def _find_vm_dispatchers(self) -> List[int]:
+    def _find_vm_dispatchers(self) -> list[int]:
         """Find VM dispatcher addresses."""
         try:
             # Simple heuristic - look for functions with many successors
@@ -570,7 +570,7 @@ class IterativeSimplifier:
         except Exception:
             return []
     
-    def _extract_mba_expressions(self) -> List[str]:
+    def _extract_mba_expressions(self) -> list[str]:
         """Extract MBA expressions from the binary."""
         try:
             # Instruction analysis for MBA expression detection
@@ -599,7 +599,7 @@ class IterativeSimplifier:
             logger.error(f"Rollback failed: {e}")
             return False
     
-    def get_progress_report(self) -> Dict[str, Any]:
+    def get_progress_report(self) -> dict[str, Any]:
         """Get current progress report."""
         return {
             'iteration': self.metrics.iteration,

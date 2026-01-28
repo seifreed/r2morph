@@ -10,7 +10,7 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 
 try:
     import z3
@@ -36,11 +36,11 @@ class MBAExpression:
     """Represents an MBA expression with metadata."""
     
     expression: str
-    variables: Set[str] = field(default_factory=set)
+    variables: set[str] = field(default_factory=set)
     bit_width: int = 64
     complexity: MBAComplexity = MBAComplexity.UNKNOWN
-    original_form: Optional[str] = None
-    simplified_form: Optional[str] = None
+    original_form: str | None = None
+    simplified_form: str | None = None
     is_linear: bool = False
     degree: int = 0
     coefficient_count: int = 0
@@ -52,12 +52,12 @@ class SimplificationResult:
     
     success: bool = False
     original_expression: str = ""
-    simplified_expression: Optional[str] = None
+    simplified_expression: str | None = None
     complexity_reduction: float = 0.0
     solving_time: float = 0.0
     method_used: str = "unknown"
     confidence: float = 0.0
-    equivalent_native: Optional[str] = None
+    equivalent_native: str | None = None
 
 
 class MBASolver:
@@ -94,7 +94,7 @@ class MBASolver:
             "z3_simplifications": 0,
         }
     
-    def _load_mba_patterns(self) -> Dict[str, str]:
+    def _load_mba_patterns(self) -> dict[str, str]:
         """Load known MBA patterns and their simplified forms."""
         patterns = {
             # Linear MBA patterns
@@ -148,7 +148,7 @@ class MBASolver:
         
         return mba
     
-    def _extract_variables(self, expression: str) -> Set[str]:
+    def _extract_variables(self, expression: str) -> set[str]:
         """Extract variable names from expression."""
         # Simple regex to find variable-like tokens
         import re
@@ -292,7 +292,7 @@ class MBASolver:
         result.solving_time = time.time() - start_time
         return result
     
-    def _simplify_with_patterns(self, expression: str) -> Optional[str]:
+    def _simplify_with_patterns(self, expression: str) -> str | None:
         """Simplify using pattern matching."""
         simplified = expression
         
@@ -314,7 +314,7 @@ class MBASolver:
         
         return simplified if simplified != expression else None
     
-    def _simplify_with_z3(self, mba: MBAExpression) -> Optional[str]:
+    def _simplify_with_z3(self, mba: MBAExpression) -> str | None:
         """Simplify using Z3 SMT solver."""
         if not Z3_AVAILABLE:
             return None
@@ -345,7 +345,7 @@ class MBASolver:
         
         return None
     
-    def _parse_expression_to_z3(self, expression: str, z3_vars: Dict[str, Any]) -> Optional[Any]:
+    def _parse_expression_to_z3(self, expression: str, z3_vars: dict[str, Any]) -> Any | None:
         """Parse expression to Z3 format (simplified implementation)."""
         if not Z3_AVAILABLE:
             return None
@@ -387,7 +387,7 @@ class MBASolver:
             logger.debug(f"Z3 parsing error: {e}")
             return None
     
-    def _parse_operand_to_z3(self, operand: str, z3_vars: Dict[str, Any]) -> Optional[Any]:
+    def _parse_operand_to_z3(self, operand: str, z3_vars: dict[str, Any]) -> Any | None:
         """Parse single operand to Z3."""
         operand = operand.strip()
         
@@ -414,7 +414,7 @@ class MBASolver:
         
         return cleaned.strip()
     
-    def _simplify_with_truth_table(self, mba: MBAExpression) -> Optional[str]:
+    def _simplify_with_truth_table(self, mba: MBAExpression) -> str | None:
         """Simplify using truth table analysis (for small expressions)."""
         if len(mba.variables) > self.max_variables:
             return None
@@ -440,7 +440,8 @@ class MBASolver:
                 try:
                     result = self._evaluate_expression(mba.expression, assignment)
                     truth_table[tuple(assignment[var] for var in variables)] = result
-                except:
+                except Exception as e:
+                    logger.debug(f"Expression evaluation failed: {e}")
                     return None
             
             # Try to find a simpler equivalent expression
@@ -451,7 +452,7 @@ class MBASolver:
             logger.debug(f"Truth table simplification error: {e}")
             return None
     
-    def _evaluate_expression(self, expression: str, assignment: Dict[str, int]) -> int:
+    def _evaluate_expression(self, expression: str, assignment: dict[str, int]) -> int:
         """Evaluate expression with given variable assignment."""
         # Replace variables with their values
         expr = expression
@@ -463,10 +464,11 @@ class MBASolver:
             # Simple evaluation for basic operators
             expr = expr.replace('&', ' & ').replace('|', ' | ').replace('^', ' ^ ')
             return eval(expr)
-        except:
+        except Exception as e:
+            logger.debug(f"Failed to evaluate expression '{expr}': {e}")
             return 0
     
-    def _find_simple_equivalent(self, truth_table: Dict[Tuple, int], variables: List[str]) -> Optional[str]:
+    def _find_simple_equivalent(self, truth_table: dict[tuple, int], variables: list[str]) -> str | None:
         """Find simple equivalent expression from truth table."""
         # Try simple patterns first
         
@@ -523,7 +525,7 @@ class MBASolver:
         reduction = (original_complexity - simplified_complexity) / original_complexity
         return max(0.0, reduction)
     
-    def _generate_native_equivalent(self, simplified_expr: str) -> Optional[str]:
+    def _generate_native_equivalent(self, simplified_expr: str) -> str | None:
         """Generate equivalent native assembly code."""
         # Map simple expressions to assembly
         if simplified_expr == "0":
@@ -543,7 +545,7 @@ class MBASolver:
         
         return None
     
-    def get_solver_statistics(self) -> Dict[str, Any]:
+    def get_solver_statistics(self) -> dict[str, Any]:
         """Get solver performance statistics."""
         total = self.stats["expressions_analyzed"]
         
@@ -556,3 +558,4 @@ class MBASolver:
             stats["pattern_success_rate"] = 0.0
         
         return stats
+

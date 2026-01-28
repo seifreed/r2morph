@@ -11,7 +11,7 @@ This module provides comprehensive testing capabilities including:
 import time
 import json
 import statistics
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Any
 from dataclasses import dataclass, asdict
 from pathlib import Path
 from enum import Enum
@@ -53,7 +53,7 @@ class PerformanceMetrics:
     cpu_usage_percent: float
     peak_memory_mb: float
     success: bool
-    error_message: Optional[str] = None
+    error_message: str | None = None
 
 
 @dataclass
@@ -74,7 +74,7 @@ class TestSample:
     """Represents a test sample with known characteristics."""
     file_path: str
     sample_hash: str
-    expected_packer: Optional[str]
+    expected_packer: str | None
     expected_vm_protection: bool
     expected_anti_analysis: bool
     expected_cfo: bool
@@ -107,8 +107,8 @@ class BenchmarkResult:
     sample: TestSample
     category: BenchmarkCategory
     performance: PerformanceMetrics
-    accuracy: Optional[AccuracyMetrics]
-    analysis_result: Dict[str, Any]
+    accuracy: AccuracyMetrics | None
+    analysis_result: dict[str, Any]
     timestamp: str
     r2morph_version: str
 
@@ -118,16 +118,16 @@ class ValidationFramework:
     Comprehensive validation framework for r2morph analysis capabilities.
     """
     
-    def __init__(self, test_data_dir: Optional[str] = None):
+    def __init__(self, test_data_dir: str | None = None):
         """
         Initialize the validation framework.
-        
+
         Args:
             test_data_dir: Directory containing test samples
         """
         self.test_data_dir = Path(test_data_dir) if test_data_dir else Path("dataset")
-        self.test_samples: List[TestSample] = []
-        self.benchmark_results: List[BenchmarkResult] = []
+        self.test_samples: list[TestSample] = []
+        self.benchmark_results: list[BenchmarkResult] = []
         
         # Load test samples
         self._load_test_samples()
@@ -204,7 +204,7 @@ class ValidationFramework:
         """Add a new test sample."""
         self.test_samples.append(sample)
     
-    def _measure_performance(self, func, *args, **kwargs) -> PerformanceMetrics:
+    def _measure_performance(self, func, *args, **kwargs) -> tuple[PerformanceMetrics, Any]:
         """
         Measure performance metrics for a function execution.
         
@@ -262,7 +262,7 @@ class ValidationFramework:
             error_message=error_message
         ), result
     
-    def _calculate_accuracy_metrics(self, expected: Dict[str, Any], actual: Dict[str, Any]) -> AccuracyMetrics:
+    def _calculate_accuracy_metrics(self, expected: dict[str, Any], actual: dict[str, Any]) -> AccuracyMetrics:
         """
         Calculate accuracy metrics by comparing expected vs actual results.
         
@@ -379,7 +379,8 @@ class ValidationFramework:
             BenchmarkResult
         """
         from r2morph import Binary
-        from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, SimplificationStrategy
+        from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier
+        from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
         
         def run_devirtualization():
             with Binary(sample.file_path) as bin_obj:
@@ -403,7 +404,7 @@ class ValidationFramework:
                 # Iterative Simplification
                 iterative_simplifier = IterativeSimplifier(bin_obj)
                 iter_result = iterative_simplifier.simplify(
-                    strategy=SimplificationStrategy.BALANCED,
+                    strategy=SimplificationStrategy.ADAPTIVE,
                     max_iterations=3,  # Reduced for benchmarking
                     timeout=30
                 )
@@ -441,7 +442,8 @@ class ValidationFramework:
         """
         from r2morph import Binary
         from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass
-        from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, SimplificationStrategy
+        from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier
+        from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
         
         def run_full_pipeline():
             with Binary(sample.file_path) as bin_obj:
@@ -474,7 +476,7 @@ class ValidationFramework:
                     # Iterative Simplification
                     iterative_simplifier = IterativeSimplifier(bin_obj)
                     iter_result = iterative_simplifier.simplify(
-                        strategy=SimplificationStrategy.FAST,
+                        strategy=SimplificationStrategy.CONSERVATIVE,
                         max_iterations=2,
                         timeout=20
                     )
@@ -528,7 +530,7 @@ class ValidationFramework:
             r2morph_version="2.0.0-phase2"
         )
     
-    def run_validation_suite(self, categories: Optional[List[BenchmarkCategory]] = None) -> Dict[str, Any]:
+    def run_validation_suite(self, categories: list[BenchmarkCategory] | None = None) -> dict[str, Any]:
         """
         Run the complete validation suite.
         
@@ -592,7 +594,26 @@ class ValidationFramework:
         
         return summary
     
-    def _generate_validation_summary(self, results: List[BenchmarkResult]) -> Dict[str, Any]:
+    def _calculate_percentile(self, values: list[float], percentile: int) -> float:
+        """
+        Calculate percentile from a list of values.
+
+        Args:
+            values: List of float values
+            percentile: Percentile to calculate (e.g., 95, 99)
+
+        Returns:
+            The percentile value, or max value if insufficient data, or 0.0 if empty
+        """
+        if not values:
+            return 0.0
+        n = 100 if percentile >= 99 else 20
+        index = (n * percentile) // 100 - 1
+        if len(values) >= n:
+            return statistics.quantiles(values, n=n)[index]
+        return max(values)
+
+    def _generate_validation_summary(self, results: list[BenchmarkResult]) -> dict[str, Any]:
         """Generate a summary of validation results."""
         if not results:
             return {
@@ -658,8 +679,8 @@ class ValidationFramework:
             'severity_breakdown': severity_breakdown,
             'execution_time_percentiles': {
                 'p50': statistics.median(execution_times) if execution_times else 0.0,
-                'p95': statistics.quantiles(execution_times, n=20)[18] if len(execution_times) >= 20 else (max(execution_times) if execution_times else 0.0),
-                'p99': statistics.quantiles(execution_times, n=100)[98] if len(execution_times) >= 100 else (max(execution_times) if execution_times else 0.0)
+                'p95': self._calculate_percentile(execution_times, 95),
+                'p99': self._calculate_percentile(execution_times, 99)
             }
         }
     

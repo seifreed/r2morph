@@ -14,10 +14,12 @@ Features:
 
 import logging
 import random
-from typing import Any, List
+from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.equivalences import load_equivalence_rules
 
 logger = logging.getLogger(__name__)
 
@@ -67,167 +69,21 @@ class InstructionSubstitutionPass(MutationPass):
 
         This method shuffles each equivalence group for randomness (r2morph-style re-seeding).
         Called after each successful mutation to ensure different patterns are used.
+
+        Rules are loaded from YAML files in the equivalences/ directory.
         """
+        # Load rules from YAML files for each supported architecture
         self.equivalence_groups = {
-            "x86": [
-                [
-                    "mov eax, 0",
-                    "xor eax, eax",
-                    "sub eax, eax",
-                    "push 0; pop eax",
-                ],
-                [
-                    "mov ebx, 0",
-                    "xor ebx, ebx",
-                    "sub ebx, ebx",
-                    "push 0; pop ebx",
-                ],
-                [
-                    "mov ecx, 0",
-                    "xor ecx, ecx",
-                    "sub ecx, ecx",
-                    "push 0; pop ecx",
-                ],
-                [
-                    "mov edx, 0",
-                    "xor edx, edx",
-                    "sub edx, edx",
-                    "push 0; pop edx",
-                ],
-                [
-                    "mov esi, 0",
-                    "xor esi, esi",
-                    "sub esi, esi",
-                    "push 0; pop esi",
-                ],
-                [
-                    "mov edi, 0",
-                    "xor edi, edi",
-                    "sub edi, edi",
-                    "push 0; pop edi",
-                ],
-                [
-                    "mov rax, 0",
-                    "xor rax, rax",
-                    "sub rax, rax",
-                    "xor eax, eax",
-                ],
-                [
-                    "mov rbx, 0",
-                    "xor rbx, rbx",
-                    "sub rbx, rbx",
-                    "xor ebx, ebx",
-                ],
-                [
-                    "mov rcx, 0",
-                    "xor rcx, rcx",
-                    "sub rcx, rcx",
-                    "xor ecx, ecx",
-                ],
-                [
-                    "mov rdx, 0",
-                    "xor rdx, rdx",
-                    "sub rdx, rdx",
-                    "xor edx, edx",
-                ],
-                [
-                    "mov rsi, 0",
-                    "xor rsi, rsi",
-                    "sub rsi, rsi",
-                    "xor esi, esi",
-                ],
-                [
-                    "mov rdi, 0",
-                    "xor rdi, rdi",
-                    "sub rdi, rdi",
-                    "xor edi, edi",
-                ],
-                ["mov eax, eax", "push eax; pop eax", "xchg eax, eax"],
-                ["mov ebx, ebx", "push ebx; pop ebx", "xchg ebx, ebx"],
-                ["mov ecx, ecx", "push ecx; pop ecx", "xchg ecx, ecx"],
-                ["mov edx, edx", "push edx; pop edx", "xchg edx, edx"],
-                ["mov esi, esi", "push esi; pop esi", "xchg esi, esi"],
-                ["mov edi, edi", "push edi; pop edi", "xchg edi, edi"],
-                ["mov rax, rax", "push rax; pop rax", "xchg rax, rax"],
-                ["mov rbx, rbx", "push rbx; pop rbx", "xchg rbx, rbx"],
-                ["mov rcx, rcx", "push rcx; pop rcx", "xchg rcx, rcx"],
-                ["mov rdx, rdx", "push rdx; pop rdx", "xchg rdx, rdx"],
-                [
-                    "mov eax, 1",
-                    "push 1; pop eax",
-                    "xor eax, eax; inc eax",
-                ],
-                [
-                    "mov ebx, 1",
-                    "push 1; pop ebx",
-                    "xor ebx, ebx; inc ebx",
-                ],
-                [
-                    "mov ecx, 1",
-                    "push 1; pop ecx",
-                    "xor ecx, ecx; inc ecx",
-                ],
-                [
-                    "mov edx, 1",
-                    "push 1; pop edx",
-                    "xor edx, edx; inc edx",
-                ],
-                ["test eax, eax", "or eax, eax"],
-                ["test ebx, ebx", "or ebx, ebx"],
-                ["test ecx, ecx", "or ecx, ecx"],
-                ["test edx, edx", "or edx, edx"],
-                ["test esi, esi", "or esi, esi"],
-                ["test edi, edi", "or edi, edi"],
-                ["test rax, rax", "or rax, rax"],
-                ["test rbx, rbx", "or rbx, rbx"],
-                ["test rcx, rcx", "or rcx, rcx"],
-                ["test rdx, rdx", "or rdx, rdx"],
-                ["xor eax, eax", "sub eax, eax"],
-                ["xor ebx, ebx", "sub ebx, ebx"],
-                ["xor ecx, ecx", "sub ecx, ecx"],
-                ["xor edx, edx", "sub edx, edx"],
-                ["xor esi, esi", "sub esi, esi"],
-                ["xor edi, edi", "sub edi, edi"],
-                ["xor rax, rax", "sub rax, rax"],
-                ["xor rbx, rbx", "sub rbx, rbx"],
-                ["xor rcx, rcx", "sub rcx, rcx"],
-                ["xor rdx, rdx", "sub rdx, rdx"],
-                ["add eax, 1", "inc eax"],
-                ["add ebx, 1", "inc ebx"],
-                ["add ecx, 1", "inc ecx"],
-                ["add edx, 1", "inc edx"],
-                ["add esi, 1", "inc esi"],
-                ["add edi, 1", "inc edi"],
-                ["add rax, 1", "inc rax"],
-                ["add rbx, 1", "inc rbx"],
-                ["add rcx, 1", "inc rcx"],
-                ["add rdx, 1", "inc rdx"],
-                ["sub eax, 1", "dec eax"],
-                ["sub ebx, 1", "dec ebx"],
-                ["sub ecx, 1", "dec ecx"],
-                ["sub edx, 1", "dec edx"],
-                ["sub esi, 1", "dec esi"],
-                ["sub edi, 1", "dec edi"],
-                ["sub rax, 1", "dec rax"],
-                ["sub rbx, 1", "dec rbx"],
-                ["sub rcx, 1", "dec rcx"],
-                ["sub rdx, 1", "dec rdx"],
-                ["push eax; pop eax", "nop"],
-                ["push ebx; pop ebx", "nop"],
-                ["push ecx; pop ecx", "nop"],
-                ["push edx; pop edx", "nop"],
-                ["push rax; pop rax", "nop"],
-                ["push rbx; pop rbx", "nop"],
-                ["push rcx; pop rcx", "nop"],
-                ["push rdx; pop rdx", "nop"],
-                ["nop", "xchg eax, eax", "xchg rax, rax"],
-            ]
+            "x86": load_equivalence_rules("x86"),
+            "arm": load_equivalence_rules("arm"),
         }
 
+        # Shuffle each group for randomness (r2morph-style re-seeding)
         for arch in self.equivalence_groups:
             for group in self.equivalence_groups[arch]:
                 random.shuffle(group)
 
+        # Build pattern-to-group lookup table
         self.pattern_to_group = {}
         for arch, groups in self.equivalence_groups.items():
             if arch not in self.pattern_to_group:
@@ -293,16 +149,16 @@ class InstructionSubstitutionPass(MutationPass):
             logger.warning("Binary not analyzed, analyzing now...")
             binary.analyze()
 
-        arch_info = binary.get_arch_info()
-        arch = arch_info.get("arch", "unknown")
+        arch_family, bits = binary.get_arch_family()
 
-        arch_family = "x86" if arch in ["x86", "x64"] else arch
+        if arch_family == "arm" and bits == 64:
+            return self._apply_arm64_mov_substitution(binary)
 
         if arch_family not in self.equivalence_groups:
-            logger.warning(f"No substitution rules for architecture: {arch}")
+            logger.warning(f"No substitution rules for architecture: {arch_family}")
             return {
                 "mutations_applied": 0,
-                "error": f"Unsupported architecture: {arch}",
+                "error": f"Unsupported architecture: {arch_family}",
             }
 
         functions = binary.get_functions()
@@ -313,7 +169,7 @@ class InstructionSubstitutionPass(MutationPass):
         logger.info(f"Instruction substitution: processing {len(functions)} functions")
 
         for func in functions:
-            if func.get("size", 0) < 10:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
 
             try:
@@ -413,4 +269,72 @@ class InstructionSubstitutionPass(MutationPass):
             "total_functions": len(functions),
             "force_different": self.force_different,
             "strict_size": self.strict_size,
+        }
+
+    def _apply_arm64_mov_substitution(self, binary: Binary) -> dict[str, Any]:
+        """Apply safe ARM64 mov-immediate substitutions."""
+        functions = binary.get_functions()
+        mutations_applied = 0
+        functions_mutated = 0
+
+        for func in functions:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+                continue
+
+            try:
+                instructions = binary.get_function_disasm(func["addr"])
+            except Exception as e:
+                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
+                continue
+
+            func_mutations = 0
+            for insn in instructions:
+                disasm = insn.get("disasm", "").lower().replace("#", "")
+                addr = insn.get("addr", 0)
+                size = insn.get("size", 0)
+
+                if not disasm.startswith("mov "):
+                    continue
+
+                parts = [p.strip() for p in disasm.split(",")]
+                if len(parts) != 2:
+                    continue
+
+                dst = parts[0].split()[-1]
+                imm = parts[1]
+
+                if not (dst.startswith("w") or dst.startswith("x")):
+                    continue
+
+                if not imm.startswith("0x") and not imm.isdigit():
+                    continue
+
+                try:
+                    imm_val = int(imm, 16) if imm.startswith("0x") else int(imm)
+                except ValueError:
+                    continue
+
+                if imm_val < 0 or imm_val > 0xFFFF:
+                    continue
+
+                new_insn = f"movz {dst}, {hex(imm_val)}"
+                new_bytes = binary.assemble(new_insn, func["addr"])
+
+                if not new_bytes or len(new_bytes) != size:
+                    continue
+
+                if binary.write_bytes(addr, new_bytes):
+                    func_mutations += 1
+                    mutations_applied += 1
+
+                    if func_mutations >= self.max_substitutions:
+                        break
+
+            if func_mutations > 0:
+                functions_mutated += 1
+
+        return {
+            "mutations_applied": mutations_applied,
+            "functions_mutated": functions_mutated,
+            "total_functions": len(functions),
         }

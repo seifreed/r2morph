@@ -3,10 +3,10 @@ Entropy analysis for detecting suspicious patterns.
 """
 
 import logging
-import math
-from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
+
+from r2morph.utils.entropy import calculate_entropy, calculate_file_entropy
 
 logger = logging.getLogger(__name__)
 
@@ -97,22 +97,7 @@ class EntropyAnalyzer:
         Returns:
             Entropy value (0-8)
         """
-        with open(path, "rb") as f:
-            data = f.read()
-
-        if not data:
-            return 0.0
-
-        counter = Counter(data)
-        length = len(data)
-
-        entropy = 0.0
-        for count in counter.values():
-            prob = count / length
-            if prob > 0:
-                entropy -= prob * math.log2(prob)
-
-        return entropy
+        return calculate_file_entropy(path)
 
     def _analyze_sections(self, path: Path) -> dict[str, float]:
         """
@@ -166,19 +151,7 @@ class EntropyAnalyzer:
         Returns:
             Entropy value
         """
-        if not data:
-            return 0.0
-
-        counter = Counter(data)
-        length = len(data)
-
-        entropy = 0.0
-        for count in counter.values():
-            prob = count / length
-            if prob > 0:
-                entropy -= prob * math.log2(prob)
-
-        return entropy
+        return calculate_entropy(data)
 
     def compare_entropy(
         self, original_path: Path, morphed_path: Path

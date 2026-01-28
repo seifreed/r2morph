@@ -10,6 +10,7 @@ import random
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -184,6 +185,10 @@ class NopInsertionPass(MutationPass):
             logger.warning("Binary not analyzed, analyzing now...")
             binary.analyze()
 
+        arch_family, bits = binary.get_arch_family()
+        if arch_family == "arm" and bits == 64:
+            return self._apply_arm64_safe_nops(binary)
+
         functions = binary.get_functions()
         mutations_applied = 0
         functions_mutated = 0
@@ -194,7 +199,7 @@ class NopInsertionPass(MutationPass):
         )
 
         for func in functions:
-            if func.get("size", 0) < 10:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
 
             try:
@@ -210,16 +215,31 @@ class NopInsertionPass(MutationPass):
 
                 is_redundant = False
 
-                if "mov" in disasm:
-                    parts = disasm.split(",")
-                    if len(parts) == 2:
-                        src = parts[1].strip()
-                        dst = parts[0].split()[-1].strip() if " " in parts[0] else ""
-                        if src == dst:
-                            is_redundant = True
+                if arch_family == "x86":
+                    if "mov" in disasm:
+                        parts = disasm.split(",")
+                        if len(parts) == 2:
+                            src = parts[1].strip()
+                            dst = parts[0].split()[-1].strip() if " " in parts[0] else ""
+                            if src == dst:
+                                is_redundant = True
 
-                if any(op in disasm for op in ["add", "sub", "or", "xor"]) and ", 0" in disasm:
-                    is_redundant = True
+                    if any(op in disasm for op in ["add", "sub", "or", "xor"]) and ", 0" in disasm:
+                        is_redundant = True
+
+                elif arch_family == "arm" and bits == 64:
+                    if disasm == "nop":
+                        is_redundant = True
+                    elif disasm.startswith("mov "):
+                        parts = disasm.replace("#", "").split(",")
+                        if len(parts) == 2 and parts[0].split()[-1] == parts[1].strip():
+                            is_redundant = True
+                    elif disasm.startswith(("add ", "sub ")):
+                        parts = disasm.replace("#", "").split(",")
+                        if len(parts) == 3:
+                            imm = parts[2].strip()
+                            if imm in ("0", "0x0"):
+                                is_redundant = True
 
                 if insn_type in ["jmp", "cjmp", "call", "ret", "ujmp", "rcall"]:
                     is_redundant = False
@@ -240,12 +260,15 @@ class NopInsertionPass(MutationPass):
                         continue
 
                     try:
-                        arch_info = binary.get_arch_info()
-                        arch = arch_info.get("arch", "unknown")
-                        bits = arch_info.get("bits", 32)
-                        arch_family = "x86" if arch in ["x86", "x64"] else arch
-
                         nop_written = False
+
+                        if arch_family == "arm" and bits == 64:
+                            # Only mutate known-safe redundant instructions on ARM64
+                            if insn.get("disasm", "").lower() == "nop":
+                                nop_bytes = binary.assemble("mov xzr, xzr", func["addr"])
+                                if nop_bytes and len(nop_bytes) == size:
+                                    binary.write_bytes(addr, nop_bytes)
+                                    nop_written = True
 
                         if self.use_creative_nops and random.random() < 0.7:
                             if size in [3, 4, 5] and arch_family == "x86":
@@ -303,6 +326,74 @@ class NopInsertionPass(MutationPass):
             f"NOP insertion complete: {mutations_applied} NOPs inserted "
             f"in {functions_mutated} functions"
         )
+
+        return {
+            "mutations_applied": mutations_applied,
+            "functions_mutated": functions_mutated,
+            "total_functions": len(functions),
+        }
+
+    def _apply_arm64_safe_nops(self, binary: Binary) -> dict[str, Any]:
+        """Apply safe ARM64 substitutions that preserve semantics."""
+        functions = binary.get_functions()
+        mutations_applied = 0
+        functions_mutated = 0
+
+        for func in functions:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+                continue
+
+            try:
+                instructions = binary.get_function_disasm(func["addr"])
+            except Exception as e:
+                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
+                continue
+
+            func_mutations = 0
+            for insn in instructions:
+                disasm = insn.get("disasm", "").lower().replace("#", "")
+                addr = insn.get("addr", 0)
+                size = insn.get("size", 0)
+
+                if not disasm.startswith("mov "):
+                    continue
+
+                parts = [p.strip() for p in disasm.split(",")]
+                if len(parts) != 2:
+                    continue
+
+                dst = parts[0].split()[-1]
+                imm = parts[1]
+
+                if not (dst.startswith("w") or dst.startswith("x")):
+                    continue
+
+                if not imm.startswith("0x") and not imm.isdigit():
+                    continue
+
+                try:
+                    imm_val = int(imm, 16) if imm.startswith("0x") else int(imm)
+                except ValueError:
+                    continue
+
+                if imm_val < 0 or imm_val > 0xFFFF:
+                    continue
+
+                new_insn = f"movz {dst}, {hex(imm_val)}"
+                new_bytes = binary.assemble(new_insn, func["addr"])
+
+                if not new_bytes or len(new_bytes) != size:
+                    continue
+
+                if binary.write_bytes(addr, new_bytes):
+                    func_mutations += 1
+                    mutations_applied += 1
+
+                    if func_mutations >= self.max_nops:
+                        break
+
+            if func_mutations > 0:
+                functions_mutated += 1
 
         return {
             "mutations_applied": mutations_applied,

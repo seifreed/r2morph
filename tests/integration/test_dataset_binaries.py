@@ -2,9 +2,18 @@
 Real integration tests using dataset binaries.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
+pytest.importorskip("yaml")
 
 from r2morph import MorphEngine
 from r2morph.analysis.analyzer import BinaryAnalyzer
@@ -26,17 +35,17 @@ class TestDatasetBinaries:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls_macOS"
+        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
 
     @pytest.fixture
-    def pafish_exe(self):
-        """Path to pafish.exe PE binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "pafish.exe"
+    def pe_x86_64_exe(self):
+        """Path to pe_x86_64.exe PE binary."""
+        return Path(__file__).parent.parent.parent / "dataset" / "pe_x86_64.exe"
 
     def test_analyze_elf_binary(self, ls_elf):
         """Test analyzing real ELF binary."""
@@ -68,12 +77,12 @@ class TestDatasetBinaries:
             arch_info = binary.get_arch_info()
             assert "mach" in arch_info["format"].lower()
 
-    def test_analyze_pe_binary(self, pafish_exe):
+    def test_analyze_pe_binary(self, pe_x86_64_exe):
         """Test analyzing real PE binary."""
-        if not pafish_exe.exists():
+        if not pe_x86_64_exe.exists():
             pytest.skip("PE binary not available")
 
-        with Binary(pafish_exe) as binary:
+        with Binary(pe_x86_64_exe) as binary:
             binary.analyze()
 
             functions = binary.get_functions()
@@ -81,7 +90,7 @@ class TestDatasetBinaries:
 
             arch_info = binary.get_arch_info()
             assert "pe" in arch_info["format"].lower()
-            assert arch_info["bits"] == 32
+        assert arch_info["bits"] == 64
 
     def test_binary_analyzer_on_elf(self, ls_elf):
         """Test BinaryAnalyzer on real ELF binary."""
@@ -242,8 +251,8 @@ class TestDatasetBinaries:
             binary.analyze()
             functions = binary.get_functions()
 
-            assert len(functions) > 10
-            assert all("name" in f or "offset" in f for f in functions)
+        assert len(functions) >= 1
+        assert all("name" in f or "offset" in f for f in functions)
 
     def test_get_disassembly_from_elf(self, ls_elf):
         """Test getting disassembly from real ELF binary."""

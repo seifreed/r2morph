@@ -2,9 +2,16 @@
 Comprehensive real tests for validation modules.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph import MorphEngine
 from r2morph.mutations import NopInsertionPass
@@ -19,7 +26,7 @@ class TestBinaryValidatorComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_validator_init(self):
         """Test BinaryValidator initialization."""
@@ -83,7 +90,7 @@ class TestMutationFuzzerComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_fuzzer_init(self):
         """Test MutationFuzzer initialization."""
@@ -148,7 +155,7 @@ class TestRegressionTesterComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_tester_init(self, tmp_path):
         """Test RegressionTester initialization."""

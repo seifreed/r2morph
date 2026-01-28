@@ -3,11 +3,19 @@ Comprehensive test suite to push coverage from 73% to 80%+.
 Targets CLI, dependencies, invariants, and other low-coverage modules.
 """
 
+import importlib.util
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph.analysis.dependencies import DependencyAnalyzer, InstructionDef
 from r2morph.analysis.invariants import InvariantDetector, InvariantType
@@ -20,7 +28,7 @@ class TestCLIComprehensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_cli_simple_mode_with_positional_args(self, ls_elf, tmp_path):
         """Test CLI simple mode with positional arguments."""
@@ -29,7 +37,7 @@ class TestCLIComprehensive:
 
         output = tmp_path / "ls_simple_pos"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -43,7 +51,7 @@ class TestCLIComprehensive:
 
         output = tmp_path / "ls_input_opt"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-i", str(ls_elf), "-o", str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-i", str(ls_elf), "-o", str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -57,7 +65,7 @@ class TestCLIComprehensive:
 
         output = tmp_path / "ls_aggressive"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-a", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-a", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -71,7 +79,7 @@ class TestCLIComprehensive:
 
         output = tmp_path / "ls_force"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-f", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-f", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -85,7 +93,7 @@ class TestCLIComprehensive:
 
         output = tmp_path / "ls_verbose"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-v", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-v", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -99,7 +107,7 @@ class TestCLIComprehensive:
 
         output = tmp_path / "ls_debug"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-d", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-d", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -109,7 +117,7 @@ class TestCLIComprehensive:
     def test_cli_no_input_file(self, tmp_path):
         """Test CLI without input file shows usage."""
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli"],
+            [sys.executable, "-m", "r2morph.cli"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -122,7 +130,7 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "analyze", str(ls_elf)],
+            [sys.executable, "-m", "r2morph.cli", "analyze", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -135,7 +143,7 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "functions", str(ls_elf)],
+            [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
@@ -149,7 +157,7 @@ class TestCLIComprehensive:
 
         output = tmp_path / "ls_single_mut"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "morph", str(ls_elf), "-o", str(output), "-m", "nop"],
+            [sys.executable, "-m", "r2morph.cli", "morph", str(ls_elf), "-o", str(output), "-m", "nop"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -164,7 +172,7 @@ class TestCLIComprehensive:
         output = tmp_path / "ls_multi_mut"
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "morph",
@@ -190,7 +198,7 @@ class TestCLIComprehensive:
         output = tmp_path / "ls_morph_verbose"
         result = subprocess.run(
             [
-                "python3",
+                sys.executable,
                 "-m",
                 "r2morph.cli",
                 "morph",
@@ -213,7 +221,7 @@ class TestDependencyAnalyzerExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_analyze_function_dependencies(self, ls_elf):
         """Test analyzing function dependencies."""
@@ -309,7 +317,7 @@ class TestInvariantDetectorExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_detect_all_invariants(self, ls_elf):
         """Test detecting all types of invariants."""
@@ -385,7 +393,7 @@ class TestHotPathDetectorExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_detector_init(self, ls_elf):
         """Test HotPathDetector initialization."""
@@ -460,7 +468,7 @@ class TestBinaryMethodsExtended:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_binary_write_bytes(self, ls_elf, tmp_path):
         """Test writing bytes at specific address."""

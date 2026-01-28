@@ -10,7 +10,7 @@ import time
 import threading
 import multiprocessing
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
-from typing import Dict, List, Any, Optional, Callable, Tuple, Iterator
+from typing import Any, Callable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
 import logging
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PerformanceConfig:
     """Configuration for performance optimization."""
-    max_workers: Optional[int] = None
+    max_workers: int | None = None
     memory_limit_mb: int = 2048
     enable_parallel: bool = True
     enable_caching: bool = True
@@ -74,6 +74,8 @@ class MemoryManager:
         
     def check_memory_usage(self) -> bool:
         """Check if memory usage is within limits."""
+        if self.config.memory_limit_mb <= 0:
+            return False
         self.monitor.update()
         
         if self.monitor.memory_usage_mb > self.config.memory_limit_mb:
@@ -111,16 +113,16 @@ class ResultCache:
     """Simple result caching for expensive operations."""
     
     def __init__(self, max_size: int = 1000):
-        self.cache: Dict[str, Any] = {}
-        self.access_times: Dict[str, float] = {}
+        self.cache: dict[str, Any] = {}
+        self.access_times: dict[str, float] = {}
         self.max_size = max_size
         self.hits = 0
         self.misses = 0
     
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         """Get cached result."""
         if key in self.cache:
-            self.access_times[key] = time.time()
+            self.access_times[key] = time.monotonic_ns()
             self.hits += 1
             return self.cache[key]
         
@@ -133,7 +135,7 @@ class ResultCache:
             self._evict_lru()
         
         self.cache[key] = value
-        self.access_times[key] = time.time()
+        self.access_times[key] = time.monotonic_ns()
     
     def _evict_lru(self):
         """Evict least recently used item."""
@@ -183,7 +185,7 @@ class ParallelAnalysisEngine:
             return f"{analysis_type}:{binary_path}"
     
     def _analyze_single_binary(self, binary_path: str, analysis_func: Callable, 
-                              analysis_type: str = "default") -> Dict[str, Any]:
+                              analysis_type: str = "default") -> dict[str, Any]:
         """Analyze a single binary with caching and error handling."""
         cache_key = self._get_cache_key(binary_path, analysis_type)
         
@@ -241,8 +243,8 @@ class ParallelAnalysisEngine:
             # Trigger GC periodically
             self.memory_manager.trigger_gc_if_needed()
     
-    def analyze_batch(self, binary_paths: List[str], analysis_func: Callable,
-                     analysis_type: str = "default") -> List[Dict[str, Any]]:
+    def analyze_batch(self, binary_paths: list[str], analysis_func: Callable,
+                     analysis_type: str = "default") -> list[dict[str, Any]]:
         """Analyze a batch of binaries in parallel."""
         if not self.config.enable_parallel:
             # Sequential processing
@@ -285,8 +287,8 @@ class ParallelAnalysisEngine:
         
         return results
     
-    def analyze_chunked(self, binary_paths: List[str], analysis_func: Callable,
-                       analysis_type: str = "default") -> Iterator[List[Dict[str, Any]]]:
+    def analyze_chunked(self, binary_paths: list[str], analysis_func: Callable,
+                       analysis_type: str = "default") -> Iterator[list[dict[str, Any]]]:
         """Analyze binaries in chunks to manage memory usage."""
         chunk_size = self.memory_manager.get_optimal_chunk_size(len(binary_paths))
         
@@ -305,7 +307,7 @@ class ParallelAnalysisEngine:
             # Clean up between chunks
             self.memory_manager.trigger_gc_if_needed()
     
-    def get_performance_stats(self) -> Dict[str, Any]:
+    def get_performance_stats(self) -> dict[str, Any]:
         """Get performance statistics."""
         self.memory_manager.monitor.update()
         
@@ -329,7 +331,7 @@ class IncrementalAnalyzer:
     
     def __init__(self, state_file: str = "incremental_state.json"):
         self.state_file = Path(state_file)
-        self.file_states: Dict[str, Dict[str, Any]] = {}
+        self.file_states: dict[str, dict[str, Any]] = {}
         self._load_state()
     
     def _load_state(self):
@@ -354,7 +356,7 @@ class IncrementalAnalyzer:
         except Exception as e:
             logger.error(f"Failed to save incremental state: {e}")
     
-    def _get_file_signature(self, file_path: str) -> Dict[str, Any]:
+    def _get_file_signature(self, file_path: str) -> dict[str, Any]:
         """Get file signature for change detection."""
         try:
             stat = Path(file_path).stat()
@@ -381,7 +383,7 @@ class IncrementalAnalyzer:
         return (current_sig['size'] != previous_sig.get('size') or
                 current_sig['mtime'] != previous_sig.get('mtime'))
     
-    def get_changed_files(self, file_paths: List[str]) -> List[str]:
+    def get_changed_files(self, file_paths: list[str]) -> list[str]:
         """Get list of files that have changed."""
         changed_files = []
         
@@ -391,7 +393,7 @@ class IncrementalAnalyzer:
         
         return changed_files
     
-    def update_file_state(self, file_path: str, analysis_result: Dict[str, Any]):
+    def update_file_state(self, file_path: str, analysis_result: dict[str, Any]):
         """Update file state after analysis."""
         signature = self._get_file_signature(file_path)
         
@@ -401,13 +403,13 @@ class IncrementalAnalyzer:
             'analysis_result': analysis_result
         }
     
-    def get_cached_result(self, file_path: str) -> Optional[Dict[str, Any]]:
+    def get_cached_result(self, file_path: str) -> dict[str, Any] | None:
         """Get cached analysis result if file hasn't changed."""
         if not self.has_file_changed(file_path):
             return self.file_states.get(file_path, {}).get('analysis_result')
         return None
     
-    def cleanup_missing_files(self, current_files: List[str]):
+    def cleanup_missing_files(self, current_files: list[str]):
         """Remove state for files that no longer exist."""
         current_files_set = set(current_files)
         files_to_remove = []
@@ -430,7 +432,7 @@ class IncrementalAnalyzer:
 class OptimizedAnalysisFramework:
     """High-level framework combining all performance optimizations."""
     
-    def __init__(self, config: PerformanceConfig, incremental_state_file: Optional[str] = None):
+    def __init__(self, config: PerformanceConfig, incremental_state_file: str | None = None):
         self.config = config
         self.parallel_engine = ParallelAnalysisEngine(config)
         
@@ -441,8 +443,8 @@ class OptimizedAnalysisFramework:
         else:
             self.incremental_analyzer = None
     
-    def analyze_files(self, file_paths: List[str], analysis_func: Callable,
-                     analysis_type: str = "optimized") -> List[Dict[str, Any]]:
+    def analyze_files(self, file_paths: list[str], analysis_func: Callable,
+                     analysis_type: str = "optimized") -> list[dict[str, Any]]:
         """
         Analyze files with full optimization (parallel, incremental, caching).
         
@@ -520,7 +522,7 @@ class OptimizedAnalysisFramework:
         
         return results
     
-    def get_comprehensive_stats(self) -> Dict[str, Any]:
+    def get_comprehensive_stats(self) -> dict[str, Any]:
         """Get comprehensive performance statistics."""
         stats = self.parallel_engine.get_performance_stats()
         
@@ -533,7 +535,7 @@ class OptimizedAnalysisFramework:
 # Analysis function wrappers for common operations
 def create_detection_analysis_func():
     """Create detection analysis function for parallel processing."""
-    def analyze_detection(binary_path: str) -> Dict[str, Any]:
+    def analyze_detection(binary_path: str) -> dict[str, Any]:
         try:
             from r2morph import Binary
             from r2morph.detection import ObfuscationDetector
@@ -562,7 +564,7 @@ def create_detection_analysis_func():
 
 def create_devirtualization_analysis_func():
     """Create devirtualization analysis function for parallel processing."""
-    def analyze_devirtualization(binary_path: str) -> Dict[str, Any]:
+    def analyze_devirtualization(binary_path: str) -> dict[str, Any]:
         try:
             from r2morph import Binary
             from r2morph.devirtualization import CFOSimplifier

@@ -6,7 +6,7 @@ Replaces registers with equivalent unused registers in code sequences.
 
 import logging
 import random
-from typing import Any, List, Tuple
+from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
@@ -178,7 +178,7 @@ class RegisterSubstitutionPass(MutationPass):
 
     def _find_substitution_candidates(
         self, instructions: list[dict[str, Any]], arch: str
-    ) -> list[Tuple[str, str]]:
+    ) -> list[tuple[str, str]]:
         """
         Find valid register substitution opportunities.
 
@@ -370,6 +370,10 @@ class RegisterSubstitutionPass(MutationPass):
 
         arch_info = binary.get_arch_info()
         arch = arch_info.get("arch", "unknown")
+        bits = arch_info.get("bits", 0)
+
+        if arch == "arm" and bits == 64:
+            return {"mutations_applied": 0, "skipped": True}
 
         register_classes = self._get_register_class(arch)
         if not register_classes:

@@ -189,7 +189,7 @@ def demonstrate_vm_handler_analysis(binary: Binary, obfuscation_result):
                     blocks = binary.get_basic_blocks(func_addr)
                     if len(blocks) > 20:  # Many basic blocks
                         potential_dispatchers.append(func_addr)
-                except:
+                except Exception:
                     continue
         
         if potential_dispatchers:

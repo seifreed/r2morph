@@ -6,6 +6,14 @@ import shutil
 from pathlib import Path
 
 import pytest
+import importlib.util
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.nop_insertion import NopInsertionPass
@@ -17,7 +25,7 @@ class TestNopInsertionPassReal:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_nop_insertion_basic(self, ls_elf, tmp_path):
         """Test basic NOP insertion."""

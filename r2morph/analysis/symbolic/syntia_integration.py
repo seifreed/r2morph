@@ -12,7 +12,7 @@ Reference: "Syntia: Synthesizing the Semantics of Obfuscated Code" by Blazytko e
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 from pathlib import Path
 import subprocess
 import tempfile
@@ -45,10 +45,10 @@ class InstructionSemantics:
     address: int
     instruction_bytes: bytes
     disassembly: str
-    learned_semantics: Optional[str] = None
-    semantic_formula: Optional[str] = None
-    input_variables: Set[str] = field(default_factory=set)
-    output_variables: Set[str] = field(default_factory=set)
+    learned_semantics: str | None = None
+    semantic_formula: str | None = None
+    input_variables: set[str] = field(default_factory=set)
+    output_variables: set[str] = field(default_factory=set)
     complexity: SemanticComplexity = SemanticComplexity.UNKNOWN
     confidence: float = 0.0
     learning_time: float = 0.0
@@ -61,9 +61,9 @@ class VMHandlerSemantics:
     handler_id: int
     entry_address: int
     handler_type: str  # e.g., "arithmetic", "branch", "memory"
-    instruction_semantics: List[InstructionSemantics] = field(default_factory=list)
-    overall_semantic_formula: Optional[str] = None
-    equivalent_native_code: Optional[str] = None
+    instruction_semantics: list[InstructionSemantics] = field(default_factory=list)
+    overall_semantic_formula: str | None = None
+    equivalent_native_code: str | None = None
     confidence: float = 0.0
 
 
@@ -96,7 +96,7 @@ class SyntiaFramework:
         self.smt_solver = use_smt_solver
         
         # Cache for learned semantics
-        self.semantics_cache: Dict[bytes, InstructionSemantics] = {}
+        self.semantics_cache: dict[bytes, InstructionSemantics] = {}
         
         # Statistics
         self.synthesis_stats = {
@@ -113,7 +113,7 @@ class SyntiaFramework:
                                   instruction_bytes: bytes,
                                   address: int,
                                   disassembly: str,
-                                  context: Optional[Dict[str, Any]] = None) -> InstructionSemantics:
+                                  context: dict[str, Any] | None = None) -> InstructionSemantics:
         """
         Learn semantics of a single instruction or instruction sequence.
         
@@ -181,11 +181,49 @@ class SyntiaFramework:
         self.semantics_cache[instruction_bytes] = semantics
         
         return semantics
+
+    def synthesize_semantics(self, instructions: list[dict[str, Any]], address: int) -> list[InstructionSemantics] | None:
+        """
+        Synthesize semantics for a list of instructions.
+
+        Args:
+            instructions: List of instruction dicts (expects 'bytes' and 'disasm')
+            address: Base address for the instruction sequence
+
+        Returns:
+            List of learned InstructionSemantics or None if no input
+        """
+        if not instructions:
+            return None
+
+        results: list[InstructionSemantics] = []
+        current_addr = address
+        for inst in instructions:
+            inst_bytes = inst.get("bytes")
+            disasm = inst.get("disasm", "")
+            if isinstance(inst_bytes, str):
+                try:
+                    inst_bytes = bytes.fromhex(inst_bytes)
+                except ValueError:
+                    inst_bytes = b""
+            if not isinstance(inst_bytes, (bytes, bytearray)):
+                inst_bytes = b""
+
+            semantics = self.learn_instruction_semantics(
+                instruction_bytes=bytes(inst_bytes),
+                address=current_addr,
+                disassembly=disasm,
+                context=inst.get("context"),
+            )
+            results.append(semantics)
+            current_addr += inst.get("size", 1)
+
+        return results
     
     def _synthesize_with_syntia(self, 
                                instruction_bytes: bytes,
                                disassembly: str,
-                               context: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+                               context: dict[str, Any] | None) -> dict[str, Any] | None:
         """
         Perform actual synthesis using Syntia framework.
         
@@ -206,7 +244,7 @@ class SyntiaFramework:
     
     def _fallback_semantic_analysis(self, 
                                      instruction_bytes: bytes,
-                                     disassembly: str) -> Dict[str, Any]:
+                                     disassembly: str) -> dict[str, Any]:
         """
         Fallback semantic analysis when Syntia is not available.
         
@@ -270,7 +308,7 @@ class SyntiaFramework:
             return SemanticComplexity.COMPLEX
     
     def analyze_vm_handler(self, 
-                          handler_instructions: List[Tuple[int, bytes, str]],
+                          handler_instructions: list[tuple[int, bytes, str]],
                           handler_id: int) -> VMHandlerSemantics:
         """
         Analyze a complete VM handler using semantic learning.
@@ -286,7 +324,8 @@ class SyntiaFramework:
         
         handler_semantics = VMHandlerSemantics(
             handler_id=handler_id,
-            entry_address=handler_instructions[0][0] if handler_instructions else 0
+            entry_address=handler_instructions[0][0] if handler_instructions else 0,
+            handler_type="unknown"
         )
         
         # Learn semantics for each instruction
@@ -317,7 +356,7 @@ class SyntiaFramework:
         return handler_semantics
     
     def _synthesize_handler_semantics(self, 
-                                    instruction_semantics: List[InstructionSemantics]) -> Optional[str]:
+                                    instruction_semantics: list[InstructionSemantics]) -> str | None:
         """
         Synthesize overall semantics for a VM handler from individual instructions.
         
@@ -342,7 +381,7 @@ class SyntiaFramework:
         return None
     
     def _classify_handler_type(self, 
-                             instruction_semantics: List[InstructionSemantics]) -> str:
+                             instruction_semantics: list[InstructionSemantics]) -> str:
         """
         Classify VM handler type based on instruction semantics.
         
@@ -374,7 +413,7 @@ class SyntiaFramework:
             return "unknown"
     
     def _generate_equivalent_native_code(self, 
-                                       handler_semantics: VMHandlerSemantics) -> Optional[str]:
+                                       handler_semantics: VMHandlerSemantics) -> str | None:
         """
         Generate equivalent native code for a VM handler.
         
@@ -405,7 +444,7 @@ class SyntiaFramework:
     
     def simplify_mba_with_syntia(self, 
                                mba_expression: str,
-                               variables: Set[str]) -> Optional[str]:
+                               variables: set[str]) -> str | None:
         """
         Simplify Mixed Boolean Arithmetic expression using Syntia.
         
@@ -429,7 +468,7 @@ class SyntiaFramework:
         
         return None
     
-    def get_synthesis_statistics(self) -> Dict[str, Any]:
+    def get_synthesis_statistics(self) -> dict[str, Any]:
         """Get synthesis performance statistics."""
         total_analyzed = self.synthesis_stats["instructions_analyzed"]
         

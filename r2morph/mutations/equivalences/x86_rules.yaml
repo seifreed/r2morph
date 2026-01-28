@@ -1,0 +1,146 @@
+# x86_rules.yaml
+version: "1.0"
+description: "x86/x64 instruction equivalence rules for metamorphic transformation"
+
+equivalence_groups:
+  # Zero register patterns - 32-bit
+  - name: "zero_register_32bit"
+    description: "Ways to zero a 32-bit register"
+    instructions:
+      - "mov {reg}, 0"
+      - "xor {reg}, {reg}"
+      - "sub {reg}, {reg}"
+      - "push 0; pop {reg}"
+    registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
+
+  # Zero register patterns - 64-bit
+  - name: "zero_register_64bit"
+    description: "Ways to zero a 64-bit register (including 32-bit xor trick)"
+    instructions:
+      - "mov {reg}, 0"
+      - "xor {reg}, {reg}"
+      - "sub {reg}, {reg}"
+      - "xor {reg32}, {reg32}"
+    registers: ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
+    register_mappings:
+      rax: {reg32: "eax"}
+      rbx: {reg32: "ebx"}
+      rcx: {reg32: "ecx"}
+      rdx: {reg32: "edx"}
+      rsi: {reg32: "esi"}
+      rdi: {reg32: "edi"}
+
+  # Self-move patterns - 32-bit
+  - name: "self_move_32bit"
+    description: "Ways to move a register to itself (NOPs)"
+    instructions:
+      - "mov {reg}, {reg}"
+      - "push {reg}; pop {reg}"
+      - "xchg {reg}, {reg}"
+    registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
+
+  # Self-move patterns - 64-bit
+  - name: "self_move_64bit"
+    description: "Ways to move a 64-bit register to itself (NOPs)"
+    instructions:
+      - "mov {reg}, {reg}"
+      - "push {reg}; pop {reg}"
+      - "xchg {reg}, {reg}"
+    registers: ["rax", "rbx", "rcx", "rdx"]
+
+  # Move immediate 1 patterns - 32-bit
+  - name: "mov_one_32bit"
+    description: "Ways to load 1 into a 32-bit register"
+    instructions:
+      - "mov {reg}, 1"
+      - "push 1; pop {reg}"
+      - "xor {reg}, {reg}; inc {reg}"
+    registers: ["eax", "ebx", "ecx", "edx"]
+
+  # Test/compare with self patterns - 32-bit
+  - name: "test_self_32bit"
+    description: "Ways to test if a 32-bit register is zero"
+    instructions:
+      - "test {reg}, {reg}"
+      - "or {reg}, {reg}"
+    registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
+
+  # Test/compare with self patterns - 64-bit
+  - name: "test_self_64bit"
+    description: "Ways to test if a 64-bit register is zero"
+    instructions:
+      - "test {reg}, {reg}"
+      - "or {reg}, {reg}"
+    registers: ["rax", "rbx", "rcx", "rdx"]
+
+  # XOR/SUB zero equivalence - 32-bit
+  - name: "xor_sub_zero_32bit"
+    description: "XOR and SUB with self both zero the register"
+    instructions:
+      - "xor {reg}, {reg}"
+      - "sub {reg}, {reg}"
+    registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
+
+  # XOR/SUB zero equivalence - 64-bit
+  - name: "xor_sub_zero_64bit"
+    description: "XOR and SUB with self both zero the register"
+    instructions:
+      - "xor {reg}, {reg}"
+      - "sub {reg}, {reg}"
+    registers: ["rax", "rbx", "rcx", "rdx"]
+
+  # Increment patterns - 32-bit
+  - name: "increment_32bit"
+    description: "Ways to increment a 32-bit register"
+    instructions:
+      - "add {reg}, 1"
+      - "inc {reg}"
+    registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
+
+  # Increment patterns - 64-bit
+  - name: "increment_64bit"
+    description: "Ways to increment a 64-bit register"
+    instructions:
+      - "add {reg}, 1"
+      - "inc {reg}"
+    registers: ["rax", "rbx", "rcx", "rdx"]
+
+  # Decrement patterns - 32-bit
+  - name: "decrement_32bit"
+    description: "Ways to decrement a 32-bit register"
+    instructions:
+      - "sub {reg}, 1"
+      - "dec {reg}"
+    registers: ["eax", "ebx", "ecx", "edx", "esi", "edi"]
+
+  # Decrement patterns - 64-bit
+  - name: "decrement_64bit"
+    description: "Ways to decrement a 64-bit register"
+    instructions:
+      - "sub {reg}, 1"
+      - "dec {reg}"
+    registers: ["rax", "rbx", "rcx", "rdx"]
+
+  # Push/pop NOP equivalence - 32-bit
+  - name: "push_pop_nop_32bit"
+    description: "Push/pop same register is effectively a NOP"
+    instructions:
+      - "push {reg}; pop {reg}"
+      - "nop"
+    registers: ["eax", "ebx", "ecx", "edx"]
+
+  # Push/pop NOP equivalence - 64-bit
+  - name: "push_pop_nop_64bit"
+    description: "Push/pop same register is effectively a NOP"
+    instructions:
+      - "push {reg}; pop {reg}"
+      - "nop"
+    registers: ["rax", "rbx", "rcx", "rdx"]
+
+  # NOP equivalences (non-templated)
+  - name: "nop_equivalences"
+    description: "Various NOP instruction equivalences"
+    instructions:
+      - "nop"
+      - "xchg eax, eax"
+      - "xchg rax, rax"

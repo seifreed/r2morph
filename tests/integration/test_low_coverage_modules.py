@@ -2,10 +2,17 @@
 Comprehensive tests for modules with low coverage using real binaries.
 """
 
+import importlib.util
 import shutil
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
@@ -22,7 +29,7 @@ class TestControlFlowFlatteningReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_flatten_basic(self, ls_elf, tmp_path):
         """Test basic control flow flattening."""
@@ -79,7 +86,7 @@ class TestDeadCodeInjectionReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_inject_basic(self, ls_elf, tmp_path):
         """Test basic dead code injection."""
@@ -136,7 +143,7 @@ class TestOpaquePredicatesReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_opaque_basic(self, ls_elf, tmp_path):
         """Test basic opaque predicate insertion."""
@@ -193,7 +200,7 @@ class TestNopInsertionDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_nop_standard(self, ls_elf, tmp_path):
         """Test standard NOP insertion."""
@@ -271,7 +278,7 @@ class TestProfilingReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_profiler_basic(self, ls_elf, tmp_path):
         """Test basic profiling."""
@@ -402,4 +409,4 @@ class TestSessionReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"

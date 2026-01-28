@@ -3,12 +3,25 @@ Main morphing engine for binary transformations.
 """
 
 import logging
+import os
+import platform
+import shutil
+import tempfile
 from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import (
+    BATCH_MUTATION_CHECKPOINT,
+    LARGE_BINARY_THRESHOLD_MB,
+    LARGE_FUNCTION_COUNT_THRESHOLD,
+    MANY_FUNCTIONS_THRESHOLD,
+    MEDIUM_FUNCTION_COUNT_THRESHOLD,
+    VERY_MANY_FUNCTIONS_THRESHOLD,
+)
 from r2morph.mutations.base import MutationPass
 from r2morph.pipeline.pipeline import Pipeline
+from r2morph.platform.codesign import CodeSigner
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +62,32 @@ class MorphEngine:
         """
         return self.pipeline.passes
 
+    def _should_use_low_memory(self, path: Path) -> bool:
+        """Determine if low-memory mode should be enabled based on file size."""
+        binary_size_mb = os.path.getsize(path) / (1024 * 1024)
+        return binary_size_mb > LARGE_BINARY_THRESHOLD_MB
+
+    def _create_working_copy(self, original_path: Path) -> Path:
+        """Create a temporary working copy of the binary."""
+        temp_dir = Path(tempfile.gettempdir()) / "r2morph"
+        temp_dir.mkdir(exist_ok=True)
+        working_copy = temp_dir / f"{original_path.name}.working"
+        shutil.copy2(original_path, working_copy)
+        return working_copy
+
+    def _get_binary_size_mb(self, path: Path) -> float:
+        """Get binary file size in megabytes."""
+        return os.path.getsize(path) / (1024 * 1024)
+
+    def _should_enable_memory_efficient_mode(
+        self, binary_size_mb: float, function_count: int
+    ) -> bool:
+        """Determine if memory-efficient mode should be enabled."""
+        return (
+            binary_size_mb > LARGE_BINARY_THRESHOLD_MB
+            or function_count > LARGE_FUNCTION_COUNT_THRESHOLD
+        )
+
     def load_binary(self, path: str | Path, writable: bool = True) -> "MorphEngine":
         """
         Load a binary for transformation.
@@ -60,41 +99,22 @@ class MorphEngine:
         Returns:
             Self for method chaining
         """
+        path = Path(path)
         logger.info(f"Loading binary: {path}")
 
         if writable:
-            import shutil
-            import tempfile
-            from pathlib import Path
-            import os
-
-            original_path = Path(path)
-            temp_dir = Path(tempfile.gettempdir()) / "r2morph"
-            temp_dir.mkdir(exist_ok=True)
-
-            working_copy = temp_dir / f"{original_path.name}.working"
-            shutil.copy2(original_path, working_copy)
-
+            working_copy = self._create_working_copy(path)
             logger.debug(f"Created working copy: {working_copy}")
-
-            # Check if we should enable low-memory mode based on file size
-            binary_size_mb = os.path.getsize(working_copy) / (1024 * 1024)
-            low_memory = binary_size_mb > 50
-
-            self.binary = Binary(working_copy, writable=True, low_memory=low_memory)
-            self._original_path = original_path
+            self._original_path = path
+            target_path = working_copy
         else:
-            import os
-            from pathlib import Path
-
-            # Check if we should enable low-memory mode based on file size
-            binary_size_mb = os.path.getsize(path) / (1024 * 1024)
-            low_memory = binary_size_mb > 50
-
-            self.binary = Binary(path, writable=False, low_memory=low_memory)
             self._original_path = None
+            target_path = path
 
+        low_memory = self._should_use_low_memory(target_path)
+        self.binary = Binary(target_path, writable=writable, low_memory=low_memory)
         self.binary.open()
+
         return self
 
     def analyze(self, level: str = "auto") -> "MorphEngine":
@@ -117,50 +137,7 @@ class MorphEngine:
 
         # Auto-detect best analysis level based on function count and size
         if level == "auto":
-            import os
-            import time
-
-            # Step 1: Quick basic analysis to count functions
-            logger.info("Running quick analysis to estimate complexity...")
-            start = time.time()
-            self.binary.analyze("aa")
-            quick_funcs = len(self.binary.get_functions())
-            aa_time = time.time() - start
-
-            # Calculate average function size
-            binary_size_mb = os.path.getsize(self.binary.path) / (1024 * 1024)
-            avg_func_size = (binary_size_mb * 1024 * 1024) / quick_funcs if quick_funcs > 0 else 0
-
-            logger.info(
-                f"Binary stats: {quick_funcs} functions, {binary_size_mb:.1f} MB, "
-                f"avg {avg_func_size:.0f} bytes/func (aa took {aa_time:.1f}s)"
-            )
-
-            # Step 2: Decide analysis level based on complexity
-            if quick_funcs > 10000:
-                level = "aa"  # Already done
-                logger.warning(
-                    f"Very large binary ({quick_funcs} functions). "
-                    f"Using fast analysis level 'aa' (already complete)."
-                )
-            elif quick_funcs > 5000:
-                level = "aac"  # Add call analysis
-                logger.warning(
-                    f"Large binary ({quick_funcs} functions). "
-                    f"Using 'aac' analysis (adds ~10-20s for call analysis)."
-                )
-                self.binary.analyze("aac")
-            elif quick_funcs > 2000:
-                level = "aac"
-                logger.info(f"Medium binary ({quick_funcs} functions). Using 'aac' analysis.")
-                self.binary.analyze("aac")
-            else:
-                level = "aaa"
-                logger.info(
-                    f"Small binary ({quick_funcs} functions). "
-                    f"Using full 'aaa' analysis (~{int(aa_time * 3)}s estimated)."
-                )
-                self.binary.analyze("aaa")
+            level = self._auto_detect_analysis_level()
         else:
             # Manual level specified
             logger.info(f"Analyzing binary with level: {level}...")
@@ -180,20 +157,67 @@ class MorphEngine:
         logger.debug(f"Architecture: {arch_info}")
 
         # Enable memory-efficient mode for large binaries to prevent OOM
-        import os
-        binary_size_mb = os.path.getsize(self.binary.path) / (1024 * 1024)
-        if binary_size_mb > 50 or len(functions) > 3000:
+        binary_size_mb = self._get_binary_size_mb(self.binary.path)
+        if self._should_enable_memory_efficient_mode(binary_size_mb, len(functions)):
             self._memory_efficient_mode = True
             logger.warning(
                 f"Large binary detected ({binary_size_mb:.1f} MB, {len(functions)} functions). "
                 f"Enabling memory-efficient mode to prevent OOM crashes."
             )
             logger.info(
-                "Memory-efficient mode: reduced mutations per function, "
-                "batch processing with r2 restarts every 1000 mutations."
+                f"Memory-efficient mode: reduced mutations per function, "
+                f"batch processing with r2 restarts every {BATCH_MUTATION_CHECKPOINT} mutations."
             )
 
         return self
+
+    def _auto_detect_analysis_level(self) -> str:
+        """Auto-detect optimal analysis level based on binary complexity."""
+        import time
+
+        # Step 1: Quick basic analysis to count functions
+        logger.info("Running quick analysis to estimate complexity...")
+        start = time.time()
+        self.binary.analyze("aa")
+        quick_funcs = len(self.binary.get_functions())
+        aa_time = time.time() - start
+
+        # Calculate average function size
+        binary_size_mb = self._get_binary_size_mb(self.binary.path)
+        avg_func_size = (binary_size_mb * 1024 * 1024) / quick_funcs if quick_funcs > 0 else 0
+
+        logger.info(
+            f"Binary stats: {quick_funcs} functions, {binary_size_mb:.1f} MB, "
+            f"avg {avg_func_size:.0f} bytes/func (aa took {aa_time:.1f}s)"
+        )
+
+        # Step 2: Decide analysis level based on complexity
+        if quick_funcs > VERY_MANY_FUNCTIONS_THRESHOLD:
+            level = "aa"  # Already done
+            logger.warning(
+                f"Very large binary ({quick_funcs} functions). "
+                f"Using fast analysis level 'aa' (already complete)."
+            )
+        elif quick_funcs > MANY_FUNCTIONS_THRESHOLD:
+            level = "aac"  # Add call analysis
+            logger.warning(
+                f"Large binary ({quick_funcs} functions). "
+                f"Using 'aac' analysis (adds ~10-20s for call analysis)."
+            )
+            self.binary.analyze("aac")
+        elif quick_funcs > MEDIUM_FUNCTION_COUNT_THRESHOLD:
+            level = "aac"
+            logger.info(f"Medium binary ({quick_funcs} functions). Using 'aac' analysis.")
+            self.binary.analyze("aac")
+        else:
+            level = "aaa"
+            logger.info(
+                f"Small binary ({quick_funcs} functions). "
+                f"Using full 'aaa' analysis (~{int(aa_time * 3)}s estimated)."
+            )
+            self.binary.analyze("aaa")
+
+        return level
 
     def add_mutation(self, mutation: MutationPass) -> "MorphEngine":
         """
@@ -281,15 +305,48 @@ class MorphEngine:
         if not self.binary:
             raise RuntimeError("No binary loaded.")
 
-        import shutil
-        from pathlib import Path
-
         output_path = Path(output_path)
 
         logger.info(f"Saving transformed binary to: {output_path}")
 
         shutil.copy2(self.binary.path, output_path)
         logger.info(f"Binary successfully saved to: {output_path}")
+
+        if platform.system() == "Darwin":
+            entitlements = self.config.get("codesign_entitlements")
+            if entitlements:
+                entitlements = Path(entitlements)
+            hardened = bool(self.config.get("codesign_hardened", False))
+            timestamp = bool(self.config.get("codesign_timestamp", False))
+
+            from r2morph.platform.macho_handler import MachOHandler
+
+            handler = MachOHandler(output_path)
+            if handler.is_macho():
+                ok, msg = handler.validate_integrity()
+                if not ok:
+                    logger.warning(f"Mach-O layout check failed: {msg}")
+                repaired = handler.repair_integrity(
+                    entitlements=entitlements,
+                    hardened=hardened,
+                    timestamp=timestamp,
+                )
+                if not repaired:
+                    logger.warning(f"Mach-O repair/signing failed for: {output_path}")
+                try:
+                    output_path.chmod(output_path.stat().st_mode | 0o111)
+                except OSError as e:
+                    logger.warning(f"Failed to mark Mach-O executable: {e}")
+            else:
+                signer = CodeSigner()
+                if not signer.sign_binary(
+                    output_path,
+                    adhoc=True,
+                    entitlements=entitlements,
+                    hardened=hardened,
+                    timestamp=timestamp,
+                ):
+                    logger.warning(f"Ad-hoc signing failed for: {output_path}")
 
     def close(self):
         """Close and cleanup resources."""

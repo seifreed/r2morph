@@ -5,6 +5,14 @@ Tests for analysis modules to increase coverage.
 from pathlib import Path
 
 import pytest
+import importlib.util
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
 
 from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph
 from r2morph.analysis.dependencies import (
@@ -22,7 +30,7 @@ class TestCFGModuleDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_basic_block_creation(self):
         """Test BasicBlock creation and methods."""
@@ -207,7 +215,7 @@ class TestInvariantDetectorDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_invariant_creation(self):
         """Test Invariant dataclass."""

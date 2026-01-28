@@ -6,7 +6,7 @@ Expands single instructions into multiple equivalent instructions.
 
 import logging
 import random
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
@@ -98,7 +98,7 @@ class InstructionExpansionPass(MutationPass):
 
     def _match_expansion_pattern(
         self, instruction: dict[str, Any], arch: str
-    ) -> list[list[Tuple[str, ...]]]:
+    ) -> list[list[tuple[str, ...]]]:
         """
         Check if instruction matches any expansion pattern.
 

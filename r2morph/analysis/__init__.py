@@ -6,6 +6,12 @@ from r2morph.analysis.analyzer import BinaryAnalyzer
 from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph
 from r2morph.analysis.dependencies import Dependency, DependencyAnalyzer, DependencyType
 from r2morph.analysis.diff_analyzer import DiffAnalyzer, DiffStats
+from r2morph.analysis.enhanced_analyzer import (
+    AnalysisOptions,
+    AnalysisResults,
+    EnhancedAnalysisOrchestrator,
+    check_enhanced_dependencies,
+)
 from r2morph.analysis.invariants import (
     Invariant,
     InvariantDetector,
@@ -47,9 +53,14 @@ __all__ = [
     "InvariantType",
     "DiffAnalyzer",
     "DiffStats",
+    # Enhanced analysis orchestrator
+    "EnhancedAnalysisOrchestrator",
+    "AnalysisOptions",
+    "AnalysisResults",
+    "check_enhanced_dependencies",
     # Symbolic execution (if available)
     "AngrBridge",
-    "ConstraintSolver", 
+    "ConstraintSolver",
     "PathExplorer",
     "StateManager",
     "SyntiaFramework",

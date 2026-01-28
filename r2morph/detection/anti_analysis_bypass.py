@@ -17,7 +17,7 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Tuple, Any, Callable
+from typing import Any
 from enum import Enum
 import threading
 import subprocess
@@ -70,12 +70,12 @@ class AntiAnalysisPattern:
     """Pattern for detecting anti-analysis techniques."""
     name: str
     technique_type: AntiAnalysisType
-    api_calls: List[str] = field(default_factory=list)
-    registry_keys: List[str] = field(default_factory=list)
-    file_paths: List[str] = field(default_factory=list)
-    process_names: List[str] = field(default_factory=list)
-    string_patterns: List[str] = field(default_factory=list)
-    timing_patterns: List[str] = field(default_factory=list)
+    api_calls: list[str] = field(default_factory=list)
+    registry_keys: list[str] = field(default_factory=list)
+    file_paths: list[str] = field(default_factory=list)
+    process_names: list[str] = field(default_factory=list)
+    string_patterns: list[str] = field(default_factory=list)
+    timing_patterns: list[str] = field(default_factory=list)
     confidence_threshold: float = 0.7
 
 
@@ -83,13 +83,13 @@ class AntiAnalysisPattern:
 class BypassResult:
     """Result of anti-analysis bypass operation."""
     success: bool
-    techniques_applied: List[BypassTechnique] = field(default_factory=list)
-    techniques_detected: List[AntiAnalysisType] = field(default_factory=list)
+    techniques_applied: list[BypassTechnique] = field(default_factory=list)
+    techniques_detected: list[AntiAnalysisType] = field(default_factory=list)
     bypass_confidence: float = 0.0
-    warnings: List[str] = field(default_factory=list)
-    errors: List[str] = field(default_factory=list)
-    environment_state: Dict[str, Any] = field(default_factory=dict)
-    active_bypasses: Dict[str, Any] = field(default_factory=dict)
+    warnings: list[str] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    environment_state: dict[str, Any] = field(default_factory=dict)
+    active_bypasses: dict[str, Any] = field(default_factory=dict)
 
 
 class AntiAnalysisBypass:
@@ -113,13 +113,13 @@ class AntiAnalysisBypass:
         
         logger.info("Initialized anti-analysis bypass framework")
     
-    def detect_anti_analysis_techniques(self, binary) -> Dict[AntiAnalysisType, float]:
+    def detect_anti_analysis_techniques(self, binary) -> dict[AntiAnalysisType, float]:
         """
         Detect anti-analysis techniques in a binary.
-        
+
         Args:
             binary: Binary object to analyze
-            
+
         Returns:
             Dictionary mapping technique types to confidence scores
         """
@@ -148,13 +148,13 @@ class AntiAnalysisBypass:
         
         return results
     
-    def apply_comprehensive_bypass(self, detected_techniques: Dict[AntiAnalysisType, float]) -> BypassResult:
+    def apply_comprehensive_bypass(self, detected_techniques: dict[AntiAnalysisType, float]) -> BypassResult:
         """
         Apply comprehensive bypass for detected techniques.
-        
+
         Args:
             detected_techniques: Dictionary of detected techniques and confidence scores
-            
+
         Returns:
             BypassResult with applied bypasses
         """
@@ -194,7 +194,7 @@ class AntiAnalysisBypass:
         
         return result
     
-    def _load_anti_analysis_patterns(self) -> List[AntiAnalysisPattern]:
+    def _load_anti_analysis_patterns(self) -> list[AntiAnalysisPattern]:
         """Load known anti-analysis patterns."""
         patterns = []
         
@@ -326,7 +326,7 @@ class AntiAnalysisBypass:
         
         return confidence
     
-    def _detect_runtime_anti_analysis(self) -> Dict[AntiAnalysisType, float]:
+    def _detect_runtime_anti_analysis(self) -> dict[AntiAnalysisType, float]:
         """Detect anti-analysis techniques at runtime."""
         results = {}
         
@@ -417,7 +417,7 @@ class AntiAnalysisBypass:
         except Exception:
             return 0.0
     
-    def _get_bypass_methods(self, technique: AntiAnalysisType) -> List[BypassTechnique]:
+    def _get_bypass_methods(self, technique: AntiAnalysisType) -> list[BypassTechnique]:
         """Get appropriate bypass methods for a technique."""
         bypass_map = {
             AntiAnalysisType.DEBUGGER_DETECTION: [
@@ -577,7 +577,7 @@ class AntiAnalysisBypass:
         except Exception as e:
             logger.error(f"Environment backup failed: {e}")
     
-    def _get_environment_state(self) -> Dict[str, Any]:
+    def _get_environment_state(self) -> dict[str, Any]:
         """Get current environment state."""
         return {
             "environment_vars": dict(os.environ),
@@ -606,7 +606,7 @@ class AntiAnalysisBypass:
             logger.error(f"Environment restoration failed: {e}")
             return False
     
-    def get_bypass_status(self) -> Dict[str, Any]:
+    def get_bypass_status(self) -> dict[str, Any]:
         """Get current bypass status."""
         return {
             "active_bypasses": list(self.active_bypasses.keys()),

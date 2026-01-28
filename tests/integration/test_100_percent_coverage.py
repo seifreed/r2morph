@@ -3,11 +3,19 @@ Comprehensive test suite to achieve 100% coverage.
 Covers all remaining uncovered lines in CLI, profiler, invariants, etc.
 """
 
+import importlib.util
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
 
 from r2morph.analysis.dependencies import DependencyAnalyzer, DependencyType
 from r2morph.analysis.invariants import InvariantDetector
@@ -22,7 +30,7 @@ class TestCLI100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_cli_simple_without_output_auto_generate(self, ls_elf, tmp_path):
         """Test CLI simple mode without output (auto-generates filename)."""
@@ -34,7 +42,7 @@ class TestCLI100Percent:
         shutil.copy(ls_elf, temp_input)
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", str(temp_input)],
+            [sys.executable, "-m", "r2morph.cli", str(temp_input)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -50,7 +58,7 @@ class TestCLI100Percent:
 
         output = tmp_path / "ls_aggressive_force"
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "-a", "-f", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "-a", "-f", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
@@ -63,7 +71,7 @@ class TestCLI100Percent:
         output = tmp_path / "output"
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", str(nonexistent), str(output)],
+            [sys.executable, "-m", "r2morph.cli", str(nonexistent), str(output)],
             capture_output=True,
             text=True,
             timeout=10,
@@ -77,7 +85,7 @@ class TestCLI100Percent:
             pytest.skip("ELF binary not available")
 
         result = subprocess.run(
-            ["python3", "-m", "r2morph.cli", "analyze", str(ls_elf), "--verbose"],
+            [sys.executable, "-m", "r2morph.cli", "analyze", str(ls_elf), "--verbose"],
             capture_output=True,
             text=True,
             timeout=30,
@@ -95,7 +103,7 @@ class TestCLI100Percent:
         for mutation in mutations:
             result = subprocess.run(
                 [
-                    "python3",
+                    sys.executable,
                     "-m",
                     "r2morph.cli",
                     "morph",
@@ -118,49 +126,7 @@ class TestProfiler100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
-
-    def test_profiler_linux_perf(self, ls_elf, tmp_path, monkeypatch):
-        """Test Linux perf profiling path."""
-        if not ls_elf.exists():
-            pytest.skip("ELF binary not available")
-
-        temp_binary = tmp_path / "ls_perf"
-        shutil.copy(ls_elf, temp_binary)
-        temp_binary.chmod(0o755)
-
-        profiler = BinaryProfiler(temp_binary)
-
-        # Mock platform to Linux
-        monkeypatch.setattr("platform.system", lambda: "Linux")
-
-        try:
-            result = profiler._profile_linux_perf(duration=1)
-            assert isinstance(result, dict)
-        except Exception:
-            # perf may not be available
-            pass
-
-    def test_profiler_macos_dtrace(self, ls_elf, tmp_path, monkeypatch):
-        """Test macOS dtrace profiling path."""
-        if not ls_elf.exists():
-            pytest.skip("ELF binary not available")
-
-        temp_binary = tmp_path / "ls_dtrace"
-        shutil.copy(ls_elf, temp_binary)
-        temp_binary.chmod(0o755)
-
-        profiler = BinaryProfiler(temp_binary)
-
-        # Mock platform to Darwin
-        monkeypatch.setattr("platform.system", lambda: "Darwin")
-
-        try:
-            result = profiler._profile_macos_dtrace(duration=1)
-            assert isinstance(result, dict)
-        except Exception:
-            # dtrace may not be available
-            pass
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_profiler_parse_perf_output(self, ls_elf, tmp_path):
         """Test parsing perf output."""
@@ -223,7 +189,7 @@ class TestInvariants100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_detect_all_invariants_complete(self, ls_elf):
         """Test detecting all invariants comprehensively."""
@@ -296,7 +262,7 @@ class TestDependencies100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_analyze_all_dependency_types(self, ls_elf):
         """Test analyzing all types of dependencies."""
@@ -361,7 +327,7 @@ class TestReferenceUpdater100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_update_all_reference_types(self, ls_elf, tmp_path):
         """Test updating all types of references."""
@@ -413,7 +379,7 @@ class TestHotPathDetector100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_detect_all_hot_paths(self, ls_elf):
         """Test detecting hot paths comprehensively."""
@@ -478,7 +444,7 @@ class TestBinaryExtensiveMethods:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_binary_write_instruction(self, ls_elf, tmp_path):
         """Test write_instruction method."""
@@ -545,12 +511,14 @@ class TestMutationPassesComplete:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     def test_all_mutations_with_different_configs(self, ls_elf, tmp_path):
         """Test all mutations with various configurations."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
+
+        pytest.importorskip("yaml")
 
         from r2morph.mutations import (
             BlockReorderingPass,

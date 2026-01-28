@@ -3,7 +3,7 @@ Function representation for binary analysis.
 """
 
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 
 @dataclass
@@ -25,9 +25,9 @@ class Function:
     name: str
     size: int
     instructions: list[dict[str, Any]]
-    basic_blocks: list[Dict[str, Any]]
-    calls: List[int]
-    metadata: Dict[str, Any]
+    basic_blocks: list[dict[str, Any]]
+    calls: list[int]
+    metadata: dict[str, Any]
 
     @classmethod
     def from_r2_dict(cls, data: dict[str, Any]) -> "Function":

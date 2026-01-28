@@ -8,7 +8,7 @@ their semantic behavior using pattern matching and symbolic execution.
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import CFGBuilder
@@ -32,31 +32,31 @@ class VMHandlerType(Enum):
     UNKNOWN = "unknown"           # Unclassified handler
 
 
-@dataclass 
+@dataclass
 class VMHandler:
     """Represents a virtual machine handler."""
-    
+
     handler_id: int
     entry_address: int
     size: int
     handler_type: VMHandlerType = VMHandlerType.UNKNOWN
-    instructions: List[Dict[str, Any]] = field(default_factory=list)
-    semantic_signature: Optional[str] = None
-    equivalent_x86: Optional[str] = None
+    instructions: list[dict[str, Any]] = field(default_factory=list)
+    semantic_signature: str | None = None
+    equivalent_x86: str | None = None
     confidence: float = 0.0
-    analysis_notes: List[str] = field(default_factory=list)
+    analysis_notes: list[str] = field(default_factory=list)
 
 
 @dataclass
 class VMArchitecture:
     """Represents the overall VM architecture."""
-    
+
     dispatcher_address: int
-    handlers: Dict[int, VMHandler] = field(default_factory=dict)
-    handler_table_address: Optional[int] = None
-    vm_registers: List[str] = field(default_factory=list)
-    vm_stack_address: Optional[int] = None
-    bytecode_address: Optional[int] = None
+    handlers: dict[int, VMHandler] = field(default_factory=dict)
+    handler_table_address: int | None = None
+    vm_registers: list[str] = field(default_factory=list)
+    vm_stack_address: int | None = None
+    bytecode_address: int | None = None
     vm_context_size: int = 0
 
 
@@ -76,10 +76,10 @@ class VMHandlerAnalyzer:
             binary: Binary to analyze
         """
         self.binary = binary
-        self.vm_architecture: Optional[VMArchitecture] = None
+        self.vm_architecture: VMArchitecture | None = None
         self.handler_patterns = self._load_handler_patterns()
         
-    def _load_handler_patterns(self) -> Dict[VMHandlerType, List[Dict[str, Any]]]:
+    def _load_handler_patterns(self) -> dict[VMHandlerType, list[dict[str, Any]]]:
         """Load patterns for identifying different handler types."""
         patterns = {
             VMHandlerType.ARITHMETIC: [
@@ -171,7 +171,7 @@ class VMHandlerAnalyzer:
         logger.info(f"VM analysis complete: {len(self.vm_architecture.handlers)} handlers identified")
         return self.vm_architecture
     
-    def _find_handler_table(self, dispatcher_addr: int) -> Optional[int]:
+    def _find_handler_table(self, dispatcher_addr: int) -> int | None:
         """
         Find the VM handler table from the dispatcher.
         
@@ -253,8 +253,9 @@ class VMHandlerAnalyzer:
                     # Stop if we hit a clearly invalid address
                     if entry == 0 or entry > 0x7fffffff:
                         break
-                        
-                except:
+
+                except Exception as e:
+                    logger.debug(f"Failed to read table entry: {e}")
                     break
             
             # Validate entries look like code addresses
@@ -276,15 +277,16 @@ class VMHandlerAnalyzer:
             # Try to disassemble one instruction at this address
             disasm = self.binary.r2.cmd(f"pd 1 @ {addr}")
             return len(disasm.strip()) > 0 and "invalid" not in disasm.lower()
-        except:
+        except Exception as e:
+            logger.debug(f"Failed to validate code address 0x{addr:x}: {e}")
             return False
     
-    def _extract_table_from_block(self, block_addr: int) -> Optional[int]:
+    def _extract_table_from_block(self, block_addr: int) -> int | None:
         """Extract handler table address from a basic block."""
         # Comprehensive implementation for VM handler emulation
         return None
     
-    def _extract_handler_addresses(self, table_addr: Optional[int]) -> List[int]:
+    def _extract_handler_addresses(self, table_addr: int | None) -> list[int]:
         """
         Extract handler addresses from the handler table.
         
@@ -322,8 +324,9 @@ class VMHandlerAnalyzer:
                         addresses.append(entry)
                     else:
                         break
-                        
-                except:
+
+                except Exception as e:
+                    logger.debug(f"Failed to read handler entry: {e}")
                     break
             
             logger.info(f"Extracted {len(addresses)} handler addresses from table")
@@ -333,7 +336,7 @@ class VMHandlerAnalyzer:
         
         return addresses
     
-    def _analyze_single_handler(self, handler_id: int, address: int) -> Optional[VMHandler]:
+    def _analyze_single_handler(self, handler_id: int, address: int) -> VMHandler | None:
         """
         Analyze a single VM handler.
         
@@ -377,7 +380,7 @@ class VMHandlerAnalyzer:
             logger.debug(f"Error analyzing handler {handler_id}: {e}")
             return None
     
-    def _get_handler_instructions(self, address: int) -> List[Dict[str, Any]]:
+    def _get_handler_instructions(self, address: int) -> list[dict[str, Any]]:
         """Get instructions for a VM handler."""
         try:
             # Try to get function disassembly
@@ -398,7 +401,7 @@ class VMHandlerAnalyzer:
             logger.debug(f"Error getting handler instructions: {e}")
             return []
     
-    def _classify_handler_type(self, instructions: List[Dict[str, Any]]) -> VMHandlerType:
+    def _classify_handler_type(self, instructions: list[dict[str, Any]]) -> VMHandlerType:
         """
         Classify handler type based on instruction patterns.
         
@@ -440,7 +443,7 @@ class VMHandlerAnalyzer:
         
         return VMHandlerType.UNKNOWN
     
-    def _generate_semantic_signature(self, instructions: List[Dict[str, Any]]) -> str:
+    def _generate_semantic_signature(self, instructions: list[dict[str, Any]]) -> str:
         """Generate semantic signature for handler."""
         # Simple signature based on instruction mnemonics
         mnemonics = []
@@ -455,7 +458,7 @@ class VMHandlerAnalyzer:
         
         return " -> ".join(mnemonics[:10])  # Limit to first 10 instructions
     
-    def _generate_equivalent_x86(self, handler: VMHandler) -> Optional[str]:
+    def _generate_equivalent_x86(self, handler: VMHandler) -> str | None:
         """Generate equivalent x86 assembly for handler."""
         # Simple mapping based on handler type
         if handler.handler_type == VMHandlerType.ARITHMETIC:
@@ -510,7 +513,7 @@ class VMHandlerAnalyzer:
         # Analyze memory references to locate bytecode sections
         pass
     
-    def get_handler_statistics(self) -> Dict[str, Any]:
+    def get_handler_statistics(self) -> dict[str, Any]:
         """Get statistics about analyzed handlers."""
         if not self.vm_architecture:
             return {}

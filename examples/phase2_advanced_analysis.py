@@ -23,7 +23,7 @@ import json
 import sys
 import time
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any
 
 # r2morph imports
 from r2morph import Binary
@@ -65,7 +65,7 @@ def print_banner():
     print(banner)
 
 
-def analyze_basic_obfuscation(binary: Binary, detector: ObfuscationDetector) -> Dict[str, Any]:
+def analyze_basic_obfuscation(binary: Binary, detector: ObfuscationDetector) -> dict[str, Any]:
     """Perform basic obfuscation analysis."""
     print("\n🔍 [1/8] Basic Obfuscation Analysis")
     print("=" * 50)
@@ -94,7 +94,7 @@ def analyze_basic_obfuscation(binary: Binary, detector: ObfuscationDetector) -> 
     }
 
 
-def analyze_extended_packers(binary: Binary, detector: ObfuscationDetector) -> Dict[str, Any]:
+def analyze_extended_packers(binary: Binary, detector: ObfuscationDetector) -> dict[str, Any]:
     """Perform extended packer analysis."""
     print("\n🔍 [2/8] Extended Packer Detection")
     print("=" * 50)
@@ -130,7 +130,7 @@ def analyze_extended_packers(binary: Binary, detector: ObfuscationDetector) -> D
     }
 
 
-def apply_anti_analysis_bypass(binary: Binary) -> Dict[str, Any]:
+def apply_anti_analysis_bypass(binary: Binary) -> dict[str, Any]:
     """Apply anti-analysis bypass techniques."""
     print("\n🛡️ [3/8] Anti-Analysis Bypass")
     print("=" * 50)
@@ -165,7 +165,7 @@ def apply_anti_analysis_bypass(binary: Binary) -> Dict[str, Any]:
         return {"detected_techniques": {}, "bypass_result": None}
 
 
-def perform_symbolic_analysis(binary: Binary, has_vm: bool) -> Dict[str, Any]:
+def perform_symbolic_analysis(binary: Binary, has_vm: bool) -> dict[str, Any]:
     """Perform symbolic execution analysis."""
     print("\n🧠 [4/8] Symbolic Execution Analysis")
     print("=" * 50)
@@ -218,7 +218,7 @@ def perform_symbolic_analysis(binary: Binary, has_vm: bool) -> Dict[str, Any]:
     return results
 
 
-def apply_cfo_simplification(binary: Binary) -> Dict[str, Any]:
+def apply_cfo_simplification(binary: Binary) -> dict[str, Any]:
     """Apply Control Flow Obfuscation simplification."""
     print("\n🔀 [5/8] Control Flow Obfuscation Simplification")
     print("=" * 50)
@@ -263,7 +263,7 @@ def apply_cfo_simplification(binary: Binary) -> Dict[str, Any]:
     return results
 
 
-def perform_iterative_simplification(binary: Binary) -> Dict[str, Any]:
+def perform_iterative_simplification(binary: Binary) -> dict[str, Any]:
     """Perform iterative multi-pass simplification."""
     print("\n🔄 [6/8] Iterative Multi-Pass Simplification")
     print("=" * 50)
@@ -316,7 +316,7 @@ def perform_iterative_simplification(binary: Binary) -> Dict[str, Any]:
     return results
 
 
-def perform_binary_rewriting(binary: Binary, output_path: str) -> Dict[str, Any]:
+def perform_binary_rewriting(binary: Binary, output_path: str) -> dict[str, Any]:
     """Perform binary rewriting and reconstruction."""
     print("\n🔧 [7/8] Binary Rewriting & Reconstruction")
     print("=" * 50)
@@ -381,8 +381,8 @@ def perform_binary_rewriting(binary: Binary, output_path: str) -> Dict[str, Any]
     return results
 
 
-def generate_comprehensive_report(binary: Binary, detector: ObfuscationDetector, 
-                                 analysis_results: Dict[str, Any]) -> Dict[str, Any]:
+def generate_comprehensive_report(binary: Binary, detector: ObfuscationDetector,
+                                 analysis_results: dict[str, Any]) -> dict[str, Any]:
     """Generate comprehensive analysis report."""
     print("\n📊 [8/8] Comprehensive Report Generation")
     print("=" * 50)
@@ -424,7 +424,7 @@ def generate_comprehensive_report(binary: Binary, detector: ObfuscationDetector,
         return {"error": str(e)}
 
 
-def save_results(results: Dict[str, Any], output_dir: Path):
+def save_results(results: dict[str, Any], output_dir: Path):
     """Save analysis results to files."""
     try:
         output_dir.mkdir(exist_ok=True)

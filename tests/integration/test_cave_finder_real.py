@@ -5,6 +5,14 @@ Real integration tests for CaveFinder using dataset binaries.
 from pathlib import Path
 
 import pytest
+import importlib.util
+
+if importlib.util.find_spec("r2pipe") is None:
+    pytest.skip("r2pipe not installed", allow_module_level=True)
+if importlib.util.find_spec("yaml") is None:
+    pytest.skip("pyyaml not installed", allow_module_level=True)
+
+
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.cave_finder import CaveFinder, CodeCave
@@ -16,12 +24,12 @@ class TestCaveFinderReal:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
 
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls_macOS"
+        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
 
     def test_cave_finder_initialization(self, ls_elf):
         """Test CaveFinder initialization."""
