@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "r2morph"
-version = "0.1.0"
+version = "1.0.0"
 description = "A metamorphic binary transformation engine based on r2pipe and radare2"
 readme = "README.md"
 requires-python = ">=3.10"
