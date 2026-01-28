@@ -43,6 +43,13 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           choco install radare2 -y
+          "C:\ProgramData\chocolatey\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "C:\Program Files\radare2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "C:\Program Files\radare2\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "C:\Program Files\Radare2" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "C:\Program Files\Radare2\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          where r2
+          where radare2
 
       - name: Install Python dependencies
         run: |
