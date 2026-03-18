@@ -59,8 +59,9 @@ class EnhancedAnalysisOrchestrator:
     dynamic instrumentation, devirtualization, and report generation.
     """
 
-    def __init__(self, binary_path: Path, output_dir: Path | None = None,
-                 console: Console | None = None):
+    def __init__(
+        self, binary_path: Path, output_dir: Path | None = None, console: Console | None = None
+    ):
         """
         Initialize the orchestrator.
 
@@ -85,11 +86,8 @@ class EnhancedAnalysisOrchestrator:
         """
         try:
             from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass
-            from r2morph.devirtualization import (
-                CFOSimplifier,
-                IterativeSimplifier,
-                BinaryRewriter
-            )
+            from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, BinaryRewriter
+
             return True
         except ImportError:
             return False
@@ -108,8 +106,8 @@ class EnhancedAnalysisOrchestrator:
         if self._binary is not None:
             try:
                 self._binary.__exit__(None, None, None)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Error cleaning up binary: {e}")
             self._binary = None
 
     def run_detection(self) -> Any:
@@ -148,15 +146,11 @@ class EnhancedAnalysisOrchestrator:
         table.add_column("Result", style="green")
 
         table.add_row(
-            "Packer Detected",
-            result.packer_detected.value if result.packer_detected else "None"
+            "Packer Detected", result.packer_detected.value if result.packer_detected else "None"
         )
         table.add_row("VM Protection", "Yes" if result.vm_detected else "No")
         table.add_row("Anti-Analysis", "Yes" if result.anti_analysis_detected else "No")
-        table.add_row(
-            "Control Flow Flattening",
-            "Yes" if result.control_flow_flattened else "No"
-        )
+        table.add_row("Control Flow Flattening", "Yes" if result.control_flow_flattened else "No")
         table.add_row("MBA Detected", "Yes" if result.mba_detected else "No")
         table.add_row("Confidence Score", f"{result.confidence_score:.2f}")
         table.add_row("Techniques Found", str(len(result.obfuscation_techniques)))
@@ -166,17 +160,17 @@ class EnhancedAnalysisOrchestrator:
         # Extended detection info
         self.console.print("\n[bold cyan]Extended Detection:[/bold cyan]")
 
-        if self.results.custom_vm.get('detected'):
-            vm_type = self.results.custom_vm.get('vm_type', 'unknown')
-            confidence = self.results.custom_vm.get('confidence', 0)
+        if self.results.custom_vm.get("detected"):
+            vm_type = self.results.custom_vm.get("vm_type", "unknown")
+            confidence = self.results.custom_vm.get("confidence", 0)
             self.console.print(f"  Custom Virtualizer: {vm_type} ({confidence:.2f})")
 
-        if self.results.layers.get('layers_detected', 0) > 0:
-            layers_count = self.results.layers['layers_detected']
+        if self.results.layers.get("layers_detected", 0) > 0:
+            layers_count = self.results.layers["layers_detected"]
             self.console.print(f"  Packing Layers: {layers_count}")
 
-        if self.results.metamorphic.get('detected'):
-            poly_ratio = self.results.metamorphic.get('polymorphic_ratio', 0)
+        if self.results.metamorphic.get("detected"):
+            poly_ratio = self.results.metamorphic.get("polymorphic_ratio", 0)
             self.console.print(f"  Metamorphic Engine: {poly_ratio:.1%}")
 
         # Obfuscation techniques list
@@ -203,9 +197,7 @@ class EnhancedAnalysisOrchestrator:
 
         if detected_techniques:
             bypass_result = bypass_framework.apply_comprehensive_bypass(detected_techniques)
-            self.console.print(
-                f"Applied {len(bypass_result.techniques_applied)} bypasses"
-            )
+            self.console.print(f"Applied {len(bypass_result.techniques_applied)} bypasses")
             return bypass_result
         else:
             self.console.print("No anti-analysis techniques detected")
@@ -227,16 +219,14 @@ class EnhancedAnalysisOrchestrator:
 
             total_reduction = 0
             for func in functions:
-                func_addr = func.get('offset', 0)
+                func_addr = func.get("offset", 0)
                 result = cfo_simplifier.simplify_control_flow(func_addr)
                 if result.success:
                     reduction = result.original_complexity - result.simplified_complexity
                     total_reduction += reduction
 
             if total_reduction > 0:
-                self.console.print(
-                    f"CFO simplification: {total_reduction} complexity reduced"
-                )
+                self.console.print(f"CFO simplification: {total_reduction} complexity reduced")
 
             self.results.cfo_reduction = total_reduction
             return total_reduction
@@ -245,8 +235,9 @@ class EnhancedAnalysisOrchestrator:
             self.console.print(f"[yellow]CFO simplification error: {e}[/yellow]")
             return 0
 
-    def run_iterative_simplification(self, max_iterations: int = 5,
-                                      timeout: int = 60) -> dict[str, Any] | None:
+    def run_iterative_simplification(
+        self, max_iterations: int = 5, timeout: int = 60
+    ) -> dict[str, Any] | None:
         """
         Run iterative simplification passes.
 
@@ -266,7 +257,7 @@ class EnhancedAnalysisOrchestrator:
             result = simplifier.simplify(
                 strategy=SimplificationStrategy.ADAPTIVE,
                 max_iterations=max_iterations,
-                timeout=timeout
+                timeout=timeout,
             )
 
             if result.success:
@@ -315,9 +306,7 @@ class EnhancedAnalysisOrchestrator:
             return None
 
         except ImportError:
-            self.console.print(
-                "[yellow]Symbolic execution not available (missing angr)[/yellow]"
-            )
+            self.console.print("[yellow]Symbolic execution not available (missing angr)[/yellow]")
             return None
 
     def run_dynamic_analysis(self) -> bool:
@@ -330,9 +319,7 @@ class EnhancedAnalysisOrchestrator:
         try:
             from r2morph.instrumentation import FridaEngine
 
-            self.console.print(
-                "\n[bold yellow]Setting up dynamic instrumentation...[/bold yellow]"
-            )
+            self.console.print("\n[bold yellow]Setting up dynamic instrumentation...[/bold yellow]")
 
             frida_engine = FridaEngine()
             self.console.print("Frida engine initialized")
@@ -360,20 +347,19 @@ class EnhancedAnalysisOrchestrator:
             # Set up output path
             if self.output_dir:
                 output_path = (
-                    self.output_dir /
-                    f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
+                    self.output_dir / f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
                 )
             else:
                 output_path = (
-                    self.binary_path.parent /
-                    f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
+                    self.binary_path.parent
+                    / f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
                 )
 
             # Add example patches
             functions = self._binary.get_functions()[:3]
             patches_added = 0
             for func in functions:
-                func_addr = func.get('offset', 0)
+                func_addr = func.get("offset", 0)
                 if rewriter.add_patch(func_addr, ["nop"]):
                     patches_added += 1
 
@@ -402,6 +388,7 @@ class EnhancedAnalysisOrchestrator:
         """
         if self._detector is None:
             from r2morph.detection import ObfuscationDetector
+
             self._detector = ObfuscationDetector()
 
         self.console.print("\n[bold yellow]Generating comprehensive report...[/bold yellow]")
@@ -436,16 +423,16 @@ class EnhancedAnalysisOrchestrator:
         results_dict = {}
 
         if self.results.cfo_reduction > 0:
-            results_dict['cfo_reduction'] = self.results.cfo_reduction
+            results_dict["cfo_reduction"] = self.results.cfo_reduction
 
         if self.results.iterative_result:
-            results_dict['iterative_result'] = self.results.iterative_result
+            results_dict["iterative_result"] = self.results.iterative_result
 
         if self.results.vm_handlers > 0:
-            results_dict['vm_handlers'] = self.results.vm_handlers
+            results_dict["vm_handlers"] = self.results.vm_handlers
 
         if self.results.rewrite_output:
-            results_dict['rewrite_output'] = self.results.rewrite_output
+            results_dict["rewrite_output"] = self.results.rewrite_output
 
         if results_dict:
             self.console.print("\n[bold cyan]Advanced Analysis Results:[/bold cyan]")
@@ -466,9 +453,7 @@ class EnhancedAnalysisOrchestrator:
             )
 
         if result.anti_analysis_detected:
-            self.console.print(
-                "  - Anti-analysis techniques detected - use --bypass --dynamic"
-            )
+            self.console.print("  - Anti-analysis techniques detected - use --bypass --dynamic")
 
         if result.mba_detected:
             self.console.print(
@@ -476,23 +461,23 @@ class EnhancedAnalysisOrchestrator:
             )
 
         if result.control_flow_flattened:
-            self.console.print(
-                "  - Control flow flattening detected - use --symbolic --devirt"
-            )
+            self.console.print("  - Control flow flattening detected - use --symbolic --devirt")
 
-        layers_detected = self.results.layers.get('layers_detected', 0)
+        layers_detected = self.results.layers.get("layers_detected", 0)
         if layers_detected > 1:
             self.console.print(
                 "  - Multiple packing layers detected - iterative unpacking recommended"
             )
 
         # Check if binary appears lightly obfuscated
-        if not any([
-            result.vm_detected,
-            result.anti_analysis_detected,
-            result.mba_detected,
-            result.control_flow_flattened
-        ]):
+        if not any(
+            [
+                result.vm_detected,
+                result.anti_analysis_detected,
+                result.mba_detected,
+                result.control_flow_flattened,
+            ]
+        ):
             self.console.print(
                 "  - Binary appears lightly obfuscated - standard analysis may suffice"
             )
@@ -536,8 +521,7 @@ class EnhancedAnalysisOrchestrator:
             # Iterative Simplification
             if options.iterative:
                 self.run_iterative_simplification(
-                    max_iterations=options.max_iterations,
-                    timeout=options.timeout
+                    max_iterations=options.max_iterations, timeout=options.timeout
                 )
 
             # Symbolic Execution
@@ -583,11 +567,8 @@ def check_enhanced_dependencies() -> bool:
     """
     try:
         from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass
-        from r2morph.devirtualization import (
-            CFOSimplifier,
-            IterativeSimplifier,
-            BinaryRewriter
-        )
+        from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, BinaryRewriter
+
         return True
     except ImportError:
         return False

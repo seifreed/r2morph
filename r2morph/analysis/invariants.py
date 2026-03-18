@@ -73,13 +73,17 @@ class InvariantDetector:
         Returns:
             List of stack balance invariants
         """
-        invariants = []
+        invariants: list[Invariant] = []
 
         try:
             instructions = self.binary.get_function_disasm(function_address)
         except Exception as e:
             logger.debug(f"Failed to get disasm for function @ 0x{function_address:x}: {e}")
             return invariants
+
+        arch_info = self.binary.get_arch_info()
+        bits = arch_info.get("bits", 64)
+        stack_word_size = bits // 8
 
         stack_delta = 0
         push_count = 0
@@ -90,21 +94,33 @@ class InvariantDetector:
             mnemonic = disasm.split()[0] if disasm else ""
 
             if mnemonic == "push":
-                stack_delta -= 8
+                stack_delta -= stack_word_size
                 push_count += 1
             elif mnemonic == "pop":
-                stack_delta += 8
+                stack_delta += stack_word_size
                 pop_count += 1
             elif mnemonic in ["call"]:
                 pass
-            elif mnemonic in ["ret", "retn"]:
+            elif mnemonic in ["ret", "retn", "retq", "retl"]:
+                ret_suffix = disasm.split()[1] if len(disasm.split()) > 1 else None
+                if ret_suffix:
+                    try:
+                        ret_imm = int(ret_suffix.strip().rstrip(","), 0)
+                        stack_delta += ret_imm
+                    except ValueError:
+                        pass
                 if stack_delta != 0:
                     invariants.append(
                         Invariant(
                             invariant_type=InvariantType.STACK_BALANCE,
                             description=f"Stack unbalanced at return (delta={stack_delta})",
                             location=insn.get("offset", 0),
-                            details={"delta": stack_delta, "pushes": push_count, "pops": pop_count},
+                            details={
+                                "delta": stack_delta,
+                                "pushes": push_count,
+                                "pops": pop_count,
+                                "arch_bits": bits,
+                            },
                         )
                     )
 
@@ -133,9 +149,15 @@ class InvariantDetector:
         Returns:
             List of register preservation invariants
         """
-        invariants = []
+        invariants: list[Invariant] = []
 
-        arch_family = "x86" if arch in ["x86", "x64"] else arch
+        if arch in ["x86", "x64"]:
+            arch_family = "x64" if arch == "x64" else "x86"
+        elif arch in ["arm", "arm64", "aarch64"]:
+            arch_family = "arm"
+        else:
+            arch_family = arch
+
         callee_saved = set(self.CALLEE_SAVED_REGS.get(arch_family, []))
 
         if not callee_saved:

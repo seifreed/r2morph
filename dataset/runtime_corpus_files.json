@@ -1,0 +1,11 @@
+[
+  {
+    "description": "side-effect-file",
+    "args": [],
+    "stdin": "",
+    "expected_exitcode": 0,
+    "monitored_files": [
+      "side_effect.txt"
+    ]
+  }
+]

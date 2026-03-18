@@ -98,7 +98,7 @@ class CaveFinder:
         Returns:
             List of caves found
         """
-        caves = []
+        caves: list[CodeCave] = []
 
         try:
             data_hex = self.binary.r2.cmd(f"p8 {size} @ 0x{start_addr:x}")

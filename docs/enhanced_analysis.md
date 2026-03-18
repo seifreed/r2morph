@@ -1,5 +1,9 @@
 # Enhanced Obfuscated Binary Analysis
 
+This document covers secondary, experimental capabilities in the repository.
+
+These workflows are not the primary product direction for `r2morph`. The mainline product is the mutation engine with validation documented in the root [README](../README.md) and [ROADMAP](./ROADMAP.md).
+
 This document describes the new enhanced capabilities added to r2morph for analyzing sophisticated obfuscated binaries, including commercial packers like VMProtect and Themida.
 
 ## New Features

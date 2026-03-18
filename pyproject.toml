@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "r2morph"
-version = "1.0.0"
+version = "0.2.0"
 description = "A metamorphic binary transformation engine based on r2pipe and radare2"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -135,6 +135,11 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+markers = [
+    "product_smoke: end-to-end tests for the stable mutation engine product",
+    "slow: slower integration or product tests",
+    "experimental: tests for optional or experimental analysis surfaces outside the stable core",
+]
 addopts = [
     "-v",
     "--strict-markers",

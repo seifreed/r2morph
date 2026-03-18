@@ -30,7 +30,13 @@ class Binary:
         memory_manager: MemoryManager instance for batch processing
     """
 
-    def __init__(self, path: str | Path, flags: list[str] | None = None, writable: bool = False, low_memory: bool = False):
+    def __init__(
+        self,
+        path: str | Path,
+        flags: list[str] | None = None,
+        writable: bool = False,
+        low_memory: bool = False,
+    ):
         """
         Initialize a Binary instance.
 
@@ -69,6 +75,7 @@ class Binary:
         """Get the AssemblyService instance (lazy-loaded)."""
         if self._assembly_service is None:
             from r2morph.core.assembly import get_assembly_service
+
             self._assembly_service = get_assembly_service()
         return self._assembly_service
 
@@ -77,6 +84,7 @@ class Binary:
         """Get the MemoryManager instance (lazy-loaded)."""
         if self._memory_manager is None:
             from r2morph.core.memory_manager import get_memory_manager
+
             self._memory_manager = get_memory_manager()
         return self._memory_manager
 
@@ -105,8 +113,8 @@ class Binary:
             if self._low_memory:
                 logger.debug("Configuring r2 for low memory mode")
                 self.r2.cmd("e bin.cache=false")  # Disable binary cache
-                self.r2.cmd("e io.cache=false")   # Disable I/O cache
-                self.r2.cmd("e bin.strings=false") # Don't cache strings
+                self.r2.cmd("e io.cache=false")  # Disable I/O cache
+                self.r2.cmd("e bin.strings=false")  # Don't cache strings
 
             logger.debug(f"Binary info: {self.info.get('core', {}).get('format', 'unknown')}")
         except Exception as e:
@@ -205,7 +213,8 @@ class Binary:
             raise RuntimeError("Binary not opened. Call open() first.")
 
         disasm = self.r2.cmdj(f"pdfj @ {address}") or {}
-        return disasm.get("ops", [])
+        ops: list[dict[str, Any]] = disasm.get("ops", [])
+        return ops
 
     def get_basic_blocks(self, address: int) -> list[dict[str, Any]]:
         """
@@ -277,8 +286,8 @@ class Binary:
                             var_name = parts[0].split()[-1].strip()
                             location = parts[1].strip()
                             var_map[var_name] = location
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Could not parse function variables at 0x{function_addr:x}: {e}")
 
         # Replace variables with resolved addresses
         resolved = instruction
@@ -346,7 +355,7 @@ class Binary:
         import re
 
         # Parse instruction: movzx/movsx dest, src
-        match = re.match(r'(movzx|movsx)\s+(\w+),\s*(\w+)', instruction.strip(), re.IGNORECASE)
+        match = re.match(r"(movzx|movsx)\s+(\w+),\s*(\w+)", instruction.strip(), re.IGNORECASE)
         if not match:
             return None
 
@@ -357,20 +366,44 @@ class Binary:
 
         # Register encoding tables
         reg32_encoding = {
-            "eax": 0, "ecx": 1, "edx": 2, "ebx": 3,
-            "esp": 4, "ebp": 5, "esi": 6, "edi": 7,
+            "eax": 0,
+            "ecx": 1,
+            "edx": 2,
+            "ebx": 3,
+            "esp": 4,
+            "ebp": 5,
+            "esi": 6,
+            "edi": 7,
         }
         reg16_encoding = {
-            "ax": 0, "cx": 1, "dx": 2, "bx": 3,
-            "sp": 4, "bp": 5, "si": 6, "di": 7,
+            "ax": 0,
+            "cx": 1,
+            "dx": 2,
+            "bx": 3,
+            "sp": 4,
+            "bp": 5,
+            "si": 6,
+            "di": 7,
         }
         reg8_encoding = {
-            "al": 0, "cl": 1, "dl": 2, "bl": 3,
-            "ah": 4, "ch": 5, "dh": 6, "bh": 7,
+            "al": 0,
+            "cl": 1,
+            "dl": 2,
+            "bl": 3,
+            "ah": 4,
+            "ch": 5,
+            "dh": 6,
+            "bh": 7,
         }
         reg64_encoding = {
-            "rax": 0, "rcx": 1, "rdx": 2, "rbx": 3,
-            "rsp": 4, "rbp": 5, "rsi": 6, "rdi": 7,
+            "rax": 0,
+            "rcx": 1,
+            "rdx": 2,
+            "rbx": 3,
+            "rsp": 4,
+            "rbp": 5,
+            "rsi": 6,
+            "rdi": 7,
         }
 
         # Determine opcode based on source size and operation
@@ -434,8 +467,10 @@ class Binary:
                 segment_byte = seg_byte
                 # Remove only the segment prefix, keep size specifiers
                 # "mov dword fs:[rax], ecx" -> "mov dword [rax], ecx"
-                instruction_without_segment = instruction.replace(seg_name, '', 1)
-                instruction_without_segment = instruction_without_segment.replace(seg_name.upper(), '', 1)
+                instruction_without_segment = instruction.replace(seg_name, "", 1)
+                instruction_without_segment = instruction_without_segment.replace(
+                    seg_name.upper(), "", 1
+                )
                 break
 
         if segment_byte is None:
@@ -492,7 +527,10 @@ class Binary:
                     return manual_bytes
 
             # Fallback 2: segment prefix instructions (fs:, gs:, etc.)
-            if any(seg in normalized_instruction.lower() for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]):
+            if any(
+                seg in normalized_instruction.lower()
+                for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]
+            ):
                 logger.debug(f"Radare2 assembler failed, trying segment prefix fallback")
                 segment_bytes = self._assemble_segment_prefix_fallback(normalized_instruction)
                 if segment_bytes:
@@ -556,8 +594,8 @@ class Binary:
                     if verify == hex_data.lower():
                         self.track_mutation()
                         return True
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to write via r2 wx at 0x{address:x}: {e}")
 
             paddr_result = self.r2.cmd(f"s2p 0x{address:x}")
 
@@ -576,7 +614,8 @@ class Binary:
                                 f"Mapped vaddr 0x{address:x} -> section paddr 0x{physical_offset:x}"
                             )
                             break
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Section mapping failed for 0x{address:x}: {e}")
                     physical_offset = None
 
                 if physical_offset is None:
@@ -602,6 +641,32 @@ class Binary:
         except Exception as e:
             logger.error(f"Failed to write bytes at 0x{address:x}: {e}")
             return False
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        """
+        Read bytes from the binary at a virtual address.
+
+        Args:
+            address: Target virtual address
+            size: Number of bytes to read
+
+        Returns:
+            Bytes read from the binary. Returns empty bytes on failure.
+        """
+        if not self.r2:
+            raise RuntimeError("Binary not opened. Call open() first.")
+
+        if size <= 0:
+            return b""
+
+        try:
+            hex_data = self.r2.cmd(f"p8 {size} @ 0x{address:x}").strip()
+            if not hex_data:
+                return b""
+            return bytes.fromhex(hex_data)
+        except Exception as e:
+            logger.error(f"Failed to read bytes at 0x{address:x}: {e}")
+            return b""
 
     def write_instruction(self, address: int, instruction: str) -> bool:
         """

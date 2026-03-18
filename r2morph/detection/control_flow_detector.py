@@ -10,7 +10,10 @@ This module provides detection of control flow-based obfuscation including:
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +44,7 @@ class ControlFlowAnalyzer:
     including flattening, opaque predicates, and virtualization.
     """
 
-    def __init__(self, binary: "Binary"):
+    def __init__(self, binary: Binary):
         """
         Initialize control flow analyzer.
 
@@ -120,7 +123,8 @@ class ControlFlowAnalyzer:
                         if dispatcher_found:
                             cff_indicators += 1
 
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Failed to get blocks for function 0x{func_addr:x}: {e}")
                     continue
 
             if total_functions == 0:
@@ -152,7 +156,8 @@ class ControlFlowAnalyzer:
 
             return False
 
-        except Exception:
+        except Exception as e:
+            logger.debug(f"Error in dispatcher pattern check: {e}")
             return False
 
     def _detect_opaque_predicates(self) -> int:
@@ -190,7 +195,10 @@ class ControlFlowAnalyzer:
                                     if len(operands) >= 2 and operands[0] == operands[1]:
                                         opaque_count += 1
 
-                except Exception:
+                except Exception as e:
+                    logger.debug(
+                        f"Error analyzing function 0x{func_addr:x} for opaque predicates: {e}"
+                    )
                     continue
 
         except Exception as e:
@@ -237,7 +245,8 @@ class ControlFlowAnalyzer:
                         if mix_ratio > 0.4:  # More than 40% boolean/arithmetic mix
                             mba_count += 1
 
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Error analyzing function 0x{func_addr:x} for MBA patterns: {e}")
                     continue
 
         except Exception as e:
@@ -302,7 +311,8 @@ class ControlFlowAnalyzer:
                                 f"High indirect jump ratio in function at 0x{func_addr:x}"
                             )
 
-                except Exception:
+                except Exception as e:
+                    logger.debug(f"Error analyzing function 0x{func_addr:x} for VM indicators: {e}")
                     continue
 
             # Calculate confidence
@@ -440,7 +450,10 @@ class ControlFlowAnalyzer:
                                     redundant_moves += 1
 
                         # Count potentially dead arithmetic
-                        if any(instr in opcode for instr in ["add", "sub", "xor"]) and "0" in opcode:
+                        if (
+                            any(instr in opcode for instr in ["add", "sub", "xor"])
+                            and "0" in opcode
+                        ):
                             dead_code_count += 1
 
                     # Calculate polymorphic score
@@ -454,7 +467,10 @@ class ControlFlowAnalyzer:
                                 f"Function at 0x{func_addr:x} has {poly_score:.1%} polymorphic indicators"
                             )
 
-                except Exception:
+                except Exception as e:
+                    logger.debug(
+                        f"Error analyzing function 0x{func_addr:x} for polymorphic indicators: {e}"
+                    )
                     continue
 
             # Calculate overall results

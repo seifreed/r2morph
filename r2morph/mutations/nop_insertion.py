@@ -57,13 +57,25 @@ class NopInsertionPass(MutationPass):
 
     REGISTERS_32BIT = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
     REGISTERS_64BIT = ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
+    CALLER_SAVED_32BIT = {"eax", "ecx", "edx"}
+    CALLER_SAVED_64BIT = {
+        "rax",
+        "rcx",
+        "rdx",
+        "rsi",
+        "rdi",
+        "r8",
+        "r9",
+        "r10",
+        "r11",
+    }
 
     def _init_nop_equivalents(self):
         """
         Initialize and shuffle NOP equivalents (r2morph-style re-seeding).
 
-        This method is called after each successful mutation to ensure
-        different NOP patterns are used each time.
+        This method is called during initialization and when random seed
+        is reset to ensure reproducible randomness across runs.
         """
         self.NOP_EQUIVALENTS = {}
         for arch, patterns in self.NOP_EQUIVALENTS_BASE.items():
@@ -142,8 +154,7 @@ class NopInsertionPass(MutationPass):
 
                 for inst in instructions:
                     inst_bytes = binary.assemble(inst, function_addr)
-                    if not inst_bytes:
-                        all_bytes = None
+                    if inst_bytes is None:
                         break
                     all_bytes += inst_bytes
 
@@ -168,8 +179,43 @@ class NopInsertionPass(MutationPass):
         self.probability = self.config.get("probability", 0.5)
         self.use_creative_nops = self.config.get("use_creative_nops", True)
         self.force_different = self.config.get("force_different", False)
+        self.set_support(
+            formats=("ELF", "Mach-O"),
+            architectures=("x86_64", "arm64"),
+            validators=("structural", "runtime", "symbolic"),
+            stability="stable",
+            notes=(
+                "safe redundant-instruction replacement",
+                "arm64 support via mov-immediate substitution is experimental",
+            ),
+            validator_capabilities={
+                "structural": {
+                    "mode": "region",
+                    "coverage": "patch integrity + invariant checks",
+                },
+                "runtime": {
+                    "mode": "per-pass + final",
+                    "coverage": "sample-based equivalence",
+                },
+                "symbolic": {
+                    "mode": "experimental",
+                    "scope": "bounded real-binary observables on replaced regions",
+                    "confidence": "medium",
+                    "expected_statuses": (
+                        "real-binary-observables-match",
+                        "real-binary-observable-mismatch",
+                    ),
+                },
+            },
+        )
 
         self._init_nop_equivalents()
+
+    def _is_safe_self_redundancy(self, register: str, bits: int) -> bool:
+        """Restrict stable NOP substitution to caller-saved self-operations."""
+        if bits == 64:
+            return register in self.CALLER_SAVED_64BIT
+        return register in self.CALLER_SAVED_32BIT
 
     def apply(self, binary: Binary) -> dict[str, Any]:
         """
@@ -181,6 +227,9 @@ class NopInsertionPass(MutationPass):
         Returns:
             Dictionary with mutation statistics
         """
+        if self._reset_random() is not None:
+            self._init_nop_equivalents()
+
         if not binary.is_analyzed():
             logger.warning("Binary not analyzed, analyzing now...")
             binary.analyze()
@@ -220,12 +269,26 @@ class NopInsertionPass(MutationPass):
                         parts = disasm.split(",")
                         if len(parts) == 2:
                             src = parts[1].strip()
-                            dst = parts[0].split()[-1].strip() if " " in parts[0] else ""
-                            if src == dst:
+                            mnemonic_parts = parts[0].split()
+                            dst = mnemonic_parts[-1].strip() if len(mnemonic_parts) >= 2 else ""
+                            if dst and src == dst and self._is_safe_self_redundancy(dst, bits):
                                 is_redundant = True
-
-                    if any(op in disasm for op in ["add", "sub", "or", "xor"]) and ", 0" in disasm:
-                        is_redundant = True
+                    elif "lea" in disasm:
+                        parts = disasm.split(",")
+                        if len(parts) == 2:
+                            mnemonic_parts = parts[0].split()
+                            dst = mnemonic_parts[-1].strip() if len(mnemonic_parts) >= 2 else ""
+                            src = parts[1].strip().strip("[]")
+                            if dst and src == dst and self._is_safe_self_redundancy(dst, bits):
+                                is_redundant = True
+                    elif "xchg" in disasm:
+                        parts = disasm.split(",")
+                        if len(parts) == 2:
+                            mnemonic_parts = parts[0].split()
+                            dst = mnemonic_parts[-1].strip() if len(mnemonic_parts) >= 2 else ""
+                            src = parts[1].strip()
+                            if dst and src == dst and self._is_safe_self_redundancy(dst, bits):
+                                is_redundant = True
 
                 elif arch_family == "arm" and bits == 64:
                     if disasm == "nop":
@@ -260,7 +323,15 @@ class NopInsertionPass(MutationPass):
                         continue
 
                     try:
+                        mutation_checkpoint = self._create_mutation_checkpoint("nop")
+                        baseline = {}
+                        if self._validation_manager is not None:
+                            baseline = self._validation_manager.capture_structural_baseline(
+                                binary, func["addr"]
+                            )
+                        original_bytes = binary.read_bytes(addr, size)
                         nop_written = False
+                        mutated_disasm = "nop"
 
                         if arch_family == "arm" and bits == 64:
                             # Only mutate known-safe redundant instructions on ARM64
@@ -269,6 +340,7 @@ class NopInsertionPass(MutationPass):
                                 if nop_bytes and len(nop_bytes) == size:
                                     binary.write_bytes(addr, nop_bytes)
                                     nop_written = True
+                                    mutated_disasm = "mov xzr, xzr"
 
                         if self.use_creative_nops and random.random() < 0.7:
                             if size in [3, 4, 5] and arch_family == "x86":
@@ -282,6 +354,7 @@ class NopInsertionPass(MutationPass):
                                         f"(was: {insn.get('disasm', 'unknown')})"
                                     )
                                     nop_written = True
+                                    mutated_disasm = "jmp+dead-code"
 
                             if not nop_written and arch_family in self.NOP_EQUIVALENTS:
                                 equivalents = self.NOP_EQUIVALENTS[arch_family]
@@ -302,6 +375,7 @@ class NopInsertionPass(MutationPass):
                                             f"(was: {insn.get('disasm', 'unknown')})"
                                         )
                                         nop_written = True
+                                        mutated_disasm = nop_equiv
                                         break
 
                         if not nop_written:
@@ -310,6 +384,32 @@ class NopInsertionPass(MutationPass):
                                 f"Inserted {size} plain NOPs at 0x{addr:x} "
                                 f"(was: {insn.get('disasm', 'unknown')})"
                             )
+                            mutated_disasm = f"nop x{size}"
+
+                        mutated_bytes = binary.read_bytes(addr, size)
+                        record = self._record_mutation(
+                            function_address=func["addr"],
+                            start_address=addr,
+                            end_address=addr + size - 1,
+                            original_bytes=original_bytes,
+                            mutated_bytes=mutated_bytes,
+                            original_disasm=insn.get("disasm", ""),
+                            mutated_disasm=mutated_disasm,
+                            mutation_kind="nop_insertion",
+                            metadata={"structural_baseline": baseline, "size": size},
+                        )
+                        if self._validation_manager is not None:
+                            outcome = self._validation_manager.validate_mutation(
+                                binary, record.to_dict()
+                            )
+                            if not outcome.passed and mutation_checkpoint is not None:
+                                if self._session is not None:
+                                    self._session.rollback_to(mutation_checkpoint)
+                                binary.reload()
+                                self._records.pop()
+                                if self._rollback_policy == "fail-fast":
+                                    raise RuntimeError("Mutation-level validation failed")
+                                continue
 
                         func_mutations += 1
                         mutations_applied += 1
@@ -385,7 +485,24 @@ class NopInsertionPass(MutationPass):
                 if not new_bytes or len(new_bytes) != size:
                     continue
 
+                original_bytes = binary.read_bytes(addr, size)
                 if binary.write_bytes(addr, new_bytes):
+                    baseline = {}
+                    if self._validation_manager is not None:
+                        baseline = self._validation_manager.capture_structural_baseline(
+                            binary, func["addr"]
+                        )
+                    record = self._record_mutation(
+                        function_address=func["addr"],
+                        start_address=addr,
+                        end_address=addr + size - 1,
+                        original_bytes=original_bytes,
+                        mutated_bytes=binary.read_bytes(addr, size),
+                        original_disasm=insn.get("disasm", ""),
+                        mutated_disasm=new_insn,
+                        mutation_kind="nop_insertion",
+                        metadata={"structural_baseline": baseline, "size": size},
+                    )
                     func_mutations += 1
                     mutations_applied += 1
 

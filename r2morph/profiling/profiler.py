@@ -29,7 +29,7 @@ class BinaryProfiler:
         self.binary_path = binary_path
         self.profile_data: dict = {}
 
-    def profile(self, test_inputs: list[str] = None, duration: int = 10) -> dict:
+    def profile(self, test_inputs: list[str] | None = None, duration: int = 10) -> dict:
         """
         Profile binary execution.
 

@@ -5,7 +5,7 @@ This package provides a modular framework for analyzing and transforming binary 
 through semantic-preserving mutations.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 __author__ = "r2morph contributors"
 __license__ = "MIT"
 

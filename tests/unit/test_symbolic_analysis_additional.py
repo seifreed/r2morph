@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import importlib.util
+from importlib import import_module
 import pytest
 import z3
 
@@ -18,6 +19,7 @@ from r2morph.analysis.symbolic.path_explorer import (
 )
 from r2morph.analysis.symbolic.state_manager import StateManager, StateSchedulingStrategy
 from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver, MBAExpression
+from r2morph.validation.manager import ValidationManager
 
 
 def _load_binary():
@@ -159,3 +161,71 @@ def test_path_explorer_technique_tracking_and_results():
         assert predicates[0]["sample_count"] >= 1
     finally:
         bin_obj.__exit__(None, None, None)
+
+
+class _ObservableCheckBinary:
+    def get_arch_info(self):
+        return {"arch": "x86", "bits": 32, "format": "ELF"}
+
+
+def test_instruction_substitution_observables_match_for_known_zeroing_pair():
+    manager = ValidationManager(mode="symbolic")
+    bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
+
+    result = manager._compare_instruction_substitution_observables(
+        _ObservableCheckBinary(),
+        {
+            "pass_name": "InstructionSubstitution",
+            "mutations": [
+                {
+                    "start_address": 0x401000,
+                    "end_address": 0x401001,
+                    "original_bytes": "31c0",
+                    "mutated_bytes": "29c0",
+                    "metadata": {
+                        "equivalence_group_index": 7,
+                        "equivalence_original_pattern": "xor eax, eax",
+                        "equivalence_replacement_pattern": "sub eax, eax",
+                        "equivalence_members": ["xor eax, eax", "sub eax, eax"],
+                    },
+                }
+            ],
+        },
+        bridge_module,
+    )
+
+    assert result["symbolic_observable_check_performed"] is True
+    assert result["symbolic_observable_equivalent"] is True
+    assert result["symbolic_observable_mismatches"] == []
+    assert result["symbolic_observable_regions"][0]["mismatches"] == []
+
+
+def test_instruction_substitution_observables_detect_mismatch():
+    manager = ValidationManager(mode="symbolic")
+    bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
+
+    result = manager._compare_instruction_substitution_observables(
+        _ObservableCheckBinary(),
+        {
+            "pass_name": "InstructionSubstitution",
+            "mutations": [
+                {
+                    "start_address": 0x401010,
+                    "end_address": 0x401010,
+                    "original_bytes": "31c0",
+                    "mutated_bytes": "90",
+                    "metadata": {
+                        "equivalence_group_index": 9,
+                        "equivalence_original_pattern": "xor eax, eax",
+                        "equivalence_replacement_pattern": "nop",
+                        "equivalence_members": ["xor eax, eax", "nop"],
+                    },
+                }
+            ],
+        },
+        bridge_module,
+    )
+
+    assert result["symbolic_observable_check_performed"] is True
+    assert result["symbolic_observable_equivalent"] is False
+    assert any(mismatch["observable"] == "eax" for mismatch in result["symbolic_observable_mismatches"])

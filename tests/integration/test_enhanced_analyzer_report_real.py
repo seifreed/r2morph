@@ -2,7 +2,12 @@ from pathlib import Path
 
 import pytest
 
+import pytest
+
 from r2morph.analysis.enhanced_analyzer import EnhancedAnalysisOrchestrator
+
+
+pytestmark = [pytest.mark.experimental]
 
 
 def test_enhanced_analyzer_generate_and_save_report(tmp_path: Path):

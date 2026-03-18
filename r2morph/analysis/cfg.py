@@ -267,8 +267,8 @@ class CFGBuilder:
                 instructions = [
                     insn for insn in all_instrs if addr <= insn.get("offset", 0) < addr + size
                 ]
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Could not get instructions for block at 0x{addr:x}: {e}")
 
             block = BasicBlock(
                 address=addr,

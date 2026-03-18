@@ -10,9 +10,13 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from r2morph.utils.entropy import calculate_entropy
+
+if TYPE_CHECKING:
+    from r2morph.core.binary import Binary
+    from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -332,7 +336,9 @@ class PackerSignatureDatabase:
                     best_match = signature.packer_type
 
             if best_match != PackerType.NONE:
-                logger.info(f"Detected packer: {best_match.value} (confidence: {best_confidence:.2f})")
+                logger.info(
+                    f"Detected packer: {best_match.value} (confidence: {best_confidence:.2f})"
+                )
 
         except Exception as e:
             logger.error(f"Error detecting packer: {e}")
@@ -382,8 +388,8 @@ class PackerSignatureDatabase:
                     total_checks += 1
                     if pattern.lower() in strings_output.lower():
                         confidence += 1.0
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to check string patterns: {e}")
 
         # Check entropy
         entropy_result = entropy_analyzer.analyze_file(Path(binary.path))
@@ -393,7 +399,9 @@ class PackerSignatureDatabase:
 
         return confidence / max(total_checks, 1)
 
-    def detect_packing_layers(self, binary: "Binary", entropy_analyzer: "EntropyAnalyzer") -> dict[str, Any]:
+    def detect_packing_layers(
+        self, binary: "Binary", entropy_analyzer: "EntropyAnalyzer"
+    ) -> dict[str, Any]:
         """
         Detect multiple packing layers.
 
@@ -430,9 +438,14 @@ class PackerSignatureDatabase:
 
                             if entropy > 7.0:  # High entropy threshold
                                 high_entropy_sections.append(
-                                    {"name": section.get("name", ""), "entropy": entropy, "size": size}
+                                    {
+                                        "name": section.get("name", ""),
+                                        "entropy": entropy,
+                                        "size": size,
+                                    }
                                 )
-                    except Exception:
+                    except Exception as e:
+                        logger.debug(f"Failed to analyze section entropy: {e}")
                         continue
 
             # Multiple high-entropy sections suggest layered packing
@@ -452,7 +465,11 @@ class PackerSignatureDatabase:
 
                 if confidence > 0.5:
                     result["packers"].append(
-                        {"name": signature.name, "type": signature.packer_type.value, "confidence": confidence}
+                        {
+                            "name": signature.name,
+                            "type": signature.packer_type.value,
+                            "confidence": confidence,
+                        }
                     )
 
             # If multiple packers detected, likely layered

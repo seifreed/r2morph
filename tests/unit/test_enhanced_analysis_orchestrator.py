@@ -1,6 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from r2morph.analysis.enhanced_analyzer import EnhancedAnalysisOrchestrator, AnalysisOptions
+
+
+pytestmark = [pytest.mark.experimental]
 
 
 def test_enhanced_analysis_orchestrator_paths(tmp_path):

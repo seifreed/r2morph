@@ -57,6 +57,34 @@ class InstructionSubstitutionPass(MutationPass):
         self.probability = self.config.get("probability", 0.7)
         self.force_different = self.config.get("force_different", False)
         self.strict_size = self.config.get("strict_size", False)
+        self.set_support(
+            formats=("ELF",),
+            architectures=("x86_64",),
+            validators=("structural", "runtime", "symbolic"),
+            stability="stable",
+            notes=("known equivalence groups", "bounded symbolic observables"),
+            validator_capabilities={
+                "structural": {
+                    "mode": "region",
+                    "coverage": "patch integrity + invariant checks",
+                },
+                "runtime": {
+                    "mode": "per-pass + final",
+                    "coverage": "sample-based equivalence",
+                },
+                "symbolic": {
+                    "mode": "experimental",
+                    "scope": "bounded real-binary and shellcode observables",
+                    "confidence": "best among stable passes",
+                    "expected_statuses": (
+                        "real-binary-observables-match",
+                        "real-binary-observable-mismatch",
+                        "bounded-step-observables-match",
+                        "bounded-step-observable-mismatch",
+                    ),
+                },
+            },
+        )
 
         self._init_substitution_rules()
 
@@ -111,7 +139,7 @@ class InstructionSubstitutionPass(MutationPass):
 
         return normalized
 
-    def _get_equivalents(self, instruction: dict[str, Any], arch: str) -> tuple[str, list[str]]:
+    def _get_equivalents(self, instruction: dict[str, Any], arch: str) -> tuple[str, list[str], int | None]:
         """
         Get all equivalent patterns for an instruction.
 
@@ -123,7 +151,7 @@ class InstructionSubstitutionPass(MutationPass):
             Tuple of (original_pattern, list of equivalent patterns)
         """
         if arch not in self.pattern_to_group:
-            return ("", [])
+            return ("", [], None)
 
         disasm = instruction.get("disasm", "")
         normalized = self._normalize_instruction(disasm)
@@ -131,9 +159,9 @@ class InstructionSubstitutionPass(MutationPass):
         if normalized in self.pattern_to_group[arch]:
             group_idx = self.pattern_to_group[arch][normalized]
             equivalents = self.equivalence_groups[arch][group_idx]
-            return (normalized, equivalents)
+            return (normalized, equivalents, group_idx)
 
-        return ("", [])
+        return ("", [], None)
 
     def apply(self, binary: Binary) -> dict[str, Any]:
         """
@@ -145,6 +173,9 @@ class InstructionSubstitutionPass(MutationPass):
         Returns:
             Dictionary with mutation statistics
         """
+        if self._reset_random() is not None:
+            self._init_substitution_rules()
+
         if not binary.is_analyzed():
             logger.warning("Binary not analyzed, analyzing now...")
             binary.analyze()
@@ -180,7 +211,7 @@ class InstructionSubstitutionPass(MutationPass):
 
             func_mutations = 0
             for insn in instructions:
-                original_pattern, equivalents = self._get_equivalents(insn, arch_family)
+                original_pattern, equivalents, group_idx = self._get_equivalents(insn, arch_family)
 
                 if equivalents and len(equivalents) > 1:
                     candidates_found += 1
@@ -206,6 +237,14 @@ class InstructionSubstitutionPass(MutationPass):
                             continue
 
                         try:
+                            mutation_checkpoint = self._create_mutation_checkpoint("subst")
+                            baseline = {}
+                            if self._validation_manager is not None:
+                                baseline = self._validation_manager.capture_structural_baseline(
+                                    binary, func["addr"]
+                                )
+                            original_bytes = binary.read_bytes(addr, orig_size)
+
                             if ";" in chosen:
                                 instruction_list = [i.strip() for i in chosen.split(";")]
                                 all_bytes = b""
@@ -226,22 +265,94 @@ class InstructionSubstitutionPass(MutationPass):
                                 new_size = len(new_bytes)
 
                                 if new_size == orig_size:
-                                    binary.write_bytes(addr, new_bytes)
+                                    if not binary.write_bytes(addr, new_bytes):
+                                        continue
                                     logger.info(
                                         f"Substituted '{insn.get('disasm')}' with "
                                         f"'{chosen}' at 0x{addr:x}"
                                     )
+                                    mutated_bytes = binary.read_bytes(addr, orig_size)
+                                    record = self._record_mutation(
+                                        function_address=func["addr"],
+                                        start_address=addr,
+                                        end_address=addr + orig_size - 1,
+                                        original_bytes=original_bytes,
+                                        mutated_bytes=mutated_bytes,
+                                        original_disasm=insn.get("disasm", ""),
+                                        mutated_disasm=chosen,
+                                        mutation_kind="instruction_substitution",
+                                        metadata={
+                                            "strict_size": self.strict_size,
+                                            "equivalence_arch": arch_family,
+                                            "equivalence_group_index": group_idx,
+                                            "equivalence_group_size": len(equivalents),
+                                            "equivalence_original_pattern": original_pattern,
+                                            "equivalence_replacement_pattern": chosen,
+                                            "equivalence_members": list(equivalents),
+                                            "structural_baseline": baseline,
+                                        },
+                                    )
+                                    if self._validation_manager is not None:
+                                        outcome = self._validation_manager.validate_mutation(
+                                            binary, record.to_dict()
+                                        )
+                                        if not outcome.passed and mutation_checkpoint is not None:
+                                            self._session.rollback_to(mutation_checkpoint)
+                                            binary.reload()
+                                            self._records.pop()
+                                            if self._rollback_policy == "fail-fast":
+                                                raise RuntimeError(
+                                                    "Mutation-level validation failed"
+                                                )
+                                            continue
                                     func_mutations += 1
                                     mutations_applied += 1
 
                                     self._init_substitution_rules()
                                 elif new_size < orig_size and not self.strict_size:
-                                    binary.write_bytes(addr, new_bytes)
-                                    binary.nop_fill(addr + new_size, orig_size - new_size)
+                                    if not binary.write_bytes(addr, new_bytes):
+                                        continue
+                                    if not binary.nop_fill(addr + new_size, orig_size - new_size):
+                                        continue
                                     logger.info(
                                         f"Substituted '{insn.get('disasm')}' with "
                                         f"'{chosen}' (+ NOPs) at 0x{addr:x}"
                                     )
+                                    mutated_bytes = binary.read_bytes(addr, orig_size)
+                                    record = self._record_mutation(
+                                        function_address=func["addr"],
+                                        start_address=addr,
+                                        end_address=addr + orig_size - 1,
+                                        original_bytes=original_bytes,
+                                        mutated_bytes=mutated_bytes,
+                                        original_disasm=insn.get("disasm", ""),
+                                        mutated_disasm=f"{chosen}; nop_fill",
+                                        mutation_kind="instruction_substitution",
+                                        metadata={
+                                            "strict_size": self.strict_size,
+                                            "nop_fill_size": orig_size - new_size,
+                                            "equivalence_arch": arch_family,
+                                            "equivalence_group_index": group_idx,
+                                            "equivalence_group_size": len(equivalents),
+                                            "equivalence_original_pattern": original_pattern,
+                                            "equivalence_replacement_pattern": chosen,
+                                            "equivalence_members": list(equivalents),
+                                            "structural_baseline": baseline,
+                                        },
+                                    )
+                                    if self._validation_manager is not None:
+                                        outcome = self._validation_manager.validate_mutation(
+                                            binary, record.to_dict()
+                                        )
+                                        if not outcome.passed and mutation_checkpoint is not None:
+                                            self._session.rollback_to(mutation_checkpoint)
+                                            binary.reload()
+                                            self._records.pop()
+                                            if self._rollback_policy == "fail-fast":
+                                                raise RuntimeError(
+                                                    "Mutation-level validation failed"
+                                                )
+                                            continue
                                     func_mutations += 1
                                     mutations_applied += 1
 

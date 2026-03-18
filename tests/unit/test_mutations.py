@@ -30,6 +30,15 @@ class TestNopInsertionPass:
         assert nop_pass.name == "NopInsertion"
         assert nop_pass.config is not None
 
+    def test_nop_safe_self_redundancy_rejects_32bit_subregisters_on_x86_64(self):
+        nop_pass = NopInsertionPass()
+
+        assert nop_pass._is_safe_self_redundancy("rax", 64) is True
+        assert nop_pass._is_safe_self_redundancy("rcx", 64) is True
+        assert nop_pass._is_safe_self_redundancy("eax", 64) is False
+        assert nop_pass._is_safe_self_redundancy("ecx", 64) is False
+        assert nop_pass._is_safe_self_redundancy("ebx", 64) is False
+
     def test_nop_apply(self, tmp_path):
         test_file = Path(__file__).parent.parent / "fixtures" / "simple"
         if not test_file.exists():
@@ -54,6 +63,22 @@ class TestInstructionSubstitutionPass:
         from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
         subst_pass = InstructionSubstitutionPass()
         assert subst_pass.name == "InstructionSubstitution"
+
+    def test_subst_equivalence_lookup_exposes_group_metadata(self):
+        pytest.importorskip("yaml")
+        from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+
+        subst_pass = InstructionSubstitutionPass()
+        normalized, equivalents, group_idx = subst_pass._get_equivalents(
+            {"disasm": "xor eax, eax"},
+            "x86",
+        )
+
+        assert normalized == "xor eax, eax"
+        assert isinstance(group_idx, int)
+        assert len(equivalents) >= 2
+        assert "xor eax, eax" in equivalents
+        assert "sub eax, eax" in equivalents
 
     def test_subst_apply(self, tmp_path):
         pytest.importorskip("yaml")

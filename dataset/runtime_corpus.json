@@ -1,0 +1,16 @@
+[
+  {
+    "description": "default-exec",
+    "args": [],
+    "stdin": "",
+    "expected_exitcode": 0
+  },
+  {
+    "description": "help-output",
+    "args": [
+      "--help"
+    ],
+    "stdin": "",
+    "expected_exitcode": 0
+  }
+]

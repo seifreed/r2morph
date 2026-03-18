@@ -121,13 +121,84 @@ class InstructionExpansionPass(MutationPass):
             return []
 
         mnemonic = parts[0]
-        expansions = []
+        operands = [p.strip(",") for p in parts[1:]] if len(parts) > 1 else []
+
+        expansions: list[list[tuple[str, ...]]] = []
+
+        size_specifiers = {"dword", "qword", "byte", "word", "ptr"}
+        is_register_operand = lambda op: (
+            op
+            and op not in size_specifiers
+            and not op.startswith("[")
+            and not op.startswith("0x")
+            and not op.isdigit()
+            and not (op.startswith("-") and op[1:].isdigit())
+        )
+
+        is_immediate_operand = lambda op: (
+            op
+            and (op.isdigit() or (op.startswith("-") and op[1:].isdigit()) or op.startswith("0x"))
+        )
 
         for pattern, expansion_list in self.EXPANSION_RULES[arch_family].items():
             pattern_mnemonic = pattern[0]
+            pattern_ops = list(pattern[1:]) if len(pattern) > 1 else []
 
-            if mnemonic == pattern_mnemonic:
+            if mnemonic != pattern_mnemonic:
+                continue
+
+            if not pattern_ops:
                 expansions.extend(expansion_list)
+                continue
+
+            if len(pattern_ops) == 1 and pattern_ops[0] == "reg":
+                if operands and is_register_operand(operands[0]):
+                    expansions.extend(expansion_list)
+                continue
+
+            if len(pattern_ops) >= 1 and pattern_ops[0] == "reg":
+                if not operands or not is_register_operand(operands[0]):
+                    continue
+
+                if len(pattern_ops) == 2:
+                    second_pattern = pattern_ops[1]
+                    if len(operands) >= 2:
+                        second_op = operands[1]
+                        if second_pattern == "reg":
+                            if is_register_operand(second_op):
+                                expansions.extend(expansion_list)
+                        elif second_pattern == "0":
+                            if second_op == "0" or second_op == "0x0":
+                                expansions.extend(expansion_list)
+                        elif second_pattern == "small_imm":
+                            if is_immediate_operand(second_op):
+                                try:
+                                    val = (
+                                        int(second_op, 16)
+                                        if second_op.startswith("0x")
+                                        else int(second_op)
+                                    )
+                                    if 0 <= val <= 255:
+                                        expansions.extend(expansion_list)
+                                except ValueError:
+                                    pass
+                        elif second_pattern.isdigit() or second_pattern.startswith("-"):
+                            if is_immediate_operand(second_op):
+                                try:
+                                    expected = int(second_pattern)
+                                    actual = (
+                                        int(second_op, 16)
+                                        if second_op.startswith("0x")
+                                        else int(second_op)
+                                    )
+                                    if expected == actual:
+                                        expansions.extend(expansion_list)
+                                except ValueError:
+                                    pass
+                        else:
+                            expansions.extend(expansion_list)
+                else:
+                    expansions.extend(expansion_list)
 
         return expansions
 

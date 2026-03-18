@@ -13,7 +13,12 @@ from r2morph.analysis.symbolic.angr_bridge import AngrBridge
 from r2morph.analysis.symbolic.state_manager import StateManager, StateSchedulingStrategy
 from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver, MBAExpression
 from r2morph.analysis.symbolic.path_explorer import PathExplorer, ExplorationStrategy
+import pytest
+
 from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework
+
+
+pytestmark = [pytest.mark.experimental]
 
 
 def _load_binary():

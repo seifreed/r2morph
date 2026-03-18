@@ -57,7 +57,7 @@ class OpaquePredicatePass(MutationPass):
         funcs_mutated = 0
 
         for func in functions:
-            func_addr = func.get("offset", 0)
+            func_addr = func.get("addr", 0)
 
             if func.get("size", 0) < OPAQUE_PREDICATE_MIN_FUNCTION_SIZE:
                 continue
@@ -84,7 +84,7 @@ class OpaquePredicatePass(MutationPass):
         Returns:
             Number of mutations applied
         """
-        func_addr = func.get("offset", 0)
+        func_addr = func.get("addr", 0)
         mutations = 0
 
         try:

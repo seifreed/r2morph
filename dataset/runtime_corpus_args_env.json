@@ -1,0 +1,16 @@
+[
+  {
+    "description": "args-env-working-dir",
+    "args": [
+      "alpha",
+      "beta"
+    ],
+    "stdin": "",
+    "env": {
+      "R2MORPH_MODE": "fixture"
+    },
+    "expected_exitcode": 0,
+    "working_dir": ".",
+    "monitored_files": []
+  }
+]

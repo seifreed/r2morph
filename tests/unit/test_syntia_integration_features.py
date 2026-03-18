@@ -1,6 +1,11 @@
 from pathlib import Path
 
+import pytest
+
 from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework, InstructionSemantics, VMHandlerSemantics
+
+
+pytestmark = [pytest.mark.experimental]
 
 
 def test_syntia_vm_handler_analysis_and_exports(tmp_path):

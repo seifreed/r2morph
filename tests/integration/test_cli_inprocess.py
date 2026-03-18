@@ -46,6 +46,7 @@ def test_cli_functions_inprocess():
         assert exc.exit_code in {0, 1, 2}
 
 
+@pytest.mark.experimental
 def test_cli_analyze_enhanced_detect_only(tmp_path: Path):
     binary_path = _dataset_path("elf_x86_64")
     if not binary_path.exists():
@@ -89,3 +90,4 @@ def test_cli_morph_inprocess(tmp_path: Path):
 
 def test_cli_version_inprocess():
     version()
+pytestmark = []

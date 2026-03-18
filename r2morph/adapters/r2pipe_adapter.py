@@ -4,11 +4,14 @@ This module provides the concrete implementation of DisassemblerInterface
 using r2pipe for actual radare2 interaction.
 """
 
+import logging
 import r2pipe
 from pathlib import Path
 from typing import Any
 
 from .disassembler import DisassemblerInterface
+
+logger = logging.getLogger(__name__)
 
 
 class R2PipeAdapter:
@@ -67,9 +70,8 @@ class R2PipeAdapter:
         if self._r2 is not None:
             try:
                 self._r2.quit()
-            except Exception:
-                # Ignore errors during cleanup
-                pass
+            except Exception as e:
+                logger.debug(f"Error closing r2pipe connection: {e}")
             finally:
                 self._r2 = None
 

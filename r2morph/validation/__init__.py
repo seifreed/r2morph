@@ -9,14 +9,25 @@ This module provides comprehensive testing and validation capabilities:
 """
 
 from r2morph.validation.fuzzer import MutationFuzzer, FuzzResult
+from r2morph.validation.manager import ValidationIssue, ValidationManager, ValidationOutcome
 from r2morph.validation.regression import RegressionTester, RegressionTest, RegressionResult, RegressionTestFramework
-from r2morph.validation.validator import BinaryValidator, ValidationResult
+from r2morph.validation.validator import (
+    BinaryValidator,
+    RuntimeComparisonConfig,
+    ValidationResult,
+    ValidationTestCase,
+)
 from r2morph.validation.benchmark import ValidationFramework, BenchmarkResult, TestSample, PerformanceMetrics, AccuracyMetrics
 
 __all__ = [
     # Core Validation
     "BinaryValidator",
+    "RuntimeComparisonConfig",
     "ValidationResult",
+    "ValidationTestCase",
+    "ValidationManager",
+    "ValidationOutcome",
+    "ValidationIssue",
     
     # Fuzzing
     "MutationFuzzer",

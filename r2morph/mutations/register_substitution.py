@@ -9,6 +9,7 @@ import random
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -156,6 +157,38 @@ class RegisterSubstitutionPass(MutationPass):
         self.probability = self.config.get("probability", 0.2)
         self.max_substitutions = self.config.get("max_substitutions_per_function", 3)
         self.respect_calling_convention = self.config.get("respect_calling_convention", True)
+        self.set_support(
+            formats=("ELF",),
+            architectures=("x86_64",),
+            validators=("structural", "runtime", "symbolic"),
+            stability="stable",
+            notes=("ABI-aware caller-saved substitution",),
+            validator_capabilities={
+                "structural": {
+                    "mode": "region",
+                    "coverage": "patch integrity + invariant checks",
+                },
+                "runtime": {
+                    "mode": "per-pass + final",
+                    "coverage": "sample-based equivalence",
+                    "recommended": True,
+                },
+                "symbolic": {
+                    "mode": "experimental",
+                    "scope": "bounded real-binary observables on mutated instructions",
+                    "confidence": "limited",
+                    "recommended": False,
+                    "known_limitations": (
+                        "register substitutions may diverge under single-step observable checks",
+                        "prefer structural + runtime for release decisions",
+                    ),
+                    "expected_statuses": (
+                        "real-binary-observable-mismatch",
+                        "bounded-step-passed",
+                    ),
+                },
+            },
+        )
 
     def _get_register_class(self, arch: str) -> dict[str, list[str]]:
         """
@@ -239,10 +272,17 @@ class RegisterSubstitutionPass(MutationPass):
         """
         Check if register substitution is safe for size-extension instructions (movzx, movsx).
 
-        These instructions have size constraints:
-        - movzx eax, al (32-bit dest, 8-bit source) - INVALID: source is part of dest
-        - movzx edx, al (valid - different register families) ✅
-        - movzx al, eax (INVALID - dest smaller than source) ❌
+        Safety rules for movzx/movsx:
+        1. If substituting DESTINATION register: new dest must be same size as original dest
+        2. If substituting SOURCE register:
+           - Substitution must preserve size (orig_size == subst_size)
+           - Source register must NOT be part of dest register (different families)
+        3. movzx/movsx require destination to be larger than source
+
+        Examples:
+        - movzx eax, al -> movzx ecx, al: SAFE (dest substitution, same size, different families)
+        - movzx eax, al -> movzx eax, bl: UNSAFE (source substitution, but al is part of eax)
+        - movzx eax, bl -> movzx eax, cl: SAFE (source substitution, same size, neither part of eax)
 
         Args:
             disasm: Instruction disassembly
@@ -252,25 +292,19 @@ class RegisterSubstitutionPass(MutationPass):
         Returns:
             True if substitution is safe, False otherwise
         """
-        # Parse the instruction to extract source and destination
         parts = disasm.split(",")
         if len(parts) < 2:
             return False
 
-        # Get destination and source operands
-        dest = parts[0].split()[-1].strip()  # Last word before comma
+        dest = parts[0].split()[-1].strip()
         source = parts[1].strip()
 
-        # Get sizes
         orig_size = self.REGISTER_SIZES.get(orig_reg, 0)
         subst_size = self.REGISTER_SIZES.get(subst_reg, 0)
 
         if orig_size == 0 or subst_size == 0:
-            # Unknown register size, be conservative
             return False
 
-        # For movzx/movsx: both registers must have same size if being substituted
-        # This ensures the instruction semantics remain valid
         if orig_size != subst_size:
             logger.debug(
                 f"Skipping {disasm}: {orig_reg}({orig_size}b) -> {subst_reg}({subst_size}b) "
@@ -278,36 +312,49 @@ class RegisterSubstitutionPass(MutationPass):
             )
             return False
 
-        # Check if source and dest are from the same register family
-        # e.g., movzx eax, al is problematic (al is part of eax)
-        # This creates register aliasing issues that radare2 cannot assemble
         register_families = {
             "a": ["al", "ah", "ax", "eax", "rax"],
             "b": ["bl", "bh", "bx", "ebx", "rbx"],
             "c": ["cl", "ch", "cx", "ecx", "rcx"],
             "d": ["dl", "dh", "dx", "edx", "rdx"],
+            "si": ["sil", "si", "esi", "rsi"],
+            "di": ["dil", "di", "edi", "rdi"],
+            "sp": ["spl", "sp", "esp", "rsp"],
+            "bp": ["bpl", "bp", "ebp", "rbp"],
         }
 
         dest_family = None
         source_family = None
+        orig_family = None
+        subst_family = None
 
         for family, regs in register_families.items():
             if dest in regs:
                 dest_family = family
             if source in regs:
                 source_family = family
+            if orig_reg in regs:
+                orig_family = family
+            if subst_reg in regs:
+                subst_family = family
 
-        if dest_family and source_family and dest_family == source_family:
-            # Source and dest from same register family - problematic
-            logger.debug(f"Skipping {disasm}: {dest} and {source} from same register family")
-            return False
+        if orig_reg == dest:
+            if subst_family and dest_family and subst_family == dest_family:
+                logger.debug(
+                    f"Skipping dest substitution {disasm}: {subst_reg} is in same family as {dest}"
+                )
+                return False
+        elif orig_reg == source:
+            if subst_family and dest_family and subst_family == dest_family:
+                logger.debug(
+                    f"Skipping source substitution {disasm}: {subst_reg} would be in same family as dest {dest}"
+                )
+                return False
 
-        # Additionally verify the constraint: destination must be larger than source
-        dest_size = self.REGISTER_SIZES.get(dest, 0)
-        source_size = self.REGISTER_SIZES.get(source, 0)
+        dest_mem_size = self.REGISTER_SIZES.get(dest, 0)
+        source_mem_size = self.REGISTER_SIZES.get(source, 0)
 
-        if dest_size > 0 and source_size > 0 and dest_size <= source_size:
-            # Invalid operation regardless of substitution
+        if dest_mem_size > 0 and source_mem_size > 0 and dest_mem_size <= source_mem_size:
             return False
 
         return True
@@ -364,6 +411,8 @@ class RegisterSubstitutionPass(MutationPass):
         Returns:
             Dictionary with mutation statistics
         """
+        self._reset_random()
+
         if not binary.is_analyzed():
             logger.warning("Binary not analyzed, analyzing now...")
             binary.analyze()
@@ -391,7 +440,7 @@ class RegisterSubstitutionPass(MutationPass):
         logger.info(f"Register substitution: processing {len(functions)} functions")
 
         for func in functions:
-            if func.get("size", 0) < 20:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
 
             try:
@@ -478,21 +527,57 @@ class RegisterSubstitutionPass(MutationPass):
                         continue
 
                     try:
+                        mutation_checkpoint = self._create_mutation_checkpoint("reg")
+                        baseline = {}
+                        if self._validation_manager is not None:
+                            baseline = self._validation_manager.capture_structural_baseline(
+                                binary, func["addr"]
+                            )
+                        original_bytes = binary.read_bytes(addr, orig_size)
                         new_bytes = binary.assemble(new_disasm, func["addr"])
 
                         if new_bytes:
                             new_size = len(new_bytes)
 
                             if new_size <= orig_size:
-                                binary.write_bytes(addr, new_bytes)
+                                if not binary.write_bytes(addr, new_bytes):
+                                    continue
 
                                 if new_size < orig_size:
-                                    binary.nop_fill(addr + new_size, orig_size - new_size)
+                                    if not binary.nop_fill(addr + new_size, orig_size - new_size):
+                                        continue
 
                                 logger.debug(
                                     f"Substituted {orig_reg} -> {subst_reg} at 0x{addr:x}: "
                                     f"'{disasm}' -> '{new_disasm}'"
                                 )
+                                mutated_bytes = binary.read_bytes(addr, orig_size)
+                                record = self._record_mutation(
+                                    function_address=func["addr"],
+                                    start_address=addr,
+                                    end_address=addr + orig_size - 1,
+                                    original_bytes=original_bytes,
+                                    mutated_bytes=mutated_bytes,
+                                    original_disasm=insn.get("disasm", ""),
+                                    mutated_disasm=new_disasm,
+                                    mutation_kind="register_substitution",
+                                    metadata={
+                                        "original_register": orig_reg,
+                                        "substitute_register": subst_reg,
+                                        "structural_baseline": baseline,
+                                    },
+                                )
+                                if self._validation_manager is not None:
+                                    outcome = self._validation_manager.validate_mutation(
+                                        binary, record.to_dict()
+                                    )
+                                    if not outcome.passed and mutation_checkpoint is not None:
+                                        self._session.rollback_to(mutation_checkpoint)
+                                        binary.reload()
+                                        self._records.pop()
+                                        if self._rollback_policy == "fail-fast":
+                                            raise RuntimeError("Mutation-level validation failed")
+                                        continue
                                 substituted_count += 1
                                 func_mutations += 1
                             else:

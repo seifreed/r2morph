@@ -17,20 +17,44 @@ logger = logging.getLogger(__name__)
 # Register encoding tables for manual instruction encoding
 REGISTER_ENCODING = {
     "reg32": {
-        "eax": 0, "ecx": 1, "edx": 2, "ebx": 3,
-        "esp": 4, "ebp": 5, "esi": 6, "edi": 7,
+        "eax": 0,
+        "ecx": 1,
+        "edx": 2,
+        "ebx": 3,
+        "esp": 4,
+        "ebp": 5,
+        "esi": 6,
+        "edi": 7,
     },
     "reg16": {
-        "ax": 0, "cx": 1, "dx": 2, "bx": 3,
-        "sp": 4, "bp": 5, "si": 6, "di": 7,
+        "ax": 0,
+        "cx": 1,
+        "dx": 2,
+        "bx": 3,
+        "sp": 4,
+        "bp": 5,
+        "si": 6,
+        "di": 7,
     },
     "reg8": {
-        "al": 0, "cl": 1, "dl": 2, "bl": 3,
-        "ah": 4, "ch": 5, "dh": 6, "bh": 7,
+        "al": 0,
+        "cl": 1,
+        "dl": 2,
+        "bl": 3,
+        "ah": 4,
+        "ch": 5,
+        "dh": 6,
+        "bh": 7,
     },
     "reg64": {
-        "rax": 0, "rcx": 1, "rdx": 2, "rbx": 3,
-        "rsp": 4, "rbp": 5, "rsi": 6, "rdi": 7,
+        "rax": 0,
+        "rcx": 1,
+        "rdx": 2,
+        "rbx": 3,
+        "rsp": 4,
+        "rbp": 5,
+        "rsi": 6,
+        "rdi": 7,
     },
 }
 
@@ -49,7 +73,9 @@ class AssemblyService:
         """Initialize AssemblyService."""
         pass
 
-    def assemble(self, binary: "Binary", instruction: str, function_addr: int | None = None) -> bytes | None:
+    def assemble(
+        self, binary: "Binary", instruction: str, function_addr: int | None = None
+    ) -> bytes | None:
         """
         Assemble an instruction using radare2's rasm2 with intelligent fallbacks.
 
@@ -66,9 +92,7 @@ class AssemblyService:
 
         try:
             # Resolve symbolic variables to actual addresses
-            resolved_instruction = self._resolve_symbolic_vars(
-                binary, instruction, function_addr
-            )
+            resolved_instruction = self._resolve_symbolic_vars(binary, instruction, function_addr)
 
             # Normalize syntax for radare2 assembler compatibility
             normalized_instruction = self._normalize_assembly_syntax(resolved_instruction)
@@ -90,7 +114,10 @@ class AssemblyService:
                     return manual_bytes
 
             # Fallback 2: segment prefix instructions (fs:, gs:, etc.)
-            if any(seg in normalized_instruction.lower() for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]):
+            if any(
+                seg in normalized_instruction.lower()
+                for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]
+            ):
                 logger.debug("Radare2 assembler failed, trying segment prefix fallback")
                 segment_bytes = self._assemble_segment_prefix_fallback(
                     binary, normalized_instruction
@@ -151,8 +178,8 @@ class AssemblyService:
                             var_name = parts[0].split()[-1].strip()
                             location = parts[1].strip()
                             var_map[var_name] = location
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Could not resolve variables for instruction: {e}")
 
         # Replace variables with resolved addresses
         resolved = instruction
@@ -218,7 +245,7 @@ class AssemblyService:
             Assembled bytes or None if cannot encode
         """
         # Parse instruction: movzx/movsx dest, src
-        match = re.match(r'(movzx|movsx)\s+(\w+),\s*(\w+)', instruction.strip(), re.IGNORECASE)
+        match = re.match(r"(movzx|movsx)\s+(\w+),\s*(\w+)", instruction.strip(), re.IGNORECASE)
         if not match:
             return None
 
@@ -292,8 +319,10 @@ class AssemblyService:
                 segment_byte = seg_byte
                 # Remove only the segment prefix, keep size specifiers
                 # "mov dword fs:[rax], ecx" -> "mov dword [rax], ecx"
-                instruction_without_segment = instruction.replace(seg_name, '', 1)
-                instruction_without_segment = instruction_without_segment.replace(seg_name.upper(), '', 1)
+                instruction_without_segment = instruction.replace(seg_name, "", 1)
+                instruction_without_segment = instruction_without_segment.replace(
+                    seg_name.upper(), "", 1
+                )
                 break
 
         if segment_byte is None:

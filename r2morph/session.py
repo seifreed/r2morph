@@ -5,6 +5,8 @@ Mutation session management with checkpointing and rollback.
 import json
 import logging
 import shutil
+import tempfile
+import uuid
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -40,16 +42,17 @@ class MorphSession:
             working_dir: Directory for session data
         """
         if working_dir is None:
-            import tempfile
-
             working_dir = Path(tempfile.gettempdir()) / "r2morph_sessions"
 
         self.working_dir = working_dir
         self.working_dir.mkdir(parents=True, exist_ok=True)
 
-        self.session_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.session_dir = self.working_dir / self.session_id
-        self.session_dir.mkdir(exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+        unique_suffix = uuid.uuid4().hex[:8]
+        self.session_id = f"{timestamp}_{unique_suffix}"
+        self.session_dir = Path(
+            tempfile.mkdtemp(prefix=f"r2morph_{self.session_id}_", dir=self.working_dir)
+        )
 
         self.checkpoints: list[Checkpoint] = []
         self.current_binary: Path | None = None
@@ -137,6 +140,10 @@ class MorphSession:
             logger.error(f"Checkpoint file not found: {checkpoint.binary_path}")
             return False
 
+        if self.current_binary is None:
+            logger.error("No active binary in session to restore to")
+            return False
+
         shutil.copy2(checkpoint.binary_path, self.current_binary)
         self.mutations_count = checkpoint.mutations_applied
 
@@ -156,18 +163,44 @@ class MorphSession:
         """
         from r2morph.core.binary import Binary
 
+        if self.current_binary is None:
+            raise ValueError("No active binary in session")
+
         logger.info(f"Applying mutation: {mutation_pass.name}")
 
-        with Binary(self.current_binary, writable=True) as binary:
+        binary = None
+        try:
+            binary = Binary(self.current_binary, writable=True)
+            binary.open()
             binary.analyze()
-            result = mutation_pass.apply(binary)
+            result: dict[str, Any] = mutation_pass.apply(binary)
 
-        mutations_applied = result.get("mutations_applied", 0)
-        self.mutations_count += mutations_applied
+            mutations_applied = result.get("mutations_applied", 0)
+            self.mutations_count += mutations_applied
 
-        logger.info(f"Applied {mutations_applied} mutations (total: {self.mutations_count})")
+            logger.info(f"Applied {mutations_applied} mutations (total: {self.mutations_count})")
 
-        return result
+            return result
+        except Exception as e:
+            logger.error(f"Mutation failed: {mutation_pass.name}: {e}")
+            self._restore_from_last_checkpoint()
+            raise
+        finally:
+            if binary is not None:
+                try:
+                    binary.close()
+                except Exception as close_error:
+                    logger.debug(f"Error closing binary: {close_error}")
+
+    def _restore_from_last_checkpoint(self) -> None:
+        """Attempt to restore binary from the most recent checkpoint."""
+        for checkpoint in reversed(self.checkpoints):
+            if checkpoint.binary_path.exists():
+                logger.warning(f"Restoring from checkpoint: {checkpoint.name}")
+                if self.current_binary is not None:
+                    shutil.copy2(checkpoint.binary_path, self.current_binary)
+                self.mutations_count = checkpoint.mutations_applied
+                break
 
     def list_checkpoints(self) -> list[Checkpoint]:
         """
