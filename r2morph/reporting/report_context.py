@@ -5,9 +5,9 @@ These context objects group related parameters into cohesive units,
 following Clean Code principles for function argument lists.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 
 @dataclass
@@ -85,6 +85,70 @@ class ReportPayload:
     pass_results: dict[str, Any] = field(default_factory=dict)
     pass_support: dict[str, Any] = field(default_factory=dict)
     symbolic_state: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class ReportViews:
+    """Typed return value for build_report_views, replacing dict[str, Any]."""
+
+    general_passes: list[dict[str, Any]] = field(default_factory=list)
+    general_pass_rows: list[dict[str, Any]] = field(default_factory=list)
+    general_summary: dict[str, Any] = field(default_factory=dict)
+    general_summary_rows: list[dict[str, Any]] = field(default_factory=list)
+    general_renderer_state: dict[str, Any] = field(default_factory=dict)
+    general_triage_rows: list[dict[str, Any]] = field(default_factory=list)
+    general_filter_views: dict[str, list[str]] = field(default_factory=dict)
+    general_symbolic: dict[str, Any] = field(default_factory=dict)
+    general_gates: dict[str, Any] = field(default_factory=dict)
+    general_degradation: dict[str, Any] = field(default_factory=dict)
+    general_discards: dict[str, Any] = field(default_factory=dict)
+    passes: dict[str, list[str]] = field(default_factory=dict)
+    triage_priority: list[dict[str, Any]] = field(default_factory=list)
+    only_pass: dict[str, dict[str, Any]] = field(default_factory=dict)
+    pass_filter_views: dict[str, list[str]] = field(default_factory=dict)
+    mismatch_priority: list[dict[str, Any]] = field(default_factory=list)
+    mismatch_map: dict[str, dict[str, Any]] = field(default_factory=dict)
+    mismatch_view: list[dict[str, Any]] = field(default_factory=list)
+    only_mismatches: dict[str, Any] = field(default_factory=dict)
+    failed_gates: list[dict[str, Any]] = field(default_factory=list)
+    only_failed_gates: dict[str, Any] = field(default_factory=dict)
+    validation_adjustments: dict[str, Any] = field(default_factory=dict)
+    discarded_view: dict[str, Any] = field(default_factory=dict)
+
+    # -- dict-like API for backward compatibility --
+
+    def __getitem__(self, key: str) -> Any:
+        return getattr(self, key)
+
+    def __contains__(self, key: str) -> bool:
+        return hasattr(self, key) and key in {f.name for f in fields(self)}
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Dict-compatible .get() for backward compatibility."""
+        try:
+            return getattr(self, key)
+        except AttributeError:
+            return default
+
+    def keys(self) -> list[str]:
+        """Return field names, enabling dict(report_views)."""
+        return [f.name for f in fields(self)]
+
+    def values(self) -> list[Any]:
+        """Return field values."""
+        return [getattr(self, f.name) for f in fields(self)]
+
+    def items(self) -> list[tuple[str, Any]]:
+        """Return (name, value) pairs."""
+        return [(f.name, getattr(self, f.name)) for f in fields(self)]
+
+    def __iter__(self) -> Iterator[str]:
+        """Iterate over field names so dict(obj) works."""
+        return iter(self.keys())
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dict for backward compatibility."""
+        return asdict(self)
 
 
 @dataclass

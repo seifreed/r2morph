@@ -5,12 +5,16 @@ Inserts NOP (no operation) instructions at safe locations in the binary.
 Note: Currently only overwrites truly redundant instructions to avoid breaking the binary.
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -84,7 +88,7 @@ class NopInsertionPass(MutationPass):
             self.NOP_EQUIVALENTS[arch] = shuffled
 
     def _generate_jmp_dead_code(
-        self, size: int, bits: int, binary: Binary, function_addr: int | None = None
+        self, size: int, bits: int, binary: Any, function_addr: int | None = None
     ) -> bytes | None:
         """
         Generate jmp + dead code pattern (r2morph-STYLE).
@@ -95,7 +99,7 @@ class NopInsertionPass(MutationPass):
         Args:
             size: Total size needed in bytes
             bits: Architecture bits (32 or 64)
-            binary: Binary instance for assembling
+            binary: Any instance for assembling
             function_addr: Function address for resolving symbolic variables (optional)
 
         Returns:
@@ -233,12 +237,12 @@ class NopInsertionPass(MutationPass):
             return register in self.CALLER_SAVED_64BIT
         return register in self.CALLER_SAVED_32BIT
 
-    def _select_candidates(self, binary: Binary, functions: list[dict[str, Any]], arch_family: str, bits: int) -> list[tuple[dict, list]]:
+    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]], arch_family: str, bits: int) -> list[tuple[dict, list]]:
         """
         Iterate functions, get disasm, and filter redundant instruction candidates.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             functions: List of function dicts
             arch_family: Architecture family string
             bits: Architecture bit width
@@ -317,12 +321,12 @@ class NopInsertionPass(MutationPass):
                 result.append((func, selected))
         return result
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply NOP insertion mutations to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Any instance to mutate
 
         Returns:
             Dictionary with mutation statistics
@@ -454,7 +458,7 @@ class NopInsertionPass(MutationPass):
             "total_functions": len(functions),
         }
 
-    def _apply_arm64_safe_nops(self, binary: Binary) -> dict[str, Any]:
+    def _apply_arm64_safe_nops(self, binary: Any) -> dict[str, Any]:
         """Apply safe ARM64 substitutions that preserve semantics."""
         functions = binary.get_functions()
         mutations_applied = 0

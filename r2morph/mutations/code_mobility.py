@@ -52,13 +52,17 @@ requires:
 TODO: Implement actual binary modification.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -132,7 +136,7 @@ class CodeMobilityPass(MutationPass):
             ),
         )
 
-    def _get_basic_blocks(self, binary: Binary, func_addr: int) -> list[dict[str, Any]]:
+    def _get_basic_blocks(self, binary: Any, func_addr: int) -> list[dict[str, Any]]:
         """Get basic blocks for a function."""
         try:
             return binary.get_basic_blocks(func_addr)
@@ -156,7 +160,7 @@ class CodeMobilityPass(MutationPass):
         section_idx = block_id % num_sections
         return f"{self.section_prefix}_{section_idx}"
 
-    def _create_mobility_plan(self, binary: Binary, functions: list[dict[str, Any]]) -> MobilityPlan:
+    def _create_mobility_plan(self, binary: Any, functions: list[dict[str, Any]]) -> MobilityPlan:
         """Create plan for moving blocks."""
         plan = MobilityPlan()
         block_id = 0
@@ -252,12 +256,12 @@ section {section_name} align=16
         random.shuffle(shuffled)
         return shuffled
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply code mobility transformation.
 
         Args:
-            binary: Binary to transform
+            binary: Any to transform
 
         Returns:
             Statistics dictionary

@@ -54,13 +54,17 @@ requires:
 TODO: Implement actual binary modification.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -156,7 +160,7 @@ class FunctionOutliningPass(MutationPass):
             ),
         )
 
-    def _get_basic_blocks(self, binary: Binary, func_addr: int) -> list[dict[str, Any]]:
+    def _get_basic_blocks(self, binary: Any, func_addr: int) -> list[dict[str, Any]]:
         """Get basic blocks for a function."""
         try:
             blocks = binary.get_basic_blocks(func_addr)
@@ -178,7 +182,7 @@ class FunctionOutliningPass(MutationPass):
         return True, ""
 
     def _split_into_chunks(
-        self, blocks: list[dict[str, Any]], binary: Binary, min_chunks: int, max_chunks: int
+        self, blocks: list[dict[str, Any]], binary: Any, min_chunks: int, max_chunks: int
     ) -> list[OutlinedChunk]:
         """Split blocks into chunks for outlining."""
         if len(blocks) < min_chunks:
@@ -268,12 +272,12 @@ class FunctionOutliningPass(MutationPass):
 
         return "\n".join(asm_lines), chunk_offsets
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply function outlining.
 
         Args:
-            binary: Binary to outline
+            binary: Any to outline
 
         Returns:
             Statistics dictionary

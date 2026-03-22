@@ -37,14 +37,18 @@ Multiple iterations with different seeds produce
 different polymorphic variants while maintaining semantics.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
-from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +235,7 @@ class PolymorphicEngine:
 
     def run(
         self,
-        binary: Binary,
+        binary: Any,
         initial_state: EngineState = EngineState.INIT,
         max_iterations: int | None = None,
     ) -> EngineRunResult:
@@ -239,7 +243,7 @@ class PolymorphicEngine:
         Run the polymorphic engine.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             initial_state: Starting state
             max_iterations: Maximum iterations (overrides instance setting)
 
@@ -495,12 +499,12 @@ class PolymorphicEnginePass(MutationPass):
         """
         self.engine.add_mutation(name, mutation)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply polymorphic engine to binary.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
 
         Returns:
             Statistics from engine run
@@ -545,7 +549,7 @@ class NoOpMutation(MutationPass):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(name="NoOp", config=config)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """Apply no-op mutation."""
         return {"applied": False, "reason": "NoOp mutation"}
 
@@ -556,5 +560,5 @@ class NoOp(MutationPass):
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(name="NoOp", config=config)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         return {"mutations": 0, "reason": "NoOp pass"}

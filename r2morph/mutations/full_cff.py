@@ -19,14 +19,18 @@ Flattened:
 This transformation makes control flow analysis much harder.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph, BasicBlock, BlockType
 from r2morph.relocations.cave_injector import CodeCaveInjector, CaveCreationOptions
@@ -96,7 +100,7 @@ class FullControlFlowFlatteningPass(MutationPass):
             probability=self.config.get("probability", 0.5),
         )
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """Apply full control flow flattening."""
         if not binary.is_analyzed():
             logger.warning("Binary not analyzed, analyzing now...")
@@ -154,7 +158,7 @@ class FullControlFlowFlatteningPass(MutationPass):
             "total_functions": len(functions),
         }
 
-    def _select_candidates(self, binary: Binary, functions: list[dict]) -> list[dict]:
+    def _select_candidates(self, binary: Any, functions: list[dict]) -> list[dict]:
         """Select candidate functions for CFF."""
         candidates = []
 
@@ -182,7 +186,7 @@ class FullControlFlowFlatteningPass(MutationPass):
 
     def _flatten_function_cff(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: ControlFlowGraph,
         cave_injector: CodeCaveInjector,
         arch: str,
@@ -393,12 +397,12 @@ class FullControlFlowFlatteningPass(MutationPass):
 
         return instructions
 
-    def _assemble_dispatcher(self, binary: Binary, instructions: list[str]) -> bytes | None:
+    def _assemble_dispatcher(self, binary: Any, instructions: list[str]) -> bytes | None:
         """
         Assemble dispatcher instructions into bytes.
 
         Args:
-            binary: Binary instance for assembly
+            binary: Any instance for assembly
             instructions: List of assembly instructions
 
         Returns:
@@ -428,7 +432,7 @@ class FullControlFlowFlatteningPass(MutationPass):
 
     def _patch_function_blocks(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: ControlFlowGraph,
         dispatcher_blocks: list[DispatcherBlock],
         state_table: dict[int, tuple[int, int | None]],

@@ -4,13 +4,17 @@ Register substitution mutation pass.
 Replaces registers with equivalent unused registers in code sequences.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -492,12 +496,39 @@ class RegisterSubstitutionPass(MutationPass):
 
         return True
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def _select_candidates(
+        self, binary: Any, functions: list[dict[str, Any]], arch: str,
+    ) -> list[tuple[dict, list[dict], list[tuple[str, str]]]]:
+        """Select functions with substitution candidates.
+
+        Returns list of (func, instructions, selected_pairs) tuples.
+        """
+        result = []
+        for func in functions:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+                continue
+            func_addr = func.get("offset", func.get("addr", 0))
+            try:
+                instructions = binary.get_function_disasm(func_addr)
+            except Exception as e:
+                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
+                continue
+            candidates = self._find_substitution_candidates(instructions, arch)
+            if not candidates:
+                continue
+            if random.random() > self.probability:
+                continue
+            num_substitutions = min(self.max_substitutions, len(candidates))
+            selected = random.sample(candidates, num_substitutions)
+            result.append((func, instructions, selected))
+        return result
+
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply register substitution mutations to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Object satisfying BinaryAccessProtocol
 
         Returns:
             Dictionary with mutation statistics
@@ -531,27 +562,7 @@ class RegisterSubstitutionPass(MutationPass):
 
         logger.info(f"Register substitution: processing {len(functions)} functions")
 
-        for func in functions:
-            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-                continue
-
-            func_addr = func.get("offset", func.get("addr", 0))
-            try:
-                instructions = binary.get_function_disasm(func_addr)
-            except Exception as e:
-                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
-                continue
-
-            candidates = self._find_substitution_candidates(instructions, arch)
-
-            if not candidates:
-                continue
-
-            if random.random() > self.probability:
-                continue
-
-            num_substitutions = min(self.max_substitutions, len(candidates))
-            selected = random.sample(candidates, num_substitutions)
+        for func, instructions, selected in self._select_candidates(binary, functions, arch):
 
             func_mutations = 0
             for orig_reg, subst_reg in selected:

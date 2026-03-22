@@ -4,12 +4,16 @@ Instruction expansion mutation pass.
 Expands single instructions into multiple equivalent instructions.
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -303,12 +307,12 @@ class InstructionExpansionPass(MutationPass):
 
         return True
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply instruction expansion mutations to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Any instance to mutate
 
         Returns:
             Dictionary with mutation statistics

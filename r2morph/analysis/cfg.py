@@ -352,7 +352,7 @@ class CFGBuilder:
 
         try:
             r2_blocks = self.binary.get_basic_blocks(function_address)
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.error(f"Failed to get basic blocks for function @ 0x{function_address:x}: {e}")
             return cfg
 
@@ -370,7 +370,7 @@ class CFGBuilder:
             try:
                 all_instrs = self.binary.get_function_disasm(function_address)
                 instructions = [insn for insn in all_instrs if addr <= insn.get("offset", 0) < addr + size]
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Could not get instructions for block at 0x{addr:x}: {e}")
 
             block = BasicBlock(
@@ -441,7 +441,7 @@ class CFGBuilder:
                 name = func.get("name", "")
                 if addr:
                     functions[addr] = name
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to get functions for tail call detection: {e}")
 
         for addr, block in cfg.blocks.items():
@@ -533,7 +533,7 @@ class CFGBuilder:
                 if block.address in landing_pads:
                     block.block_type = BlockType.LANDING_PAD
                     block.metadata["is_landing_pad"] = True
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to detect ELF exception edges: {e}")
 
         return exception_edges
@@ -592,7 +592,7 @@ class CFGBuilder:
                 cfg = self.build_cfg(addr, name)
                 if cfg.blocks:
                     cfgs[addr] = cfg
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to build CFG for {name}: {e}")
 
         logger.info(f"Successfully built {len(cfgs)} CFGs")

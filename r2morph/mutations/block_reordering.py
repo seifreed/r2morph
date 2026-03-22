@@ -6,13 +6,17 @@ This is a powerful obfuscation technique that changes code layout without
 affecting program semantics.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -111,12 +115,12 @@ class BlockReorderingPass(MutationPass):
 
         return jumps_needed
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply block reordering mutations to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Any instance to mutate
 
         Returns:
             Dictionary with mutation statistics
@@ -139,7 +143,7 @@ class BlockReorderingPass(MutationPass):
 
             try:
                 blocks = binary.get_basic_blocks(func["addr"])
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to get blocks for {func.get('name')}: {e}")
                 continue
 
@@ -192,7 +196,7 @@ class BlockReorderingPass(MutationPass):
                                 logger.info(f"Swapped blocks at 0x{addr1:x} <-> 0x{addr2:x} ({size1} bytes each)")
                                 blocks_swapped += 1
                                 mutations_applied += 1
-                    except Exception as e:
+                    except (ValueError, OSError, BrokenPipeError) as e:
                         logger.debug(f"Failed to swap blocks: {e}")
 
             jumps_inserted = 0
@@ -216,7 +220,7 @@ class BlockReorderingPass(MutationPass):
                         insn_type = last_insn[0].get("type", "")
                         if insn_type in ["jmp", "cjmp", "ret", "call"]:
                             continue
-                except Exception as e:
+                except (ValueError, OSError, BrokenPipeError) as e:
                     logger.debug(f"Failed to disassemble instruction: {e}")
                     continue
 
@@ -250,7 +254,7 @@ class BlockReorderingPass(MutationPass):
                                         f"not on instruction boundary"
                                     )
                                     continue
-                        except Exception:
+                        except (ValueError, OSError, BrokenPipeError):
                             pass
 
                         try:
@@ -258,7 +262,7 @@ class BlockReorderingPass(MutationPass):
                                 logger.info(f"Inserted jump at 0x{write_addr:x}: {jmp_insn}")
                                 jumps_inserted += 1
                                 mutations_applied += 1
-                        except Exception as e:
+                        except (ValueError, OSError, BrokenPipeError) as e:
                             logger.debug(f"Failed to insert jump: {e}")
 
             if blocks_swapped > 0 or jumps_inserted > 0:

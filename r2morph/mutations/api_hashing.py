@@ -19,12 +19,16 @@ Example:
                  call resolve_by_hash
 """
 
+from __future__ import annotations
+
 import logging
 import struct
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -658,7 +662,7 @@ class APIHashingPass(MutationPass):
         algo = HASH_ALGORITHMS.get(self.hash_algorithm, hash_ror13)
         return algo(api_name)
 
-    def _find_imports(self, binary: Binary) -> list[dict[str, Any]]:
+    def _find_imports(self, binary: Any) -> list[dict[str, Any]]:
         """Find import entries in the binary."""
         imports = []
 
@@ -695,12 +699,12 @@ class APIHashingPass(MutationPass):
                 return self._hash_api(known)
         return None
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply API hashing mutation.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
 
         Returns:
             Statistics dictionary

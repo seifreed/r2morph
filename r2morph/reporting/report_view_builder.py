@@ -8,6 +8,7 @@ with shared projection helpers to eliminate row-shape duplication.
 from typing import Any
 
 from r2morph.reporting.gate_evaluator import SEVERITY_ORDER
+from r2morph.reporting.report_context import ReportViews
 
 
 # ---------------------------------------------------------------------------
@@ -439,7 +440,7 @@ def build_report_views(
     discarded_mutation_priority: list[dict[str, Any]],
     discarded_mutation_summary: dict[str, Any],
     validation_adjustment_rows: list[dict[str, Any]],
-) -> dict[str, Any]:
+) -> ReportViews:
     """Persist small precomputed views for common report filters."""
     lookups = _build_lookup_maps(
         normalized_pass_results=normalized_pass_results,
@@ -525,22 +526,22 @@ def build_report_views(
     general_summary_rows = summary["general_summary_rows"]
     general_renderer_state = summary["general_renderer_state"]
 
-    return {
-        "general_passes": general_pass_rows,
-        "general_pass_rows": general_pass_rows,
-        "general_summary": general_summary_payload,
-        "general_summary_rows": general_summary_rows,
-        "general_renderer_state": general_renderer_state,
-        "general_triage_rows": [dict(row) for row in triage_priority],
-        "general_filter_views": filter_buckets,
-        "general_symbolic": general_symbolic,
-        "general_gates": general_gates,
-        "general_degradation": general_degradation,
-        "general_discards": general_discards,
-        "passes": filter_buckets,
-        "triage_priority": triage_priority,
-        "only_pass": only_pass,
-        "pass_filter_views": {
+    return ReportViews(
+        general_passes=general_pass_rows,
+        general_pass_rows=general_pass_rows,
+        general_summary=general_summary_payload,
+        general_summary_rows=general_summary_rows,
+        general_renderer_state=general_renderer_state,
+        general_triage_rows=[dict(row) for row in triage_priority],
+        general_filter_views=filter_buckets,
+        general_symbolic=general_symbolic,
+        general_gates=general_gates,
+        general_degradation=general_degradation,
+        general_discards=general_discards,
+        passes=filter_buckets,
+        triage_priority=triage_priority,
+        only_pass=only_pass,
+        pass_filter_views={
             "only_risky_passes": filter_buckets.get("risky", []),
             "only_structural_risk": filter_buckets.get("structural_risk", []),
             "only_symbolic_risk": filter_buckets.get("symbolic_risk", []),
@@ -548,10 +549,10 @@ def build_report_views(
             "only_covered_passes": filter_buckets.get("covered", []),
             "only_uncovered_passes": filter_buckets.get("uncovered", []),
         },
-        "mismatch_priority": [dict(row) for row in observable_mismatch_priority],
-        "mismatch_map": {str(pass_name): dict(row) for pass_name, row in observable_mismatch_map.items()},
-        "mismatch_view": mismatch_rows,
-        "only_mismatches": {
+        mismatch_priority=[dict(row) for row in observable_mismatch_priority],
+        mismatch_map={str(pass_name): dict(row) for pass_name, row in observable_mismatch_map.items()},
+        mismatch_view=mismatch_rows,
+        only_mismatches={
             "priority": [dict(row) for row in observable_mismatch_priority],
             "by_pass": mismatch_by_pass,
             **_build_category_views(
@@ -577,8 +578,8 @@ def build_report_views(
                 "trigger_pass_count": sum(1 for row in mismatch_rows if row.get("degradation_triggered_by_pass")),
             },
         },
-        "failed_gates": [dict(row) for row in gate_failure_priority],
-        "only_failed_gates": {
+        failed_gates=[dict(row) for row in gate_failure_priority],
+        only_failed_gates={
             "priority": failed_gates_rows,
             "by_pass": failed_gates_by_pass,
             **_build_category_views(
@@ -603,7 +604,7 @@ def build_report_views(
                 "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
             },
         },
-        "validation_adjustments": {
+        validation_adjustments={
             "rows": degraded_rows,
             "by_pass": {str(row.get("pass_name")): dict(row) for row in degraded_rows if row.get("pass_name")},
             **_build_category_views(
@@ -636,7 +637,7 @@ def build_report_views(
                 "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
             },
         },
-        "discarded_view": {
+        discarded_view={
             "priority": [dict(row) for row in discarded_mutation_priority],
             "rows": [dict(row) for row in discarded_mutation_priority],
             **_build_category_views(
@@ -673,4 +674,4 @@ def build_report_views(
                 },
             },
         },
-    }
+    )

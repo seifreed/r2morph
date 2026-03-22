@@ -5,12 +5,16 @@ Injects conditionals that are always true or always false,
 but appear complex to analysis tools.
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import OPAQUE_PREDICATE_MIN_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -40,12 +44,12 @@ class OpaquePredicatePass(MutationPass):
         self.max_predicates = self.config.get("max_predicates_per_function", 3)
         self.probability = self.config.get("probability", 0.3)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply opaque predicate mutations.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
 
         Returns:
             Statistics dict
@@ -74,12 +78,12 @@ class OpaquePredicatePass(MutationPass):
             "functions_mutated": funcs_mutated,
         }
 
-    def _insert_opaque_predicates(self, binary: Binary, func: dict) -> int:
+    def _insert_opaque_predicates(self, binary: Any, func: dict) -> int:
         """
         Insert opaque predicates in a function.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             func: Function dict
 
         Returns:
@@ -168,12 +172,12 @@ class OpaquePredicatePass(MutationPass):
 
         return mutations
 
-    def _assemble_predicate(self, binary: Binary, instructions: list[str], addr: int) -> bytes | None:
+    def _assemble_predicate(self, binary: Any, instructions: list[str], addr: int) -> bytes | None:
         """
         Assemble predicate instructions into bytes.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             instructions: List of assembly instructions
             addr: Address to assemble at
 
@@ -196,12 +200,12 @@ class OpaquePredicatePass(MutationPass):
 
         return assembled if assembled else None
 
-    def _generate_predicate(self, binary: Binary, predicate_type: str, insert_addr: int) -> list[str]:
+    def _generate_predicate(self, binary: Any, predicate_type: str, insert_addr: int) -> list[str]:
         """
         Generate opaque predicate assembly code.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             predicate_type: "always_true" or "always_false"
             insert_addr: Address to insert at
 

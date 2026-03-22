@@ -33,13 +33,17 @@ Advanced techniques:
     - Interleaved construction (mix with junk instructions)
 """
 
+from __future__ import annotations
+
 import logging
 import random
 import secrets
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.crypto.aes import (
     aes_decrypt_block,
     aes_encrypt_block,
@@ -526,7 +530,7 @@ class StackStringsPass(MutationPass):
             ),
         )
 
-    def _find_strings_in_section(self, binary: Binary, section: dict[str, Any]) -> list[dict[str, Any]]:
+    def _find_strings_in_section(self, binary: Any, section: dict[str, Any]) -> list[dict[str, Any]]:
         """Find strings in a binary section."""
         strings = []
         addr = section.get("addr", 0)
@@ -575,12 +579,12 @@ class StackStringsPass(MutationPass):
             junk_probability=self.junk_probability,
         )
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply stack string transformation.
 
         Args:
-            binary: Binary to transform
+            binary: Any to transform
 
         Returns:
             Statistics dictionary

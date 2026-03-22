@@ -93,11 +93,11 @@ class ValidationManager:
             size = getattr(action, "size", None)
             try:
                 addr_value = int(getattr(addr, "concrete_value", addr))
-            except Exception:
+            except (TypeError, ValueError):
                 addr_value = None
             try:
                 size_value = int(getattr(size, "concrete_value", size))
-            except Exception:
+            except (TypeError, ValueError):
                 size_value = None
             if addr_value is None:
                 signatures.append("unknown")
@@ -141,7 +141,7 @@ class ValidationManager:
             expected = baseline.get("invariants", [])
             try:
                 current = detector.detect_all_invariants(function_address)
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 issues.append(
                     ValidationIssue(
                         validator="structural",
@@ -168,7 +168,7 @@ class ValidationManager:
             try:
                 binary.get_function_disasm(function_address)
                 binary.get_basic_blocks(function_address)
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 issues.append(
                     ValidationIssue(
                         validator="control_flow",
@@ -279,7 +279,7 @@ class ValidationManager:
                         state,
                         num_inst=step_budget,
                     )
-                except Exception as e:
+                except Exception as e:  # angr may raise any exception type during symbolic execution
                     step_error = f"bounded symbolic step failed at 0x{start:x}: {e}"
                     break
 
@@ -356,7 +356,7 @@ class ValidationManager:
                             "bounded symbolic step passed but observable or transition effects diverged"
                         )
             return payload
-        except Exception as e:
+        except Exception as e:  # angr/claripy backend may raise any exception type
             payload["symbolic_status"] = "backend-error"
             payload["symbolic_reason"] = str(e)
             return payload
@@ -563,7 +563,7 @@ class ValidationManager:
                             }
                         )
                 compared_regions.append(region_report)
-        except Exception as e:
+        except Exception as e:  # angr symbolic execution may raise any exception type
             return {
                 "symbolic_observable_check_performed": False,
                 "symbolic_observable_reason": f"observable check failed: {e}",
@@ -693,7 +693,7 @@ class ValidationManager:
                         }
                     )
                 compared_regions.append(region_report)
-        except Exception as e:
+        except Exception as e:  # angr symbolic execution may raise any exception type
             return {
                 "symbolic_transition_check_performed": False,
                 "symbolic_transition_reason": f"transition check failed: {e}",
@@ -731,7 +731,7 @@ class ValidationManager:
         with Binary(previous_binary_path, writable=False) as original_binary:
             try:
                 original_binary.analyze("aa")
-            except Exception as analyze_error:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as analyze_error:
                 logger.warning(f"Failed to analyze original binary: {analyze_error}")
                 return {
                     "symbolic_binary_check_performed": False,
@@ -739,7 +739,7 @@ class ValidationManager:
                 }
             try:
                 original_bridge = AngrBridge(original_binary)
-            except Exception as bridge_error:
+            except Exception as bridge_error:  # AngrBridge init may raise any angr error
                 logger.error(f"Failed to create original bridge: {bridge_error}")
                 return {
                     "symbolic_binary_check_performed": False,
@@ -747,11 +747,11 @@ class ValidationManager:
                 }
             try:
                 mutated_bridge = AngrBridge(binary)
-            except Exception as bridge_error:
+            except Exception as bridge_error:  # AngrBridge init may raise any angr error
                 if original_bridge and hasattr(original_bridge, "angr_project"):
                     try:
                         original_bridge.angr_project.loader.close()
-                    except Exception:
+                    except Exception:  # best-effort cleanup
                         pass
                 logger.error(f"Failed to create mutated bridge: {bridge_error}")
                 return {
@@ -1042,7 +1042,7 @@ class ValidationManager:
                         continue
                     compared_regions.append(region_report)
                     mismatches.extend(region_mismatches)
-        except Exception as e:
+        except Exception as e:  # angr symbolic comparison may raise any exception type
             return {
                 "symbolic_binary_check_performed": False,
                 "symbolic_binary_reason": f"real binary symbolic comparison failed: {e}",
@@ -1053,14 +1053,14 @@ class ValidationManager:
                 try:
                     if hasattr(original_bridge.angr_project, "loader"):
                         original_bridge.angr_project.loader.close()
-                except Exception as e:
+                except Exception as e:  # best-effort cleanup
                     cleanup_errors.append(f"original: {e}")
                     logger.warning(f"Error closing original angr project: {e}")
             if mutated_bridge is not None and hasattr(mutated_bridge, "angr_project"):
                 try:
                     if hasattr(mutated_bridge.angr_project, "loader"):
                         mutated_bridge.angr_project.loader.close()
-                except Exception as e:
+                except Exception as e:  # best-effort cleanup
                     cleanup_errors.append(f"mutated: {e}")
                     logger.warning(f"Error closing mutated angr project: {e}")
             if cleanup_errors:
@@ -1206,7 +1206,7 @@ class ValidationManager:
         detector = InvariantDetector(binary)
         try:
             invariants = detector.detect_all_invariants(function_address)
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to capture invariants for 0x{function_address:x}: {e}")
             invariants = []
 

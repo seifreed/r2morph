@@ -12,12 +12,16 @@ Features:
 - jmp + dead code patterns (dynamically generated)
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.equivalences import load_equivalence_rules
 
@@ -163,12 +167,12 @@ class InstructionSubstitutionPass(MutationPass):
 
         return ("", [], None)
 
-    def _select_candidates(self, binary: Binary, functions: list[dict[str, Any]], arch_family: str) -> list[tuple[dict, list]]:
+    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]], arch_family: str) -> list[tuple[dict, list]]:
         """
         Iterate functions, get disasm, and filter candidate instructions for substitution.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             functions: List of function dicts
             arch_family: Architecture family string
 
@@ -196,12 +200,12 @@ class InstructionSubstitutionPass(MutationPass):
                 result.append((func, candidates))
         return result
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply instruction substitution mutations to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Any instance to mutate
 
         Returns:
             Dictionary with mutation statistics
@@ -389,7 +393,7 @@ class InstructionSubstitutionPass(MutationPass):
             "strict_size": self.strict_size,
         }
 
-    def _apply_arm64_mov_substitution(self, binary: Binary) -> dict[str, Any]:
+    def _apply_arm64_mov_substitution(self, binary: Any) -> dict[str, Any]:
         """Apply safe ARM64 mov-immediate substitutions."""
         functions = binary.get_functions()
         mutations_applied = 0

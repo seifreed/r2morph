@@ -39,14 +39,18 @@ Opcode Categories:
     - Control flow: JMP, JZ, JNZ, CALL, RET
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from dataclasses import dataclass, field
 from enum import Enum, IntEnum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -573,12 +577,12 @@ class CodeVirtualizationPass(MutationPass):
 
         return bytes(bytecode)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply code virtualization.
 
         Args:
-            binary: Binary to virtualize
+            binary: Any to virtualize
 
         Returns:
             Statistics dictionary
@@ -1016,7 +1020,7 @@ class MultiVMVirtualizationPass(CodeVirtualizationPass):
 
         return vm_insns, bytes(bytecode)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """Apply multi-VM virtualization."""
         self._reset_random()
         logger.info(f"Applying multi-VM virtualization with {len(self.active_profiles)} VMs")

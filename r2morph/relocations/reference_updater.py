@@ -104,7 +104,7 @@ class ReferenceUpdater:
                     logger.debug(f"Updated absolute jump at 0x{jump_addr:x} -> 0x{new_target:x}")
                     return True
 
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, json.JSONDecodeError) as e:
             logger.error(f"Failed to update jump at 0x{jump_addr:x}: {e}")
 
         return False

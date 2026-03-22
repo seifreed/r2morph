@@ -68,13 +68,17 @@ complexity through opaque predicates and jump obfuscation rather than
 simple block reordering.
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from r2morph.analysis.cfg import CFGBuilder
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, UNCONDITIONAL_TRANSFERS
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 from r2morph.utils.dead_code import (
     generate_arm_dead_code_for_size,
@@ -206,7 +210,7 @@ class ControlFlowFlatteningPass(MutationPass):
         self.probability = self.config.get("probability", 0.5)
         self.opaque_density = self.config.get("opaque_predicate_density", 3)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply control flow flattening transformations.
 
@@ -218,7 +222,7 @@ class ControlFlowFlatteningPass(MutationPass):
         5. Tracks and returns mutation statistics
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
 
         Returns:
             Statistics dict with mutation counts and details
@@ -273,7 +277,7 @@ class ControlFlowFlatteningPass(MutationPass):
             "functions_processed": functions_processed,
         }
 
-    def _select_candidates(self, binary: Binary, functions: list[dict]) -> list[dict]:
+    def _select_candidates(self, binary: Any, functions: list[dict]) -> list[dict]:
         """
         Select functions suitable for flattening.
 
@@ -283,7 +287,7 @@ class ControlFlowFlatteningPass(MutationPass):
         - Not being an import/thunk (library functions shouldn't be modified)
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             functions: List of functions
 
         Returns:
@@ -312,7 +316,7 @@ class ControlFlowFlatteningPass(MutationPass):
                     func["_block_count"] = len(blocks)
                     candidates.append(func)
 
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to analyze function 0x{func_addr:x}: {e}")
 
         # Sort by block count (more blocks = better candidate for obfuscation)
@@ -320,7 +324,7 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return candidates
 
-    def _flatten_function(self, binary: Binary, func: dict) -> dict[str, int] | None:
+    def _flatten_function(self, binary: Any, func: dict) -> dict[str, int] | None:
         """
         Apply control flow flattening transformations to a function.
 
@@ -335,7 +339,7 @@ class ControlFlowFlatteningPass(MutationPass):
         - Inserting small sequences that fit available space
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             func: Function dict
 
         Returns:
@@ -349,7 +353,7 @@ class ControlFlowFlatteningPass(MutationPass):
         # Get basic blocks
         try:
             blocks = binary.get_basic_blocks(func_addr)
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.error(f"Failed to get blocks for {func_name}: {e}")
             return None
 
@@ -378,7 +382,7 @@ class ControlFlowFlatteningPass(MutationPass):
         # Get function disassembly for instruction analysis
         try:
             all_instrs = binary.get_function_disasm(func_addr)
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to get disasm for {func_name}: {e}")
             return None
 
@@ -557,7 +561,7 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return sequences
 
-    def _add_opaque_predicate(self, binary: Binary, addr: int, available_size: int, arch: str, bits: int) -> bool:
+    def _add_opaque_predicate(self, binary: Any, addr: int, available_size: int, arch: str, bits: int) -> bool:
         """
         Add an opaque predicate at the specified address.
 
@@ -568,7 +572,7 @@ class ControlFlowFlatteningPass(MutationPass):
         - (x & 0) == 0 is always true
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             addr: Address to write the predicate
             available_size: Maximum bytes available
             arch: Architecture family
@@ -706,7 +710,7 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return predicates
 
-    def _obfuscate_jump(self, binary: Binary, jump_insn: dict, block: dict, arch: str, bits: int) -> bool:
+    def _obfuscate_jump(self, binary: Any, jump_insn: dict, block: dict, arch: str, bits: int) -> bool:
         """
         Obfuscate an unconditional jump instruction.
 
@@ -719,7 +723,7 @@ class ControlFlowFlatteningPass(MutationPass):
         the jump in-place without expanding the function.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             jump_insn: The jump instruction dictionary
             block: The containing basic block
             arch: Architecture family
@@ -793,13 +797,13 @@ class ControlFlowFlatteningPass(MutationPass):
         return False
 
     def _analyze_jump_target(
-        self, binary: Binary, jump_insn: dict, jump_addr: int, arch: str, bits: int
+        self, binary: Any, jump_insn: dict, jump_addr: int, arch: str, bits: int
     ) -> dict | None:
         """
         Analyze jump instruction to extract target and size.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             jump_insn: Jump instruction dictionary
             jump_addr: Address of jump instruction
             arch: Architecture family
@@ -827,10 +831,11 @@ class ControlFlowFlatteningPass(MutationPass):
                 return {"target": int(addr_match.group(1), 16), "size": jump_size}
 
             return None
-        except Exception:
+        except (ValueError, KeyError, TypeError) as e:
+            logger.debug(f"Failed to analyze jump target: {e}")
             return None
 
-    def _insert_dead_code_with_predicate(self, binary: Binary, addr: int, size: int, arch: str, bits: int) -> bool:
+    def _insert_dead_code_with_predicate(self, binary: Any, addr: int, size: int, arch: str, bits: int) -> bool:
         """
         Insert dead code containing an opaque predicate into a NOP sled.
 
@@ -842,7 +847,7 @@ class ControlFlowFlatteningPass(MutationPass):
         Uses the shared dead code generation utilities.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             addr: Start address of NOP sequence
             size: Size of NOP sequence
             arch: Architecture family
@@ -881,7 +886,7 @@ class ControlFlowFlatteningPass(MutationPass):
         return False
 
     # Keep the dispatcher generation methods for reference/future use
-    def _generate_dispatcher(self, binary: Binary, blocks: list[Any]) -> list[str]:
+    def _generate_dispatcher(self, binary: Any, blocks: list[Any]) -> list[str]:
         """
         Generate dispatcher code (for reference/analysis purposes).
 
@@ -890,7 +895,7 @@ class ControlFlowFlatteningPass(MutationPass):
         is not currently implemented.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             blocks: List of basic blocks
 
         Returns:

@@ -4,13 +4,17 @@ Base class for ABI-aware mutation passes.
 Provides integration of ABI mutation hooks into the mutation pipeline.
 """
 
+from __future__ import annotations
+
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass, MutationRecord
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.abi_hook import (
     ABIMutationHook,
     ABICheckResult,
@@ -82,12 +86,12 @@ class ABIAwareMutationPass(MutationPass):
         self._abi_result: ABIResult | None = None
         self._abi_snapshots: dict[int, ABISnapshot] = {}
 
-    def run(self, binary: Binary) -> dict[str, Any]:
+    def run(self, binary: Any) -> dict[str, Any]:
         """
         Run the mutation pass with ABI enforcement.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
 
         Returns:
             Mutation result dictionary
@@ -151,14 +155,14 @@ class ABIAwareMutationPass(MutationPass):
             logger.error(f"Error in ABI-aware mutation pass {self.name}: {e}")
             raise
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply mutations with ABI checking.
 
         This method wraps apply_abi_aware() with ABI enforcement.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
 
         Returns:
             Mutation result dictionary
@@ -209,7 +213,7 @@ class ABIAwareMutationPass(MutationPass):
     @abstractmethod
     def apply_abi_aware(
         self,
-        binary: Binary,
+        binary: Any,
         abi_hook: ABIMutationHook | None,
     ) -> dict[str, Any]:
         """
@@ -218,7 +222,7 @@ class ABIAwareMutationPass(MutationPass):
         Subclasses should implement this method.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             abi_hook: ABI mutation hook for checking
 
         Returns:
@@ -228,7 +232,7 @@ class ABIAwareMutationPass(MutationPass):
 
     def apply_to_function_abi_aware(
         self,
-        binary: Binary,
+        binary: Any,
         function_address: int,
         abi_snapshot: ABISnapshot,
     ) -> dict[str, Any] | None:
@@ -238,7 +242,7 @@ class ABIAwareMutationPass(MutationPass):
         Override this method for function-level mutations.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             function_address: Function address
             abi_snapshot: Pre-mutation ABI snapshot
 

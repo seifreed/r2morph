@@ -209,7 +209,7 @@ class RelocationManager:
                         return True
                     logger.warning(f"write_bytes failed for control flow ref at 0x{from_addr:x}")
 
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, json.JSONDecodeError) as e:
             logger.error(f"Failed to update control flow ref at 0x{from_addr:x}: {e}")
 
         return False
@@ -240,7 +240,7 @@ class RelocationManager:
                     return True
                 logger.warning(f"write_bytes failed for data ref at 0x{from_addr:x}")
 
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError) as e:
             logger.error(f"Failed to update data ref at 0x{from_addr:x}: {e}")
 
         return False
@@ -309,6 +309,6 @@ class RelocationManager:
 
             return True
 
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError) as e:
             logger.error(f"Failed to shift code block: {e}")
             return False

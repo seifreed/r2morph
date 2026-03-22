@@ -5,13 +5,17 @@ Provides mutation passes that are aware of control flow graphs
 to avoid mutating critical control flow points.
 """
 
+from __future__ import annotations
+
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from r2morph.mutations.base import MutationPass, MutationResult
-from r2morph.core.binary import Binary
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.analysis.cfg import ControlFlowGraph, CFGBuilder
 from r2morph.analysis.critical_nodes import (
     CriticalNodeDetector,
@@ -87,14 +91,14 @@ class CFGAwareMutationPass(MutationPass):
         self._scorer: MutationSafetyScorer | None = None
         self._cfg: ControlFlowGraph | None = None
 
-    def apply(self, binary: Binary) -> MutationResult:
+    def apply(self, binary: Any) -> MutationResult:
         """
         Apply the mutation (CFG-aware wrapper).
 
         This method builds the CFG and calls apply_cfg_aware().
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
 
         Returns:
             MutationResult instance
@@ -146,7 +150,7 @@ class CFGAwareMutationPass(MutationPass):
     @abstractmethod
     def apply_cfg_aware(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: ControlFlowGraph,
         safe_regions: list[AddressRange],
     ) -> dict[str, Any]:
@@ -156,7 +160,7 @@ class CFGAwareMutationPass(MutationPass):
         Subclasses must implement this method.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             cfg: Control flow graph for current function
             safe_regions: List of safe regions for mutations
 
@@ -287,7 +291,7 @@ class CFGAwareNOPInsertion(CFGAwareMutationPass):
 
     def apply_cfg_aware(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: ControlFlowGraph,
         safe_regions: list[AddressRange],
     ) -> dict[str, Any]:
@@ -295,7 +299,7 @@ class CFGAwareNOPInsertion(CFGAwareMutationPass):
         Apply CFG-aware NOP insertion.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             cfg: Control flow graph
             safe_regions: Safe regions for mutations
 
@@ -344,12 +348,12 @@ class CFGAwareNOPInsertion(CFGAwareMutationPass):
 
         return result
 
-    def _insert_nop(self, binary: Binary, address: int) -> bool:
+    def _insert_nop(self, binary: Any, address: int) -> bool:
         """
         Insert a NOP at the specified address.
 
         Args:
-            binary: Binary to modify
+            binary: Any to modify
             address: Address to insert NOP
 
         Returns:
@@ -402,7 +406,7 @@ class CFGAwareSubstitution(CFGAwareMutationPass):
 
     def apply_cfg_aware(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: ControlFlowGraph,
         safe_regions: list[AddressRange],
     ) -> dict[str, Any]:
@@ -410,7 +414,7 @@ class CFGAwareSubstitution(CFGAwareMutationPass):
         Apply CFG-aware instruction substitution.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             cfg: Control flow graph
             safe_regions: Safe regions for mutations
 
@@ -455,14 +459,14 @@ class CFGAwareSubstitution(CFGAwareMutationPass):
 
         return result
 
-    def _get_substitution(self, disasm: str, address: int, binary: Binary) -> str | None:
+    def _get_substitution(self, disasm: str, address: int, binary: Any) -> str | None:
         """
         Get a safe substitution for an instruction.
 
         Args:
             disasm: Disassembled instruction
             address: Instruction address
-            binary: Binary being mutated
+            binary: Any being mutated
 
         Returns:
             Substitution or None if not applicable

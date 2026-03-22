@@ -16,14 +16,18 @@ Anti-disassembly makes static analysis difficult by:
 - Injecting SEH handlers that confuse analysis tools
 """
 
+from __future__ import annotations
+
 import logging
 import random
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -342,7 +346,7 @@ class AntiDisassemblyPass(MutationPass):
 
         return snippets
 
-    def _inject_snippet(self, binary: Binary, addr: int, snippet: AntiDisasmSnippet) -> bool:
+    def _inject_snippet(self, binary: Any, addr: int, snippet: AntiDisasmSnippet) -> bool:
         """Inject a snippet at the given address."""
         try:
             snippet_bytes = bytes.fromhex(snippet.bytes_hex)
@@ -351,7 +355,7 @@ class AntiDisassemblyPass(MutationPass):
             logger.debug(f"Failed to inject snippet: {e}")
             return False
 
-    def _inject_overlapping(self, binary: Binary, addr: int) -> bool:
+    def _inject_overlapping(self, binary: Any, addr: int) -> bool:
         """Inject overlapping instruction pattern."""
         snippet = random.choice(OVERLAPPING_X64)
         try:
@@ -361,7 +365,7 @@ class AntiDisassemblyPass(MutationPass):
             logger.debug(f"Failed to inject overlapping pattern: {e}")
             return False
 
-    def _inject_false_branch(self, binary: Binary, addr: int) -> bool:
+    def _inject_false_branch(self, binary: Any, addr: int) -> bool:
         """Inject false branch pattern."""
         snippet = random.choice(FALSE_BRANCH_X64)
         try:
@@ -371,7 +375,7 @@ class AntiDisassemblyPass(MutationPass):
             logger.debug(f"Failed to inject false branch pattern: {e}")
             return False
 
-    def _inject_jump_middle(self, binary: Binary, addr: int) -> bool:
+    def _inject_jump_middle(self, binary: Any, addr: int) -> bool:
         """Inject jump into middle of instruction."""
         snippet = random.choice(JUMP_MIDDLE_X64)
         try:
@@ -381,12 +385,12 @@ class AntiDisassemblyPass(MutationPass):
             logger.debug(f"Failed to inject jump-middle pattern: {e}")
             return False
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply anti-disassembly techniques.
 
         Args:
-            binary: Binary to transform
+            binary: Any to transform
 
         Returns:
             Statistics dictionary

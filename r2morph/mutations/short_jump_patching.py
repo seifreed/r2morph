@@ -13,13 +13,16 @@ Transformations:
 - jrcxz -> test rcx, rcx; jz
 """
 
+from __future__ import annotations
+
 import logging
-from typing import Any
-
 import random
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -64,12 +67,12 @@ class ShortJumpPatchingPass(MutationPass):
         """
         return SHORT_JUMP_EXCLUSIVE.get(mnemonic.lower())
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply short jump patching to the binary.
 
         Args:
-            binary: Binary to process
+            binary: Any to process
 
         Returns:
             Dictionary with patching statistics
@@ -297,12 +300,12 @@ class RIPRelativeValidationPass(MutationPass):
         super().__init__(name="RIPRelativeValidation", config=config)
         self.fail_on_detect = self.config.get("fail_on_detect", True)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Validate binary for RIP-relative instructions.
 
         Args:
-            binary: Binary to validate
+            binary: Any to validate
 
         Returns:
             Dictionary with validation results

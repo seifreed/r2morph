@@ -5,12 +5,16 @@ Obfuscates string literals in the binary by encoding/encrypting them
 and adding decode stubs that run at runtime.
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -58,12 +62,12 @@ class StringObfuscationPass(MutationPass):
             ),
         )
 
-    def _find_strings(self, binary: Binary, section: dict[str, Any]) -> list[dict[str, Any]]:
+    def _find_strings(self, binary: Any, section: dict[str, Any]) -> list[dict[str, Any]]:
         """
         Find printable string candidates in a section.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             section: Section dictionary from r2
 
         Returns:
@@ -264,12 +268,12 @@ class StringObfuscationPass(MutationPass):
         else:
             return data, 0
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply string obfuscation to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Any instance to mutate
 
         Returns:
             Dictionary with mutation statistics

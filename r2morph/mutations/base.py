@@ -2,14 +2,20 @@
 Base class for mutation passes.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 import time
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
+# Mutation passes accept any object satisfying BinaryAccessProtocol.
+# We use Any at runtime to avoid circular imports; the protocol is
+# enforced structurally via the methods called on binary.
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -145,14 +151,11 @@ class MutationPass(ABC):
         )
 
     @abstractmethod
-    def apply(self, binary: Binary) -> dict[str, Any]:
-        """
-        Apply mutations to the binary.
-
-        This method must be implemented by subclasses.
+    def apply(self, binary: Any) -> dict[str, Any]:
+        """Apply mutations to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Object satisfying BinaryAccessProtocol
 
         Returns:
             Dictionary with mutation statistics
@@ -170,12 +173,11 @@ class MutationPass(ABC):
         """
         pass  # Default no-op; subclasses override as needed
 
-    def run(self, binary: Binary) -> dict[str, Any]:
-        """
-        Run the mutation pass on a binary.
+    def run(self, binary: Any) -> dict[str, Any]:
+        """Run the mutation pass on a binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Object satisfying BinaryAccessProtocol
 
         Returns:
             Dictionary with mutation results and statistics

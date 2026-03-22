@@ -25,12 +25,16 @@ Note:
     without affecting program semantics.
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, UNCONDITIONAL_TRANSFERS
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 from r2morph.utils.dead_code import (
     generate_dead_code_for_arch,
@@ -93,12 +97,12 @@ class DeadCodeInjectionPass(MutationPass):
         self.code_complexity = self.config.get("code_complexity", "medium")
         self.min_padding_size = self.config.get("min_padding_size", 3)
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply dead code injection mutations.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
 
         Returns:
             Statistics dict
@@ -147,7 +151,7 @@ class DeadCodeInjectionPass(MutationPass):
             "code_complexity": self.code_complexity,
         }
 
-    def _inject_dead_code(self, binary: Binary, func: dict) -> tuple[int, int]:
+    def _inject_dead_code(self, binary: Any, func: dict) -> tuple[int, int]:
         """
         Inject dead code in a function.
 
@@ -155,7 +159,7 @@ class DeadCodeInjectionPass(MutationPass):
         and replaces them with generated dead code sequences.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             func: Function dict
 
         Returns:
@@ -166,7 +170,7 @@ class DeadCodeInjectionPass(MutationPass):
 
         try:
             instructions = binary.get_function_disasm(func_addr)
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to get disasm for function at 0x{func_addr:x}: {e}")
             return 0, 0
 
@@ -354,7 +358,7 @@ class DeadCodeInjectionPass(MutationPass):
 
         return False
 
-    def _generate_dead_code_for_size(self, binary: Binary, max_size: int, func_addr: int) -> bytes | None:
+    def _generate_dead_code_for_size(self, binary: Any, max_size: int, func_addr: int) -> bytes | None:
         """
         Generate dead code that fits within the specified size.
 
@@ -362,7 +366,7 @@ class DeadCodeInjectionPass(MutationPass):
         fits within max_size bytes.
 
         Args:
-            binary: Binary instance for assembly
+            binary: Any instance for assembly
             max_size: Maximum size in bytes for the dead code
             func_addr: Function address for assembly context
 
@@ -426,14 +430,14 @@ class DeadCodeInjectionPass(MutationPass):
         """
         return generate_nop_sequence(arch, bits, size)
 
-    def _generate_dead_code(self, binary: Binary) -> list[str]:
+    def _generate_dead_code(self, binary: Any) -> list[str]:
         """
         Generate dead code based on complexity setting.
 
         Uses the shared dead code generation utility.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
 
         Returns:
             List of assembly instructions (without labels/directives for assembly)
