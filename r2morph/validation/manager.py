@@ -889,57 +889,58 @@ class ValidationManager:
 
         region_report["original_region_exit_address"] = getattr(original_final, "addr", None)
         region_report["mutated_region_exit_address"] = getattr(mutated_final, "addr", None)
-        region_report["control_flow_observables"] = [
-            "region_exit_address",
-            "region_exit_steps",
-        ]
-        if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
-            region_report["mismatches"].append("successor_address")
-            mismatches.append(
-                {
-                    "start_address": mutation["start_address"],
-                    "end_address": mutation["end_address"],
-                    "observable": "successor_address",
-                }
-            )
+        region_report["control_flow_observables"] = ["region_exit_address", "region_exit_steps"]
 
+        self._check_observables(
+            region_report, mismatches, mutation,
+            original_final, mutated_final, compared_registers, stack_reg,
+        )
+        return region_report, mismatches
+
+    def _check_observables(
+        self,
+        region_report: dict[str, Any],
+        mismatches: list[dict[str, Any]],
+        mutation: dict[str, Any],
+        original_final: Any,
+        mutated_final: Any,
+        compared_registers: list[str],
+        stack_reg: str,
+    ) -> None:
+        """Compare observables between original and mutated final states."""
+        start, end = mutation["start_address"], mutation["end_address"]
+
+        def _record(observable: str) -> None:
+            region_report["mismatches"].append(observable)
+            mismatches.append({"start_address": start, "end_address": end, "observable": observable})
+
+        # Control flow: exit address
+        if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
+            _record("successor_address")
+
+        # Registers
         for reg_name in compared_registers:
             if not hasattr(original_final.regs, reg_name) or not hasattr(mutated_final.regs, reg_name):
                 continue
             left = getattr(original_final.regs, reg_name)
             right = getattr(mutated_final.regs, reg_name)
             if original_final.solver.satisfiable(extra_constraints=[left != right]):
-                region_report["mismatches"].append(reg_name)
-                mismatches.append(
-                    {
-                        "start_address": mutation["start_address"],
-                        "end_address": mutation["end_address"],
-                        "observable": reg_name,
-                    }
-                )
+                _record(reg_name)
+
+        # Flags
         if hasattr(original_final.regs, "eflags") and hasattr(mutated_final.regs, "eflags"):
             if original_final.solver.satisfiable(
                 extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
             ):
-                region_report["mismatches"].append("eflags")
-                mismatches.append(
-                    {
-                        "start_address": mutation["start_address"],
-                        "end_address": mutation["end_address"],
-                        "observable": "eflags",
-                    }
-                )
+                _record("eflags")
+
+        # Stack pointer
         original_stack = getattr(original_final.regs, stack_reg)
         mutated_stack = getattr(mutated_final.regs, stack_reg)
         if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
-            region_report["mismatches"].append("stack_delta")
-            mismatches.append(
-                {
-                    "start_address": mutation["start_address"],
-                    "end_address": mutation["end_address"],
-                    "observable": "stack_delta",
-                }
-            )
+            _record("stack_delta")
+
+        # Memory writes
         original_writes = self._collect_memory_write_signatures(original_final)
         mutated_writes = self._collect_memory_write_signatures(mutated_final)
         region_report["original_memory_writes"] = original_writes
@@ -947,15 +948,7 @@ class ValidationManager:
         region_report["original_memory_write_count"] = len(original_writes)
         region_report["mutated_memory_write_count"] = len(mutated_writes)
         if original_writes != mutated_writes:
-            region_report["mismatches"].append("memory_writes")
-            mismatches.append(
-                {
-                    "start_address": mutation["start_address"],
-                    "end_address": mutation["end_address"],
-                    "observable": "memory_writes",
-                }
-            )
-        return region_report, mismatches
+            _record("memory_writes")
 
     def _compare_real_binary_regions(
         self,
