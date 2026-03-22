@@ -7,7 +7,10 @@ Handles all write operations: bytes, instructions, NOP fills.
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from r2morph.adapters.disassembler import DisassemblerInterface
 
 logger = logging.getLogger(__name__)
 
@@ -23,22 +26,22 @@ class BinaryWriter:
     - Batch mutation tracking
     """
 
-    def __init__(self, r2: Any, path: Path, writable: bool = False):
+    def __init__(self, r2: "DisassemblerInterface | None", path: Path, writable: bool = False):
         """
         Initialize BinaryWriter.
 
         Args:
-            r2: r2pipe connection instance
+            r2: Disassembler connection (r2pipe or DisassemblerInterface)
             path: Path to the binary file
             writable: Whether the binary was opened in write mode
         """
-        self._r2 = r2
+        self._r2: "DisassemblerInterface | None" = r2
         self._path = path
         self._writable = writable
         self._mutation_counter = 0
 
-    def set_r2(self, r2: Any) -> None:
-        """Update the r2pipe connection after reload."""
+    def set_r2(self, r2: "DisassemblerInterface | None") -> None:
+        """Update the disassembler connection after reload."""
         self._r2 = r2
 
     def set_writable(self, writable: bool) -> None:

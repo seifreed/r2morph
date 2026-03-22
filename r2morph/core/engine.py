@@ -21,7 +21,8 @@ from r2morph.core.constants import (
     MEDIUM_FUNCTION_COUNT_THRESHOLD,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
-from r2morph.mutations.base import MutationPass
+from r2morph.mutations.base import MutationPass  # concrete used for isinstance checks
+from r2morph.protocols import MutationPassProtocol  # abstraction for type hints
 from r2morph.pipeline.pipeline import Pipeline
 from r2morph.reporting.gate_evaluator import (
     SEVERITY_ORDER,

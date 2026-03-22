@@ -17,6 +17,14 @@ SEVERITY_ORDER: dict[str, int] = {
     "not-requested": 4,
 }
 
+ROLLBACK_SEVERITY_ORDER: dict[str, int] = {
+    "high": 0,
+    "medium": 1,
+    "low": 2,
+}
+
+ROLLBACK_SEVERITY_ORDER: dict[str, int] = {"high": 0, "medium": 1, "low": 2}
+
 
 @dataclass
 class GateFailure:

@@ -11,6 +11,7 @@ from r2morph.reporting.gate_evaluator import (
     summarize_gate_failures as _summarize_gate_failures,
 )
 from r2morph.reporting.report_helpers import (
+    _first_available,
     _is_risky_pass,
     _has_structural_risk,
     _has_symbolic_risk,
@@ -83,15 +84,19 @@ def _resolve_pass_filter_sets(
         or {}
     )
     triage_rows = list(
-        _summary_first(
-            summary,
-            "pass_triage_rows",
-            report_views.get("general_triage_rows", report_views.get("triage_priority", [])),
+        _first_available(
+            list(
+                _summary_first(
+                    summary,
+                    "pass_triage_rows",
+                    report_views.get("general_triage_rows", report_views.get("triage_priority", [])),
+                )
+                or []
+            ),
+            list(general_renderer_state.get("triage_rows", []) or []),
         )
         or []
     )
-    if not triage_rows and general_renderer_state.get("triage_rows"):
-        triage_rows = list(general_renderer_state.get("triage_rows", []) or [])
     resolved = {
         "risky": set(pass_filter_views.get("only_risky_passes", risk_buckets.get("risky", []))),
         "structural": set(
@@ -280,7 +285,7 @@ def _resolve_general_report_flow_state(
         mutations=mutations,
         pass_results=pass_results,
     )
-    from r2morph.reporting.report_builder_ext import _build_general_filtered_summary
+    from r2morph.reporting.filtered_summary_builder import _build_general_filtered_summary
     filtered_summary, degradation_roles = _build_general_filtered_summary(
         summary=summary,
         mutations=mutations,

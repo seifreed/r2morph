@@ -10,7 +10,7 @@ from r2morph.reporting.report_resolver import (
     _resolve_only_mismatches_state,
     _resolve_only_pass_view,
 )
-from r2morph.reporting.report_builder_ext import (
+from r2morph.reporting.filtered_summary_builder import (
     _build_general_report_payload,
     _build_only_mismatches_payload,
     _build_report_filters,
@@ -29,7 +29,7 @@ from r2morph.reporting.report_rendering import (
     _render_pass_validation_contexts,
     _render_pass_validation_context,
     _render_only_pass_sections,
-    console,
+    _get_console,
 )
 
 

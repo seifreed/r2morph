@@ -56,24 +56,27 @@ from r2morph.reporting.report_renderer import (
     ReportRenderer,
     ConsoleRenderer,
 )
-from r2morph.reporting.console_renderer import (
-    CONSOLE,
-    create_table,
-    render_pass_capabilities,
-    render_pass_validation_contexts,
-    render_symbolic_sections,
-    render_gate_sections,
-    render_degradation_sections,
-    render_only_mismatches_sections,
-    render_only_pass_sections,
-    render_report_filter_messages,
-    render_summary_table,
-    render_gate_evaluation_sections,
-    render_general_report_sections,
-    render_general_only_pass_sections,
-    render_mismatch_summary_sections,
-    render_validation_context_table,
-)
+# Console rendering functions are lazily imported via __getattr__ below
+# to avoid a circular import with r2morph.core.engine.
+_LAZY_RENDERING_NAMES = {
+    "CONSOLE",
+    "create_table",
+    "render_pass_capabilities",
+    "render_pass_validation_contexts",
+    "render_symbolic_sections",
+    "render_gate_sections",
+    "render_degradation_sections",
+    "render_only_mismatches_sections",
+    "render_only_pass_sections",
+    "render_report_filter_messages",
+    "render_summary_table",
+    "render_gate_evaluation_sections",
+    "render_general_report_sections",
+    "render_general_only_pass_sections",
+    "render_mismatch_summary_sections",
+    "render_validation_context_table",
+}
+
 from r2morph.reporting.report_state import (
     resolve_general_symbolic_state,
     resolve_mismatch_view,
@@ -167,3 +170,14 @@ __all__ = [
     "ReportData",
     "format_as_sarif",
 ]
+
+
+def __getattr__(name: str):
+    """Lazily resolve rendering symbols to avoid circular imports."""
+    if name in _LAZY_RENDERING_NAMES:
+        from r2morph.reporting import report_rendering as _rr
+
+        value = getattr(_rr, name)
+        globals()[name] = value  # cache for subsequent access
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

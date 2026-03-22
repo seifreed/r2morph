@@ -78,7 +78,7 @@ from r2morph.reporting.report_resolver import (
     _resolve_pass_filter_sets,
     _resolve_report_gate_state,
 )
-from r2morph.reporting.report_builder_ext import (
+from r2morph.reporting.filtered_summary_builder import (
     _build_base_filtered_summary,
     _build_filtered_summary_degradation_sections,
     _build_filtered_summary_gate_sections,

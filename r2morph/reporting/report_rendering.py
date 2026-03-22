@@ -15,14 +15,24 @@ from typing import Any
 
 import typer
 from rich.console import Console
+from rich.table import Table
 
 from r2morph.core.engine import (
     _build_gate_failure_priority,
     _build_gate_failure_severity_priority,
     _summarize_gate_failures,
 )
+from r2morph.reporting.report_helpers import _sort_pass_evidence
 
-console = Console()
+_console: Console | None = None
+
+
+def _get_console() -> Console:
+    global _console
+    if _console is None:
+        _console = Console()
+    return _console
+
 
 SEVERITY_ORDER = {
     "mismatch": 0,
@@ -49,27 +59,27 @@ def _render_report_filter_messages(
 ) -> None:
     """Render compact filter-resolution/status messages."""
     if only_pass is not None and resolved_only_pass != only_pass:
-        console.print(f"[bold]Pass Filter Resolution[/bold]: {only_pass} -> {resolved_only_pass}")
+        _get_console().print(f"[bold]Pass Filter Resolution[/bold]: {only_pass} -> {resolved_only_pass}")
     if only_pass_failure is not None and resolved_only_pass_failure != only_pass_failure:
-        console.print(
+        _get_console().print(
             f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}"
         )
     if only_risky_passes:
-        console.print(f"[bold]Risky Pass Filter[/bold]: {len(selected_risk_pass_names)} risky pass(es) detected")
+        _get_console().print(f"[bold]Risky Pass Filter[/bold]: {len(selected_risk_pass_names)} risky pass(es) detected")
     if only_uncovered_passes:
-        console.print(
+        _get_console().print(
             f"[bold]Uncovered Pass Filter[/bold]: {len(selected_risk_pass_names)} uncovered pass(es) detected"
         )
     if only_covered_passes:
-        console.print(f"[bold]Covered Pass Filter[/bold]: {len(selected_risk_pass_names)} covered pass(es) detected")
+        _get_console().print(f"[bold]Covered Pass Filter[/bold]: {len(selected_risk_pass_names)} covered pass(es) detected")
     if only_clean_passes:
-        console.print(f"[bold]Clean Pass Filter[/bold]: {len(selected_risk_pass_names)} clean pass(es) detected")
+        _get_console().print(f"[bold]Clean Pass Filter[/bold]: {len(selected_risk_pass_names)} clean pass(es) detected")
     if only_structural_risk:
-        console.print(
+        _get_console().print(
             f"[bold]Structural Risk Filter[/bold]: {len(selected_risk_pass_names)} structural-risk pass(es) detected"
         )
     if only_symbolic_risk:
-        console.print(
+        _get_console().print(
             f"[bold]Symbolic Risk Filter[/bold]: {len(selected_risk_pass_names)} symbolic-risk pass(es) detected"
         )
 
@@ -89,9 +99,9 @@ def _render_only_mismatches_sections(
     mismatch_severity_rows: list[dict[str, Any]],
 ) -> None:
     """Render the textual sections for report --only-mismatches."""
-    console.print(f"[bold]Filtered Mismatch Mutations[/bold]: {len(filtered_mutations)}")
+    _get_console().print(f"[bold]Filtered Mismatch Mutations[/bold]: {len(filtered_mutations)}")
     if degraded_validation:
-        console.print(
+        _get_console().print(
             "[bold]Mismatch Degradation Context[/bold]: "
             f"requested={requested_validation_mode}, effective={effective_validation_mode}"
         )
@@ -99,31 +109,31 @@ def _render_only_mismatches_sections(
             trigger_names = ", ".join(
                 item.get("pass_name", item.get("mutation", "unknown")) for item in mismatch_degraded_passes
             )
-            console.print(f"  trigger_passes={trigger_names}")
+            _get_console().print(f"  trigger_passes={trigger_names}")
         elif degraded_passes:
             trigger_names = ", ".join(
                 item.get("pass_name", item.get("mutation", "unknown")) for item in degraded_passes
             )
-            console.print(f"  trigger_passes={trigger_names}")
+            _get_console().print(f"  trigger_passes={trigger_names}")
     if mismatch_counts_by_pass:
-        console.print("[bold]Mismatch Pass Summary[/bold]:")
+        _get_console().print("[bold]Mismatch Pass Summary[/bold]:")
         for pass_name in filtered_passes:
             count = mismatch_counts_by_pass.get(pass_name, 0)
             role = mismatch_pass_context.get(pass_name, {}).get("role", "unknown")
             observables = mismatch_observables_by_pass.get(pass_name, [])
             observable_fragment = f", observables={','.join(observables)}" if observables else ""
-            console.print(f"  [cyan]{pass_name}[/cyan]: mismatch_count={count}, role={role}{observable_fragment}")
+            _get_console().print(f"  [cyan]{pass_name}[/cyan]: mismatch_count={count}, role={role}{observable_fragment}")
     if mismatch_severity_rows:
-        console.print("[bold]Mismatch Severity Priority[/bold]:")
+        _get_console().print("[bold]Mismatch Severity Priority[/bold]:")
         for row in mismatch_severity_rows:
-            console.print(
+            _get_console().print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"severity={row.get('severity', 'unknown')}, "
                 f"issue_count={row.get('issue_count', 0)}, "
                 f"symbolic_requested={row.get('symbolic_requested', 0)}"
             )
     if filtered_mutations:
-        console.print("[bold]Mismatch Addresses[/bold]:")
+        _get_console().print("[bold]Mismatch Addresses[/bold]:")
         for mutation in filtered_mutations:
             pass_name = mutation.get("pass_name", "unknown")
             start = mutation.get("start_address")
@@ -136,7 +146,7 @@ def _render_only_mismatches_sections(
                 location = f"0x{start:x}-0x{end:x}"
             observables = mutation.get("metadata", {}).get("symbolic_observable_mismatches", [])
             observable_str = ", ".join(observables) if observables else ""
-            console.print(f"  [cyan]{pass_name}[/cyan] @ {location}: {observable_str}")
+            _get_console().print(f"  [cyan]{pass_name}[/cyan] @ {location}: {observable_str}")
 
 
 def _render_symbolic_sections(
@@ -154,7 +164,7 @@ def _render_symbolic_sections(
     """Render symbolic-report sections from persisted summary first, then fall back."""
     if not symbolic_requested:
         return
-    console.print(
+    _get_console().print(
         "[bold]Symbolic Mutation Summary[/bold]: "
         f"{observable_match} observable match, "
         f"{observable_mismatch} observable mismatch, "
@@ -175,7 +185,7 @@ def _render_symbolic_sections(
             if pass_stats["symbolic_requested"] > 0
         ]
     for row in coverage_rows:
-        console.print(
+        _get_console().print(
             f"  [cyan]{row['pass_name']}[/cyan]: "
             f"{row['observable_match']} match, "
             f"{row['observable_mismatch']} mismatch, "
@@ -226,9 +236,9 @@ def _render_symbolic_sections(
         ]
         severity_rows.sort(key=lambda item: item["pass_name"])
     if severity_rows:
-        console.print("[bold]Severity Priority[/bold]:")
+        _get_console().print("[bold]Severity Priority[/bold]:")
         for row in severity_rows:
-            console.print(
+            _get_console().print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"severity={row['severity']}, "
                 f"issue_count={row.get('issue_count', 0)}, "
@@ -263,7 +273,7 @@ def _render_symbolic_sections(
             )
         )
     if issue_rows:
-        console.print("[bold]Passes With Symbolic Issues[/bold]:")
+        _get_console().print("[bold]Passes With Symbolic Issues[/bold]:")
         for row in issue_rows:
             severity = row["severity"]
             if severity_rows:
@@ -275,7 +285,7 @@ def _render_symbolic_sections(
                     ),
                     severity,
                 )
-            console.print(
+            _get_console().print(
                 f"  [yellow]{row['pass_name']}[/yellow]: "
                 f"severity={severity}, "
                 f"mismatch={row['observable_mismatch']}, "
@@ -284,9 +294,9 @@ def _render_symbolic_sections(
             )
     triage_rows = list(summary.get("pass_triage_rows", []))
     if triage_rows:
-        console.print("[bold]Pass Triage[/bold]:")
+        _get_console().print("[bold]Pass Triage[/bold]:")
         for row in triage_rows:
-            console.print(
+            _get_console().print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"severity={row.get('severity', 'unknown')}, "
                 f"structural_issues={row.get('structural_issue_count', 0)}, "
@@ -311,9 +321,9 @@ def _render_symbolic_sections(
             ]
         )
     if pass_evidence_rows:
-        console.print("[bold]Pass Evidence[/bold]:")
+        _get_console().print("[bold]Pass Evidence[/bold]:")
         for row in pass_evidence_rows:
-            console.print(
+            _get_console().print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"changed_regions={row.get('changed_region_count', 0)}, "
                 f"structural_issues={row.get('structural_issue_count', 0)}, "
@@ -322,9 +332,9 @@ def _render_symbolic_sections(
             )
     capability_rows = list(summary.get("pass_capability_summary", []))
     if capability_rows:
-        console.print("[bold]Pass Capabilities[/bold]:")
+        _get_console().print("[bold]Pass Capabilities[/bold]:")
         for row in capability_rows:
-            console.print(
+            _get_console().print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"runtime_recommended={str(row.get('runtime_recommended', False)).lower()}, "
                 f"symbolic_recommended={str(row.get('symbolic_recommended', False)).lower()}, "
@@ -333,15 +343,15 @@ def _render_symbolic_sections(
     discarded_priority = list(summary.get("discarded_mutation_priority", []))
     discarded_summary = dict(summary.get("discarded_mutation_summary", {}) or {})
     if discarded_priority or discarded_summary.get("by_pass"):
-        console.print("[bold]Discarded Mutations[/bold]:")
+        _get_console().print("[bold]Discarded Mutations[/bold]:")
         for row in discarded_priority or discarded_summary["by_pass"]:
             reasons = ",".join(f"{reason}:{count}" for reason, count in dict(row.get("reasons", {})).items())
-            console.print(
+            _get_console().print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"discarded={row.get('discarded_count', 0)}" + (f", reasons={reasons}" if reasons else "")
             )
     if mismatch_rows:
-        console.print("[bold]Symbolic Mismatches[/bold]:")
+        _get_console().print("[bold]Symbolic Mismatches[/bold]:")
         for pass_name, start, end, observables in mismatch_rows:
             if start is None or end is None:
                 location = "unknown"
@@ -350,7 +360,7 @@ def _render_symbolic_sections(
             else:
                 location = f"0x{start:x}-0x{end:x}"
             details = ", ".join(observables) if observables else "unknown"
-            console.print(f"  [red]{pass_name}[/red] @ {location}: {details}")
+            _get_console().print(f"  [red]{pass_name}[/red] @ {location}: {details}")
 
 
 def _render_degradation_sections(
@@ -365,36 +375,36 @@ def _render_degradation_sections(
 ) -> None:
     """Render validation-mode adjustment/degradation summary."""
     if degraded_validation:
-        console.print(
+        _get_console().print(
             "[bold]Validation Mode Adjustment[/bold]: "
             f"requested={requested_validation_mode}, effective={effective_validation_mode}"
         )
         if validation_policy is not None:
-            console.print(
+            _get_console().print(
                 f"  policy={validation_policy.get('policy', 'unknown')}, "
                 f"reason={validation_policy.get('reason', 'unknown')}"
             )
             if degraded_passes:
-                console.print("[bold]Degraded Passes[/bold]:")
+                _get_console().print("[bold]Degraded Passes[/bold]:")
                 for item in degraded_passes:
                     pass_name = item.get("pass_name", item.get("mutation", "unknown"))
                     confidence = item.get("confidence", "unknown")
-                    console.print(f"  [yellow]{pass_name}[/yellow]: symbolic confidence={confidence}")
+                    _get_console().print(f"  [yellow]{pass_name}[/yellow]: symbolic confidence={confidence}")
             if degradation_roles:
-                console.print("[bold]Degradation Roles[/bold]:")
+                _get_console().print("[bold]Degradation Roles[/bold]:")
                 for role, count in sorted(degradation_roles.items()):
-                    console.print(f"  {role}: {count}")
+                    _get_console().print(f"  {role}: {count}")
             if symbolic_severity_rows:
-                console.print("[bold]Degraded Severity Priority[/bold]:")
+                _get_console().print("[bold]Degraded Severity Priority[/bold]:")
                 for row in symbolic_severity_rows:
-                    console.print(
+                    _get_console().print(
                         f"  [cyan]{row['pass_name']}[/cyan]: "
                         f"severity={row.get('severity', 'unknown')}, "
                         f"issue_count={row.get('issue_count', 0)}, "
                         f"symbolic_requested={row.get('symbolic_requested', 0)}"
                     )
     elif requested_validation_mode:
-        console.print(
+        _get_console().print(
             "[bold]Validation Mode[/bold]: "
             f"requested={requested_validation_mode}, effective={effective_validation_mode}"
         )
@@ -412,9 +422,9 @@ def _render_gate_sections(
     """Render persisted gate evaluation and failure sections."""
     if not gate_evaluation:
         return
-    console.print(f"[bold]Gate Evaluation[/bold]: all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}")
+    _get_console().print(f"[bold]Gate Evaluation[/bold]: all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}")
     if gate_requested.get("min_severity") is not None:
-        console.print(
+        _get_console().print(
             "  "
             f"min_severity={gate_requested.get('min_severity')}, "
             f"passed={'yes' if gate_results.get('min_severity_passed', True) else 'no'}"
@@ -424,33 +434,33 @@ def _render_gate_sections(
             f"{item.get('pass_name')}<={item.get('max_severity')}"
             for item in gate_requested.get("require_pass_severity", [])
         )
-        console.print(
+        _get_console().print(
             "  "
             f"require_pass_severity={requested_rules}, "
             f"passed={'yes' if gate_results.get('require_pass_severity_passed', True) else 'no'}"
         )
         failures = list(gate_results.get("require_pass_severity_failures", []))
         if failures:
-            console.print("  failures: " + ", ".join(failures))
-    console.print(
+            _get_console().print("  failures: " + ", ".join(failures))
+    _get_console().print(
         "[bold]Gate Failure Summary[/bold]: "
         f"min_severity_failed={'yes' if gate_failure_summary.get('min_severity_failed') else 'no'}, "
         f"require_pass_failures={gate_failure_summary.get('require_pass_severity_failure_count', 0)}"
     )
     severity_counts = gate_failure_summary.get("require_pass_severity_failures_by_expected_severity", {})
     if severity_counts:
-        console.print(
+        _get_console().print(
             "  expected_severity_counts="
             + ", ".join(f"{severity}:{count}" for severity, count in severity_counts.items())
         )
     if gate_failure_severity_priority:
-        console.print(
+        _get_console().print(
             "  expected_severity_priority="
             + ", ".join(f"{row.get('severity')}:{row.get('failure_count')}" for row in gate_failure_severity_priority)
         )
     pass_failure_map = gate_failure_summary.get("require_pass_severity_failures_by_pass", {})
     if pass_failure_map:
-        console.print("[bold]Gate Failure By Pass[/bold]:")
+        _get_console().print("[bold]Gate Failure By Pass[/bold]:")
         for row in gate_failure_priority or [
             {
                 "pass_name": pass_name,
@@ -464,7 +474,7 @@ def _render_gate_sections(
             failures = list(row.get("failures", []))
             failure_count = row.get("failure_count", len(failures))
             strictest = row.get("strictest_expected_severity", "unknown")
-            console.print(
+            _get_console().print(
                 f"  [yellow]{pass_name}[/yellow] "
                 f"(count={failure_count}, strictest_expected={strictest}): " + ", ".join(failures)
             )
@@ -477,7 +487,7 @@ def _render_pass_capabilities(
     """Render pass capabilities for visible passes."""
     if not filtered_summary.get("pass_capabilities"):
         return
-    console.print("[bold]Pass Capabilities[/bold]:")
+    _get_console().print("[bold]Pass Capabilities[/bold]:")
     for pass_name in filtered_summary.get("passes", []):
         capabilities = filtered_summary["pass_capabilities"].get(pass_name)
         if not capabilities:
@@ -495,7 +505,7 @@ def _render_pass_capabilities(
         if symbolic_recommended is not None:
             fragments.append(f"symbolic recommended={'yes' if symbolic_recommended else 'no'}")
         if fragments:
-            console.print(f"  [cyan]{pass_name}[/cyan]: " + ", ".join(fragments))
+            _get_console().print(f"  [cyan]{pass_name}[/cyan]: " + ", ".join(fragments))
 
 
 def _render_pass_validation_contexts(
@@ -526,7 +536,7 @@ def _render_pass_validation_contexts(
         if context:
             relevant_contexts.append((pass_name, context))
     if relevant_contexts:
-        console.print("[bold]Pass Validation Context[/bold]:")
+        _get_console().print("[bold]Pass Validation Context[/bold]:")
         for pass_name, context in relevant_contexts:
             _render_pass_validation_context(pass_name, context)
 
@@ -549,7 +559,7 @@ def _render_pass_validation_context(
         fragments.append("role=executed-under-degraded-mode")
     else:
         fragments.append(f"role={context.get('role', 'requested-mode')}")
-    console.print(f"  [cyan]{pass_name}[/cyan]: " + ", ".join(fragments))
+    _get_console().print(f"  [cyan]{pass_name}[/cyan]: " + ", ".join(fragments))
 
 
 def _render_only_pass_sections(
@@ -563,8 +573,8 @@ def _render_only_pass_sections(
 ) -> None:
     """Render summary blocks for a single filtered pass."""
     if pass_symbolic_summary and pass_symbolic_summary.get("symbolic_requested", 0) > 0:
-        console.print("[bold]Pass Symbolic Summary[/bold]:")
-        console.print(
+        _get_console().print("[bold]Pass Symbolic Summary[/bold]:")
+        _get_console().print(
             "  "
             f"[cyan]{pass_name}[/cyan]: "
             f"{pass_symbolic_summary.get('observable_match', 0)} match, "
@@ -572,7 +582,7 @@ def _render_only_pass_sections(
             f"{pass_symbolic_summary.get('bounded_only', 0)} bounded-only, "
             f"{pass_symbolic_summary.get('without_coverage', 0)} without coverage"
         )
-        console.print(
+        _get_console().print(
             "  "
             f"severity={pass_symbolic_summary.get('severity', 'unknown')}, "
             f"issue_count={pass_symbolic_summary.get('issue_count', 0)}"
@@ -588,15 +598,15 @@ def _render_only_pass_sections(
                 issues_by_severity[sev]["without_coverage"] += issue.get("without_coverage", 0)
                 issues_by_severity[sev]["bounded_only"] += issue.get("bounded_only", 0)
             for sev, counts in issues_by_severity.items():
-                console.print(
+                _get_console().print(
                     "  "
                     f"issues: {sev}(mismatch={counts['mismatch']}, "
                     f"without_coverage={counts['without_coverage']}, "
                     f"bounded_only={counts['bounded_only']})"
                 )
     if pass_evidence:
-        console.print("[bold]Pass Evidence Summary[/bold]:")
-        console.print(
+        _get_console().print("[bold]Pass Evidence Summary[/bold]:")
+        _get_console().print(
             "  "
             f"[cyan]{pass_name}[/cyan]: "
             f"changed_regions={pass_evidence.get('changed_region_count', 0)}, "
@@ -606,7 +616,7 @@ def _render_only_pass_sections(
             f"symbolic_mismatch={pass_evidence.get('symbolic_binary_mismatched_regions', 0)}"
         )
     if pass_region_evidence:
-        console.print("[bold]Pass Region Evidence[/bold]:")
+        _get_console().print("[bold]Pass Region Evidence[/bold]:")
         for row in pass_region_evidence[:5]:
             start = row.get("start_address")
             end = row.get("end_address")
@@ -616,7 +626,7 @@ def _render_only_pass_sections(
                 region = f"0x{start:x}"
             else:
                 region = f"0x{start:x}-0x{end:x}"
-            console.print(
+            _get_console().print(
                 "  "
                 f"[cyan]{region}[/cyan]: "
                 f"equivalent={str(bool(row.get('equivalent', False))).lower()}, "
@@ -625,10 +635,10 @@ def _render_only_pass_sections(
                 f"trace={row.get('original_trace_length', 0)}/{row.get('mutated_trace_length', 0)}"
             )
     if pass_validation_context:
-        console.print("[bold]Pass Validation Context[/bold]:")
+        _get_console().print("[bold]Pass Validation Context[/bold]:")
         _render_pass_validation_context(pass_name, pass_validation_context)
     if pass_capabilities:
-        console.print("[bold]Pass Capabilities[/bold]:")
+        _get_console().print("[bold]Pass Capabilities[/bold]:")
         fragments = []
         if pass_capabilities.get("runtime_recommended") is not None:
             fragments.append(f"runtime recommended={'yes' if pass_capabilities.get('runtime_recommended') else 'no'}")
@@ -637,6 +647,655 @@ def _render_only_pass_sections(
         if pass_capabilities.get("symbolic_recommended") is not None:
             fragments.append(f"symbolic recommended={'yes' if pass_capabilities.get('symbolic_recommended') else 'no'}")
         if fragments:
-            console.print(f"  [cyan]{pass_name}[/cyan]: " + ", ".join(fragments))
+            _get_console().print(f"  [cyan]{pass_name}[/cyan]: " + ", ".join(fragments))
 
+
+# ---------------------------------------------------------------------------
+# Functions merged from console_renderer.py
+# ---------------------------------------------------------------------------
+
+# Backward-compatible alias; prefer _get_console() for lazy initialization.
+
+
+class _LazyConsole:
+    """Thin proxy so ``CONSOLE.print(...)`` keeps working."""
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(_get_console(), name)
+
+
+CONSOLE = _LazyConsole()  # type: ignore[assignment]
+
+
+def create_table(title: str, columns: list[tuple[str, str]]) -> Table:
+    """
+    Create a styled table with columns.
+
+    Args:
+        title: Table title
+        columns: List of (column_name, style) tuples
+
+    Returns:
+        Configured Table instance
+    """
+    table = Table(title=title)
+    for name, style in columns:
+        table.add_column(name, style=style)
+    return table
+
+
+def render_pass_capabilities(
+    capabilities: list[dict[str, Any]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render pass capabilities table.
+
+    Args:
+        capabilities: List of capability dictionaries
+        console: Optional console instance (uses default if None)
+    """
+    if not capabilities:
+        return
+
+    c = console or _get_console()
+    table = create_table(
+        "Pass Capabilities",
+        [
+            ("Pass", "cyan"),
+            ("Category", "blue"),
+            ("Support", "green"),
+        ],
+    )
+
+    for cap in capabilities:
+        table.add_row(
+            cap.get("pass_name", "unknown"),
+            cap.get("category", "unknown"),
+            cap.get("support", "unknown"),
+        )
+
+    c.print(table)
+
+
+def render_pass_validation_contexts(
+    contexts: list[dict[str, Any]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render pass validation contexts table.
+
+    Args:
+        contexts: List of validation context dictionaries
+        console: Optional console instance
+    """
+    if not contexts:
+        return
+
+    c = console or _get_console()
+    table = create_table(
+        "Pass Validation Contexts",
+        [
+            ("Pass", "cyan"),
+            ("Mode", "blue"),
+            ("Degraded", "yellow"),
+            ("Gate Failures", "red"),
+        ],
+    )
+
+    for ctx in contexts:
+        table.add_row(
+            ctx.get("pass_name", "unknown"),
+            ctx.get("validation_mode", "unknown"),
+            "Yes" if ctx.get("degraded_execution") else "No",
+            str(ctx.get("gate_failure_count", 0)),
+        )
+
+    c.print(table)
+
+
+def render_symbolic_sections(
+    symbolic_requested: int,
+    observable_match: int,
+    observable_mismatch: int,
+    bounded_only: int,
+    without_coverage: int,
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render symbolic validation summary.
+
+    Args:
+        symbolic_requested: Total symbolic regions checked
+        observable_match: Observable match count
+        observable_mismatch: Observable mismatch count
+        bounded_only: Bounded only count
+        without_coverage: Without coverage count
+        console: Optional console instance
+    """
+    if symbolic_requested == 0:
+        return
+
+    c = console or _get_console()
+    table = create_table(
+        "Symbolic Validation Summary",
+        [
+            ("Metric", "cyan"),
+            ("Count", "green"),
+        ],
+    )
+
+    table.add_row("Symbolic Regions Checked", str(symbolic_requested))
+    table.add_row("Observable Match", str(observable_match))
+    table.add_row("Observable Mismatch", str(observable_mismatch))
+    table.add_row("Bounded Only", str(bounded_only))
+    table.add_row("Without Coverage", str(without_coverage))
+
+    c.print(table)
+
+
+def render_gate_sections(
+    gate_failure_summary: dict[str, Any],
+    gate_failure_priority: list[dict[str, Any]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render gate failure summary.
+
+    Args:
+        gate_failure_summary: Gate failure summary dict
+        gate_failure_priority: Priority ordered gate failures
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    if not gate_failure_summary.get("require_pass_severity_failure_count", 0):
+        c.print("[green]All gate checks passed[/green]")
+        return
+
+    table = create_table(
+        "Gate Failures",
+        [
+            ("Pass", "cyan"),
+            ("Failure Count", "red"),
+            ("Strictest Severity", "yellow"),
+        ],
+    )
+
+    for row in gate_failure_priority:
+        table.add_row(
+            row.get("pass_name", "unknown"),
+            str(row.get("failure_count", 0)),
+            row.get("strictest_expected_severity", "unknown"),
+        )
+
+    c.print(table)
+
+
+def render_degradation_sections(
+    degradation_summary: dict[str, Any],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render validation mode degradation summary.
+
+    Args:
+        degradation_summary: Degradation summary dict
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    if not degradation_summary.get("degraded_validation"):
+        return
+
+    table = create_table(
+        "Validation Mode Degradation",
+        [
+            ("Role", "cyan"),
+            ("Count", "yellow"),
+        ],
+    )
+
+    for role, count in degradation_summary.get("roles", {}).items():
+        table.add_row(role, str(count))
+
+    c.print(table)
+
+
+def render_only_mismatches_sections(
+    mismatch_rows: list[dict[str, Any]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render only-mismatches report sections.
+
+    Args:
+        mismatch_rows: List of mismatch row dictionaries
+        console: Optional console instance
+    """
+    if not mismatch_rows:
+        return
+
+    c = console or _get_console()
+    table = create_table(
+        "Observable Mismatches by Pass",
+        [
+            ("Pass", "cyan"),
+            ("Mismatch Count", "red"),
+            ("Regions Checked", "blue"),
+        ],
+    )
+
+    for row in mismatch_rows:
+        table.add_row(
+            row.get("pass_name", "unknown"),
+            str(row.get("mismatch_count", 0)),
+            str(row.get("region_count", 0)),
+        )
+
+    c.print(table)
+
+
+def render_only_pass_sections(
+    pass_name: str,
+    pass_data: dict[str, Any],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render sections for a single pass.
+
+    Args:
+        pass_name: Name of the pass
+        pass_data: Pass data dictionary
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    c.print(f"\n[bold cyan]Pass: {pass_name}[/bold cyan]")
+
+    if pass_data.get("evidence_summary"):
+        evidence = pass_data["evidence_summary"]
+        table = create_table(
+            "Evidence Summary",
+            [
+                ("Metric", "cyan"),
+                ("Value", "green"),
+            ],
+        )
+        table.add_row("Changed Regions", str(evidence.get("changed_region_count", 0)))
+        table.add_row("Structural Issues", str(evidence.get("structural_issue_count", 0)))
+        table.add_row(
+            "Symbolic Mismatches", str(evidence.get("symbolic_binary_mismatched_regions", 0))
+        )
+        c.print(table)
+
+
+def render_report_filter_messages(
+    only_pass: str | None,
+    resolved_only_pass: str | None,
+    only_pass_failure: str | None,
+    resolved_only_pass_failure: str | None,
+    only_risky_passes: bool,
+    only_uncovered_passes: bool,
+    only_covered_passes: bool,
+    only_clean_passes: bool,
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render filter resolution messages.
+
+    Args:
+        only_pass: Original --only-pass argument
+        resolved_only_pass: Resolved pass name
+        only_pass_failure: Original --only-pass-failure argument
+        resolved_only_pass_failure: Resolved pass failure name
+        only_risky_passes: --only-risky-passes flag
+        only_uncovered_passes: --only-uncovered-passes flag
+        only_covered_passes: --only-covered-passes flag
+        only_clean_passes: --only-clean-passes flag
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    if only_pass is not None and resolved_only_pass != only_pass:
+        c.print(f"[bold]Pass Filter Resolution[/bold]: {only_pass} -> {resolved_only_pass}")
+
+    if only_pass_failure is not None and resolved_only_pass_failure != only_pass_failure:
+        c.print(
+            f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}"
+        )
+
+    if only_risky_passes:
+        c.print(
+            "[bold]Filter[/bold]: Showing only passes with symbolic mismatches or structural issues"
+        )
+
+    if only_uncovered_passes:
+        c.print(
+            "[bold]Filter[/bold]: Showing only clean passes without effective symbolic coverage"
+        )
+
+    if only_covered_passes:
+        c.print("[bold]Filter[/bold]: Showing only clean passes with effective symbolic coverage")
+
+    if only_clean_passes:
+        c.print(
+            "[bold]Filter[/bold]: Showing only passes with no structural issues and clean symbolic evidence"
+        )
+
+
+def render_summary_table(
+    summary: dict[str, Any],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render a generic summary table.
+
+    Args:
+        summary: Summary dictionary
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    table = create_table(
+        "Report Summary",
+        [
+            ("Metric", "cyan"),
+            ("Value", "green"),
+        ],
+    )
+
+    for key, value in summary.items():
+        if isinstance(value, dict):
+            continue
+        if isinstance(value, list):
+            continue
+        table.add_row(key.replace("_", " ").title(), str(value))
+
+    c.print(table)
+
+
+def render_gate_evaluation_sections(
+    gate_evaluation: dict[str, Any],
+    gate_requested: dict[str, Any],
+    gate_results: dict[str, Any],
+    gate_failure_summary: dict[str, Any],
+    gate_failure_priority: list[dict[str, Any]],
+    gate_failure_severity_priority: list[dict[str, Any]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render persisted gate evaluation and failure sections.
+
+    Args:
+        gate_evaluation: Gate evaluation dict
+        gate_requested: Gate requested dict
+        gate_results: Gate results dict
+        gate_failure_summary: Gate failure summary dict
+        gate_failure_priority: Priority ordered gate failures
+        gate_failure_severity_priority: Severity priority ordered failures
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    if not gate_evaluation:
+        return
+
+    c.print(
+        "[bold]Gate Evaluation[/bold]: "
+        f"all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}"
+    )
+
+    if gate_requested.get("min_severity") is not None:
+        c.print(
+            "  "
+            f"min_severity={gate_requested.get('min_severity')}, "
+            f"passed={'yes' if gate_results.get('min_severity_passed', True) else 'no'}"
+        )
+
+    if gate_requested.get("require_pass_severity"):
+        requested_rules = ", ".join(
+            f"{item.get('pass_name')}<={item.get('max_severity')}"
+            for item in gate_requested.get("require_pass_severity", [])
+        )
+        c.print(
+            "  "
+            f"require_pass_severity={requested_rules}, "
+            f"passed={'yes' if gate_results.get('require_pass_severity_passed', True) else 'no'}"
+        )
+        failures = list(gate_results.get("require_pass_severity_failures", []))
+        if failures:
+            c.print("  failures: " + ", ".join(failures))
+
+    c.print(
+        "[bold]Gate Failure Summary[/bold]: "
+        f"min_severity_failed={'yes' if gate_failure_summary.get('min_severity_failed') else 'no'}, "
+        f"require_pass_failures={gate_failure_summary.get('require_pass_severity_failure_count', 0)}"
+    )
+
+    severity_counts = gate_failure_summary.get(
+        "require_pass_severity_failures_by_expected_severity", {}
+    )
+    if severity_counts:
+        c.print(
+            "  expected_severity_counts="
+            + ", ".join(f"{severity}:{count}" for severity, count in severity_counts.items())
+        )
+
+    if gate_failure_severity_priority:
+        c.print(
+            "  expected_severity_priority="
+            + ", ".join(
+                f"{row.get('severity')}:{row.get('failure_count')}"
+                for row in gate_failure_severity_priority
+            )
+        )
+
+    pass_failure_map = gate_failure_summary.get("require_pass_severity_failures_by_pass", {})
+    if pass_failure_map:
+        c.print("[bold]Gate Failure By Pass[/bold]:")
+        for row in gate_failure_priority or [
+            {
+                "pass_name": pass_name,
+                "failure_count": len(failures),
+                "strictest_expected_severity": "unknown",
+                "failures": list(failures),
+            }
+            for pass_name, failures in pass_failure_map.items()
+        ]:
+            pass_name = row.get("pass_name", "unknown")
+            failures_list = list(row.get("failures", []))
+            failure_count = row.get("failure_count", len(failures_list))
+            strictest = row.get("strictest_expected_severity", "unknown")
+            c.print(
+                f"  [yellow]{pass_name}[/yellow] "
+                f"(count={failure_count}, strictest_expected={strictest}): "
+                + ", ".join(failures_list)
+            )
+
+
+def render_general_report_sections(
+    filtered_summary: dict[str, Any],
+    summary: dict[str, Any],
+    pass_results: dict[str, Any],
+    degraded_passes: list[dict[str, Any]],
+    requested_validation_mode: str | None,
+    effective_validation_mode: str | None,
+    degraded_validation: bool,
+    validation_policy: dict[str, Any] | None,
+    gate_evaluation: dict[str, Any],
+    gate_requested: dict[str, Any],
+    gate_results: dict[str, Any],
+    gate_failure_summary: dict[str, Any],
+    gate_failure_priority: list[dict[str, Any]],
+    gate_failure_severity_priority: list[dict[str, Any]],
+    degradation_roles: dict[str, int],
+    resolved_only_pass: str | None,
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render general report flow sections.
+
+    Args:
+        filtered_summary: Filtered summary dict
+        summary: Full summary dict
+        pass_results: Pass results dict
+        degraded_passes: List of degraded passes
+        requested_validation_mode: Requested validation mode
+        effective_validation_mode: Effective validation mode
+        degraded_validation: Whether validation was degraded
+        validation_policy: Validation policy dict
+        gate_evaluation: Gate evaluation dict
+        gate_requested: Gate requested dict
+        gate_results: Gate results dict
+        gate_failure_summary: Gate failure summary dict
+        gate_failure_priority: Priority ordered gate failures
+        gate_failure_severity_priority: Severity priority ordered failures
+        degradation_roles: Degradation roles dict
+        resolved_only_pass: Resolved only pass filter
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    if resolved_only_pass:
+        c.print(f"\n[bold cyan]Filtered to Pass: {resolved_only_pass}[/bold cyan]")
+
+    if degraded_validation:
+        c.print(
+            f"\n[yellow]Validation Mode Degraded:[/yellow] "
+            f"requested={requested_validation_mode}, effective={effective_validation_mode}"
+        )
+
+    if gate_evaluation:
+        render_gate_evaluation_sections(
+            gate_evaluation=gate_evaluation,
+            gate_requested=gate_requested,
+            gate_results=gate_results,
+            gate_failure_summary=gate_failure_summary,
+            gate_failure_priority=gate_failure_priority,
+            gate_failure_severity_priority=gate_failure_severity_priority,
+            console=c,
+        )
+
+    if degradation_roles:
+        render_degradation_sections(
+            {"degraded_validation": degraded_validation, "roles": degradation_roles},
+            console=c,
+        )
+
+
+def render_general_only_pass_sections(
+    pass_name: str,
+    summary: dict[str, Any],
+    pass_results: dict[str, Any],
+    resolved_only_pass: str | None,
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render only-pass sections for general report.
+
+    Args:
+        pass_name: Pass name
+        summary: Summary dict
+        pass_results: Pass results dict
+        resolved_only_pass: Resolved only pass filter
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    if not resolved_only_pass:
+        return
+
+    c.print(f"\n[bold cyan]Single Pass Report: {pass_name}[/bold cyan]")
+
+    pass_result = pass_results.get(pass_name, {})
+    if pass_result:
+        evidence = pass_result.get("evidence_summary", {})
+        if evidence:
+            render_only_pass_sections(pass_name, {"evidence_summary": evidence}, console=c)
+
+
+def render_mismatch_summary_sections(
+    mismatch_counts_by_pass: dict[str, int],
+    mismatch_observables_by_pass: dict[str, list[str]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render mismatch summary sections.
+
+    Args:
+        mismatch_counts_by_pass: Dict of pass name to mismatch count
+        mismatch_observables_by_pass: Dict of pass name to observable list
+        console: Optional console instance
+    """
+    c = console or _get_console()
+
+    if not mismatch_counts_by_pass:
+        return
+
+    table = create_table(
+        "Observable Mismatches Summary",
+        [
+            ("Pass", "cyan"),
+            ("Count", "red"),
+            ("Observables", "yellow"),
+        ],
+    )
+
+    for pass_name, count in sorted(mismatch_counts_by_pass.items(), key=lambda x: -x[1]):
+        observables = mismatch_observables_by_pass.get(pass_name, [])[:3]
+        obs_str = ", ".join(observables)
+        if len(mismatch_observables_by_pass.get(pass_name, [])) > 3:
+            obs_str += "..."
+        table.add_row(pass_name, str(count), obs_str)
+
+    c.print(table)
+
+
+def render_validation_context_table(
+    validation_contexts: list[dict[str, Any]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """
+    Render validation context table.
+
+    Args:
+        validation_contexts: List of validation context dicts
+        console: Optional console instance
+    """
+    if not validation_contexts:
+        return
+
+    c = console or _get_console()
+    table = create_table(
+        "Validation Context",
+        [
+            ("Pass", "cyan"),
+            ("Mode", "blue"),
+            ("Degraded", "yellow"),
+        ],
+    )
+
+    for ctx in validation_contexts:
+        table.add_row(
+            ctx.get("pass_name", "unknown"),
+            ctx.get("validation_mode", "unknown"),
+            "Yes" if ctx.get("degraded_execution") else "No",
+        )
+
+    c.print(table)
 

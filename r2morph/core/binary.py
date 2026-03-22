@@ -71,7 +71,7 @@ class Binary:
             self.flags.append("-w")
 
         self._injected_disassembler = disassembler
-        self.r2: Any = None
+        self.r2: "DisassemblerInterface | None" = None
         self.info: dict[str, Any] = {}
         self._analyzed = False
         self._writable = writable

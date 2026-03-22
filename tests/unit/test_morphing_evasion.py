@@ -35,6 +35,8 @@ from r2morph.mutations.stack_strings import (
     xor_bytes,
     xor_rolling,
     add_shift_encode,
+)
+from r2morph.crypto.aes import (
     aes_encrypt_string,
     aes_decrypt_block,
 )

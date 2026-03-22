@@ -8,6 +8,8 @@ and pass result normalization.
 from dataclasses import dataclass
 from typing import Any
 
+from r2morph.reporting.gate_evaluator import ROLLBACK_SEVERITY_ORDER
+
 
 @dataclass
 class SymbolicStats:
@@ -479,7 +481,7 @@ class SummaryAggregator:
             "skip_invalid_mutation": "low",
             "unknown": "low",
         }
-        severity_order = {"high": 0, "medium": 1, "low": 2}
+        severity_order = ROLLBACK_SEVERITY_ORDER
         by_pass: dict[str, int] = {}
         by_reason: dict[str, int] = {}
         by_pass_reason: dict[str, dict[str, int]] = {}

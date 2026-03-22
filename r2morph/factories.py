@@ -152,7 +152,7 @@ def create_console_renderer(
     Returns:
         Dict with render functions
     """
-    from r2morph.reporting.console_renderer import (
+    from r2morph.reporting.report_rendering import (
         render_pass_capabilities,
         render_pass_validation_contexts,
         render_symbolic_sections,

@@ -32,6 +32,14 @@ SEVERITY_ORDER = {
 }
 
 
+def _first_available(*sources: Any) -> Any:
+    """Return the first truthy value from sources, or the last one."""
+    for source in sources:
+        if source:
+            return source
+    return sources[-1] if sources else None
+
+
 def _summary_first(
     summary: dict[str, Any],
     key: str,
@@ -608,14 +616,18 @@ def _resolve_general_report_views(summary: dict[str, Any]) -> dict[str, Any]:
     general_gates_view = dict(summary_report_views.get("general_gates", {}) or {})
     general_degradation_view = dict(summary_report_views.get("general_degradation", {}) or {})
     general_discards_view = dict(summary_report_views.get("general_discards", {}) or {})
-    general_summary_rows = list(summary_report_views.get("general_summary_rows", []) or [])
-
-    if not general_summary_rows and general_renderer_state.get("general_summary_rows"):
-        general_summary_rows = list(general_renderer_state.get("general_summary_rows", []) or [])
-    if not general_summary_rows and general_renderer_state.get("summary_rows"):
-        general_summary_rows = list(general_renderer_state.get("summary_rows", []) or [])
-    if not general_summary_view and general_renderer_state.get("general_summary"):
-        general_summary_view = dict(general_renderer_state.get("general_summary", {}) or {})
+    general_summary_rows = list(
+        _first_available(
+            list(summary_report_views.get("general_summary_rows", []) or []),
+            list(general_renderer_state.get("general_summary_rows", []) or []),
+            list(general_renderer_state.get("summary_rows", []) or []),
+        )
+        or []
+    )
+    general_summary_view = _first_available(
+        general_summary_view,
+        dict(general_renderer_state.get("general_summary", {}) or {}),
+    )
     if not general_symbolic_view and general_renderer_state.get("general_symbolic"):
         general_symbolic_view = {"overview": dict(general_renderer_state.get("general_symbolic", {}) or {})}
     if not general_gates_view and general_renderer_state.get("general_gates"):
