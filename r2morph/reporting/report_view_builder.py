@@ -526,6 +526,194 @@ def build_report_views(
     general_summary_rows = summary["general_summary_rows"]
     general_renderer_state = summary["general_renderer_state"]
 
+    return _assemble_report_views(
+        general_pass_rows=general_pass_rows,
+        general_summary_payload=general_summary_payload,
+        general_summary_rows=general_summary_rows,
+        general_renderer_state=general_renderer_state,
+        triage_priority=triage_priority,
+        filter_buckets=filter_buckets,
+        general_symbolic=general_symbolic,
+        general_gates=general_gates,
+        general_degradation=general_degradation,
+        general_discards=general_discards,
+        only_pass=only_pass,
+        observable_mismatch_priority=observable_mismatch_priority,
+        observable_mismatch_map=observable_mismatch_map,
+        mismatch_rows=mismatch_rows,
+        mismatch_by_pass=mismatch_by_pass,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+        failed_gates_rows=failed_gates_rows,
+        failed_gates_by_pass=failed_gates_by_pass,
+        failed_gates_expected_severity=failed_gates_expected_severity,
+        degraded_rows=degraded_rows,
+        discarded_mutation_priority=discarded_mutation_priority,
+        discarded_mutation_summary=discarded_mutation_summary,
+    )
+
+
+def _build_mismatch_detail(
+    observable_mismatch_priority: list[dict[str, Any]],
+    mismatch_rows: list[dict[str, Any]],
+    mismatch_by_pass: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """Build the only_mismatches detail section."""
+    return {
+        "priority": [dict(row) for row in observable_mismatch_priority],
+        "by_pass": mismatch_by_pass,
+        **_build_category_views(
+            mismatch_rows,
+            compact_fields=["pass_name", "mismatch_count", "severity", "role",
+                            "symbolic_confidence", "degraded_execution", "region_count",
+                            "region_mismatch_count", "region_exit_match_count", "compact_region"],
+        ),
+        "rows": mismatch_rows,
+        "compact_summary": {
+            **_summarize_rows(
+                mismatch_rows,
+                ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
+            ),
+            "degraded_pass_count": sum(1 for row in mismatch_rows if row.get("degraded_execution")),
+        },
+        "summary": {
+            **_summarize_rows(
+                mismatch_rows,
+                ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
+            ),
+            "degraded_pass_count": sum(1 for row in mismatch_rows if row.get("degraded_execution")),
+            "trigger_pass_count": sum(1 for row in mismatch_rows if row.get("degradation_triggered_by_pass")),
+        },
+    }
+
+
+def _build_gate_detail(
+    gate_failure_priority: list[dict[str, Any]],
+    gate_failure_summary: dict[str, Any] | None,
+    gate_failure_severity_priority: list[dict[str, Any]],
+    failed_gates_rows: list[dict[str, Any]],
+    failed_gates_by_pass: dict[str, dict[str, Any]],
+    failed_gates_expected_severity: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the only_failed_gates detail section."""
+    gfs = gate_failure_summary or {}
+    return {
+        "priority": failed_gates_rows,
+        "by_pass": failed_gates_by_pass,
+        **_build_category_views(
+            failed_gates_rows,
+            compact_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed"],
+            final_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed", "failures"],
+        ),
+        "grouped_by_pass": failed_gates_rows,
+        "summary": dict(gfs),
+        "severity_priority": [dict(row) for row in gate_failure_severity_priority],
+        "expected_severity_counts": failed_gates_expected_severity,
+        "failed": bool(gfs.get("require_pass_severity_failed")),
+        "failure_count": int(gfs.get("require_pass_severity_failure_count", 0)),
+        "pass_count": len(failed_gates_rows),
+        "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
+        "compact_summary": {
+            "failed": bool(gfs.get("require_pass_severity_failed")),
+            "failure_count": int(gfs.get("require_pass_severity_failure_count", 0)),
+            "pass_count": len(failed_gates_rows),
+            "expected_severity_counts": failed_gates_expected_severity,
+            "severity_priority": [dict(row) for row in gate_failure_severity_priority],
+            "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
+        },
+    }
+
+
+def _build_validation_adjustments_detail(degraded_rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Build the validation_adjustments detail section."""
+    shared = {
+        "degraded_validation": bool(degraded_rows),
+        "row_count": len(degraded_rows),
+        "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
+        "degraded_execution_count": sum(1 for row in degraded_rows if row.get("executed_under_degraded_mode")),
+        "gate_failure_count": sum(int(row.get("gate_failure_count", 0)) for row in degraded_rows),
+        "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
+    }
+    return {
+        "rows": degraded_rows,
+        "by_pass": {str(row.get("pass_name")): dict(row) for row in degraded_rows if row.get("pass_name")},
+        **_build_category_views(
+            degraded_rows,
+            compact_fields=["pass_name", "role", "triggered_adjustment",
+                            "executed_under_degraded_mode", "gate_failure_count"],
+        ),
+        "summary": {
+            "requested_validation_mode": next(
+                (row.get("requested_validation_mode") for row in degraded_rows if row.get("requested_validation_mode")),
+                None,
+            ),
+            "effective_validation_mode": next(
+                (row.get("effective_validation_mode") for row in degraded_rows if row.get("effective_validation_mode")),
+                None,
+            ),
+            **shared,
+        },
+        "compact_summary": shared,
+    }
+
+
+def _build_discarded_detail(
+    discarded_mutation_priority: list[dict[str, Any]],
+    discarded_mutation_summary: dict[str, Any],
+) -> dict[str, Any]:
+    """Build the discarded_view detail section."""
+    return {
+        "priority": [dict(row) for row in discarded_mutation_priority],
+        "rows": [dict(row) for row in discarded_mutation_priority],
+        **_build_category_views(
+            discarded_mutation_priority,
+            compact_fields=["pass_name", "discarded_count", "impact_severity", "reason_count"],
+            final_fields=["pass_name", "discarded_count", "impact_severity", "reason_count", "reasons"],
+        ),
+        "by_reason": dict(discarded_mutation_summary.get("by_reason", {})),
+        "compact_by_reason": {
+            str(reason): int(count)
+            for reason, count in discarded_mutation_summary.get("by_reason", {}).items()
+            if count
+        },
+        "by_pass": [dict(row) for row in discarded_mutation_summary.get("by_pass", [])],
+        "by_impact": dict(discarded_mutation_summary.get("by_impact", {})),
+        "summary": {
+            "count": len(discarded_mutation_priority),
+            "passes": [str(row.get("pass_name")) for row in discarded_mutation_priority if row.get("pass_name")],
+            "reasons": sorted(
+                str(reason) for reason, count in discarded_mutation_summary.get("by_reason", {}).items() if count
+            ),
+            "impacts": {
+                str(level): len(rows) for level, rows in discarded_mutation_summary.get("by_impact", {}).items()
+            },
+        },
+        "compact_summary": {
+            "count": len(discarded_mutation_priority),
+            **_summarize_rows(discarded_mutation_priority, []),
+            "reason_count": len(
+                [reason for reason, count in discarded_mutation_summary.get("by_reason", {}).items() if count]
+            ),
+            "impact_counts": {
+                str(level): len(rows) for level, rows in discarded_mutation_summary.get("by_impact", {}).items()
+            },
+        },
+    }
+
+
+def _assemble_report_views(
+    *,
+    general_pass_rows, general_summary_payload, general_summary_rows,
+    general_renderer_state, triage_priority, filter_buckets,
+    general_symbolic, general_gates, general_degradation, general_discards,
+    only_pass, observable_mismatch_priority, observable_mismatch_map,
+    mismatch_rows, mismatch_by_pass, gate_failure_priority, gate_failure_summary,
+    gate_failure_severity_priority, failed_gates_rows, failed_gates_by_pass,
+    failed_gates_expected_severity, degraded_rows, discarded_mutation_priority,
+    discarded_mutation_summary,
+) -> ReportViews:
+    """Assemble the final ReportViews from pre-built components."""
     return ReportViews(
         general_passes=general_pass_rows,
         general_pass_rows=general_pass_rows,
@@ -552,126 +740,12 @@ def build_report_views(
         mismatch_priority=[dict(row) for row in observable_mismatch_priority],
         mismatch_map={str(pass_name): dict(row) for pass_name, row in observable_mismatch_map.items()},
         mismatch_view=mismatch_rows,
-        only_mismatches={
-            "priority": [dict(row) for row in observable_mismatch_priority],
-            "by_pass": mismatch_by_pass,
-            **_build_category_views(
-                mismatch_rows,
-                compact_fields=["pass_name", "mismatch_count", "severity", "role",
-                                "symbolic_confidence", "degraded_execution", "region_count",
-                                "region_mismatch_count", "region_exit_match_count", "compact_region"],
-            ),
-            "rows": mismatch_rows,
-            "compact_summary": {
-                **_summarize_rows(
-                    mismatch_rows,
-                    ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
-                ),
-                "degraded_pass_count": sum(1 for row in mismatch_rows if row.get("degraded_execution")),
-            },
-            "summary": {
-                **_summarize_rows(
-                    mismatch_rows,
-                    ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
-                ),
-                "degraded_pass_count": sum(1 for row in mismatch_rows if row.get("degraded_execution")),
-                "trigger_pass_count": sum(1 for row in mismatch_rows if row.get("degradation_triggered_by_pass")),
-            },
-        },
+        only_mismatches=_build_mismatch_detail(observable_mismatch_priority, mismatch_rows, mismatch_by_pass),
         failed_gates=[dict(row) for row in gate_failure_priority],
-        only_failed_gates={
-            "priority": failed_gates_rows,
-            "by_pass": failed_gates_by_pass,
-            **_build_category_views(
-                failed_gates_rows,
-                compact_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed"],
-                final_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed", "failures"],
-            ),
-            "grouped_by_pass": failed_gates_rows,
-            "summary": dict(gate_failure_summary or {}),
-            "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-            "expected_severity_counts": failed_gates_expected_severity,
-            "failed": bool((gate_failure_summary or {}).get("require_pass_severity_failed")),
-            "failure_count": int((gate_failure_summary or {}).get("require_pass_severity_failure_count", 0)),
-            "pass_count": len(failed_gates_rows),
-            "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
-            "compact_summary": {
-                "failed": bool((gate_failure_summary or {}).get("require_pass_severity_failed")),
-                "failure_count": int((gate_failure_summary or {}).get("require_pass_severity_failure_count", 0)),
-                "pass_count": len(failed_gates_rows),
-                "expected_severity_counts": failed_gates_expected_severity,
-                "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-                "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
-            },
-        },
-        validation_adjustments={
-            "rows": degraded_rows,
-            "by_pass": {str(row.get("pass_name")): dict(row) for row in degraded_rows if row.get("pass_name")},
-            **_build_category_views(
-                degraded_rows,
-                compact_fields=["pass_name", "role", "triggered_adjustment",
-                                "executed_under_degraded_mode", "gate_failure_count"],
-            ),
-            "summary": {
-                "requested_validation_mode": next(
-                    (row.get("requested_validation_mode") for row in degraded_rows if row.get("requested_validation_mode")),
-                    None,
-                ),
-                "effective_validation_mode": next(
-                    (row.get("effective_validation_mode") for row in degraded_rows if row.get("effective_validation_mode")),
-                    None,
-                ),
-                "degraded_validation": bool(degraded_rows),
-                "row_count": len(degraded_rows),
-                "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
-                "degraded_execution_count": sum(1 for row in degraded_rows if row.get("executed_under_degraded_mode")),
-                "gate_failure_count": sum(int(row.get("gate_failure_count", 0)) for row in degraded_rows),
-                "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
-            },
-            "compact_summary": {
-                "degraded_validation": bool(degraded_rows),
-                "row_count": len(degraded_rows),
-                "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
-                "degraded_execution_count": sum(1 for row in degraded_rows if row.get("executed_under_degraded_mode")),
-                "gate_failure_count": sum(int(row.get("gate_failure_count", 0)) for row in degraded_rows),
-                "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
-            },
-        },
-        discarded_view={
-            "priority": [dict(row) for row in discarded_mutation_priority],
-            "rows": [dict(row) for row in discarded_mutation_priority],
-            **_build_category_views(
-                discarded_mutation_priority,
-                compact_fields=["pass_name", "discarded_count", "impact_severity", "reason_count"],
-                final_fields=["pass_name", "discarded_count", "impact_severity", "reason_count", "reasons"],
-            ),
-            "by_reason": dict(discarded_mutation_summary.get("by_reason", {})),
-            "compact_by_reason": {
-                str(reason): int(count)
-                for reason, count in discarded_mutation_summary.get("by_reason", {}).items()
-                if count
-            },
-            "by_pass": [dict(row) for row in discarded_mutation_summary.get("by_pass", [])],
-            "by_impact": dict(discarded_mutation_summary.get("by_impact", {})),
-            "summary": {
-                "count": len(discarded_mutation_priority),
-                "passes": [str(row.get("pass_name")) for row in discarded_mutation_priority if row.get("pass_name")],
-                "reasons": sorted(
-                    str(reason) for reason, count in discarded_mutation_summary.get("by_reason", {}).items() if count
-                ),
-                "impacts": {
-                    str(level): len(rows) for level, rows in discarded_mutation_summary.get("by_impact", {}).items()
-                },
-            },
-            "compact_summary": {
-                "count": len(discarded_mutation_priority),
-                **_summarize_rows(discarded_mutation_priority, []),
-                "reason_count": len(
-                    [reason for reason, count in discarded_mutation_summary.get("by_reason", {}).items() if count]
-                ),
-                "impact_counts": {
-                    str(level): len(rows) for level, rows in discarded_mutation_summary.get("by_impact", {}).items()
-                },
-            },
-        },
+        only_failed_gates=_build_gate_detail(
+            gate_failure_priority, gate_failure_summary, gate_failure_severity_priority,
+            failed_gates_rows, failed_gates_by_pass, failed_gates_expected_severity,
+        ),
+        validation_adjustments=_build_validation_adjustments_detail(degraded_rows),
+        discarded_view=_build_discarded_detail(discarded_mutation_priority, discarded_mutation_summary),
     )
