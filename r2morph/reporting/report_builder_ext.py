@@ -898,47 +898,19 @@ def _build_filtered_summary_degradation_sections(
     return section
 
 
-def _populate_filtered_summary_pass_sections(
+def _populate_pass_capabilities_and_context(
     *,
     filtered_summary: dict[str, Any],
-    summary: dict[str, Any],
     pass_results: dict[str, Any],
     pass_support: dict[str, Any],
     requested_validation_mode: str | None,
     effective_validation_mode: str | None,
-    degraded_passes: list[dict[str, Any]],
     degradation_roles: dict[str, int],
-    by_pass: dict[str, dict[str, int]],
     normalized_pass_map: dict[str, dict[str, Any]],
-    selected_risk_pass_names: set[str],
-    resolved_only_pass: str | None,
-    only_risky_filters: bool,
-    only_degraded: bool,
-) -> dict[str, int]:
-    """Populate filtered_summary pass-related sections using summary-first data."""
-    summary_sources = _resolve_summary_pass_sources(summary)
-    summary_pass_validation_context = summary_sources["pass_validation_context"]
-    summary_pass_symbolic_summary = summary_sources["pass_symbolic_summary"]
-    summary_pass_capabilities = summary_sources["pass_capabilities"]
-    summary_pass_evidence_map = summary_sources["pass_evidence_map"]
-    summary_pass_region_evidence_map = summary_sources["pass_region_evidence_map"]
-    summary_pass_triage_map = summary_sources["pass_triage_map"]
-    summary_normalized_pass_results = summary_sources["normalized_pass_results"]
-    summary_symbolic_issue_map = summary_sources["symbolic_issue_map"]
-    summary_symbolic_coverage_map = summary_sources["symbolic_coverage_map"]
-    summary_symbolic_severity_map = summary_sources["symbolic_severity_map"]
-    summary_pass_capability_summary_map = summary_sources["pass_capability_summary_map"]
-    summary_validation_role_map = summary_sources["validation_role_map"]
-    summary_discarded_mutation_summary = summary_sources["discarded_mutation_summary"]
-    summary_discarded_mutation_priority = summary_sources["discarded_mutation_priority"]
-    summary_pass_evidence_compact = summary_sources["pass_evidence_compact"]
-    summary_report_views = summary_sources["report_views"]
-    summary_discarded_view = summary_sources["discarded_view"]
-    summary_general_passes = summary_sources["general_passes"]
-    summary_general_pass_rows = summary_sources["general_pass_rows"]
-    summary_general_symbolic = summary_sources["general_symbolic"]
-    summary_general_discards = summary_sources["general_discards"]
-
+    summary_pass_capabilities: dict[str, Any],
+    summary_pass_validation_context: dict[str, Any],
+) -> None:
+    """Populate pass_capabilities and pass_validation_context for each visible pass."""
     for pass_name in filtered_summary["passes"]:
         capabilities = summary_pass_capabilities.get(pass_name)
         if capabilities is None:
@@ -988,19 +960,19 @@ def _populate_filtered_summary_pass_sections(
             if role:
                 degradation_roles[role] = degradation_roles.get(role, 0) + 1
 
-    _populate_filtered_summary_symbolic_sections(
-        filtered_summary=filtered_summary,
-        summary=summary,
-        pass_results=pass_results,
-        by_pass=by_pass,
-        degraded_passes=degraded_passes,
-        only_degraded=only_degraded,
-        summary_symbolic_issue_map=summary_symbolic_issue_map,
-        summary_symbolic_coverage_map=summary_symbolic_coverage_map,
-        summary_symbolic_severity_map=summary_symbolic_severity_map,
-        summary_pass_symbolic_summary=summary_pass_symbolic_summary,
-    )
 
+def _populate_symbolic_issue_passes(
+    *,
+    filtered_summary: dict[str, Any],
+    summary: dict[str, Any],
+    pass_results: dict[str, Any],
+    by_pass: dict[str, dict[str, int]],
+    summary_symbolic_issue_map: dict[str, Any],
+    summary_pass_evidence_compact: list[dict[str, Any]],
+    summary_pass_evidence_map: dict[str, Any],
+    summary_general_symbolic: dict[str, Any],
+) -> None:
+    """Populate pass_evidence and symbolic_issue_passes sections."""
     pass_evidence_priority_rows = list(summary.get("pass_evidence_priority", []))
     if pass_evidence_priority_rows:
         filtered_summary["pass_evidence"] = [
@@ -1071,6 +1043,18 @@ def _populate_filtered_summary_pass_sections(
             )
         ]
 
+
+def _populate_symbolic_coverage_and_severity(
+    *,
+    filtered_summary: dict[str, Any],
+    by_pass: dict[str, dict[str, int]],
+    degraded_passes: list[dict[str, Any]],
+    only_degraded: bool,
+    summary_symbolic_coverage_map: dict[str, Any],
+    summary_symbolic_severity_map: dict[str, Any],
+    pass_results: dict[str, Any],
+) -> None:
+    """Populate symbolic_coverage_by_pass and symbolic_severity_by_pass sections."""
     if not filtered_summary["symbolic_coverage_by_pass"]:
         visible_passes = set(filtered_summary["passes"])
         filtered_summary["symbolic_coverage_by_pass"] = [
@@ -1133,50 +1117,24 @@ def _populate_filtered_summary_pass_sections(
             for pass_name in [item.get("pass_name", item.get("mutation", "unknown")) for item in degraded_passes]
         ]
 
-    filtered_summary["degradation_roles"] = degradation_roles
-    for pass_name in filtered_summary["passes"]:
-        pass_symbolic_summary = summary_pass_symbolic_summary.get(
-            pass_name, pass_results.get(pass_name, {}).get("symbolic_summary")
-        )
-        if not pass_symbolic_summary:
-            normalized_row = normalized_pass_map.get(pass_name, {})
-            if normalized_row:
-                pass_symbolic_summary = {
-                    "pass_name": pass_name,
-                    "severity": normalized_row.get("severity", "not-requested"),
-                    "issue_count": normalized_row.get("issue_count", 0),
-                    "symbolic_requested": normalized_row.get("symbolic_requested", 0),
-                    "observable_match": normalized_row.get("observable_match", 0),
-                    "observable_mismatch": normalized_row.get("observable_mismatch", 0),
-                    "bounded_only": normalized_row.get("bounded_only", 0),
-                    "without_coverage": normalized_row.get("without_coverage", 0),
-                    "issues": [],
-                }
-        if pass_symbolic_summary:
-            filtered_summary["pass_symbolic_summary"][pass_name] = dict(pass_symbolic_summary)
 
-    if not filtered_summary["pass_validation_context"] and summary_pass_validation_context:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_validation_context"] = {
-            pass_name: dict(context)
-            for pass_name, context in summary_pass_validation_context.items()
-            if not visible_passes or pass_name in visible_passes
-        }
-    if not filtered_summary["pass_symbolic_summary"] and summary_pass_symbolic_summary:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_symbolic_summary"] = {
-            pass_name: dict(summary_row)
-            for pass_name, summary_row in summary_pass_symbolic_summary.items()
-            if not visible_passes or pass_name in visible_passes
-        }
-    if not filtered_summary["pass_capabilities"] and summary_pass_capabilities:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_capabilities"] = {
-            pass_name: dict(capabilities)
-            for pass_name, capabilities in summary_pass_capabilities.items()
-            if not visible_passes or pass_name in visible_passes
-        }
-
+def _populate_triage_and_results(
+    *,
+    filtered_summary: dict[str, Any],
+    summary: dict[str, Any],
+    summary_pass_triage_map: dict[str, Any],
+    summary_normalized_pass_results: list[dict[str, Any]],
+    summary_pass_capability_summary_map: dict[str, Any],
+    summary_validation_role_map: dict[str, Any],
+    summary_report_views: dict[str, Any],
+    summary_general_pass_rows: list[dict[str, Any]],
+    summary_general_passes: list[dict[str, Any]],
+    summary_discarded_mutation_summary: dict[str, Any],
+    summary_discarded_view: dict[str, Any],
+    summary_discarded_mutation_priority: list[dict[str, Any]],
+    summary_general_discards: dict[str, Any],
+) -> None:
+    """Populate triage rows, normalized results, capability summary, and validation role rows."""
     pass_triage_rows = list(
         _summary_first(summary, "pass_triage_rows", summary_report_views.get("triage_priority", [])) or []
     )
@@ -1258,6 +1216,21 @@ def _populate_filtered_summary_pass_sections(
         filtered_summary["discarded_mutation_compact_summary"] = dict(summary_general_discards.get("summary", {}))
     if "discarded_mutation_compact_rows" not in filtered_summary and summary_general_discards.get("rows"):
         filtered_summary["discarded_mutation_compact_rows"] = list(summary_general_discards.get("rows", []))
+
+
+def _populate_pass_evidence(
+    *,
+    filtered_summary: dict[str, Any],
+    pass_results: dict[str, Any],
+    normalized_pass_map: dict[str, dict[str, Any]],
+    selected_risk_pass_names: set[str],
+    resolved_only_pass: str | None,
+    only_risky_filters: bool,
+    summary_pass_region_evidence_map: dict[str, Any],
+    summary_pass_evidence_map: dict[str, Any],
+    summary_general_pass_rows: list[dict[str, Any]],
+) -> None:
+    """Populate pass_evidence and pass_region_evidence_map with fallback chains."""
     visible_passes = set(filtered_summary["passes"])
     if summary_pass_region_evidence_map:
         filtered_summary["pass_region_evidence_map"] = {
@@ -1333,6 +1306,14 @@ def _populate_filtered_summary_pass_sections(
             ]
         )
 
+
+def _apply_risk_filters(
+    *,
+    filtered_summary: dict[str, Any],
+    selected_risk_pass_names: set[str],
+    only_risky_filters: bool,
+) -> None:
+    """Apply risk-based filtering and final symbolic summary fallbacks."""
     if only_risky_filters:
         filtered_summary["pass_evidence"] = _sort_pass_evidence(
             [row for row in filtered_summary["pass_evidence"] if row.get("pass_name") in selected_risk_pass_names]
@@ -1406,6 +1387,181 @@ def _populate_filtered_summary_pass_sections(
                 key=lambda item: item[0],
             )
         ]
+
+
+def _populate_filtered_summary_pass_sections(
+    *,
+    filtered_summary: dict[str, Any],
+    summary: dict[str, Any],
+    pass_results: dict[str, Any],
+    pass_support: dict[str, Any],
+    requested_validation_mode: str | None,
+    effective_validation_mode: str | None,
+    degraded_passes: list[dict[str, Any]],
+    degradation_roles: dict[str, int],
+    by_pass: dict[str, dict[str, int]],
+    normalized_pass_map: dict[str, dict[str, Any]],
+    selected_risk_pass_names: set[str],
+    resolved_only_pass: str | None,
+    only_risky_filters: bool,
+    only_degraded: bool,
+) -> dict[str, int]:
+    """Populate filtered_summary pass-related sections using summary-first data."""
+    summary_sources = _resolve_summary_pass_sources(summary)
+    summary_pass_validation_context = summary_sources["pass_validation_context"]
+    summary_pass_symbolic_summary = summary_sources["pass_symbolic_summary"]
+    summary_pass_capabilities = summary_sources["pass_capabilities"]
+    summary_pass_evidence_map = summary_sources["pass_evidence_map"]
+    summary_pass_region_evidence_map = summary_sources["pass_region_evidence_map"]
+    summary_pass_triage_map = summary_sources["pass_triage_map"]
+    summary_normalized_pass_results = summary_sources["normalized_pass_results"]
+    summary_symbolic_issue_map = summary_sources["symbolic_issue_map"]
+    summary_symbolic_coverage_map = summary_sources["symbolic_coverage_map"]
+    summary_symbolic_severity_map = summary_sources["symbolic_severity_map"]
+    summary_pass_capability_summary_map = summary_sources["pass_capability_summary_map"]
+    summary_validation_role_map = summary_sources["validation_role_map"]
+    summary_discarded_mutation_summary = summary_sources["discarded_mutation_summary"]
+    summary_discarded_mutation_priority = summary_sources["discarded_mutation_priority"]
+    summary_pass_evidence_compact = summary_sources["pass_evidence_compact"]
+    summary_report_views = summary_sources["report_views"]
+    summary_discarded_view = summary_sources["discarded_view"]
+    summary_general_passes = summary_sources["general_passes"]
+    summary_general_pass_rows = summary_sources["general_pass_rows"]
+    summary_general_symbolic = summary_sources["general_symbolic"]
+    summary_general_discards = summary_sources["general_discards"]
+
+    # 1. Populate pass capabilities and validation context
+    _populate_pass_capabilities_and_context(
+        filtered_summary=filtered_summary,
+        pass_results=pass_results,
+        pass_support=pass_support,
+        requested_validation_mode=requested_validation_mode,
+        effective_validation_mode=effective_validation_mode,
+        degradation_roles=degradation_roles,
+        normalized_pass_map=normalized_pass_map,
+        summary_pass_capabilities=summary_pass_capabilities,
+        summary_pass_validation_context=summary_pass_validation_context,
+    )
+
+    # 2. Delegate to _populate_filtered_summary_symbolic_sections (kept in main)
+    _populate_filtered_summary_symbolic_sections(
+        filtered_summary=filtered_summary,
+        summary=summary,
+        pass_results=pass_results,
+        by_pass=by_pass,
+        degraded_passes=degraded_passes,
+        only_degraded=only_degraded,
+        summary_symbolic_issue_map=summary_symbolic_issue_map,
+        summary_symbolic_coverage_map=summary_symbolic_coverage_map,
+        summary_symbolic_severity_map=summary_symbolic_severity_map,
+        summary_pass_symbolic_summary=summary_pass_symbolic_summary,
+    )
+
+    # 3. Populate pass_evidence and symbolic_issue_passes
+    _populate_symbolic_issue_passes(
+        filtered_summary=filtered_summary,
+        summary=summary,
+        pass_results=pass_results,
+        by_pass=by_pass,
+        summary_symbolic_issue_map=summary_symbolic_issue_map,
+        summary_pass_evidence_compact=summary_pass_evidence_compact,
+        summary_pass_evidence_map=summary_pass_evidence_map,
+        summary_general_symbolic=summary_general_symbolic,
+    )
+
+    # 4. Populate symbolic coverage and severity
+    _populate_symbolic_coverage_and_severity(
+        filtered_summary=filtered_summary,
+        by_pass=by_pass,
+        degraded_passes=degraded_passes,
+        only_degraded=only_degraded,
+        summary_symbolic_coverage_map=summary_symbolic_coverage_map,
+        summary_symbolic_severity_map=summary_symbolic_severity_map,
+        pass_results=pass_results,
+    )
+
+    # Fallback population (kept in main)
+    filtered_summary["degradation_roles"] = degradation_roles
+    for pass_name in filtered_summary["passes"]:
+        pass_symbolic_summary = summary_pass_symbolic_summary.get(
+            pass_name, pass_results.get(pass_name, {}).get("symbolic_summary")
+        )
+        if not pass_symbolic_summary:
+            normalized_row = normalized_pass_map.get(pass_name, {})
+            if normalized_row:
+                pass_symbolic_summary = {
+                    "pass_name": pass_name,
+                    "severity": normalized_row.get("severity", "not-requested"),
+                    "issue_count": normalized_row.get("issue_count", 0),
+                    "symbolic_requested": normalized_row.get("symbolic_requested", 0),
+                    "observable_match": normalized_row.get("observable_match", 0),
+                    "observable_mismatch": normalized_row.get("observable_mismatch", 0),
+                    "bounded_only": normalized_row.get("bounded_only", 0),
+                    "without_coverage": normalized_row.get("without_coverage", 0),
+                    "issues": [],
+                }
+        if pass_symbolic_summary:
+            filtered_summary["pass_symbolic_summary"][pass_name] = dict(pass_symbolic_summary)
+
+    if not filtered_summary["pass_validation_context"] and summary_pass_validation_context:
+        visible_passes = set(filtered_summary["passes"])
+        filtered_summary["pass_validation_context"] = {
+            pass_name: dict(context)
+            for pass_name, context in summary_pass_validation_context.items()
+            if not visible_passes or pass_name in visible_passes
+        }
+    if not filtered_summary["pass_symbolic_summary"] and summary_pass_symbolic_summary:
+        visible_passes = set(filtered_summary["passes"])
+        filtered_summary["pass_symbolic_summary"] = {
+            pass_name: dict(summary_row)
+            for pass_name, summary_row in summary_pass_symbolic_summary.items()
+            if not visible_passes or pass_name in visible_passes
+        }
+    if not filtered_summary["pass_capabilities"] and summary_pass_capabilities:
+        visible_passes = set(filtered_summary["passes"])
+        filtered_summary["pass_capabilities"] = {
+            pass_name: dict(capabilities)
+            for pass_name, capabilities in summary_pass_capabilities.items()
+            if not visible_passes or pass_name in visible_passes
+        }
+
+    # 5. Populate triage rows, normalized results, capability summary, validation roles, discards
+    _populate_triage_and_results(
+        filtered_summary=filtered_summary,
+        summary=summary,
+        summary_pass_triage_map=summary_pass_triage_map,
+        summary_normalized_pass_results=summary_normalized_pass_results,
+        summary_pass_capability_summary_map=summary_pass_capability_summary_map,
+        summary_validation_role_map=summary_validation_role_map,
+        summary_report_views=summary_report_views,
+        summary_general_pass_rows=summary_general_pass_rows,
+        summary_general_passes=summary_general_passes,
+        summary_discarded_mutation_summary=summary_discarded_mutation_summary,
+        summary_discarded_view=summary_discarded_view,
+        summary_discarded_mutation_priority=summary_discarded_mutation_priority,
+        summary_general_discards=summary_general_discards,
+    )
+
+    # 6. Populate pass evidence with fallback chains
+    _populate_pass_evidence(
+        filtered_summary=filtered_summary,
+        pass_results=pass_results,
+        normalized_pass_map=normalized_pass_map,
+        selected_risk_pass_names=selected_risk_pass_names,
+        resolved_only_pass=resolved_only_pass,
+        only_risky_filters=only_risky_filters,
+        summary_pass_region_evidence_map=summary_pass_region_evidence_map,
+        summary_pass_evidence_map=summary_pass_evidence_map,
+        summary_general_pass_rows=summary_general_pass_rows,
+    )
+
+    # 7. Apply risk-based filters and final symbolic summary fallbacks
+    _apply_risk_filters(
+        filtered_summary=filtered_summary,
+        selected_risk_pass_names=selected_risk_pass_names,
+        only_risky_filters=only_risky_filters,
+    )
+
     return degradation_roles
 
 
