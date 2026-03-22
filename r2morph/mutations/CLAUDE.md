@@ -21,5 +21,6 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
+| #18565 | 6:54 PM | 🔄 | Extract pattern matching and application logic into helper methods | ~514 |
 | #18478 | 5:56 PM | 🔄 | Extract bitwise gadgets into dedicated method | ~375 |
 </claude-mem-context>

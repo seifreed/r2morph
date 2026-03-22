@@ -272,6 +272,88 @@ class ConstantUnfoldingPass(MutationPass):
                 result.append((func, selected))
         return result
 
+    def _match_unfold_pattern(
+        self, disasm: str, bits: int, binary: Any, func_addr: int,
+    ) -> tuple[list[str] | None, bool]:
+        """Match instruction to an unfold pattern. Returns (unfolded_instructions, is_constant)."""
+        parts = disasm.replace(",", " ").split()
+        if len(parts) < 2:
+            return None, False
+
+        mnemonic = parts[0]
+        reg = parts[1]
+        value_str = parts[2] if len(parts) > 2 else ""
+
+        is_numeric = value_str.isdigit() or (
+            value_str.startswith("0x") and all(c in "0123456789abcdefABCDEF" for c in value_str[2:])
+        )
+        if not is_numeric:
+            return None, False
+
+        value = int(value_str, 0)
+
+        if mnemonic == "mov" and value == 0:
+            return self._unfold_zero(reg, bits, binary, func_addr), True
+        if mnemonic == "mov" and value == 1:
+            return self._unfold_one(reg, bits, binary, func_addr), True
+        if mnemonic == "add" and 1 < value <= self.max_sequence:
+            return self._unfold_constant_add(reg, value, bits), True
+        if mnemonic == "sub" and 1 < value <= self.max_sequence:
+            return self._unfold_constant_sub(reg, value, bits), True
+        return None, False
+
+    def _apply_single_unfold(
+        self, binary: Any, func: dict, addr: int, orig_size: int,
+        disasm: str, unfolded: list[str], baseline: dict,
+    ) -> bool:
+        """Assemble, write, validate, and record a single unfold. Returns True on success."""
+        all_bytes = b""
+        for inst in unfolded:
+            inst_bytes = binary.assemble(inst, func["addr"])
+            if inst_bytes:
+                all_bytes += inst_bytes
+
+        if not all_bytes or len(all_bytes) > orig_size:
+            return False
+
+        if not binary.write_bytes(addr, all_bytes):
+            return False
+
+        if len(all_bytes) < orig_size:
+            binary.nop_fill(addr + len(all_bytes), orig_size - len(all_bytes))
+
+        original_bytes = binary.read_bytes(addr, orig_size)
+        mutated_bytes = binary.read_bytes(addr, orig_size)
+        mutation_checkpoint = self._create_mutation_checkpoint("unfold")
+        record = self._record_mutation(
+            function_address=func["addr"],
+            start_address=addr,
+            end_address=addr + orig_size - 1,
+            original_bytes=original_bytes,
+            mutated_bytes=mutated_bytes,
+            original_disasm=disasm,
+            mutated_disasm="; ".join(unfolded),
+            mutation_kind="constant_unfolding",
+            metadata={
+                "unfolded_instructions": len(unfolded),
+                "original_size": orig_size,
+                "new_size": len(all_bytes),
+                "structural_baseline": baseline,
+            },
+        )
+        if self._validation_manager is not None:
+            outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
+            if not outcome.passed and mutation_checkpoint is not None:
+                if self._session is not None:
+                    self._session.rollback_to(mutation_checkpoint)
+                binary.reload()
+                if self._records:
+                    self._records.pop()
+                if self._rollback_policy == "fail-fast":
+                    raise RuntimeError("Mutation-level validation failed")
+                return False
+        return True
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply constant unfolding to the binary.
@@ -322,133 +404,32 @@ class ConstantUnfoldingPass(MutationPass):
                     continue
 
                 try:
-                    parts = disasm.replace(",", " ").split()
-                    if len(parts) < 2:
-                        continue
-
-                    mnemonic = parts[0]
-
-                    unfolded = None
-
-                    if mnemonic == "mov":
-                        reg = parts[1]
-                        value_str = parts[2] if len(parts) > 2 else ""
-
-                        if value_str.isdigit() or (
-                            value_str.startswith("0x") and all(c in "0123456789abcdefABCDEF" for c in value_str[2:])
-                        ):
-                            value = int(value_str, 0)
-
-                            if value == 0:
-                                unfolded = self._unfold_zero(reg, bits, binary, func["addr"])
-                                constants_unfolded += 1
-                            elif value == 1:
-                                unfolded = self._unfold_one(reg, bits, binary, func["addr"])
-                                constants_unfolded += 1
-
-                    elif mnemonic == "add":
-                        reg = parts[1]
-                        value_str = parts[2] if len(parts) > 2 else ""
-
-                        if value_str.isdigit() or (
-                            value_str.startswith("0x") and all(c in "0123456789abcdefABCDEF" for c in value_str[2:])
-                        ):
-                            value = int(value_str, 0)
-
-                            if 1 < value <= self.max_sequence:
-                                unfolded = self._unfold_constant_add(reg, value, bits)
-                                constants_unfolded += 1
-
-                    elif mnemonic == "sub":
-                        reg = parts[1]
-                        value_str = parts[2] if len(parts) > 2 else ""
-
-                        if value_str.isdigit() or (
-                            value_str.startswith("0x") and all(c in "0123456789abcdefABCDEF" for c in value_str[2:])
-                        ):
-                            value = int(value_str, 0)
-
-                            if 1 < value <= self.max_sequence:
-                                unfolded = self._unfold_constant_sub(reg, value, bits)
-                                constants_unfolded += 1
-
+                    unfolded, is_constant = self._match_unfold_pattern(disasm, bits, binary, func["addr"])
                     if not unfolded:
                         continue
+                    if is_constant:
+                        constants_unfolded += 1
 
                     new_size = self._calculate_sequence_size(unfolded, binary, func["addr"])
-
                     if new_size == 0:
                         continue
-
                     if new_size > orig_size:
                         if self.size_limit > 1 and new_size > orig_size * self.size_limit:
                             continue
                         if new_size > orig_size + 16:
-                            logger.debug(
-                                f"Skipping unfold at 0x{addr:x}: size increase too large ({new_size} vs {orig_size})"
-                            )
                             continue
 
-                    mutation_checkpoint = self._create_mutation_checkpoint("unfold")
                     baseline = {}
                     if self._validation_manager is not None:
                         baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
-                    original_bytes = binary.read_bytes(addr, orig_size)
 
-                    all_bytes = b""
-                    for inst in unfolded:
-                        inst_bytes = binary.assemble(inst, func["addr"])
-                        if inst_bytes:
-                            all_bytes += inst_bytes
+                    if self._apply_single_unfold(binary, func, addr, orig_size, disasm, unfolded, baseline):
+                        logger.info(f"Unfolded constant: '{disasm}' -> '{'; '.join(unfolded)}' at 0x{addr:x}")
+                        func_mutations += 1
+                        mutations_applied += 1
+                        size_increase += new_size - orig_size
 
-                    if not all_bytes:
-                        continue
-
-                    if len(all_bytes) > orig_size:
-                        logger.debug(f"Skipping unfold at 0x{addr:x}: size too large ({len(all_bytes)} > {orig_size})")
-                        continue
-
-                    if not binary.write_bytes(addr, all_bytes):
-                        continue
-
-                    if len(all_bytes) < orig_size:
-                        binary.nop_fill(addr + len(all_bytes), orig_size - len(all_bytes))
-
-                    mutated_bytes = binary.read_bytes(addr, orig_size)
-                    record = self._record_mutation(
-                        function_address=func["addr"],
-                        start_address=addr,
-                        end_address=addr + orig_size - 1,
-                        original_bytes=original_bytes,
-                        mutated_bytes=mutated_bytes,
-                        original_disasm=disasm,
-                        mutated_disasm="; ".join(unfolded),
-                        mutation_kind="constant_unfolding",
-                        metadata={
-                            "unfolded_instructions": len(unfolded),
-                            "original_size": orig_size,
-                            "new_size": len(all_bytes),
-                            "structural_baseline": baseline,
-                        },
-                    )
-                    if self._validation_manager is not None:
-                        outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
-                        if not outcome.passed and mutation_checkpoint is not None:
-                            if self._session is not None:
-                                self._session.rollback_to(mutation_checkpoint)
-                            binary.reload()
-                            if self._records:
-                                self._records.pop()
-                            if self._rollback_policy == "fail-fast":
-                                raise RuntimeError("Mutation-level validation failed")
-                            continue
-
-                    logger.info(f"Unfolded constant: '{disasm}' -> '{'; '.join(unfolded)}' at 0x{addr:x}")
-                    func_mutations += 1
-                    mutations_applied += 1
-                    size_increase += len(all_bytes) - orig_size
-
-                except Exception as e:
+                except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                     logger.debug(f"Failed to unfold constant at 0x{addr:x}: {e}")
 
             if func_mutations > 0:
