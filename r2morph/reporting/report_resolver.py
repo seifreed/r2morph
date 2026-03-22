@@ -6,9 +6,9 @@ Extracted from cli.py -- no logic changes.
 import re
 from typing import Any
 
-from r2morph.core.engine import (
-    _build_gate_failure_severity_priority,
-    _summarize_gate_failures,
+from r2morph.reporting.gate_evaluator import (
+    build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
+    summarize_gate_failures as _summarize_gate_failures,
 )
 from r2morph.reporting.report_helpers import (
     _is_risky_pass,
@@ -399,54 +399,6 @@ def _resolve_only_mismatches_state(
     }
 
 
-def _resolve_general_filtered_passes(
-    *,
-    existing_passes: list[str],
-    summary_only_pass_view: dict[str, Any],
-    summary_general_passes: list[dict[str, Any]],
-    summary_general_pass_rows: list[dict[str, Any]],
-    summary_general_summary: dict[str, Any],
-    resolved_only_pass: str | None,
-    selected_risk_pass_names: set[str],
-    only_risky_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
-    only_failed_gates: bool,
-    gate_failure_priority: list[dict[str, Any]],
-) -> list[str]:
-    """Resolve the visible pass list for the general report path."""
-    resolved_passes = list(existing_passes)
-    if not resolved_passes and summary_general_summary.get("passes"):
-        resolved_passes = [str(pass_name) for pass_name in list(summary_general_summary.get("passes", [])) if pass_name]
-    if not resolved_passes and summary_general_passes:
-        resolved_passes = sorted({str(row.get("pass_name")) for row in summary_general_passes if row.get("pass_name")})
-    if not resolved_passes and summary_general_pass_rows:
-        resolved_passes = sorted(
-            {str(row.get("pass_name")) for row in summary_general_pass_rows if row.get("pass_name")}
-        )
-    if resolved_only_pass and not resolved_passes and resolved_only_pass in summary_only_pass_view:
-        resolved_passes = [resolved_only_pass]
-    if (
-        only_risky_passes
-        or only_structural_risk
-        or only_symbolic_risk
-        or only_uncovered_passes
-        or only_covered_passes
-        or only_clean_passes
-    ):
-        return sorted(
-            pass_name
-            for pass_name in selected_risk_pass_names
-            if resolved_only_pass is None or pass_name == resolved_only_pass
-        )
-    if resolved_only_pass and not resolved_passes:
-        return [resolved_only_pass]
-    if only_failed_gates and not resolved_passes and gate_failure_priority:
-        return sorted({str(row.get("pass_name")) for row in gate_failure_priority if row.get("pass_name")})
-    return resolved_passes
 
 
 def _resolve_general_report_state(
@@ -741,5 +693,70 @@ def _resolve_mismatch_severity_rows(
             for pass_name in filtered_passes
         ]
     return mismatch_severity_rows
+
+
+def _resolve_report_context(
+    *,
+    payload: dict[str, Any],
+    resolved_only_pass: str | None,
+    resolved_only_pass_failure: str | None,
+    only_expected_severity: str | None,
+) -> dict[str, Any]:
+    """Resolve the initial report context from payload and filters.
+
+    Note: resolved_only_pass and resolved_only_pass_failure must be
+    pre-resolved by the CLI layer (via alias map). This function is
+    pure data logic with no CLI dependencies.
+    """
+    summary = payload.get("summary") or {}
+    requested_validation_mode = summary.get(
+        "requested_validation_mode",
+        payload.get("requested_validation_mode", payload.get("validation_mode", "off")),
+    )
+    effective_validation_mode = summary.get(
+        "validation_mode",
+        payload.get("validation_mode", "off"),
+    )
+    validation_policy = payload.get("validation_policy")
+    gate_evaluation = payload.get("gate_evaluation") or {}
+    gate_requested = dict(gate_evaluation.get("requested", {}))
+    gate_results = dict(gate_evaluation.get("results", {}))
+    gate_failure_summary, gate_failure_priority, gate_failure_severity_priority, filtered_gate_failed = (
+        _resolve_report_gate_state(
+            summary=summary,
+            payload=payload,
+            gate_evaluation=gate_evaluation,
+            only_expected_severity=only_expected_severity,
+            resolved_only_pass_failure=resolved_only_pass_failure,
+        )
+    )
+    failed_gates = bool(gate_results) and not bool(gate_results.get("all_passed", True))
+    if (only_expected_severity or resolved_only_pass_failure) and not gate_failure_summary.get(
+        "require_pass_severity_failure_count", 0
+    ):
+        failed_gates = False
+    if only_expected_severity or resolved_only_pass_failure:
+        failed_gates = filtered_gate_failed
+    degraded_validation = requested_validation_mode != effective_validation_mode
+    degraded_passes = list((validation_policy or {}).get("limited_passes", []))
+    degradation_roles = dict(summary.get("degradation_roles", {}))
+    return {
+        "summary": summary,
+        "resolved_only_pass": resolved_only_pass,
+        "resolved_only_pass_failure": resolved_only_pass_failure,
+        "requested_validation_mode": requested_validation_mode,
+        "effective_validation_mode": effective_validation_mode,
+        "validation_policy": validation_policy,
+        "gate_evaluation": gate_evaluation,
+        "gate_requested": gate_requested,
+        "gate_results": gate_results,
+        "gate_failure_summary": gate_failure_summary,
+        "gate_failure_priority": gate_failure_priority,
+        "gate_failure_severity_priority": gate_failure_severity_priority,
+        "failed_gates": failed_gates,
+        "degraded_validation": degraded_validation,
+        "degraded_passes": degraded_passes,
+        "degradation_roles": degradation_roles,
+    }
 
 

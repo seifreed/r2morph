@@ -264,7 +264,7 @@ def _build_general_filtered_summary(
     summary_general_summary = dict(summary_report_views.get("general_summary", {}) or {})
     if not summary_general_summary:
         summary_general_summary = dict(filtered_summary.get("general_summary", {}) or {})
-    from r2morph.reporting.report_resolver import _resolve_general_filtered_passes
+    from r2morph.reporting.report_helpers import _resolve_general_filtered_passes
     filtered_summary["passes"] = _resolve_general_filtered_passes(
         existing_passes=filtered_summary["passes"],
         summary_only_pass_view=only_pass_view,
