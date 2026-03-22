@@ -10,8 +10,6 @@ Covers:
 - Order suggestion
 """
 
-import pytest
-
 from r2morph.mutations.pass_dependencies import (
     DependencyType,
     PassDependency,

@@ -9,11 +9,8 @@ These tests verify:
 - Platform/arch-specific ABI rules
 """
 
-import pytest
-
 from r2morph.analysis.abi_checker import (
     ABIChecker,
-    ABISpec,
     ABIType,
     ABIViolationType,
     detect_abi,

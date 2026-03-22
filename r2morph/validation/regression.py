@@ -205,7 +205,9 @@ class RegressionTestFramework:
                     "mba_detected": result.mba_detected,
                     "confidence_score": round(result.confidence_score, 3),  # Round for stability
                     "techniques_count": len(result.obfuscation_techniques),
-                    "obfuscation_techniques": sorted(result.obfuscation_techniques[:20], key=lambda t: t.value),  # Limited list
+                    "obfuscation_techniques": sorted(
+                        result.obfuscation_techniques[:20], key=lambda t: t.value
+                    ),  # Limited list
                 }
 
                 # Extended detection results
@@ -780,7 +782,7 @@ class RegressionTester:
             RegisterSubstitutionPass,
         )
 
-        mapping: dict[str, type[MutationPass]] = {
+        mapping: dict[str, Any] = {
             "nop": NopInsertionPass,
             "substitute": InstructionSubstitutionPass,
             "register": RegisterSubstitutionPass,
@@ -792,4 +794,5 @@ class RegressionTester:
         if mutation_class is None:
             raise ValueError(f"Unknown mutation pass: {name}")
 
-        return mutation_class()
+        result: MutationPass = mutation_class()
+        return result

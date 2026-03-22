@@ -9,8 +9,6 @@ Covers:
 """
 
 import json
-import pytest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 from typer.testing import CliRunner
 
@@ -82,8 +80,8 @@ class TestSemanticValidateCommand:
             mock_binary.get_functions.return_value = []
             mock_binary_class.return_value = mock_binary
 
-            with patch("r2morph.validation.semantic.SemanticValidator") as mock_validator_class:
-                mock_validator = MagicMock()
+            with patch("r2morph.validation.semantic.SemanticValidator"):
+                MagicMock()
                 mock_result = MagicMock()
                 mock_result.passed = True
                 mock_result.mode = "fast"
@@ -98,7 +96,7 @@ class TestSemanticValidateCommand:
                 with patch("r2morph.validation.semantic.validate_semantic_equivalence") as mock_validate:
                     mock_validate.return_value = mock_result
 
-                    result = runner.invoke(
+                    runner.invoke(
                         app,
                         ["semantic-validate", str(binary_path), "--mode", "fast"],
                     )
@@ -120,7 +118,7 @@ class TestSemanticValidateCommand:
             mock_result.to_dict.return_value = {"passed": True}
 
             with patch("r2morph.validation.semantic.validate_semantic_equivalence", return_value=mock_result):
-                result = runner.invoke(
+                runner.invoke(
                     app,
                     ["semantic-validate", str(binary_path), "--json"],
                 )
@@ -143,7 +141,7 @@ class TestSemanticValidateCommand:
             mock_result.to_dict.return_value = {"passed": True}
 
             with patch("r2morph.validation.semantic.validate_semantic_equivalence", return_value=mock_result):
-                result = runner.invoke(
+                runner.invoke(
                     app,
                     ["semantic-validate", str(binary_path), "--output", str(output_path)],
                 )
@@ -300,7 +298,7 @@ class TestIntegration:
                 mock_result.to_dict.return_value = {"passed": True}
 
                 with patch("r2morph.validation.semantic.validate_semantic_equivalence", return_value=mock_result):
-                    result = runner.invoke(
+                    runner.invoke(
                         app,
                         ["semantic-validate", str(binary_path), "--mode", mode],
                     )

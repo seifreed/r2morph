@@ -18,9 +18,18 @@ from enum import Enum
 from typing import Any, Callable
 import re
 
-_console_class: Any
+
+class _FallbackConsole:
+    """Fallback console when rich is not available."""
+
+    def print(self, *args: Any, **kwargs: Any) -> None:
+        """Print to stdout."""
+        print(*args)
+
+
+Console: Any
 try:
-    from rich.console import Console as _RichConsole
+    from rich.console import Console
     from rich.layout import Layout
     from rich.panel import Panel
     from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
@@ -29,17 +38,9 @@ try:
     from rich.text import Text
 
     RICH_AVAILABLE = True
-    _console_class = _RichConsole
 except ImportError:
     RICH_AVAILABLE = False
-
-    class _FallbackConsole:
-        def print(self, *args: Any, **kwargs: Any) -> None:
-            print(*args)
-
-    _console_class = _FallbackConsole
-
-Console = _console_class
+    Console = _FallbackConsole
 
 
 class TUIAction(str, Enum):

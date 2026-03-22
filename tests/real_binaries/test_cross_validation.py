@@ -7,6 +7,7 @@ other binary analysis tools (radare2, objdump, readelf, etc.).
 
 import os
 import platform
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -37,9 +38,6 @@ def run_tool(tool_name: str, args: list, timeout: int = 10) -> tuple:
         return result.returncode == 0, result.stdout, result.stderr
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False, b"", b""
-
-
-import shutil
 
 
 class TestRadare2CrossValidation:
@@ -82,7 +80,7 @@ int main() {
 
         with MorphEngine(config=config) as engine:
             engine.load_binary(test_binary).analyze()
-            original_functions = len(list(engine.binary.functions))
+            len(list(engine.binary.functions))
 
             engine.add_mutation("nop")
             result = engine.run(validation_mode="structural")
@@ -93,13 +91,13 @@ int main() {
         # Use radare2 to count functions in original
         success, stdout, _ = run_tool("r2", ["-q", "-c", "afl", str(test_binary)])
         if success and stdout:
-            r2_func_count = len([l for l in stdout.decode().strip().split("\n") if l])
+            r2_func_count = len([line for line in stdout.decode().strip().split("\n") if line])
 
             # Use radare2 to count functions in mutated
             if output.exists():
                 success2, stdout2, _ = run_tool("r2", ["-q", "-c", "afl", str(output)])
                 if success2 and stdout2:
-                    r2_mutated_count = len([l for l in stdout2.decode().strip().split("\n") if l])
+                    r2_mutated_count = len([line for line in stdout2.decode().strip().split("\n") if line])
 
                     # Function count should be preserved
                     assert (
@@ -116,7 +114,7 @@ int main() {
         success, stdout, _ = run_tool("r2", ["-q", "-c", "iS", str(test_binary)])
 
         if success and stdout:
-            original_sections = [l for l in stdout.decode().strip().split("\n") if l.strip()]
+            original_sections = [line for line in stdout.decode().strip().split("\n") if line.strip()]
 
             with MorphEngine(config=config) as engine:
                 engine.load_binary(test_binary).analyze()
@@ -129,7 +127,7 @@ int main() {
             if output.exists():
                 success2, stdout2, _ = run_tool("r2", ["-q", "-c", "iS", str(output)])
                 if success2 and stdout2:
-                    mutated_sections = [l for l in stdout2.decode().strip().split("\n") if l.strip()]
+                    mutated_sections = [line for line in stdout2.decode().strip().split("\n") if line.strip()]
 
                     # Section count should be preserved
                     assert len(original_sections) == len(
@@ -172,7 +170,7 @@ int main() { printf("test"); return 0; }
         success, stdout, _ = run_tool("objdump", ["-d", str(test_binary)])
 
         if success and stdout:
-            original_lines = len([l for l in stdout.decode().split("\n") if l.strip()])
+            original_lines = len([line for line in stdout.decode().split("\n") if line.strip()])
 
             config = EngineConfig.create_default()
             with MorphEngine(config=config) as engine:
@@ -186,7 +184,7 @@ int main() { printf("test"); return 0; }
             if output.exists():
                 success2, stdout2, _ = run_tool("objdump", ["-d", str(output)])
                 if success2 and stdout2:
-                    mutated_lines = len([l for l in stdout2.decode().split("\n") if l.strip()])
+                    mutated_lines = len([line for line in stdout2.decode().split("\n") if line.strip()])
 
                     # Mutation should not destroy instructions
                     # (may have more due to NOP insertion)

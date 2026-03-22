@@ -12,7 +12,6 @@ Tests for:
 - Anti-Disassembly (anti_disassembly.py)
 """
 
-import pytest
 from r2morph.mutations.api_hashing import (
     hash_ror13,
     hash_ror7,
@@ -36,13 +35,8 @@ from r2morph.mutations.stack_strings import (
     xor_rolling,
     add_shift_encode,
 )
-from r2morph.crypto.aes import (
-    aes_encrypt_string,
-    aes_decrypt_block,
-)
 from r2morph.mutations.code_virtualization import (
     VMOpcode,
-    VMHandler,
     VMInstruction,
     VMContext,
     REG_MAP_X64,
@@ -51,9 +45,6 @@ from r2morph.mutations.code_virtualization import (
     translate_instruction_to_vm,
     generate_vm_dispatcher_x64,
     generate_vm_handler_x64,
-    VMProfile,
-    MULTI_VM_PROFILES,
-    MultiVMVirtualizationPass,
 )
 from r2morph.mutations.function_outlining import (
     OutlinedChunk,
@@ -96,59 +87,13 @@ from r2morph.mutations.anti_disassembly import (
     OVERLAPPING_X64,
     JUMP_MIDDLE_X64,
     FALSE_BRANCH_X64,
-    SEH_BASED_X64,
-    POLYGLOT_X64_86,
-    TRAMPOLINE_X64,
-    ALL_ANTI_DISASM_X64,
     generate_false_disasm_sequence,
     generate_opaque_predicate_x64,
     generate_sled_obfuscation,
     AntiDisassemblyPass,
 )
-from r2morph.mutations.stack_strings import (
-    StackStringsPass,
-    EncodingScheme,
-    generate_stack_string_x64,
-    generate_stack_string_x86,
-    find_printable_strings,
-    xor_bytes,
-    xor_rolling,
-    add_shift_encode,
-)
-from r2morph.mutations.code_virtualization import (
-    VMOpcode,
-    VMHandler,
-    VMInstruction,
-    VMContext,
-    REG_MAP_X64,
-    REG_MAP_X86,
-    CodeVirtualizationPass,
-    translate_instruction_to_vm,
-    generate_vm_dispatcher_x64,
-    generate_vm_handler_x64,
-)
-from r2morph.mutations.function_outlining import (
-    OutlinedChunk,
-    OutlinedFunction,
-    FunctionOutliningPass,
-    calculate_chunk_layout,
-    generate_interleaved_layout,
-)
 from r2morph.mutations.code_mobility import (
-    MobileBlock,
     MobilityPlan,
-    CodeMobilityPass,
-    calculate_section_offsets,
-    estimate_size_with_jumps,
-)
-from r2morph.mutations.polymorphic_engine import (
-    EngineState,
-    StateTransition,
-    MutationResult,
-    EngineRunResult,
-    PolymorphicEngine,
-    PolymorphicEnginePass,
-    NoOp,
 )
 
 

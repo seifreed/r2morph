@@ -2,7 +2,6 @@
 Unit tests for liveness analysis module.
 """
 
-import pytest
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph, BlockType
 from r2morph.analysis.liveness import (
     LivenessAnalysis,

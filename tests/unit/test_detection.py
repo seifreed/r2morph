@@ -2,12 +2,9 @@
 Unit tests for detection modules.
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock
 
 from r2morph.detection.control_flow_detector import (
-    ControlFlowAnalyzer,
     ControlFlowAnalysisResult,
 )
 from r2morph.detection.obfuscation_detector import (

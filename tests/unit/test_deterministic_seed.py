@@ -10,7 +10,6 @@ Tests for Issue #6:
 
 import pytest
 import random
-from unittest.mock import MagicMock, patch
 
 from r2morph.mutations.base import MutationPass, MutationRecord, MutationResult
 from r2morph.mutations.nop_insertion import NopInsertionPass

@@ -136,13 +136,14 @@ class ValidationManager:
                 )
             )
 
-        function_address = mutation.get("function_address")
+        raw_function_address = mutation.get("function_address")
         baseline = mutation.get("metadata", {}).get("structural_baseline", {})
-        if function_address not in (None, 0):
+        if raw_function_address is not None and raw_function_address != 0:
+            function_address: int = int(raw_function_address)
             detector = InvariantDetector(binary)
             expected = baseline.get("invariants", [])
             try:
-                current = detector.detect_all_invariants(int(function_address))
+                current = detector.detect_all_invariants(function_address)
             except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 issues.append(
                     ValidationIssue(
@@ -168,8 +169,8 @@ class ValidationManager:
                     )
 
             try:
-                binary.get_function_disasm(int(function_address))
-                binary.get_basic_blocks(int(function_address))
+                binary.get_function_disasm(function_address)
+                binary.get_basic_blocks(function_address)
             except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 issues.append(
                     ValidationIssue(

@@ -8,7 +8,6 @@ import pytest
 
 try:
     from hypothesis import given, settings, assume, strategies as st
-    from hypothesis.strategies import composite
 
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
@@ -20,13 +19,9 @@ if HYPOTHESIS_AVAILABLE:
         create_function_strategy,
         create_function_with_loops_strategy,
         create_function_with_branches_strategy,
-        create_binary_with_functions_strategy,
-        create_address_strategy,
-        create_instruction_sequence_strategy,
         create_x86_register_strategy,
         create_mutation_seed_strategy,
         Function,
-        Instruction,
     )
 
     from r2morph.mutations.conflict_detector import (

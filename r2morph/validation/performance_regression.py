@@ -127,8 +127,8 @@ class PerformanceBenchmark:
     def measure_execution_time(
         self,
         func: Any,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> list[float]:
         """
         Measure execution time of a function over multiple runs.
@@ -164,8 +164,8 @@ class PerformanceBenchmark:
     def measure_memory_usage(
         self,
         func: Any,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> dict[str, float]:
         """
         Measure memory usage of a function.
@@ -224,7 +224,7 @@ class PerformanceBenchmark:
             RegisterSubstitutionPass,
         )
 
-        mutation_classes = {
+        mutation_classes: dict[str, Any] = {
             "nop": NopInsertionPass,
             "substitute": InstructionSubstitutionPass,
             "register": RegisterSubstitutionPass,
@@ -423,7 +423,7 @@ class PerformanceRegressionSuite:
         Returns:
             Dictionary with results and any regressions
         """
-        results = {
+        results: dict[str, Any] = {
             "passed": 0,
             "failed": 0,
             "regressions": [],

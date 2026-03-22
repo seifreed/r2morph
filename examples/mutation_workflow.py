@@ -12,7 +12,6 @@ Usage:
     python mutation_workflow.py input.bin
 """
 
-import json
 import sys
 from pathlib import Path
 
@@ -85,7 +84,7 @@ def demo_custom_config(input_path: Path):
         engine.add_mutation("substitute")
 
         result = engine.run(validation_mode="structural")
-        print(f"\nCustom configuration applied:")
+        print("\nCustom configuration applied:")
         print(f"  NOP config: max={nop_config.max_nop_sequences}, prob={nop_config.probability}")
         print(f"  Result: {result.mutations_applied} mutations")
 
@@ -109,7 +108,7 @@ def demo_aggressive_mode(input_path: Path):
 
         result = engine.run(validation_mode="structural")
 
-        print(f"\nAggressive mode:")
+        print("\nAggressive mode:")
         print(f"  Mutations: {result.mutations_applied}")
         print(f"  Validation: {result.validation_status}")
 

@@ -403,9 +403,9 @@ class PackerSignatureDatabase:
         if signature.string_patterns:
             try:
                 strings_output = binary.r2.cmd("izz") if binary.r2 is not None else ""
-                for pattern in signature.string_patterns:
+                for str_pattern in signature.string_patterns:
                     total_checks += 1
-                    if pattern.lower() in strings_output.lower():
+                    if str_pattern.lower() in strings_output.lower():
                         confidence += 1.0
             except Exception as e:
                 logger.debug(f"Failed to check string patterns: {e}")

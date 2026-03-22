@@ -12,8 +12,7 @@ Covers:
 """
 
 from pathlib import Path
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from r2morph.analysis.call_graph import (
     CallType,

@@ -10,11 +10,8 @@ Tests for Issue #3 acceptance criteria:
 """
 
 import pytest
-import os
-import tempfile
 import subprocess
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from r2morph.core.binary import Binary
 from r2morph.analysis.pattern_preservation import (
@@ -275,7 +272,7 @@ class TestJumpTablePreservation:
                 binary.analyze()
 
                 manager = PatternPreservationManager(binary)
-                summary = manager.analyze()
+                manager.analyze()
 
                 jt_patterns = manager.get_patterns_by_type(PatternType.JUMP_TABLE)
                 jt_entries = manager.get_patterns_by_type(PatternType.JUMP_TABLE_ENTRY)
@@ -343,7 +340,7 @@ class TestExceptionEdgePreservation:
                 binary.analyze()
 
                 manager = PatternPreservationManager(binary)
-                summary = manager.analyze()
+                manager.analyze()
 
                 exc_patterns = manager.get_patterns_by_type(PatternType.EXCEPTION_HANDLER)
                 lp_patterns = manager.get_patterns_by_type(PatternType.LANDING_PAD)
@@ -401,10 +398,10 @@ class TestPltGotPreservation:
                 binary.analyze()
 
                 manager = PatternPreservationManager(binary)
-                summary = manager.analyze()
+                manager.analyze()
 
                 plt_patterns = manager.get_patterns_by_type(PatternType.PLT_THUNK)
-                got_patterns = manager.get_patterns_by_type(PatternType.GOT_ENTRY)
+                manager.get_patterns_by_type(PatternType.GOT_ENTRY)
 
                 assert len(plt_patterns) > 0, "Expected PLT entries"
 
@@ -459,7 +456,7 @@ class TestTailCallPreservation:
                 manager = PatternPreservationManager(binary)
                 manager.analyze()
 
-                tc_patterns = manager.get_patterns_by_type(PatternType.TAIL_CALL)
+                manager.get_patterns_by_type(PatternType.TAIL_CALL)
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -601,7 +598,7 @@ class TestRegressionNoBreakage:
                 binary.analyze()
 
                 manager = PatternPreservationManager(binary)
-                summary = manager.analyze()
+                manager.analyze()
 
             result2 = subprocess.run(
                 [str(switch_binary), "5"],

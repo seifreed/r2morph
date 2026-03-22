@@ -9,7 +9,6 @@ Covers:
 - Dispatcher code generation
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 from dataclasses import asdict
 
@@ -214,7 +213,7 @@ class TestFullControlFlowFlatteningPass:
 
     def test_create_dispatcher_blocks(self):
         """Test dispatcher block creation."""
-        binary = self._create_mock_binary()
+        self._create_mock_binary()
         mutation_pass = FullControlFlowFlatteningPass()
         cfg = self._create_mock_cfg(num_blocks=5)
 
@@ -226,7 +225,7 @@ class TestFullControlFlowFlatteningPass:
 
     def test_create_dispatcher_blocks_exit_detection(self):
         """Test that exit blocks are correctly identified."""
-        binary = self._create_mock_binary()
+        self._create_mock_binary()
         mutation_pass = FullControlFlowFlatteningPass()
         cfg = self._create_mock_cfg(num_blocks=3)
 

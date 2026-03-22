@@ -29,6 +29,8 @@ from r2morph.validation.semantic_invariants import (
 
 logger = logging.getLogger(__name__)
 
+angr: Any
+claripy: Any
 try:
     import angr
     import claripy
@@ -36,7 +38,7 @@ try:
     ANGR_AVAILABLE = True
 except ImportError:
     ANGR_AVAILABLE = False
-    angr = None  # type: ignore[assignment]
+    angr = None
     claripy = None
 
 
@@ -655,7 +657,7 @@ class ExtendedSemanticValidator(SemanticValidator):
 
     def get_cache_statistics(self) -> dict[str, Any]:
         """Get cache statistics."""
-        stats = {
+        stats: dict[str, Any] = {
             "validation_cache_size": len(self._validation_cache),
         }
 
@@ -670,7 +672,7 @@ class ExtendedSemanticValidator(SemanticValidator):
 def create_extended_validator(
     binary: Binary,
     mode: str = "standard",
-    **kwargs,
+    **kwargs: Any,
 ) -> ExtendedSemanticValidator:
     """
     Create an extended semantic validator.
@@ -685,19 +687,19 @@ def create_extended_validator(
     """
     mode_enum = ValidationMode(mode)
 
-    thorough_defaults = {
+    thorough_defaults: dict[str, Any] = {
         "max_states": 10000,
         "max_steps": 500,
         "merge_interval": 100,
     }
 
-    standard_defaults = {
+    standard_defaults: dict[str, Any] = {
         "max_states": 5000,
         "max_steps": 250,
         "merge_interval": 50,
     }
 
-    fast_defaults = {
+    fast_defaults: dict[str, Any] = {
         "max_states": 1000,
         "max_steps": 100,
         "merge_interval": 25,

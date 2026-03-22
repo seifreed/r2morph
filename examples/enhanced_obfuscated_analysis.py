@@ -22,8 +22,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from r2morph import Binary
-from r2morph.detection import ObfuscationDetector, PackerType, ObfuscationType
-from r2morph.analysis.symbolic import AngrBridge, PathExplorer, ConstraintSolver, SyntiaFramework
+from r2morph.detection import ObfuscationDetector
+from r2morph.analysis.symbolic import AngrBridge, PathExplorer, SyntiaFramework
 from r2morph.instrumentation import FridaEngine, FRIDA_AVAILABLE
 from r2morph.devirtualization import VMHandlerAnalyzer, MBASolver
 
@@ -37,29 +37,29 @@ def analyze_obfuscation_techniques(binary: Binary):
     detector = ObfuscationDetector()
     result = detector.analyze_binary(binary)
 
-    print(f"\n📦 Packer Detection:")
+    print("\n📦 Packer Detection:")
     print(f"  Detected: {result.packer_detected.value}")
 
-    print(f"\n🔍 Obfuscation Techniques Found:")
+    print("\n🔍 Obfuscation Techniques Found:")
     for technique in result.obfuscation_techniques:
         confidence = result.confidence_scores.get(technique.value, 0.0)
         print(f"  • {technique.value}: {confidence:.2f} confidence")
 
     if result.vm_detected:
-        print(f"\n🤖 Virtual Machine Detection:")
-        print(f"  VM Detected: ✅ Yes")
+        print("\n🤖 Virtual Machine Detection:")
+        print("  VM Detected: ✅ Yes")
         print(f"  Handler Count: {result.vm_handler_count}")
         print(f"  Confidence: {result.confidence_scores.get('virtualization', 0.0):.2f}")
 
     if result.mba_expressions_found > 0:
-        print(f"\n🧮 Mixed Boolean Arithmetic:")
+        print("\n🧮 Mixed Boolean Arithmetic:")
         print(f"  MBA Expressions: {result.mba_expressions_found}")
 
     if result.opaque_predicates_found > 0:
-        print(f"\n🎭 Opaque Predicates:")
+        print("\n🎭 Opaque Predicates:")
         print(f"  Opaque Predicates: {result.opaque_predicates_found}")
 
-    print(f"\n📋 Analysis Recommendations:")
+    print("\n📋 Analysis Recommendations:")
     if result.requires_devirtualization:
         print("  ⚡ Devirtualization required")
     if result.requires_dynamic_analysis:
@@ -134,7 +134,7 @@ def demonstrate_dynamic_instrumentation(binary_path: Path):
         )
 
         if result.success:
-            print(f"  ✅ Instrumentation successful")
+            print("  ✅ Instrumentation successful")
             print(f"  • Process ID: {result.process_id}")
             print(f"  • API calls captured: {result.api_calls_captured}")
             print(f"  • Analysis time: {result.instrumentation_time:.2f}s")
@@ -195,7 +195,7 @@ def demonstrate_vm_handler_analysis(binary: Binary, obfuscation_result):
             # Analyze VM architecture
             vm_arch = analyzer.analyze_vm_architecture(dispatcher_addr)
 
-            print(f"\n📊 VM Architecture Analysis:")
+            print("\n📊 VM Architecture Analysis:")
             print(f"  • Dispatcher: 0x{vm_arch.dispatcher_address:x}")
             if vm_arch.handler_table_address:
                 print(f"  • Handler table: 0x{vm_arch.handler_table_address:x}")
@@ -207,7 +207,7 @@ def demonstrate_vm_handler_analysis(binary: Binary, obfuscation_result):
 
             handler_types = stats.get("handler_types", {})
             if handler_types:
-                print(f"  • Handler types:")
+                print("  • Handler types:")
                 for handler_type, count in handler_types.items():
                     print(f"    - {handler_type}: {count}")
         else:
@@ -256,11 +256,11 @@ def demonstrate_mba_simplification():
                 if result.equivalent_native:
                     print(f"    • Native equivalent: {result.equivalent_native}")
             else:
-                print(f"    • Simplification failed")
+                print("    • Simplification failed")
 
         # Show statistics
         stats = solver.get_solver_statistics()
-        print(f"\n📈 MBA Solver Statistics:")
+        print("\n📈 MBA Solver Statistics:")
         print(f"  • Success rate: {stats.get('success_rate', 0.0):.1%}")
         print(f"  • Pattern matches: {stats.get('pattern_matches', 0)}")
 
@@ -301,7 +301,7 @@ def demonstrate_syntia_integration():
 
         # Show statistics
         stats = syntia.get_synthesis_statistics()
-        print(f"\n📊 Syntia Statistics:")
+        print("\n📊 Syntia Statistics:")
         print(f"  • Instructions analyzed: {stats.get('instructions_analyzed', 0)}")
         print(f"  • Semantics learned: {stats.get('semantics_learned', 0)}")
         print(f"  • Success rate: {stats.get('success_rate', 0.0):.1%}")

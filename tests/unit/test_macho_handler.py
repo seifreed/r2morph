@@ -2,9 +2,8 @@
 Unit tests for Mach-O handler module.
 """
 
-import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch, mock_open, MagicMock
+from unittest.mock import patch
 import struct
 
 from r2morph.platform.macho_handler import MachOHandler

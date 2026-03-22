@@ -8,8 +8,6 @@ Covers:
 - Platform-specific integrity checks
 """
 
-import pytest
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from r2morph.validation.integrity import BinaryIntegrityValidator, validate_binary_integrity

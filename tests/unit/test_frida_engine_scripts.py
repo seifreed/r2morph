@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from r2morph.instrumentation.frida_engine import FridaEngine, FRIDA_AVAILABLE

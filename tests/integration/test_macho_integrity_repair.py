@@ -11,11 +11,9 @@ Tests for Issue #4:
 
 import pytest
 import platform
-import subprocess
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.codesign import CodeSigner
@@ -333,7 +331,6 @@ class TestMachOIntegrityDarwin:
 
     def test_full_repair_system_binary(self, system_binary, tmp_path):
         """Test full_repair with copied system binary."""
-        import shutil
 
         test_binary = tmp_path / "test_binary"
         shutil.copy(system_binary, test_binary)
@@ -347,13 +344,12 @@ class TestMachOIntegrityDarwin:
         """Test code signature verification with system binary."""
         signer = CodeSigner()
 
-        result = signer.verify(system_binary)
+        signer.verify(system_binary)
 
         pass
 
     def test_codesign_adhoc_sign(self, system_binary, tmp_path):
         """Test ad-hoc signing."""
-        import shutil
 
         test_binary = tmp_path / "test_sign"
         shutil.copy(system_binary, test_binary)
@@ -384,7 +380,7 @@ class TestFatBinaryDarwin:
 
             try:
                 handler = MachOHandler(temp_path)
-                result = handler.is_fat_binary()
+                handler.is_fat_binary()
             finally:
                 temp_path.unlink()
 
@@ -395,7 +391,7 @@ class TestFatBinaryDarwin:
         output = tmp_path / "output"
 
         handler = MachOHandler(source)
-        result = handler.extract_architecture("x86_64", output)
+        handler.extract_architecture("x86_64", output)
 
         pass
 
@@ -409,7 +405,7 @@ class TestFatBinaryDarwin:
         thin2.write_bytes(b"\x00" * 100)
 
         handler = MachOHandler(thin1)
-        result = handler.create_fat_binary([thin1, thin2], output)
+        handler.create_fat_binary([thin1, thin2], output)
 
         pass
 
@@ -462,7 +458,7 @@ class TestMachOErrorHandling:
 
         try:
             handler = MachOHandler(test_file)
-            result = handler.is_macho()
+            handler.is_macho()
         except PermissionError:
             pass
         finally:
@@ -488,7 +484,6 @@ class TestMachORepairWorkflow:
     @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS only")
     def test_repair_workflow_system_binary(self, tmp_path):
         """Test complete repair workflow on system binary copy."""
-        import shutil
 
         system_binaries = ["/bin/ls", "/bin/cat", "/usr/bin/true"]
         source = None
@@ -550,11 +545,11 @@ class TestMachOPlatformIntegration:
         test_file.write_bytes(b"\x00" * 100)
         test_file.chmod(0o755)
 
-        original_mode = test_file.stat().st_mode
+        test_file.stat().st_mode
 
         handler = MachOHandler(test_file)
         handler.full_repair()
 
-        final_mode = test_file.stat().st_mode
+        test_file.stat().st_mode
         if handler.is_macho():
             pass

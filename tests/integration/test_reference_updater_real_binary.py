@@ -1,5 +1,4 @@
 import shutil
-import platform
 from pathlib import Path
 
 from r2morph.core.binary import Binary

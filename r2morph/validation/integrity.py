@@ -221,7 +221,8 @@ class BinaryIntegrityValidator:
 
     def _validate_pe(self, handler: Any) -> tuple[bool, list[str]]:
         """Validate PE binary integrity."""
-        return handler.validate_integrity()
+        result: tuple[bool, list[str]] = handler.validate_integrity()
+        return result
 
     def repair(self) -> tuple[bool, list[str]]:
         """

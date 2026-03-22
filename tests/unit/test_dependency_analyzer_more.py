@@ -1,4 +1,4 @@
-from r2morph.analysis.dependencies import DependencyAnalyzer, DependencyType
+from r2morph.analysis.dependencies import DependencyAnalyzer
 
 
 def test_dependency_analyzer_parse_operands_call_and_stack():

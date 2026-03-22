@@ -8,8 +8,7 @@ Covers:
 - PLT/GOT thunk identification
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from r2morph.analysis.switch_table import (
     JumpTable,

@@ -5,7 +5,6 @@ Generate test fixtures for real binary tests.
 Creates simple ELF binaries for testing mutations.
 """
 
-import os
 import subprocess
 import sys
 from pathlib import Path
@@ -155,5 +154,5 @@ if __name__ == "__main__":
     # List what we have
     print("\nAvailable fixtures:")
     for f in sorted(FIXTURES_DIR.rglob("*")):
-        if f.is_file() and not f.suffix in [".c", ".o", ".obj", ".S"]:
+        if f.is_file() and f.suffix not in [".c", ".o", ".obj", ".S"]:
             print(f"  - {f.relative_to(FIXTURES_DIR)}")

@@ -12,9 +12,6 @@ Tests for Issue #4:
 import pytest
 import platform
 import struct
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from r2morph.platform.pe_handler import PEHandler
 
@@ -266,7 +263,7 @@ class TestPEBasicParsing:
         test_file.write_bytes(pe_data)
 
         handler = PEHandler(test_file)
-        offset = handler.get_checksum_offset()
+        handler.get_checksum_offset()
 
         pass
 
@@ -299,7 +296,7 @@ class TestPEBasicParsing:
         test_file.write_bytes(pe_data)
 
         handler = PEHandler(test_file)
-        header_info = handler._read_pe_header()
+        handler._read_pe_header()
 
         pass
 
@@ -338,12 +335,12 @@ class TestPEChecksumCalculation:
         test_file.write_bytes(pe_data_small)
 
         handler = PEHandler(test_file)
-        checksum_small = handler._calculate_pe_checksum()
+        handler._calculate_pe_checksum()
 
         pe_data_large = dos_header + pe_signature + coff_header + optional_header + b"\x00" * 200
         test_file.write_bytes(pe_data_large)
 
-        checksum_large = handler._calculate_pe_checksum()
+        handler._calculate_pe_checksum()
 
         pass
 
@@ -389,7 +386,7 @@ class TestPESectionHandling:
         handler = PEHandler(test_file)
 
         if handler.is_pe():
-            sections = handler.get_sections()
+            handler.get_sections()
 
             pass
 
@@ -443,7 +440,7 @@ class TestPEIntegrityValidation:
         pe_data = dos_header + pe_signature + coff_header + bytes(optional_header)
         test_file.write_bytes(pe_data)
 
-        handler = PEHandler(test_file)
+        PEHandler(test_file)
 
         pass
 
@@ -634,7 +631,7 @@ class TestPEChecksumComparison:
         handler = PEHandler(test_file)
 
         if handler.is_pe():
-            stored = handler._get_stored_checksum()
-            calculated = handler._calculate_pe_checksum()
+            handler._get_stored_checksum()
+            handler._calculate_pe_checksum()
 
             pass

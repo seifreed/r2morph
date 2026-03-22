@@ -2,8 +2,6 @@
 Tests for conflict detection module.
 """
 
-import pytest
-
 from r2morph.mutations.conflict_detector import (
     Conflict,
     ConflictDetector,

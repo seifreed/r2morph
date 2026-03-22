@@ -1576,7 +1576,7 @@ class MorphEngine:
             "normalized_pass_results": normalized_pass_results,
             "validation_adjustments": validation_adjustments,
             "validation_adjustment_rows": validation_adjustment_rows,
-            "report_views": report_views,
+            "report_views": report_views.to_dict(),
         }
 
     def build_report(self, result: dict[str, Any] | None = None) -> dict[str, Any]:

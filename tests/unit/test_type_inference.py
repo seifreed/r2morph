@@ -8,7 +8,6 @@ Covers:
 - Type propagation
 """
 
-import pytest
 from unittest.mock import MagicMock
 
 from r2morph.analysis.type_inference import (

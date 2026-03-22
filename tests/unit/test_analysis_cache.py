@@ -2,7 +2,6 @@
 Unit tests for analysis cache.
 """
 
-import pickle
 import tempfile
 from datetime import datetime
 from pathlib import Path

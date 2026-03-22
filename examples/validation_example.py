@@ -72,14 +72,14 @@ def demo_runtime_validation(original_path: Path, mutated_path: Path):
     print()
 
     # Runtime validation requires test cases
-    runtime_config = RuntimeComparisonConfig(
+    RuntimeComparisonConfig(
         timeout_seconds=10,
         compare_stdout=True,
         compare_stderr=True,
         compare_exit_code=True,
     )
 
-    config = EngineConfig.create_default()
+    EngineConfig.create_default()
 
     # Note: Runtime validation requires a test corpus
     # corpus = Path("test_corpus.json")  # JSON test cases

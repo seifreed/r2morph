@@ -1,5 +1,3 @@
-import pytest
-
 from r2morph.devirtualization.cfo_simplifier import CFOSimplifier, ControlFlowBlock
 
 

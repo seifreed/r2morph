@@ -242,7 +242,8 @@ class MachOHandler:
             return [binary]
         if isinstance(binary, lief.MachO.FatBinary):
             try:
-                return list(binary.it_binaries)  # type: ignore[arg-type]
+                it: Any = binary.it_binaries
+                return list(it)
             except Exception:
                 return []
         return []

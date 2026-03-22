@@ -3,7 +3,6 @@ Real integration tests for validation using compiled binaries.
 """
 
 import importlib.util
-from pathlib import Path
 
 import pytest
 

@@ -2,9 +2,7 @@
 Unit tests for extended semantic validation module.
 """
 
-import pytest
-from dataclasses import dataclass
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock, patch
 
 from r2morph.validation.extended_semantic import (
     ConstraintCache,

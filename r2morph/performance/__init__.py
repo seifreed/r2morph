@@ -386,7 +386,9 @@ class IncrementalAnalyzer:
 
         previous_sig = self.file_states[file_path].get("signature", {})
 
-        return bool(current_sig["size"] != previous_sig.get("size") or current_sig["mtime"] != previous_sig.get("mtime"))
+        return bool(
+            current_sig["size"] != previous_sig.get("size") or current_sig["mtime"] != previous_sig.get("mtime")
+        )
 
     def get_changed_files(self, file_paths: list[str]) -> list[str]:
         """Get list of files that have changed."""

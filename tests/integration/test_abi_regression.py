@@ -9,9 +9,6 @@ Tests for Issue #5:
 """
 
 import pytest
-import tempfile
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from r2morph.mutations.abi_hook import (
     ABIMutationHook,
@@ -24,11 +21,8 @@ from r2morph.mutations.abi_aware_base import (
     ABIResult,
     ABIValidationError,
     ABIAwareMutationPass,
-    create_abi_aware_pass,
 )
 from r2morph.analysis.abi_checker import (
-    ABIChecker,
-    ABISpec,
     ABIType,
     ABIViolation,
     ABIViolationType,
@@ -531,7 +525,7 @@ class TestABIIntegrationWithMutations:
         hook = ABIMutationHook(binary, action=ABIViolationAction.BLOCK)
 
         hook.snapshot_function(0x1000)
-        result = hook.validate_function(0x1000)
+        hook.validate_function(0x1000)
 
         assert hook.can_save_binary() is True
 

@@ -3,8 +3,7 @@ Tests for new mutation passes: DataFlow, StringObfuscation, ImportObfuscation,
 ConstantUnfolding, and ParallelExecutor.
 """
 
-import pytest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass

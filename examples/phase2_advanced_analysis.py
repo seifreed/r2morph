@@ -27,10 +27,9 @@ from typing import Any
 
 # r2morph imports
 from r2morph import Binary
-from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass, AntiAnalysisType
+from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass
 from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, BinaryRewriter, SimplificationStrategy
 from r2morph.analysis.symbolic import AngrBridge, PathExplorer, ConstraintSolver
-from r2morph.instrumentation import FridaEngine
 
 
 def print_banner():
@@ -331,7 +330,7 @@ def perform_binary_rewriting(binary: Binary, output_path: str) -> dict[str, Any]
         rewrite_result = rewriter.rewrite_binary(output_path)
 
         if rewrite_result.success:
-            print(f"✅ Binary rewritten successfully")
+            print("✅ Binary rewritten successfully")
             print(f"   Output: {rewrite_result.output_path}")
             print(f"   Patches Applied: {rewrite_result.patches_applied}")
             print(f"   Relocations Updated: {rewrite_result.relocations_updated}")
@@ -375,13 +374,13 @@ def generate_comprehensive_report(
         vm_detected = report.get("obfuscation_analysis", {}).get("vm_detected", False)
         layers_detected = report.get("layer_analysis", {}).get("layers_detected", 0)
 
-        print(f"📋 Report Generated:")
+        print("📋 Report Generated:")
         print(f"   Timestamp: {report['timestamp']}")
         print(f"   Binary: {report['binary_info']['path']}")
         print(f"   Format: {report['binary_info']['format']}")
         print(f"   Architecture: {report['binary_info']['architecture']} {report['binary_info']['bits']}-bit")
 
-        print(f"\n🎯 Summary:")
+        print("\n🎯 Summary:")
         print(f"   Obfuscation Techniques: {total_techniques}")
         print(f"   VM Protection: {'Yes' if vm_detected else 'No'}")
         print(f"   Packing Layers: {layers_detected}")
@@ -507,7 +506,7 @@ def main():
         successful_phases = sum(
             1
             for phase, result in analysis_results.items()
-            if isinstance(result, dict) and result.get("success") != False and "error" not in result
+            if isinstance(result, dict) and result.get("success") and "error" not in result
         )
         total_phases = len(analysis_results)
 

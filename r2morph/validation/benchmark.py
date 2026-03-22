@@ -142,7 +142,7 @@ class ValidationFramework:
     def _load_test_samples(self) -> None:
         """Load predefined test samples."""
         # Add known test samples for benchmarking purposes
-        test_samples_data = [
+        test_samples_data: list[dict[str, Any]] = [
             {
                 "file_path": str(self.test_data_dir / "vmprotect_sample.exe"),
                 "sample_hash": "abcd1234567890abcd1234567890abcd1234567890abcd1234567890abcd1234",
@@ -211,7 +211,7 @@ class ValidationFramework:
         """Add a new test sample."""
         self.test_samples.append(sample)
 
-    def _measure_performance(self, func, *args, **kwargs) -> tuple[PerformanceMetrics, Any]:
+    def _measure_performance(self, func: Any, *args: Any, **kwargs: Any) -> tuple[PerformanceMetrics, Any]:
         """
         Measure performance metrics for a function execution.
 
@@ -223,9 +223,9 @@ class ValidationFramework:
         Returns:
             PerformanceMetrics object
         """
-        start_memory = 0
-        peak_memory = 0
-        cpu_percent = 0
+        start_memory: float = 0
+        peak_memory: float = 0
+        cpu_percent: float = 0
 
         if HAS_PSUTIL:
             process = psutil.Process()
@@ -329,7 +329,7 @@ class ValidationFramework:
         from r2morph import Binary
         from r2morph.detection import ObfuscationDetector
 
-        def run_detection() -> None:
+        def run_detection() -> dict[str, Any]:
             with Binary(sample.file_path) as bin_obj:
                 bin_obj.analyze()
                 detector = ObfuscationDetector()
@@ -382,7 +382,7 @@ class ValidationFramework:
         from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier
         from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
 
-        def run_devirtualization() -> None:
+        def run_devirtualization() -> dict[str, Any]:
             with Binary(sample.file_path) as bin_obj:
                 bin_obj.analyze()
 
@@ -447,7 +447,7 @@ class ValidationFramework:
         from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier
         from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
 
-        def run_full_pipeline() -> None:
+        def run_full_pipeline() -> dict[str, Any]:
             with Binary(sample.file_path) as bin_obj:
                 bin_obj.analyze()
 

@@ -130,7 +130,7 @@ def demo_custom_pass(input_path: Path, output_path: Path):
         seed=42,  # Reproducible
     )
 
-    print(f"\nConfiguration:")
+    print("\nConfiguration:")
     print(f"  Max NOPs: {custom_config.max_nops}")
     print(f"  Probability: {custom_config.probability}")
     print(f"  Seed: {custom_config.seed}")
@@ -149,7 +149,7 @@ def demo_custom_pass(input_path: Path, output_path: Path):
 
         result = engine.run(validation_mode="off")
 
-        print(f"\nResults:")
+        print("\nResults:")
         print(f"  Mutations: {result.mutations_applied}")
 
         # Show records
@@ -181,9 +181,9 @@ def demo_pass_composition(input_path: Path):
 
         result = engine.run(validation_mode="structural")
 
-        print(f"\nComposed passes:")
-        print(f"  Built-in: nop, substitute")
-        print(f"  Custom: custom_nop")
+        print("\nComposed passes:")
+        print("  Built-in: nop, substitute")
+        print("  Custom: custom_nop")
         print(f"  Results: {result.mutations_applied} mutations")
         print(f"  Status: {result.validation_status}")
 

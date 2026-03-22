@@ -1,7 +1,6 @@
 from pathlib import Path
 import platform
 import shutil
-import subprocess
 
 import pytest
 

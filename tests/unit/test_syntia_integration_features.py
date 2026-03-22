@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework, InstructionSemantics, VMHandlerSemantics

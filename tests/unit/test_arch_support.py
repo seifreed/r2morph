@@ -9,9 +9,7 @@ Tests for architecture support:
 - Architecture detection
 """
 
-import pytest
 import random
-from unittest.mock import MagicMock, patch
 
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass

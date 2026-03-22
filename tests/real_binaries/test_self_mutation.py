@@ -6,10 +6,8 @@ of mutation correctness and safety.
 """
 
 import os
-import platform
 import subprocess
 import shutil
-import sys
 import tempfile
 from pathlib import Path
 
@@ -93,10 +91,6 @@ class TestSelfMutation:
         # without breaking functionality
 
         # Verify module can be imported
-        import r2morph
-        import r2morph.core.engine
-        import r2morph.mutations
-        import r2morph.validation
 
         # Verify version is accessible
         assert __version__

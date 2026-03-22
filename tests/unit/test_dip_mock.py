@@ -1,7 +1,5 @@
 """Tests demonstrating DIP: mutation passes work with mock disassembler."""
 
-import pytest
-from unittest.mock import MagicMock
 from r2morph.adapters.disassembler import DisassemblerInterface
 
 
@@ -34,7 +32,8 @@ def test_mock_satisfies_protocol():
 
 def test_binary_accepts_mock_disassembler():
     from r2morph.core.binary import Binary
-    import tempfile, os
+    import tempfile
+    import os
 
     # Create a minimal temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:

@@ -31,10 +31,10 @@ logger = logging.getLogger(__name__)
 # Platform-specific locking
 if sys.platform == "win32":
     try:
-        import msvcrt
+        import importlib.util as _ilu
 
-        HAS_MSVCRT = True
-    except ImportError:
+        HAS_MSVCRT = _ilu.find_spec("msvcrt") is not None
+    except Exception:
         HAS_MSVCRT = False
     FCNTL_AVAILABLE = False
 else:
@@ -258,8 +258,8 @@ class BinaryFileLock:
         self.binary_path = Path(binary_path)
         self.lock_path = self.binary_path.with_suffix(self.binary_path.suffix + ".lock")
         self.timeout = timeout
-        self._lock_file = None
-        self._lock_dir_path = None
+        self._lock_file: Any = None
+        self._lock_dir_path: Path | None = None
         self._locked = False
 
     def acquire(self, blocking: bool = True) -> bool:
@@ -303,9 +303,8 @@ class BinaryFileLock:
                 start_time = time.time()
                 while True:
                     try:
-                        __import__("msvcrt").locking(
-                            lock_file.fileno(), msvcrt.LK_NBLCK if not blocking else msvcrt.LK_LOCK, 1
-                        )
+                        _msvcrt = __import__("msvcrt")
+                        _msvcrt.locking(lock_file.fileno(), _msvcrt.LK_NBLCK if not blocking else _msvcrt.LK_LOCK, 1)
                         self._lock_file = lock_file
                         self._locked = True
                         logger.debug(f"Acquired lock for {self.binary_path}")
@@ -358,7 +357,8 @@ class BinaryFileLock:
                 if FCNTL_AVAILABLE and self._lock_file:
                     fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
                 elif HAS_MSVCRT and self._lock_file:
-                    __import__("msvcrt").locking(self._lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                    _msvcrt = __import__("msvcrt")
+                    _msvcrt.locking(self._lock_file.fileno(), _msvcrt.LK_UNLCK, 1)
                 elif self._lock_dir_path:
                     if self._lock_dir_path.exists():
                         self._lock_dir_path.rmdir()
@@ -379,7 +379,7 @@ class BinaryFileLock:
             raise TimeoutError(f"Failed to acquire lock for {self.binary_path} within {self.timeout}s")
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Context manager exit."""
         self.release()
 

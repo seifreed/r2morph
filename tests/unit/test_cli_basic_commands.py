@@ -1,16 +1,16 @@
 from __future__ import annotations
 
-from pathlib import Path
+import json
 import subprocess
 import sys
-import json
+from pathlib import Path
 
 import pytest
 
+from r2morph import cli
+
 typer_testing = pytest.importorskip("typer.testing")
 CliRunner = typer_testing.CliRunner
-
-from r2morph import cli
 
 
 def test_cli_simple_mode(tmp_path: Path) -> None:

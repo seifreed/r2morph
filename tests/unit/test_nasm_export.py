@@ -2,7 +2,6 @@
 Tests for NASM export functionality.
 """
 
-import pytest
 import tempfile
 import os
 import random

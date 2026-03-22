@@ -29,14 +29,14 @@ class TestMutationConfig:
         config = MutationConfig()
         assert config.max_per_function == 5
         assert config.probability == 0.5
-        assert config.force_different == False
+        assert not config.force_different
 
     def test_mutation_config_custom_values(self):
         """Test MutationConfig with custom values."""
         config = MutationConfig(max_per_function=10, probability=0.8, force_different=True)
         assert config.max_per_function == 10
         assert config.probability == 0.8
-        assert config.force_different == True
+        assert config.force_different
 
     def test_mutation_config_to_dict(self):
         """Test MutationConfig to_dict() method."""
@@ -46,7 +46,7 @@ class TestMutationConfig:
         assert isinstance(result, dict)
         assert result["max_per_function"] == 7
         assert result["probability"] == 0.6
-        assert result["force_different"] == True
+        assert result["force_different"]
 
 
 class TestNopInsertionConfig:
@@ -58,9 +58,9 @@ class TestNopInsertionConfig:
         # Inherited defaults
         assert config.max_per_function == 5
         assert config.probability == 0.5
-        assert config.force_different == False
+        assert not config.force_different
         # Own defaults
-        assert config.use_creative_nops == True
+        assert config.use_creative_nops
         assert config.max_nops_per_function == 5
 
     def test_nop_insertion_config_custom_values(self):
@@ -70,8 +70,8 @@ class TestNopInsertionConfig:
         )
         assert config.max_per_function == 8
         assert config.probability == 0.7
-        assert config.force_different == True
-        assert config.use_creative_nops == False
+        assert config.force_different
+        assert not config.use_creative_nops
         assert config.max_nops_per_function == 12
 
     def test_nop_insertion_config_to_dict(self):
@@ -85,7 +85,7 @@ class TestNopInsertionConfig:
         assert result["max_per_function"] == 3
         # NOP-specific fields
         assert "use_creative_nops" in result
-        assert result["use_creative_nops"] == False
+        assert not result["use_creative_nops"]
         assert "max_nops_per_function" in result
         assert result["max_nops_per_function"] == 7
 
@@ -136,14 +136,14 @@ class TestAnalysisConfig:
         config = AnalysisConfig()
         assert config.level == "auto"
         assert config.timeout_seconds == 300
-        assert config.low_memory == False
+        assert not config.low_memory
 
     def test_analysis_config_custom_values(self):
         """Test AnalysisConfig with custom values."""
         config = AnalysisConfig(level="aaa", timeout_seconds=600, low_memory=True)
         assert config.level == "aaa"
         assert config.timeout_seconds == 600
-        assert config.low_memory == True
+        assert config.low_memory
 
     def test_analysis_config_to_dict(self):
         """Test AnalysisConfig to_dict() method."""
@@ -152,7 +152,7 @@ class TestAnalysisConfig:
 
         assert result["level"] == "aa"
         assert result["timeout_seconds"] == 120
-        assert result["low_memory"] == True
+        assert result["low_memory"]
 
 
 class TestEngineConfig:
@@ -161,8 +161,8 @@ class TestEngineConfig:
     def test_engine_config_defaults(self):
         """Test EngineConfig default values."""
         config = EngineConfig()
-        assert config.aggressive == False
-        assert config.force_different == False
+        assert not config.aggressive
+        assert not config.force_different
         assert isinstance(config.nop, NopInsertionConfig)
         assert isinstance(config.substitution, InstructionSubstitutionConfig)
         assert isinstance(config.register, RegisterSubstitutionConfig)
@@ -172,42 +172,42 @@ class TestEngineConfig:
         """Test EngineConfig.create_default() factory method."""
         config = EngineConfig.create_default()
 
-        assert config.aggressive == False
-        assert config.force_different == False
+        assert not config.aggressive
+        assert not config.force_different
         assert config.nop.max_per_function == 5
         assert config.nop.probability == 0.5
-        assert config.nop.use_creative_nops == True
+        assert config.nop.use_creative_nops
         assert config.substitution.max_substitutions_per_function == 10
         assert config.analysis.level == "auto"
-        assert config.analysis.low_memory == False
+        assert not config.analysis.low_memory
 
     def test_engine_config_factory_aggressive(self):
         """Test EngineConfig.create_aggressive() factory method."""
         config = EngineConfig.create_aggressive()
 
-        assert config.aggressive == True
-        assert config.force_different == True
+        assert config.aggressive
+        assert config.force_different
         assert config.nop.max_per_function == 20
         assert config.nop.probability == 0.95
-        assert config.nop.force_different == True
+        assert config.nop.force_different
         assert config.nop.max_nops_per_function == 20
-        assert config.nop.use_creative_nops == True
+        assert config.nop.use_creative_nops
         assert config.substitution.max_per_function == 30
         assert config.substitution.probability == 0.95
         assert config.substitution.max_substitutions_per_function == 30
-        assert config.substitution.force_different == True
+        assert config.substitution.force_different
         assert config.register.max_per_function == 15
         assert config.register.probability == 0.9
         assert config.register.max_substitutions_per_function == 15
-        assert config.register.force_different == True
+        assert config.register.force_different
         assert config.expansion.max_per_function == 15
         assert config.expansion.probability == 0.9
         assert config.expansion.max_expansions_per_function == 15
-        assert config.expansion.force_different == True
+        assert config.expansion.force_different
         assert config.block.max_per_function == 8
         assert config.block.probability == 0.8
         assert config.block.max_reorderings_per_function == 8
-        assert config.block.force_different == True
+        assert config.block.force_different
         assert config.analysis.level == "aaa"
         assert config.analysis.timeout_seconds == 600
 
@@ -215,15 +215,15 @@ class TestEngineConfig:
         """Test EngineConfig.create_memory_efficient() factory method."""
         config = EngineConfig.create_memory_efficient()
 
-        assert config.aggressive == False
-        assert config.force_different == False
+        assert not config.aggressive
+        assert not config.force_different
         assert config.nop.max_per_function == 2
         assert config.nop.probability == 0.3
-        assert config.nop.use_creative_nops == False
+        assert not config.nop.use_creative_nops
         assert config.substitution.max_per_function == 2
         assert config.register.max_substitutions_per_function == 2
         assert config.analysis.level == "aa"
-        assert config.analysis.low_memory == True
+        assert config.analysis.low_memory
 
     def test_engine_config_to_dict(self):
         """Test EngineConfig to_dict() method for backwards compatibility."""
@@ -247,9 +247,9 @@ class TestEngineConfig:
         config = EngineConfig.create_aggressive()
         result = config.to_dict()
 
-        assert result["aggressive"] == True
+        assert result["aggressive"]
         assert result["nop"]["max_per_function"] == 20
-        assert result["nop"]["use_creative_nops"] == True
+        assert result["nop"]["use_creative_nops"]
         assert result["substitution"]["max_substitutions_per_function"] == 30
         assert result["analysis"]["level"] == "aaa"
 

@@ -18,13 +18,14 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+nx: Any
 try:
     import networkx as nx
 
     NETWORKX_AVAILABLE = True
 except ImportError:
     NETWORKX_AVAILABLE = False
-    nx: Any = None
+    nx = None
 
 logger = logging.getLogger(__name__)
 
@@ -575,7 +576,7 @@ class CFOSimplifier:
 
             # Cyclomatic complexity: M = E - N + 2P
             complexity = num_edges - num_nodes + (2 * num_components)
-            return max(1, complexity)
+            return int(max(1, complexity))
 
         except Exception as e:
             logger.error(f"Complexity calculation failed: {e}")

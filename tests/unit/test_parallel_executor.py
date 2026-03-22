@@ -3,8 +3,7 @@ Tests for parallel executor module.
 """
 
 import pytest
-from unittest.mock import Mock, patch
-import time
+from unittest.mock import Mock
 
 from r2morph.core.parallel_executor import (
     TaskStatus,
@@ -189,7 +188,7 @@ class TestWorkQueue:
 
         id1 = queue.add_task(function_address=0x1000)
         id2 = queue.add_task(function_address=0x2000, dependencies=[id1])
-        id3 = queue.add_task(function_address=0x3000, dependencies=[id1, id2])
+        queue.add_task(function_address=0x3000, dependencies=[id1, id2])
 
         ready = queue.get_ready_tasks()
         assert len(ready) == 1

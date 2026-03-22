@@ -2,7 +2,6 @@
 Tests for pattern_pool module.
 """
 
-import pytest
 from r2morph.mutations.pattern_pool import (
     MutationPatternPool,
     MatchResult,

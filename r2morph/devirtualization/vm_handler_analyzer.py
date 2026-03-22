@@ -10,7 +10,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import CFGBuilder
 
 logger = logging.getLogger(__name__)
@@ -68,7 +67,7 @@ class VMHandlerAnalyzer:
     to identify VM handlers and understand their behavior.
     """
 
-    def __init__(self, binary: Binary | None) -> None:
+    def __init__(self, binary: Any) -> None:
         """
         Initialize VM handler analyzer.
 
@@ -376,7 +375,7 @@ class VMHandlerAnalyzer:
         assert self.binary.r2 is not None
         try:
             # Try to get function disassembly
-            instructions = self.binary.get_function_disasm(address)
+            instructions: list[dict[str, Any]] = self.binary.get_function_disasm(address)
 
             if not instructions:
                 # Fallback: disassemble a fixed number of instructions

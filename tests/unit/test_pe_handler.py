@@ -2,9 +2,7 @@
 Unit tests for PE handler module.
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import Mock, patch, mock_open, MagicMock
+from unittest.mock import patch
 import struct
 
 from r2morph.platform.pe_handler import PEHandler

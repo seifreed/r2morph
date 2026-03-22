@@ -234,7 +234,7 @@ class ResultMerger:
         """Add a mutation result."""
         self._results.append(result)
 
-    def merge(self, binary: Binary, results: list[MutationResult] | None = None) -> dict[str, Any]:
+    def merge(self, binary: Binary | None, results: list[MutationResult] | None = None) -> dict[str, Any]:
         """
         Merge mutation results.
 

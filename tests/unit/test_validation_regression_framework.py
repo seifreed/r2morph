@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pytest
 
 from r2morph.validation.regression import RegressionTestFramework, RegressionTestType
@@ -46,8 +44,8 @@ def test_generate_regression_report_empty_and_populated(tmp_path):
     framework = RegressionTestFramework(baseline_dir=str(tmp_path))
     assert framework.generate_regression_report() == "No regression test results available."
 
-    baseline = framework.create_api_compatibility_baseline("api_report")
-    result = framework.run_regression_test("api_report")
+    framework.create_api_compatibility_baseline("api_report")
+    framework.run_regression_test("api_report")
 
     report = framework.generate_regression_report()
     assert "R2MORPH REGRESSION TEST REPORT" in report

@@ -3,12 +3,6 @@ Tests for validation quality features: Fuzzer integration,
 Continuous fuzzing, Performance regression, and Memory leak detection.
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
-import tempfile
-import os
-
 from r2morph.validation.mutation_fuzzer import (
     FuzzConfig,
     FuzzTestCase,
@@ -25,17 +19,14 @@ from r2morph.validation.performance_regression import (
     PerformanceRegression,
     BenchmarkConfig,
     PerformanceBenchmark,
-    PerformanceRegressionSuite,
     create_benchmark,
 )
 from r2morph.validation.leak_detection import (
     MemorySnapshot,
     MemoryLeak,
-    LeakDetectionResult,
     ObjectTracker,
     MemoryLeakDetector,
     ResourceLeak,
-    ResourceLeakTestResult,
     ResourceLeakDetector,
     create_memory_detector,
 )
@@ -489,11 +480,11 @@ class TestResourceLeakDetector:
         result = detector.stop_monitoring()
 
         critical_leaks = [
-            l
-            for l in result.resource_leaks
-            if l.resource_type in ("file_descriptors", "open_files", "open_connections")
+            leak
+            for leak in result.resource_leaks
+            if leak.resource_type in ("file_descriptors", "open_files", "open_connections")
         ]
-        assert len(critical_leaks) == 0 or all(l.leaked_count <= 10 for l in critical_leaks)
+        assert len(critical_leaks) == 0 or all(leak.leaked_count <= 10 for leak in critical_leaks)
 
 
 class TestDataclasses:

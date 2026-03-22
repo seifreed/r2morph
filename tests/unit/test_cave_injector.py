@@ -8,7 +8,6 @@ Covers:
 - Trampoline generation
 """
 
-import pytest
 from unittest.mock import MagicMock, patch
 
 from r2morph.relocations.cave_injector import (

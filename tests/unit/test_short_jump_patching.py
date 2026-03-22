@@ -2,7 +2,6 @@
 Tests for short jump patching functionality.
 """
 
-import pytest
 from r2morph.mutations.short_jump_patching import (
     ShortJumpPatchingPass,
     RIPRelativeValidationPass,

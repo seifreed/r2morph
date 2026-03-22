@@ -290,8 +290,8 @@ class MemoryLeakDetector:
     def test_function(
         self,
         func: Any,
-        *args,
-        **kwargs,
+        *args: Any,
+        **kwargs: Any,
     ) -> LeakDetectionResult:
         """
         Test a function for memory leaks.
@@ -477,7 +477,7 @@ class ResourceLeakDetector:
             resource_leaks=leaks,
         )
 
-    def test_function(self, func: Any, *args, **kwargs) -> ResourceLeakTestResult:
+    def test_function(self, func: Any, *args: Any, **kwargs: Any) -> ResourceLeakTestResult:
         """
         Test a function for resource leaks.
 

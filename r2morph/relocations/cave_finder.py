@@ -242,9 +242,9 @@ class CaveFinder:
                     logger.info(f"Inserted {needed_size} bytes at 0x{addr:x} in {preferred_section}")
                     return addr
 
-        cave = self.find_cave_for_size(needed_size)
-        if cave:
-            addr, _ = self.allocate_cave(cave, needed_size)
+        found_cave = self.find_cave_for_size(needed_size)
+        if found_cave:
+            addr, _ = self.allocate_cave(found_cave, needed_size)
             if not self.binary.write_bytes(addr, code_bytes):
                 logger.error(f"Failed to write {needed_size} bytes at 0x{addr:x}")
                 return None

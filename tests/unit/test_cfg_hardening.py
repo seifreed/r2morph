@@ -9,8 +9,7 @@ Tests for Issue #3:
 """
 
 import pytest
-from unittest.mock import MagicMock, patch
-from dataclasses import dataclass
+from unittest.mock import patch
 
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,

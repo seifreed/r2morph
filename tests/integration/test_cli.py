@@ -17,9 +17,9 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
 # Check if typer is available
 try:
-    import typer
+    import importlib.util
 
-    TYPER_AVAILABLE = True
+    TYPER_AVAILABLE = importlib.util.find_spec("typer") is not None
 except ImportError:
     TYPER_AVAILABLE = False
 

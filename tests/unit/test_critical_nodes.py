@@ -2,7 +2,6 @@
 Unit tests for critical node detection module.
 """
 
-import pytest
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph, BlockType
 from r2morph.analysis.critical_nodes import (
     AddressRange,

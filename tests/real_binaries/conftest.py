@@ -6,8 +6,8 @@ Provides fixtures for testing with real system binaries.
 
 import os
 import platform
+import shutil
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -88,9 +88,6 @@ def has_objdump():
 def has_readelf():
     """Check if readelf is available."""
     return shutil.which("readelf") is not None
-
-
-import shutil
 
 
 @pytest.fixture

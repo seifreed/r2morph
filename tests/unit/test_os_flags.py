@@ -2,13 +2,10 @@
 Unit tests for os_flags module.
 """
 
-import pytest
 from r2morph.analysis.os_flags import (
     WINFLAGS,
     LINFLAGS,
     OSFlags,
-    WINDOWS_FLAGS,
-    LINUX_FLAGS,
     get_flags,
 )
 

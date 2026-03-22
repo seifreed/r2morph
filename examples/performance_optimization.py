@@ -147,7 +147,7 @@ def create_test_detection_func():
                     "techniques_count": len(result.obfuscation_techniques),
                 }
 
-        except Exception as e:
+        except Exception:
             # Return dummy data for missing files
             return {
                 "packer_detected": None,
@@ -243,7 +243,7 @@ def run_performance_comparison():
 
     sequential_result = benchmark_sequential_analysis(test_files, analysis_func)
 
-    print(f"Results:")
+    print("Results:")
     print(f"  Total Time: {sequential_result['total_time']:.2f}s")
     print(f"  Average per File: {sequential_result['average_time_per_file']:.3f}s")
     print(f"  Successful Analyses: {sequential_result['successful_analyses']}/{len(test_files)}")
@@ -256,7 +256,7 @@ def run_performance_comparison():
     try:
         parallel_result = benchmark_parallel_analysis(test_files, analysis_func)
 
-        print(f"Results:")
+        print("Results:")
         print(f"  Total Time: {parallel_result['total_time']:.2f}s")
         print(f"  Average per File: {parallel_result['average_time_per_file']:.3f}s")
         print(f"  Successful Analyses: {parallel_result['successful_analyses']}/{len(test_files)}")
@@ -279,7 +279,7 @@ def run_performance_comparison():
     try:
         incremental_result = benchmark_incremental_analysis(test_files, analysis_func)
 
-        print(f"Results:")
+        print("Results:")
         print(f"  First Run Time: {incremental_result['first_run_time']:.2f}s")
         print(f"  Incremental Time: {incremental_result['total_time']:.2f}s")
         print(f"  Incremental Speedup: {incremental_result['first_run_time'] / incremental_result['total_time']:.1f}x")
@@ -320,7 +320,7 @@ def run_performance_comparison():
 
         successful_memory = sum(1 for r in memory_results if r.get("success", False))
 
-        print(f"Results:")
+        print("Results:")
         print(f"  Total Time: {memory_time:.2f}s")
         print(f"  Successful Analyses: {successful_memory}/{len(test_files)}")
         print(f"  Memory Limit: {memory_config.memory_limit_mb}MB")
@@ -346,7 +346,7 @@ def run_performance_comparison():
         speedup = sequential_result["total_time"] / incremental_result["total_time"]
         print(f"Incremental Optimization: {incremental_result['total_time']:.2f}s ({speedup:.1f}x speedup)")
 
-    print(f"\nOptimizations provide significant performance improvements for large-scale analysis!")
+    print("\nOptimizations provide significant performance improvements for large-scale analysis!")
 
     return {"sequential": sequential_result, "parallel": parallel_result, "incremental": incremental_result}
 
@@ -411,7 +411,7 @@ def main():
     if args.scalability:
         run_scalability_test()
 
-    print(f"\nPerformance optimization demonstration completed!")
+    print("\nPerformance optimization demonstration completed!")
 
 
 if __name__ == "__main__":

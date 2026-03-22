@@ -7,9 +7,7 @@ Covers:
 - CI integration
 """
 
-import pytest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 from r2morph.validation.semantic_invariants import (
     InvariantCategory,
@@ -26,7 +24,6 @@ from r2morph.validation.semantic import (
     ValidationMode,
     ValidationResultStatus,
     MutationRegion,
-    SemanticCheck,
     ObservableComparison,
     SemanticValidationResult,
     SemanticValidationReport,

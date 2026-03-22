@@ -154,6 +154,9 @@ class FridaEngine:
                 return result
 
             # Attach Frida session
+            if self.device is None:
+                result.error_message = "Frida device not initialized"
+                return result
             self.session = self.device.attach(pid)
             result.process_id = pid
 
@@ -161,7 +164,7 @@ class FridaEngine:
             self._load_basic_instrumentation()
 
             # Start analysis
-            if mode == InstrumentationMode.SPAWN:
+            if mode == InstrumentationMode.SPAWN and self.device is not None:
                 self.device.resume(pid)
 
             # Collect data for specified time
@@ -194,7 +197,9 @@ class FridaEngine:
             if environment:
                 spawn_options["env"] = environment
 
-            pid = self.device.spawn(spawn_args, **spawn_options)
+            if self.device is None:
+                return None
+            pid: int = self.device.spawn(spawn_args, **spawn_options)
             logger.info(f"Spawned process {binary_path.name} with PID {pid}")
             return pid
 
@@ -205,12 +210,14 @@ class FridaEngine:
     def _find_and_attach_process(self, process_name: str) -> int | None:
         """Find and attach to existing process."""
         try:
+            if self.device is None:
+                return None
             processes = self.device.enumerate_processes()
 
             for process in processes:
                 if process.name == process_name:
                     logger.info(f"Found process {process_name} with PID {process.pid}")
-                    return process.pid
+                    return int(process.pid)
 
             logger.error(f"Process {process_name} not found")
             return None
@@ -485,7 +492,7 @@ class FridaEngine:
 
             memory_data = None
 
-            def on_message(message, data: Any) -> None:
+            def on_message(message: Any, data: Any) -> None:
                 nonlocal memory_data
                 if message.get("type") == "send":
                     payload = message.get("payload", {})

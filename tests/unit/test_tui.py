@@ -2,8 +2,6 @@
 Unit tests for TUI (Terminal User Interface).
 """
 
-import pytest
-
 from r2morph.tui import (
     TUIAction,
     TUIFunction,
@@ -18,7 +16,6 @@ from r2morph.tui import (
     TUIProgressIndicator,
     MutationTUI,
     create_default_passes,
-    run_interactive_mode,
 )
 
 
@@ -203,10 +200,6 @@ class TestCreateDefaultPasses:
 
 class TestRunInteractiveMode:
     def test_create_default_passes_integration(self):
-        functions = [
-            {"address": 0x1000, "name": "main", "size": 256},
-            {"address": 0x2000, "name": "test", "size": 128},
-        ]
 
         passes = create_default_passes()
         assert len(passes) == 8

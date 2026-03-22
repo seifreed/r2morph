@@ -2,7 +2,6 @@
 Unit tests for register_tracker module.
 """
 
-import pytest
 from r2morph.analysis.register_tracker import (
     RegTracker,
     REG_64,

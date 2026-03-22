@@ -66,7 +66,7 @@ def run_performance_benchmarks():
         execution_time = time.time() - start_time
 
         # Display summary
-        print(f"\nBenchmark Results Summary:")
+        print("\nBenchmark Results Summary:")
         print(f"  Total Tests: {results['total_tests']}")
         print(f"  Success Rate: {results['success_rate']:.1%}")
         print(f"  Average Execution Time: {results['avg_execution_time']:.2f}s")
@@ -75,7 +75,7 @@ def run_performance_benchmarks():
 
         # Category breakdown
         if results["categories"]:
-            print(f"\nCategory Performance:")
+            print("\nCategory Performance:")
             for category, stats in results["categories"].items():
                 print(f"  {category.upper()}:")
                 print(f"    Success Rate: {stats['success_rate']:.1%}")
@@ -83,7 +83,7 @@ def run_performance_benchmarks():
 
         # Export results
         framework.export_results("performance_benchmark_results.json", "json")
-        print(f"\nDetailed results exported to performance_benchmark_results.json")
+        print("\nDetailed results exported to performance_benchmark_results.json")
 
         return results
 
@@ -131,7 +131,7 @@ def run_accuracy_validation():
                     print(f"    Recall: {result.accuracy.recall:.1%}")
                     print(f"    F1-Score: {result.accuracy.f1_score:.3f}")
                 else:
-                    print(f"    No accuracy metrics available")
+                    print("    No accuracy metrics available")
 
                 print(f"    Performance: {result.performance.execution_time:.2f}s")
 
@@ -145,7 +145,7 @@ def run_accuracy_validation():
             avg_recall = sum(r.recall for r in accuracy_results) / len(accuracy_results)
             avg_f1 = sum(r.f1_score for r in accuracy_results) / len(accuracy_results)
 
-            print(f"\nOverall Accuracy Metrics:")
+            print("\nOverall Accuracy Metrics:")
             print(f"  Average Accuracy: {avg_accuracy:.1%}")
             print(f"  Average Precision: {avg_precision:.1%}")
             print(f"  Average Recall: {avg_recall:.1%}")
@@ -244,13 +244,13 @@ def run_regression_tests():
         with open("regression_test_report.txt", "w") as f:
             f.write(report)
 
-        print(f"\nRegression test report saved to regression_test_report.txt")
+        print("\nRegression test report saved to regression_test_report.txt")
 
         # Summary
         total_tests = len(framework.test_results)
         passed_tests = sum(1 for r in framework.test_results if r.passed)
 
-        print(f"\nRegression Testing Summary:")
+        print("\nRegression Testing Summary:")
         print(f"  Total Tests: {total_tests}")
         print(f"  Passed: {passed_tests}")
         print(f"  Failed: {total_tests - passed_tests}")
@@ -299,7 +299,7 @@ def run_real_world_validation():
                     bin_obj.analyze()
 
                     # Step 1: Detection
-                    print(f"  1. Running detection analysis...")
+                    print("  1. Running detection analysis...")
                     detector = ObfuscationDetector()
                     detection_result = detector.analyze_binary(bin_obj)
 
@@ -313,7 +313,7 @@ def run_real_world_validation():
                     complexity_reduction = 0.0
 
                     if detection_result.vm_detected or detection_result.control_flow_flattened:
-                        print(f"  2. Running devirtualization...")
+                        print("  2. Running devirtualization...")
 
                         try:
                             # CFO Simplification
@@ -339,17 +339,17 @@ def run_real_world_validation():
                                         f"     Devirtualization successful: {complexity_reduction:.1f} complexity reduced"
                                     )
                                 else:
-                                    print(f"     Iterative simplification failed")
+                                    print("     Iterative simplification failed")
                             else:
-                                print(f"     No complexity reduction achieved")
+                                print("     No complexity reduction achieved")
 
                         except Exception as e:
                             print(f"     Devirtualization error: {e}")
                     else:
-                        print(f"  2. Skipping devirtualization (not needed)")
+                        print("  2. Skipping devirtualization (not needed)")
 
                     # Step 3: Validation
-                    print(f"  3. Validating results...")
+                    print("  3. Validating results...")
 
                     scenario_time = time.time() - scenario_start
 
@@ -401,7 +401,7 @@ def run_real_world_validation():
                 )
 
         # Summary
-        print(f"\nReal-World Validation Summary:")
+        print("\nReal-World Validation Summary:")
         total_scenarios = len(validation_results)
         passed_scenarios = sum(1 for r in validation_results if r.get("passed", False))
 
@@ -542,7 +542,7 @@ def generate_comprehensive_report(performance_results, accuracy_results, regress
         f.write(report_text)
 
     print(report_text)
-    print(f"\nComprehensive report saved to comprehensive_validation_report.txt")
+    print("\nComprehensive report saved to comprehensive_validation_report.txt")
 
     return overall_score
 

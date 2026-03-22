@@ -249,7 +249,7 @@ class TestDependencyAnalyzerExtensive:
 
         with Binary(ls_elf) as binary:
             binary.analyze()
-            analyzer = DependencyAnalyzer()
+            DependencyAnalyzer()
 
             insn_def = InstructionDef(address=0x1000)
             insn_def.defines.add("rax")
@@ -370,7 +370,7 @@ class TestInvariantDetectorExtensive:
 
         with Binary(ls_elf) as binary:
             binary.analyze()
-            detector = InvariantDetector(binary)
+            InvariantDetector(binary)
 
             functions = binary.get_functions()
             if len(functions) > 0:
@@ -379,7 +379,6 @@ class TestInvariantDetectorExtensive:
                     try:
                         disasm = binary.get_function_disasm(func_addr)
                         if disasm and len(disasm) > 0:
-                            stack_delta = 0
                             for insn in disasm[:10]:
                                 mnemonic = insn.get("mnemonic", "")
                                 if mnemonic in ["push", "pop", "call", "ret"]:

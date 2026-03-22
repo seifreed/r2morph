@@ -2,7 +2,6 @@
 Tests for semantic_validation module (post-mutation validation).
 """
 
-import pytest
 from r2morph.mutations.semantic_validation import (
     SemanticValidator,
     ValidationResult,

@@ -801,7 +801,7 @@ class ELFHandler:
                             if null_run >= min_size:
                                 vaddr = section["vaddr"] + null_start
                                 logger.info(f"Found code cave: {null_run} bytes at 0x{vaddr:x} in {section['name']}")
-                                return vaddr
+                                return int(vaddr)
                         else:
                             null_run = 0
 

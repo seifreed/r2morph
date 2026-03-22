@@ -2,7 +2,6 @@
 Tests for block reordering helper functions.
 """
 
-import pytest
 import random
 from r2morph.mutations.block_reordering import (
     shuffle_blocks,
