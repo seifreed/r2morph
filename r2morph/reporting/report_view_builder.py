@@ -541,8 +541,12 @@ def _build_report_views(
         "triage_priority": triage_priority,
         "only_pass": only_pass,
         "pass_filter_views": {
-            f"only_{k}" if not k.endswith("_risk") else f"only_{k}": v
-            for k, v in filter_buckets.items()
+            "only_risky_passes": filter_buckets.get("risky", []),
+            "only_structural_risk": filter_buckets.get("structural_risk", []),
+            "only_symbolic_risk": filter_buckets.get("symbolic_risk", []),
+            "only_clean_passes": filter_buckets.get("clean", []),
+            "only_covered_passes": filter_buckets.get("covered", []),
+            "only_uncovered_passes": filter_buckets.get("uncovered", []),
         },
         "mismatch_priority": [dict(row) for row in observable_mismatch_priority],
         "mismatch_map": {str(pass_name): dict(row) for pass_name, row in observable_mismatch_map.items()},
@@ -557,10 +561,13 @@ def _build_report_views(
                                 "region_mismatch_count", "region_exit_match_count", "compact_region"],
             ),
             "rows": mismatch_rows,
-            "compact_summary": _summarize_rows(
-                mismatch_rows,
-                ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
-            ),
+            "compact_summary": {
+                **_summarize_rows(
+                    mismatch_rows,
+                    ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
+                ),
+                "degraded_pass_count": sum(1 for row in mismatch_rows if row.get("degraded_execution")),
+            },
             "summary": {
                 **_summarize_rows(
                     mismatch_rows,
@@ -614,17 +621,19 @@ def _build_report_views(
                     None,
                 ),
                 "degraded_validation": bool(degraded_rows),
-                **_summarize_rows(degraded_rows, ["gate_failure_count"]),
                 "row_count": len(degraded_rows),
                 "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
                 "degraded_execution_count": sum(1 for row in degraded_rows if row.get("executed_under_degraded_mode")),
+                "gate_failure_count": sum(int(row.get("gate_failure_count", 0)) for row in degraded_rows),
+                "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
             },
             "compact_summary": {
                 "degraded_validation": bool(degraded_rows),
                 "row_count": len(degraded_rows),
                 "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
                 "degraded_execution_count": sum(1 for row in degraded_rows if row.get("executed_under_degraded_mode")),
-                **_summarize_rows(degraded_rows, ["gate_failure_count"]),
+                "gate_failure_count": sum(int(row.get("gate_failure_count", 0)) for row in degraded_rows),
+                "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
             },
         },
         "discarded_view": {
