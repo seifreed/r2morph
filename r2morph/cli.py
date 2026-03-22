@@ -20,12 +20,7 @@ from rich.table import Table
 
 from r2morph import __version__
 from r2morph.core.config import EngineConfig
-from r2morph.core.engine import (
-    MorphEngine,
-    _build_gate_failure_priority,
-    _build_gate_failure_severity_priority,
-    _summarize_gate_failures,
-)
+from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT, is_experimental_mutation, is_stable_mutation
 from r2morph.utils.logging import setup_logging
 from r2morph.validation import BinaryValidator
@@ -48,15 +43,6 @@ from r2morph.reporting.report_helpers import (
     _normalized_pass_map,
     _pass_names_from_triage_rows,
     _pass_severity_requirements_met,
-    _render_degradation_sections,
-    _render_gate_sections,
-    _render_only_mismatches_sections,
-    _render_only_pass_sections,
-    _render_pass_capabilities,
-    _render_pass_validation_context,
-    _render_pass_validation_contexts,
-    _render_report_filter_messages,
-    _render_symbolic_sections,
     _report_view_has_results,
     _resolve_general_report_views,
     _resolve_summary_pass_sources,
@@ -67,6 +53,17 @@ from r2morph.reporting.report_helpers import (
     _summary_first,
     _visible_rows,
     SEVERITY_ORDER as _HELPERS_SEVERITY_ORDER,
+)
+from r2morph.reporting.report_rendering import (
+    _render_degradation_sections,
+    _render_gate_sections,
+    _render_only_mismatches_sections,
+    _render_only_pass_sections,
+    _render_pass_capabilities,
+    _render_pass_validation_context,
+    _render_pass_validation_contexts,
+    _render_report_filter_messages,
+    _render_symbolic_sections,
 )
 from r2morph.reporting.report_resolver import (
     _resolve_failed_gates_view,

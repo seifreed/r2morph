@@ -17,6 +17,9 @@ from r2morph.reporting.report_builder_ext import (
 )
 from r2morph.reporting.report_helpers import (
     _finalize_report_output,
+    _summary_first,
+)
+from r2morph.reporting.report_rendering import (
     _render_report_filter_messages,
     _render_only_mismatches_sections,
     _render_symbolic_sections,
@@ -26,7 +29,6 @@ from r2morph.reporting.report_helpers import (
     _render_pass_validation_contexts,
     _render_pass_validation_context,
     _render_only_pass_sections,
-    _summary_first,
     console,
 )
 
