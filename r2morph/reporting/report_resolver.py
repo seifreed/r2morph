@@ -247,8 +247,14 @@ def _resolve_general_report_flow_state(
     only_uncovered_passes: bool,
     only_covered_passes: bool,
     only_clean_passes: bool,
+    summary_builder: Any = None,
 ) -> dict[str, Any]:
-    """Resolve summary-first state for the general report path."""
+    """Resolve summary-first state for the general report path.
+
+    Args:
+        summary_builder: Callable with same signature as _build_general_filtered_summary.
+            Injected to avoid circular import between resolver and filtered_summary_builder.
+    """
     general_state = _resolve_general_report_state(
         summary=summary,
         payload=payload,
@@ -285,14 +291,10 @@ def _resolve_general_report_flow_state(
         mutations=mutations,
         pass_results=pass_results,
     )
-    # Lazy import to break circular dependency: report_resolver imports
-    # report_helpers, and filtered_summary_builder also imports report_helpers.
-    # A top-level import would create a resolver -> filtered_summary_builder ->
-    # report_helpers -> resolver cycle.  Accepting a callback parameter was
-    # considered but would ripple through many callers; the lazy import is the
-    # least invasive fix.
-    from r2morph.reporting.filtered_summary_builder import _build_general_filtered_summary
-    filtered_summary, degradation_roles = _build_general_filtered_summary(
+    if summary_builder is None:
+        from r2morph.reporting.filtered_summary_builder import _build_general_filtered_summary
+        summary_builder = _build_general_filtered_summary
+    filtered_summary, degradation_roles = summary_builder(
         summary=summary,
         mutations=mutations,
         pass_results=pass_results,

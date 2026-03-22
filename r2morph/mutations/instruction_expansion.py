@@ -269,7 +269,7 @@ class InstructionExpansionPass(MutationPass):
             else:
                 return new_mnemonic
 
-        except Exception as e:
+        except (ValueError, IndexError, KeyError) as e:
             logger.debug(f"Failed to build instruction from pattern {pattern}: {e}")
             return None
 
@@ -348,7 +348,7 @@ class InstructionExpansionPass(MutationPass):
 
             try:
                 instructions = binary.get_function_disasm(func["addr"])
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
 
@@ -451,7 +451,7 @@ class InstructionExpansionPass(MutationPass):
                                             f"Skipping expansion at 0x{addr:x}: new instruction too large "
                                             f"({new_size} > {orig_size})"
                                         )
-                    except Exception as e:
+                    except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                         logger.debug(f"Failed to expand at 0x{addr:x}: {e}")
                 else:
                     # Multi-instruction expansions are not yet implemented:

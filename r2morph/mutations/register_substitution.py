@@ -510,7 +510,7 @@ class RegisterSubstitutionPass(MutationPass):
             func_addr = func.get("offset", func.get("addr", 0))
             try:
                 instructions = binary.get_function_disasm(func_addr)
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
             candidates = self._find_substitution_candidates(instructions, arch)
@@ -679,7 +679,7 @@ class RegisterSubstitutionPass(MutationPass):
                                 func_mutations += 1
                             else:
                                 logger.debug(f"Skipping substitution at 0x{addr:x}: new instruction too large")
-                    except Exception as e:
+                    except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                         logger.debug(f"Failed to substitute at 0x{addr:x}: {e}")
 
                 if substituted_count > 0:

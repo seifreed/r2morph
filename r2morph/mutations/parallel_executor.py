@@ -213,14 +213,14 @@ class ParallelMutator:
     def execute_parallel(
         self,
         passes: list[MutationPass],
-        binary: Binary,
+        binary: Any,
     ) -> tuple[list[MutationRecord], ParallelStats]:
         """
         Execute mutation passes in parallel.
 
         Args:
             passes: List of mutation passes to execute
-            binary: Binary instance
+            binary: Any instance
 
         Returns:
             Tuple of (mutation_records, parallel_stats)

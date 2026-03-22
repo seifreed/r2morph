@@ -187,7 +187,7 @@ class InstructionSubstitutionPass(MutationPass):
             try:
                 func_addr = func.get("offset", func.get("addr", 0))
                 instructions = binary.get_function_disasm(func_addr)
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
 
@@ -373,7 +373,7 @@ class InstructionSubstitutionPass(MutationPass):
                                         f"Skipping substitution: size mismatch "
                                         f"({new_size} vs {orig_size}, strict={self.strict_size})"
                                     )
-                        except Exception as e:
+                        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                             logger.error(f"Failed to substitute at 0x{addr:x}: {e}")
 
             if func_mutations > 0:
@@ -406,7 +406,7 @@ class InstructionSubstitutionPass(MutationPass):
             try:
                 func_addr = func.get("offset", func.get("addr", 0))
                 instructions = binary.get_function_disasm(func_addr)
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
 

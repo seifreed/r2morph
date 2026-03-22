@@ -4,13 +4,17 @@ Hardened mutation pass base class.
 Extends CFG-aware mutations with pattern preservation and integrity validation.
 """
 
+from __future__ import annotations
+
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.mutations.cfg_aware import CFGAwareMutationPass, CFGAwareMutationResult
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
     PatternType,
@@ -94,12 +98,12 @@ class HardenedMutationPass(CFGAwareMutationPass):
         self._validator: HardenedMutationValidator | None = None
         self._current_function: int | None = None
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply the hardened mutation.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
 
         Returns:
             Mutation result dictionary
@@ -153,12 +157,12 @@ class HardenedMutationPass(CFGAwareMutationPass):
 
         return result.to_dict()
 
-    def _apply_to_function(self, binary: Binary, func_addr: int) -> dict[str, Any]:
+    def _apply_to_function(self, binary: Any, func_addr: int) -> dict[str, Any]:
         """
         Apply mutation to a single function.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             func_addr: Function address
 
         Returns:
@@ -217,7 +221,7 @@ class HardenedMutationPass(CFGAwareMutationPass):
     @abstractmethod
     def apply_hardened(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: Any,
         safe_regions: list[tuple[int, int]],
         exclusion_zones: list[Any],
@@ -228,7 +232,7 @@ class HardenedMutationPass(CFGAwareMutationPass):
         Subclasses must implement this method.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             cfg: Control flow graph
             safe_regions: Safe (start, end) address ranges
             exclusion_zones: Exclusion zones to avoid
@@ -337,7 +341,7 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
 
     def apply_hardened(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: Any,
         safe_regions: list[tuple[int, int]],
         exclusion_zones: list[Any],
@@ -346,7 +350,7 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
         Apply hardened CFF transformation.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             cfg: Control flow graph
             safe_regions: Safe address ranges
             exclusion_zones: Exclusion zones
@@ -397,7 +401,7 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
 
     def _try_flatten_block(
         self,
-        binary: Binary,
+        binary: Any,
         block_addr: int,
         block: Any,
         exclusion_zones: list[Any],
@@ -406,7 +410,7 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
         Try to flatten a block.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             block_addr: Block address
             block: Block object
             exclusion_zones: Exclusion zones
@@ -460,7 +464,7 @@ class HardenedOpaquePredicates(HardenedMutationPass):
 
     def apply_hardened(
         self,
-        binary: Binary,
+        binary: Any,
         cfg: Any,
         safe_regions: list[tuple[int, int]],
         exclusion_zones: list[Any],
@@ -469,7 +473,7 @@ class HardenedOpaquePredicates(HardenedMutationPass):
         Apply hardened opaque predicate insertion.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             cfg: Control flow graph
             safe_regions: Safe address ranges
             exclusion_zones: Exclusion zones
@@ -511,7 +515,7 @@ class HardenedOpaquePredicates(HardenedMutationPass):
 
     def _find_opaque_opportunities(
         self,
-        binary: Binary,
+        binary: Any,
         block_addr: int,
         block: Any,
         exclusion_zones: list[Any],
@@ -520,7 +524,7 @@ class HardenedOpaquePredicates(HardenedMutationPass):
         Find opportunities for opaque predicate insertion.
 
         Args:
-            binary: Binary to mutate
+            binary: Any to mutate
             block_addr: Block address
             block: Block object
             exclusion_zones: Exclusion zones

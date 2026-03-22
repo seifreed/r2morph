@@ -122,6 +122,15 @@ class Gadgets:
 
     def _init_operate_gadgets(self):
         self.operate_gadgets = {
+            **self._mov_gadgets(),
+            **self._arithmetic_gadgets(),
+            **self._lea_gadgets(),
+            **self._bitwise_gadgets(),
+        }
+
+    def _mov_gadgets(self) -> dict[str, tuple]:
+        """MOV-family gadgets: register-register, register-memory, register-immediate."""
+        return {
             "mov_reg_reg": (
                 lambda reg, sec_reg: f"mov {reg}, {sec_reg}",
                 REG_ALL,
@@ -152,6 +161,11 @@ class Gadgets:
                 REG_ALL,
                 20,
             ),
+        }
+
+    def _arithmetic_gadgets(self) -> dict[str, tuple]:
+        """ADD/SUB/INC/DEC gadgets."""
+        return {
             "add_reg_reg": (
                 lambda reg, sec_reg: f"add {reg}, {sec_reg}",
                 REG_ALL,
@@ -192,6 +206,11 @@ class Gadgets:
                 REG_ALL,
                 5,
             ),
+        }
+
+    def _lea_gadgets(self) -> dict[str, tuple]:
+        """LEA-family gadgets: address calculation variants."""
+        return {
             "lea_reg_mem": (
                 lambda reg, sec_reg: f"lea {reg}, [{sec_reg}]",
                 REG_64 | REG_32,
@@ -254,6 +273,11 @@ class Gadgets:
                 REG_64 | REG_32,
                 5,
             ),
+        }
+
+    def _bitwise_gadgets(self) -> dict[str, tuple]:
+        """XOR/AND/OR/ROL/SAR/SHR/SHL and NOP gadgets."""
+        return {
             "nop": (
                 lambda reg, sec_reg: "nop",
                 REG_ALL,

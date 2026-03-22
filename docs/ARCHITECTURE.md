@@ -134,3 +134,16 @@ A minimal AES-256 ECB implementation avoids adding `cryptography` or
 `pycryptodome` as a runtime dependency. The implementation is explicitly
 documented as not suitable for production security -- it exists solely to
 generate encrypted payloads for obfuscation.
+
+## Logging Policy
+
+| Level | Usage | Example |
+|-------|-------|---------|
+| `DEBUG` | Recoverable conditions, diagnostic info | Assembly fallback succeeded, cache miss |
+| `INFO` | Normal operation milestones | Pass applied N mutations, analysis complete |
+| `WARNING` | Degraded operation, non-fatal issues | Write verification failed, validation degraded |
+| `ERROR` | Data loss, operation failure | Binary corruption, unrecoverable write failure |
+
+Exception handling follows the principle of catching the narrowest
+exception type possible. Broad `except Exception` is reserved for
+pipeline-level catch-all where any pass may raise any error.

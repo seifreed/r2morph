@@ -149,7 +149,7 @@ class ReferenceUpdater:
                     logger.debug(f"Updated call at 0x{call_addr:x} -> 0x{new_target:x}")
                     return True
 
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, json.JSONDecodeError) as e:
             logger.error(f"Failed to update call at 0x{call_addr:x}: {e}")
 
         return False
@@ -201,7 +201,7 @@ class ReferenceUpdater:
                     f"Pointer value mismatch at 0x{ptr_addr:x}: expected 0x{old_value:x}, got 0x{current_value:x}"
                 )
 
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError) as e:
             logger.error(f"Failed to update pointer at 0x{ptr_addr:x}: {e}")
 
         return False

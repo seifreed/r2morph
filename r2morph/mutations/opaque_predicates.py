@@ -97,7 +97,7 @@ class OpaquePredicatePass(MutationPass):
             import json
 
             basic_blocks = json.loads(bb_json) if bb_json else []
-        except Exception as e:
+        except (ValueError, OSError, BrokenPipeError, json.JSONDecodeError) as e:
             logger.debug(f"Failed to get basic blocks: {e}")
             return 0
 

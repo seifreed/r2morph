@@ -5,12 +5,15 @@ Provides a reusable hook that can be integrated into any mutation pass
 to enforce ABI invariants before and after mutations.
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.analysis.abi_checker import (
     ABIChecker,
     ABISpec,
@@ -72,7 +75,7 @@ class ABIMutationHook:
 
     def __init__(
         self,
-        binary: Binary,
+        binary: Any,
         action: ABIViolationAction = ABIViolationAction.WARN,
         check_stack_alignment: bool = True,
         check_callee_saved: bool = True,
@@ -84,7 +87,7 @@ class ABIMutationHook:
         Initialize ABI mutation hook.
 
         Args:
-            binary: Binary being mutated
+            binary: Any being mutated
             action: Action to take on violation
             check_stack_alignment: Enable stack alignment checks
             check_callee_saved: Enable callee-saved register checks
@@ -348,7 +351,7 @@ class ABIMutationHook:
 
 
 def create_abi_hook(
-    binary: Binary,
+    binary: Any,
     strict: bool = False,
     checks: list[str] | None = None,
 ) -> ABIMutationHook:
@@ -356,7 +359,7 @@ def create_abi_hook(
     Factory function to create an ABI hook with common configurations.
 
     Args:
-        binary: Binary being mutated
+        binary: Any being mutated
         strict: If True, block on violations; if False, warn
         checks: List of checks to enable (all if None)
 

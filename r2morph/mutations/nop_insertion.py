@@ -170,7 +170,7 @@ class NopInsertionPass(MutationPass):
                 if all_bytes and len(all_bytes) == size:
                     return all_bytes
 
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError) as e:
                 logger.debug(f"Failed to assemble jmp pattern '{pattern}': {e}")
                 continue
 
@@ -258,7 +258,7 @@ class NopInsertionPass(MutationPass):
             func_addr = func.get("offset", func.get("addr", 0))
             try:
                 instructions = binary.get_function_disasm(func_addr)
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
 
@@ -444,7 +444,7 @@ class NopInsertionPass(MutationPass):
 
                         self._init_nop_equivalents()
 
-                    except Exception as e:
+                    except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                         logger.error(f"Failed to insert NOP at 0x{addr:x}: {e}")
 
             if func_mutations > 0:
@@ -470,7 +470,7 @@ class NopInsertionPass(MutationPass):
 
             try:
                 instructions = binary.get_function_disasm(func["addr"])
-            except Exception as e:
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
 

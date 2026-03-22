@@ -15,12 +15,16 @@ requires:
 TODO: Implement actual binary modification.
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -61,12 +65,12 @@ class ImportTableObfuscationPass(MutationPass):
             ),
         )
 
-    def _get_imports_elf(self, binary: Binary) -> list[dict[str, Any]]:
+    def _get_imports_elf(self, binary: Any) -> list[dict[str, Any]]:
         """
         Get imports from ELF binary using relocations.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
 
         Returns:
             List of import dictionaries
@@ -117,12 +121,12 @@ class ImportTableObfuscationPass(MutationPass):
 
         return imports
 
-    def _get_imports_pe(self, binary: Binary) -> list[dict[str, Any]]:
+    def _get_imports_pe(self, binary: Any) -> list[dict[str, Any]]:
         """
         Get imports from PE binary.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
 
         Returns:
             List of import dictionaries
@@ -152,12 +156,12 @@ class ImportTableObfuscationPass(MutationPass):
 
         return imports
 
-    def _generate_jump_stub_x86_64(self, binary: Binary, target_addr: int) -> bytes | None:
+    def _generate_jump_stub_x86_64(self, binary: Any, target_addr: int) -> bytes | None:
         """
         Generate a jump stub for x86_64.
 
         Args:
-            binary: Binary instance for assembly
+            binary: Any instance for assembly
             target_addr: Target address to jump to
 
         Returns:
@@ -167,12 +171,12 @@ class ImportTableObfuscationPass(MutationPass):
         result = binary.assemble(stub, None)
         return bytes(result) if result else None
 
-    def _generate_jump_stub_x86(self, binary: Binary, target_addr: int) -> bytes | None:
+    def _generate_jump_stub_x86(self, binary: Any, target_addr: int) -> bytes | None:
         """
         Generate a jump stub for x86.
 
         Args:
-            binary: Binary instance for assembly
+            binary: Any instance for assembly
             target_addr: Target address to jump to
 
         Returns:
@@ -182,12 +186,12 @@ class ImportTableObfuscationPass(MutationPass):
         result = binary.assemble(stub, None)
         return bytes(result) if result else None
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply import table obfuscation to the binary.
 
         Args:
-            binary: Binary to obfuscate
+            binary: Any to obfuscate
 
         Returns:
             Statistics dictionary

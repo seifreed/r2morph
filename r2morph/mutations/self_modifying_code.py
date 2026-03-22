@@ -31,15 +31,19 @@ Example transformation:
 The decrypt_stub is polymorphic and regenerated each time.
 """
 
+from __future__ import annotations
+
 import logging
 import random
 import struct
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -394,7 +398,7 @@ class SelfModifyingCodePass(MutationPass):
             else:
                 return generate_xor_decrypt_stub_x86(key, data_addr, data_size).decode()
 
-    def _find_encryptable_functions(self, binary: Binary) -> list[dict[str, Any]]:
+    def _find_encryptable_functions(self, binary: Any) -> list[dict[str, Any]]:
         """Find functions suitable for encryption."""
         encryptable = []
         functions = binary.get_functions()
@@ -411,12 +415,12 @@ class SelfModifyingCodePass(MutationPass):
 
         return encryptable
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply self-modifying code transformation.
 
         Args:
-            binary: Binary to transform
+            binary: Any to transform
 
         Returns:
             Statistics dictionary

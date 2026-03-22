@@ -10,12 +10,16 @@ Examples:
     mov eax, 1   ->  xor eax, eax; inc eax
 """
 
+from __future__ import annotations
+
 import logging
 import random
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+if TYPE_CHECKING:
+    from r2morph.protocols import BinaryAccessProtocol
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -107,14 +111,14 @@ class ConstantUnfoldingPass(MutationPass):
                 "edi": ["edi"],
             }
 
-    def _unfold_zero(self, reg: str, bits: int, binary: Binary, base_addr: int) -> list[str] | None:
+    def _unfold_zero(self, reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | None:
         """
         Unfold setting register to zero.
 
         Args:
             reg: Register name
             bits: Architecture bits
-            binary: Binary instance for size calculation
+            binary: Any instance for size calculation
             base_addr: Base address for assembly
 
         Returns:
@@ -127,14 +131,14 @@ class ConstantUnfoldingPass(MutationPass):
         ]
         return [random.choice(patterns)]
 
-    def _unfold_one(self, reg: str, bits: int, binary: Binary, base_addr: int) -> list[str] | None:
+    def _unfold_one(self, reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | None:
         """
         Unfold setting register to one.
 
         Args:
             reg: Register name
             bits: Architecture bits
-            binary: Binary instance
+            binary: Any instance
             base_addr: Base address
 
         Returns:
@@ -207,13 +211,13 @@ class ConstantUnfoldingPass(MutationPass):
             result.append(f"dec {reg}")
         return result
 
-    def _calculate_sequence_size(self, instructions: list[str], binary: Binary, base_addr: int) -> int:
+    def _calculate_sequence_size(self, instructions: list[str], binary: Any, base_addr: int) -> int:
         """
         Calculate total size of instruction sequence.
 
         Args:
             instructions: List of instruction strings
-            binary: Binary instance
+            binary: Any instance
             base_addr: Base address for assembly
 
         Returns:
@@ -231,12 +235,12 @@ class ConstantUnfoldingPass(MutationPass):
                 total_size += len(bytes_result) if bytes_result else 0
         return total_size
 
-    def _select_candidates(self, binary: Binary, functions: list[dict[str, Any]]) -> list[tuple[dict, list]]:
+    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]]) -> list[tuple[dict, list]]:
         """
         Iterate functions, get disasm, and filter candidate instructions.
 
         Args:
-            binary: Binary instance
+            binary: Any instance
             functions: List of function dicts
 
         Returns:
@@ -268,12 +272,12 @@ class ConstantUnfoldingPass(MutationPass):
                 result.append((func, selected))
         return result
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply constant unfolding to the binary.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Any instance to mutate
 
         Returns:
             Dictionary with mutation statistics
