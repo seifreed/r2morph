@@ -713,6 +713,275 @@ class ValidationManager:
             "symbolic_transition_mismatches": mismatches,
         }
 
+    def _setup_symbolic_bridges(
+        self,
+        binary: Binary,
+        previous_binary_path: Path,
+        current_binary_path: Path,
+        bridge_module: Any,
+    ) -> dict[str, Any] | tuple[Any, Any, Any, Any, Any]:
+        """Create AngrBridge for original and mutated binaries.
+
+        Returns (original_bridge, mutated_bridge, angr_module, claripy, options)
+        on success, or a failure dict on error.
+        """
+        from r2morph.analysis.symbolic.angr_bridge import AngrBridge
+
+        original_bridge = None
+        with Binary(previous_binary_path, writable=False) as original_binary:
+            try:
+                original_binary.analyze("aa")
+            except Exception as analyze_error:
+                logger.warning(f"Failed to analyze original binary: {analyze_error}")
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": f"Failed to analyze original binary: {analyze_error}",
+                }
+            try:
+                original_bridge = AngrBridge(original_binary)
+            except Exception as bridge_error:
+                logger.error(f"Failed to create original bridge: {bridge_error}")
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": f"Failed to create original bridge: {bridge_error}",
+                }
+            try:
+                mutated_bridge = AngrBridge(binary)
+            except Exception as bridge_error:
+                if original_bridge and hasattr(original_bridge, "angr_project"):
+                    try:
+                        original_bridge.angr_project.loader.close()
+                    except Exception:
+                        pass
+                logger.error(f"Failed to create mutated bridge: {bridge_error}")
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": f"Failed to create mutated bridge: {bridge_error}",
+                }
+            angr_module = getattr(bridge_module, "angr", None)
+            if angr_module is None:
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": "angr module not available",
+                }
+            claripy = import_module("claripy")
+            options = angr_module.options
+            return (original_bridge, mutated_bridge, angr_module, claripy, options)
+
+    def _compare_single_region(
+        self,
+        mutation: dict[str, Any],
+        original_bridge: Any,
+        mutated_bridge: Any,
+        original_binary: Binary,
+        angr_module: Any,
+        claripy: Any,
+        options: Any,
+        pass_name: str,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Compare symbolic effects for a single mutation region.
+
+        Returns (region_report, mismatches) for this region.
+        """
+        mismatches: list[dict[str, Any]] = []
+        start = mutation["start_address"]
+        end = mutation["end_address"]
+        step_budget = self._estimate_symbolic_region_steps(pass_name, mutation)
+        region_width = max(1, end - start + 1)
+        region_exit_budget = max(step_budget * 2, region_width + 1)
+        resolved_original = original_bridge.resolve_loaded_address(start)
+        resolved_mutated = mutated_bridge.resolve_loaded_address(start)
+        if resolved_original is None or resolved_mutated is None:
+            logger.warning(f"Failed to resolve loaded address for mutation at 0x{start:x}")
+            return None, []
+
+        original_state = original_bridge.angr_project.factory.blank_state(
+            addr=resolved_original,
+            add_options={
+                options.ZERO_FILL_UNCONSTRAINED_MEMORY,
+                options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
+            },
+        )
+        mutated_state = mutated_bridge.angr_project.factory.blank_state(
+            addr=resolved_mutated,
+            add_options={
+                options.ZERO_FILL_UNCONSTRAINED_MEMORY,
+                options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
+            },
+        )
+        bit_width = 64 if original_binary.get_arch_info().get("bits") == 64 else 32
+        stack_reg = "rsp" if bit_width == 64 else "esp"
+        base_reg = "rbp" if bit_width == 64 else "ebp"
+        setattr(original_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
+        setattr(mutated_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
+        setattr(original_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
+        setattr(mutated_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
+
+        compared_registers = ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
+        if bit_width == 32:
+            compared_registers = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
+        for reg_name in compared_registers:
+            shared = claripy.BVS(f"{reg_name}_{start:x}", bit_width)
+            if hasattr(original_state.regs, reg_name):
+                setattr(original_state.regs, reg_name, shared)
+            if hasattr(mutated_state.regs, reg_name):
+                setattr(mutated_state.regs, reg_name, shared)
+
+        step_strategy = "region-exit"
+        original_final = original_state
+        mutated_final = mutated_state
+        original_steps = 0
+        mutated_steps = 0
+        original_exit_error = None
+        mutated_exit_error = None
+        original_trace_addresses = [resolved_original]
+        mutated_trace_addresses = [resolved_mutated]
+        for _ in range(region_exit_budget):
+            current_original_addr = getattr(original_final, "addr", None)
+            if (
+                current_original_addr is None
+                or current_original_addr > resolved_original + region_width - 1
+            ):
+                break
+            original_succ = list(
+                original_bridge.angr_project.factory.successors(
+                    original_final,
+                    num_inst=1,
+                ).flat_successors
+            )
+            if len(original_succ) != 1:
+                original_exit_error = "successor_count"
+                break
+            original_final = original_succ[0]
+            original_steps += 1
+            next_original_addr = getattr(original_final, "addr", None)
+            if next_original_addr is not None:
+                original_trace_addresses.append(next_original_addr)
+        else:
+            original_exit_error = "region_exit_budget_exhausted"
+
+        for _ in range(region_exit_budget):
+            current_mutated_addr = getattr(mutated_final, "addr", None)
+            if current_mutated_addr is None or current_mutated_addr > resolved_mutated + region_width - 1:
+                break
+            mutated_succ = list(
+                mutated_bridge.angr_project.factory.successors(
+                    mutated_final,
+                    num_inst=1,
+                ).flat_successors
+            )
+            if len(mutated_succ) != 1:
+                mutated_exit_error = "successor_count"
+                break
+            mutated_final = mutated_succ[0]
+            mutated_steps += 1
+            next_mutated_addr = getattr(mutated_final, "addr", None)
+            if next_mutated_addr is not None:
+                mutated_trace_addresses.append(next_mutated_addr)
+        else:
+            mutated_exit_error = "region_exit_budget_exhausted"
+
+        region_report = {
+            "start_address": mutation["start_address"],
+            "end_address": mutation["end_address"],
+            "original_loaded_address": resolved_original,
+            "mutated_loaded_address": resolved_mutated,
+            "step_budget": step_budget,
+            "region_exit_budget": region_exit_budget,
+            "step_strategy": step_strategy,
+            "original_region_exit_steps": original_steps,
+            "mutated_region_exit_steps": mutated_steps,
+            "original_trace_addresses": original_trace_addresses,
+            "mutated_trace_addresses": mutated_trace_addresses,
+            "registers_checked": list(compared_registers) + ["eflags", "stack_delta"],
+            "mismatches": [],
+        }
+        if original_exit_error or mutated_exit_error:
+            step_strategy = "region-exit-fallback-budget"
+            region_report["step_strategy"] = step_strategy
+            exit_error = original_exit_error or mutated_exit_error
+            if original_exit_error and mutated_exit_error and original_exit_error != mutated_exit_error:
+                exit_error = f"{original_exit_error}|{mutated_exit_error}"
+            region_report["mismatches"].append(exit_error)
+            mismatches.append(
+                {
+                    "start_address": mutation["start_address"],
+                    "end_address": mutation["end_address"],
+                    "observable": exit_error,
+                }
+            )
+            return region_report, mismatches
+
+        region_report["original_region_exit_address"] = getattr(original_final, "addr", None)
+        region_report["mutated_region_exit_address"] = getattr(mutated_final, "addr", None)
+        region_report["control_flow_observables"] = [
+            "region_exit_address",
+            "region_exit_steps",
+        ]
+        if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
+            region_report["mismatches"].append("successor_address")
+            mismatches.append(
+                {
+                    "start_address": mutation["start_address"],
+                    "end_address": mutation["end_address"],
+                    "observable": "successor_address",
+                }
+            )
+
+        for reg_name in compared_registers:
+            if not hasattr(original_final.regs, reg_name) or not hasattr(mutated_final.regs, reg_name):
+                continue
+            left = getattr(original_final.regs, reg_name)
+            right = getattr(mutated_final.regs, reg_name)
+            if original_final.solver.satisfiable(extra_constraints=[left != right]):
+                region_report["mismatches"].append(reg_name)
+                mismatches.append(
+                    {
+                        "start_address": mutation["start_address"],
+                        "end_address": mutation["end_address"],
+                        "observable": reg_name,
+                    }
+                )
+        if hasattr(original_final.regs, "eflags") and hasattr(mutated_final.regs, "eflags"):
+            if original_final.solver.satisfiable(
+                extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
+            ):
+                region_report["mismatches"].append("eflags")
+                mismatches.append(
+                    {
+                        "start_address": mutation["start_address"],
+                        "end_address": mutation["end_address"],
+                        "observable": "eflags",
+                    }
+                )
+        original_stack = getattr(original_final.regs, stack_reg)
+        mutated_stack = getattr(mutated_final.regs, stack_reg)
+        if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
+            region_report["mismatches"].append("stack_delta")
+            mismatches.append(
+                {
+                    "start_address": mutation["start_address"],
+                    "end_address": mutation["end_address"],
+                    "observable": "stack_delta",
+                }
+            )
+        original_writes = self._collect_memory_write_signatures(original_final)
+        mutated_writes = self._collect_memory_write_signatures(mutated_final)
+        region_report["original_memory_writes"] = original_writes
+        region_report["mutated_memory_writes"] = mutated_writes
+        region_report["original_memory_write_count"] = len(original_writes)
+        region_report["mutated_memory_write_count"] = len(mutated_writes)
+        if original_writes != mutated_writes:
+            region_report["mismatches"].append("memory_writes")
+            mismatches.append(
+                {
+                    "start_address": mutation["start_address"],
+                    "end_address": mutation["end_address"],
+                    "observable": "memory_writes",
+                }
+            )
+        return region_report, mismatches
+
     def _compare_real_binary_regions(
         self,
         binary: Binary,
@@ -745,250 +1014,34 @@ class ValidationManager:
         original_bridge = None
         mutated_bridge = None
         try:
-            from r2morph.analysis.symbolic.angr_bridge import AngrBridge
+            bridge_result = self._setup_symbolic_bridges(
+                binary, previous_binary_path, current_binary_path, bridge_module,
+            )
+            if isinstance(bridge_result, dict):
+                return bridge_result
+            original_bridge, mutated_bridge, angr_module, claripy, options = bridge_result
 
+            compared_regions = []
+            mismatches = []
+            pass_name = pass_result.get("pass_name", "")
             with Binary(previous_binary_path, writable=False) as original_binary:
-                try:
-                    original_binary.analyze("aa")
-                except Exception as analyze_error:
-                    logger.warning(f"Failed to analyze original binary: {analyze_error}")
-                    return {
-                        "symbolic_binary_check_performed": False,
-                        "symbolic_binary_reason": f"Failed to analyze original binary: {analyze_error}",
-                    }
-                try:
-                    original_bridge = AngrBridge(original_binary)
-                except Exception as bridge_error:
-                    logger.error(f"Failed to create original bridge: {bridge_error}")
-                    return {
-                        "symbolic_binary_check_performed": False,
-                        "symbolic_binary_reason": f"Failed to create original bridge: {bridge_error}",
-                    }
-                try:
-                    mutated_bridge = AngrBridge(binary)
-                except Exception as bridge_error:
-                    if original_bridge and hasattr(original_bridge, "angr_project"):
-                        try:
-                            original_bridge.angr_project.loader.close()
-                        except Exception:
-                            pass
-                    logger.error(f"Failed to create mutated bridge: {bridge_error}")
-                    return {
-                        "symbolic_binary_check_performed": False,
-                        "symbolic_binary_reason": f"Failed to create mutated bridge: {bridge_error}",
-                    }
-                angr_module = getattr(bridge_module, "angr", None)
-                if angr_module is None:
-                    return {
-                        "symbolic_binary_check_performed": False,
-                        "symbolic_binary_reason": "angr module not available",
-                    }
-                claripy = import_module("claripy")
-                options = angr_module.options
-                compared_regions = []
-                mismatches = []
+                original_binary.analyze("aa")
                 for mutation in pass_result.get("mutations", []):
-                    start = mutation["start_address"]
-                    end = mutation["end_address"]
-                    step_budget = self._estimate_symbolic_region_steps(
-                        pass_result.get("pass_name", ""),
+                    result = self._compare_single_region(
                         mutation,
+                        original_bridge,
+                        mutated_bridge,
+                        original_binary,
+                        angr_module,
+                        claripy,
+                        options,
+                        pass_name,
                     )
-                    region_width = max(1, end - start + 1)
-                    region_exit_budget = max(step_budget * 2, region_width + 1)
-                    resolved_original = original_bridge.resolve_loaded_address(start)
-                    resolved_mutated = mutated_bridge.resolve_loaded_address(start)
-                    if resolved_original is None or resolved_mutated is None:
-                        logger.warning(f"Failed to resolve loaded address for mutation at 0x{start:x}")
+                    region_report, region_mismatches = result
+                    if region_report is None:
                         continue
-
-                    original_state = original_bridge.angr_project.factory.blank_state(
-                        addr=resolved_original,
-                        add_options={
-                            options.ZERO_FILL_UNCONSTRAINED_MEMORY,
-                            options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
-                        },
-                    )
-                    mutated_state = mutated_bridge.angr_project.factory.blank_state(
-                        addr=resolved_mutated,
-                        add_options={
-                            options.ZERO_FILL_UNCONSTRAINED_MEMORY,
-                            options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
-                        },
-                    )
-                    bit_width = 64 if original_binary.get_arch_info().get("bits") == 64 else 32
-                    stack_reg = "rsp" if bit_width == 64 else "esp"
-                    base_reg = "rbp" if bit_width == 64 else "ebp"
-                    setattr(original_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-                    setattr(mutated_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-                    setattr(original_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
-                    setattr(mutated_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
-
-                    compared_registers = ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
-                    if bit_width == 32:
-                        compared_registers = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
-                    for reg_name in compared_registers:
-                        shared = claripy.BVS(f"{reg_name}_{start:x}", bit_width)
-                        if hasattr(original_state.regs, reg_name):
-                            setattr(original_state.regs, reg_name, shared)
-                        if hasattr(mutated_state.regs, reg_name):
-                            setattr(mutated_state.regs, reg_name, shared)
-
-                    step_strategy = "region-exit"
-                    original_final = original_state
-                    mutated_final = mutated_state
-                    original_steps = 0
-                    mutated_steps = 0
-                    original_exit_error = None
-                    mutated_exit_error = None
-                    original_trace_addresses = [resolved_original]
-                    mutated_trace_addresses = [resolved_mutated]
-                    for _ in range(region_exit_budget):
-                        current_original_addr = getattr(original_final, "addr", None)
-                        if (
-                            current_original_addr is None
-                            or current_original_addr > resolved_original + region_width - 1
-                        ):
-                            break
-                        original_succ = list(
-                            original_bridge.angr_project.factory.successors(
-                                original_final,
-                                num_inst=1,
-                            ).flat_successors
-                        )
-                        if len(original_succ) != 1:
-                            original_exit_error = "successor_count"
-                            break
-                        original_final = original_succ[0]
-                        original_steps += 1
-                        next_original_addr = getattr(original_final, "addr", None)
-                        if next_original_addr is not None:
-                            original_trace_addresses.append(next_original_addr)
-                    else:
-                        original_exit_error = "region_exit_budget_exhausted"
-
-                    for _ in range(region_exit_budget):
-                        current_mutated_addr = getattr(mutated_final, "addr", None)
-                        if current_mutated_addr is None or current_mutated_addr > resolved_mutated + region_width - 1:
-                            break
-                        mutated_succ = list(
-                            mutated_bridge.angr_project.factory.successors(
-                                mutated_final,
-                                num_inst=1,
-                            ).flat_successors
-                        )
-                        if len(mutated_succ) != 1:
-                            mutated_exit_error = "successor_count"
-                            break
-                        mutated_final = mutated_succ[0]
-                        mutated_steps += 1
-                        next_mutated_addr = getattr(mutated_final, "addr", None)
-                        if next_mutated_addr is not None:
-                            mutated_trace_addresses.append(next_mutated_addr)
-                    else:
-                        mutated_exit_error = "region_exit_budget_exhausted"
-
-                    region_report = {
-                        "start_address": mutation["start_address"],
-                        "end_address": mutation["end_address"],
-                        "original_loaded_address": resolved_original,
-                        "mutated_loaded_address": resolved_mutated,
-                        "step_budget": step_budget,
-                        "region_exit_budget": region_exit_budget,
-                        "step_strategy": step_strategy,
-                        "original_region_exit_steps": original_steps,
-                        "mutated_region_exit_steps": mutated_steps,
-                        "original_trace_addresses": original_trace_addresses,
-                        "mutated_trace_addresses": mutated_trace_addresses,
-                        "registers_checked": list(compared_registers) + ["eflags", "stack_delta"],
-                        "mismatches": [],
-                    }
-                    if original_exit_error or mutated_exit_error:
-                        step_strategy = "region-exit-fallback-budget"
-                        region_report["step_strategy"] = step_strategy
-                        exit_error = original_exit_error or mutated_exit_error
-                        if original_exit_error and mutated_exit_error and original_exit_error != mutated_exit_error:
-                            exit_error = f"{original_exit_error}|{mutated_exit_error}"
-                        region_report["mismatches"].append(exit_error)
-                        mismatches.append(
-                            {
-                                "start_address": mutation["start_address"],
-                                "end_address": mutation["end_address"],
-                                "observable": exit_error,
-                            }
-                        )
-                        compared_regions.append(region_report)
-                        continue
-
-                    region_report["original_region_exit_address"] = getattr(original_final, "addr", None)
-                    region_report["mutated_region_exit_address"] = getattr(mutated_final, "addr", None)
-                    region_report["control_flow_observables"] = [
-                        "region_exit_address",
-                        "region_exit_steps",
-                    ]
-                    if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
-                        region_report["mismatches"].append("successor_address")
-                        mismatches.append(
-                            {
-                                "start_address": mutation["start_address"],
-                                "end_address": mutation["end_address"],
-                                "observable": "successor_address",
-                            }
-                        )
-
-                    for reg_name in compared_registers:
-                        if not hasattr(original_final.regs, reg_name) or not hasattr(mutated_final.regs, reg_name):
-                            continue
-                        left = getattr(original_final.regs, reg_name)
-                        right = getattr(mutated_final.regs, reg_name)
-                        if original_final.solver.satisfiable(extra_constraints=[left != right]):
-                            region_report["mismatches"].append(reg_name)
-                            mismatches.append(
-                                {
-                                    "start_address": mutation["start_address"],
-                                    "end_address": mutation["end_address"],
-                                    "observable": reg_name,
-                                }
-                            )
-                    if hasattr(original_final.regs, "eflags") and hasattr(mutated_final.regs, "eflags"):
-                        if original_final.solver.satisfiable(
-                            extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
-                        ):
-                            region_report["mismatches"].append("eflags")
-                            mismatches.append(
-                                {
-                                    "start_address": mutation["start_address"],
-                                    "end_address": mutation["end_address"],
-                                    "observable": "eflags",
-                                }
-                            )
-                    original_stack = getattr(original_final.regs, stack_reg)
-                    mutated_stack = getattr(mutated_final.regs, stack_reg)
-                    if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
-                        region_report["mismatches"].append("stack_delta")
-                        mismatches.append(
-                            {
-                                "start_address": mutation["start_address"],
-                                "end_address": mutation["end_address"],
-                                "observable": "stack_delta",
-                            }
-                        )
-                    original_writes = self._collect_memory_write_signatures(original_final)
-                    mutated_writes = self._collect_memory_write_signatures(mutated_final)
-                    region_report["original_memory_writes"] = original_writes
-                    region_report["mutated_memory_writes"] = mutated_writes
-                    region_report["original_memory_write_count"] = len(original_writes)
-                    region_report["mutated_memory_write_count"] = len(mutated_writes)
-                    if original_writes != mutated_writes:
-                        region_report["mismatches"].append("memory_writes")
-                        mismatches.append(
-                            {
-                                "start_address": mutation["start_address"],
-                                "end_address": mutation["end_address"],
-                                "observable": "memory_writes",
-                            }
-                        )
                     compared_regions.append(region_report)
+                    mismatches.extend(region_mismatches)
         except Exception as e:
             return {
                 "symbolic_binary_check_performed": False,

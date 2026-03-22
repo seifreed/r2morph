@@ -93,6 +93,110 @@ class Pipeline:
         self.passes.clear()
         logger.debug("Pipeline cleared")
 
+    def _build_diff_summary(self, pass_result: dict[str, Any]) -> dict[str, Any]:
+        """Build the diff_summary dict from mutations in a pass result."""
+        return {
+            "mutations": len(pass_result["mutations"]),
+            "changed_bytes": sum(
+                int(mutation.get("byte_diff_count", 0))
+                for mutation in pass_result["mutations"]
+            ),
+            "changed_regions": [
+                [mutation["start_address"], mutation["end_address"]]
+                for mutation in pass_result["mutations"]
+            ],
+            "region_details": [
+                {
+                    "address_range": [
+                        mutation["start_address"],
+                        mutation["end_address"],
+                    ],
+                    "mutation_kind": mutation.get("mutation_kind", "unknown"),
+                    "byte_diff_count": int(mutation.get("byte_diff_count", 0)),
+                    "function_address": mutation.get("function_address"),
+                }
+                for mutation in pass_result["mutations"]
+            ],
+            "mutation_kinds": sorted(
+                {
+                    mutation.get("mutation_kind", "unknown")
+                    for mutation in pass_result["mutations"]
+                }
+            ),
+        }
+
+    def _handle_validation_failure(
+        self,
+        results: dict[str, Any],
+        pass_result: dict[str, Any],
+        mutation_pass: MutationPass,
+        binary: Binary,
+        session: Any | None,
+        checkpoint_name: str | None,
+        rollback_policy: str,
+        reason: str,
+    ) -> None:
+        """Handle rollback and discard logic for a failed validation."""
+        discarded = pass_result.get(
+            "mutations_applied", len(pass_result["mutations"])
+        )
+        if session is not None and checkpoint_name is not None:
+            session.rollback_to(checkpoint_name)
+            binary.reload()
+        if rollback_policy == "fail-fast":
+            raise RuntimeError(f"{reason} for pass {mutation_pass.name}")
+        pass_result["rolled_back"] = True
+        pass_result["rollback_reason"] = reason.lower().replace(" ", "_")
+        pass_result["status"] = "rolled_back"
+        pass_result["discarded_mutations"] = discarded
+        discarded_records = []
+        for mutation in pass_result["mutations"]:
+            discarded_mutation = deepcopy(mutation)
+            discarded_mutation["status"] = "discarded"
+            discarded_mutation.setdefault("metadata", {})
+            discarded_mutation["metadata"]["discard_reason"] = reason.lower().replace(" ", "_")
+            discarded_mutation["metadata"]["discarded_by_pass"] = mutation_pass.name
+            discarded_records.append(discarded_mutation)
+        pass_result["discarded_mutations_detail"] = discarded_records
+        pass_result["mutations_applied"] = 0
+        pass_result["mutations"] = []
+        results["rolled_back_passes"] += 1
+        results["discarded_mutations"] += discarded
+        results["discarded_mutations_detail"].extend(discarded_records)
+
+    def _handle_symbolic_metadata(
+        self,
+        results: dict[str, Any],
+        validation_result: Any,
+        mutation_pass: MutationPass,
+    ) -> None:
+        """Update results['validation']['symbolic'] with pass status."""
+        symbolic = results["validation"]["symbolic"]
+        if validation_result.metadata.get("symbolic_requested"):
+            symbolic["requested"] = True
+            status = validation_result.metadata.get("symbolic_status", "unknown")
+            symbolic["statuses"].append(
+                {
+                    "pass_name": mutation_pass.name,
+                    "status": status,
+                    "reason": validation_result.metadata.get("symbolic_reason", ""),
+                }
+            )
+            if status in {
+                "precheck-passed",
+                "bounded-step-passed",
+                "bounded-step-known-equivalence",
+                "bounded-step-observables-match",
+                "shellcode-observables-match",
+                "real-binary-observables-match",
+            }:
+                symbolic["supported_passes"].append(mutation_pass.name)
+            else:
+                symbolic["fallback_passes"].append(mutation_pass.name)
+            symbolic["proven"] = symbolic["proven"] or bool(
+                validation_result.metadata.get("symbolic_proven", False)
+            )
+
     def run(
         self,
         binary: Binary,
@@ -176,35 +280,7 @@ class Pipeline:
                     )
                     if previous_binary is not None:
                         pass_result["previous_binary_path"] = str(previous_binary)
-                pass_result["diff_summary"] = {
-                    "mutations": len(pass_result["mutations"]),
-                    "changed_bytes": sum(
-                        int(mutation.get("byte_diff_count", 0))
-                        for mutation in pass_result["mutations"]
-                    ),
-                    "changed_regions": [
-                        [mutation["start_address"], mutation["end_address"]]
-                        for mutation in pass_result["mutations"]
-                    ],
-                    "region_details": [
-                        {
-                            "address_range": [
-                                mutation["start_address"],
-                                mutation["end_address"],
-                            ],
-                            "mutation_kind": mutation.get("mutation_kind", "unknown"),
-                            "byte_diff_count": int(mutation.get("byte_diff_count", 0)),
-                            "function_address": mutation.get("function_address"),
-                        }
-                        for mutation in pass_result["mutations"]
-                    ],
-                    "mutation_kinds": sorted(
-                        {
-                            mutation.get("mutation_kind", "unknown")
-                            for mutation in pass_result["mutations"]
-                        }
-                    ),
-                }
+                pass_result["diff_summary"] = self._build_diff_summary(pass_result)
                 validation_result = None
                 runtime_pass_result = None
                 if validation_manager is not None and pass_result["mutations"]:
@@ -212,60 +288,15 @@ class Pipeline:
                     pass_result["validation"] = validation_result.to_dict()
                     results["validation"]["passes"].append(validation_result.to_dict())
                     results["validation"]["total_issues"] += len(validation_result.issues)
-                    symbolic = results["validation"]["symbolic"]
-                    if validation_result.metadata.get("symbolic_requested"):
-                        symbolic["requested"] = True
-                        status = validation_result.metadata.get("symbolic_status", "unknown")
-                        symbolic["statuses"].append(
-                            {
-                                "pass_name": mutation_pass.name,
-                                "status": status,
-                                "reason": validation_result.metadata.get("symbolic_reason", ""),
-                            }
-                        )
-                        if status in {
-                            "precheck-passed",
-                            "bounded-step-passed",
-                            "bounded-step-known-equivalence",
-                            "bounded-step-observables-match",
-                            "shellcode-observables-match",
-                            "real-binary-observables-match",
-                        }:
-                            symbolic["supported_passes"].append(mutation_pass.name)
-                        else:
-                            symbolic["fallback_passes"].append(mutation_pass.name)
-                        symbolic["proven"] = symbolic["proven"] or bool(
-                            validation_result.metadata.get("symbolic_proven", False)
-                        )
+                    self._handle_symbolic_metadata(results, validation_result, mutation_pass)
                     if not validation_result.passed:
                         results["validation"]["all_passed"] = False
                         results["validation"]["failed_passes"].append(mutation_pass.name)
-                        discarded = pass_result.get(
-                            "mutations_applied", len(pass_result["mutations"])
+                        self._handle_validation_failure(
+                            results, pass_result, mutation_pass, binary,
+                            session, checkpoint_name, rollback_policy,
+                            reason="Validation failed",
                         )
-                        if session is not None and checkpoint_name is not None:
-                            session.rollback_to(checkpoint_name)
-                            binary.reload()
-                        if rollback_policy == "fail-fast":
-                            raise RuntimeError(f"Validation failed for pass {mutation_pass.name}")
-                        pass_result["rolled_back"] = True
-                        pass_result["rollback_reason"] = "validation_failed"
-                        pass_result["status"] = "rolled_back"
-                        pass_result["discarded_mutations"] = discarded
-                        discarded_records = []
-                        for mutation in pass_result["mutations"]:
-                            discarded_mutation = deepcopy(mutation)
-                            discarded_mutation["status"] = "discarded"
-                            discarded_mutation.setdefault("metadata", {})
-                            discarded_mutation["metadata"]["discard_reason"] = "validation_failed"
-                            discarded_mutation["metadata"]["discarded_by_pass"] = mutation_pass.name
-                            discarded_records.append(discarded_mutation)
-                        pass_result["discarded_mutations_detail"] = discarded_records
-                        pass_result["mutations_applied"] = 0
-                        pass_result["mutations"] = []
-                        results["rolled_back_passes"] += 1
-                        results["discarded_mutations"] += discarded
-                        results["discarded_mutations_detail"].extend(discarded_records)
                     else:
                         pass_result["rolled_back"] = False
                         pass_result["discarded_mutations"] = 0
@@ -310,37 +341,11 @@ class Pipeline:
                         ):
                             results["validation"]["all_passed"] = False
                             results["validation"]["failed_passes"].append(mutation_pass.name)
-                            discarded = pass_result.get(
-                                "mutations_applied", len(pass_result["mutations"])
+                            self._handle_validation_failure(
+                                results, pass_result, mutation_pass, binary,
+                                session, checkpoint_name, rollback_policy,
+                                reason="Runtime validation failed",
                             )
-                            session.rollback_to(checkpoint_name)
-                            binary.reload()
-                            if rollback_policy == "fail-fast":
-                                raise RuntimeError(
-                                    f"Runtime validation failed for pass {mutation_pass.name}"
-                                )
-                            pass_result["rolled_back"] = True
-                            pass_result["rollback_reason"] = "runtime_validation_failed"
-                            pass_result["status"] = "rolled_back"
-                            pass_result["discarded_mutations"] = discarded
-                            discarded_records = []
-                            for mutation in pass_result["mutations"]:
-                                discarded_mutation = deepcopy(mutation)
-                                discarded_mutation["status"] = "discarded"
-                                discarded_mutation.setdefault("metadata", {})
-                                discarded_mutation["metadata"]["discard_reason"] = (
-                                    "runtime_validation_failed"
-                                )
-                                discarded_mutation["metadata"]["discarded_by_pass"] = (
-                                    mutation_pass.name
-                                )
-                                discarded_records.append(discarded_mutation)
-                            pass_result["discarded_mutations_detail"] = discarded_records
-                            pass_result["mutations_applied"] = 0
-                            pass_result["mutations"] = []
-                            results["rolled_back_passes"] += 1
-                            results["discarded_mutations"] += discarded
-                            results["discarded_mutations_detail"].extend(discarded_records)
 
                 if not pass_result.get("rolled_back", False):
                     results["passes_run"] += 1
