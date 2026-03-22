@@ -18,6 +18,7 @@ venv/
 
 # Testing/coverage
 .pytest_cache/
+.hypothesis/
 .coverage
 htmlcov/
 
@@ -27,3 +28,4 @@ htmlcov/
 
 # Editor/AI tooling
 .claude/
+.planning/

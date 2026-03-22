@@ -8,6 +8,7 @@ affecting program semantics.
 
 import logging
 import random
+import re
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -187,13 +188,8 @@ class BlockReorderingPass(MutationPass):
                             bytes1 = bytes.fromhex(bytes1_hex.strip())
                             bytes2 = bytes.fromhex(bytes2_hex.strip())
 
-                            if binary.write_bytes(addr1, bytes2) and binary.write_bytes(
-                                addr2, bytes1
-                            ):
-                                logger.info(
-                                    f"Swapped blocks at 0x{addr1:x} <-> 0x{addr2:x} "
-                                    f"({size1} bytes each)"
-                                )
+                            if binary.write_bytes(addr1, bytes2) and binary.write_bytes(addr2, bytes1):
+                                logger.info(f"Swapped blocks at 0x{addr1:x} <-> 0x{addr2:x} ({size1} bytes each)")
                                 blocks_swapped += 1
                                 mutations_applied += 1
                     except Exception as e:
@@ -235,7 +231,27 @@ class BlockReorderingPass(MutationPass):
                     jmp_bytes = binary.assemble(jmp_insn, func["addr"])
 
                     if jmp_bytes and len(jmp_bytes) <= 5:
+                        # Verify the last instruction(s) at the write point won't
+                        # be partially overwritten — only write into trailing NOPs
+                        # or after the last complete instruction boundary.
                         write_addr = addr + size - len(jmp_bytes)
+
+                        # Find the last instruction that starts at or before write_addr
+                        try:
+                            block_instrs = binary.r2.cmdj(f"pdj -10 @ 0x{addr + size:x}")
+                            if block_instrs:
+                                # Check that write_addr falls on an instruction boundary
+                                insn_boundaries = {
+                                    insn.get("offset", 0) for insn in block_instrs if insn.get("offset", 0) >= addr
+                                }
+                                if write_addr not in insn_boundaries and write_addr != addr + size:
+                                    logger.debug(
+                                        f"Skipping jump insert at 0x{write_addr:x}: "
+                                        f"not on instruction boundary"
+                                    )
+                                    continue
+                        except Exception:
+                            pass
 
                         try:
                             if binary.write_bytes(write_addr, jmp_bytes):
@@ -249,8 +265,7 @@ class BlockReorderingPass(MutationPass):
                 total_blocks_reordered += blocks_swapped * 2
                 functions_mutated += 1
                 logger.info(
-                    f"Reordered {blocks_swapped} block pairs and inserted {jumps_inserted} jumps "
-                    f"in {func.get('name')}"
+                    f"Reordered {blocks_swapped} block pairs and inserted {jumps_inserted} jumps in {func.get('name')}"
                 )
             else:
                 logger.debug(f"Could not reorder {func.get('name')}: no suitable blocks found")

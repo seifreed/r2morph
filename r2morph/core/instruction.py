@@ -2,8 +2,11 @@
 Instruction representation for binary analysis.
 """
 
+import logging
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -46,13 +49,31 @@ class Instruction:
         operands_str = parts[1] if len(parts) > 1 else ""
         operands = [op.strip() for op in operands_str.split(",")] if operands_str else []
 
-        raw_bytes = bytes.fromhex(data.get("bytes", ""))
+        raw_hex = data.get("bytes", "")
+        raw_bytes = b""
+        if raw_hex:
+            raw_hex = raw_hex.strip()
+            for c in raw_hex:
+                if c not in "0123456789abcdefABCDEF":
+                    logger.debug(f"Invalid hex character in instruction bytes: {c}")
+                    raw_hex = ""
+                    break
+            if raw_hex:
+                try:
+                    raw_bytes = bytes.fromhex(raw_hex)
+                except ValueError as e:
+                    logger.debug(f"Failed to parse hex bytes '{raw_hex[:20]}...': {e}")
+                    raw_bytes = b""
+
+        size = data.get("size", 0)
+        if size > 0 and len(raw_bytes) > 0 and len(raw_bytes) != size:
+            logger.debug(f"Size mismatch at 0x{data.get('offset', 0):x}: expected {size}, got {len(raw_bytes)} bytes")
 
         return cls(
             address=data.get("offset", 0),
             mnemonic=mnemonic,
             operands=operands,
-            size=data.get("size", 0),
+            size=size,
             bytes=raw_bytes,
             type=data.get("type", "unknown"),
             metadata=data,

@@ -187,6 +187,35 @@ def test_product_cli_accepts_each_stable_pass(
     assert expected_pass in payload["passes"]
 
 
+def _normalize_passes_for_comparison(passes: dict) -> dict:
+    """Remove non-deterministic fields from passes for reproducibility comparison."""
+    normalized = {}
+    for pass_name, pass_data in passes.items():
+        normalized[pass_name] = {
+            k: v for k, v in pass_data.items() if k not in ("execution_time_seconds", "previous_binary_path")
+        }
+        # Normalize mutations within pass
+        if "mutations" in normalized[pass_name]:
+            normalized[pass_name]["mutations"] = _normalize_mutations_for_comparison(normalized[pass_name]["mutations"])
+    return normalized
+
+
+def _normalize_mutations_for_comparison(mutations: list) -> list:
+    """Remove non-deterministic fields from mutations for reproducibility comparison."""
+    normalized = []
+    for mutation in mutations:
+        normalized_mutation = {k: v for k, v in mutation.items() if k not in ("recorded_after_seconds",)}
+        normalized.append(normalized_mutation)
+    return normalized
+
+
+def _normalize_summary_for_comparison(summary: dict) -> dict:
+    """Remove non-deterministic fields from summary for reproducibility comparison."""
+    result = dict(summary)
+    result.pop("execution_time_seconds", None)
+    return result
+
+
 @pytest.mark.slow
 def test_product_seed_is_reproducible_for_stable_pass(
     stable_elf_binary: Path,
@@ -230,9 +259,143 @@ def test_product_seed_is_reproducible_for_stable_pass(
 
     payload_a = json.loads(report_a.read_text(encoding="utf-8"))
     payload_b = json.loads(report_b.read_text(encoding="utf-8"))
+
     assert payload_a["config"]["seed"] == 2026
-    assert payload_a["mutations"] == payload_b["mutations"]
-    assert payload_a["passes"] == payload_b["passes"]
+    assert _normalize_mutations_for_comparison(payload_a["mutations"]) == _normalize_mutations_for_comparison(
+        payload_b["mutations"]
+    )
+    assert _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(
+        payload_b["passes"]
+    )
+
+    out_a_bytes = out_a.read_bytes()
+    out_b_bytes = out_b.read_bytes()
+    assert out_a_bytes == out_b_bytes, "Binary output should be byte-identical for same seed"
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("mutation", ["nop", "substitute", "register"])
+def test_product_seed_is_reproducible_for_all_stable_passes(
+    stable_elf_binary: Path,
+    tmp_path: Path,
+    mutation: str,
+):
+    """Each stable mutation pass should produce identical output for same seed."""
+    if not stable_elf_binary.exists():
+        pytest.skip("Stable ELF fixture not available")
+
+    report_a = tmp_path / f"seed_{mutation}_a.report.json"
+    out_a = tmp_path / f"seed_{mutation}_a.bin"
+    report_b = tmp_path / f"seed_{mutation}_b.report.json"
+    out_b = tmp_path / f"seed_{mutation}_b.bin"
+
+    seed = 42
+
+    base_cmd = [
+        sys.executable,
+        "-m",
+        "r2morph.cli",
+        "mutate",
+        str(stable_elf_binary),
+        "--seed",
+        str(seed),
+        "-m",
+        mutation,
+    ]
+
+    first = subprocess.run(
+        [*base_cmd, "-o", str(out_a), "--report", str(report_a)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    second = subprocess.run(
+        [*base_cmd, "-o", str(out_b), "--report", str(report_b)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+
+    assert first.returncode == 0, f"First run failed: {first.stderr}"
+    assert second.returncode == 0, f"Second run failed: {second.stderr}"
+
+    payload_a = json.loads(report_a.read_text(encoding="utf-8"))
+    payload_b = json.loads(report_b.read_text(encoding="utf-8"))
+
+    assert payload_a["config"]["seed"] == seed
+    assert _normalize_mutations_for_comparison(payload_a["mutations"]) == _normalize_mutations_for_comparison(
+        payload_b["mutations"]
+    ), f"Mutations differ for {mutation}"
+    assert _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(
+        payload_b["passes"]
+    ), f"Passes differ for {mutation}"
+
+    out_a_bytes = out_a.read_bytes()
+    out_b_bytes = out_b.read_bytes()
+    assert out_a_bytes == out_b_bytes, f"Binary output should be byte-identical for {mutation} with same seed"
+
+
+@pytest.mark.slow
+def test_product_seed_is_reproducible_for_combined_stable_passes(
+    stable_elf_binary: Path,
+    tmp_path: Path,
+):
+    """Combined stable mutations should produce identical output for same seed."""
+    if not stable_elf_binary.exists():
+        pytest.skip("Stable ELF fixture not available")
+
+    report_a = tmp_path / "seed_combined_a.report.json"
+    out_a = tmp_path / "seed_combined_a.bin"
+    report_b = tmp_path / "seed_combined_b.report.json"
+    out_b = tmp_path / "seed_combined_b.bin"
+
+    seed = 999
+    base_cmd = [
+        sys.executable,
+        "-m",
+        "r2morph.cli",
+        "mutate",
+        str(stable_elf_binary),
+        "--seed",
+        str(seed),
+        "-m",
+        "nop",
+        "-m",
+        "substitute",
+        "-m",
+        "register",
+    ]
+
+    first = subprocess.run(
+        [*base_cmd, "-o", str(out_a), "--report", str(report_a)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    second = subprocess.run(
+        [*base_cmd, "-o", str(out_b), "--report", str(report_b)],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+
+    assert first.returncode == 0, f"First run failed: {first.stderr}"
+    assert second.returncode == 0, f"Second run failed: {second.stderr}"
+
+    payload_a = json.loads(report_a.read_text(encoding="utf-8"))
+    payload_b = json.loads(report_b.read_text(encoding="utf-8"))
+
+    assert payload_a["config"]["seed"] == seed
+    assert _normalize_mutations_for_comparison(payload_a["mutations"]) == _normalize_mutations_for_comparison(
+        payload_b["mutations"]
+    ), "Mutations differ for combined passes"
+    assert _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(
+        payload_b["passes"]
+    ), "Passes differ for combined passes"
+
+    out_a_bytes = out_a.read_bytes()
+    out_b_bytes = out_b.read_bytes()
+    assert out_a_bytes == out_b_bytes, "Binary output should be byte-identical for combined passes with same seed"
 
 
 @pytest.mark.slow
@@ -434,4 +597,3 @@ def test_cli_mutate_validate_report_flow(stable_elf_binary: Path, tmp_path: Path
     )
     assert report_result.returncode == 0
     assert '"support_matrix"' in report_result.stdout
-

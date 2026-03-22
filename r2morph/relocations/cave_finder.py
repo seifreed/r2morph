@@ -71,9 +71,7 @@ class CaveFinder:
 
             logger.debug(f"Scanning section {section_name} for caves")
 
-            caves = self._find_caves_in_range(
-                section_addr, section_size, section_name, is_executable=True
-            )
+            caves = self._find_caves_in_range(section_addr, section_size, section_name, is_executable=True)
 
             self.caves.extend(caves)
 
@@ -102,7 +100,17 @@ class CaveFinder:
 
         try:
             data_hex = self.binary.r2.cmd(f"p8 {size} @ 0x{start_addr:x}")
-            data = bytes.fromhex(data_hex.strip())
+            if data_hex is None:
+                logger.error(f"r2 returned None for cave scan at 0x{start_addr:x}")
+                return caves
+            data_hex = data_hex.strip()
+            if not data_hex:
+                return caves
+            try:
+                data = bytes.fromhex(data_hex)
+            except ValueError as e:
+                logger.error(f"Failed to parse hex data at 0x{start_addr:x}: {e}")
+                return caves
         except Exception as e:
             logger.error(f"Failed to read section {section_name}: {e}")
             return caves
@@ -151,6 +159,11 @@ class CaveFinder:
         """
         if not self.caves:
             self.find_caves()
+            if not self.caves:
+                logger.warning(f"No caves found in binary for {needed_size} bytes")
+
+        if not self.caves:
+            return None
 
         sorted_caves = sorted(self.caves, key=lambda c: c.size, reverse=True)
 
@@ -166,6 +179,9 @@ class CaveFinder:
         """
         Allocate space from a cave.
 
+        Creates a reduced-size replacement cave in the list rather than
+        mutating the original object, so external references stay consistent.
+
         Args:
             cave: Cave to allocate from
             size: Size to allocate
@@ -179,19 +195,30 @@ class CaveFinder:
         allocated_addr = cave.address
         allocated_size = size
 
-        cave.address += size
-        cave.size -= size
+        remaining_size = cave.size - size
+        remaining_addr = cave.address + size
 
-        if cave.size < self.min_size:
+        # Remove the original cave from the list
+        try:
             self.caves.remove(cave)
+        except ValueError:
+            logger.debug("Cave already removed from available caves")
+
+        # If there's enough space left, add a new cave for the remainder
+        if remaining_size >= self.min_size:
+            remainder = CodeCave(
+                address=remaining_addr,
+                size=remaining_size,
+                section=cave.section,
+                is_executable=cave.is_executable,
+            )
+            self.caves.append(remainder)
 
         logger.debug(f"Allocated {allocated_size} bytes at 0x{allocated_addr:x}")
 
         return allocated_addr, allocated_size
 
-    def insert_code_in_cave(
-        self, code_bytes: bytes, preferred_section: str | None = None
-    ) -> int | None:
+    def insert_code_in_cave(self, code_bytes: bytes, preferred_section: str | None = None) -> int | None:
         """
         Insert code into a suitable cave.
 
@@ -208,16 +235,18 @@ class CaveFinder:
             for cave in self.caves:
                 if cave.section == preferred_section and cave.size >= needed_size:
                     addr, _ = self.allocate_cave(cave, needed_size)
-                    self.binary.write_bytes(addr, code_bytes)
-                    logger.info(
-                        f"Inserted {needed_size} bytes at 0x{addr:x} in {preferred_section}"
-                    )
+                    if not self.binary.write_bytes(addr, code_bytes):
+                        logger.error(f"Failed to write {needed_size} bytes at 0x{addr:x}")
+                        return None
+                    logger.info(f"Inserted {needed_size} bytes at 0x{addr:x} in {preferred_section}")
                     return addr
 
         cave = self.find_cave_for_size(needed_size)
         if cave:
             addr, _ = self.allocate_cave(cave, needed_size)
-            self.binary.write_bytes(addr, code_bytes)
+            if not self.binary.write_bytes(addr, code_bytes):
+                logger.error(f"Failed to write {needed_size} bytes at 0x{addr:x}")
+                return None
             logger.info(f"Inserted {needed_size} bytes at 0x{addr:x}")
             return addr
 

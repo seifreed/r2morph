@@ -59,9 +59,7 @@ class _FakeSession:
 
     def checkpoint(self, name: str, description: str = ""):
         self.checkpoints.append(name)
-        self._checkpoint_objects.append(
-            SimpleNamespace(name=name, binary_path=Path("/tmp/fake.bin"))
-        )
+        self._checkpoint_objects.append(SimpleNamespace(name=name, binary_path=Path("/tmp/fake.bin")))
 
     def rollback_to(self, name: str) -> bool:
         self.rollbacks.append(name)
@@ -284,16 +282,12 @@ def test_engine_build_report_includes_gate_failure_summary():
             "gate_evaluation": {
                 "requested": {
                     "min_severity": "clean",
-                    "require_pass_severity": [
-                        {"pass_name": "NopInsertion", "max_severity": "clean"}
-                    ],
+                    "require_pass_severity": [{"pass_name": "NopInsertion", "max_severity": "clean"}],
                 },
                 "results": {
                     "min_severity_passed": False,
                     "require_pass_severity_passed": False,
-                    "require_pass_severity_failures": [
-                        "NopInsertion=not-requested(expected <= clean)"
-                    ],
+                    "require_pass_severity_failures": ["NopInsertion=not-requested(expected <= clean)"],
                     "all_passed": False,
                 },
             },
@@ -319,7 +313,7 @@ def test_engine_build_report_includes_gate_failure_summary():
         "secondary_cli_namespace": "experimental",
         "prolonged_experimental_areas": [
             "cross-format rewriting outside ELF",
-            "non-x86_64 production support",
+            "non-x86_64 production support (arm64, arm32, x86_32)",
             "semantic validation beyond bounded symbolic scope",
         ],
     }
@@ -694,9 +688,7 @@ def test_build_pass_validation_context_assigns_role():
         validation_policy={
             "policy": "degrade-runtime",
             "reason": "limited-symbolic-support",
-            "limited_passes": [
-                {"pass_name": "RegisterSubstitution", "confidence": "limited"}
-            ],
+            "limited_passes": [{"pass_name": "RegisterSubstitution", "confidence": "limited"}],
         },
     )
     assert trigger_context["role"] == "degradation-trigger"
@@ -708,9 +700,7 @@ def test_build_pass_validation_context_assigns_role():
         validation_policy={
             "policy": "degrade-runtime",
             "reason": "limited-symbolic-support",
-            "limited_passes": [
-                {"pass_name": "RegisterSubstitution", "confidence": "limited"}
-            ],
+            "limited_passes": [{"pass_name": "RegisterSubstitution", "confidence": "limited"}],
         },
     )
     assert degraded_context["role"] == "executed-under-degraded-mode"
@@ -730,11 +720,7 @@ def test_enrich_validation_policy_copies_role_from_pass_results():
             "policy": "degrade-runtime",
             "limited_passes": [{"pass_name": "RegisterSubstitution", "confidence": "limited"}],
         },
-        {
-            "RegisterSubstitution": {
-                "validation_context": {"role": "degradation-trigger"}
-            }
-        },
+        {"RegisterSubstitution": {"validation_context": {"role": "degradation-trigger"}}},
     )
 
     assert enriched is not None
@@ -744,15 +730,9 @@ def test_enrich_validation_policy_copies_role_from_pass_results():
 def test_summarize_degradation_roles_counts_roles():
     counts = _summarize_degradation_roles(
         {
-            "RegisterSubstitution": {
-                "validation_context": {"role": "degradation-trigger"}
-            },
-            "NopInsertion": {
-                "validation_context": {"role": "executed-under-degraded-mode"}
-            },
-            "InstructionSubstitution": {
-                "validation_context": {"role": "requested-mode"}
-            },
+            "RegisterSubstitution": {"validation_context": {"role": "degradation-trigger"}},
+            "NopInsertion": {"validation_context": {"role": "executed-under-degraded-mode"}},
+            "InstructionSubstitution": {"validation_context": {"role": "requested-mode"}},
         }
     )
 
@@ -983,6 +963,7 @@ def test_symbolic_validation_reports_bounded_step_metadata(monkeypatch):
             "flat_successors": 1,
             "unsat_successors": 0,
             "successor_addresses": [0x401011],
+            "step_budget": 1,
         }
     ]
 
@@ -1290,14 +1271,9 @@ def test_engine_build_report_uses_stable_sections():
         "impacts": {"high": 0, "medium": 0, "low": 0},
     }
     assert report["report_views"]["triage_priority"][0]["pass_name"] == "RecordingPass"
-    assert (
-        report["report_views"]["only_pass"]["RecordingPass"]["normalized"]["pass_name"]
-        == "RecordingPass"
-    )
+    assert report["report_views"]["only_pass"]["RecordingPass"]["normalized"]["pass_name"] == "RecordingPass"
     assert report["report_views"]["only_pass"]["RecordingPass"]["region_evidence"] == []
-    assert report["report_views"]["pass_filter_views"]["only_clean_passes"] == [
-        "RecordingPass"
-    ]
+    assert report["report_views"]["pass_filter_views"]["only_clean_passes"] == ["RecordingPass"]
     assert report["report_views"]["mismatch_view"] == []
     assert report["report_views"]["only_mismatches"]["priority"] == []
     assert report["report_views"]["only_mismatches"]["rows"] == []
@@ -1472,13 +1448,9 @@ def test_engine_build_report_persists_pass_summary_maps():
     )
 
     assert report["pass_symbolic_summary"]["RecordingPass"]["pass_name"] == "RecordingPass"
-    assert report["summary"]["pass_symbolic_summary"]["RecordingPass"]["pass_name"] == (
-        "RecordingPass"
-    )
+    assert report["summary"]["pass_symbolic_summary"]["RecordingPass"]["pass_name"] == ("RecordingPass")
     assert report["pass_validation_context"]["RecordingPass"]["role"] == "degradation-trigger"
-    assert report["summary"]["pass_validation_context"]["RecordingPass"]["role"] == (
-        "degradation-trigger"
-    )
+    assert report["summary"]["pass_validation_context"]["RecordingPass"]["role"] == ("degradation-trigger")
 
 
 def test_summarize_pass_buckets_distinguishes_risk_and_coverage():

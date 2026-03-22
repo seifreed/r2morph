@@ -2,10 +2,12 @@
 Main relocation manager for handling code movement and reference updates.
 """
 
+import json
 import logging
 from dataclasses import dataclass
 
 from r2morph.core.binary import Binary
+from r2morph.relocations.utils import get_endianness
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +45,11 @@ class RelocationManager:
         self.address_map: dict[int, int] = {}
         self._analyzed_refs: set[int] = set()
 
-    def add_relocation(
-        self, old_address: int, new_address: int, size: int, relocation_type: str = "move"
-    ):
+    def _get_endianness(self) -> str:
+        """Detect binary endianness from architecture info."""
+        return get_endianness(self.binary)
+
+    def add_relocation(self, old_address: int, new_address: int, size: int, relocation_type: str = "move"):
         """
         Register a code relocation.
 
@@ -64,10 +68,7 @@ class RelocationManager:
         self.relocations.append(relocation)
         self.address_map[old_address] = new_address
 
-        logger.debug(
-            f"Registered relocation: 0x{old_address:x} -> 0x{new_address:x} "
-            f"({size} bytes, {relocation_type})"
-        )
+        logger.debug(f"Registered relocation: 0x{old_address:x} -> 0x{new_address:x} ({size} bytes, {relocation_type})")
 
     def get_new_address(self, old_address: int) -> int | None:
         """
@@ -154,9 +155,7 @@ class RelocationManager:
         if new_to_addr is None:
             return False
 
-        logger.debug(
-            f"Updating {ref_type} reference at 0x{from_addr:x}: 0x{to_addr:x} -> 0x{new_to_addr:x}"
-        )
+        logger.debug(f"Updating {ref_type} reference at 0x{from_addr:x}: 0x{to_addr:x} -> 0x{new_to_addr:x}")
 
         if ref_type in ["CALL", "JMP"]:
             return self._update_control_flow_ref(from_addr, to_addr, new_to_addr, ref_type)
@@ -165,9 +164,7 @@ class RelocationManager:
 
         return False
 
-    def _update_control_flow_ref(
-        self, from_addr: int, old_target: int, new_target: int, ref_type: str
-    ) -> bool:
+    def _update_control_flow_ref(self, from_addr: int, old_target: int, new_target: int, ref_type: str) -> bool:
         """
         Update a control flow reference (call/jmp).
 
@@ -198,17 +195,19 @@ class RelocationManager:
                 new_insn = f"{mnemonic} {new_offset:+d}"
                 new_bytes = self.binary.assemble(new_insn)
 
-                if len(new_bytes) <= size:
-                    self.binary.write_bytes(from_addr, new_bytes)
-                    return True
+                if new_bytes is not None and len(new_bytes) <= size:
+                    if self.binary.write_bytes(from_addr, new_bytes):
+                        return True
+                    logger.warning(f"write_bytes failed for control flow ref at 0x{from_addr:x}")
 
             else:
                 new_insn = f"{mnemonic} 0x{new_target:x}"
                 new_bytes = self.binary.assemble(new_insn)
 
-                if len(new_bytes) <= size:
-                    self.binary.write_bytes(from_addr, new_bytes)
-                    return True
+                if new_bytes is not None and len(new_bytes) <= size:
+                    if self.binary.write_bytes(from_addr, new_bytes):
+                        return True
+                    logger.warning(f"write_bytes failed for control flow ref at 0x{from_addr:x}")
 
         except Exception as e:
             logger.error(f"Failed to update control flow ref at 0x{from_addr:x}: {e}")
@@ -232,12 +231,14 @@ class RelocationManager:
             ptr_size = arch_info["bits"] // 8
 
             current_ptr_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ 0x{from_addr:x}")
-            current_ptr = int.from_bytes(bytes.fromhex(current_ptr_hex.strip()), byteorder="little")
+            endian = self._get_endianness()
+            current_ptr = int.from_bytes(bytes.fromhex(current_ptr_hex.strip()), byteorder=endian)
 
             if current_ptr == old_target:
-                new_ptr_bytes = new_target.to_bytes(ptr_size, byteorder="little")
-                self.binary.write_bytes(from_addr, new_ptr_bytes)
-                return True
+                new_ptr_bytes = new_target.to_bytes(ptr_size, byteorder=endian)
+                if self.binary.write_bytes(from_addr, new_ptr_bytes):
+                    return True
+                logger.warning(f"write_bytes failed for data ref at 0x{from_addr:x}")
 
         except Exception as e:
             logger.error(f"Failed to update data ref at 0x{from_addr:x}: {e}")
@@ -289,22 +290,22 @@ class RelocationManager:
             True if successful
         """
         try:
-            logger.info(
-                f"Shifting code block at 0x{start_address:x} "
-                f"(size={size}) by {shift_amount:+d} bytes"
-            )
+            logger.info(f"Shifting code block at 0x{start_address:x} (size={size}) by {shift_amount:+d} bytes")
 
             block_hex = self.binary.r2.cmd(f"p8 {size} @ 0x{start_address:x}")
             block_bytes = bytes.fromhex(block_hex.strip())
 
             new_address = start_address + shift_amount
 
-            self.binary.write_bytes(new_address, block_bytes)
+            if not self.binary.write_bytes(new_address, block_bytes):
+                logger.error(f"Failed to write shifted block at 0x{new_address:x}")
+                return False
 
             self.add_relocation(start_address, new_address, size, "move")
 
             if shift_amount > 0:
-                self.binary.nop_fill(start_address, min(size, shift_amount))
+                if not self.binary.nop_fill(start_address, min(size, shift_amount)):
+                    logger.warning(f"Failed to NOP-fill old location at 0x{start_address:x}")
 
             return True
 

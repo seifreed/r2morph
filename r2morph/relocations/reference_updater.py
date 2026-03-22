@@ -2,10 +2,12 @@
 Update references (jumps, calls, pointers) after code modifications.
 """
 
+import json
 import logging
 from enum import Enum
 
 from r2morph.core.binary import Binary
+from r2morph.relocations.utils import get_endianness
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +40,10 @@ class ReferenceUpdater:
         self.binary = binary
         self.updated_refs: set[int] = set()
 
+    def _get_endianness(self) -> str:
+        """Detect binary endianness from architecture info."""
+        return get_endianness(self.binary)
+
     def update_jump_target(self, jump_addr: int, old_target: int, new_target: int) -> bool:
         """
         Update a jump instruction to point to new target.
@@ -52,8 +58,6 @@ class ReferenceUpdater:
         """
         try:
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{jump_addr:x}")
-            import json
-
             insns = json.loads(insn_json)
             if not insns:
                 return False
@@ -70,8 +74,10 @@ class ReferenceUpdater:
 
                 new_bytes = self.binary.assemble(new_insn)
 
-                if len(new_bytes) <= size:
-                    self.binary.write_bytes(jump_addr, new_bytes)
+                if new_bytes and len(new_bytes) <= size:
+                    if not self.binary.write_bytes(jump_addr, new_bytes):
+                        logger.warning(f"write_bytes failed for jump at 0x{jump_addr:x}")
+                        return False
 
                     if len(new_bytes) < size:
                         self.binary.nop_fill(jump_addr + len(new_bytes), size - len(new_bytes))
@@ -87,8 +93,10 @@ class ReferenceUpdater:
                 new_insn = f"{mnemonic} 0x{new_target:x}"
                 new_bytes = self.binary.assemble(new_insn)
 
-                if len(new_bytes) <= size:
-                    self.binary.write_bytes(jump_addr, new_bytes)
+                if new_bytes and len(new_bytes) <= size:
+                    if not self.binary.write_bytes(jump_addr, new_bytes):
+                        logger.warning(f"write_bytes failed for jump at 0x{jump_addr:x}")
+                        return False
                     if len(new_bytes) < size:
                         self.binary.nop_fill(jump_addr + len(new_bytes), size - len(new_bytes))
 
@@ -115,8 +123,6 @@ class ReferenceUpdater:
         """
         try:
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{call_addr:x}")
-            import json
-
             insns = json.loads(insn_json)
             if not insns:
                 return False
@@ -132,8 +138,10 @@ class ReferenceUpdater:
 
                 new_bytes = self.binary.assemble(new_insn)
 
-                if len(new_bytes) <= size:
-                    self.binary.write_bytes(call_addr, new_bytes)
+                if new_bytes and len(new_bytes) <= size:
+                    if not self.binary.write_bytes(call_addr, new_bytes):
+                        logger.warning(f"write_bytes failed for call at 0x{call_addr:x}")
+                        return False
                     if len(new_bytes) < size:
                         self.binary.nop_fill(call_addr + len(new_bytes), size - len(new_bytes))
 
@@ -146,9 +154,7 @@ class ReferenceUpdater:
 
         return False
 
-    def update_data_pointer(
-        self, ptr_addr: int, old_value: int, new_value: int, ptr_size: int | None = None
-    ) -> bool:
+    def update_data_pointer(self, ptr_addr: int, old_value: int, new_value: int, ptr_size: int | None = None) -> bool:
         """
         Update a data pointer.
 
@@ -167,22 +173,32 @@ class ReferenceUpdater:
                 ptr_size = arch_info["bits"] // 8
 
             current_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ 0x{ptr_addr:x}")
-            current_bytes = bytes.fromhex(current_hex.strip())
-            current_value = int.from_bytes(current_bytes, byteorder="little")
+            if current_hex is None:
+                logger.error(f"r2 returned None for pointer at 0x{ptr_addr:x}")
+                return False
+            current_hex = current_hex.strip()
+            if not current_hex:
+                logger.error(f"Empty response for pointer at 0x{ptr_addr:x}")
+                return False
+            try:
+                current_bytes = bytes.fromhex(current_hex)
+            except ValueError as e:
+                logger.error(f"Failed to parse hex at 0x{ptr_addr:x}: {e}")
+                return False
+            current_value = int.from_bytes(current_bytes, byteorder=self._get_endianness())
 
             if current_value == old_value:
-                new_bytes = new_value.to_bytes(ptr_size, byteorder="little")
-                self.binary.write_bytes(ptr_addr, new_bytes)
+                new_bytes = new_value.to_bytes(ptr_size, byteorder=self._get_endianness())
+                if not self.binary.write_bytes(ptr_addr, new_bytes):
+                    logger.warning(f"write_bytes failed for pointer at 0x{ptr_addr:x}")
+                    return False
 
                 self.updated_refs.add(ptr_addr)
-                logger.debug(
-                    f"Updated pointer at 0x{ptr_addr:x}: 0x{old_value:x} -> 0x{new_value:x}"
-                )
+                logger.debug(f"Updated pointer at 0x{ptr_addr:x}: 0x{old_value:x} -> 0x{new_value:x}")
                 return True
             else:
                 logger.warning(
-                    f"Pointer value mismatch at 0x{ptr_addr:x}: "
-                    f"expected 0x{old_value:x}, got 0x{current_value:x}"
+                    f"Pointer value mismatch at 0x{ptr_addr:x}: expected 0x{old_value:x}, got 0x{current_value:x}"
                 )
 
         except Exception as e:

@@ -13,8 +13,7 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
-from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph
+from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph, BlockType
 from r2morph.analysis.dependencies import (
     Dependency,
     DependencyAnalyzer,
@@ -56,7 +55,7 @@ class TestCFGModuleDetailed:
 
     def test_basic_block_is_conditional(self):
         """Test conditional block detection."""
-        block = BasicBlock(address=0x1000, size=64, type="conditional")
+        block = BasicBlock(address=0x1000, size=64, block_type=BlockType.CONDITIONAL)
         assert block.is_conditional()
 
         block2 = BasicBlock(address=0x2000, size=32)
@@ -66,7 +65,7 @@ class TestCFGModuleDetailed:
 
     def test_basic_block_is_return(self):
         """Test return block detection."""
-        block = BasicBlock(address=0x1000, size=64, type="return")
+        block = BasicBlock(address=0x1000, size=64, block_type=BlockType.RETURN)
         assert block.is_return()
 
         block2 = BasicBlock(address=0x2000, size=32)

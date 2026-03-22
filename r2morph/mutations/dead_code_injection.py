@@ -114,6 +114,8 @@ class DeadCodeInjectionPass(MutationPass):
         funcs_mutated = 0
         injection_points_found = 0
 
+        self._reset_random()
+
         logger.info(
             f"Dead code injection: processing {len(functions)} functions "
             f"(max {self.max_injections} injections per function, "
@@ -193,15 +195,50 @@ class DeadCodeInjectionPass(MutationPass):
             dead_code = self._generate_dead_code_for_size(binary, available_size, func_addr)
 
             if not dead_code:
-                logger.debug(
-                    f"Could not generate dead code for {available_size} bytes at 0x{inject_addr:x}"
-                )
+                logger.debug(f"Could not generate dead code for {available_size} bytes at 0x{inject_addr:x}")
                 continue
+
+            mutation_checkpoint = self._create_mutation_checkpoint("dead_code")
+            baseline = {}
+            if self._validation_manager is not None:
+                baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
+
+            original_bytes = binary.read_bytes(inject_addr, available_size)
+            if not original_bytes:
+                original_bytes = b"\x90" * available_size
 
             # Write the dead code bytes
             success = binary.write_bytes(inject_addr, dead_code)
 
             if success:
+                record = self._record_mutation(
+                    function_address=func_addr,
+                    start_address=inject_addr,
+                    end_address=inject_addr + len(dead_code) - 1,
+                    original_bytes=original_bytes[: len(dead_code)],
+                    mutated_bytes=dead_code,
+                    original_disasm=f"padding ({len(dead_code)} bytes)",
+                    mutated_disasm=f"dead_code ({len(dead_code)} bytes)",
+                    mutation_kind="dead_code_injection",
+                    metadata={
+                        "injection_point_type": point["type"],
+                        "available_size": available_size,
+                        "structural_baseline": baseline,
+                    },
+                )
+
+                if self._validation_manager is not None:
+                    outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
+                    if not outcome.passed and mutation_checkpoint is not None:
+                        if self._session is not None:
+                            self._session.rollback_to(mutation_checkpoint)
+                        binary.reload()
+                        if self._records:
+                            self._records.pop()
+                        if self._rollback_policy == "fail-fast":
+                            raise RuntimeError("Mutation-level validation failed")
+                        continue
+
                 logger.info(
                     f"Injected {len(dead_code)} bytes of dead code at 0x{inject_addr:x} "
                     f"(available: {available_size} bytes, type: {point['type']})"
@@ -212,9 +249,7 @@ class DeadCodeInjectionPass(MutationPass):
 
         return mutations, len(injection_points)
 
-    def _find_injection_points(
-        self, instructions: list[dict[str, Any]]
-    ) -> list[dict[str, Any]]:
+    def _find_injection_points(self, instructions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """
         Find safe injection points in the instruction stream.
 
@@ -255,11 +290,13 @@ class DeadCodeInjectionPass(MutationPass):
 
                 # Only consider if we have enough space
                 if padding_size >= self.min_padding_size:
-                    injection_points.append({
-                        "addr": padding_start,
-                        "size": padding_size,
-                        "type": "padding",
-                    })
+                    injection_points.append(
+                        {
+                            "addr": padding_start,
+                            "size": padding_size,
+                            "type": "padding",
+                        }
+                    )
 
                 i = j
                 continue
@@ -282,9 +319,7 @@ class DeadCodeInjectionPass(MutationPass):
 
         return injection_points
 
-    def _is_safe_injection_point(
-        self, insn: dict[str, Any], instructions: list[dict[str, Any]], index: int
-    ) -> bool:
+    def _is_safe_injection_point(self, insn: dict[str, Any], instructions: list[dict[str, Any]], index: int) -> bool:
         """
         Check if we can safely inject code after this instruction.
 
@@ -320,9 +355,7 @@ class DeadCodeInjectionPass(MutationPass):
 
         return False
 
-    def _generate_dead_code_for_size(
-        self, binary: Binary, max_size: int, func_addr: int
-    ) -> bytes | None:
+    def _generate_dead_code_for_size(self, binary: Binary, max_size: int, func_addr: int) -> bytes | None:
         """
         Generate dead code that fits within the specified size.
 
@@ -346,8 +379,7 @@ class DeadCodeInjectionPass(MutationPass):
 
             # Filter out labels and directives (they can't be assembled directly)
             assemblable_insns = [
-                insn for insn in dead_code_insns
-                if not insn.startswith(".") and not insn.endswith(":")
+                insn for insn in dead_code_insns if not insn.startswith(".") and not insn.endswith(":")
             ]
 
             if not assemblable_insns:

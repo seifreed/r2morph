@@ -204,7 +204,8 @@ class InstructionSubstitutionPass(MutationPass):
                 continue
 
             try:
-                instructions = binary.get_function_disasm(func["addr"])
+                func_addr = func.get("offset", func.get("addr", 0))
+                instructions = binary.get_function_disasm(func_addr)
             except Exception as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
@@ -216,10 +217,7 @@ class InstructionSubstitutionPass(MutationPass):
                 if equivalents and len(equivalents) > 1:
                     candidates_found += 1
 
-                    if (
-                        random.random() < self.probability
-                        and func_mutations < self.max_substitutions
-                    ):
+                    if random.random() < self.probability and func_mutations < self.max_substitutions:
                         if self.force_different:
                             available = [e for e in equivalents if e != original_pattern]
                             if not available:
@@ -240,9 +238,7 @@ class InstructionSubstitutionPass(MutationPass):
                             mutation_checkpoint = self._create_mutation_checkpoint("subst")
                             baseline = {}
                             if self._validation_manager is not None:
-                                baseline = self._validation_manager.capture_structural_baseline(
-                                    binary, func["addr"]
-                                )
+                                baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
                             original_bytes = binary.read_bytes(addr, orig_size)
 
                             if ";" in chosen:
@@ -267,10 +263,7 @@ class InstructionSubstitutionPass(MutationPass):
                                 if new_size == orig_size:
                                     if not binary.write_bytes(addr, new_bytes):
                                         continue
-                                    logger.info(
-                                        f"Substituted '{insn.get('disasm')}' with "
-                                        f"'{chosen}' at 0x{addr:x}"
-                                    )
+                                    logger.info(f"Substituted '{insn.get('disasm')}' with '{chosen}' at 0x{addr:x}")
                                     mutated_bytes = binary.read_bytes(addr, orig_size)
                                     record = self._record_mutation(
                                         function_address=func["addr"],
@@ -293,17 +286,13 @@ class InstructionSubstitutionPass(MutationPass):
                                         },
                                     )
                                     if self._validation_manager is not None:
-                                        outcome = self._validation_manager.validate_mutation(
-                                            binary, record.to_dict()
-                                        )
+                                        outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
                                         if not outcome.passed and mutation_checkpoint is not None:
                                             self._session.rollback_to(mutation_checkpoint)
                                             binary.reload()
                                             self._records.pop()
                                             if self._rollback_policy == "fail-fast":
-                                                raise RuntimeError(
-                                                    "Mutation-level validation failed"
-                                                )
+                                                raise RuntimeError("Mutation-level validation failed")
                                             continue
                                     func_mutations += 1
                                     mutations_applied += 1
@@ -315,8 +304,7 @@ class InstructionSubstitutionPass(MutationPass):
                                     if not binary.nop_fill(addr + new_size, orig_size - new_size):
                                         continue
                                     logger.info(
-                                        f"Substituted '{insn.get('disasm')}' with "
-                                        f"'{chosen}' (+ NOPs) at 0x{addr:x}"
+                                        f"Substituted '{insn.get('disasm')}' with '{chosen}' (+ NOPs) at 0x{addr:x}"
                                     )
                                     mutated_bytes = binary.read_bytes(addr, orig_size)
                                     record = self._record_mutation(
@@ -341,17 +329,13 @@ class InstructionSubstitutionPass(MutationPass):
                                         },
                                     )
                                     if self._validation_manager is not None:
-                                        outcome = self._validation_manager.validate_mutation(
-                                            binary, record.to_dict()
-                                        )
+                                        outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
                                         if not outcome.passed and mutation_checkpoint is not None:
                                             self._session.rollback_to(mutation_checkpoint)
                                             binary.reload()
                                             self._records.pop()
                                             if self._rollback_policy == "fail-fast":
-                                                raise RuntimeError(
-                                                    "Mutation-level validation failed"
-                                                )
+                                                raise RuntimeError("Mutation-level validation failed")
                                             continue
                                     func_mutations += 1
                                     mutations_applied += 1
@@ -393,7 +377,8 @@ class InstructionSubstitutionPass(MutationPass):
                 continue
 
             try:
-                instructions = binary.get_function_disasm(func["addr"])
+                func_addr = func.get("offset", func.get("addr", 0))
+                instructions = binary.get_function_disasm(func_addr)
             except Exception as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue

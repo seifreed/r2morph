@@ -45,15 +45,24 @@ class MutationRecord:
     metadata: dict[str, Any] = field(default_factory=dict)
     status: str = "applied"
     recorded_after_seconds: float | None = None
+    seed: int | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-safe dict."""
         payload = asdict(self)
-        original = bytes.fromhex(self.original_bytes)
-        mutated = bytes.fromhex(self.mutated_bytes)
-        changed_offsets = [
-            index for index, (left, right) in enumerate(zip(original, mutated)) if left != right
-        ]
+
+        # Safely parse hex bytes, handling invalid hex gracefully
+        try:
+            original = bytes.fromhex(self.original_bytes) if self.original_bytes else b""
+        except ValueError:
+            original = b""
+
+        try:
+            mutated = bytes.fromhex(self.mutated_bytes) if self.mutated_bytes else b""
+        except ValueError:
+            mutated = b""
+
+        changed_offsets = [index for index, (left, right) in enumerate(zip(original, mutated)) if left != right]
         payload["address_range"] = [self.start_address, self.end_address]
         payload["byte_diff_count"] = len(changed_offsets)
         payload["changed_byte_offsets"] = changed_offsets
@@ -68,6 +77,29 @@ class MutationRecord:
         ]
         payload["size"] = len(mutated)
         return payload
+
+
+@dataclass
+class MutationResult:
+    """Base result class for mutation operations."""
+
+    success: bool = True
+    mutations_applied: int = 0
+    records: list[MutationRecord] = field(default_factory=list)
+    errors: list[str] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    seed: int | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to dictionary."""
+        return {
+            "success": self.success,
+            "mutations_applied": self.mutations_applied,
+            "records": [r.to_dict() for r in self.records],
+            "errors": self.errors,
+            "metadata": self.metadata,
+            "seed": self.seed,
+        }
 
 
 class MutationPass(ABC):
@@ -104,6 +136,7 @@ class MutationPass(ABC):
         self._checkpoint_per_mutation = False
         self._mutation_counter = 0
         self._run_started_at: float | None = None
+        self._active_seed: int | None = None
         self._support = PassSupport(
             formats=("ELF",),
             architectures=("x86_64",),
@@ -125,6 +158,17 @@ class MutationPass(ABC):
             Dictionary with mutation statistics
         """
         pass
+
+    def configure_for_memory_constraints(self, factor: float) -> None:
+        """Adjust pass configuration for memory-efficient mode.
+
+        Subclasses should override this to reduce their resource usage.
+        The factor ranges from 0.0 (most aggressive reduction) to 1.0 (no change).
+
+        Args:
+            factor: Reduction factor (0.0-1.0)
+        """
+        pass  # Default no-op; subclasses override as needed
 
     def run(self, binary: Binary) -> dict[str, Any]:
         """
@@ -254,10 +298,9 @@ class MutationPass(ABC):
             metadata=metadata or {},
             status=status,
             recorded_after_seconds=(
-                round(time.perf_counter() - self._run_started_at, 6)
-                if self._run_started_at is not None
-                else None
+                round(time.perf_counter() - self._run_started_at, 6) if self._run_started_at is not None else None
             ),
+            seed=self._active_seed,
         )
         self._records.append(record)
         return record
@@ -273,12 +316,15 @@ class MutationPass(ABC):
         if self.config.get("_use_derived_seed") and self.config.get("_pass_seed") is not None:
             derived_seed = int(self.config["_pass_seed"])
             random.seed(derived_seed)
+            self._active_seed = derived_seed
             return derived_seed
 
         seed = self.config.get("seed")
         if seed is None:
+            self._active_seed = None
             return None
         random.seed(seed)
+        self._active_seed = int(seed)
         return int(seed)
 
     def get_records(self) -> list[MutationRecord]:

@@ -40,13 +40,22 @@ class Function:
         Returns:
             Function instance
         """
+        # Extract call addresses from callrefs (which may be dicts or ints)
+        callrefs = data.get("callrefs", [])
+        calls = []
+        for ref in callrefs:
+            if isinstance(ref, dict):
+                calls.append(ref.get("addr", 0))
+            elif isinstance(ref, int):
+                calls.append(ref)
+
         return cls(
             address=data.get("offset", 0),
             name=data.get("name", "unknown"),
             size=data.get("size", 0),
             instructions=[],
             basic_blocks=[],
-            calls=data.get("callrefs", []),
+            calls=calls,
             metadata=data,
         )
 

@@ -6,6 +6,7 @@ import sys
 import json
 
 import pytest
+
 typer_testing = pytest.importorskip("typer.testing")
 CliRunner = typer_testing.CliRunner
 
@@ -79,6 +80,9 @@ def test_cli_warns_for_experimental_mutations(monkeypatch: pytest.MonkeyPatch, t
         def save(self, output_path):
             Path(output_path).write_bytes(self.path.read_bytes())
 
+        def build_report(self, result=None):
+            return {"pass_results": {}, "mutations": []}
+
     monkeypatch.setattr(cli, "MorphEngine", FakeEngine)
 
     runner = CliRunner()
@@ -143,6 +147,9 @@ def test_cli_warns_for_symbolic_validation_mode(
         def save(self, output_path):
             Path(output_path).write_bytes(self.path.read_bytes())
 
+        def build_report(self, result=None):
+            return {"pass_results": {}, "mutations": []}
+
     monkeypatch.setattr(cli, "MorphEngine", FakeEngine)
 
     runner = CliRunner()
@@ -182,7 +189,7 @@ def test_cli_report_prints_symbolic_mutation_summary(tmp_path: Path) -> None:
                             "symbolic_status": "bounded-step-observables-match",
                             "symbolic_observable_check_performed": True,
                             "symbolic_observable_equivalent": True,
-                        }
+                        },
                     },
                     {
                         "pass_name": "InstructionSubstitution",
@@ -194,21 +201,21 @@ def test_cli_report_prints_symbolic_mutation_summary(tmp_path: Path) -> None:
                             "symbolic_observable_check_performed": True,
                             "symbolic_observable_equivalent": False,
                             "symbolic_observable_mismatches": ["eax", "eflags"],
-                        }
+                        },
                     },
                     {
                         "pass_name": "NopInsertion",
                         "metadata": {
                             "symbolic_requested": True,
                             "symbolic_status": "bounded-step-passed",
-                        }
+                        },
                     },
                     {
                         "pass_name": "BlockReordering",
                         "metadata": {
                             "symbolic_requested": True,
                             "symbolic_status": "unsupported-pass",
-                        }
+                        },
                     },
                 ]
             }
@@ -667,9 +674,7 @@ def test_cli_report_only_expected_severity_filters_gate_summary(tmp_path: Path) 
                             "pass_name": "InstructionSubstitution",
                             "failure_count": 1,
                             "strictest_expected_severity": "bounded-only",
-                            "failures": [
-                                "InstructionSubstitution=not-requested(expected <= bounded-only)"
-                            ],
+                            "failures": ["InstructionSubstitution=not-requested(expected <= bounded-only)"],
                         },
                         {
                             "pass_name": "NopInsertion",
@@ -728,9 +733,9 @@ def test_cli_report_only_expected_severity_filters_gate_summary(tmp_path: Path) 
     assert "expected_severity_counts=clean:1" in result.output
     payload = json.loads(filtered_path.read_text(encoding="utf-8"))
     assert payload["report_filters"]["only_expected_severity"] == "clean"
-    assert payload["filtered_summary"]["gate_failures"][
-        "require_pass_severity_failures_by_expected_severity"
-    ] == {"clean": 1}
+    assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_expected_severity"] == {
+        "clean": 1
+    }
     assert payload["filtered_summary"]["gate_failure_priority"] == [
         {
             "pass_name": "NopInsertion",
@@ -757,22 +762,14 @@ def test_cli_report_only_expected_severity_require_results_respects_filtered_gat
                             "failures": ["NopInsertion=not-requested(expected <= clean)"],
                         }
                     ],
-                    "gate_failure_severity_priority": [
-                        {"severity": "clean", "failure_count": 1}
-                    ],
+                    "gate_failure_severity_priority": [{"severity": "clean", "failure_count": 1}],
                 },
                 "gate_evaluation": {
-                    "requested": {
-                        "require_pass_severity": [
-                            {"pass_name": "NopInsertion", "max_severity": "clean"}
-                        ]
-                    },
+                    "requested": {"require_pass_severity": [{"pass_name": "NopInsertion", "max_severity": "clean"}]},
                     "results": {
                         "min_severity_passed": True,
                         "require_pass_severity_passed": False,
-                        "require_pass_severity_failures": [
-                            "NopInsertion=not-requested(expected <= clean)"
-                        ],
+                        "require_pass_severity_failures": ["NopInsertion=not-requested(expected <= clean)"],
                         "all_passed": False,
                     },
                 },
@@ -828,9 +825,7 @@ def test_cli_report_only_pass_failure_filters_gate_summary(tmp_path: Path) -> No
                             "pass_name": "InstructionSubstitution",
                             "failure_count": 1,
                             "strictest_expected_severity": "bounded-only",
-                            "failures": [
-                                "InstructionSubstitution=not-requested(expected <= bounded-only)"
-                            ],
+                            "failures": ["InstructionSubstitution=not-requested(expected <= bounded-only)"],
                         },
                     ],
                     "gate_failure_severity_priority": [
@@ -883,9 +878,9 @@ def test_cli_report_only_pass_failure_filters_gate_summary(tmp_path: Path) -> No
     assert "expected_severity_counts=clean:1" in result.output
     payload = json.loads(filtered_path.read_text(encoding="utf-8"))
     assert payload["report_filters"]["only_pass_failure"] == "NopInsertion"
-    assert payload["filtered_summary"]["gate_failures"][
-        "require_pass_severity_failures_by_pass"
-    ] == {"NopInsertion": ["NopInsertion=not-requested(expected <= clean)"]}
+    assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_pass"] == {
+        "NopInsertion": ["NopInsertion=not-requested(expected <= clean)"]
+    }
     assert payload["filtered_summary"]["gate_failure_priority"] == [
         {
             "pass_name": "NopInsertion",
@@ -914,17 +909,11 @@ def test_cli_report_only_pass_failure_require_results_respects_filtered_gates(
                     ],
                 },
                 "gate_evaluation": {
-                    "requested": {
-                        "require_pass_severity": [
-                            {"pass_name": "NopInsertion", "max_severity": "clean"}
-                        ]
-                    },
+                    "requested": {"require_pass_severity": [{"pass_name": "NopInsertion", "max_severity": "clean"}]},
                     "results": {
                         "min_severity_passed": True,
                         "require_pass_severity_passed": False,
-                        "require_pass_severity_failures": [
-                            "NopInsertion=not-requested(expected <= clean)"
-                        ],
+                        "require_pass_severity_failures": ["NopInsertion=not-requested(expected <= clean)"],
                         "all_passed": False,
                     },
                 },
@@ -979,17 +968,11 @@ def test_cli_report_only_pass_failure_accepts_mutation_alias(tmp_path: Path) -> 
                     ],
                 },
                 "gate_evaluation": {
-                    "requested": {
-                        "require_pass_severity": [
-                            {"pass_name": "NopInsertion", "max_severity": "clean"}
-                        ]
-                    },
+                    "requested": {"require_pass_severity": [{"pass_name": "NopInsertion", "max_severity": "clean"}]},
                     "results": {
                         "min_severity_passed": True,
                         "require_pass_severity_passed": False,
-                        "require_pass_severity_failures": [
-                            "NopInsertion=not-requested(expected <= clean)"
-                        ],
+                        "require_pass_severity_failures": ["NopInsertion=not-requested(expected <= clean)"],
                         "all_passed": False,
                     },
                 },
@@ -1296,8 +1279,7 @@ def test_cli_report_only_mismatches_preserves_degraded_context(tmp_path: Path) -
     assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "RegisterSubstitution"
     assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["severity"] == "mismatch"
     assert (
-        payload["filtered_summary"]["pass_validation_context"]["RegisterSubstitution"]["role"]
-        == "degradation-trigger"
+        payload["filtered_summary"]["pass_validation_context"]["RegisterSubstitution"]["role"] == "degradation-trigger"
     )
 
 
@@ -1449,24 +1431,12 @@ def test_cli_report_only_pass_shows_local_symbolic_summary(tmp_path: Path) -> No
     assert "changed_bytes=2" in result.output
     assert "symbolic_mismatch=1" in result.output
     payload = json.loads(output_path.read_text(encoding="utf-8"))
+    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["symbolic_requested"] == 2
     assert (
-        payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"][
-            "symbolic_requested"
-        ]
-        == 2
-    )
-    assert (
-        payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"][
-            "issues"
-        ][0]["severity"]
+        payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["issues"][0]["severity"]
         == "mismatch"
     )
-    assert (
-        payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"][
-            "severity"
-        ]
-        == "mismatch"
-    )
+    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "mismatch"
     assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "InstructionSubstitution"
     assert payload["filtered_summary"]["pass_evidence"][0]["changed_region_count"] == 1
 
@@ -1690,16 +1660,10 @@ def test_cli_report_only_risky_passes_filters_to_risky_passes(tmp_path: Path) ->
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["report_filters"]["only_risky_passes"] is True
     assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == [
-        "RegisterSubstitution"
-    ]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == [
-        "RegisterSubstitution"
-    ]
+    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
+    assert payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == ["RegisterSubstitution"]
     assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == (
-        "RegisterSubstitution"
-    )
+    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == ("RegisterSubstitution")
 
 
 def test_cli_report_only_risky_passes_require_results_uses_pass_evidence(tmp_path: Path) -> None:
@@ -1816,12 +1780,8 @@ def test_cli_report_prefers_persisted_pass_buckets_without_pass_results(tmp_path
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == [
-        "RegisterSubstitution"
-    ]
-    assert payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == [
-        "InstructionSubstitution"
-    ]
+    assert payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == ["RegisterSubstitution"]
+    assert payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == ["InstructionSubstitution"]
 
 
 def test_cli_report_prefers_persisted_pass_summary_maps_without_pass_results(
@@ -1899,12 +1859,8 @@ def test_cli_report_prefers_persisted_pass_summary_maps_without_pass_results(
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"][
-        "severity"
-    ] == "clean"
-    assert payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"][
-        "role"
-    ] == "requested-mode"
+    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean"
+    assert payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"]["role"] == "requested-mode"
 
 
 def test_cli_report_prefers_persisted_capability_and_evidence_maps_without_pass_results(
@@ -1953,9 +1909,9 @@ def test_cli_report_prefers_persisted_capability_and_evidence_maps_without_pass_
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_capabilities"]["InstructionSubstitution"][
-        "symbolic"
-    ]["recommended"] is True
+    assert (
+        payload["filtered_summary"]["pass_capabilities"]["InstructionSubstitution"]["symbolic"]["recommended"] is True
+    )
     assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "InstructionSubstitution"
 
 
@@ -1976,9 +1932,7 @@ def test_cli_report_prefers_persisted_triage_and_discard_summaries_without_pass_
                         "without_coverage": 0,
                         "statuses": {"real-binary-observable-mismatch": 1},
                     },
-                    "symbolic_status_counts": {
-                        "real-binary-observable-mismatch": 1
-                    },
+                    "symbolic_status_counts": {"real-binary-observable-mismatch": 1},
                     "pass_triage_rows": [
                         {
                             "pass_name": "RegisterSubstitution",
@@ -2082,32 +2036,18 @@ def test_cli_report_prefers_persisted_triage_and_discard_summaries_without_pass_
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["symbolic_statuses"] == {
-        "real-binary-observable-mismatch": 1
-    }
+    assert payload["filtered_summary"]["symbolic_statuses"] == {"real-binary-observable-mismatch": 1}
     assert payload["filtered_summary"]["pass_triage_rows"][0]["pass_name"] == "RegisterSubstitution"
     assert payload["filtered_summary"]["pass_capability_summary"][0]["symbolic_confidence"] == "limited"
     assert payload["filtered_summary"]["validation_role_rows"][0]["role"] == "requested-mode"
     assert payload["filtered_summary"]["validation_adjustments"]["degraded_validation"] is False
-    assert payload["filtered_summary"]["validation_adjustment_compact_summary"][
-        "degraded_validation"
-    ] is False
+    assert payload["filtered_summary"]["validation_adjustment_compact_summary"]["degraded_validation"] is False
     assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["discarded_mutation_summary"]["by_reason"] == {
-        "runtime_validation_failed": 1
-    }
-    assert payload["filtered_summary"]["discarded_mutation_compact_rows"][0]["pass_name"] == (
-        "RegisterSubstitution"
-    )
-    assert payload["filtered_summary"]["discarded_mutation_final_rows"][0]["pass_name"] == (
-        "RegisterSubstitution"
-    )
-    assert payload["filtered_summary"]["discarded_mutation_final_rows"][0]["reasons"] == [
-        "runtime_validation_failed"
-    ]
-    assert payload["filtered_summary"]["discarded_mutation_compact_by_reason"] == {
-        "runtime_validation_failed": 1
-    }
+    assert payload["filtered_summary"]["discarded_mutation_summary"]["by_reason"] == {"runtime_validation_failed": 1}
+    assert payload["filtered_summary"]["discarded_mutation_compact_rows"][0]["pass_name"] == ("RegisterSubstitution")
+    assert payload["filtered_summary"]["discarded_mutation_final_rows"][0]["pass_name"] == ("RegisterSubstitution")
+    assert payload["filtered_summary"]["discarded_mutation_final_rows"][0]["reasons"] == ["runtime_validation_failed"]
+    assert payload["filtered_summary"]["discarded_mutation_compact_by_reason"] == {"runtime_validation_failed": 1}
 
 
 def test_cli_report_prefers_report_views_and_normalized_pass_results_without_pass_results(
@@ -2212,15 +2152,9 @@ def test_cli_report_prefers_report_views_and_normalized_pass_results_without_pas
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
     assert payload["filtered_summary"]["pass_triage_rows"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == (
-        "RegisterSubstitution"
-    )
-    assert payload["filtered_summary"]["pass_validation_context"]["RegisterSubstitution"][
-        "role"
-    ] == "requested-mode"
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["RegisterSubstitution"][
-        "severity"
-    ] == "mismatch"
+    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("RegisterSubstitution")
+    assert payload["filtered_summary"]["pass_validation_context"]["RegisterSubstitution"]["role"] == "requested-mode"
+    assert payload["filtered_summary"]["pass_symbolic_summary"]["RegisterSubstitution"]["severity"] == "mismatch"
 
 
 def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: Path) -> None:
@@ -2254,9 +2188,7 @@ def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: P
                                     "failure_count": 1,
                                     "strictest_expected_severity": "clean",
                                     "role": "requested-mode",
-                                    "failures": [
-                                        "RegisterSubstitution=not-requested(expected <= clean)"
-                                    ],
+                                    "failures": ["RegisterSubstitution=not-requested(expected <= clean)"],
                                 }
                             ],
                             "by_pass": {
@@ -2265,9 +2197,7 @@ def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: P
                                     "failure_count": 1,
                                     "strictest_expected_severity": "clean",
                                     "role": "requested-mode",
-                                    "failures": [
-                                        "RegisterSubstitution=not-requested(expected <= clean)"
-                                    ],
+                                    "failures": ["RegisterSubstitution=not-requested(expected <= clean)"],
                                 }
                             },
                             "grouped_by_pass": [
@@ -2276,9 +2206,7 @@ def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: P
                                     "failure_count": 1,
                                     "strictest_expected_severity": "clean",
                                     "role": "requested-mode",
-                                    "failures": [
-                                        "RegisterSubstitution=not-requested(expected <= clean)"
-                                    ],
+                                    "failures": ["RegisterSubstitution=not-requested(expected <= clean)"],
                                 }
                             ],
                             "summary": {
@@ -2289,17 +2217,11 @@ def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: P
                                     "RegisterSubstitution=not-requested(expected <= clean)"
                                 ],
                                 "require_pass_severity_failures_by_pass": {
-                                    "RegisterSubstitution": [
-                                        "RegisterSubstitution=not-requested(expected <= clean)"
-                                    ]
+                                    "RegisterSubstitution": ["RegisterSubstitution=not-requested(expected <= clean)"]
                                 },
-                                "require_pass_severity_failures_by_expected_severity": {
-                                    "clean": 1
-                                },
+                                "require_pass_severity_failures_by_expected_severity": {"clean": 1},
                             },
-                            "severity_priority": [
-                                {"severity": "clean", "failure_count": 1}
-                            ],
+                            "severity_priority": [{"severity": "clean", "failure_count": 1}],
                             "expected_severity_counts": {"clean": 1},
                             "failed": True,
                             "failure_count": 1,
@@ -2338,12 +2260,10 @@ def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: P
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["failed_gates"] is True
-    assert payload["filtered_summary"]["gate_failure_priority"][0]["pass_name"] == (
-        "RegisterSubstitution"
-    )
-    assert payload["filtered_summary"]["gate_failures"][
-        "require_pass_severity_failures_by_expected_severity"
-    ] == {"clean": 1}
+    assert payload["filtered_summary"]["gate_failure_priority"][0]["pass_name"] == ("RegisterSubstitution")
+    assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_expected_severity"] == {
+        "clean": 1
+    }
 
 
 def test_cli_report_handles_summary_normalized_pass_results_only_minimal_report(
@@ -2400,12 +2320,8 @@ def test_cli_report_handles_summary_normalized_pass_results_only_minimal_report(
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == (
-        "InstructionSubstitution"
-    )
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"][
-        "severity"
-    ] == "clean"
+    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
+    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean"
 
 
 def test_cli_report_handles_summary_general_passes_only_minimal_report(
@@ -2473,12 +2389,8 @@ def test_cli_report_handles_summary_general_passes_only_minimal_report(
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == (
-        "InstructionSubstitution"
-    )
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"][
-        "severity"
-    ] == "clean"
+    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
+    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean"
 
 
 def test_cli_report_handles_summary_general_pass_rows_only_minimal_report(
@@ -2552,12 +2464,10 @@ def test_cli_report_handles_summary_general_pass_rows_only_minimal_report(
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == (
-        "InstructionSubstitution"
+    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
+    assert (
+        payload["filtered_summary"]["pass_capability_summary"][0]["symbolic_confidence"] == "best among stable passes"
     )
-    assert payload["filtered_summary"]["pass_capability_summary"][0][
-        "symbolic_confidence"
-    ] == "best among stable passes"
     assert payload["filtered_summary"]["pass_evidence"][0]["changed_region_count"] == 1
 
 
@@ -2648,9 +2558,7 @@ def test_cli_report_handles_summary_general_filter_views_without_schema_version(
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == [
-        "RegisterSubstitution"
-    ]
+    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
 
 
 def test_cli_report_handles_summary_general_filter_views_with_old_schema_version(
@@ -2717,7 +2625,7 @@ def test_cli_report_handles_summary_general_filter_views_with_old_schema_version
                                 "changed_bytes": 1,
                             }
                         ],
-                    }
+                    },
                 },
                 "mutations": [],
             }
@@ -2855,12 +2763,8 @@ def test_cli_report_handles_summary_general_views_only_minimal_report(
     assert payload["filtered_summary"]["observable_mismatch"] == 1
     assert payload["filtered_summary"]["general_summary"]["pass_count"] == 1
     assert payload["filtered_summary"]["general_symbolic"]["overview"]["observable_mismatch"] == 1
-    assert payload["filtered_summary"]["general_gates"]["summary"][
-        "require_pass_severity_failed"
-    ] is False
-    assert payload["filtered_summary"]["general_degradation"]["summary"][
-        "degraded_validation"
-    ] is False
+    assert payload["filtered_summary"]["general_gates"]["summary"]["require_pass_severity_failed"] is False
+    assert payload["filtered_summary"]["general_degradation"]["summary"]["degraded_validation"] is False
     assert payload["filtered_summary"]["general_discards"]["summary"]["count"] == 0
     assert payload["filtered_summary"]["validation_adjustments"]["degraded_validation"] is False
     assert payload["filtered_summary"]["discarded_mutation_compact_summary"]["count"] == 0
@@ -2978,9 +2882,7 @@ def test_cli_report_handles_summary_general_renderer_state_only_minimal_report(
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["general_renderer_state"]["summary"]["pass_count"] == 1
     assert payload["filtered_summary"]["symbolic_requested"] == 1
-    assert payload["filtered_summary"]["general_summary"]["passes"] == [
-        "InstructionSubstitution"
-    ]
+    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
 
 
 def test_cli_report_handles_summary_general_renderer_state_general_sections_only_minimal_report(
@@ -3093,13 +2995,9 @@ def test_cli_report_handles_summary_general_renderer_state_general_sections_only
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["general_summary"]["passes"] == [
-        "InstructionSubstitution"
-    ]
+    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
     assert payload["filtered_summary"]["general_symbolic"]["overview"]["symbolic_requested"] == 1
-    assert payload["filtered_summary"]["general_degradation"]["summary"][
-        "effective_validation_mode"
-    ] == "symbolic"
+    assert payload["filtered_summary"]["general_degradation"]["summary"]["effective_validation_mode"] == "symbolic"
 
 
 def test_cli_report_uses_general_renderer_sections_for_gate_and_degradation_payloads(
@@ -3196,9 +3094,7 @@ def test_cli_report_uses_general_renderer_sections_for_gate_and_degradation_payl
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is True
     assert payload["filtered_summary"]["gate_failure_compact_summary"]["failure_count"] == 2
-    assert payload["filtered_summary"]["validation_adjustment_summary"][
-        "effective_validation_mode"
-    ] == "runtime"
+    assert payload["filtered_summary"]["validation_adjustment_summary"]["effective_validation_mode"] == "runtime"
     assert payload["filtered_summary"]["discarded_mutation_compact_summary"]["count"] == 1
 
 
@@ -3275,9 +3171,7 @@ def test_cli_report_handles_summary_general_renderer_state_general_passes_only_m
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["general_summary"]["passes"] == [
-        "InstructionSubstitution"
-    ]
+    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
 
 
 def test_cli_report_handles_summary_general_renderer_state_summary_rows_only_minimal_report(
@@ -3398,9 +3292,7 @@ def test_cli_report_handles_summary_general_renderer_state_summary_rows_only_min
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["general_summary_rows"][0]["section"] == "passes"
-    assert payload["filtered_summary"]["general_summary"]["passes"] == [
-        "InstructionSubstitution"
-    ]
+    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
     assert payload["filtered_summary"]["symbolic_requested"] == 1
 
 
@@ -3524,9 +3416,7 @@ def test_cli_report_handles_summary_general_renderer_state_filter_views_only_min
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == [
-        "RegisterSubstitution"
-    ]
+    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
 
 
 def test_cli_report_handles_summary_general_renderer_state_general_filter_views_only_minimal_report(
@@ -3650,9 +3540,7 @@ def test_cli_report_handles_summary_general_renderer_state_general_filter_views_
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
     assert payload["filtered_summary"]["passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == [
-        "RegisterSubstitution"
-    ]
+    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
 
 
 def test_cli_report_handles_summary_general_renderer_state_general_pass_rows_only_minimal_report(
@@ -3728,9 +3616,7 @@ def test_cli_report_handles_summary_general_renderer_state_general_pass_rows_onl
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == (
-        "InstructionSubstitution"
-    )
+    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
 
 
 def test_cli_report_handles_summary_general_summary_rows_only_minimal_report(
@@ -3840,9 +3726,7 @@ def test_cli_report_handles_summary_general_summary_rows_only_minimal_report(
     assert payload["filtered_summary"]["general_summary"]["pass_count"] == 1
     assert payload["filtered_summary"]["general_symbolic"]["overview"]["symbolic_requested"] == 1
     assert payload["filtered_summary"]["general_gates"]["compact_summary"]["failed"] is False
-    assert payload["filtered_summary"]["general_degradation"]["summary"][
-        "degraded_validation"
-    ] is False
+    assert payload["filtered_summary"]["general_degradation"]["summary"]["degraded_validation"] is False
     assert payload["filtered_summary"]["general_discards"]["summary"]["count"] == 0
 
 
@@ -4107,9 +3991,7 @@ def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
                                     "failure_count": 1,
                                     "strictest_expected_severity": "clean",
                                     "role": "requested-mode",
-                                    "failures": [
-                                        "NopInsertion=not-requested(expected <= clean)"
-                                    ],
+                                    "failures": ["NopInsertion=not-requested(expected <= clean)"],
                                 }
                             ],
                             "by_pass": {
@@ -4118,9 +4000,7 @@ def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
                                     "failure_count": 1,
                                     "strictest_expected_severity": "clean",
                                     "role": "requested-mode",
-                                    "failures": [
-                                        "NopInsertion=not-requested(expected <= clean)"
-                                    ],
+                                    "failures": ["NopInsertion=not-requested(expected <= clean)"],
                                 }
                             },
                             "summary": {
@@ -4129,21 +4009,13 @@ def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
                                 "min_severity": None,
                                 "require_pass_severity_failed": True,
                                 "require_pass_severity_failure_count": 1,
-                                "require_pass_severity_failures": [
-                                    "NopInsertion=not-requested(expected <= clean)"
-                                ],
+                                "require_pass_severity_failures": ["NopInsertion=not-requested(expected <= clean)"],
                                 "require_pass_severity_failures_by_pass": {
-                                    "NopInsertion": [
-                                        "NopInsertion=not-requested(expected <= clean)"
-                                    ]
+                                    "NopInsertion": ["NopInsertion=not-requested(expected <= clean)"]
                                 },
-                                "require_pass_severity_failures_by_expected_severity": {
-                                    "clean": 1
-                                },
+                                "require_pass_severity_failures_by_expected_severity": {"clean": 1},
                             },
-                            "severity_priority": [
-                                {"severity": "clean", "failure_count": 1}
-                            ],
+                            "severity_priority": [{"severity": "clean", "failure_count": 1}],
                             "final_rows": [
                                 {
                                     "pass_name": "NopInsertion",
@@ -4160,9 +4032,7 @@ def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
                                     "strictest_expected_severity": "clean",
                                     "role": "requested-mode",
                                     "failed": True,
-                                    "failures": [
-                                        "NopInsertion=not-requested(expected <= clean)"
-                                    ],
+                                    "failures": ["NopInsertion=not-requested(expected <= clean)"],
                                 }
                             },
                             "failed": True,
@@ -4171,17 +4041,11 @@ def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
                     }
                 },
                 "gate_evaluation": {
-                    "requested": {
-                        "require_pass_severity": [
-                            {"pass_name": "NopInsertion", "max_severity": "clean"}
-                        ]
-                    },
+                    "requested": {"require_pass_severity": [{"pass_name": "NopInsertion", "max_severity": "clean"}]},
                     "results": {
                         "all_passed": False,
                         "require_pass_severity_passed": False,
-                        "require_pass_severity_failures": [
-                            "NopInsertion=not-requested(expected <= clean)"
-                        ],
+                        "require_pass_severity_failures": ["NopInsertion=not-requested(expected <= clean)"],
                     },
                 },
                 "mutations": [],
@@ -4209,16 +4073,14 @@ def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failure_count"] == 1
     assert payload["filtered_summary"]["gate_failure_priority"][0]["pass_name"] == "NopInsertion"
-    assert payload["filtered_summary"]["gate_failure_severity_priority"] == [
-        {"severity": "clean", "failure_count": 1}
-    ]
+    assert payload["filtered_summary"]["gate_failure_severity_priority"] == [{"severity": "clean", "failure_count": 1}]
     assert payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is True
     assert payload["filtered_summary"]["gate_failure_compact_summary"]["severity_priority"] == [
         {"severity": "clean", "failure_count": 1}
     ]
-    assert payload["filtered_summary"]["gate_failure_final_by_pass"]["NopInsertion"][
-        "failures"
-    ] == ["NopInsertion=not-requested(expected <= clean)"]
+    assert payload["filtered_summary"]["gate_failure_final_by_pass"]["NopInsertion"]["failures"] == [
+        "NopInsertion=not-requested(expected <= clean)"
+    ]
     assert payload["filtered_summary"]["gate_failure_final_rows"][0]["pass_name"] == "NopInsertion"
     assert payload["filtered_summary"]["gate_failure_final_rows"][0]["failures"] == [
         "NopInsertion=not-requested(expected <= clean)"
@@ -4395,31 +4257,21 @@ def test_cli_report_only_mismatches_prefers_persisted_report_view(
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["mismatch_counts_by_pass"]["RegisterSubstitution"] == 2
-    assert payload["filtered_summary"]["mismatch_observables_by_pass"][
-        "RegisterSubstitution"
-    ] == ["rax", "rflags"]
-    assert payload["filtered_summary"]["observable_mismatch_priority"][0]["pass_name"] == (
-        "RegisterSubstitution"
-    )
+    assert payload["filtered_summary"]["mismatch_observables_by_pass"]["RegisterSubstitution"] == ["rax", "rflags"]
+    assert payload["filtered_summary"]["observable_mismatch_priority"][0]["pass_name"] == ("RegisterSubstitution")
     assert payload["filtered_summary"]["mismatch_compact_summary"]["pass_count"] == 1
-    assert payload["filtered_summary"]["mismatch_final_by_pass"]["RegisterSubstitution"][
-        "compact_region"
-    ] == {
+    assert payload["filtered_summary"]["mismatch_final_by_pass"]["RegisterSubstitution"]["compact_region"] == {
         "region_count": 0,
         "region_mismatch_count": 0,
         "region_exit_match_count": 0,
     }
-    assert payload["filtered_summary"]["mismatch_final_rows"][0]["pass_name"] == (
-        "RegisterSubstitution"
-    )
+    assert payload["filtered_summary"]["mismatch_final_rows"][0]["pass_name"] == ("RegisterSubstitution")
     assert payload["filtered_summary"]["mismatch_final_rows"][0]["compact_region"] == {
         "region_count": 0,
         "region_mismatch_count": 0,
         "region_exit_match_count": 0,
     }
-    assert payload["filtered_summary"]["mismatch_compact_by_pass"]["RegisterSubstitution"][
-        "mismatch_count"
-    ] == 2
+    assert payload["filtered_summary"]["mismatch_compact_by_pass"]["RegisterSubstitution"]["mismatch_count"] == 2
 
 
 def test_cli_report_prefers_discarded_final_by_pass_without_pass_results(
@@ -4475,9 +4327,9 @@ def test_cli_report_prefers_discarded_final_by_pass_without_pass_results(
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["discarded_mutation_final_by_pass"][
-        "RegisterSubstitution"
-    ]["reasons"] == ["runtime_validation_failed"]
+    assert payload["filtered_summary"]["discarded_mutation_final_by_pass"]["RegisterSubstitution"]["reasons"] == [
+        "runtime_validation_failed"
+    ]
 
 
 def test_cli_report_handles_summary_only_mismatches_minimal_report_without_passes(
@@ -4547,9 +4399,7 @@ def test_cli_report_handles_summary_only_mismatches_minimal_report_without_passe
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["mismatch_counts_by_pass"] == {
-        "RegisterSubstitution": 1
-    }
+    assert payload["filtered_summary"]["mismatch_counts_by_pass"] == {"RegisterSubstitution": 1}
 
 
 def test_cli_report_handles_summary_only_failed_gates_compact_rows_minimal_report(
@@ -4581,13 +4431,9 @@ def test_cli_report_handles_summary_only_failed_gates_compact_rows_minimal_repor
                                 "require_pass_severity_failure_count": 1,
                                 "require_pass_severity_failures": [],
                                 "require_pass_severity_failures_by_pass": {},
-                                "require_pass_severity_failures_by_expected_severity": {
-                                    "clean": 1
-                                },
+                                "require_pass_severity_failures_by_expected_severity": {"clean": 1},
                             },
-                            "severity_priority": [
-                                {"severity": "clean", "failure_count": 1}
-                            ],
+                            "severity_priority": [{"severity": "clean", "failure_count": 1}],
                             "expected_severity_counts": {"clean": 1},
                             "failed": True,
                             "failure_count": 1,
@@ -4623,9 +4469,7 @@ def test_cli_report_handles_summary_only_failed_gates_compact_rows_minimal_repor
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["filtered_summary"]["gate_failure_compact_rows"][0]["pass_name"] == "NopInsertion"
-    assert payload["filtered_summary"]["gate_failure_compact_rows"][0]["role"] == (
-        "requested-mode"
-    )
+    assert payload["filtered_summary"]["gate_failure_compact_rows"][0]["role"] == ("requested-mode")
     assert payload["filtered_summary"]["gate_failure_compact_rows"][0]["failed"] is True
 
 
@@ -5117,12 +4961,8 @@ def test_cli_report_only_covered_passes_filters_to_covered_passes(tmp_path: Path
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["report_filters"]["only_covered_passes"] is True
     assert payload["filtered_summary"]["covered_passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == [
-        "InstructionSubstitution"
-    ]
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == (
-        "InstructionSubstitution"
-    )
+    assert payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == ["InstructionSubstitution"]
+    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == ("InstructionSubstitution")
 
 
 def test_cli_report_only_uncovered_passes_filters_to_uncovered_passes(tmp_path: Path) -> None:
@@ -5226,9 +5066,7 @@ def test_cli_report_only_uncovered_passes_filters_to_uncovered_passes(tmp_path: 
     payload = json.loads(output_path.read_text(encoding="utf-8"))
     assert payload["report_filters"]["only_uncovered_passes"] is True
     assert payload["filtered_summary"]["uncovered_passes"] == ["ReportFixture"]
-    assert payload["filtered_summary"]["pass_coverage_buckets"]["uncovered"] == [
-        "ReportFixture"
-    ]
+    assert payload["filtered_summary"]["pass_coverage_buckets"]["uncovered"] == ["ReportFixture"]
     assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "ReportFixture"
 
 
@@ -5404,7 +5242,7 @@ def test_cli_report_summary_only_skips_json(tmp_path: Path) -> None:
                             "symbolic_observable_mismatches": ["eax"],
                         },
                     }
-                ]
+                ],
             }
         ),
         encoding="utf-8",
@@ -5478,7 +5316,7 @@ def test_cli_report_only_mismatches_prefers_persisted_mismatch_summary(tmp_path:
                             "mismatch_count": 2,
                             "observables": ["eax", "eflags"],
                         }
-                    ]
+                    ],
                 },
                 "mutations": [],
             }
@@ -5536,10 +5374,7 @@ def test_cli_report_exports_filtered_pass_capabilities(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert (
-        payload["filtered_summary"]["pass_capabilities"]["RegisterSubstitution"]["runtime"]["recommended"]
-        is True
-    )
+    assert payload["filtered_summary"]["pass_capabilities"]["RegisterSubstitution"]["runtime"]["recommended"] is True
 
 
 def test_cli_report_exports_symbolic_issue_passes_summary(tmp_path: Path) -> None:
@@ -5741,7 +5576,4 @@ def test_cli_report_only_mismatches_exports_pass_mismatch_counts(tmp_path: Path)
         "eax",
         "eflags",
     ]
-    assert (
-        payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"]["role"]
-        == "requested-mode"
-    )
+    assert payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"]["role"] == "requested-mode"

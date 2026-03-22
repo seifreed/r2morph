@@ -44,42 +44,28 @@ class InstructionExpansionPass(MutationPass):
         - max_expansion_size: Max instruction sequence length (default: 4)
     """
 
+    # Only single-instruction expansions are supported. Multi-instruction
+    # expansions (e.g., imul reg,3 -> mov tmp,reg; shl reg,1; add reg,tmp)
+    # require temporary register allocation and are not yet implemented.
+    #
+    # FLAG SAFETY NOTE:
+    # - inc/dec → add/sub: UNSAFE if CF is live (inc/dec preserve CF, add/sub modify it)
+    # - mov reg, 0 → xor/sub: UNSAFE if ANY flags are live (mov doesn't touch flags)
+    # These rules are EXCLUDED to avoid semantic corruption. Only flag-safe
+    # expansions are included.
     EXPANSION_RULES = {
         "x86": {
-            ("inc", "reg"): [
-                [("add", "reg", "1")],
-                [("sub", "reg", "-1")],
-            ],
-            ("dec", "reg"): [
-                [("sub", "reg", "1")],
-                [("add", "reg", "-1")],
-            ],
+            # imul → shl/add: both set CF/OF, safe equivalence
             ("imul", "reg", "2"): [
                 [("shl", "reg", "1")],
                 [("add", "reg", "reg")],
             ],
-            ("imul", "reg", "3"): [
-                [("mov", "temp", "reg"), ("shl", "reg", "1"), ("add", "reg", "temp")],
-            ],
             ("imul", "reg", "4"): [
                 [("shl", "reg", "2")],
             ],
-            ("imul", "reg", "5"): [
-                [("mov", "temp", "reg"), ("shl", "reg", "2"), ("add", "reg", "temp")],
-            ],
+            # shl 1 → add: both set same flags, safe equivalence
             ("shl", "reg", "1"): [
                 [("add", "reg", "reg")],
-            ],
-            ("neg", "reg"): [
-                [("not", "reg"), ("inc", "reg")],
-            ],
-            ("mov", "reg", "0"): [
-                [("xor", "reg", "reg")],
-                [("sub", "reg", "reg")],
-                [("and", "reg", "0")],
-            ],
-            ("mov", "reg", "small_imm"): [
-                [("xor", "reg", "reg"), ("add", "reg", "imm")],
             ],
         }
     }
@@ -96,9 +82,18 @@ class InstructionExpansionPass(MutationPass):
         self.max_expansions = self.config.get("max_expansions_per_function", 5)
         self.max_expansion_size = self.config.get("max_expansion_size", 4)
 
-    def _match_expansion_pattern(
-        self, instruction: dict[str, Any], arch: str
-    ) -> list[list[tuple[str, ...]]]:
+    def configure_for_memory_constraints(self, factor: float) -> None:
+        """Reduce expansion count for memory-efficient mode."""
+        original = self.max_expansions
+        self.max_expansions = max(1, int(self.max_expansions * factor))
+        self.config["max_expansions_per_function"] = self.max_expansions
+        if self.max_expansions != original:
+            import logging
+            logging.getLogger(__name__).debug(
+                f"Memory-efficient: reduced max_expansions from {original} to {self.max_expansions}"
+            )
+
+    def _match_expansion_pattern(self, instruction: dict[str, Any], arch: str) -> list[list[tuple[str, ...]]]:
         """
         Check if instruction matches any expansion pattern.
 
@@ -126,19 +121,47 @@ class InstructionExpansionPass(MutationPass):
         expansions: list[list[tuple[str, ...]]] = []
 
         size_specifiers = {"dword", "qword", "byte", "word", "ptr"}
-        is_register_operand = lambda op: (
-            op
-            and op not in size_specifiers
-            and not op.startswith("[")
-            and not op.startswith("0x")
-            and not op.isdigit()
-            and not (op.startswith("-") and op[1:].isdigit())
-        )
 
-        is_immediate_operand = lambda op: (
-            op
-            and (op.isdigit() or (op.startswith("-") and op[1:].isdigit()) or op.startswith("0x"))
-        )
+        import re
+
+        def is_register_operand(op: str) -> bool:
+            if not op:
+                return False
+            if op in size_specifiers:
+                return False
+            if op.startswith("[") or op.startswith("-["):
+                return False
+            if op.startswith("0x") or op.startswith("-0x"):
+                return False
+            if op.isdigit() or (op.startswith("-") and op[1:].isdigit()):
+                return False
+            if op.endswith("h") or op.endswith("H"):
+                hex_part = op[:-1]
+                if all(c in "0123456789abcdefABCDEF" for c in hex_part):
+                    return False
+            if re.match(r"^\[.+\]$", op):
+                return False
+            if "," in op:
+                return False
+            return True
+
+        def is_immediate_operand(op: str) -> bool:
+            if not op:
+                return False
+            if op.isdigit():
+                return True
+            if op.startswith("-") and len(op) > 1:
+                rest = op[1:]
+                if rest.isdigit():
+                    return True
+                if rest.startswith("0x") and len(rest) > 2:
+                    return all(c in "0123456789abcdefABCDEF" for c in rest[2:])
+            if op.startswith("0x") and len(op) > 2:
+                return all(c in "0123456789abcdefABCDEF" for c in op[2:])
+            if op.endswith("h") or op.endswith("H"):
+                hex_part = op[:-1]
+                return all(c in "0123456789abcdefABCDEF" for c in hex_part)
+            return False
 
         for pattern, expansion_list in self.EXPANSION_RULES[arch_family].items():
             pattern_mnemonic = pattern[0]
@@ -173,11 +196,7 @@ class InstructionExpansionPass(MutationPass):
                         elif second_pattern == "small_imm":
                             if is_immediate_operand(second_op):
                                 try:
-                                    val = (
-                                        int(second_op, 16)
-                                        if second_op.startswith("0x")
-                                        else int(second_op)
-                                    )
+                                    val = int(second_op, 16) if second_op.startswith("0x") else int(second_op)
                                     if 0 <= val <= 255:
                                         expansions.extend(expansion_list)
                                 except ValueError:
@@ -186,11 +205,7 @@ class InstructionExpansionPass(MutationPass):
                             if is_immediate_operand(second_op):
                                 try:
                                     expected = int(second_pattern)
-                                    actual = (
-                                        int(second_op, 16)
-                                        if second_op.startswith("0x")
-                                        else int(second_op)
-                                    )
+                                    actual = int(second_op, 16) if second_op.startswith("0x") else int(second_op)
                                     if expected == actual:
                                         expansions.extend(expansion_list)
                                 except ValueError:
@@ -202,9 +217,7 @@ class InstructionExpansionPass(MutationPass):
 
         return expansions
 
-    def _build_instruction_from_pattern(
-        self, pattern: tuple[str, ...], orig_parts: list[str]
-    ) -> str | None:
+    def _build_instruction_from_pattern(self, pattern: tuple[str, ...], orig_parts: list[str]) -> str | None:
         """
         Build a concrete instruction from a pattern and original instruction parts.
 
@@ -302,6 +315,7 @@ class InstructionExpansionPass(MutationPass):
         Returns:
             Dictionary with mutation statistics
         """
+        self._reset_random()
         if not binary.is_analyzed():
             logger.warning("Binary not analyzed, analyzing now...")
             binary.analyze()
@@ -380,29 +394,71 @@ class InstructionExpansionPass(MutationPass):
                                 new_size = len(new_bytes)
 
                                 if new_size <= orig_size:
-                                    binary.write_bytes(addr, new_bytes)
+                                    mutation_checkpoint = self._create_mutation_checkpoint("insn_expand")
+                                    baseline = {}
+                                    if self._validation_manager is not None:
+                                        baseline = self._validation_manager.capture_structural_baseline(
+                                            binary, func["addr"]
+                                        )
 
-                                    if new_size < orig_size:
-                                        binary.nop_fill(addr + new_size, orig_size - new_size)
+                                    original_bytes = binary.read_bytes(addr, orig_size)
 
-                                    size_inc = new_size - orig_size
-                                    logger.info(
-                                        f"Expanded '{orig_disasm}' -> '{new_disasm}' at 0x{addr:x} "
-                                        f"({orig_size} -> {new_size} bytes)"
-                                    )
-                                    func_expansions += 1
-                                    func_size_increase += size_inc
-                                else:
-                                    logger.debug(
-                                        f"Skipping expansion at 0x{addr:x}: new instruction too large "
-                                        f"({new_size} > {orig_size})"
-                                    )
+                                    if binary.write_bytes(addr, new_bytes):
+                                        if new_size < orig_size:
+                                            binary.nop_fill(addr + new_size, orig_size - new_size)
+
+                                        mutated_bytes = binary.read_bytes(addr, orig_size)
+                                        record = self._record_mutation(
+                                            function_address=func["addr"],
+                                            start_address=addr,
+                                            end_address=addr + orig_size - 1,
+                                            original_bytes=original_bytes if original_bytes else b"",
+                                            mutated_bytes=mutated_bytes if mutated_bytes else new_bytes,
+                                            original_disasm=orig_disasm,
+                                            mutated_disasm=new_disasm,
+                                            mutation_kind="instruction_expansion",
+                                            metadata={
+                                                "expansion_type": "single",
+                                                "structural_baseline": baseline,
+                                            },
+                                        )
+
+                                        if self._validation_manager is not None:
+                                            outcome = self._validation_manager.validate_mutation(
+                                                binary, record.to_dict()
+                                            )
+                                            if not outcome.passed and mutation_checkpoint is not None:
+                                                if self._session is not None:
+                                                    self._session.rollback_to(mutation_checkpoint)
+                                                binary.reload()
+                                                if self._records:
+                                                    self._records.pop()
+                                                if self._rollback_policy == "fail-fast":
+                                                    raise RuntimeError("Mutation-level validation failed")
+                                                continue
+
+                                        size_inc = new_size - orig_size
+                                        logger.info(
+                                            f"Expanded '{orig_disasm}' -> '{new_disasm}' at 0x{addr:x} "
+                                            f"({orig_size} -> {new_size} bytes)"
+                                        )
+                                        func_expansions += 1
+                                        func_size_increase += size_inc
+                                    else:
+                                        logger.debug(
+                                            f"Skipping expansion at 0x{addr:x}: new instruction too large "
+                                            f"({new_size} > {orig_size})"
+                                        )
                     except Exception as e:
                         logger.debug(f"Failed to expand at 0x{addr:x}: {e}")
                 else:
+                    # Multi-instruction expansions are not yet implemented:
+                    # they require temporary register allocation and space
+                    # management that is beyond the current single-instruction
+                    # in-place replacement strategy.
                     logger.debug(
                         f"Skipping multi-instruction expansion at 0x{addr:x} "
-                        f"(would require {len(chosen_expansion)} instructions)"
+                        f"(not implemented: would require {len(chosen_expansion)} instructions)"
                     )
 
             if func_expansions > 0:
@@ -412,8 +468,7 @@ class InstructionExpansionPass(MutationPass):
                 functions_mutated += 1
 
                 logger.info(
-                    f"Expanded {func_expansions} instructions in {func.get('name')} "
-                    f"(+{func_size_increase} bytes)"
+                    f"Expanded {func_expansions} instructions in {func.get('name')} (+{func_size_increase} bytes)"
                 )
 
         logger.info(

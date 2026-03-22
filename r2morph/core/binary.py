@@ -1,9 +1,16 @@
 """
 Binary class for handling binary executables with r2pipe.
+
+Refactored following Single Responsibility Principle:
+- BinaryReader: handles all read operations
+- BinaryWriter: handles all write operations
+- AssemblyService: handles assembly with fallbacks
+- Binary: coordinates services and manages r2pipe connection
 """
 
 import logging
 import shutil
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -14,6 +21,8 @@ from r2morph.core.constants import BATCH_MUTATION_CHECKPOINT
 if TYPE_CHECKING:
     from r2morph.core.assembly import AssemblyService
     from r2morph.core.memory_manager import MemoryManager
+    from r2morph.core.reader import BinaryReader
+    from r2morph.core.writer import BinaryWriter
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +31,16 @@ class Binary:
     """
     Represents a binary executable and provides an interface to radare2 through r2pipe.
 
+    This class coordinates services following Single Responsibility Principle:
+    - AssemblyService: instruction encoding with intelligent fallbacks
+    - MemoryManager: batch processing and memory management
+    - BinaryReader: all read operations (functions, disasm, sections, etc.)
+    - BinaryWriter: all write operations (bytes, instructions, NOPs)
+
     Attributes:
         path: Path to the binary file
         r2: r2pipe connection instance
         info: Binary metadata from radare2
-        assembly: AssemblyService instance for instruction encoding
-        memory_manager: MemoryManager instance for batch processing
     """
 
     def __init__(
@@ -36,19 +49,17 @@ class Binary:
         flags: list[str] | None = None,
         writable: bool = False,
         low_memory: bool = False,
+        disassembler: Any = None,
     ):
-        """
-        Initialize a Binary instance.
+        """Initialize Binary.
 
         Args:
             path: Path to the binary file
-            flags: Optional list of radare2 flags (e.g., ['-2', '-A'])
-            writable: If True, open binary in write mode
-            low_memory: If True, configure r2 for low memory usage (prevents OOM on large binaries)
-
-        Raises:
-            FileNotFoundError: If binary file doesn't exist
-            RuntimeError: If r2pipe connection fails
+            flags: r2pipe flags (default: ["-2"])
+            writable: Open in write mode
+            low_memory: Enable low memory mode
+            disassembler: Optional DisassemblerInterface instance for DIP.
+                          If provided, used instead of r2pipe.open() directly.
         """
         self.path = Path(path)
         if not self.path.exists():
@@ -58,116 +69,137 @@ class Binary:
         if writable:
             self.flags.append("-w")
 
-        self.r2: r2pipe.open_sync.open | None = None
+        self._injected_disassembler = disassembler
+        self.r2: Any = None
         self.info: dict[str, Any] = {}
         self._analyzed = False
         self._writable = writable
         self._low_memory = low_memory
         self._functions_cache: list[dict[str, Any]] | None = None
-        self._mutation_counter = 0  # Track mutations for batch processing
+        self._mutation_counter = 0
 
-        # Lazy-loaded services for backwards compatibility
+        # Thread safety for lazy-loaded services
+        self._lock = threading.Lock()
+
+        # Lazy-loaded services
         self._assembly_service: "AssemblyService | None" = None
         self._memory_manager: "MemoryManager | None" = None
+        self._reader: "BinaryReader | None" = None
+        self._writer: "BinaryWriter | None" = None
 
     @property
     def assembly(self) -> "AssemblyService":
         """Get the AssemblyService instance (lazy-loaded)."""
         if self._assembly_service is None:
-            from r2morph.core.assembly import get_assembly_service
+            with self._lock:
+                if self._assembly_service is None:
+                    from r2morph.core.assembly import get_assembly_service
 
-            self._assembly_service = get_assembly_service()
+                    self._assembly_service = get_assembly_service()
         return self._assembly_service
 
     @property
     def memory_manager(self) -> "MemoryManager":
         """Get the MemoryManager instance (lazy-loaded)."""
         if self._memory_manager is None:
-            from r2morph.core.memory_manager import get_memory_manager
+            with self._lock:
+                if self._memory_manager is None:
+                    from r2morph.core.memory_manager import get_memory_manager
 
-            self._memory_manager = get_memory_manager()
+                    self._memory_manager = get_memory_manager()
         return self._memory_manager
 
+    @property
+    def reader(self) -> "BinaryReader":
+        """Get the BinaryReader instance (lazy-loaded)."""
+        if self._reader is None:
+            with self._lock:
+                if self._reader is None:
+                    from r2morph.core.reader import BinaryReader
+
+                    self._reader = BinaryReader(self.r2)
+        return self._reader
+
+    @property
+    def writer(self) -> "BinaryWriter":
+        """Get the BinaryWriter instance (lazy-loaded)."""
+        if self._writer is None:
+            with self._lock:
+                if self._writer is None:
+                    from r2morph.core.writer import BinaryWriter
+
+                    self._writer = BinaryWriter(self.r2, self.path, self._writable)
+        return self._writer
+
     def __enter__(self):
-        """Context manager entry."""
         self.open()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit."""
         self.close()
 
     def open(self) -> "Binary":
-        """
-        Open the binary with r2pipe.
-
-        Returns:
-            Self for method chaining
-        """
         try:
             logger.info(f"Opening binary: {self.path}")
-            self.r2 = r2pipe.open(str(self.path), flags=self.flags)
+            if self._injected_disassembler is not None:
+                # Use injected disassembler (DIP: enables testing without r2pipe)
+                self._injected_disassembler.open(self.path, self.flags)
+                self.r2 = self._injected_disassembler
+            else:
+                self.r2 = r2pipe.open(str(self.path), flags=self.flags)
             self.info = self.r2.cmdj("ij") or {}
 
-            # Configure r2 for low memory usage on large binaries
             if self._low_memory:
                 logger.debug("Configuring r2 for low memory mode")
-                self.r2.cmd("e bin.cache=false")  # Disable binary cache
-                self.r2.cmd("e io.cache=false")  # Disable I/O cache
-                self.r2.cmd("e bin.strings=false")  # Don't cache strings
+                self.r2.cmd("e bin.cache=false")
+                self.r2.cmd("e io.cache=false")
+                self.r2.cmd("e bin.strings=false")
 
             logger.debug(f"Binary info: {self.info.get('core', {}).get('format', 'unknown')}")
+
+            # Update services with new r2 connection
+            if self._reader:
+                self._reader.set_r2(self.r2)
+            if self._writer:
+                self._writer.set_r2(self.r2)
+
         except Exception as e:
             raise RuntimeError(f"Failed to open binary with r2pipe: {e}")
         return self
 
     def close(self):
-        """Close the r2pipe connection."""
         if self.r2:
             self.r2.quit()
             self.r2 = None
             logger.info(f"Closed binary: {self.path}")
 
     def reload(self):
-        """
-        Reload r2 connection (close and reopen).
-
-        This is useful for batch processing on large binaries to release
-        accumulated memory in radare2 process, preventing OOM crashes.
-        """
         logger.debug("Reloading r2 connection to free memory")
         was_analyzed = self._analyzed
-        self.close()
-        self.open()
-        # Restore analyzed state (cache is preserved separately)
-        self._analyzed = was_analyzed
+        with self._lock:
+            self.close()
+            self._reader = None
+            self._writer = None
+            self.open()
+        # Re-run analysis if it was previously done, so caches are fresh
+        if was_analyzed:
+            self.analyze()
+        else:
+            self._analyzed = False
+            self._functions_cache = None
 
     def analyze(self, level: str = "aaa") -> "Binary":
-        """
-        Run radare2 analysis on the binary.
-
-        Args:
-            level: Analysis level (aa, aaa, aaaa, etc.)
-                - aa: basic analysis (~5-10s for large binaries)
-                - aaa: analyze all referenced code (~2-3min for 7k+ functions)
-                - aaaa: experimental analysis (very slow)
-
-        Returns:
-            Self for method chaining
-        """
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
 
         logger.info(f"Running analysis: {level}")
 
-        # Warn about slow analysis
         if level in ["aaa", "aaaa"]:
             logger.warning("Analysis may take 2-5 minutes for large binaries. Please wait...")
 
         self.r2.cmd(level)
         self._analyzed = True
 
-        # Cache functions after analysis to avoid repeated expensive r2 calls
         try:
             self._functions_cache = self.r2.cmdj("aflj") or []
             logger.info(f"Analysis complete - cached {len(self._functions_cache)} functions")
@@ -177,579 +209,152 @@ class Binary:
 
         return self
 
+    # Delegated read methods to BinaryReader
+
     def get_functions(self) -> list[dict[str, Any]]:
-        """
-        Get list of functions in the binary.
-
-        Returns cached functions after analysis to avoid expensive r2 queries.
-
-        Returns:
-            List of function dictionaries with metadata
-        """
+        """Get list of functions in the binary."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
-
-        # Use cached functions if available (set during analyze())
-        if self._functions_cache is not None:
-            logger.debug(f"Using cached {len(self._functions_cache)} functions")
-            return self._functions_cache
-
-        # Fallback to querying r2 if no cache
-        functions = self.r2.cmdj("aflj") or []
-        logger.debug(f"Found {len(functions)} functions (uncached)")
-        return functions
+        return self.reader.get_functions(cached=self._functions_cache)
 
     def get_function_disasm(self, address: int) -> list[dict[str, Any]]:
-        """
-        Get disassembly of a function at given address.
-
-        Args:
-            address: Function address
-
-        Returns:
-            List of instruction dictionaries
-        """
+        """Get disassembly of a function at given address."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
-
-        disasm = self.r2.cmdj(f"pdfj @ {address}") or {}
-        ops: list[dict[str, Any]] = disasm.get("ops", [])
-        return ops
+        return self.reader.get_function_disasm(address)
 
     def get_basic_blocks(self, address: int) -> list[dict[str, Any]]:
-        """
-        Get basic blocks for a function at given address.
-
-        Args:
-            address: Function address
-
-        Returns:
-            List of basic block dictionaries
-        """
+        """Get basic blocks for a function at given address."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
-
-        blocks = self.r2.cmdj(f"afbj @ {address}") or []
-        return blocks
+        return self.reader.get_basic_blocks(address)
 
     def get_sections(self) -> list[dict[str, Any]]:
-        """
-        Get sections from the binary.
-
-        Returns:
-            List of section dictionaries with keys like name, size, vaddr, etc.
-        """
+        """Get sections from the binary."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
+        return self.reader.get_sections()
 
-        sections = self.r2.cmdj("iSj") or []
-        return sections
-
-    def _resolve_symbolic_vars(self, instruction: str, function_addr: int | None = None) -> str:
-        """
-        Resolve symbolic variable names in instruction to actual addresses.
-
-        Converts var_XXh to [rsp+offset] or [rbp-offset] based on function analysis.
-
-        Args:
-            instruction: Assembly instruction with symbolic vars (e.g., "mov eax, [var_10h]")
-            function_addr: Function address for variable context (optional)
-
-        Returns:
-            Instruction with resolved addresses
-        """
-        import re
-
-        if not self.r2:
-            return instruction
-
-        # Pattern to match symbolic variables: var_XXh, var_bp_XXh, arg_XXh, and suffixed versions (var_XXh_2, etc.)
-        var_pattern = r"\[(var_(?:bp_)?|arg_)([0-9a-f]+)h(_\d+)?\]"
-        matches = list(re.finditer(var_pattern, instruction, re.IGNORECASE))
-
-        if not matches:
-            return instruction
-
-        # Get variable and argument information from current function if available
-        var_map = {}
-        if function_addr:
-            try:
-                # Get function variables and arguments with afv command
-                vars_output = self.r2.cmd(f"afv @ {function_addr}")
-                # Parse output like:
-                # "var int64_t var_20h @ rsp+0x20"
-                # "arg int64_t arg1 @ rcx"
-                for line in vars_output.split("\n"):
-                    if ("var_" in line or "arg" in line) and "@" in line:
-                        parts = line.split("@")
-                        if len(parts) == 2:
-                            var_name = parts[0].split()[-1].strip()
-                            location = parts[1].strip()
-                            var_map[var_name] = location
-            except Exception as e:
-                logger.debug(f"Could not parse function variables at 0x{function_addr:x}: {e}")
-
-        # Replace variables with resolved addresses
-        resolved = instruction
-        for match in reversed(matches):  # Reverse to maintain positions
-            prefix = match.group(1)  # "var_", "var_bp_", or "arg_"
-            offset_hex = match.group(2)
-            suffix = match.group(3) or ""  # "_2", "_3", etc. or empty string
-            offset = int(offset_hex, 16)
-
-            # Construct variable name (including suffix if present)
-            if prefix == "var_bp_":
-                var_name = f"var_bp_{offset_hex}h{suffix}"
-            elif prefix == "var_":
-                var_name = f"var_{offset_hex}h{suffix}"
-            else:  # arg_
-                var_name = f"arg_{offset_hex}h{suffix}"
-
-            # Try to get from function analysis first
-            if var_name in var_map:
-                replacement = f"[{var_map[var_name]}]"
-            else:
-                # Fallback: construct based on naming convention
-                if prefix == "var_bp_":
-                    # var_bp_XXh means [rbp - offset]
-                    replacement = f"[rbp - 0x{offset:x}]"
-                elif prefix == "arg_":
-                    # arg_XXh typically means [rsp + offset] or [rbp + offset]
-                    # Arguments are typically above the stack frame
-                    replacement = f"[rsp + 0x{offset:x}]"
-                else:
-                    # var_XXh typically means [rsp + offset]
-                    replacement = f"[rsp + 0x{offset:x}]"
-
-            resolved = resolved[: match.start()] + replacement + resolved[match.end() :]
-
-        return resolved
-
-    def _normalize_assembly_syntax(self, instruction: str) -> str:
-        """
-        Normalize assembly syntax to work around radare2 assembler quirks.
-
-        Args:
-            instruction: Assembly instruction
-
-        Returns:
-            Normalized instruction
-        """
-        # No longer removing size specifiers with segment prefixes
-        # The segment prefix fallback will handle these correctly
-        return instruction
-
-    def _assemble_movzx_movsx_fallback(self, instruction: str) -> bytes | None:
-        """
-        Manually encode movzx/movsx instructions using direct opcodes.
-
-        Radare2's assembler fails on register-to-register movzx/movsx but works on memory operands.
-        This fallback manually constructs the opcodes for reg-to-reg cases.
-
-        Args:
-            instruction: movzx/movsx instruction (e.g., "movzx eax, bl")
-
-        Returns:
-            Assembled bytes or None if cannot encode
-        """
-        import re
-
-        # Parse instruction: movzx/movsx dest, src
-        match = re.match(r"(movzx|movsx)\s+(\w+),\s*(\w+)", instruction.strip(), re.IGNORECASE)
-        if not match:
-            return None
-
-        mnemonic, dest, src = match.groups()
-        mnemonic = mnemonic.lower()
-        dest = dest.lower()
-        src = src.lower()
-
-        # Register encoding tables
-        reg32_encoding = {
-            "eax": 0,
-            "ecx": 1,
-            "edx": 2,
-            "ebx": 3,
-            "esp": 4,
-            "ebp": 5,
-            "esi": 6,
-            "edi": 7,
-        }
-        reg16_encoding = {
-            "ax": 0,
-            "cx": 1,
-            "dx": 2,
-            "bx": 3,
-            "sp": 4,
-            "bp": 5,
-            "si": 6,
-            "di": 7,
-        }
-        reg8_encoding = {
-            "al": 0,
-            "cl": 1,
-            "dl": 2,
-            "bl": 3,
-            "ah": 4,
-            "ch": 5,
-            "dh": 6,
-            "bh": 7,
-        }
-        reg64_encoding = {
-            "rax": 0,
-            "rcx": 1,
-            "rdx": 2,
-            "rbx": 3,
-            "rsp": 4,
-            "rbp": 5,
-            "rsi": 6,
-            "rdi": 7,
-        }
-
-        # Determine opcode based on source size and operation
-        if src in reg8_encoding:
-            # Source is 8-bit
-            opcode = bytes([0x0F, 0xB6 if mnemonic == "movzx" else 0xBE])
-            src_code = reg8_encoding[src]
-        elif src in reg16_encoding:
-            # Source is 16-bit
-            opcode = bytes([0x0F, 0xB7 if mnemonic == "movzx" else 0xBF])
-            src_code = reg16_encoding[src]
-        else:
-            # Unknown source register size
-            return None
-
-        # Determine destination encoding
-        if dest in reg32_encoding:
-            dest_code = reg32_encoding[dest]
-        elif dest in reg64_encoding:
-            # 64-bit destination requires REX.W prefix
-            dest_code = reg64_encoding[dest]
-            opcode = bytes([0x48]) + opcode  # REX.W prefix
-        else:
-            return None
-
-        # Construct ModR/M byte: 11 (register mode) + dest<<3 + src
-        modrm = 0xC0 | (dest_code << 3) | src_code
-
-        return opcode + bytes([modrm])
-
-    def _assemble_segment_prefix_fallback(self, instruction: str) -> bytes | None:
-        """
-        Manually encode instructions with segment prefixes (fs:, gs:, etc.).
-
-        Radare2's assembler fails on segment-prefixed instructions.
-        This fallback removes the segment prefix, assembles without it, then adds the prefix byte.
-
-        Args:
-            instruction: Instruction with segment prefix (e.g., "mov fs:[rax], ecx")
-
-        Returns:
-            Assembled bytes with segment prefix or None if failed
-        """
-        import re
-
-        # Segment prefix bytes
-        segment_prefixes = {
-            "es:": 0x26,
-            "cs:": 0x2E,
-            "ss:": 0x36,
-            "ds:": 0x3E,
-            "fs:": 0x64,
-            "gs:": 0x65,
-        }
-
-        # Find which segment prefix is used
-        segment_byte = None
-        instruction_without_segment = instruction
-        for seg_name, seg_byte in segment_prefixes.items():
-            if seg_name in instruction.lower():
-                segment_byte = seg_byte
-                # Remove only the segment prefix, keep size specifiers
-                # "mov dword fs:[rax], ecx" -> "mov dword [rax], ecx"
-                instruction_without_segment = instruction.replace(seg_name, "", 1)
-                instruction_without_segment = instruction_without_segment.replace(
-                    seg_name.upper(), "", 1
-                )
-                break
-
-        if segment_byte is None:
-            return None
-
-        # Try to assemble the instruction without the segment prefix
-        if not self.r2:
-            return None
-
-        result = self.r2.cmd(f"pa {instruction_without_segment}")
-        hex_str = result.strip()
-        if hex_str:
-            base_bytes = bytes.fromhex(hex_str)
-            # Prepend segment prefix byte
-            return bytes([segment_byte]) + base_bytes
-
-        return None
-
-    def assemble(self, instruction: str, function_addr: int | None = None) -> bytes | None:
-        """
-        Assemble an instruction using radare2's rasm2 with intelligent fallbacks.
-
-        Args:
-            instruction: Assembly instruction (e.g., "nop", "xor eax, eax")
-            function_addr: Function address for resolving symbolic variables (optional)
-
-        Returns:
-            Assembled bytes or None if failed
-        """
+    def read_bytes(self, address: int, size: int) -> bytes:
+        """Read bytes from the binary at a virtual address."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
+        return self.reader.read_bytes(address, size)
 
-        try:
-            # Resolve symbolic variables to actual addresses
-            resolved_instruction = self._resolve_symbolic_vars(instruction, function_addr)
+    def get_arch_info(self) -> dict[str, Any]:
+        """Get architecture information from the binary."""
+        return self.reader.get_arch_info(self.info)
 
-            # Normalize syntax for radare2 assembler compatibility
-            normalized_instruction = self._normalize_assembly_syntax(resolved_instruction)
+    def get_arch_family(self) -> tuple[str, int]:
+        """Return (arch_family, bits) tuple."""
+        return self.reader.get_arch_family(self.info)
 
-            # Try standard radare2 assembler first
-            result = self.r2.cmd(f"pa {normalized_instruction}")
-            hex_str = result.strip()
-            if hex_str:
-                return bytes.fromhex(hex_str)
-
-            # If radare2 failed, try intelligent fallbacks
-
-            # Fallback 1: movzx/movsx manual encoding
-            if normalized_instruction.strip().lower().startswith(("movzx", "movsx")):
-                logger.debug(f"Radare2 assembler failed, trying manual movzx/movsx encoding")
-                manual_bytes = self._assemble_movzx_movsx_fallback(normalized_instruction)
-                if manual_bytes:
-                    logger.debug(f"  Successfully encoded: {manual_bytes.hex()}")
-                    return manual_bytes
-
-            # Fallback 2: segment prefix instructions (fs:, gs:, etc.)
-            if any(
-                seg in normalized_instruction.lower()
-                for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]
-            ):
-                logger.debug(f"Radare2 assembler failed, trying segment prefix fallback")
-                segment_bytes = self._assemble_segment_prefix_fallback(normalized_instruction)
-                if segment_bytes:
-                    logger.debug(f"  Successfully encoded: {segment_bytes.hex()}")
-                    return segment_bytes
-
-            # All fallbacks exhausted
-            logger.error(f"Failed to assemble: {instruction}")
-            if normalized_instruction != instruction:
-                logger.debug(f"  After normalization: {normalized_instruction}")
-            return None
-
-        except Exception as e:
-            logger.error(f"Assembly error for '{instruction}': {e}")
-            return None
-
-    def track_mutation(self, batch_size: int = BATCH_MUTATION_CHECKPOINT):
-        """
-        Track mutation count and reload r2 periodically for batch processing.
-
-        This prevents OOM on large binaries by restarting r2 every N mutations.
-
-        Args:
-            batch_size: Number of mutations before reloading r2 (default: BATCH_MUTATION_CHECKPOINT)
-        """
-        if not self._low_memory:
-            return
-
-        self._mutation_counter += 1
-        if self._mutation_counter % batch_size == 0:
-            logger.info(
-                f"Batch checkpoint: {self._mutation_counter} mutations applied. "
-                f"Reloading r2 to free memory..."
-            )
-            self.reload()
+    # Delegated write methods to BinaryWriter
 
     def write_bytes(self, address: int, data: bytes) -> bool:
-        """
-        Write bytes to binary at specified address.
-
-        Args:
-            address: Target virtual address (will be converted to physical offset)
-            data: Bytes to write
-
-        Returns:
-            True if successful
-        """
+        """Write bytes to binary at specified address."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
-
         if not self._writable:
             logger.warning("Binary opened in read-only mode, write may fail")
 
-        try:
-            # Prefer r2 write to honor virtual address mappings when available
-            if self.r2:
-                hex_data = data.hex()
-                try:
-                    self.r2.cmd(f"wx {hex_data} @ 0x{address:x}")
-                    verify = self.r2.cmd(f"p8 {len(data)} @ 0x{address:x}").strip().lower()
-                    if verify == hex_data.lower():
-                        self.track_mutation()
-                        return True
-                except Exception as e:
-                    logger.debug(f"Failed to write via r2 wx at 0x{address:x}: {e}")
+        success = self.writer.write_bytes(
+            address,
+            data,
+            resolve_physical_offset_func=self.reader.resolve_physical_offset,
+        )
 
-            paddr_result = self.r2.cmd(f"s2p 0x{address:x}")
+        # Track mutation for batch processing
+        if success and self._low_memory:
+            self._mutation_counter += 1
+            if self._mutation_counter % BATCH_MUTATION_CHECKPOINT == 0:
+                logger.info(
+                    f"Batch checkpoint: {self._mutation_counter} mutations applied. Reloading r2 to free memory..."
+                )
+                self.reload()
 
-            if not paddr_result or paddr_result.strip() == "":
-                physical_offset = None
-                try:
-                    for section in self.get_sections():
-                        vaddr = section.get("vaddr")
-                        paddr = section.get("paddr")
-                        size = section.get("size") or section.get("vsize") or 0
-                        if vaddr is None or paddr is None:
-                            continue
-                        if vaddr <= address < vaddr + size:
-                            physical_offset = int(paddr + (address - vaddr))
-                            logger.debug(
-                                f"Mapped vaddr 0x{address:x} -> section paddr 0x{physical_offset:x}"
-                            )
-                            break
-                except Exception as e:
-                    logger.debug(f"Section mapping failed for 0x{address:x}: {e}")
-                    physical_offset = None
-
-                if physical_offset is None:
-                    physical_offset = address
-                    logger.debug(f"Using address directly as physical offset: 0x{address:x}")
-            else:
-                try:
-                    physical_offset = int(paddr_result.strip(), 16)
-                    logger.debug(f"Converted vaddr 0x{address:x} -> paddr 0x{physical_offset:x}")
-                except ValueError:
-                    physical_offset = address
-                    logger.debug(f"Could not parse paddr, using direct: 0x{address:x}")
-
-            with open(self.path, "r+b") as f:
-                f.seek(physical_offset)
-                f.write(data)
-            logger.debug(f"Wrote {len(data)} bytes at physical offset 0x{physical_offset:x}")
-
-            # Track mutation for batch processing
-            self.track_mutation()
-
-            return True
-        except Exception as e:
-            logger.error(f"Failed to write bytes at 0x{address:x}: {e}")
-            return False
-
-    def read_bytes(self, address: int, size: int) -> bytes:
-        """
-        Read bytes from the binary at a virtual address.
-
-        Args:
-            address: Target virtual address
-            size: Number of bytes to read
-
-        Returns:
-            Bytes read from the binary. Returns empty bytes on failure.
-        """
-        if not self.r2:
-            raise RuntimeError("Binary not opened. Call open() first.")
-
-        if size <= 0:
-            return b""
-
-        try:
-            hex_data = self.r2.cmd(f"p8 {size} @ 0x{address:x}").strip()
-            if not hex_data:
-                return b""
-            return bytes.fromhex(hex_data)
-        except Exception as e:
-            logger.error(f"Failed to read bytes at 0x{address:x}: {e}")
-            return b""
+        return success
 
     def write_instruction(self, address: int, instruction: str) -> bool:
-        """
-        Assemble and write an instruction at specified address.
-
-        Args:
-            address: Target address
-            instruction: Assembly instruction
-
-        Returns:
-            True if successful
-        """
+        """Assemble and write an instruction at specified address."""
         assembled = self.assemble(instruction)
         if assembled:
             return self.write_bytes(address, assembled)
         return False
 
     def nop_fill(self, address: int, size: int) -> bool:
-        """
-        Fill a region with NOPs.
-
-        Args:
-            address: Start address
-            size: Number of bytes to fill
-
-        Returns:
-            True if successful
-        """
+        """Fill a region with NOPs."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
 
-        nop_bytes = b"\x90" * size
+        arch_info = self.get_arch_info()
+        arch = arch_info.get("arch", "x86").lower()
+        bits = arch_info.get("bits", 64)
+
+        if arch in ("arm", "arm64", "aarch64"):
+            if bits == 64:
+                nop_bytes = b"\x1f\x20\x03\xd5" * (size // 4)
+                # ARM64 instructions are always 4 bytes; pad remainder with x86 NOPs
+                # which are safe as padding but won't execute (only reached by alignment)
+                remainder = size % 4
+                if remainder:
+                    nop_bytes += b"\x00" * remainder
+            else:
+                nop_bytes = b"\x00\x00\xa0\xe1" * (size // 4)
+                remainder = size % 4
+                if remainder:
+                    nop_bytes += b"\x00" * remainder
+        else:
+            nop_bytes = b"\x90" * size
+
         return self.write_bytes(address, nop_bytes)
 
     def save(self, output_path: str | Path | None = None):
-        """
-        Save modified binary to file.
-
-        Args:
-            output_path: Output file path. If None, keeps current file.
-        """
+        """Save modified binary to file."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
+        self.writer.save(output_path)
 
-        if output_path and output_path != self.path:
-            output_path = Path(output_path)
+    # Assembly (delegated to AssemblyService)
 
-            shutil.copy2(self.path, output_path)
-            logger.info(f"Copied binary to: {output_path}")
-        else:
-            logger.info(f"Changes already written to: {self.path}")
+    def assemble(self, instruction: str, function_addr: int | None = None) -> bytes | None:
+        """Assemble an instruction using radare2's rasm2 with intelligent fallbacks."""
+        if not self.r2:
+            raise RuntimeError("Binary not opened. Call open() first.")
+        return self.assembly.assemble(self, instruction, function_addr)
 
-    def get_arch_info(self) -> dict[str, Any]:
-        """
-        Get architecture information from the binary.
+    # Mutation tracking (delegated to MemoryManager)
 
-        Returns:
-            Dictionary with arch, bits, endian, etc.
-        """
-        core_info = self.info.get("bin", {})
-        return {
-            "arch": core_info.get("arch", "unknown"),
-            "bits": core_info.get("bits", 0),
-            "endian": core_info.get("endian", "unknown"),
-            "format": core_info.get("class", "unknown"),
-            "machine": core_info.get("machine", "unknown"),
-        }
+    def track_mutation(self, batch_size: int = BATCH_MUTATION_CHECKPOINT):
+        """Track mutation count and reload r2 periodically for batch processing."""
+        if not self._low_memory:
+            return
 
-    def get_arch_family(self) -> tuple[str, int]:
-        """
-        Return (arch_family, bits) tuple.
+        self._mutation_counter += 1
+        if self._mutation_counter % batch_size == 0:
+            logger.info(f"Batch checkpoint: {self._mutation_counter} mutations applied. Reloading r2 to free memory...")
+            self.reload()
 
-        Normalizes architecture names to families (e.g., x86 and x64 -> x86).
-
-        Returns:
-            Tuple of (arch_family, bits)
-        """
-        info = self.get_arch_info()
-        arch = info.get("arch", "unknown")
-        bits = info.get("bits", 32)
-        family = "x86" if arch in ["x86", "x64"] else arch
-        return family, bits
+    # Utility methods
 
     def is_analyzed(self) -> bool:
         """Check if binary has been analyzed."""
         return self._analyzed
+
+    # Internal methods for backward compatibility
+
+    def _resolve_symbolic_vars(self, instruction: str, function_addr: int | None = None) -> str:
+        """Resolve symbolic variable names in instruction to actual addresses."""
+        return self.reader.resolve_symbolic_vars(instruction, function_addr)
+
+    def _normalize_assembly_syntax(self, instruction: str) -> str:
+        """Normalize assembly syntax to work around radare2 assembler quirks."""
+        return instruction
+
+    def _assemble_movzx_movsx_fallback(self, instruction: str) -> bytes | None:
+        """Manually encode movzx/movsx instructions using direct opcodes."""
+        return self.assembly._assemble_movzx_movsx_fallback(instruction)
+
+    def _assemble_segment_prefix_fallback(self, instruction: str) -> bytes | None:
+        """Manually encode instructions with segment prefixes (fs:, gs:, etc.)."""
+        return self.assembly._assemble_segment_prefix_fallback(self, instruction)

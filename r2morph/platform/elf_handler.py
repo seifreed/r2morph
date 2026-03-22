@@ -51,10 +51,10 @@ PT_NOTE = 4
 PT_SHLIB = 5
 PT_PHDR = 6
 PT_TLS = 7
-PT_GNU_EH_FRAME = 0x6474e550
-PT_GNU_STACK = 0x6474e551
-PT_GNU_RELRO = 0x6474e552
-PT_GNU_PROPERTY = 0x6474e553
+PT_GNU_EH_FRAME = 0x6474E550
+PT_GNU_STACK = 0x6474E551
+PT_GNU_RELRO = 0x6474E552
+PT_GNU_PROPERTY = 0x6474E553
 
 
 class ELFHandler:
@@ -97,6 +97,8 @@ class ELFHandler:
         try:
             with open(self.binary_path, "rb") as f:
                 magic = f.read(4)
+                if len(magic) < 4:
+                    return False
                 return magic == ELF_MAGIC
         except (OSError, IOError) as e:
             logger.error(f"Failed to read file for ELF check: {e}")
@@ -262,6 +264,10 @@ class ELFHandler:
         if end == -1:
             end = len(shstrtab_data)
 
+        MAX_SECTION_NAME = 256
+        if end - name_offset > MAX_SECTION_NAME:
+            end = name_offset + MAX_SECTION_NAME
+
         return shstrtab_data[name_offset:end].decode("utf-8", errors="replace")
 
     def get_sections(self) -> list[dict[str, Any]]:
@@ -296,35 +302,54 @@ class ELFHandler:
                 is_64bit = header["is_64bit"]
                 endian = "<" if header["is_little_endian"] else ">"
 
+                file_size = self.binary_path.stat().st_size
+
                 # First, read the section header string table
                 shstrtab_data = b""
                 if header["e_shstrndx"] < header["e_shnum"]:
-                    # Read the shstrtab section header
-                    shstrtab_offset = (
-                        header["e_shoff"] + header["e_shstrndx"] * header["e_shentsize"]
-                    )
-                    f.seek(shstrtab_offset)
-                    shstrtab_header = f.read(header["e_shentsize"])
-
-                    if is_64bit:
-                        # 64-bit section header: sh_offset at bytes 24-32, sh_size at 32-40
-                        sh_offset = struct.unpack(f"{endian}Q", shstrtab_header[24:32])[0]
-                        sh_size = struct.unpack(f"{endian}Q", shstrtab_header[32:40])[0]
+                    # Validate offset calculation doesn't overflow
+                    shstrtab_offset = header["e_shoff"] + header["e_shstrndx"] * header["e_shentsize"]
+                    if shstrtab_offset > file_size or shstrtab_offset < header["e_shoff"]:
+                        logger.warning(f"Invalid shstrtab offset: {shstrtab_offset}")
                     else:
-                        # 32-bit section header: sh_offset at bytes 16-20, sh_size at 20-24
-                        sh_offset = struct.unpack(f"{endian}I", shstrtab_header[16:20])[0]
-                        sh_size = struct.unpack(f"{endian}I", shstrtab_header[20:24])[0]
+                        f.seek(shstrtab_offset)
+                        shstrtab_header = f.read(header["e_shentsize"])
 
-                    f.seek(sh_offset)
-                    shstrtab_data = f.read(sh_size)
+                        if len(shstrtab_header) < header["e_shentsize"]:
+                            logger.warning(f"Truncated shstrtab header")
+                        else:
+                            if is_64bit:
+                                sh_offset = struct.unpack(f"{endian}Q", shstrtab_header[24:32])[0]
+                                sh_size = struct.unpack(f"{endian}Q", shstrtab_header[32:40])[0]
+                            else:
+                                sh_offset = struct.unpack(f"{endian}I", shstrtab_header[16:20])[0]
+                                sh_size = struct.unpack(f"{endian}I", shstrtab_header[20:24])[0]
+
+                            if sh_offset + sh_size > file_size:
+                                logger.warning(f"shstrtab extends beyond file: offset={sh_offset}, size={sh_size}")
+                            else:
+                                f.seek(sh_offset)
+                                shstrtab_data = f.read(sh_size)
 
                 # Now read all section headers
                 sections = []
                 f.seek(header["e_shoff"])
 
-                for i in range(header["e_shnum"]):
-                    sh_data = f.read(header["e_shentsize"])
-                    if len(sh_data) < header["e_shentsize"]:
+                MAX_SECTIONS = 10000
+                MAX_SECTION_ENTRY_SIZE = 1024
+                section_count = min(header["e_shnum"], MAX_SECTIONS)
+                section_entry_size = min(header["e_shentsize"], MAX_SECTION_ENTRY_SIZE)
+
+                if header["e_shnum"] > MAX_SECTIONS:
+                    logger.warning(f"Excessive section count {header['e_shnum']}, limiting to {MAX_SECTIONS}")
+                if header["e_shentsize"] > MAX_SECTION_ENTRY_SIZE:
+                    logger.warning(
+                        f"Excessive section entry size {header['e_shentsize']}, limiting to {MAX_SECTION_ENTRY_SIZE}"
+                    )
+
+                for i in range(section_count):
+                    sh_data = f.read(section_entry_size)
+                    if len(sh_data) < section_entry_size:
                         logger.warning(f"Truncated section header at index {i}")
                         break
 
@@ -359,19 +384,21 @@ class ELFHandler:
 
                     section_name = self._get_section_name(sh_name, shstrtab_data)
 
-                    sections.append({
-                        "name": section_name,
-                        "vaddr": sh_addr,
-                        "size": sh_size,
-                        "offset": sh_offset,
-                        "flags": sh_flags,
-                        "type": sh_type,
-                        "link": sh_link,
-                        "info": sh_info,
-                        "align": sh_addralign,
-                        "entsize": sh_entsize,
-                        "index": i,
-                    })
+                    sections.append(
+                        {
+                            "name": section_name,
+                            "vaddr": sh_addr,
+                            "size": sh_size,
+                            "offset": sh_offset,
+                            "flags": sh_flags,
+                            "type": sh_type,
+                            "link": sh_link,
+                            "info": sh_info,
+                            "align": sh_addralign,
+                            "entsize": sh_entsize,
+                            "index": i,
+                        }
+                    )
 
                 logger.debug(f"Parsed {len(sections)} sections from {self.binary_path}")
                 return sections
@@ -464,18 +491,20 @@ class ELFHandler:
                         p_flags = struct.unpack(f"{endian}I", ph_data[24:28])[0]
                         p_align = struct.unpack(f"{endian}I", ph_data[28:32])[0]
 
-                    segments.append({
-                        "type": p_type,
-                        "type_name": type_names.get(p_type, f"UNKNOWN({p_type})"),
-                        "vaddr": p_vaddr,
-                        "paddr": p_paddr,
-                        "filesz": p_filesz,
-                        "memsz": p_memsz,
-                        "offset": p_offset,
-                        "flags": p_flags,
-                        "align": p_align,
-                        "index": i,
-                    })
+                    segments.append(
+                        {
+                            "type": p_type,
+                            "type_name": type_names.get(p_type, f"UNKNOWN({p_type})"),
+                            "vaddr": p_vaddr,
+                            "paddr": p_paddr,
+                            "filesz": p_filesz,
+                            "memsz": p_memsz,
+                            "offset": p_offset,
+                            "flags": p_flags,
+                            "align": p_align,
+                            "index": i,
+                        }
+                    )
 
                 logger.debug(f"Parsed {len(segments)} segments from {self.binary_path}")
                 return segments
@@ -519,10 +548,7 @@ class ELFHandler:
         try:
             import lief
         except ImportError:
-            logger.error(
-                "lief library required for section manipulation. "
-                "Install with: pip install lief"
-            )
+            logger.error("lief library required for section manipulation. Install with: pip install lief")
             return None
 
         try:
@@ -559,10 +585,7 @@ class ELFHandler:
             self._elf_header = None
 
             vaddr = added_section.virtual_address
-            logger.info(
-                f"Added ELF section '{name}' ({size} bytes, flags=0x{flags:x}) "
-                f"at vaddr 0x{vaddr:x}"
-            )
+            logger.info(f"Added ELF section '{name}' ({size} bytes, flags=0x{flags:x}) at vaddr 0x{vaddr:x}")
             return vaddr
 
         except Exception as e:
@@ -582,10 +605,7 @@ class ELFHandler:
         try:
             import lief
         except ImportError:
-            logger.warning(
-                "lief library recommended for symbol table parsing. "
-                "Install with: pip install lief"
-            )
+            logger.warning("lief library recommended for symbol table parsing. Install with: pip install lief")
             return {"symtab": [], "dynsym": []}
 
         try:
@@ -595,34 +615,42 @@ class ELFHandler:
 
             result = {"symtab": [], "dynsym": []}
 
+            MAX_SYMBOLS = 100000
             # Get static symbols
             for sym in elf.static_symbols:
-                result["symtab"].append({
-                    "name": sym.name,
-                    "value": sym.value,
-                    "size": sym.size,
-                    "type": str(sym.type).split(".")[-1],
-                    "binding": str(sym.binding).split(".")[-1],
-                    "visibility": str(sym.visibility).split(".")[-1],
-                    "shndx": sym.shndx,
-                })
+                if len(result["symtab"]) >= MAX_SYMBOLS:
+                    logger.warning(f"Truncating symbol table at {MAX_SYMBOLS} entries")
+                    break
+                result["symtab"].append(
+                    {
+                        "name": sym.name,
+                        "value": sym.value,
+                        "size": sym.size,
+                        "type": str(sym.type).split(".")[-1],
+                        "binding": str(sym.binding).split(".")[-1],
+                        "visibility": str(sym.visibility).split(".")[-1],
+                        "shndx": sym.shndx,
+                    }
+                )
 
             # Get dynamic symbols
             for sym in elf.dynamic_symbols:
-                result["dynsym"].append({
-                    "name": sym.name,
-                    "value": sym.value,
-                    "size": sym.size,
-                    "type": str(sym.type).split(".")[-1],
-                    "binding": str(sym.binding).split(".")[-1],
-                    "visibility": str(sym.visibility).split(".")[-1],
-                    "shndx": sym.shndx,
-                })
+                if len(result["dynsym"]) >= MAX_SYMBOLS:
+                    logger.warning(f"Truncating dynamic symbol table at {MAX_SYMBOLS} entries")
+                    break
+                result["dynsym"].append(
+                    {
+                        "name": sym.name,
+                        "value": sym.value,
+                        "size": sym.size,
+                        "type": str(sym.type).split(".")[-1],
+                        "binding": str(sym.binding).split(".")[-1],
+                        "visibility": str(sym.visibility).split(".")[-1],
+                        "shndx": sym.shndx,
+                    }
+                )
 
-            logger.debug(
-                f"Found {len(result['symtab'])} static and "
-                f"{len(result['dynsym'])} dynamic symbols"
-            )
+            logger.debug(f"Found {len(result['symtab'])} static and {len(result['dynsym'])} dynamic symbols")
             return result
 
         except Exception as e:
@@ -651,10 +679,7 @@ class ELFHandler:
         try:
             import lief
         except ImportError:
-            logger.warning(
-                "lief library required for symbol preservation. "
-                "Install with: pip install lief"
-            )
+            logger.warning("lief library required for symbol preservation. Install with: pip install lief")
             return False
 
         try:
@@ -676,9 +701,7 @@ class ELFHandler:
             static_count = len(static_symbols)
             dynamic_count = len(dynamic_symbols)
 
-            logger.info(
-                f"Symbol tables intact: {static_count} static, {dynamic_count} dynamic symbols"
-            )
+            logger.info(f"Symbol tables intact: {static_count} static, {dynamic_count} dynamic symbols")
             return True
 
         except Exception as e:
@@ -769,10 +792,7 @@ class ELFHandler:
                             null_run += 1
                             if null_run >= min_size:
                                 vaddr = section["vaddr"] + null_start
-                                logger.info(
-                                    f"Found code cave: {null_run} bytes at "
-                                    f"0x{vaddr:x} in {section['name']}"
-                                )
+                                logger.info(f"Found code cave: {null_run} bytes at 0x{vaddr:x} in {section['name']}")
                                 return vaddr
                         else:
                             null_run = 0

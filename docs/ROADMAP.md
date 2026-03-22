@@ -93,57 +93,51 @@ Delivered:
 
 ### Phase 7: Shrink the Official Core to a Stable Subset
 
-Status: `in progress`
+Status: `completed`
 
-Target:
+Delivered:
 
 - Keep official support limited to `nop`, `substitute`, and `register`.
 - Keep `block`, `dead-code`, `opaque`, `expand`, and `cff` marked as experimental.
 - Make the stable subset visible in docs, CLI defaults, and tests.
-
-Remaining work:
-
-- Tighten help text and package metadata around the stable subset.
-- Add CI gates that treat stable and experimental coverage separately.
+- Help text and CLI warnings explicitly call out experimental passes.
+- CI gates separate stable and experimental test runs.
+- Package metadata reflects stable mutation focus.
 
 ### Phase 8: Product Corpus and Acceptance Tests
 
-Status: `in progress`
+Status: `completed`
 
-Target:
+Delivered:
 
 - Maintain a small, deterministic ELF x86_64 corpus.
 - Add product acceptance coverage for each stable pass.
 - Add rollback and invalid-mutation regression coverage.
-
-Remaining work:
-
 - Expand the product-smoke suite with per-pass fixtures.
 - Split tests more clearly into `unit`, `integration`, `product_smoke`, and `slow`.
 
 ### Phase 9: Product UX
 
-Status: `in progress`
+Status: `completed`
 
-Target:
+Delivered:
 
 - Present the engine as `mutate`, `validate`, and `report`.
 - Expose product-centric flags for validation mode, rollback policy, seed, and output report.
+- CLI help text documents stable vs experimental mutations.
+- JSON report contains all relevant mutation, validation, and summary fields.
 
 ### Phase 10: Experimental Symbolic Validation
 
-Status: `in progress`
+Status: `completed`
 
-Target:
+Delivered:
 
 - Add an experimental symbolic validator for a narrow subset of cases.
-
-Current state:
-
 - `symbolic` is exposed as an experimental validation mode.
-- Reports now identify symbolic coverage scope, backend availability, bounded-step results, and fallback reasons.
-- `InstructionSubstitution` can now tag bounded-step results that also map to a known equivalence group and, when possible, compare a small set of observable register/flag effects on original vs mutated snippets.
-- Structural validation remains the blocking fallback; symbolic mode does not claim general semantic equivalence.
+- Reports identify symbolic coverage scope, backend availability, bounded-step results, and fallback reasons.
+- `InstructionSubstitution` tags bounded-step results that map to known equivalence groups.
+- Structural validation remains the blocking fallback.
 
 Scope limits:
 
@@ -153,15 +147,54 @@ Scope limits:
 
 Success criteria:
 
-- The CLI can expose `symbolic` as experimental without implying general semantic equivalence.
+- The CLI exposes `symbolic` as experimental without implying general semantic equivalence.
 - The report identifies when symbolic validation ran, what region it covered, whether a bounded step executed, and why it passed or failed.
 
-## Next Execution Block
+## All Phases Complete
 
-The next recommended implementation block is:
+The core product roadmap has been fully implemented:
 
-1. Finish Phase 7 by warning on experimental passes and making the stable subset the only default set.
-2. Finish Phase 8 by expanding product-smoke fixtures and adding explicit rollback-failure fixtures.
-3. Finish Phase 9 by wiring `--seed` and improving CLI summaries for rollback and validation outcomes.
+1. **Phase 1-6**: Foundation complete (mutation tracking, pipeline, validation, reporting)
+2. **Phase 7**: Stable subset clearly defined (`nop`, `substitute`, `register`) with experimental areas marked
+3. **Phase 8**: Product acceptance tests in place with per-pass fixtures
+4. **Phase 9**: CLI UX polished (`mutate`, `validate`, `report` commands)
+5. **Phase 10**: Experimental symbolic validation available
 
-This keeps the project deep on the product path before adding any new advanced analysis features.
+## Future Direction
+
+### Near-Term Improvements
+
+1. **Expand Architecture Support**
+   - Add `arm64` to stable architecture support
+   - Improve `PE` and `Mach-O` format handling
+
+2. **Enhance Symbolic Validation**
+   - Expand bounded-step coverage for more instruction patterns
+   - Improve observable comparison accuracy
+
+3. **Performance Optimization**
+   - Reduce memory footprint for large binaries
+   - Parallelize mutation pass execution
+
+4. **Documentation**
+   - Add more examples for common workflows
+   - Document report JSON schema formally
+
+### Experimental Features (Secondary)
+
+These remain experimental and not part of the stable core:
+
+- `expand` mutation pass (instruction expansion)
+- `block` mutation pass (block reordering)
+- `opaque` mutation pass (opaque predicates)
+- `dead-code` mutation pass (dead code injection)
+- `cff` mutation pass (control flow flattening)
+- Devirtualization analysis
+- Enhanced anti-analysis detection
+- Instrumentation frameworks
+
+### Version Roadmap
+
+- **0.2.x**: Stability improvements, bug fixes, documentation
+- **0.3.0**: Additional stable mutation patterns, architecture expansion
+- **0.4.0**: Performance optimizations, extended corpus support

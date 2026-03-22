@@ -136,17 +136,61 @@ class ControlFlowFlatteningPass(MutationPass):
 
     # Conditional jump instructions (x86)
     X86_CONDITIONAL_JUMPS = {
-        "je", "jne", "jz", "jnz", "ja", "jae", "jb", "jbe",
-        "jg", "jge", "jl", "jle", "jo", "jno", "js", "jns",
-        "jp", "jnp", "jcxz", "jecxz", "jrcxz"
+        "je",
+        "jne",
+        "jz",
+        "jnz",
+        "ja",
+        "jae",
+        "jb",
+        "jbe",
+        "jg",
+        "jge",
+        "jl",
+        "jle",
+        "jo",
+        "jno",
+        "js",
+        "jns",
+        "jp",
+        "jnp",
+        "jcxz",
+        "jecxz",
+        "jrcxz",
     }
 
     # ARM conditional branch instructions
     ARM_CONDITIONAL_BRANCHES = {
-        "beq", "bne", "bcs", "bcc", "bmi", "bpl", "bvs", "bvc",
-        "bhi", "bls", "bge", "blt", "bgt", "ble", "b.eq", "b.ne",
-        "b.cs", "b.cc", "b.mi", "b.pl", "b.vs", "b.vc", "b.hi",
-        "b.ls", "b.ge", "b.lt", "b.gt", "b.le", "cbz", "cbnz"
+        "beq",
+        "bne",
+        "bcs",
+        "bcc",
+        "bmi",
+        "bpl",
+        "bvs",
+        "bvc",
+        "bhi",
+        "bls",
+        "bge",
+        "blt",
+        "bgt",
+        "ble",
+        "b.eq",
+        "b.ne",
+        "b.cs",
+        "b.cc",
+        "b.mi",
+        "b.pl",
+        "b.vs",
+        "b.vc",
+        "b.hi",
+        "b.ls",
+        "b.ge",
+        "b.lt",
+        "b.gt",
+        "b.le",
+        "cbz",
+        "cbnz",
     }
 
     def __init__(self, config: dict[str, Any] | None = None):
@@ -179,6 +223,7 @@ class ControlFlowFlatteningPass(MutationPass):
         Returns:
             Statistics dict with mutation counts and details
         """
+        self._reset_random()
         if not binary.is_analyzed():
             logger.warning("Binary not analyzed, analyzing now...")
             binary.analyze()
@@ -324,6 +369,12 @@ class ControlFlowFlatteningPass(MutationPass):
             "total": 0,
         }
 
+        baseline = {}
+        if self._validation_manager is not None:
+            baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
+
+        mutation_checkpoint = self._create_mutation_checkpoint("cff")
+
         # Get function disassembly for instruction analysis
         try:
             all_instrs = binary.get_function_disasm(func_addr)
@@ -348,10 +399,7 @@ class ControlFlowFlatteningPass(MutationPass):
             block_end = block_addr + block_size
 
             # Find instructions in this block
-            block_instrs = [
-                ins for ins in all_instrs
-                if block_addr <= ins.get("offset", 0) < block_end
-            ]
+            block_instrs = [ins for ins in all_instrs if block_addr <= ins.get("offset", 0) < block_end]
 
             if not block_instrs:
                 continue
@@ -376,8 +424,7 @@ class ControlFlowFlatteningPass(MutationPass):
                     if available_space >= 2:
                         # We have slack space, use it
                         if self._add_opaque_predicate(
-                            binary, prev_addr + prev_size,
-                            available_space, arch_family, bits
+                            binary, prev_addr + prev_size, available_space, arch_family, bits
                         ):
                             predicates_added += 1
                             mutations["opaque_predicates"] += 1
@@ -401,14 +448,42 @@ class ControlFlowFlatteningPass(MutationPass):
                 break
 
             if nop_size >= 5:  # Need at least 5 bytes for meaningful dead code
-                if self._insert_dead_code_with_predicate(
-                    binary, nop_start, nop_size, arch_family, bits
-                ):
+                if self._insert_dead_code_with_predicate(binary, nop_start, nop_size, arch_family, bits):
                     predicates_added += 1
                     mutations["opaque_predicates"] += 1
                     mutations["total"] += 1
 
         if mutations["total"] > 0:
+            self._record_mutation(
+                function_address=func_addr,
+                start_address=blocks[0].get("addr", 0) if blocks else func_addr,
+                end_address=blocks[-1].get("addr", 0) + blocks[-1].get("size", 0) if blocks else func_addr,
+                original_bytes=b"",
+                mutated_bytes=b"",
+                original_disasm="function before CFF",
+                mutated_disasm=f"CFF: {mutations['opaque_predicates']} predicates, {mutations['jump_obfuscations']} jumps",
+                mutation_kind="control_flow_flattening",
+                metadata={
+                    "opaque_predicates": mutations["opaque_predicates"],
+                    "jump_obfuscations": mutations["jump_obfuscations"],
+                    "structural_baseline": baseline,
+                },
+            )
+
+            if self._validation_manager is not None and mutation_checkpoint is not None:
+                if self._records:
+                    outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
+                    if not outcome.passed:
+                        if self._session is not None:
+                            self._session.rollback_to(mutation_checkpoint)
+                        binary.reload()
+                        if self._records:
+                            self._records.pop()
+                        if self._rollback_policy == "fail-fast":
+                            raise RuntimeError("Mutation-level validation failed")
+                        logger.debug(f"CFF validation failed for {func_name}, rolled back")
+                        return None
+
             logger.info(
                 f"Flattened {func_name}: {mutations['opaque_predicates']} opaque predicates, "
                 f"{mutations['jump_obfuscations']} jump obfuscations"
@@ -431,15 +506,15 @@ class ControlFlowFlatteningPass(MutationPass):
         """
         mnemonic = mnemonic.lower()
 
-        if arch == "x86":
+        if arch in ("x86", "x86_64"):
             return mnemonic in self.X86_CONDITIONAL_JUMPS
-        elif arch == "arm":
+        elif arch in ("arm", "arm64", "aarch64"):
             return mnemonic in self.ARM_CONDITIONAL_BRANCHES
 
         # Generic check for jump-like mnemonics that aren't unconditional
-        if mnemonic.startswith("j") and mnemonic != "jmp":
+        if mnemonic.startswith("j") and mnemonic not in ("jmp", "j"):
             return True
-        if mnemonic.startswith("b") and mnemonic not in ("b", "br", "bx", "blr"):
+        if mnemonic.startswith("b") and mnemonic not in ("b", "br", "bx", "blr", "bl"):
             return True
 
         return False
@@ -483,10 +558,7 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return sequences
 
-    def _add_opaque_predicate(
-        self, binary: Binary, addr: int, available_size: int,
-        arch: str, bits: int
-    ) -> bool:
+    def _add_opaque_predicate(self, binary: Binary, addr: int, available_size: int, arch: str, bits: int) -> bool:
         """
         Add an opaque predicate at the specified address.
 
@@ -533,9 +605,7 @@ class ControlFlowFlatteningPass(MutationPass):
             if success and len(assembled) <= available_size:
                 # Pad with NOPs if needed using shared utility
                 if len(assembled) < available_size:
-                    assembled += generate_nop_sequence(
-                        arch, bits, available_size - len(assembled)
-                    )
+                    assembled += generate_nop_sequence(arch, bits, available_size - len(assembled))
 
                 return binary.write_bytes(addr, assembled)
 
@@ -564,40 +634,41 @@ class ControlFlowFlatteningPass(MutationPass):
         reg = random.choice(regs)
 
         predicates = [
-            # Opaque predicate: x*x >= 0 (always true, but requires multiplication)
-            # This is hard to prove statically without symbolic execution
+            # x^2 | 1 is always non-zero → ZF=0 after test → opaque true.
+            # push saves original reg; pop restores it. On x86 pop does NOT
+            # modify flags, so ZF=0 from test persists through pop.
             [
                 f"push {reg}",
-                f"imul {reg}, {reg}",  # x * x
-                f"test {reg}, {reg}",  # Sets SF based on result
+                f"imul {reg}, {reg}",
+                f"or {reg}, 1",
+                f"test {reg}, {reg}",
                 f"pop {reg}",
             ],
-            # Opaque predicate: (x | 1) != 0 (always true)
+            # (x | 1) != 0 is always true: opaque true
             [
                 f"push {reg}",
                 f"or {reg}, 1",
-                f"test {reg}, {reg}",  # Always non-zero
+                f"test {reg}, {reg}",
                 f"pop {reg}",
             ],
-            # Opaque predicate: x ^ x == 0 (always true)
+            # x & (x-1) == x when x is 0 (ZF set): always-zero predicate
             [
-                f"push {reg}",
-                f"xor {reg}, {reg}",  # Always 0
-                f"test {reg}, {reg}",  # ZF = 1
-                f"pop {reg}",
+                f"xor {reg}, {reg}",
+                f"test {reg}, {reg}",
             ],
-            # Simpler: just set flags in a confusing way
-            [
-                f"push {reg}",
-                f"mov {reg}, 0x12345678",
-                f"xor {reg}, 0x12345678",  # Result is 0
-                f"pop {reg}",
-            ],
-            # Very small: just modify flags with pushf/popf
+            # Save and restore flags for transparent predicate insertion
             [
                 "pushf" if bits == 32 else "pushfq",
                 "nop",
                 "popf" if bits == 32 else "popfq",
+            ],
+            # 2*(x/2) always has bit 0 clear: opaque false on odd test
+            [
+                f"push {reg}",
+                f"mov {reg}, 42",
+                f"and {reg}, 0xFFFFFFFE" if bits == 32 else f"and {reg}, 0xFFFFFFFFFFFFFFFE",
+                f"test {reg}, 1",
+                f"pop {reg}",
             ],
         ]
 
@@ -636,10 +707,7 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return predicates
 
-    def _obfuscate_jump(
-        self, binary: Binary, jump_insn: dict, block: dict,
-        arch: str, bits: int
-    ) -> bool:
+    def _obfuscate_jump(self, binary: Binary, jump_insn: dict, block: dict, arch: str, bits: int) -> bool:
         """
         Obfuscate an unconditional jump instruction.
 
@@ -692,31 +760,80 @@ class ControlFlowFlatteningPass(MutationPass):
             return False
 
         if arch == "x86":
-            # Try to create a more complex but equivalent jump
-            # Option 1: Use a conditional jump that's always taken + unconditional
-            # This adds complexity for analysis
+            jump_info = self._analyze_jump_target(binary, jump_insn, jump_addr, arch, bits)
+            if jump_info is None:
+                return False
 
-            # Calculate relative offset for a shorter jump if possible
-            rel_offset = target_addr - (jump_addr + 2)  # 2-byte short jump
+            target_addr = jump_info["target"]
+            current_jump_size = jump_info["size"]
 
+            if current_jump_size < 5:
+                logger.debug(f"Jump at 0x{jump_addr:x} too small for obfuscation")
+                return False
+
+            rel_offset = target_addr - (jump_addr + 2)
             if -128 <= rel_offset <= 127:
-                # Can use short jump form, fill rest with dead code
                 new_insn = f"jmp 0x{target_addr:x}"
-                assembled = binary.assemble(new_insn)
+                assembled = binary.assemble(new_insn, jump_addr)
 
-                if assembled and len(assembled) <= jump_size:
-                    # Pad with NOPs using shared utility
-                    padded = assembled + generate_nop_sequence(
-                        arch, bits, jump_size - len(assembled)
-                    )
+                if assembled and len(assembled) <= current_jump_size:
+                    padded = assembled + generate_nop_sequence(arch, bits, current_jump_size - len(assembled))
                     return binary.write_bytes(jump_addr, padded)
 
+            long_rel_offset = target_addr - (jump_addr + 5)
+            if -2147483648 <= long_rel_offset <= 2147483647:
+                new_insn = f"jmp 0x{target_addr:x}"
+                assembled = binary.assemble(new_insn, jump_addr)
+
+                if assembled and len(assembled) <= current_jump_size:
+                    padded = assembled + generate_nop_sequence(arch, bits, current_jump_size - len(assembled))
+                    return binary.write_bytes(jump_addr, padded)
+
+            logger.debug(f"Could not obfuscate jump at 0x{jump_addr:x} - assembly failed or size mismatch")
+            return False
+
+        logger.debug(f"Jump obfuscation not supported for architecture: {arch}")
         return False
 
-    def _insert_dead_code_with_predicate(
-        self, binary: Binary, addr: int, size: int,
-        arch: str, bits: int
-    ) -> bool:
+    def _analyze_jump_target(
+        self, binary: Binary, jump_insn: dict, jump_addr: int, arch: str, bits: int
+    ) -> dict | None:
+        """
+        Analyze jump instruction to extract target and size.
+
+        Args:
+            binary: Binary instance
+            jump_insn: Jump instruction dictionary
+            jump_addr: Address of jump instruction
+            arch: Architecture family
+            bits: Bit width
+
+        Returns:
+            Dict with 'target' and 'size', or None if analysis fails
+        """
+        try:
+            disasm = jump_insn.get("disasm", "")
+            if not disasm:
+                return None
+
+            if "jmp" not in disasm.lower()[:3]:
+                return None
+
+            jump_size = jump_insn.get("size", 0)
+            if jump_size == 0:
+                return None
+
+            import re
+
+            addr_match = re.search(r"0x([0-9a-fA-F]+)", disasm)
+            if addr_match:
+                return {"target": int(addr_match.group(1), 16), "size": jump_size}
+
+            return None
+        except Exception:
+            return None
+
+    def _insert_dead_code_with_predicate(self, binary: Binary, addr: int, size: int, arch: str, bits: int) -> bool:
         """
         Insert dead code containing an opaque predicate into a NOP sled.
 

@@ -109,6 +109,11 @@ class NopInsertionPass(MutationPass):
 
         patterns = []
 
+        # x86-32 patterns: inc/dec are 1-byte opcodes (0x40-0x4F),
+        # push/pop are 1-byte (0x50-0x5F). jmp rel8 is 2 bytes (EB xx).
+        # Note: on x86-64 these same opcodes are REX prefixes, so
+        # inc/dec become 2-byte (FF /0, FF /1). Patterns below are
+        # sized for the correct encoding per bits value.
         if size == 3 and bits == 32:
             patterns = [
                 f"jmp 1; inc {random.choice(regs)}",
@@ -179,6 +184,17 @@ class NopInsertionPass(MutationPass):
         self.probability = self.config.get("probability", 0.5)
         self.use_creative_nops = self.config.get("use_creative_nops", True)
         self.force_different = self.config.get("force_different", False)
+
+    def configure_for_memory_constraints(self, factor: float) -> None:
+        """Reduce NOP insertion density for memory-efficient mode."""
+        original = self.max_nops
+        self.max_nops = max(1, int(self.max_nops * factor))
+        self.config["max_nops_per_function"] = self.max_nops
+        if self.max_nops != original:
+            import logging
+            logging.getLogger(__name__).debug(
+                f"Memory-efficient: reduced max_nops from {original} to {self.max_nops}"
+            )
         self.set_support(
             formats=("ELF", "Mach-O"),
             architectures=("x86_64", "arm64"),
@@ -242,17 +258,15 @@ class NopInsertionPass(MutationPass):
         mutations_applied = 0
         functions_mutated = 0
 
-        logger.info(
-            f"NOP insertion: processing {len(functions)} functions "
-            f"(max {self.max_nops} NOPs per function)"
-        )
+        logger.info(f"NOP insertion: processing {len(functions)} functions (max {self.max_nops} NOPs per function)")
 
         for func in functions:
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
 
+            func_addr = func.get("offset", func.get("addr", 0))
             try:
-                instructions = binary.get_function_disasm(func["addr"])
+                instructions = binary.get_function_disasm(func_addr)
             except Exception as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
@@ -326,9 +340,7 @@ class NopInsertionPass(MutationPass):
                         mutation_checkpoint = self._create_mutation_checkpoint("nop")
                         baseline = {}
                         if self._validation_manager is not None:
-                            baseline = self._validation_manager.capture_structural_baseline(
-                                binary, func["addr"]
-                            )
+                            baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
                         original_bytes = binary.read_bytes(addr, size)
                         nop_written = False
                         mutated_disasm = "nop"
@@ -338,23 +350,21 @@ class NopInsertionPass(MutationPass):
                             if insn.get("disasm", "").lower() == "nop":
                                 nop_bytes = binary.assemble("mov xzr, xzr", func["addr"])
                                 if nop_bytes and len(nop_bytes) == size:
-                                    binary.write_bytes(addr, nop_bytes)
-                                    nop_written = True
-                                    mutated_disasm = "mov xzr, xzr"
+                                    if binary.write_bytes(addr, nop_bytes):
+                                        nop_written = True
+                                        mutated_disasm = "mov xzr, xzr"
 
                         if self.use_creative_nops and random.random() < 0.7:
                             if size in [3, 4, 5] and arch_family == "x86":
-                                jmp_bytes = self._generate_jmp_dead_code(
-                                    size, bits, binary, func["addr"]
-                                )
+                                jmp_bytes = self._generate_jmp_dead_code(size, bits, binary, func["addr"])
                                 if jmp_bytes:
-                                    binary.write_bytes(addr, jmp_bytes)
-                                    logger.info(
-                                        f"Inserted jmp+dead code NOP ({size} bytes) at 0x{addr:x} "
-                                        f"(was: {insn.get('disasm', 'unknown')})"
-                                    )
-                                    nop_written = True
-                                    mutated_disasm = "jmp+dead-code"
+                                    if binary.write_bytes(addr, jmp_bytes):
+                                        logger.info(
+                                            f"Inserted jmp+dead code NOP ({size} bytes) at 0x{addr:x} "
+                                            f"(was: {insn.get('disasm', 'unknown')})"
+                                        )
+                                        nop_written = True
+                                        mutated_disasm = "jmp+dead-code"
 
                             if not nop_written and arch_family in self.NOP_EQUIVALENTS:
                                 equivalents = self.NOP_EQUIVALENTS[arch_family]
@@ -363,26 +373,23 @@ class NopInsertionPass(MutationPass):
                                 for nop_equiv in equivalents:
                                     nop_bytes = binary.assemble(nop_equiv, func["addr"])
                                     if nop_bytes and len(nop_bytes) <= size:
-                                        binary.write_bytes(addr, nop_bytes)
+                                        if binary.write_bytes(addr, nop_bytes):
+                                            if len(nop_bytes) < size:
+                                                binary.nop_fill(addr + len(nop_bytes), size - len(nop_bytes))
 
-                                        if len(nop_bytes) < size:
-                                            binary.nop_fill(
-                                                addr + len(nop_bytes), size - len(nop_bytes)
+                                            logger.info(
+                                                f"Inserted creative NOP '{nop_equiv}' at 0x{addr:x} "
+                                                f"(was: {insn.get('disasm', 'unknown')})"
                                             )
-
-                                        logger.info(
-                                            f"Inserted creative NOP '{nop_equiv}' at 0x{addr:x} "
-                                            f"(was: {insn.get('disasm', 'unknown')})"
-                                        )
-                                        nop_written = True
-                                        mutated_disasm = nop_equiv
-                                        break
+                                            nop_written = True
+                                            mutated_disasm = nop_equiv
+                                            break
 
                         if not nop_written:
-                            binary.nop_fill(addr, size)
+                            if not binary.nop_fill(addr, size):
+                                continue  # Skip recording if write failed entirely
                             logger.info(
-                                f"Inserted {size} plain NOPs at 0x{addr:x} "
-                                f"(was: {insn.get('disasm', 'unknown')})"
+                                f"Inserted {size} plain NOPs at 0x{addr:x} (was: {insn.get('disasm', 'unknown')})"
                             )
                             mutated_disasm = f"nop x{size}"
 
@@ -399,9 +406,7 @@ class NopInsertionPass(MutationPass):
                             metadata={"structural_baseline": baseline, "size": size},
                         )
                         if self._validation_manager is not None:
-                            outcome = self._validation_manager.validate_mutation(
-                                binary, record.to_dict()
-                            )
+                            outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
                             if not outcome.passed and mutation_checkpoint is not None:
                                 if self._session is not None:
                                     self._session.rollback_to(mutation_checkpoint)
@@ -422,10 +427,7 @@ class NopInsertionPass(MutationPass):
             if func_mutations > 0:
                 functions_mutated += 1
 
-        logger.info(
-            f"NOP insertion complete: {mutations_applied} NOPs inserted "
-            f"in {functions_mutated} functions"
-        )
+        logger.info(f"NOP insertion complete: {mutations_applied} NOPs inserted in {functions_mutated} functions")
 
         return {
             "mutations_applied": mutations_applied,
@@ -485,13 +487,11 @@ class NopInsertionPass(MutationPass):
                 if not new_bytes or len(new_bytes) != size:
                     continue
 
+                baseline = {}
+                if self._validation_manager is not None:
+                    baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
                 original_bytes = binary.read_bytes(addr, size)
                 if binary.write_bytes(addr, new_bytes):
-                    baseline = {}
-                    if self._validation_manager is not None:
-                        baseline = self._validation_manager.capture_structural_baseline(
-                            binary, func["addr"]
-                        )
                     record = self._record_mutation(
                         function_address=func["addr"],
                         start_address=addr,

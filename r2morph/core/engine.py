@@ -23,6 +23,7 @@ from r2morph.core.constants import (
 )
 from r2morph.mutations.base import MutationPass
 from r2morph.pipeline.pipeline import Pipeline
+from r2morph.reporting.gate_evaluator import SEVERITY_ORDER
 from r2morph.platform.codesign import CodeSigner
 from r2morph.core.support import PRODUCT_SUPPORT, classify_target_support
 from r2morph.session import MorphSession
@@ -35,13 +36,7 @@ REPORT_SCHEMA_VERSION = 1
 
 def _summarize_gate_failures(gate_evaluation: dict[str, Any]) -> dict[str, Any]:
     """Build a compact summary of persisted gate failures for reports."""
-    severity_order = {
-        "mismatch": 0,
-        "without-coverage": 1,
-        "bounded-only": 2,
-        "clean": 3,
-        "not-requested": 4,
-    }
+    severity_order = SEVERITY_ORDER
     requested = dict(gate_evaluation.get("requested", {}))
     results = dict(gate_evaluation.get("results", {}))
     pass_failures = list(results.get("require_pass_severity_failures", []))
@@ -54,12 +49,8 @@ def _summarize_gate_failures(gate_evaluation: dict[str, Any]) -> dict[str, Any]:
         marker = "expected <= "
         if marker in failure_text:
             severity = failure_text.split(marker, 1)[1].rstrip(") ").strip()
-            failures_by_expected_severity[severity] = (
-                failures_by_expected_severity.get(severity, 0) + 1
-            )
-    min_severity_failed = requested.get("min_severity") is not None and not results.get(
-        "min_severity_passed", True
-    )
+            failures_by_expected_severity[severity] = failures_by_expected_severity.get(severity, 0) + 1
+    min_severity_failed = requested.get("min_severity") is not None and not results.get("min_severity_passed", True)
     require_pass_failed = bool(pass_failures)
     return {
         "all_passed": bool(results.get("all_passed", True)),
@@ -141,21 +132,13 @@ def _build_gate_failure_severity_priority(
     """Build an ordered severity-first summary for gate failures."""
     if not gate_failures:
         return []
-    severity_order = {
-        "mismatch": 0,
-        "without-coverage": 1,
-        "bounded-only": 2,
-        "clean": 3,
-        "not-requested": 4,
-    }
+    severity_order = SEVERITY_ORDER
     rows = [
         {
             "severity": severity,
             "failure_count": count,
         }
-        for severity, count in gate_failures.get(
-            "require_pass_severity_failures_by_expected_severity", {}
-        ).items()
+        for severity, count in gate_failures.get("require_pass_severity_failures_by_expected_severity", {}).items()
     ]
     rows.sort(
         key=lambda item: (
@@ -265,11 +248,7 @@ def _summarize_symbolic_issue_passes(
 
     issue_rows = []
     for pass_name, stats in by_pass.items():
-        if (
-            stats["observable_mismatch"] == 0
-            and stats["without_coverage"] == 0
-            and stats["bounded_only"] == 0
-        ):
+        if stats["observable_mismatch"] == 0 and stats["without_coverage"] == 0 and stats["bounded_only"] == 0:
             continue
         severity = (
             "mismatch"
@@ -445,9 +424,7 @@ def _build_symbolic_summary_for_pass(
     mutations: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Build a symbolic coverage/issues summary for one pass."""
-    pass_mutations = [
-        mutation for mutation in mutations if mutation.get("pass_name", "unknown") == pass_name
-    ]
+    pass_mutations = [mutation for mutation in mutations if mutation.get("pass_name", "unknown") == pass_name]
     coverage_rows = _summarize_symbolic_coverage_by_pass(pass_mutations)
     issue_rows = _summarize_symbolic_issue_passes(pass_mutations)
     coverage = (
@@ -463,11 +440,7 @@ def _build_symbolic_summary_for_pass(
         }
     )
     severity = (
-        issue_rows[0]["severity"]
-        if issue_rows
-        else "clean"
-        if coverage["symbolic_requested"] > 0
-        else "not-requested"
+        issue_rows[0]["severity"] if issue_rows else "clean" if coverage["symbolic_requested"] > 0 else "not-requested"
     )
     return {
         **coverage,
@@ -492,13 +465,7 @@ def _summarize_symbolic_severity_by_pass(
                 "symbolic_requested": symbolic_summary.get("symbolic_requested", 0),
             }
         )
-    severity_order = {
-        "mismatch": 0,
-        "without-coverage": 1,
-        "bounded-only": 2,
-        "clean": 3,
-        "not-requested": 4,
-    }
+    severity_order = SEVERITY_ORDER
     rows.sort(
         key=lambda item: (
             severity_order.get(item["severity"], 99),
@@ -584,13 +551,9 @@ def _summarize_validation_adjustments(
 ) -> dict[str, Any]:
     """Summarize validation mode adjustments for report consumers."""
     limited_passes = list((validation_policy or {}).get("limited_passes", []))
-    trigger_passes = [
-        item.get("pass_name", item.get("mutation", "unknown")) for item in limited_passes
-    ]
+    trigger_passes = [item.get("pass_name", item.get("mutation", "unknown")) for item in limited_passes]
     degraded_passes = [
-        row["pass_name"]
-        for row in validation_role_rows
-        if row.get("role") == "executed-under-degraded-mode"
+        row["pass_name"] for row in validation_role_rows if row.get("role") == "executed-under-degraded-mode"
     ]
     return {
         "requested_validation_mode": requested_mode,
@@ -655,9 +618,7 @@ def _summarize_pass_risk_buckets(
         issue_count = int(symbolic_summary.get("issue_count", 0))
         has_structural_risk = structural_issues > 0
         has_symbolic_risk = (
-            symbolic_mismatch > 0
-            or severity in {"mismatch", "without-coverage", "bounded-only"}
-            or issue_count > 0
+            symbolic_mismatch > 0 or severity in {"mismatch", "without-coverage", "bounded-only"} or issue_count > 0
         )
         if has_structural_risk or has_symbolic_risk:
             risky.append(pass_name)
@@ -691,9 +652,7 @@ def _summarize_pass_timings(pass_results: dict[str, Any]) -> list[dict[str, Any]
         rows.append(
             {
                 "pass_name": pass_name,
-                "execution_time_seconds": round(
-                    float(pass_result.get("execution_time_seconds", 0.0)), 6
-                ),
+                "execution_time_seconds": round(float(pass_result.get("execution_time_seconds", 0.0)), 6),
                 "mutations": len(pass_result.get("mutations", [])),
                 "rolled_back": bool(pass_result.get("rolled_back", False)),
                 "validation_issue_count": len(validation.get("issues", [])),
@@ -753,8 +712,7 @@ def _summarize_structural_evidence(
         "region_count": len(structural_regions),
         "validators": sorted(validators),
         "severity_counts": {
-            key: severities[key]
-            for key in sorted(severities, key=lambda item: (-severities[item], item))
+            key: severities[key] for key in sorted(severities, key=lambda item: (-severities[item], item))
         },
         "sample_messages": unique_messages[:5],
     }
@@ -784,9 +742,7 @@ def _build_evidence_summary_for_pass(
             mismatched_regions += 1
         else:
             matched_regions += 1
-        control_flow_observables.update(
-            metadata.get("symbolic_binary_control_flow_observables", [])
-        )
+        control_flow_observables.update(metadata.get("symbolic_binary_control_flow_observables", []))
         max_original_trace_len = max(
             max_original_trace_len,
             len(metadata.get("symbolic_binary_original_trace_addresses", [])),
@@ -805,18 +761,10 @@ def _build_evidence_summary_for_pass(
                 "mismatches": mismatches,
                 "mismatch_count": len(mismatches),
                 "step_strategy": metadata.get("symbolic_binary_step_strategy"),
-                "original_region_exit_address": metadata.get(
-                    "symbolic_binary_original_region_exit_address"
-                ),
-                "mutated_region_exit_address": metadata.get(
-                    "symbolic_binary_mutated_region_exit_address"
-                ),
-                "original_trace_length": len(
-                    metadata.get("symbolic_binary_original_trace_addresses", [])
-                ),
-                "mutated_trace_length": len(
-                    metadata.get("symbolic_binary_mutated_trace_addresses", [])
-                ),
+                "original_region_exit_address": metadata.get("symbolic_binary_original_region_exit_address"),
+                "mutated_region_exit_address": metadata.get("symbolic_binary_mutated_region_exit_address"),
+                "original_trace_length": len(metadata.get("symbolic_binary_original_trace_addresses", [])),
+                "mutated_trace_length": len(metadata.get("symbolic_binary_mutated_trace_addresses", [])),
                 "original_region_exit_steps": metadata.get(
                     "symbolic_binary_original_region_exit_steps",
                     0,
@@ -908,7 +856,7 @@ def _summarize_discarded_mutations(
         "skip_invalid_mutation": "low",
         "unknown": "low",
     }
-    severity_order = {"high": 0, "medium": 1, "low": 2}
+    severity_order = SEVERITY_ORDER
     by_pass: dict[str, int] = {}
     by_reason: dict[str, int] = {}
     by_pass_reason: dict[str, dict[str, int]] = {}
@@ -924,10 +872,7 @@ def _summarize_discarded_mutations(
             "pass_name": pass_name,
             "discarded_count": count,
             "impact_severity": min(
-                (
-                    severity_by_reason.get(reason, "low")
-                    for reason in by_pass_reason.get(pass_name, {})
-                ),
+                (severity_by_reason.get(reason, "low") for reason in by_pass_reason.get(pass_name, {})),
                 key=lambda severity: severity_order.get(severity, 99),
                 default="low",
             ),
@@ -969,7 +914,7 @@ def _build_discarded_mutation_priority(
     discarded_summary: dict[str, Any],
 ) -> list[dict[str, Any]]:
     """Build a stable priority view for discarded mutations."""
-    severity_order = {"high": 0, "medium": 1, "low": 2}
+    severity_order = SEVERITY_ORDER
     rows = [dict(row) for row in discarded_summary.get("by_pass", [])]
     rows.sort(
         key=lambda item: (
@@ -987,23 +932,19 @@ def _summarize_pass_triage_rows(
     pass_capability_summary_map: dict[str, dict[str, Any]],
 ) -> list[dict[str, Any]]:
     """Build one compact triage row per pass for CLI/report consumers."""
-    severity_order = {
-        "mismatch": 0,
-        "without-coverage": 1,
-        "bounded-only": 2,
-        "clean": 3,
-        "not-requested": 4,
-    }
+    severity_order = SEVERITY_ORDER
     rows = []
     for pass_name, pass_result in pass_results.items():
         symbolic_summary = dict(pass_result.get("symbolic_summary", {}) or {})
         evidence_summary = dict(pass_result.get("evidence_summary", {}) or {})
         validation_context = dict(pass_result.get("validation_context", {}) or {})
         capability_summary = dict(pass_capability_summary_map.get(pass_name, {}) or {})
+        severity = symbolic_summary.get("severity", "not-requested")
         rows.append(
             {
                 "pass_name": pass_name,
-                "severity": symbolic_summary.get("severity", "not-requested"),
+                "severity": severity,
+                "severity_order": severity_order.get(severity, 99),
                 "issue_count": int(symbolic_summary.get("issue_count", 0)),
                 "symbolic_requested": int(symbolic_summary.get("symbolic_requested", 0)),
                 "observable_match": int(symbolic_summary.get("observable_match", 0)),
@@ -1097,8 +1038,7 @@ def _build_pass_region_evidence_map(
                 "mismatches": list(row.get("mismatches", [])),
                 "step_strategy": row.get("step_strategy"),
                 "region_exit_equivalent": (
-                    row.get("original_region_exit_address")
-                    == row.get("mutated_region_exit_address")
+                    row.get("original_region_exit_address") == row.get("mutated_region_exit_address")
                     and row.get("original_region_exit_address") is not None
                 ),
                 "original_region_exit_address": row.get("original_region_exit_address"),
@@ -1134,18 +1074,14 @@ def _summarize_normalized_pass_results(
             {
                 "pass_name": pass_name,
                 "status": pass_results.get(pass_name, {}).get("status", "unknown"),
-                "mutations_applied": int(
-                    pass_results.get(pass_name, {}).get("mutations_applied", 0)
-                ),
+                "mutations_applied": int(pass_results.get(pass_name, {}).get("mutations_applied", 0)),
                 "severity": symbolic_summary.get(
                     "severity",
                     triage.get("severity", "not-requested"),
                 ),
                 "issue_count": int(symbolic_summary.get("issue_count", 0)),
                 "structural_issue_count": int(evidence.get("structural_issue_count", 0)),
-                "symbolic_binary_mismatched_regions": int(
-                    evidence.get("symbolic_binary_mismatched_regions", 0)
-                ),
+                "symbolic_binary_mismatched_regions": int(evidence.get("symbolic_binary_mismatched_regions", 0)),
                 "changed_region_count": int(evidence.get("changed_region_count", 0)),
                 "changed_bytes": int(evidence.get("changed_bytes", 0)),
                 "runtime_recommended": bool(capability.get("runtime_recommended", False)),
@@ -1162,726 +1098,10 @@ def _summarize_normalized_pass_results(
     return rows
 
 
-def _build_report_views(
-    *,
-    pass_risk_buckets: dict[str, list[str]],
-    pass_coverage_buckets: dict[str, list[str]],
-    pass_triage_rows: list[dict[str, Any]],
-    normalized_pass_results: list[dict[str, Any]],
-    pass_symbolic_summary: dict[str, Any],
-    pass_evidence_map: dict[str, Any],
-    pass_region_evidence_map: dict[str, list[dict[str, Any]]],
-    pass_validation_context: dict[str, Any],
-    pass_capability_summary_map: dict[str, Any],
-    observable_mismatch_priority: list[dict[str, Any]],
-    observable_mismatch_map: dict[str, dict[str, Any]],
-    symbolic_severity_by_pass: list[dict[str, Any]],
-    gate_failure_priority: list[dict[str, Any]],
-    gate_failure_summary: dict[str, Any] | None,
-    gate_failure_severity_priority: list[dict[str, Any]],
-    discarded_mutation_priority: list[dict[str, Any]],
-    discarded_mutation_summary: dict[str, Any],
-    validation_adjustment_rows: list[dict[str, Any]],
-) -> dict[str, Any]:
-    """Persist small precomputed views for common report filters."""
-    normalized_pass_map = {
-        str(row.get("pass_name")): dict(row)
-        for row in normalized_pass_results
-        if row.get("pass_name")
-    }
-    triage_priority = [
-        dict(row)
-        for row in sorted(
-            (row for row in pass_triage_rows if row.get("pass_name")),
-            key=lambda row: (
-                int(row.get("severity_order", 99)),
-                -int(row.get("structural_issue_count", 0)),
-                -int(row.get("symbolic_binary_mismatched_regions", 0)),
-                str(row.get("pass_name", "")),
-            ),
-        )
-    ]
-    symbolic_severity_map = {
-        str(row.get("pass_name")): dict(row)
-        for row in symbolic_severity_by_pass
-        if row.get("pass_name")
-    }
-    discarded_by_pass = {
-        str(row.get("pass_name")): dict(row)
-        for row in list(discarded_mutation_summary.get("by_pass", []) or [])
-        if row.get("pass_name")
-    }
-    base_general_pass_rows = [
-        {
-            **dict(row),
-            "region_evidence_count": len(
-                pass_region_evidence_map.get(str(row.get("pass_name", "")), [])
-            ),
-        }
-        for row in normalized_pass_results
-        if row.get("pass_name")
-    ]
-    mismatch_rows = []
-    for row in observable_mismatch_priority:
-        pass_name = str(row.get("pass_name", ""))
-        if not pass_name:
-            continue
-        normalized_row = normalized_pass_map.get(pass_name, {})
-        severity_row = symbolic_severity_map.get(pass_name, {})
-        validation_context = pass_validation_context.get(pass_name, {})
-        region_evidence = list(pass_region_evidence_map.get(pass_name, []))
-        mismatch_rows.append(
-            {
-                "pass_name": pass_name,
-                "mismatch_count": int(row.get("mismatch_count", 0)),
-                "observables": list(row.get("observables", [])),
-                "severity": severity_row.get("severity", "mismatch"),
-                "issue_count": int(severity_row.get("issue_count", 0)),
-                "symbolic_requested": int(severity_row.get("symbolic_requested", 0)),
-                "role": normalized_row.get("role", "requested-mode"),
-                "symbolic_confidence": normalized_row.get("symbolic_confidence", "unknown"),
-                "degraded_execution": bool(validation_context.get("degraded_execution", False)),
-                "degradation_triggered_by_pass": bool(
-                    validation_context.get("degradation_triggered_by_pass", False)
-                ),
-                "region_evidence": region_evidence,
-                "region_count": len(region_evidence),
-                "region_mismatch_count": sum(
-                    int(item.get("mismatch_count", 0)) for item in region_evidence
-                ),
-                "region_exit_match_count": sum(
-                    1 for item in region_evidence if item.get("region_exit_equivalent")
-                ),
-                "compact_region": {
-                    "region_count": len(region_evidence),
-                    "region_mismatch_count": sum(
-                        int(item.get("mismatch_count", 0)) for item in region_evidence
-                    ),
-                    "region_exit_match_count": sum(
-                        1 for item in region_evidence if item.get("region_exit_equivalent")
-                    ),
-                },
-            }
-        )
-    mismatch_by_pass = {}
-    for row in mismatch_rows:
-        pass_name = str(row.get("pass_name", ""))
-        if not pass_name:
-            continue
-        mismatch_by_pass[pass_name] = {
-            "pass_name": pass_name,
-            "mismatch_count": int(row.get("mismatch_count", 0)),
-            "observables": list(row.get("observables", [])),
-            "severity": row.get("severity", "mismatch"),
-            "issue_count": int(row.get("issue_count", 0)),
-            "symbolic_requested": int(row.get("symbolic_requested", 0)),
-            "role": row.get("role", "requested-mode"),
-            "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-            "degraded_execution": bool(row.get("degraded_execution", False)),
-            "degradation_triggered_by_pass": bool(row.get("degradation_triggered_by_pass", False)),
-            "region_evidence": list(row.get("region_evidence", [])),
-            "region_count": int(row.get("region_count", 0)),
-            "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-            "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-            "compact_region": dict(row.get("compact_region", {})),
-        }
-    only_pass = {}
-    for row in triage_priority:
-        pass_name = str(row.get("pass_name", ""))
-        if not pass_name:
-            continue
-        only_pass[pass_name] = {
-            "normalized": dict(normalized_pass_map.get(pass_name, row)),
-            "symbolic_summary": dict(pass_symbolic_summary.get(pass_name, {})),
-            "evidence": dict(pass_evidence_map.get(pass_name, {})),
-            "region_evidence": list(pass_region_evidence_map.get(pass_name, [])),
-            "validation_context": dict(pass_validation_context.get(pass_name, {})),
-            "capabilities": dict(pass_capability_summary_map.get(pass_name, {})),
-        }
-    failed_gates_rows = [
-        {
-            "pass_name": row.get("pass_name"),
-            "failure_count": int(row.get("failure_count", 0)),
-            "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-            "failures": list(row.get("failures", [])),
-            "role": normalized_pass_map.get(str(row.get("pass_name", "")), {}).get(
-                "role", "requested-mode"
-            ),
-        }
-        for row in gate_failure_priority
-        if row.get("pass_name")
-    ]
-    failed_gates_compact_rows = [
-        {
-            "pass_name": str(row.get("pass_name")),
-            "failure_count": int(row.get("failure_count", 0)),
-            "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-            "role": row.get("role", "requested-mode"),
-            "failed": bool(row.get("failures")),
-        }
-        for row in failed_gates_rows
-        if row.get("pass_name")
-    ]
-    failed_gates_final_rows = [
-        {
-            "pass_name": str(row.get("pass_name")),
-            "failure_count": int(row.get("failure_count", 0)),
-            "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-            "role": row.get("role", "requested-mode"),
-            "failed": bool(row.get("failures")),
-            "failures": list(row.get("failures", [])),
-        }
-        for row in failed_gates_rows
-        if row.get("pass_name")
-    ]
-    failed_gates_by_pass = {
-        str(row.get("pass_name")): dict(row) for row in failed_gates_rows if row.get("pass_name")
-    }
-    general_pass_row_map = {}
-    for row in base_general_pass_rows:
-        pass_name = str(row.get("pass_name", ""))
-        if not pass_name:
-            continue
-        validation_context = dict(pass_validation_context.get(pass_name, {}) or {})
-        discarded_row = dict(discarded_by_pass.get(pass_name, {}) or {})
-        gate_row = dict(failed_gates_by_pass.get(pass_name, {}) or {})
-        general_pass_row_map[pass_name] = {
-            **dict(row),
-            "degraded_execution": bool(validation_context.get("degraded_execution", False)),
-            "degradation_triggered_by_pass": bool(
-                validation_context.get("degradation_triggered_by_pass", False)
-            ),
-            "gate_failure_count": int(gate_row.get("failure_count", 0)),
-            "strictest_expected_severity": gate_row.get("strictest_expected_severity", "unknown"),
-            "discarded_count": int(discarded_row.get("discarded_count", 0)),
-            "discard_reasons": dict(discarded_row.get("reasons", {}) or {}),
-            "discard_impacts": dict(discarded_row.get("impact_counts", {}) or {}),
-        }
-    general_pass_rows = [
-        general_pass_row_map[pass_name] for pass_name in sorted(general_pass_row_map)
-    ]
-    failed_gates_expected_severity = dict(
-        (gate_failure_summary or {}).get("require_pass_severity_failures_by_expected_severity", {})
-    )
-    degraded_rows = [
-        dict(row)
-        for row in validation_adjustment_rows
-        if row.get("degraded_validation")
-        or row.get("triggered_adjustment")
-        or row.get("executed_under_degraded_mode")
-        or row.get("gate_failure_count", 0)
-    ]
-    general_symbolic = {
-        "overview": {
-            "symbolic_requested": sum(
-                int(row.get("symbolic_requested", 0)) for row in normalized_pass_results
-            ),
-            "observable_match": sum(
-                int(row.get("observable_match", 0)) for row in normalized_pass_results
-            ),
-            "observable_mismatch": sum(
-                int(row.get("observable_mismatch", 0)) for row in normalized_pass_results
-            ),
-            "bounded_only": sum(int(row.get("bounded_only", 0)) for row in normalized_pass_results),
-            "without_coverage": sum(
-                int(row.get("without_coverage", 0)) for row in normalized_pass_results
-            ),
-        },
-        "severity_by_pass": [dict(row) for row in symbolic_severity_by_pass],
-        "triage_rows": [dict(row) for row in triage_priority],
-    }
-    general_gates = {
-        "summary": dict(gate_failure_summary or {}),
-        "priority": [dict(row) for row in gate_failure_priority],
-        "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-        "compact_summary": {
-            "failed": bool((gate_failure_summary or {}).get("require_pass_severity_failed")),
-            "failure_count": int(
-                (gate_failure_summary or {}).get("require_pass_severity_failure_count", 0)
-            ),
-            "pass_count": len(failed_gates_rows),
-            "expected_severity_counts": failed_gates_expected_severity,
-            "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-            "passes": [
-                str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")
-            ],
-        },
-    }
-    general_degradation = {
-        "summary": {
-            "requested_validation_mode": next(
-                (
-                    row.get("requested_validation_mode")
-                    for row in degraded_rows
-                    if row.get("requested_validation_mode")
-                ),
-                None,
-            ),
-            "effective_validation_mode": next(
-                (
-                    row.get("effective_validation_mode")
-                    for row in degraded_rows
-                    if row.get("effective_validation_mode")
-                ),
-                None,
-            ),
-            "degraded_validation": bool(degraded_rows),
-            "row_count": len(degraded_rows),
-            "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
-            "gate_failure_count": sum(
-                int(row.get("gate_failure_count", 0)) for row in degraded_rows
-            ),
-        },
-        "rows": [dict(row) for row in degraded_rows],
-        "compact_rows": [
-            {
-                "pass_name": str(row.get("pass_name", "unknown")),
-                "role": row.get("role", "requested-mode"),
-                "triggered_adjustment": bool(row.get("triggered_adjustment")),
-                "executed_under_degraded_mode": bool(row.get("executed_under_degraded_mode")),
-                "gate_failure_count": int(row.get("gate_failure_count", 0)),
-            }
-            for row in degraded_rows
-        ],
-    }
-    general_discards = {
-        "summary": {
-            "count": sum(int(row.get("discarded_count", 0)) for row in discarded_mutation_priority),
-            "passes": [
-                str(row.get("pass_name"))
-                for row in discarded_mutation_priority
-                if row.get("pass_name")
-            ],
-            "reasons": dict(discarded_mutation_summary.get("by_reason", {}) or {}),
-            "impacts": {
-                severity: len(
-                    list((discarded_mutation_summary.get("by_impact", {}) or {}).get(severity, []))
-                )
-                for severity in ("high", "medium", "low")
-            },
-        },
-        "rows": [dict(row) for row in discarded_mutation_priority],
-    }
-    general_summary_payload = {
-        "pass_count": len(general_pass_rows),
-        "passes": [str(row.get("pass_name")) for row in general_pass_rows if row.get("pass_name")],
-        "risky_pass_count": len(pass_risk_buckets.get("risky", [])),
-        "clean_pass_count": len(pass_risk_buckets.get("clean", [])),
-        "covered_pass_count": len(pass_coverage_buckets.get("covered", [])),
-        "uncovered_pass_count": len(pass_coverage_buckets.get("uncovered", [])),
-    }
-    general_summary_rows = [
-        {"section": "passes", **general_summary_payload},
-        {"section": "symbolic", **dict(general_symbolic.get("overview", {}))},
-        {"section": "gates", **dict(general_gates.get("compact_summary", {}))},
-        {"section": "degradation", **dict(general_degradation.get("summary", {}))},
-        {"section": "discards", **dict(general_discards.get("summary", {}))},
-    ]
-    general_renderer_state = {
-        "summary": dict(general_summary_payload),
-        "general_summary": dict(general_summary_payload),
-        "summary_rows": [dict(row) for row in general_summary_rows],
-        "general_summary_rows": [dict(row) for row in general_summary_rows],
-        "symbolic": dict(general_symbolic.get("overview", {})),
-        "general_symbolic": dict(general_symbolic.get("overview", {})),
-        "gates": dict(general_gates.get("compact_summary", {})),
-        "general_gates": dict(general_gates.get("compact_summary", {})),
-        "degradation": dict(general_degradation.get("summary", {})),
-        "general_degradation": dict(general_degradation.get("summary", {})),
-        "discards": dict(general_discards.get("summary", {})),
-        "general_discards": dict(general_discards.get("summary", {})),
-        "filter_views": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
-        "passes": [dict(row) for row in general_pass_rows],
-        "general_passes": [dict(row) for row in general_pass_rows],
-        "general_filter_views": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
-        "pass_rows": [dict(row) for row in general_pass_rows],
-        "general_pass_rows": [dict(row) for row in general_pass_rows],
-        "triage_rows": [dict(row) for row in triage_priority],
-        "general_triage_rows": [dict(row) for row in triage_priority],
-    }
-    return {
-        "general_passes": general_pass_rows,
-        "general_pass_rows": general_pass_rows,
-        "general_summary": general_summary_payload,
-        "general_summary_rows": general_summary_rows,
-        "general_renderer_state": general_renderer_state,
-        "general_triage_rows": [dict(row) for row in triage_priority],
-        "general_filter_views": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
-        "general_symbolic": general_symbolic,
-        "general_gates": general_gates,
-        "general_degradation": general_degradation,
-        "general_discards": general_discards,
-        "passes": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
-        "triage_priority": triage_priority,
-        "only_pass": only_pass,
-        "pass_filter_views": {
-            "only_risky_passes": list(pass_risk_buckets.get("risky", [])),
-            "only_structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "only_symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "only_clean_passes": list(pass_risk_buckets.get("clean", [])),
-            "only_covered_passes": list(pass_coverage_buckets.get("covered", [])),
-            "only_uncovered_passes": list(pass_coverage_buckets.get("uncovered", [])),
-        },
-        "mismatch_priority": [dict(row) for row in observable_mismatch_priority],
-        "mismatch_map": {
-            str(pass_name): dict(row) for pass_name, row in observable_mismatch_map.items()
-        },
-        "mismatch_view": mismatch_rows,
-        "only_mismatches": {
-            "priority": [dict(row) for row in observable_mismatch_priority],
-            "by_pass": mismatch_by_pass,
-            "compact_by_pass": {
-                str(row.get("pass_name", "")): {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-                if row.get("pass_name")
-            },
-            "rows": mismatch_rows,
-            "compact_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-            ],
-            "final_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-            ],
-            "final_by_pass": {
-                str(row.get("pass_name", "")): {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-                if row.get("pass_name")
-            },
-            "compact_summary": {
-                "pass_count": len(mismatch_rows),
-                "mismatch_count": sum(int(row.get("mismatch_count", 0)) for row in mismatch_rows),
-                "degraded_pass_count": sum(
-                    1 for row in mismatch_rows if row.get("degraded_execution")
-                ),
-                "region_count": sum(int(row.get("region_count", 0)) for row in mismatch_rows),
-                "region_mismatch_count": sum(
-                    int(row.get("region_mismatch_count", 0)) for row in mismatch_rows
-                ),
-                "region_exit_match_count": sum(
-                    int(row.get("region_exit_match_count", 0)) for row in mismatch_rows
-                ),
-                "passes": [
-                    str(row.get("pass_name")) for row in mismatch_rows if row.get("pass_name")
-                ],
-            },
-            "summary": {
-                "pass_count": len(mismatch_rows),
-                "mismatch_count": sum(int(row.get("mismatch_count", 0)) for row in mismatch_rows),
-                "degraded_pass_count": sum(
-                    1 for row in mismatch_rows if row.get("degraded_execution")
-                ),
-                "trigger_pass_count": sum(
-                    1 for row in mismatch_rows if row.get("degradation_triggered_by_pass")
-                ),
-                "region_count": sum(int(row.get("region_count", 0)) for row in mismatch_rows),
-                "region_mismatch_count": sum(
-                    int(row.get("region_mismatch_count", 0)) for row in mismatch_rows
-                ),
-                "region_exit_match_count": sum(
-                    int(row.get("region_exit_match_count", 0)) for row in mismatch_rows
-                ),
-                "passes": [
-                    str(row.get("pass_name")) for row in mismatch_rows if row.get("pass_name")
-                ],
-            },
-        },
-        "failed_gates": [dict(row) for row in gate_failure_priority],
-        "only_failed_gates": {
-            "priority": failed_gates_rows,
-            "by_pass": failed_gates_by_pass,
-            "compact_by_pass": {
-                str(row.get("pass_name")): {
-                    "pass_name": str(row.get("pass_name")),
-                    "failure_count": int(row.get("failure_count", 0)),
-                    "strictest_expected_severity": row.get(
-                        "strictest_expected_severity", "unknown"
-                    ),
-                    "role": row.get("role", "requested-mode"),
-                    "failed": bool(row.get("failures")),
-                }
-                for row in failed_gates_rows
-                if row.get("pass_name")
-            },
-            "grouped_by_pass": failed_gates_rows,
-            "compact_rows": failed_gates_compact_rows,
-            "final_rows": failed_gates_final_rows,
-            "final_by_pass": {
-                str(row.get("pass_name")): {
-                    "pass_name": str(row.get("pass_name")),
-                    "failure_count": int(row.get("failure_count", 0)),
-                    "strictest_expected_severity": row.get(
-                        "strictest_expected_severity", "unknown"
-                    ),
-                    "role": row.get("role", "requested-mode"),
-                    "failed": bool(row.get("failures")),
-                    "failures": list(row.get("failures", [])),
-                }
-                for row in failed_gates_rows
-                if row.get("pass_name")
-            },
-            "summary": dict(gate_failure_summary or {}),
-            "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-            "expected_severity_counts": failed_gates_expected_severity,
-            "failed": bool((gate_failure_summary or {}).get("require_pass_severity_failed")),
-            "failure_count": int(
-                (gate_failure_summary or {}).get("require_pass_severity_failure_count", 0)
-            ),
-            "pass_count": len(failed_gates_rows),
-            "passes": [
-                str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")
-            ],
-            "compact_summary": {
-                "failed": bool((gate_failure_summary or {}).get("require_pass_severity_failed")),
-                "failure_count": int(
-                    (gate_failure_summary or {}).get("require_pass_severity_failure_count", 0)
-                ),
-                "pass_count": len(failed_gates_rows),
-                "expected_severity_counts": failed_gates_expected_severity,
-                "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-                "passes": [
-                    str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")
-                ],
-            },
-        },
-        "validation_adjustments": {
-            "rows": degraded_rows,
-            "by_pass": {
-                str(row.get("pass_name")): dict(row)
-                for row in degraded_rows
-                if row.get("pass_name")
-            },
-            "compact_by_pass": {
-                str(row.get("pass_name")): {
-                    "pass_name": str(row.get("pass_name")),
-                    "role": row.get("role", "requested-mode"),
-                    "triggered_adjustment": bool(row.get("triggered_adjustment")),
-                    "executed_under_degraded_mode": bool(row.get("executed_under_degraded_mode")),
-                    "gate_failure_count": int(row.get("gate_failure_count", 0)),
-                }
-                for row in degraded_rows
-                if row.get("pass_name")
-            },
-            "compact_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "role": row.get("role", "requested-mode"),
-                    "triggered_adjustment": bool(row.get("triggered_adjustment")),
-                    "executed_under_degraded_mode": bool(row.get("executed_under_degraded_mode")),
-                    "gate_failure_count": int(row.get("gate_failure_count", 0)),
-                }
-                for row in degraded_rows
-            ],
-            "summary": {
-                "requested_validation_mode": next(
-                    (
-                        row.get("requested_validation_mode")
-                        for row in degraded_rows
-                        if row.get("requested_validation_mode")
-                    ),
-                    None,
-                ),
-                "effective_validation_mode": next(
-                    (
-                        row.get("effective_validation_mode")
-                        for row in degraded_rows
-                        if row.get("effective_validation_mode")
-                    ),
-                    None,
-                ),
-                "row_count": len(degraded_rows),
-                "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
-                "degraded_execution_count": sum(
-                    1 for row in degraded_rows if row.get("executed_under_degraded_mode")
-                ),
-                "degraded_validation": bool(degraded_rows),
-                "gate_failure_count": sum(
-                    int(row.get("gate_failure_count", 0)) for row in degraded_rows
-                ),
-                "passes": [
-                    str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")
-                ],
-            },
-            "compact_summary": {
-                "degraded_validation": bool(degraded_rows),
-                "row_count": len(degraded_rows),
-                "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
-                "degraded_execution_count": sum(
-                    1 for row in degraded_rows if row.get("executed_under_degraded_mode")
-                ),
-                "gate_failure_count": sum(
-                    int(row.get("gate_failure_count", 0)) for row in degraded_rows
-                ),
-                "passes": [
-                    str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")
-                ],
-            },
-        },
-        "discarded_view": {
-            "priority": [dict(row) for row in discarded_mutation_priority],
-            "rows": [dict(row) for row in discarded_mutation_priority],
-            "compact_by_pass": {
-                str(row.get("pass_name", "unknown")): {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                }
-                for row in discarded_mutation_priority
-                if row.get("pass_name")
-            },
-            "compact_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                }
-                for row in discarded_mutation_priority
-            ],
-            "final_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                    "reasons": list(row.get("reasons", [])),
-                }
-                for row in discarded_mutation_priority
-            ],
-            "final_by_pass": {
-                str(row.get("pass_name", "unknown")): {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                    "reasons": list(row.get("reasons", [])),
-                }
-                for row in discarded_mutation_priority
-                if row.get("pass_name")
-            },
-            "by_reason": dict(discarded_mutation_summary.get("by_reason", {})),
-            "compact_by_reason": {
-                str(reason): int(count)
-                for reason, count in discarded_mutation_summary.get("by_reason", {}).items()
-                if count
-            },
-            "by_pass": [dict(row) for row in discarded_mutation_summary.get("by_pass", [])],
-            "by_impact": dict(discarded_mutation_summary.get("by_impact", {})),
-            "summary": {
-                "count": len(discarded_mutation_priority),
-                "passes": [
-                    str(row.get("pass_name"))
-                    for row in discarded_mutation_priority
-                    if row.get("pass_name")
-                ],
-                "reasons": sorted(
-                    str(reason)
-                    for reason, count in discarded_mutation_summary.get("by_reason", {}).items()
-                    if count
-                ),
-                "impacts": {
-                    str(level): len(rows)
-                    for level, rows in discarded_mutation_summary.get("by_impact", {}).items()
-                },
-            },
-            "compact_summary": {
-                "count": len(discarded_mutation_priority),
-                "pass_count": len(
-                    [row for row in discarded_mutation_priority if row.get("pass_name")]
-                ),
-                "reason_count": len(
-                    [
-                        reason
-                        for reason, count in discarded_mutation_summary.get("by_reason", {}).items()
-                        if count
-                    ]
-                ),
-                "impact_counts": {
-                    str(level): len(rows)
-                    for level, rows in discarded_mutation_summary.get("by_impact", {}).items()
-                },
-                "passes": [
-                    str(row.get("pass_name"))
-                    for row in discarded_mutation_priority
-                    if row.get("pass_name")
-                ],
-            },
-        },
-    }
+# _build_report_views has been extracted to r2morph.reporting.report_view_builder
+# to maintain SRP. Import it here for backward compatibility.
+from r2morph.reporting.report_view_builder import _build_report_views  # noqa: F811, E402
+
 
 
 def _summarize_validation_adjustment_rows(
@@ -1894,9 +1114,7 @@ def _summarize_validation_adjustment_rows(
     rows: list[dict[str, Any]] = []
     degraded_validation = bool(validation_adjustments.get("degraded_validation", False))
     trigger_passes = set(validation_adjustments.get("trigger_passes", []) or [])
-    degraded_passes = set(
-        validation_adjustments.get("executed_under_degraded_mode_passes", []) or []
-    )
+    degraded_passes = set(validation_adjustments.get("executed_under_degraded_mode_passes", []) or [])
     for row in validation_role_rows:
         pass_name = str(row.get("pass_name", ""))
         if not pass_name:
@@ -1977,14 +1195,9 @@ class MorphEngine:
         """Get binary file size in megabytes."""
         return os.path.getsize(path) / (1024 * 1024)
 
-    def _should_enable_memory_efficient_mode(
-        self, binary_size_mb: float, function_count: int
-    ) -> bool:
+    def _should_enable_memory_efficient_mode(self, binary_size_mb: float, function_count: int) -> bool:
         """Determine if memory-efficient mode should be enabled."""
-        return (
-            binary_size_mb > LARGE_BINARY_THRESHOLD_MB
-            or function_count > LARGE_FUNCTION_COUNT_THRESHOLD
-        )
+        return binary_size_mb > LARGE_BINARY_THRESHOLD_MB or function_count > LARGE_FUNCTION_COUNT_THRESHOLD
 
     def load_binary(self, path: str | Path, writable: bool = True) -> "MorphEngine":
         """
@@ -2094,14 +1307,12 @@ class MorphEngine:
         if quick_funcs > VERY_MANY_FUNCTIONS_THRESHOLD:
             level = "aa"  # Already done
             logger.warning(
-                f"Very large binary ({quick_funcs} functions). "
-                f"Using fast analysis level 'aa' (already complete)."
+                f"Very large binary ({quick_funcs} functions). Using fast analysis level 'aa' (already complete)."
             )
         elif quick_funcs > MANY_FUNCTIONS_THRESHOLD:
             level = "aac"  # Add call analysis
             logger.warning(
-                f"Large binary ({quick_funcs} functions). "
-                f"Using 'aac' analysis (adds ~10-20s for call analysis)."
+                f"Large binary ({quick_funcs} functions). Using 'aac' analysis (adds ~10-20s for call analysis)."
             )
             self.binary.analyze("aac")
         elif quick_funcs > MEDIUM_FUNCTION_COUNT_THRESHOLD:
@@ -2111,8 +1322,7 @@ class MorphEngine:
         else:
             level = "aaa"
             logger.info(
-                f"Small binary ({quick_funcs} functions). "
-                f"Using full 'aaa' analysis (~{int(aa_time * 3)}s estimated)."
+                f"Small binary ({quick_funcs} functions). Using full 'aaa' analysis (~{int(aa_time * 3)}s estimated)."
             )
             self.binary.analyze("aaa")
 
@@ -2132,25 +1342,7 @@ class MorphEngine:
         """
         # Adjust mutation config for large binaries to prevent OOM
         if self._memory_efficient_mode:
-            mutation_name = mutation.__class__.__name__
-            if mutation_name == "NopInsertionPass":
-                # Reduce NOPs per function from 5 to 2
-                original = mutation.config.get("max_nops_per_function", 5)
-                mutation.config["max_nops_per_function"] = min(2, original)
-                mutation.max_nops = mutation.config["max_nops_per_function"]
-                logger.debug(
-                    f"Memory-efficient mode: reduced max_nops_per_function "
-                    f"from {original} to {mutation.max_nops}"
-                )
-            elif mutation_name == "InstructionExpansionPass":
-                # Reduce expansions if config exists
-                if "max_expansions" in mutation.config:
-                    original = mutation.config["max_expansions"]
-                    mutation.config["max_expansions"] = min(2, original)
-                    logger.debug(
-                        f"Memory-efficient mode: reduced max_expansions "
-                        f"from {original} to {mutation.config['max_expansions']}"
-                    )
+            mutation.configure_for_memory_constraints(0.4)
 
         self.pipeline.add_pass(mutation)
         logger.debug(f"Added mutation: {mutation.__class__.__name__}")
@@ -2167,9 +1359,7 @@ class MorphEngine:
             Self for method chaining
         """
         self.pipeline.passes = [
-            p
-            for p in self.pipeline.passes
-            if getattr(p, "name", p.__class__.__name__) != mutation_name
+            p for p in self.pipeline.passes if getattr(p, "name", p.__class__.__name__) != mutation_name
         ]
         logger.debug(f"Removed mutation: {mutation_name}")
         return self
@@ -2225,9 +1415,7 @@ class MorphEngine:
         if runtime_validator is not None and self._original_path is not None:
             runtime_result = runtime_validator.validate(self._original_path, self.binary.path)
             result["validation"]["runtime"] = runtime_result.to_dict()
-            result["validation"]["all_passed"] = (
-                result["validation"].get("all_passed", True) and runtime_result.passed
-            )
+            result["validation"]["all_passed"] = result["validation"].get("all_passed", True) and runtime_result.passed
             if not runtime_result.passed and self._session is not None:
                 self._session.rollback_to("initial")
                 self.binary.reload()
@@ -2337,8 +1525,7 @@ class MorphEngine:
         """Build a stable machine-readable engine report."""
         payload = result or self._last_result or {}
         pass_results = {
-            pass_name: dict(pass_result)
-            for pass_name, pass_result in payload.get("pass_results", {}).items()
+            pass_name: dict(pass_result) for pass_name, pass_result in payload.get("pass_results", {}).items()
         }
         mutations = payload.get("mutations", [])
         aggregate_regions = []
@@ -2352,14 +1539,10 @@ class MorphEngine:
         degradation_role_counts = _summarize_degradation_roles(pass_results)
         symbolic_issue_passes = _summarize_symbolic_issue_passes(mutations)
         symbolic_coverage_by_pass = _summarize_symbolic_coverage_by_pass(mutations)
-        symbolic_status_counts, symbolic_status_rows, symbolic_status_map = (
-            _summarize_symbolic_statuses(mutations)
-        )
+        symbolic_status_counts, symbolic_status_rows, symbolic_status_map = _summarize_symbolic_statuses(mutations)
         observable_mismatch_by_pass = _summarize_observable_mismatches_by_pass(mutations)
         observable_mismatch_map = _build_observable_mismatch_map(observable_mismatch_by_pass)
-        observable_mismatch_priority = _build_observable_mismatch_priority(
-            observable_mismatch_by_pass
-        )
+        observable_mismatch_priority = _build_observable_mismatch_priority(observable_mismatch_by_pass)
         pass_timing_summary = _summarize_pass_timings(pass_results)
         diff_digest = _summarize_diff_digest(pass_results)
         gate_evaluation = payload.get("gate_evaluation")
@@ -2381,19 +1564,13 @@ class MorphEngine:
             )
         symbolic_severity_by_pass = _summarize_symbolic_severity_by_pass(pass_results)
         symbolic_issue_map = {
-            str(row.get("pass_name")): dict(row)
-            for row in symbolic_issue_passes
-            if row.get("pass_name")
+            str(row.get("pass_name")): dict(row) for row in symbolic_issue_passes if row.get("pass_name")
         }
         symbolic_coverage_map = {
-            str(row.get("pass_name")): dict(row)
-            for row in symbolic_coverage_by_pass
-            if row.get("pass_name")
+            str(row.get("pass_name")): dict(row) for row in symbolic_coverage_by_pass if row.get("pass_name")
         }
         symbolic_severity_map = {
-            str(row.get("pass_name")): dict(row)
-            for row in symbolic_severity_by_pass
-            if row.get("pass_name")
+            str(row.get("pass_name")): dict(row) for row in symbolic_severity_by_pass if row.get("pass_name")
         }
         pass_evidence = _summarize_pass_evidence(pass_results)
         pass_evidence_priority = [dict(row) for row in pass_evidence]
@@ -2415,27 +1592,20 @@ class MorphEngine:
             str(payload.get("arch", "")),
             int(payload["bits"]) if payload.get("bits") is not None else None,
         )
-        pass_support = {
-            mutation.name: mutation.get_support().to_dict() for mutation in self.pipeline.passes
-        }
+        pass_support = {mutation.name: mutation.get_support().to_dict() for mutation in self.pipeline.passes}
         pass_capabilities = {
-            pass_name: support.get("validator_capabilities", {})
-            for pass_name, support in pass_support.items()
+            pass_name: support.get("validator_capabilities", {}) for pass_name, support in pass_support.items()
         }
         for pass_name in pass_results:
             pass_capabilities.setdefault(pass_name, {})
         pass_capability_summary = _summarize_pass_capability_rows(pass_capabilities)
         pass_capability_summary_map = _build_pass_capability_summary_map(pass_capability_summary)
         pass_evidence_map = {
-            row.get("pass_name", "unknown"): dict(row)
-            for row in pass_evidence
-            if row.get("pass_name")
+            row.get("pass_name", "unknown"): dict(row) for row in pass_evidence if row.get("pass_name")
         }
         validation_role_rows = _summarize_validation_role_rows(pass_validation_context)
         validation_role_map = _build_validation_role_map(validation_role_rows)
-        discarded_mutation_summary = _summarize_discarded_mutations(
-            list(payload.get("discarded_mutations_detail", []))
-        )
+        discarded_mutation_summary = _summarize_discarded_mutations(list(payload.get("discarded_mutations_detail", [])))
         discarded_mutation_priority = _build_discarded_mutation_priority(discarded_mutation_summary)
         pass_triage_rows = _summarize_pass_triage_rows(
             pass_results,

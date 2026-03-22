@@ -50,6 +50,7 @@ class OpaquePredicatePass(MutationPass):
         Returns:
             Statistics dict
         """
+        self._reset_random()
         logger.info("Applying opaque predicate mutations")
 
         functions = binary.get_functions()
@@ -98,6 +99,11 @@ class OpaquePredicatePass(MutationPass):
 
         num_predicates = min(self.max_predicates, len(basic_blocks) // 2)
 
+        mutation_checkpoint = self._create_mutation_checkpoint("opaque_predicate")
+        baseline = {}
+        if self._validation_manager is not None:
+            baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
+
         for _ in range(num_predicates):
             if random.random() > self.probability:
                 continue
@@ -107,6 +113,7 @@ class OpaquePredicatePass(MutationPass):
 
             bb = random.choice(basic_blocks)
             bb_addr = bb.get("addr", 0)
+            bb_size = bb.get("size", 0)
 
             predicate_type = random.choice(
                 [
@@ -118,14 +125,78 @@ class OpaquePredicatePass(MutationPass):
             predicate_code = self._generate_predicate(binary, predicate_type, bb_addr)
 
             if predicate_code:
-                logger.debug(f"Would insert {predicate_type} predicate at 0x{bb_addr:x}")
-                mutations += 1
+                assembled = self._assemble_predicate(binary, predicate_code, bb_addr)
+                if assembled and len(assembled) <= bb_size:
+                    orig_bytes_hex = ""
+                    if binary.r2:
+                        orig_bytes_hex = binary.r2.cmd(f"p8 {len(assembled)} @ 0x{bb_addr:x}") or ""
+                    orig_bytes = b""
+                    if orig_bytes_hex.strip():
+                        try:
+                            orig_bytes = bytes.fromhex(orig_bytes_hex.strip())
+                        except ValueError:
+                            logger.debug(f"Invalid hex in original bytes: {orig_bytes_hex[:20]}...")
+                            orig_bytes = b""
+
+                    if binary.write_bytes(bb_addr, assembled):
+                        self._record_mutation(
+                            function_address=func_addr,
+                            start_address=bb_addr,
+                            end_address=bb_addr + len(assembled) - 1,
+                            original_bytes=orig_bytes,
+                            mutated_bytes=assembled,
+                            original_disasm=f"block at 0x{bb_addr:x}",
+                            mutated_disasm=f"opaque {predicate_type} predicate",
+                            mutation_kind="opaque_predicate",
+                            metadata={"predicate_type": predicate_type, "structural_baseline": baseline},
+                        )
+                        mutations += 1
+                        logger.debug(f"Inserted {predicate_type} predicate at 0x{bb_addr:x}")
+
+        if mutations > 0 and self._validation_manager is not None and mutation_checkpoint is not None:
+            if self._records:
+                outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
+                if not outcome.passed:
+                    if self._session is not None:
+                        self._session.rollback_to(mutation_checkpoint)
+                    binary.reload()
+                    if self._records:
+                        self._records.pop()
+                    if self._rollback_policy == "fail-fast":
+                        raise RuntimeError("Mutation-level validation failed")
+                    return 0
 
         return mutations
 
-    def _generate_predicate(
-        self, binary: Binary, predicate_type: str, insert_addr: int
-    ) -> list[str]:
+    def _assemble_predicate(self, binary: Binary, instructions: list[str], addr: int) -> bytes | None:
+        """
+        Assemble predicate instructions into bytes.
+
+        Args:
+            binary: Binary instance
+            instructions: List of assembly instructions
+            addr: Address to assemble at
+
+        Returns:
+            Assembled bytes or None on failure
+        """
+        assembled = b""
+        current_addr = addr
+
+        for insn in instructions:
+            if insn.startswith("."):
+                continue
+
+            insn_bytes = binary.assemble(insn, current_addr)
+            if insn_bytes is None:
+                return None
+
+            assembled += insn_bytes
+            current_addr += len(insn_bytes)
+
+        return assembled if assembled else None
+
+    def _generate_predicate(self, binary: Binary, predicate_type: str, insert_addr: int) -> list[str]:
         """
         Generate opaque predicate assembly code.
 
@@ -164,41 +235,43 @@ class OpaquePredicatePass(MutationPass):
         if predicate_type == "always_true":
             predicates = [
                 [
-                    f"push {reg}",
-                    f"imul {reg}, {reg}",
-                    "test {reg}, {reg}",
-                    "jns .real_code",
-                    "jmp .fake_code",
+                    f"xor {reg}, {reg}",
+                    f"test {reg}, {reg}",
+                    "jz .real_code",
                     ".real_code:",
-                    f"pop {reg}",
                 ],
                 [
-                    f"push {reg}",
-                    f"and {reg}, 1",
+                    f"mov {reg}, 0",
+                    f"test {reg}, {reg}",
                     "jz .real_code",
-                    "jmp .real_code",
                     ".real_code:",
-                    f"pop {reg}",
                 ],
                 [
                     f"cmp {reg}, {reg}",
                     "je .real_code",
                     ".real_code:",
                 ],
+                [
+                    f"push {reg}",
+                    f"xor {reg}, {reg}",
+                    f"test {reg}, {reg}",
+                    "jz .real_code",
+                    "nop",
+                    ".real_code:",
+                    f"pop {reg}",
+                ],
             ]
 
         else:
             predicates = [
                 [
-                    f"push {reg}",
-                    f"imul {reg}, {reg}",
-                    "test {reg}, {reg}",
-                    "js .fake_code",
+                    f"mov {reg}, 0",
+                    f"test {reg}, {reg}",
+                    "jnz .fake_code",
                     "jmp .real_code",
                     ".fake_code:",
                     "nop",
                     ".real_code:",
-                    f"pop {reg}",
                 ],
                 [
                     f"cmp {reg}, {reg}",

@@ -50,9 +50,7 @@ class MorphSession:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         unique_suffix = uuid.uuid4().hex[:8]
         self.session_id = f"{timestamp}_{unique_suffix}"
-        self.session_dir = Path(
-            tempfile.mkdtemp(prefix=f"r2morph_{self.session_id}_", dir=self.working_dir)
-        )
+        self.session_dir = Path(tempfile.mkdtemp(prefix=f"r2morph_{self.session_id}_", dir=self.working_dir))
 
         self.checkpoints: list[Checkpoint] = []
         self.current_binary: Path | None = None
@@ -73,6 +71,10 @@ class MorphSession:
         logger.info(f"Starting session with {original_binary.name}")
 
         working_copy = self.session_dir / "current.bin"
+
+        if working_copy.exists():
+            logger.warning(f"Overwriting existing working copy: {working_copy}")
+
         shutil.copy2(original_binary, working_copy)
 
         self.current_binary = working_copy
@@ -168,6 +170,9 @@ class MorphSession:
 
         logger.info(f"Applying mutation: {mutation_pass.name}")
 
+        checkpoint_before = self.checkpoint("pre_mutation", description or f"Before {mutation_pass.name}")
+        mutations_before = self.mutations_count
+
         binary = None
         try:
             binary = Binary(self.current_binary, writable=True)
@@ -183,7 +188,19 @@ class MorphSession:
             return result
         except Exception as e:
             logger.error(f"Mutation failed: {mutation_pass.name}: {e}")
-            self._restore_from_last_checkpoint()
+            self.mutations_count = mutations_before
+            rollback_ok = False
+            if self.current_binary and checkpoint_before.binary_path.exists():
+                try:
+                    shutil.copy2(checkpoint_before.binary_path, self.current_binary)
+                    rollback_ok = True
+                except FileNotFoundError:
+                    logger.warning(f"Checkpoint file disappeared: {checkpoint_before.binary_path}")
+                except Exception as rollback_error:
+                    logger.error(f"Failed to rollback: {rollback_error}")
+            # Only remove checkpoint after confirmed successful rollback
+            if rollback_ok:
+                self._remove_checkpoint(checkpoint_before)
             raise
         finally:
             if binary is not None:
@@ -191,6 +208,17 @@ class MorphSession:
                     binary.close()
                 except Exception as close_error:
                     logger.debug(f"Error closing binary: {close_error}")
+
+    def _remove_checkpoint(self, checkpoint: Checkpoint) -> None:
+        """Remove a checkpoint file."""
+        if checkpoint is None:
+            return
+        try:
+            if checkpoint.binary_path.exists():
+                checkpoint.binary_path.unlink()
+            self.checkpoints = [cp for cp in self.checkpoints if cp.name != checkpoint.name]
+        except Exception as e:
+            logger.debug(f"Failed to remove checkpoint {checkpoint.name}: {e}")
 
     def _restore_from_last_checkpoint(self) -> None:
         """Attempt to restore binary from the most recent checkpoint."""
@@ -251,15 +279,28 @@ class MorphSession:
         Clean up session files.
 
         Args:
-            keep_checkpoints: Keep checkpoint files
+            keep_checkpoints: Keep checkpoint files but clean current binary
         """
         logger.info("Cleaning up session")
 
-        if not keep_checkpoints:
-            shutil.rmtree(self.session_dir, ignore_errors=True)
-        else:
-            if self.current_binary and self.current_binary.exists():
+        cleanup_errors = []
+
+        if self.current_binary and self.current_binary.exists():
+            try:
                 self.current_binary.unlink()
+                self.current_binary = None
+            except Exception as e:
+                logger.error(f"Failed to clean up current binary: {e}")
+                cleanup_errors.append(str(e))
+
+        if not keep_checkpoints:
+            try:
+                shutil.rmtree(self.session_dir)
+            except Exception as e:
+                logger.error(f"Failed to clean up session directory: {e}")
+                cleanup_errors.append(str(e))
+
+        return len(cleanup_errors) == 0
 
     def _save_metadata(self):
         """Save session metadata to JSON."""
@@ -278,5 +319,7 @@ class MorphSession:
         }
 
         metadata_file = self.session_dir / "session.json"
-        with open(metadata_file, "w") as f:
+        temp_file = metadata_file.with_suffix(".tmp")
+        with open(temp_file, "w") as f:
             json.dump(metadata, f, indent=2)
+        temp_file.replace(metadata_file)

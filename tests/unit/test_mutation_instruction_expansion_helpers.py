@@ -4,14 +4,19 @@ from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 def test_instruction_expansion_helpers():
     pass_obj = InstructionExpansionPass()
 
+    # inc/dec rules were removed (flag-unsafe: inc preserves CF, add modifies it)
     expansions = pass_obj._match_expansion_pattern({"disasm": "inc eax"}, "x86")
     assert isinstance(expansions, list)
-    assert expansions
+    assert not expansions  # No expansion for inc (flag-unsafe)
+
+    # Test flag-safe expansion: imul reg, 2 → shl reg, 1
+    expansions = pass_obj._match_expansion_pattern({"disasm": "imul eax, 2"}, "x86")
+    assert isinstance(expansions, list)
 
     # Build instruction from pattern with a valid register
-    pattern = ("inc", "reg")
-    built = pass_obj._build_instruction_from_pattern(pattern, ["inc", "eax"])
-    assert built == "inc eax"
+    pattern = ("shl", "reg", "1")
+    built = pass_obj._build_instruction_from_pattern(pattern, ["shl", "eax", "1"])
+    assert built == "shl eax, 1"
 
     # Reject size specifier as register target
     invalid = pass_obj._build_instruction_from_pattern(("inc", "reg"), ["mov", "dword", "[rsp]", ",", "eax"])

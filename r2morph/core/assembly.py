@@ -55,6 +55,14 @@ REGISTER_ENCODING = {
         "rbp": 5,
         "rsi": 6,
         "rdi": 7,
+        "r8": 8,
+        "r9": 9,
+        "r10": 10,
+        "r11": 11,
+        "r12": 12,
+        "r13": 13,
+        "r14": 14,
+        "r15": 15,
     },
 }
 
@@ -73,9 +81,7 @@ class AssemblyService:
         """Initialize AssemblyService."""
         pass
 
-    def assemble(
-        self, binary: "Binary", instruction: str, function_addr: int | None = None
-    ) -> bytes | None:
+    def assemble(self, binary: "Binary", instruction: str, function_addr: int | None = None) -> bytes | None:
         """
         Assemble an instruction using radare2's rasm2 with intelligent fallbacks.
 
@@ -101,7 +107,10 @@ class AssemblyService:
             result = binary.r2.cmd(f"pa {normalized_instruction}")
             hex_str = result.strip()
             if hex_str:
-                return bytes.fromhex(hex_str)
+                try:
+                    return bytes.fromhex(hex_str)
+                except ValueError as e:
+                    logger.error(f"Failed to parse hex '{hex_str[:20]}...': {e}")
 
             # If radare2 failed, try intelligent fallbacks
 
@@ -114,20 +123,16 @@ class AssemblyService:
                     return manual_bytes
 
             # Fallback 2: segment prefix instructions (fs:, gs:, etc.)
-            if any(
-                seg in normalized_instruction.lower()
-                for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]
-            ):
+            if any(seg in normalized_instruction.lower() for seg in ["fs:", "gs:", "es:", "ds:", "ss:", "cs:"]):
                 logger.debug("Radare2 assembler failed, trying segment prefix fallback")
-                segment_bytes = self._assemble_segment_prefix_fallback(
-                    binary, normalized_instruction
-                )
+                segment_bytes = self._assemble_segment_prefix_fallback(binary, normalized_instruction)
                 if segment_bytes:
                     logger.debug(f"  Successfully encoded: {segment_bytes.hex()}")
                     return segment_bytes
 
             # All fallbacks exhausted
-            logger.error(f"Failed to assemble: {instruction}")
+            hex_str = result.strip() if result else ""
+            logger.error(f"Failed to assemble: {instruction}, r2 returned: {hex_str[:50] if hex_str else 'empty'}")
             if normalized_instruction != instruction:
                 logger.debug(f"  After normalization: {normalized_instruction}")
             return None
@@ -136,86 +141,12 @@ class AssemblyService:
             logger.error(f"Assembly error for '{instruction}': {e}")
             return None
 
-    def _resolve_symbolic_vars(
-        self, binary: "Binary", instruction: str, function_addr: int | None = None
-    ) -> str:
+    def _resolve_symbolic_vars(self, binary: "Binary", instruction: str, function_addr: int | None = None) -> str:
+        """Resolve symbolic variable names in instruction to actual addresses.
+
+        Delegates to BinaryReader.resolve_symbolic_vars() to avoid duplication.
         """
-        Resolve symbolic variable names in instruction to actual addresses.
-
-        Converts var_XXh to [rsp+offset] or [rbp-offset] based on function analysis.
-
-        Args:
-            binary: Binary instance with r2pipe connection
-            instruction: Assembly instruction with symbolic vars (e.g., "mov eax, [var_10h]")
-            function_addr: Function address for variable context (optional)
-
-        Returns:
-            Instruction with resolved addresses
-        """
-        if not binary.r2:
-            return instruction
-
-        # Pattern to match symbolic variables: var_XXh, var_bp_XXh, arg_XXh, and suffixed versions (var_XXh_2, etc.)
-        var_pattern = r"\[(var_(?:bp_)?|arg_)([0-9a-f]+)h(_\d+)?\]"
-        matches = list(re.finditer(var_pattern, instruction, re.IGNORECASE))
-
-        if not matches:
-            return instruction
-
-        # Get variable and argument information from current function if available
-        var_map = {}
-        if function_addr:
-            try:
-                # Get function variables and arguments with afv command
-                vars_output = binary.r2.cmd(f"afv @ {function_addr}")
-                # Parse output like:
-                # "var int64_t var_20h @ rsp+0x20"
-                # "arg int64_t arg1 @ rcx"
-                for line in vars_output.split("\n"):
-                    if ("var_" in line or "arg" in line) and "@" in line:
-                        parts = line.split("@")
-                        if len(parts) == 2:
-                            var_name = parts[0].split()[-1].strip()
-                            location = parts[1].strip()
-                            var_map[var_name] = location
-            except Exception as e:
-                logger.debug(f"Could not resolve variables for instruction: {e}")
-
-        # Replace variables with resolved addresses
-        resolved = instruction
-        for match in reversed(matches):  # Reverse to maintain positions
-            prefix = match.group(1)  # "var_", "var_bp_", or "arg_"
-            offset_hex = match.group(2)
-            suffix = match.group(3) or ""  # "_2", "_3", etc. or empty string
-            offset = int(offset_hex, 16)
-
-            # Construct variable name (including suffix if present)
-            if prefix == "var_bp_":
-                var_name = f"var_bp_{offset_hex}h{suffix}"
-            elif prefix == "var_":
-                var_name = f"var_{offset_hex}h{suffix}"
-            else:  # arg_
-                var_name = f"arg_{offset_hex}h{suffix}"
-
-            # Try to get from function analysis first
-            if var_name in var_map:
-                replacement = f"[{var_map[var_name]}]"
-            else:
-                # Fallback: construct based on naming convention
-                if prefix == "var_bp_":
-                    # var_bp_XXh means [rbp - offset]
-                    replacement = f"[rbp - 0x{offset:x}]"
-                elif prefix == "arg_":
-                    # arg_XXh typically means [rsp + offset] or [rbp + offset]
-                    # Arguments are typically above the stack frame
-                    replacement = f"[rsp + 0x{offset:x}]"
-                else:
-                    # var_XXh typically means [rsp + offset]
-                    replacement = f"[rsp + 0x{offset:x}]"
-
-            resolved = resolved[: match.start()] + replacement + resolved[match.end() :]
-
-        return resolved
+        return binary._resolve_symbolic_vars(instruction, function_addr)
 
     def _normalize_assembly_syntax(self, instruction: str) -> str:
         """
@@ -273,18 +204,25 @@ class AssemblyService:
             return None
 
         # Determine destination encoding
+        rex = 0
         if dest in reg32_encoding:
             dest_code = reg32_encoding[dest]
         elif dest in reg64_encoding:
-            # 64-bit destination requires REX.W prefix
             dest_code = reg64_encoding[dest]
-            opcode = bytes([0x48]) + opcode  # REX.W prefix
+            if dest_code >= 8:
+                # High register (r8-r15): REX.R bit extends ModR/M reg field
+                rex |= 0x44  # REX + REX.R
+                dest_code &= 0x07
+            else:
+                rex |= 0x48  # REX.W for 64-bit operand size
         else:
             return None
 
         # Construct ModR/M byte: 11 (register mode) + dest<<3 + src
         modrm = 0xC0 | (dest_code << 3) | src_code
 
+        if rex:
+            return bytes([rex]) + opcode + bytes([modrm])
         return opcode + bytes([modrm])
 
     def _assemble_segment_prefix_fallback(self, binary: "Binary", instruction: str) -> bytes | None:
@@ -301,7 +239,6 @@ class AssemblyService:
         Returns:
             Assembled bytes with segment prefix or None if failed
         """
-        # Segment prefix bytes
         segment_prefixes = {
             "es:": 0x26,
             "cs:": 0x2E,
@@ -311,33 +248,34 @@ class AssemblyService:
             "gs:": 0x65,
         }
 
-        # Find which segment prefix is used
         segment_byte = None
         instruction_without_segment = instruction
         for seg_name, seg_byte in segment_prefixes.items():
             if seg_name in instruction.lower():
                 segment_byte = seg_byte
-                # Remove only the segment prefix, keep size specifiers
-                # "mov dword fs:[rax], ecx" -> "mov dword [rax], ecx"
                 instruction_without_segment = instruction.replace(seg_name, "", 1)
-                instruction_without_segment = instruction_without_segment.replace(
-                    seg_name.upper(), "", 1
-                )
+                instruction_without_segment = instruction_without_segment.replace(seg_name.upper(), "", 1)
                 break
 
         if segment_byte is None:
             return None
 
-        # Try to assemble the instruction without the segment prefix
         if not binary.r2:
             return None
 
         result = binary.r2.cmd(f"pa {instruction_without_segment}")
-        hex_str = result.strip()
+        hex_str = result.strip() if result else ""
         if hex_str:
-            base_bytes = bytes.fromhex(hex_str)
-            # Prepend segment prefix byte
-            return bytes([segment_byte]) + base_bytes
+            for c in hex_str:
+                if c not in "0123456789abcdefABCDEF":
+                    logger.debug(f"Invalid hex in segment prefix fallback: {hex_str[:20]}...")
+                    return None
+            try:
+                base_bytes = bytes.fromhex(hex_str)
+                return bytes([segment_byte]) + base_bytes
+            except ValueError:
+                logger.debug(f"Failed to parse hex in segment prefix fallback: {hex_str[:20]}...")
+                return None
 
         return None
 

@@ -6,6 +6,7 @@ Replaces registers with equivalent unused registers in code sequences.
 
 import logging
 import random
+import re
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -67,6 +68,92 @@ class RegisterSubstitutionPass(MutationPass):
             "gp": ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"],
             "caller_saved": ["r0", "r1", "r2", "r3"],
             "callee_saved": ["r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"],
+        },
+        "arm64": {
+            "gp64": [
+                "x0",
+                "x1",
+                "x2",
+                "x3",
+                "x4",
+                "x5",
+                "x6",
+                "x7",
+                "x8",
+                "x9",
+                "x10",
+                "x11",
+                "x12",
+                "x13",
+                "x14",
+                "x15",
+                "x16",
+                "x17",
+                "x18",
+                "x19",
+                "x20",
+                "x21",
+                "x22",
+                "x23",
+                "x24",
+                "x25",
+                "x26",
+                "x27",
+                "x28",
+            ],
+            "gp32": [
+                "w0",
+                "w1",
+                "w2",
+                "w3",
+                "w4",
+                "w5",
+                "w6",
+                "w7",
+                "w8",
+                "w9",
+                "w10",
+                "w11",
+                "w12",
+                "w13",
+                "w14",
+                "w15",
+                "w16",
+                "w17",
+                "w18",
+                "w19",
+                "w20",
+                "w21",
+                "w22",
+                "w23",
+                "w24",
+                "w25",
+                "w26",
+                "w27",
+                "w28",
+            ],
+            "caller_saved": [
+                "x0",
+                "x1",
+                "x2",
+                "x3",
+                "x4",
+                "x5",
+                "x6",
+                "x7",
+                "x8",
+                "x9",
+                "x10",
+                "x11",
+                "x12",
+                "x13",
+                "x14",
+                "x15",
+                "x16",
+                "x17",
+                "x30",
+            ],
+            "callee_saved": ["x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"],
         },
     }
 
@@ -159,10 +246,13 @@ class RegisterSubstitutionPass(MutationPass):
         self.respect_calling_convention = self.config.get("respect_calling_convention", True)
         self.set_support(
             formats=("ELF",),
-            architectures=("x86_64",),
+            architectures=("x86_64", "arm64"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",
-            notes=("ABI-aware caller-saved substitution",),
+            notes=(
+                "ABI-aware caller-saved substitution",
+                "arm64: uses caller-saved registers x0-x17, x30",
+            ),
             validator_capabilities={
                 "structural": {
                     "mode": "region",
@@ -202,16 +292,16 @@ class RegisterSubstitutionPass(MutationPass):
         """
         if arch in ["x86", "x64"]:
             arch_family = arch
-        elif arch in ["arm", "arm64"]:
+        elif arch == "arm64":
+            arch_family = "arm64"
+        elif arch == "arm":
             arch_family = "arm"
         else:
             return {}
 
         return self.REGISTER_CLASSES.get(arch_family, {})
 
-    def _find_substitution_candidates(
-        self, instructions: list[dict[str, Any]], arch: str
-    ) -> list[tuple[str, str]]:
+    def _find_substitution_candidates(self, instructions: list[dict[str, Any]], arch: str) -> list[tuple[str, str]]:
         """
         Find valid register substitution opportunities.
 
@@ -237,14 +327,12 @@ class RegisterSubstitutionPass(MutationPass):
                         used_registers.add(reg)
 
         caller_saved = set(register_classes.get("caller_saved", []))
-        unused = caller_saved - used_registers
+        unused = list(caller_saved - used_registers)
+        random.shuffle(unused)
 
-        if unused:
-            for used_reg in used_registers & caller_saved:
-                if unused:
-                    substitute = random.choice(list(unused))
-                    candidates.append((used_reg, substitute))
-                    unused.discard(substitute)
+        for i, used_reg in enumerate(used_registers & caller_saved):
+            if i < len(unused):
+                candidates.append((used_reg, unused[i]))
 
         return candidates
 
@@ -266,9 +354,7 @@ class RegisterSubstitutionPass(MutationPass):
                 count += 1
         return count
 
-    def _is_safe_size_extension_substitution(
-        self, disasm: str, orig_reg: str, subst_reg: str
-    ) -> bool:
+    def _is_safe_size_extension_substitution(self, disasm: str, orig_reg: str, subst_reg: str) -> bool:
         """
         Check if register substitution is safe for size-extension instructions (movzx, movsx).
 
@@ -339,23 +425,30 @@ class RegisterSubstitutionPass(MutationPass):
                 subst_family = family
 
         if orig_reg == dest:
-            if subst_family and dest_family and subst_family == dest_family:
-                logger.debug(
-                    f"Skipping dest substitution {disasm}: {subst_reg} is in same family as {dest}"
-                )
+            if subst_family and orig_family and subst_family == orig_family:
+                logger.debug(f"Skipping dest substitution {disasm}: {subst_reg} is in same family as {dest}")
                 return False
         elif orig_reg == source:
-            if subst_family and dest_family and subst_family == dest_family:
+            if subst_family and source_family and subst_family == source_family:
                 logger.debug(
-                    f"Skipping source substitution {disasm}: {subst_reg} would be in same family as dest {dest}"
+                    f"Skipping source substitution {disasm}: {subst_reg} would be in same family as source {source}"
                 )
                 return False
 
         dest_mem_size = self.REGISTER_SIZES.get(dest, 0)
         source_mem_size = self.REGISTER_SIZES.get(source, 0)
 
-        if dest_mem_size > 0 and source_mem_size > 0 and dest_mem_size <= source_mem_size:
-            return False
+        if dest_mem_size > 0 and source_mem_size > 0:
+            if dest_mem_size < source_mem_size:
+                logger.debug(
+                    f"Skipping size extension: dest size ({dest_mem_size}) must be >= source size ({source_mem_size})"
+                )
+                return False
+            if dest_mem_size == source_mem_size:
+                logger.debug(
+                    f"Skipping size extension: dest size ({dest_mem_size}) equals source size ({source_mem_size})"
+                )
+                return False
 
         return True
 
@@ -392,11 +485,10 @@ class RegisterSubstitutionPass(MutationPass):
         # Check if orig_reg is in the calculation (inside brackets)
         if "[" in calculation_part and "]" in calculation_part:
             calc_inner = calculation_part.split("[")[1].split("]")[0]
-            if orig_reg in calc_inner:
+            # Use word boundary match to avoid substring collisions (e.g., "r8" in "r28")
+            if re.search(r"\b" + re.escape(orig_reg) + r"\b", calc_inner):
                 # Unsafe: register is part of address calculation
-                logger.debug(
-                    f"Skipping LEA substitution: {orig_reg} in address calculation of '{disasm}'"
-                )
+                logger.debug(f"Skipping LEA substitution: {orig_reg} in address calculation of '{disasm}'")
                 return False
 
         return True
@@ -421,10 +513,11 @@ class RegisterSubstitutionPass(MutationPass):
         arch = arch_info.get("arch", "unknown")
         bits = arch_info.get("bits", 0)
 
+        arch_key = arch
         if arch == "arm" and bits == 64:
-            return {"mutations_applied": 0, "skipped": True}
+            arch_key = "arm64"
 
-        register_classes = self._get_register_class(arch)
+        register_classes = self._get_register_class(arch_key)
         if not register_classes:
             logger.warning(f"No register classes defined for architecture: {arch}")
             return {
@@ -443,8 +536,9 @@ class RegisterSubstitutionPass(MutationPass):
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
 
+            func_addr = func.get("offset", func.get("addr", 0))
             try:
-                instructions = binary.get_function_disasm(func["addr"])
+                instructions = binary.get_function_disasm(func_addr)
             except Exception as e:
                 logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
                 continue
@@ -495,9 +589,7 @@ class RegisterSubstitutionPass(MutationPass):
                     # Category 2: VALIDATE FIRST - Can be resolved with proper checks
                     # movzx/movsx: Size-extension instructions with manual encoding fallback
                     if mnemonic in ["movzx", "movsx"]:
-                        if not self._is_safe_size_extension_substitution(
-                            disasm, orig_reg, subst_reg
-                        ):
+                        if not self._is_safe_size_extension_substitution(disasm, orig_reg, subst_reg):
                             continue
 
                     # LEA: Address calculation - only safe if substituting destination
@@ -512,9 +604,7 @@ class RegisterSubstitutionPass(MutationPass):
                         if len(parts) > 1:
                             mem_part = parts[1].split("]")[0]
                             # If register only appears in memory operand, skip
-                            non_mem_part = parts[0] + (
-                                parts[1].split("]")[1] if "]" in parts[1] else ""
-                            )
+                            non_mem_part = parts[0] + (parts[1].split("]")[1] if "]" in parts[1] else "")
                             if orig_reg not in non_mem_part and orig_reg in mem_part:
                                 continue
 
@@ -530,9 +620,7 @@ class RegisterSubstitutionPass(MutationPass):
                         mutation_checkpoint = self._create_mutation_checkpoint("reg")
                         baseline = {}
                         if self._validation_manager is not None:
-                            baseline = self._validation_manager.capture_structural_baseline(
-                                binary, func["addr"]
-                            )
+                            baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
                         original_bytes = binary.read_bytes(addr, orig_size)
                         new_bytes = binary.assemble(new_disasm, func["addr"])
 
@@ -548,8 +636,7 @@ class RegisterSubstitutionPass(MutationPass):
                                         continue
 
                                 logger.debug(
-                                    f"Substituted {orig_reg} -> {subst_reg} at 0x{addr:x}: "
-                                    f"'{disasm}' -> '{new_disasm}'"
+                                    f"Substituted {orig_reg} -> {subst_reg} at 0x{addr:x}: '{disasm}' -> '{new_disasm}'"
                                 )
                                 mutated_bytes = binary.read_bytes(addr, orig_size)
                                 record = self._record_mutation(
@@ -568,29 +655,26 @@ class RegisterSubstitutionPass(MutationPass):
                                     },
                                 )
                                 if self._validation_manager is not None:
-                                    outcome = self._validation_manager.validate_mutation(
-                                        binary, record.to_dict()
-                                    )
+                                    outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
                                     if not outcome.passed and mutation_checkpoint is not None:
-                                        self._session.rollback_to(mutation_checkpoint)
+                                        if self._session is not None:
+                                            self._session.rollback_to(mutation_checkpoint)
                                         binary.reload()
-                                        self._records.pop()
+                                        if self._records:
+                                            self._records.pop()
                                         if self._rollback_policy == "fail-fast":
                                             raise RuntimeError("Mutation-level validation failed")
                                         continue
                                 substituted_count += 1
                                 func_mutations += 1
                             else:
-                                logger.debug(
-                                    f"Skipping substitution at 0x{addr:x}: new instruction too large"
-                                )
+                                logger.debug(f"Skipping substitution at 0x{addr:x}: new instruction too large")
                     except Exception as e:
                         logger.debug(f"Failed to substitute at 0x{addr:x}: {e}")
 
                 if substituted_count > 0:
                     logger.info(
-                        f"Substituted {orig_reg} -> {subst_reg} in {func.get('name')}: "
-                        f"{substituted_count} instructions"
+                        f"Substituted {orig_reg} -> {subst_reg} in {func.get('name')}: {substituted_count} instructions"
                     )
                     total_registers_substituted += 1
 

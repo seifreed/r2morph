@@ -15,7 +15,7 @@ class SupportMatrix:
     stable_formats: tuple[str, ...] = ("ELF",)
     stable_architectures: tuple[str, ...] = ("x86_64",)
     prolonged_experimental_formats: tuple[str, ...] = ("Mach-O", "PE")
-    prolonged_experimental_architectures: tuple[str, ...] = ("arm64", "x86")
+    prolonged_experimental_architectures: tuple[str, ...] = ("arm64", "arm32", "x86")
     stable_mutations: tuple[str, ...] = ("nop", "substitute", "register")
     experimental_mutations: tuple[str, ...] = ("expand", "block")
     stable_validators: tuple[str, ...] = ("structural", "runtime")
@@ -36,9 +36,15 @@ class SupportMatrix:
             ],
             "prolonged_experimental_areas": [
                 "cross-format rewriting outside ELF",
-                "non-x86_64 production support",
+                "non-x86_64 production support (arm64, arm32, x86_32)",
                 "semantic validation beyond bounded symbolic scope",
             ],
+            "architecture_support": {
+                "x86_64": {"status": "stable", "passes": ["nop", "substitute", "register"]},
+                "x86": {"status": "experimental", "passes": ["nop"]},
+                "arm64": {"status": "experimental", "passes": ["nop"]},
+                "arm32": {"status": "experimental", "passes": ["nop"]},
+            },
         }
     )
 
@@ -54,12 +60,16 @@ def _normalize_architecture_name(architecture: str, bits: int | None = None) -> 
     """Normalize architecture labels emitted by analysis backends."""
     normalized_arch = str(architecture).strip()
     lowered = normalized_arch.lower()
-    if lowered in {"x86_64", "amd64"}:
+    if lowered in {"x86_64", "x86-64", "amd64", "x64"}:
         return "x86_64"
     if lowered == "x86" and bits == 64:
         return "x86_64"
-    if lowered == "x86":
+    if lowered in {"x86", "i386", "i686"}:
         return "x86"
+    if lowered in {"arm64", "aarch64", "arm64e"}:
+        return "arm64"
+    if lowered in {"arm", "armv7", "armv7l", "armv7a", "thumb"}:
+        return "arm"
     return normalized_arch
 
 
@@ -72,8 +82,7 @@ def classify_target_support(
     normalized_format = str(binary_format).strip()
     normalized_arch = _normalize_architecture_name(architecture, bits)
     stable = (
-        normalized_format in PRODUCT_SUPPORT.stable_formats
-        and normalized_arch in PRODUCT_SUPPORT.stable_architectures
+        normalized_format in PRODUCT_SUPPORT.stable_formats and normalized_arch in PRODUCT_SUPPORT.stable_architectures
     )
     prolonged_experimental = (
         normalized_format in PRODUCT_SUPPORT.prolonged_experimental_formats
@@ -95,9 +104,7 @@ def classify_target_support(
         "reason": reason,
         "stable_target": dict(PRODUCT_SUPPORT.notes.get("stable_target", {})),
         "secondary_cli_namespace": PRODUCT_SUPPORT.notes.get("secondary_cli_namespace"),
-        "prolonged_experimental_areas": list(
-            PRODUCT_SUPPORT.notes.get("prolonged_experimental_areas", [])
-        ),
+        "prolonged_experimental_areas": list(PRODUCT_SUPPORT.notes.get("prolonged_experimental_areas", [])),
     }
 
 

@@ -1,5 +1,11 @@
 """
 Pytest configuration and fixtures.
+
+Test Markers:
+- stable: Tests for stable mutations (nop, substitute, register)
+- experimental: Tests for experimental mutations (expand, block, opaue, dead-code, cff)
+- product_smoke: Product acceptance tests for CI
+- slow: Tests that take longer than 10 seconds
 """
 
 import os
@@ -8,6 +14,38 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
+
+def pytest_configure(config):
+    """Register custom markers."""
+    config.addinivalue_line(
+        "markers", "stable: marks tests for stable mutation passes (nop, substitute, register)"
+    )
+    config.addinivalue_line(
+        "markers", "experimental: marks tests for experimental mutation passes (expand, block, opaque, dead-code, cff)"
+    )
+    config.addinivalue_line(
+        "markers", "product_smoke: marks product acceptance tests for CI"
+    )
+    config.addinivalue_line(
+        "markers", "slow: marks tests that take longer than 10 seconds"
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Add marker to tests based on file location."""
+    for item in items:
+        # Auto-mark tests in product_smoke directory
+        if "product_smoke" in str(item.fspath):
+            item.add_marker(pytest.mark.product_smoke)
+
+        # Auto-mark tests in integration directory
+        if "integration" in str(item.fspath):
+            item.add_marker(pytest.mark.integration)
+
+        # Auto-mark tests in unit directory
+        if "unit" in str(item.fspath):
+            item.add_marker(pytest.mark.unit)
 
 
 @pytest.fixture

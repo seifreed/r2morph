@@ -10,10 +10,22 @@ from dataclasses import asdict, dataclass, field
 from importlib import import_module
 from typing import Any
 
+from r2morph.analysis.abi_checker import ABIChecker
 from r2morph.analysis.invariants import InvariantDetector
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_address(value: int | str | None) -> int:
+    """Parse an address that may be an int or hex string like '0x401010'."""
+    if value is None:
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str) and value.startswith("0x"):
+        return int(value, 16)
+    return int(value)
 
 
 @dataclass
@@ -60,8 +72,10 @@ class ValidationManager:
     Coordinates structural validation for mutations and passes.
     """
 
-    def __init__(self, mode: str = "structural"):
+    def __init__(self, mode: str = "structural", check_abi: bool = False):
         self.mode = mode
+        self.check_abi = check_abi
+        self._abi_checker: ABIChecker | None = None
 
     def _collect_memory_write_signatures(self, state: Any) -> list[str]:
         """Collect a compact, best-effort signature of memory writes from an angr state."""
@@ -140,9 +154,7 @@ class ValidationManager:
 
             if expected:
                 current_keys = {(inv.invariant_type.value, inv.location) for inv in current}
-                missing = [
-                    inv for inv in expected if (inv["type"], inv["location"]) not in current_keys
-                ]
+                missing = [inv for inv in expected if (inv["type"], inv["location"]) not in current_keys]
                 if missing:
                     issues.append(
                         ValidationIssue(
@@ -189,13 +201,14 @@ class ValidationManager:
             "symbolic_pass_name": pass_name,
             "covered_functions": sorted(
                 {
-                    mutation.get("function_address")
+                    _parse_address(mutation["function_address"])
                     for mutation in mutations
                     if mutation.get("function_address") not in (None, 0)
                 }
             ),
             "covered_address_ranges": [
-                [mutation["start_address"], mutation["end_address"]] for mutation in mutations
+                [_parse_address(mutation["start_address"]), _parse_address(mutation["end_address"])]
+                for mutation in mutations
             ],
         }
 
@@ -211,10 +224,11 @@ class ValidationManager:
         if len(mutations) > 8:
             return False, "unsupported-scope", metadata
         if any(
-            (mutation["end_address"] - mutation["start_address"] + 1) > 16 for mutation in mutations
+            (_parse_address(mutation["end_address"]) - _parse_address(mutation["start_address"]) + 1) > 16
+            for mutation in mutations
         ):
             return False, "unsupported-scope", metadata
-        if any(mutation.get("function_address") in (None, 0) for mutation in mutations):
+        if any(mutation.get("function_address") in (None, 0, "0x0") for mutation in mutations):
             return False, "unsupported-scope", metadata
         return True, "supported", metadata
 
@@ -247,8 +261,8 @@ class ValidationManager:
             step_error: str | None = None
 
             for mutation in pass_result.get("mutations", []):
-                start = mutation["start_address"]
-                end = mutation["end_address"]
+                start = _parse_address(mutation["start_address"])
+                end = _parse_address(mutation["end_address"])
                 state = bridge.create_symbolic_state(start)
                 if state is None:
                     step_error = f"failed to initialize symbolic state at 0x{start:x}"
@@ -272,11 +286,7 @@ class ValidationManager:
                 flat_successors = list(getattr(successors, "flat_successors", []))
                 unsat_successors = list(getattr(successors, "unsat_successors", []))
                 successor_addrs = sorted(
-                    {
-                        succ.addr
-                        for succ in flat_successors
-                        if getattr(succ, "addr", None) is not None
-                    }
+                    {succ.addr for succ in flat_successors if getattr(succ, "addr", None) is not None}
                 )
                 total_flat_successors += len(flat_successors)
                 total_unsat_successors += len(unsat_successors)
@@ -303,21 +313,15 @@ class ValidationManager:
             payload.update(self._build_instruction_substitution_symbolic_hint(pass_result))
             if step_error is not None:
                 payload["symbolic_status"] = (
-                    "state-init-failed"
-                    if step_error.startswith("failed to initialize")
-                    else "step-failed"
+                    "state-init-failed" if step_error.startswith("failed to initialize") else "step-failed"
                 )
                 payload["symbolic_reason"] = step_error
                 if payload.get("symbolic_semantic_hint_supported"):
                     payload.update(
-                        self._compare_instruction_substitution_observables(
-                            binary, pass_result, bridge_module
-                        )
+                        self._compare_instruction_substitution_observables(binary, pass_result, bridge_module)
                     )
                     payload.update(
-                        self._compare_instruction_substitution_transition(
-                            binary, pass_result, bridge_module
-                        )
+                        self._compare_instruction_substitution_transition(binary, pass_result, bridge_module)
                     )
                     if payload.get("symbolic_observable_check_performed"):
                         transition_ok = payload.get("symbolic_transition_equivalent", True)
@@ -337,16 +341,8 @@ class ValidationManager:
                 payload["symbolic_reason"] = (
                     "symbolic bounded step passed and substitutions map to a known equivalence group"
                 )
-                payload.update(
-                    self._compare_instruction_substitution_observables(
-                        binary, pass_result, bridge_module
-                    )
-                )
-                payload.update(
-                    self._compare_instruction_substitution_transition(
-                        binary, pass_result, bridge_module
-                    )
-                )
+                payload.update(self._compare_instruction_substitution_observables(binary, pass_result, bridge_module))
+                payload.update(self._compare_instruction_substitution_transition(binary, pass_result, bridge_module))
                 if payload.get("symbolic_observable_check_performed"):
                     transition_ok = payload.get("symbolic_transition_equivalent", True)
                     if payload.get("symbolic_observable_equivalent") and transition_ok:
@@ -377,14 +373,12 @@ class ValidationManager:
             if not disasm:
                 continue
             if isinstance(disasm, str):
-                instructions = [
-                    part.strip() for part in disasm.replace("\n", ";").split(";") if part.strip()
-                ]
+                instructions = [part.strip() for part in disasm.replace("\n", ";").split(";") if part.strip()]
                 if instructions:
                     candidates.append(len(instructions))
 
         region_size = (
-            int(mutation.get("end_address", 0)) - int(mutation.get("start_address", 0)) + 1
+            _parse_address(mutation.get("end_address", 0)) - _parse_address(mutation.get("start_address", 0)) + 1
         )
         if region_size > 0:
             candidates.append(1 if region_size <= 4 else 2 if region_size <= 8 else 3)
@@ -396,9 +390,7 @@ class ValidationManager:
             step_budget = max(step_budget, 2)
         return max(1, min(step_budget, 4))
 
-    def _build_instruction_substitution_symbolic_hint(
-        self, pass_result: dict[str, Any]
-    ) -> dict[str, Any]:
+    def _build_instruction_substitution_symbolic_hint(self, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Add a narrow semantic hint for instruction substitutions from known equivalence groups."""
         if pass_result.get("pass_name") != "InstructionSubstitution":
             return {}
@@ -415,12 +407,7 @@ class ValidationManager:
             original = metadata.get("equivalence_original_pattern")
             replacement = metadata.get("equivalence_replacement_pattern")
             group_index = metadata.get("equivalence_group_index")
-            if (
-                isinstance(group_index, int)
-                and original in members
-                and replacement in members
-                and len(members) >= 2
-            ):
+            if isinstance(group_index, int) and original in members and replacement in members and len(members) >= 2:
                 supported.append(
                     {
                         "start_address": mutation["start_address"],
@@ -535,12 +522,8 @@ class ValidationManager:
                     if hasattr(mutated_state.regs, reg_name):
                         setattr(mutated_state.regs, reg_name, shared)
 
-                original_succ = list(
-                    original_project.factory.successors(original_state).flat_successors
-                )
-                mutated_succ = list(
-                    mutated_project.factory.successors(mutated_state).flat_successors
-                )
+                original_succ = list(original_project.factory.successors(original_state).flat_successors)
+                mutated_succ = list(mutated_project.factory.successors(mutated_state).flat_successors)
                 region_report = {
                     "start_address": mutation["start_address"],
                     "end_address": mutation["end_address"],
@@ -565,9 +548,7 @@ class ValidationManager:
                 original_final = original_succ[0]
                 mutated_final = mutated_succ[0]
                 for observable in observables:
-                    if not hasattr(original_final.regs, observable) or not hasattr(
-                        mutated_final.regs, observable
-                    ):
+                    if not hasattr(original_final.regs, observable) or not hasattr(mutated_final.regs, observable):
                         continue
                     left = getattr(original_final.regs, observable)
                     right = getattr(mutated_final.regs, observable)
@@ -666,12 +647,8 @@ class ValidationManager:
                 setattr(original_state.regs, stack_reg, shared_stack)
                 setattr(mutated_state.regs, stack_reg, shared_stack)
 
-                original_succ = list(
-                    original_project.factory.successors(original_state).flat_successors
-                )
-                mutated_succ = list(
-                    mutated_project.factory.successors(mutated_state).flat_successors
-                )
+                original_succ = list(original_project.factory.successors(original_state).flat_successors)
+                mutated_succ = list(mutated_project.factory.successors(mutated_state).flat_successors)
                 region_report = {
                     "start_address": mutation["start_address"],
                     "end_address": mutation["end_address"],
@@ -706,9 +683,7 @@ class ValidationManager:
 
                 original_stack = getattr(original_final.regs, stack_reg)
                 mutated_stack = getattr(mutated_final.regs, stack_reg)
-                if original_final.solver.satisfiable(
-                    extra_constraints=[original_stack != mutated_stack]
-                ):
+                if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
                     region_report["mismatches"].append("stack_delta")
                     mismatches.append(
                         {
@@ -773,9 +748,35 @@ class ValidationManager:
             from r2morph.analysis.symbolic.angr_bridge import AngrBridge
 
             with Binary(previous_binary_path, writable=False) as original_binary:
-                original_binary.analyze("aa")
-                original_bridge = AngrBridge(original_binary)
-                mutated_bridge = AngrBridge(binary)
+                try:
+                    original_binary.analyze("aa")
+                except Exception as analyze_error:
+                    logger.warning(f"Failed to analyze original binary: {analyze_error}")
+                    return {
+                        "symbolic_binary_check_performed": False,
+                        "symbolic_binary_reason": f"Failed to analyze original binary: {analyze_error}",
+                    }
+                try:
+                    original_bridge = AngrBridge(original_binary)
+                except Exception as bridge_error:
+                    logger.error(f"Failed to create original bridge: {bridge_error}")
+                    return {
+                        "symbolic_binary_check_performed": False,
+                        "symbolic_binary_reason": f"Failed to create original bridge: {bridge_error}",
+                    }
+                try:
+                    mutated_bridge = AngrBridge(binary)
+                except Exception as bridge_error:
+                    if original_bridge and hasattr(original_bridge, "angr_project"):
+                        try:
+                            original_bridge.angr_project.loader.close()
+                        except Exception:
+                            pass
+                    logger.error(f"Failed to create mutated bridge: {bridge_error}")
+                    return {
+                        "symbolic_binary_check_performed": False,
+                        "symbolic_binary_reason": f"Failed to create mutated bridge: {bridge_error}",
+                    }
                 angr_module = getattr(bridge_module, "angr", None)
                 if angr_module is None:
                     return {
@@ -797,6 +798,9 @@ class ValidationManager:
                     region_exit_budget = max(step_budget * 2, region_width + 1)
                     resolved_original = original_bridge.resolve_loaded_address(start)
                     resolved_mutated = mutated_bridge.resolve_loaded_address(start)
+                    if resolved_original is None or resolved_mutated is None:
+                        logger.warning(f"Failed to resolve loaded address for mutation at 0x{start:x}")
+                        continue
 
                     original_state = original_bridge.angr_project.factory.blank_state(
                         addr=resolved_original,
@@ -865,10 +869,7 @@ class ValidationManager:
 
                     for _ in range(region_exit_budget):
                         current_mutated_addr = getattr(mutated_final, "addr", None)
-                        if (
-                            current_mutated_addr is None
-                            or current_mutated_addr > resolved_mutated + region_width - 1
-                        ):
+                        if current_mutated_addr is None or current_mutated_addr > resolved_mutated + region_width - 1:
                             break
                         mutated_succ = list(
                             mutated_bridge.angr_project.factory.successors(
@@ -906,11 +907,7 @@ class ValidationManager:
                         step_strategy = "region-exit-fallback-budget"
                         region_report["step_strategy"] = step_strategy
                         exit_error = original_exit_error or mutated_exit_error
-                        if (
-                            original_exit_error
-                            and mutated_exit_error
-                            and original_exit_error != mutated_exit_error
-                        ):
+                        if original_exit_error and mutated_exit_error and original_exit_error != mutated_exit_error:
                             exit_error = f"{original_exit_error}|{mutated_exit_error}"
                         region_report["mismatches"].append(exit_error)
                         mismatches.append(
@@ -923,19 +920,13 @@ class ValidationManager:
                         compared_regions.append(region_report)
                         continue
 
-                    region_report["original_region_exit_address"] = getattr(
-                        original_final, "addr", None
-                    )
-                    region_report["mutated_region_exit_address"] = getattr(
-                        mutated_final, "addr", None
-                    )
+                    region_report["original_region_exit_address"] = getattr(original_final, "addr", None)
+                    region_report["mutated_region_exit_address"] = getattr(mutated_final, "addr", None)
                     region_report["control_flow_observables"] = [
                         "region_exit_address",
                         "region_exit_steps",
                     ]
-                    if getattr(original_final, "addr", None) != getattr(
-                        mutated_final, "addr", None
-                    ):
+                    if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
                         region_report["mismatches"].append("successor_address")
                         mismatches.append(
                             {
@@ -946,9 +937,7 @@ class ValidationManager:
                         )
 
                     for reg_name in compared_registers:
-                        if not hasattr(original_final.regs, reg_name) or not hasattr(
-                            mutated_final.regs, reg_name
-                        ):
+                        if not hasattr(original_final.regs, reg_name) or not hasattr(mutated_final.regs, reg_name):
                             continue
                         left = getattr(original_final.regs, reg_name)
                         right = getattr(mutated_final.regs, reg_name)
@@ -961,13 +950,9 @@ class ValidationManager:
                                     "observable": reg_name,
                                 }
                             )
-                    if hasattr(original_final.regs, "eflags") and hasattr(
-                        mutated_final.regs, "eflags"
-                    ):
+                    if hasattr(original_final.regs, "eflags") and hasattr(mutated_final.regs, "eflags"):
                         if original_final.solver.satisfiable(
-                            extra_constraints=[
-                                original_final.regs.eflags != mutated_final.regs.eflags
-                            ]
+                            extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
                         ):
                             region_report["mismatches"].append("eflags")
                             mismatches.append(
@@ -979,9 +964,7 @@ class ValidationManager:
                             )
                     original_stack = getattr(original_final.regs, stack_reg)
                     mutated_stack = getattr(mutated_final.regs, stack_reg)
-                    if original_final.solver.satisfiable(
-                        extra_constraints=[original_stack != mutated_stack]
-                    ):
+                    if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
                         region_report["mismatches"].append("stack_delta")
                         mismatches.append(
                             {
@@ -1012,18 +995,23 @@ class ValidationManager:
                 "symbolic_binary_reason": f"real binary symbolic comparison failed: {e}",
             }
         finally:
+            cleanup_errors = []
             if original_bridge is not None and hasattr(original_bridge, "angr_project"):
                 try:
                     if hasattr(original_bridge.angr_project, "loader"):
                         original_bridge.angr_project.loader.close()
                 except Exception as e:
-                    logger.debug(f"Error closing original angr project: {e}")
+                    cleanup_errors.append(f"original: {e}")
+                    logger.warning(f"Error closing original angr project: {e}")
             if mutated_bridge is not None and hasattr(mutated_bridge, "angr_project"):
                 try:
                     if hasattr(mutated_bridge.angr_project, "loader"):
                         mutated_bridge.angr_project.loader.close()
                 except Exception as e:
-                    logger.debug(f"Error closing mutated angr project: {e}")
+                    cleanup_errors.append(f"mutated: {e}")
+                    logger.warning(f"Error closing mutated angr project: {e}")
+            if cleanup_errors:
+                logger.debug(f"Cleanup errors during angr resource release: {cleanup_errors}")
 
         return {
             "symbolic_binary_check_performed": bool(compared_regions),
@@ -1082,9 +1070,7 @@ class ValidationManager:
                 }
 
             if pass_result.get("pass_name") == "InstructionSubstitution":
-                mutation_metadata["symbolic_semantic_hint"] = metadata.get(
-                    "symbolic_semantic_hint", "none"
-                )
+                mutation_metadata["symbolic_semantic_hint"] = metadata.get("symbolic_semantic_hint", "none")
                 mutation_metadata["symbolic_semantic_hint_supported"] = bool(
                     metadata.get("symbolic_semantic_hint_supported", False)
                 )
@@ -1092,15 +1078,9 @@ class ValidationManager:
                 observable = observable_by_range.get(key)
                 if observable is not None:
                     mutation_metadata["symbolic_observable_check_performed"] = True
-                    mutation_metadata["symbolic_observable_equivalent"] = (
-                        len(observable.get("mismatches", [])) == 0
-                    )
-                    mutation_metadata["symbolic_observable_mismatches"] = list(
-                        observable.get("mismatches", [])
-                    )
-                    mutation_metadata["symbolic_observables_checked"] = list(
-                        observable.get("observables_checked", [])
-                    )
+                    mutation_metadata["symbolic_observable_equivalent"] = len(observable.get("mismatches", [])) == 0
+                    mutation_metadata["symbolic_observable_mismatches"] = list(observable.get("mismatches", []))
+                    mutation_metadata["symbolic_observables_checked"] = list(observable.get("observables_checked", []))
                 elif metadata.get("symbolic_observable_check_performed"):
                     mutation_metadata["symbolic_observable_check_performed"] = False
                     mutation_metadata["symbolic_observable_equivalent"] = False
@@ -1113,21 +1093,13 @@ class ValidationManager:
                 transition = transition_regions.get(key)
                 if transition is not None:
                     mutation_metadata["symbolic_transition_check_performed"] = True
-                    mutation_metadata["symbolic_transition_equivalent"] = (
-                        len(transition.get("mismatches", [])) == 0
-                    )
-                    mutation_metadata["symbolic_transition_mismatches"] = list(
-                        transition.get("mismatches", [])
-                    )
+                    mutation_metadata["symbolic_transition_equivalent"] = len(transition.get("mismatches", [])) == 0
+                    mutation_metadata["symbolic_transition_mismatches"] = list(transition.get("mismatches", []))
             binary_region = binary_by_range.get(key)
             if binary_region is not None:
                 mutation_metadata["symbolic_binary_check_performed"] = True
-                mutation_metadata["symbolic_binary_equivalent"] = (
-                    len(binary_region.get("mismatches", [])) == 0
-                )
-                mutation_metadata["symbolic_binary_step_budget"] = int(
-                    binary_region.get("step_budget", 1)
-                )
+                mutation_metadata["symbolic_binary_equivalent"] = len(binary_region.get("mismatches", [])) == 0
+                mutation_metadata["symbolic_binary_step_budget"] = int(binary_region.get("step_budget", 1))
                 mutation_metadata["symbolic_binary_region_exit_budget"] = int(
                     binary_region.get("region_exit_budget", 0)
                 )
@@ -1141,11 +1113,11 @@ class ValidationManager:
                 mutation_metadata["symbolic_binary_mutated_region_exit_steps"] = int(
                     binary_region.get("mutated_region_exit_steps", 0)
                 )
-                mutation_metadata["symbolic_binary_original_region_exit_address"] = (
-                    binary_region.get("original_region_exit_address")
+                mutation_metadata["symbolic_binary_original_region_exit_address"] = binary_region.get(
+                    "original_region_exit_address"
                 )
-                mutation_metadata["symbolic_binary_mutated_region_exit_address"] = (
-                    binary_region.get("mutated_region_exit_address")
+                mutation_metadata["symbolic_binary_mutated_region_exit_address"] = binary_region.get(
+                    "mutated_region_exit_address"
                 )
                 mutation_metadata["symbolic_binary_original_trace_addresses"] = list(
                     binary_region.get("original_trace_addresses", [])
@@ -1153,9 +1125,7 @@ class ValidationManager:
                 mutation_metadata["symbolic_binary_mutated_trace_addresses"] = list(
                     binary_region.get("mutated_trace_addresses", [])
                 )
-                mutation_metadata["symbolic_binary_mismatches"] = list(
-                    binary_region.get("mismatches", [])
-                )
+                mutation_metadata["symbolic_binary_mismatches"] = list(binary_region.get("mismatches", []))
                 mutation_metadata["symbolic_binary_registers_checked"] = list(
                     binary_region.get("registers_checked", [])
                 )
@@ -1175,9 +1145,7 @@ class ValidationManager:
                     binary_region.get("mutated_memory_write_count", 0)
                 )
 
-    def capture_structural_baseline(
-        self, binary: Binary, function_address: int | None
-    ) -> dict[str, Any]:
+    def capture_structural_baseline(self, binary: Binary, function_address: int | None) -> dict[str, Any]:
         """Capture a lightweight baseline before mutation."""
         if self.mode == "off" or function_address in (None, 0):
             return {}
@@ -1256,9 +1224,7 @@ class ValidationManager:
                 "NopInsertion",
                 "RegisterSubstitution",
             }:
-                result.metadata.update(
-                    self._compare_real_binary_regions(binary, pass_result, bridge_module)
-                )
+                result.metadata.update(self._compare_real_binary_regions(binary, pass_result, bridge_module))
                 if result.metadata.get("symbolic_binary_check_performed"):
                     if result.metadata.get("symbolic_binary_equivalent"):
                         result.metadata["symbolic_status"] = "real-binary-observables-match"
@@ -1271,4 +1237,80 @@ class ValidationManager:
                             "bounded real-binary symbolic effects diverged for the mutated regions"
                         )
             self._annotate_mutations_with_symbolic_metadata(pass_result, result.metadata)
+
+        if self.check_abi:
+            abi_issues = self._check_abi_violations(binary, pass_result)
+            issues.extend(abi_issues)
+            if abi_issues:
+                result.issues.extend(abi_issues)
+                result.passed = False
+                result.metadata["abi_violations"] = len(abi_issues)
+
         return result
+
+    def validate_abi(
+        self, binary: Binary, function_address: int, mutation_regions: list[tuple[int, int]] | None = None
+    ) -> dict[str, Any]:
+        """
+        Check ABI invariants for a function.
+
+        Args:
+            binary: Binary to check
+            function_address: Function address
+            mutation_regions: Optional list of mutated regions
+
+        Returns:
+            Dictionary with ABI validation results
+        """
+        if self._abi_checker is None:
+            self._abi_checker = ABIChecker(binary)
+
+        violations = self._abi_checker.check_all(function_address, mutation_regions)
+
+        return {
+            "passed": len(violations) == 0,
+            "violations": [
+                {
+                    "type": v.violation_type.value,
+                    "description": v.description,
+                    "location": v.location,
+                    "details": v.details,
+                }
+                for v in violations
+            ],
+            "violation_count": len(violations),
+        }
+
+    def _check_abi_violations(self, binary: Binary, pass_result: dict[str, Any]) -> list[ValidationIssue]:
+        """Check for ABI violations in a pass."""
+        issues: list[ValidationIssue] = []
+
+        if self._abi_checker is None:
+            self._abi_checker = ABIChecker(binary)
+
+        mutations = pass_result.get("mutations", [])
+        mutation_regions: list[tuple[int, int]] = []
+
+        for mutation in mutations:
+            start = mutation.get("start_address")
+            end = mutation.get("end_address")
+            if start is not None and end is not None:
+                mutation_regions.append((start, end))
+
+        functions = binary.get_functions() if hasattr(binary, "get_functions") else []
+        for func in functions[:5]:
+            func_addr = func.get("offset") or func.get("addr", 0)
+            violations = self._abi_checker.check_all(func_addr, mutation_regions if mutation_regions else None)
+
+            for v in violations:
+                issues.append(
+                    ValidationIssue(
+                        validator="abi",
+                        message=v.description,
+                        address_range=(v.location, v.location + 8),
+                        severity="warning",
+                        evidence=v.details,
+                    )
+                )
+
+        return issues

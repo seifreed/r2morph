@@ -39,6 +39,35 @@ from r2morph.core.memory_manager import (
     MemoryManager,
     get_memory_manager,
 )
+from r2morph.core.parallel import (
+    DependencyResolver,
+    ExecutionPlan,
+    ParallelMutationEngine,
+    PassDependency,
+    PassResult,
+    PassStatus,
+    execute_parallel,
+)
+from r2morph.core.parallel_executor import (
+    MutationResult,
+    MutationTask,
+    ParallelMutator,
+    ResolutionStrategy,
+    ResultMerger,
+    TaskStatus,
+    WorkQueue,
+)
+from r2morph.core.reader import BinaryReader
+from r2morph.core.writer import BinaryWriter
+from r2morph.core.analysis_cache import (
+    AnalysisCache,
+    CacheEntry,
+    CacheKey,
+    CacheStats,
+    CacheStorage,
+    compute_binary_hash,
+    compute_partial_hash,
+)
 
 __all__ = [
     # Core classes
@@ -52,6 +81,8 @@ __all__ = [
     "get_assembly_service",
     "MemoryManager",
     "get_memory_manager",
+    "BinaryReader",
+    "BinaryWriter",
     # Config classes
     "AnalysisConfig",
     "EngineConfig",
@@ -72,4 +103,28 @@ __all__ = [
     "SMALL_FUNCTION_THRESHOLD",
     "VERY_LARGE_BINARY_THRESHOLD_MB",
     "VERY_MANY_FUNCTIONS_THRESHOLD",
+    # Parallel execution
+    "DependencyResolver",
+    "ExecutionPlan",
+    "ParallelMutationEngine",
+    "PassDependency",
+    "PassResult",
+    "PassStatus",
+    "execute_parallel",
+    # Parallel executor
+    "MutationResult",
+    "MutationTask",
+    "ParallelMutator",
+    "ResolutionStrategy",
+    "ResultMerger",
+    "TaskStatus",
+    "WorkQueue",
+    # Analysis Cache
+    "AnalysisCache",
+    "CacheEntry",
+    "CacheKey",
+    "CacheStats",
+    "CacheStorage",
+    "compute_binary_hash",
+    "compute_partial_hash",
 ]

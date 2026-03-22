@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "r2morph"
 version = "0.2.0"
-description = "A metamorphic binary transformation engine based on r2pipe and radare2"
+description = "Metamorphic binary mutation engine with structural validation"
 readme = "README.md"
 requires-python = ">=3.10"
 license = {text = "MIT"}
@@ -22,10 +22,11 @@ keywords = [
     "radare2",
     "r2pipe",
     "reverse-engineering",
-    "binary-mutation"
+    "binary-mutation",
+    "binary-patching",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
@@ -64,9 +65,7 @@ docs = [
     "mkdocs-material>=9.0.0",
     "mkdocstrings[python]>=0.22.0",
 ]
-# Advanced analysis optional dependencies
 enhanced = [
-    # Include all enhanced analysis capabilities
     "angr>=9.2.0; platform_system != \"Windows\"",
     "z3-solver>=4.12.0",
     "frida>=16.0.0; platform_system != \"Windows\"",
@@ -78,22 +77,21 @@ enhanced = [
     "psutil>=5.9.0",
 ]
 syntia = [
-    "cvc5>=1.0.0",  # SMT solver for Syntia
-    "pysmt>=0.9.0",  # SMT abstraction layer
-    "claripy>=9.2.0",  # Constraint solving for angr
+    "cvc5>=1.0.0",
+    "pysmt>=0.9.0",
+    "claripy>=9.2.0",
 ]
 devirtualization = [
-    "miasm>=0.1.0",  # Additional disassembly framework
-    "unicorn>=2.0.0",  # CPU emulator engine
-    "qiling>=1.4.0",  # Advanced emulation framework
+    "miasm>=0.1.0",
+    "unicorn>=2.0.0",
+    "qiling>=1.4.0",
 ]
 machine-learning = [
-    "scikit-learn>=1.3.0",  # For pattern recognition
-    "torch>=2.0.0",  # For neural network based analysis
-    "transformers>=4.30.0",  # For advanced semantic analysis
+    "scikit-learn>=1.3.0",
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
 ]
 all = [
-    # Include all optional dependencies
     "angr>=9.2.0; platform_system != \"Windows\"",
     "z3-solver>=4.12.0",
     "frida>=16.0.0; platform_system != \"Windows\"",
@@ -115,31 +113,21 @@ all = [
 ]
 
 [project.scripts]
-r2morph = "r2morph.cli:main"
+r2morph = "r2morph.cli:app"
 
 [project.urls]
 Homepage = "https://github.com/seifreed/r2morph"
-Documentation = "https://github.com/seifreed/r2morph/blob/main/README.md"
+Documentation = "https://github.com/seifreed/r2morph#readme"
 Repository = "https://github.com/seifreed/r2morph"
 Issues = "https://github.com/seifreed/r2morph/issues"
-"Source Code" = "https://github.com/seifreed/r2morph"
-"Bug Tracker" = "https://github.com/seifreed/r2morph/issues"
-
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["r2morph*"]
-exclude = ["tests*", "docs*", "examples*", "scripts*"]
+Changelog = "https://github.com/seifreed/r2morph/blob/main/CHANGELOG.md"
 
 [tool.pytest.ini_options]
+minversion = "7.0"
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
-markers = [
-    "product_smoke: end-to-end tests for the stable mutation engine product",
-    "slow: slower integration or product tests",
-    "experimental: tests for optional or experimental analysis surfaces outside the stable core",
-]
 addopts = [
     "-v",
     "--strict-markers",
@@ -148,54 +136,55 @@ addopts = [
     "--cov-report=term-missing",
     "--cov-report=html",
 ]
-
-[tool.black]
-line-length = 100
-target-version = ["py310", "py311", "py312", "py313"]
-include = '\.pyi?$'
-
-[tool.ruff]
-line-length = 100
-target-version = "py310"
-select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes
-    "I",   # isort
-    "C",   # flake8-comprehensions
-    "B",   # flake8-bugbear
-    "UP",  # pyupgrade
+markers = [
+    "stable: marks tests for stable mutation passes (nop, substitute, register)",
+    "experimental: marks tests for experimental mutation passes (expand, block, opaque, dead-code, cff)",
+    "product_smoke: marks product acceptance tests for CI",
+    "slow: marks tests that take longer than 10 seconds",
+    "unit: marks unit tests",
+    "integration: marks integration tests",
 ]
-ignore = [
-    "E501",  # line too long (handled by black)
+filterwarnings = [
+    "ignore::DeprecationWarning",
 ]
-
-[tool.mypy]
-python_version = "3.10"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false
-disallow_incomplete_defs = false
-check_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-strict_equality = true
 
 [tool.coverage.run]
 source = ["r2morph"]
+branch = true
 omit = [
-    "*/tests/*",
-    "*/test_*.py",
+    "tests/*",
+    "r2morph/adapters/*",
+    "*/__pycache__/*",
 ]
 
 [tool.coverage.report]
 exclude_lines = [
     "pragma: no cover",
     "def __repr__",
-    "raise AssertionError",
     "raise NotImplementedError",
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 120
+target-version = ["py310"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+disallow_untyped_defs = true
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["r2morph*"]
+exclude = ["tests*", "docs*", "examples*", "scripts*"]

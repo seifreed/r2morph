@@ -1,0 +1,265 @@
+# ARM64 (AArch64) Instruction Equivalence Rules
+# Version: 2.0
+# Description: Comprehensive ARM64 instruction equivalence rules for metamorphic transformation
+
+version: "2.0"
+description: "ARM64/AArch64 instruction equivalence rules for metamorphic transformation"
+
+# ARM64 Register Classes
+register_classes:
+  general_64:
+    - "x0"
+    - "x1"
+    - "x2"
+    - "x3"
+    - "x4"
+    - "x5"
+    - "x6"
+    - "x7"
+    - "x8"
+    - "x9"
+    - "x10"
+    - "x11"
+    - "x12"
+    - "x13"
+    - "x14"
+    - "x15"
+    - "x16"
+    - "x17"
+    - "x18"
+    - "x19"
+    - "x20"
+    - "x21"
+    - "x22"
+    - "x23"
+    - "x24"
+    - "x25"
+    - "x26"
+    - "x27"
+    - "x28"
+    - "x29"
+    - "x30"
+  
+  general_32:
+    - "w0"
+    - "w1"
+    - "w2"
+    - "w3"
+    - "w4"
+    - "w5"
+    - "w6"
+    - "w7"
+    - "w8"
+    - "w9"
+    - "w10"
+    - "w11"
+    - "w12"
+    - "w13"
+    - "w14"
+    - "w15"
+    - "w16"
+    - "w17"
+    - "w18"
+    - "w19"
+    - "w20"
+    - "w21"
+    - "w22"
+    - "w23"
+    - "w24"
+    - "w25"
+    - "w26"
+    - "w27"
+    - "w28"
+    - "w29"
+    - "w30"
+  
+  caller_saved:
+    - "x0"
+    - "x1"
+    - "x2"
+    - "x3"
+    - "x4"
+    - "x5"
+    - "x6"
+    - "x7"
+    - "x8"
+    - "x9"
+    - "x10"
+    - "x11"
+    - "x12"
+    - "x13"
+    - "x14"
+    - "x15"
+    - "x16"
+    - "x17"
+  
+  callee_saved:
+    - "x19"
+    - "x20"
+    - "x21"
+    - "x22"
+    - "x23"
+    - "x24"
+    - "x25"
+    - "x26"
+    - "x27"
+    - "x28"
+  
+  special:
+    - "sp"
+    - "pc"
+    - "xzr"
+    - "wzr"
+
+# Calling Convention (AAPCS64)
+calling_convention:
+  argument_registers:
+    - "x0"
+    - "x1"
+    - "x2"
+    - "x3"
+    - "x4"
+    - "x5"
+    - "x6"
+    - "x7"
+  
+  return_value:
+    - "x0"
+    - "x1"
+  
+  scratch_registers:
+    - "x0"
+    - "x1"
+    - "x2"
+    - "x3"
+    - "x4"
+    - "x5"
+    - "x6"
+    - "x7"
+    - "x8"
+    - "x9"
+    - "x10"
+    - "x11"
+    - "x12"
+    - "x13"
+    - "x14"
+    - "x15"
+    - "x16"
+    - "x17"
+
+# Equivalence Groups
+equivalence_groups:
+  - name: "zero_register_64"
+    description: "Ways to zero a 64-bit register"
+    instructions:
+      - "mov {reg}, #0"
+      - "mov {reg}, xzr"
+      - "eor {reg}, {reg}, {reg}"
+      - "sub {reg}, {reg}, {reg}"
+    registers: ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15", "x16", "x17"]
+  
+  - name: "zero_register_32"
+    description: "Ways to zero a 32-bit register"
+    instructions:
+      - "mov {reg}, #0"
+      - "mov {reg}, wzr"
+      - "eor {reg}, {reg}, {reg}"
+      - "sub {reg}, {reg}, {reg}"
+    registers: ["w0", "w1", "w2", "w3", "w4", "w5", "w6", "w7"]
+
+  - name: "load_one_64"
+    description: "Ways to load 1 into a 64-bit register"
+    instructions:
+      - "mov {reg}, #1"
+    registers: ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+
+  - name: "increment_64"
+    description: "Ways to increment a 64-bit register"
+    instructions:
+      - "add {reg}, {reg}, #1"
+      - "sub {reg}, {reg}, #-1"
+    registers: ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+
+  - name: "decrement_64"
+    description: "Ways to decrement a 64-bit register"
+    instructions:
+      - "sub {reg}, {reg}, #1"
+      - "add {reg}, {reg}, #-1"
+    registers: ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+
+  - name: "nop_equivalences_64"
+    description: "ARM64 NOP instruction equivalences"
+    instructions:
+      - "nop"
+      - "mov x0, x0"
+      - "mov x1, x1"
+      - "mov x2, x2"
+      - "mov x3, x3"
+      - "add x0, x0, #0"
+      - "sub x0, x0, #0"
+      - "orr x0, x0, #0"
+
+  - name: "self_move_64"
+    description: "Ways to move a register to itself (NOPs)"
+    instructions:
+      - "mov {reg}, {reg}"
+      - "add {reg}, {reg}, #0"
+      - "sub {reg}, {reg}, #0"
+      - "orr {reg}, {reg}, #0"
+    registers: ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+
+  - name: "self_move_32"
+    description: "Ways to move a 32-bit register to itself (NOPs)"
+    instructions:
+      - "mov {reg}, {reg}"
+      - "add {reg}, {reg}, #0"
+      - "sub {reg}, {reg}, #0"
+    registers: ["w0", "w1", "w2", "w3", "w4", "w5", "w6", "w7"]
+
+  - name: "compare_zero"
+    description: "Ways to compare register with zero"
+    instructions:
+      - "cmp {reg}, #0"
+      - "cmp {reg}, xzr"
+      - "tst {reg}, {reg}"
+    registers: ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+
+  - name: "test_self"
+    description: "Ways to test register against itself"
+    instructions:
+      - "tst {reg}, {reg}"
+      - "ands xzr, {reg}, {reg}"
+    registers: ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+
+# Protected instructions (do not mutate)
+protected_instructions:
+  - "pacia"
+  - "pacib"
+  - "pacda"
+  - "pacdb"
+  - "autia"
+  - "autib"
+  - "paciza"
+  - "pacizb"
+  - "autiza"
+  - "autizb"
+  - "retaaa"
+  - "retab"
+  - "braa"
+  - "brab"
+  - "blraa"
+  - "blrab"
+
+# Mutation constraints
+constraints:
+  stack_safety:
+    pattern: "sp"
+    action: "preserve"
+  
+  link_register:
+    pattern: "x30|lr"
+    action: "preserve"
+  
+  system_registers:
+    pattern: "msr|mrs"
+    action: "skip"
