@@ -216,7 +216,6 @@ class ValidationFramework:
         Returns:
             PerformanceMetrics object
         """
-        # Initialize metrics
         start_memory = 0
         peak_memory = 0
         cpu_percent = 0
@@ -297,7 +296,6 @@ class ValidationFramework:
             else:  # exp_val and not act_val
                 fn += 1
         
-        # Calculate metrics
         precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
         f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
@@ -343,10 +341,8 @@ class ValidationFramework:
                     'techniques_count': len(result.obfuscation_techniques)
                 }
         
-        # Measure performance
         performance, analysis_result = self._measure_performance(run_detection)
-        
-        # Calculate accuracy if analysis succeeded
+
         accuracy = None
         if performance.success and analysis_result:
             expected = {
@@ -496,10 +492,8 @@ class ValidationFramework:
                     'pipeline_completed': True
                 }
         
-        # Measure performance
         performance, analysis_result = self._measure_performance(run_full_pipeline)
-        
-        # Calculate accuracy
+
         accuracy = None
         if performance.success and analysis_result:
             expected = {
@@ -835,7 +829,6 @@ class ValidationFramework:
 
 def main():
     """Example usage of the validation framework."""
-    # Initialize framework
     framework = ValidationFramework()
     
     # Run validation suite

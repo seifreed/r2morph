@@ -231,6 +231,43 @@ class ConstantUnfoldingPass(MutationPass):
                 total_size += len(bytes_result) if bytes_result else 0
         return total_size
 
+    def _select_candidates(self, binary: Binary, functions: list[dict[str, Any]]) -> list[tuple[dict, list]]:
+        """
+        Iterate functions, get disasm, and filter candidate instructions.
+
+        Args:
+            binary: Binary instance
+            functions: List of function dicts
+
+        Returns:
+            List of (func, selected_candidates) tuples
+        """
+        result = []
+        for func in functions:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+                continue
+
+            try:
+                instructions = binary.get_function_disasm(func["addr"])
+            except Exception as e:
+                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
+                continue
+
+            candidates = []
+            for insn in instructions:
+                disasm = insn.get("disasm", "").lower()
+                mnemonic = disasm.split()[0] if disasm else ""
+
+                if mnemonic not in ["mov", "add", "sub", "push", "xor"]:
+                    continue
+
+                candidates.append(insn)
+
+            selected = random.sample(candidates, min(self.max_unfolds, len(candidates)))
+            if selected:
+                result.append((func, selected))
+        return result
+
     def apply(self, binary: Binary) -> dict[str, Any]:
         """
         Apply constant unfolding to the binary.
@@ -263,29 +300,8 @@ class ConstantUnfoldingPass(MutationPass):
 
         logger.info(f"Constant unfolding: processing {len(functions)} functions")
 
-        for func in functions:
-            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-                continue
-
-            try:
-                instructions = binary.get_function_disasm(func["addr"])
-            except Exception as e:
-                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
-                continue
-
+        for func, selected in self._select_candidates(binary, functions):
             func_mutations = 0
-            candidates = []
-
-            for insn in instructions:
-                disasm = insn.get("disasm", "").lower()
-                mnemonic = disasm.split()[0] if disasm else ""
-
-                if mnemonic not in ["mov", "add", "sub", "push", "xor"]:
-                    continue
-
-                candidates.append(insn)
-
-            selected = random.sample(candidates, min(self.max_unfolds, len(candidates)))
 
             for insn in selected:
                 if random.random() > self.probability:

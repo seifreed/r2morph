@@ -63,6 +63,31 @@ class BinaryWriterProtocol(Protocol):
 
 
 @runtime_checkable
+class BinaryAccessProtocol(BinaryReaderProtocol, BinaryWriterProtocol, Protocol):
+    """Composite protocol for mutation passes that need both read and write access."""
+
+    def assemble(self, instruction: str, function_addr: int | None = None) -> bytes | None:
+        """Assemble an instruction to bytes."""
+        ...
+
+    def get_arch_info(self) -> dict[str, Any]:
+        """Get architecture information."""
+        ...
+
+    def is_analyzed(self) -> bool:
+        """Check if binary has been analyzed."""
+        ...
+
+    def analyze(self, level: str = "aaa") -> Any:
+        """Run analysis on the binary."""
+        ...
+
+    def reload(self) -> None:
+        """Reload the binary connection."""
+        ...
+
+
+@runtime_checkable
 class AssemblyServiceProtocol(Protocol):
     """Protocol for assembly services."""
 
@@ -207,6 +232,7 @@ class SummaryAggregatorProtocol(Protocol):
 __all__ = [
     "BinaryReaderProtocol",
     "BinaryWriterProtocol",
+    "BinaryAccessProtocol",
     "AssemblyServiceProtocol",
     "MemoryManagerProtocol",
     "ReportEmitterProtocol",

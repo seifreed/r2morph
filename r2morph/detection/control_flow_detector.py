@@ -114,7 +114,6 @@ class ControlFlowAnalyzer:
 
                 total_functions += 1
 
-                # Get basic blocks for this function
                 try:
                     blocks = self.binary.get_basic_blocks(func_addr)
                     if len(blocks) > 20:  # Many basic blocks might indicate flattening
@@ -145,7 +144,6 @@ class ControlFlowAnalyzer:
                 if block_addr == 0:
                     continue
 
-                # Get instructions in this block
                 instructions = self.binary.get_function_disasm(block_addr)
 
                 # Look for switch/jump table patterns
@@ -315,7 +313,6 @@ class ControlFlowAnalyzer:
                     logger.debug(f"Error analyzing function 0x{func_addr:x} for VM indicators: {e}")
                     continue
 
-            # Calculate confidence
             if total_functions > 0:
                 vm_ratio = vm_indicators / min(total_functions, 20)
                 result["confidence"] = vm_ratio
@@ -421,7 +418,6 @@ class ControlFlowAnalyzer:
                 func_addr = self._get_function_address(func)
 
                 try:
-                    # Get function instructions
                     instructions = self.binary.r2.cmdj(f"pdfj @ {func_addr}")
                     if not instructions or "ops" not in instructions:
                         continue
@@ -436,11 +432,9 @@ class ControlFlowAnalyzer:
                     for op in ops:
                         opcode = op.get("opcode", "").lower()
 
-                        # Count NOPs
                         if "nop" in opcode:
                             nop_count += 1
 
-                        # Count redundant moves (mov reg, reg)
                         if "mov" in opcode and len(opcode.split()) >= 3:
                             parts = opcode.split()
                             if len(parts) >= 3:
@@ -449,14 +443,12 @@ class ControlFlowAnalyzer:
                                 if src == dst:
                                     redundant_moves += 1
 
-                        # Count potentially dead arithmetic
                         if (
                             any(instr in opcode for instr in ["add", "sub", "xor"])
                             and "0" in opcode
                         ):
                             dead_code_count += 1
 
-                    # Calculate polymorphic score
                     total_ops = len(ops)
                     if total_ops > 0:
                         poly_score = (dead_code_count + nop_count + redundant_moves) / total_ops
@@ -473,7 +465,6 @@ class ControlFlowAnalyzer:
                     )
                     continue
 
-            # Calculate overall results
             if total_functions > 0:
                 result["polymorphic_ratio"] = polymorphic_functions / total_functions
 

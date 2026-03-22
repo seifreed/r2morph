@@ -232,10 +232,8 @@ class InstructionExpansionPass(MutationPass):
             new_mnemonic = pattern[0]
             new_operands = []
 
-            # Extract the target register from original instruction
             target_register = None
             if len(orig_parts) > 1:
-                # Get first operand (destination register)
                 candidate = orig_parts[1].strip(",").strip()
 
                 # Validation: reject size specifiers and memory operands

@@ -82,7 +82,7 @@ class BinaryReader:
             except ValueError as e:
                 logger.error(f"Failed to parse hex at 0x{address:x}: {e}")
                 return b""
-        except Exception as e:
+        except (ValueError, OSError) as e:
             logger.error(f"Failed to read bytes at 0x{address:x}: {e}")
             return b""
 

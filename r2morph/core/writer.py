@@ -171,7 +171,7 @@ class BinaryWriter:
                 verify = verify.strip().lower()
                 if verify == hex_data.lower():
                     write_success = True
-        except Exception as e:
+        except (ValueError, OSError) as e:
             logger.debug(f"Failed to write via r2 wx at 0x{address:x}: {e}")
 
         if not write_success:
@@ -199,7 +199,7 @@ class BinaryWriter:
                         logger.debug(f"Wrote {len(data)} bytes at physical offset 0x{physical_offset:x}")
                     else:
                         logger.error(f"Write verification failed at 0x{address:x}")
-            except Exception as e:
+            except (ValueError, OSError) as e:
                 logger.error(f"Failed to write bytes at 0x{address:x}: {e}")
 
         if write_success:

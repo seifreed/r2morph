@@ -137,7 +137,7 @@ class AssemblyService:
                 logger.debug(f"  After normalization: {normalized_instruction}")
             return None
 
-        except Exception as e:
+        except (ValueError, OSError) as e:
             logger.error(f"Assembly error for '{instruction}': {e}")
             return None
 

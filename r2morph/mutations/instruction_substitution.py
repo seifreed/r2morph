@@ -163,6 +163,39 @@ class InstructionSubstitutionPass(MutationPass):
 
         return ("", [], None)
 
+    def _select_candidates(self, binary: Binary, functions: list[dict[str, Any]], arch_family: str) -> list[tuple[dict, list]]:
+        """
+        Iterate functions, get disasm, and filter candidate instructions for substitution.
+
+        Args:
+            binary: Binary instance
+            functions: List of function dicts
+            arch_family: Architecture family string
+
+        Returns:
+            List of (func, candidate_instructions) tuples
+        """
+        result = []
+        for func in functions:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+                continue
+
+            try:
+                func_addr = func.get("offset", func.get("addr", 0))
+                instructions = binary.get_function_disasm(func_addr)
+            except Exception as e:
+                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
+                continue
+
+            candidates = []
+            for insn in instructions:
+                original_pattern, equivalents, group_idx = self._get_equivalents(insn, arch_family)
+                if equivalents and len(equivalents) > 1:
+                    candidates.append(insn)
+            if candidates:
+                result.append((func, candidates))
+        return result
+
     def apply(self, binary: Binary) -> dict[str, Any]:
         """
         Apply instruction substitution mutations to the binary.
@@ -199,19 +232,9 @@ class InstructionSubstitutionPass(MutationPass):
 
         logger.info(f"Instruction substitution: processing {len(functions)} functions")
 
-        for func in functions:
-            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-                continue
-
-            try:
-                func_addr = func.get("offset", func.get("addr", 0))
-                instructions = binary.get_function_disasm(func_addr)
-            except Exception as e:
-                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
-                continue
-
+        for func, func_candidates in self._select_candidates(binary, functions, arch_family):
             func_mutations = 0
-            for insn in instructions:
+            for insn in func_candidates:
                 original_pattern, equivalents, group_idx = self._get_equivalents(insn, arch_family)
 
                 if equivalents and len(equivalents) > 1:

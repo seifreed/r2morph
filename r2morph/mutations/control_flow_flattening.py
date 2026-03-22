@@ -418,7 +418,6 @@ class ControlFlowFlatteningPass(MutationPass):
                     prev_addr = prev_insn.get("offset", 0)
                     prev_size = prev_insn.get("size", 0)
 
-                    # Check if we have NOPs or padding we can use
                     available_space = last_addr - (prev_addr + prev_size)
 
                     if available_space >= 2:
@@ -737,8 +736,6 @@ class ControlFlowFlatteningPass(MutationPass):
         if jump_size < 5:
             return False
 
-        # Get the jump target from the instruction
-        # The disasm format includes the target in the instruction text
         disasm = jump_insn.get("disasm", "")
         if not disasm:
             return False

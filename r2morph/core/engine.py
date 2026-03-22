@@ -21,7 +21,7 @@ from r2morph.core.constants import (
     MEDIUM_FUNCTION_COUNT_THRESHOLD,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
-from r2morph.mutations.base import MutationPass  # concrete used for isinstance checks
+from r2morph.mutations.base import MutationPass  # Concrete type needed for isinstance checks in pipeline binding
 from r2morph.protocols import MutationPassProtocol  # abstraction for type hints
 from r2morph.pipeline.pipeline import Pipeline
 from r2morph.reporting.gate_evaluator import (
@@ -35,7 +35,7 @@ from r2morph.reporting.gate_evaluator import (
 _summarize_gate_failures = summarize_gate_failures
 _build_gate_failure_priority = build_gate_failure_priority
 _build_gate_failure_severity_priority = build_gate_failure_severity_priority
-from r2morph.reporting.report_view_builder import _build_report_views
+from r2morph.reporting.report_view_builder import build_report_views
 from r2morph.platform.codesign import CodeSigner
 from r2morph.core.support import PRODUCT_SUPPORT, classify_target_support
 from r2morph.session import MorphSession
@@ -1188,7 +1188,6 @@ class MorphEngine:
         quick_funcs = len(self.binary.get_functions())
         aa_time = time.time() - start
 
-        # Calculate average function size
         binary_size_mb = self._get_binary_size_mb(self.binary.path)
         avg_func_size = (binary_size_mb * 1024 * 1024) / quick_funcs if quick_funcs > 0 else 0
 
@@ -1534,7 +1533,7 @@ class MorphEngine:
             validation_adjustments,
             gate_failures if isinstance(gate_failures, dict) else {},
         )
-        report_views = _build_report_views(
+        report_views = build_report_views(
             pass_risk_buckets=enrichments["pass_risk_buckets"],
             pass_coverage_buckets=enrichments["pass_coverage_buckets"],
             pass_triage_rows=pass_triage_rows,

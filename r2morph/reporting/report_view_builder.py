@@ -419,7 +419,7 @@ def _build_summary_views(
     }
 
 
-def _build_report_views(
+def build_report_views(
     *,
     pass_risk_buckets: dict[str, list[str]],
     pass_coverage_buckets: dict[str, list[str]],

@@ -92,7 +92,6 @@ class ObfuscationDetector:
         if not binary.is_analyzed():
             binary.analyze()
 
-        # Create specialized analyzers for this binary
         cf_analyzer = ControlFlowAnalyzer(binary)
         pattern_matcher = PatternMatcher(binary)
 

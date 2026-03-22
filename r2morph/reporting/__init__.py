@@ -99,17 +99,22 @@ from r2morph.reporting.report_emitter import (
 )
 
 __all__ = [
+    # Gate evaluation
     "SEVERITY_ORDER",
     "GateEvaluator",
     "GateFailure",
+    # Summary aggregation
     "SummaryAggregator",
     "SymbolicAggregator",
     "EvidenceAggregator",
+    # Report filtering
     "ReportFilters",
     "PassFilterResolver",
+    # Report building
     "ReportBuilder",
     "ReportContext",
     "FilteredReport",
+    # Rendering
     "ReportRenderer",
     "ConsoleRenderer",
     "CONSOLE",
@@ -128,22 +133,17 @@ __all__ = [
     "render_general_only_pass_sections",
     "render_mismatch_summary_sections",
     "render_validation_context_table",
+    # Report state resolution (public API)
     "resolve_general_symbolic_state",
     "resolve_mismatch_view",
     "resolve_pass_filter_sets",
-    "_normalized_pass_map",
-    "_summary_first",
-    "_is_risky_pass",
-    "_has_structural_risk",
-    "_has_symbolic_risk",
-    "_is_clean_pass",
-    "_is_covered_pass",
-    "_is_uncovered_pass",
+    # Report emission
     "emit_report_payload",
     "enforce_report_requirements",
     "severity_threshold_met",
     "report_view_has_results",
     "gate_failure_result_count",
+    # SARIF schema types
     "SARIFReport",
     "SARIFRun",
     "SARIFResult",
@@ -164,6 +164,7 @@ __all__ = [
     "SARIFLogicalLocation",
     "SARIFFileChange",
     "SARIFReplacement",
+    # SARIF formatting
     "SARIFFormatter",
     "MutationResult",
     "ValidationResult",

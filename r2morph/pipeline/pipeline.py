@@ -361,7 +361,7 @@ class Pipeline:
                     f"Pass {mutation_pass.name} {status_msg}: "
                     f"{pass_result.get('mutations_applied', 0)} mutations"
                 )
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - intentionally broad: passes may raise any error and we must rollback + continue
                 logger.error(f"Pass {mutation_pass.name} failed: {e}")
                 if session is not None and checkpoint_name is not None:
                     session.rollback_to(checkpoint_name)

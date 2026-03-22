@@ -285,6 +285,12 @@ def _resolve_general_report_flow_state(
         mutations=mutations,
         pass_results=pass_results,
     )
+    # Lazy import to break circular dependency: report_resolver imports
+    # report_helpers, and filtered_summary_builder also imports report_helpers.
+    # A top-level import would create a resolver -> filtered_summary_builder ->
+    # report_helpers -> resolver cycle.  Accepting a callback parameter was
+    # considered but would ripple through many callers; the lazy import is the
+    # least invasive fix.
     from r2morph.reporting.filtered_summary_builder import _build_general_filtered_summary
     filtered_summary, degradation_roles = _build_general_filtered_summary(
         summary=summary,

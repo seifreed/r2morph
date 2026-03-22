@@ -477,7 +477,6 @@ class RegisterSubstitutionPass(MutationPass):
         dest = parts[0].split()[-1].strip()
         calculation_part = parts[1].strip()
 
-        # Check if orig_reg is the destination
         if orig_reg == dest:
             # Safe to substitute destination register
             return True

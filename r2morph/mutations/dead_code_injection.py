@@ -342,7 +342,6 @@ class DeadCodeInjectionPass(MutationPass):
         if mnemonic in self.PADDING_INSTRUCTIONS:
             return True
 
-        # Check if previous instruction was an unconditional transfer
         if index > 0:
             prev_insn = instructions[index - 1]
             prev_mnemonic = prev_insn.get("mnemonic", "").lower()

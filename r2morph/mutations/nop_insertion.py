@@ -233,33 +233,20 @@ class NopInsertionPass(MutationPass):
             return register in self.CALLER_SAVED_64BIT
         return register in self.CALLER_SAVED_32BIT
 
-    def apply(self, binary: Binary) -> dict[str, Any]:
+    def _select_candidates(self, binary: Binary, functions: list[dict[str, Any]], arch_family: str, bits: int) -> list[tuple[dict, list]]:
         """
-        Apply NOP insertion mutations to the binary.
+        Iterate functions, get disasm, and filter redundant instruction candidates.
 
         Args:
-            binary: Binary instance to mutate
+            binary: Binary instance
+            functions: List of function dicts
+            arch_family: Architecture family string
+            bits: Architecture bit width
 
         Returns:
-            Dictionary with mutation statistics
+            List of (func, selected_candidates) tuples
         """
-        if self._reset_random() is not None:
-            self._init_nop_equivalents()
-
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
-
-        arch_family, bits = binary.get_arch_family()
-        if arch_family == "arm" and bits == 64:
-            return self._apply_arm64_safe_nops(binary)
-
-        functions = binary.get_functions()
-        mutations_applied = 0
-        functions_mutated = 0
-
-        logger.info(f"NOP insertion: processing {len(functions)} functions (max {self.max_nops} NOPs per function)")
-
+        result = []
         for func in functions:
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
@@ -326,6 +313,38 @@ class NopInsertionPass(MutationPass):
 
             nops_to_insert = min(self.max_nops, len(candidates))
             selected = random.sample(candidates, min(nops_to_insert, len(candidates)))
+            if selected:
+                result.append((func, selected))
+        return result
+
+    def apply(self, binary: Binary) -> dict[str, Any]:
+        """
+        Apply NOP insertion mutations to the binary.
+
+        Args:
+            binary: Binary instance to mutate
+
+        Returns:
+            Dictionary with mutation statistics
+        """
+        if self._reset_random() is not None:
+            self._init_nop_equivalents()
+
+        if not binary.is_analyzed():
+            logger.warning("Binary not analyzed, analyzing now...")
+            binary.analyze()
+
+        arch_family, bits = binary.get_arch_family()
+        if arch_family == "arm" and bits == 64:
+            return self._apply_arm64_safe_nops(binary)
+
+        functions = binary.get_functions()
+        mutations_applied = 0
+        functions_mutated = 0
+
+        logger.info(f"NOP insertion: processing {len(functions)} functions (max {self.max_nops} NOPs per function)")
+
+        for func, selected in self._select_candidates(binary, functions, arch_family, bits):
 
             func_mutations = 0
             for insn in selected:

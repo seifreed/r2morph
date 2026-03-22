@@ -149,9 +149,9 @@ def _render_only_mismatches_sections(
             _get_console().print(f"  [cyan]{pass_name}[/cyan] @ {location}: {observable_str}")
 
 
-def _render_symbolic_sections(
+def _render_match_table(
     *,
-    symbolic_requested: int,
+    console: Console,
     observable_match: int,
     observable_mismatch: int,
     bounded_only: int,
@@ -159,12 +159,9 @@ def _render_symbolic_sections(
     summary: dict[str, Any],
     pass_results: dict[str, Any],
     by_pass: dict[str, dict[str, int]],
-    mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
-) -> None:
-    """Render symbolic-report sections from persisted summary first, then fall back."""
-    if not symbolic_requested:
-        return
-    _get_console().print(
+) -> list[dict[str, Any]]:
+    """Render the symbolic match/coverage overview and return resolved coverage_rows."""
+    console.print(
         "[bold]Symbolic Mutation Summary[/bold]: "
         f"{observable_match} observable match, "
         f"{observable_mismatch} observable mismatch, "
@@ -185,13 +182,24 @@ def _render_symbolic_sections(
             if pass_stats["symbolic_requested"] > 0
         ]
     for row in coverage_rows:
-        _get_console().print(
+        console.print(
             f"  [cyan]{row['pass_name']}[/cyan]: "
             f"{row['observable_match']} match, "
             f"{row['observable_mismatch']} mismatch, "
             f"{row['bounded_only']} bounded-only, "
             f"{row['without_coverage']} without coverage"
         )
+    return coverage_rows
+
+
+def _render_mismatch_table(
+    *,
+    console: Console,
+    summary: dict[str, Any],
+    by_pass: dict[str, dict[str, int]],
+    coverage_rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Render severity priority and issue rows; return (severity_rows, issue_rows)."""
     issue_rows = list(summary.get("symbolic_issue_passes", []))
     severity_rows = list(summary.get("symbolic_severity_by_pass", []))
     if not severity_rows:
@@ -236,9 +244,9 @@ def _render_symbolic_sections(
         ]
         severity_rows.sort(key=lambda item: item["pass_name"])
     if severity_rows:
-        _get_console().print("[bold]Severity Priority[/bold]:")
+        console.print("[bold]Severity Priority[/bold]:")
         for row in severity_rows:
-            _get_console().print(
+            console.print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"severity={row['severity']}, "
                 f"issue_count={row.get('issue_count', 0)}, "
@@ -273,7 +281,7 @@ def _render_symbolic_sections(
             )
         )
     if issue_rows:
-        _get_console().print("[bold]Passes With Symbolic Issues[/bold]:")
+        console.print("[bold]Passes With Symbolic Issues[/bold]:")
         for row in issue_rows:
             severity = row["severity"]
             if severity_rows:
@@ -285,18 +293,29 @@ def _render_symbolic_sections(
                     ),
                     severity,
                 )
-            _get_console().print(
+            console.print(
                 f"  [yellow]{row['pass_name']}[/yellow]: "
                 f"severity={severity}, "
                 f"mismatch={row['observable_mismatch']}, "
                 f"without_coverage={row['without_coverage']}, "
                 f"bounded_only={row['bounded_only']}"
             )
+    return severity_rows, issue_rows
+
+
+def _render_coverage_table(
+    *,
+    console: Console,
+    summary: dict[str, Any],
+    pass_results: dict[str, Any],
+    mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
+) -> None:
+    """Render triage, evidence, capabilities, discarded mutations, and mismatch details."""
     triage_rows = list(summary.get("pass_triage_rows", []))
     if triage_rows:
-        _get_console().print("[bold]Pass Triage[/bold]:")
+        console.print("[bold]Pass Triage[/bold]:")
         for row in triage_rows:
-            _get_console().print(
+            console.print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"severity={row.get('severity', 'unknown')}, "
                 f"structural_issues={row.get('structural_issue_count', 0)}, "
@@ -321,9 +340,9 @@ def _render_symbolic_sections(
             ]
         )
     if pass_evidence_rows:
-        _get_console().print("[bold]Pass Evidence[/bold]:")
+        console.print("[bold]Pass Evidence[/bold]:")
         for row in pass_evidence_rows:
-            _get_console().print(
+            console.print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"changed_regions={row.get('changed_region_count', 0)}, "
                 f"structural_issues={row.get('structural_issue_count', 0)}, "
@@ -332,9 +351,9 @@ def _render_symbolic_sections(
             )
     capability_rows = list(summary.get("pass_capability_summary", []))
     if capability_rows:
-        _get_console().print("[bold]Pass Capabilities[/bold]:")
+        console.print("[bold]Pass Capabilities[/bold]:")
         for row in capability_rows:
-            _get_console().print(
+            console.print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"runtime_recommended={str(row.get('runtime_recommended', False)).lower()}, "
                 f"symbolic_recommended={str(row.get('symbolic_recommended', False)).lower()}, "
@@ -343,15 +362,15 @@ def _render_symbolic_sections(
     discarded_priority = list(summary.get("discarded_mutation_priority", []))
     discarded_summary = dict(summary.get("discarded_mutation_summary", {}) or {})
     if discarded_priority or discarded_summary.get("by_pass"):
-        _get_console().print("[bold]Discarded Mutations[/bold]:")
+        console.print("[bold]Discarded Mutations[/bold]:")
         for row in discarded_priority or discarded_summary["by_pass"]:
             reasons = ",".join(f"{reason}:{count}" for reason, count in dict(row.get("reasons", {})).items())
-            _get_console().print(
+            console.print(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"discarded={row.get('discarded_count', 0)}" + (f", reasons={reasons}" if reasons else "")
             )
     if mismatch_rows:
-        _get_console().print("[bold]Symbolic Mismatches[/bold]:")
+        console.print("[bold]Symbolic Mismatches[/bold]:")
         for pass_name, start, end, observables in mismatch_rows:
             if start is None or end is None:
                 location = "unknown"
@@ -360,7 +379,47 @@ def _render_symbolic_sections(
             else:
                 location = f"0x{start:x}-0x{end:x}"
             details = ", ".join(observables) if observables else "unknown"
-            _get_console().print(f"  [red]{pass_name}[/red] @ {location}: {details}")
+            console.print(f"  [red]{pass_name}[/red] @ {location}: {details}")
+
+
+def _render_symbolic_sections(
+    *,
+    symbolic_requested: int,
+    observable_match: int,
+    observable_mismatch: int,
+    bounded_only: int,
+    observable_not_run: int,
+    summary: dict[str, Any],
+    pass_results: dict[str, Any],
+    by_pass: dict[str, dict[str, int]],
+    mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
+) -> None:
+    """Render symbolic-report sections from persisted summary first, then fall back."""
+    if not symbolic_requested:
+        return
+    console = _get_console()
+    coverage_rows = _render_match_table(
+        console=console,
+        observable_match=observable_match,
+        observable_mismatch=observable_mismatch,
+        bounded_only=bounded_only,
+        observable_not_run=observable_not_run,
+        summary=summary,
+        pass_results=pass_results,
+        by_pass=by_pass,
+    )
+    _render_mismatch_table(
+        console=console,
+        summary=summary,
+        by_pass=by_pass,
+        coverage_rows=coverage_rows,
+    )
+    _render_coverage_table(
+        console=console,
+        summary=summary,
+        pass_results=pass_results,
+        mismatch_rows=mismatch_rows,
+    )
 
 
 def _render_degradation_sections(
