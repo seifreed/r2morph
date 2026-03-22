@@ -85,10 +85,17 @@ class PackerSignatureDatabase:
         self.signatures = self._load_signatures()
 
     def _load_signatures(self) -> list[PackerSignature]:
-        """Load known packer signatures."""
-        signatures = []
+        """Load known packer signatures from categorized sub-loaders."""
+        return [
+            *self._vm_protector_signatures(),
+            *self._compressor_signatures(),
+            *self._protector_signatures(),
+            *self._other_signatures(),
+        ]
 
-        # VMProtect signatures (multiple versions)
+    def _vm_protector_signatures(self) -> list[PackerSignature]:
+        """VMProtect, Themida/WinLicense, Enigma Protector signatures."""
+        signatures: list[PackerSignature] = []
         signatures.append(
             PackerSignature(
                 name="VMProtect 3.x",
@@ -140,7 +147,11 @@ class PackerSignatureDatabase:
             )
         )
 
-        # UPX signatures (multiple versions)
+        return signatures
+
+    def _compressor_signatures(self) -> list[PackerSignature]:
+        """UPX, ASPack, PECompact, MPRESS signatures."""
+        signatures: list[PackerSignature] = []
         signatures.append(
             PackerSignature(
                 name="UPX",
@@ -205,7 +216,11 @@ class PackerSignatureDatabase:
             )
         )
 
-        # ASProtect signatures
+        return signatures
+
+    def _protector_signatures(self) -> list[PackerSignature]:
+        """ASProtect, Obsidium, Armadillo, SafeEngine signatures."""
+        signatures: list[PackerSignature] = []
         signatures.append(
             PackerSignature(
                 name="ASProtect",
@@ -267,7 +282,11 @@ class PackerSignatureDatabase:
             )
         )
 
-        # PESpin signatures
+        return signatures
+
+    def _other_signatures(self) -> list[PackerSignature]:
+        """PESpin, Metamorphic engine signatures."""
+        signatures: list[PackerSignature] = []
         signatures.append(
             PackerSignature(
                 name="PESpin",

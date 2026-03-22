@@ -828,58 +828,33 @@ class ValidationManager:
                 setattr(mutated_state.regs, reg_name, shared)
 
         step_strategy = "region-exit"
-        original_final = original_state
-        mutated_final = mutated_state
-        original_steps = 0
-        mutated_steps = 0
-        original_exit_error = None
-        mutated_exit_error = None
-        original_trace_addresses = [resolved_original]
-        mutated_trace_addresses = [resolved_mutated]
-        for _ in range(region_exit_budget):
-            current_original_addr = getattr(original_final, "addr", None)
-            if (
-                current_original_addr is None
-                or current_original_addr > resolved_original + region_width - 1
-            ):
-                break
-            original_succ = list(
-                original_bridge.angr_project.factory.successors(
-                    original_final,
-                    num_inst=1,
-                ).flat_successors
-            )
-            if len(original_succ) != 1:
-                original_exit_error = "successor_count"
-                break
-            original_final = original_succ[0]
-            original_steps += 1
-            next_original_addr = getattr(original_final, "addr", None)
-            if next_original_addr is not None:
-                original_trace_addresses.append(next_original_addr)
-        else:
-            original_exit_error = "region_exit_budget_exhausted"
 
-        for _ in range(region_exit_budget):
-            current_mutated_addr = getattr(mutated_final, "addr", None)
-            if current_mutated_addr is None or current_mutated_addr > resolved_mutated + region_width - 1:
-                break
-            mutated_succ = list(
-                mutated_bridge.angr_project.factory.successors(
-                    mutated_final,
-                    num_inst=1,
-                ).flat_successors
-            )
-            if len(mutated_succ) != 1:
-                mutated_exit_error = "successor_count"
-                break
-            mutated_final = mutated_succ[0]
-            mutated_steps += 1
-            next_mutated_addr = getattr(mutated_final, "addr", None)
-            if next_mutated_addr is not None:
-                mutated_trace_addresses.append(next_mutated_addr)
-        else:
-            mutated_exit_error = "region_exit_budget_exhausted"
+        def _step_to_exit(state, bridge, resolved_addr):
+            """Step symbolic state until it exits the region. Returns (final, steps, error, trace)."""
+            final, steps, error, trace = state, 0, None, [resolved_addr]
+            for _ in range(region_exit_budget):
+                addr = getattr(final, "addr", None)
+                if addr is None or addr > resolved_addr + region_width - 1:
+                    break
+                succ = list(bridge.angr_project.factory.successors(final, num_inst=1).flat_successors)
+                if len(succ) != 1:
+                    error = "successor_count"
+                    break
+                final = succ[0]
+                steps += 1
+                nxt = getattr(final, "addr", None)
+                if nxt is not None:
+                    trace.append(nxt)
+            else:
+                error = "region_exit_budget_exhausted"
+            return final, steps, error, trace
+
+        original_final, original_steps, original_exit_error, original_trace_addresses = _step_to_exit(
+            original_state, original_bridge, resolved_original,
+        )
+        mutated_final, mutated_steps, mutated_exit_error, mutated_trace_addresses = _step_to_exit(
+            mutated_state, mutated_bridge, resolved_mutated,
+        )
 
         region_report = {
             "start_address": mutation["start_address"],
