@@ -1,13 +1,74 @@
 """
 Report view builder extracted from engine.py.
 
-Contains the _build_report_views() function that transforms raw mutation
-and validation results into structured report views.
+Decomposes report view construction into focused builders,
+with shared projection helpers to eliminate row-shape duplication.
 """
 
 from typing import Any
 
 from r2morph.reporting.gate_evaluator import SEVERITY_ORDER
+
+
+# ---------------------------------------------------------------------------
+# Shared row-projection helpers (DRY: eliminate 4x duplication per category)
+# ---------------------------------------------------------------------------
+
+def _project_rows(rows: list[dict[str, Any]], fields: list[str]) -> list[dict[str, Any]]:
+    """Project rows to a subset of fields with type normalization."""
+    result = []
+    for row in rows:
+        projected: dict[str, Any] = {}
+        for f in fields:
+            val = row.get(f)
+            if isinstance(val, bool):
+                projected[f] = val
+            elif isinstance(val, int):
+                projected[f] = val
+            elif isinstance(val, dict):
+                projected[f] = dict(val)
+            elif isinstance(val, list):
+                projected[f] = list(val)
+            elif val is None:
+                projected[f] = row.get(f, "")
+            else:
+                projected[f] = str(val) if val else ""
+        result.append(projected)
+    return result
+
+
+def _project_by_pass(rows: list[dict[str, Any]], fields: list[str]) -> dict[str, dict[str, Any]]:
+    """Project rows keyed by pass_name."""
+    projected = _project_rows([r for r in rows if r.get("pass_name")], fields)
+    return {str(r.get("pass_name", "")): r for r in projected}
+
+
+def _build_category_views(
+    rows: list[dict[str, Any]],
+    compact_fields: list[str],
+    final_fields: list[str] | None = None,
+) -> dict[str, Any]:
+    """Build compact/final rows and by-pass indexes for a category.
+
+    Returns dict with: compact_by_pass, compact_rows, final_rows, final_by_pass.
+    """
+    if final_fields is None:
+        final_fields = compact_fields
+    return {
+        "compact_by_pass": _project_by_pass(rows, compact_fields),
+        "compact_rows": _project_rows(rows, compact_fields),
+        "final_rows": _project_rows(rows, final_fields),
+        "final_by_pass": _project_by_pass(rows, final_fields),
+    }
+
+
+def _summarize_rows(rows: list[dict[str, Any]], count_fields: list[str]) -> dict[str, Any]:
+    """Build a compact summary from rows with pass list and count aggregations."""
+    summary: dict[str, Any] = {"pass_count": len(rows)}
+    for f in count_fields:
+        summary[f] = sum(int(row.get(f, 0)) for row in rows)
+    summary["passes"] = [str(row.get("pass_name")) for row in rows if row.get("pass_name")]
+    return summary
 
 
 def _build_lookup_maps(
@@ -482,6 +543,16 @@ def _build_report_views(
     general_summary_rows = summary["general_summary_rows"]
     general_renderer_state = summary["general_renderer_state"]
 
+    # Build filter bucket view once (was duplicated 3x as general_filter_views, passes, pass_filter_views)
+    filter_buckets = {
+        "risky": list(pass_risk_buckets.get("risky", [])),
+        "structural_risk": list(pass_risk_buckets.get("structural", [])),
+        "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
+        "clean": list(pass_risk_buckets.get("clean", [])),
+        "covered": list(pass_coverage_buckets.get("covered", [])),
+        "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
+    }
+
     return {
         "general_passes": general_pass_rows,
         "general_pass_rows": general_pass_rows,
@@ -489,35 +560,17 @@ def _build_report_views(
         "general_summary_rows": general_summary_rows,
         "general_renderer_state": general_renderer_state,
         "general_triage_rows": [dict(row) for row in triage_priority],
-        "general_filter_views": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
+        "general_filter_views": filter_buckets,
         "general_symbolic": general_symbolic,
         "general_gates": general_gates,
         "general_degradation": general_degradation,
         "general_discards": general_discards,
-        "passes": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
+        "passes": filter_buckets,
         "triage_priority": triage_priority,
         "only_pass": only_pass,
         "pass_filter_views": {
-            "only_risky_passes": list(pass_risk_buckets.get("risky", [])),
-            "only_structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "only_symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "only_clean_passes": list(pass_risk_buckets.get("clean", [])),
-            "only_covered_passes": list(pass_coverage_buckets.get("covered", [])),
-            "only_uncovered_passes": list(pass_coverage_buckets.get("uncovered", [])),
+            f"only_{k}" if not k.endswith("_risk") else f"only_{k}": v
+            for k, v in filter_buckets.items()
         },
         "mismatch_priority": [dict(row) for row in observable_mismatch_priority],
         "mismatch_map": {str(pass_name): dict(row) for pass_name, row in observable_mismatch_map.items()},
@@ -525,119 +578,36 @@ def _build_report_views(
         "only_mismatches": {
             "priority": [dict(row) for row in observable_mismatch_priority],
             "by_pass": mismatch_by_pass,
-            "compact_by_pass": {
-                str(row.get("pass_name", "")): {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-                if row.get("pass_name")
-            },
+            **_build_category_views(
+                mismatch_rows,
+                compact_fields=["pass_name", "mismatch_count", "severity", "role",
+                                "symbolic_confidence", "degraded_execution", "region_count",
+                                "region_mismatch_count", "region_exit_match_count", "compact_region"],
+            ),
             "rows": mismatch_rows,
-            "compact_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-            ],
-            "final_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-            ],
-            "final_by_pass": {
-                str(row.get("pass_name", "")): {
-                    "pass_name": str(row.get("pass_name", "")),
-                    "mismatch_count": int(row.get("mismatch_count", 0)),
-                    "severity": row.get("severity", "mismatch"),
-                    "role": row.get("role", "requested-mode"),
-                    "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-                    "degraded_execution": bool(row.get("degraded_execution", False)),
-                    "region_count": int(row.get("region_count", 0)),
-                    "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-                    "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-                    "compact_region": dict(row.get("compact_region", {})),
-                }
-                for row in mismatch_rows
-                if row.get("pass_name")
-            },
-            "compact_summary": {
-                "pass_count": len(mismatch_rows),
-                "mismatch_count": sum(int(row.get("mismatch_count", 0)) for row in mismatch_rows),
-                "degraded_pass_count": sum(1 for row in mismatch_rows if row.get("degraded_execution")),
-                "region_count": sum(int(row.get("region_count", 0)) for row in mismatch_rows),
-                "region_mismatch_count": sum(int(row.get("region_mismatch_count", 0)) for row in mismatch_rows),
-                "region_exit_match_count": sum(int(row.get("region_exit_match_count", 0)) for row in mismatch_rows),
-                "passes": [str(row.get("pass_name")) for row in mismatch_rows if row.get("pass_name")],
-            },
+            "compact_summary": _summarize_rows(
+                mismatch_rows,
+                ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
+            ),
             "summary": {
-                "pass_count": len(mismatch_rows),
-                "mismatch_count": sum(int(row.get("mismatch_count", 0)) for row in mismatch_rows),
+                **_summarize_rows(
+                    mismatch_rows,
+                    ["mismatch_count", "region_count", "region_mismatch_count", "region_exit_match_count"],
+                ),
                 "degraded_pass_count": sum(1 for row in mismatch_rows if row.get("degraded_execution")),
                 "trigger_pass_count": sum(1 for row in mismatch_rows if row.get("degradation_triggered_by_pass")),
-                "region_count": sum(int(row.get("region_count", 0)) for row in mismatch_rows),
-                "region_mismatch_count": sum(int(row.get("region_mismatch_count", 0)) for row in mismatch_rows),
-                "region_exit_match_count": sum(int(row.get("region_exit_match_count", 0)) for row in mismatch_rows),
-                "passes": [str(row.get("pass_name")) for row in mismatch_rows if row.get("pass_name")],
             },
         },
         "failed_gates": [dict(row) for row in gate_failure_priority],
         "only_failed_gates": {
             "priority": failed_gates_rows,
             "by_pass": failed_gates_by_pass,
-            "compact_by_pass": {
-                str(row.get("pass_name")): {
-                    "pass_name": str(row.get("pass_name")),
-                    "failure_count": int(row.get("failure_count", 0)),
-                    "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-                    "role": row.get("role", "requested-mode"),
-                    "failed": bool(row.get("failures")),
-                }
-                for row in failed_gates_rows
-                if row.get("pass_name")
-            },
+            **_build_category_views(
+                failed_gates_rows,
+                compact_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed"],
+                final_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed", "failures"],
+            ),
             "grouped_by_pass": failed_gates_rows,
-            "compact_rows": failed_gates_compact_rows,
-            "final_rows": failed_gates_final_rows,
-            "final_by_pass": {
-                str(row.get("pass_name")): {
-                    "pass_name": str(row.get("pass_name")),
-                    "failure_count": int(row.get("failure_count", 0)),
-                    "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-                    "role": row.get("role", "requested-mode"),
-                    "failed": bool(row.get("failures")),
-                    "failures": list(row.get("failures", [])),
-                }
-                for row in failed_gates_rows
-                if row.get("pass_name")
-            },
             "summary": dict(gate_failure_summary or {}),
             "severity_priority": [dict(row) for row in gate_failure_severity_priority],
             "expected_severity_counts": failed_gates_expected_severity,
@@ -657,103 +627,42 @@ def _build_report_views(
         "validation_adjustments": {
             "rows": degraded_rows,
             "by_pass": {str(row.get("pass_name")): dict(row) for row in degraded_rows if row.get("pass_name")},
-            "compact_by_pass": {
-                str(row.get("pass_name")): {
-                    "pass_name": str(row.get("pass_name")),
-                    "role": row.get("role", "requested-mode"),
-                    "triggered_adjustment": bool(row.get("triggered_adjustment")),
-                    "executed_under_degraded_mode": bool(row.get("executed_under_degraded_mode")),
-                    "gate_failure_count": int(row.get("gate_failure_count", 0)),
-                }
-                for row in degraded_rows
-                if row.get("pass_name")
-            },
-            "compact_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "role": row.get("role", "requested-mode"),
-                    "triggered_adjustment": bool(row.get("triggered_adjustment")),
-                    "executed_under_degraded_mode": bool(row.get("executed_under_degraded_mode")),
-                    "gate_failure_count": int(row.get("gate_failure_count", 0)),
-                }
-                for row in degraded_rows
-            ],
+            **_build_category_views(
+                degraded_rows,
+                compact_fields=["pass_name", "role", "triggered_adjustment",
+                                "executed_under_degraded_mode", "gate_failure_count"],
+            ),
             "summary": {
                 "requested_validation_mode": next(
-                    (
-                        row.get("requested_validation_mode")
-                        for row in degraded_rows
-                        if row.get("requested_validation_mode")
-                    ),
+                    (row.get("requested_validation_mode") for row in degraded_rows if row.get("requested_validation_mode")),
                     None,
                 ),
                 "effective_validation_mode": next(
-                    (
-                        row.get("effective_validation_mode")
-                        for row in degraded_rows
-                        if row.get("effective_validation_mode")
-                    ),
+                    (row.get("effective_validation_mode") for row in degraded_rows if row.get("effective_validation_mode")),
                     None,
                 ),
+                "degraded_validation": bool(degraded_rows),
+                **_summarize_rows(degraded_rows, ["gate_failure_count"]),
                 "row_count": len(degraded_rows),
                 "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
                 "degraded_execution_count": sum(1 for row in degraded_rows if row.get("executed_under_degraded_mode")),
-                "degraded_validation": bool(degraded_rows),
-                "gate_failure_count": sum(int(row.get("gate_failure_count", 0)) for row in degraded_rows),
-                "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
             },
             "compact_summary": {
                 "degraded_validation": bool(degraded_rows),
                 "row_count": len(degraded_rows),
                 "trigger_count": sum(1 for row in degraded_rows if row.get("triggered_adjustment")),
                 "degraded_execution_count": sum(1 for row in degraded_rows if row.get("executed_under_degraded_mode")),
-                "gate_failure_count": sum(int(row.get("gate_failure_count", 0)) for row in degraded_rows),
-                "passes": [str(row.get("pass_name")) for row in degraded_rows if row.get("pass_name")],
+                **_summarize_rows(degraded_rows, ["gate_failure_count"]),
             },
         },
         "discarded_view": {
             "priority": [dict(row) for row in discarded_mutation_priority],
             "rows": [dict(row) for row in discarded_mutation_priority],
-            "compact_by_pass": {
-                str(row.get("pass_name", "unknown")): {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                }
-                for row in discarded_mutation_priority
-                if row.get("pass_name")
-            },
-            "compact_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                }
-                for row in discarded_mutation_priority
-            ],
-            "final_rows": [
-                {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                    "reasons": list(row.get("reasons", [])),
-                }
-                for row in discarded_mutation_priority
-            ],
-            "final_by_pass": {
-                str(row.get("pass_name", "unknown")): {
-                    "pass_name": str(row.get("pass_name", "unknown")),
-                    "discarded_count": int(row.get("discarded_count", 0)),
-                    "impact_severity": row.get("impact_severity", "low"),
-                    "reason_count": len(list(row.get("reasons", []))),
-                    "reasons": list(row.get("reasons", [])),
-                }
-                for row in discarded_mutation_priority
-                if row.get("pass_name")
-            },
+            **_build_category_views(
+                discarded_mutation_priority,
+                compact_fields=["pass_name", "discarded_count", "impact_severity", "reason_count"],
+                final_fields=["pass_name", "discarded_count", "impact_severity", "reason_count", "reasons"],
+            ),
             "by_reason": dict(discarded_mutation_summary.get("by_reason", {})),
             "compact_by_reason": {
                 str(reason): int(count)
@@ -774,14 +683,13 @@ def _build_report_views(
             },
             "compact_summary": {
                 "count": len(discarded_mutation_priority),
-                "pass_count": len([row for row in discarded_mutation_priority if row.get("pass_name")]),
+                **_summarize_rows(discarded_mutation_priority, []),
                 "reason_count": len(
                     [reason for reason, count in discarded_mutation_summary.get("by_reason", {}).items() if count]
                 ),
                 "impact_counts": {
                     str(level): len(rows) for level, rows in discarded_mutation_summary.get("by_impact", {}).items()
                 },
-                "passes": [str(row.get("pass_name")) for row in discarded_mutation_priority if row.get("pass_name")],
             },
         },
     }
