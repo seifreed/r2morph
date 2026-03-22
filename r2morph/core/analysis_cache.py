@@ -9,17 +9,64 @@ based on binary hash and analysis parameters.
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import logging
 import pickle
 import threading
-import time
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+# Safe modules and classes allowed for unpickling cache data
+_SAFE_MODULES: dict[str, set[str]] = {
+    "r2morph.core.analysis_cache": {"CacheEntry", "CacheKey", "CacheStats"},
+    "builtins": {
+        "True",
+        "False",
+        "None",
+        "int",
+        "float",
+        "str",
+        "bytes",
+        "list",
+        "tuple",
+        "dict",
+        "set",
+        "frozenset",
+        "bool",
+        "complex",
+    },
+    "collections": {
+        "OrderedDict",
+        "defaultdict",
+        "deque",
+        "Counter",
+        "namedtuple",
+    },
+    "datetime": {"datetime", "date", "time", "timedelta", "timezone"},
+}
+
+
+class RestrictedUnpickler(pickle.Unpickler):
+    """Unpickler that only allows known-safe types to be deserialized."""
+
+    def find_class(self, module: str, name: str) -> type:
+        allowed = _SAFE_MODULES.get(module)
+        if allowed is not None and name in allowed:
+            cls = super().find_class(module, name)
+            if isinstance(cls, type):
+                return cls
+            return type(cls)
+        raise pickle.UnpicklingError(f"Deserialization of {module}.{name} is not allowed")
+
+
+def _safe_pickle_load(f: io.BufferedIOBase) -> Any:
+    """Load a pickle file using the RestrictedUnpickler for safety."""
+    return RestrictedUnpickler(f).load()
 
 
 @dataclass
@@ -140,7 +187,7 @@ class AnalysisCache:
 
         try:
             with open(entry_path, "rb") as f:
-                entry: CacheEntry = pickle.load(f)
+                entry: CacheEntry = _safe_pickle_load(f)
             entry.touch()
             self._save_entry(entry)
             with self._stats_lock:
@@ -194,7 +241,7 @@ class AnalysisCache:
         if already_exists:
             try:
                 with open(entry_path, "rb") as f:
-                    old_entry: CacheEntry = pickle.load(f)
+                    old_entry: CacheEntry = _safe_pickle_load(f)
                 existing_size = old_entry.size_bytes
             except Exception:
                 existing_size = 0
@@ -218,7 +265,7 @@ class AnalysisCache:
         for entry_path in self.cache_dir.rglob("*.cache"):
             try:
                 with open(entry_path, "rb") as f:
-                    entry: CacheEntry = pickle.load(f)
+                    entry: CacheEntry = _safe_pickle_load(f)
                 if entry.key.binary_hash == binary_hash:
                     if analysis_type is None or entry.key.analysis_type == analysis_type:
                         entry_path.unlink(missing_ok=True)
@@ -238,7 +285,7 @@ class AnalysisCache:
         for entry_path in self.cache_dir.rglob("*.cache"):
             try:
                 with open(entry_path, "rb") as f:
-                    entry: CacheEntry = pickle.load(f)
+                    entry: CacheEntry = _safe_pickle_load(f)
                 if entry.key.binary_hash == binary_hash:
                     cached_regions = entry.metadata.get("regions", [])
                     overlaps = False
@@ -281,7 +328,7 @@ class AnalysisCache:
         for entry_path in self.cache_dir.rglob("*.cache"):
             try:
                 with open(entry_path, "rb") as f:
-                    entry: CacheEntry = pickle.load(f)
+                    entry: CacheEntry = _safe_pickle_load(f)
                 entries.append((entry_path, entry))
             except (pickle.PickleError, OSError):
                 entry_path.unlink(missing_ok=True)
@@ -310,7 +357,7 @@ class AnalysisCache:
         for entry_path in self.cache_dir.rglob("*.cache"):
             try:
                 with open(entry_path, "rb") as f:
-                    entry: CacheEntry = pickle.load(f)
+                    entry: CacheEntry = _safe_pickle_load(f)
                 new_stats.entry_count += 1
                 new_stats.total_size_bytes += entry.size_bytes
 
@@ -341,7 +388,7 @@ class AnalysisCache:
 
         try:
             with open(entry_path, "rb") as f:
-                entry: CacheEntry = pickle.load(f)
+                entry: CacheEntry = _safe_pickle_load(f)
             return {
                 "created_at": entry.created_at.isoformat(),
                 "accessed_at": entry.accessed_at.isoformat(),
@@ -358,7 +405,7 @@ class AnalysisCache:
         for entry_path in self.cache_dir.rglob("*.cache"):
             try:
                 with open(entry_path, "rb") as f:
-                    entry: CacheEntry = pickle.load(f)
+                    entry: CacheEntry = _safe_pickle_load(f)
 
                 if analysis_type and entry.key.analysis_type != analysis_type:
                     continue
@@ -395,7 +442,7 @@ class AnalysisCache:
         for entry_path in self.cache_dir.rglob("*.cache"):
             try:
                 with open(entry_path, "rb") as f:
-                    entry: CacheEntry = pickle.load(f)
+                    entry: CacheEntry = _safe_pickle_load(f)
 
                 if entry.created_at < cutoff:
                     entry_path.unlink(missing_ok=True)
@@ -430,7 +477,7 @@ class AnalysisCache:
         for entry_path in self.cache_dir.rglob("*.cache"):
             try:
                 with open(entry_path, "rb") as f:
-                    entry: CacheEntry = pickle.load(f)
+                    entry: CacheEntry = _safe_pickle_load(f)
 
                 if entry.created_at < cutoff and entry.access_count < min_access_count:
                     entry_path.unlink(missing_ok=True)
@@ -451,7 +498,7 @@ class AnalysisCache:
     def _start_cleanup_thread(self) -> None:
         """Start the background cleanup thread."""
 
-        def _cleanup_loop():
+        def _cleanup_loop() -> None:
             while not self._cleanup_stop_event.is_set():
                 try:
                     self.cleanup_expired()
@@ -477,7 +524,7 @@ class AnalysisCache:
             self._cleanup_thread.join(timeout=5.0)
             logger.debug("Stopped background cache cleanup thread")
 
-    def __del__(self):
+    def __del__(self) -> None:
         """Clean up resources on deletion."""
         try:
             self.stop_cleanup_thread()
@@ -544,7 +591,7 @@ class CacheStorage:
     def _load_pickle(self, path: Path) -> Any | None:
         try:
             with open(path, "rb") as f:
-                return pickle.load(f)
+                return _safe_pickle_load(f)
         except (pickle.PickleError, EOFError, OSError):
             return None
 

@@ -46,7 +46,13 @@ def test_binary_rewriter_relocation_updates(tmp_path: Path):
             RelocationEntry(address=0x3000, target=0x4000, reloc_type="REL"),
         ]
         rewriter.patches = [
-            CodePatch(address=0x1000, operation=RewriteOperation.INSTRUCTION_INSERT, original_bytes=b"", new_bytes=b"\x90", size_change=4),
+            CodePatch(
+                address=0x1000,
+                operation=RewriteOperation.INSTRUCTION_INSERT,
+                original_bytes=b"",
+                new_bytes=b"\x90",
+                size_change=4,
+            ),
         ]
 
         stats = rewriter._update_relocations()

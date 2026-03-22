@@ -13,7 +13,6 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
 from r2morph.analysis.analyzer import BinaryAnalyzer
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.dependencies import DependencyAnalyzer

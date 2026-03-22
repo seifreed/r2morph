@@ -38,8 +38,20 @@ def test_binary_rewriter_helpers_with_real_binary(tmp_path: Path):
 
         # Address shift calculation with patches
         rewriter.patches = [
-            CodePatch(address=0x1000, operation=RewriteOperation.INSTRUCTION_INSERT, original_bytes=b"", new_bytes=b"\x90", size_change=1),
-            CodePatch(address=0x2000, operation=RewriteOperation.INSTRUCTION_DELETE, original_bytes=b"\x90", new_bytes=b"", size_change=-1),
+            CodePatch(
+                address=0x1000,
+                operation=RewriteOperation.INSTRUCTION_INSERT,
+                original_bytes=b"",
+                new_bytes=b"\x90",
+                size_change=1,
+            ),
+            CodePatch(
+                address=0x2000,
+                operation=RewriteOperation.INSTRUCTION_DELETE,
+                original_bytes=b"\x90",
+                new_bytes=b"",
+                size_change=-1,
+            ),
         ]
         shifts = rewriter._calculate_address_shifts()
         assert shifts.get(0x1000) == 0

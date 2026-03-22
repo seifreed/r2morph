@@ -11,10 +11,10 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from r2morph.mutations.base import MutationPass, MutationRecord
+from r2morph.mutations.base import MutationPass
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.abi_hook import (
     ABIMutationHook,
     ABICheckResult,
@@ -171,12 +171,10 @@ class ABIAwareMutationPass(MutationPass):
             return self.apply_abi_aware(binary, abi_hook=None)
 
         functions = binary.get_functions()
-        result = {
-            "mutations": [],
-            "mutations_applied": 0,
-            "functions_processed": 0,
-            "functions_blocked": 0,
-        }
+        mutations_list: list[Any] = []
+        mutations_applied = 0
+        functions_processed = 0
+        functions_blocked = 0
 
         for func in functions:
             func_addr = func.get("offset", func.get("addr", 0))
@@ -185,10 +183,11 @@ class ABIAwareMutationPass(MutationPass):
 
             snapshot = self._abi_hook.snapshot_function(func_addr)
             self._abi_snapshots[func_addr] = snapshot
-            self._abi_result.violations_before += len(snapshot.violations)
+            if self._abi_result is not None:
+                self._abi_result.violations_before += len(snapshot.violations)
 
             if self._abi_hook.should_skip_mutation(func_addr):
-                result["functions_blocked"] += 1
+                functions_blocked += 1
                 continue
 
             func_result = self.apply_to_function_abi_aware(binary, func_addr, snapshot)
@@ -196,19 +195,25 @@ class ABIAwareMutationPass(MutationPass):
             if func_result:
                 validation = self._abi_hook.validate_function(func_addr)
                 if not validation.valid:
-                    self._abi_result.new_violations += len(validation.new_violations)
+                    if self._abi_result is not None:
+                        self._abi_result.new_violations += len(validation.new_violations)
 
                     if self.abi_action == ABIViolationAction.BLOCK:
                         logger.warning(f"Function 0x{func_addr:x} blocked due to ABI violations")
-                        result["functions_blocked"] += 1
+                        functions_blocked += 1
                         continue
 
-                result["mutations"].extend(func_result.get("mutations", []))
-                result["mutations_applied"] += func_result.get("mutations_applied", 0)
+                mutations_list.extend(func_result.get("mutations", []))
+                mutations_applied += func_result.get("mutations_applied", 0)
 
-            result["functions_processed"] += 1
+            functions_processed += 1
 
-        return result
+        return {
+            "mutations": mutations_list,
+            "mutations_applied": mutations_applied,
+            "functions_processed": functions_processed,
+            "functions_blocked": functions_blocked,
+        }
 
     @abstractmethod
     def apply_abi_aware(
@@ -289,7 +294,7 @@ class ABIAwareMutationPass(MutationPass):
         snapshot = self._abi_snapshots.get(function_address)
         result = self._abi_hook.validate_function(function_address, mutation_regions, snapshot)
 
-        if not result.valid:
+        if not result.valid and self._abi_result is not None:
             self._abi_result.new_violations += len(result.new_violations)
 
         return result
@@ -338,6 +343,27 @@ class ABIAwareMutationPass(MutationPass):
         return self._abi_result
 
 
+class _DelegatingABIAwarePass(ABIAwareMutationPass):
+    """Concrete ABI-aware pass that delegates to a wrapped pass instance."""
+
+    def __init__(
+        self,
+        delegate: MutationPass,
+        name: str,
+        config: dict[str, Any] | None = None,
+        enforce_abi: bool = True,
+        abi_action: str = "warn",
+        abi_checks: list[str] | None = None,
+    ) -> None:
+        super().__init__(
+            name=name, config=config, enforce_abi=enforce_abi, abi_action=abi_action, abi_checks=abi_checks
+        )
+        self._delegate = delegate
+
+    def apply_abi_aware(self, binary: Any, abi_hook: ABIMutationHook | None) -> dict[str, Any]:
+        return self._delegate.apply(binary)
+
+
 def create_abi_aware_pass(
     pass_class: type,
     name: str,
@@ -362,14 +388,11 @@ def create_abi_aware_pass(
     """
     pass_instance = pass_class(name=name, config=config)
 
-    abi_pass = ABIAwareMutationPass(
+    return _DelegatingABIAwarePass(
+        delegate=pass_instance,
         name=name,
         config=config,
         enforce_abi=enforce_abi,
         abi_action=abi_action,
         abi_checks=abi_checks,
     )
-
-    abi_pass.apply = pass_instance.apply
-
-    return abi_pass

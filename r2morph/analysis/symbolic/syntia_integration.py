@@ -14,8 +14,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 from pathlib import Path
-import subprocess
-import tempfile
 import json
 
 try:
@@ -597,6 +595,8 @@ class SyntiaFramework:
         """
         Safely evaluate an expression with given variable values.
 
+        Uses AST-based evaluation that only allows safe numeric operations.
+
         Args:
             expression: Expression to evaluate
             values: Variable name to value mapping
@@ -604,32 +604,62 @@ class SyntiaFramework:
         Returns:
             Evaluation result or None on error
         """
-        import operator
+        import ast
 
         expr = expression.lower()
 
         for var, val in values.items():
             expr = expr.replace(var.lower(), str(val))
 
-        allowed_ops = {
-            "+": operator.add,
-            "-": operator.sub,
-            "*": operator.mul,
-            "&": operator.and_,
-            "|": operator.or_,
-            "^": operator.xor,
-            "~": operator.invert,
-        }
-
         safe_chars = set("0123456789+-*&|^~() ")
         if not all(c in safe_chars for c in expr):
             return None
 
         try:
-            result = eval(expr, {"__builtins__": {}}, {})
+            tree = ast.parse(expr, mode="eval")
+            result = self._safe_eval_node(tree.body)
             return int(result) & 0xFFFFFFFF
         except Exception:
             return None
+
+    @staticmethod
+    def _safe_eval_node(node: Any) -> int:
+        """Recursively evaluate an AST node, allowing only safe operations."""
+        import ast
+
+        _SAFE_BINOPS = {
+            ast.BitAnd: lambda a, b: a & b,
+            ast.BitOr: lambda a, b: a | b,
+            ast.BitXor: lambda a, b: a ^ b,
+            ast.Add: lambda a, b: a + b,
+            ast.Sub: lambda a, b: a - b,
+            ast.Mult: lambda a, b: a * b,
+            ast.LShift: lambda a, b: a << b,
+            ast.RShift: lambda a, b: a >> b,
+        }
+        _SAFE_UNARYOPS = {
+            ast.Invert: lambda a: ~a,
+            ast.USub: lambda a: -a,
+            ast.UAdd: lambda a: +a,
+        }
+
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return int(node.value)
+        elif isinstance(node, ast.BinOp):
+            bin_func = _SAFE_BINOPS.get(type(node.op))
+            if bin_func is None:
+                raise ValueError(f"Unsupported binary operator: {type(node.op).__name__}")
+            left = SyntiaFramework._safe_eval_node(node.left)
+            right = SyntiaFramework._safe_eval_node(node.right)
+            return int(bin_func(left, right))
+        elif isinstance(node, ast.UnaryOp):
+            unary_func = _SAFE_UNARYOPS.get(type(node.op))
+            if unary_func is None:
+                raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
+            operand = SyntiaFramework._safe_eval_node(node.operand)
+            return int(unary_func(operand))
+        else:
+            raise ValueError(f"Unsupported AST node type: {type(node).__name__}")
 
     def synthesize_obfuscated_sequence(
         self, input_registers: list[str], output_registers: list[str], target_semantics: str
@@ -685,7 +715,7 @@ class SyntiaFramework:
 
         return stats
 
-    def clear_cache(self):
+    def clear_cache(self) -> None:
         """Clear the semantics cache."""
         self.semantics_cache.clear()
         logger.info("Cleared semantics cache")

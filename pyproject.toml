@@ -184,6 +184,11 @@ warn_return_any = true
 warn_unused_ignores = true
 disallow_untyped_defs = true
 
+[[tool.mypy.overrides]]
+module = ["z3", "z3.*", "capstone", "capstone.*", "keystone", "keystone.*", "unicorn", "unicorn.*", "frida", "frida.*", "r2pipe", "r2pipe.*"]
+ignore_missing_imports = true
+follow_untyped_imports = true
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["r2morph*"]

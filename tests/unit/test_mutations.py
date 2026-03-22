@@ -61,6 +61,7 @@ class TestInstructionSubstitutionPass:
     def test_subst_init(self):
         pytest.importorskip("yaml")
         from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+
         subst_pass = InstructionSubstitutionPass()
         assert subst_pass.name == "InstructionSubstitution"
 
@@ -83,6 +84,7 @@ class TestInstructionSubstitutionPass:
     def test_subst_apply(self, tmp_path):
         pytest.importorskip("yaml")
         from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+
         test_file = Path(__file__).parent.parent / "fixtures" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")

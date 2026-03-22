@@ -64,7 +64,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -101,15 +101,15 @@ class OutlinedFunction:
     chunks: list[OutlinedChunk] = field(default_factory=list)
     entry_chunk: int = 0
 
-    def add_chunk(self, chunk: OutlinedChunk):
+    def add_chunk(self, chunk: OutlinedChunk) -> None:
         """Add a chunk to the function."""
         self.chunks.append(chunk)
 
     def get_chunk_order(self) -> list[int]:
         """Get chunk execution order for reconstruction."""
         order = []
-        visited = set()
-        current = self.entry_chunk
+        visited: set[int] = set()
+        current: int | None = self.entry_chunk
 
         while current is not None and current not in visited:
             visited.add(current)
@@ -164,7 +164,7 @@ class FunctionOutliningPass(MutationPass):
         """Get basic blocks for a function."""
         try:
             blocks = binary.get_basic_blocks(func_addr)
-            return blocks
+            return list(blocks)
         except Exception as e:
             logger.debug(f"Failed to get blocks at 0x{func_addr:x}: {e}")
             return []
@@ -206,7 +206,7 @@ class FunctionOutliningPass(MutationPass):
                 continue
 
             start_addr = chunk_blocks[0].get("addr", 0)
-            instructions = []
+            instructions: list[dict[str, Any]] = []
 
             for block in chunk_blocks:
                 try:
@@ -257,7 +257,7 @@ class FunctionOutliningPass(MutationPass):
         else:
             chunk_order = list(enumerate(chunks))
 
-        chunk_offsets = {}
+        chunk_offsets: dict[int, int] = {}
 
         for idx, (original_idx, chunk) in enumerate(chunk_order):
             for insn in chunk.instructions:
@@ -296,7 +296,7 @@ class FunctionOutliningPass(MutationPass):
         )
 
         functions = binary.get_functions()
-        outlined_functions = []
+        outlined_functions: list[OutlinedFunction] = []
         total_chunks = 0
         total_blocks = 0
 
@@ -343,9 +343,9 @@ class FunctionOutliningPass(MutationPass):
             logger.debug(f"Outlined {func_name}: {len(blocks)} blocks -> {len(chunks)} chunks")
 
         if self._session is not None:
-            mutation_checkpoint = self._create_mutation_checkpoint("function_outlining")
+            self._create_mutation_checkpoint("function_outlining")
         else:
-            mutation_checkpoint = None
+            pass
 
         baseline = {}
         if self._validation_manager is not None:

@@ -74,11 +74,10 @@ import logging
 import random
 from typing import TYPE_CHECKING, Any
 
-from r2morph.analysis.cfg import CFGBuilder
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, UNCONDITIONAL_TRANSFERS
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 from r2morph.utils.dead_code import (
     generate_arm_dead_code_for_size,
@@ -411,7 +410,7 @@ class ControlFlowFlatteningPass(MutationPass):
             # Get last instruction of block
             last_insn = block_instrs[-1]
             last_addr = last_insn.get("offset", 0)
-            last_size = last_insn.get("size", 0)
+            last_insn.get("size", 0)
             mnemonic = last_insn.get("mnemonic", "").lower()
 
             # Strategy 1: Add opaque predicate before conditional jumps
@@ -610,7 +609,7 @@ class ControlFlowFlatteningPass(MutationPass):
                 if len(assembled) < available_size:
                     assembled += generate_nop_sequence(arch, bits, available_size - len(assembled))
 
-                return binary.write_bytes(addr, assembled)
+                return bool(binary.write_bytes(addr, assembled))
 
         return False
 
@@ -779,7 +778,7 @@ class ControlFlowFlatteningPass(MutationPass):
 
                 if assembled and len(assembled) <= current_jump_size:
                     padded = assembled + generate_nop_sequence(arch, bits, current_jump_size - len(assembled))
-                    return binary.write_bytes(jump_addr, padded)
+                    return bool(binary.write_bytes(jump_addr, padded))
 
             long_rel_offset = target_addr - (jump_addr + 5)
             if -2147483648 <= long_rel_offset <= 2147483647:
@@ -788,7 +787,7 @@ class ControlFlowFlatteningPass(MutationPass):
 
                 if assembled and len(assembled) <= current_jump_size:
                     padded = assembled + generate_nop_sequence(arch, bits, current_jump_size - len(assembled))
-                    return binary.write_bytes(jump_addr, padded)
+                    return bool(binary.write_bytes(jump_addr, padded))
 
             logger.debug(f"Could not obfuscate jump at 0x{jump_addr:x} - assembly failed or size mismatch")
             return False
@@ -796,9 +795,7 @@ class ControlFlowFlatteningPass(MutationPass):
         logger.debug(f"Jump obfuscation not supported for architecture: {arch}")
         return False
 
-    def _analyze_jump_target(
-        self, binary: Any, jump_insn: dict, jump_addr: int, arch: str, bits: int
-    ) -> dict | None:
+    def _analyze_jump_target(self, binary: Any, jump_insn: dict, jump_addr: int, arch: str, bits: int) -> dict | None:
         """
         Analyze jump instruction to extract target and size.
 
@@ -881,7 +878,7 @@ class ControlFlowFlatteningPass(MutationPass):
             if len(assembled) < size:
                 assembled += generate_nop_sequence(arch, bits, size - len(assembled))
 
-            return binary.write_bytes(addr, assembled)
+            return bool(binary.write_bytes(addr, assembled))
 
         return False
 

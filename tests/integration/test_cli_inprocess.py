@@ -6,7 +6,6 @@ import typer
 
 from r2morph.cli import app, analyze, analyze_enhanced, functions, morph, version
 
-
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 
@@ -90,4 +89,6 @@ def test_cli_morph_inprocess(tmp_path: Path):
 
 def test_cli_version_inprocess():
     version()
+
+
 pytestmark = []

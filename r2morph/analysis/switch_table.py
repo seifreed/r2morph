@@ -143,7 +143,7 @@ class SwitchTableAnalyzer:
         """
         self.binary = binary
         self._known_functions: dict[int, str] | None = None
-        self._plt_entries: dict[int, str] | None = None
+        self._plt_entries: dict[int, dict[str, Any]] | None = None
         self._got_entries: dict[int, int] | None = None
 
     def analyze_indirect_jumps(self, function_address: int) -> list[IndirectJump]:
@@ -380,7 +380,7 @@ class SwitchTableAnalyzer:
         """
         try:
             instructions = self.binary.get_function_disasm(function_address)
-            blocks = self.binary.get_basic_blocks(function_address)
+            self.binary.get_basic_blocks(function_address)
         except Exception as e:
             logger.error(f"Failed to analyze function at 0x{function_address:x}: {e}")
             return [], []
@@ -557,7 +557,7 @@ class SwitchTableAnalyzer:
 
         return False
 
-    def _cache_functions(self):
+    def _cache_functions(self) -> None:
         """Cache function addresses for quick lookup."""
         self._known_functions = {}
 

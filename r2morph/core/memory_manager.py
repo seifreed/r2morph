@@ -68,8 +68,7 @@ class MemoryManager:
         self._mutation_counter += 1
         if self._mutation_counter % self._batch_size == 0:
             logger.info(
-                f"Batch checkpoint: {self._mutation_counter} mutations applied. "
-                f"Reloading r2 to free memory..."
+                f"Batch checkpoint: {self._mutation_counter} mutations applied. " f"Reloading r2 to free memory..."
             )
             self._reload_binary(binary)
 

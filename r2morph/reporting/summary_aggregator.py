@@ -52,7 +52,7 @@ class SymbolicAggregator:
             pass_counts = by_pass.setdefault(pass_name, {})
             pass_counts[status] = pass_counts.get(status, 0) + 1
 
-        rows = [
+        rows: list[dict[str, Any]] = [
             {
                 "pass_name": pass_name,
                 "statuses": dict(sorted(counts.items(), key=lambda item: (-item[1], item[0]))),
@@ -61,7 +61,7 @@ class SymbolicAggregator:
         ]
         rows.sort(
             key=lambda item: (
-                -sum(item["statuses"].values()),
+                -sum(dict(item["statuses"]).values()),
                 item["pass_name"],
             )
         )
@@ -69,7 +69,7 @@ class SymbolicAggregator:
         return (
             dict(sorted(global_counts.items(), key=lambda item: (-item[1], item[0]))),
             rows,
-            {row["pass_name"]: dict(row["statuses"]) for row in rows},
+            {str(row["pass_name"]): dict(row["statuses"]) for row in rows},
         )
 
     @staticmethod
@@ -110,14 +110,14 @@ class SymbolicAggregator:
             else:
                 stats["without_coverage"] += 1
 
-        rows = []
+        rows: list[dict[str, Any]] = []
         for pass_name, stats in by_pass.items():
             rows.append({"pass_name": pass_name, **stats})
         rows.sort(
             key=lambda item: (
-                -item["symbolic_requested"],
-                -item["observable_match"],
-                -item["observable_mismatch"],
+                -int(item["symbolic_requested"]),
+                -int(item["observable_match"]),
+                -int(item["observable_mismatch"]),
                 item["pass_name"],
             )
         )
@@ -156,20 +156,14 @@ class SymbolicAggregator:
             else:
                 stats["without_coverage"] += 1
 
-        issue_rows = []
+        issue_rows: list[dict[str, Any]] = []
         for pass_name, stats in by_pass.items():
-            if (
-                stats["observable_mismatch"] == 0
-                and stats["without_coverage"] == 0
-                and stats["bounded_only"] == 0
-            ):
+            if stats["observable_mismatch"] == 0 and stats["without_coverage"] == 0 and stats["bounded_only"] == 0:
                 continue
             severity = (
                 "mismatch"
                 if stats["observable_mismatch"] > 0
-                else "without-coverage"
-                if stats["without_coverage"] > 0
-                else "bounded-only"
+                else "without-coverage" if stats["without_coverage"] > 0 else "bounded-only"
             )
             issue_rows.append(
                 {
@@ -182,9 +176,9 @@ class SymbolicAggregator:
             )
         issue_rows.sort(
             key=lambda item: (
-                -item["observable_mismatch"],
-                -item["without_coverage"],
-                -item["bounded_only"],
+                -int(item["observable_mismatch"]),
+                -int(item["without_coverage"]),
+                -int(item["bounded_only"]),
                 item["pass_name"],
             )
         )
@@ -250,8 +244,7 @@ class EvidenceAggregator:
             "region_count": len(structural_regions),
             "validators": sorted(validators),
             "severity_counts": {
-                key: severities[key]
-                for key in sorted(severities, key=lambda item: (-severities[item], item))
+                key: severities[key] for key in sorted(severities, key=lambda item: (-severities[item], item))
             },
             "sample_messages": unique_messages[:5],
         }
@@ -281,9 +274,7 @@ class EvidenceAggregator:
                 mismatched_regions += 1
             else:
                 matched_regions += 1
-            control_flow_observables.update(
-                metadata.get("symbolic_binary_control_flow_observables", [])
-            )
+            control_flow_observables.update(metadata.get("symbolic_binary_control_flow_observables", []))
             max_original_trace_len = max(
                 max_original_trace_len,
                 len(metadata.get("symbolic_binary_original_trace_addresses", [])),
@@ -292,12 +283,8 @@ class EvidenceAggregator:
                 max_mutated_trace_len,
                 len(metadata.get("symbolic_binary_mutated_trace_addresses", [])),
             )
-            memory_write_activity += int(
-                metadata.get("symbolic_binary_original_memory_write_count", 0)
-            )
-            memory_write_activity += int(
-                metadata.get("symbolic_binary_mutated_memory_write_count", 0)
-            )
+            memory_write_activity += int(metadata.get("symbolic_binary_original_memory_write_count", 0))
+            memory_write_activity += int(metadata.get("symbolic_binary_mutated_memory_write_count", 0))
             symbolic_regions.append(
                 {
                     "start_address": mutation.get("start_address"),
@@ -306,24 +293,12 @@ class EvidenceAggregator:
                     "mismatches": mismatches,
                     "mismatch_count": len(mismatches),
                     "step_strategy": metadata.get("symbolic_binary_step_strategy"),
-                    "original_region_exit_address": metadata.get(
-                        "symbolic_binary_original_region_exit_address"
-                    ),
-                    "mutated_region_exit_address": metadata.get(
-                        "symbolic_binary_mutated_region_exit_address"
-                    ),
-                    "original_trace_length": len(
-                        metadata.get("symbolic_binary_original_trace_addresses", [])
-                    ),
-                    "mutated_trace_length": len(
-                        metadata.get("symbolic_binary_mutated_trace_addresses", [])
-                    ),
-                    "original_region_exit_steps": metadata.get(
-                        "symbolic_binary_original_region_exit_steps", 0
-                    ),
-                    "mutated_region_exit_steps": metadata.get(
-                        "symbolic_binary_mutated_region_exit_steps", 0
-                    ),
+                    "original_region_exit_address": metadata.get("symbolic_binary_original_region_exit_address"),
+                    "mutated_region_exit_address": metadata.get("symbolic_binary_mutated_region_exit_address"),
+                    "original_trace_length": len(metadata.get("symbolic_binary_original_trace_addresses", [])),
+                    "mutated_trace_length": len(metadata.get("symbolic_binary_mutated_trace_addresses", [])),
+                    "original_region_exit_steps": metadata.get("symbolic_binary_original_region_exit_steps", 0),
+                    "mutated_region_exit_steps": metadata.get("symbolic_binary_mutated_region_exit_steps", 0),
                 }
             )
 
@@ -370,12 +345,8 @@ class EvidenceAggregator:
                     "pass_name": pass_name,
                     "changed_region_count": evidence_summary.get("changed_region_count", 0),
                     "structural_issue_count": evidence_summary.get("structural_issue_count", 0),
-                    "symbolic_binary_regions_checked": evidence_summary.get(
-                        "symbolic_binary_regions_checked", 0
-                    ),
-                    "symbolic_binary_mismatched_regions": evidence_summary.get(
-                        "symbolic_binary_mismatched_regions", 0
-                    ),
+                    "symbolic_binary_regions_checked": evidence_summary.get("symbolic_binary_regions_checked", 0),
+                    "symbolic_binary_mismatched_regions": evidence_summary.get("symbolic_binary_mismatched_regions", 0),
                     "rolled_back": evidence_summary.get("rolled_back", False),
                     "status": evidence_summary.get("status", "unknown"),
                 }
@@ -410,7 +381,7 @@ class SummaryAggregator:
     @staticmethod
     def summarize_diff_digest(pass_results: dict[str, Any]) -> dict[str, Any]:
         """Build a compact diff digest across passes."""
-        digest = {
+        digest: dict[str, Any] = {
             "changed_region_count": 0,
             "changed_bytes": 0,
             "mutation_kinds": [],
@@ -423,8 +394,8 @@ class SummaryAggregator:
             diff_summary = pass_result.get("diff_summary", {})
             changed_regions = list(diff_summary.get("changed_regions", []))
             changed_bytes = int(diff_summary.get("changed_bytes", 0))
-            digest["changed_region_count"] += len(changed_regions)
-            digest["changed_bytes"] += changed_bytes
+            digest["changed_region_count"] = int(digest["changed_region_count"]) + len(changed_regions)
+            digest["changed_bytes"] = int(digest["changed_bytes"]) + changed_bytes
             mutation_kinds.update(diff_summary.get("mutation_kinds", []))
             if changed_regions or changed_bytes:
                 passes_with_changes.append(
@@ -449,21 +420,19 @@ class SummaryAggregator:
     @staticmethod
     def summarize_pass_timings(pass_results: dict[str, Any]) -> list[dict[str, Any]]:
         """Build a compact per-pass timing summary for tooling."""
-        rows = []
+        rows: list[dict[str, Any]] = []
         for pass_name, pass_result in pass_results.items():
             validation = pass_result.get("validation", {})
             rows.append(
                 {
                     "pass_name": pass_name,
-                    "execution_time_seconds": round(
-                        float(pass_result.get("execution_time_seconds", 0.0)), 6
-                    ),
+                    "execution_time_seconds": round(float(pass_result.get("execution_time_seconds", 0.0)), 6),
                     "mutations": len(pass_result.get("mutations", [])),
                     "rolled_back": bool(pass_result.get("rolled_back", False)),
                     "validation_issue_count": len(validation.get("issues", [])),
                 }
             )
-        rows.sort(key=lambda item: (-item["execution_time_seconds"], item["pass_name"]))
+        rows.sort(key=lambda item: (-float(item["execution_time_seconds"]), item["pass_name"]))
         return rows
 
     @staticmethod
@@ -494,15 +463,12 @@ class SummaryAggregator:
             pass_reason = by_pass_reason.setdefault(pass_name, {})
             pass_reason[reason] = pass_reason.get(reason, 0) + 1
 
-        rows = [
+        rows: list[dict[str, Any]] = [
             {
                 "pass_name": pass_name,
                 "discarded_count": count,
                 "impact_severity": min(
-                    (
-                        severity_by_reason.get(reason, "low")
-                        for reason in by_pass_reason.get(pass_name, {})
-                    ),
+                    (severity_by_reason.get(reason, "low") for reason in by_pass_reason.get(pass_name, {})),
                     key=lambda severity: severity_order.get(severity, 99),
                     default="low",
                 ),
@@ -518,7 +484,7 @@ class SummaryAggregator:
         rows.sort(
             key=lambda item: (
                 severity_order.get(str(item.get("impact_severity", "low")), 99),
-                -item["discarded_count"],
+                -int(item["discarded_count"]),
                 item["pass_name"],
             )
         )

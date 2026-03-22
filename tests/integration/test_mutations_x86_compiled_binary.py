@@ -27,23 +27,23 @@ def _build_x86_binary(tmp_dir: Path) -> Path:
         "__attribute__((noinline)) int asm_ops(int x) {\n"
         "  int y = x;\n"
         "  __asm__ volatile(\n"
-        "    \"mov %%eax, %%eax\\n\"\n"
-        "    \"add $0, %%eax\\n\"\n"
-        "    \"sub $0, %%eax\\n\"\n"
-        "    \"or $0, %%eax\\n\"\n"
-        "    \"mov $0, %%eax\\n\"\n"
-        "    \"inc %%eax\\n\"\n"
-        "    \"dec %%eax\\n\"\n"
-        "    \"imul $3, %%eax, %%eax\\n\"\n"
-        "    \"shl $1, %%eax\\n\"\n"
-        "    \"cmp %%eax, %%eax\\n\"\n"
-        "    \"test %%eax, %%eax\\n\"\n"
-        "    \"nop\\n\"\n"
-        "    \"nop\\n\"\n"
-        "    \"nop\\n\"\n"
+        '    "mov %%eax, %%eax\\n"\n'
+        '    "add $0, %%eax\\n"\n'
+        '    "sub $0, %%eax\\n"\n'
+        '    "or $0, %%eax\\n"\n'
+        '    "mov $0, %%eax\\n"\n'
+        '    "inc %%eax\\n"\n'
+        '    "dec %%eax\\n"\n'
+        '    "imul $3, %%eax, %%eax\\n"\n'
+        '    "shl $1, %%eax\\n"\n'
+        '    "cmp %%eax, %%eax\\n"\n'
+        '    "test %%eax, %%eax\\n"\n'
+        '    "nop\\n"\n'
+        '    "nop\\n"\n'
+        '    "nop\\n"\n'
         "    :\n"
-        "    : \"a\"(y)\n"
-        "    : \"cc\"\n"
+        '    : "a"(y)\n'
+        '    : "cc"\n'
         "  );\n"
         "  return y;\n"
         "}\n"
@@ -87,9 +87,7 @@ def test_x86_nop_insertion_and_substitution_real(x86_binary_path: Path, tmp_path
     with Binary(writable_path, writable=True) as bin_obj:
         bin_obj.analyze("aa")
 
-        nop_pass = NopInsertionPass(
-            config={"probability": 1.0, "max_nops_per_function": 5, "use_creative_nops": True}
-        )
+        nop_pass = NopInsertionPass(config={"probability": 1.0, "max_nops_per_function": 5, "use_creative_nops": True})
         nop_result = nop_pass.apply(bin_obj)
 
         sub_pass = InstructionSubstitutionPass(
@@ -101,9 +99,7 @@ def test_x86_nop_insertion_and_substitution_real(x86_binary_path: Path, tmp_path
     assert "mutations_applied" in sub_result
 
 
-def test_x86_instruction_expansion_and_register_substitution_real(
-    x86_binary_path: Path, tmp_path: Path
-):
+def test_x86_instruction_expansion_and_register_substitution_real(x86_binary_path: Path, tmp_path: Path):
     random.seed(1)
     writable_path = _copy_writable(tmp_path, x86_binary_path)
 
@@ -115,9 +111,7 @@ def test_x86_instruction_expansion_and_register_substitution_real(
         )
         exp_result = exp_pass.apply(bin_obj)
 
-        reg_pass = RegisterSubstitutionPass(
-            config={"probability": 1.0, "max_substitutions_per_function": 2}
-        )
+        reg_pass = RegisterSubstitutionPass(config={"probability": 1.0, "max_substitutions_per_function": 2})
         reg_result = reg_pass.apply(bin_obj)
 
     assert "mutations_applied" in exp_result
@@ -136,9 +130,7 @@ def test_x86_block_reordering_real(x86_binary_path: Path, tmp_path: Path):
     assert "functions_processed" in result
 
 
-def test_x86_opaque_predicates_and_control_flow_detection(
-    x86_binary_path: Path, tmp_path: Path
-):
+def test_x86_opaque_predicates_and_control_flow_detection(x86_binary_path: Path, tmp_path: Path):
     random.seed(3)
     writable_path = _copy_writable(tmp_path, x86_binary_path)
 

@@ -34,7 +34,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, UNCONDITIONAL_TRANSFERS
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 from r2morph.utils.dead_code import (
     generate_dead_code_for_arch,
@@ -310,7 +310,7 @@ class DeadCodeInjectionPass(MutationPass):
                 # Check if there are instructions after this that aren't jump targets
                 if i + 1 < len(instructions):
                     next_insn = instructions[i + 1]
-                    next_addr = next_insn.get("offset", next_insn.get("addr", 0))
+                    next_insn.get("offset", next_insn.get("addr", 0))
                     next_mnemonic = next_insn.get("mnemonic", "").lower()
 
                     # If next instruction is padding, it's likely unreachable
@@ -390,7 +390,7 @@ class DeadCodeInjectionPass(MutationPass):
                 return self._generate_nop_sequence(max_size, arch_family, bits)
 
             # Try to assemble and check size
-            assembled_bytes = b""
+            assembled_bytes: bytes | None = b""
             for insn in assemblable_insns:
                 insn_bytes = binary.assemble(insn, func_addr)
                 if insn_bytes is None:

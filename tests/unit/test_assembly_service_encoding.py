@@ -42,7 +42,5 @@ def test_assembly_service_symbolic_resolution():
     binary_path = Path("dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
-        resolved = assembler._resolve_symbolic_vars(
-            bin_obj, "mov eax, [var_10h]"
-        )
+        resolved = assembler._resolve_symbolic_vars(bin_obj, "mov eax, [var_10h]")
         assert "[rsp + 0x10]" in resolved

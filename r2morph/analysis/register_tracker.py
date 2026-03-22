@@ -5,7 +5,7 @@ Tracks which registers are stored on the stack to ensure
 junk code generation preserves program semantics.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 from collections import OrderedDict
 
@@ -96,7 +96,7 @@ class RegTracker:
     PRESERVED_REGS = ["rbx", "rbp", "r12", "r13", "r14", "r15"]
     SCRATCH_REGS = ["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"]
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._stack: OrderedDict[str, StackEntry] = OrderedDict()
         self._stack_depth: int = 0
 
@@ -157,7 +157,7 @@ class RegTracker:
         return reg_lower
 
     def get_compatible_registers(self, reg: str, exclude_stored: bool = False) -> list[str]:
-        base = self._get_base_register(reg)
+        self._get_base_register(reg)
         size = self.get_register_size(reg)
 
         if size not in self.X86_64_REG_SIZES:
@@ -177,11 +177,11 @@ class RegTracker:
         weights = [self.REG_WEIGHTS[r][0] for r in regs]
         return regs, weights
 
-    def get_subregister_weights(self, reg: str) -> Optional[tuple[tuple[str, ...], tuple[int, ...]]]:
+    def get_subregister_weights(self, reg: str) -> tuple[tuple[str | None, ...], tuple[int, ...]] | None:
         if reg not in self.X86_64_GPR:
             return None
-        subregs = (reg,) + self.X86_64_GPR[reg]
-        weights = (self.REG_WEIGHTS[reg][0],) + self.REG_WEIGHTS[reg][1]
+        subregs: tuple[str | None, ...] = (reg,) + self.X86_64_GPR[reg]
+        weights: tuple[int, ...] = (self.REG_WEIGHTS[reg][0],) + self.REG_WEIGHTS[reg][1]
         return subregs, weights
 
 
@@ -204,8 +204,9 @@ for _reg in RegTracker.X86_64_GPR:
     REG_SIZES_MAP[_reg] = REG_64
     REG_SIZES_MAP[RegTracker.X86_64_GPR[_reg][0]] = REG_32
     REG_SIZES_MAP[RegTracker.X86_64_GPR[_reg][1]] = REG_16
-    if RegTracker.X86_64_GPR[_reg][2]:
-        REG_SIZES_MAP[RegTracker.X86_64_GPR[_reg][2]] = REG_8H
+    _high_reg = RegTracker.X86_64_GPR[_reg][2]
+    if _high_reg is not None:
+        REG_SIZES_MAP[_high_reg] = REG_8H
     REG_SIZES_MAP[RegTracker.X86_64_GPR[_reg][3]] = REG_8L
 
 REG_WEIGHTS_MAP: dict[str, tuple[int, tuple[int, int, int, int]]] = {

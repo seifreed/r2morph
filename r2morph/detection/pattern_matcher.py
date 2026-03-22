@@ -5,9 +5,14 @@ This module provides detection of anti-debugging, anti-VM,
 and other anti-analysis techniques through string and pattern matching.
 """
 
+from __future__ import annotations
+
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 
@@ -156,6 +161,7 @@ class PatternMatcher:
             "apis_found": [],
         }
 
+        assert self.binary.r2 is not None
         try:
             # Check for anti-debug API calls
             strings_output = self.binary.r2.cmd("izz")
@@ -194,6 +200,7 @@ class PatternMatcher:
             "artifacts_found": [],
         }
 
+        assert self.binary.r2 is not None
         try:
             strings_output = self.binary.r2.cmd("izz")
 
@@ -240,6 +247,7 @@ class PatternMatcher:
         Returns:
             True if string encryption is likely
         """
+        assert self.binary.r2 is not None
         try:
             # Get strings from the binary
             strings_output = self.binary.r2.cmd("iz")
@@ -274,6 +282,7 @@ class PatternMatcher:
         Returns:
             True if import hiding is likely
         """
+        assert self.binary.r2 is not None
         try:
             # Get imports
             imports = self.binary.r2.cmd("ii")
@@ -316,6 +325,7 @@ class PatternMatcher:
         """
         results: dict[bytes, list[int]] = {}
 
+        assert self.binary.r2 is not None
         try:
             for pattern in patterns:
                 cmd = f"/x {pattern.hex()}"
@@ -354,6 +364,7 @@ class PatternMatcher:
         """
         results: dict[str, bool] = {}
 
+        assert self.binary.r2 is not None
         try:
             strings_output = self.binary.r2.cmd("izz")
 

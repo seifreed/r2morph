@@ -7,7 +7,7 @@ import logging
 from dataclasses import dataclass
 
 from r2morph.core.binary import Binary
-from r2morph.relocations.utils import get_endianness
+from r2morph.relocations.utils import get_endianness, ByteOrder
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class RelocationManager:
     Tracks moved code and updates all references (jumps, calls, data pointers).
     """
 
-    def __init__(self, binary: Binary):
+    def __init__(self, binary: Binary) -> None:
         """
         Initialize relocation manager.
 
@@ -45,11 +45,11 @@ class RelocationManager:
         self.address_map: dict[int, int] = {}
         self._analyzed_refs: set[int] = set()
 
-    def _get_endianness(self) -> str:
+    def _get_endianness(self) -> "ByteOrder":
         """Detect binary endianness from architecture info."""
         return get_endianness(self.binary)
 
-    def add_relocation(self, old_address: int, new_address: int, size: int, relocation_type: str = "move"):
+    def add_relocation(self, old_address: int, new_address: int, size: int, relocation_type: str = "move") -> None:
         """
         Register a code relocation.
 
@@ -121,6 +121,7 @@ class RelocationManager:
 
         xrefs = []
 
+        assert self.binary.r2 is not None
         xrefs_output = self.binary.r2.cmd("axtj")
         if xrefs_output:
             import json
@@ -178,6 +179,7 @@ class RelocationManager:
             True if updated
         """
         try:
+            assert self.binary.r2 is not None
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{from_addr:x}")
             import json
 
@@ -230,6 +232,7 @@ class RelocationManager:
             arch_info = self.binary.get_arch_info()
             ptr_size = arch_info["bits"] // 8
 
+            assert self.binary.r2 is not None
             current_ptr_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ 0x{from_addr:x}")
             endian = self._get_endianness()
             current_ptr = int.from_bytes(bytes.fromhex(current_ptr_hex.strip()), byteorder=endian)
@@ -256,8 +259,8 @@ class RelocationManager:
         Returns:
             True if space available
         """
+        assert self.binary.r2 is not None
         insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{address:x}")
-        import json
 
         insns = json.loads(insn_json)
         if not insns:
@@ -266,6 +269,7 @@ class RelocationManager:
         current_size = insns[0].get("size", 0)
         next_addr = address + current_size
 
+        assert self.binary.r2 is not None
         next_bytes_hex = self.binary.r2.cmd(f"p8 {additional_bytes} @ 0x{next_addr:x}")
         next_bytes = bytes.fromhex(next_bytes_hex.strip())
 
@@ -292,6 +296,7 @@ class RelocationManager:
         try:
             logger.info(f"Shifting code block at 0x{start_address:x} (size={size}) by {shift_amount:+d} bytes")
 
+            assert self.binary.r2 is not None
             block_hex = self.binary.r2.cmd(f"p8 {size} @ 0x{start_address:x}")
             block_bytes = bytes.fromhex(block_hex.strip())
 

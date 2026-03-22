@@ -3,8 +3,12 @@
 Extracted from cli.py -- no logic changes.
 """
 
+from __future__ import annotations
+
 from pathlib import Path
 from typing import Any
+
+from r2morph.reporting.report_context import ReportFlowContext
 
 from r2morph.reporting.report_resolver import (
     _resolve_only_mismatches_state,
@@ -17,7 +21,6 @@ from r2morph.reporting.filtered_summary_builder import (
 )
 from r2morph.reporting.report_helpers import (
     _finalize_report_output,
-    _summary_first,
 )
 from r2morph.reporting.report_rendering import (
     _render_report_filter_messages,
@@ -27,9 +30,7 @@ from r2morph.reporting.report_rendering import (
     _render_gate_sections,
     _render_pass_capabilities,
     _render_pass_validation_contexts,
-    _render_pass_validation_context,
     _render_only_pass_sections,
-    _get_console,
 )
 
 
@@ -66,8 +67,8 @@ def _dispatch_report_flow_ctx(ctx: "ReportFlowContext") -> None:
             filtered_summary=ctx.data.filtered_summary,
             mismatch_state=mismatch_state,
             pass_support=ctx.data.pass_support,
-            requested_validation_mode=ctx.validation.requested_validation_mode,
-            effective_validation_mode=ctx.validation.effective_validation_mode,
+            requested_validation_mode=ctx.validation.requested_validation_mode or "",
+            effective_validation_mode=ctx.validation.effective_validation_mode or "",
             degraded_validation=ctx.validation.degraded_validation,
             degraded_passes=ctx.validation.degraded_passes,
             degradation_roles=ctx.validation.degradation_roles,
@@ -566,8 +567,6 @@ def _render_general_only_pass_sections(
         pass_symbolic_summary=pass_symbolic_summary,
         pass_evidence=pass_evidence,
         pass_validation_context=pass_validation_context,
-        pass_region_evidence=pass_region_evidence,
+        pass_region_evidence=[pass_region_evidence] if pass_region_evidence else None,
         pass_capabilities=capability_row,
     )
-
-

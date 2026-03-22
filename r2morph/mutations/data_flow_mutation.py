@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -299,7 +299,7 @@ class DataFlowMutationPass(MutationPass):
 
         arch_info = binary.get_arch_info()
         arch = arch_info.get("arch", "unknown")
-        bits = arch_info.get("bits", 64)
+        arch_info.get("bits", 64)
 
         if arch not in ["x86", "x86_64"]:
             logger.warning(f"Data flow mutation only supports x86 architectures, got: {arch}")

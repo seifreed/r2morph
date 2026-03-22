@@ -20,7 +20,7 @@ def test_relocation_manager_address_mapping_real(tmp_path: Path):
 
         manager.add_relocation(0x1000, 0x2000, 0x20)
         assert manager.get_new_address(0x1000) == 0x2000
-        assert manager.get_new_address(0x100f) == 0x200f
+        assert manager.get_new_address(0x100F) == 0x200F
         assert manager.get_new_address(0x3000) is None
 
 
@@ -46,9 +46,7 @@ def test_relocation_manager_calculate_space_needed_real(tmp_path: Path):
 
         if not func_addr:
             sections = bin_obj.get_sections()
-            exec_sections = [
-                section for section in sections if "x" in str(section.get("perm", ""))
-            ]
+            exec_sections = [section for section in sections if "x" in str(section.get("perm", ""))]
             if exec_sections:
                 func_addr = exec_sections[0].get("vaddr", 0) or 0
 

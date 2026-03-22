@@ -14,15 +14,13 @@ from typing import TYPE_CHECKING, Any
 from r2morph.mutations.cfg_aware import CFGAwareMutationPass, CFGAwareMutationResult
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
     PatternType,
-    Criticality,
 )
 from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
-    IntegrityReport,
     HardenedMutationValidator,
 )
 
@@ -121,7 +119,6 @@ class HardenedMutationPass(CFGAwareMutationPass):
 
         result = HardenedMutationResult(
             success=True,
-            message="Hardened mutation completed",
         )
 
         functions = binary.get_functions()
@@ -137,7 +134,8 @@ class HardenedMutationPass(CFGAwareMutationPass):
                 func_result = self._apply_to_function(binary, func_addr)
 
                 if isinstance(func_result, dict):
-                    result.mutations.extend(func_result.get("mutations", []))
+                    mutations_list: list[Any] = result.metadata.setdefault("mutations", [])
+                    mutations_list.extend(func_result.get("mutations", []))
                     result.safe_mutations += func_result.get("safe_mutations", 0)
                     result.skipped_mutations += func_result.get("skipped_mutations", 0)
                     result.patterns_preserved += func_result.get("patterns_preserved", 0)
@@ -218,6 +216,17 @@ class HardenedMutationPass(CFGAwareMutationPass):
             min_gap=4,
         )
 
+    def apply_cfg_aware(
+        self,
+        binary: Any,
+        cfg: Any,
+        safe_regions: list[Any],
+    ) -> dict[str, Any]:
+        """Delegate to apply_hardened with empty exclusion zones."""
+        return self.apply_hardened(
+            binary, cfg, [(r.start, r.end) if hasattr(r, "start") else r for r in safe_regions], []
+        )
+
     @abstractmethod
     def apply_hardened(
         self,
@@ -270,7 +279,7 @@ class HardenedMutationPass(CFGAwareMutationPass):
             return self._preservation_manager.should_avoid(address)
         return False
 
-    def get_preserved_pattern_at(self, address: int):
+    def get_preserved_pattern_at(self, address: int) -> Any:
         """
         Get preserved pattern at address.
 
@@ -360,44 +369,51 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
         """
         import random
 
-        result = {
-            "mutations": [],
-            "safe_mutations": 0,
-            "skipped_mutations": 0,
-            "patterns_preserved": 0,
-            "patterns_avoided": 0,
-        }
+        mutations: list[dict[str, Any]] = []
+        safe_mutations = 0
+        skipped_mutations = 0
+        patterns_preserved = 0
+        patterns_avoided = 0
+
+        def _build_result() -> dict[str, Any]:
+            return {
+                "mutations": mutations,
+                "safe_mutations": safe_mutations,
+                "skipped_mutations": skipped_mutations,
+                "patterns_preserved": patterns_preserved,
+                "patterns_avoided": patterns_avoided,
+            }
 
         if random.random() > self.probability:
-            return result
+            return _build_result()
 
         blocks = list(cfg.blocks.items()) if hasattr(cfg, "blocks") else []
 
         if len(blocks) < self.min_blocks:
-            return result
+            return _build_result()
 
         for block_addr, block in blocks:
             if self.should_avoid_pattern(block_addr):
-                result["skipped_mutations"] += 1
-                result["patterns_avoided"] += 1
+                skipped_mutations += 1
+                patterns_avoided += 1
                 continue
 
             if self.should_preserve(block_addr):
-                result["patterns_preserved"] += 1
+                patterns_preserved += 1
                 continue
 
             in_safe_region = any(start <= block_addr < end for start, end in safe_regions)
 
             if not in_safe_region and safe_regions:
-                result["skipped_mutations"] += 1
+                skipped_mutations += 1
                 continue
 
             mutation = self._try_flatten_block(binary, block_addr, block, exclusion_zones)
             if mutation:
-                result["mutations"].append(mutation)
-                result["safe_mutations"] += 1
+                mutations.append(mutation)
+                safe_mutations += 1
 
-        return result
+        return _build_result()
 
     def _try_flatten_block(
         self,
@@ -481,37 +497,41 @@ class HardenedOpaquePredicates(HardenedMutationPass):
         Returns:
             Mutation result dictionary
         """
-        result = {
-            "mutations": [],
-            "safe_mutations": 0,
-            "skipped_mutations": 0,
-            "patterns_preserved": 0,
-            "patterns_avoided": 0,
-        }
+        all_mutations: list[dict[str, Any]] = []
+        safe_mutations = 0
+        skipped_mutations = 0
+        patterns_preserved = 0
+        patterns_avoided = 0
 
         blocks = list(cfg.blocks.items()) if hasattr(cfg, "blocks") else []
 
         for block_addr, block in blocks:
             if self.should_avoid_pattern(block_addr):
-                result["skipped_mutations"] += 1
-                result["patterns_avoided"] += 1
+                skipped_mutations += 1
+                patterns_avoided += 1
                 continue
 
             if self.should_preserve(block_addr):
-                result["patterns_preserved"] += 1
+                patterns_preserved += 1
                 continue
 
             in_safe_region = any(start <= block_addr < end for start, end in safe_regions)
 
             if not in_safe_region and safe_regions:
-                result["skipped_mutations"] += 1
+                skipped_mutations += 1
                 continue
 
-            mutations = self._find_opaque_opportunities(binary, block_addr, block, exclusion_zones)
-            result["mutations"].extend(mutations)
-            result["safe_mutations"] += len(mutations)
+            found_mutations = self._find_opaque_opportunities(binary, block_addr, block, exclusion_zones)
+            all_mutations.extend(found_mutations)
+            safe_mutations += len(found_mutations)
 
-        return result
+        return {
+            "mutations": all_mutations,
+            "safe_mutations": safe_mutations,
+            "skipped_mutations": skipped_mutations,
+            "patterns_preserved": patterns_preserved,
+            "patterns_avoided": patterns_avoided,
+        }
 
     def _find_opaque_opportunities(
         self,
@@ -534,7 +554,7 @@ class HardenedOpaquePredicates(HardenedMutationPass):
         """
         import random
 
-        opportunities = []
+        opportunities: list[dict[str, Any]] = []
 
         if not hasattr(block, "instructions"):
             return opportunities
@@ -561,7 +581,7 @@ class HardenedOpaquePredicates(HardenedMutationPass):
         return opportunities
 
 
-def create_hardened_cff_pass(**kwargs) -> HardenedControlFlowFlattening:
+def create_hardened_cff_pass(**kwargs: Any) -> HardenedControlFlowFlattening:
     """
     Create a hardened CFF pass.
 
@@ -574,7 +594,7 @@ def create_hardened_cff_pass(**kwargs) -> HardenedControlFlowFlattening:
     return HardenedControlFlowFlattening(**kwargs)
 
 
-def create_hardened_opaque_pass(**kwargs) -> HardenedOpaquePredicates:
+def create_hardened_opaque_pass(**kwargs: Any) -> HardenedOpaquePredicates:
     """
     Create a hardened opaque predicates pass.
 

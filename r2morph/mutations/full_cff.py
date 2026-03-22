@@ -30,10 +30,10 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
-from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph, BasicBlock, BlockType
-from r2morph.relocations.cave_injector import CodeCaveInjector, CaveCreationOptions
+from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph
+from r2morph.relocations.cave_injector import CodeCaveInjector
 
 logger = logging.getLogger(__name__)
 
@@ -279,7 +279,7 @@ class FullControlFlowFlatteningPass(MutationPass):
         Returns:
             Dict mapping state -> (next_state_true, next_state_false)
         """
-        state_table = {}
+        state_table: dict[int, tuple[int, int | None]] = {}
 
         for db in dispatcher_blocks:
             if db.is_exit:
@@ -469,7 +469,7 @@ class FullControlFlowFlatteningPass(MutationPass):
                     jump_target = dispatcher_addr
                     arch_info = binary.get_arch_info()
                     arch = arch_info.get("arch", "")
-                    bits = arch_info.get("bits", 64)
+                    arch_info.get("bits", 64)
 
                     if arch in ("x86", "x86_64"):
                         rel_offset = jump_target - (block_end + 5)

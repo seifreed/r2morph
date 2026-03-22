@@ -18,8 +18,11 @@ logger = logging.getLogger(__name__)
 
 try:
     import lief
+
+    LIEF_AVAILABLE = True
 except Exception:  # pragma: no cover - optional dependency
-    lief = None
+    lief = None  # type: ignore[assignment]
+    LIEF_AVAILABLE = False
 
 
 class PEHandler:
@@ -41,11 +44,11 @@ class PEHandler:
             binary_path: Path to PE file
         """
         self.binary_path = binary_path
-        self._binary = None
-        self._pe_offset = None
+        self._binary: Any = None
+        self._pe_offset: int | None = None
         self._sections_cache: list[dict] | None = None
 
-    def _parse_lief(self):
+    def _parse_lief(self) -> Any:
         if lief is None:
             return None
         try:
@@ -237,7 +240,7 @@ class PEHandler:
                 if checksum_offset + 4 > file_size:
                     return None
 
-                return checksum_offset
+                return int(checksum_offset)
         except Exception:
             return None
 
@@ -515,7 +518,7 @@ class PEHandler:
                 return 0
             with open(self.binary_path, "rb") as f:
                 f.seek(checksum_offset)
-                return struct.unpack("<I", f.read(4))[0]
+                return int(struct.unpack("<I", f.read(4))[0])
         except Exception:
             return 0
 
@@ -599,7 +602,9 @@ class PEHandler:
             tmp_path.replace(self.binary_path)
 
             if lief is not None:
-                self._binary = lief.parse(str(self.binary_path))
+                parsed = lief.parse(str(self.binary_path))
+                if isinstance(parsed, lief.PE.Binary):
+                    self._binary = parsed
             self._sections_cache = None
 
             self.fix_checksum()

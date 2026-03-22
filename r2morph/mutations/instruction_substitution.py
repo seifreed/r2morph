@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.equivalences import load_equivalence_rules
 
@@ -92,7 +92,7 @@ class InstructionSubstitutionPass(MutationPass):
 
         self._init_substitution_rules()
 
-    def _init_substitution_rules(self):
+    def _init_substitution_rules(self) -> None:
         """
         Initialize substitution rules with r2morph-style equivalence groups.
 
@@ -116,7 +116,7 @@ class InstructionSubstitutionPass(MutationPass):
                 random.shuffle(group)
 
         # Build pattern-to-group lookup table
-        self.pattern_to_group = {}
+        self.pattern_to_group: dict[str, dict[str, int]] = {}
         for arch, groups in self.equivalence_groups.items():
             if arch not in self.pattern_to_group:
                 self.pattern_to_group[arch] = {}
@@ -167,7 +167,9 @@ class InstructionSubstitutionPass(MutationPass):
 
         return ("", [], None)
 
-    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]], arch_family: str) -> list[tuple[dict, list]]:
+    def _select_candidates(
+        self, binary: Any, functions: list[dict[str, Any]], arch_family: str
+    ) -> list[tuple[dict, list]]:
         """
         Iterate functions, get disasm, and filter candidate instructions for substitution.
 
@@ -270,7 +272,7 @@ class InstructionSubstitutionPass(MutationPass):
 
                             if ";" in chosen:
                                 instruction_list = [i.strip() for i in chosen.split(";")]
-                                all_bytes = b""
+                                all_bytes: bytes | None = b""
 
                                 for inst in instruction_list:
                                     inst_bytes = binary.assemble(inst, func["addr"])
@@ -314,7 +316,11 @@ class InstructionSubstitutionPass(MutationPass):
                                     )
                                     if self._validation_manager is not None:
                                         outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
-                                        if not outcome.passed and mutation_checkpoint is not None:
+                                        if (
+                                            not outcome.passed
+                                            and mutation_checkpoint is not None
+                                            and self._session is not None
+                                        ):
                                             self._session.rollback_to(mutation_checkpoint)
                                             binary.reload()
                                             self._records.pop()
@@ -357,7 +363,11 @@ class InstructionSubstitutionPass(MutationPass):
                                     )
                                     if self._validation_manager is not None:
                                         outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
-                                        if not outcome.passed and mutation_checkpoint is not None:
+                                        if (
+                                            not outcome.passed
+                                            and mutation_checkpoint is not None
+                                            and self._session is not None
+                                        ):
                                             self._session.rollback_to(mutation_checkpoint)
                                             binary.reload()
                                             self._records.pop()

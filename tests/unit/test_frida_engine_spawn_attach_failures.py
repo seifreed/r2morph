@@ -31,8 +31,6 @@ def test_frida_engine_attach_failure():
     if not engine.initialize():
         pytest.skip("Frida device not available")
 
-    result = engine.instrument_binary(
-        Path("/nonexistent/process"), mode=InstrumentationMode.ATTACH
-    )
+    result = engine.instrument_binary(Path("/nonexistent/process"), mode=InstrumentationMode.ATTACH)
     assert result.success is False
     assert result.error_message is not None

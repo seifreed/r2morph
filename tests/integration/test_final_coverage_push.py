@@ -15,7 +15,6 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.dependencies import DependencyAnalyzer, InstructionDef
 from r2morph.analysis.invariants import InvariantDetector, InvariantType

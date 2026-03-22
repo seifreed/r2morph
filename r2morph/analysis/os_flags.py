@@ -7,7 +7,6 @@ in junk code generation while preserving program semantics.
 
 from typing import Final
 
-
 WINFLAGS: Final[list[int]] = [
     0x00000001,
     0x00000002,

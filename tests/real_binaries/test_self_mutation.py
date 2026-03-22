@@ -19,7 +19,6 @@ from r2morph import __version__
 from r2morph.core.engine import MorphEngine
 from r2morph.core.config import EngineConfig
 
-
 pytestmark = pytest.mark.skipif(
     os.environ.get("SKIP_SELF_MUTATION_TESTS") == "1", reason="Self-mutation tests disabled"
 )

@@ -40,9 +40,7 @@ class TestBinaryValidatorComprehensive:
         """Test adding test case."""
         validator = BinaryValidator()
 
-        validator.add_test_case(
-            args=["--version"], stdin="", expected_exitcode=0, description="Version test"
-        )
+        validator.add_test_case(args=["--version"], stdin="", expected_exitcode=0, description="Version test")
 
         assert len(validator.test_cases) == 1
 
@@ -140,9 +138,7 @@ class TestMutationFuzzerComprehensive:
 
     def test_fuzz_result(self):
         """Test FuzzResult dataclass."""
-        result = FuzzResult(
-            total_tests=10, passed=8, failed=2, crashes=0, timeouts=0, validation_results=[]
-        )
+        result = FuzzResult(total_tests=10, passed=8, failed=2, crashes=0, timeouts=0, validation_results=[])
 
         assert result.total_tests == 10
         assert result.passed == 8

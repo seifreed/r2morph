@@ -9,7 +9,7 @@ import random
 from typing import Optional
 from dataclasses import dataclass
 
-from r2morph.analysis.register_tracker import RegTracker, REG_SIZES_MAP, REG_64, REG_32, REG_16
+from r2morph.analysis.register_tracker import RegTracker, REG_SIZES_MAP
 from r2morph.mutations.gadgets import Gadgets, create_gadgets
 
 
@@ -36,9 +36,9 @@ class JunkGenerator:
         self._assembler = None
         self._init_assembler()
 
-    def _init_assembler(self):
+    def _init_assembler(self) -> None:
         try:
-            from keystone import Ks, KS_ARCH_X86, KS_MODE_64
+            from keystone import Ks, KS_ARCH_X86, KS_MODE_64  # type: ignore[import-untyped]
 
             self._assembler = Ks(KS_ARCH_X86, KS_MODE_64)
         except ImportError:
@@ -63,7 +63,7 @@ class JunkGenerator:
     def get_register_choice(self) -> tuple[list[str], list[int]]:
         return self._reg_tracker.get_register_weights()
 
-    def get_subregister_data(self, reg: str) -> tuple[tuple[str, ...], tuple[int, ...]]:
+    def get_subregister_data(self, reg: str) -> tuple[tuple[str | None, ...], tuple[int, ...]]:
         result = self._reg_tracker.get_subregister_weights(reg)
         if result is None:
             return ((), ())
@@ -124,7 +124,10 @@ class JunkGenerator:
         if not subreg_names:
             return b"", 0
 
-        subreg = random.choices(subreg_names, weights=subreg_weights, k=1)[0]
+        subreg_choice = random.choices(subreg_names, weights=subreg_weights, k=1)[0]
+        if subreg_choice is None:
+            return b"", 0
+        subreg: str = subreg_choice
 
         sec_subregs, _ = self.get_subregister_data(sec_reg)
         if sec_subregs:
@@ -191,10 +194,10 @@ class JunkGenerator:
                     available -= ins_size
                     code += ins
 
-        restore_code = self.restore_register()
-        while restore_code:
-            code += restore_code
-            restore_code = self.restore_register()
+        restore_bytes = self.restore_register()
+        while restore_bytes:
+            code += restore_bytes
+            restore_bytes = self.restore_register()
 
         return code
 
@@ -210,7 +213,7 @@ class JunkGenerator:
             restore_gadget=restore_code,
         )
 
-    def clear(self):
+    def clear(self) -> None:
         self._reg_tracker.clear()
         if self._gadgets:
             self._gadgets._stack_depth = 0

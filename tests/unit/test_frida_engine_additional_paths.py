@@ -15,9 +15,7 @@ if not FRIDA_AVAILABLE:
 def test_frida_engine_unsupported_mode():
     engine = FridaEngine(timeout=1)
     # Even if initialization fails, unsupported mode should return error
-    result = engine.instrument_binary(
-        Path("dataset/elf_x86_64"), mode=InstrumentationMode.REMOTE
-    )
+    result = engine.instrument_binary(Path("dataset/elf_x86_64"), mode=InstrumentationMode.REMOTE)
     assert result.success is False
     assert result.error_message is not None
 

@@ -16,7 +16,6 @@ from typer.testing import CliRunner
 
 from r2morph.cli import app
 
-
 runner = CliRunner()
 
 

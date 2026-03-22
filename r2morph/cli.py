@@ -9,7 +9,6 @@ Primary product flow:
 import argparse
 import json
 from pathlib import Path
-import re
 import sys
 from typing import Any
 
@@ -21,86 +20,24 @@ from rich.table import Table
 from r2morph import __version__
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
-from r2morph.core.support import PRODUCT_SUPPORT, is_experimental_mutation, is_stable_mutation
+from r2morph.core.support import PRODUCT_SUPPORT, is_experimental_mutation
 from r2morph.utils.logging import setup_logging
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator import RuntimeComparisonConfig
 
 from r2morph.reporting.report_helpers import (
     _attach_gate_evaluation,
-    _emit_report_payload,
-    _enforce_report_requirements,
-    _expected_severity_rank_from_failure,
-    _filter_failed_gates_view,
-    _finalize_report_output,
-    _gate_failure_result_count,
-    _has_structural_risk,
-    _has_symbolic_risk,
-    _is_clean_pass,
-    _is_covered_pass,
-    _is_risky_pass,
-    _is_uncovered_pass,
-    _normalized_pass_map,
-    _pass_names_from_triage_rows,
     _pass_severity_requirements_met,
-    _report_view_has_results,
-    _resolve_general_report_views,
-    _resolve_summary_pass_sources,
-    _select_report_mutations,
     _severity_threshold_met,
-    _sort_pass_evidence,
-    _summarize_symbolic_view_from_mutations,
-    _summary_first,
-    _visible_rows,
-    SEVERITY_ORDER as _HELPERS_SEVERITY_ORDER,
 )
-from r2morph.reporting.report_rendering import (
-    _render_degradation_sections,
-    _render_gate_sections,
-    _render_only_mismatches_sections,
-    _render_only_pass_sections,
-    _render_pass_capabilities,
-    _render_pass_validation_context,
-    _render_pass_validation_contexts,
-    _render_report_filter_messages,
-    _render_symbolic_sections,
-)
-from r2morph.reporting.report_helpers import _resolve_general_filtered_passes
 from r2morph.reporting.report_resolver import (
-    _resolve_failed_gates_view,
     _resolve_general_report_flow_state,
-    _resolve_general_report_state,
-    _resolve_general_symbolic_state,
-    _resolve_mismatch_severity_rows,
-    _resolve_mismatch_view,
-    _resolve_only_mismatches_state,
-    _resolve_only_pass_view,
-    _resolve_pass_filter_sets,
-    _resolve_report_gate_state,
 )
 from r2morph.reporting.filtered_summary_builder import (
-    _build_base_filtered_summary,
-    _build_filtered_summary_degradation_sections,
-    _build_filtered_summary_gate_sections,
-    _build_filtered_summary_risk_coverage_sections,
-    _build_general_filtered_summary,
-    _build_general_report_payload,
-    _build_only_mismatches_filtered_summary,
-    _build_only_mismatches_payload,
     _build_report_dispatch_state,
-    _build_report_filters,
-    _populate_filtered_summary_discarded_sections,
-    _populate_filtered_summary_pass_sections,
-    _populate_filtered_summary_symbolic_sections,
 )
 from r2morph.reporting.report_orchestrator import (
     _dispatch_report_flow,
-    _dispatch_report_flow_ctx,
-    _execute_general_report_flow,
-    _execute_only_mismatches_report_flow,
-    _render_general_flow_sections,
-    _render_general_only_pass_sections,
-    _render_general_report_sections,
 )
 
 app = typer.Typer(
@@ -153,8 +90,8 @@ def _build_config(aggressive: bool, force: bool) -> EngineConfig:
     return config
 
 
-def _mutation_config(section: object, seed: int | None, offset: int) -> dict[str, object]:
-    cfg = section.to_dict()
+def _mutation_config(section: Any, seed: int | None, offset: int) -> dict[str, Any]:
+    cfg: dict[str, Any] = section.to_dict()
     if seed is not None:
         cfg["seed"] = seed + offset
     return cfg
@@ -197,14 +134,14 @@ def _build_runtime_validator(
     return validator
 
 
-def _load_binary_analyzer():
+def _load_binary_analyzer() -> type:
     """Lazy import for analysis-only flows outside the stable mutate/report path."""
     from r2morph.analysis.analyzer import BinaryAnalyzer
 
     return BinaryAnalyzer
 
 
-def _load_diff_analyzer():
+def _load_diff_analyzer() -> type:
     """Lazy import for diff-only flows outside the stable mutate/report hot path."""
     from r2morph.analysis.diff_analyzer import DiffAnalyzer
 
@@ -309,10 +246,10 @@ def _selected_mutation_passes(
     config: EngineConfig,
     *,
     seed: int | None = None,
-) -> list[tuple[str, object]]:
+) -> list[tuple[str, Any]]:
     """Build pass instances for the selected mutation names."""
     pass_types = _load_mutation_pass_types()
-    selected: list[tuple[str, object]] = []
+    selected: list[tuple[str, Any]] = []
     offset = 0
     if "nop" in mutations:
         selected.append(("nop", pass_types["nop"](config=_mutation_config(config.nop, seed, offset))))
@@ -489,7 +426,7 @@ def _resolve_validation_mode(
     return requested_mode, None
 
 
-def _print_mutation_summary(result: dict[str, object], output_path: Path | None = None) -> None:
+def _print_mutation_summary(result: dict[str, Any], output_path: Path | None = None) -> None:
     table = Table(title="Mutation Engine Results")
     table.add_column("Metric", style="cyan")
     table.add_column("Value", style="green")
@@ -579,7 +516,7 @@ def main_callback(
     seed: int | None = typer.Option(None, "--seed", help="Deterministic seed for stable mutation selection"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
     debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug output"),
-):
+) -> None:
     """
     r2morph - mutation engine with validation
 
@@ -642,7 +579,7 @@ def main_callback(
 def analyze(
     binary: Path = typer.Argument(..., help="Path to binary file", exists=True),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-):
+) -> None:
     """
     Analyze a binary and display statistics.
     """
@@ -695,7 +632,7 @@ def analyze_enhanced(
     rewrite: bool = typer.Option(False, "--rewrite", help="Enable binary rewriting"),
     bypass: bool = typer.Option(False, "--bypass", help="Enable anti-analysis bypass"),
     output: Path = typer.Option(None, "--output", "-o", help="Output directory for results"),
-):
+) -> None:
     """
     Experimental analysis for obfuscated binaries (secondary workflow).
     Requires enhanced dependencies: pip install 'r2morph[enhanced]'
@@ -756,7 +693,7 @@ def functions(
     binary: Path = typer.Argument(..., help="Path to binary file", exists=True),
     limit: int = typer.Option(20, "--limit", "-l", help="Maximum functions to display"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-):
+) -> None:
     """
     List functions in a binary.
     """
@@ -875,7 +812,7 @@ def morph(
         help="Clear the analysis cache before running",
     ),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-):
+) -> None:
     """
     Apply tracked mutations to a binary and validate the result.
 
@@ -891,6 +828,7 @@ def morph(
 
     if clear_cache:
         from r2morph.core.analysis_cache import AnalysisCache
+
         cleared = AnalysisCache().clear()
         console.print(f"[cyan]Cleared {cleared} cache entries[/cyan]")
 
@@ -1037,13 +975,14 @@ def _evaluate_and_write_gates(
     pass_requirement_failures: list[str] = []
     if pass_severity_requirements:
         pass_requirements_ok, pass_requirement_failures = _pass_severity_requirements_met(
-            severity_rows, pass_severity_requirements,
+            severity_rows,
+            pass_severity_requirements,
         )
     report_payload = _attach_gate_evaluation(
         report_payload,
         min_severity=min_severity,
         min_severity_passed=min_severity_passed,
-        require_pass_severity=pass_severity_requirements,
+        require_pass_severity=pass_severity_requirements or [],
         require_pass_severity_passed=pass_requirements_ok,
         require_pass_severity_failures=pass_requirement_failures,
     )
@@ -1133,7 +1072,7 @@ def mutate(
     ),
     seed: int | None = typer.Option(None, "--seed", help="Deterministic seed for mutation selection"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-):
+) -> None:
     """Alias for `morph` using the product-oriented command name."""
     return morph(
         binary=binary,
@@ -1177,7 +1116,7 @@ def validate(
         help="Ignore trailing whitespace differences in stdout/stderr",
     ),
     timeout: int = typer.Option(10, "--timeout", help="Timeout per test case in seconds"),
-):
+) -> None:
     """
     Run runtime validation for an original/mutated binary pair.
 
@@ -1209,7 +1148,7 @@ def validate(
 def diff(
     original: Path = typer.Argument(..., help="Original binary", exists=True),
     mutated: Path = typer.Argument(..., help="Mutated binary", exists=True),
-):
+) -> None:
     """
     Show a lightweight diff summary between two binaries.
     """
@@ -1315,7 +1254,7 @@ def report(
         "-f",
         help="Output format: json (default) or sarif",
     ),
-):
+) -> None:
     """
     Display a previously generated engine report.
     """
@@ -1333,13 +1272,13 @@ def report(
     )
     summary = context["summary"]
     resolved_only_pass = context["resolved_only_pass"]
-    resolved_only_pass_failure = context["resolved_only_pass_failure"]
+    context["resolved_only_pass_failure"]
     requested_validation_mode = context["requested_validation_mode"]
     effective_validation_mode = context["effective_validation_mode"]
     validation_policy = context["validation_policy"]
     gate_evaluation = context["gate_evaluation"]
-    gate_requested = context["gate_requested"]
-    gate_results = context["gate_results"]
+    context["gate_requested"]
+    context["gate_results"]
     gate_failure_summary = context["gate_failure_summary"]
     gate_failure_priority = context["gate_failure_priority"]
     gate_failure_severity_priority = context["gate_failure_severity_priority"]
@@ -1401,20 +1340,23 @@ def report(
     if output_format.lower() == "sarif":
         from r2morph.reporting.sarif_formatter import format_as_sarif
 
-        sarif_report = format_as_sarif(payload)
+        mutations_list = payload.get("mutations", [])
+        validations_list = payload.get("validations", [])
+        binary_path_str = payload.get("binary_path", "")
+        sarif_report = format_as_sarif(mutations_list, validations_list, binary_path_str)
         if output:
             with open(output, "w", encoding="utf-8") as f:
-                f.write(sarif_report)
+                f.write(str(sarif_report))
             rprint(f"[green]SARIF report written to[/green] {output}")
         else:
-            print(sarif_report)
+            print(str(sarif_report))
         return
 
     _dispatch_report_flow(**dispatch_state)
 
 
 @app.command()
-def version():
+def version() -> None:
     """
     Display version information.
     """
@@ -1427,7 +1369,7 @@ def cache(
     clear: bool = typer.Option(False, "--clear", "-c", help="Clear all cached analysis results"),
     stats: bool = typer.Option(False, "--stats", "-s", help="Show cache statistics"),
     path: Path | None = typer.Option(None, "--path", "-p", help="Custom cache directory path"),
-):
+) -> None:
     """
     Manage the analysis cache.
 
@@ -1443,7 +1385,7 @@ def cache(
 
     if stats:
         statistics = cache_instance.get_stats()
-        console.print(f"[cyan]Cache Statistics:[/cyan]")
+        console.print("[cyan]Cache Statistics:[/cyan]")
         console.print(f"  Hits: {statistics.hits}")
         console.print(f"  Misses: {statistics.misses}")
         console.print(f"  Hit Rate: {statistics.hit_rate:.2%}")
@@ -1464,7 +1406,7 @@ def cache(
     raise typer.Exit(1)
 
 
-def main():
+def main() -> None:
     """Entry point for the CLI."""
     argv = sys.argv[1:]
     if argv and not argv[0].startswith("-") and argv[0] not in KNOWN_COMMANDS:

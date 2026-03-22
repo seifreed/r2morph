@@ -42,11 +42,11 @@ class ValidationResult:
     def warnings(self) -> list[ValidationIssue]:
         return [i for i in self.issues if i.severity == ValidationSeverity.WARNING]
 
-    def add_error(self, code: str, message: str, address: int = 0, **details):
+    def add_error(self, code: str, message: str, address: int = 0, **details: Any) -> None:
         self.issues.append(ValidationIssue(code, ValidationSeverity.ERROR, message, address, details))
         self.valid = False
 
-    def add_warning(self, code: str, message: str, address: int = 0, **details):
+    def add_warning(self, code: str, message: str, address: int = 0, **details: Any) -> None:
         self.issues.append(ValidationIssue(code, ValidationSeverity.WARNING, message, address, details))
 
 
@@ -331,7 +331,6 @@ class SemanticValidator:
 
         registers_written: set[str] = set()
         registers_read: set[str] = set()
-        memory_accesses: list[int] = []
         has_unsafe: bool = False
 
         for idx, ins in enumerate(junk_instructions):
@@ -436,9 +435,11 @@ class SemanticValidator:
         if isinstance(ops, dict):
             return ops.get(str(idx)) or ops.get(idx)
         elif isinstance(ops, list) and idx < len(ops):
-            return ops[idx]
+            result = ops[idx]
+            return str(result) if result is not None else None
         op_key = f"operand_{idx + 1}"
-        return ins.get(op_key)
+        result = ins.get(op_key)
+        return str(result) if result is not None else None
 
     def _get_jump_target(self, ins: dict[str, Any]) -> int | None:
         jump = ins.get("jump") or ins.get("target")

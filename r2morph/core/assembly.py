@@ -77,7 +77,7 @@ class AssemblyService:
     - Symbolic variable resolution
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize AssemblyService."""
         pass
 

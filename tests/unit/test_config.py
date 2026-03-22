@@ -33,11 +33,7 @@ class TestMutationConfig:
 
     def test_mutation_config_custom_values(self):
         """Test MutationConfig with custom values."""
-        config = MutationConfig(
-            max_per_function=10,
-            probability=0.8,
-            force_different=True
-        )
+        config = MutationConfig(max_per_function=10, probability=0.8, force_different=True)
         assert config.max_per_function == 10
         assert config.probability == 0.8
         assert config.force_different == True
@@ -70,11 +66,7 @@ class TestNopInsertionConfig:
     def test_nop_insertion_config_custom_values(self):
         """Test NopInsertionConfig with custom values."""
         config = NopInsertionConfig(
-            max_per_function=8,
-            probability=0.7,
-            force_different=True,
-            use_creative_nops=False,
-            max_nops_per_function=12
+            max_per_function=8, probability=0.7, force_different=True, use_creative_nops=False, max_nops_per_function=12
         )
         assert config.max_per_function == 8
         assert config.probability == 0.7
@@ -84,11 +76,7 @@ class TestNopInsertionConfig:
 
     def test_nop_insertion_config_to_dict(self):
         """Test NopInsertionConfig to_dict() includes all fields."""
-        config = NopInsertionConfig(
-            max_per_function=3,
-            use_creative_nops=False,
-            max_nops_per_function=7
-        )
+        config = NopInsertionConfig(max_per_function=3, use_creative_nops=False, max_nops_per_function=7)
         result = config.to_dict()
 
         assert isinstance(result, dict)
@@ -114,9 +102,7 @@ class TestInstructionSubstitutionConfig:
 
     def test_instruction_substitution_config_to_dict(self):
         """Test InstructionSubstitutionConfig to_dict() method."""
-        config = InstructionSubstitutionConfig(
-            max_substitutions_per_function=15
-        )
+        config = InstructionSubstitutionConfig(max_substitutions_per_function=15)
         result = config.to_dict()
 
         assert "max_substitutions_per_function" in result
@@ -135,9 +121,7 @@ class TestRegisterSubstitutionConfig:
 
     def test_register_substitution_config_to_dict(self):
         """Test RegisterSubstitutionConfig to_dict() method."""
-        config = RegisterSubstitutionConfig(
-            max_substitutions_per_function=8
-        )
+        config = RegisterSubstitutionConfig(max_substitutions_per_function=8)
         result = config.to_dict()
 
         assert "max_substitutions_per_function" in result
@@ -156,11 +140,7 @@ class TestAnalysisConfig:
 
     def test_analysis_config_custom_values(self):
         """Test AnalysisConfig with custom values."""
-        config = AnalysisConfig(
-            level="aaa",
-            timeout_seconds=600,
-            low_memory=True
-        )
+        config = AnalysisConfig(level="aaa", timeout_seconds=600, low_memory=True)
         assert config.level == "aaa"
         assert config.timeout_seconds == 600
         assert config.low_memory == True

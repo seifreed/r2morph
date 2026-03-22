@@ -98,6 +98,7 @@ class CaveFinder:
         """
         caves: list[CodeCave] = []
 
+        assert self.binary.r2 is not None
         try:
             data_hex = self.binary.r2.cmd(f"p8 {size} @ 0x{start_addr:x}")
             if data_hex is None:

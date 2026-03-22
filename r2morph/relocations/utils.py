@@ -1,12 +1,14 @@
 """Shared utilities for the relocations package."""
 
 import logging
-from typing import Any
+from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
+ByteOrder = Literal["little", "big"]
 
-def get_endianness(binary: Any) -> str:
+
+def get_endianness(binary: Any) -> ByteOrder:
     """Detect binary endianness from architecture info.
 
     Args:

@@ -13,7 +13,6 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
 from r2morph.core.binary import Binary
 from r2morph.core.function import Function
 from r2morph.core.instruction import Instruction
@@ -243,16 +242,12 @@ class TestInstructionComprehensive:
 
     def test_instruction_is_ret(self):
         """Test checking if instruction is ret."""
-        insn = Instruction(
-            address=0x1000, mnemonic="ret", operands=[], size=1, bytes=b"\xc3", type="ret"
-        )
+        insn = Instruction(address=0x1000, mnemonic="ret", operands=[], size=1, bytes=b"\xc3", type="ret")
         assert insn.is_ret() is True
 
     def test_instruction_repr(self):
         """Test Instruction repr."""
-        insn = Instruction(
-            address=0x1000, mnemonic="nop", operands=[], size=1, bytes=b"\x90", type="nop"
-        )
+        insn = Instruction(address=0x1000, mnemonic="nop", operands=[], size=1, bytes=b"\x90", type="nop")
         repr_str = repr(insn)
 
         assert "0x1000" in repr_str

@@ -1,27 +1,17 @@
 """CLI-specific rendering functions for report output.
 
 These functions use Rich console to render detailed report sections.
-Extracted from report_helpers.py to maintain cohesion."""
+Extracted from report_helpers.py to maintain cohesion.
 
-"""Report helpers: small helper/predicate functions for reporting.
-
+Report helpers: small helper/predicate functions for reporting.
 Extracted from cli.py -- no logic changes.
 """
 
-import json
-import re
-from pathlib import Path
 from typing import Any
 
-import typer
 from rich.console import Console
 from rich.table import Table
 
-from r2morph.core.engine import (
-    _build_gate_failure_priority,
-    _build_gate_failure_severity_priority,
-    _summarize_gate_failures,
-)
 from r2morph.reporting.report_helpers import _sort_pass_evidence
 
 _console: Console | None = None
@@ -71,7 +61,9 @@ def _render_report_filter_messages(
             f"[bold]Uncovered Pass Filter[/bold]: {len(selected_risk_pass_names)} uncovered pass(es) detected"
         )
     if only_covered_passes:
-        _get_console().print(f"[bold]Covered Pass Filter[/bold]: {len(selected_risk_pass_names)} covered pass(es) detected")
+        _get_console().print(
+            f"[bold]Covered Pass Filter[/bold]: {len(selected_risk_pass_names)} covered pass(es) detected"
+        )
     if only_clean_passes:
         _get_console().print(f"[bold]Clean Pass Filter[/bold]: {len(selected_risk_pass_names)} clean pass(es) detected")
     if only_structural_risk:
@@ -122,7 +114,9 @@ def _render_only_mismatches_sections(
             role = mismatch_pass_context.get(pass_name, {}).get("role", "unknown")
             observables = mismatch_observables_by_pass.get(pass_name, [])
             observable_fragment = f", observables={','.join(observables)}" if observables else ""
-            _get_console().print(f"  [cyan]{pass_name}[/cyan]: mismatch_count={count}, role={role}{observable_fragment}")
+            _get_console().print(
+                f"  [cyan]{pass_name}[/cyan]: mismatch_count={count}, role={role}{observable_fragment}"
+            )
     if mismatch_severity_rows:
         _get_console().print("[bold]Mismatch Severity Priority[/bold]:")
         for row in mismatch_severity_rows:
@@ -230,9 +224,7 @@ def _render_mismatch_table(
                 "severity": (
                     "mismatch"
                     if pass_stats["observable_mismatch"] > 0
-                    else "without-coverage"
-                    if pass_stats["without_coverage"] > 0
-                    else "bounded-only"
+                    else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
                 ),
                 "issue_count": (
                     pass_stats["observable_mismatch"] + pass_stats["without_coverage"] + pass_stats["bounded_only"]
@@ -259,9 +251,7 @@ def _render_mismatch_table(
                 "severity": (
                     "mismatch"
                     if pass_stats["observable_mismatch"] > 0
-                    else "without-coverage"
-                    if pass_stats["without_coverage"] > 0
-                    else "bounded-only"
+                    else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
                 ),
                 "observable_mismatch": pass_stats["observable_mismatch"],
                 "without_coverage": pass_stats["without_coverage"],
@@ -481,7 +471,9 @@ def _render_gate_sections(
     """Render persisted gate evaluation and failure sections."""
     if not gate_evaluation:
         return
-    _get_console().print(f"[bold]Gate Evaluation[/bold]: all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}")
+    _get_console().print(
+        f"[bold]Gate Evaluation[/bold]: all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}"
+    )
     if gate_requested.get("min_severity") is not None:
         _get_console().print(
             "  "
@@ -587,9 +579,7 @@ def _render_pass_validation_contexts(
                 context["role"] = (
                     "degradation-trigger"
                     if context.get("degradation_triggered_by_pass")
-                    else "executed-under-degraded-mode"
-                    if context.get("degraded_execution")
-                    else "requested-mode"
+                    else "executed-under-degraded-mode" if context.get("degraded_execution") else "requested-mode"
                 )
                 filtered_summary.setdefault("pass_validation_context", {})[pass_name] = context
         if context:
@@ -723,7 +713,7 @@ class _LazyConsole:
         return getattr(_get_console(), name)
 
 
-CONSOLE = _LazyConsole()  # type: ignore[assignment]
+CONSOLE = _LazyConsole()
 
 
 def create_table(title: str, columns: list[tuple[str, str]]) -> Table:
@@ -990,9 +980,7 @@ def render_only_pass_sections(
         )
         table.add_row("Changed Regions", str(evidence.get("changed_region_count", 0)))
         table.add_row("Structural Issues", str(evidence.get("structural_issue_count", 0)))
-        table.add_row(
-            "Symbolic Mismatches", str(evidence.get("symbolic_binary_mismatched_regions", 0))
-        )
+        table.add_row("Symbolic Mismatches", str(evidence.get("symbolic_binary_mismatched_regions", 0)))
         c.print(table)
 
 
@@ -1028,27 +1016,19 @@ def render_report_filter_messages(
         c.print(f"[bold]Pass Filter Resolution[/bold]: {only_pass} -> {resolved_only_pass}")
 
     if only_pass_failure is not None and resolved_only_pass_failure != only_pass_failure:
-        c.print(
-            f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}"
-        )
+        c.print(f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}")
 
     if only_risky_passes:
-        c.print(
-            "[bold]Filter[/bold]: Showing only passes with symbolic mismatches or structural issues"
-        )
+        c.print("[bold]Filter[/bold]: Showing only passes with symbolic mismatches or structural issues")
 
     if only_uncovered_passes:
-        c.print(
-            "[bold]Filter[/bold]: Showing only clean passes without effective symbolic coverage"
-        )
+        c.print("[bold]Filter[/bold]: Showing only clean passes without effective symbolic coverage")
 
     if only_covered_passes:
         c.print("[bold]Filter[/bold]: Showing only clean passes with effective symbolic coverage")
 
     if only_clean_passes:
-        c.print(
-            "[bold]Filter[/bold]: Showing only passes with no structural issues and clean symbolic evidence"
-        )
+        c.print("[bold]Filter[/bold]: Showing only passes with no structural issues and clean symbolic evidence")
 
 
 def render_summary_table(
@@ -1110,10 +1090,7 @@ def render_gate_evaluation_sections(
     if not gate_evaluation:
         return
 
-    c.print(
-        "[bold]Gate Evaluation[/bold]: "
-        f"all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}"
-    )
+    c.print("[bold]Gate Evaluation[/bold]: " f"all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}")
 
     if gate_requested.get("min_severity") is not None:
         c.print(
@@ -1142,9 +1119,7 @@ def render_gate_evaluation_sections(
         f"require_pass_failures={gate_failure_summary.get('require_pass_severity_failure_count', 0)}"
     )
 
-    severity_counts = gate_failure_summary.get(
-        "require_pass_severity_failures_by_expected_severity", {}
-    )
+    severity_counts = gate_failure_summary.get("require_pass_severity_failures_by_expected_severity", {})
     if severity_counts:
         c.print(
             "  expected_severity_counts="
@@ -1154,10 +1129,7 @@ def render_gate_evaluation_sections(
     if gate_failure_severity_priority:
         c.print(
             "  expected_severity_priority="
-            + ", ".join(
-                f"{row.get('severity')}:{row.get('failure_count')}"
-                for row in gate_failure_severity_priority
-            )
+            + ", ".join(f"{row.get('severity')}:{row.get('failure_count')}" for row in gate_failure_severity_priority)
         )
 
     pass_failure_map = gate_failure_summary.get("require_pass_severity_failures_by_pass", {})
@@ -1178,8 +1150,7 @@ def render_gate_evaluation_sections(
             strictest = row.get("strictest_expected_severity", "unknown")
             c.print(
                 f"  [yellow]{pass_name}[/yellow] "
-                f"(count={failure_count}, strictest_expected={strictest}): "
-                + ", ".join(failures_list)
+                f"(count={failure_count}, strictest_expected={strictest}): " + ", ".join(failures_list)
             )
 
 
@@ -1357,4 +1328,3 @@ def render_validation_context_table(
         )
 
     c.print(table)
-

@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 # We use Any at runtime to avoid circular imports; the protocol is
 # enforced structurally via the methods called on binary.
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -203,12 +203,12 @@ class MutationPass(ABC):
         finally:
             self._run_started_at = None
 
-    def enable(self):
+    def enable(self) -> None:
         """Enable this mutation pass."""
         self.enabled = True
         logger.debug(f"Enabled pass: {self.name}")
 
-    def disable(self):
+    def disable(self) -> None:
         """Disable this mutation pass."""
         self.enabled = False
         logger.debug(f"Disabled pass: {self.name}")

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import OPAQUE_PREDICATE_MIN_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -62,7 +62,7 @@ class OpaquePredicatePass(MutationPass):
         funcs_mutated = 0
 
         for func in functions:
-            func_addr = func.get("addr", 0)
+            func.get("addr", 0)
 
             if func.get("size", 0) < OPAQUE_PREDICATE_MIN_FUNCTION_SIZE:
                 continue

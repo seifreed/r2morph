@@ -100,25 +100,41 @@ from r2morph.analysis.pattern_preservation import (
 )
 
 # Symbolic execution and advanced analysis
+from typing import Any as _Any
+
+_AngrBridge: _Any = None
+_ConstraintSolver: _Any = None
+_PathExplorer: _Any = None
+_StateManager: _Any = None
+_SyntiaFramework: _Any = None
+_SYNTIA_AVAILABLE: bool = False
+
 try:
     from r2morph.analysis.symbolic import (
-        AngrBridge,
-        ConstraintSolver,
-        PathExplorer,
-        StateManager,
-        SyntiaFramework,
-        SYNTIA_AVAILABLE,
+        AngrBridge as _AngrBridgeImport,
+        ConstraintSolver as _ConstraintSolverImport,
+        PathExplorer as _PathExplorerImport,
+        StateManager as _StateManagerImport,
+        SyntiaFramework as _SyntiaFrameworkImport,
+        SYNTIA_AVAILABLE as _SYNTIA_AVAILABLE_IMPORT,
     )
 
     SYMBOLIC_AVAILABLE = True
+    _AngrBridge = _AngrBridgeImport
+    _ConstraintSolver = _ConstraintSolverImport
+    _PathExplorer = _PathExplorerImport
+    _StateManager = _StateManagerImport
+    _SyntiaFramework = _SyntiaFrameworkImport
+    _SYNTIA_AVAILABLE = _SYNTIA_AVAILABLE_IMPORT
 except ImportError:
     SYMBOLIC_AVAILABLE = False
-    AngrBridge = None
-    ConstraintSolver = None
-    PathExplorer = None
-    StateManager = None
-    SyntiaFramework = None
-    SYNTIA_AVAILABLE = False
+
+AngrBridge = _AngrBridge
+ConstraintSolver = _ConstraintSolver
+PathExplorer = _PathExplorer
+StateManager = _StateManager
+SyntiaFramework = _SyntiaFramework
+SYNTIA_AVAILABLE = _SYNTIA_AVAILABLE
 
 __all__ = [
     "BinaryAnalyzer",

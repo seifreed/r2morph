@@ -7,7 +7,7 @@ Handles all write operations: bytes, instructions, NOP fills.
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from r2morph.adapters.disassembler import DisassemblerInterface
@@ -132,7 +132,7 @@ class BinaryWriter:
         self,
         address: int,
         data: bytes,
-        resolve_physical_offset_func=None,
+        resolve_physical_offset_func: Any = None,
         sections: list[dict] | None = None,
     ) -> bool:
         """

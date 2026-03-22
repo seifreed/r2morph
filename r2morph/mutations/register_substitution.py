@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -413,14 +413,13 @@ class RegisterSubstitutionPass(MutationPass):
             "bp": ["bpl", "bp", "ebp", "rbp"],
         }
 
-        dest_family = None
         source_family = None
         orig_family = None
         subst_family = None
 
         for family, regs in register_families.items():
             if dest in regs:
-                dest_family = family
+                pass
             if source in regs:
                 source_family = family
             if orig_reg in regs:
@@ -497,7 +496,10 @@ class RegisterSubstitutionPass(MutationPass):
         return True
 
     def _select_candidates(
-        self, binary: Any, functions: list[dict[str, Any]], arch: str,
+        self,
+        binary: Any,
+        functions: list[dict[str, Any]],
+        arch: str,
     ) -> list[tuple[dict, list[dict], list[tuple[str, str]]]]:
         """Select functions with substitution candidates.
 

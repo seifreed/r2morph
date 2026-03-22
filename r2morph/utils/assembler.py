@@ -5,6 +5,7 @@ No need for Keystone - radare2 has a built-in assembler!
 """
 
 import logging
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ class R2Assembler:
     Uses radare2's native assembly capabilities instead of Keystone.
     """
 
-    def __init__(self, r2_instance):
+    def __init__(self, r2_instance: Any) -> None:
         """
         Initialize assembler.
 

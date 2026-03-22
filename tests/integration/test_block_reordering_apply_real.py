@@ -21,9 +21,7 @@ def test_block_reordering_apply_real(tmp_path: Path):
 
     with Binary(temp_binary, writable=True) as bin_obj:
         bin_obj.analyze()
-        pass_obj = BlockReorderingPass(
-            config={"probability": 1.0, "max_functions": 2}
-        )
+        pass_obj = BlockReorderingPass(config={"probability": 1.0, "max_functions": 2})
         result = pass_obj.apply(bin_obj)
 
     assert "mutations_applied" in result

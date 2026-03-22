@@ -18,9 +18,7 @@ def test_opaque_predicates_apply_real(tmp_path: Path) -> None:
 
     with Binary(work_path, writable=True) as binary:
         binary.analyze()
-        pass_obj = OpaquePredicatePass(
-            config={"max_predicates_per_function": 1, "probability": 1.0}
-        )
+        pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 1, "probability": 1.0})
         result = pass_obj.apply(binary)
 
     assert "mutations_applied" in result

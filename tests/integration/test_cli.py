@@ -320,15 +320,13 @@ class TestCLI:
         assert "symbolic_severity_by_pass" in payload["summary"]
         assert "symbolic_summary" in payload["passes"]["ReportFixture"]
         assert "severity" in payload["passes"]["ReportFixture"]["symbolic_summary"]
-        has_symbolic_issue = (
-            not mutation["metadata"].get("symbolic_observable_equivalent", False)
-            and (
-                mutation["metadata"].get("symbolic_observable_check_performed", False)
-                or symbolic_status not in {
-                    "real-binary-observables-match",
-                    "shellcode-observables-match",
-                }
-            )
+        has_symbolic_issue = not mutation["metadata"].get("symbolic_observable_equivalent", False) and (
+            mutation["metadata"].get("symbolic_observable_check_performed", False)
+            or symbolic_status
+            not in {
+                "real-binary-observables-match",
+                "shellcode-observables-match",
+            }
         )
         if has_symbolic_issue:
             assert payload["summary"]["symbolic_issue_passes"]
@@ -355,9 +353,7 @@ class TestCLI:
         assert "Severity Priority" in summary_result.stdout
         assert "Pass Evidence" in summary_result.stdout
         if "RegisterSubstitution" in summary_result.stdout and "NopInsertion" in summary_result.stdout:
-            assert summary_result.stdout.index("RegisterSubstitution") < summary_result.stdout.index(
-                "NopInsertion"
-            )
+            assert summary_result.stdout.index("RegisterSubstitution") < summary_result.stdout.index("NopInsertion")
         if has_symbolic_issue:
             assert "Passes With Symbolic Issues" in summary_result.stdout
         assert '"mutations"' not in summary_result.stdout
@@ -403,9 +399,7 @@ class TestCLI:
         assert '"report_filters": {' in status_result.stdout
         assert f'"only_status": "{symbolic_status}"' in status_result.stdout
 
-    def test_cli_report_only_risky_passes_filters_real_risky_passes(
-        self, deterministic_register_elf, tmp_path
-    ):
+    def test_cli_report_only_risky_passes_filters_real_risky_passes(self, deterministic_register_elf, tmp_path):
         """Test `report --only-risky-passes` on a real report with symbolic mismatch evidence."""
         report = tmp_path / "register_risky.report.json"
         filtered = tmp_path / "register_risky.filtered.json"
@@ -449,19 +443,11 @@ class TestCLI:
         filtered_payload = json.loads(filtered.read_text(encoding="utf-8"))
         assert filtered_payload["report_filters"]["only_risky_passes"] is True
         assert "RegisterSubstitution" in filtered_payload["filtered_summary"]["risky_passes"]
-        assert "RegisterSubstitution" in filtered_payload["filtered_summary"][
-            "pass_risk_buckets"
-        ]["risky"]
-        assert "RegisterSubstitution" in filtered_payload["filtered_summary"][
-            "pass_risk_buckets"
-        ]["symbolic"]
-        assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == (
-            "RegisterSubstitution"
-        )
+        assert "RegisterSubstitution" in filtered_payload["filtered_summary"]["pass_risk_buckets"]["risky"]
+        assert "RegisterSubstitution" in filtered_payload["filtered_summary"]["pass_risk_buckets"]["symbolic"]
+        assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == ("RegisterSubstitution")
 
-    def test_cli_report_only_symbolic_risk_filters_real_symbolic_risk(
-        self, deterministic_register_elf, tmp_path
-    ):
+    def test_cli_report_only_symbolic_risk_filters_real_symbolic_risk(self, deterministic_register_elf, tmp_path):
         """Test `report --only-symbolic-risk` on a real report with symbolic mismatch evidence."""
         report = tmp_path / "register_symbolic_risk.report.json"
         filtered = tmp_path / "register_symbolic_risk.filtered.json"
@@ -506,9 +492,7 @@ class TestCLI:
         filtered_payload = json.loads(filtered.read_text(encoding="utf-8"))
         assert filtered_payload["report_filters"]["only_symbolic_risk"] is True
         assert "RegisterSubstitution" in filtered_payload["filtered_summary"]["symbolic_risk_passes"]
-        assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == (
-            "RegisterSubstitution"
-        )
+        assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == ("RegisterSubstitution")
 
     def test_cli_report_only_clean_passes_filters_real_clean_passes(self, ls_elf, tmp_path):
         """Test `report --only-clean-passes` on a real report with clean symbolic evidence."""
@@ -549,9 +533,7 @@ class TestCLI:
         filtered_payload = json.loads(filtered.read_text(encoding="utf-8"))
         assert filtered_payload["report_filters"]["only_clean_passes"] is True
         assert "ReportFixture" in filtered_payload["filtered_summary"]["clean_passes"]
-        assert "ReportFixture" in filtered_payload["filtered_summary"]["pass_risk_buckets"][
-            "clean"
-        ]
+        assert "ReportFixture" in filtered_payload["filtered_summary"]["pass_risk_buckets"]["clean"]
         assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "ReportFixture"
 
     def test_engine_generated_report_persists_pass_buckets(self, deterministic_register_elf, tmp_path):
@@ -607,17 +589,10 @@ class TestCLI:
         assert "RegisterSubstitution" in payload["summary"]["pass_risk_buckets"]["risky"]
         assert "RegisterSubstitution" in payload["summary"]["pass_risk_buckets"]["symbolic"]
         assert "RegisterSubstitution" in payload["summary"]["report_views"]["passes"]["risky"]
-        assert payload["summary"]["report_views"]["general_passes"][0]["pass_name"] == (
-            "RegisterSubstitution"
-        )
+        assert payload["summary"]["report_views"]["general_passes"][0]["pass_name"] == ("RegisterSubstitution")
         assert "region_evidence_count" in payload["summary"]["report_views"]["general_passes"][0]
-        assert payload["summary"]["report_views"]["general_summary"]["passes"] == [
-            "RegisterSubstitution"
-        ]
-        assert (
-            payload["summary"]["report_views"]["pass_filter_views"]["only_risky_passes"]
-            == ["RegisterSubstitution"]
-        )
+        assert payload["summary"]["report_views"]["general_summary"]["passes"] == ["RegisterSubstitution"]
+        assert payload["summary"]["report_views"]["pass_filter_views"]["only_risky_passes"] == ["RegisterSubstitution"]
         assert isinstance(payload["summary"]["report_views"]["mismatch_view"], list)
         assert isinstance(payload["summary"]["report_views"]["only_mismatches"], dict)
         assert "summary" in payload["summary"]["report_views"]["only_mismatches"]
@@ -644,32 +619,19 @@ class TestCLI:
         assert "RegisterSubstitution" in payload["summary"]["pass_capability_summary_map"]
         assert "RegisterSubstitution" in payload["summary"]["pass_triage_map"]
         assert payload["summary"]["normalized_pass_results"][0]["pass_name"] == "RegisterSubstitution"
+        assert payload["summary"]["pass_evidence_map"]["RegisterSubstitution"]["pass_name"] == "RegisterSubstitution"
+        assert payload["summary"]["pass_evidence_priority"][0]["pass_name"] == "RegisterSubstitution"
+        assert payload["summary"]["symbolic_issue_map"]["RegisterSubstitution"]["pass_name"] == "RegisterSubstitution"
         assert (
-            payload["summary"]["pass_evidence_map"]["RegisterSubstitution"]["pass_name"]
-            == "RegisterSubstitution"
+            payload["summary"]["symbolic_coverage_map"]["RegisterSubstitution"]["pass_name"] == "RegisterSubstitution"
         )
         assert (
-            payload["summary"]["pass_evidence_priority"][0]["pass_name"]
-            == "RegisterSubstitution"
-        )
-        assert (
-            payload["summary"]["symbolic_issue_map"]["RegisterSubstitution"]["pass_name"]
-            == "RegisterSubstitution"
-        )
-        assert (
-            payload["summary"]["symbolic_coverage_map"]["RegisterSubstitution"]["pass_name"]
-            == "RegisterSubstitution"
-        )
-        assert (
-            payload["summary"]["symbolic_severity_map"]["RegisterSubstitution"]["pass_name"]
-            == "RegisterSubstitution"
+            payload["summary"]["symbolic_severity_map"]["RegisterSubstitution"]["pass_name"] == "RegisterSubstitution"
         )
         assert isinstance(payload["summary"]["observable_mismatch_by_pass"], list)
         assert isinstance(payload["summary"]["observable_mismatch_map"], dict)
 
-    def test_cli_report_only_covered_passes_filters_real_covered_passes(
-        self, deterministic_substitute_elf, tmp_path
-    ):
+    def test_cli_report_only_covered_passes_filters_real_covered_passes(self, deterministic_substitute_elf, tmp_path):
         """Test `report --only-covered-passes` on a real report with symbolic coverage."""
         report = tmp_path / "covered.report.json"
         filtered = tmp_path / "covered.filtered.json"
@@ -715,16 +677,10 @@ class TestCLI:
         filtered_payload = json.loads(filtered.read_text(encoding="utf-8"))
         assert filtered_payload["report_filters"]["only_covered_passes"] is True
         assert "InstructionSubstitution" in filtered_payload["filtered_summary"]["covered_passes"]
-        assert "InstructionSubstitution" in filtered_payload["filtered_summary"][
-            "pass_coverage_buckets"
-        ]["covered"]
-        assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == (
-            "InstructionSubstitution"
-        )
+        assert "InstructionSubstitution" in filtered_payload["filtered_summary"]["pass_coverage_buckets"]["covered"]
+        assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == ("InstructionSubstitution")
 
-    def test_cli_report_only_uncovered_passes_filters_real_uncovered_passes(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_only_uncovered_passes_filters_real_uncovered_passes(self, ls_elf, tmp_path):
         """Test `report --only-uncovered-passes` on a real clean report without symbolic coverage."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -763,9 +719,7 @@ class TestCLI:
         filtered_payload = json.loads(filtered.read_text(encoding="utf-8"))
         assert filtered_payload["report_filters"]["only_uncovered_passes"] is True
         assert "ReportFixture" in filtered_payload["filtered_summary"]["uncovered_passes"]
-        assert "ReportFixture" in filtered_payload["filtered_summary"]["pass_coverage_buckets"][
-            "uncovered"
-        ]
+        assert "ReportFixture" in filtered_payload["filtered_summary"]["pass_coverage_buckets"]["uncovered"]
         assert filtered_payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "ReportFixture"
 
     def test_cli_mutate_generated_report_supports_report_filters(self, ls_elf, tmp_path):
@@ -811,11 +765,7 @@ class TestCLI:
         payload = json.loads(report.read_text(encoding="utf-8"))
         assert payload["mutations"]
         mutation = next(
-            (
-                item
-                for item in payload["mutations"]
-                if item.get("metadata", {}).get("symbolic_status")
-            ),
+            (item for item in payload["mutations"] if item.get("metadata", {}).get("symbolic_status")),
             None,
         )
         if mutation is None:
@@ -917,11 +867,7 @@ class TestCLI:
 
         payload = json.loads(report.read_text(encoding="utf-8"))
         mutation = next(
-            (
-                item
-                for item in payload.get("mutations", [])
-                if item.get("metadata", {}).get("symbolic_status")
-            ),
+            (item for item in payload.get("mutations", []) if item.get("metadata", {}).get("symbolic_status")),
             None,
         )
         if mutation is None:
@@ -958,12 +904,13 @@ class TestCLI:
         assert filtered_payload["report_filters"]["only_status"] == symbolic_status
         assert filtered_payload["filtered_summary"]["mutations"] == len(filtered_payload["mutations"])
         assert filtered_payload["filtered_summary"]["passes"] == [pass_name]
-        assert filtered_payload["filtered_summary"]["symbolic_statuses"] == {symbolic_status: len(filtered_payload["mutations"])}
+        assert filtered_payload["filtered_summary"]["symbolic_statuses"] == {
+            symbolic_status: len(filtered_payload["mutations"])
+        }
         assert filtered_payload["mutations"]
         assert all(item["pass_name"] == pass_name for item in filtered_payload["mutations"])
         assert all(
-            item.get("metadata", {}).get("symbolic_status") == symbolic_status
-            for item in filtered_payload["mutations"]
+            item.get("metadata", {}).get("symbolic_status") == symbolic_status for item in filtered_payload["mutations"]
         )
 
     def test_cli_report_require_results_uses_exit_code_for_ci(self, ls_elf, tmp_path):
@@ -1005,11 +952,7 @@ class TestCLI:
         assert mutate_result.returncode == 0
         payload = json.loads(report.read_text(encoding="utf-8"))
         mutation = next(
-            (
-                item
-                for item in payload.get("mutations", [])
-                if item.get("metadata", {}).get("symbolic_status")
-            ),
+            (item for item in payload.get("mutations", []) if item.get("metadata", {}).get("symbolic_status")),
             None,
         )
         if mutation is None:
@@ -1265,9 +1208,7 @@ class TestCLI:
         assert payload["gate_evaluation"]["results"]["require_pass_severity_failures"] == []
         assert payload["gate_evaluation"]["results"]["all_passed"] is True
 
-    def test_cli_mutate_require_pass_severity_can_fail_without_losing_artifacts(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_mutate_require_pass_severity_can_fail_without_losing_artifacts(self, ls_elf, tmp_path):
         """`mutate --require-pass-severity` should fail with code 1 but keep artifacts."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -1325,18 +1266,11 @@ class TestCLI:
                 "failures": ["NopInsertion=not-requested(expected <= clean)"],
             }
         ]
-        assert payload["gate_failure_severity_priority"] == [
-            {"severity": "clean", "failure_count": 1}
-        ]
-        assert payload["gate_failures"]["require_pass_severity_failures_by_expected_severity"] == {
-            "clean": 1
-        }
+        assert payload["gate_failure_severity_priority"] == [{"severity": "clean", "failure_count": 1}]
+        assert payload["gate_failures"]["require_pass_severity_failures_by_expected_severity"] == {"clean": 1}
         assert payload["summary"]["gate_failures"]["require_pass_severity_failure_count"] == 1
         assert payload["summary"]["gate_failure_priority"] == payload["gate_failure_priority"]
-        assert (
-            payload["summary"]["gate_failure_severity_priority"]
-            == payload["gate_failure_severity_priority"]
-        )
+        assert payload["summary"]["gate_failure_severity_priority"] == payload["gate_failure_severity_priority"]
 
     def test_cli_mutate_require_pass_severity_accepts_mutation_alias(self, ls_elf, tmp_path):
         """Short mutation aliases should resolve to the concrete pass name."""
@@ -1525,9 +1459,10 @@ class TestCLI:
         assert "Limited symbolic coverage explicitly allowed" in result.stdout
         assert output_path.exists()
         payload = json.loads(report_path.read_text(encoding="utf-8"))
-        assert payload["pass_support"]["RegisterSubstitution"]["validator_capabilities"]["symbolic"][
-            "recommended"
-        ] is False
+        assert (
+            payload["pass_support"]["RegisterSubstitution"]["validator_capabilities"]["symbolic"]["recommended"]
+            is False
+        )
 
     def test_cli_symbolic_can_degrade_limited_pass_to_runtime(
         self,
@@ -1574,7 +1509,9 @@ class TestCLI:
         assert payload["validation_policy"]["reason"] == "limited-symbolic-support"
         assert payload["validation_policy"]["limited_passes"][0]["role"] == "degradation-trigger"
         assert payload["validation"]["runtime"]["passed"] in {True, False}
-        assert payload["passes"]["RegisterSubstitution"]["validation_context"]["requested_validation_mode"] == "symbolic"
+        assert (
+            payload["passes"]["RegisterSubstitution"]["validation_context"]["requested_validation_mode"] == "symbolic"
+        )
         assert payload["passes"]["RegisterSubstitution"]["validation_context"]["effective_validation_mode"] == "runtime"
         assert payload["passes"]["RegisterSubstitution"]["validation_context"]["degraded_execution"] is True
         assert payload["passes"]["RegisterSubstitution"]["validation_context"]["degradation_triggered_by_pass"] is True
@@ -1713,7 +1650,9 @@ class TestCLI:
         assert filtered_payload["filtered_summary"]["validation_mode"] == "runtime"
         assert filtered_payload["filtered_summary"]["degraded_passes"]
         assert filtered_payload["filtered_summary"]["degraded_passes"][0]["pass_name"] == "RegisterSubstitution"
-        assert filtered_payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "RegisterSubstitution"
+        assert (
+            filtered_payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "RegisterSubstitution"
+        )
         assert filtered_payload["filtered_summary"]["degradation_roles"]["degradation-trigger"] == 1
 
         mismatch_filtered_path = tmp_path / "mismatch-filtered.json"
@@ -1747,7 +1686,9 @@ class TestCLI:
         assert mismatch_payload["filtered_summary"]["degraded_validation"] is True
         assert mismatch_payload["filtered_summary"]["degraded_passes"][0]["pass_name"] == "RegisterSubstitution"
         assert mismatch_payload["filtered_summary"]["degradation_roles"]["degradation-trigger"] == 1
-        assert mismatch_payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "RegisterSubstitution"
+        assert (
+            mismatch_payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "RegisterSubstitution"
+        )
 
     def test_cli_report_can_filter_failed_gates(self, ls_elf, tmp_path):
         """Report can triage a real run where mutate finished with failed CLI gates."""
@@ -1915,9 +1856,7 @@ class TestCLI:
             "NopInsertion=not-requested(expected <= clean)"
         ]
 
-    def test_cli_report_only_expected_severity_filters_real_failed_gates(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_only_expected_severity_filters_real_failed_gates(self, ls_elf, tmp_path):
         """Report filters real failed gate views by expected severity."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -1993,9 +1932,7 @@ class TestCLI:
             }
         ]
 
-    def test_cli_report_only_expected_severity_require_results_on_real_failed_gates(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_only_expected_severity_require_results_on_real_failed_gates(self, ls_elf, tmp_path):
         """Require-results should respect filtered expected-severity gate views."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -2072,9 +2009,7 @@ class TestCLI:
         assert "Gate Failure Summary" in success_result.stdout
         assert failure_result.returncode == 1
 
-    def test_cli_report_only_pass_failure_filters_real_failed_gates(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_only_pass_failure_filters_real_failed_gates(self, ls_elf, tmp_path):
         """Report filters real failed gates to a single pass failure."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -2138,9 +2073,9 @@ class TestCLI:
         assert "expected_severity_counts=clean:1" in report_result.stdout
         filtered_payload = json.loads(filtered_path.read_text(encoding="utf-8"))
         assert filtered_payload["report_filters"]["only_pass_failure"] == "NopInsertion"
-        assert filtered_payload["filtered_summary"]["gate_failures"][
-            "require_pass_severity_failures_by_pass"
-        ] == {"NopInsertion": ["NopInsertion=not-requested(expected <= clean)"]}
+        assert filtered_payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_pass"] == {
+            "NopInsertion": ["NopInsertion=not-requested(expected <= clean)"]
+        }
         assert filtered_payload["filtered_summary"]["gate_failure_priority"] == [
             {
                 "pass_name": "NopInsertion",
@@ -2150,9 +2085,7 @@ class TestCLI:
             }
         ]
 
-    def test_cli_report_only_pass_failure_require_results_on_real_failed_gates(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_only_pass_failure_require_results_on_real_failed_gates(self, ls_elf, tmp_path):
         """Require-results should respect filtered pass-specific gate views."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -2229,9 +2162,7 @@ class TestCLI:
         assert "Gate Failure Summary" in success_result.stdout
         assert failure_result.returncode == 1
 
-    def test_cli_report_only_pass_failure_accepts_mutation_alias(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_only_pass_failure_accepts_mutation_alias(self, ls_elf, tmp_path):
         """Report accepts stable mutation aliases for pass-failure filtering."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -2348,9 +2279,7 @@ class TestCLI:
         assert '"only_pass": "NopInsertion"' in pass_result.stdout
         assert '"pass_name": "NopInsertion"' in pass_result.stdout
 
-    def test_cli_report_orders_failed_pass_severity_gates_by_expected_severity(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_orders_failed_pass_severity_gates_by_expected_severity(self, ls_elf, tmp_path):
         """Report orders grouped pass failures by stricter expected severity first."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -2417,9 +2346,7 @@ class TestCLI:
         assert "InstructionSubstitution=not-requested(expected <= bounded-only)" in failures
         assert "NopInsertion=not-requested(expected <= clean)" in failures
 
-    def test_cli_report_breaks_same_severity_gate_ties_by_failure_count(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_breaks_same_severity_gate_ties_by_failure_count(self, ls_elf, tmp_path):
         """Report orders same-severity gate failures by number of failures for the pass."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
@@ -2487,9 +2414,7 @@ class TestCLI:
         assert failures.count("NopInsertion=not-requested(expected <= clean)") == 2
         assert "InstructionSubstitution=not-requested(expected <= clean)" in failures
 
-    def test_cli_report_exports_gate_failure_priority_for_real_failed_gates(
-        self, ls_elf, tmp_path
-    ):
+    def test_cli_report_exports_gate_failure_priority_for_real_failed_gates(self, ls_elf, tmp_path):
         """Filtered report JSON preserves ordered gate failure priority for real runs."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")

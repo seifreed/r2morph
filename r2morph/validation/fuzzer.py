@@ -59,9 +59,7 @@ class MutationFuzzer:
         self.timeout = timeout
         self.validator = BinaryValidator(timeout=timeout)
 
-    def fuzz(
-        self, original_path: Path, mutated_path: Path, input_type: str = "random"
-    ) -> FuzzResult:
+    def fuzz(self, original_path: Path, mutated_path: Path, input_type: str = "random") -> FuzzResult:
         """
         Fuzz test the mutated binary.
 
@@ -150,9 +148,7 @@ class MutationFuzzer:
         else:
             return ""
 
-    def fuzz_with_args(
-        self, original_path: Path, mutated_path: Path, arg_count: int = 5
-    ) -> FuzzResult:
+    def fuzz_with_args(self, original_path: Path, mutated_path: Path, arg_count: int = 5) -> FuzzResult:
         """
         Fuzz with random command-line arguments.
 
@@ -175,9 +171,7 @@ class MutationFuzzer:
         for i in range(self.num_tests):
             num_args = random.randint(0, arg_count)
             args = [
-                "".join(
-                    random.choices(string.ascii_letters + string.digits, k=random.randint(1, 20))
-                )
+                "".join(random.choices(string.ascii_letters + string.digits, k=random.randint(1, 20)))
                 for _ in range(num_args)
             ]
 

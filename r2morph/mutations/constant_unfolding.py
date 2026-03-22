@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -144,10 +144,6 @@ class ConstantUnfoldingPass(MutationPass):
         Returns:
             List of instruction strings
         """
-        patterns = [
-            f"xor {reg}, {reg}; inc {reg}",
-            f"mov {reg}, 1",
-        ]
 
         if random.random() < 0.5:
             return [f"xor {reg}, {reg}", f"inc {reg}"]
@@ -273,7 +269,11 @@ class ConstantUnfoldingPass(MutationPass):
         return result
 
     def _match_unfold_pattern(
-        self, disasm: str, bits: int, binary: Any, func_addr: int,
+        self,
+        disasm: str,
+        bits: int,
+        binary: Any,
+        func_addr: int,
     ) -> tuple[list[str] | None, bool]:
         """Match instruction to an unfold pattern. Returns (unfolded_instructions, is_constant)."""
         parts = disasm.replace(",", " ").split()
@@ -303,8 +303,14 @@ class ConstantUnfoldingPass(MutationPass):
         return None, False
 
     def _apply_single_unfold(
-        self, binary: Any, func: dict, addr: int, orig_size: int,
-        disasm: str, unfolded: list[str], baseline: dict,
+        self,
+        binary: Any,
+        func: dict,
+        addr: int,
+        orig_size: int,
+        disasm: str,
+        unfolded: list[str],
+        baseline: dict,
     ) -> bool:
         """Assemble, write, validate, and record a single unfold. Returns True on success."""
         all_bytes = b""

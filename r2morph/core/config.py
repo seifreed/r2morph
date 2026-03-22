@@ -143,15 +143,9 @@ class EngineConfig:
     aggressive: bool = False
     force_different: bool = False
     nop: NopInsertionConfig = field(default_factory=NopInsertionConfig)
-    substitution: InstructionSubstitutionConfig = field(
-        default_factory=InstructionSubstitutionConfig
-    )
-    register: RegisterSubstitutionConfig = field(
-        default_factory=RegisterSubstitutionConfig
-    )
-    expansion: InstructionExpansionConfig = field(
-        default_factory=InstructionExpansionConfig
-    )
+    substitution: InstructionSubstitutionConfig = field(default_factory=InstructionSubstitutionConfig)
+    register: RegisterSubstitutionConfig = field(default_factory=RegisterSubstitutionConfig)
+    expansion: InstructionExpansionConfig = field(default_factory=InstructionExpansionConfig)
     block: BlockReorderingConfig = field(default_factory=BlockReorderingConfig)
     analysis: AnalysisConfig = field(default_factory=AnalysisConfig)
 

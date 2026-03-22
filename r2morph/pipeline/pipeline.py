@@ -53,7 +53,7 @@ class Pipeline:
         passes: List of mutation passes to execute
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize an empty pipeline."""
         self.passes: list[MutationPass] = []
 
@@ -88,7 +88,7 @@ class Pipeline:
                 return True
         return False
 
-    def clear(self):
+    def clear(self) -> None:
         """Clear all passes from the pipeline."""
         self.passes.clear()
         logger.debug("Pipeline cleared")
@@ -97,13 +97,9 @@ class Pipeline:
         """Build the diff_summary dict from mutations in a pass result."""
         return {
             "mutations": len(pass_result["mutations"]),
-            "changed_bytes": sum(
-                int(mutation.get("byte_diff_count", 0))
-                for mutation in pass_result["mutations"]
-            ),
+            "changed_bytes": sum(int(mutation.get("byte_diff_count", 0)) for mutation in pass_result["mutations"]),
             "changed_regions": [
-                [mutation["start_address"], mutation["end_address"]]
-                for mutation in pass_result["mutations"]
+                [mutation["start_address"], mutation["end_address"]] for mutation in pass_result["mutations"]
             ],
             "region_details": [
                 {
@@ -118,10 +114,7 @@ class Pipeline:
                 for mutation in pass_result["mutations"]
             ],
             "mutation_kinds": sorted(
-                {
-                    mutation.get("mutation_kind", "unknown")
-                    for mutation in pass_result["mutations"]
-                }
+                {mutation.get("mutation_kind", "unknown") for mutation in pass_result["mutations"]}
             ),
         }
 
@@ -137,9 +130,7 @@ class Pipeline:
         reason: str,
     ) -> None:
         """Handle rollback and discard logic for a failed validation."""
-        discarded = pass_result.get(
-            "mutations_applied", len(pass_result["mutations"])
-        )
+        discarded = pass_result.get("mutations_applied", len(pass_result["mutations"]))
         if session is not None and checkpoint_name is not None:
             session.rollback_to(checkpoint_name)
             binary.reload()
@@ -193,9 +184,7 @@ class Pipeline:
                 symbolic["supported_passes"].append(mutation_pass.name)
             else:
                 symbolic["fallback_passes"].append(mutation_pass.name)
-            symbolic["proven"] = symbolic["proven"] or bool(
-                validation_result.metadata.get("symbolic_proven", False)
-            )
+            symbolic["proven"] = symbolic["proven"] or bool(validation_result.metadata.get("symbolic_proven", False))
 
     def run(
         self,
@@ -223,7 +212,7 @@ class Pipeline:
 
         logger.info(f"Running pipeline with {len(self.passes)} passes")
 
-        results = {
+        results: dict[str, Any] = {
             "passes_run": 0,
             "total_mutations": 0,
             "rolled_back_passes": 0,
@@ -271,11 +260,7 @@ class Pipeline:
                 pass_result["support"] = mutation_pass.get_support().to_dict()
                 if session is not None and checkpoint_name is not None:
                     previous_binary = next(
-                        (
-                            cp.binary_path
-                            for cp in session.list_checkpoints()
-                            if cp.name == checkpoint_name
-                        ),
+                        (cp.binary_path for cp in session.list_checkpoints() if cp.name == checkpoint_name),
                         None,
                     )
                     if previous_binary is not None:
@@ -293,8 +278,13 @@ class Pipeline:
                         results["validation"]["all_passed"] = False
                         results["validation"]["failed_passes"].append(mutation_pass.name)
                         self._handle_validation_failure(
-                            results, pass_result, mutation_pass, binary,
-                            session, checkpoint_name, rollback_policy,
+                            results,
+                            pass_result,
+                            mutation_pass,
+                            binary,
+                            session,
+                            checkpoint_name,
+                            rollback_policy,
                             reason="Validation failed",
                         )
                     else:
@@ -302,12 +292,10 @@ class Pipeline:
                         pass_result["discarded_mutations"] = 0
                         pass_result["discarded_mutations_detail"] = []
                         pass_result["status"] = "applied"
-                    pass_result["diff_summary"]["structural_regions"] = (
-                        _summarize_validation_regions(validation_result.to_dict())
+                    pass_result["diff_summary"]["structural_regions"] = _summarize_validation_regions(
+                        validation_result.to_dict()
                     )
-                    pass_result["diff_summary"]["structural_issue_count"] = len(
-                        validation_result.issues
-                    )
+                    pass_result["diff_summary"]["structural_issue_count"] = len(validation_result.issues)
 
                 if (
                     runtime_validate_per_pass
@@ -317,17 +305,11 @@ class Pipeline:
                     and pass_result.get("mutations")
                 ):
                     previous_binary = next(
-                        (
-                            cp.binary_path
-                            for cp in session.list_checkpoints()
-                            if cp.name == checkpoint_name
-                        ),
+                        (cp.binary_path for cp in session.list_checkpoints() if cp.name == checkpoint_name),
                         None,
                     )
                     if previous_binary is not None:
-                        runtime_pass_result = runtime_validator.validate(
-                            previous_binary, binary.path
-                        )
+                        runtime_pass_result = runtime_validator.validate(previous_binary, binary.path)
                         pass_result.setdefault("validation", {})
                         pass_result["validation"]["runtime"] = runtime_pass_result.to_dict()
                         results["validation"]["runtime_passes"].append(
@@ -336,14 +318,17 @@ class Pipeline:
                                 **runtime_pass_result.to_dict(),
                             }
                         )
-                        if not runtime_pass_result.passed and not pass_result.get(
-                            "rolled_back", False
-                        ):
+                        if not runtime_pass_result.passed and not pass_result.get("rolled_back", False):
                             results["validation"]["all_passed"] = False
                             results["validation"]["failed_passes"].append(mutation_pass.name)
                             self._handle_validation_failure(
-                                results, pass_result, mutation_pass, binary,
-                                session, checkpoint_name, rollback_policy,
+                                results,
+                                pass_result,
+                                mutation_pass,
+                                binary,
+                                session,
+                                checkpoint_name,
+                                rollback_policy,
                                 reason="Runtime validation failed",
                             )
 
@@ -358,10 +343,11 @@ class Pipeline:
 
                 status_msg = "rolled back" if pass_result.get("rolled_back", False) else "complete"
                 logger.info(
-                    f"Pass {mutation_pass.name} {status_msg}: "
-                    f"{pass_result.get('mutations_applied', 0)} mutations"
+                    f"Pass {mutation_pass.name} {status_msg}: " f"{pass_result.get('mutations_applied', 0)} mutations"
                 )
-            except Exception as e:  # noqa: BLE001 - intentionally broad: passes may raise any error and we must rollback + continue
+            except (
+                Exception
+            ) as e:  # noqa: BLE001 - intentionally broad: passes may raise any error and we must rollback + continue
                 logger.error(f"Pass {mutation_pass.name} failed: {e}")
                 if session is not None and checkpoint_name is not None:
                     session.rollback_to(checkpoint_name)

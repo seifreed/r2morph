@@ -49,7 +49,7 @@ class DiffAnalyzer:
     and visual diff of changes.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize diff analyzer."""
         self.original: Binary | None = None
         self.morphed: Binary | None = None
@@ -267,7 +267,7 @@ class DiffAnalyzer:
 
         return self.diff_stats.changed_bytes // AVG_INSTRUCTION_SIZE_BYTES
 
-    def generate_report(self, output_file: Path):
+    def generate_report(self, output_file: Path) -> None:
         """
         Generate a detailed diff report.
 

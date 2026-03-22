@@ -22,13 +22,12 @@ Example:
 from __future__ import annotations
 
 import logging
-import struct
 from typing import TYPE_CHECKING, Any
 
 from r2morph.mutations.base import MutationPass
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -472,7 +471,7 @@ resolve_api_hash:
     mov rax, gs:[0x60]          ; PEB
     mov rax, [rax + 0x18]       ; PEB->Ldr
     mov rax, [rax + 0x20]       ; InMemoryOrderModuleList
-    
+
     ; Walk module list to find kernel32
 .find_kernel32:
     mov rdx, [rax]              ; next entry
@@ -501,7 +500,7 @@ resolve_api_hash:
     mov ecx, [r13 + rdx*4]       ; Name RVA
     add rcx, rsi                 ; Name address
     xor eax, eax                 ; hash accumulator
-    
+
 .name_loop:
     movzx ebx, byte [rcx]
     test bl, bl
@@ -515,12 +514,12 @@ resolve_api_hash:
 .compare_hash:
     cmp eax, r12d
     je .found
-    
+
     inc edx
     mov ebx, [rdi + 0x18]
     cmp edx, ebx
     jb .hash_loop
-    
+
     xor rax, rax                 ; not found
     jmp .done
 
@@ -553,7 +552,7 @@ resolve_api_hash:
     mov eax, fs:[0x30]           ; PEB
     mov eax, [eax + 0xC]         ; PEB->Ldr
     mov eax, [eax + 0x14]        ; InMemoryOrderModuleList
-    
+
     ; Find kernel32.dll
 .find_kernel32:
     mov edx, [eax]
@@ -563,7 +562,7 @@ resolve_api_hash:
     mov eax, [esi + 0x3C]        ; e_lfanew
     mov eax, [esi + eax + 0x78]  ; Export RVA
     add eax, esi
-    
+
     mov ebx, [eax + 0x18]        ; NumberOfNames
     mov ecx, [eax + 0x20]        ; AddressOfNames
     add ecx, esi
@@ -579,7 +578,7 @@ resolve_api_hash:
     add eax, esi                 ; Name address
     push edx
     xor edx, edx                 ; hash accumulator
-    
+
 .name_loop:
     movzx ebx, byte [eax]
     test bl, bl
@@ -594,11 +593,11 @@ resolve_api_hash:
     cmp edx, ebp
     pop edx
     je .found
-    
+
     inc ecx
     cmp ecx, [eax + 0x18]        ; compare with NumberOfNames
     jb .hash_loop
-    
+
     xor eax, eax
     jmp .done
 
@@ -664,7 +663,7 @@ class APIHashingPass(MutationPass):
 
     def _find_imports(self, binary: Any) -> list[dict[str, Any]]:
         """Find import entries in the binary."""
-        imports = []
+        imports: list[dict[str, Any]] = []
 
         try:
             r2 = binary.r2
@@ -739,22 +738,22 @@ class APIHashingPass(MutationPass):
                 continue
 
             if self.generate_stubs:
-                resolver_asm = generate_resolver_x64(hash_value, imp.get("dll", "unknown"))
+                generate_resolver_x64(hash_value, imp.get("dll", "unknown"))
             else:
-                resolver_asm = ""
+                pass
 
             hashed_count += 1
             logger.debug(f"Hashed {api_name} -> 0x{hash_value:08X}")
 
         if self.include_resolver and hashed_count > 0:
-            resolver_asm = generate_resolve_function(self.arch)
+            generate_resolve_function(self.arch)
             logger.debug(f"Generated generic resolver for {self.arch}")
             resolver_generated = True
 
         if self._session is not None:
-            mutation_checkpoint = self._create_mutation_checkpoint("api_hashing")
+            self._create_mutation_checkpoint("api_hashing")
         else:
-            mutation_checkpoint = None
+            pass
 
         baseline = {}
         if self._validation_manager is not None:

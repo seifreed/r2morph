@@ -64,9 +64,7 @@ def test_instruction_expansion_helpers():
     )
     assert built is None or "xor" in built
 
-    size_increase = expander._get_expansion_size_increase(
-        [("mov", "eax", "1"), ("add", "eax", "1")]
-    )
+    size_increase = expander._get_expansion_size_increase([("mov", "eax", "1"), ("add", "eax", "1")])
     assert size_increase >= 0
 
     safe = expander._is_safe_to_expand({"type": "nop"}, 200)

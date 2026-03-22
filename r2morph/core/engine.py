@@ -22,7 +22,6 @@ from r2morph.core.constants import (
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
 from r2morph.mutations.base import MutationPass  # Concrete type needed for isinstance checks in pipeline binding
-from r2morph.protocols import MutationPassProtocol  # abstraction for type hints
 from r2morph.pipeline.pipeline import Pipeline
 from r2morph.reporting.gate_evaluator import (
     SEVERITY_ORDER,
@@ -30,21 +29,20 @@ from r2morph.reporting.gate_evaluator import (
     build_gate_failure_severity_priority,
     summarize_gate_failures,
 )
-
-# Backward-compatible aliases (underscore-prefixed names used throughout engine)
-_summarize_gate_failures = summarize_gate_failures
-_build_gate_failure_priority = build_gate_failure_priority
-_build_gate_failure_severity_priority = build_gate_failure_severity_priority
 from r2morph.reporting.report_view_builder import build_report_views
 from r2morph.platform.codesign import CodeSigner
 from r2morph.core.support import PRODUCT_SUPPORT, classify_target_support
 from r2morph.session import MorphSession
 from r2morph.validation import BinaryValidator, ValidationManager
 
+# Backward-compatible aliases (underscore-prefixed names used throughout engine)
+_summarize_gate_failures = summarize_gate_failures
+_build_gate_failure_priority = build_gate_failure_priority
+_build_gate_failure_severity_priority = build_gate_failure_severity_priority
+
 logger = logging.getLogger(__name__)
 
 REPORT_SCHEMA_VERSION = 1
-
 
 
 def _build_pass_validation_context(
@@ -143,16 +141,14 @@ def _summarize_symbolic_issue_passes(
         else:
             stats["without_coverage"] += 1
 
-    issue_rows = []
+    issue_rows: list[dict[str, Any]] = []
     for pass_name, stats in by_pass.items():
         if stats["observable_mismatch"] == 0 and stats["without_coverage"] == 0 and stats["bounded_only"] == 0:
             continue
         severity = (
             "mismatch"
             if stats["observable_mismatch"] > 0
-            else "without-coverage"
-            if stats["without_coverage"] > 0
-            else "bounded-only"
+            else "without-coverage" if stats["without_coverage"] > 0 else "bounded-only"
         )
         issue_rows.append(
             {
@@ -210,7 +206,7 @@ def _summarize_symbolic_coverage_by_pass(
         else:
             stats["without_coverage"] += 1
 
-    rows = []
+    rows: list[dict[str, Any]] = []
     for pass_name, stats in by_pass.items():
         rows.append({"pass_name": pass_name, **stats})
     rows.sort(
@@ -296,7 +292,7 @@ def _summarize_symbolic_statuses(
         pass_name = str(mutation.get("pass_name", "unknown"))
         pass_counts = by_pass.setdefault(pass_name, {})
         pass_counts[status] = pass_counts.get(status, 0) + 1
-    rows = [
+    rows: list[dict[str, Any]] = [
         {
             "pass_name": pass_name,
             "statuses": dict(sorted(counts.items(), key=lambda item: (-item[1], item[0]))),
@@ -543,7 +539,7 @@ def _summarize_pass_risk_buckets(
 
 def _summarize_pass_timings(pass_results: dict[str, Any]) -> list[dict[str, Any]]:
     """Build a compact per-pass timing summary for tooling."""
-    rows = []
+    rows: list[dict[str, Any]] = []
     for pass_name, pass_result in pass_results.items():
         validation = pass_result.get("validation", {})
         rows.append(
@@ -561,7 +557,7 @@ def _summarize_pass_timings(pass_results: dict[str, Any]) -> list[dict[str, Any]
 
 def _summarize_diff_digest(pass_results: dict[str, Any]) -> dict[str, Any]:
     """Build a compact diff digest across passes."""
-    digest = {
+    digest: dict[str, Any] = {
         "changed_region_count": 0,
         "changed_bytes": 0,
         "mutation_kinds": [],
@@ -764,7 +760,7 @@ def _summarize_discarded_mutations(
         by_reason[reason] = by_reason.get(reason, 0) + 1
         pass_reason = by_pass_reason.setdefault(pass_name, {})
         pass_reason[reason] = pass_reason.get(reason, 0) + 1
-    rows = [
+    rows: list[dict[str, Any]] = [
         {
             "pass_name": pass_name,
             "discarded_count": count,
@@ -878,7 +874,7 @@ def _summarize_symbolic_overview(
     symbolic_status_counts: dict[str, int],
 ) -> dict[str, Any]:
     """Build a compact global symbolic overview."""
-    overview = {
+    overview: dict[str, Any] = {
         "symbolic_requested": 0,
         "observable_match": 0,
         "observable_mismatch": 0,
@@ -995,9 +991,6 @@ def _summarize_normalized_pass_results(
     return rows
 
 
-
-
-
 def _summarize_validation_adjustment_rows(
     validation_role_rows: list[dict[str, Any]],
     validation_adjustments: dict[str, Any],
@@ -1047,7 +1040,7 @@ class MorphEngine:
         config: Engine configuration
     """
 
-    def __init__(self, config: dict[str, Any] | None = None):
+    def __init__(self, config: dict[str, Any] | None = None) -> None:
         """
         Initialize the MorphEngine.
 
@@ -1111,7 +1104,7 @@ class MorphEngine:
             self._session = MorphSession()
             working_copy = self._session.start(path)
             logger.debug(f"Created session working copy: {working_copy}")
-            self._original_path = path
+            self._original_path: Path | None = path
             target_path = working_copy
         else:
             self._original_path = None
@@ -1147,6 +1140,7 @@ class MorphEngine:
         else:
             # Manual level specified
             logger.info(f"Analyzing binary with level: {level}...")
+            assert self.binary is not None
             self.binary.analyze(level)
 
         functions = self.binary.get_functions()
@@ -1163,6 +1157,7 @@ class MorphEngine:
         logger.debug(f"Architecture: {arch_info}")
 
         # Enable memory-efficient mode for large binaries to prevent OOM
+        assert self.binary is not None
         binary_size_mb = self._get_binary_size_mb(self.binary.path)
         if self._should_enable_memory_efficient_mode(binary_size_mb, len(functions)):
             self._memory_efficient_mode = True
@@ -1184,6 +1179,7 @@ class MorphEngine:
         # Step 1: Quick basic analysis to count functions
         logger.info("Running quick analysis to estimate complexity...")
         start = time.time()
+        assert self.binary is not None
         self.binary.analyze("aa")
         quick_funcs = len(self.binary.get_functions())
         aa_time = time.time() - start
@@ -1207,16 +1203,19 @@ class MorphEngine:
             logger.warning(
                 f"Large binary ({quick_funcs} functions). Using 'aac' analysis (adds ~10-20s for call analysis)."
             )
+            assert self.binary is not None
             self.binary.analyze("aac")
         elif quick_funcs > MEDIUM_FUNCTION_COUNT_THRESHOLD:
             level = "aac"
             logger.info(f"Medium binary ({quick_funcs} functions). Using 'aac' analysis.")
+            assert self.binary is not None
             self.binary.analyze("aac")
         else:
             level = "aaa"
             logger.info(
                 f"Small binary ({quick_funcs} functions). Using full 'aaa' analysis (~{int(aa_time * 3)}s estimated)."
             )
+            assert self.binary is not None
             self.binary.analyze("aaa")
 
         return level
@@ -1306,6 +1305,7 @@ class MorphEngine:
         )
 
         if runtime_validator is not None and self._original_path is not None:
+            assert self.binary is not None
             runtime_result = runtime_validator.validate(self._original_path, self.binary.path)
             result["validation"]["runtime"] = runtime_result.to_dict()
             result["validation"]["all_passed"] = result["validation"].get("all_passed", True) and runtime_result.passed
@@ -1334,6 +1334,7 @@ class MorphEngine:
         if enriched_validation_policy is not None:
             result["validation_policy"] = enriched_validation_policy
         result["execution_time_seconds"] = round(time.time() - start_time, 3)
+        assert self.binary is not None
         result["input_path"] = str(self._original_path or self.binary.path)
         result["working_path"] = str(self.binary.path)
         result["config"] = dict(self.config)
@@ -1345,7 +1346,7 @@ class MorphEngine:
         logger.info("Transformation complete")
         return self._last_result
 
-    def save(self, output_path: str | Path):
+    def save(self, output_path: str | Path) -> None:
         """
         Save the transformed binary.
 
@@ -1362,6 +1363,7 @@ class MorphEngine:
         if self._session is not None:
             self._session.finalize(output_path)
         else:
+            assert self.binary is not None
             shutil.copy2(self.binary.path, output_path)
             logger.info(f"Binary successfully saved to: {output_path}")
 
@@ -1401,7 +1403,7 @@ class MorphEngine:
                 ):
                     logger.warning(f"Ad-hoc signing failed for: {output_path}")
 
-    def close(self):
+    def close(self) -> None:
         """Close and cleanup resources."""
         if self.binary:
             self.binary.close()
@@ -1605,7 +1607,11 @@ class MorphEngine:
         gate_failure_severity_priority = _build_gate_failure_severity_priority(gate_failures)
         enrichments = self._enrich_pass_results(pass_results, mutations)
         artifacts = self._compute_report_artifacts(
-            payload, pass_results, enrichments, aggregate_structural_regions, gate_failures,
+            payload,
+            pass_results,
+            enrichments,
+            aggregate_structural_regions,
+            gate_failures,
         )
         pass_evidence_priority = [dict(row) for row in enrichments["pass_evidence"]]
         return {
@@ -1750,10 +1756,10 @@ class MorphEngine:
         logger.info(f"Saved engine report to: {output}")
         return output
 
-    def __enter__(self):
+    def __enter__(self) -> "MorphEngine":
         """Context manager entry."""
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         """Context manager exit."""
         self.close()

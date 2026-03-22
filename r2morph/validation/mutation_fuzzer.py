@@ -9,6 +9,8 @@ import hashlib
 import json
 import logging
 import random
+import statistics
+import tempfile
 import time
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -108,7 +110,7 @@ class MutationPassFuzzer:
     program behavior for each input.
     """
 
-    def __init__(self, config: FuzzConfig | None = None):
+    def __init__(self, config: FuzzConfig | None = None) -> None:
         """
         Initialize the mutation pass fuzzer.
 
@@ -229,7 +231,7 @@ class MutationPassFuzzer:
                 for _ in range(random.randint(1, 5))
             ),
             "C:\\" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 50))),
-            "/tmp/" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 30))),
+            tempfile.gettempdir() + "/" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 30))),
             "." * random.randint(1, 10)
             + "/"
             + "".join(random.choice(path_chars) for _ in range(random.randint(5, 20))),
@@ -334,8 +336,8 @@ class MutationPassFuzzer:
                     mutated_exit_code=result.mutated_exitcode,
                     original_output_hash=hashlib.sha256(result.original_output.encode()).hexdigest()[:16],
                     mutated_output_hash=hashlib.sha256(result.mutated_output.encode()).hexdigest()[:16],
-                    original_error=result.original_error,
-                    mutated_error=result.mutated_error,
+                    original_error=result.to_dict().get("original_error", ""),
+                    mutated_error=result.to_dict().get("mutated_error", ""),
                     execution_time_ms=execution_time_ms,
                     crash=result.mutated_exitcode < 0 and "TIMEOUT" not in result.mutated_output,
                     timeout="TIMEOUT" in result.mutated_output,
@@ -420,7 +422,7 @@ class MutationPassFuzzer:
             duration_seconds=end_time - start_time,
         )
 
-    def _save_failing_case(self, test_case: FuzzTestCase, result: FuzzResult, output_dir: Path):
+    def _save_failing_case(self, test_case: FuzzTestCase, result: FuzzResult, output_dir: Path) -> None:
         """Save a failing test case for later analysis."""
         case_file = output_dir / f"{test_case.test_id}_failure.json"
 
@@ -442,7 +444,7 @@ class ContinuousFuzzer:
     Runs fuzz campaigns periodically and tracks results over time.
     """
 
-    def __init__(self, config: FuzzConfig | None = None):
+    def __init__(self, config: FuzzConfig | None = None) -> None:
         self.config = config or FuzzConfig()
         self.fuzzer = MutationPassFuzzer(self.config)
         self.campaign_history: list[FuzzCampaignResult] = []

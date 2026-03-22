@@ -20,79 +20,79 @@ def _build_pattern_binary(tmp_dir: Path) -> Path:
         "__attribute__((noinline)) int opaque_predicate(int x) {\n"
         "  int y = x;\n"
         "  __asm__ volatile(\n"
-        "    \"cmp %%eax, %%eax\\n\"\n"
-        "    \"jne 1f\\n\"\n"
-        "    \"nop\\n\"\n"
-        "    \"1:\\n\"\n"
+        '    "cmp %%eax, %%eax\\n"\n'
+        '    "jne 1f\\n"\n'
+        '    "nop\\n"\n'
+        '    "1:\\n"\n'
         "    :\n"
-        "    : \"a\"(y)\n"
-        "    : \"cc\"\n"
+        '    : "a"(y)\n'
+        '    : "cc"\n'
         "  );\n"
         "  return y;\n"
         "}\n"
         "__attribute__((noinline)) int mba_mix(int x, int y) {\n"
         "  int r = x + y;\n"
         "  __asm__ volatile(\n"
-        "    \"and %%eax, %%ebx\\n\"\n"
-        "    \"or %%eax, %%ebx\\n\"\n"
-        "    \"xor %%eax, %%ebx\\n\"\n"
-        "    \"not %%eax\\n\"\n"
-        "    \"and %%eax, %%ebx\\n\"\n"
-        "    \"or %%eax, %%ebx\\n\"\n"
-        "    \"add %%eax, %%ebx\\n\"\n"
-        "    \"sub %%eax, %%ebx\\n\"\n"
-        "    \"imul %%eax, %%ebx\\n\"\n"
-        "    \"add %%eax, %%ebx\\n\"\n"
-        "    \"sub %%eax, %%ebx\\n\"\n"
-        "    \"add %%eax, %%ebx\\n\"\n"
+        '    "and %%eax, %%ebx\\n"\n'
+        '    "or %%eax, %%ebx\\n"\n'
+        '    "xor %%eax, %%ebx\\n"\n'
+        '    "not %%eax\\n"\n'
+        '    "and %%eax, %%ebx\\n"\n'
+        '    "or %%eax, %%ebx\\n"\n'
+        '    "add %%eax, %%ebx\\n"\n'
+        '    "sub %%eax, %%ebx\\n"\n'
+        '    "imul %%eax, %%ebx\\n"\n'
+        '    "add %%eax, %%ebx\\n"\n'
+        '    "sub %%eax, %%ebx\\n"\n'
+        '    "add %%eax, %%ebx\\n"\n'
         "    :\n"
-        "    : \"a\"(x), \"b\"(y)\n"
-        "    : \"cc\"\n"
+        '    : "a"(x), "b"(y)\n'
+        '    : "cc"\n'
         "  );\n"
         "  return r;\n"
         "}\n"
         "__attribute__((noinline)) void dispatcher_jump(void *ptr) {\n"
         "  __asm__ volatile(\n"
-        "    \".intel_syntax noprefix\\n\"\n"
-        "    \"jmp [rax]\\n\"\n"
-        "    \".att_syntax\\n\"\n"
+        '    ".intel_syntax noprefix\\n"\n'
+        '    "jmp [rax]\\n"\n'
+        '    ".att_syntax\\n"\n'
         "    :\n"
-        "    : \"a\"(ptr)\n"
-        "    : \"memory\"\n"
+        '    : "a"(ptr)\n'
+        '    : "memory"\n'
         "  );\n"
         "}\n"
         "__attribute__((noinline)) void vm_like(void *ptr) {\n"
         "  __asm__ volatile(\n"
-        "    \".intel_syntax noprefix\\n\"\n"
-        "    \"jmp [rax]\\n\"\n"
-        "    \"jmp [rax]\\n\"\n"
-        "    \"jmp [rax]\\n\"\n"
-        "    \"jmp [rax]\\n\"\n"
-        "    \"jmp [rax]\\n\"\n"
-        "    \".att_syntax\\n\"\n"
+        '    ".intel_syntax noprefix\\n"\n'
+        '    "jmp [rax]\\n"\n'
+        '    "jmp [rax]\\n"\n'
+        '    "jmp [rax]\\n"\n'
+        '    "jmp [rax]\\n"\n'
+        '    "jmp [rax]\\n"\n'
+        '    ".att_syntax\\n"\n'
         "    :\n"
-        "    : \"a\"(ptr)\n"
-        "    : \"memory\"\n"
+        '    : "a"(ptr)\n'
+        '    : "memory"\n'
         "  );\n"
         "}\n"
         "__attribute__((noinline)) void metamorphic_sample(int x) {\n"
         "  __asm__ volatile(\n"
-        "    \"mov %%eax, %%eax\\n\"\n"
-        "    \"mov %%eax, %%eax\\n\"\n"
-        "    \"add $0, %%eax\\n\"\n"
-        "    \"sub $0, %%eax\\n\"\n"
-        "    \"xor $0, %%eax\\n\"\n"
-        "    \"nop\\n\"\n"
-        "    \"nop\\n\"\n"
+        '    "mov %%eax, %%eax\\n"\n'
+        '    "mov %%eax, %%eax\\n"\n'
+        '    "add $0, %%eax\\n"\n'
+        '    "sub $0, %%eax\\n"\n'
+        '    "xor $0, %%eax\\n"\n'
+        '    "nop\\n"\n'
+        '    "nop\\n"\n'
         "    :\n"
-        "    : \"a\"(x)\n"
-        "    : \"cc\"\n"
+        '    : "a"(x)\n'
+        '    : "cc"\n'
         "  );\n"
         "}\n"
         "__attribute__((noinline)) void vm_pattern_blob(void) {\n"
         "  __asm__ volatile(\n"
-        "    \".byte 0xff, 0x24, 0x85\\n\"\n"
-        "    \".byte 0xff, 0x24, 0x95\\n\"\n"
+        '    ".byte 0xff, 0x24, 0x85\\n"\n'
+        '    ".byte 0xff, 0x24, 0x95\\n"\n'
         "    :\n"
         "    :\n"
         "    :\n"

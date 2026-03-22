@@ -12,7 +12,7 @@ This module provides:
 
 import json
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -166,12 +166,12 @@ class SemanticValidationReport:
     summary: dict[str, Any] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize computed fields."""
         if not self.summary:
             self._compute_summary()
 
-    def _compute_summary(self):
+    def _compute_summary(self) -> None:
         """Compute summary statistics."""
         passed = sum(1 for r in self.results if r.status == ValidationResultStatus.PASS)
         failed = sum(1 for r in self.results if r.status == ValidationResultStatus.FAIL)
@@ -222,7 +222,7 @@ class SemanticValidationReport:
         """Convert to JSON string."""
         return json.dumps(self.to_dict(), indent=indent)
 
-    def write_report(self, path: Path):
+    def write_report(self, path: Path) -> None:
         """Write report to file."""
         path.write_text(self.to_json())
 
@@ -307,7 +307,7 @@ class SemanticValidator:
     - Structured CI-ready reports
     """
 
-    def __init__(self, binary: Binary, mode: ValidationMode = ValidationMode.STANDARD):
+    def __init__(self, binary: Binary, mode: ValidationMode = ValidationMode.STANDARD) -> None:
         """
         Initialize semantic validator.
 
@@ -321,10 +321,10 @@ class SemanticValidator:
         self._angr_available = False
 
         try:
-            import angr
+            import importlib.util
 
-            self._angr_available = True
-        except (ImportError, ModuleNotFoundError, Exception) as e:
+            self._angr_available = importlib.util.find_spec("angr") is not None
+        except Exception as e:
             self._angr_available = False
             logger.debug(f"angr not available: {e}")
 
@@ -399,7 +399,7 @@ class SemanticValidator:
         self,
         result: SemanticValidationResult,
         observables: list[str] | None = None,
-    ):
+    ) -> None:
         """Run symbolic execution validation using angr."""
         if not self._angr_available:
             result.symbolic_status = "angr_unavailable"
@@ -429,9 +429,7 @@ class SemanticValidator:
                 return
 
             result.symbolic_status = "symbolic_check_performed"
-            result.observables = ObservableComparison(
-                symbolic_status="performed",
-            )
+            result.observables = ObservableComparison()
 
         except Exception as e:
             logger.debug(f"Symbolic validation failed: {e}")
@@ -532,12 +530,12 @@ def validate_semantic_equivalence(
         region = MutationRegion(
             start_address=m["start_address"],
             end_address=m["end_address"],
-            original_bytes=bytes.fromhex(m["original_bytes"])
-            if isinstance(m["original_bytes"], str)
-            else m["original_bytes"],
-            mutated_bytes=bytes.fromhex(m["mutated_bytes"])
-            if isinstance(m["mutated_bytes"], str)
-            else m["mutated_bytes"],
+            original_bytes=(
+                bytes.fromhex(m["original_bytes"]) if isinstance(m["original_bytes"], str) else m["original_bytes"]
+            ),
+            mutated_bytes=(
+                bytes.fromhex(m["mutated_bytes"]) if isinstance(m["mutated_bytes"], str) else m["mutated_bytes"]
+            ),
             pass_name=m.get("pass_name", "unknown"),
             function_address=m.get("function_address"),
             original_disasm=m.get("original_disasm"),

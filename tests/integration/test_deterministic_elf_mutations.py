@@ -69,7 +69,8 @@ def test_deterministic_nop_fixture_gets_real_binary_symbolic_coverage(
         mutation["metadata"].get("symbolic_binary_check_performed") is True
         and mutation["metadata"].get("symbolic_binary_step_budget", 0) >= 2
         and mutation["metadata"].get("symbolic_binary_region_exit_budget", 0) >= 2
-        and mutation["metadata"].get("symbolic_binary_step_strategy") in {
+        and mutation["metadata"].get("symbolic_binary_step_strategy")
+        in {
             "region-exit",
             "region-exit-fallback-budget",
         }
@@ -84,7 +85,8 @@ def test_deterministic_nop_fixture_gets_real_binary_symbolic_coverage(
         >= mutation["metadata"].get("symbolic_binary_original_region_exit_steps", 0)
         and len(mutation["metadata"].get("symbolic_binary_original_trace_addresses", [])) >= 2
         and len(mutation["metadata"].get("symbolic_binary_mutated_trace_addresses", [])) >= 2
-        and mutation["metadata"].get("symbolic_binary_control_flow_observables") == [
+        and mutation["metadata"].get("symbolic_binary_control_flow_observables")
+        == [
             "region_exit_address",
             "region_exit_steps",
         ]
@@ -126,7 +128,8 @@ def test_deterministic_instruction_substitution_fixture_gets_symbolic_coverage(
         == "best among stable passes"
     )
     assert any(
-        mutation["metadata"].get("symbolic_status") in {
+        mutation["metadata"].get("symbolic_status")
+        in {
             "bounded-step-known-equivalence",
             "bounded-step-observables-match",
             "bounded-step-observable-mismatch",
@@ -141,7 +144,8 @@ def test_deterministic_instruction_substitution_fixture_gets_symbolic_coverage(
     assert any(
         mutation["metadata"].get("symbolic_binary_check_performed") is True
         and mutation["metadata"].get("symbolic_binary_step_budget", 0) >= 1
-        and mutation["metadata"].get("symbolic_binary_step_strategy") in {
+        and mutation["metadata"].get("symbolic_binary_step_strategy")
+        in {
             "region-exit",
             "region-exit-fallback-budget",
         }
@@ -194,14 +198,8 @@ def test_deterministic_register_fixture_reports_real_binary_symbolic_mismatch(
     assert report["validation"]["symbolic"]["requested"] is True
     assert "RegisterSubstitution" in report["validation"]["symbolic"]["fallback_passes"]
     assert report["validation"]["symbolic"]["statuses"][0]["status"] == "real-binary-observable-mismatch"
-    assert (
-        report["pass_support"]["RegisterSubstitution"]["validator_capabilities"]["runtime"]["recommended"]
-        is True
-    )
-    assert (
-        report["pass_support"]["RegisterSubstitution"]["validator_capabilities"]["symbolic"]["recommended"]
-        is False
-    )
+    assert report["pass_support"]["RegisterSubstitution"]["validator_capabilities"]["runtime"]["recommended"] is True
+    assert report["pass_support"]["RegisterSubstitution"]["validator_capabilities"]["symbolic"]["recommended"] is False
     assert all(
         mutation["metadata"].get("symbolic_status") == "real-binary-observable-mismatch"
         for mutation in report["mutations"]
@@ -209,14 +207,16 @@ def test_deterministic_register_fixture_reports_real_binary_symbolic_mismatch(
     assert all(
         mutation["metadata"].get("symbolic_binary_check_performed") is True
         and mutation["metadata"].get("symbolic_binary_step_budget", 0) >= 2
-        and mutation["metadata"].get("symbolic_binary_step_strategy") in {
+        and mutation["metadata"].get("symbolic_binary_step_strategy")
+        in {
             "region-exit",
             "region-exit-fallback-budget",
         }
         for mutation in report["mutations"]
     )
     assert all(
-        mutation["metadata"].get("symbolic_binary_control_flow_observables") == [
+        mutation["metadata"].get("symbolic_binary_control_flow_observables")
+        == [
             "region_exit_address",
             "region_exit_steps",
         ]

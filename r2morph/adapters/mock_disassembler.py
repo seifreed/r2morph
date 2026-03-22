@@ -154,10 +154,7 @@ class MockDisassembler:
             AssertionError: If the command was not called.
         """
         if command not in self._command_history:
-            raise AssertionError(
-                f"Command '{command}' was not called. "
-                f"Called commands: {self._command_history}"
-            )
+            raise AssertionError(f"Command '{command}' was not called. " f"Called commands: {self._command_history}")
 
     def assert_command_not_called(self, command: str) -> None:
         """Assert that a specific command was not called.
@@ -170,8 +167,7 @@ class MockDisassembler:
         """
         if command in self._command_history:
             raise AssertionError(
-                f"Command '{command}' was unexpectedly called. "
-                f"Called commands: {self._command_history}"
+                f"Command '{command}' was unexpectedly called. " f"Called commands: {self._command_history}"
             )
 
 

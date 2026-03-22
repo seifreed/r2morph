@@ -47,9 +47,9 @@ def test_pattern_matcher_find_patterns_and_search_strings(tmp_path: Path) -> Non
         sections = binary.get_sections()
         assert sections
         candidates = [
-            section for section in sections
-            if int(section.get("vaddr", 0) or 0) > 0
-            and int(section.get("size", 0) or 0) >= len(marker)
+            section
+            for section in sections
+            if int(section.get("vaddr", 0) or 0) > 0 and int(section.get("size", 0) or 0) >= len(marker)
         ]
         assert candidates
         section = candidates[0]

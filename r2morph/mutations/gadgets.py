@@ -14,8 +14,6 @@ from r2morph.analysis.register_tracker import (
     REG_64,
     REG_32,
     REG_16,
-    REG_8H,
-    REG_8L,
     REG_ALL,
 )
 from r2morph.analysis.os_flags import OSFlags
@@ -37,6 +35,11 @@ class Gadgets:
         self._in_loop: bool = False
         self._label_counter: int = 0
         self._os_type = os_type
+        self.stack_gadgets: dict[str, tuple[Callable, Callable, int]] = {}
+        self.jump_gadgets: dict[str, tuple[Callable, int]] = {}
+        self.operate_gadgets: dict[str, tuple[Callable, int, int]] = {}
+        self.branch_gadgets: dict[str, tuple[Callable, int, int]] = {}
+        self.loop_gadgets: dict[str, tuple[Callable, int, int]] = {}
         self._ensure_initialized()
 
     def get_asm_label(self) -> str:
@@ -86,9 +89,7 @@ class Gadgets:
 
         return gadget_keys, updated_weights
 
-    stack_gadgets: dict[str, tuple[Callable, Callable, int]] = None
-
-    def _init_stack_gadgets(self):
+    def _init_stack_gadgets(self) -> None:
         self.stack_gadgets = {
             "push_reg": (
                 lambda reg: f"push {reg}",
@@ -102,9 +103,7 @@ class Gadgets:
             ),
         }
 
-    jump_gadgets: dict[str, tuple[Callable, int]] = None
-
-    def _init_jump_gadgets(self):
+    def _init_jump_gadgets(self) -> None:
         self.jump_gadgets = {
             "jz": (lambda lbl: f"jz {lbl}", 1),
             "jnz": (lambda lbl: f"jnz {lbl}", 1),
@@ -118,9 +117,7 @@ class Gadgets:
             "jbe": (lambda lbl: f"jbe {lbl}", 1),
         }
 
-    operate_gadgets: dict[str, tuple[Callable, int, int]] = None
-
-    def _init_operate_gadgets(self):
+    def _init_operate_gadgets(self) -> None:
         self.operate_gadgets = {
             **self._mov_gadgets(),
             **self._arithmetic_gadgets(),
@@ -232,14 +229,12 @@ class Gadgets:
                 5,
             ),
             "lea_reg_rsp_reg": (
-                lambda reg,
-                sec_reg: f"lea {reg}, [rsp + {reg} + {random.randint(0, max(0, self._stack_depth - 1)) * 8}]",
+                lambda reg, sec_reg: f"lea {reg}, [rsp + {reg} + {random.randint(0, max(0, self._stack_depth - 1)) * 8}]",
                 REG_64,
                 5,
             ),
             "lea_reg_rsp_secreg": (
-                lambda reg,
-                sec_reg: f"lea {reg}, [rsp + {sec_reg} + {random.randint(0, max(0, self._stack_depth - 1)) * 8}]",
+                lambda reg, sec_reg: f"lea {reg}, [rsp + {sec_reg} + {random.randint(0, max(0, self._stack_depth - 1)) * 8}]",
                 REG_64,
                 5,
             ),
@@ -346,9 +341,7 @@ class Gadgets:
             "shl_reg_8": (lambda reg, sec_reg: f"shl {reg}, 8", REG_64 | REG_32 | REG_16, 5),
         }
 
-    branch_gadgets: dict[str, tuple[Callable, int, int]] = None
-
-    def _init_branch_gadgets(self):
+    def _init_branch_gadgets(self) -> None:
         self.branch_gadgets = {
             "check_alignment": (
                 self._br_check_alignment,
@@ -372,9 +365,7 @@ class Gadgets:
             ),
         }
 
-    loop_gadgets: dict[str, tuple[Callable, int, int]] = None
-
-    def _init_loop_gadgets(self):
+    def _init_loop_gadgets(self) -> None:
         self.loop_gadgets = {
             "loop_to_0": (
                 self._lo_to_0,
@@ -441,18 +432,15 @@ class Gadgets:
 
         gadget = ""
         gadget += f"cmp {reg}, {sec_reg};"
-        gadget += self.jump_gadgets[selected_key][0](label)
+        gadget += str(self.jump_gadgets[selected_key][0](label))
         gadget += self.get_n_junk_ins(reg, sec_reg, random.randint(1, 4))
         gadget += f"{label}:"
         gadget += self.get_n_junk_ins(reg, sec_reg, random.randint(0, 4))
         return gadget
 
     def _lo_to_0(self, reg: str, sec_reg: str) -> str:
-        if (
-            self._cnt_reg == ""
-            or reg in self.reg_tracker.get_subregisters(self._cnt_reg)
-            or sec_reg in self.reg_tracker.get_subregisters(self._cnt_reg)
-        ):
+        cnt_subregs = self.reg_tracker.get_subregisters(self._cnt_reg) or ()
+        if self._cnt_reg == "" or reg in cnt_subregs or sec_reg in cnt_subregs:
             return ""
 
         gadget = ""
@@ -482,7 +470,7 @@ class Gadgets:
 
         return gadget
 
-    def _ensure_initialized(self):
+    def _ensure_initialized(self) -> None:
         """Initialize gadget tables if not yet done."""
         if not hasattr(self, "_initialized"):
             self._init_stack_gadgets()

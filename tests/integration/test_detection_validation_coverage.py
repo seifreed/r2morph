@@ -14,7 +14,6 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
 from r2morph.detection.evasion_scorer import EvasionScorer
 from r2morph.detection.similarity_hasher import SimilarityHasher
@@ -81,11 +80,7 @@ class TestEntropyAnalyzerDetailed:
         """Test suspicious entropy detection."""
         analyzer = EntropyAnalyzer()
         suspicious_entropy = 6.8
-        assert (
-            analyzer.SUSPICIOUS_ENTROPY_THRESHOLD
-            < suspicious_entropy
-            < analyzer.HIGH_ENTROPY_THRESHOLD
-        )
+        assert analyzer.SUSPICIOUS_ENTROPY_THRESHOLD < suspicious_entropy < analyzer.HIGH_ENTROPY_THRESHOLD
 
 
 class TestSimilarityHasherDetailed:
@@ -191,9 +186,7 @@ class TestBinaryValidatorDetailed:
     def test_add_test_case(self):
         """Test adding test cases."""
         validator = BinaryValidator()
-        validator.add_test_case(
-            args=["--help"], stdin="", expected_exitcode=0, description="Help test"
-        )
+        validator.add_test_case(args=["--help"], stdin="", expected_exitcode=0, description="Help test")
         assert len(validator.test_cases) == 1
         assert validator.test_cases[0]["args"] == ["--help"]
         assert validator.test_cases[0]["description"] == "Help test"

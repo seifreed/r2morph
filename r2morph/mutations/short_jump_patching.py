@@ -19,10 +19,8 @@ import logging
 import random
 from typing import TYPE_CHECKING, Any
 
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
-
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -240,7 +238,7 @@ def detect_rip_relative_displacement(insn: dict[str, Any]) -> bool:
         True if instruction uses RIP-relative addressing
     """
     disasm = insn.get("disasm", "") or insn.get("opstr", "") or ""
-    mnemonic = insn.get("mnemonic", "").lower()
+    insn.get("mnemonic", "").lower()
 
     if "rip" in disasm.lower():
         return True

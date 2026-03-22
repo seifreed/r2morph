@@ -13,13 +13,16 @@ from typing import Any
 import time
 import heapq
 
+_angr: Any = None
 try:
-    import angr
+    import angr as _angr_mod
 
     ANGR_AVAILABLE = True
+    _angr = _angr_mod
 except ImportError:
     ANGR_AVAILABLE = False
-    angr = None
+
+angr = _angr
 
 logger = logging.getLogger(__name__)
 
@@ -111,9 +114,7 @@ class StateManager:
 
         # Store state and initialize metrics
         self.active_states[state_id] = state
-        self.state_metrics[state_id] = StateMetrics(
-            depth=self._get_state_depth(state), priority_score=priority
-        )
+        self.state_metrics[state_id] = StateMetrics(depth=self._get_state_depth(state), priority_score=priority)
         self.state_coverage[state_id] = set()
 
         # Add to priority queue
@@ -165,7 +166,7 @@ class StateManager:
     def _get_best_coverage_state(self) -> tuple[int, Any] | None:
         """Get state that is likely to increase coverage."""
         best_state_id = None
-        best_score = -1
+        best_score: float = -1.0
 
         for state_id in self.active_states:
             metrics = self.state_metrics[state_id]
@@ -221,7 +222,7 @@ class StateManager:
             return state_id, self.active_states[state_id]
         return None
 
-    def update_state_coverage(self, state_id: int, new_blocks: set[int]):
+    def update_state_coverage(self, state_id: int, new_blocks: set[int]) -> None:
         """
         Update coverage information for a state.
 
@@ -246,7 +247,7 @@ class StateManager:
 
         logger.debug(f"State {state_id} found {len(truly_new_blocks)} new blocks")
 
-    def update_state_priority(self, state_id: int, new_priority: float):
+    def update_state_priority(self, state_id: int, new_priority: float) -> None:
         """
         Update priority of a state.
 
@@ -259,7 +260,7 @@ class StateManager:
             # Re-add to priority queue
             heapq.heappush(self.state_priority_queue, (-new_priority, state_id))
 
-    def _prune_states(self):
+    def _prune_states(self) -> None:
         """Prune least promising states to maintain state limit."""
         if len(self.active_states) <= self.max_states:
             return
@@ -317,7 +318,7 @@ class StateManager:
 
         return score
 
-    def _remove_state(self, state_id: int):
+    def _remove_state(self, state_id: int) -> None:
         """Remove state from all tracking structures."""
         if state_id in self.active_states:
             del self.active_states[state_id]
@@ -329,7 +330,7 @@ class StateManager:
     def _get_state_depth(self, state: Any) -> int:
         """Get exploration depth of a state."""
         if ANGR_AVAILABLE and hasattr(state, "history"):
-            return state.history.depth
+            return int(state.history.depth)
         return 0
 
     def merge_equivalent_states(self) -> int:
@@ -414,7 +415,7 @@ class StateManager:
             / max(len(self.state_metrics), 1),
         }
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up state manager resources."""
         self.active_states.clear()
         self.state_metrics.clear()

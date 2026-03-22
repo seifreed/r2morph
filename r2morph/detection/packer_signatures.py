@@ -80,7 +80,7 @@ class PackerSignatureDatabase:
     packers in binaries based on multiple heuristics.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the packer signature database."""
         self.signatures = self._load_signatures()
 
@@ -355,9 +355,7 @@ class PackerSignatureDatabase:
                     best_match = signature.packer_type
 
             if best_match != PackerType.NONE:
-                logger.info(
-                    f"Detected packer: {best_match.value} (confidence: {best_confidence:.2f})"
-                )
+                logger.info(f"Detected packer: {best_match.value} (confidence: {best_confidence:.2f})")
 
         except Exception as e:
             logger.error(f"Error detecting packer: {e}")
@@ -367,6 +365,8 @@ class PackerSignatureDatabase:
     def _get_entry_bytes(self, binary: "Binary", entry_point: int, size: int = 32) -> bytes:
         """Get bytes at entry point."""
         try:
+            if binary.r2 is None:
+                return b""
             entry_hex = binary.r2.cmd(f"p8 {size} @ {entry_point}")
             return bytes.fromhex(entry_hex.strip()) if entry_hex.strip() else b""
         except Exception:
@@ -402,7 +402,7 @@ class PackerSignatureDatabase:
         # Check strings
         if signature.string_patterns:
             try:
-                strings_output = binary.r2.cmd("izz")
+                strings_output = binary.r2.cmd("izz") if binary.r2 is not None else ""
                 for pattern in signature.string_patterns:
                     total_checks += 1
                     if pattern.lower() in strings_output.lower():
@@ -418,9 +418,7 @@ class PackerSignatureDatabase:
 
         return confidence / max(total_checks, 1)
 
-    def detect_packing_layers(
-        self, binary: "Binary", entropy_analyzer: "EntropyAnalyzer"
-    ) -> dict[str, Any]:
+    def detect_packing_layers(self, binary: "Binary", entropy_analyzer: "EntropyAnalyzer") -> dict[str, Any]:
         """
         Detect multiple packing layers.
 
@@ -431,7 +429,7 @@ class PackerSignatureDatabase:
         Returns:
             Dictionary with layer analysis
         """
-        result = {
+        result: dict[str, Any] = {
             "layers_detected": 0,
             "packers": [],
             "confidence": 0.0,
@@ -450,6 +448,8 @@ class PackerSignatureDatabase:
                     size = min(section.get("size", 0), 1024)  # Limit for performance
 
                     try:
+                        if binary.r2 is None:
+                            continue
                         data_hex = binary.r2.cmd(f"p8 {size} @ {addr}")
                         if data_hex and data_hex.strip():
                             data = bytes.fromhex(data_hex.strip())

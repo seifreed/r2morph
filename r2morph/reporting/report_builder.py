@@ -5,16 +5,10 @@ This module handles building report payloads, context resolution,
 and filtered report generation.
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.reporting.gate_evaluator import GateEvaluator, SEVERITY_ORDER
-from r2morph.reporting.summary_aggregator import (
-    EvidenceAggregator,
-    SummaryAggregator,
-    SymbolicAggregator,
-)
-from r2morph.reporting.report_filters import PassFilterResolver, ReportFilters
 
 
 @dataclass
@@ -57,9 +51,7 @@ class ReportBuilder:
     """Builds report payloads and resolves report contexts."""
 
     @staticmethod
-    def resolve_report_pass_filter(
-        pass_filter: str | None, alias_map: dict[str, str] | None = None
-    ) -> str | None:
+    def resolve_report_pass_filter(pass_filter: str | None, alias_map: dict[str, str] | None = None) -> str | None:
         """Resolve a pass filter alias to canonical pass name."""
         if pass_filter is None:
             return None
@@ -153,12 +145,8 @@ class ReportBuilder:
         resolved_only_pass_failure: str | None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], bool]:
         """Resolve persisted gate summaries and filtered gate state for report()."""
-        gate_failure_summary = (
-            GateEvaluator.summarize_gate_failures(gate_evaluation) if gate_evaluation else {}
-        )
-        gate_failure_priority = list(
-            summary.get("gate_failure_priority", payload.get("gate_failure_priority", []))
-        )
+        gate_failure_summary = GateEvaluator.summarize_gate_failures(gate_evaluation) if gate_evaluation else {}
+        gate_failure_priority = list(summary.get("gate_failure_priority", payload.get("gate_failure_priority", [])))
         gate_failure_severity_priority = list(
             summary.get(
                 "gate_failure_severity_priority",
@@ -176,15 +164,11 @@ class ReportBuilder:
         )
 
         if gate_failure_summary.get("require_pass_severity_failures_by_pass"):
-            import re
 
             ordered_failures = sorted(
                 gate_failure_summary["require_pass_severity_failures_by_pass"].items(),
                 key=lambda item: (
-                    min(
-                        ReportBuilder._expected_severity_rank_from_failure(failure)
-                        for failure in item[1]
-                    ),
+                    min(ReportBuilder._expected_severity_rank_from_failure(failure) for failure in item[1]),
                     -len(item[1]),
                     item[0],
                 ),
@@ -247,9 +231,7 @@ class ReportBuilder:
             gate_failure_severity_priority = persisted_severity_priority
 
         if not gate_failure_severity_priority:
-            gate_failure_severity_priority = GateEvaluator.build_gate_failure_severity_priority(
-                gate_failure_summary
-            )
+            gate_failure_severity_priority = GateEvaluator.build_gate_failure_severity_priority(gate_failure_summary)
 
         return gate_failure_summary, gate_failure_priority, gate_failure_severity_priority
 
@@ -268,30 +250,20 @@ class ReportBuilder:
 
         if only_expected_severity:
             filtered_severity_priority = [
-                row
-                for row in filtered_severity_priority
-                if row.get("severity") == only_expected_severity
+                row for row in filtered_severity_priority if row.get("severity") == only_expected_severity
             ]
             filtered_priority = [
-                row
-                for row in filtered_priority
-                if row.get("strictest_expected_severity") == only_expected_severity
+                row for row in filtered_priority if row.get("strictest_expected_severity") == only_expected_severity
             ]
             filtered_summary["require_pass_severity_failures_by_expected_severity"] = {
-                row.get("severity", "unknown"): row.get("failure_count", 0)
-                for row in filtered_severity_priority
+                row.get("severity", "unknown"): row.get("failure_count", 0) for row in filtered_severity_priority
             }
 
         if resolved_only_pass_failure:
-            filtered_priority = [
-                row
-                for row in filtered_priority
-                if row.get("pass_name") == resolved_only_pass_failure
-            ]
+            filtered_priority = [row for row in filtered_priority if row.get("pass_name") == resolved_only_pass_failure]
 
         filtered_summary["require_pass_severity_failures_by_pass"] = {
-            row.get("pass_name", "unknown"): list(row.get("failures", []))
-            for row in filtered_priority
+            row.get("pass_name", "unknown"): list(row.get("failures", [])) for row in filtered_priority
         }
         filtered_summary["require_pass_severity_failures"] = [
             failure for row in filtered_priority for failure in row.get("failures", [])
@@ -299,23 +271,15 @@ class ReportBuilder:
         filtered_summary["require_pass_severity_failure_count"] = len(
             filtered_summary["require_pass_severity_failures"]
         )
-        filtered_summary["require_pass_severity_failed"] = bool(
-            filtered_summary["require_pass_severity_failures"]
-        )
+        filtered_summary["require_pass_severity_failed"] = bool(filtered_summary["require_pass_severity_failures"])
 
         if resolved_only_pass_failure:
             severity_counts: dict[str, int] = {}
             for row in filtered_priority:
                 severity = row.get("strictest_expected_severity", "unknown")
-                severity_counts[severity] = severity_counts.get(severity, 0) + int(
-                    row.get("failure_count", 0)
-                )
-            filtered_summary["require_pass_severity_failures_by_expected_severity"] = (
-                severity_counts
-            )
-            filtered_severity_priority = GateEvaluator.build_gate_failure_severity_priority(
-                filtered_summary
-            )
+                severity_counts[severity] = severity_counts.get(severity, 0) + int(row.get("failure_count", 0))
+            filtered_summary["require_pass_severity_failures_by_expected_severity"] = severity_counts
+            filtered_severity_priority = GateEvaluator.build_gate_failure_severity_priority(filtered_summary)
 
         filtered_failed = bool(filtered_summary.get("require_pass_severity_failure_count", 0))
         return filtered_summary, filtered_priority, filtered_severity_priority, filtered_failed

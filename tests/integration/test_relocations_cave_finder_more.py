@@ -21,9 +21,7 @@ def test_cave_finder_allocate_and_insert_real(tmp_path: Path):
 
         if not caves:
             sections = bin_obj.get_sections()
-            exec_sections = [
-                section for section in sections if "x" in str(section.get("perm", ""))
-            ]
+            exec_sections = [section for section in sections if "x" in str(section.get("perm", ""))]
             if exec_sections:
                 section = max(
                     exec_sections,
@@ -32,9 +30,7 @@ def test_cave_finder_allocate_and_insert_real(tmp_path: Path):
                 vaddr = section.get("vaddr", 0)
                 vsize = section.get("vsize", 0) or section.get("size", 0)
                 if vaddr and vsize >= finder.min_size:
-                    bin_obj.write_bytes(
-                        vaddr + vsize - finder.min_size, b"\x00" * finder.min_size
-                    )
+                    bin_obj.write_bytes(vaddr + vsize - finder.min_size, b"\x00" * finder.min_size)
                     caves = finder.find_caves(max_caves=10)
 
         assert caves, "Expected to find or create at least one cave"

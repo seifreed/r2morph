@@ -33,10 +33,7 @@ class Dependency:
     dep_type: DependencyType
 
     def __repr__(self) -> str:
-        return (
-            f"<Dep {self.dep_type.value}: 0x{self.from_address:x} -> "
-            f"0x{self.to_address:x} on {self.resource}>"
-        )
+        return f"<Dep {self.dep_type.value}: 0x{self.from_address:x} -> " f"0x{self.to_address:x} on {self.resource}>"
 
 
 @dataclass
@@ -60,7 +57,7 @@ class DependencyAnalyzer:
     Tracks register and memory dependencies to understand data flow.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize dependency analyzer."""
         self.dependencies: list[Dependency] = []
         self.defs: dict[int, InstructionDef] = {}
@@ -75,8 +72,8 @@ class DependencyAnalyzer:
         Returns:
             Tuple of (defines, uses) sets
         """
-        defines = set()
-        uses = set()
+        defines: set[str] = set()
+        uses: set[str] = set()
 
         disasm = instruction.get("disasm", "").lower()
 
@@ -249,9 +246,7 @@ class DependencyAnalyzer:
 
                 last_def[reg] = addr
 
-        logger.debug(
-            f"Found {len(self.dependencies)} dependencies in {len(instructions)} instructions"
-        )
+        logger.debug(f"Found {len(self.dependencies)} dependencies in {len(instructions)} instructions")
 
         return self.dependencies
 
@@ -265,11 +260,7 @@ class DependencyAnalyzer:
         Returns:
             List of dependencies
         """
-        return [
-            dep
-            for dep in self.dependencies
-            if dep.from_address == address or dep.to_address == address
-        ]
+        return [dep for dep in self.dependencies if dep.from_address == address or dep.to_address == address]
 
     def has_dependency(self, from_addr: int, to_addr: int) -> bool:
         """
@@ -282,9 +273,7 @@ class DependencyAnalyzer:
         Returns:
             True if dependency exists
         """
-        return any(
-            dep.from_address == from_addr and dep.to_address == to_addr for dep in self.dependencies
-        )
+        return any(dep.from_address == from_addr and dep.to_address == to_addr for dep in self.dependencies)
 
     def get_dependency_chain(self, start_addr: int) -> list[int]:
         """
@@ -346,8 +335,7 @@ class DependencyAnalyzer:
                 color = "gray"
 
             lines.append(
-                f'  "0x{dep.from_address:x}" -> "0x{dep.to_address:x}" '
-                f'[label="{dep.resource}", color={color}];'
+                f'  "0x{dep.from_address:x}" -> "0x{dep.to_address:x}" ' f'[label="{dep.resource}", color={color}];'
             )
 
         lines.append("}")

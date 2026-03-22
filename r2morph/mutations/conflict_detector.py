@@ -168,7 +168,7 @@ class RegionTracker:
     Maintains a registry of all applied mutations and their regions.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._regions: dict[int, MutationRegion] = {}
         self._regions_by_address: dict[int, list[int]] = {}
         self._region_counter = 0
@@ -272,7 +272,7 @@ class ConflictDetector:
     memory conflicts, and control flow conflicts.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._conflict_counter = 0
         self._region_tracker = RegionTracker()
 
@@ -619,15 +619,15 @@ class SemanticConflictDetector:
         if len(cf_mutations) > 1:
             for i, (idx1, m1) in enumerate(cf_mutations):
                 for idx2, m2 in cf_mutations[i + 1 :]:
-                    start1 = m1.get("start", m1.get("address", 0))
-                    start2 = m2.get("start", m2.get("address", 0))
+                    m1.get("start", m1.get("address", 0))
+                    m2.get("start", m2.get("address", 0))
 
                     conflicts.append(
                         {
                             "type": "semantic_control_flow",
                             "severity": "high",
                             "mutation_indices": [idx1, idx2],
-                            "description": f"Multiple control flow mutations may interact unexpectedly",
+                            "description": "Multiple control flow mutations may interact unexpectedly",
                             "resolution": "Apply control flow mutations in separate passes or verify combined semantics",
                         }
                     )

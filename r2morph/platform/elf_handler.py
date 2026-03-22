@@ -316,7 +316,7 @@ class ELFHandler:
                         shstrtab_header = f.read(header["e_shentsize"])
 
                         if len(shstrtab_header) < header["e_shentsize"]:
-                            logger.warning(f"Truncated shstrtab header")
+                            logger.warning("Truncated shstrtab header")
                         else:
                             if is_64bit:
                                 sh_offset = struct.unpack(f"{endian}Q", shstrtab_header[24:32])[0]
@@ -558,6 +558,10 @@ class ELFHandler:
                 logger.error(f"Failed to parse ELF with lief: {self.binary_path}")
                 return None
 
+            if not isinstance(elf, lief.ELF.Binary):
+                logger.error("Parsed binary is not ELF format")
+                return None
+
             # Check if section already exists
             existing = elf.get_section(name)
             if existing is not None:
@@ -568,7 +572,7 @@ class ELFHandler:
             section = lief.ELF.Section(name)
             section.type = lief.ELF.Section.TYPE.PROGBITS
             section.flags = lief.ELF.Section.FLAGS(flags)
-            section.content = [0] * size  # Zero-filled content
+            section.content = list(bytes(size))  # Zero-filled content
             section.alignment = 0x10  # 16-byte alignment
 
             # Add section to binary
@@ -613,11 +617,14 @@ class ELFHandler:
             if elf is None:
                 return {"symtab": [], "dynsym": []}
 
-            result = {"symtab": [], "dynsym": []}
+            result: dict[str, list[dict[str, Any]]] = {"symtab": [], "dynsym": []}
+
+            if not isinstance(elf, lief.ELF.Binary):
+                return result
 
             MAX_SYMBOLS = 100000
             # Get static symbols
-            for sym in elf.static_symbols:
+            for sym in elf.symtab_symbols:
                 if len(result["symtab"]) >= MAX_SYMBOLS:
                     logger.warning(f"Truncating symbol table at {MAX_SYMBOLS} entries")
                     break
@@ -717,7 +724,8 @@ class ELFHandler:
         header = self._parse_elf_header()
         if header is None:
             return None
-        return header.get("e_entry")
+        entry = header.get("e_entry")
+        return int(entry) if entry is not None else None
 
     def get_architecture(self) -> dict[str, Any]:
         """Get architecture information from the ELF binary.

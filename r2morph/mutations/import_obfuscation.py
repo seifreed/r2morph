@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.mutations.base import MutationPass
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,26 @@ class ImportTableObfuscationPass(MutationPass):
             ),
         )
 
+    def _get_binary_format(self, binary: Any) -> str:
+        """Detect binary format (ELF, PE, etc.)."""
+        arch_info = binary.get_arch_info()
+        bin_type = str(arch_info.get("type", "")).upper()
+        if "ELF" in bin_type:
+            return "ELF"
+        elif "PE" in bin_type or "COFF" in bin_type:
+            return "PE"
+        elif "MACH" in bin_type:
+            return "Mach-O"
+        return bin_type
+
+    def _get_imports(self, binary: Any, binary_format: str) -> list[dict[str, Any]]:
+        """Get imports based on binary format."""
+        if binary_format == "ELF":
+            return self._get_imports_elf(binary)
+        elif binary_format == "PE":
+            return self._get_imports_pe(binary)
+        return []
+
     def _get_imports_elf(self, binary: Any) -> list[dict[str, Any]]:
         """
         Get imports from ELF binary using relocations.
@@ -75,7 +95,7 @@ class ImportTableObfuscationPass(MutationPass):
         Returns:
             List of import dictionaries
         """
-        imports = []
+        imports: list[dict[str, Any]] = []
 
         try:
             r2 = binary.r2
@@ -131,7 +151,7 @@ class ImportTableObfuscationPass(MutationPass):
         Returns:
             List of import dictionaries
         """
-        imports = []
+        imports: list[dict[str, Any]] = []
 
         try:
             r2 = binary.r2
@@ -258,15 +278,15 @@ class ImportTableObfuscationPass(MutationPass):
                 continue
 
         if self._session is not None:
-            mutation_checkpoint = self._create_mutation_checkpoint("import_obfuscation")
+            self._create_mutation_checkpoint("import_obfuscation")
         else:
-            mutation_checkpoint = None
+            pass
 
         baseline = {}
         if self._validation_manager is not None:
             baseline = self._validation_manager.capture_structural_baseline(binary, 0)
 
-        record = self._record_mutation(
+        self._record_mutation(
             function_address=None,
             start_address=0,
             end_address=0,

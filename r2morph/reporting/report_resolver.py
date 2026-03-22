@@ -21,14 +21,10 @@ from r2morph.reporting.report_helpers import (
     _pass_names_from_triage_rows,
     _select_report_mutations,
     _summarize_symbolic_view_from_mutations,
-    _sort_pass_evidence,
     _filter_failed_gates_view,
     _expected_severity_rank_from_failure,
     _normalized_pass_map,
     _summary_first,
-    _visible_rows,
-    _resolve_general_report_views,
-    _resolve_summary_pass_sources,
 )
 
 
@@ -43,24 +39,28 @@ def _resolve_pass_filter_sets(
     pass_filter_views = dict(report_views.get("general_filter_views", report_views.get("pass_filter_views", {})) or {})
     if not pass_filter_views and general_renderer_state.get("general_filter_views"):
         pass_filter_views = {
-            f"only_{key}_passes"
-            if key in {"risky", "clean", "covered", "uncovered"}
-            else "only_structural_risk"
-            if key == "structural_risk"
-            else "only_symbolic_risk"
-            if key == "symbolic_risk"
-            else key: value
+            (
+                f"only_{key}_passes"
+                if key in {"risky", "clean", "covered", "uncovered"}
+                else (
+                    "only_structural_risk"
+                    if key == "structural_risk"
+                    else "only_symbolic_risk" if key == "symbolic_risk" else key
+                )
+            ): value
             for key, value in dict(general_renderer_state.get("general_filter_views", {}) or {}).items()
         }
     if not pass_filter_views and general_renderer_state.get("filter_views"):
         pass_filter_views = {
-            f"only_{key}_passes"
-            if key in {"risky", "clean", "covered", "uncovered"}
-            else "only_structural_risk"
-            if key == "structural_risk"
-            else "only_symbolic_risk"
-            if key == "symbolic_risk"
-            else key: value
+            (
+                f"only_{key}_passes"
+                if key in {"risky", "clean", "covered", "uncovered"}
+                else (
+                    "only_structural_risk"
+                    if key == "structural_risk"
+                    else "only_symbolic_risk" if key == "symbolic_risk" else key
+                )
+            ): value
             for key, value in dict(general_renderer_state.get("filter_views", {}) or {}).items()
         }
     risk_buckets = dict(
@@ -98,26 +98,29 @@ def _resolve_pass_filter_sets(
         or []
     )
     resolved = {
-        "risky": set(pass_filter_views.get("only_risky_passes", risk_buckets.get("risky", []))),
+        "risky": set(pass_filter_views.get("only_risky_passes", risk_buckets.get("risky", [])) or []),
         "structural": set(
             pass_filter_views.get(
                 "only_structural_risk",
                 risk_buckets.get("structural", []),
             )
+            or []
         ),
-        "symbolic": set(pass_filter_views.get("only_symbolic_risk", risk_buckets.get("symbolic", []))),
-        "clean": set(pass_filter_views.get("only_clean_passes", risk_buckets.get("clean", []))),
+        "symbolic": set(pass_filter_views.get("only_symbolic_risk", risk_buckets.get("symbolic", [])) or []),
+        "clean": set(pass_filter_views.get("only_clean_passes", risk_buckets.get("clean", [])) or []),
         "covered": set(
             pass_filter_views.get(
                 "only_covered_passes",
                 coverage_buckets.get("covered", []),
             )
+            or []
         ),
         "uncovered": set(
             pass_filter_views.get(
                 "only_uncovered_passes",
                 coverage_buckets.get("uncovered", []),
             )
+            or []
         ),
     }
     if triage_rows:
@@ -293,6 +296,7 @@ def _resolve_general_report_flow_state(
     )
     if summary_builder is None:
         from r2morph.reporting.filtered_summary_builder import _build_general_filtered_summary
+
         summary_builder = _build_general_filtered_summary
     filtered_summary, degradation_roles = summary_builder(
         summary=summary,
@@ -412,8 +416,6 @@ def _resolve_only_mismatches_state(
     }
 
 
-
-
 def _resolve_general_report_state(
     *,
     summary: dict[str, Any],
@@ -492,7 +494,7 @@ def _resolve_only_pass_view(
     filtered_summary: dict[str, Any],
     pass_results: dict[str, Any],
     pass_name: str,
-) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
+) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
     """Resolve pass-scoped symbolic/evidence/context views with summary-first fallbacks."""
     report_views = dict(summary.get("report_views", {}) or {})
     only_pass_map = dict(report_views.get("only_pass", {}) or {})
@@ -600,16 +602,18 @@ def _resolve_report_gate_state(
             {
                 "pass_name": pass_name,
                 "failure_count": len(failures),
-                "strictest_expected_severity": min(
-                    (
-                        severity
-                        for severity in (re.search(r"expected <= ([^)]+)", failure) for failure in failures)
-                        if severity
-                    ),
-                    key=lambda match: _expected_severity_rank_from_failure(f"expected <= {match.group(1)}"),
-                ).group(1)
-                if failures
-                else "unknown",
+                "strictest_expected_severity": (
+                    min(
+                        (
+                            severity
+                            for severity in (re.search(r"expected <= ([^)]+)", failure) for failure in failures)
+                            if severity
+                        ),
+                        key=lambda match: _expected_severity_rank_from_failure(f"expected <= {match.group(1)}"),
+                    ).group(1)
+                    if failures
+                    else "unknown"
+                ),
                 "failures": list(failures),
             }
             for pass_name, failures in gate_failure_summary.get("require_pass_severity_failures_by_pass", {}).items()
@@ -771,5 +775,3 @@ def _resolve_report_context(
         "degraded_passes": degraded_passes,
         "degradation_roles": degradation_roles,
     }
-
-

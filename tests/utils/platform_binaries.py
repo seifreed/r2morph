@@ -3,7 +3,6 @@ from __future__ import annotations
 import platform
 from pathlib import Path
 
-
 _ROOT = Path(__file__).resolve().parents[2]
 _FIXTURES = _ROOT / "tests" / "fixtures"
 _DATASET = _ROOT / "dataset"

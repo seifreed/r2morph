@@ -133,8 +133,15 @@ class LivenessAnalysis:
     }
     _CALL_DEFINED_REGS = {
         "sysv_amd64": [
-            ("rax", 64), ("rdx", 64), ("rcx", 64), ("rsi", 64), ("rdi", 64),
-            ("r8", 64), ("r9", 64), ("r10", 64), ("r11", 64),
+            ("rax", 64),
+            ("rdx", 64),
+            ("rcx", 64),
+            ("rsi", 64),
+            ("rdi", 64),
+            ("r8", 64),
+            ("r9", 64),
+            ("r10", 64),
+            ("r11", 64),
         ],
         "win64": [("rax", 64), ("rcx", 64), ("rdx", 64), ("r8", 64), ("r9", 64), ("r10", 64), ("r11", 64)],
         "cdecl_32": [("eax", 32), ("ecx", 32), ("edx", 32)],
@@ -189,8 +196,8 @@ class LivenessAnalysis:
 
     def _get_block_use(self, block: BasicBlock) -> set[Register]:
         """Get registers used before defined in a block."""
-        used = set()
-        defined = set()
+        used: set[Register] = set()
+        defined: set[Register] = set()
 
         for insn in block.instructions:
             regs_used = self._extract_registers_used(insn)
@@ -322,7 +329,7 @@ class LivenessAnalysis:
 
     def _extract_registers_used(self, insn: dict) -> set[Register]:
         """Extract registers used by an instruction."""
-        used = set()
+        used: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
 
         if not disasm:
@@ -371,7 +378,7 @@ class LivenessAnalysis:
 
     def _extract_registers_defined(self, insn: dict) -> set[Register]:
         """Extract registers defined by an instruction."""
-        defined = set()
+        defined: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
         mnemonic = insn.get("type", "").lower()
 

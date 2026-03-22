@@ -16,7 +16,6 @@ import pytest
 from r2morph.core.engine import MorphEngine
 from r2morph.core.config import EngineConfig
 
-
 pytestmark = pytest.mark.skipif(
     os.environ.get("SKIP_CROSS_VALIDATION_TESTS") == "1", reason="Cross-validation tests disabled"
 )
@@ -103,9 +102,9 @@ int main() {
                     r2_mutated_count = len([l for l in stdout2.decode().strip().split("\n") if l])
 
                     # Function count should be preserved
-                    assert r2_func_count == r2_mutated_count, (
-                        f"Function count mismatch: original={r2_func_count}, mutated={r2_mutated_count}"
-                    )
+                    assert (
+                        r2_func_count == r2_mutated_count
+                    ), f"Function count mismatch: original={r2_func_count}, mutated={r2_mutated_count}"
 
     @pytest.mark.skipif(not has_tool("r2"), reason="radare2 not available")
     def test_r2_section_preservation(self, test_binary, temp_dir):
@@ -133,9 +132,9 @@ int main() {
                     mutated_sections = [l for l in stdout2.decode().strip().split("\n") if l.strip()]
 
                     # Section count should be preserved
-                    assert len(original_sections) == len(mutated_sections), (
-                        f"Section count mismatch: {len(original_sections)} vs {len(mutated_sections)}"
-                    )
+                    assert len(original_sections) == len(
+                        mutated_sections
+                    ), f"Section count mismatch: {len(original_sections)} vs {len(mutated_sections)}"
 
 
 class TestObjdumpCrossValidation:
@@ -191,9 +190,9 @@ int main() { printf("test"); return 0; }
 
                     # Mutation should not destroy instructions
                     # (may have more due to NOP insertion)
-                    assert mutated_lines >= original_lines * 0.9, (
-                        f"Too many instructions lost: {original_lines} -> {mutated_lines}"
-                    )
+                    assert (
+                        mutated_lines >= original_lines * 0.9
+                    ), f"Too many instructions lost: {original_lines} -> {mutated_lines}"
 
 
 class TestReadelfCrossValidation:
@@ -257,9 +256,9 @@ int main() { return 42; }
                     for line in mutated_headers.split("\n"):
                         if "Entry point" in line:
                             mutated_entry = line
-                            assert entry_point == mutated_entry, (
-                                f"Entry point changed: {entry_point} vs {mutated_entry}"
-                            )
+                            assert (
+                                entry_point == mutated_entry
+                            ), f"Entry point changed: {entry_point} vs {mutated_entry}"
                             break
 
     @pytest.mark.skipif(not has_tool("readelf"), reason="readelf not available")

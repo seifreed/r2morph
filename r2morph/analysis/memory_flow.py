@@ -107,7 +107,7 @@ class MemoryFlowAnalyzer:
     - Heap objects
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._accesses: dict[int, list[MemoryAccess]] = {}
         self._locations: dict[int, MemoryLocation] = {}
         self._aliases: dict[int, set[int]] = {}
@@ -210,7 +210,7 @@ class MemoryFlowAnalyzer:
                 match = re.search(r"mov\s+\[.*?([+-]?\d+).*?\],\s+(\w+)", disasm)
                 if match:
                     offset = int(match.group(1))
-                    val = match.group(2)
+                    match.group(2)
                     var_name = f"var_{abs(offset)}"
                     if var_name not in local_vars:
                         local_vars[var_name] = {
@@ -289,7 +289,8 @@ class MemoryFlowAnalyzer:
                 address = self._extract_memory_address(operand, stack_frame)
                 size = self._extract_arm_access_size(disasm)
                 location_name = self._identify_location(operand, address, stack_frame)
-                registers = [re.search(r"ldr\s+(\w+)", disasm).group(1)] if re.search(r"ldr\s+(\w+)", disasm) else []
+                ldr_match = re.search(r"ldr\s+(\w+)", disasm)
+                registers = [ldr_match.group(1)] if ldr_match else []
 
         elif "str" in disasm:
             access_type = MemoryAccessType.WRITE
@@ -301,7 +302,8 @@ class MemoryFlowAnalyzer:
                 address = self._extract_memory_address(operand, stack_frame)
                 size = self._extract_arm_access_size(disasm)
                 location_name = self._identify_location(operand, address, stack_frame)
-                registers = [re.search(r"str\s+(\w+)", disasm).group(1)] if re.search(r"str\s+(\w+)", disasm) else []
+                str_match = re.search(r"str\s+(\w+)", disasm)
+                registers = [str_match.group(1)] if str_match else []
 
         elif any(op in disasm for op in ["push", "pop"]):
             import re
@@ -418,11 +420,11 @@ class MemoryFlowAnalyzer:
         if "sp" in operand_lower or "rbp" in operand_lower or "ebp" in operand_lower or "fp" in operand_lower:
             return f"stack_{abs(address)}"
         elif "rbx" in operand_lower or "r12" in operand_lower or "r13" in operand_lower:
-            return f"stack_base"
+            return "stack_base"
 
         for var in stack_frame.get("local_vars", []):
             if var.get("offset") == address:
-                return var.get("name", f"stack_{abs(address)}")
+                return str(var.get("name", f"stack_{abs(address)}"))
 
         return f"unknown_{abs(address) if address else 0}"
 
@@ -503,7 +505,7 @@ class InterproceduralDataFlowAnalyzer:
     - Context sensitivity
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._function_summaries: dict[int, dict[str, Any]] = {}
         self._call_graph: dict[int, list[int]] = {}
 
@@ -637,7 +639,7 @@ class InterproceduralDataFlowAnalyzer:
 
         visited.add(func_addr)
 
-        summary = self._function_summaries.get(func_addr, {})
+        self._function_summaries.get(func_addr, {})
         callees = self._call_graph.get(func_addr, [])
 
         for callee_addr in callees:

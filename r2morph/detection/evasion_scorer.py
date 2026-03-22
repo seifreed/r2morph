@@ -44,7 +44,7 @@ class EvasionScorer:
     - Known signature patterns
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize evasion scorer."""
         self.weights = {
             "hash_change": 0.25,
@@ -240,9 +240,7 @@ class EvasionScorer:
             recommendations.append("💡 Consider more aggressive mutations to change structure")
 
         if score.signature_score < 40:
-            recommendations.append(
-                "💡 Byte patterns too similar - add more instruction substitutions"
-            )
+            recommendations.append("💡 Byte patterns too similar - add more instruction substitutions")
 
         if score.overall_score > 80:
             recommendations.append("✅ Excellent evasion score!")

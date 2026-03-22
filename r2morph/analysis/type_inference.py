@@ -88,7 +88,7 @@ class TypeInfo:
         elif self.category == TypeCategory.STRUCT:
             return f"<TypeInfo struct({len(self.fields)} fields)>"
         elif self.category == TypeCategory.FUNCTION:
-            return f"<TypeInfo function>"
+            return "<TypeInfo function>"
         return f"<TypeInfo {self.category.value}>"
 
     def to_dict(self) -> dict[str, Any]:
@@ -158,7 +158,7 @@ class StructField:
     type_info: TypeInfo
     size: int = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.size == 0:
             self.size = self.type_info.size
 
@@ -198,8 +198,8 @@ class TypeInference:
         types = inferrer.propagate_types(binary, function)
     """
 
-    def __init__(self):
-        self._type_counter = 0
+    def __init__(self) -> None:
+        self._type_counter: int = 0
         self._type_cache: dict[int, TypeInfo] = {}
         self._address_types: dict[int, TypeInfo] = {}
         self._register_types: dict[str, TypeInfo] = {}
@@ -207,7 +207,7 @@ class TypeInference:
     def _new_type_id(self) -> int:
         """Generate a new type ID."""
         self._type_counter += 1
-        return self._type_counter
+        return int(self._type_counter)
 
     def create_primitive_type(self, primitive: PrimitiveType) -> TypeInfo:
         """Create a primitive type."""
@@ -357,7 +357,6 @@ class TypeInference:
             return self.create_pointer_type()
 
         if "[" in dest:
-            ptr_size = 8
             return self.create_pointer_type()
 
         return TypeInfo(
@@ -767,7 +766,7 @@ class TypeInference:
         calling_conv: dict[str, Any],
     ) -> None:
         """Propagate type information through call graph edges."""
-        return_reg = calling_conv.get("return_register", "")
+        calling_conv.get("return_register", "")
 
         for caller_addr, callees in call_graph.items():
             caller_types = function_types.get(caller_addr, {})
@@ -1075,7 +1074,7 @@ class PointerAnalysis:
         aliases = analysis.get_aliases(address)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._points_to: dict[int, set[int]] = {}
         self._aliases: dict[int, set[int]] = {}
 

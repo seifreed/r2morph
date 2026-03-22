@@ -81,7 +81,7 @@ class CodeCaveInjector:
     DEFAULT_ALIGNMENT = 16
     MIN_SECTION_SIZE = 0x200
 
-    def __init__(self, binary: Binary, min_cave_size: int = 16):
+    def __init__(self, binary: Binary, min_cave_size: int = 16) -> None:
         """
         Initialize the code cave injector.
 
@@ -248,7 +248,6 @@ class CodeCaveInjector:
         TODO: Implement actual PE section creation.
         """
         try:
-            from r2morph.platform.pe_handler import PEHandler
 
             sections = self.binary.get_sections()
             if not sections:
@@ -465,7 +464,7 @@ class CodeCaveInjector:
         """Get addresses of created sections."""
         return self._created_sections.copy()
 
-    def clear_allocations(self):
+    def clear_allocations(self) -> None:
         """Clear all allocation tracking."""
         self._allocations.clear()
         self._created_sections.clear()
@@ -508,7 +507,7 @@ class CodeCaveInjector:
                 break
 
             dest = original_destinations[i]
-            offset = allocation.address + (i * self._get_jmp_size(bits))
+            allocation.address + (i * self._get_jmp_size(bits))
 
             jmp_bytes = self._create_trampoline_jump(site, dest, arch, bits)
 

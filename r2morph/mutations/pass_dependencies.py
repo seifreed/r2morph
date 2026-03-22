@@ -12,7 +12,7 @@ This module provides:
 """
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -107,12 +107,12 @@ class PassDependencyRegistry:
         violations = registry.validate_pipeline(["nop_insertion", "block_reordering"])
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._dependencies: list[PassDependency] = []
         self._pass_names: set[str] = set()
         self._initialize_default_dependencies()
 
-    def _initialize_default_dependencies(self):
+    def _initialize_default_dependencies(self) -> None:
         """Initialize with known pass dependencies."""
         self.register(
             "control_flow_flattening",
@@ -186,7 +186,7 @@ class PassDependencyRegistry:
         dep_type: DependencyType,
         reason: str = "",
         optional: bool = False,
-    ):
+    ) -> None:
         """
         Register a dependency between two passes.
 

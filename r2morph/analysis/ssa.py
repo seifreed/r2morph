@@ -95,7 +95,7 @@ class SSAConverter:
     3. Propagate definitions through dominance frontier
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._version_counter: dict[str, int] = {}
         self._current_def: dict[str, list[SSAVariable]] = {}
         self._sealed_blocks: set[int] = set()
@@ -201,7 +201,7 @@ class SSAConverter:
         for block_addr, ssa_block in ssa_blocks.items():
             if len(ssa_block.predecessors) >= 2:
                 for pred_addr in ssa_block.predecessors:
-                    runner = pred_addr
+                    runner: int | None = pred_addr
                     idom_block = idom.get(block_addr)
 
                     while runner != idom_block and runner is not None:
@@ -491,8 +491,8 @@ class SSAConverter:
         live_info: dict[int, tuple[set[SSAVariable], set[SSAVariable]]] = {}
 
         for block_addr, ssa_block in ssa_blocks.items():
-            used = set()
-            defined = set()
+            used: set[str | SSAVariable] = set()
+            defined: set[str | SSAVariable] = set()
 
             for instruction in ssa_block.instructions:
                 disasm = instruction.get("disasm", "").lower()
@@ -508,8 +508,11 @@ class SSAConverter:
             live_in: set[SSAVariable] = set()
 
             for reg in used:
-                version = self._get_current_version(reg)
-                live_in.add(SSAVariable(base_name=reg, version=version))
+                if isinstance(reg, SSAVariable):
+                    live_in.add(reg)
+                else:
+                    version = self._get_current_version(reg)
+                    live_in.add(SSAVariable(base_name=reg, version=version))
 
             live_info[block_addr] = (live_in, live_out)
 

@@ -13,13 +13,12 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.analysis.abi_checker import (
     ABIChecker,
     ABISpec,
     ABIViolation,
     ABIViolationType,
-    detect_abi,
 )
 
 logger = logging.getLogger(__name__)
@@ -319,13 +318,13 @@ class ABIMutationHook:
             ],
         }
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset hook state for new mutation session."""
         self._snapshots.clear()
         self._total_violations.clear()
         self._blocked_functions.clear()
 
-    def log_violations(self, level: str = "warning"):
+    def log_violations(self, level: str = "warning") -> None:
         """
         Log all violations at specified level.
 

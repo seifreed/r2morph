@@ -18,9 +18,7 @@ def test_block_reordering_apply_real(tmp_path: Path) -> None:
 
     with Binary(work_path, writable=True) as binary:
         binary.analyze()
-        pass_obj = BlockReorderingPass(
-            config={"probability": 1.0, "max_functions": 1, "preserve_fallthrough": True}
-        )
+        pass_obj = BlockReorderingPass(config={"probability": 1.0, "max_functions": 1, "preserve_fallthrough": True})
         result = pass_obj.apply(binary)
 
     assert result["total_functions"] >= 0

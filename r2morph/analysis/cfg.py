@@ -79,13 +79,13 @@ class BasicBlock:
     def __repr__(self) -> str:
         return f"<BasicBlock @ 0x{self.address:x} size={self.size} type={self.block_type.value}>"
 
-    def add_successor(self, address: int, edge_type: EdgeType = EdgeType.NORMAL):
+    def add_successor(self, address: int, edge_type: EdgeType = EdgeType.NORMAL) -> None:
         """Add a successor block with optional edge type."""
         if address not in self.successors:
             self.successors.append(address)
             self.edge_types[address] = edge_type
 
-    def add_predecessor(self, address: int):
+    def add_predecessor(self, address: int) -> None:
         """Add a predecessor block."""
         if address not in self.predecessors:
             self.predecessors.append(address)
@@ -161,13 +161,13 @@ class ControlFlowGraph:
     tail_calls: list[TailCall] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
 
-    def add_block(self, block: BasicBlock):
+    def add_block(self, block: BasicBlock) -> None:
         """Add a basic block to the CFG."""
         self.blocks[block.address] = block
         if self.entry_block is None:
             self.entry_block = block
 
-    def add_edge(self, from_addr: int, to_addr: int, edge_type: EdgeType = EdgeType.NORMAL):
+    def add_edge(self, from_addr: int, to_addr: int, edge_type: EdgeType = EdgeType.NORMAL) -> None:
         """Add a control flow edge."""
         edge = (from_addr, to_addr)
         if edge not in self.edges:
@@ -178,11 +178,11 @@ class ControlFlowGraph:
         if to_addr in self.blocks:
             self.blocks[to_addr].add_predecessor(from_addr)
 
-    def add_exception_edge(self, edge: ExceptionEdge):
+    def add_exception_edge(self, edge: ExceptionEdge) -> None:
         """Add an exception handling edge."""
         self.exception_edges.append(edge)
 
-    def add_tail_call(self, tail_call: TailCall):
+    def add_tail_call(self, tail_call: TailCall) -> None:
         """Add a detected tail call."""
         self.tail_calls.append(tail_call)
 
@@ -390,9 +390,9 @@ class CFGBuilder:
             if r2_block.get("jump"):
                 to_addr = r2_block["jump"]
                 edge_type = EdgeType.NORMAL
-                block = cfg.get_block(from_addr)
-                if block:
-                    terminal = block.get_terminal_instruction()
+                src_block = cfg.get_block(from_addr)
+                if src_block:
+                    terminal = src_block.get_terminal_instruction()
                     if terminal:
                         mnemonic = terminal.get("type", "").lower()
                         if mnemonic == "ujmp":
@@ -407,10 +407,10 @@ class CFGBuilder:
 
             if r2_block.get("fail"):
                 to_addr = r2_block["fail"]
-                block = cfg.get_block(from_addr)
+                fail_block = cfg.get_block(from_addr)
                 edge_type = EdgeType.CONDITIONAL_FALSE
-                if block:
-                    terminal = block.get_terminal_instruction()
+                if fail_block:
+                    terminal = fail_block.get_terminal_instruction()
                     if terminal:
                         mnemonic = terminal.get("type", "").lower()
                         if mnemonic == "cjmp":
@@ -423,7 +423,7 @@ class CFGBuilder:
 
         return cfg
 
-    def _detect_tail_calls(self, cfg: ControlFlowGraph, function_address: int):
+    def _detect_tail_calls(self, cfg: ControlFlowGraph, function_address: int) -> None:
         """
         Detect tail calls in a CFG.
 
@@ -518,6 +518,8 @@ class CFGBuilder:
         exception_edges: list[ExceptionEdge] = []
 
         try:
+            if self.binary.r2 is None:
+                return exception_edges
             functions = self.binary.r2.cmdj("aflj")
             if not functions:
                 return exception_edges

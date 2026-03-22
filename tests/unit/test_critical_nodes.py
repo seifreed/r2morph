@@ -525,9 +525,9 @@ class TestComplexScenarios:
 
         for safe_region in safe:
             for exclusion_zone in exclusion:
-                assert not safe_region.overlaps(exclusion_zone), (
-                    f"Safe region 0x{safe_region.start:x}-0x{safe_region.end:x} overlaps with exclusion zone 0x{exclusion_zone.start:x}-0x{exclusion_zone.end:x}"
-                )
+                assert not safe_region.overlaps(
+                    exclusion_zone
+                ), f"Safe region 0x{safe_region.start:x}-0x{safe_region.end:x} overlaps with exclusion zone 0x{exclusion_zone.start:x}-0x{exclusion_zone.end:x}"
 
     def test_nearby_critical_nodes(self):
         """Test get_nearby_critical_nodes method."""

@@ -18,18 +18,12 @@ import pytest
 
 def pytest_configure(config):
     """Register custom markers."""
-    config.addinivalue_line(
-        "markers", "stable: marks tests for stable mutation passes (nop, substitute, register)"
-    )
+    config.addinivalue_line("markers", "stable: marks tests for stable mutation passes (nop, substitute, register)")
     config.addinivalue_line(
         "markers", "experimental: marks tests for experimental mutation passes (expand, block, opaque, dead-code, cff)"
     )
-    config.addinivalue_line(
-        "markers", "product_smoke: marks product acceptance tests for CI"
-    )
-    config.addinivalue_line(
-        "markers", "slow: marks tests that take longer than 10 seconds"
-    )
+    config.addinivalue_line("markers", "product_smoke: marks product acceptance tests for CI")
+    config.addinivalue_line("markers", "slow: marks tests that take longer than 10 seconds")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -115,7 +109,11 @@ def _find_cross_elf_toolchain() -> tuple[str, str] | None:
     clang = next((candidate for candidate in clang_candidates if candidate and Path(candidate).exists()), None)
     if clang is None:
         for candidate in clang_candidates:
-            if candidate and subprocess.run(["/usr/bin/env", "sh", "-c", f"command -v {candidate} >/dev/null 2>&1"]).returncode == 0:
+            if (
+                candidate
+                and subprocess.run(["/usr/bin/env", "sh", "-c", f"command -v {candidate} >/dev/null 2>&1"]).returncode
+                == 0
+            ):
                 clang = candidate
                 break
 

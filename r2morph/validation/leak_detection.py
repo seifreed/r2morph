@@ -8,7 +8,7 @@ using memory profiling and garbage collection tracking.
 import gc
 import logging
 import tracemalloc
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 from weakref import WeakSet
@@ -63,24 +63,24 @@ class ObjectTracker:
     Track object creation and deletion to detect leaks.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tracked_objects: WeakSet = WeakSet()
         self._creation_counts: dict[str, int] = {}
         self._deletion_counts: dict[str, int] = {}
         self._enabled = False
 
-    def start_tracking(self):
+    def start_tracking(self) -> None:
         """Start tracking objects."""
         self._tracked_objects = WeakSet()
         self._creation_counts = {}
         self._deletion_counts = {}
         self._enabled = True
 
-    def stop_tracking(self):
+    def stop_tracking(self) -> None:
         """Stop tracking objects."""
         self._enabled = False
 
-    def track_object(self, obj: object):
+    def track_object(self, obj: object) -> None:
         """Track an object."""
         if self._enabled:
             self._tracked_objects.add(obj)
@@ -120,7 +120,7 @@ class MemoryLeakDetector:
         threshold_mb: float = 10.0,
         object_growth_threshold: int = 1000,
         enable_tracing: bool = True,
-    ):
+    ) -> None:
         """
         Initialize memory leak detector.
 
@@ -289,7 +289,7 @@ class MemoryLeakDetector:
 
     def test_function(
         self,
-        func: callable,
+        func: Any,
         *args,
         **kwargs,
     ) -> LeakDetectionResult:
@@ -310,7 +310,7 @@ class MemoryLeakDetector:
         snapshots = [initial_snapshot]
 
         try:
-            result = func(*args, **kwargs)
+            func(*args, **kwargs)
 
             gc.collect()
 
@@ -365,7 +365,7 @@ class MemoryLeakDetector:
         """
         from r2morph import Binary
 
-        def run_pass():
+        def run_pass() -> None:
             with Binary(binary_path, flags=["-2"], writable=True) as binary:
                 binary.analyze()
 
@@ -400,14 +400,13 @@ class ResourceLeakDetector:
     Detect resource leaks (file handles, connections, etc).
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._initial_resources: dict[str, int] = {}
         self._final_resources: dict[str, int] = {}
 
     def _get_resource_counts(self) -> dict[str, int]:
         """Get current resource counts."""
         import os
-        import sys
 
         resources = {}
 
@@ -440,7 +439,7 @@ class ResourceLeakDetector:
 
         return resources
 
-    def start_monitoring(self):
+    def start_monitoring(self) -> None:
         """Start resource monitoring."""
         gc.collect()
         self._initial_resources = self._get_resource_counts()
@@ -478,7 +477,7 @@ class ResourceLeakDetector:
             resource_leaks=leaks,
         )
 
-    def test_function(self, func: callable, *args, **kwargs) -> ResourceLeakTestResult:
+    def test_function(self, func: Any, *args, **kwargs) -> ResourceLeakTestResult:
         """
         Test a function for resource leaks.
 

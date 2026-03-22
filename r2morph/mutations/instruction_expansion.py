@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.mutations.base import MutationPass
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class InstructionExpansionPass(MutationPass):
     # - mov reg, 0 → xor/sub: UNSAFE if ANY flags are live (mov doesn't touch flags)
     # These rules are EXCLUDED to avoid semantic corruption. Only flag-safe
     # expansions are included.
-    EXPANSION_RULES = {
+    EXPANSION_RULES: dict[str, dict[tuple[str, ...], list[list[tuple[str, ...]]]]] = {
         "x86": {
             # imul → shl/add: both set CF/OF, safe equivalence
             ("imul", "reg", "2"): [
@@ -93,6 +93,7 @@ class InstructionExpansionPass(MutationPass):
         self.config["max_expansions_per_function"] = self.max_expansions
         if self.max_expansions != original:
             import logging
+
             logging.getLogger(__name__).debug(
                 f"Memory-efficient: reduced max_expansions from {original} to {self.max_expansions}"
             )

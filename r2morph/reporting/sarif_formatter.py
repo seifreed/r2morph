@@ -7,7 +7,6 @@ with tools like GitHub Security, Azure DevOps, and SonarQube.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path

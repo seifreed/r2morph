@@ -313,9 +313,9 @@ class TestJumpTablePreservation:
                     jump_tables, _ = analyzer.detect_switch_pattern(func_addr)
 
                     for table in jump_tables:
-                        assert manager.should_avoid(table.table_address), (
-                            f"Jump table at 0x{table.table_address:x} should be in exclusion zone"
-                        )
+                        assert manager.should_avoid(
+                            table.table_address
+                        ), f"Jump table at 0x{table.table_address:x} should be in exclusion zone"
 
                         for target in table.unique_targets:
                             pattern = manager.get_pattern_at(target)
@@ -379,9 +379,9 @@ class TestExceptionEdgePreservation:
 
                 for func_addr, frame in frames.items():
                     for lp in frame.landing_pads:
-                        assert manager.should_preserve(lp.address), (
-                            f"Landing pad at 0x{lp.address:x} should be preserved"
-                        )
+                        assert manager.should_preserve(
+                            lp.address
+                        ), f"Landing pad at 0x{lp.address:x} should be preserved"
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -409,9 +409,9 @@ class TestPltGotPreservation:
                 assert len(plt_patterns) > 0, "Expected PLT entries"
 
                 for pattern in plt_patterns:
-                    assert pattern.criticality == Criticality.PRESERVE, (
-                        f"PLT at 0x{pattern.start_address:x} should be preserved"
-                    )
+                    assert (
+                        pattern.criticality == Criticality.PRESERVE
+                    ), f"PLT at 0x{pattern.start_address:x} should be preserved"
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -432,12 +432,12 @@ class TestPltGotPreservation:
                 plt_patterns = manager.get_patterns_by_type(PatternType.PLT_THUNK)
 
                 for pattern in plt_patterns:
-                    assert manager.should_preserve(pattern.start_address), (
-                        f"PLT at 0x{pattern.start_address:x} should be preserved"
-                    )
-                    assert manager.should_avoid(pattern.start_address), (
-                        f"PLT at 0x{pattern.start_address:x} should be in exclusion zone"
-                    )
+                    assert manager.should_preserve(
+                        pattern.start_address
+                    ), f"PLT at 0x{pattern.start_address:x} should be preserved"
+                    assert manager.should_avoid(
+                        pattern.start_address
+                    ), f"PLT at 0x{pattern.start_address:x} should be in exclusion zone"
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -480,9 +480,9 @@ class TestTailCallPreservation:
                 tc_patterns = manager.get_patterns_by_type(PatternType.TAIL_CALL)
 
                 for pattern in tc_patterns:
-                    assert manager.should_avoid(pattern.start_address), (
-                        f"Tail call at 0x{pattern.start_address:x} should be avoided"
-                    )
+                    assert manager.should_avoid(
+                        pattern.start_address
+                    ), f"Tail call at 0x{pattern.start_address:x} should be avoided"
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")

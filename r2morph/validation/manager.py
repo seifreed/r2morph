@@ -72,7 +72,7 @@ class ValidationManager:
     Coordinates structural validation for mutations and passes.
     """
 
-    def __init__(self, mode: str = "structural", check_abi: bool = False):
+    def __init__(self, mode: str = "structural", check_abi: bool = False) -> None:
         self.mode = mode
         self.check_abi = check_abi
         self._abi_checker: ABIChecker | None = None
@@ -92,11 +92,13 @@ class ValidationManager:
             addr = getattr(action, "addr", None)
             size = getattr(action, "size", None)
             try:
-                addr_value = int(getattr(addr, "concrete_value", addr))
+                raw_addr = getattr(addr, "concrete_value", addr)
+                addr_value = int(raw_addr) if raw_addr is not None else None
             except (TypeError, ValueError):
                 addr_value = None
             try:
-                size_value = int(getattr(size, "concrete_value", size))
+                raw_size = getattr(size, "concrete_value", size)
+                size_value = int(raw_size) if raw_size is not None else None
             except (TypeError, ValueError):
                 size_value = None
             if addr_value is None:
@@ -140,7 +142,7 @@ class ValidationManager:
             detector = InvariantDetector(binary)
             expected = baseline.get("invariants", [])
             try:
-                current = detector.detect_all_invariants(function_address)
+                current = detector.detect_all_invariants(int(function_address))
             except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 issues.append(
                     ValidationIssue(
@@ -166,8 +168,8 @@ class ValidationManager:
                     )
 
             try:
-                binary.get_function_disasm(function_address)
-                binary.get_basic_blocks(function_address)
+                binary.get_function_disasm(int(function_address))
+                binary.get_basic_blocks(int(function_address))
             except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
                 issues.append(
                     ValidationIssue(
@@ -575,9 +577,11 @@ class ValidationManager:
             "symbolic_observable_reason": (
                 "observable register/flag effects matched"
                 if compared_regions and not mismatches
-                else "observable register/flag differences detected"
-                if compared_regions
-                else "no eligible instruction substitutions for observable check"
+                else (
+                    "observable register/flag differences detected"
+                    if compared_regions
+                    else "no eligible instruction substitutions for observable check"
+                )
             ),
             "symbolic_observable_regions": compared_regions,
             "symbolic_observable_mismatches": mismatches,
@@ -705,9 +709,11 @@ class ValidationManager:
             "symbolic_transition_reason": (
                 "successor address and stack delta matched"
                 if compared_regions and not mismatches
-                else "transition differences detected"
-                if compared_regions
-                else "no eligible instruction substitutions for transition check"
+                else (
+                    "transition differences detected"
+                    if compared_regions
+                    else "no eligible instruction substitutions for transition check"
+                )
             ),
             "symbolic_transition_regions": compared_regions,
             "symbolic_transition_mismatches": mismatches,
@@ -793,7 +799,7 @@ class ValidationManager:
         resolved_mutated = mutated_bridge.resolve_loaded_address(start)
         if resolved_original is None or resolved_mutated is None:
             logger.warning(f"Failed to resolve loaded address for mutation at 0x{start:x}")
-            return None, []
+            return {"skipped": True, "reason": "resolve_failed"}, []
 
         original_state = original_bridge.angr_project.factory.blank_state(
             addr=resolved_original,
@@ -829,7 +835,7 @@ class ValidationManager:
 
         step_strategy = "region-exit"
 
-        def _step_to_exit(state, bridge, resolved_addr):
+        def _step_to_exit(state: Any, bridge: Any, resolved_addr: Any) -> tuple[Any, int, str | None, list[Any]]:
             """Step symbolic state until it exits the region. Returns (final, steps, error, trace)."""
             final, steps, error, trace = state, 0, None, [resolved_addr]
             for _ in range(region_exit_budget):
@@ -850,10 +856,14 @@ class ValidationManager:
             return final, steps, error, trace
 
         original_final, original_steps, original_exit_error, original_trace_addresses = _step_to_exit(
-            original_state, original_bridge, resolved_original,
+            original_state,
+            original_bridge,
+            resolved_original,
         )
         mutated_final, mutated_steps, mutated_exit_error, mutated_trace_addresses = _step_to_exit(
-            mutated_state, mutated_bridge, resolved_mutated,
+            mutated_state,
+            mutated_bridge,
+            resolved_mutated,
         )
 
         region_report = {
@@ -892,8 +902,13 @@ class ValidationManager:
         region_report["control_flow_observables"] = ["region_exit_address", "region_exit_steps"]
 
         self._check_observables(
-            region_report, mismatches, mutation,
-            original_final, mutated_final, compared_registers, stack_reg,
+            region_report,
+            mismatches,
+            mutation,
+            original_final,
+            mutated_final,
+            compared_registers,
+            stack_reg,
         )
         return region_report, mismatches
 
@@ -983,7 +998,10 @@ class ValidationManager:
         mutated_bridge = None
         try:
             bridge_result = self._setup_symbolic_bridges(
-                binary, previous_binary_path, current_binary_path, bridge_module,
+                binary,
+                previous_binary_path,
+                current_binary_path,
+                bridge_module,
             )
             if isinstance(bridge_result, dict):
                 return bridge_result
@@ -1040,9 +1058,11 @@ class ValidationManager:
             "symbolic_binary_reason": (
                 "bounded real-binary symbolic effects matched"
                 if compared_regions and not mismatches
-                else "bounded real-binary symbolic effects diverged"
-                if compared_regions
-                else "no eligible regions for real-binary symbolic comparison"
+                else (
+                    "bounded real-binary symbolic effects diverged"
+                    if compared_regions
+                    else "no eligible regions for real-binary symbolic comparison"
+                )
             ),
             "symbolic_binary_regions": compared_regions,
             "symbolic_binary_mismatches": mismatches,
@@ -1173,6 +1193,7 @@ class ValidationManager:
 
         detector = InvariantDetector(binary)
         try:
+            assert function_address is not None
             invariants = detector.detect_all_invariants(function_address)
         except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to capture invariants for 0x{function_address:x}: {e}")

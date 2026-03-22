@@ -56,6 +56,27 @@ from r2morph.reporting.report_renderer import (
     ReportRenderer,
     ConsoleRenderer,
 )
+from r2morph.reporting.report_state import (
+    resolve_general_symbolic_state,
+    resolve_mismatch_view,
+    resolve_pass_filter_sets,
+    _normalized_pass_map as _normalized_pass_map,
+    _summary_first as _summary_first,
+    _is_risky_pass as _is_risky_pass,
+    _has_structural_risk as _has_structural_risk,
+    _has_symbolic_risk as _has_symbolic_risk,
+    _is_clean_pass as _is_clean_pass,
+    _is_covered_pass as _is_covered_pass,
+    _is_uncovered_pass as _is_uncovered_pass,
+)
+from r2morph.reporting.report_emitter import (
+    emit_report_payload,
+    enforce_report_requirements,
+    severity_threshold_met,
+    report_view_has_results,
+    gate_failure_result_count,
+)
+
 # Console rendering functions are lazily imported via __getattr__ below
 # to avoid a circular import with r2morph.core.engine.
 _LAZY_RENDERING_NAMES = {
@@ -76,27 +97,6 @@ _LAZY_RENDERING_NAMES = {
     "render_mismatch_summary_sections",
     "render_validation_context_table",
 }
-
-from r2morph.reporting.report_state import (
-    resolve_general_symbolic_state,
-    resolve_mismatch_view,
-    resolve_pass_filter_sets,
-    _normalized_pass_map,
-    _summary_first,
-    _is_risky_pass,
-    _has_structural_risk,
-    _has_symbolic_risk,
-    _is_clean_pass,
-    _is_covered_pass,
-    _is_uncovered_pass,
-)
-from r2morph.reporting.report_emitter import (
-    emit_report_payload,
-    enforce_report_requirements,
-    severity_threshold_met,
-    report_view_has_results,
-    gate_failure_result_count,
-)
 
 __all__ = [
     # Gate evaluation
@@ -173,7 +173,7 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> object:
     """Lazily resolve rendering symbols to avoid circular imports."""
     if name in _LAZY_RENDERING_NAMES:
         from r2morph.reporting import report_rendering as _rr

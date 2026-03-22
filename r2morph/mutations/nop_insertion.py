@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -74,7 +74,7 @@ class NopInsertionPass(MutationPass):
         "r11",
     }
 
-    def _init_nop_equivalents(self):
+    def _init_nop_equivalents(self) -> None:
         """
         Initialize and shuffle NOP equivalents (r2morph-style re-seeding).
 
@@ -196,9 +196,8 @@ class NopInsertionPass(MutationPass):
         self.config["max_nops_per_function"] = self.max_nops
         if self.max_nops != original:
             import logging
-            logging.getLogger(__name__).debug(
-                f"Memory-efficient: reduced max_nops from {original} to {self.max_nops}"
-            )
+
+            logging.getLogger(__name__).debug(f"Memory-efficient: reduced max_nops from {original} to {self.max_nops}")
         self.set_support(
             formats=("ELF", "Mach-O"),
             architectures=("x86_64", "arm64"),
@@ -237,7 +236,9 @@ class NopInsertionPass(MutationPass):
             return register in self.CALLER_SAVED_64BIT
         return register in self.CALLER_SAVED_32BIT
 
-    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]], arch_family: str, bits: int) -> list[tuple[dict, list]]:
+    def _select_candidates(
+        self, binary: Any, functions: list[dict[str, Any]], arch_family: str, bits: int
+    ) -> list[tuple[dict, list]]:
         """
         Iterate functions, get disasm, and filter redundant instruction candidates.
 
@@ -515,7 +516,7 @@ class NopInsertionPass(MutationPass):
                     baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
                 original_bytes = binary.read_bytes(addr, size)
                 if binary.write_bytes(addr, new_bytes):
-                    record = self._record_mutation(
+                    self._record_mutation(
                         function_address=func["addr"],
                         start_address=addr,
                         end_address=addr + size - 1,

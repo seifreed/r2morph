@@ -44,13 +44,13 @@ from __future__ import annotations
 import logging
 import random
 from dataclasses import dataclass, field
-from enum import Enum, IntEnum
+from enum import IntEnum
 from typing import TYPE_CHECKING, Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -258,26 +258,67 @@ vm_execute:
     push r13
     push r14
     push r15
-    
+
     ; Initialize VM context - allocate context area on stack
     sub rsp, 256               ; VM context area (16 registers * 8 bytes + stack)
     mov rbx, rsp               ; VM context base pointer
     mov r12, rsi                ; bytecode pointer
     mov r13, 0                  ; stack pointer (virtual stack)
-    
+
 .vm_loop:
     movzx eax, byte [r12]      ; load opcode
     inc r12                     ; advance PC
-    
+
     ; Handler table dispatch
     lea rcx, [rel vm_handlers]
     movzx eax, al
     jmp [rcx + rax * 8]         ; jump to handler
-    
+
 .vm_handlers:
 """
     for i in range(num_handlers):
         asm += f"    dq vm_handler_{i:02x}\n"
+
+    return asm
+
+
+def generate_vm_dispatcher_x86(num_handlers: int = 256) -> str:
+    """
+    Generate x86 (32-bit) assembly for VM dispatcher.
+
+    Args:
+        num_handlers: Number of handler slots
+
+    Returns:
+        Assembly code string
+    """
+    asm = """
+; Virtual Machine Dispatcher (x86)
+; Executes bytecode from ESI pointer
+
+vm_execute:
+    push ebx
+    push edi
+    push ebp
+
+    ; Initialize VM context - allocate context area on stack
+    sub esp, 128               ; VM context area (8 registers * 4 bytes + stack)
+    mov ebx, esp               ; VM context base pointer
+    mov edi, esi               ; bytecode pointer
+
+.vm_loop:
+    movzx eax, byte [edi]     ; load opcode
+    inc edi                     ; advance PC
+
+    ; Handler table dispatch
+    lea ecx, [vm_handlers]
+    movzx eax, al
+    jmp [ecx + eax * 4]        ; jump to handler
+
+.vm_handlers:
+"""
+    for i in range(num_handlers):
+        asm += f"    dd vm_handler_{i:02x}\n"
 
     return asm
 
@@ -295,7 +336,7 @@ vm_handler_02:                 ; MOV_REG_IMM
     inc r12
     movsx rax, dword [r12]    ; immediate value
     add r12, 4
-    
+
     ; Store to virtual register area
     mov [rbx + rcx * 8], rax
     jmp vm_execute
@@ -306,7 +347,7 @@ vm_handler_21:                 ; ADD_REG_IMM
     inc r12
     movsx rax, dword [r12]    ; immediate value
     add r12, 4
-    
+
     add [rbx + rcx * 8], rax
     jmp vm_execute
 """,
@@ -359,7 +400,7 @@ def translate_instruction_to_vm(insn: dict[str, Any], arch: str = "x64") -> VMIn
     mnemonic = insn.get("mnemonic", "").lower()
     op1 = insn.get("op1", "")
     op2 = insn.get("op2", "")
-    op3 = insn.get("op3", "")
+    insn.get("op3", "")
 
     if mnemonic == "nop":
         return VMInstruction(VMOpcode.NOP, original_asm="nop")
@@ -682,9 +723,9 @@ class CodeVirtualizationPass(MutationPass):
 
         if self.include_dispatcher and virtualized_count > 0:
             if arch == "x64":
-                dispatcher_asm = generate_vm_dispatcher_x64()
+                generate_vm_dispatcher_x64()
             else:
-                dispatcher_asm = generate_vm_dispatcher_x86()
+                generate_vm_dispatcher_x86()
             logger.debug("Generated VM dispatcher")
 
         return {
@@ -787,7 +828,7 @@ def generate_multi_vm_dispatcher_x64(profile: VMProfile) -> str:
     push r9
     push r10
     push r11
-    
+
     mov rsi, [rsp + 88]  ; bytecode pointer
     xor rbx, rbx
     lea rcx, [{handler_table_label}]
@@ -803,7 +844,7 @@ def generate_multi_vm_dispatcher_x64(profile: VMProfile) -> str:
     push rbx
     push rcx
     push rdx
-    
+
     mov rsi, [rbp + 8]  ; bytecode pointer
     lea rdi, [rbp - 256]  ; VM stack
 """
@@ -816,7 +857,7 @@ def generate_multi_vm_dispatcher_x64(profile: VMProfile) -> str:
     push r13
     push r14
     push r15
-    
+
     mov r12, rsi  ; bytecode pointer
     xor rbx, rbx  ; VM context
 """
@@ -825,7 +866,7 @@ def generate_multi_vm_dispatcher_x64(profile: VMProfile) -> str:
 .vm_loop_{profile.name}:
     movzx eax, byte [rsi]
     inc rsi
-    
+
     ; Dispatch to handler
 """
 
@@ -860,7 +901,7 @@ def generate_multi_vm_dispatcher_x64(profile: VMProfile) -> str:
     return prelude + dispatch_loop + handlers_section + junk_handlers_code
 
 
-def generate_multi_vm_handler_x64(opcode: int, profile: VMProfile) -> str:
+def generate_multi_vm_handler_x64(opcode: int | VMOpcode, profile: VMProfile) -> str:
     """
     Generate a handler for a specific opcode and VM profile.
 
@@ -904,8 +945,9 @@ def generate_multi_vm_handler_x64(opcode: int, profile: VMProfile) -> str:
     ret
 """
 
-    if opcode in opcodes_with_regs:
-        mnemonic, op_type = opcodes_with_regs[opcode]
+    vm_opcode = VMOpcode(opcode) if not isinstance(opcode, VMOpcode) else opcode
+    if vm_opcode in opcodes_with_regs:
+        mnemonic, op_type = opcodes_with_regs[vm_opcode]
         if profile.obfuscate_handlers:
             return f"""{handler_name}:
     ; Obfuscated {mnemonic} handler
@@ -967,7 +1009,7 @@ class MultiVMVirtualizationPass(CodeVirtualizationPass):
         self.active_profiles: list[VMProfile] = []
         self._init_profiles()
 
-    def _init_profiles(self):
+    def _init_profiles(self) -> None:
         """Initialize VM profiles."""
         available = {p.name: p for p in MULTI_VM_PROFILES}
         self.active_profiles = []

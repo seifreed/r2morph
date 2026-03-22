@@ -129,13 +129,13 @@ class SemanticInvariantRegistry:
         ),
     ]
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize the invariant registry."""
         self._invariants: dict[str, InvariantSpec] = {inv.name: inv for inv in self.STANDARD_INVARIANTS}
         self._pass_invariants: dict[str, list[str]] = {}
         self._build_pass_index()
 
-    def _build_pass_index(self):
+    def _build_pass_index(self) -> None:
         """Build index of invariants by pass type."""
         self._pass_invariants = {}
         for inv in self._invariants.values():
@@ -144,7 +144,7 @@ class SemanticInvariantRegistry:
                     self._pass_invariants[pass_type] = []
                 self._pass_invariants[pass_type].append(inv.name)
 
-    def register_invariant(self, invariant: InvariantSpec):
+    def register_invariant(self, invariant: InvariantSpec) -> None:
         """Register a new invariant."""
         self._invariants[invariant.name] = invariant
         self._build_pass_index()
@@ -168,7 +168,7 @@ class StackBalanceChecker:
         "arm64": ("sp", 64),
     }
 
-    def __init__(self, binary: Binary):
+    def __init__(self, binary: Binary) -> None:
         """Initialize stack balance checker."""
         self.binary = binary
 
@@ -273,7 +273,7 @@ class RegisterPreservationChecker:
         "arm64": ["x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28", "x29"],
     }
 
-    def __init__(self, binary: Binary):
+    def __init__(self, binary: Binary) -> None:
         """Initialize register preservation checker."""
         self.binary = binary
 
@@ -337,7 +337,7 @@ class RegisterPreservationChecker:
 class ControlFlowPreservationChecker:
     """Checks control flow preservation invariants."""
 
-    def __init__(self, binary: Binary):
+    def __init__(self, binary: Binary) -> None:
         """Initialize control flow preservation checker."""
         self.binary = binary
 
@@ -406,7 +406,7 @@ class SemanticInvariantChecker:
     Provides unified interface for all invariant checks.
     """
 
-    def __init__(self, binary: Binary):
+    def __init__(self, binary: Binary) -> None:
         """Initialize semantic invariant checker."""
         self.binary = binary
         self.registry = SemanticInvariantRegistry()

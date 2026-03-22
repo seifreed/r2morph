@@ -148,7 +148,7 @@ class CallGraph:
         callees = cg.get_callees(func_addr)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.nodes: dict[int, CallNode] = {}
         self.edges: list[CallEdge] = []
         self.entry_points: list[int] = []
@@ -700,7 +700,7 @@ class CallGraphBuilder:
         call_type = CallType.DIRECT
         is_tail = self._is_tail_call(disasm)
 
-        if call_target in cg.nodes:
+        if isinstance(call_target, int) and call_target in cg.nodes:
             target_node = cg.nodes[call_target]
             if target_node.call_type == CallType.PLT:
                 call_type = CallType.PLT
@@ -784,7 +784,7 @@ class CallGraphBuilder:
             if main_addr in cg.nodes and main_addr not in entry_points:
                 entry_points.append(main_addr)
 
-        init_syms = [symbols.get(f"__libc_csu_init"), symbols.get("_init")]
+        init_syms = [symbols.get("__libc_csu_init"), symbols.get("_init")]
         for sym in init_syms:
             if sym:
                 addr = sym if isinstance(sym, int) else sym.get("offset", 0)

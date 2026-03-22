@@ -10,13 +10,12 @@ from __future__ import annotations
 
 import logging
 import random
-import re
 from typing import TYPE_CHECKING, Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -206,7 +205,7 @@ class BlockReorderingPass(MutationPass):
                     break
 
                 block = blocks[i]
-                next_block = blocks[i + 1]
+                blocks[i + 1]
 
                 addr = block.get("addr", 0)
                 size = block.get("size", 0)
@@ -250,8 +249,7 @@ class BlockReorderingPass(MutationPass):
                                 }
                                 if write_addr not in insn_boundaries and write_addr != addr + size:
                                     logger.debug(
-                                        f"Skipping jump insert at 0x{write_addr:x}: "
-                                        f"not on instruction boundary"
+                                        f"Skipping jump insert at 0x{write_addr:x}: " f"not on instruction boundary"
                                     )
                                     continue
                         except (ValueError, OSError, BrokenPipeError):

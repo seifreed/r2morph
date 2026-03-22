@@ -125,7 +125,7 @@ class BinaryValidator:
         env: dict[str, str] | None = None,
         expected_exitcode: int = 0,
         description: str = "",
-    ):
+    ) -> None:
         """
         Add a test case for validation.
 
@@ -209,19 +209,13 @@ class BinaryValidator:
                     "mutated_exitcode": mut_result["exitcode"],
                     "stdout_match": orig_stdout == mut_stdout,
                     "stderr_match": orig_stderr == mut_stderr,
-                    "files_compared": sorted(
-                        set(self.comparison.monitored_files) | set(test_case.monitored_files)
-                    ),
+                    "files_compared": sorted(set(self.comparison.monitored_files) | set(test_case.monitored_files)),
                 }
             )
 
-            if (
-                self.comparison.compare_exitcode
-                and orig_result["exitcode"] != mut_result["exitcode"]
-            ):
+            if self.comparison.compare_exitcode and orig_result["exitcode"] != mut_result["exitcode"]:
                 errors.append(
-                    f"Test {i + 1}: Exit code mismatch "
-                    f"({orig_result['exitcode']} vs {mut_result['exitcode']})"
+                    f"Test {i + 1}: Exit code mismatch " f"({orig_result['exitcode']} vs {mut_result['exitcode']})"
                 )
                 all_outputs_match = False
 
@@ -234,9 +228,7 @@ class BinaryValidator:
                 all_outputs_match = False
 
             if self.comparison.compare_files:
-                expected_files = set(self.comparison.monitored_files) | set(
-                    test_case.monitored_files
-                )
+                expected_files = set(self.comparison.monitored_files) | set(test_case.monitored_files)
                 for rel_path in expected_files:
                     orig_file = orig_result["files"].get(rel_path, "")
                     mut_file = mut_result["files"].get(rel_path, "")
@@ -274,12 +266,8 @@ class BinaryValidator:
             output_hashes={
                 "original_stdout_sha256": self._hash_text(orig_combined),
                 "mutated_stdout_sha256": self._hash_text(mut_combined),
-                "original_stderr_sha256": self._hash_text(
-                    "\n".join(o["stderr"] for o in original_outputs)
-                ),
-                "mutated_stderr_sha256": self._hash_text(
-                    "\n".join(o["stderr"] for o in mutated_outputs)
-                ),
+                "original_stderr_sha256": self._hash_text("\n".join(o["stderr"] for o in original_outputs)),
+                "mutated_stderr_sha256": self._hash_text("\n".join(o["stderr"] for o in mutated_outputs)),
                 "normalized_original_stdout_sha256": self._hash_text(
                     "\n".join(self._normalize_output(o["stdout"]) for o in original_outputs)
                 ),
@@ -370,9 +358,7 @@ class BinaryValidator:
                 except Exception as e:
                     logger.debug(f"Error cleaning up temp directory {run_dir}: {e}")
 
-    def _calculate_similarity(
-        self, original_outputs: list[dict], mutated_outputs: list[dict]
-    ) -> float:
+    def _calculate_similarity(self, original_outputs: list[dict], mutated_outputs: list[dict]) -> float:
         """
         Calculate similarity percentage between outputs.
 
@@ -416,9 +402,7 @@ class BinaryValidator:
 
         return (total_matches / total_enabled_checks * 100) if total_enabled_checks > 0 else 0.0
 
-    def validate_with_inputs(
-        self, original_path: Path, mutated_path: Path, test_inputs: list[str]
-    ) -> ValidationResult:
+    def validate_with_inputs(self, original_path: Path, mutated_path: Path, test_inputs: list[str]) -> ValidationResult:
         """
         Validate with multiple input strings.
 

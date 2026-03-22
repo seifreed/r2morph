@@ -14,7 +14,6 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceType, ReferenceUpdater
 
@@ -111,9 +110,7 @@ class TestReferenceUpdaterReal:
 
                         if jump_addr and jump_target:
                             # Try to update (may fail if instruction can't be modified)
-                            result = updater.update_jump_target(
-                                jump_addr, jump_target, jump_target + 10
-                            )
+                            result = updater.update_jump_target(jump_addr, jump_target, jump_target + 10)
                             # Just check it doesn't crash
                             assert isinstance(result, bool)
                             return  # Test one jump and exit
@@ -146,9 +143,7 @@ class TestReferenceUpdaterReal:
 
                         if call_addr and call_target:
                             # Try to update (may fail if instruction can't be modified)
-                            result = updater.update_call_target(
-                                call_addr, call_target, call_target + 10
-                            )
+                            result = updater.update_call_target(call_addr, call_target, call_target + 10)
                             # Just check it doesn't crash
                             assert isinstance(result, bool)
                             return  # Test one call and exit
@@ -213,9 +208,7 @@ class TestReferenceUpdaterReal:
                 target_addr = functions[5].get("offset", functions[5].get("addr", 0))
                 if target_addr:
                     # Try to update all references
-                    updated_count = updater.update_all_references_to(
-                        target_addr, target_addr + 0x100
-                    )
+                    updated_count = updater.update_all_references_to(target_addr, target_addr + 0x100)
                     assert isinstance(updated_count, int)
                     assert updated_count >= 0
 

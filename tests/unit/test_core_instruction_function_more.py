@@ -22,9 +22,7 @@ def test_instruction_helpers_and_repr():
 
 
 def test_function_helpers_and_repr():
-    func = Function.from_r2_dict(
-        {"offset": 0x402000, "name": "sym.test", "size": 64, "callrefs": [0x401000]}
-    )
+    func = Function.from_r2_dict({"offset": 0x402000, "name": "sym.test", "size": 64, "callrefs": [0x401000]})
     func.instructions = [{"offset": 0x402000}, {"offset": 0x402002}]
     func.basic_blocks = [{"addr": 0x402000}, {"addr": 0x402010}]
 

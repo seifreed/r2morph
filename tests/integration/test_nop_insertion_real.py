@@ -14,7 +14,6 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
 from r2morph.core.binary import Binary
 from r2morph.mutations.nop_insertion import NopInsertionPass
 
@@ -92,9 +91,7 @@ class TestNopInsertionPassReal:
             with Binary(temp_binary, writable=True) as binary:
                 binary.analyze()
 
-                pass_obj = NopInsertionPass(
-                    config={"max_nops_per_function": max_nops, "probability": 1.0}
-                )
+                pass_obj = NopInsertionPass(config={"max_nops_per_function": max_nops, "probability": 1.0})
 
                 result = pass_obj.apply(binary)
                 assert isinstance(result, dict)

@@ -24,7 +24,7 @@ class BinaryIntegrityValidator:
     - PE: Checksum, relocation directories, import/export tables
     """
 
-    def __init__(self, binary_path: Path, binary: Binary | None = None):
+    def __init__(self, binary_path: Path, binary: Binary | None = None) -> None:
         """
         Initialize binary integrity validator.
 
@@ -34,8 +34,8 @@ class BinaryIntegrityValidator:
         """
         self.binary_path = binary_path
         self.binary = binary
-        self._handler = None
-        self._format = None
+        self._handler: Any = None
+        self._format: str | None = None
         self._detect_format()
 
     def _detect_format(self) -> str:
@@ -146,7 +146,6 @@ class BinaryIntegrityValidator:
                 flags = segment.get("flags", 0)
                 p_flags_executable = 0x1
                 p_flags_writable = 0x2
-                p_flags_readable = 0x4
 
                 if flags & p_flags_executable and flags & p_flags_writable:
                     issues.append(f"Segment at 0x{segment.get('virtual_address', 0):x} is both writable and executable")
@@ -231,7 +230,6 @@ class BinaryIntegrityValidator:
         Returns:
             (success, list of repairs made)
         """
-        repairs: list[str] = []
 
         if self._format == "unknown":
             return False, ["Unknown binary format"]

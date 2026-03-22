@@ -17,9 +17,7 @@ def test_nop_insertion_arm64_path(tmp_path: Path):
 
     with Binary(temp_binary, writable=True) as bin_obj:
         bin_obj.analyze()
-        pass_obj = NopInsertionPass(
-            config={"max_nops_per_function": 2, "probability": 1.0}
-        )
+        pass_obj = NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0})
         result = pass_obj.apply(bin_obj)
 
     assert "mutations_applied" in result

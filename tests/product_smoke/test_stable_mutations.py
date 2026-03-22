@@ -13,7 +13,6 @@ from pathlib import Path
 
 import pytest
 
-
 STABLE_MUTATIONS = ["nop", "substitute", "register"]
 EXPERIMENTAL_MUTATIONS = ["expand", "block"]
 

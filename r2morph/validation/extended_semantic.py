@@ -11,12 +11,10 @@ This module extends the base SemanticValidator with:
 import logging
 import time
 from dataclasses import dataclass, field
-from functools import lru_cache
 from typing import Any
-from pathlib import Path
 
 from r2morph.core.binary import Binary
-from r2morph.analysis.cfg import ControlFlowGraph, BasicBlock, BlockType
+from r2morph.analysis.cfg import ControlFlowGraph
 from r2morph.validation.semantic import (
     SemanticValidator,
     ValidationMode,
@@ -24,13 +22,9 @@ from r2morph.validation.semantic import (
     MutationRegion,
     SemanticCheck,
     SemanticValidationResult,
-    SemanticValidationReport,
-    ObservableComparison,
 )
 from r2morph.validation.semantic_invariants import (
     InvariantCategory,
-    InvariantSeverity,
-    InvariantViolation,
 )
 
 logger = logging.getLogger(__name__)
@@ -42,7 +36,7 @@ try:
     ANGR_AVAILABLE = True
 except ImportError:
     ANGR_AVAILABLE = False
-    angr = None
+    angr = None  # type: ignore[assignment]
     claripy = None
 
 
@@ -77,7 +71,7 @@ class ConstraintCache:
     re-solving identical constraints across multiple runs.
     """
 
-    def __init__(self, max_size: int = 10000, ttl_seconds: float = 3600):
+    def __init__(self, max_size: int = 10000, ttl_seconds: float = 3600) -> None:
         """
         Initialize constraint cache.
 
@@ -207,7 +201,7 @@ class ImprovedStateMerging:
     Implements k-lattice merging and intelligent merge point detection.
     """
 
-    def __init__(self, k_limit: int = 3):
+    def __init__(self, k_limit: int = 3) -> None:
         """
         Initialize state merging.
 
@@ -229,7 +223,7 @@ class ImprovedStateMerging:
         """
         merge_points = []
 
-        dominators = cfg.compute_dominators()
+        cfg.compute_dominators()
 
         for addr, block in cfg.blocks.items():
             if len(block.predecessors) > 1:
@@ -329,7 +323,7 @@ class ExtendedSemanticValidator(SemanticValidator):
         max_steps: int = 500,
         use_constraint_cache: bool = True,
         merge_interval: int = 100,
-    ):
+    ) -> None:
         """
         Initialize extended semantic validator.
 
@@ -446,7 +440,9 @@ class ExtendedSemanticValidator(SemanticValidator):
             }
 
             if hasattr(self._constraint_cache, "get_statistics"):
-                result.symbolic_details["cache_stats"] = self._constraint_cache.get_statistics()
+                result.symbolic_details["cache_stats"] = (
+                    self._constraint_cache.get_statistics() if self._constraint_cache is not None else {}
+                )
 
         except Exception as e:
             logger.debug(f"Symbolic validation failed: {e}")
@@ -664,7 +660,9 @@ class ExtendedSemanticValidator(SemanticValidator):
         }
 
         if self._constraint_cache:
-            stats["constraint_cache"] = self._constraint_cache.get_statistics()
+            stats["constraint_cache"] = (
+                self._constraint_cache.get_statistics() if self._constraint_cache is not None else {}
+            )
 
         return stats
 

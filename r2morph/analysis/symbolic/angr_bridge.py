@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 else:
     try:
         import angr
-        import archinfo
+        import archinfo  # noqa: F401 - required runtime dependency for angr
         from angr import Project, SimState
         from angr.analyses import CFGFast
 
@@ -33,7 +33,7 @@ else:
         CFGFast = None
 
 from r2morph.core.binary import Binary
-from r2morph.analysis.cfg import ControlFlowGraph, BasicBlock
+from r2morph.analysis.cfg import ControlFlowGraph
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +55,7 @@ class AngrBridge:
             auto_load_libs: Whether to auto-load shared libraries
         """
         if not ANGR_AVAILABLE:
-            raise ImportError(
-                "angr is required for symbolic execution. Install with: pip install angr"
-            )
+            raise ImportError("angr is required for symbolic execution. Install with: pip install angr")
 
         self.binary = binary
         self.auto_load_libs = auto_load_libs
@@ -151,7 +149,7 @@ class AngrBridge:
             logger.error(f"Failed to convert r2 CFG to angr: {e}")
             return None
 
-    def _build_address_mapping(self, r2_cfg: ControlFlowGraph, angr_cfg: Any):
+    def _build_address_mapping(self, r2_cfg: ControlFlowGraph, angr_cfg: Any) -> None:
         """
         Build bidirectional mapping between r2 and angr addresses.
 
@@ -165,9 +163,7 @@ class AngrBridge:
                 self._r2_to_angr_mapping[r2_addr] = r2_addr
                 self._angr_to_r2_mapping[r2_addr] = r2_addr
 
-    def create_symbolic_state(
-        self, address: int, concrete_values: dict[str, Any] | None = None
-    ) -> Any | None:
+    def create_symbolic_state(self, address: int, concrete_values: dict[str, Any] | None = None) -> Any | None:
         """
         Create symbolic state for analysis at given address.
 
@@ -192,9 +188,7 @@ class AngrBridge:
             # Set up symbolic memory regions as needed
             self._setup_symbolic_memory(state)
 
-            logger.debug(
-                f"Created symbolic state at 0x{resolved_address:x} (requested 0x{address:x})"
-            )
+            logger.debug(f"Created symbolic state at 0x{resolved_address:x} (requested 0x{address:x})")
             return state
 
         except Exception as e:
@@ -229,7 +223,7 @@ class AngrBridge:
 
         return address
 
-    def _setup_symbolic_memory(self, state: Any):
+    def _setup_symbolic_memory(self, state: Any) -> None:
         """
         Set up symbolic memory regions for analysis.
 
@@ -274,7 +268,7 @@ class AngrBridge:
             logger.error(f"Failed to get function boundaries: {e}")
             return function_addr, function_addr + 0x100
 
-    def synchronize_analysis_results(self):
+    def synchronize_analysis_results(self) -> None:
         """
         Synchronize analysis results between r2 and angr.
 
@@ -287,7 +281,7 @@ class AngrBridge:
 
             # Update r2 analysis with angr discoveries
             for func_addr in cfg.kb.functions:
-                func = cfg.kb.functions[func_addr]
+                cfg.kb.functions[func_addr]
 
                 # Check if r2 missed this function
                 r2_functions = self.binary.get_functions()
@@ -300,7 +294,7 @@ class AngrBridge:
         except Exception as e:
             logger.error(f"Failed to synchronize analysis results: {e}")
 
-    def cleanup(self):
+    def cleanup(self) -> None:
         """Clean up resources."""
         if self._angr_project:
             # angr doesn't require explicit cleanup, but we can clear references

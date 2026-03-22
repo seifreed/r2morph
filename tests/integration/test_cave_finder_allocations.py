@@ -17,9 +17,7 @@ def test_cave_allocation_and_insertion_real(tmp_path: Path):
     with Binary(work_path, writable=True) as bin_obj:
         bin_obj.analyze()
         sections = bin_obj.get_sections()
-        exec_sections = [
-            section for section in sections if "x" in str(section.get("perm", "")).lower()
-        ]
+        exec_sections = [section for section in sections if "x" in str(section.get("perm", "")).lower()]
         assert exec_sections, "Expected at least one executable section"
         section = exec_sections[0]
         vaddr = int(section.get("vaddr", 0) or 0)

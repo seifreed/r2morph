@@ -47,10 +47,7 @@ def load_equivalence_rules(arch: str = "x86") -> list[list[str]]:
         expanded_groups = _expand_group(group)
         groups.extend(expanded_groups)
 
-    logger.debug(
-        f"Loaded {len(groups)} equivalence groups for {arch} "
-        f"from {rules_file.name}"
-    )
+    logger.debug(f"Loaded {len(groups)} equivalence groups for {arch} " f"from {rules_file.name}")
 
     return groups
 

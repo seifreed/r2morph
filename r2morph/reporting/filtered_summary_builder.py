@@ -10,7 +10,6 @@ from r2morph.reporting.report_helpers import (
     _sort_pass_evidence,
     _summary_first,
     _visible_rows,
-    _normalized_pass_map,
     _resolve_general_report_views,
     _resolve_summary_pass_sources,
 )
@@ -265,6 +264,7 @@ def _build_general_filtered_summary(
     if not summary_general_summary:
         summary_general_summary = dict(filtered_summary.get("general_summary", {}) or {})
     from r2morph.reporting.report_helpers import _resolve_general_filtered_passes
+
     filtered_summary["passes"] = _resolve_general_filtered_passes(
         existing_passes=filtered_summary["passes"],
         summary_only_pass_view=only_pass_view,
@@ -948,9 +948,7 @@ def _populate_pass_capabilities_and_context(
             context_payload["role"] = (
                 "degradation-trigger"
                 if context.get("degradation_triggered_by_pass")
-                else "executed-under-degraded-mode"
-                if context.get("degraded_execution")
-                else "requested-mode"
+                else "executed-under-degraded-mode" if context.get("degraded_execution") else "requested-mode"
             )
             filtered_summary["pass_validation_context"][pass_name] = context_payload
 
@@ -1020,9 +1018,7 @@ def _populate_symbolic_issue_passes(
                 "severity": (
                     "mismatch"
                     if pass_stats["observable_mismatch"] > 0
-                    else "without-coverage"
-                    if pass_stats["without_coverage"] > 0
-                    else "bounded-only"
+                    else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
                 ),
                 "observable_mismatch": pass_stats["observable_mismatch"],
                 "without_coverage": pass_stats["without_coverage"],
@@ -1603,9 +1599,7 @@ def _populate_filtered_summary_symbolic_sections(
                 "severity": (
                     "mismatch"
                     if pass_stats["observable_mismatch"] > 0
-                    else "without-coverage"
-                    if pass_stats["without_coverage"] > 0
-                    else "bounded-only"
+                    else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
                 ),
                 "observable_mismatch": pass_stats["observable_mismatch"],
                 "without_coverage": pass_stats["without_coverage"],
@@ -1738,5 +1732,3 @@ def _populate_filtered_summary_discarded_sections(
                     for reason, count in reasons.items():
                         by_reason[reason] = by_reason.get(reason, 0) + count
             filtered_summary["discarded_mutation_compact_by_reason"] = by_reason
-
-

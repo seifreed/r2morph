@@ -16,8 +16,8 @@ from enum import Enum
 from typing import Any
 
 from r2morph.core.binary import Binary
-from r2morph.analysis.exception import ExceptionInfoReader, ExceptionFrame
-from r2morph.analysis.switch_table import SwitchTableAnalyzer, JumpTable, IndirectJump
+from r2morph.analysis.exception import ExceptionInfoReader
+from r2morph.analysis.switch_table import SwitchTableAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +138,7 @@ class PatternPreservationManager:
 
         return self._get_summary()
 
-    def _detect_exception_patterns(self):
+    def _detect_exception_patterns(self) -> None:
         """Detect exception handling patterns (landing pads, handlers)."""
         try:
             self._exception_reader = ExceptionInfoReader(self.binary)
@@ -170,7 +170,7 @@ class PatternPreservationManager:
         except Exception as e:
             logger.debug(f"Exception pattern detection failed: {e}")
 
-    def _detect_jump_table_patterns(self):
+    def _detect_jump_table_patterns(self) -> None:
         """Detect jump tables and switch dispatch patterns."""
         try:
             self._switch_analyzer = SwitchTableAnalyzer(self.binary)
@@ -228,7 +228,7 @@ class PatternPreservationManager:
         except Exception as e:
             logger.debug(f"Jump table pattern detection failed: {e}")
 
-    def _detect_plt_got_patterns(self):
+    def _detect_plt_got_patterns(self) -> None:
         """Detect PLT thunks and GOT entries."""
         try:
             if self._switch_analyzer is None:
@@ -250,7 +250,7 @@ class PatternPreservationManager:
         except Exception as e:
             logger.debug(f"PLT/GOT pattern detection failed: {e}")
 
-    def _detect_tail_call_patterns(self):
+    def _detect_tail_call_patterns(self) -> None:
         """Detect tail call patterns."""
         try:
             if self._switch_analyzer is None:
@@ -283,7 +283,7 @@ class PatternPreservationManager:
         except Exception as e:
             logger.debug(f"Tail call pattern detection failed: {e}")
 
-    def _build_exclusion_zones(self):
+    def _build_exclusion_zones(self) -> None:
         """Build exclusion zones from patterns."""
         self._exclusion_zones = []
 
@@ -314,7 +314,7 @@ class PatternPreservationManager:
         }
         return radii.get(pattern.type, self.default_radius)
 
-    def _build_address_index(self):
+    def _build_address_index(self) -> None:
         """Build address index for fast lookup."""
         self._address_index = {}
 

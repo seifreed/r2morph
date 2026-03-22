@@ -23,7 +23,6 @@ from r2morph.core.engine import MorphEngine
 from r2morph.core.config import EngineConfig
 from r2morph.validation import BinaryValidator
 
-
 pytestmark = pytest.mark.skipif(os.environ.get("SKIP_REAL_BINARY_TESTS") == "1", reason="Real binary tests disabled")
 
 

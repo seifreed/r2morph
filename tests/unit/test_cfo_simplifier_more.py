@@ -40,9 +40,7 @@ def test_cfo_extract_state_and_setters():
     )
     setter = ControlFlowBlock(
         address=0x600,
-        instructions=[
-            {"opcode": "mov", "operands": [{"value": "state"}, {"value": "3"}]}
-        ],
+        instructions=[{"opcode": "mov", "operands": [{"value": "state"}, {"value": "3"}]}],
     )
 
     simplifier.blocks = {block.address: block, setter.address: setter}

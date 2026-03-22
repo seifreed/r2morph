@@ -45,6 +45,7 @@ class HotPathDetector:
             func_addr = func.get("offset", 0)
             func_name = func.get("name", f"0x{func_addr:x}")
 
+            assert self.binary.r2 is not None
             try:
                 bb_json = self.binary.r2.cmd(f"afbj @ 0x{func_addr:x}")
                 import json

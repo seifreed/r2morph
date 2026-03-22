@@ -89,7 +89,7 @@ class R2PipeAdapter:
         """
         if self._r2 is None:
             raise RuntimeError("Disassembler not open")
-        return self._r2.cmd(command)
+        return str(self._r2.cmd(command))
 
     def cmdj(self, command: str) -> Any:
         """Execute a command and return JSON result.

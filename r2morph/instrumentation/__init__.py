@@ -14,10 +14,11 @@ from r2morph.instrumentation.frida_engine import FridaEngine
 # Check Frida availability
 try:
     import frida
+
     FRIDA_AVAILABLE = True
 except ImportError:
     FRIDA_AVAILABLE = False
-    frida = None
+    frida = None  # type: ignore[assignment]
 
 __all__ = [
     "FridaEngine",

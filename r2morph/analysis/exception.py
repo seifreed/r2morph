@@ -11,7 +11,6 @@ import logging
 import struct
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -120,7 +119,7 @@ class ExceptionInfoReader:
 
         return self._frames
 
-    def _read_elf_eh_frame(self):
+    def _read_elf_eh_frame(self) -> None:
         """Read exception frames from ELF .eh_frame section."""
         try:
             sections = self._get_sections()
@@ -150,7 +149,7 @@ class ExceptionInfoReader:
         except Exception as e:
             logger.debug(f"Failed to read ELF eh_frame: {e}")
 
-    def _parse_eh_frame(self, data: bytes, base_addr: int):
+    def _parse_eh_frame(self, data: bytes, base_addr: int) -> None:
         """
         Parse .eh_frame section data.
 
@@ -183,11 +182,11 @@ class ExceptionInfoReader:
                 logger.debug(f"Failed to parse eh_frame entry at offset {offset}: {e}")
                 break
 
-    def _parse_cie(self, data: bytes, offset: int, length: int, base_addr: int):
+    def _parse_cie(self, data: bytes, offset: int, length: int, base_addr: int) -> None:
         """Parse a Common Information Entry."""
         pass
 
-    def _parse_fde(self, data: bytes, offset: int, length: int, base_addr: int, cie_offset: int):
+    def _parse_fde(self, data: bytes, offset: int, length: int, base_addr: int, cie_offset: int) -> None:
         """Parse a Frame Description Entry and extract function bounds."""
         try:
             ptr_size = 8 if self.binary.get_arch_info().get("bits", 64) == 64 else 4
@@ -203,7 +202,7 @@ class ExceptionInfoReader:
                 data[pc_begin_offset + ptr_size : pc_begin_offset + 2 * ptr_size],
             )[0]
 
-            if pc_begin > 0:
+            if pc_begin > 0 and self._frames is not None:
                 frame = ExceptionFrame(
                     function_start=pc_begin,
                     function_end=pc_begin + pc_range,
@@ -213,8 +212,10 @@ class ExceptionInfoReader:
         except Exception as e:
             logger.debug(f"Failed to parse FDE at {offset}: {e}")
 
-    def _read_pe_exception_data(self):
+    def _read_pe_exception_data(self) -> None:
         """Read exception frames from PE .pdata and .xdata sections."""
+        if self._frames is None:
+            self._frames = {}
         try:
             sections = self._get_sections()
             pdata_section = None
@@ -268,7 +269,7 @@ class ExceptionInfoReader:
         except Exception as e:
             logger.debug(f"Failed to read PE exception data: {e}")
 
-    def _read_macho_unwind_info(self):
+    def _read_macho_unwind_info(self) -> None:
         """Read exception frames from Mach-O __unwind_info section."""
         try:
             sections = self._get_sections()

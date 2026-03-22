@@ -41,9 +41,7 @@ class TestControlFlowFlatteningReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = ControlFlowFlatteningPass(
-                config={"max_functions_to_flatten": 1, "probability": 1.0}
-            )
+            pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 1, "probability": 1.0})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
             assert "mutations_applied" in result
@@ -58,9 +56,7 @@ class TestControlFlowFlatteningReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = ControlFlowFlatteningPass(
-                config={"max_functions_to_flatten": 3, "probability": 1.0}
-            )
+            pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 3, "probability": 1.0})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
 
@@ -74,9 +70,7 @@ class TestControlFlowFlatteningReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = ControlFlowFlatteningPass(
-                config={"max_functions_to_flatten": 2, "probability": 0.1}
-            )
+            pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 2, "probability": 0.1})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
 
@@ -98,9 +92,7 @@ class TestDeadCodeInjectionReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = DeadCodeInjectionPass(
-                config={"max_injections_per_function": 5, "probability": 1.0}
-            )
+            pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 5, "probability": 1.0})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
             assert "mutations_applied" in result
@@ -115,9 +107,7 @@ class TestDeadCodeInjectionReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = DeadCodeInjectionPass(
-                config={"max_injections_per_function": 10, "probability": 0.8}
-            )
+            pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 10, "probability": 0.8})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
 
@@ -131,9 +121,7 @@ class TestDeadCodeInjectionReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = DeadCodeInjectionPass(
-                config={"max_injections_per_function": 15, "probability": 0.9}
-            )
+            pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 15, "probability": 0.9})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
 
@@ -155,9 +143,7 @@ class TestOpaquePredicatesReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = OpaquePredicatePass(
-                config={"max_predicates_per_function": 3, "probability": 1.0}
-            )
+            pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 3, "probability": 1.0})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
             assert "mutations_applied" in result
@@ -172,9 +158,7 @@ class TestOpaquePredicatesReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = OpaquePredicatePass(
-                config={"max_predicates_per_function": 5, "probability": 0.8}
-            )
+            pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 5, "probability": 0.8})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
 
@@ -188,9 +172,7 @@ class TestOpaquePredicatesReal:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            pass_obj = OpaquePredicatePass(
-                config={"max_predicates_per_function": 2, "probability": 1.0}
-            )
+            pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 2, "probability": 1.0})
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
 
@@ -266,9 +248,7 @@ class TestNopInsertionDetailed:
 
             with Binary(temp_binary, writable=True) as binary:
                 binary.analyze()
-                pass_obj = NopInsertionPass(
-                    config={"max_nops_per_function": count, "probability": 1.0}
-                )
+                pass_obj = NopInsertionPass(config={"max_nops_per_function": count, "probability": 1.0})
                 result = pass_obj.apply(binary)
                 assert isinstance(result, dict)
 

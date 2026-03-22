@@ -7,13 +7,12 @@ with shared projection helpers to eliminate row-shape duplication.
 
 from typing import Any
 
-from r2morph.reporting.gate_evaluator import SEVERITY_ORDER
 from r2morph.reporting.report_context import ReportViews
-
 
 # ---------------------------------------------------------------------------
 # Shared row-projection helpers (DRY: eliminate 4x duplication per category)
 # ---------------------------------------------------------------------------
+
 
 def _project_rows(rows: list[dict[str, Any]], fields: list[str]) -> list[dict[str, Any]]:
     """Project rows to a subset of fields with type normalization."""
@@ -215,11 +214,7 @@ def _build_mismatch_views(
             }
         )
     # Index mismatch rows by pass_name (rows already contain all needed fields)
-    mismatch_by_pass = {
-        str(row["pass_name"]): dict(row)
-        for row in mismatch_rows
-        if row.get("pass_name")
-    }
+    mismatch_by_pass = {str(row["pass_name"]): dict(row) for row in mismatch_rows if row.get("pass_name")}
     return {
         "mismatch_rows": mismatch_rows,
         "mismatch_by_pass": mismatch_by_pass,
@@ -308,7 +303,7 @@ def _build_summary_views(
         or row.get("executed_under_degraded_mode")
         or row.get("gate_failure_count", 0)
     ]
-    general_symbolic = {
+    general_symbolic: dict[str, Any] = {
         "overview": {
             "symbolic_requested": sum(int(row.get("symbolic_requested", 0)) for row in normalized_pass_results),
             "observable_match": sum(int(row.get("observable_match", 0)) for row in normalized_pass_results),
@@ -319,7 +314,7 @@ def _build_summary_views(
         "severity_by_pass": [dict(row) for row in symbolic_severity_by_pass],
         "triage_rows": [dict(row) for row in triage_priority],
     }
-    general_gates = {
+    general_gates: dict[str, Any] = {
         "summary": dict(gate_failure_summary or {}),
         "priority": [dict(row) for row in gate_failure_priority],
         "severity_priority": [dict(row) for row in gate_failure_severity_priority],
@@ -332,7 +327,7 @@ def _build_summary_views(
             "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
         },
     }
-    general_degradation = {
+    general_degradation: dict[str, Any] = {
         "summary": {
             "requested_validation_mode": next(
                 (row.get("requested_validation_mode") for row in degraded_rows if row.get("requested_validation_mode")),
@@ -359,7 +354,7 @@ def _build_summary_views(
             for row in degraded_rows
         ],
     }
-    general_discards = {
+    general_discards: dict[str, Any] = {
         "summary": {
             "count": sum(int(row.get("discarded_count", 0)) for row in discarded_mutation_priority),
             "passes": [str(row.get("pass_name")) for row in discarded_mutation_priority if row.get("pass_name")],
@@ -460,8 +455,8 @@ def build_report_views(
         normalized_pass_map=normalized_pass_map,
     )
     failed_gates_rows = gates["failed_gates_rows"]
-    failed_gates_compact_rows = gates["failed_gates_compact_rows"]
-    failed_gates_final_rows = gates["failed_gates_final_rows"]
+    gates["failed_gates_compact_rows"]
+    gates["failed_gates_final_rows"]
     failed_gates_by_pass = gates["failed_gates_by_pass"]
     failed_gates_expected_severity = gates["failed_gates_expected_severity"]
 
@@ -565,9 +560,18 @@ def _build_mismatch_detail(
         "by_pass": mismatch_by_pass,
         **_build_category_views(
             mismatch_rows,
-            compact_fields=["pass_name", "mismatch_count", "severity", "role",
-                            "symbolic_confidence", "degraded_execution", "region_count",
-                            "region_mismatch_count", "region_exit_match_count", "compact_region"],
+            compact_fields=[
+                "pass_name",
+                "mismatch_count",
+                "severity",
+                "role",
+                "symbolic_confidence",
+                "degraded_execution",
+                "region_count",
+                "region_mismatch_count",
+                "region_exit_match_count",
+                "compact_region",
+            ],
         ),
         "rows": mismatch_rows,
         "compact_summary": {
@@ -640,8 +644,13 @@ def _build_validation_adjustments_detail(degraded_rows: list[dict[str, Any]]) ->
         "by_pass": {str(row.get("pass_name")): dict(row) for row in degraded_rows if row.get("pass_name")},
         **_build_category_views(
             degraded_rows,
-            compact_fields=["pass_name", "role", "triggered_adjustment",
-                            "executed_under_degraded_mode", "gate_failure_count"],
+            compact_fields=[
+                "pass_name",
+                "role",
+                "triggered_adjustment",
+                "executed_under_degraded_mode",
+                "gate_failure_count",
+            ],
         ),
         "summary": {
             "requested_validation_mode": next(
@@ -704,14 +713,30 @@ def _build_discarded_detail(
 
 def _assemble_report_views(
     *,
-    general_pass_rows, general_summary_payload, general_summary_rows,
-    general_renderer_state, triage_priority, filter_buckets,
-    general_symbolic, general_gates, general_degradation, general_discards,
-    only_pass, observable_mismatch_priority, observable_mismatch_map,
-    mismatch_rows, mismatch_by_pass, gate_failure_priority, gate_failure_summary,
-    gate_failure_severity_priority, failed_gates_rows, failed_gates_by_pass,
-    failed_gates_expected_severity, degraded_rows, discarded_mutation_priority,
-    discarded_mutation_summary,
+    general_pass_rows: list[dict[str, Any]],
+    general_summary_payload: dict[str, Any],
+    general_summary_rows: list[dict[str, Any]],
+    general_renderer_state: dict[str, Any],
+    triage_priority: list[dict[str, Any]],
+    filter_buckets: dict[str, list[str]] | None,
+    general_symbolic: dict[str, Any],
+    general_gates: dict[str, Any],
+    general_degradation: dict[str, Any],
+    general_discards: dict[str, Any],
+    only_pass: dict[str, dict[str, Any]],
+    observable_mismatch_priority: list[dict[str, Any]],
+    observable_mismatch_map: dict[str, dict[str, Any]],
+    mismatch_rows: list[dict[str, Any]],
+    mismatch_by_pass: dict[str, dict[str, Any]],
+    gate_failure_priority: list[dict[str, Any]],
+    gate_failure_summary: dict[str, Any] | None,
+    gate_failure_severity_priority: list[dict[str, Any]],
+    failed_gates_rows: list[dict[str, Any]],
+    failed_gates_by_pass: dict[str, dict[str, Any]],
+    failed_gates_expected_severity: dict[str, Any],
+    degraded_rows: list[dict[str, Any]],
+    discarded_mutation_priority: list[dict[str, Any]],
+    discarded_mutation_summary: dict[str, Any],
 ) -> ReportViews:
     """Assemble the final ReportViews from pre-built components."""
     return ReportViews(
@@ -721,21 +746,21 @@ def _assemble_report_views(
         general_summary_rows=general_summary_rows,
         general_renderer_state=general_renderer_state,
         general_triage_rows=[dict(row) for row in triage_priority],
-        general_filter_views=filter_buckets,
+        general_filter_views=filter_buckets or {},
         general_symbolic=general_symbolic,
         general_gates=general_gates,
         general_degradation=general_degradation,
         general_discards=general_discards,
-        passes=filter_buckets,
+        passes=filter_buckets or {},
         triage_priority=triage_priority,
         only_pass=only_pass,
         pass_filter_views={
-            "only_risky_passes": filter_buckets.get("risky", []),
-            "only_structural_risk": filter_buckets.get("structural_risk", []),
-            "only_symbolic_risk": filter_buckets.get("symbolic_risk", []),
-            "only_clean_passes": filter_buckets.get("clean", []),
-            "only_covered_passes": filter_buckets.get("covered", []),
-            "only_uncovered_passes": filter_buckets.get("uncovered", []),
+            "only_risky_passes": (filter_buckets or {}).get("risky", []),
+            "only_structural_risk": (filter_buckets or {}).get("structural_risk", []),
+            "only_symbolic_risk": (filter_buckets or {}).get("symbolic_risk", []),
+            "only_clean_passes": (filter_buckets or {}).get("clean", []),
+            "only_covered_passes": (filter_buckets or {}).get("covered", []),
+            "only_uncovered_passes": (filter_buckets or {}).get("uncovered", []),
         },
         mismatch_priority=[dict(row) for row in observable_mismatch_priority],
         mismatch_map={str(pass_name): dict(row) for pass_name, row in observable_mismatch_map.items()},
@@ -743,8 +768,12 @@ def _assemble_report_views(
         only_mismatches=_build_mismatch_detail(observable_mismatch_priority, mismatch_rows, mismatch_by_pass),
         failed_gates=[dict(row) for row in gate_failure_priority],
         only_failed_gates=_build_gate_detail(
-            gate_failure_priority, gate_failure_summary, gate_failure_severity_priority,
-            failed_gates_rows, failed_gates_by_pass, failed_gates_expected_severity,
+            gate_failure_priority,
+            gate_failure_summary,
+            gate_failure_severity_priority,
+            failed_gates_rows,
+            failed_gates_by_pass,
+            failed_gates_expected_severity,
         ),
         validation_adjustments=_build_validation_adjustments_detail(degraded_rows),
         discarded_view=_build_discarded_detail(discarded_mutation_priority, discarded_mutation_summary),

@@ -60,7 +60,7 @@ _size_to_regs: dict[int, list[str]] = {64: [], 32: [], 16: [], 8: []}
 _base_to_index: dict[str, int] = {}
 
 
-def _init_caches():
+def _init_caches() -> None:
     global _register_info_cache, _size_to_regs, _base_to_index
 
     if _register_info_cache:

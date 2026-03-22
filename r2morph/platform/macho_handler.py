@@ -6,13 +6,17 @@ import logging
 import platform
 import struct
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 try:
     import lief
+
+    LIEF_AVAILABLE = True
 except Exception:  # pragma: no cover - optional dependency
-    lief = None
+    lief = None  # type: ignore[assignment]
+    LIEF_AVAILABLE = False
 
 
 class MachOHandler:
@@ -33,7 +37,7 @@ class MachOHandler:
         """
         self.binary_path = binary_path
 
-    def _parse_lief(self):
+    def _parse_lief(self) -> Any:
         if lief is None:
             return None
         try:
@@ -62,7 +66,7 @@ class MachOHandler:
                 macho_magics_native_le = {0xFEEDFACE, 0xFEEDFACF}
                 # When read as little-endian, these (byte-swapped) indicate a BE binary
                 macho_magics_native_be = {0xCEFAEDFE, 0xCFFAEDFE}
-                macho_magics_le = macho_magics_native_le | macho_magics_native_be
+                macho_magics_native_le | macho_magics_native_be
                 fat_magics_be = {0xCAFEBABE, 0xCAFEBABF, 0xBEBAFECA, 0xBFBAFECA}
 
                 endian = "<"
@@ -231,14 +235,14 @@ class MachOHandler:
             logger.error(f"Failed to parse Mach-O fallback: {e}")
             return [], []
 
-    def _iter_macho_binaries(self, binary):
+    def _iter_macho_binaries(self, binary: Any) -> list[Any]:
         if lief is None or binary is None:
             return []
         if isinstance(binary, lief.MachO.Binary):
             return [binary]
         if isinstance(binary, lief.MachO.FatBinary):
             try:
-                return list(binary.it_binaries)
+                return list(binary.it_binaries)  # type: ignore[arg-type]
             except Exception:
                 return []
         return []
@@ -276,14 +280,14 @@ class MachOHandler:
             return commands
 
         binary = self._parse_lief()
-        commands: list[dict] = []
+        lief_commands: list[dict[Any, Any]] = []
         for macho in self._iter_macho_binaries(binary):
             for cmd in getattr(macho, "commands", []):
                 name = getattr(cmd, "command", None)
                 if name is not None and hasattr(name, "name"):
                     name = name.name
-                commands.append({"command": str(name)})
-        return commands
+                lief_commands.append({"command": str(name)})
+        return lief_commands
 
     def get_segments(self) -> list[dict]:
         """Get Mach-O segments."""
@@ -292,10 +296,10 @@ class MachOHandler:
             return segments
 
         binary = self._parse_lief()
-        segments: list[dict] = []
+        lief_segments: list[dict[Any, Any]] = []
         for macho in self._iter_macho_binaries(binary):
             for seg in getattr(macho, "segments", []):
-                segments.append(
+                lief_segments.append(
                     {
                         "name": seg.name,
                         "virtual_address": getattr(seg, "virtual_address", 0),
@@ -304,7 +308,7 @@ class MachOHandler:
                         "file_size": getattr(seg, "file_size", 0),
                     }
                 )
-        return segments
+        return lief_segments
 
     def validate(self) -> bool:
         """Validate Mach-O structure."""
@@ -321,7 +325,7 @@ class MachOHandler:
             return len(self._iter_macho_binaries(binary)) > 0
         return False
 
-    def _relocations_in_segments(self, binary) -> bool:
+    def _relocations_in_segments(self, binary: Any) -> bool:
         try:
             segments = list(getattr(binary, "segments", []))
             if not segments:

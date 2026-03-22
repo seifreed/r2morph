@@ -139,18 +139,18 @@ class Register:
 
         for base, alias_set in arm64_alias_map.items():
             if name in alias_set:
-                result: set[Register] = set()
+                arm64_result: set[Register] = set()
                 for a in alias_set:
                     size = 64 if a.startswith("x") or a == "sp" or a == "lr" else 32
-                    result.add(Register(a, size))
-                return result
+                    arm64_result.add(Register(a, size))
+                return arm64_result
 
         for base, alias_set in arm32_alias_map.items():
             if name in alias_set:
-                result: set[Register] = set()
+                arm32_result: set[Register] = set()
                 for a in alias_set:
-                    result.add(Register(a, 32))
-                return result
+                    arm32_result.add(Register(a, 32))
+                return arm32_result
 
         return aliases
 
@@ -219,7 +219,7 @@ class DefUseChain:
     uses: list[Use] = field(default_factory=list)
     live_range: tuple[int, int] | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Initialize live range from definition and uses."""
         if self.live_range is None:
             self._update_live_range()
@@ -249,7 +249,7 @@ class DefUseChain:
 class DataFlowResult:
     """Result of data flow analysis."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.live_in: dict[int, set[Register]] = {}
         self.live_out: dict[int, set[Register]] = {}
         self.reaching_in: dict[int, set[Definition]] = {}
@@ -347,8 +347,8 @@ class DataFlowAnalyzer:
 
     def _get_block_use(self, block: BasicBlock) -> set[Register]:
         """Get registers used before being defined in a block."""
-        used = set()
-        defined = set()
+        used: set[Register] = set()
+        defined: set[Register] = set()
 
         for insn in block.instructions:
             regs_used = self._extract_used_registers(insn)
@@ -363,7 +363,7 @@ class DataFlowAnalyzer:
 
     def _get_block_def(self, block: BasicBlock) -> set[Register]:
         """Get registers defined in a block."""
-        defined = set()
+        defined: set[Register] = set()
 
         for insn in block.instructions:
             regs_def = self._extract_defined_registers(insn)
@@ -373,7 +373,7 @@ class DataFlowAnalyzer:
 
     def _extract_used_registers(self, insn: dict) -> set[Register]:
         """Extract registers used by an instruction."""
-        used = set()
+        used: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
 
         if not disasm:
@@ -399,7 +399,7 @@ class DataFlowAnalyzer:
 
     def _extract_defined_registers(self, insn: dict) -> set[Register]:
         """Extract registers defined by an instruction."""
-        defined = set()
+        defined: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
         mnemonic = insn.get("type", "").lower()
 

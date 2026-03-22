@@ -12,7 +12,7 @@ Usage:
 """
 
 from pathlib import Path
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
 from rich.console import Console
 
@@ -20,7 +20,7 @@ from rich.console import Console
 def create_binary_reader(
     r2: Any,
     lazy_load: bool = True,
-):
+) -> Any:
     """
     Factory function for BinaryReader.
 
@@ -40,7 +40,7 @@ def create_binary_writer(
     r2: Any,
     path: Path,
     writable: bool = False,
-):
+) -> Any:
     """
     Factory function for BinaryWriter.
 
@@ -57,7 +57,7 @@ def create_binary_writer(
     return BinaryWriter(r2, path, writable)
 
 
-def create_assembly_service():
+def create_assembly_service() -> Any:
     """
     Factory function for AssemblyService.
 
@@ -72,7 +72,7 @@ def create_assembly_service():
 def create_memory_manager(
     batch_size: int = 1000,
     low_memory: bool = False,
-):
+) -> Any:
     """
     Factory function for MemoryManager.
 
@@ -90,7 +90,7 @@ def create_memory_manager(
 
 def create_report_emitter(
     console: Console | None = None,
-):
+) -> dict[str, Any]:
     """
     Factory function for report emission.
 
@@ -142,7 +142,7 @@ def create_report_emitter(
 
 def create_console_renderer(
     console: Console | None = None,
-):
+) -> dict[str, Any]:
     """
     Factory function for console rendering.
 
@@ -209,34 +209,22 @@ def create_console_renderer(
         "render_gate_sections": render_gate,
         "render_degradation_sections": render_degradation,
         "render_summary_table": render_summary,
-        "render_only_mismatches_sections": lambda rows: render_only_mismatches_sections(
-            rows, console=c
-        ),
-        "render_only_pass_sections": lambda name, data: render_only_pass_sections(
-            name, data, console=c
-        ),
-        "render_report_filter_messages": lambda *args, **kw: render_report_filter_messages(
-            *args, console=c, **kw
-        ),
-        "render_gate_evaluation_sections": lambda *args, **kw: render_gate_evaluation_sections(
-            *args, console=c, **kw
-        ),
-        "render_general_report_sections": lambda *args, **kw: render_general_report_sections(
-            *args, console=c, **kw
-        ),
+        "render_only_mismatches_sections": lambda rows: render_only_mismatches_sections(rows, console=c),
+        "render_only_pass_sections": lambda name, data: render_only_pass_sections(name, data, console=c),
+        "render_report_filter_messages": lambda *args, **kw: render_report_filter_messages(*args, console=c, **kw),
+        "render_gate_evaluation_sections": lambda *args, **kw: render_gate_evaluation_sections(*args, console=c, **kw),
+        "render_general_report_sections": lambda *args, **kw: render_general_report_sections(*args, console=c, **kw),
         "render_general_only_pass_sections": lambda *args, **kw: render_general_only_pass_sections(
             *args, console=c, **kw
         ),
         "render_mismatch_summary_sections": lambda *args, **kw: render_mismatch_summary_sections(
             *args, console=c, **kw
         ),
-        "render_validation_context_table": lambda *args, **kw: render_validation_context_table(
-            *args, console=c, **kw
-        ),
+        "render_validation_context_table": lambda *args, **kw: render_validation_context_table(*args, console=c, **kw),
     }
 
 
-def create_gate_evaluator():
+def create_gate_evaluator() -> type:
     """
     Factory function for GateEvaluator.
 
@@ -248,7 +236,7 @@ def create_gate_evaluator():
     return GateEvaluator
 
 
-def create_summary_aggregator():
+def create_summary_aggregator() -> Any:
     """
     Factory function for SummaryAggregator.
 
@@ -260,7 +248,7 @@ def create_summary_aggregator():
     return SummaryAggregator()
 
 
-def create_symbolic_aggregator():
+def create_symbolic_aggregator() -> type:
     """
     Factory function for SymbolicAggregator.
 
@@ -272,7 +260,7 @@ def create_symbolic_aggregator():
     return SymbolicAggregator
 
 
-def create_evidence_aggregator():
+def create_evidence_aggregator() -> type:
     """
     Factory function for EvidenceAggregator.
 
@@ -284,7 +272,7 @@ def create_evidence_aggregator():
     return EvidenceAggregator
 
 
-def create_report_builder():
+def create_report_builder() -> type:
     """
     Factory function for ReportBuilder.
 
@@ -296,7 +284,7 @@ def create_report_builder():
     return ReportBuilder
 
 
-def create_pass_filter_resolver():
+def create_pass_filter_resolver() -> type:
     """
     Factory function for PassFilterResolver.
 
@@ -308,7 +296,7 @@ def create_pass_filter_resolver():
     return PassFilterResolver
 
 
-def create_report_filters():
+def create_report_filters() -> type:
     """
     Factory function for ReportFilters.
 

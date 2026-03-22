@@ -5,7 +5,6 @@ from typer.main import get_command
 
 from r2morph.cli import app, analyze as analyze_cmd, functions as functions_cmd, morph as morph_cmd
 
-
 runner = CliRunner()
 app_cmd = get_command(app)
 

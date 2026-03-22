@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -350,7 +350,7 @@ class AntiDisassemblyPass(MutationPass):
         """Inject a snippet at the given address."""
         try:
             snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return binary.write_bytes(addr, snippet_bytes)
+            return bool(binary.write_bytes(addr, snippet_bytes))
         except Exception as e:
             logger.debug(f"Failed to inject snippet: {e}")
             return False
@@ -360,7 +360,7 @@ class AntiDisassemblyPass(MutationPass):
         snippet = random.choice(OVERLAPPING_X64)
         try:
             snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return binary.write_bytes(addr, snippet_bytes)
+            return bool(binary.write_bytes(addr, snippet_bytes))
         except Exception as e:
             logger.debug(f"Failed to inject overlapping pattern: {e}")
             return False
@@ -370,7 +370,7 @@ class AntiDisassemblyPass(MutationPass):
         snippet = random.choice(FALSE_BRANCH_X64)
         try:
             snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return binary.write_bytes(addr, snippet_bytes)
+            return bool(binary.write_bytes(addr, snippet_bytes))
         except Exception as e:
             logger.debug(f"Failed to inject false branch pattern: {e}")
             return False
@@ -380,7 +380,7 @@ class AntiDisassemblyPass(MutationPass):
         snippet = random.choice(JUMP_MIDDLE_X64)
         try:
             snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return binary.write_bytes(addr, snippet_bytes)
+            return bool(binary.write_bytes(addr, snippet_bytes))
         except Exception as e:
             logger.debug(f"Failed to inject jump-middle pattern: {e}")
             return False

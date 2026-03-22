@@ -4,7 +4,6 @@ import pytest
 
 from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework, InstructionSemantics, VMHandlerSemantics
 
-
 pytestmark = [pytest.mark.experimental]
 
 
@@ -33,10 +32,18 @@ def test_syntia_vm_handler_analysis_and_exports(tmp_path):
     framework.clear_cache()
 
     # Additional classification paths
-    sem = InstructionSemantics(address=0x2000, instruction_bytes=b"\x90", disassembly="jmp 0x1", learned_semantics="branch", confidence=0.9)
+    sem = InstructionSemantics(
+        address=0x2000, instruction_bytes=b"\x90", disassembly="jmp 0x1", learned_semantics="branch", confidence=0.9
+    )
     handler_type = framework._classify_handler_type([sem])
     assert handler_type in {"branch", "unknown"}
 
-    handler_sem = VMHandlerSemantics(handler_id=2, entry_address=0x2000, handler_type="branch", instruction_semantics=[sem], overall_semantic_formula="branch")
+    handler_sem = VMHandlerSemantics(
+        handler_id=2,
+        entry_address=0x2000,
+        handler_type="branch",
+        instruction_semantics=[sem],
+        overall_semantic_formula="branch",
+    )
     native = framework._generate_equivalent_native_code(handler_sem)
     assert native is not None

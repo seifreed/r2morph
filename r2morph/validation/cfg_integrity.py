@@ -14,7 +14,7 @@ from enum import Enum
 from typing import Any
 
 from r2morph.core.binary import Binary
-from r2morph.analysis.cfg import ControlFlowGraph, CFGBuilder
+from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
     PatternType,
@@ -100,7 +100,7 @@ class CFGIntegrityChecker:
     critical control flow properties are preserved.
     """
 
-    def __init__(self, binary: Binary, preserve_patterns: bool = True):
+    def __init__(self, binary: Binary, preserve_patterns: bool = True) -> None:
         self.binary = binary
         self.preserve_patterns = preserve_patterns
         self._snapshots: dict[int, CFGSnapshot] = {}
@@ -131,7 +131,7 @@ class CFGIntegrityChecker:
             exit_blocks: list[int] = []
 
             for addr, block in cfg.blocks.items():
-                block_info = {
+                block_info: dict[str, Any] = {
                     "address": addr,
                     "size": block.size if hasattr(block, "size") else 0,
                     "instructions": [],
@@ -159,9 +159,11 @@ class CFGIntegrityChecker:
 
             if hasattr(cfg, "edges"):
                 for edge in cfg.edges:
-                    src = edge.src if hasattr(edge, "src") else edge[0]
-                    dst = edge.dst if hasattr(edge, "dst") else edge[1]
-                    edge_type = edge.type if hasattr(edge, "type") else edge[2] if len(edge) > 2 else "normal"
+                    src = edge[0] if hasattr(edge, "src") else edge[0]
+                    dst = edge[1] if hasattr(edge, "dst") else edge[1]
+                    edge_type = (
+                        getattr(edge, "type", "") if hasattr(edge, "type") else edge[2] if len(edge) > 2 else "normal"
+                    )
                     edges.append((src, dst, edge_type))
 
             preserved: list[PreservedPattern] = []
@@ -257,7 +259,7 @@ class CFGIntegrityChecker:
 
         return report
 
-    def _check_reachability(self, snapshot: CFGSnapshot, report: IntegrityReport):
+    def _check_reachability(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
         """Check that all blocks from snapshot are still reachable."""
         if not snapshot.entry_block:
             return
@@ -295,7 +297,7 @@ class CFGIntegrityChecker:
 
         return reachable
 
-    def _check_edge_preservation(self, snapshot: CFGSnapshot, report: IntegrityReport):
+    def _check_edge_preservation(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
         """Check that critical edges are preserved."""
         critical_types = {"exception", "unwind", "landing_pad"}
 
@@ -323,7 +325,7 @@ class CFGIntegrityChecker:
                         )
                     )
 
-    def _check_jump_targets(self, snapshot: CFGSnapshot, report: IntegrityReport):
+    def _check_jump_targets(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
         """Check that jump targets are valid."""
         for addr, block_info in snapshot.blocks.items():
             instructions = block_info.get("instructions", [])
@@ -361,7 +363,7 @@ class CFGIntegrityChecker:
                 pass
         return None
 
-    def _check_preserved_patterns(self, snapshot: CFGSnapshot, report: IntegrityReport):
+    def _check_preserved_patterns(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
         """Check that preserved patterns are intact."""
         for pattern in snapshot.preserved_patterns:
             if pattern.start_address not in snapshot.blocks:
@@ -378,9 +380,11 @@ class CFGIntegrityChecker:
                     ):
                         report.violations.append(
                             IntegrityViolation(
-                                status=IntegrityStatus.JUMP_TABLE
-                                if pattern.type == PatternType.JUMP_TABLE
-                                else IntegrityStatus.EXCEPTION_FLOW,
+                                status=(
+                                    IntegrityStatus.JUMP_TABLE
+                                    if pattern.type == PatternType.JUMP_TABLE
+                                    else IntegrityStatus.EXCEPTION_FLOW
+                                ),
                                 address=pattern.start_address,
                                 description=f"Preserved pattern {pattern.type.value} may be corrupted",
                                 severity="error",
@@ -413,9 +417,7 @@ class CFGIntegrityChecker:
         zones = self._preservation_manager.get_exclusion_zones()
 
         func_zones = [
-            z
-            for z in zones
-            if z.expanded_start < function_address + 0x10000 and z.expanded_end > function_address
+            z for z in zones if z.expanded_start < function_address + 0x10000 and z.expanded_end > function_address
         ]
 
         return {
@@ -429,12 +431,12 @@ class CFGIntegrityChecker:
             ),
         }
 
-    def clear_snapshot(self, function_address: int):
+    def clear_snapshot(self, function_address: int) -> None:
         """Clear a snapshot after validation."""
         if function_address in self._snapshots:
             del self._snapshots[function_address]
 
-    def clear_all_snapshots(self):
+    def clear_all_snapshots(self) -> None:
         """Clear all stored snapshots."""
         self._snapshots.clear()
 
@@ -446,7 +448,7 @@ class HardenedMutationValidator:
     Combines pattern preservation and CFG integrity checks.
     """
 
-    def __init__(self, binary: Binary):
+    def __init__(self, binary: Binary) -> None:
         self.binary = binary
         self._preservation_manager: PatternPreservationManager | None = None
         self._integrity_checker = CFGIntegrityChecker(binary)

@@ -17,7 +17,7 @@ def test_vm_handler_classification_and_semantics():
 
         functions = bin_obj.get_functions()
         if functions:
-            instrs = analyzer._get_handler_instructions(functions[0].get('offset', 0))
+            instrs = analyzer._get_handler_instructions(functions[0].get("offset", 0))
             assert isinstance(instrs, list)
 
         instructions = [

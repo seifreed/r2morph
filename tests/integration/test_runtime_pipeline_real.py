@@ -86,7 +86,10 @@ def test_runtime_validation_rolls_back_failed_pass_on_real_binary(
     assert result["validation"]["runtime_passes"]
     assert result["validation"]["runtime_passes"][0]["passed"] is False
     assert result["pass_results"]["PatchString"]["rollback_reason"] == "runtime_validation_failed"
-    assert result["pass_results"]["PatchString"]["discarded_mutations_detail"][0]["metadata"]["discard_reason"] == "runtime_validation_failed"
+    assert (
+        result["pass_results"]["PatchString"]["discarded_mutations_detail"][0]["metadata"]["discard_reason"]
+        == "runtime_validation_failed"
+    )
 
     final_result = validator.validate(patchable_runtime_binary, output)
     assert final_result.passed is True

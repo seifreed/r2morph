@@ -14,7 +14,6 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import Relocation, RelocationManager
 

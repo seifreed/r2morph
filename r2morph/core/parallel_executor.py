@@ -98,7 +98,7 @@ class WorkQueue:
     Handles task dependencies and prioritization.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tasks: dict[int, MutationTask] = {}
         self._completed: set[int] = set()
         self._running: set[int] = set()
@@ -226,7 +226,7 @@ class ResultMerger:
     Merges mutation results from parallel execution.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._results: list[MutationResult] = []
         self._conflicts: list[dict[str, Any]] = []
 
@@ -338,15 +338,15 @@ class ResultMerger:
                 resolution["action"] = "skip_second"
 
             elif strategy == ResolutionStrategy.REORDER:
-                resolution["description"] = f"Reorder mutations to avoid overlap"
+                resolution["description"] = "Reorder mutations to avoid overlap"
                 resolution["action"] = "reorder"
 
             elif strategy == ResolutionStrategy.MERGE:
-                resolution["description"] = f"Merge mutations into single pass"
+                resolution["description"] = "Merge mutations into single pass"
                 resolution["action"] = "merge"
 
             else:
-                resolution["description"] = f"Abort due to unresolvable conflict"
+                resolution["description"] = "Abort due to unresolvable conflict"
                 resolution["action"] = "abort"
 
             resolutions.append(resolution)
@@ -367,7 +367,7 @@ class ParallelMutator:
     using process pools for CPU-bound work.
     """
 
-    def __init__(self, max_workers: int | None = None, use_threads: bool = False):
+    def __init__(self, max_workers: int | None = None, use_threads: bool = False) -> None:
         """
         Initialize parallel mutator.
 

@@ -12,10 +12,13 @@ def test_block_reordering_helper_methods():
     assert pass_obj._can_reorder_function(small_func, [{"addr": 0, "size": 4}]) is False
     assert pass_obj._can_reorder_function({"size": 30}, [{"addr": 0, "size": 4}]) is False
     assert pass_obj._can_reorder_function({"size": 30}, large_blocks) is False
-    assert pass_obj._can_reorder_function(
-        {"size": 30},
-        [{"addr": 0, "size": 8}, {"addr": 8, "size": 8}],
-    ) is True
+    assert (
+        pass_obj._can_reorder_function(
+            {"size": 30},
+            [{"addr": 0, "size": 8}, {"addr": 8, "size": 8}],
+        )
+        is True
+    )
 
     # _generate_reordering preserves first block
     random.seed(42)

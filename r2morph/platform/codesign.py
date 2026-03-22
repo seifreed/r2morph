@@ -20,7 +20,7 @@ class CodeSigner:
     Linux: Uses signing tools as needed
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize code signer."""
         self.platform = platform.system()
 

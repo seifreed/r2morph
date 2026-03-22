@@ -6,7 +6,7 @@ import logging
 import sys
 
 
-def setup_logging(level: str = "INFO", log_file: str | None = None):
+def setup_logging(level: str = "INFO", log_file: str | None = None) -> None:
     """
     Configure logging for r2morph.
 

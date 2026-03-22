@@ -144,9 +144,7 @@ def test_cli_validate_supports_normalize_whitespace(runtime_binary_pair, tmp_pat
     assert '"normalize_whitespace": true' in normalized_result.stdout
 
 
-def test_runtime_validator_detects_args_env_working_dir_mismatch_real(
-    args_env_binary_pair, tmp_path
-):
+def test_runtime_validator_detects_args_env_working_dir_mismatch_real(args_env_binary_pair, tmp_path):
     original, mutated = args_env_binary_pair
     workdir = tmp_path / "exec"
     workdir.mkdir()
@@ -173,9 +171,7 @@ def test_runtime_validator_detects_args_env_working_dir_mismatch_real(
     assert result.runtime_details[0]["working_dir"] == str(workdir)
 
 
-def test_cli_validate_supports_args_env_working_dir_corpus_real(
-    args_env_binary_pair, tmp_path
-):
+def test_cli_validate_supports_args_env_working_dir_corpus_real(args_env_binary_pair, tmp_path):
     original, mutated = args_env_binary_pair
     workdir = tmp_path / "exec"
     workdir.mkdir()

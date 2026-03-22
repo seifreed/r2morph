@@ -243,9 +243,7 @@ class InvariantDetector:
 
         return invariants
 
-    def verify_invariants(
-        self, function_address: int, expected_invariants: list[Invariant]
-    ) -> list[Invariant]:
+    def verify_invariants(self, function_address: int, expected_invariants: list[Invariant]) -> list[Invariant]:
         """
         Verify that expected invariants still hold.
 
@@ -316,8 +314,7 @@ class SemanticValidator:
 
         if not is_valid:
             logger.warning(
-                f"Function @ 0x{function_address:x} has {len(violations)} "
-                f"invariant violations after mutation"
+                f"Function @ 0x{function_address:x} has {len(violations)} " f"invariant violations after mutation"
             )
             for violation in violations:
                 logger.debug(f"  Violation: {violation}")

@@ -62,7 +62,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ class MobilityPlan:
     section_layout: dict[str, list[int]] = field(default_factory=dict)
     entry_points: dict[int, int] = field(default_factory=dict)
 
-    def add_block(self, block: MobileBlock):
+    def add_block(self, block: MobileBlock) -> None:
         """Add a block to the plan."""
         self.blocks.append(block)
         if block.target_section not in self.section_layout:
@@ -139,7 +139,7 @@ class CodeMobilityPass(MutationPass):
     def _get_basic_blocks(self, binary: Any, func_addr: int) -> list[dict[str, Any]]:
         """Get basic blocks for a function."""
         try:
-            return binary.get_basic_blocks(func_addr)
+            return list(binary.get_basic_blocks(func_addr))
         except Exception as e:
             logger.debug(f"Failed to get blocks: {e}")
             return []
@@ -230,7 +230,7 @@ section {section_name} align=16
     def _generate_block_code(self, block: MobileBlock, original_section: str) -> str:
         """Generate assembly for a mobile block."""
         lines = [
-            f"",
+            "",
             f"block_{block.block_id:04x}:",
             f"    ; Original: 0x{block.original_address:08x} in {original_section}",
             f"    ; Size: {block.size} bytes",
@@ -312,9 +312,9 @@ section {section_name} align=16
             logger.debug(f"Generated {section_name}: {len(asm)} bytes of assembly")
 
         if self._session is not None:
-            mutation_checkpoint = self._create_mutation_checkpoint("code_mobility")
+            self._create_mutation_checkpoint("code_mobility")
         else:
-            mutation_checkpoint = None
+            pass
 
         baseline = {}
         if self._validation_manager is not None:

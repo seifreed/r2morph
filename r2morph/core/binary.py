@@ -9,7 +9,6 @@ Refactored following Single Responsibility Principle:
 """
 
 import logging
-import shutil
 import threading
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -71,7 +70,7 @@ class Binary:
             self.flags.append("-w")
 
         self._injected_disassembler = disassembler
-        self.r2: "DisassemblerInterface | None" = None
+        self.r2: Any = None
         self.info: dict[str, Any] = {}
         self._analyzed = False
         self._writable = writable
@@ -132,11 +131,11 @@ class Binary:
                     self._writer = BinaryWriter(self.r2, self.path, self._writable)
         return self._writer
 
-    def __enter__(self):
+    def __enter__(self) -> "Binary":
         self.open()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
 
     def open(self) -> "Binary":
@@ -168,13 +167,14 @@ class Binary:
             raise RuntimeError(f"Failed to open binary with r2pipe: {e}")
         return self
 
-    def close(self):
+    def close(self) -> None:
         if self.r2:
-            self.r2.quit()
+            if hasattr(self.r2, "quit"):
+                self.r2.quit()
             self.r2 = None
             logger.info(f"Closed binary: {self.path}")
 
-    def reload(self):
+    def reload(self) -> None:
         logger.debug("Reloading r2 connection to free memory")
         was_analyzed = self._analyzed
         with self._lock:
@@ -310,7 +310,7 @@ class Binary:
 
         return self.write_bytes(address, nop_bytes)
 
-    def save(self, output_path: str | Path | None = None):
+    def save(self, output_path: str | Path | None = None) -> None:
         """Save modified binary to file."""
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
@@ -326,7 +326,7 @@ class Binary:
 
     # Mutation tracking (delegated to MemoryManager)
 
-    def track_mutation(self, batch_size: int = BATCH_MUTATION_CHECKPOINT):
+    def track_mutation(self, batch_size: int = BATCH_MUTATION_CHECKPOINT) -> None:
         """Track mutation count and reload r2 periodically for batch processing."""
         if not self._low_memory:
             return

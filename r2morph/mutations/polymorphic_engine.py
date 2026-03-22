@@ -48,7 +48,7 @@ from typing import TYPE_CHECKING, Any, Callable
 from r2morph.mutations.base import MutationPass
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 
 logger = logging.getLogger(__name__)
 

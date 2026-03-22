@@ -34,7 +34,7 @@ class MorphSession:
     rolling back to previous states if needed.
     """
 
-    def __init__(self, working_dir: Path | None = None):
+    def __init__(self, working_dir: Path | None = None) -> None:
         """
         Initialize mutation session.
 
@@ -274,7 +274,7 @@ class MorphSession:
 
         return True
 
-    def cleanup(self, keep_checkpoints: bool = False):
+    def cleanup(self, keep_checkpoints: bool = False) -> bool:
         """
         Clean up session files.
 
@@ -302,7 +302,7 @@ class MorphSession:
 
         return len(cleanup_errors) == 0
 
-    def _save_metadata(self):
+    def _save_metadata(self) -> None:
         """Save session metadata to JSON."""
         metadata = {
             "session_id": self.session_id,

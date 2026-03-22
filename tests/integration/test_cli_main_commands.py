@@ -180,11 +180,7 @@ class TestCLIMainCallback:
             timeout=10,
         )
         # Should show help or usage
-        assert (
-            "Usage" in result.stdout
-            or "usage" in result.stdout.lower()
-            or "Commands" in result.stdout
-        )
+        assert "Usage" in result.stdout or "usage" in result.stdout.lower() or "Commands" in result.stdout
 
 
 class TestCLIAnalyzeCommand:

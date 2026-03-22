@@ -48,9 +48,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = DeadCodeInjectionPass(
-                config={"max_injections_per_function": 3, "probability": 1.0}
-            )
+            pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 3, "probability": 1.0})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -67,9 +65,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = DeadCodeInjectionPass(
-                config={"max_injections_per_function": 5, "probability": 0.8}
-            )
+            pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 5, "probability": 0.8})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -85,9 +81,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = OpaquePredicatePass(
-                config={"max_predicates_per_function": 2, "probability": 1.0}
-            )
+            pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 2, "probability": 1.0})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -104,9 +98,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = OpaquePredicatePass(
-                config={"max_predicates_per_function": 3, "probability": 0.8}
-            )
+            pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 3, "probability": 0.8})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -122,9 +114,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = ControlFlowFlatteningPass(
-                config={"max_functions_to_flatten": 2, "probability": 1.0}
-            )
+            pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 2, "probability": 1.0})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -141,9 +131,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = ControlFlowFlatteningPass(
-                config={"max_functions_to_flatten": 1, "probability": 1.0}
-            )
+            pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 1, "probability": 1.0})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -159,9 +147,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = RegisterSubstitutionPass(
-                config={"max_substitutions_per_function": 5, "probability": 1.0}
-            )
+            pass_obj = RegisterSubstitutionPass(config={"max_substitutions_per_function": 5, "probability": 1.0})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -178,9 +164,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = InstructionExpansionPass(
-                config={"max_expansions_per_function": 5, "probability": 1.0}
-            )
+            pass_obj = InstructionExpansionPass(config={"max_expansions_per_function": 5, "probability": 1.0})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -197,9 +181,7 @@ class TestMutationsComprehensiveReal:
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
 
-            pass_obj = BlockReorderingPass(
-                config={"max_reorderings_per_function": 3, "probability": 1.0}
-            )
+            pass_obj = BlockReorderingPass(config={"max_reorderings_per_function": 3, "probability": 1.0})
 
             result = pass_obj.apply(binary)
             assert isinstance(result, dict)
@@ -218,12 +200,8 @@ class TestMutationsComprehensiveReal:
 
             mutations = [
                 NopInsertionPass(config={"max_nops_per_function": 2, "probability": 1.0}),
-                InstructionSubstitutionPass(
-                    config={"max_substitutions_per_function": 3, "probability": 1.0}
-                ),
-                RegisterSubstitutionPass(
-                    config={"max_substitutions_per_function": 2, "probability": 1.0}
-                ),
+                InstructionSubstitutionPass(config={"max_substitutions_per_function": 3, "probability": 1.0}),
+                RegisterSubstitutionPass(config={"max_substitutions_per_function": 2, "probability": 1.0}),
             ]
 
             for mutation in mutations:
@@ -243,9 +221,7 @@ class TestMutationsComprehensiveReal:
 
             mutations = [
                 NopInsertionPass(config={"max_nops_per_function": 5, "probability": 0.1}),
-                DeadCodeInjectionPass(
-                    config={"max_injections_per_function": 3, "probability": 0.1}
-                ),
+                DeadCodeInjectionPass(config={"max_injections_per_function": 3, "probability": 0.1}),
                 OpaquePredicatePass(config={"max_predicates_per_function": 2, "probability": 0.1}),
             ]
 

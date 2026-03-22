@@ -311,7 +311,7 @@ class ParallelMutator:
 
         overhead_factor = 1.0 + (0.1 * effective_workers)
 
-        return effective_workers / overhead_factor
+        return float(effective_workers / overhead_factor)
 
 
 def create_parallel_executor(config: dict[str, Any] | None = None) -> ParallelMutator:

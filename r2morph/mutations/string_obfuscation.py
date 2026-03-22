@@ -11,10 +11,8 @@ import logging
 import random
 from typing import TYPE_CHECKING, Any
 
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
-
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -73,7 +71,7 @@ class StringObfuscationPass(MutationPass):
         Returns:
             List of string dictionaries with addr, size, and content
         """
-        strings = []
+        strings: list[dict[str, Any]] = []
         addr = section.get("addr", 0)
         size = section.get("size", 0)
 
@@ -173,76 +171,76 @@ class StringObfuscationPass(MutationPass):
         """
         if encoding == "xor":
             return [
-                f"push rsi",
-                f"push rcx",
-                f"lea rsi, [rip + _encoded_string]",
+                "push rsi",
+                "push rcx",
+                "lea rsi, [rip + _encoded_string]",
                 f"mov rcx, {size}",
-                f"_decode_loop:",
+                "_decode_loop:",
                 f"xor byte [rsi], {key}",
-                f"inc rsi",
-                f"dec rcx",
-                f"jnz _decode_loop",
-                f"pop rcx",
-                f"pop rsi",
+                "inc rsi",
+                "dec rcx",
+                "jnz _decode_loop",
+                "pop rcx",
+                "pop rsi",
             ]
         elif encoding == "rot13":
             return [
-                f"push rsi",
-                f"push rcx",
-                f"push rax",
-                f"lea rsi, [rip + _encoded_string]",
+                "push rsi",
+                "push rcx",
+                "push rax",
+                "lea rsi, [rip + _encoded_string]",
                 f"mov rcx, {size}",
-                f"_decode_rot13:",
-                f"mov al, [rsi]",
-                f"cmp al, 0x41",
-                f"jb _skip_rot13",
-                f"cmp al, 0x5a",
-                f"ja _rot13_lower",
-                f"sub al, 0x41",
-                f"add al, 13",
-                f"cmp al, 26",
-                f"jb _upper_ok",
-                f"sub al, 26",
-                f"_upper_ok:",
-                f"add al, 0x41",
-                f"jmp _store_rot13",
-                f"_rot13_lower:",
-                f"cmp al, 0x61",
-                f"jb _skip_rot13",
-                f"cmp al, 0x7a",
-                f"ja _skip_rot13",
-                f"sub al, 0x61",
-                f"add al, 13",
-                f"cmp al, 26",
-                f"jb _lower_ok",
-                f"sub al, 26",
-                f"_lower_ok:",
-                f"add al, 0x61",
-                f"_store_rot13:",
-                f"mov [rsi], al",
-                f"_skip_rot13:",
-                f"inc rsi",
-                f"dec rcx",
-                f"jnz _decode_rot13",
-                f"pop rax",
-                f"pop rcx",
-                f"pop rsi",
+                "_decode_rot13:",
+                "mov al, [rsi]",
+                "cmp al, 0x41",
+                "jb _skip_rot13",
+                "cmp al, 0x5a",
+                "ja _rot13_lower",
+                "sub al, 0x41",
+                "add al, 13",
+                "cmp al, 26",
+                "jb _upper_ok",
+                "sub al, 26",
+                "_upper_ok:",
+                "add al, 0x41",
+                "jmp _store_rot13",
+                "_rot13_lower:",
+                "cmp al, 0x61",
+                "jb _skip_rot13",
+                "cmp al, 0x7a",
+                "ja _skip_rot13",
+                "sub al, 0x61",
+                "add al, 13",
+                "cmp al, 26",
+                "jb _lower_ok",
+                "sub al, 26",
+                "_lower_ok:",
+                "add al, 0x61",
+                "_store_rot13:",
+                "mov [rsi], al",
+                "_skip_rot13:",
+                "inc rsi",
+                "dec rcx",
+                "jnz _decode_rot13",
+                "pop rax",
+                "pop rcx",
+                "pop rsi",
             ]
         else:
             return [
-                f"push rsi",
-                f"push rcx",
-                f"lea rsi, [rip + _encoded_string]",
+                "push rsi",
+                "push rcx",
+                "lea rsi, [rip + _encoded_string]",
                 f"mov rcx, {size // 2}",
-                f"_decode_swap:",
-                f"mov al, [rsi]",
-                f"xchg al, [rsi + 1]",
-                f"mov [rsi], al",
-                f"add rsi, 2",
-                f"dec rcx",
-                f"jnz _decode_swap",
-                f"pop rcx",
-                f"pop rsi",
+                "_decode_swap:",
+                "mov al, [rsi]",
+                "xchg al, [rsi + 1]",
+                "mov [rsi], al",
+                "add rsi, 2",
+                "dec rcx",
+                "jnz _decode_swap",
+                "pop rcx",
+                "pop rsi",
             ]
 
     def _encode_string(self, data: bytes, encoding: str) -> tuple[bytes, int]:

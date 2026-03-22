@@ -159,9 +159,7 @@ class BinaryAnalyzer:
             "total_basic_blocks": total_blocks,
             "total_code_size": total_size,
             "avg_function_size": total_size / len(functions) if functions else 0,
-            "avg_instructions_per_function": (
-                total_instructions / len(functions) if functions else 0
-            ),
+            "avg_instructions_per_function": (total_instructions / len(functions) if functions else 0),
         }
 
     def identify_hot_functions(self, min_size: int = SMALL_FUNCTION_THRESHOLD) -> list[Function]:

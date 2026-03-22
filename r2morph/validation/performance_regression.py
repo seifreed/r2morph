@@ -6,13 +6,12 @@ and ensure mutation passes remain efficient.
 """
 
 import gc
-import hashlib
 import json
 import logging
 import statistics
 import time
 import tracemalloc
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -83,7 +82,7 @@ class PerformanceBenchmark:
     to detect performance regressions.
     """
 
-    def __init__(self, config: BenchmarkConfig | None = None):
+    def __init__(self, config: BenchmarkConfig | None = None) -> None:
         self.config = config or BenchmarkConfig()
         self.baseline_dir = Path("performance_baselines")
         self.baseline_dir.mkdir(exist_ok=True)
@@ -127,7 +126,7 @@ class PerformanceBenchmark:
 
     def measure_execution_time(
         self,
-        func: callable,
+        func: Any,
         *args,
         **kwargs,
     ) -> list[float]:
@@ -164,7 +163,7 @@ class PerformanceBenchmark:
 
     def measure_memory_usage(
         self,
-        func: callable,
+        func: Any,
         *args,
         **kwargs,
     ) -> dict[str, float]:
@@ -231,7 +230,7 @@ class PerformanceBenchmark:
             "register": RegisterSubstitutionPass,
         }
 
-        def run_mutation_pipeline():
+        def run_mutation_pipeline() -> None:
             with Binary(binary_path) as binary:
                 binary.analyze()
                 for mutation_name in mutations:
@@ -396,7 +395,7 @@ class PerformanceRegressionSuite:
     Suite of performance regression tests.
     """
 
-    def __init__(self, config: BenchmarkConfig | None = None):
+    def __init__(self, config: BenchmarkConfig | None = None) -> None:
         self.config = config or BenchmarkConfig()
         self.benchmark = PerformanceBenchmark(self.config)
         self.test_binaries: list[tuple[Path, list[str], str]] = []
@@ -406,7 +405,7 @@ class PerformanceRegressionSuite:
         binary_path: Path,
         mutations: list[str],
         baseline_name: str,
-    ):
+    ) -> None:
         """
         Add a performance test.
 

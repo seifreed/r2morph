@@ -1,14 +1,12 @@
 """Pure data helper functions for report generation.
 
-Predicates, utilities, and data transformations with no CLI/rendering dependencies."""
+Predicates, utilities, and data transformations with no CLI/rendering dependencies.
 
-"""Report helpers: small helper/predicate functions for reporting.
-
+Report helpers: small helper/predicate functions for reporting.
 Extracted from cli.py -- no logic changes.
 """
 
 import json
-import re
 from pathlib import Path
 from typing import Any
 
@@ -369,9 +367,7 @@ def _finalize_report_output(
         gate_failure_count=(
             int(filtered_summary.get("gate_failures", {}).get("require_pass_severity_failure_count", 0))
             if (only_expected_severity is not None or resolved_only_pass_failure is not None)
-            else _gate_failure_result_count(filtered_summary.get("gate_failures", {}))
-            if only_failed_gates
-            else None
+            else _gate_failure_result_count(filtered_summary.get("gate_failures", {})) if only_failed_gates else None
         ),
         only_risky_passes=(
             only_risky_passes
@@ -398,14 +394,14 @@ def _finalize_report_output(
 
 
 def _attach_gate_evaluation(
-    report_payload: dict[str, object],
+    report_payload: dict[str, Any],
     *,
     min_severity: str | None,
     min_severity_passed: bool,
     require_pass_severity: list[tuple[str, str, int]],
     require_pass_severity_passed: bool,
     require_pass_severity_failures: list[str],
-) -> dict[str, object]:
+) -> dict[str, Any]:
     """Attach CLI gate evaluation metadata to a report payload."""
     gate_evaluation = {
         "requested": {
@@ -429,7 +425,7 @@ def _attach_gate_evaluation(
     report_payload["gate_failures"] = gate_failures
     report_payload["gate_failure_priority"] = gate_failure_priority
     report_payload["gate_failure_severity_priority"] = gate_failure_severity_priority
-    summary = dict(report_payload.get("summary", {}))
+    summary: dict[str, Any] = dict(report_payload.get("summary", {}) or {})
     summary["gate_evaluation"] = gate_evaluation["results"]
     summary["gate_failures"] = gate_failures
     summary["gate_failure_priority"] = gate_failure_priority
@@ -702,7 +698,6 @@ def _resolve_summary_pass_sources(summary: dict[str, Any]) -> dict[str, Any]:
         "general_discards": resolved_general_views["general_discards"],
         "general_triage_rows": list(report_views.get("general_triage_rows", []) or general_renderer_triage_rows),
     }
-
 
 
 def _resolve_general_filtered_passes(

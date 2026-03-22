@@ -36,17 +36,16 @@ def handle_mutate_command(
     Returns:
         Dict with mutation results
     """
-    from r2morph.core import Binary, MorphEngine
-    from r2morph.session import SessionManager
+    from r2morph.session import MorphSession
 
-    session = SessionManager(str(input_file))
+    session: Any = MorphSession(Path(str(input_file)))
     session.set_mutations(mutations)
     session.set_validation_mode(validation_mode)
 
     if output_file:
         session.set_output(str(output_file))
 
-    results = session.run()
+    results: dict[str, Any] = dict(session.run())
 
     if report_path:
         report_path.write_text(json.dumps(results, indent=2), encoding="utf-8")
@@ -72,10 +71,10 @@ def handle_report_command(
     Returns:
         Dict with report payload
     """
-    from r2morph.reporting import emit_report_payload, enforce_report_requirements
+    from r2morph.reporting import enforce_report_requirements
 
     with open(report_file, "r", encoding="utf-8") as handle:
-        payload = json.load(handle)
+        payload: dict[str, Any] = json.load(handle)
 
     # Apply filters if specified
     if only_pass:
@@ -133,9 +132,9 @@ def handle_session_command(
     Returns:
         Dict with session info
     """
-    from r2morph.session import SessionManager
+    from r2morph.session import MorphSession
 
-    session = SessionManager(str(input_file))
+    session: Any = MorphSession(Path(str(input_file)))
     if session_name:
         session.set_name(session_name)
 

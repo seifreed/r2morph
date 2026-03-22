@@ -102,9 +102,7 @@ def test_benchmark_export_formats(tmp_path: Path) -> None:
     sample = _make_sample(tmp_path)
     perf_ok = PerformanceMetrics(0.25, 3.0, 0.0, 0.0, True, None)
     acc = AccuracyMetrics(1, 0, 1, 0, 1.0, 1.0, 1.0, 1.0)
-    framework.benchmark_results = [
-        BenchmarkResult(sample, BenchmarkCategory.DETECTION, perf_ok, acc, {}, "now", "dev")
-    ]
+    framework.benchmark_results = [BenchmarkResult(sample, BenchmarkCategory.DETECTION, perf_ok, acc, {}, "now", "dev")]
 
     json_path = tmp_path / "bench.json"
     csv_path = tmp_path / "bench.csv"

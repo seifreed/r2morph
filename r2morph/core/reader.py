@@ -209,6 +209,7 @@ class BinaryReader:
         # Pattern to match symbolic variables
         var_pattern = r"\[(var_(?:bp_)?|arg_)([0-9a-f]+)h(_\d+)?\]"
         import re
+
         matches = list(re.finditer(var_pattern, instruction, re.IGNORECASE))
 
         if not matches:
@@ -300,7 +301,7 @@ class BinaryReader:
                 if physical_offset < paddr:
                     continue
                 logger.debug(f"Mapped vaddr 0x{address:x} -> section paddr 0x{physical_offset:x}")
-                return physical_offset
+                return int(physical_offset)
 
         logger.warning(f"Could not resolve physical offset for vaddr 0x{address:x}")
         return None

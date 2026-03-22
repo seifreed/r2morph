@@ -8,16 +8,12 @@ This module handles resolution of report state including:
 - Mismatch view resolution
 """
 
-from typing import Any
+from typing import Any, Callable
 
 
 def _normalized_pass_map(normalized_results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     """Build a normalized pass map from results."""
-    return {
-        str(row.get("pass_name", "")): dict(row)
-        for row in normalized_results
-        if row.get("pass_name")
-    }
+    return {str(row.get("pass_name", "")): dict(row) for row in normalized_results if row.get("pass_name")}
 
 
 def resolve_general_symbolic_state(
@@ -25,8 +21,8 @@ def resolve_general_symbolic_state(
     summary: dict[str, Any],
     mutations: list[dict[str, Any]],
     pass_results: dict[str, Any],
-    summarize_symbolic_func: callable,
-    render_symbolic_func: callable,
+    summarize_symbolic_func: Callable[..., Any],
+    render_symbolic_func: Callable[..., Any],
 ) -> dict[str, Any]:
     """
     Resolve symbolic summary inputs for the general report path.
@@ -109,18 +105,12 @@ def resolve_mismatch_view(
         )
         or []
     )
-    mismatch_view = list(
-        only_mismatches_view.get("rows", report_views.get("mismatch_view", [])) or []
-    )
+    mismatch_view = list(only_mismatches_view.get("rows", report_views.get("mismatch_view", [])) or [])
     mismatch_compact_rows = list(only_mismatches_view.get("compact_rows", []) or [])
 
     if mismatch_map:
-        counts_by_pass = {
-            pass_name: int(row.get("mismatch_count", 0)) for pass_name, row in mismatch_map.items()
-        }
-        observables_by_pass = {
-            pass_name: list(row.get("observables", [])) for pass_name, row in mismatch_map.items()
-        }
+        counts_by_pass = {pass_name: int(row.get("mismatch_count", 0)) for pass_name, row in mismatch_map.items()}
+        observables_by_pass = {pass_name: list(row.get("observables", [])) for pass_name, row in mismatch_map.items()}
     else:
         persisted_rows = list(_summary_first(summary, "observable_mismatch_by_pass", []))
         counts_by_pass = {
@@ -149,9 +139,7 @@ def resolve_mismatch_view(
     for mutation in mutations:
         pass_name = mutation.get("pass_name", "unknown")
         counts_by_pass[pass_name] = counts_by_pass.get(pass_name, 0) + 1
-        mismatch_observables = mutation.get("metadata", {}).get(
-            "symbolic_observable_mismatches", []
-        )
+        mismatch_observables = mutation.get("metadata", {}).get("symbolic_observable_mismatches", [])
         if mismatch_observables:
             merged = set(observables_by_pass.get(pass_name, []))
             merged.update(mismatch_observables)
@@ -174,7 +162,7 @@ def resolve_pass_filter_sets(
     *,
     summary: dict[str, Any],
     pass_results: dict[str, Any],
-    summary_first_func: callable = None,
+    summary_first_func: Callable[..., Any] | None = None,
 ) -> dict[str, set[str]]:
     """
     Resolve pass filter buckets from persisted summary first, then fall back.
@@ -189,33 +177,33 @@ def resolve_pass_filter_sets(
     """
     report_views = dict(summary.get("report_views", {}) or {})
     general_renderer_state = dict(report_views.get("general_renderer_state", {}) or {})
-    pass_filter_views = dict(
-        report_views.get("general_filter_views", report_views.get("pass_filter_views", {})) or {}
-    )
+    pass_filter_views = dict(report_views.get("general_filter_views", report_views.get("pass_filter_views", {})) or {})
 
     if not pass_filter_views and general_renderer_state.get("general_filter_views"):
         pass_filter_views = {
-            f"only_{key}_passes"
-            if key in {"risky", "clean", "covered", "uncovered"}
-            else "only_structural_risk"
-            if key == "structural_risk"
-            else "only_symbolic_risk"
-            if key == "symbolic_risk"
-            else key: value
-            for key, value in dict(
-                general_renderer_state.get("general_filter_views", {}) or {}
-            ).items()
+            (
+                f"only_{key}_passes"
+                if key in {"risky", "clean", "covered", "uncovered"}
+                else (
+                    "only_structural_risk"
+                    if key == "structural_risk"
+                    else "only_symbolic_risk" if key == "symbolic_risk" else key
+                )
+            ): value
+            for key, value in dict(general_renderer_state.get("general_filter_views", {}) or {}).items()
         }
 
     if not pass_filter_views and general_renderer_state.get("filter_views"):
         pass_filter_views = {
-            f"only_{key}_passes"
-            if key in {"risky", "clean", "covered", "uncovered"}
-            else "only_structural_risk"
-            if key == "structural_risk"
-            else "only_symbolic_risk"
-            if key == "symbolic_risk"
-            else key: value
+            (
+                f"only_{key}_passes"
+                if key in {"risky", "clean", "covered", "uncovered"}
+                else (
+                    "only_structural_risk"
+                    if key == "structural_risk"
+                    else "only_symbolic_risk" if key == "symbolic_risk" else key
+                )
+            ): value
             for key, value in dict(general_renderer_state.get("filter_views", {}) or {}).items()
         }
 
@@ -226,12 +214,8 @@ def resolve_pass_filter_sets(
             "pass_coverage_buckets",
             {
                 "covered": (pass_filter_views or report_views.get("passes", {})).get("covered", []),
-                "uncovered": (pass_filter_views or report_views.get("passes", {})).get(
-                    "uncovered", []
-                ),
-                "clean_only": (pass_filter_views or report_views.get("passes", {})).get(
-                    "clean", []
-                ),
+                "uncovered": (pass_filter_views or report_views.get("passes", {})).get("uncovered", []),
+                "clean_only": (pass_filter_views or report_views.get("passes", {})).get("clean", []),
             },
         )
         or {}
@@ -250,28 +234,29 @@ def resolve_pass_filter_sets(
         triage_rows = list(general_renderer_state.get("triage_rows", []) or [])
 
     resolved = {
-        "risky": set(pass_filter_views.get("only_risky_passes", risk_buckets.get("risky", []))),
+        "risky": set(pass_filter_views.get("only_risky_passes", risk_buckets.get("risky", [])) or []),
         "structural": set(
             pass_filter_views.get(
                 "only_structural_risk",
                 risk_buckets.get("structural", []),
             )
+            or []
         ),
-        "symbolic": set(
-            pass_filter_views.get("only_symbolic_risk", risk_buckets.get("symbolic", []))
-        ),
-        "clean": set(pass_filter_views.get("only_clean_passes", risk_buckets.get("clean", []))),
+        "symbolic": set(pass_filter_views.get("only_symbolic_risk", risk_buckets.get("symbolic", [])) or []),
+        "clean": set(pass_filter_views.get("only_clean_passes", risk_buckets.get("clean", [])) or []),
         "covered": set(
             pass_filter_views.get(
                 "only_covered_passes",
                 coverage_buckets.get("covered", []),
             )
+            or []
         ),
         "uncovered": set(
             pass_filter_views.get(
                 "only_uncovered_passes",
                 coverage_buckets.get("uncovered", []),
             )
+            or []
         ),
     }
 
@@ -339,9 +324,7 @@ def _pass_names_from_triage_rows(
         covered = clean and symbolic_requested > 0 and without_coverage == 0
         uncovered = clean and not covered
         symbolic_risk = (
-            symbolic_mismatch > 0
-            or severity in {"mismatch", "without-coverage", "bounded-only"}
-            or issue_count > 0
+            symbolic_mismatch > 0 or severity in {"mismatch", "without-coverage", "bounded-only"} or issue_count > 0
         )
         structural_risk = structural_issue_count > 0
         risky = symbolic_risk or structural_risk
@@ -388,11 +371,7 @@ def _has_symbolic_risk(evidence: dict[str, Any] | None, symbolic: dict[str, Any]
     symbolic_mismatch = int(e.get("symbolic_binary_mismatched_regions", 0))
     severity = str(s.get("severity", "not-requested"))
     issue_count = int(s.get("issue_count", 0))
-    return (
-        symbolic_mismatch > 0
-        or severity in {"mismatch", "without-coverage", "bounded-only"}
-        or issue_count > 0
-    )
+    return symbolic_mismatch > 0 or severity in {"mismatch", "without-coverage", "bounded-only"} or issue_count > 0
 
 
 def _is_clean_pass(evidence: dict[str, Any] | None, symbolic: dict[str, Any] | None) -> bool:
@@ -417,10 +396,7 @@ def _is_covered_pass(evidence: dict[str, Any] | None, symbolic: dict[str, Any] |
     without_coverage = int(s.get("without_coverage", 0))
     checked_regions = int(e.get("symbolic_binary_regions_checked", 0))
     return (
-        _is_clean_pass(evidence, symbolic)
-        and symbolic_requested > 0
-        and without_coverage == 0
-        and checked_regions > 0
+        _is_clean_pass(evidence, symbolic) and symbolic_requested > 0 and without_coverage == 0 and checked_regions > 0
     )
 
 

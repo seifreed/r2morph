@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.mutations.base import MutationPass, MutationResult
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.analysis.cfg import ControlFlowGraph, CFGBuilder
 from r2morph.analysis.critical_nodes import (
     CriticalNodeDetector,
@@ -84,14 +84,15 @@ class CFGAwareMutationPass(MutationPass):
             exclusion_radius: Radius around critical nodes to exclude
             min_safety_score: Minimum safety score for mutation sites
         """
-        super().__init__(name=name, enabled=enabled)
+        super().__init__(name=name)
+        self.enabled = enabled
         self.exclusion_radius = exclusion_radius
         self.min_safety_score = min_safety_score
         self._detector: CriticalNodeDetector | None = None
         self._scorer: MutationSafetyScorer | None = None
         self._cfg: ControlFlowGraph | None = None
 
-    def apply(self, binary: Any) -> MutationResult:
+    def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply the mutation (CFG-aware wrapper).
 
@@ -101,7 +102,7 @@ class CFGAwareMutationPass(MutationPass):
             binary: Any to mutate
 
         Returns:
-            MutationResult instance
+            Mutation result dictionary
         """
         builder = CFGBuilder(binary)
         functions = binary.get_functions()
@@ -110,12 +111,10 @@ class CFGAwareMutationPass(MutationPass):
             logger.warning("No functions found in binary")
             return CFGAwareMutationResult(
                 success=False,
-                message="No functions found in binary",
-            )
+            ).to_dict()
 
         result = CFGAwareMutationResult(
             success=True,
-            message="CFG-aware mutation completed",
         )
 
         for func in functions:
@@ -137,7 +136,8 @@ class CFGAwareMutationPass(MutationPass):
                 func_result = self.apply_cfg_aware(binary, self._cfg, safe_regions)
 
                 if isinstance(func_result, dict):
-                    result.mutations.extend(func_result.get("mutations", []))
+                    mutations_list: list[Any] = result.metadata.setdefault("mutations", [])
+                    mutations_list.extend(func_result.get("mutations", []))
                     result.safe_mutations += func_result.get("safe_mutations", 0)
                     result.skipped_mutations += func_result.get("skipped_mutations", 0)
                     result.critical_nodes_avoided += func_result.get("critical_nodes_avoided", 0)
@@ -145,7 +145,7 @@ class CFGAwareMutationPass(MutationPass):
             except Exception as e:
                 logger.error(f"Failed to apply CFG-aware mutation to {func_name}: {e}")
 
-        return result
+        return result.to_dict()
 
     @abstractmethod
     def apply_cfg_aware(
@@ -306,16 +306,19 @@ class CFGAwareNOPInsertion(CFGAwareMutationPass):
         Returns:
             Dictionary with mutation results
         """
-        result = {
-            "mutations": [],
-            "safe_mutations": 0,
-            "skipped_mutations": 0,
-            "critical_nodes_avoided": 0,
-        }
+        mutations: list[dict[str, Any]] = []
+        safe_mutations = 0
+        skipped_mutations = 0
+        critical_nodes_avoided = 0
 
         if not safe_regions:
             logger.debug(f"No safe regions in function {cfg.function_name}")
-            return result
+            return {
+                "mutations": mutations,
+                "safe_mutations": safe_mutations,
+                "skipped_mutations": skipped_mutations,
+                "critical_nodes_avoided": critical_nodes_avoided,
+            }
 
         safe_addresses = []
         for addr, block in cfg.blocks.items():
@@ -331,22 +334,27 @@ class CFGAwareNOPInsertion(CFGAwareMutationPass):
             try:
                 mutation_result = self._insert_nop(binary, addr)
                 if mutation_result:
-                    result["mutations"].append(
+                    mutations.append(
                         {
                             "type": "nop_insertion",
                             "address": f"0x{addr:x}",
                             "safety_score": score,
                         }
                     )
-                    result["safe_mutations"] += 1
+                    safe_mutations += 1
                     nops_inserted += 1
             except Exception as e:
                 logger.debug(f"Failed to insert NOP at 0x{addr:x}: {e}")
-                result["skipped_mutations"] += 1
+                skipped_mutations += 1
 
-        result["critical_nodes_avoided"] = len(self.get_critical_nodes())
+        critical_nodes_avoided = len(self.get_critical_nodes())
 
-        return result
+        return {
+            "mutations": mutations,
+            "safe_mutations": safe_mutations,
+            "skipped_mutations": skipped_mutations,
+            "critical_nodes_avoided": critical_nodes_avoided,
+        }
 
     def _insert_nop(self, binary: Any, address: int) -> bool:
         """
@@ -371,7 +379,7 @@ class CFGAwareNOPInsertion(CFGAwareMutationPass):
         else:
             nop_bytes = b"\x90"
 
-        return binary.write_bytes(address, nop_bytes)
+        return bool(binary.write_bytes(address, nop_bytes))
 
 
 class CFGAwareSubstitution(CFGAwareMutationPass):
@@ -421,16 +429,18 @@ class CFGAwareSubstitution(CFGAwareMutationPass):
         Returns:
             Dictionary with mutation results
         """
-        result = {
-            "mutations": [],
-            "safe_mutations": 0,
-            "skipped_mutations": 0,
-            "critical_nodes_avoided": 0,
-        }
+        mutations: list[dict[str, Any]] = []
+        safe_mutations = 0
+        skipped_mutations = 0
 
         if not safe_regions:
             logger.debug(f"No safe regions in function {cfg.function_name}")
-            return result
+            return {
+                "mutations": mutations,
+                "safe_mutations": safe_mutations,
+                "skipped_mutations": skipped_mutations,
+                "critical_nodes_avoided": 0,
+            }
 
         for addr, block in cfg.blocks.items():
             if self.should_skip(addr):
@@ -445,7 +455,7 @@ class CFGAwareSubstitution(CFGAwareMutationPass):
                 substitution = self._get_substitution(disasm, insn_addr, binary)
 
                 if substitution:
-                    result["mutations"].append(
+                    mutations.append(
                         {
                             "type": "substitution",
                             "address": f"0x{insn_addr:x}",
@@ -453,11 +463,14 @@ class CFGAwareSubstitution(CFGAwareMutationPass):
                             "substitution": substitution,
                         }
                     )
-                    result["safe_mutations"] += 1
+                    safe_mutations += 1
 
-        result["critical_nodes_avoided"] = len(self.get_critical_nodes())
-
-        return result
+        return {
+            "mutations": mutations,
+            "safe_mutations": safe_mutations,
+            "skipped_mutations": skipped_mutations,
+            "critical_nodes_avoided": len(self.get_critical_nodes()),
+        }
 
     def _get_substitution(self, disasm: str, address: int, binary: Any) -> str | None:
         """
@@ -492,7 +505,7 @@ class CFGAwareSubstitution(CFGAwareMutationPass):
         return None
 
 
-def create_cfg_aware_nop_pass(**kwargs) -> CFGAwareNOPInsertion:
+def create_cfg_aware_nop_pass(**kwargs: Any) -> CFGAwareNOPInsertion:
     """
     Create a CFG-aware NOP insertion pass.
 
@@ -505,7 +518,7 @@ def create_cfg_aware_nop_pass(**kwargs) -> CFGAwareNOPInsertion:
     return CFGAwareNOPInsertion(**kwargs)
 
 
-def create_cfg_aware_substitution_pass(**kwargs) -> CFGAwareSubstitution:
+def create_cfg_aware_substitution_pass(**kwargs: Any) -> CFGAwareSubstitution:
     """
     Create a CFG-aware substitution pass.
 

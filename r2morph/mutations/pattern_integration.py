@@ -12,11 +12,7 @@ from typing import Any
 from dataclasses import dataclass
 
 from r2morph.mutations.pattern_pool import (
-    MutationPatternPool,
-    MatchResult,
     get_pattern_pools,
-    clear_pattern_pools,
-    register_pattern_pool,
 )
 from r2morph.mutations.junk_generator import JunkGenerator, create_junk_generator
 
@@ -49,7 +45,7 @@ class PatternMatchIntegration:
 
     def get_junk_generator(self, os_type: str = "linux") -> JunkGenerator:
         """Get or create junk generator."""
-        if self._junk_generator is None or self._junk_generator._os_type != os_type:
+        if self._junk_generator is None or self._junk_generator.os_type != os_type:
             self._junk_generator = create_junk_generator(os_type)
         return self._junk_generator
 
@@ -84,7 +80,7 @@ class PatternMatchIntegration:
                     operand_str=ins.get("disasm", "").split(maxsplit=1)[1] if " " in ins.get("disasm", "") else "",
                     bytes=ins.get("bytes", ""),
                     type=ins.get("type", ""),
-                    opcode=ins.get("opcode", ins.get("disasm", "")),
+                    opcode=str(ins.get("opcode", ins.get("disasm", ""))),
                     mutated=getattr(ins, "mutated", False),
                 )
             else:
@@ -129,15 +125,15 @@ class PatternMatchIntegration:
 
         return converted, mutation_log
 
-    def _extract_operand(self, ins: dict, idx: int) -> str:
+    def _extract_operand(self, ins: dict[str, Any], idx: int) -> str:
         """Extract operand at index from instruction dict."""
-        disasm = ins.get("disasm", "")
+        disasm = str(ins.get("disasm", ""))
         parts = disasm.split(maxsplit=1)
         if len(parts) < 2:
             return ""
         operands = parts[1].split(",")
         if idx < len(operands):
-            return operands[idx].strip()
+            return str(operands[idx].strip())
         return ""
 
     def generate_junk_code(
@@ -199,7 +195,7 @@ def create_pattern_integration(
     use_patterns: bool = True,
     use_junk: bool = True,
     os_type: str = "linux",
-    **kwargs,
+    **kwargs: Any,
 ) -> PatternMatchIntegration:
     """
     Factory function to create a configured PatternMatchIntegration.

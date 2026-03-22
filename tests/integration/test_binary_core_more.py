@@ -20,6 +20,7 @@ def _get_section_vaddr(binary: Binary) -> int:
             return int(vaddr or paddr)
     return int(sections[0].get("vaddr", 0) or sections[0].get("paddr", 0) or 0)
 
+
 def _map_vaddr_to_paddr(binary: Binary, vaddr: int) -> int | None:
     if not binary.r2:
         return None

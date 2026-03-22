@@ -13,31 +13,33 @@ Uses the rich library for terminal rendering with fallback to basic text mode.
 
 from __future__ import annotations
 
-import sys
-import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable
 import re
 
+_console_class: Any
 try:
-    from rich.console import Console
+    from rich.console import Console as _RichConsole
     from rich.layout import Layout
-    from rich.live import Live
     from rich.panel import Panel
     from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
     from rich.prompt import Confirm, Prompt
     from rich.table import Table
     from rich.text import Text
-    from rich.syntax import Syntax
 
     RICH_AVAILABLE = True
+    _console_class = _RichConsole
 except ImportError:
     RICH_AVAILABLE = False
 
-    class Console:
-        def print(self, *args, **kwargs):
+    class _FallbackConsole:
+        def print(self, *args: Any, **kwargs: Any) -> None:
             print(*args)
+
+    _console_class = _FallbackConsole
+
+Console = _console_class
 
 
 class TUIAction(str, Enum):
@@ -95,7 +97,7 @@ class TUIProgress:
 
 
 class TUIMainScreen:
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
 
     def render(self) -> None:
@@ -147,7 +149,7 @@ class TUIMainScreen:
 
 
 class TUIFunctionScreen:
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
 
     def render(self, functions: list[TUIFunction]) -> None:
@@ -190,7 +192,7 @@ class TUIPassScreen:
         "cff": ("Flatten control flow", False),
     }
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
 
     def render(self, passes: list[TUIPass]) -> None:
@@ -267,7 +269,7 @@ class TUIPassConfig:
         },
     }
 
-    def __init__(self, pass_name: str, config: dict[str, Any] | None = None):
+    def __init__(self, pass_name: str, config: dict[str, Any] | None = None) -> None:
         self.pass_name = pass_name
         self.config = config or self.DEFAULT_CONFIGS.get(pass_name, {}).copy()
 
@@ -297,7 +299,7 @@ class TUIConfigScreen:
         "cff": {"dispatcher_style": ["switch", "jump_table", "nested"]},
     }
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
         self._current_pass: str | None = None
         self._configs: dict[str, TUIPassConfig] = {}
@@ -333,9 +335,9 @@ class TUIConfigScreen:
 
             if key in config_options:
                 options_str = " | ".join(config_options[key])
-            elif val_type == bool:
+            elif val_type is bool:
                 options_str = "true | false"
-            elif val_type == int:
+            elif val_type is int:
                 options_str = "<number>"
             else:
                 options_str = "<value>"
@@ -370,9 +372,9 @@ class TUIConfigScreen:
                 config_types = self.CONFIG_TYPES.get(pass_name, {})
                 expected_type = config_types.get(option, str)
 
-                if expected_type == bool:
+                if expected_type is bool:
                     config[option] = value.lower() in ("true", "1", "yes", "on")
-                elif expected_type == int:
+                elif expected_type is int:
                     try:
                         config[option] = int(value)
                     except ValueError:
@@ -391,7 +393,7 @@ class TUIConfigScreen:
 
 
 class TUIPreviewScreen:
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
 
     def render(self, mutations: list[TUIMutation], page: int = 0, page_size: int = 10) -> None:
@@ -463,10 +465,10 @@ class TUIPreviewScreen:
 
 
 class TUIProgressIndicator:
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
         self._progress: Progress | None = None
-        self._task_id = None
+        self._task_id: Any = None
 
     def start(self, total: int, description: str = "Processing") -> None:
         if RICH_AVAILABLE:
@@ -496,7 +498,7 @@ class TUIProgressIndicator:
 
 
 class MutationTUI:
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console() if RICH_AVAILABLE else Console()
         self.main_screen = TUIMainScreen(self.console)
         self.function_screen = TUIFunctionScreen(self.console)
@@ -698,8 +700,8 @@ def create_default_passes() -> list[TUIPass]:
 
 
 def run_interactive_mode(
-    functions: list[dict[str, Any]],
-    passes: list[dict[str, Any]] | None = None,
+    functions: list[Any],
+    passes: list[Any] | None = None,
     on_execute: Callable | None = None,
 ) -> dict[str, Any] | None:
     tui = MutationTUI()
@@ -713,15 +715,15 @@ def run_interactive_mode(
     ]
     tui_passes = passes or [
         TUIPass(
-            name=p.get("name", ""),
-            description=p.get("description", ""),
-            is_stable=p.get("is_stable", False),
+            name=getattr(p, "name", ""),
+            description=getattr(p, "description", ""),
+            is_stable=getattr(p, "is_stable", False),
         )
         for p in create_default_passes()
     ]
     if not on_execute:
 
-        def default_execute(funcs, passes):
+        def default_execute(funcs: list[TUIFunction], passes: list[TUIPass]) -> list[TUIMutation]:
             return []
 
         on_execute = default_execute
@@ -747,7 +749,7 @@ class FunctionFilter:
     Provides search by name pattern and filtering by size/address.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._pattern: str = ""
         self._min_size: int = 0
         self._max_size: int = 0
@@ -805,7 +807,7 @@ class DiffView:
     Shows disassembly changes with syntax highlighting.
     """
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
         self._mutations: list[TUIMutation] = []
         self._current_idx: int = 0
@@ -1095,7 +1097,7 @@ class FunctionSearchScreen:
     - Address range filter
     """
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
         self._filter = FunctionFilter()
         self._search_mode = False

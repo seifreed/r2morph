@@ -17,7 +17,6 @@ import pytest
 
 from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework
 
-
 pytestmark = [pytest.mark.experimental]
 
 

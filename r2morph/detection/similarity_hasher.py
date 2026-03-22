@@ -17,7 +17,7 @@ class SimilarityHasher:
     even if they're not identical.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize similarity hasher."""
         self.has_ssdeep = self._check_tool("ssdeep")
         self.has_tlsh = self._check_tool("tlsh")
@@ -51,7 +51,7 @@ class SimilarityHasher:
         Returns:
             Dict with ssdeep and tlsh hashes
         """
-        result = {
+        result: dict[str, str | None] = {
             "ssdeep": None,
             "tlsh": None,
         }
@@ -75,9 +75,7 @@ class SimilarityHasher:
             ssdeep hash or None
         """
         try:
-            result = subprocess.run(
-                ["ssdeep", "-b", str(path)], capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(["ssdeep", "-b", str(path)], capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
                 output = result.stdout.strip()
@@ -100,9 +98,7 @@ class SimilarityHasher:
             TLSH hash or None
         """
         try:
-            result = subprocess.run(
-                ["tlsh", "-f", str(path)], capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(["tlsh", "-f", str(path)], capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
                 output = result.stdout.strip()
@@ -126,9 +122,7 @@ class SimilarityHasher:
             Similarity score 0-100, or None
         """
         try:
-            result = subprocess.run(
-                ["ssdeep", "-a", "-s", hash1, hash2], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["ssdeep", "-a", "-s", hash1, hash2], capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 output = result.stdout.strip()
@@ -143,7 +137,7 @@ class SimilarityHasher:
 
         return None
 
-    def compare_files(self, path1: Path, path2: Path) -> dict[str, int | None]:
+    def compare_files(self, path1: Path, path2: Path) -> dict[str, int | float | None]:
         """
         Compare similarity of two files.
 
@@ -156,7 +150,7 @@ class SimilarityHasher:
         """
         logger.info(f"Comparing {path1.name} vs {path2.name}")
 
-        result = {
+        result: dict[str, int | float | None] = {
             "ssdeep_similarity": None,
             "tlsh_distance": None,
         }

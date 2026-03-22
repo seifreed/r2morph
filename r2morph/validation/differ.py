@@ -6,7 +6,6 @@ to visualize changes and verify correctness.
 """
 
 import logging
-import struct
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -168,7 +167,7 @@ class DiffReport:
 
         return json.dumps(self.to_dict(), indent=indent)
 
-    def write_report(self, path: Path):
+    def write_report(self, path: Path) -> None:
         """Write report to file."""
         path.write_text(self.to_json())
 
@@ -179,7 +178,7 @@ class DiffReport:
             result[diff.severity].append(diff)
         return result
 
-    def _compute_summary(self):
+    def _compute_summary(self) -> None:
         """Compute summary statistics."""
         self.summary = {
             "total_changes": len(self.diffs),
@@ -202,7 +201,7 @@ class BinaryDiffer:
     - Disassembly comparison
     """
 
-    def __init__(self, original: Binary, mutated: Binary, context_bytes: int = 8):
+    def __init__(self, original: Binary, mutated: Binary, context_bytes: int = 8) -> None:
         """
         Initialize binary differ.
 

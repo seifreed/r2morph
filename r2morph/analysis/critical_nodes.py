@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from r2morph.analysis.cfg import ControlFlowGraph, BasicBlock, BlockType, EdgeType
+from r2morph.analysis.cfg import ControlFlowGraph, BlockType
 
 logger = logging.getLogger(__name__)
 
@@ -429,7 +429,7 @@ class MutationSafetyScorer:
         safest = scorer.get_safest_addresses(cfg, count=10)
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._detector: CriticalNodeDetector | None = None
 
     def score_address(

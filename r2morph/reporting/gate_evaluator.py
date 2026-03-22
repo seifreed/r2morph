@@ -8,7 +8,6 @@ and pass severity requirements checking.
 from dataclasses import dataclass
 from typing import Any
 
-
 SEVERITY_ORDER: dict[str, int] = {
     "mismatch": 0,
     "without-coverage": 1,
@@ -22,8 +21,6 @@ ROLLBACK_SEVERITY_ORDER: dict[str, int] = {
     "medium": 1,
     "low": 2,
 }
-
-ROLLBACK_SEVERITY_ORDER: dict[str, int] = {"high": 0, "medium": 1, "low": 2}
 
 
 @dataclass
@@ -120,13 +117,9 @@ class GateEvaluator:
             marker = "expected <= "
             if marker in failure_text:
                 severity = failure_text.split(marker, 1)[1].rstrip(") ").strip()
-                failures_by_expected_severity[severity] = (
-                    failures_by_expected_severity.get(severity, 0) + 1
-                )
+                failures_by_expected_severity[severity] = failures_by_expected_severity.get(severity, 0) + 1
 
-        min_severity_failed = requested.get("min_severity") is not None and not results.get(
-            "min_severity_passed", True
-        )
+        min_severity_failed = requested.get("min_severity") is not None and not results.get("min_severity_passed", True)
         require_pass_failed = bool(pass_failures)
 
         return {
@@ -215,9 +208,7 @@ class GateEvaluator:
                 "severity": severity,
                 "failure_count": count,
             }
-            for severity, count in gate_failures.get(
-                "require_pass_severity_failures_by_expected_severity", {}
-            ).items()
+            for severity, count in gate_failures.get("require_pass_severity_failures_by_expected_severity", {}).items()
         ]
 
         rows.sort(
@@ -232,13 +223,13 @@ class GateEvaluator:
 
     @staticmethod
     def attach_gate_evaluation(
-        report_payload: dict[str, object],
+        report_payload: dict[str, Any],
         min_severity: str | None,
         min_severity_passed: bool,
         require_pass_severity: list[tuple[str, str, int]],
         require_pass_severity_passed: bool,
         require_pass_severity_failures: list[str],
-    ) -> dict[str, object]:
+    ) -> dict[str, Any]:
         """Attach CLI gate evaluation metadata to a report payload."""
         gate_evaluation = {
             "requested": {
@@ -257,16 +248,14 @@ class GateEvaluator:
         }
         gate_failures = GateEvaluator.summarize_gate_failures(gate_evaluation)
         gate_failure_priority = GateEvaluator.build_gate_failure_priority(gate_failures)
-        gate_failure_severity_priority = GateEvaluator.build_gate_failure_severity_priority(
-            gate_failures
-        )
+        gate_failure_severity_priority = GateEvaluator.build_gate_failure_severity_priority(gate_failures)
 
         report_payload["gate_evaluation"] = gate_evaluation
         report_payload["gate_failures"] = gate_failures
         report_payload["gate_failure_priority"] = gate_failure_priority
         report_payload["gate_failure_severity_priority"] = gate_failure_severity_priority
 
-        summary = dict(report_payload.get("summary", {}))
+        summary: dict[str, Any] = dict(report_payload.get("summary", {}) or {})
         summary["gate_evaluation"] = gate_evaluation["results"]
         summary["gate_failures"] = gate_failures
         summary["gate_failure_priority"] = gate_failure_priority

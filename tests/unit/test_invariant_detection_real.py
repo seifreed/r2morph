@@ -30,9 +30,7 @@ def test_semantic_validator_batch():
 
         addresses = [func.get("offset", 0) for func in functions[:2]]
         validator = SemanticValidator(bin_obj)
-        invariants_map = {
-            addr: validator.detector.detect_all_invariants(addr) for addr in addresses
-        }
+        invariants_map = {addr: validator.detector.detect_all_invariants(addr) for addr in addresses}
 
         result = validator.batch_validate(addresses, invariants_map)
         assert result["functions_validated"] == len(addresses)

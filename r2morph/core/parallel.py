@@ -14,14 +14,12 @@ Features:
 
 import logging
 import threading
-import os
 import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed, Future
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable
 from pathlib import Path
-from contextlib import contextmanager
 import time
 import sys
 
@@ -148,7 +146,7 @@ class DependencyResolver:
         ),
     }
 
-    def __init__(self, custom_dependencies: dict[str, PassDependency] | None = None):
+    def __init__(self, custom_dependencies: dict[str, PassDependency] | None = None) -> None:
         """
         Initialize dependency resolver.
 
@@ -249,7 +247,7 @@ class BinaryFileLock:
     the same binary file.
     """
 
-    def __init__(self, binary_path: Path, timeout: float = 30.0):
+    def __init__(self, binary_path: Path, timeout: float = 30.0) -> None:
         """
         Initialize binary file lock.
 
@@ -277,7 +275,7 @@ class BinaryFileLock:
         if self._locked:
             return True
 
-        lock_file = None
+        lock_file: Any = None
         try:
             lock_file = open(self.lock_path, "w")
 
@@ -292,7 +290,7 @@ class BinaryFileLock:
                         self._locked = True
                         logger.debug(f"Acquired lock for {self.binary_path}")
                         return True
-                    except (IOError, OSError) as e:
+                    except (IOError, OSError):
                         if not blocking:
                             lock_file.close()
                             return False
@@ -305,12 +303,14 @@ class BinaryFileLock:
                 start_time = time.time()
                 while True:
                     try:
-                        msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK if not blocking else msvcrt.LK_LOCK, 1)
+                        __import__("msvcrt").locking(
+                            lock_file.fileno(), msvcrt.LK_NBLCK if not blocking else msvcrt.LK_LOCK, 1
+                        )
                         self._lock_file = lock_file
                         self._locked = True
                         logger.debug(f"Acquired lock for {self.binary_path}")
                         return True
-                    except (IOError, OSError) as e:
+                    except (IOError, OSError):
                         if not blocking:
                             lock_file.close()
                             return False
@@ -358,7 +358,7 @@ class BinaryFileLock:
                 if FCNTL_AVAILABLE and self._lock_file:
                     fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
                 elif HAS_MSVCRT and self._lock_file:
-                    msvcrt.locking(self._lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+                    __import__("msvcrt").locking(self._lock_file.fileno(), msvcrt.LK_UNLCK, 1)
                 elif self._lock_dir_path:
                     if self._lock_dir_path.exists():
                         self._lock_dir_path.rmdir()
@@ -407,7 +407,7 @@ class ParallelMutationEngine:
         checkpoint_dir: Path | None = None,
         use_file_lock: bool = True,
         lock_timeout: float = 30.0,
-    ):
+    ) -> None:
         """
         Initialize parallel mutation engine.
 
@@ -499,7 +499,7 @@ class ParallelMutationEngine:
                         logger.error(f"Pass {pass_name} not found in pass list")
                         self._add_result(
                             pass_name,
-                            PassResult(pass_name=pass_name, status=PassStatus.FAILED, error=f"Pass not found"),
+                            PassResult(pass_name=pass_name, status=PassStatus.FAILED, error="Pass not found"),
                         )
                         continue
                     pass_obj = matching_passes[0]

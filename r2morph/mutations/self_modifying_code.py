@@ -35,7 +35,6 @@ from __future__ import annotations
 
 import logging
 import random
-import struct
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -43,7 +42,7 @@ from typing import TYPE_CHECKING, Any
 from r2morph.mutations.base import MutationPass
 
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 
 logger = logging.getLogger(__name__)
 
@@ -266,14 +265,14 @@ def generate_polymorphic_stub_x64(key: bytes, data_size: int, seed: int | None =
         [
             f"push {tmp_reg}\npop {tmp_reg}",
             f"xor {tmp_reg}, {tmp_reg}",
-            f"nop\nnop",
+            "nop\nnop",
             "",
         ]
     )
 
     key_size = len(key)
     if key_size <= 8:
-        key_load = "\n".join([f"mov {tmp_reg}, 0x" + key[::-1].hex() + f"  ; key"])
+        key_load = "\n".join([f"mov {tmp_reg}, 0x" + key[::-1].hex() + "  ; key"])
     else:
         key_load = f"lea {tmp_reg}, [rip + key_table]"
 
@@ -456,7 +455,7 @@ class SelfModifyingCodePass(MutationPass):
 
             arch_info = binary.get_arch_info()
             arch = "x64" if arch_info.get("arch") in ("x86_64", "x64", "amd64") else "x86"
-            encrypted = self._encrypt_data(original_bytes, key, self.encryption_scheme)
+            self._encrypt_data(original_bytes, key, self.encryption_scheme)
 
             stub_code = self._generate_decrypt_stub(key, func_addr, func_size, arch)
 

@@ -187,9 +187,7 @@ class ReportRenderer:
         if only_failed_gates:
             gate_failure_summary = payload.get("gate_failures", {})
             gate_failure_priority = payload.get("gate_failure_priority", [])
-            self._console_renderer.render_gate_failure_summary(
-                gate_failure_summary, gate_failure_priority
-            )
+            self._console_renderer.render_gate_failure_summary(gate_failure_summary, gate_failure_priority)
             return
 
         if only_mismatches:

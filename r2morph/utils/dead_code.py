@@ -12,7 +12,6 @@ These utilities generate architecture-appropriate instruction sequences that:
 """
 
 import random
-from typing import Any
 
 
 def generate_x86_dead_code(bits: int = 64, complexity: str = "medium") -> list[str]:
@@ -369,7 +368,7 @@ def generate_x86_dead_code_for_size(max_size: int, bits: int) -> list[str]:
             f"push {reg}",
             f"mov {reg}, 0x41424344",
             f"xor {reg}, 0x41424344",  # Result is 0
-            f"test {reg}, {reg}",       # ZF = 1 (opaque predicate)
+            f"test {reg}, {reg}",  # ZF = 1 (opaque predicate)
             f"pop {reg}",
         ]
     elif max_size >= 8:
@@ -411,7 +410,7 @@ def generate_arm_dead_code_for_size(max_size: int, bits: int) -> list[str]:
         return [
             f"mov {reg}, #0x42",
             f"eor {reg}, {reg}, #0x42",  # Result is 0
-            f"cmp {reg}, #0",             # Always equal (ZF=1)
+            f"cmp {reg}, #0",  # Always equal (ZF=1)
         ]
     elif max_size >= 8:
         return [
@@ -422,9 +421,7 @@ def generate_arm_dead_code_for_size(max_size: int, bits: int) -> list[str]:
         return ["nop"]
 
 
-def generate_dead_code_for_arch(
-    arch: str, bits: int, complexity: str = "medium"
-) -> list[str]:
+def generate_dead_code_for_arch(arch: str, bits: int, complexity: str = "medium") -> list[str]:
     """
     Generate dead code for the specified architecture.
 

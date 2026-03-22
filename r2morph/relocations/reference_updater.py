@@ -7,7 +7,7 @@ import logging
 from enum import Enum
 
 from r2morph.core.binary import Binary
-from r2morph.relocations.utils import get_endianness
+from r2morph.relocations.utils import get_endianness, ByteOrder
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class ReferenceUpdater:
     when code is moved or inserted.
     """
 
-    def __init__(self, binary: Binary):
+    def __init__(self, binary: Binary) -> None:
         """
         Initialize reference updater.
 
@@ -40,7 +40,7 @@ class ReferenceUpdater:
         self.binary = binary
         self.updated_refs: set[int] = set()
 
-    def _get_endianness(self) -> str:
+    def _get_endianness(self) -> "ByteOrder":
         """Detect binary endianness from architecture info."""
         return get_endianness(self.binary)
 
@@ -56,6 +56,7 @@ class ReferenceUpdater:
         Returns:
             True if successful
         """
+        assert self.binary.r2 is not None
         try:
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{jump_addr:x}")
             insns = json.loads(insn_json)
@@ -121,6 +122,7 @@ class ReferenceUpdater:
         Returns:
             True if successful
         """
+        assert self.binary.r2 is not None
         try:
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{call_addr:x}")
             insns = json.loads(insn_json)
@@ -167,6 +169,7 @@ class ReferenceUpdater:
         Returns:
             True if successful
         """
+        assert self.binary.r2 is not None
         try:
             if ptr_size is None:
                 arch_info = self.binary.get_arch_info()
@@ -220,6 +223,7 @@ class ReferenceUpdater:
 
         refs = []
 
+        assert self.binary.r2 is not None
         xrefs_json = self.binary.r2.cmd(f"axtj @ 0x{target_addr:x}")
         if xrefs_json:
             import json

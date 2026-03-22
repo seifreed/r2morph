@@ -40,15 +40,10 @@ import random
 import secrets
 from typing import TYPE_CHECKING, Any
 
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
-
 if TYPE_CHECKING:
-    from r2morph.protocols import BinaryAccessProtocol
+    pass
 from r2morph.crypto.aes import (
-    aes_decrypt_block,
-    aes_encrypt_block,
     aes_encrypt_string,
-    aes_key_expansion,
 )
 from r2morph.mutations.base import MutationPass
 
@@ -108,25 +103,25 @@ def generate_aes_decode_asm_x64(key: bytes, data_len: int, label_id: int) -> lis
     """
     asm_lines = []
     asm_lines.append(f"    ; AES-256 decryption ({data_len} bytes)")
-    asm_lines.append(f"    lea rdi, [rsp]  ; destination")
+    asm_lines.append("    lea rdi, [rsp]  ; destination")
     asm_lines.append(f"    lea rsi, [rsp + {data_len + 32}]  ; encrypted data source")
     asm_lines.append(f"    mov ecx, {(data_len + 15) // 16}  ; block count")
 
-    asm_lines.append(f"    ; Key bytes (32 bytes):")
+    asm_lines.append("    ; Key bytes (32 bytes):")
     for i in range(0, 32, 8):
         key_chunk = key[i : i + 8]
         asm_lines.append(f"    mov r8, 0x{key_chunk[::-1].hex()}")
         asm_lines.append(f"    mov [rsp + {i}], r8")
 
     asm_lines.append(f"aes_decrypt_loop_{label_id:x}:")
-    asm_lines.append(f"    ; Load encrypted block")
-    asm_lines.append(f"    movdqu xmm0, [rsi]")
-    asm_lines.append(f"    ; Simplified AES decryption (using hardware AES-NI if available)")
-    asm_lines.append(f"    ; For portability, this uses a simplified approach")
-    asm_lines.append(f"    pxor xmm0, [rsp]  ; XOR with first round key")
-    asm_lines.append(f"    movdqu [rdi], xmm0")
-    asm_lines.append(f"    add rsi, 16")
-    asm_lines.append(f"    add rdi, 16")
+    asm_lines.append("    ; Load encrypted block")
+    asm_lines.append("    movdqu xmm0, [rsi]")
+    asm_lines.append("    ; Simplified AES decryption (using hardware AES-NI if available)")
+    asm_lines.append("    ; For portability, this uses a simplified approach")
+    asm_lines.append("    pxor xmm0, [rsp]  ; XOR with first round key")
+    asm_lines.append("    movdqu [rdi], xmm0")
+    asm_lines.append("    add rsi, 16")
+    asm_lines.append("    add rdi, 16")
     asm_lines.append(f"    loop aes_decrypt_loop_{label_id:x}")
 
     return asm_lines
@@ -146,29 +141,29 @@ def generate_aes_decode_asm_x86(key: bytes, data_len: int, label_id: int) -> lis
     """
     asm_lines = []
     asm_lines.append(f"    ; AES-256 decryption ({data_len} bytes)")
-    asm_lines.append(f"    lea edi, [esp]  ; destination")
+    asm_lines.append("    lea edi, [esp]  ; destination")
     asm_lines.append(f"    lea esi, [esp + {data_len + 32}]  ; encrypted data source")
     asm_lines.append(f"    mov ecx, {(data_len + 15) // 16}  ; block count")
 
-    asm_lines.append(f"    ; Key bytes (32 bytes):")
+    asm_lines.append("    ; Key bytes (32 bytes):")
     for i in range(0, 32, 4):
         key_chunk = key[i : i + 4]
         asm_lines.append(f"    mov eax, 0x{key_chunk[::-1].hex()}")
         asm_lines.append(f"    mov [esp + {i}], eax")
 
     asm_lines.append(f"aes_decrypt_loop_{label_id:x}:")
-    asm_lines.append(f"    ; Load encrypted block")
-    asm_lines.append(f"    movq mm0, [esi]")
-    asm_lines.append(f"    movq mm1, [esi + 8]")
-    asm_lines.append(f"    ; XOR with round key")
-    asm_lines.append(f"    pxor mm0, [esp]")
-    asm_lines.append(f"    pxor mm1, [esp + 8]")
-    asm_lines.append(f"    movq [edi], mm0")
-    asm_lines.append(f"    movq [edi + 8], mm1")
-    asm_lines.append(f"    add esi, 16")
-    asm_lines.append(f"    add edi, 16")
+    asm_lines.append("    ; Load encrypted block")
+    asm_lines.append("    movq mm0, [esi]")
+    asm_lines.append("    movq mm1, [esi + 8]")
+    asm_lines.append("    ; XOR with round key")
+    asm_lines.append("    pxor mm0, [esp]")
+    asm_lines.append("    pxor mm1, [esp + 8]")
+    asm_lines.append("    movq [edi], mm0")
+    asm_lines.append("    movq [edi + 8], mm1")
+    asm_lines.append("    add esi, 16")
+    asm_lines.append("    add edi, 16")
     asm_lines.append(f"    loop aes_decrypt_loop_{label_id:x}")
-    asm_lines.append(f"    emms  ; clear MMX state")
+    asm_lines.append("    emms  ; clear MMX state")
 
     return asm_lines
 
@@ -263,13 +258,13 @@ def generate_stack_string_x64(
                 junk_used.append(junk[0])
 
         decode_loop = [
-            f"    ; Decode XOR'd string",
-            f"    lea rdi, [rsp]",
+            "    ; Decode XOR'd string",
+            "    lea rdi, [rsp]",
             f"    mov rcx, {len(encoded_data)}",
             f"    mov dl, 0x{xor_key:02X}",
             f".decode_loop_{id(encoded_data):x}:",
-            f"    xor byte [rdi], dl",
-            f"    inc rdi",
+            "    xor byte [rdi], dl",
+            "    inc rdi",
             f"    loop .decode_loop_{id(encoded_data):x}",
         ]
         asm_lines.extend(decode_loop)
@@ -284,16 +279,16 @@ def generate_stack_string_x64(
                 junk_used.append(junk[0])
 
         decode_loop = [
-            f"    ; Decode rolling XOR string",
-            f"    lea rdi, [rsp]",
+            "    ; Decode rolling XOR string",
+            "    lea rdi, [rsp]",
             f"    mov rcx, {len(encoded_data)}",
             f"    mov dl, 0x{xor_key:02X}",
             f".decode_loop_{id(encoded_data):x}:",
-            f"    xor byte [rdi], dl",
-            f"    inc rdi",
-            f"    imul dl, 7",
-            f"    inc dl",
-            f"    and dl, 0xFF",
+            "    xor byte [rdi], dl",
+            "    inc rdi",
+            "    imul dl, 7",
+            "    inc dl",
+            "    and dl, 0xFF",
             f"    loop .decode_loop_{id(encoded_data):x}",
         ]
         asm_lines.extend(decode_loop)
@@ -308,12 +303,12 @@ def generate_stack_string_x64(
                 junk_used.append(junk[0])
 
         decode_loop = [
-            f"    ; Decode ADD-shift'd string",
-            f"    lea rdi, [rsp]",
+            "    ; Decode ADD-shift'd string",
+            "    lea rdi, [rsp]",
             f"    mov rcx, {len(encoded_data)}",
             f".decode_loop_{id(encoded_data):x}:",
             f"    sub byte [rdi], {add_shift}",
-            f"    inc rdi",
+            "    inc rdi",
             f"    loop .decode_loop_{id(encoded_data):x}",
         ]
         asm_lines.extend(decode_loop)
@@ -423,12 +418,12 @@ def generate_stack_string_x86(
                 junk_used.append(junk[0])
 
         decode_loop = [
-            f"    lea edi, [esp]",
+            "    lea edi, [esp]",
             f"    mov ecx, {len(encoded_data)}",
             f"    mov dl, 0x{xor_key:02X}",
             f".decode_loop_{id(encoded_data):x}:",
-            f"    xor byte [edi], dl",
-            f"    inc edi",
+            "    xor byte [edi], dl",
+            "    inc edi",
             f"    loop .decode_loop_{id(encoded_data):x}",
         ]
         asm_lines.extend(decode_loop)
@@ -469,8 +464,8 @@ def find_printable_strings(data: bytes, min_length: int = 4) -> list[tuple[int, 
     Returns:
         List of (offset, string_bytes) tuples
     """
-    strings = []
-    current_string = []
+    strings: list[tuple[int, bytes]] = []
+    current_string: list[int] = []
     start_offset = 0
 
     for i, b in enumerate(data):
@@ -532,7 +527,7 @@ class StackStringsPass(MutationPass):
 
     def _find_strings_in_section(self, binary: Any, section: dict[str, Any]) -> list[dict[str, Any]]:
         """Find strings in a binary section."""
-        strings = []
+        strings: list[dict[str, Any]] = []
         addr = section.get("addr", 0)
         size = section.get("size", 0)
 

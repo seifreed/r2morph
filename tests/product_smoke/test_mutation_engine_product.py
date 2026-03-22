@@ -13,7 +13,6 @@ from r2morph.mutations import NopInsertionPass
 from r2morph.mutations.base import MutationPass
 from r2morph.validation import BinaryValidator
 
-
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:

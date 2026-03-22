@@ -41,7 +41,7 @@ class EntropyAnalyzer:
     HIGH_ENTROPY_THRESHOLD = 7.0
     SUSPICIOUS_ENTROPY_THRESHOLD = 6.5
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize entropy analyzer."""
         pass
 
@@ -62,9 +62,7 @@ class EntropyAnalyzer:
         section_entropies = self._analyze_sections(path)
 
         suspicious = [
-            name
-            for name, entropy in section_entropies.items()
-            if entropy > self.SUSPICIOUS_ENTROPY_THRESHOLD
+            name for name, entropy in section_entropies.items() if entropy > self.SUSPICIOUS_ENTROPY_THRESHOLD
         ]
 
         is_packed = overall > self.HIGH_ENTROPY_THRESHOLD
@@ -127,6 +125,8 @@ class EntropyAnalyzer:
                         continue
 
                     try:
+                        if binary.r2 is None:
+                            continue
                         data_hex = binary.r2.cmd(f"p8 {size} @ 0x{vaddr:x}")
                         data = bytes.fromhex(data_hex.strip())
 
@@ -153,9 +153,7 @@ class EntropyAnalyzer:
         """
         return calculate_entropy(data)
 
-    def compare_entropy(
-        self, original_path: Path, morphed_path: Path
-    ) -> tuple[float, float, float]:
+    def compare_entropy(self, original_path: Path, morphed_path: Path) -> tuple[float, float, float]:
         """
         Compare entropy between original and morphed binary.
 
@@ -170,9 +168,7 @@ class EntropyAnalyzer:
         morph_entropy = self._calculate_file_entropy(morphed_path)
         delta = morph_entropy - orig_entropy
 
-        logger.info(
-            f"Entropy comparison: {orig_entropy:.4f} -> {morph_entropy:.4f} (delta: {delta:+.4f})"
-        )
+        logger.info(f"Entropy comparison: {orig_entropy:.4f} -> {morph_entropy:.4f} (delta: {delta:+.4f})")
 
         return orig_entropy, morph_entropy, delta
 

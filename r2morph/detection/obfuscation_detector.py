@@ -69,7 +69,7 @@ class ObfuscationDetector:
     provide comprehensive obfuscation detection.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize obfuscation detector with specialized analyzers."""
         self.packer_db = PackerSignatureDatabase()
         self.entropy_analyzer = EntropyAnalyzer()
@@ -137,9 +137,7 @@ class ObfuscationDetector:
         if pattern_result.anti_vm_detected:
             result.obfuscation_techniques.append(ObfuscationType.ANTI_VM)
             result.confidence_scores["anti_vm"] = pattern_result.anti_vm_confidence
-        result.anti_analysis_detected = (
-            pattern_result.anti_debug_detected or pattern_result.anti_vm_detected
-        )
+        result.anti_analysis_detected = pattern_result.anti_debug_detected or pattern_result.anti_vm_detected
 
         if pattern_result.string_encryption_detected:
             result.obfuscation_techniques.append(ObfuscationType.STRING_ENCRYPTION)

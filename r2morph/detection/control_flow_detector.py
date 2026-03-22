@@ -194,9 +194,7 @@ class ControlFlowAnalyzer:
                                         opaque_count += 1
 
                 except Exception as e:
-                    logger.debug(
-                        f"Error analyzing function 0x{func_addr:x} for opaque predicates: {e}"
-                    )
+                    logger.debug(f"Error analyzing function 0x{func_addr:x} for opaque predicates: {e}")
                     continue
 
         except Exception as e:
@@ -291,9 +289,7 @@ class ControlFlowAnalyzer:
                         disasm = inst.get("disasm", "").lower()
 
                         # Indirect jumps through registers/memory
-                        if "jmp" in disasm and any(
-                            reg in disasm for reg in ["eax", "ebx", "ecx", "edx", "rax", "rbx"]
-                        ):
+                        if "jmp" in disasm and any(reg in disasm for reg in ["eax", "ebx", "ecx", "edx", "rax", "rbx"]):
                             indirect_jumps += 1
 
                         # Memory table accesses
@@ -305,9 +301,7 @@ class ControlFlowAnalyzer:
                         indirect_ratio = indirect_jumps / len(instructions)
                         if indirect_ratio > 0.1:  # More than 10% indirect jumps
                             vm_indicators += 1
-                            result["indicators"].append(
-                                f"High indirect jump ratio in function at 0x{func_addr:x}"
-                            )
+                            result["indicators"].append(f"High indirect jump ratio in function at 0x{func_addr:x}")
 
                 except Exception as e:
                     logger.debug(f"Error analyzing function 0x{func_addr:x} for VM indicators: {e}")
@@ -338,6 +332,8 @@ class ControlFlowAnalyzer:
             "vm_type": "unknown",
         }
 
+        assert self.binary.r2 is not None
+        assert self.binary.r2 is not None
         try:
             # Look for VM-specific patterns
             patterns = {
@@ -417,6 +413,7 @@ class ControlFlowAnalyzer:
             for func in functions[:20]:  # Limit analysis for performance
                 func_addr = self._get_function_address(func)
 
+                assert self.binary.r2 is not None
                 try:
                     instructions = self.binary.r2.cmdj(f"pdfj @ {func_addr}")
                     if not instructions or "ops" not in instructions:
@@ -443,10 +440,7 @@ class ControlFlowAnalyzer:
                                 if src == dst:
                                     redundant_moves += 1
 
-                        if (
-                            any(instr in opcode for instr in ["add", "sub", "xor"])
-                            and "0" in opcode
-                        ):
+                        if any(instr in opcode for instr in ["add", "sub", "xor"]) and "0" in opcode:
                             dead_code_count += 1
 
                     total_ops = len(ops)
@@ -460,9 +454,7 @@ class ControlFlowAnalyzer:
                             )
 
                 except Exception as e:
-                    logger.debug(
-                        f"Error analyzing function 0x{func_addr:x} for polymorphic indicators: {e}"
-                    )
+                    logger.debug(f"Error analyzing function 0x{func_addr:x} for polymorphic indicators: {e}")
                     continue
 
             if total_functions > 0:
