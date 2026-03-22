@@ -213,28 +213,12 @@ def _build_mismatch_views(
                 },
             }
         )
-    mismatch_by_pass = {}
-    for row in mismatch_rows:
-        pass_name = str(row.get("pass_name", ""))
-        if not pass_name:
-            continue
-        mismatch_by_pass[pass_name] = {
-            "pass_name": pass_name,
-            "mismatch_count": int(row.get("mismatch_count", 0)),
-            "observables": list(row.get("observables", [])),
-            "severity": row.get("severity", "mismatch"),
-            "issue_count": int(row.get("issue_count", 0)),
-            "symbolic_requested": int(row.get("symbolic_requested", 0)),
-            "role": row.get("role", "requested-mode"),
-            "symbolic_confidence": row.get("symbolic_confidence", "unknown"),
-            "degraded_execution": bool(row.get("degraded_execution", False)),
-            "degradation_triggered_by_pass": bool(row.get("degradation_triggered_by_pass", False)),
-            "region_evidence": list(row.get("region_evidence", [])),
-            "region_count": int(row.get("region_count", 0)),
-            "region_mismatch_count": int(row.get("region_mismatch_count", 0)),
-            "region_exit_match_count": int(row.get("region_exit_match_count", 0)),
-            "compact_region": dict(row.get("compact_region", {})),
-        }
+    # Index mismatch rows by pass_name (rows already contain all needed fields)
+    mismatch_by_pass = {
+        str(row["pass_name"]): dict(row)
+        for row in mismatch_rows
+        if row.get("pass_name")
+    }
     return {
         "mismatch_rows": mismatch_rows,
         "mismatch_by_pass": mismatch_by_pass,
@@ -312,6 +296,7 @@ def _build_summary_views(
     general_pass_rows: list[dict[str, Any]],
     failed_gates_rows: list[dict[str, Any]],
     failed_gates_expected_severity: dict[str, Any],
+    filter_buckets: dict[str, list[str]] | None = None,
 ) -> dict[str, Any]:
     """Build general_symbolic, general_gates, general_degradation, general_discards, general_summary_*, general_renderer_state."""
     degraded_rows = [
@@ -413,24 +398,10 @@ def _build_summary_views(
         "general_degradation": dict(general_degradation.get("summary", {})),
         "discards": dict(general_discards.get("summary", {})),
         "general_discards": dict(general_discards.get("summary", {})),
-        "filter_views": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
+        "filter_views": filter_buckets or {},
         "passes": [dict(row) for row in general_pass_rows],
         "general_passes": [dict(row) for row in general_pass_rows],
-        "general_filter_views": {
-            "risky": list(pass_risk_buckets.get("risky", [])),
-            "structural_risk": list(pass_risk_buckets.get("structural", [])),
-            "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-            "clean": list(pass_risk_buckets.get("clean", [])),
-            "covered": list(pass_coverage_buckets.get("covered", [])),
-            "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-        },
+        "general_filter_views": filter_buckets or {},
         "pass_rows": [dict(row) for row in general_pass_rows],
         "general_pass_rows": [dict(row) for row in general_pass_rows],
         "triage_rows": [dict(row) for row in triage_priority],
@@ -518,6 +489,16 @@ def _build_report_views(
     mismatch_rows = mismatches["mismatch_rows"]
     mismatch_by_pass = mismatches["mismatch_by_pass"]
 
+    # Build filter buckets once, pass to summary builder to avoid duplication
+    filter_buckets = {
+        "risky": list(pass_risk_buckets.get("risky", [])),
+        "structural_risk": list(pass_risk_buckets.get("structural", [])),
+        "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
+        "clean": list(pass_risk_buckets.get("clean", [])),
+        "covered": list(pass_coverage_buckets.get("covered", [])),
+        "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
+    }
+
     summary = _build_summary_views(
         normalized_pass_results=normalized_pass_results,
         symbolic_severity_by_pass=symbolic_severity_by_pass,
@@ -533,6 +514,7 @@ def _build_report_views(
         general_pass_rows=general_pass_rows,
         failed_gates_rows=failed_gates_rows,
         failed_gates_expected_severity=failed_gates_expected_severity,
+        filter_buckets=filter_buckets,
     )
     degraded_rows = summary["degraded_rows"]
     general_symbolic = summary["general_symbolic"]
@@ -542,16 +524,6 @@ def _build_report_views(
     general_summary_payload = summary["general_summary_payload"]
     general_summary_rows = summary["general_summary_rows"]
     general_renderer_state = summary["general_renderer_state"]
-
-    # Build filter bucket view once (was duplicated 3x as general_filter_views, passes, pass_filter_views)
-    filter_buckets = {
-        "risky": list(pass_risk_buckets.get("risky", [])),
-        "structural_risk": list(pass_risk_buckets.get("structural", [])),
-        "symbolic_risk": list(pass_risk_buckets.get("symbolic", [])),
-        "clean": list(pass_risk_buckets.get("clean", [])),
-        "covered": list(pass_coverage_buckets.get("covered", [])),
-        "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
-    }
 
     return {
         "general_passes": general_pass_rows,
