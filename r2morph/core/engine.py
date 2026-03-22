@@ -24,6 +24,7 @@ from r2morph.core.constants import (
 from r2morph.mutations.base import MutationPass
 from r2morph.pipeline.pipeline import Pipeline
 from r2morph.reporting.gate_evaluator import SEVERITY_ORDER
+from r2morph.reporting.report_view_builder import _build_report_views
 from r2morph.platform.codesign import CodeSigner
 from r2morph.core.support import PRODUCT_SUPPORT, classify_target_support
 from r2morph.session import MorphSession
@@ -1098,9 +1099,6 @@ def _summarize_normalized_pass_results(
     return rows
 
 
-# _build_report_views has been extracted to r2morph.reporting.report_view_builder
-# to maintain SRP. Import it here for backward compatibility.
-from r2morph.reporting.report_view_builder import _build_report_views  # noqa: F811, E402
 
 
 

@@ -19,6 +19,7 @@ import r2pipe
 from r2morph.core.constants import BATCH_MUTATION_CHECKPOINT
 
 if TYPE_CHECKING:
+    from r2morph.adapters.disassembler import DisassemblerInterface
     from r2morph.core.assembly import AssemblyService
     from r2morph.core.memory_manager import MemoryManager
     from r2morph.core.reader import BinaryReader
@@ -49,7 +50,7 @@ class Binary:
         flags: list[str] | None = None,
         writable: bool = False,
         low_memory: bool = False,
-        disassembler: Any = None,
+        disassembler: "DisassemblerInterface | None" = None,
     ):
         """Initialize Binary.
 
