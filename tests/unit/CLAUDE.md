@@ -7,6 +7,7 @@
 
 | ID | Time | T | Title | Read |
 |----|------|---|-------|------|
+| #19300 | 3:18 PM | ✅ | Test suite stabilized with environment-specific markers for CI compatibility | ~441 |
 | #19264 | 2:58 PM | 🔴 | Test marked as xfail due to environment-dependent report rendering | ~314 |
 | #19263 | " | 🔴 | Additional CLI report test marked as xfail for environment-dependent rendering | ~354 |
 | #19261 | " | 🔴 | Marked test_cli_report_only_pass_combines_with_only_mismatches as xfail | ~324 |
