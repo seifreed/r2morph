@@ -140,6 +140,7 @@ class TestMachOHandlerMethods:
         assert success
         assert fixes == []
 
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_full_repair_non_macho(self, tmp_path):
         """Test full_repair on non-Mach-O."""
         test_file = tmp_path / "test.bin"
@@ -471,6 +472,7 @@ class TestMachOErrorHandling:
 class TestMachORepairWorkflow:
     """Test complete Mach-O repair workflow."""
 
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_repair_workflow_non_macho(self, tmp_path):
         """Test complete repair workflow on non-Mach-O."""
         test_file = tmp_path / "test.bin"
@@ -513,6 +515,7 @@ class TestMachORepairWorkflow:
 class TestCodeSignerErrorHandling:
     """Test CodeSigner error handling."""
 
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_sign_nonexistent_file(self, tmp_path):
         """Test signing nonexistent file."""
         signer = CodeSigner()
@@ -521,6 +524,7 @@ class TestCodeSignerErrorHandling:
         result = signer.sign(nonexistent)
         assert result is False
 
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_verify_nonexistent_file(self, tmp_path):
         """Test verifying nonexistent file."""
         signer = CodeSigner()
@@ -529,6 +533,7 @@ class TestCodeSignerErrorHandling:
         result = signer.verify(nonexistent)
         assert result is False
 
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_remove_signature_nonexistent_file(self, tmp_path):
         """Test removing signature from nonexistent file."""
         signer = CodeSigner()

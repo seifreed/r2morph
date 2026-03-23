@@ -4,6 +4,7 @@ Real runtime validation tests using host-compiled binaries.
 
 import importlib.util
 import json
+import shutil
 import subprocess
 import sys
 
@@ -13,6 +14,9 @@ from r2morph.validation.validator import BinaryValidator, RuntimeComparisonConfi
 
 if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
+
+if shutil.which("gcc") is None:
+    pytest.skip("gcc not available for compiling test binaries", allow_module_level=True)
 
 
 def test_runtime_validator_detects_and_normalizes_whitespace(runtime_binary_pair):

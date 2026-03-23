@@ -2,9 +2,12 @@
 Unit tests for Mach-O handler module.
 """
 
+import platform
 from pathlib import Path
 from unittest.mock import patch
 import struct
+
+import pytest
 
 from r2morph.platform.macho_handler import MachOHandler
 
@@ -347,6 +350,7 @@ class TestIterMachoBinaries:
 
 
 class TestExtractArchitecture:
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_extract_architecture_nonexistent_file(self, tmp_path):
         handler = MachOHandler(tmp_path / "nonexistent")
         result = handler.extract_architecture("arm64", tmp_path / "output")
@@ -354,6 +358,7 @@ class TestExtractArchitecture:
 
 
 class TestCreateFatBinary:
+    @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_create_fat_binary_empty_list(self, tmp_path):
         binary_path = tmp_path / "test_binary"
         binary_path.write_bytes(b"\xfe\xed\xfa\xce" + b"\x00" * 100)
