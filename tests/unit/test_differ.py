@@ -515,15 +515,16 @@ class TestBinaryDiffer:
         original = self._create_mock_binary("/bin/original")
         mutated = self._create_mock_binary("/bin/mutated")
 
-        original.get_function_bytes.return_value = b"\x90" * 10
-        mutated.get_function_bytes.return_value = b"\xcc" * 10
+        # get_function_diff uses read_bytes and get_function_disasm (not get_function_bytes)
+        original.read_bytes.return_value = b"\x90" * 10
+        mutated.read_bytes.return_value = b"\xcc" * 10
         original.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "nop"},
-            {"offset": 0x1001, "disasm": "nop"},
+            {"offset": 0x1000, "size": 1, "disasm": "nop"},
+            {"offset": 0x1001, "size": 9, "disasm": "nop"},
         ]
         mutated.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "int3"},
-            {"offset": 0x1001, "disasm": "int3"},
+            {"offset": 0x1000, "size": 1, "disasm": "int3"},
+            {"offset": 0x1001, "size": 9, "disasm": "int3"},
         ]
         mutated.get_functions.return_value = [
             {"offset": 0x1000, "name": "test_func"},
@@ -541,8 +542,9 @@ class TestBinaryDiffer:
         original = self._create_mock_binary("/bin/original")
         mutated = self._create_mock_binary("/bin/mutated")
 
-        original.get_function_bytes.return_value = None
-        mutated.get_function_bytes.return_value = None
+        # get_function_diff returns None when disasm is empty
+        original.get_function_disasm.return_value = []
+        mutated.get_function_disasm.return_value = []
 
         differ = BinaryDiffer(original, mutated)
         func_diff = differ.get_function_diff(0x1000)

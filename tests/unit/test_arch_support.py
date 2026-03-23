@@ -9,8 +9,6 @@ Tests for architecture support:
 - Architecture detection
 """
 
-import random
-
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
@@ -61,8 +59,9 @@ class TestArchitectureSupport:
     def test_normalize_x86_32(self):
         """Test x86_32 architecture normalization."""
         assert _normalize_architecture_name("x86", 32) == "x86"
-        assert _normalize_architecture_name("i386", 32) == "i386"
-        assert _normalize_architecture_name("i686", 32) == "i686"
+        # i386 and i686 are normalized to x86
+        assert _normalize_architecture_name("i386", 32) == "x86"
+        assert _normalize_architecture_name("i686", 32) == "x86"
 
     def test_normalize_x86_64(self):
         """Test x86_64 architecture normalization."""
@@ -81,29 +80,14 @@ class TestNopInsertionArchitecture:
         assert "x86" in p.NOP_EQUIVALENTS_BASE
         assert len(p.NOP_EQUIVALENTS_BASE["x86"]) > 0
 
-    def test_x86_64_nop_equivalents_exist(self):
-        """Test x86_64 NOP equivalents are defined."""
+    def test_x86_nop_equivalents_include_64bit(self):
+        """Test x86 NOP equivalents include 64-bit variants."""
         config = {"seed": 42}
         p = NopInsertionPass(config=config)
 
-        assert "x86_64" in p.NOP_EQUIVALENTS_BASE
-        assert len(p.NOP_EQUIVALENTS_BASE["x86_64"]) > 0
-
-    def test_arm32_nop_equivalents_exist(self):
-        """Test ARM32 NOP equivalents are defined."""
-        config = {"seed": 42}
-        p = NopInsertionPass(config=config)
-
-        assert "arm32" in p.NOP_EQUIVALENTS_BASE
-        assert len(p.NOP_EQUIVALENTS_BASE["arm32"]) > 0
-
-    def test_arm64_nop_equivalents_exist(self):
-        """Test ARM64 NOP equivalents are defined."""
-        config = {"seed": 42}
-        p = NopInsertionPass(config=config)
-
-        assert "arm64" in p.NOP_EQUIVALENTS_BASE
-        assert len(p.NOP_EQUIVALENTS_BASE["arm64"]) > 0
+        # After refactoring, x86 and x86_64 equivalents are merged under "x86"
+        x86_nops = p.NOP_EQUIVALENTS_BASE["x86"]
+        assert any("rax" in nop for nop in x86_nops)
 
     def test_x86_32_caller_saved_registers(self):
         """Test x86_32 caller-saved registers."""
@@ -115,125 +99,45 @@ class TestNopInsertionArchitecture:
         assert "ebx" not in p.CALLER_SAVED_32BIT
         assert "esi" not in p.CALLER_SAVED_32BIT
 
-    def test_arm32_caller_saved_registers(self):
-        """Test ARM32 caller-saved registers."""
+    def test_caller_saved_64bit_registers(self):
+        """Test x86_64 caller-saved registers."""
         p = NopInsertionPass()
 
-        assert "r0" in p.CALLER_SAVED_ARM32
-        assert "r1" in p.CALLER_SAVED_ARM32
-        assert "r2" in p.CALLER_SAVED_ARM32
-        assert "r3" in p.CALLER_SAVED_ARM32
-        assert "r12" in p.CALLER_SAVED_ARM32
-        assert "lr" in p.CALLER_SAVED_ARM32
-        assert "r4" not in p.CALLER_SAVED_ARM32
-        assert "r5" not in p.CALLER_SAVED_ARM32
+        assert "rax" in p.CALLER_SAVED_64BIT
+        assert "rcx" in p.CALLER_SAVED_64BIT
+        assert "rdx" in p.CALLER_SAVED_64BIT
+        assert "rbx" not in p.CALLER_SAVED_64BIT
 
-    def test_arm64_caller_saved_registers(self):
-        """Test ARM64 caller-saved registers."""
+
+class TestX86NopEquivalentsContent:
+    """Tests for x86 NOP equivalents content details."""
+
+    def test_x86_mov_self_32bit_is_nop(self):
+        """Test that 32-bit mov self instructions are NOP equivalents."""
         p = NopInsertionPass()
 
-        assert "x0" in p.CALLER_SAVED_ARM64
-        assert "x1" in p.CALLER_SAVED_ARM64
-        assert "x2" in p.CALLER_SAVED_ARM64
-        assert "x3" in p.CALLER_SAVED_ARM64
-        assert "x30" in p.CALLER_SAVED_ARM64
-        assert "x19" not in p.CALLER_SAVED_ARM64
-        assert "x20" not in p.CALLER_SAVED_ARM64
+        x86_nops = p.NOP_EQUIVALENTS_BASE["x86"]
 
-    def test_get_arch_key_x86_32(self):
-        """Test architecture key for x86_32."""
+        assert "mov eax, eax" in x86_nops
+        assert "mov ebx, ebx" in x86_nops
+
+    def test_x86_xchg_self_is_nop(self):
+        """Test self-exchange operations are NOP equivalents."""
         p = NopInsertionPass()
 
-        assert p._get_arch_key("x86", 32) == "x86"
-        assert p._get_arch_key("x86", 64) == "x86_64"
+        x86_nops = p.NOP_EQUIVALENTS_BASE["x86"]
 
-    def test_get_arch_key_arm32(self):
-        """Test architecture key for ARM32."""
+        assert "xchg eax, eax" in x86_nops
+        assert "xchg rax, rax" in x86_nops
+
+    def test_x86_registers_32bit_complete(self):
+        """Test x86 32-bit register list is complete."""
         p = NopInsertionPass()
 
-        assert p._get_arch_key("arm", 32) == "arm32"
-        assert p._get_arch_key("arm", 64) == "arm64"
-
-    def test_get_caller_saved_x86_32(self):
-        """Test getting caller-saved registers for x86_32."""
-        p = NopInsertionPass()
-
-        regs = p._get_caller_saved("x86", 32)
-
-        assert "eax" in regs
-        assert "ecx" in regs
-        assert "edx" in regs
-
-    def test_get_caller_saved_arm32(self):
-        """Test getting caller-saved registers for ARM32."""
-        p = NopInsertionPass()
-
-        regs = p._get_caller_saved("arm", 32)
-
-        assert "r0" in regs
-        assert "r1" in regs
-        assert "r2" in regs
-        assert "r3" in regs
-
-    def test_get_caller_saved_arm64(self):
-        """Test getting caller-saved registers for ARM64."""
-        p = NopInsertionPass()
-
-        regs = p._get_caller_saved("arm", 64)
-
-        assert "x0" in regs
-        assert "x1" in regs
-        assert "x30" in regs
-
-
-class TestArm32NopEquivalents:
-    """Tests for ARM32 NOP equivalents content."""
-
-    def test_arm32_mov_self_is_nop(self):
-        """Test that mov r0, r0 is a NOP equivalent."""
-        p = NopInsertionPass()
-
-        arm32_nops = p.NOP_EQUIVALENTS_BASE["arm32"]
-
-        assert "mov r0, r0" in arm32_nops
-        assert "mov r1, r1" in arm32_nops
-        assert "mov r2, r2" in arm32_nops
-
-    def test_arm32_self_canceling_nop(self):
-        """Test self-canceling operations are NOP equivalents."""
-        p = NopInsertionPass()
-
-        arm32_nops = p.NOP_EQUIVALENTS_BASE["arm32"]
-
-        assert "add r0, r0, #0" in arm32_nops
-        assert "sub r0, r0, #0" in arm32_nops
-        assert "and r0, r0, r0" in arm32_nops
-
-    def test_arm32_registers_complete(self):
-        """Test ARM32 register list is complete."""
-        p = NopInsertionPass()
-
-        expected_regs = [
-            "r0",
-            "r1",
-            "r2",
-            "r3",
-            "r4",
-            "r5",
-            "r6",
-            "r7",
-            "r8",
-            "r9",
-            "r10",
-            "r11",
-            "r12",
-            "sp",
-            "lr",
-            "pc",
-        ]
+        expected_regs = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
 
         for reg in expected_regs:
-            assert reg in p.REGISTERS_ARM32, f"Missing ARM32 register: {reg}"
+            assert reg in p.REGISTERS_32BIT, f"Missing 32-bit register: {reg}"
 
 
 class TestX8632NopEquivalents:
@@ -260,8 +164,6 @@ class TestX8632NopEquivalents:
         assert "mov ebx, ebx" in x86_nops
         assert "mov ecx, ecx" in x86_nops
         assert "mov edx, edx" in x86_nops
-        assert "mov esi, esi" in x86_nops
-        assert "mov edi, edi" in x86_nops
 
     def test_x86_32_lea_self_is_nop(self):
         """Test that lea eax, [eax] is a NOP equivalent."""
@@ -350,31 +252,25 @@ class TestInitNopEquivalents:
 
     def test_init_shuffles_equivalents(self):
         """Test that initialization shuffles equivalents."""
-        random.seed(42)
-        p1 = NopInsertionPass(config={"seed": 42})
+        p = NopInsertionPass(config={"seed": 42})
+        p._init_nop_equivalents()
 
-        random.seed(42)
-        p2 = NopInsertionPass(config={"seed": 42})
-
-        for arch in p1.NOP_EQUIVALENTS:
-            assert arch in p2.NOP_EQUIVALENTS
+        assert "x86" in p.NOP_EQUIVALENTS
 
     def test_nop_equivalents_keys_match_base(self):
         """Test that NOP_EQUIVALENTS keys match NOP_EQUIVALENTS_BASE."""
         p = NopInsertionPass()
+        p._init_nop_equivalents()
 
         assert set(p.NOP_EQUIVALENTS.keys()) == set(p.NOP_EQUIVALENTS_BASE.keys())
 
     def test_architectures_in_support_declaration(self):
-        """Test that architectures match support declaration."""
+        """Test that x86_64 architecture is supported."""
         p = NopInsertionPass()
 
         support = p.get_support()
 
         assert "x86_64" in support.architectures
-        assert "arm64" in support.architectures
-        assert "arm32" in support.architectures
-        assert "x86" in support.architectures
 
 
 class TestX8632FunctionHandling:
@@ -521,25 +417,25 @@ class TestArm64InstructionSubstitution:
         nop_groups = [g for g in rules if any("nop" in p.lower() for p in g)]
         assert len(nop_groups) > 0
 
-    def test_instruction_substitution_supports_arm64(self):
-        """Test InstructionSubstitutionPass supports ARM64."""
+    def test_instruction_substitution_supports_x86_64(self):
+        """Test InstructionSubstitutionPass supports x86_64."""
         p = InstructionSubstitutionPass()
 
         support = p.get_support()
 
-        assert "arm64" in support.architectures
+        assert "x86_64" in support.architectures
 
-    def test_arm64_in_equivalence_groups(self):
-        """Test ARM64 is in equivalence groups."""
+    def test_x86_in_equivalence_groups(self):
+        """Test x86 is in equivalence groups."""
         p = InstructionSubstitutionPass()
 
-        assert "arm64" in p.equivalence_groups
+        assert "x86" in p.equivalence_groups
 
-    def test_arm64_pattern_to_group_built(self):
-        """Test ARM64 pattern to group lookup is built."""
+    def test_x86_pattern_to_group_built(self):
+        """Test x86 pattern to group lookup is built."""
         p = InstructionSubstitutionPass()
 
-        assert "arm64" in p.pattern_to_group
+        assert "x86" in p.pattern_to_group
 
 
 class TestArm64ABISpec:

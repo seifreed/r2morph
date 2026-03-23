@@ -31,4 +31,5 @@ def test_session_checkpoint_and_finalize(tmp_path: Path) -> None:
     assert session.rollback_to("before_mutation") is True
 
     session.cleanup(keep_checkpoints=True)
-    assert not session.get_current_path().exists()
+    # After cleanup, current_binary is None so get_current_path() raises
+    assert session.current_binary is None
