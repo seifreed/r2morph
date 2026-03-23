@@ -286,11 +286,7 @@ class MachOHandler:
             for cmd in getattr(macho, "commands", []):
                 name = getattr(cmd, "command", None)
                 if name is not None and hasattr(name, "name"):
-                    raw_name = name.name
-                    # Ensure standard LC_ prefix for Mach-O load command names
-                    if not raw_name.startswith("LC_"):
-                        raw_name = f"LC_{raw_name}"
-                    name = raw_name
+                    name = name.name
                 lief_commands.append({"command": str(name)})
         return lief_commands
 
