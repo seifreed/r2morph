@@ -4,6 +4,9 @@ Assembly service for instruction encoding with intelligent fallbacks.
 Extracted from Binary class following Single Responsibility Principle.
 """
 
+from __future__ import annotations
+
+
 import logging
 import re
 from typing import TYPE_CHECKING

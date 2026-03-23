@@ -6,6 +6,9 @@ angr project format, enabling symbolic execution of binary code analyzed
 by radare2.
 """
 
+from __future__ import annotations
+
+
 import logging
 from pathlib import Path
 from typing import Any, TYPE_CHECKING

@@ -5,6 +5,9 @@ Extracted from Binary class following Single Responsibility Principle.
 Handles mutation tracking and r2 connection reloading to prevent OOM.
 """
 
+from __future__ import annotations
+
+
 import logging
 from typing import TYPE_CHECKING
 

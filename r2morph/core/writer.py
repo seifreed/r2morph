@@ -5,6 +5,9 @@ Extracted from Binary class following Single Responsibility Principle.
 Handles all write operations: bytes, instructions, NOP fills.
 """
 
+from __future__ import annotations
+
+
 import logging
 from pathlib import Path
 from typing import Any, TYPE_CHECKING

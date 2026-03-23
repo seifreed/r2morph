@@ -8,6 +8,9 @@ This module provides detection of control flow-based obfuscation including:
 - Mixed Boolean Arithmetic (MBA) expressions
 """
 
+from __future__ import annotations
+
+
 import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any

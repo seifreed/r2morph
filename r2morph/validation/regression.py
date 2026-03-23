@@ -5,6 +5,9 @@ This module provides automated regression testing capabilities to ensure
 that new changes don't break existing functionality.
 """
 
+from __future__ import annotations
+
+
 import json
 import logging
 import time

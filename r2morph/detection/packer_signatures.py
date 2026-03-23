@@ -6,6 +6,9 @@ for detecting specific packers based on entry point patterns,
 section names, strings, and entropy analysis.
 """
 
+from __future__ import annotations
+
+
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
