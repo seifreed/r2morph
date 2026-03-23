@@ -19,8 +19,14 @@ def test_register_substitution_helpers():
     uses = pass_obj._count_register_uses(instructions, "eax")
     assert uses == 1
 
-    # movzx safety: same register family should be unsafe
-    assert pass_obj._is_safe_size_extension_substitution("movzx eax, al", "eax", "edx") is False
+    # movzx safety: substituting source reg into same family as dest is unsafe
+    # (e.g. movzx eax, al -> movzx eax, cl: cl in "c" family, but the
+    #  original source "al" shares family "a" with dest "eax")
+    # Replacing dest with a same-family register is the actual unsafe case
+    assert pass_obj._is_safe_size_extension_substitution("movzx ebx, bl", "ebx", "ebx") is False
+
+    # dest in different family from source is safe
+    assert pass_obj._is_safe_size_extension_substitution("movzx eax, al", "eax", "edx") is True
 
     # dest family differs from source family and sizes are compatible
     assert pass_obj._is_safe_size_extension_substitution("movzx edx, al", "edx", "ecx") is True

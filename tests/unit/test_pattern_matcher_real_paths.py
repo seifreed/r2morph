@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from r2morph.core.binary import Binary
 from r2morph.detection.pattern_matcher import PatternMatcher
 
@@ -50,5 +52,5 @@ def test_pattern_matcher_error_paths_on_closed_binary(tmp_path):
     matcher = PatternMatcher(bin_obj)
     bin_obj.close()
 
-    results = matcher.search_strings(["test"], case_sensitive=False)
-    assert results["test"] is False
+    with pytest.raises(AssertionError):
+        matcher.search_strings(["test"], case_sensitive=False)

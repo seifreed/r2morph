@@ -188,8 +188,8 @@ class TestBinaryValidatorDetailed:
         validator = BinaryValidator()
         validator.add_test_case(args=["--help"], stdin="", expected_exitcode=0, description="Help test")
         assert len(validator.test_cases) == 1
-        assert validator.test_cases[0]["args"] == ["--help"]
-        assert validator.test_cases[0]["description"] == "Help test"
+        assert validator.test_cases[0].args == ["--help"]
+        assert validator.test_cases[0].description == "Help test"
 
     def test_add_multiple_test_cases(self):
         """Test adding multiple test cases."""

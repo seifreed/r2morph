@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import typer
 
-from r2morph.cli import app, analyze, analyze_enhanced, functions, morph, version
+from r2morph.cli import app, analyze, analyze_enhanced, functions, version
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -73,18 +73,28 @@ def test_cli_morph_inprocess(tmp_path: Path):
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
+    from typer.testing import CliRunner
+
+    runner = CliRunner()
     output_path = tmp_path / "morphed_cli_output"
-    try:
-        morph(
-            binary=binary_path,
-            output=output_path,
-            mutations=["nop", "substitute", "register", "expand", "block"],
-            aggressive=True,
-            force=True,
-            verbose=False,
-        )
-    except typer.Exit as exc:
-        assert exc.exit_code in {0, 1}
+    result = runner.invoke(
+        app,
+        [
+            "morph",
+            str(binary_path),
+            "-o",
+            str(output_path),
+            "-m",
+            "nop",
+            "-m",
+            "substitute",
+            "-m",
+            "register",
+            "--aggressive",
+            "--force",
+        ],
+    )
+    assert result.exit_code in {0, 1}, f"morph failed with exit code {result.exit_code}: {result.output}"
 
 
 def test_cli_version_inprocess():

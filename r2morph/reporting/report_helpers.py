@@ -174,7 +174,7 @@ def _severity_threshold_met(
     if min_severity_rank is None:
         return True
     if not severity_rows:
-        return True
+        return False
     return any(
         SEVERITY_ORDER.get(str(row.get("severity", "not-requested")), 99) <= min_severity_rank for row in severity_rows
     )
@@ -744,7 +744,22 @@ def _resolve_general_filtered_passes(
             if resolved_only_pass is None or pass_name == resolved_only_pass
         )
     if resolved_only_pass and not resolved_passes:
-        return [resolved_only_pass]
+        # Only include the requested pass when it actually appears in the
+        # report data.  If it does not, keep the list empty so that
+        # ``--require-results`` can detect that the filtered view is empty.
+        all_known = (
+            set(existing_passes)
+            | {str(row.get("pass_name")) for row in summary_general_passes if row.get("pass_name")}
+            | {str(row.get("pass_name")) for row in summary_general_pass_rows if row.get("pass_name")}
+            | set(summary_only_pass_view)
+        )
+        if resolved_only_pass in all_known:
+            return [resolved_only_pass]
+        return []
     if only_failed_gates and not resolved_passes and gate_failure_priority:
         return sorted({str(row.get("pass_name")) for row in gate_failure_priority if row.get("pass_name")})
+    # When filtering to a single pass, restrict the resolved list so that
+    # ``--require-results`` correctly detects empty views.
+    if resolved_only_pass and resolved_passes:
+        return [p for p in resolved_passes if p == resolved_only_pass]
     return resolved_passes

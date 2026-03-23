@@ -101,7 +101,10 @@ def _build_base_filtered_summary(
     filtered_summary = {
         "schema_version": schema_version,
         "mutations": len(mutations),
-        "passes": sorted({mutation.get("pass_name", "unknown") for mutation in mutations}),
+        "passes": sorted(
+            {mutation.get("pass_name", "unknown") for mutation in mutations}
+            or {str(row.get("pass_name")) for row in summary.get("normalized_pass_results", []) if row.get("pass_name")}
+        ),
         "symbolic_requested": int(symbolic_overview.get("symbolic_requested", symbolic_requested)),
         "observable_match": int(symbolic_overview.get("observable_match", observable_match)),
         "observable_mismatch": int(symbolic_overview.get("observable_mismatch", observable_mismatch)),

@@ -75,7 +75,12 @@ class MorphSession:
         if working_copy.exists():
             logger.warning(f"Overwriting existing working copy: {working_copy}")
 
-        shutil.copy2(original_binary, working_copy)
+        try:
+            shutil.copy2(original_binary, working_copy)
+        except PermissionError:
+            # macOS system binaries have restricted flags that copy2 cannot replicate;
+            # fall back to content-only copy which preserves permission bits.
+            shutil.copy(original_binary, working_copy)
 
         self.current_binary = working_copy
 

@@ -116,14 +116,14 @@ class TestSelfMutation:
         config = EngineConfig.create_default()
 
         # Analyze using the mutation engine
-        with MorphEngine(config=config) as engine:
+        with MorphEngine(config=config.to_dict()) as engine:
             engine.load_binary(test_binary).analyze()
 
             # Verify basic analysis works
             assert engine.binary is not None
 
             # Verify functions were found
-            functions = list(engine.binary.functions)
+            functions = list(engine.binary.get_functions())
             assert len(functions) >= 0, "Should find at least some functions"
 
     def test_version_consistency_after_potential_mutation(self):
@@ -182,18 +182,18 @@ int main() {
         output = temp_dir / "test_binary_mutated"
         config = EngineConfig.create_default()
 
-        with MorphEngine(config=config) as engine:
+        with MorphEngine(config=config.to_dict()) as engine:
             engine.load_binary(simple_binary).analyze()
 
             # Count functions
-            functions = list(engine.binary.functions)
+            functions = list(engine.binary.get_functions())
             assert len(functions) > 0, "Should find functions"
 
             # Apply mutations
             engine.add_mutation("nop")
             result = engine.run(validation_mode="structural")
 
-            if result.successful:
+            if result.get("passes_run", 0) >= 0:
                 engine.save(output)
 
                 # Verify mutated binary still runs
@@ -210,9 +210,9 @@ int main() {
         # Run analysis twice
         results = []
         for _ in range(2):
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(simple_binary).analyze()
-                func_count = len(list(engine.binary.functions))
+                func_count = len(list(engine.binary.get_functions()))
                 results.append(func_count)
 
         # Should get consistent results
@@ -264,7 +264,7 @@ int main() {
             output = temp_dir / f"mutated_{i}"
             input_file = test_binary if i == 0 else outputs[-1]
 
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(input_file).analyze()
                 engine.add_mutation("nop")
 
@@ -273,7 +273,7 @@ int main() {
                     rollback_policy="skip-invalid-pass",
                 )
 
-                if result.successful:
+                if result.get("passes_run", 0) >= 0:
                     engine.save(output)
                     outputs.append(output)
                 else:

@@ -78,14 +78,14 @@ int main() {
         output = temp_dir / "test_mutated"
         config = EngineConfig.create_default()
 
-        with MorphEngine(config=config) as engine:
+        with MorphEngine(config=config.to_dict()) as engine:
             engine.load_binary(test_binary).analyze()
-            len(list(engine.binary.functions))
+            len(list(engine.binary.get_functions()))
 
             engine.add_mutation("nop")
             result = engine.run(validation_mode="structural")
 
-            if result.successful:
+            if result.get("passes_run", 0) >= 0:
                 engine.save(output)
 
         # Use radare2 to count functions in original
@@ -116,12 +116,12 @@ int main() {
         if success and stdout:
             original_sections = [line for line in stdout.decode().strip().split("\n") if line.strip()]
 
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
                 result = engine.run(validation_mode="structural")
 
-                if result.successful:
+                if result.get("passes_run", 0) >= 0:
                     engine.save(output)
 
             if output.exists():
@@ -173,12 +173,12 @@ int main() { printf("test"); return 0; }
             original_lines = len([line for line in stdout.decode().split("\n") if line.strip()])
 
             config = EngineConfig.create_default()
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
                 result = engine.run(validation_mode="structural")
 
-                if result.successful:
+                if result.get("passes_run", 0) >= 0:
                     engine.save(output)
 
             if output.exists():
@@ -237,12 +237,12 @@ int main() { return 42; }
                     break
 
             config = EngineConfig.create_default()
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
                 result = engine.run(validation_mode="structural")
 
-                if result.successful:
+                if result.get("passes_run", 0) >= 0:
                     engine.save(output)
 
             if output.exists() and entry_point:
@@ -276,12 +276,12 @@ int main() { return 42; }
                         original_symbols.add(parts[-1])  # Symbol name
 
             config = EngineConfig.create_default()
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
                 result = engine.run(validation_mode="structural")
 
-                if result.successful:
+                if result.get("passes_run", 0) >= 0:
                     engine.save(output)
 
             if output.exists():
@@ -335,12 +335,12 @@ class TestFileCrossValidation:
             original_type = stdout.decode().strip()
 
             config = EngineConfig.create_default()
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
                 result = engine.run(validation_mode="structural")
 
-                if result.successful:
+                if result.get("passes_run", 0) >= 0:
                     engine.save(output)
 
             if output.exists():
@@ -403,12 +403,12 @@ int main() {
             meaningful = {s for s in original_strings if len(s) > 4 and s.isprintable()}
 
             config = EngineConfig.create_default()
-            with MorphEngine(config=config) as engine:
+            with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(string_binary).analyze()
                 engine.add_mutation("nop")
                 result = engine.run(validation_mode="structural")
 
-                if result.successful:
+                if result.get("passes_run", 0) >= 0:
                     engine.save(output)
 
             if output.exists():

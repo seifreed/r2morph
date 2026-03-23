@@ -228,34 +228,36 @@ int main(int argc, char **argv) {
 def switch_binary():
     """Fixture for switch statement binary."""
     path = TestBinaryFixture.compile_switch_binary()
-    if path and path.exists():
-        yield path
-        if path.exists():
-            pass
+    if not path or not path.exists():
+        pytest.skip("Could not compile switch test binary (gcc not available)")
+    yield path
 
 
 @pytest.fixture
 def exception_binary():
     """Fixture for exception handling binary."""
     path = TestBinaryFixture.compile_exception_binary()
-    if path and path.exists():
-        yield path
+    if not path or not path.exists():
+        pytest.skip("Could not compile exception test binary (g++ not available)")
+    yield path
 
 
 @pytest.fixture
 def plt_binary():
     """Fixture for PLT calls binary."""
     path = TestBinaryFixture.compile_plt_binary()
-    if path and path.exists():
-        yield path
+    if not path or not path.exists():
+        pytest.skip("Could not compile PLT test binary (gcc not available)")
+    yield path
 
 
 @pytest.fixture
 def tail_call_binary():
     """Fixture for tail call binary."""
     path = TestBinaryFixture.compile_tail_call_binary()
-    if path and path.exists():
-        yield path
+    if not path or not path.exists():
+        pytest.skip("Could not compile tail call test binary (gcc not available)")
+    yield path
 
 
 class TestJumpTablePreservation:

@@ -1220,18 +1220,21 @@ class MorphEngine:
 
         return level
 
-    def add_mutation(self, mutation: MutationPass) -> "MorphEngine":
+    def add_mutation(self, mutation: "MutationPass | str") -> "MorphEngine":
         """
         Add a mutation pass to the pipeline.
 
         Automatically adjusts mutation parameters when in memory-efficient mode.
 
         Args:
-            mutation: Mutation pass to add
+            mutation: Mutation pass instance or pass name (e.g. "nop", "substitute",
+                      "register", "expand", "block")
 
         Returns:
             Self for method chaining
         """
+        if isinstance(mutation, str):
+            mutation = self._resolve_mutation_pass(mutation)
         # Adjust mutation config for large binaries to prevent OOM
         if self._memory_efficient_mode:
             mutation.configure_for_memory_constraints(0.4)
@@ -1239,6 +1242,30 @@ class MorphEngine:
         self.pipeline.add_pass(mutation)
         logger.debug(f"Added mutation: {mutation.__class__.__name__}")
         return self
+
+    @staticmethod
+    def _resolve_mutation_pass(name: str) -> MutationPass:
+        """Resolve a mutation pass name to an instance."""
+        from r2morph.mutations import (
+            BlockReorderingPass,
+            InstructionExpansionPass,
+            InstructionSubstitutionPass,
+            NopInsertionPass,
+            RegisterSubstitutionPass,
+        )
+
+        pass_map: dict[str, type] = {
+            "nop": NopInsertionPass,
+            "substitute": InstructionSubstitutionPass,
+            "register": RegisterSubstitutionPass,
+            "expand": InstructionExpansionPass,
+            "block": BlockReorderingPass,
+        }
+        cls = pass_map.get(name)
+        if cls is None:
+            raise ValueError(f"Unknown mutation pass: {name!r}. Valid names: {list(pass_map)}")
+        result: MutationPass = cls()
+        return result
 
     def remove_mutation(self, mutation_name: str) -> "MorphEngine":
         """

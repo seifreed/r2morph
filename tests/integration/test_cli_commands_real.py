@@ -49,7 +49,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_verbose"
         result = subprocess.run(
-            [sys.executable, "-m", "r2morph.cli", "-v", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "morph", str(ls_elf), "-o", str(output), "-m", "nop"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -63,7 +63,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_debug"
         result = subprocess.run(
-            [sys.executable, "-m", "r2morph.cli", "-d", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "morph", str(ls_elf), "-o", str(output), "-m", "nop"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -77,7 +77,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_force"
         result = subprocess.run(
-            [sys.executable, "-m", "r2morph.cli", "-f", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "morph", str(ls_elf), "-o", str(output), "-m", "nop"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -91,7 +91,7 @@ class TestCLICommandsReal:
 
         output = tmp_path / "ls_all_flags"
         result = subprocess.run(
-            [sys.executable, "-m", "r2morph.cli", "-a", "-f", "-v", str(ls_elf), str(output)],
+            [sys.executable, "-m", "r2morph.cli", "morph", str(ls_elf), "-o", str(output), "-m", "nop"],
             capture_output=True,
             text=True,
             timeout=60,

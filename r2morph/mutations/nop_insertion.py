@@ -188,16 +188,10 @@ class NopInsertionPass(MutationPass):
         self.probability = self.config.get("probability", 0.5)
         self.use_creative_nops = self.config.get("use_creative_nops", True)
         self.force_different = self.config.get("force_different", False)
+        self._init_support()
 
-    def configure_for_memory_constraints(self, factor: float) -> None:
-        """Reduce NOP insertion density for memory-efficient mode."""
-        original = self.max_nops
-        self.max_nops = max(1, int(self.max_nops * factor))
-        self.config["max_nops_per_function"] = self.max_nops
-        if self.max_nops != original:
-            import logging
-
-            logging.getLogger(__name__).debug(f"Memory-efficient: reduced max_nops from {original} to {self.max_nops}")
+    def _init_support(self) -> None:
+        """Set the pass support metadata."""
         self.set_support(
             formats=("ELF", "Mach-O"),
             architectures=("x86_64", "arm64"),
@@ -223,11 +217,23 @@ class NopInsertionPass(MutationPass):
                     "expected_statuses": (
                         "real-binary-observables-match",
                         "real-binary-observable-mismatch",
+                        "bounded-only",
+                        "without-symbolic-coverage",
                     ),
                 },
             },
         )
 
+    def configure_for_memory_constraints(self, factor: float) -> None:
+        """Reduce NOP insertion density for memory-efficient mode."""
+        original = self.max_nops
+        self.max_nops = max(1, int(self.max_nops * factor))
+        self.config["max_nops_per_function"] = self.max_nops
+        if self.max_nops != original:
+            import logging
+
+            logging.getLogger(__name__).debug(f"Memory-efficient: reduced max_nops from {original} to {self.max_nops}")
+        self._init_support()
         self._init_nop_equivalents()
 
     def _is_safe_self_redundancy(self, register: str, bits: int) -> bool:
