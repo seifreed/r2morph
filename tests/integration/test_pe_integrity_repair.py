@@ -145,7 +145,7 @@ class TestPEBasicParsing:
         )
 
         optional_header = struct.pack(
-            "<HHIIIIIIIIIIIIIIIIII",
+            "<HHIIIIIIIIIIIIIIIII",
             0x10B,
             1,
             0,

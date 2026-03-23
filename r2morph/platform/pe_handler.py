@@ -474,7 +474,7 @@ class PEHandler:
         if binary is None:
             return True, []
 
-        if not binary.has_header:
+        if not getattr(binary, "has_header", True):
             issues.append("Missing PE header")
 
         sections = self.get_sections()

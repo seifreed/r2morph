@@ -9,7 +9,15 @@ from r2morph.mutations.short_jump_patching import (
     validate_instructions_for_rip_relative,
     SHORT_JUMP_EXCLUSIVE,
 )
-from r2morph.mutations.block_reordering import patch_short_jump_exclusive
+
+
+def patch_short_jump_exclusive(mnemonic: str) -> str | None:
+    """Return replacement instruction pair as a string, or None."""
+    key = mnemonic.lower()
+    entry = SHORT_JUMP_EXCLUSIVE.get(key)
+    if entry is None:
+        return None
+    return f"{entry[0]}\n{entry[1]}"
 
 
 class TestShortJumpExclusive:

@@ -1,5 +1,9 @@
 """Property-based tests for report view projection helpers."""
 
+import pytest
+
+pytest.importorskip("hypothesis")
+
 from hypothesis import given, strategies as st
 from r2morph.reporting.report_view_builder import _project_rows, _build_category_views
 
