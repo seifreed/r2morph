@@ -9,6 +9,7 @@ import random
 import shutil
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -1769,6 +1770,22 @@ class MorphEngine:
             "support_matrix": PRODUCT_SUPPORT.to_dict(),
             "support_profile": artifacts["support_profile"],
             "validation_policy": payload.get("validation_policy"),
+            "metadata": self._build_report_metadata(payload),
+        }
+
+    @staticmethod
+    def _build_report_metadata(payload: dict[str, Any]) -> dict[str, Any]:
+        import sys
+
+        from r2morph import __version__
+
+        return {
+            "tool": "r2morph",
+            "version": __version__,
+            "timestamp": datetime.now().isoformat(),
+            "duration_seconds": payload.get("execution_time_seconds", 0.0),
+            "python_version": sys.version.split()[0],
+            "platform": platform.platform(),
         }
 
     def save_report(self, output_path: str | Path, result: dict[str, Any] | None = None) -> Path:

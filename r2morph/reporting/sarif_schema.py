@@ -182,6 +182,84 @@ class SARIFFix:
 
 
 @dataclass
+class SARIFThreadFlowLocation:
+    location: SARIFLocation
+    index: int | None = None
+    state: dict[str, Any] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"location": self.location.to_dict()}
+        if self.index is not None:
+            d["index"] = self.index
+        if self.state:
+            d["state"] = self.state
+        return d
+
+
+@dataclass
+class SARIFThreadFlow:
+    locations: list[SARIFThreadFlowLocation] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"locations": [loc.to_dict() for loc in self.locations]}
+
+
+@dataclass
+class SARIFCodeFlow:
+    message: SARIFMessage | None = None
+    thread_flows: list[SARIFThreadFlow] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"threadFlows": [tf.to_dict() for tf in self.thread_flows]}
+        if self.message:
+            d["message"] = self.message.to_dict()
+        return d
+
+
+@dataclass
+class SARIFTaxonReference:
+    id: str
+    tool_component: dict[str, str] | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"id": self.id}
+        if self.tool_component:
+            d["toolComponent"] = self.tool_component
+        return d
+
+
+@dataclass
+class SARIFTaxon:
+    id: str
+    name: str
+    short_description: SARIFMessage | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"id": self.id, "name": self.name}
+        if self.short_description:
+            d["shortDescription"] = self.short_description.to_dict()
+        return d
+
+
+@dataclass
+class SARIFTaxonomy:
+    name: str
+    version: str | None = None
+    information_uri: str | None = None
+    taxa: list[SARIFTaxon] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        d: dict[str, Any] = {"name": self.name}
+        if self.version:
+            d["version"] = self.version
+        if self.information_uri:
+            d["informationUri"] = self.information_uri
+        if self.taxa:
+            d["taxa"] = [t.to_dict() for t in self.taxa]
+        return d
+
+
+@dataclass
 class SARIFResult:
     rule_id: str
     level: SARIFLevel = SARIFLevel.WARNING
@@ -189,7 +267,10 @@ class SARIFResult:
     locations: list[SARIFLocation] = field(default_factory=list)
     related_locations: list[SARIFLocation] = field(default_factory=list)
     fixes: list[SARIFFix] | None = None
+    code_flows: list[SARIFCodeFlow] | None = None
     rule_index: int | None = None
+    partial_fingerprints: dict[str, str] | None = None
+    taxa: list[SARIFTaxonReference] | None = None
     properties: dict[str, Any] | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -205,8 +286,14 @@ class SARIFResult:
             d["relatedLocations"] = [loc.to_dict() for loc in self.related_locations]
         if self.fixes:
             d["fixes"] = [fix.to_dict() for fix in self.fixes]
+        if self.code_flows:
+            d["codeFlows"] = [cf.to_dict() for cf in self.code_flows]
         if self.rule_index is not None:
             d["ruleIndex"] = self.rule_index
+        if self.partial_fingerprints:
+            d["partialFingerprints"] = self.partial_fingerprints
+        if self.taxa:
+            d["taxa"] = [t.to_dict() for t in self.taxa]
         if self.properties:
             d["properties"] = self.properties
         return d
@@ -348,6 +435,7 @@ class SARIFRun:
     results: list[SARIFResult] = field(default_factory=list)
     artifacts: list[SARIFArtifact] | None = None
     invocations: list[SARIFInvocation] | None = None
+    taxonomies: list[SARIFTaxonomy] | None = None
     original_uri_base_ids: dict[str, str] | None = None
     properties: dict[str, Any] | None = None
 
@@ -360,6 +448,8 @@ class SARIFRun:
             d["artifacts"] = [a.to_dict() for a in self.artifacts]
         if self.invocations:
             d["invocations"] = [i.to_dict() for i in self.invocations]
+        if self.taxonomies:
+            d["taxonomies"] = [t.to_dict() for t in self.taxonomies]
         if self.original_uri_base_ids:
             d["originalUriBaseIds"] = self.original_uri_base_ids
         if self.properties:
@@ -369,7 +459,7 @@ class SARIFRun:
 
 @dataclass
 class SARIFReport:
-    schema_uri: str = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json"
+    schema_uri: str = "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/main/Schemata/sarif-schema-2.1.0.json"
     version: str = "2.1.0"
     runs: list[SARIFRun] = field(default_factory=list)
     inline_external_properties: dict[str, Any] | None = None

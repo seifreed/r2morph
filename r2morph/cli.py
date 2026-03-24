@@ -810,6 +810,7 @@ def morph(
         "--clear-cache",
         help="Clear the analysis cache before running",
     ),
+    report_format: str = typer.Option("json", "--format", help="Report format: json (default) or sarif"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
 ) -> None:
     """
@@ -854,6 +855,7 @@ def morph(
         min_severity=min_severity,
         require_pass_severity=require_pass_severity,
         seed=seed,
+        report_format=report_format,
     )
 
 
@@ -876,6 +878,7 @@ def _run_morph_workflow(
     min_severity: str | None,
     require_pass_severity: list[str] | None,
     seed: int | None,
+    report_format: str = "json",
 ) -> None:
     """Execute the mutation pipeline, validate, and write results.
 
@@ -930,7 +933,8 @@ def _run_morph_workflow(
                         normalize_whitespace=runtime_normalize_whitespace,
                     )
 
-                report_path = report or output.parent / f"{output.stem}.report.json"
+                report_ext = ".sarif" if report_format.lower() == "sarif" else ".report.json"
+                report_path = report or output.parent / f"{output.stem}{report_ext}"
                 result = engine.run(
                     validation_mode=effective_validation_mode,
                     rollback_policy=rollback_policy,
@@ -951,6 +955,7 @@ def _run_morph_workflow(
                 min_severity=min_severity,
                 min_severity_rank=min_severity_rank,
                 pass_severity_requirements=pass_severity_requirements,
+                report_format=report_format,
             )
         except typer.Exit:
             raise
@@ -966,6 +971,7 @@ def _evaluate_and_write_gates(
     min_severity: str | None,
     min_severity_rank: int | None,
     pass_severity_requirements: list[tuple[str, str, int]] | None,
+    report_format: str = "json",
 ) -> None:
     """Evaluate severity gates, write report, and exit on failure."""
     severity_rows = list(report_payload.get("summary", {}).get("symbolic_severity_by_pass", []))
@@ -986,7 +992,17 @@ def _evaluate_and_write_gates(
         require_pass_severity_failures=pass_requirement_failures,
     )
     if report_path is not None:
-        report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
+        if report_format.lower() == "sarif":
+            from r2morph.reporting.sarif_formatter import format_as_sarif
+
+            sarif = format_as_sarif(
+                report_payload.get("mutations", []),
+                report_payload.get("validation", {}).get("results", []),
+                report_payload.get("input", {}).get("path", ""),
+            )
+            report_path.write_text(sarif.to_json(), encoding="utf-8")
+        else:
+            report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
     if min_severity is not None and not min_severity_passed:
         console.print(f"[bold yellow]Severity gate failed:[/bold yellow] min_severity={min_severity}")
         raise typer.Exit(1)
@@ -1070,6 +1086,7 @@ def mutate(
         help="Require a specific pass severity in the final report, e.g. InstructionSubstitution=bounded-only",
     ),
     seed: int | None = typer.Option(None, "--seed", help="Deterministic seed for mutation selection"),
+    report_format: str = typer.Option("json", "--format", help="Report format: json (default) or sarif"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
 ) -> None:
     """Alias for `morph` using the product-oriented command name."""
@@ -1091,6 +1108,7 @@ def mutate(
         min_severity=min_severity,
         require_pass_severity=require_pass_severity,
         seed=seed,
+        report_format=report_format,
         verbose=verbose,
     )
 
@@ -1345,10 +1363,10 @@ def report(
         sarif_report = format_as_sarif(mutations_list, validations_list, binary_path_str)
         if output:
             with open(output, "w", encoding="utf-8") as f:
-                f.write(str(sarif_report))
+                f.write(sarif_report.to_json())
             rprint(f"[green]SARIF report written to[/green] {output}")
         else:
-            print(str(sarif_report))
+            print(sarif_report.to_json())
         return
 
     _dispatch_report_flow(**dispatch_state)

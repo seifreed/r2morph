@@ -1,0 +1,126 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/anomalyco/r2morph/blob/main/r2morph/reporting/report_schema.json",
+  "title": "r2morph Mutation Report",
+  "description": "Machine-readable report produced by r2morph after binary mutation and validation.",
+  "type": "object",
+  "required": ["schema_version", "input", "output", "passes", "mutations", "summary", "metadata"],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "description": "Report schema version identifier."
+    },
+    "input": {
+      "type": "object",
+      "description": "Input binary metadata.",
+      "properties": {
+        "path": { "type": ["string", "null"] },
+        "arch": { "type": ["string", "null"] },
+        "bits": { "type": ["integer", "null"] },
+        "format": { "type": ["string", "null"] },
+        "functions": { "type": ["integer", "null"] }
+      }
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "working_path": { "type": ["string", "null"] }
+      }
+    },
+    "passes": {
+      "type": "object",
+      "description": "Per-pass mutation results keyed by pass name.",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "pass_name": { "type": "string" },
+          "mutations_applied": { "type": "integer" },
+          "mutations_attempted": { "type": "integer" },
+          "stability": { "type": "string", "enum": ["stable", "experimental"] },
+          "execution_time_seconds": { "type": "number" },
+          "diff_summary": {
+            "type": "object",
+            "properties": {
+              "changed_bytes": { "type": "integer" },
+              "changed_regions": { "type": "array", "items": { "type": "object" } },
+              "structural_regions": { "type": "array", "items": { "type": "object" } }
+            }
+          },
+          "validation": { "type": "object" }
+        }
+      }
+    },
+    "mutations": {
+      "type": "array",
+      "description": "Flat list of all individual mutations applied.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "address": { "type": "integer" },
+          "pass_name": { "type": "string" },
+          "original_bytes": { "description": "Hex-encoded original bytes." },
+          "mutated_bytes": { "description": "Hex-encoded mutated bytes." },
+          "function": { "type": ["string", "null"] },
+          "section": { "type": ["string", "null"] },
+          "description": { "type": ["string", "null"] },
+          "disassembly": { "type": ["string", "null"] }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "description": "Aggregated validation results.",
+      "properties": {
+        "mode": { "type": "string" },
+        "passed": { "type": "boolean" },
+        "results": { "type": "array", "items": { "type": "object" } }
+      }
+    },
+    "gate_evaluation": {
+      "type": ["object", "null"],
+      "description": "Severity gate evaluation results."
+    },
+    "gate_failures": {
+      "type": ["array", "null"],
+      "items": { "type": "object" }
+    },
+    "timings": {
+      "type": "object",
+      "properties": {
+        "execution_time_seconds": { "type": "number" },
+        "passes": { "type": "object" }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "description": "Aggregated summary of the mutation run.",
+      "properties": {
+        "schema_version": { "type": "string" },
+        "passes_run": { "type": "integer" },
+        "total_mutations": { "type": "integer" },
+        "rolled_back_passes": { "type": "integer" },
+        "failed_passes": { "type": "integer" },
+        "changed_bytes": { "type": "integer" },
+        "validation_mode": { "type": "string" },
+        "execution_time_seconds": { "type": "number" }
+      }
+    },
+    "config": {
+      "type": "object",
+      "description": "Engine configuration used for this run."
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Tool and environment metadata.",
+      "required": ["tool", "version", "timestamp"],
+      "properties": {
+        "tool": { "type": "string", "const": "r2morph" },
+        "version": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "duration_seconds": { "type": "number" },
+        "python_version": { "type": "string" },
+        "platform": { "type": "string" }
+      }
+    }
+  }
+}
