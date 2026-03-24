@@ -18,7 +18,6 @@ from enum import Enum
 import hashlib
 import logging
 
-# Type checking for optional dependencies
 try:
     import psutil
 
@@ -136,12 +135,10 @@ class ValidationFramework:
         self.test_samples: list[TestSample] = []
         self.benchmark_results: list[BenchmarkResult] = []
 
-        # Load test samples
         self._load_test_samples()
 
     def _load_test_samples(self) -> None:
         """Load predefined test samples."""
-        # Add known test samples for benchmarking purposes
         test_samples_data: list[dict[str, Any]] = [
             {
                 "file_path": str(self.test_data_dir / "vmprotect_sample.exe"),
@@ -236,7 +233,6 @@ class ValidationFramework:
         error_message = None
 
         try:
-            # Execute function
             result = func(*args, **kwargs)
 
             if HAS_PSUTIL:
@@ -282,7 +278,6 @@ class ValidationFramework:
         Returns:
             AccuracyMetrics object
         """
-        # Define comparison fields
         fields = ["packer_detected", "vm_protection", "anti_analysis", "cfo_detected", "mba_detected"]
 
         tp = fp = tn = fn = 0
@@ -386,9 +381,8 @@ class ValidationFramework:
             with Binary(sample.file_path) as bin_obj:
                 bin_obj.analyze()
 
-                # CFO Simplification
                 cfo_simplifier = CFOSimplifier(bin_obj)
-                functions = bin_obj.get_functions()[:3]  # Test on first 3 functions
+                functions = bin_obj.get_functions()[:3]
 
                 cfo_results = []
                 for func in functions:
@@ -403,10 +397,9 @@ class ValidationFramework:
                             }
                         )
 
-                # Iterative Simplification
                 iterative_simplifier = IterativeSimplifier(bin_obj)
                 iter_result = iterative_simplifier.simplify(
-                    strategy=SimplificationStrategy.ADAPTIVE, max_iterations=3, timeout=30  # Reduced for benchmarking
+                    strategy=SimplificationStrategy.ADAPTIVE, max_iterations=3, timeout=30
                 )
 
                 return {
@@ -419,7 +412,6 @@ class ValidationFramework:
                     ),
                 }
 
-        # Measure performance
         performance, analysis_result = self._measure_performance(run_devirtualization)
 
         return BenchmarkResult(
@@ -451,23 +443,19 @@ class ValidationFramework:
             with Binary(sample.file_path) as bin_obj:
                 bin_obj.analyze()
 
-                # Step 1: Detection
                 detector = ObfuscationDetector()
                 detection_result = detector.analyze_binary(bin_obj)
 
-                # Step 2: Anti-Analysis Bypass
                 bypass_framework = AntiAnalysisBypass()
                 detected_techniques = bypass_framework.detect_anti_analysis_techniques(bin_obj)
                 bypass_applied = len(detected_techniques) > 0
 
-                # Step 3: Devirtualization (if needed)
                 devirt_performed = False
                 complexity_reduction = 0.0
 
                 if detection_result.vm_detected or detection_result.control_flow_flattened:
-                    # CFO Simplification
                     cfo_simplifier = CFOSimplifier(bin_obj)
-                    functions = bin_obj.get_functions()[:2]  # Limited for performance
+                    functions = bin_obj.get_functions()[:2]
 
                     for func in functions:
                         func_addr = func.get("offset", 0)
@@ -475,7 +463,6 @@ class ValidationFramework:
                         if result.success:
                             complexity_reduction += result.original_complexity - result.simplified_complexity
 
-                    # Iterative Simplification
                     iterative_simplifier = IterativeSimplifier(bin_obj)
                     iter_result = iterative_simplifier.simplify(
                         strategy=SimplificationStrategy.CONSERVATIVE, max_iterations=2, timeout=20
@@ -563,7 +550,6 @@ class ValidationFramework:
 
             logger.info(f"Testing sample: {sample.description}")
 
-            # Run benchmarks for each category
             for category in categories:
                 try:
                     if category == BenchmarkCategory.DETECTION:
@@ -586,7 +572,6 @@ class ValidationFramework:
                 except Exception as e:
                     logger.error(f"Benchmark failed for {sample.file_path} ({category.value}): {e}")
 
-        # Generate summary
         summary = self._generate_validation_summary(results)
 
         logger.info("Validation suite completed")
@@ -628,7 +613,6 @@ class ValidationFramework:
                 "severity_breakdown": {},
             }
 
-        # Overall metrics
         total_tests = len(results)
         successful_tests = sum(1 for r in results if r.performance.success)
         success_rate = successful_tests / total_tests
@@ -639,11 +623,9 @@ class ValidationFramework:
         memory_usages = [r.performance.memory_usage_mb for r in results if r.performance.success]
         avg_memory_usage = statistics.mean(memory_usages) if memory_usages else 0.0
 
-        # Accuracy metrics (where available)
         accuracy_scores = [r.accuracy.accuracy for r in results if r.accuracy is not None]
         avg_accuracy = statistics.mean(accuracy_scores) if accuracy_scores else 0.0
 
-        # Category breakdown
         categories = {}
         for category in BenchmarkCategory:
             cat_results = [r for r in results if r.category == category]
@@ -658,7 +640,6 @@ class ValidationFramework:
                     "avg_time": statistics.mean(cat_times) if cat_times else 0.0,
                 }
 
-        # Severity breakdown
         severity_breakdown = {}
         for severity in TestSeverity:
             sev_results = [r for r in results if r.sample.severity == severity]
@@ -724,7 +705,6 @@ class ValidationFramework:
             with open(output_path, "w", newline="") as f:
                 writer = csv.writer(f)
 
-                # Header
                 writer.writerow(
                     [
                         "sample_path",
@@ -741,7 +721,6 @@ class ValidationFramework:
                     ]
                 )
 
-                # Data
                 for result in self.benchmark_results:
                     writer.writerow(
                         [
@@ -760,7 +739,6 @@ class ValidationFramework:
                     )
 
         except ImportError:
-            # Fallback to simple text format if csv module not available
             with open(output_path, "w") as f:
                 f.write("sample_path,category,success,execution_time,memory_usage_mb,timestamp\n")
                 for result in self.benchmark_results:
@@ -783,7 +761,6 @@ class ValidationFramework:
         report.append("=" * 80)
         report.append("")
 
-        # Overall Summary
         report.append("OVERALL SUMMARY")
         report.append("-" * 40)
         report.append(f"Total Tests:          {summary['total_tests']}")
@@ -794,7 +771,6 @@ class ValidationFramework:
         report.append(f"Average Accuracy:     {summary['avg_accuracy']:.1%}")
         report.append("")
 
-        # Performance Percentiles
         report.append("PERFORMANCE PERCENTILES")
         report.append("-" * 40)
         percentiles = summary["execution_time_percentiles"]
@@ -803,7 +779,6 @@ class ValidationFramework:
         report.append(f"P99:                  {percentiles['p99']:.2f}s")
         report.append("")
 
-        # Category Breakdown
         if summary["categories"]:
             report.append("CATEGORY BREAKDOWN")
             report.append("-" * 40)
@@ -814,7 +789,6 @@ class ValidationFramework:
                 report.append(f"  Avg Time:    {stats['avg_time']:.2f}s")
                 report.append("")
 
-        # Severity Breakdown
         if summary["severity_breakdown"]:
             report.append("SEVERITY BREAKDOWN")
             report.append("-" * 40)
@@ -824,7 +798,6 @@ class ValidationFramework:
                 report.append(f"  Success:     {stats['successful']} ({stats['success_rate']:.1%})")
                 report.append("")
 
-        # Recommendations
         report.append("RECOMMENDATIONS")
         report.append("-" * 40)
 
@@ -853,17 +826,14 @@ def main() -> None:
     """Example usage of the validation framework."""
     framework = ValidationFramework()
 
-    # Run validation suite
     print("Starting r2morph validation suite...")
 
     try:
         framework.run_validation_suite([BenchmarkCategory.DETECTION, BenchmarkCategory.FULL_PIPELINE])
 
-        # Generate and display report
         report = framework.generate_report()
         print(report)
 
-        # Export results
         framework.export_results("validation_results.json", "json")
         print("\nResults exported to validation_results.json")
 

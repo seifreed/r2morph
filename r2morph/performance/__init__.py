@@ -101,7 +101,6 @@ class MemoryManager:
 
         available_memory_mb = psutil.virtual_memory().available / 1024 / 1024
 
-        # Estimate memory per item (rough heuristic)
         estimated_memory_per_item = 10  # MB per binary analysis
 
         max_items_in_memory = int(available_memory_mb * 0.5 / estimated_memory_per_item)
@@ -171,7 +170,6 @@ class ParallelAnalysisEngine:
         self.memory_manager = MemoryManager(config)
         self.cache = ResultCache() if config.enable_caching else None
 
-        # Determine optimal worker count
         if config.max_workers is None:
             self.max_workers = min(8, (os.cpu_count() or 1) + 4)
         else:
@@ -182,7 +180,6 @@ class ParallelAnalysisEngine:
     def _get_cache_key(self, binary_path: str, analysis_type: str) -> str:
         """Generate cache key for analysis result."""
         try:
-            # Use file size and modification time for cache key
             stat = Path(binary_path).stat()
             return f"{analysis_type}:{binary_path}:{stat.st_size}:{stat.st_mtime}"
         except Exception:
@@ -194,7 +191,6 @@ class ParallelAnalysisEngine:
         """Analyze a single binary with caching and error handling."""
         cache_key = self._get_cache_key(binary_path, analysis_type)
 
-        # Check cache first
         if self.cache:
             cached_result = self.cache.get(cache_key)
             if cached_result is not None:
@@ -202,11 +198,8 @@ class ParallelAnalysisEngine:
                 result_dict: dict[str, Any] = cached_result
                 return result_dict
 
-        # Check memory before analysis
         if not self.memory_manager.check_memory_usage():
             self.memory_manager.trigger_gc_if_needed()
-
-            # If still over limit, return error
             if not self.memory_manager.check_memory_usage():
                 return {
                     "binary_path": binary_path,
@@ -215,13 +208,11 @@ class ParallelAnalysisEngine:
                     "analysis_type": analysis_type,
                 }
 
-        # Perform analysis
         start_time = time.time()
 
         try:
             result: dict[str, Any] = analysis_func(binary_path)
 
-            # Add metadata
             result.update(
                 {
                     "binary_path": binary_path,
@@ -231,7 +222,6 @@ class ParallelAnalysisEngine:
                 }
             )
 
-            # Cache result
             if self.cache:
                 self.cache.set(cache_key, result)
 
@@ -248,7 +238,6 @@ class ParallelAnalysisEngine:
             }
 
         finally:
-            # Trigger GC periodically
             self.memory_manager.trigger_gc_if_needed()
 
     def analyze_batch(
@@ -256,17 +245,13 @@ class ParallelAnalysisEngine:
     ) -> list[dict[str, Any]]:
         """Analyze a batch of binaries in parallel."""
         if not self.config.enable_parallel:
-            # Sequential processing
             results = []
             for binary_path in binary_paths:
                 result = self._analyze_single_binary(binary_path, analysis_func, analysis_type)
                 results.append(result)
             return results
 
-        # Parallel processing
         results = []
-
-        # Choose executor type
         executor_class: type[ProcessPoolExecutor] | type[ThreadPoolExecutor]
         if self.config.use_multiprocessing:
             executor_class = ProcessPoolExecutor
@@ -274,13 +259,11 @@ class ParallelAnalysisEngine:
             executor_class = ThreadPoolExecutor
 
         with executor_class(max_workers=self.max_workers) as executor:
-            # Submit all tasks
             future_to_path = {
                 executor.submit(self._analyze_single_binary, binary_path, analysis_func, analysis_type): binary_path
                 for binary_path in binary_paths
             }
 
-            # Collect results with timeout
             for future in as_completed(future_to_path, timeout=self.config.timeout_seconds):
                 try:
                     result = future.result()
@@ -307,12 +290,8 @@ class ParallelAnalysisEngine:
 
             logger.debug(f"Processing chunk {i//chunk_size + 1}/{(len(binary_paths) + chunk_size - 1)//chunk_size}")
 
-            # Process chunk
             chunk_results = self.analyze_batch(chunk, analysis_func, analysis_type)
-
             yield chunk_results
-
-            # Clean up between chunks
             self.memory_manager.trigger_gc_if_needed()
 
     def get_performance_stats(self) -> dict[str, Any]:
@@ -463,13 +442,11 @@ class OptimizedAnalysisFramework:
         """
         start_time = time.time()
 
-        # Filter files if incremental analysis is enabled
         if self.incremental_analyzer:
             changed_files = self.incremental_analyzer.get_changed_files(file_paths)
 
             logger.info(f"Incremental analysis: {len(changed_files)}/{len(file_paths)} files changed")
 
-            # Get cached results for unchanged files
             results = []
             for file_path in file_paths:
                 if file_path not in changed_files:
@@ -477,7 +454,6 @@ class OptimizedAnalysisFramework:
                     if cached_result:
                         results.append(cached_result)
 
-            # Only analyze changed files
             files_to_analyze = changed_files
         else:
             files_to_analyze = file_paths
@@ -486,30 +462,25 @@ class OptimizedAnalysisFramework:
         if files_to_analyze:
             logger.info(f"Analyzing {len(files_to_analyze)} files")
 
-            # Process in chunks if memory management is needed
             if len(files_to_analyze) > self.config.chunk_size:
                 for chunk_results in self.parallel_engine.analyze_chunked(
                     files_to_analyze, analysis_func, analysis_type
                 ):
                     results.extend(chunk_results)
 
-                    # Update incremental state for each chunk
                     if self.incremental_analyzer:
                         for result in chunk_results:
                             if result.get("success"):
                                 self.incremental_analyzer.update_file_state(result["binary_path"], result)
             else:
-                # Process all files at once
                 new_results = self.parallel_engine.analyze_batch(files_to_analyze, analysis_func, analysis_type)
                 results.extend(new_results)
 
-                # Update incremental state
                 if self.incremental_analyzer:
                     for result in new_results:
                         if result.get("success"):
                             self.incremental_analyzer.update_file_state(result["binary_path"], result)
 
-        # Clean up and save state
         if self.incremental_analyzer:
             self.incremental_analyzer.cleanup_missing_files(file_paths)
             self.incremental_analyzer.save()
@@ -531,7 +502,6 @@ class OptimizedAnalysisFramework:
         return stats
 
 
-# Analysis function wrappers for common operations
 def create_detection_analysis_func() -> Callable[[str], dict[str, Any]]:
     """Create detection analysis function for parallel processing."""
 
@@ -601,7 +571,6 @@ def create_devirtualization_analysis_func() -> Callable[[str], dict[str, Any]]:
 
 def main() -> None:
     """Example usage of the optimization framework."""
-    # Configuration
     config = PerformanceConfig(
         max_workers=4,
         memory_limit_mb=1024,
@@ -611,13 +580,8 @@ def main() -> None:
         chunk_size=50,
     )
 
-    # Initialize framework
     framework = OptimizedAnalysisFramework(config)
-
-    # Example file list (you would provide real file paths)
     test_files = ["dataset/simple", "dataset/loop", "dataset/conditional"]
-
-    # Filter to existing files
     existing_files = [f for f in test_files if Path(f).exists()]
 
     if not existing_files:
@@ -628,7 +592,6 @@ def main() -> None:
     print(f"Configuration: {config}")
     print(f"Files to analyze: {len(existing_files)}")
 
-    # Run detection analysis
     print("\nRunning optimized detection analysis...")
     detection_func = create_detection_analysis_func()
 
@@ -640,7 +603,6 @@ def main() -> None:
     print(f"Detection analysis completed: {successful_detections}/{len(detection_results)} successful")
     print(f"Total time: {detection_time:.2f}s")
 
-    # Run devirtualization analysis
     print("\nRunning optimized devirtualization analysis...")
     devirt_func = create_devirtualization_analysis_func()
 
@@ -652,7 +614,6 @@ def main() -> None:
     print(f"Devirtualization analysis completed: {successful_devirts}/{len(devirt_results)} successful")
     print(f"Total time: {devirt_time:.2f}s")
 
-    # Show performance statistics
     stats = framework.get_comprehensive_stats()
     print("\nPerformance Statistics:")
     for key, value in stats.items():

@@ -128,22 +128,17 @@ class PatternMatcher:
         """
         result = PatternMatchResult()
 
-        # Detect anti-debug techniques
         anti_debug_result = self._detect_anti_debug()
         result.anti_debug_detected = anti_debug_result["detected"]
         result.anti_debug_confidence = anti_debug_result["confidence"]
         result.anti_debug_apis = anti_debug_result["apis_found"]
 
-        # Detect anti-VM techniques
         anti_vm_result = self._detect_anti_vm()
         result.anti_vm_detected = anti_vm_result["detected"]
         result.anti_vm_confidence = anti_vm_result["confidence"]
         result.anti_vm_artifacts = anti_vm_result["artifacts_found"]
 
-        # Detect string encryption
         result.string_encryption_detected = self._detect_string_encryption()
-
-        # Detect import hiding
         result.import_hiding_detected = self._detect_import_hiding()
 
         return result
@@ -163,7 +158,6 @@ class PatternMatcher:
 
         assert self.binary.r2 is not None
         try:
-            # Check for anti-debug API calls
             strings_output = self.binary.r2.cmd("izz")
 
             found_apis = []
@@ -175,7 +169,6 @@ class PatternMatcher:
             result["confidence"] = min(1.0, len(found_apis) / len(self.ANTI_DEBUG_APIS))
             result["detected"] = result["confidence"] > 0.1  # At least one API found
 
-            # Check for debugger window names
             for window in self.DEBUGGER_WINDOWS:
                 if window in strings_output:
                     result["apis_found"].append(f"Window: {window}")
@@ -213,14 +206,12 @@ class PatternMatcher:
             result["confidence"] = min(1.0, len(found_artifacts) / len(self.VM_ARTIFACTS) * 2)  # Scale up
             result["detected"] = result["confidence"] > 0.1
 
-            # Check for registry key patterns
             for key in self.ANTI_ANALYSIS_REGISTRY:
                 if key.lower() in strings_output.lower():
                     result["artifacts_found"].append(f"Registry: {key}")
                     result["confidence"] = min(1.0, result["confidence"] + 0.1)
                     result["detected"] = True
 
-            # Check for hardware-based detection patterns
             hardware_patterns = [
                 "CPUID",
                 "rdtsc",
@@ -249,20 +240,17 @@ class PatternMatcher:
         """
         assert self.binary.r2 is not None
         try:
-            # Get strings from the binary
             strings_output = self.binary.r2.cmd("iz")
 
             if not strings_output:
                 return False
 
-            # Count readable vs non-readable strings
             lines = strings_output.strip().split("\n")
             total_strings = len(lines)
 
             if total_strings < 10:
                 return False
 
-            # Low string count relative to binary size might indicate encryption
             binary_size = self.binary.info.get("bin", {}).get("size", 0)
             if binary_size > 0:
                 strings_per_kb = (total_strings * 1024) / binary_size
@@ -284,13 +272,11 @@ class PatternMatcher:
         """
         assert self.binary.r2 is not None
         try:
-            # Get imports
             imports = self.binary.r2.cmd("ii")
 
             if not imports:
                 return True  # No imports at all is suspicious
 
-            # Check for dynamic loading patterns
             dynamic_load_apis = [
                 "GetProcAddress",
                 "LoadLibrary",
@@ -302,7 +288,6 @@ class PatternMatcher:
 
             has_dynamic_loading = any(api in imports for api in dynamic_load_apis)
 
-            # Few imports + dynamic loading = likely import hiding
             import_count = len(imports.strip().split("\n"))
             if import_count < 20 and has_dynamic_loading:
                 return True
@@ -334,7 +319,6 @@ class PatternMatcher:
                 if matches and matches.strip():
                     addresses = []
                     for line in matches.strip().split("\n"):
-                        # Parse address from radare2 output
                         parts = line.split()
                         if parts:
                             try:
@@ -377,7 +361,6 @@ class PatternMatcher:
 
         except Exception as e:
             logger.error(f"String search failed: {e}")
-            # Mark all as not found on error
             for term in search_terms:
                 results[term] = False
 

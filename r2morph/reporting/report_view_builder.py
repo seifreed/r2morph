@@ -9,9 +9,7 @@ from typing import Any
 
 from r2morph.reporting.report_context import ReportViews
 
-# ---------------------------------------------------------------------------
 # Shared row-projection helpers (DRY: eliminate 4x duplication per category)
-# ---------------------------------------------------------------------------
 
 
 def _project_rows(rows: list[dict[str, Any]], fields: list[str]) -> list[dict[str, Any]]:

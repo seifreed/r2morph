@@ -340,14 +340,10 @@ class PackerSignatureDatabase:
         best_confidence = 0.0
 
         try:
-            # Get binary information
             sections = binary.get_sections()
             entry_point = binary.info.get("bin", {}).get("baddr", 0)
-
-            # Read entry point bytes
             entry_bytes = self._get_entry_bytes(binary, entry_point)
 
-            # Check each signature
             for signature in self.signatures:
                 confidence = self._calculate_signature_confidence(
                     signature, sections, entry_bytes, binary, entropy_analyzer
@@ -387,7 +383,6 @@ class PackerSignatureDatabase:
         confidence = 0.0
         total_checks = 0
 
-        # Check section names
         if signature.section_names:
             section_names = [s.get("name", "") for s in sections]
             for sig_section in signature.section_names:
@@ -395,14 +390,12 @@ class PackerSignatureDatabase:
                 if any(sig_section in name for name in section_names):
                     confidence += 1.0
 
-        # Check entry point patterns
         if signature.entry_patterns and entry_bytes:
             for pattern in signature.entry_patterns:
                 total_checks += 1
                 if pattern in entry_bytes:
                     confidence += 1.0
 
-        # Check strings
         if signature.string_patterns:
             try:
                 strings_output = binary.r2.cmd("izz") if binary.r2 is not None else ""
@@ -413,7 +406,6 @@ class PackerSignatureDatabase:
             except Exception as e:
                 logger.debug(f"Failed to check string patterns: {e}")
 
-        # Check entropy
         entropy_result = entropy_analyzer.analyze_file(Path(binary.path))
         if entropy_result.overall_entropy >= signature.entropy_threshold:
             total_checks += 1
@@ -440,13 +432,11 @@ class PackerSignatureDatabase:
         }
 
         try:
-            # Analyze entropy across sections
             sections = binary.get_sections()
             high_entropy_sections = []
 
             for section in sections:
                 if section.get("size", 0) > 0:
-                    # Get section data and calculate entropy
                     addr = section.get("vaddr", 0)
                     size = min(section.get("size", 0), 1024)  # Limit for performance
 
@@ -470,13 +460,11 @@ class PackerSignatureDatabase:
                         logger.debug(f"Failed to analyze section entropy: {e}")
                         continue
 
-            # Multiple high-entropy sections suggest layered packing
             if len(high_entropy_sections) > 1:
                 result["layers_detected"] = len(high_entropy_sections)
                 result["requires_unpacking"] = True
                 result["confidence"] = min(1.0, len(high_entropy_sections) / 5.0)
 
-            # Check for nested packer signatures
             sections_list = binary.get_sections()
             entry_bytes = self._get_entry_bytes(binary, binary.info.get("bin", {}).get("baddr", 0))
 
@@ -494,7 +482,6 @@ class PackerSignatureDatabase:
                         }
                     )
 
-            # If multiple packers detected, likely layered
             if len(result["packers"]) > 1:
                 result["layers_detected"] = max(result["layers_detected"], len(result["packers"]))
                 result["requires_unpacking"] = True

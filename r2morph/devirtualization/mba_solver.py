@@ -87,7 +87,6 @@ class MBASolver:
         self.max_variables = max_variables
         self.known_patterns = self._load_mba_patterns()
 
-        # Statistics
         self.stats = {
             "expressions_analyzed": 0,
             "expressions_simplified": 0,
@@ -125,19 +124,10 @@ class MBASolver:
 
         mba = MBAExpression(expression=expression, original_form=expression)
 
-        # Extract variables
         mba.variables = self._extract_variables(expression)
-
-        # Determine complexity
         mba.complexity = self._assess_complexity(expression)
-
-        # Check if linear
         mba.is_linear = self._is_linear_mba(expression)
-
-        # Calculate degree
         mba.degree = self._calculate_polynomial_degree(expression)
-
-        # Count coefficients
         mba.coefficient_count = self._count_coefficients(expression)
 
         logger.debug(f"MBA analysis: {len(mba.variables)} vars, complexity={mba.complexity.value}")
@@ -146,14 +136,11 @@ class MBASolver:
 
     def _extract_variables(self, expression: str) -> set[str]:
         """Extract variable names from expression."""
-        # Simple regex to find variable-like tokens
         import re
 
-        # Find tokens that look like variables (letters followed by optional digits)
         var_pattern = r"\b[a-zA-Z][a-zA-Z0-9_]*\b"
         potential_vars = re.findall(var_pattern, expression)
 
-        # Filter out operators and keywords
         operators = {"and", "or", "xor", "not", "shl", "shr", "add", "sub", "mul", "div"}
         variables = set()
 
@@ -165,7 +152,6 @@ class MBASolver:
 
     def _assess_complexity(self, expression: str) -> MBAComplexity:
         """Assess the complexity of an MBA expression."""
-        # Count operators and operations
         op_count = sum(expression.count(op) for op in ["+", "-", "*", "/", "&", "|", "^", "~"])
         paren_depth = self._calculate_parentheses_depth(expression)
 
@@ -203,10 +189,7 @@ class MBASolver:
 
     def _calculate_polynomial_degree(self, expression: str) -> int:
         """Calculate polynomial degree (simplified estimation)."""
-        # Count maximum multiplication depth
         max_degree = 1
-
-        # Look for patterns like x*y*z to estimate degree
         mult_parts = expression.split("*")
         for part in mult_parts:
             var_count = len(self._extract_variables(part))
@@ -218,7 +201,6 @@ class MBASolver:
         """Count numeric coefficients in expression."""
         import re
 
-        # Find numeric constants
         number_pattern = r"\b\d+\b"
         numbers = re.findall(number_pattern, expression)
 
@@ -245,7 +227,6 @@ class MBASolver:
             mba = self.analyze_mba_expression(expression)
 
             if method == "auto":
-                # Choose best method based on expression characteristics
                 if len(mba.variables) <= 3 and mba.complexity == MBAComplexity.SIMPLE:
                     method = "truth_table"
                 elif mba.complexity == MBAComplexity.SIMPLE:
@@ -253,7 +234,6 @@ class MBASolver:
                 else:
                     method = "z3"
 
-            # Apply selected simplification method
             if method == "patterns":
                 simplified = self._simplify_with_patterns(expression)
             elif method == "z3" and Z3_AVAILABLE:
@@ -291,10 +271,8 @@ class MBASolver:
         for pattern, replacement in self.known_patterns.items():
             try:
                 if replacement == "optimize_complex":
-                    # Handle complex patterns specially
                     continue
 
-                # Apply regex substitution
                 new_expr = re.sub(pattern, replacement, simplified, flags=re.IGNORECASE)
                 if new_expr != simplified:
                     simplified = new_expr
@@ -312,22 +290,15 @@ class MBASolver:
             return None
 
         try:
-            # Create Z3 variables
             z3_vars = {}
             for var in mba.variables:
                 z3_vars[var] = z3.BitVec(var, mba.bit_width)
 
-            # Parse expression to Z3 (simplified parsing)
             z3_expr = self._parse_expression_to_z3(mba.expression, z3_vars)
 
             if z3_expr is not None:
-                # Simplify with Z3
                 simplified_z3 = z3.simplify(z3_expr)
-
-                # Convert back to string
                 simplified_str = str(simplified_z3)
-
-                # Clean up Z3 formatting
                 simplified_str = self._cleanup_z3_output(simplified_str)
 
                 return simplified_str
@@ -346,7 +317,6 @@ class MBASolver:
             # This is a very simplified parser - a real implementation would need
             # a proper expression parser for MBA expressions
 
-            # Handle simple binary operations
             for op in ["+", "-", "*", "&", "|", "^"]:
                 if op in expression:
                     parts = expression.split(op, 1)
@@ -354,7 +324,6 @@ class MBASolver:
                         left = parts[0].strip()
                         right = parts[1].strip()
 
-                        # Recursively parse operands
                         left_z3 = self._parse_operand_to_z3(left, z3_vars)
                         right_z3 = self._parse_operand_to_z3(right, z3_vars)
 
@@ -372,7 +341,6 @@ class MBASolver:
                             elif op == "^":
                                 return left_z3 ^ right_z3
 
-            # Single operand
             return self._parse_operand_to_z3(expression, z3_vars)
 
         except Exception as e:
@@ -383,11 +351,9 @@ class MBASolver:
         """Parse single operand to Z3."""
         operand = operand.strip()
 
-        # Check if it's a variable
         if operand in z3_vars:
             return z3_vars[operand]
 
-        # Check if it's a number
         try:
             num = int(operand)
             return z3.BitVecVal(num, 64)
@@ -398,10 +364,7 @@ class MBASolver:
 
     def _cleanup_z3_output(self, z3_output: str) -> str:
         """Clean up Z3 output formatting."""
-        # Remove Z3-specific formatting
         cleaned = z3_output.replace("BitVecRef", "").replace("BitVecVal", "")
-
-        # Simplify bit vector operations
         cleaned = re.sub(r"\b(\w+)#64\b", r"\1", cleaned)
 
         return cleaned.strip()
@@ -412,23 +375,19 @@ class MBASolver:
             return None
 
         try:
-            # Generate truth table for all variable combinations
             variables = list(mba.variables)
             n_vars = len(variables)
 
             if n_vars == 0:
                 return None
 
-            # Evaluate expression for all input combinations
             truth_table = {}
 
             for i in range(2**n_vars):
-                # Create variable assignment
                 assignment = {}
                 for j, var in enumerate(variables):
                     assignment[var] = (i >> j) & 1
 
-                # Evaluate expression
                 try:
                     result = self._evaluate_expression(mba.expression, assignment)
                     truth_table[tuple(assignment[var] for var in variables)] = result
@@ -436,7 +395,6 @@ class MBASolver:
                     logger.debug(f"Expression evaluation failed: {e}")
                     return None
 
-            # Try to find a simpler equivalent expression
             simplified = self._find_simple_equivalent(truth_table, variables)
             return simplified
 
@@ -448,12 +406,10 @@ class MBASolver:
         """Evaluate expression with given variable assignment using safe AST evaluation."""
         import ast
 
-        # Replace variables with their values
         expr = expression
         for var, value in assignment.items():
             expr = expr.replace(var, str(value))
 
-        # Normalize operators for parsing
         expr = expr.replace("&", " & ").replace("|", " | ").replace("^", " ^ ")
 
         try:
@@ -505,35 +461,27 @@ class MBASolver:
 
     def _find_simple_equivalent(self, truth_table: dict[tuple, int], variables: list[str]) -> str | None:
         """Find simple equivalent expression from truth table."""
-        # Try simple patterns first
-
-        # Check if always 0 or 1
         values = list(truth_table.values())
         if all(v == 0 for v in values):
             return "0"
         if all(v == 1 for v in values):
             return "1"
 
-        # Check if equals one of the variables
         for i, var in enumerate(variables):
             if all(truth_table[inputs] == inputs[i] for inputs in truth_table):
                 return var
 
-        # Check simple operations between first two variables
         if len(variables) >= 2:
             var1, var2 = variables[0], variables[1]
 
-            # Check XOR
             xor_match = all(truth_table[inputs] == (inputs[0] ^ inputs[1]) for inputs in truth_table)
             if xor_match:
                 return f"{var1} ^ {var2}"
 
-            # Check AND
             and_match = all(truth_table[inputs] == (inputs[0] & inputs[1]) for inputs in truth_table)
             if and_match:
                 return f"{var1} & {var2}"
 
-            # Check OR
             or_match = all(truth_table[inputs] == (inputs[0] | inputs[1]) for inputs in truth_table)
             if or_match:
                 return f"{var1} | {var2}"
@@ -553,7 +501,6 @@ class MBASolver:
 
     def _generate_native_equivalent(self, simplified_expr: str) -> str | None:
         """Generate equivalent native assembly code."""
-        # Map simple expressions to assembly
         if simplified_expr == "0":
             return "xor eax, eax"
         elif simplified_expr == "1":

@@ -111,7 +111,6 @@ class AntiAnalysisBypass:
         self.environment_backup: dict[str, str] = {}
         self.is_windows = os.name == "nt"
 
-        # Performance monitoring
         self.timing_baseline: dict[str, float] = {}
         self.api_call_counts: dict[str, int] = {}
 
@@ -132,7 +131,6 @@ class AntiAnalysisBypass:
         try:
             logger.info("Detecting anti-analysis techniques")
 
-            # Analyze binary for anti-analysis patterns
             for pattern in self.patterns:
                 confidence = self._check_pattern_match(pattern, binary)
 
@@ -140,7 +138,6 @@ class AntiAnalysisBypass:
                     results[pattern.technique_type] = max(results.get(pattern.technique_type, 0.0), confidence)
                     logger.debug(f"Detected {pattern.name} with confidence {confidence:.2f}")
 
-            # Runtime detection
             runtime_results = self._detect_runtime_anti_analysis()
             for technique, confidence in runtime_results.items():
                 results[technique] = max(results.get(technique, 0.0), confidence)
@@ -165,10 +162,8 @@ class AntiAnalysisBypass:
         try:
             logger.info(f"Applying bypasses for {len(detected_techniques)} detected techniques")
 
-            # Backup current environment
             self._backup_environment()
 
-            # Apply bypasses based on detected techniques
             for technique, confidence in detected_techniques.items():
                 bypass_methods = self._get_bypass_methods(technique)
 
@@ -181,11 +176,9 @@ class AntiAnalysisBypass:
                     except Exception as e:
                         result.warnings.append(f"Failed to apply {bypass_method.value}: {e}")
 
-            # Calculate overall bypass confidence
             if result.techniques_applied:
                 result.bypass_confidence = min(1.0, len(result.techniques_applied) / len(detected_techniques))
 
-            # Save environment state
             result.environment_state = self._get_environment_state()
             result.active_bypasses = self.active_bypasses.copy()
 
@@ -200,7 +193,6 @@ class AntiAnalysisBypass:
         """Load known anti-analysis patterns."""
         patterns = []
 
-        # Debugger detection patterns
         patterns.append(
             AntiAnalysisPattern(
                 name="IsDebuggerPresent",
@@ -219,7 +211,6 @@ class AntiAnalysisBypass:
             )
         )
 
-        # VM detection patterns
         patterns.append(
             AntiAnalysisPattern(
                 name="VMware Detection",
@@ -251,7 +242,6 @@ class AntiAnalysisBypass:
             )
         )
 
-        # Sandbox detection patterns
         patterns.append(
             AntiAnalysisPattern(
                 name="Cuckoo Sandbox",
@@ -272,7 +262,6 @@ class AntiAnalysisBypass:
             )
         )
 
-        # Timing attack patterns
         patterns.append(
             AntiAnalysisPattern(
                 name="Sleep/Delay Evasion",
@@ -282,7 +271,6 @@ class AntiAnalysisBypass:
             )
         )
 
-        # Process inspection patterns
         patterns.append(
             AntiAnalysisPattern(
                 name="Process Enumeration",
@@ -292,7 +280,6 @@ class AntiAnalysisBypass:
             )
         )
 
-        # API hooking detection
         patterns.append(
             AntiAnalysisPattern(
                 name="API Hook Detection",
@@ -311,7 +298,6 @@ class AntiAnalysisBypass:
         matches = 0
 
         try:
-            # Check API calls
             if pattern.api_calls:
                 imports = binary.get_imports()
                 import_names = [imp.get("name", "") for imp in imports]
@@ -321,7 +307,6 @@ class AntiAnalysisBypass:
                     if any(api_call.lower() in name.lower() for name in import_names):
                         matches += 1
 
-            # Check strings
             if pattern.string_patterns:
                 strings_output = binary.r2.cmd("izz")
 
@@ -330,7 +315,6 @@ class AntiAnalysisBypass:
                     if string_pattern.lower() in strings_output.lower():
                         matches += 1
 
-            # Calculate confidence
             if total_checks > 0:
                 confidence = matches / total_checks
 
@@ -344,7 +328,6 @@ class AntiAnalysisBypass:
         results = {}
 
         try:
-            # Check for debugger processes
             if PSUTIL_AVAILABLE:
                 debugger_processes = [
                     "ollydbg.exe",
@@ -366,12 +349,10 @@ class AntiAnalysisBypass:
                         1.0, debugger_count / len(debugger_processes) * 3
                     )
 
-            # Check VM indicators
             vm_confidence = self._check_vm_environment()
             if vm_confidence > 0:
                 results[AntiAnalysisType.VM_DETECTION] = vm_confidence
 
-            # Check timing
             timing_confidence = self._check_timing_manipulation()
             if timing_confidence > 0:
                 results[AntiAnalysisType.TIMING_ATTACKS] = timing_confidence
@@ -388,19 +369,15 @@ class AntiAnalysisBypass:
         try:
             vm_indicators = []
 
-            # Check system info
             if PSUTIL_AVAILABLE:
-                # CPU count (VMs often have fewer cores)
                 cpu_count = psutil.cpu_count()
                 if cpu_count is not None and cpu_count <= 2:
                     vm_indicators.append("low_cpu_count")
 
-                # Memory (VMs often have limited memory)
                 memory = psutil.virtual_memory().total
                 if memory < 2 * 1024 * 1024 * 1024:  # Less than 2GB
                     vm_indicators.append("low_memory")
 
-            # Check for VM files
             vm_files = [
                 "C:\\Windows\\System32\\drivers\\vmmouse.sys",
                 "C:\\Windows\\System32\\drivers\\vmhgfs.sys",
@@ -412,7 +389,6 @@ class AntiAnalysisBypass:
                 if os.path.exists(vm_file):
                     vm_indicators.append(f"vm_file:{vm_file}")
 
-            # Calculate confidence
             if vm_indicators:
                 confidence = min(1.0, len(vm_indicators) / 5.0)
 
@@ -424,7 +400,6 @@ class AntiAnalysisBypass:
     def _check_timing_manipulation(self) -> float:
         """Check for timing manipulation."""
         try:
-            # Measure timing precision
             start_time = time.perf_counter()
             time.sleep(0.001)  # 1ms sleep
             end_time = time.perf_counter()
@@ -432,7 +407,6 @@ class AntiAnalysisBypass:
             actual_delay = end_time - start_time
             expected_delay = 0.001
 
-            # If timing is off by more than 50%, might be manipulation
             deviation = abs(actual_delay - expected_delay) / expected_delay
             return min(1.0, deviation)
 
@@ -490,7 +464,6 @@ class AntiAnalysisBypass:
     def _apply_environment_masking(self) -> bool:
         """Apply environment masking bypass."""
         try:
-            # Modify environment variables to hide analysis environment
             masking_vars = {
                 "USERNAME": "Administrator",
                 "COMPUTERNAME": "DESKTOP-PC",
@@ -512,8 +485,6 @@ class AntiAnalysisBypass:
     def _apply_api_redirection(self) -> bool:
         """Apply API redirection bypass."""
         try:
-            # Advanced DLL injection and API hooking implementation
-            # Log successful bypass application
             logger.debug("API redirection bypass applied")
             self.active_bypasses["api_redirection"] = True
             return True
@@ -525,7 +496,6 @@ class AntiAnalysisBypass:
     def _apply_timing_manipulation(self) -> bool:
         """Apply timing manipulation bypass."""
         try:
-            # Store baseline timing for manipulation
             self.timing_baseline = {"start_time": time.time(), "perf_counter": time.perf_counter()}
 
             self.active_bypasses["timing_manipulation"] = self.timing_baseline
@@ -539,8 +509,6 @@ class AntiAnalysisBypass:
     def _apply_registry_spoofing(self) -> bool:
         """Apply registry spoofing bypass."""
         try:
-            # Advanced registry redirection implementation
-            # Log successful bypass application
             logger.debug("Registry spoofing bypass applied")
             self.active_bypasses["registry_spoofing"] = True
             return True
@@ -552,7 +520,6 @@ class AntiAnalysisBypass:
     def _apply_filesystem_hooks(self) -> bool:
         """Apply filesystem hooks bypass."""
         try:
-            # Advanced filesystem redirection implementation
             logger.debug("Filesystem hooks bypass applied")
             self.active_bypasses["filesystem_hooks"] = True
             return True
@@ -564,7 +531,6 @@ class AntiAnalysisBypass:
     def _apply_process_hiding(self) -> bool:
         """Apply process hiding bypass."""
         try:
-            # Advanced process manipulation implementation
             logger.debug("Process hiding bypass applied")
             self.active_bypasses["process_hiding"] = True
             return True
@@ -576,7 +542,6 @@ class AntiAnalysisBypass:
     def _apply_hardware_emulation(self) -> bool:
         """Apply hardware emulation bypass."""
         try:
-            # Advanced hardware virtualization implementation
             logger.debug("Hardware emulation bypass applied")
             self.active_bypasses["hardware_emulation"] = True
             return True
@@ -605,14 +570,12 @@ class AntiAnalysisBypass:
     def restore_environment(self) -> bool:
         """Restore original environment state."""
         try:
-            # Restore environment variables
             for var, value in self.environment_backup.items():
                 if value:
                     os.environ[var] = value
                 elif var in os.environ:
                     del os.environ[var]
 
-            # Clear active bypasses
             self.active_bypasses.clear()
             self.timing_baseline.clear()
 

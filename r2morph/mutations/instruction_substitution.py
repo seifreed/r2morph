@@ -104,18 +104,15 @@ class InstructionSubstitutionPass(MutationPass):
 
         Rules are loaded from YAML files in the equivalences/ directory.
         """
-        # Load rules from YAML files for each supported architecture
         self.equivalence_groups = {
             "x86": load_equivalence_rules("x86"),
             "arm": load_equivalence_rules("arm"),
         }
 
-        # Shuffle each group for randomness (r2morph-style re-seeding)
         for arch in self.equivalence_groups:
             for group in self.equivalence_groups[arch]:
                 random.shuffle(group)
 
-        # Build pattern-to-group lookup table
         self.pattern_to_group: dict[str, dict[str, int]] = {}
         for arch, groups in self.equivalence_groups.items():
             if arch not in self.pattern_to_group:

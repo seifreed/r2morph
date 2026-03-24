@@ -861,7 +861,6 @@ class DiffView:
         if mutation.description:
             self.console.print(f"[dim]{mutation.description}[/dim]")
 
-        # Show original bytes
         orig_hex = mutation.original_bytes.hex() if mutation.original_bytes else "N/A"
         mut_hex = mutation.mutated_bytes.hex() if mutation.mutated_bytes else "N/A"
 
@@ -874,7 +873,6 @@ class DiffView:
 
         self.console.print(table)
 
-        # Show byte differences
         if mutation.original_bytes and mutation.mutated_bytes:
             diff_table = Table(title="Byte Differences", show_header=True)
             diff_table.add_column("Offset", style="dim")
@@ -896,7 +894,6 @@ class DiffView:
 
             self.console.print(diff_table)
 
-        # Navigation hints
         self.console.print("\n[dim]n: next | p: previous | q: quit[/dim]")
 
     def _render_basic(self) -> None:

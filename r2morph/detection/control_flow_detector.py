@@ -65,24 +65,17 @@ class ControlFlowAnalyzer:
         """
         result = ControlFlowAnalysisResult()
 
-        # Detect control flow flattening
         result.cff_confidence = self._detect_control_flow_flattening()
         result.cff_detected = result.cff_confidence > 0.3
-
-        # Detect opaque predicates
         result.opaque_predicates_count = self._detect_opaque_predicates()
-
-        # Detect MBA patterns
         result.mba_expressions_count = self._detect_mba_patterns()
 
-        # Detect virtualization
         vm_result = self._detect_virtualization()
         result.vm_detected = vm_result["detected"]
         result.vm_confidence = vm_result["confidence"]
         result.vm_handler_count = vm_result["handler_count"]
         result.vm_indicators = vm_result["indicators"]
 
-        # Detect metamorphic code
         meta_result = self._detect_metamorphic_engine()
         result.metamorphic_detected = meta_result["detected"]
         result.metamorphic_confidence = meta_result["confidence"]
@@ -120,7 +113,6 @@ class ControlFlowAnalyzer:
                 try:
                     blocks = self.binary.get_basic_blocks(func_addr)
                     if len(blocks) > 20:  # Many basic blocks might indicate flattening
-                        # Check for dispatcher pattern (switch-like structure)
                         dispatcher_found = self._check_dispatcher_pattern(blocks)
                         if dispatcher_found:
                             cff_indicators += 1
@@ -141,7 +133,6 @@ class ControlFlowAnalyzer:
     def _check_dispatcher_pattern(self, blocks: list[dict[str, Any]]) -> bool:
         """Check for control flow dispatcher pattern."""
         try:
-            # Look for blocks with many successors (dispatcher characteristic)
             for block in blocks:
                 block_addr = block.get("addr", 0)
                 if block_addr == 0:
@@ -149,7 +140,6 @@ class ControlFlowAnalyzer:
 
                 instructions = self.binary.get_function_disasm(block_addr)
 
-                # Look for switch/jump table patterns
                 for inst in instructions:
                     disasm = inst.get("disasm", "").lower()
                     if ("jmp" in disasm and "[" in disasm) or "switch" in disasm:
@@ -181,15 +171,11 @@ class ControlFlowAnalyzer:
                 try:
                     instructions = self.binary.get_function_disasm(func_addr)
 
-                    # Look for suspicious conditional patterns
                     for i, inst in enumerate(instructions):
                         disasm = inst.get("disasm", "").lower()
 
-                        # Look for comparisons followed by predictable branches
                         if "cmp" in disasm and i + 1 < len(instructions):
-                            # Check for obvious always-true/false conditions
                             if "cmp" in disasm:
-                                # Simple heuristic: same register compared with itself
                                 parts = disasm.split(None, 1)
                                 if len(parts) == 2:
                                     operands = [op.strip() for op in parts[1].split(",")]
@@ -225,7 +211,6 @@ class ControlFlowAnalyzer:
                 try:
                     instructions = self.binary.get_function_disasm(func_addr)
 
-                    # Look for MBA patterns: complex arithmetic with boolean operations
                     bool_ops = 0
                     arith_ops = 0
 
@@ -238,7 +223,6 @@ class ControlFlowAnalyzer:
                         if any(op in disasm for op in ["add", "sub", "mul", "imul"]):
                             arith_ops += 1
 
-                    # MBA typically has high mix of boolean and arithmetic operations
                     if bool_ops > 5 and arith_ops > 5 and len(instructions) > 0:
                         mix_ratio = (bool_ops + arith_ops) / len(instructions)
                         if mix_ratio > 0.4:  # More than 40% boolean/arithmetic mix
@@ -275,7 +259,6 @@ class ControlFlowAnalyzer:
             if total_functions == 0:
                 return result
 
-            # Look for VM characteristics
             for func in functions[:20]:  # Check first 20 functions
                 func_addr = self._get_function_address(func)
                 if func_addr == 0:
@@ -284,22 +267,18 @@ class ControlFlowAnalyzer:
                 try:
                     instructions = self.binary.get_function_disasm(func_addr)
 
-                    # VM indicator patterns
                     indirect_jumps = 0
                     table_accesses = 0
 
                     for inst in instructions:
                         disasm = inst.get("disasm", "").lower()
 
-                        # Indirect jumps through registers/memory
                         if "jmp" in disasm and any(reg in disasm for reg in ["eax", "ebx", "ecx", "edx", "rax", "rbx"]):
                             indirect_jumps += 1
 
-                        # Memory table accesses
                         if "mov" in disasm and "[" in disasm and "+" in disasm:
                             table_accesses += 1
 
-                    # High ratio of indirect jumps suggests VM
                     if len(instructions) > 0:
                         indirect_ratio = indirect_jumps / len(instructions)
                         if indirect_ratio > 0.1:  # More than 10% indirect jumps
@@ -338,7 +317,6 @@ class ControlFlowAnalyzer:
         assert self.binary.r2 is not None
         assert self.binary.r2 is not None
         try:
-            # Look for VM-specific patterns
             patterns = {
                 "register_based": [
                     b"\x8b\x45\xfc",  # mov eax, [ebp-4] - stack access
@@ -354,7 +332,6 @@ class ControlFlowAnalyzer:
                 ],
             }
 
-            # Check for each pattern type
             for vm_type, type_patterns in patterns.items():
                 pattern_count = 0
 
@@ -371,9 +348,7 @@ class ControlFlowAnalyzer:
                     result["indicators"].append(f"Found {pattern_count} {vm_type} VM patterns")
                     break
 
-            # Additional heuristics
             if not result["detected"]:
-                # Check for computed jump tables
                 jump_table_patterns = [
                     b"\xff\x24\x85",  # jmp [table + reg*4]
                     b"\xff\x24\x95",  # jmp [table + reg*4] variant
@@ -424,7 +399,6 @@ class ControlFlowAnalyzer:
 
                     ops = instructions["ops"]
 
-                    # Look for metamorphic indicators
                     dead_code_count = 0
                     nop_count = 0
                     redundant_moves = 0

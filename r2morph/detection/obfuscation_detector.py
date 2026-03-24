@@ -88,21 +88,17 @@ class ObfuscationDetector:
 
         result = ObfuscationAnalysisResult()
 
-        # Ensure binary is analyzed
         if not binary.is_analyzed():
             binary.analyze()
 
         cf_analyzer = ControlFlowAnalyzer(binary)
         pattern_matcher = PatternMatcher(binary)
 
-        # 1. Packer detection
         result.packer_detected = self.packer_db.detect(binary, self.entropy_analyzer)
 
-        # 2. Entropy analysis
         entropy_result = self.entropy_analyzer.analyze_file(Path(binary.path))
         result.analysis_details["entropy"] = entropy_result
 
-        # 3. Control flow analysis (CFF, opaque predicates, MBA, VM)
         cf_result = cf_analyzer.analyze()
 
         if cf_result.cff_detected:
@@ -127,7 +123,6 @@ class ObfuscationDetector:
             result.obfuscation_techniques.append(ObfuscationType.OPAQUE_PREDICATES)
             result.confidence_scores["opaque_predicates"] = min(1.0, result.opaque_predicates_found / 5.0)
 
-        # 4. Pattern matching (anti-debug, anti-VM)
         pattern_result = pattern_matcher.scan()
 
         if pattern_result.anti_debug_detected:
@@ -147,7 +142,6 @@ class ObfuscationDetector:
             result.obfuscation_techniques.append(ObfuscationType.IMPORT_HIDING)
             result.confidence_scores["import_hiding"] = 0.7
 
-        # 5. Determine analysis requirements
         result.requires_devirtualization = result.vm_detected or result.packer_detected in [
             PackerType.VMPROTECT,
             PackerType.THEMIDA,
@@ -235,7 +229,6 @@ class ObfuscationDetector:
         try:
             report["timestamp"] = datetime.datetime.now().isoformat()
 
-            # Basic binary info
             report["binary_info"] = {
                 "path": binary.filepath if hasattr(binary, "filepath") else "unknown",
                 "format": binary.info.get("bin", {}).get("class", "unknown"),
@@ -243,7 +236,6 @@ class ObfuscationDetector:
                 "bits": binary.info.get("bin", {}).get("bits", 0),
             }
 
-            # Comprehensive analysis
             basic_result = self.analyze_binary(binary)
             report["obfuscation_analysis"] = {
                 "packer_detected": basic_result.packer_detected.value,
@@ -257,12 +249,10 @@ class ObfuscationDetector:
                 "requires_dynamic_analysis": basic_result.requires_dynamic_analysis,
             }
 
-            # Extended analysis
             report["virtualization_analysis"] = self.detect_custom_virtualizer(binary)
             report["layer_analysis"] = self.detect_code_packing_layers(binary)
             report["metamorphic_analysis"] = self.detect_metamorphic_engine(binary)
 
-            # Generate recommendations
             recommendations = []
 
             if basic_result.vm_detected:

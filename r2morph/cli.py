@@ -659,7 +659,6 @@ def analyze_enhanced(
 
     with console.status("[bold green]Analyzing obfuscated binary..."):
         try:
-            # Configure analysis options
             options = AnalysisOptions(
                 verbose=verbose,
                 detect_only=detect_only,

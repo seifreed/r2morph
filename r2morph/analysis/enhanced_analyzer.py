@@ -119,7 +119,6 @@ class EnhancedAnalysisOrchestrator:
         self._detector = ObfuscationDetector()
         self.results.detection_result = self._detector.analyze_binary(self._binary)
 
-        # Extended detection
         self.results.custom_vm = self._detector.detect_custom_virtualizer(self._binary)
         self.results.layers = self._detector.detect_code_packing_layers(self._binary)
         self.results.metamorphic = self._detector.detect_metamorphic_engine(self._binary)
@@ -137,7 +136,6 @@ class EnhancedAnalysisOrchestrator:
         if result is None:
             return
 
-        # Main detection table
         table = Table(title=f"Enhanced Analysis: {self.binary_path.name}")
         table.add_column("Detection", style="cyan")
         table.add_column("Result", style="green")
@@ -152,7 +150,6 @@ class EnhancedAnalysisOrchestrator:
 
         self.console.print(table)
 
-        # Extended detection info
         self.console.print("\n[bold cyan]Extended Detection:[/bold cyan]")
 
         if self.results.custom_vm.get("detected"):
@@ -168,7 +165,6 @@ class EnhancedAnalysisOrchestrator:
             poly_ratio = self.results.metamorphic.get("polymorphic_ratio", 0)
             self.console.print(f"  Metamorphic Engine: {poly_ratio:.1%}")
 
-        # Obfuscation techniques list
         if result.obfuscation_techniques:
             self.console.print("\n[bold cyan]Obfuscation Techniques:[/bold cyan]")
             for i, technique in enumerate(result.obfuscation_techniques[:10], 1):
@@ -335,13 +331,11 @@ class EnhancedAnalysisOrchestrator:
         try:
             rewriter = BinaryRewriter(self._binary)
 
-            # Set up output path
             if self.output_dir:
                 output_path = self.output_dir / f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
             else:
                 output_path = self.binary_path.parent / f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
 
-            # Add example patches
             functions = self._binary.get_functions()[:3]
             patches_added = 0
             for func in functions:
@@ -349,7 +343,6 @@ class EnhancedAnalysisOrchestrator:
                 if rewriter.add_patch(func_addr, ["nop"]):
                     patches_added += 1
 
-            # Perform rewriting
             rewrite_result = rewriter.rewrite_binary(str(output_path))
 
             if rewrite_result.success:
@@ -449,7 +442,6 @@ class EnhancedAnalysisOrchestrator:
         if layers_detected > 1:
             self.console.print("  - Multiple packing layers detected - iterative unpacking recommended")
 
-        # Check if binary appears lightly obfuscated
         if not any(
             [
                 result.vm_detected,
@@ -474,10 +466,7 @@ class EnhancedAnalysisOrchestrator:
             options = AnalysisOptions()
 
         try:
-            # Load the binary
             self._load_binary()
-
-            # Step 1: Enhanced Obfuscation Detection
             self.run_detection()
             self.display_detection_results(verbose=options.verbose)
 
@@ -486,42 +475,31 @@ class EnhancedAnalysisOrchestrator:
 
             result = self.results.detection_result
 
-            # Step 2: Anti-Analysis Bypass
             if options.bypass:
                 self.run_anti_analysis_bypass()
 
-            # Step 3: Advanced Analysis
-
-            # Control Flow Obfuscation Simplification
             if result.control_flow_flattened or options.devirt:
                 self.run_cfo_simplification()
 
-            # Iterative Simplification
             if options.iterative:
                 self.run_iterative_simplification(max_iterations=options.max_iterations, timeout=options.timeout)
 
-            # Symbolic Execution
             if options.symbolic and result.vm_detected:
                 self.run_symbolic_analysis()
 
-            # Dynamic Instrumentation
             if options.dynamic:
                 self.run_dynamic_analysis()
 
-            # Binary Rewriting
             if options.rewrite:
                 self.run_binary_rewriting()
 
-            # Display analysis results summary
             self.display_analysis_results()
 
-            # Step 4: Comprehensive Report
             report = self.generate_report()
 
             if self.output_dir:
                 self.save_report(report)
 
-            # Step 5: Recommendations
             self.display_recommendations()
 
             self.console.print("\n[bold green]Phase 2 Analysis Complete![/bold green]")

@@ -72,11 +72,9 @@ def _expand_group(group: dict) -> list[list[str]]:
     if not instructions:
         return []
 
-    # If no registers defined, return as a single group
     if not registers:
         return [instructions]
 
-    # Expand templates for each register
     expanded_groups = []
     for reg in registers:
         expanded_instructions = []
@@ -100,10 +98,8 @@ def _expand_template(instruction: str, register: str, mappings: dict) -> str:
     Returns:
         Expanded instruction string
     """
-    # Replace the main register placeholder
     result = instruction.replace("{reg}", register)
 
-    # Replace any additional mapped placeholders
     for placeholder, value in mappings.items():
         result = result.replace("{" + placeholder + "}", value)
 

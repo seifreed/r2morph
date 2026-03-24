@@ -127,7 +127,6 @@ class DeadCodeInjectionPass(MutationPass):
         )
 
         for func in functions:
-            # Skip tiny functions
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
 
@@ -177,25 +176,21 @@ class DeadCodeInjectionPass(MutationPass):
         if not instructions:
             return 0, 0
 
-        # Find injection points: padding regions or bytes after unconditional transfers
         injection_points = self._find_injection_points(instructions)
 
         if not injection_points:
             return 0, 0
 
-        # Limit injections per function
         num_to_inject = min(self.max_injections, len(injection_points))
         selected_points = random.sample(injection_points, num_to_inject)
 
         for point in selected_points:
-            # Apply probability filter
             if random.random() > self.probability:
                 continue
 
             inject_addr = point["addr"]
             available_size = point["size"]
 
-            # Generate dead code that fits in the available space
             dead_code = self._generate_dead_code_for_size(binary, available_size, func_addr)
 
             if not dead_code:
@@ -211,7 +206,6 @@ class DeadCodeInjectionPass(MutationPass):
             if not original_bytes:
                 original_bytes = b"\x90" * available_size
 
-            # Write the dead code bytes
             success = binary.write_bytes(inject_addr, dead_code)
 
             if success:
@@ -275,13 +269,11 @@ class DeadCodeInjectionPass(MutationPass):
             insn = instructions[i]
             mnemonic = insn.get("mnemonic", "").lower()
 
-            # Strategy 1: Find padding sequences (consecutive NOPs/INT3s)
             if mnemonic in self.PADDING_INSTRUCTIONS:
                 padding_start = insn.get("offset", insn.get("addr", 0))
                 padding_size = insn.get("size", 1)
                 j = i + 1
 
-                # Accumulate consecutive padding instructions
                 while j < len(instructions):
                     next_insn = instructions[j]
                     next_mnemonic = next_insn.get("mnemonic", "").lower()
@@ -292,7 +284,6 @@ class DeadCodeInjectionPass(MutationPass):
                     padding_size += next_insn.get("size", 1)
                     j += 1
 
-                # Only consider if we have enough space
                 if padding_size >= self.min_padding_size:
                     injection_points.append(
                         {
@@ -305,19 +296,14 @@ class DeadCodeInjectionPass(MutationPass):
                 i = j
                 continue
 
-            # Strategy 2: Look for unreachable code after unconditional transfers
             if mnemonic in UNCONDITIONAL_TRANSFERS:
-                # Check if there are instructions after this that aren't jump targets
                 if i + 1 < len(instructions):
                     next_insn = instructions[i + 1]
                     next_insn.get("offset", next_insn.get("addr", 0))
                     next_mnemonic = next_insn.get("mnemonic", "").lower()
 
-                    # If next instruction is padding, it's likely unreachable
                     if next_mnemonic in self.PADDING_INSTRUCTIONS:
-                        # This will be caught by Strategy 1 on next iteration
                         pass
-                    # Could extend to detect other unreachable patterns here
 
             i += 1
 
@@ -342,7 +328,6 @@ class DeadCodeInjectionPass(MutationPass):
         """
         mnemonic = insn.get("mnemonic", "").lower()
 
-        # Padding instructions are always safe to overwrite
         if mnemonic in self.PADDING_INSTRUCTIONS:
             return True
 
@@ -351,9 +336,6 @@ class DeadCodeInjectionPass(MutationPass):
             prev_mnemonic = prev_insn.get("mnemonic", "").lower()
 
             if prev_mnemonic in UNCONDITIONAL_TRANSFERS:
-                # This instruction follows an unconditional jump/ret
-                # It's potentially dead code (unless it's a jump target)
-                # For safety, only allow if it's also padding
                 return mnemonic in self.PADDING_INSTRUCTIONS
 
         return False
@@ -373,45 +355,36 @@ class DeadCodeInjectionPass(MutationPass):
         Returns:
             Assembled bytes or None if cannot fit
         """
-        # Get architecture info
         arch_family, bits = binary.get_arch_family()
 
-        # Try to generate code that fits
         for _attempt in range(5):  # Multiple attempts with different random choices
             dead_code_insns = self._generate_dead_code(binary)
 
-            # Filter out labels and directives (they can't be assembled directly)
             assemblable_insns = [
                 insn for insn in dead_code_insns if not insn.startswith(".") and not insn.endswith(":")
             ]
 
             if not assemblable_insns:
-                # Fall back to NOPs if no assemblable instructions
                 return self._generate_nop_sequence(max_size, arch_family, bits)
 
-            # Try to assemble and check size
             assembled_bytes: bytes | None = b""
             for insn in assemblable_insns:
                 insn_bytes = binary.assemble(insn, func_addr)
                 if insn_bytes is None:
-                    # Assembly failed, try next instruction set
                     assembled_bytes = None
                     break
                 assembled_bytes += insn_bytes
 
-                # Stop if we've exceeded the size
                 if len(assembled_bytes) > max_size:
                     assembled_bytes = None
                     break
 
             if assembled_bytes and len(assembled_bytes) <= max_size:
-                # Pad with NOPs if needed
                 if len(assembled_bytes) < max_size:
                     padding_size = max_size - len(assembled_bytes)
                     assembled_bytes += self._generate_nop_sequence(padding_size, arch_family, bits)
                 return assembled_bytes
 
-        # Fallback: just return NOPs
         return self._generate_nop_sequence(max_size, arch_family, bits)
 
     def _generate_nop_sequence(self, size: int, arch: str, bits: int) -> bytes:

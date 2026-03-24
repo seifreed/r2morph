@@ -120,12 +120,10 @@ class ELFHandler:
                 logger.warning(f"Not a valid ELF file: {self.binary_path}")
                 return False
 
-            # Parse ELF header to validate structure
             header = self._parse_elf_header()
             if header is None:
                 return False
 
-            # Validate section header table is within file bounds
             file_size = self.binary_path.stat().st_size
             sh_offset = header["e_shoff"]
             sh_size = header["e_shentsize"] * header["e_shnum"]
@@ -137,7 +135,6 @@ class ELFHandler:
                 )
                 return False
 
-            # Validate program header table is within file bounds
             ph_offset = header["e_phoff"]
             ph_size = header["e_phentsize"] * header["e_phnum"]
 
@@ -552,7 +549,6 @@ class ELFHandler:
             return None
 
         try:
-            # Parse the ELF binary with lief
             elf = lief.parse(str(self.binary_path))
             if elf is None:
                 logger.error(f"Failed to parse ELF with lief: {self.binary_path}")
@@ -562,30 +558,25 @@ class ELFHandler:
                 logger.error("Parsed binary is not ELF format")
                 return None
 
-            # Check if section already exists
             existing = elf.get_section(name)
             if existing is not None:
                 logger.warning(f"Section '{name}' already exists at 0x{existing.virtual_address:x}")
                 return existing.virtual_address
 
-            # Create new section
             section = lief.ELF.Section(name)
             section.type = lief.ELF.Section.TYPE.PROGBITS
             section.flags = lief.ELF.Section.FLAGS(flags)
             section.content = list(bytes(size))  # Zero-filled content
             section.alignment = 0x10  # 16-byte alignment
 
-            # Add section to binary
             added_section = elf.add(section, loaded=True)
 
             if added_section is None:
                 logger.error(f"Failed to add section '{name}' to ELF")
                 return None
 
-            # Write modified binary back
             elf.write(str(self.binary_path))
 
-            # Clear cached header since file changed
             self._elf_header = None
 
             vaddr = added_section.virtual_address
@@ -623,7 +614,6 @@ class ELFHandler:
                 return result
 
             MAX_SYMBOLS = 100000
-            # Get static symbols
             for sym in elf.symtab_symbols:
                 if len(result["symtab"]) >= MAX_SYMBOLS:
                     logger.warning(f"Truncating symbol table at {MAX_SYMBOLS} entries")
@@ -640,7 +630,6 @@ class ELFHandler:
                     }
                 )
 
-            # Get dynamic symbols
             for sym in elf.dynamic_symbols:
                 if len(result["dynsym"]) >= MAX_SYMBOLS:
                     logger.warning(f"Truncating dynamic symbol table at {MAX_SYMBOLS} entries")

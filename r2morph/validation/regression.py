@@ -120,7 +120,6 @@ class RegressionTestFramework:
         self.baselines: dict[str, BaselineResult] = {}
         self.test_results: list[NewRegressionResult] = []
 
-        # Load existing baselines
         self._load_baselines()
 
     def _load_baselines(self) -> None:
@@ -166,14 +165,12 @@ class RegressionTestFramework:
     def _compute_input_hash(self, input_data: Any) -> str:
         """Compute hash of input data for consistency checking."""
         if isinstance(input_data, (str, Path)):
-            # File input
             try:
                 with open(input_data, "rb") as f:
                     return hashlib.sha256(f.read()).hexdigest()
             except Exception:
                 return hashlib.sha256(str(input_data).encode()).hexdigest()
         else:
-            # Other input types
             return hashlib.sha256(str(input_data).encode()).hexdigest()
 
     def create_detection_baseline(self, test_id: str, binary_path: str) -> BaselineResult:
@@ -199,7 +196,6 @@ class RegressionTestFramework:
                 detector = ObfuscationDetector()
                 result = detector.analyze_binary(bin_obj)
 
-                # Extract relevant output for comparison
                 expected_output = {
                     "packer_detected": result.packer_detected.value if result.packer_detected else None,
                     "vm_detected": result.vm_detected,
@@ -213,7 +209,6 @@ class RegressionTestFramework:
                     ),  # Limited list
                 }
 
-                # Extended detection results
                 custom_vm = detector.detect_custom_virtualizer(bin_obj)
                 layers = detector.detect_code_packing_layers(bin_obj)
                 metamorphic = detector.detect_metamorphic_engine(bin_obj)
@@ -234,7 +229,6 @@ class RegressionTestFramework:
 
         execution_time = time.time() - start_time
 
-        # Performance baseline
         performance_baseline = {
             "execution_time": round(execution_time, 3),
             "max_allowed_time": round(execution_time * 2.0, 3),  # Allow 2x slowdown
@@ -267,19 +261,16 @@ class RegressionTestFramework:
 
         api_checks: dict[str, Any] = {}
 
-        # Test core imports
         api_checks["binary_import"] = importlib.util.find_spec("r2morph") is not None
         api_checks["detection_import"] = importlib.util.find_spec("r2morph.detection") is not None
         api_checks["devirtualization_import"] = importlib.util.find_spec("r2morph.devirtualization") is not None
 
-        # Test class instantiation
         try:
             from r2morph.detection import ObfuscationDetector
 
             detector = ObfuscationDetector()
             api_checks["detector_instantiation"] = True
 
-            # Test method existence
             api_checks["analyze_binary_method"] = hasattr(detector, "analyze_binary")
             api_checks["detect_custom_virtualizer_method"] = hasattr(detector, "detect_custom_virtualizer")
             api_checks["get_comprehensive_report_method"] = hasattr(detector, "get_comprehensive_report")
@@ -288,7 +279,6 @@ class RegressionTestFramework:
             api_checks["detector_instantiation"] = False
             api_checks["analyze_binary_method"] = False
 
-        # Test enum imports
         try:
             from r2morph.detection import PackerType
 
@@ -328,13 +318,11 @@ class RegressionTestFramework:
         baseline = self.baselines[test_id]
         issues = []
 
-        # Verify input consistency (for file-based tests)
         if binary_path and baseline.test_type != RegressionTestType.API_COMPATIBILITY:
             current_hash = self._compute_input_hash(binary_path)
             if current_hash != baseline.input_hash:
                 issues.append(f"Input file hash mismatch: expected {baseline.input_hash}, got {current_hash}")
 
-        # Run the appropriate test
         if baseline.test_type == RegressionTestType.DETECTION_ACCURACY:
             if binary_path is None:
                 raise ValueError("binary_path is required for detection accuracy tests")
@@ -344,7 +332,6 @@ class RegressionTestFramework:
         else:
             raise ValueError(f"Unsupported test type: {baseline.test_type}")
 
-        # Compare results
         issues.extend(self._compare_outputs(baseline.expected_output, actual_output, baseline.test_type))
         issues.extend(self._compare_performance(baseline.performance_baseline, performance_actual))
 
@@ -377,7 +364,6 @@ class RegressionTestFramework:
             detector = ObfuscationDetector()
             result = detector.analyze_binary(bin_obj)
 
-            # Extract output for comparison
             actual_output = {
                 "packer_detected": result.packer_detected.value if result.packer_detected else None,
                 "vm_detected": result.vm_detected,
@@ -389,7 +375,6 @@ class RegressionTestFramework:
                 "obfuscation_techniques": sorted(result.obfuscation_techniques[:20], key=lambda t: t.value),
             }
 
-            # Extended detection
             custom_vm = detector.detect_custom_virtualizer(bin_obj)
             layers = detector.detect_code_packing_layers(bin_obj)
             metamorphic = detector.detect_metamorphic_engine(bin_obj)
@@ -415,19 +400,16 @@ class RegressionTestFramework:
 
         api_checks: dict[str, Any] = {}
 
-        # Test core imports
         api_checks["binary_import"] = importlib.util.find_spec("r2morph") is not None
         api_checks["detection_import"] = importlib.util.find_spec("r2morph.detection") is not None
         api_checks["devirtualization_import"] = importlib.util.find_spec("r2morph.devirtualization") is not None
 
-        # Test class instantiation
         try:
             from r2morph.detection import ObfuscationDetector
 
             detector = ObfuscationDetector()
             api_checks["detector_instantiation"] = True
 
-            # Test method existence
             api_checks["analyze_binary_method"] = hasattr(detector, "analyze_binary")
             api_checks["detect_custom_virtualizer_method"] = hasattr(detector, "detect_custom_virtualizer")
             api_checks["get_comprehensive_report_method"] = hasattr(detector, "get_comprehensive_report")
@@ -436,7 +418,6 @@ class RegressionTestFramework:
             api_checks["detector_instantiation"] = False
             api_checks["analyze_binary_method"] = False
 
-        # Test enum imports
         try:
             from r2morph.detection import PackerType
 
@@ -454,17 +435,14 @@ class RegressionTestFramework:
         """Compare expected vs actual outputs."""
         issues = []
 
-        # Check for missing keys
         missing_keys = set(expected.keys()) - set(actual.keys())
         if missing_keys:
             issues.append(f"Missing output keys: {missing_keys}")
 
-        # Check for extra keys
         extra_keys = set(actual.keys()) - set(expected.keys())
         if extra_keys:
             issues.append(f"Extra output keys: {extra_keys}")
 
-        # Compare values
         for key in expected.keys():
             if key not in actual:
                 continue
@@ -479,20 +457,16 @@ class RegressionTestFramework:
 
     def _values_differ(self, expected: Any, actual: Any, key: str) -> bool:
         """Check if two values differ significantly."""
-        # Handle floating point comparisons with tolerance
         if isinstance(expected, float) and isinstance(actual, float):
             tolerance = 0.1 if "score" in key else 0.001
             return abs(expected - actual) > tolerance
 
-        # Handle list comparisons (order doesn't matter for some fields)
         if isinstance(expected, list) and isinstance(actual, list):
             if "techniques" in key:
-                # Order doesn't matter for technique lists
                 return set(expected) != set(actual)
             else:
                 return expected != actual
 
-        # Direct comparison for other types
         return bool(expected != actual)
 
     def _compare_performance(self, baseline: dict[str, float], actual: dict[str, float]) -> list[str]:
@@ -501,7 +475,6 @@ class RegressionTestFramework:
 
         for metric, baseline_value in baseline.items():
             if metric.endswith("_max"):
-                # This is a maximum threshold
                 base_metric = metric[:-4]  # Remove '_max' suffix
                 if base_metric in actual:
                     if actual[base_metric] > baseline_value:
@@ -523,7 +496,6 @@ class RegressionTestFramework:
         report.append("=" * 80)
         report.append("")
 
-        # Summary
         total_tests = len(self.test_results)
         passed_tests = sum(1 for r in self.test_results if r.passed)
         failed_tests = total_tests - passed_tests
@@ -538,7 +510,6 @@ class RegressionTestFramework:
         )
         report.append("")
 
-        # Test Results
         report.append("TEST RESULTS")
         report.append("-" * 40)
 

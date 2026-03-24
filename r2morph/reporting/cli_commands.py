@@ -76,7 +76,6 @@ def handle_report_command(
     with open(report_file, "r", encoding="utf-8") as handle:
         payload: dict[str, Any] = json.load(handle)
 
-    # Apply filters if specified
     if only_pass:
         mutations = [m for m in payload.get("mutations", []) if m.get("pass_name") == only_pass]
         payload["mutations"] = mutations
@@ -85,7 +84,6 @@ def handle_report_command(
             "mutations": len(mutations),
         }
 
-    # Check requirements
     if require_results:
         severity_rows = payload.get("summary", {}).get("symbolic_severity_by_pass", [])
         enforce_report_requirements(
@@ -210,12 +208,9 @@ def resolve_validation_mode(
         return "structural", "", policy
 
     if requested_mode == "symbolic":
-        # Check if binary supports symbolic validation
         try:
             with Binary(binary_path) as binary:
                 binary.analyze("aaa")
-                # Check for required features
-                # For now, assume symbolic is supported
                 return "symbolic", "", policy
         except Exception as e:
             if allow_limited:

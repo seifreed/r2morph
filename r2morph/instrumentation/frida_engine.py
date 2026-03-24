@@ -73,12 +73,9 @@ class FridaEngine:
         self.session: Any | None = None
         self.scripts: dict[str, Any] = {}
 
-        # Runtime data collection
         self.api_calls: list[dict[str, Any]] = []
         self.memory_accesses: list[dict[str, Any]] = []
         self.anti_analysis_events: list[dict[str, Any]] = []
-
-        # Statistics
         self.stats = {
             "processes_instrumented": 0,
             "scripts_loaded": 0,
@@ -140,10 +137,8 @@ class FridaEngine:
             binary_path = Path(binary_path)
 
             if mode == InstrumentationMode.SPAWN:
-                # Spawn new process
                 pid = self._spawn_process(binary_path, arguments, environment)
             elif mode == InstrumentationMode.ATTACH:
-                # Attach to existing process
                 pid = self._find_and_attach_process(binary_path.name)
             else:
                 result.error_message = f"Unsupported instrumentation mode: {mode}"
@@ -153,21 +148,17 @@ class FridaEngine:
                 result.error_message = "Failed to get target process ID"
                 return result
 
-            # Attach Frida session
             if self.device is None:
                 result.error_message = "Frida device not initialized"
                 return result
             self.session = self.device.attach(pid)
             result.process_id = pid
 
-            # Load basic instrumentation scripts
             self._load_basic_instrumentation()
 
-            # Start analysis
             if mode == InstrumentationMode.SPAWN and self.device is not None:
                 self.device.resume(pid)
 
-            # Collect data for specified time
             time.sleep(min(self.timeout, 10))  # Collect for up to 10 seconds
 
             result.success = True
@@ -228,17 +219,9 @@ class FridaEngine:
 
     def _load_basic_instrumentation(self) -> None:
         """Load basic instrumentation scripts."""
-        # API call monitoring script
-        api_monitor_script = self._create_api_monitor_script()
-        self.load_script("api_monitor", api_monitor_script)
-
-        # Anti-analysis detection script
-        anti_analysis_script = self._create_anti_analysis_script()
-        self.load_script("anti_analysis", anti_analysis_script)
-
-        # Memory access monitoring script
-        memory_monitor_script = self._create_memory_monitor_script()
-        self.load_script("memory_monitor", memory_monitor_script)
+        self.load_script("api_monitor", self._create_api_monitor_script())
+        self.load_script("anti_analysis", self._create_anti_analysis_script())
+        self.load_script("memory_monitor", self._create_memory_monitor_script())
 
     def _create_api_monitor_script(self) -> str:
         """Create JavaScript script for API call monitoring."""
@@ -475,7 +458,6 @@ class FridaEngine:
             if not self.session:
                 return None
 
-            # Create script to dump memory
             dump_script = f"""
             const addr = ptr({address});
             const size = {size};
@@ -502,7 +484,6 @@ class FridaEngine:
             script.on("message", on_message)
             script.load()
 
-            # Wait for dump to complete
             time.sleep(0.1)
             script.unload()
 
@@ -525,7 +506,6 @@ class FridaEngine:
     def cleanup(self) -> None:
         """Clean up Frida resources."""
         try:
-            # Unload all scripts
             for name, script in self.scripts.items():
                 try:
                     script.unload()
@@ -534,7 +514,6 @@ class FridaEngine:
 
             self.scripts.clear()
 
-            # Detach session
             if self.session:
                 self.session.detach()
                 self.session = None
