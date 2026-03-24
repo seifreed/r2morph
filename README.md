@@ -85,16 +85,6 @@ pip install -e ".[dev]"
 
 ---
 
-## Product Focus
-
-`r2morph` is being focused around a single product:
-
-**load binary -> apply tracked mutations -> validate -> export binary + report**
-
-The stable core is mutation + validation. Advanced reversing workflows remain available in the repository, but are secondary and should be treated as experimental.
-
-See [docs/ROADMAP.md](docs/ROADMAP.md) for the implementation roadmap and current phase status.
-
 ## Support Matrix
 
 ### Stable Core
