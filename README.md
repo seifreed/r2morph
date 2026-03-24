@@ -32,12 +32,15 @@
 
 | Feature | Description |
 |---------|-------------|
-| **Tracked Mutations** | Every applied mutation can be recorded with addresses, bytes, and disassembly |
-| **Validation Pipeline** | Structural validation in the engine, optional runtime validation, rollback on failure |
-| **Machine-Readable Reports** | Export JSON reports for CI, regression checks, and auditability |
-| **CLI + Python API** | Run as `mutate`, `validate`, `report`, or embed as a library |
-| **radare2-backed Analysis** | Reuse radare2/r2pipe for disassembly and binary metadata |
-| **Experimental Modules** | Devirtualization, enhanced analysis, instrumentation, and anti-analysis helpers remain secondary/experimental |
+| **Tracked Mutations** | Every mutation is recorded with address, original/mutated bytes, disassembly, and function context |
+| **Validation Pipeline** | Structural, runtime, and experimental symbolic validation with automatic rollback on failure |
+| **Session Management** | Checkpoint/rollback system preserving binary state across mutation passes |
+| **SARIF 2.1.0 Reports** | Full OASIS SARIF output with MITRE ATT&CK taxonomy, fingerprints, and code flows for CI/CD integration |
+| **JSON Reports** | Machine-readable reports with metadata, timing, gate evaluation, and JSON Schema documentation |
+| **CLI + Python API** | Run as `morph`, `mutate`, `validate`, `report`, or embed as a library |
+| **radare2-backed Analysis** | CFG, SSA, liveness, dataflow, and register tracking via radare2/r2pipe |
+| **Detection Suite** | Packer signature database, entropy analysis, control flow pattern detection, similarity hashing |
+| **Devirtualization** | VM handler analysis, MBA simplification (Z3-based), CFO pattern removal |
 
 ---
 
@@ -96,31 +99,73 @@ See [docs/ROADMAP.md](docs/ROADMAP.md) for the implementation roadmap and curren
 
 ### Stable Core
 
-| Area | Supported | Stability |
-|------|-----------|-----------|
-| Formats | ELF | Stable |
-| Architectures | x86_64 | Stable |
-| Mutations | `nop`, `substitute`, `register` | Stable |
-| Validators | `structural`, `runtime` | Stable / Supported |
-| Output | JSON report + mutated binary | Stable |
+| Area | Supported | Notes |
+|------|-----------|-------|
+| **Formats** | ELF | Full section handling, relocation support |
+| **Architectures** | x86_64 | Comprehensive instruction equivalence rules |
+| **Architectures** | x86 (32-bit) | Partial support via shared register maps |
+| **Mutations** | `nop`, `substitute`, `register` | Fully tested, production-ready |
+| **Validators** | `structural`, `runtime` | Structural always runs; runtime via `--validation-mode runtime` |
+| **Output** | JSON + SARIF 2.1.0 | `--format json` (default) or `--format sarif` |
 
-### Experimental / Secondary
+### Experimental / Working
 
-| Area | Supported | Stability |
-|------|-----------|-----------|
-| Formats | PE, Mach-O | Experimental |
-| Mutations | `expand`, `block`, `opaque`, `dead-code`, `cff` | Experimental |
-| Validation | symbolic equivalence | Experimental |
-| Analysis | devirtualization, Frida, anti-analysis, packer analysis | Experimental |
+| Area | Supported | Notes |
+|------|-----------|-------|
+| **Mutations** | `expand` | Single-instruction expansions, flag-safe subset |
+| **Mutations** | `block` | Basic block reordering with jump patching |
+| **Mutations** | `dead-code` | Injects dead code in padding regions |
+| **Mutations** | `short-jump` | Patches short jumps to equivalent sequences |
+| **Mutations** | `constant-unfolding` | Unfolds constant expressions (x86_64, partial ARM64) |
+| **Validation** | `symbolic` | Bounded symbolic step via angr, ELF x86_64 only, advisory |
+| **Validation** | `cfg-integrity` | Reachability and edge preservation checks |
+| **Formats** | PE | Handler via LIEF, minimal transformation support |
+| **Formats** | Mach-O | Handler via LIEF, load command parsing, partial Fat binary support |
+| **Architecture** | ARM64 | NOP insertion (`mov xzr, xzr`), register maps defined |
+
+### Planned / Stub
+
+These modules have framework code but do not yet apply real binary mutations:
+
+| Area | Status |
+|------|--------|
+| Control Flow Flattening (`cff`) | Analyzes CFG structure, does not flatten |
+| Opaque Predicates (`opaque`) | Analyzes candidates, no insertion |
+| Code Virtualization | Opcode definitions exist, no VM generation |
+| Code Mobility | Framework only |
+| Function Outlining | Framework only |
+| API Hashing | Windows-specific, stub |
+| Import Obfuscation | Framework only |
+| Self-Modifying Code | Encryption schemes defined, no application |
+| Anti-Disassembly | Technique dataclasses only |
+| ARM32 mutations | Register maps exist, untested |
+
+## Architecture Support Detail
+
+| Architecture | NOP | Substitute | Register | Expand | Block | Dead Code |
+|--------------|-----|-----------|----------|--------|-------|-----------|
+| **x86_64** | Yes | Yes | Yes | Yes | Yes | Yes |
+| **x86** | Yes | Yes | Yes | Partial | Partial | Partial |
+| **ARM64** | Partial | No | Partial | No | No | No |
+| **ARM32** | No | No | No | No | No | No |
+
+### Instruction Equivalence Rules
+
+- **x86/x86_64**: 100+ rules in `r2morph/mutations/equivalences/x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence
+- **ARM64**: Register classes defined in `arm64_rules.yaml`, no instruction groups yet
+- **ARM32**: Register classes defined in `arm_rules.yaml`, no instruction groups yet
 
 ## Quick Start
 
 ```bash
 # Stable mutate + validate flow
-r2morph input_binary output_binary
+r2morph mutate input_binary -o output_binary
 
-# Explicit mutate command with report
-r2morph mutate input_binary -o output_binary --report mutation_report.json
+# Explicit mutations with JSON report
+r2morph mutate input_binary -o output_binary -m nop -m substitute --report report.json
+
+# SARIF 2.1.0 report for CI/CD (GitHub Security, Azure DevOps, SonarQube)
+r2morph mutate input_binary -o output_binary --report report.sarif --format sarif
 
 # Reproducible stable mutation run
 r2morph mutate input_binary -o output_binary --seed 1337
@@ -139,16 +184,16 @@ r2morph validate input_binary output_binary --corpus dataset/runtime_corpus.json
 ### Command Line Interface
 
 ```bash
-# Stable default flow
-r2morph input_binary output_binary
-
 # Stable tracked mutation flow
 r2morph mutate input_binary -o output_binary -m nop -m substitute -m register
 
 # Reproducible mutation selection
 r2morph mutate input_binary -o output_binary --seed 1337
 
-# Experimental symbolic precheck mode
+# SARIF output directly from mutate
+r2morph mutate input_binary -o output_binary --format sarif --report mutations.sarif
+
+# Experimental symbolic precheck mode (ELF x86_64 only)
 r2morph mutate input_binary -o output_binary --validation-mode symbolic
 
 # Allow a limited symbolic pass explicitly
@@ -174,8 +219,6 @@ r2morph mutate input_binary -o output_binary --report report.json \
 r2morph mutate input_binary -o output_binary --report report.json \
   --require-pass-severity nop=not-requested
 
-# The generated report preserves gate requests and outcomes in `gate_evaluation`
-
 # Validate a mutated binary against the original
 r2morph validate input_binary output_binary
 
@@ -190,100 +233,77 @@ r2morph mutate input_binary -o output_binary \
   --validation-mode runtime \
   --runtime-corpus dataset/runtime_corpus.json
 
-# Display a saved report with symbolic coverage summaries and mismatch triage when available
+# Display a saved report
 r2morph report report.json
+
+# Display as SARIF
+r2morph report report.json --format sarif
 
 # Use the saved report as a CI gate
 r2morph report report.json --require-results --min-severity mismatch
 
 # Triage only runs where persisted CLI gates failed
 r2morph report report.json --only-failed-gates --summary-only
-# The summary includes compact gate failure causes for fast triage
 
-# Restrict persisted gate failures to one expected severity
-r2morph report report.json --only-failed-gates --only-expected-severity clean --summary-only
-
-# Restrict persisted gate failures to one pass
-r2morph report report.json --only-failed-gates --only-pass-failure NopInsertion --summary-only
-
-# Stable mutation aliases work for gate triage too
-r2morph report report.json --only-failed-gates --only-pass-failure nop --summary-only
+# Restrict the report to one pass
+r2morph report report.json --only-pass nop
 
 # Triage only symbolic observable mismatches
 r2morph report report.json --only-mismatches
 
-# Restrict the report to one pass, optionally combined with mismatch triage
-r2morph report report.json --only-pass InstructionSubstitution --only-mismatches
-
-# Stable mutation aliases also work in pass filtering
-r2morph report report.json --only-pass nop
-
-# Filter directly by symbolic status
-r2morph report report.json --only-status bounded-step-observable-mismatch
-
-# Show only reports where the effective validation mode was degraded
-r2morph report report.json --only-degraded
-# The report summary includes the degraded pass set and symbolic confidence for each cause
-
-# Show only the textual summary for terminal triage
-r2morph report report.json --summary-only
-
-# Export a filtered report JSON for CI or post-processing
+# Export a filtered report JSON for CI
 r2morph report report.json --only-pass InstructionSubstitution --output filtered-report.json
-
-# Fail in CI when a filtered view has no matching mutations
-r2morph report report.json --only-pass InstructionSubstitution --require-results
-
-# Fail in CI when a filtered gate view has no matching failures
-r2morph report report.json --only-failed-gates --only-expected-severity clean --require-results
-r2morph report report.json --only-failed-gates --only-pass-failure nop --require-results
-
-# The exported JSON includes `filtered_summary` for the active view
-r2morph report report.json --only-status bounded-step-passed --output filtered-report.json
-
-# `filtered_summary.symbolic_statuses` exposes the status distribution for the current view
-r2morph report report.json --only-pass InstructionSubstitution --output filtered-report.json
-
-# Gate-focused filtered views also preserve `gate_failures`, `gate_failure_priority`,
-# `gate_failure_severity_priority`, and normalized `report_filters`
-r2morph report report.json --only-failed-gates --only-pass-failure nop --output filtered-report.json
 ```
 
 #### Report Filter Quick Reference
 
 | Filter | Purpose | Example |
 | --- | --- | --- |
-| `--only-pass <pass-or-alias>` | Restrict mutations to one pass in the current view | `r2morph report report.json --only-pass nop` |
-| `--only-status <symbolic_status>` | Restrict mutations to one symbolic status | `r2morph report report.json --only-status bounded-step-observable-mismatch` |
+| `--format <json\|sarif>` | Output format (JSON default, SARIF 2.1.0) | `r2morph report report.json --format sarif` |
+| `--only-pass <pass-or-alias>` | Restrict to one pass | `r2morph report report.json --only-pass nop` |
+| `--only-status <symbolic_status>` | Restrict by symbolic status | `r2morph report report.json --only-status bounded-step-observable-mismatch` |
 | `--only-mismatches` | Show only symbolic observable mismatches | `r2morph report report.json --only-mismatches` |
-| `--only-degraded` | Show only runs where requested and effective validation modes differ | `r2morph report report.json --only-degraded --summary-only` |
-| `--only-failed-gates` | Show only runs where persisted CLI gates failed | `r2morph report report.json --only-failed-gates --summary-only` |
-| `--only-expected-severity <severity>` | Restrict persisted gate failures by expected severity | `r2morph report report.json --only-failed-gates --only-expected-severity clean` |
-| `--only-pass-failure <pass-or-alias>` | Restrict persisted gate failures to one pass | `r2morph report report.json --only-failed-gates --only-pass-failure nop` |
-| `--summary-only` | Print only the textual triage summary | `r2morph report report.json --summary-only` |
-| `--output <file>` | Export the filtered JSON view for CI/post-processing | `r2morph report report.json --only-pass nop --output filtered.json` |
-| `--require-results` | Exit `1` when the filtered view is empty | `r2morph report report.json --only-failed-gates --only-pass-failure nop --require-results` |
-| `--min-severity <severity>` | Require at least one pass in the view at or above the given severity | `r2morph report report.json --require-results --min-severity mismatch` |
+| `--only-degraded` | Show only degraded validation modes | `r2morph report report.json --only-degraded --summary-only` |
+| `--only-failed-gates` | Show only failed severity gates | `r2morph report report.json --only-failed-gates --summary-only` |
+| `--only-expected-severity <sev>` | Filter gate failures by severity | `r2morph report report.json --only-failed-gates --only-expected-severity clean` |
+| `--only-pass-failure <pass>` | Filter gate failures by pass | `r2morph report report.json --only-failed-gates --only-pass-failure nop` |
+| `--summary-only` | Print textual triage summary only | `r2morph report report.json --summary-only` |
+| `--output <file>` | Export filtered JSON | `r2morph report report.json --only-pass nop --output filtered.json` |
+| `--require-results` | Exit `1` when filtered view is empty | `r2morph report report.json --only-pass nop --require-results` |
+| `--min-severity <severity>` | Require minimum severity in view | `r2morph report report.json --require-results --min-severity mismatch` |
 
 Alias notes:
-- Stable aliases are accepted in `--only-pass` and `--only-pass-failure`: `nop`, `substitute`, `register`.
-- The textual summary shows alias resolution explicitly, for example `nop -> NopInsertion`.
+- Stable aliases accepted: `nop`, `substitute`, `register`.
+- The textual summary shows alias resolution: `nop -> NopInsertion`.
+
+### SARIF 2.1.0 Integration
+
+Reports in SARIF format include:
+
+- **MITRE ATT&CK taxonomy** mapping mutations to techniques (T1027 Obfuscated Files, T1027.001 Binary Padding, T1027.002 Software Packing)
+- **Partial fingerprints** (SHA256) for deduplication across CI runs
+- **Code flows** showing mutation chains per function
+- **Related locations** linking mutations to their validation failures
+- **Disassembly snippets** in the rendered field alongside hex bytes
+- **Fix suggestions** with byte-level replacements
+
+Compatible with GitHub Code Scanning, Azure DevOps, SonarQube, and any SARIF 2.1.0 consumer.
 
 ### Python Library
 
 ```python
 from r2morph import MorphEngine
-from r2morph.mutations import NopInsertionPass, InstructionSubstitutionPass
+from r2morph.mutations import NopInsertionPass, InstructionSubstitutionPass, RegisterSubstitutionPass
 
 with MorphEngine() as engine:
-    engine.load_binary("input.exe").analyze()
+    engine.load_binary("input.elf").analyze()
 
     engine.add_mutation(NopInsertionPass())
     engine.add_mutation(InstructionSubstitutionPass())
     engine.add_mutation(RegisterSubstitutionPass())
 
     result = engine.run(validation_mode="structural", report_path="mutation_report.json")
-    engine.save("output.exe")
+    engine.save("output.elf")
 
 print(f"Applied {result['total_mutations']} mutations")
 ```
@@ -326,13 +346,24 @@ r2morph validate original mutated \
   --normalize-whitespace
 ```
 
-### Experimental Advanced Analysis
+### Detection & Analysis
+
+r2morph includes a detection suite for analyzing obfuscated binaries:
+
+| Module | Capability |
+|--------|-----------|
+| **Obfuscation Detector** | Commercial packer signatures (VMProtect, Themida, UPX, etc.), confidence scoring |
+| **Entropy Analyzer** | Section entropy analysis for packing/encryption detection |
+| **Pattern Matcher** | Anti-debug, anti-VM, string encryption, import hiding detection |
+| **Similarity Hasher** | Fuzzy hashing for binary comparison (ssdeep-style) |
+| **Control Flow Detector** | CFF, opaque predicates, VM dispatch, MBA expression detection |
+| **Packer Signatures** | 50+ signature database with categorized detection |
+
+### Devirtualization (Experimental)
 
 ```python
 from r2morph import Binary
 from r2morph.detection import ObfuscationDetector
-from r2morph.analysis.symbolic import AngrBridge, PathExplorer
-from r2morph.instrumentation import FridaEngine
 from r2morph.devirtualization import VMHandlerAnalyzer, MBASolver
 
 with Binary("vmprotected.exe") as binary:
@@ -342,57 +373,86 @@ with Binary("vmprotected.exe") as binary:
     result = detector.analyze_binary(binary)
 
     if result.vm_detected:
-        angr_bridge = AngrBridge(binary)
-        explorer = PathExplorer(angr_bridge)
-        vm_result = explorer.explore_vm_handlers()
-
-        frida_engine = FridaEngine()
-        runtime_result = frida_engine.instrument_binary("vmprotected.exe")
-
         vm_analyzer = VMHandlerAnalyzer(binary)
         handlers = vm_analyzer.analyze_vm_architecture()
 
+        # Z3-based MBA simplification
         mba_solver = MBASolver()
         simplified = mba_solver.simplify_handlers(handlers)
 ```
 
-This advanced analysis workflow remains experimental and is secondary to the mutation engine.
-See `docs/enhanced_analysis.md` for more details.
-CLI access lives under the secondary namespace:
+| Module | Status | Notes |
+|--------|--------|-------|
+| **VM Handler Analyzer** | Partial | Pattern-based handler classification |
+| **MBA Solver** | Working | Z3 SMT solver, max 8 variables, timeout-bounded |
+| **CFO Simplifier** | Framework | Pattern library defined, application incomplete |
+| **Binary Rewriter** | Framework | Patch/relocation infrastructure |
 
-```bash
-r2morph experimental analyze-enhanced sample.bin --detect-only
+### Instrumentation (Experimental)
+
+Optional Frida integration for dynamic analysis:
+
+```python
+from r2morph.instrumentation import FridaEngine
+
+frida = FridaEngine()
+result = frida.instrument_binary("target.exe")
 ```
+
+Supports process spawning, script injection, API call logging, and anti-analysis detection. Requires `frida` package.
 
 ## Experimental Symbolic Validation
 
 `--validation-mode symbolic` is available as an experimental mode for bounded prechecks on the stable core. It is intentionally narrow:
 
 - `ELF x86_64` only
-- Stable passes only
+- Stable passes only (`nop`, `substitute`, `register`)
 - Small mutated regions only
 - Structural validation remains the blocking fallback
+- Uses angr for bounded symbolic execution (advisory, not proof)
 
 Reports identify whether symbolic coverage was supported, whether the backend initialized, whether a bounded symbolic step ran for the mutated regions, and why the run fell back or remained unproven.
 Each report also exposes `pass_support.<PassName>.validator_capabilities`, so consumers can distinguish between passes with stronger symbolic evidence such as `InstructionSubstitution` and passes where `runtime` remains the recommended release gate, such as `RegisterSubstitution`.
-
-For `InstructionSubstitution`, the experimental report also flags when a mutated region comes from a known equivalence group and, when possible, compares a small set of observable register/flag effects on both snippets and bounded states from the real pre-pass/post-pass binaries. This remains a scoped hint, not a general semantic proof.
 
 ---
 
 ## Supported Transformations
 
-**Stable Mutations**
-- Instruction Substitution
-- NOP Insertion
-- Register Reassignment
+### Stable Mutations (x86_64 ELF, tested)
 
-**Experimental Mutations**
-- Block Reordering
-- Instruction Expansion
-- Opaque Predicates
-- Dead Code Injection
-- Control Flow Flattening
+| Pass | Description |
+|------|-------------|
+| **NOP Insertion** | Inserts benign NOP instructions at safe locations within functions |
+| **Instruction Substitution** | Replaces instructions with semantically equivalent alternatives from bidirectional equivalence groups |
+| **Register Substitution** | Substitutes registers while preserving program semantics via liveness analysis |
+
+### Experimental Mutations (working, limited testing)
+
+| Pass | Description |
+|------|-------------|
+| **Block Reordering** | Reorders basic blocks with jump patching to preserve control flow |
+| **Instruction Expansion** | Expands single instructions into longer equivalent sequences (flag-safe subset) |
+| **Dead Code Injection** | Injects semantically neutral code in padding regions |
+| **Short Jump Patching** | Replaces short jumps with equivalent instruction sequences |
+| **Constant Unfolding** | Unfolds constant expressions into multi-instruction equivalents |
+
+### Planned (framework exists, not yet functional)
+
+Control Flow Flattening, Opaque Predicates, Code Virtualization, Code Mobility, Function Outlining, API Hashing, Import Obfuscation, Self-Modifying Code, Anti-Disassembly, Data Flow Mutation
+
+---
+
+## Report Schema
+
+JSON reports follow a documented schema at `r2morph/reporting/report_schema.json`. Each report includes:
+
+- **metadata**: tool version, timestamp, duration, platform
+- **input/output**: binary path, architecture, format, function count
+- **passes**: per-pass mutation counts, timing, diff summaries
+- **mutations**: flat list with address, bytes, disassembly, function, section
+- **validation**: mode, results, symbolic coverage
+- **gate_evaluation**: severity gate outcomes for CI
+- **summary**: aggregated statistics
 
 ---
 
@@ -420,6 +480,7 @@ with Binary("/path/to/binary") as binary:
 - Python 3.10+
 - radare2
 - See `pyproject.toml` for full dependency list
+- Optional: `lief` (PE/Mach-O support), `angr` (symbolic validation), `frida` (instrumentation), `z3-solver` (MBA simplification)
 - For local development: `requirements-dev.txt`
 
 ---
