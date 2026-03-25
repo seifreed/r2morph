@@ -124,11 +124,7 @@ pip install -e ".[dev]"
 | **Mutations** | `import-obfuscation` | Jump stub indirection for import calls |
 | **Mutations** | `self-modifying` | XOR-encrypts function bodies with runtime decryptor stub |
 
-### Planned / Stub
-
-| Area | Status |
-|------|--------|
-| ARM32 mutations | Register maps exist, untested |
+| **Architecture** | ARM32 | NOP insertion, instruction substitution, register substitution |
 
 ## Architecture Support Detail
 
@@ -137,13 +133,13 @@ pip install -e ".[dev]"
 | **x86_64** | Yes | Yes | Yes | Yes | Yes | Yes |
 | **x86** | Yes | Yes | Yes | Partial | Partial | Partial |
 | **ARM64** | Partial | No | Partial | No | No | No |
-| **ARM32** | No | No | No | No | No | No |
+| **ARM32** | Yes | Yes | Yes | No | No | No |
 
 ### Instruction Equivalence Rules
 
 - **x86/x86_64**: 100+ rules in `r2morph/mutations/equivalences/x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence
 - **ARM64**: Register classes defined in `arm64_rules.yaml`, no instruction groups yet
-- **ARM32**: Register classes defined in `arm_rules.yaml`, no instruction groups yet
+- **ARM32**: 10+ equivalence groups in `arm_rules.yaml` covering zero, increment, decrement, self-move, shift, negate, double, compare patterns for r0-r11
 
 ## Quick Start
 
@@ -426,9 +422,6 @@ Each report also exposes `pass_support.<PassName>.validator_capabilities`, so co
 | **Short Jump Patching** | Replaces short jumps with equivalent instruction sequences |
 | **Constant Unfolding** | Unfolds constant expressions into multi-instruction equivalents |
 
-### Planned
-
-ARM32 mutation support (register maps defined, not tested)
 
 ---
 

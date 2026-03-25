@@ -250,7 +250,7 @@ class RegisterSubstitutionPass(MutationPass):
         self.respect_calling_convention = self.config.get("respect_calling_convention", True)
         self.set_support(
             formats=("ELF",),
-            architectures=("x86_64", "arm64"),
+            architectures=("x86_64", "arm64", "arm"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",
             notes=(

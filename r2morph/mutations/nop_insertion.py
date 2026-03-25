@@ -56,12 +56,27 @@ class NopInsertionPass(MutationPass):
             "lea rbx, [rbx]",
             "lea rcx, [rcx]",
             "lea rdx, [rdx]",
-        ]
+        ],
+        "arm": [
+            "mov r0, r0",
+            "mov r1, r1",
+            "mov r2, r2",
+            "mov r3, r3",
+            "orr r0, r0, #0",
+            "orr r1, r1, #0",
+            "add r0, r0, #0",
+            "add r1, r1, #0",
+            "sub r0, r0, #0",
+            "lsl r0, r0, #0",
+            "lsl r1, r1, #0",
+        ],
     }
 
     REGISTERS_32BIT = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
     REGISTERS_64BIT = ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
+    REGISTERS_ARM32 = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
     CALLER_SAVED_32BIT = {"eax", "ecx", "edx"}
+    CALLER_SAVED_ARM32 = {"r0", "r1", "r2", "r3"}
     CALLER_SAVED_64BIT = {
         "rax",
         "rcx",
@@ -194,7 +209,7 @@ class NopInsertionPass(MutationPass):
         """Set the pass support metadata."""
         self.set_support(
             formats=("ELF", "Mach-O"),
-            architectures=("x86_64", "arm64"),
+            architectures=("x86_64", "arm64", "arm"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",
             notes=(
@@ -302,7 +317,7 @@ class NopInsertionPass(MutationPass):
                             if dst and src == dst and self._is_safe_self_redundancy(dst, bits):
                                 is_redundant = True
 
-                elif arch_family == "arm" and bits == 64:
+                elif arch_family == "arm":
                     if disasm == "nop":
                         is_redundant = True
                     elif disasm.startswith("mov "):
@@ -348,6 +363,8 @@ class NopInsertionPass(MutationPass):
         arch_family, bits = binary.get_arch_family()
         if arch_family == "arm" and bits == 64:
             return self._apply_arm64_safe_nops(binary)
+        if arch_family == "arm" and bits == 32:
+            return self._apply_arm32_safe_nops(binary)
 
         functions = binary.get_functions()
         mutations_applied = 0
@@ -536,6 +553,76 @@ class NopInsertionPass(MutationPass):
                     func_mutations += 1
                     mutations_applied += 1
 
+                    if func_mutations >= self.max_nops:
+                        break
+
+            if func_mutations > 0:
+                functions_mutated += 1
+
+        return {
+            "mutations_applied": mutations_applied,
+            "functions_mutated": functions_mutated,
+            "total_functions": len(functions),
+        }
+
+    def _apply_arm32_safe_nops(self, binary: Any) -> dict[str, Any]:
+        """Apply safe ARM32 NOP substitutions (4-byte instructions)."""
+        arm32_nops = self.NOP_EQUIVALENTS.get("arm", self.NOP_EQUIVALENTS_BASE.get("arm", []))
+        functions = binary.get_functions()
+        mutations_applied = 0
+        functions_mutated = 0
+
+        for func in functions:
+            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+                continue
+
+            try:
+                instructions = binary.get_function_disasm(func["addr"])
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
+                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
+                continue
+
+            func_mutations = 0
+            for insn in instructions:
+                disasm = insn.get("disasm", "").lower().strip()
+                addr = insn.get("addr", 0)
+                size = insn.get("size", 0)
+
+                if size != 4:
+                    continue
+
+                is_nop_like = False
+                if disasm in ("nop", "mov r0, r0"):
+                    is_nop_like = True
+                elif disasm.startswith("mov "):
+                    parts = disasm.split(",")
+                    if len(parts) == 2 and parts[0].split()[-1].strip() == parts[1].strip():
+                        is_nop_like = True
+
+                if not is_nop_like:
+                    continue
+                if random.random() >= self.probability:
+                    continue
+
+                replacement = random.choice(arm32_nops)
+                new_bytes = binary.assemble(replacement, func["addr"])
+                if not new_bytes or len(new_bytes) != 4:
+                    continue
+
+                original_bytes = binary.read_bytes(addr, size)
+                if binary.write_bytes(addr, new_bytes):
+                    self._record_mutation(
+                        function_address=func["addr"],
+                        start_address=addr,
+                        end_address=addr + size - 1,
+                        original_bytes=original_bytes,
+                        mutated_bytes=new_bytes,
+                        original_disasm=disasm,
+                        mutated_disasm=replacement,
+                        mutation_kind="nop_insertion",
+                    )
+                    func_mutations += 1
+                    mutations_applied += 1
                     if func_mutations >= self.max_nops:
                         break
 

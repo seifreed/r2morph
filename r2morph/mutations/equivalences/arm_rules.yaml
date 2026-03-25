@@ -1,6 +1,11 @@
 # arm_rules.yaml
 version: "1.0"
-description: "ARM instruction equivalence rules for metamorphic transformation"
+description: "ARM32 instruction equivalence rules for metamorphic transformation"
+
+register_classes:
+  caller_saved: ["r0", "r1", "r2", "r3"]
+  callee_saved: ["r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
+  general: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
 
 equivalence_groups:
   # Zero register patterns
@@ -11,7 +16,7 @@ equivalence_groups:
       - "eor {reg}, {reg}, {reg}"
       - "sub {reg}, {reg}, {reg}"
       - "and {reg}, {reg}, #0"
-    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
 
   # Move immediate 1 patterns
   - name: "mov_one"
@@ -27,7 +32,7 @@ equivalence_groups:
     instructions:
       - "add {reg}, {reg}, #1"
       - "sub {reg}, {reg}, #-1"
-    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
 
   # Decrement patterns
   - name: "decrement"
@@ -35,7 +40,7 @@ equivalence_groups:
     instructions:
       - "sub {reg}, {reg}, #1"
       - "add {reg}, {reg}, #-1"
-    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
 
   # Test/compare patterns
   - name: "test_zero"
@@ -43,7 +48,7 @@ equivalence_groups:
     instructions:
       - "cmp {reg}, #0"
       - "tst {reg}, {reg}"
-    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
 
   # NOP equivalences
   - name: "nop_equivalences"
@@ -53,14 +58,15 @@ equivalence_groups:
       - "mov r0, r0"
       - "mov r8, r8"
 
-  # Self-move patterns
+  # Self-move patterns (NOP-like)
   - name: "self_move"
-    description: "Ways to move a register to itself (NOPs)"
+    description: "Ways to move a register to itself"
     instructions:
       - "mov {reg}, {reg}"
       - "orr {reg}, {reg}, #0"
       - "add {reg}, {reg}, #0"
-    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+      - "sub {reg}, {reg}, #0"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
 
   # Logical shift left by 0 (NOP-like)
   - name: "shift_zero"
@@ -68,4 +74,29 @@ equivalence_groups:
     instructions:
       - "lsl {reg}, {reg}, #0"
       - "mov {reg}, {reg}"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
+
+  # Negate patterns
+  - name: "negate"
+    description: "Ways to negate a register"
+    instructions:
+      - "rsb {reg}, {reg}, #0"
+      - "mvn {reg}, {reg}; add {reg}, {reg}, #1"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
+
+  # Double value patterns
+  - name: "double"
+    description: "Ways to double a register value"
+    instructions:
+      - "add {reg}, {reg}, {reg}"
+      - "lsl {reg}, {reg}, #1"
+    registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"]
+
+  # Move via bitwise operations
+  - name: "move_via_logic"
+    description: "Move between registers using logical ops"
+    instructions:
+      - "mov {reg}, {reg}"
+      - "orr {reg}, {reg}, #0"
+      - "bic {reg}, {reg}, #0"
     registers: ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]

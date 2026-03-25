@@ -63,7 +63,7 @@ class InstructionSubstitutionPass(MutationPass):
         self.strict_size = self.config.get("strict_size", False)
         self.set_support(
             formats=("ELF",),
-            architectures=("x86_64",),
+            architectures=("x86_64", "arm"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",
             notes=("known equivalence groups", "bounded symbolic observables"),
