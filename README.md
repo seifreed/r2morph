@@ -26,21 +26,21 @@
 
 ## Overview
 
-**r2morph** is a mutation-first engine for applying metamorphic binary transformations with explicit validation, rollback, and machine-readable reports. It leverages **radare2** and **r2pipe** to analyze binaries, apply tracked mutations, and verify the result before export.
+**r2morph** is a metamorphic mutation engine that applies tracked binary transformations with validation, rollback, and machine-readable reports. It uses **radare2** for analysis and supports 18 mutation passes across 4 architectures.
 
 ### Key Features
 
 | Feature | Description |
 |---------|-------------|
-| **Tracked Mutations** | Every mutation is recorded with address, original/mutated bytes, disassembly, and function context |
-| **Validation Pipeline** | Structural, runtime, and experimental symbolic validation with automatic rollback on failure |
+| **18 Mutation Passes** | From stable NOP/substitute/register to experimental CFF, virtualization, and self-modifying code |
+| **4 Architectures** | x86_64, x86, ARM64, ARM32 |
+| **3 Binary Formats** | ELF (stable), PE and Mach-O (experimental, via LIEF) |
+| **4 Validation Modes** | Structural, runtime, symbolic (angr), CFG integrity |
 | **Session Management** | Checkpoint/rollback system preserving binary state across mutation passes |
-| **SARIF 2.1.0 Reports** | Full OASIS SARIF output with MITRE ATT&CK taxonomy, fingerprints, and code flows for CI/CD integration |
-| **JSON Reports** | Machine-readable reports with metadata, timing, gate evaluation, and JSON Schema documentation |
-| **CLI + Python API** | Run as `morph`, `mutate`, `validate`, `report`, or embed as a library |
-| **radare2-backed Analysis** | CFG, SSA, liveness, dataflow, and register tracking via radare2/r2pipe |
-| **Detection Suite** | Packer signature database, entropy analysis, control flow pattern detection, similarity hashing |
-| **Devirtualization** | VM handler analysis, MBA simplification (Z3-based), CFO pattern removal |
+| **SARIF 2.1.0 Reports** | OASIS SARIF with MITRE ATT&CK taxonomy, fingerprints, code flows |
+| **JSON Reports** | Documented schema, metadata, timing, gate evaluation |
+| **Detection Suite** | Packer signatures, entropy analysis, pattern matching, similarity hashing |
+| **Devirtualization** | VM handler analysis, MBA simplification (Z3-based) |
 
 ---
 
@@ -62,14 +62,9 @@ sys/install.sh
 ### Install r2morph
 
 ```bash
-# Basic installation
-pip install r2morph
-
-# Enhanced analysis capabilities
-pip install "r2morph[enhanced]"
-
-# All optional features
-pip install "r2morph[all]"
+pip install r2morph                  # Basic
+pip install "r2morph[enhanced]"      # + angr, lief, z3
+pip install "r2morph[all]"           # + frida, hypothesis
 ```
 
 ### Development Install
@@ -77,9 +72,6 @@ pip install "r2morph[all]"
 ```bash
 git clone https://github.com/seifreed/r2morph.git
 cd r2morph
-pip install -e .
-
-# Dev tooling
 pip install -e ".[dev]"
 ```
 
@@ -87,195 +79,144 @@ pip install -e ".[dev]"
 
 ## Support Matrix
 
-### Stable Core
+### Formats
 
-| Area | Supported | Notes |
-|------|-----------|-------|
-| **Formats** | ELF | Full section handling, relocation support |
-| **Architectures** | x86_64 | Comprehensive instruction equivalence rules |
-| **Architectures** | x86 (32-bit) | Partial support via shared register maps |
-| **Mutations** | `nop`, `substitute`, `register` | Fully tested, production-ready |
-| **Validators** | `structural`, `runtime` | Structural always runs; runtime via `--validation-mode runtime` |
-| **Output** | JSON + SARIF 2.1.0 | `--format json` (default) or `--format sarif` |
+| Format | Status | Section Creation | Notes |
+|--------|--------|-----------------|-------|
+| **ELF** | Stable | Via LIEF | Full section handling, relocations, code caves |
+| **PE** | Experimental | Via LIEF | Section creation, checksum fixing |
+| **Mach-O** | Experimental | Via LIEF | Load command parsing, Fat binary support |
 
-### Experimental / Working
+### Architectures
 
-| Area | Supported | Notes |
-|------|-----------|-------|
-| **Mutations** | `expand` | Single-instruction expansions, flag-safe subset |
-| **Mutations** | `block` | Basic block reordering with jump patching |
-| **Mutations** | `dead-code` | Injects dead code in padding regions |
-| **Mutations** | `cff` | Inserts opaque predicates and jump obfuscation into functions |
-| **Mutations** | `opaque` | Assembles and writes opaque predicate instructions into basic blocks |
-| **Mutations** | `code-virtualization` | Translates instructions to VM bytecode and writes dispatcher |
-| **Mutations** | `anti-disassembly` | Injects anti-disassembly snippets into basic blocks |
-| **Mutations** | `data-flow` | Data flow analysis-driven safe register/instruction substitutions |
-| **Mutations** | `short-jump` | Patches short jumps to equivalent sequences |
-| **Mutations** | `constant-unfolding` | Unfolds constant expressions (x86_64, partial ARM64) |
-| **Validation** | `symbolic` | Bounded symbolic step via angr, ELF x86_64 only, advisory |
-| **Validation** | `cfg-integrity` | Reachability and edge preservation checks |
-| **Formats** | PE | Handler via LIEF, minimal transformation support |
-| **Formats** | Mach-O | Handler via LIEF, load command parsing, partial Fat binary support |
-| **Architecture** | ARM64 | NOP insertion (`mov xzr, xzr`), register maps defined |
-
-| **Mutations** | `code-mobility` | Relocates blocks to code caves with trampolines |
-| **Mutations** | `function-outlining` | Distributes function chunks across code caves |
-| **Mutations** | `api-hashing` | Hash trampolines obscuring PLT references (ELF) |
-| **Mutations** | `import-obfuscation` | Jump stub indirection for import calls |
-| **Mutations** | `self-modifying` | XOR-encrypts function bodies with runtime decryptor stub |
-
-| **Architecture** | ARM32 | NOP insertion, instruction substitution, register substitution |
-
-## Architecture Support Detail
-
-| Architecture | NOP | Substitute | Register | Expand | Block | Dead Code |
-|--------------|-----|-----------|----------|--------|-------|-----------|
-| **x86_64** | Yes | Yes | Yes | Yes | Yes | Yes |
-| **x86** | Yes | Yes | Yes | Partial | Partial | Partial |
-| **ARM64** | Partial | No | Partial | No | No | No |
-| **ARM32** | Yes | Yes | Yes | No | No | No |
+| Architecture | NOP | Substitute | Register | Expand | Block | Dead Code | Other Passes |
+|--------------|-----|-----------|----------|--------|-------|-----------|-------------|
+| **x86_64** | Yes | Yes | Yes | Yes | Yes | Yes | All 18 passes |
+| **x86** | Yes | Yes | Yes | Partial | Partial | Partial | - |
+| **ARM64** | Partial | No | Partial | No | No | No | - |
+| **ARM32** | Yes | Yes | Yes | No | No | No | - |
 
 ### Instruction Equivalence Rules
 
-- **x86/x86_64**: 100+ rules in `r2morph/mutations/equivalences/x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence
-- **ARM64**: Register classes defined in `arm64_rules.yaml`, no instruction groups yet
-- **ARM32**: 10+ equivalence groups in `arm_rules.yaml` covering zero, increment, decrement, self-move, shift, negate, double, compare patterns for r0-r11
+- **x86/x86_64**: 100+ rules in `x86_rules.yaml` - bidirectional groups covering zero registers, self-moves, flag-preserving patterns, XOR/SUB equivalence
+- **ARM32**: 10+ groups in `arm_rules.yaml` - zero, increment, decrement, self-move, shift, negate, double, compare for r0-r11
+- **ARM64**: Register classes defined in `arm64_rules.yaml`
+
+---
+
+## Mutation Passes
+
+### Stable (tested, production-ready)
+
+| Pass | CLI Flag | Description |
+|------|----------|-------------|
+| **NOP Insertion** | `-m nop` | Inserts benign NOP equivalents at safe locations |
+| **Instruction Substitution** | `-m substitute` | Replaces instructions with semantically equivalent alternatives |
+| **Register Substitution** | `-m register` | Substitutes registers via liveness analysis |
+
+### Experimental (working, limited testing)
+
+| Pass | CLI Flag | Description |
+|------|----------|-------------|
+| **Instruction Expansion** | `-m expand` | Expands single instructions into longer equivalent sequences |
+| **Block Reordering** | `-m block` | Reorders basic blocks with jump patching |
+| **Dead Code Injection** | `-m dead-code` | Injects semantically neutral code in padding regions |
+| **Control Flow Flattening** | `-m cff` | Inserts opaque predicates and jump obfuscation |
+| **Opaque Predicates** | `-m opaque` | Writes opaque predicate instructions into basic blocks |
+| **Code Virtualization** | `-m code-virtualization` | Translates instructions to VM bytecode with dispatcher |
+| **Anti-Disassembly** | `-m anti-disassembly` | Injects anti-disassembly snippets |
+| **Data Flow Mutation** | `-m data-flow` | Data flow analysis-driven safe substitutions |
+| **Short Jump Patching** | `-m short-jump` | Patches short jumps to equivalent sequences |
+| **Constant Unfolding** | `-m constant-unfolding` | Unfolds constant expressions into multi-instruction equivalents |
+| **Code Mobility** | `-m code-mobility` | Relocates blocks to code caves with trampolines |
+| **Function Outlining** | `-m function-outlining` | Distributes function chunks across code caves |
+| **API Hashing** | `-m api-hashing` | Hash trampolines obscuring PLT references |
+| **Import Obfuscation** | `-m import-obfuscation` | Jump stub indirection for import calls |
+| **Self-Modifying Code** | `-m self-modifying` | XOR-encrypts function bodies with runtime decryptor |
+
+---
+
+## Validation
+
+| Mode | Flag | Status | Description |
+|------|------|--------|-------------|
+| **Structural** | `--validation-mode structural` | Stable | Binary format integrity checks (always runs) |
+| **Runtime** | `--validation-mode runtime` | Stable | Compares original vs mutated execution (exit code, stdout, stderr, files) |
+| **Symbolic** | `--validation-mode symbolic` | Experimental | Bounded symbolic step via angr (ELF x86_64, advisory) |
+| **CFG Integrity** | Automatic | Experimental | Reachability and edge preservation checks |
+
+---
 
 ## Quick Start
 
 ```bash
-# Stable mutate + validate flow
-r2morph mutate input_binary -o output_binary
+# Mutate with stable passes
+r2morph mutate input.elf -o output.elf -m nop -m substitute -m register
 
-# Explicit mutations with JSON report
-r2morph mutate input_binary -o output_binary -m nop -m substitute --report report.json
+# SARIF report for CI/CD
+r2morph mutate input.elf -o output.elf --format sarif --report mutations.sarif
 
-# SARIF 2.1.0 report for CI/CD (GitHub Security, Azure DevOps, SonarQube)
-r2morph mutate input_binary -o output_binary --report report.sarif --format sarif
+# Reproducible run
+r2morph mutate input.elf -o output.elf --seed 1337
 
-# Reproducible stable mutation run
-r2morph mutate input_binary -o output_binary --seed 1337
+# Runtime validation
+r2morph validate original.elf mutated.elf --corpus dataset/runtime_corpus.json
 
-# Runtime validation of an original/mutated pair
-r2morph validate input_binary output_binary
+# CI gate: fail if severity below threshold
+r2morph mutate input.elf -o output.elf --report report.json --min-severity bounded-only
 
-# Runtime validation with a reusable corpus
-r2morph validate input_binary output_binary --corpus dataset/runtime_corpus.json
+# Display and filter reports
+r2morph report report.json --only-pass nop --summary-only
+r2morph report report.json --format sarif -o report.sarif
 ```
 
 ---
 
-## Usage
+## CLI Reference
 
-### Command Line Interface
+### Commands
 
-```bash
-# Stable tracked mutation flow
-r2morph mutate input_binary -o output_binary -m nop -m substitute -m register
+| Command | Description |
+|---------|-------------|
+| `r2morph mutate` | Apply mutations, validate, export binary + report |
+| `r2morph validate` | Compare original vs mutated binary behavior |
+| `r2morph report` | Display, filter, or convert a saved report |
+| `r2morph analyze` | Analyze binary structure and functions |
+| `r2morph functions` | List functions in a binary |
+| `r2morph version` | Show version |
 
-# Reproducible mutation selection
-r2morph mutate input_binary -o output_binary --seed 1337
+### Report Filters
 
-# SARIF output directly from mutate
-r2morph mutate input_binary -o output_binary --format sarif --report mutations.sarif
+| Filter | Purpose |
+|--------|---------|
+| `--format <json\|sarif>` | Output format (JSON default, SARIF 2.1.0) |
+| `--only-pass <name>` | Restrict to one mutation pass |
+| `--only-mismatches` | Show only symbolic observable mismatches |
+| `--only-failed-gates` | Show only failed severity gates |
+| `--only-degraded` | Show only degraded validation modes |
+| `--summary-only` | Print textual triage summary only |
+| `--output <file>` | Export filtered JSON |
+| `--require-results` | Exit 1 when filtered view is empty |
+| `--min-severity <sev>` | Require minimum severity in view |
 
-# Experimental symbolic precheck mode (ELF x86_64 only)
-r2morph mutate input_binary -o output_binary --validation-mode symbolic
+---
 
-# Allow a limited symbolic pass explicitly
-r2morph mutate input_binary -o output_binary --validation-mode symbolic \
-  --allow-limited-symbolic -m register
-
-# Degrade a limited symbolic pass to runtime validation instead of blocking
-r2morph mutate input_binary -o output_binary --validation-mode symbolic \
-  --limited-symbolic-policy degrade-runtime -m register
-
-# Export a machine-readable report
-r2morph mutate input_binary -o output_binary --report report.json
-
-# Fail the CLI run unless the final report reaches a minimum symbolic severity
-r2morph mutate input_binary -o output_binary --report report.json \
-  --min-severity bounded-only
-
-# Fail unless a specific pass reaches the required local severity
-r2morph mutate input_binary -o output_binary --report report.json \
-  --require-pass-severity InstructionSubstitution=bounded-only
-
-# Short mutation aliases also work in pass severity gating
-r2morph mutate input_binary -o output_binary --report report.json \
-  --require-pass-severity nop=not-requested
-
-# Validate a mutated binary against the original
-r2morph validate input_binary output_binary
-
-# Validate with a JSON corpus of runtime cases
-r2morph validate input_binary output_binary --corpus dataset/runtime_corpus.json
-
-# Ignore trailing whitespace differences in stdout/stderr
-r2morph validate input_binary output_binary --corpus dataset/runtime_corpus.json --normalize-whitespace
-
-# Run mutate with runtime validation backed by a real corpus
-r2morph mutate input_binary -o output_binary \
-  --validation-mode runtime \
-  --runtime-corpus dataset/runtime_corpus.json
-
-# Display a saved report
-r2morph report report.json
-
-# Display as SARIF
-r2morph report report.json --format sarif
-
-# Use the saved report as a CI gate
-r2morph report report.json --require-results --min-severity mismatch
-
-# Triage only runs where persisted CLI gates failed
-r2morph report report.json --only-failed-gates --summary-only
-
-# Restrict the report to one pass
-r2morph report report.json --only-pass nop
-
-# Triage only symbolic observable mismatches
-r2morph report report.json --only-mismatches
-
-# Export a filtered report JSON for CI
-r2morph report report.json --only-pass InstructionSubstitution --output filtered-report.json
-```
-
-#### Report Filter Quick Reference
-
-| Filter | Purpose | Example |
-| --- | --- | --- |
-| `--format <json\|sarif>` | Output format (JSON default, SARIF 2.1.0) | `r2morph report report.json --format sarif` |
-| `--only-pass <pass-or-alias>` | Restrict to one pass | `r2morph report report.json --only-pass nop` |
-| `--only-status <symbolic_status>` | Restrict by symbolic status | `r2morph report report.json --only-status bounded-step-observable-mismatch` |
-| `--only-mismatches` | Show only symbolic observable mismatches | `r2morph report report.json --only-mismatches` |
-| `--only-degraded` | Show only degraded validation modes | `r2morph report report.json --only-degraded --summary-only` |
-| `--only-failed-gates` | Show only failed severity gates | `r2morph report report.json --only-failed-gates --summary-only` |
-| `--only-expected-severity <sev>` | Filter gate failures by severity | `r2morph report report.json --only-failed-gates --only-expected-severity clean` |
-| `--only-pass-failure <pass>` | Filter gate failures by pass | `r2morph report report.json --only-failed-gates --only-pass-failure nop` |
-| `--summary-only` | Print textual triage summary only | `r2morph report report.json --summary-only` |
-| `--output <file>` | Export filtered JSON | `r2morph report report.json --only-pass nop --output filtered.json` |
-| `--require-results` | Exit `1` when filtered view is empty | `r2morph report report.json --only-pass nop --require-results` |
-| `--min-severity <severity>` | Require minimum severity in view | `r2morph report report.json --require-results --min-severity mismatch` |
-
-Alias notes:
-- Stable aliases accepted: `nop`, `substitute`, `register`.
-- The textual summary shows alias resolution: `nop -> NopInsertion`.
-
-### SARIF 2.1.0 Integration
+## SARIF 2.1.0 Integration
 
 Reports in SARIF format include:
 
-- **MITRE ATT&CK taxonomy** mapping mutations to techniques (T1027 Obfuscated Files, T1027.001 Binary Padding, T1027.002 Software Packing)
+- **MITRE ATT&CK taxonomy** - T1027 (Obfuscated Files), T1027.001 (Binary Padding), T1027.002 (Software Packing)
 - **Partial fingerprints** (SHA256) for deduplication across CI runs
 - **Code flows** showing mutation chains per function
-- **Related locations** linking mutations to their validation failures
+- **Related locations** linking mutations to validation failures
 - **Disassembly snippets** in the rendered field alongside hex bytes
 - **Fix suggestions** with byte-level replacements
 
 Compatible with GitHub Code Scanning, Azure DevOps, SonarQube, and any SARIF 2.1.0 consumer.
 
-### Python Library
+---
+
+## Python API
 
 ```python
 from r2morph import MorphEngine
@@ -288,53 +229,15 @@ with MorphEngine() as engine:
     engine.add_mutation(InstructionSubstitutionPass())
     engine.add_mutation(RegisterSubstitutionPass())
 
-    result = engine.run(validation_mode="structural", report_path="mutation_report.json")
+    result = engine.run(validation_mode="structural", report_path="report.json")
     engine.save("output.elf")
 
 print(f"Applied {result['total_mutations']} mutations")
 ```
 
-### Runtime Corpus
+---
 
-`r2morph validate --corpus` accepts a JSON array of runtime test cases. A reusable example lives at `dataset/runtime_corpus.json`.
-For side effects, `dataset/runtime_corpus_files.json` shows the `monitored_files` form used with `--compare-files`.
-
-```json
-[
-  {
-    "description": "default-exec",
-    "args": [],
-    "stdin": "",
-    "expected_exitcode": 0
-  },
-  {
-    "description": "help-output",
-    "args": ["--help"],
-    "stdin": "",
-    "expected_exitcode": 0
-  }
-]
-```
-
-Example with file side effects:
-
-```bash
-r2morph validate original mutated \
-  --corpus dataset/runtime_corpus_files.json \
-  --compare-files
-```
-
-Runtime validation can also normalize trailing whitespace differences:
-
-```bash
-r2morph validate original mutated \
-  --corpus dataset/runtime_corpus.json \
-  --normalize-whitespace
-```
-
-### Detection & Analysis
-
-r2morph includes a detection suite for analyzing obfuscated binaries:
+## Detection & Analysis
 
 | Module | Capability |
 |--------|-----------|
@@ -343,85 +246,20 @@ r2morph includes a detection suite for analyzing obfuscated binaries:
 | **Pattern Matcher** | Anti-debug, anti-VM, string encryption, import hiding detection |
 | **Similarity Hasher** | Fuzzy hashing for binary comparison (ssdeep-style) |
 | **Control Flow Detector** | CFF, opaque predicates, VM dispatch, MBA expression detection |
-| **Packer Signatures** | 50+ signature database with categorized detection |
+| **Packer Signatures** | 50+ categorized signature database |
 
-### Devirtualization (Experimental)
-
-```python
-from r2morph import Binary
-from r2morph.detection import ObfuscationDetector
-from r2morph.devirtualization import VMHandlerAnalyzer, MBASolver
-
-with Binary("vmprotected.exe") as binary:
-    binary.analyze()
-
-    detector = ObfuscationDetector()
-    result = detector.analyze_binary(binary)
-
-    if result.vm_detected:
-        vm_analyzer = VMHandlerAnalyzer(binary)
-        handlers = vm_analyzer.analyze_vm_architecture()
-
-        # Z3-based MBA simplification
-        mba_solver = MBASolver()
-        simplified = mba_solver.simplify_handlers(handlers)
-```
+## Devirtualization (Experimental)
 
 | Module | Status | Notes |
 |--------|--------|-------|
-| **VM Handler Analyzer** | Partial | Pattern-based handler classification |
+| **VM Handler Analyzer** | Working | Pattern-based handler classification |
 | **MBA Solver** | Working | Z3 SMT solver, max 8 variables, timeout-bounded |
 | **CFO Simplifier** | Framework | Pattern library defined, application incomplete |
 | **Binary Rewriter** | Framework | Patch/relocation infrastructure |
 
-### Instrumentation (Experimental)
+## Instrumentation (Experimental)
 
-Optional Frida integration for dynamic analysis:
-
-```python
-from r2morph.instrumentation import FridaEngine
-
-frida = FridaEngine()
-result = frida.instrument_binary("target.exe")
-```
-
-Supports process spawning, script injection, API call logging, and anti-analysis detection. Requires `frida` package.
-
-## Experimental Symbolic Validation
-
-`--validation-mode symbolic` is available as an experimental mode for bounded prechecks on the stable core. It is intentionally narrow:
-
-- `ELF x86_64` only
-- Stable passes only (`nop`, `substitute`, `register`)
-- Small mutated regions only
-- Structural validation remains the blocking fallback
-- Uses angr for bounded symbolic execution (advisory, not proof)
-
-Reports identify whether symbolic coverage was supported, whether the backend initialized, whether a bounded symbolic step ran for the mutated regions, and why the run fell back or remained unproven.
-Each report also exposes `pass_support.<PassName>.validator_capabilities`, so consumers can distinguish between passes with stronger symbolic evidence such as `InstructionSubstitution` and passes where `runtime` remains the recommended release gate, such as `RegisterSubstitution`.
-
----
-
-## Supported Transformations
-
-### Stable Mutations (x86_64 ELF, tested)
-
-| Pass | Description |
-|------|-------------|
-| **NOP Insertion** | Inserts benign NOP instructions at safe locations within functions |
-| **Instruction Substitution** | Replaces instructions with semantically equivalent alternatives from bidirectional equivalence groups |
-| **Register Substitution** | Substitutes registers while preserving program semantics via liveness analysis |
-
-### Experimental Mutations (working, limited testing)
-
-| Pass | Description |
-|------|-------------|
-| **Block Reordering** | Reorders basic blocks with jump patching to preserve control flow |
-| **Instruction Expansion** | Expands single instructions into longer equivalent sequences (flag-safe subset) |
-| **Dead Code Injection** | Injects semantically neutral code in padding regions |
-| **Short Jump Patching** | Replaces short jumps with equivalent instruction sequences |
-| **Constant Unfolding** | Unfolds constant expressions into multi-instruction equivalents |
-
+Frida integration for dynamic analysis: process spawning, script injection, API call logging, anti-analysis detection. Requires `frida` package.
 
 ---
 
@@ -439,32 +277,11 @@ JSON reports follow a documented schema at `r2morph/reporting/report_schema.json
 
 ---
 
-## Examples
-
-### Basic Binary Analysis
-
-```python
-from r2morph import Binary
-
-with Binary("/path/to/binary") as binary:
-    binary.analyze()
-
-    functions = binary.get_functions()
-    print(f"Found {len(functions)} functions")
-
-    arch = binary.get_arch_info()
-    print(f"Architecture: {arch['arch']} ({arch['bits']}-bit)")
-```
-
----
-
 ## Requirements
 
 - Python 3.10+
 - radare2
-- See `pyproject.toml` for full dependency list
-- Optional: `lief` (PE/Mach-O support), `angr` (symbolic validation), `frida` (instrumentation), `z3-solver` (MBA simplification)
-- For local development: `requirements-dev.txt`
+- Optional: `lief` (PE/Mach-O/section creation), `angr` (symbolic validation), `frida` (instrumentation), `z3-solver` (MBA simplification)
 
 ---
 
