@@ -59,7 +59,6 @@ class InstructionExpansionPass(MutationPass):
     # expansions are included.
     EXPANSION_RULES: dict[str, dict[tuple[str, ...], list[list[tuple[str, ...]]]]] = {
         "x86": {
-            # imul → shl/add: both set CF/OF, safe equivalence
             ("imul", "reg", "2"): [
                 [("shl", "reg", "1")],
                 [("add", "reg", "reg")],
@@ -67,11 +66,43 @@ class InstructionExpansionPass(MutationPass):
             ("imul", "reg", "4"): [
                 [("shl", "reg", "2")],
             ],
-            # shl 1 → add: both set same flags, safe equivalence
             ("shl", "reg", "1"): [
                 [("add", "reg", "reg")],
             ],
-        }
+        },
+        "arm": {
+            ("lsl", "reg", "reg", "#1"): [
+                [("add", "reg", "reg", "reg")],
+            ],
+            ("add", "reg", "reg", "#1"): [
+                [("adds", "reg", "reg", "#1")],
+            ],
+            ("mov", "reg", "#0"): [
+                [("eor", "reg", "reg", "reg")],
+                [("sub", "reg", "reg", "reg")],
+            ],
+            ("sub", "reg", "reg", "#1"): [
+                [("subs", "reg", "reg", "#1")],
+            ],
+        },
+        "arm64": {
+            ("lsl", "reg", "reg", "#1"): [
+                [("add", "reg", "reg", "reg")],
+            ],
+            ("mov", "reg", "#0"): [
+                [("eor", "reg", "reg", "reg")],
+                [("sub", "reg", "reg", "reg")],
+            ],
+            ("mov", "reg", "xzr"): [
+                [("eor", "reg", "reg", "reg")],
+            ],
+            ("add", "reg", "reg", "#1"): [
+                [("sub", "reg", "reg", "#-1")],
+            ],
+            ("sub", "reg", "reg", "#1"): [
+                [("add", "reg", "reg", "#-1")],
+            ],
+        },
     }
 
     def __init__(self, config: dict[str, Any] | None = None):

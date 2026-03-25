@@ -89,12 +89,12 @@ pip install -e ".[dev]"
 
 ### Architectures
 
-| Architecture | NOP | Substitute | Register | Expand | Block | Dead Code | Other Passes |
-|--------------|-----|-----------|----------|--------|-------|-----------|-------------|
-| **x86_64** | Yes | Yes | Yes | Yes | Yes | Yes | All 18 passes |
-| **x86** | Yes | Yes | Yes | Partial | Partial | Partial | - |
-| **ARM64** | Partial | No | Partial | No | No | No | - |
-| **ARM32** | Yes | Yes | Yes | No | No | No | - |
+| Architecture | NOP | Substitute | Register | Expand | Block | Dead Code |
+|--------------|-----|-----------|----------|--------|-------|-----------|
+| **x86_64** | Yes | Yes | Yes | Yes | Yes | Yes |
+| **x86** | Yes | Yes | Yes | Yes | Yes | Yes |
+| **ARM64** | Yes | Yes | Yes | Yes | Yes | Yes |
+| **ARM32** | Yes | Yes | Yes | Yes | Yes | Yes |
 
 ### Instruction Equivalence Rules
 

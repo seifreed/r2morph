@@ -504,31 +504,32 @@ class NopInsertionPass(MutationPass):
                 addr = insn.get("addr", 0)
                 size = insn.get("size", 0)
 
-                if not disasm.startswith("mov "):
+                is_nop_like = False
+                new_insn = None
+
+                if disasm in ("nop", "mov x0, x0", "mov xzr, xzr"):
+                    is_nop_like = True
+                    nop_alts = ["mov x0, x0", "add x0, x0, #0", "orr x0, x0, #0"]
+                    new_insn = random.choice(nop_alts)
+                elif disasm.startswith("mov "):
+                    parts = [p.strip() for p in disasm.split(",")]
+                    if len(parts) == 2:
+                        dst = parts[0].split()[-1]
+                        src = parts[1]
+                        if dst == src and (dst.startswith("x") or dst.startswith("w")):
+                            is_nop_like = True
+                            new_insn = f"add {dst}, {dst}, #0"
+                        elif (dst.startswith("w") or dst.startswith("x")) and (src.startswith("0x") or src.isdigit()):
+                            try:
+                                imm_val = int(src, 16) if src.startswith("0x") else int(src)
+                            except ValueError:
+                                continue
+                            if 0 <= imm_val <= 0xFFFF:
+                                is_nop_like = True
+                                new_insn = f"movz {dst}, {hex(imm_val)}"
+
+                if not is_nop_like or new_insn is None:
                     continue
-
-                parts = [p.strip() for p in disasm.split(",")]
-                if len(parts) != 2:
-                    continue
-
-                dst = parts[0].split()[-1]
-                imm = parts[1]
-
-                if not (dst.startswith("w") or dst.startswith("x")):
-                    continue
-
-                if not imm.startswith("0x") and not imm.isdigit():
-                    continue
-
-                try:
-                    imm_val = int(imm, 16) if imm.startswith("0x") else int(imm)
-                except ValueError:
-                    continue
-
-                if imm_val < 0 or imm_val > 0xFFFF:
-                    continue
-
-                new_insn = f"movz {dst}, {hex(imm_val)}"
                 new_bytes = binary.assemble(new_insn, func["addr"])
 
                 if not new_bytes or len(new_bytes) != size:

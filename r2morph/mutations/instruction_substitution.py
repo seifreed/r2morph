@@ -63,7 +63,7 @@ class InstructionSubstitutionPass(MutationPass):
         self.strict_size = self.config.get("strict_size", False)
         self.set_support(
             formats=("ELF",),
-            architectures=("x86_64", "arm"),
+            architectures=("x86_64", "arm", "arm64"),
             validators=("structural", "runtime", "symbolic"),
             stability="stable",
             notes=("known equivalence groups", "bounded symbolic observables"),
@@ -107,6 +107,7 @@ class InstructionSubstitutionPass(MutationPass):
         self.equivalence_groups = {
             "x86": load_equivalence_rules("x86"),
             "arm": load_equivalence_rules("arm"),
+            "arm64": load_equivalence_rules("arm64"),
         }
 
         for arch in self.equivalence_groups:

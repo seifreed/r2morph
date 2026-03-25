@@ -230,10 +230,16 @@ class BlockReorderingPass(MutationPass):
                     target_block = blocks[i + 2]
                     target_addr = target_block.get("addr", 0)
 
-                    jmp_insn = f"jmp 0x{target_addr:x}"
+                    arch_family, _ = binary.get_arch_family()
+                    if arch_family == "arm":
+                        jmp_insn = f"b 0x{target_addr:x}"
+                        max_jmp_size = 4
+                    else:
+                        jmp_insn = f"jmp 0x{target_addr:x}"
+                        max_jmp_size = 5
                     jmp_bytes = binary.assemble(jmp_insn, func["addr"])
 
-                    if jmp_bytes and len(jmp_bytes) <= 5:
+                    if jmp_bytes and len(jmp_bytes) <= max_jmp_size:
                         # Verify the last instruction(s) at the write point won't
                         # be partially overwritten — only write into trailing NOPs
                         # or after the last complete instruction boundary.
