@@ -43,15 +43,8 @@ Benefits:
     - Makes disassembly harder
     - Increases complexity of CFG reconstruction
 
-NOTE: This is a PLACEHOLDER implementation. The apply() method currently
-only plans the outlining but does NOT modify the binary. Full implementation
-requires:
-1. Allocating space for outlined chunks
-2. Writing moved blocks to new locations
-3. Patching jump targets in original locations
-4. Updating relocations and references
-
-TODO: Implement actual binary modification.
+Implementation uses CaveFinder to locate executable code caves,
+relocates non-entry chunks with trampoline jumps at original sites.
 """
 
 from __future__ import annotations

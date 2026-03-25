@@ -573,8 +573,36 @@ class PEHandler:
         Returns:
             Virtual address of new section, or None
         """
-        logger.info(f"Would add PE section '{name}' ({size} bytes)")
-        return None
+        if lief is None:
+            logger.error("lief required for PE section creation")
+            return None
+
+        try:
+            parsed = lief.parse(str(self.binary_path))
+            if parsed is None or not isinstance(parsed, lief.PE.Binary):
+                logger.error("Failed to parse PE binary with lief")
+                return None
+
+            section = lief.PE.Section(name[:8])
+            section.content = list(bytes(size))
+            section.characteristics = characteristics
+            section.virtual_size = size
+
+            parsed.add_section(section)
+            parsed.write(str(self.binary_path))
+
+            added = parsed.get_section(name[:8])
+            if added is None:
+                logger.error(f"PE section '{name}' not found after adding")
+                return None
+
+            vaddr: int = added.virtual_address
+            logger.info(f"Added PE section '{name}' ({size} bytes) at vaddr 0x{vaddr:x}")
+            return vaddr
+
+        except Exception as e:
+            logger.error(f"Failed to add PE section '{name}': {e}")
+            return None
 
     def refresh_headers(self) -> bool:
         """

@@ -41,15 +41,9 @@ Benefits:
     - Distributes code entropy across sections
     - Complicates linear disassembly
 
-NOTE: This is a PLACEHOLDER implementation. The apply() method currently
-only plans the mobility but does NOT modify the binary. Full implementation
-requires:
-1. Allocating new sections in the binary
-2. Copying code blocks to new sections
-3. Patching jump targets at original locations
-4. Updating relocations and references
-
-TODO: Implement actual binary modification.
+Implementation uses CaveFinder to locate executable code caves,
+relocates blocks with trampoline jumps at original sites, and
+appends return jumps at the end of each relocated block.
 """
 
 from __future__ import annotations

@@ -4,15 +4,8 @@ Import table obfuscation mutation pass.
 Obfuscates the import table by redirecting imports through a jump table,
 making static analysis of imported functions more difficult.
 
-NOTE: This is a PLACEHOLDER implementation. The apply() method currently
-only plans the obfuscation but does NOT modify the binary. Full implementation
-requires:
-1. Allocating space for jump table (new section or cave)
-2. Writing jump stubs to the allocated space
-3. Patching import address references to point to jump stubs
-4. Updating relocations/PLT entries as needed
-
-TODO: Implement actual binary modification.
+Implementation allocates code caves for jump stubs, writes indirect
+jump instructions, and patches call-site cross-references.
 """
 
 from __future__ import annotations

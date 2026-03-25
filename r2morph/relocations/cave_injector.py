@@ -183,47 +183,33 @@ class CodeCaveInjector:
             return None
 
     def _create_elf_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
-        """
-        Create a new ELF section.
-
-        NOTE: This is a PLACEHOLDER that plans section creation but does NOT modify
-        the binary. The actual section creation requires:
-        1. Extending the binary file
-        2. Adding ELF header entries for the new section
-        3. Updating program headers
-        4. Writing section content
-
-        The returned allocation has metadata["pending_creation"] = True to indicate
-        the section needs to be finalized by the caller.
-
-        TODO: Implement actual ELF section creation.
-        """
+        """Create a new ELF section using lief via ELFHandler.add_section."""
         try:
-            sections = self.binary.get_sections()
-            if not sections:
+            from r2morph.platform.elf_handler import ELFHandler
+
+            section_size = max(options.size, self.MIN_SECTION_SIZE)
+            flags = 0x6 if options.executable else 0x2
+            if options.executable:
+                flags = 0x6  # SHF_ALLOC | SHF_EXECINSTR
+
+            handler = ELFHandler(self.binary.path)
+            vaddr = handler.add_section(options.name, section_size, flags=flags)
+            if vaddr is None:
+                logger.error(f"ELFHandler.add_section failed for '{options.name}'")
                 return None
 
-            last_section = max(sections, key=lambda s: s.get("vaddr", 0) + s.get("vsize", 0))
-            last_addr = last_section.get("vaddr", 0) + last_section.get("vsize", 0)
-
-            aligned_addr = self._align_address(last_addr, options.alignment)
-            section_size = max(options.size, self.MIN_SECTION_SIZE)
-
-            self._created_sections[options.name] = aligned_addr
+            self._created_sections[options.name] = vaddr
 
             allocation = CodeCaveAllocation(
-                address=aligned_addr,
+                address=vaddr,
                 size=section_size,
                 cave_type=CaveType.NEW_SECTION,
                 section_name=options.name,
                 alignment=options.alignment,
-                metadata={"format": "ELF", "pending_creation": True},
+                metadata={"format": "ELF"},
             )
 
-            logger.warning(
-                f"ELF section creation PLACEHOLDER: {options.name} at 0x{aligned_addr:x} ({section_size} bytes). "
-                "Section will NOT be created - caller must finalize."
-            )
+            logger.info(f"Created ELF section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
             self._allocations.append(allocation)
             return allocation
 
@@ -232,49 +218,50 @@ class CodeCaveInjector:
             return None
 
     def _create_pe_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
-        """
-        Create a new PE section.
-
-        NOTE: This is a PLACEHOLDER that plans section creation but does NOT modify
-        the binary. The actual section creation requires:
-        1. Extending the binary file
-        2. Adding PE section header
-        3. Updating PE header
-        4. Writing section content
-
-        The returned allocation has metadata["pending_creation"] = True to indicate
-        the section needs to be finalized by the caller.
-
-        TODO: Implement actual PE section creation.
-        """
+        """Create a new PE section using lief via PEHandler.add_section."""
         try:
+            import lief
+        except ImportError:
+            logger.error("lief required for PE section creation")
+            return None
 
-            sections = self.binary.get_sections()
-            if not sections:
+        try:
+            section_size = max(options.size, self.MIN_SECTION_SIZE)
+            characteristics = 0x60000020  # CODE | EXECUTE | READ
+            if not options.executable:
+                characteristics = 0xC0000040  # INITIALIZED_DATA | READ | WRITE
+
+            parsed = lief.parse(str(self.binary.path))
+            if parsed is None or not isinstance(parsed, lief.PE.Binary):
+                logger.error("Failed to parse PE binary with lief")
                 return None
 
-            last_section = max(sections, key=lambda s: s.get("vaddr", 0) + s.get("vsize", 0))
-            last_addr = last_section.get("vaddr", 0) + last_section.get("vsize", 0)
+            section = lief.PE.Section(options.name[:8])
+            section.content = list(bytes(section_size))
+            section.characteristics = characteristics
+            section.virtual_size = section_size
 
-            section_alignment = 0x1000
-            aligned_addr = self._align_address(last_addr, section_alignment)
-            section_size = self._align_address(options.size, section_alignment)
+            parsed.add_section(section)
+            parsed.write(str(self.binary.path))
 
-            self._created_sections[options.name] = aligned_addr
+            added = parsed.get_section(options.name[:8])
+            vaddr = added.virtual_address if added else 0
+            if vaddr == 0:
+                logger.error(f"PE section '{options.name}' added but vaddr is 0")
+                return None
+
+            self._created_sections[options.name] = vaddr
 
             allocation = CodeCaveAllocation(
-                address=aligned_addr,
+                address=vaddr,
                 size=section_size,
                 cave_type=CaveType.NEW_SECTION,
                 section_name=options.name,
-                alignment=section_alignment,
-                metadata={"format": "PE", "pending_creation": True},
+                alignment=0x1000,
+                metadata={"format": "PE"},
             )
 
-            logger.warning(
-                f"PE section creation PLACEHOLDER: {options.name} at 0x{aligned_addr:x} ({section_size} bytes). "
-                "Section will NOT be created - caller must finalize."
-            )
+            logger.info(f"Created PE section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
             self._allocations.append(allocation)
             return allocation
 
@@ -283,51 +270,55 @@ class CodeCaveInjector:
             return None
 
     def _create_macho_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
-        """
-        Create a new Mach-O section.
-
-        NOTE: This is a PLACEHOLDER that plans section creation but does NOT modify
-        the binary. The actual section creation requires:
-        1. Extending the binary file
-        2. Adding Mach-O segment/section headers
-        3. Updating load commands
-        4. Writing section content
-
-        The returned allocation has metadata["pending_creation"] = True to indicate
-        the section needs to be finalized by the caller.
-
-        TODO: Implement actual Mach-O section creation.
-        """
+        """Create a new Mach-O section in __TEXT segment using lief."""
         try:
-            sections = self.binary.get_sections()
-            if not sections:
+            import lief
+        except ImportError:
+            logger.error("lief required for Mach-O section creation")
+            return None
+
+        try:
+            section_size = max(options.size, self.MIN_SECTION_SIZE)
+            parsed = lief.parse(str(self.binary.path))
+            if parsed is None:
+                logger.error("Failed to parse Mach-O binary with lief")
                 return None
 
-            text_sections = [s for s in sections if "__TEXT" in s.get("name", "")]
-            if not text_sections:
+            macho = parsed
+            if isinstance(parsed, lief.MachO.FatBinary):
+                macho = parsed.at(0)
+            if not isinstance(macho, lief.MachO.Binary):
+                logger.error("Parsed binary is not Mach-O")
                 return None
 
-            last_section = max(text_sections, key=lambda s: s.get("vaddr", 0) + s.get("vsize", 0))
-            last_addr = last_section.get("vaddr", 0) + last_section.get("vsize", 0)
+            section = lief.MachO.Section(options.name, list(bytes(section_size)))
+            section.alignment = 4  # 2^4 = 16-byte alignment
 
-            section_alignment = 0x4000
-            aligned_addr = self._align_address(last_addr, section_alignment)
+            text_segment = macho.get_segment("__TEXT")
+            if text_segment is None:
+                logger.error("No __TEXT segment found in Mach-O")
+                return None
 
-            self._created_sections[options.name] = aligned_addr
+            added = text_segment.add_section(section)
+            macho.write(str(self.binary.path))
+
+            vaddr = added.virtual_address if added else 0
+            if vaddr == 0:
+                logger.error(f"Mach-O section '{options.name}' added but vaddr is 0")
+                return None
+
+            self._created_sections[options.name] = vaddr
 
             allocation = CodeCaveAllocation(
-                address=aligned_addr,
-                size=options.size,
+                address=vaddr,
+                size=section_size,
                 cave_type=CaveType.NEW_SECTION,
                 section_name=options.name,
-                alignment=section_alignment,
-                metadata={"format": "Mach-O", "pending_creation": True},
+                alignment=0x4000,
+                metadata={"format": "Mach-O"},
             )
 
-            logger.warning(
-                f"Mach-O section creation PLACEHOLDER: {options.name} at 0x{aligned_addr:x} ({options.size} bytes). "
-                "Section will NOT be created - caller must finalize."
-            )
+            logger.info(f"Created Mach-O section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
             self._allocations.append(allocation)
             return allocation
 
