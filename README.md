@@ -105,6 +105,11 @@ pip install -e ".[dev]"
 | **Mutations** | `expand` | Single-instruction expansions, flag-safe subset |
 | **Mutations** | `block` | Basic block reordering with jump patching |
 | **Mutations** | `dead-code` | Injects dead code in padding regions |
+| **Mutations** | `cff` | Inserts opaque predicates and jump obfuscation into functions |
+| **Mutations** | `opaque` | Assembles and writes opaque predicate instructions into basic blocks |
+| **Mutations** | `code-virtualization` | Translates instructions to VM bytecode and writes dispatcher |
+| **Mutations** | `anti-disassembly` | Injects anti-disassembly snippets into basic blocks |
+| **Mutations** | `data-flow` | Data flow analysis-driven safe register/instruction substitutions |
 | **Mutations** | `short-jump` | Patches short jumps to equivalent sequences |
 | **Mutations** | `constant-unfolding` | Unfolds constant expressions (x86_64, partial ARM64) |
 | **Validation** | `symbolic` | Bounded symbolic step via angr, ELF x86_64 only, advisory |
@@ -113,21 +118,16 @@ pip install -e ".[dev]"
 | **Formats** | Mach-O | Handler via LIEF, load command parsing, partial Fat binary support |
 | **Architecture** | ARM64 | NOP insertion (`mov xzr, xzr`), register maps defined |
 
-### Planned / Stub
+| **Mutations** | `code-mobility` | Relocates blocks to code caves with trampolines |
+| **Mutations** | `function-outlining` | Distributes function chunks across code caves |
+| **Mutations** | `api-hashing` | Hash trampolines obscuring PLT references (ELF) |
+| **Mutations** | `import-obfuscation` | Jump stub indirection for import calls |
+| **Mutations** | `self-modifying` | XOR-encrypts function bodies with runtime decryptor stub |
 
-These modules have framework code but do not yet apply real binary mutations:
+### Planned / Stub
 
 | Area | Status |
 |------|--------|
-| Control Flow Flattening (`cff`) | Analyzes CFG structure, does not flatten |
-| Opaque Predicates (`opaque`) | Analyzes candidates, no insertion |
-| Code Virtualization | Opcode definitions exist, no VM generation |
-| Code Mobility | Framework only |
-| Function Outlining | Framework only |
-| API Hashing | Windows-specific, stub |
-| Import Obfuscation | Framework only |
-| Self-Modifying Code | Encryption schemes defined, no application |
-| Anti-Disassembly | Technique dataclasses only |
 | ARM32 mutations | Register maps exist, untested |
 
 ## Architecture Support Detail
@@ -426,9 +426,9 @@ Each report also exposes `pass_support.<PassName>.validator_capabilities`, so co
 | **Short Jump Patching** | Replaces short jumps with equivalent instruction sequences |
 | **Constant Unfolding** | Unfolds constant expressions into multi-instruction equivalents |
 
-### Planned (framework exists, not yet functional)
+### Planned
 
-Control Flow Flattening, Opaque Predicates, Code Virtualization, Code Mobility, Function Outlining, API Hashing, Import Obfuscation, Self-Modifying Code, Anti-Disassembly, Data Flow Mutation
+ARM32 mutation support (register maps defined, not tested)
 
 ---
 

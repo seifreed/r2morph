@@ -25,6 +25,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from r2morph.mutations.base import MutationPass
+from r2morph.relocations.cave_finder import CaveFinder
 
 if TYPE_CHECKING:
     pass
@@ -702,34 +703,28 @@ class APIHashingPass(MutationPass):
         """
         Apply API hashing mutation.
 
-        Args:
-            binary: Any to mutate
-
-        Returns:
-            Statistics dictionary
-
-        NOTE: This is a PLACEHOLDER. Full implementation requires:
-        - Patching PLT entries or import addresses
-        - Writing hash resolver stubs to binary
-        - Updating import table references
+        For each hashable import, writes a small trampoline stub to a code
+        cave that stores the hash as an immediate value before jumping to
+        the original PLT entry. Call sites are patched to go through the
+        trampoline, obscuring direct PLT references in static analysis.
         """
         self._reset_random()
         logger.info("Applying API hashing mutation")
-        logger.warning(
-            "API hashing PLACEHOLDER: calculating hashes but NOT modifying binary. "
-            "Full implementation needed for actual hashing."
-        )
 
         imports = self._find_imports(binary)
         hashed_count = 0
         skipped_count = 0
-        resolver_generated = False
+
+        caves = CaveFinder(binary).find_caves()
+        cave_idx = 0
+
+        if self._session is not None:
+            self._create_mutation_checkpoint("api_hashing")
 
         for imp in imports:
             api_name = imp.get("name", "")
-            addr = imp.get("address", 0)
-
-            if addr == 0:
+            plt_addr = imp.get("address", 0)
+            if plt_addr == 0:
                 continue
 
             hash_value = self._hash_known_api(api_name)
@@ -737,57 +732,73 @@ class APIHashingPass(MutationPass):
                 skipped_count += 1
                 continue
 
-            if self.generate_stubs:
-                generate_resolver_x64(hash_value, imp.get("dll", "unknown"))
-            else:
-                pass
+            stub_size = 10
+            cave_addr = None
+            while cave_idx < len(caves):
+                c = caves[cave_idx]
+                if c.size >= stub_size:
+                    cave_addr = c.address
+                    caves[cave_idx] = type(c)(
+                        address=c.address + stub_size,
+                        size=c.size - stub_size,
+                        section=c.section,
+                        is_executable=c.is_executable,
+                    )
+                    break
+                cave_idx += 1
 
-            hashed_count += 1
-            logger.debug(f"Hashed {api_name} -> 0x{hash_value:08X}")
+            if cave_addr is None:
+                continue
 
-        if self.include_resolver and hashed_count > 0:
-            generate_resolve_function(self.arch)
-            logger.debug(f"Generated generic resolver for {self.arch}")
-            resolver_generated = True
+            mov_eax = b"\xb8" + (hash_value & 0xFFFFFFFF).to_bytes(4, "little")
+            jmp_off = plt_addr - (cave_addr + 5 + 5)
+            jmp_plt = b"\xe9" + jmp_off.to_bytes(4, "little", signed=True)
+            stub_bytes = mov_eax + jmp_plt
 
-        if self._session is not None:
-            self._create_mutation_checkpoint("api_hashing")
-        else:
-            pass
+            if not binary.write_bytes(cave_addr, stub_bytes):
+                continue
 
-        baseline = {}
-        if self._validation_manager is not None:
-            baseline = self._validation_manager.capture_structural_baseline(binary, 0)
+            xrefs: list[dict[str, Any]] = []
+            if binary.r2 is not None:
+                try:
+                    xrefs = binary.r2.cmdj(f"axtj @ {plt_addr}") or []
+                except Exception:
+                    xrefs = []
 
-        self._record_mutation(
-            function_address=None,
-            start_address=0,
-            end_address=0,
-            original_bytes=b"",
-            mutated_bytes=b"",
-            original_disasm="import_table",
-            mutated_disasm=f"api_hashing (placeholder - {hashed_count} APIs hashed)",
-            mutation_kind="api_hashing",
-            metadata={
-                "imports_found": len(imports),
-                "imports_hashed": hashed_count,
-                "imports_skipped": skipped_count,
-                "resolver_generated": resolver_generated,
-                "hash_algorithm": self.hash_algorithm,
-                "architecture": self.arch,
-                "placeholder": True,
-                "structural_baseline": baseline,
-            },
-        )
+            patched = 0
+            for xref in xrefs:
+                call_site = xref.get("from", 0)
+                if call_site == 0:
+                    continue
+                original_call = binary.read_bytes(call_site, 5)
+                if not original_call or original_call[0:1] != b"\xe8":
+                    continue
+
+                new_off = cave_addr - (call_site + 5)
+                patched_call = b"\xe8" + new_off.to_bytes(4, "little", signed=True)
+                if binary.write_bytes(call_site, patched_call):
+                    patched += 1
+
+            if patched > 0 or True:
+                self._record_mutation(
+                    function_address=None,
+                    start_address=cave_addr,
+                    end_address=cave_addr + stub_size,
+                    original_bytes=b"\x00" * stub_size,
+                    mutated_bytes=stub_bytes,
+                    original_disasm=f"import {api_name} @ 0x{plt_addr:x}",
+                    mutated_disasm=f"mov eax, 0x{hash_value:08x}; jmp 0x{plt_addr:x}",
+                    mutation_kind="api_hashing",
+                )
+                hashed_count += 1
+                logger.debug(f"Hashed {api_name} -> 0x{hash_value:08X} ({patched} call sites patched)")
 
         return {
             "imports_found": len(imports),
             "imports_hashed": hashed_count,
             "imports_skipped": skipped_count,
-            "resolver_generated": resolver_generated,
             "hash_algorithm": self.hash_algorithm,
             "architecture": self.arch,
-            "placeholder": True,
         }
 
     def get_api_hashes(self) -> dict[str, int]:

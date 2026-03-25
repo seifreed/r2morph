@@ -276,29 +276,25 @@ class FunctionOutliningPass(MutationPass):
         """
         Apply function outlining.
 
-        Args:
-            binary: Any to outline
-
-        Returns:
-            Statistics dictionary
-
-        NOTE: This is a PLACEHOLDER. Full implementation requires:
-        - Allocating space for outlined chunks
-        - Writing moved blocks to new locations
-        - Patching jump targets in original locations
-        - Updating relocations and references
+        Relocates non-entry chunks of selected functions to code caves,
+        replacing the original chunk location with a trampoline jump.
         """
         self._reset_random()
         logger.info("Applying function outlining")
-        logger.warning(
-            "Function outlining PLACEHOLDER: analyzing functions but NOT modifying binary. "
-            "Full implementation needed for actual outlining."
-        )
 
         functions = binary.get_functions()
         outlined_functions: list[OutlinedFunction] = []
         total_chunks = 0
         total_blocks = 0
+        chunks_relocated = 0
+
+        from r2morph.relocations.cave_finder import CaveFinder
+
+        caves = CaveFinder(binary).find_caves()
+        cave_idx = 0
+
+        if self._session is not None:
+            self._create_mutation_checkpoint("function_outlining")
 
         for func in functions:
             if len(outlined_functions) >= self.max_functions:
@@ -309,7 +305,6 @@ class FunctionOutliningPass(MutationPass):
 
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
-
             if random.random() > self.probability:
                 continue
 
@@ -323,7 +318,6 @@ class FunctionOutliningPass(MutationPass):
                 continue
 
             chunks = self._split_into_chunks(blocks, binary, self.min_chunks, self.max_chunks)
-
             if len(chunks) < 2:
                 continue
 
@@ -334,52 +328,80 @@ class FunctionOutliningPass(MutationPass):
                 entry_chunk=chunks[0].chunk_id if chunks else 0,
             )
 
-            outline_asm, chunk_offsets = self._generate_outline_asm(chunks, self.interleave_functions)
+            for chunk in chunks[1:]:
+                if not chunk.instructions:
+                    continue
+
+                first_addr = chunk.instructions[0].get("offset", chunk.original_address)
+                last_insn = chunk.instructions[-1]
+                last_addr = last_insn.get("offset", first_addr)
+                last_size = last_insn.get("size", 1)
+                chunk_size = (last_addr + last_size) - first_addr
+
+                if chunk_size < 5:
+                    continue
+
+                disasm_text = "; ".join(str(i.get("disasm", "")) for i in chunk.instructions[:3])
+                if "[rip" in disasm_text:
+                    continue
+
+                original_bytes = binary.read_bytes(first_addr, chunk_size)
+                if not original_bytes or len(original_bytes) < 5:
+                    continue
+
+                needed = chunk_size + 5
+                cave_addr = None
+                while cave_idx < len(caves):
+                    c = caves[cave_idx]
+                    if c.size >= needed:
+                        cave_addr = c.address
+                        caves[cave_idx] = type(c)(
+                            address=c.address + needed,
+                            size=c.size - needed,
+                            section=c.section,
+                            is_executable=c.is_executable,
+                        )
+                        break
+                    cave_idx += 1
+
+                if cave_addr is None:
+                    continue
+
+                return_target = first_addr + chunk_size
+                ret_off = return_target - (cave_addr + chunk_size + 5)
+                return_jmp = b"\xe9" + ret_off.to_bytes(4, "little", signed=True)
+
+                if not binary.write_bytes(cave_addr, original_bytes + return_jmp):
+                    continue
+
+                tramp_off = cave_addr - (first_addr + 5)
+                trampoline = b"\xe9" + tramp_off.to_bytes(4, "little", signed=True)
+                nops = b"\x90" * (chunk_size - 5)
+                binary.write_bytes(first_addr, trampoline + nops)
+
+                self._record_mutation(
+                    function_address=func_addr,
+                    start_address=first_addr,
+                    end_address=first_addr + chunk_size,
+                    original_bytes=original_bytes,
+                    mutated_bytes=trampoline + nops,
+                    original_disasm=disasm_text,
+                    mutated_disasm=f"jmp 0x{cave_addr:x} (outlined chunk)",
+                    mutation_kind="function_outlining",
+                )
+                chunks_relocated += 1
 
             outlined_functions.append(outlined_func)
             total_chunks += len(chunks)
             total_blocks += len(blocks)
-
             logger.debug(f"Outlined {func_name}: {len(blocks)} blocks -> {len(chunks)} chunks")
-
-        if self._session is not None:
-            self._create_mutation_checkpoint("function_outlining")
-        else:
-            pass
-
-        baseline = {}
-        if self._validation_manager is not None:
-            baseline = self._validation_manager.capture_structural_baseline(binary, 0)
-
-        self._record_mutation(
-            function_address=None,
-            start_address=0,
-            end_address=0,
-            original_bytes=b"",
-            mutated_bytes=b"",
-            original_disasm="functions",
-            mutated_disasm=f"function_outlining (placeholder - {len(outlined_functions)} functions outlined)",
-            mutation_kind="function_outlining",
-            metadata={
-                "functions_outlined": len(outlined_functions),
-                "total_chunks": total_chunks,
-                "total_blocks": total_blocks,
-                "average_chunks_per_function": total_chunks / max(len(outlined_functions), 1),
-                "interleaved": self.interleave_functions,
-                "section_name": self.section_name,
-                "placeholder": True,
-                "structural_baseline": baseline,
-            },
-        )
 
         return {
             "functions_outlined": len(outlined_functions),
+            "chunks_relocated": chunks_relocated,
             "total_chunks": total_chunks,
             "total_blocks": total_blocks,
             "average_chunks_per_function": total_chunks / max(len(outlined_functions), 1),
-            "interleaved": self.interleave_functions,
-            "section_name": self.section_name,
-            "placeholder": True,
         }
 
 

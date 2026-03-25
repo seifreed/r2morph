@@ -260,91 +260,92 @@ section {section_name} align=16
         """
         Apply code mobility transformation.
 
-        Args:
-            binary: Any to transform
-
-        Returns:
-            Statistics dictionary
-
-        NOTE: This is a PLACEHOLDER. Full implementation requires:
-        - Allocating new sections in the binary
-        - Copying code blocks to new sections
-        - Patching jump targets at original locations
-        - Updating relocations and references
+        Relocates basic blocks to code caves, replacing originals with
+        trampolines. Each relocated block ends with a jump back to the
+        instruction following the original block.
         """
         self._reset_random()
         logger.info("Applying code mobility")
-        logger.warning(
-            "Code mobility PLACEHOLDER: analyzing code but NOT modifying binary. "
-            "Full implementation needed for actual mobility."
-        )
 
         functions = binary.get_functions()
         plan = self._create_mobility_plan(binary, functions)
 
         if not plan.blocks:
             logger.info("No blocks selected for mobility")
-            return {
-                "blocks_moved": 0,
-                "sections_created": 0,
-                "avg_block_size": 0,
-                "placeholder": True,
-            }
+            return {"blocks_moved": 0, "sections_created": 0, "avg_block_size": 0}
 
         interleaved_blocks = self._interleave_blocks(plan.blocks)
 
-        total_size = sum(b.size for b in interleaved_blocks)
-        sections_used = set(b.target_section for b in interleaved_blocks)
+        from r2morph.relocations.cave_finder import CaveFinder
 
-        section_asm = {}
-        for section_name in sorted(sections_used):
-            section_idx = int(section_name.split("_")[-1])
-            section_asm[section_name] = self._generate_section_header(section_name, section_idx)
-
-        for block in interleaved_blocks:
-            if block.target_section not in section_asm:
-                continue
-
-            block_code = self._generate_block_code(block, block.original_section)
-            section_asm[block.target_section] += block_code
-
-        for section_name, asm in section_asm.items():
-            logger.debug(f"Generated {section_name}: {len(asm)} bytes of assembly")
+        caves = CaveFinder(binary).find_caves()
+        cave_idx = 0
+        blocks_moved = 0
 
         if self._session is not None:
             self._create_mutation_checkpoint("code_mobility")
-        else:
-            pass
 
-        baseline = {}
-        if self._validation_manager is not None:
-            baseline = self._validation_manager.capture_structural_baseline(binary, 0)
+        for block in interleaved_blocks:
+            if block.size < 5:
+                continue
 
-        self._record_mutation(
-            function_address=None,
-            start_address=0,
-            end_address=0,
-            original_bytes=b"",
-            mutated_bytes=b"",
-            original_disasm="code_sections",
-            mutated_disasm=f"mobility_plan (placeholder - {len(interleaved_blocks)} blocks planned)",
-            mutation_kind="code_mobility",
-            metadata={
-                "blocks_moved": len(interleaved_blocks),
-                "sections_created": len(sections_used),
-                "avg_block_size": total_size // max(len(interleaved_blocks), 1),
-                "placeholder": True,
-                "structural_baseline": baseline,
-            },
-        )
+            original_bytes = binary.read_bytes(block.original_address, block.size)
+            if not original_bytes or len(original_bytes) < 5:
+                continue
 
+            disasm = binary.get_function_disasm(block.original_address)
+            disasm_text = "; ".join(str(i.get("disasm", "")) for i in (disasm or [])[:3])
+            if "[rip" in disasm_text:
+                continue
+
+            needed = block.size + 5
+            cave_addr = None
+            while cave_idx < len(caves):
+                c = caves[cave_idx]
+                if c.size >= needed:
+                    cave_addr = c.address
+                    caves[cave_idx] = type(c)(
+                        address=c.address + needed,
+                        size=c.size - needed,
+                        section=c.section,
+                        is_executable=c.is_executable,
+                    )
+                    break
+                cave_idx += 1
+
+            if cave_addr is None:
+                continue
+
+            return_target = block.original_address + block.size
+            ret_offset = return_target - (cave_addr + block.size + 5)
+            return_jmp = b"\xe9" + ret_offset.to_bytes(4, "little", signed=True)
+
+            if not binary.write_bytes(cave_addr, original_bytes + return_jmp):
+                continue
+
+            tramp_offset = cave_addr - (block.original_address + 5)
+            trampoline = b"\xe9" + tramp_offset.to_bytes(4, "little", signed=True)
+            nops = b"\x90" * (block.size - 5)
+
+            binary.write_bytes(block.original_address, trampoline + nops)
+
+            self._record_mutation(
+                function_address=block.original_address,
+                start_address=block.original_address,
+                end_address=block.original_address + block.size,
+                original_bytes=original_bytes,
+                mutated_bytes=trampoline + nops,
+                original_disasm=disasm_text,
+                mutated_disasm=f"jmp 0x{cave_addr:x} (relocated block)",
+                mutation_kind="code_mobility",
+            )
+            blocks_moved += 1
+
+        total_size = sum(b.size for b in interleaved_blocks)
         return {
-            "blocks_moved": len(interleaved_blocks),
-            "sections_created": len(sections_used),
+            "blocks_moved": blocks_moved,
+            "sections_created": 0,
             "avg_block_size": total_size // max(len(interleaved_blocks), 1),
-            "section_names": list(sections_used),
-            "preserve_order": self.preserve_order,
-            "placeholder": True,
         }
 
 
