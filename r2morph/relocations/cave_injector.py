@@ -190,18 +190,8 @@ class CodeCaveInjector:
         """Plan the next section address when we cannot materialize one on disk."""
         max_end = 0
         for section in self.binary.get_sections():
-            start = (
-                section.get("vaddr")
-                or section.get("virtual_address")
-                or section.get("addr")
-                or 0
-            )
-            size = (
-                section.get("vsize")
-                or section.get("virtual_size")
-                or section.get("size")
-                or 0
-            )
+            start = section.get("vaddr") or section.get("virtual_address") or section.get("addr") or 0
+            size = section.get("vsize") or section.get("virtual_size") or section.get("size") or 0
             max_end = max(max_end, start + size)
 
         if max_end == 0:
