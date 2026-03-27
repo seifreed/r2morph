@@ -44,7 +44,9 @@ def test_pe_handler_checksum_and_validation(tmp_path: Path) -> None:
     assert isinstance(checksum, int)
 
     assert handler.fix_checksum() is True
-    assert handler.add_section("test", 128) is None
+    new_section_vaddr = handler.add_section("test", 128)
+    assert isinstance(new_section_vaddr, int)
+    assert new_section_vaddr > 0
 
     sections = handler.get_sections()
     imports = handler.get_imports()

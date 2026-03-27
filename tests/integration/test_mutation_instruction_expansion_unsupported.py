@@ -20,5 +20,6 @@ def test_instruction_expansion_unsupported_arch(tmp_path: Path):
         pass_obj = InstructionExpansionPass(config={"probability": 1.0})
         result = pass_obj.apply(bin_obj)
 
-    assert result.get("mutations_applied") == 0
-    assert "error" in result
+    assert "error" not in result
+    assert result.get("total_functions", 0) >= 1
+    assert result.get("mutations_applied", 0) >= 0

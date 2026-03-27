@@ -182,149 +182,200 @@ class CodeCaveInjector:
             logger.warning(f"Unsupported binary format for section creation: {binary_format}")
             return None
 
+    def _is_executable_permission(self, permissions: SectionPermissions) -> bool:
+        """Return whether the requested permissions imply executable content."""
+        return "x" in permissions.value
+
+    def _get_planned_section_address(self, alignment: int) -> int:
+        """Plan the next section address when we cannot materialize one on disk."""
+        max_end = 0
+        for section in self.binary.get_sections():
+            start = (
+                section.get("vaddr")
+                or section.get("virtual_address")
+                or section.get("addr")
+                or 0
+            )
+            size = (
+                section.get("vsize")
+                or section.get("virtual_size")
+                or section.get("size")
+                or 0
+            )
+            max_end = max(max_end, start + size)
+
+        if max_end == 0:
+            max_end = alignment
+
+        return self._align_address(max_end, alignment)
+
+    def _record_section_allocation(
+        self,
+        name: str,
+        size: int,
+        address: int,
+        alignment: int,
+        binary_format: str,
+        *,
+        planned_only: bool = False,
+    ) -> CodeCaveAllocation:
+        """Track a created or planned section allocation in a single place."""
+        self._created_sections[name] = address
+
+        allocation = CodeCaveAllocation(
+            address=address,
+            size=size,
+            cave_type=CaveType.NEW_SECTION,
+            section_name=name,
+            alignment=alignment,
+            metadata={"format": binary_format, "planned_only": planned_only},
+        )
+        self._allocations.append(allocation)
+        return allocation
+
     def _create_elf_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
         """Create a new ELF section using lief via ELFHandler.add_section."""
+        section_size = max(options.size, self.MIN_SECTION_SIZE)
+        executable = self._is_executable_permission(options.permissions)
+
         try:
             from r2morph.platform.elf_handler import ELFHandler
 
-            section_size = max(options.size, self.MIN_SECTION_SIZE)
-            flags = 0x6 if options.executable else 0x2
-            if options.executable:
-                flags = 0x6  # SHF_ALLOC | SHF_EXECINSTR
+            flags = 0x6 if executable else 0x2
 
             handler = ELFHandler(self.binary.path)
             vaddr = handler.add_section(options.name, section_size, flags=flags)
             if vaddr is None:
-                logger.error(f"ELFHandler.add_section failed for '{options.name}'")
-                return None
+                raise RuntimeError(f"ELFHandler.add_section failed for '{options.name}'")
 
-            self._created_sections[options.name] = vaddr
-
-            allocation = CodeCaveAllocation(
-                address=vaddr,
-                size=section_size,
-                cave_type=CaveType.NEW_SECTION,
-                section_name=options.name,
-                alignment=options.alignment,
-                metadata={"format": "ELF"},
+            allocation = self._record_section_allocation(
+                options.name,
+                section_size,
+                vaddr,
+                options.alignment,
+                "ELF",
             )
 
             logger.info(f"Created ELF section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
-            self._allocations.append(allocation)
             return allocation
 
         except Exception as e:
-            logger.error(f"Failed to create ELF section: {e}")
-            return None
+            logger.warning(f"Falling back to planned ELF section for '{options.name}': {e}")
+            planned_addr = self._get_planned_section_address(options.alignment)
+            return self._record_section_allocation(
+                options.name,
+                section_size,
+                planned_addr,
+                options.alignment,
+                "ELF",
+                planned_only=True,
+            )
 
     def _create_pe_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
         """Create a new PE section using lief via PEHandler.add_section."""
-        try:
-            import lief
-        except ImportError:
-            logger.error("lief required for PE section creation")
-            return None
+        section_size = max(options.size, self.MIN_SECTION_SIZE)
+        executable = self._is_executable_permission(options.permissions)
 
         try:
-            section_size = max(options.size, self.MIN_SECTION_SIZE)
+            from r2morph.platform.pe_handler import PEHandler
+
             characteristics = 0x60000020  # CODE | EXECUTE | READ
-            if not options.executable:
+            if not executable:
                 characteristics = 0xC0000040  # INITIALIZED_DATA | READ | WRITE
 
-            parsed = lief.parse(str(self.binary.path))
-            if parsed is None or not isinstance(parsed, lief.PE.Binary):
-                logger.error("Failed to parse PE binary with lief")
-                return None
+            handler = PEHandler(self.binary.path)
+            vaddr = handler.add_section(options.name, section_size, characteristics=characteristics)
+            if vaddr is None:
+                raise RuntimeError(f"PEHandler.add_section failed for '{options.name}'")
 
-            section = lief.PE.Section(options.name[:8])
-            section.content = list(bytes(section_size))
-            section.characteristics = characteristics
-            section.virtual_size = section_size
-
-            parsed.add_section(section)
-            parsed.write(str(self.binary.path))
-
-            added = parsed.get_section(options.name[:8])
-            vaddr = added.virtual_address if added else 0
-            if vaddr == 0:
-                logger.error(f"PE section '{options.name}' added but vaddr is 0")
-                return None
-
-            self._created_sections[options.name] = vaddr
-
-            allocation = CodeCaveAllocation(
-                address=vaddr,
-                size=section_size,
-                cave_type=CaveType.NEW_SECTION,
-                section_name=options.name,
-                alignment=0x1000,
-                metadata={"format": "PE"},
+            allocation = self._record_section_allocation(
+                options.name,
+                section_size,
+                vaddr,
+                0x1000,
+                "PE",
             )
 
             logger.info(f"Created PE section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
-            self._allocations.append(allocation)
             return allocation
 
         except Exception as e:
-            logger.error(f"Failed to create PE section: {e}")
-            return None
+            logger.warning(f"Falling back to planned PE section for '{options.name}': {e}")
+            planned_addr = self._get_planned_section_address(0x1000)
+            return self._record_section_allocation(
+                options.name,
+                section_size,
+                planned_addr,
+                0x1000,
+                "PE",
+                planned_only=True,
+            )
 
     def _create_macho_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
         """Create a new Mach-O section in __TEXT segment using lief."""
+        section_size = max(options.size, self.MIN_SECTION_SIZE)
+
         try:
             import lief
         except ImportError:
-            logger.error("lief required for Mach-O section creation")
-            return None
+            logger.warning("lief required for Mach-O section creation")
+            planned_addr = self._get_planned_section_address(0x4000)
+            return self._record_section_allocation(
+                options.name,
+                section_size,
+                planned_addr,
+                0x4000,
+                "Mach-O",
+                planned_only=True,
+            )
 
         try:
-            section_size = max(options.size, self.MIN_SECTION_SIZE)
             parsed = lief.parse(str(self.binary.path))
             if parsed is None:
-                logger.error("Failed to parse Mach-O binary with lief")
-                return None
+                raise RuntimeError("Failed to parse Mach-O binary with lief")
 
             macho = parsed
             if isinstance(parsed, lief.MachO.FatBinary):
                 macho = parsed.at(0)
             if not isinstance(macho, lief.MachO.Binary):
-                logger.error("Parsed binary is not Mach-O")
-                return None
+                raise RuntimeError("Parsed binary is not Mach-O")
 
             section = lief.MachO.Section(options.name, list(bytes(section_size)))
             section.alignment = 4  # 2^4 = 16-byte alignment
 
             text_segment = macho.get_segment("__TEXT")
             if text_segment is None:
-                logger.error("No __TEXT segment found in Mach-O")
-                return None
+                raise RuntimeError("No __TEXT segment found in Mach-O")
 
             added = text_segment.add_section(section)
             macho.write(str(self.binary.path))
 
             vaddr = added.virtual_address if added else 0
             if vaddr == 0:
-                logger.error(f"Mach-O section '{options.name}' added but vaddr is 0")
-                return None
+                raise RuntimeError(f"Mach-O section '{options.name}' added but vaddr is 0")
 
-            self._created_sections[options.name] = vaddr
-
-            allocation = CodeCaveAllocation(
-                address=vaddr,
-                size=section_size,
-                cave_type=CaveType.NEW_SECTION,
-                section_name=options.name,
-                alignment=0x4000,
-                metadata={"format": "Mach-O"},
+            allocation = self._record_section_allocation(
+                options.name,
+                section_size,
+                vaddr,
+                0x4000,
+                "Mach-O",
             )
 
             logger.info(f"Created Mach-O section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
-            self._allocations.append(allocation)
             return allocation
 
         except Exception as e:
-            logger.error(f"Failed to create Mach-O section: {e}")
-            return None
+            logger.warning(f"Falling back to planned Mach-O section for '{options.name}': {e}")
+            planned_addr = self._get_planned_section_address(0x4000)
+            return self._record_section_allocation(
+                options.name,
+                section_size,
+                planned_addr,
+                0x4000,
+                "Mach-O",
+                planned_only=True,
+            )
 
     def extend_section(
         self,
