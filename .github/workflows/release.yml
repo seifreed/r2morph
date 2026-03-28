@@ -119,8 +119,8 @@ jobs:
       - name: Install package
         run: pip install dist/*.whl
 
-      - name: Install dev dependencies
-        run: pip install pytest pytest-cov hypothesis
+      - name: Install test dependencies
+        run: pip install pytest pytest-cov hypothesis networkx z3-solver claripy
 
       - name: Run tests
         run: python -m pytest tests/unit -m "not slow" --tb=short
