@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-28
+
+### Added
+- Release automation from Git tags via GitHub Actions.
+- PyPI Trusted Publishing support using GitHub OIDC, without a static PyPI token.
+- GitHub Release asset generation for built distributions plus `SHA256SUMS`.
+- Full support matrix coverage for the six core mutation passes across x86_64, x86, ARM64, and ARM32.
+- Real PE section creation support in the cave injector path used by relocation-based mutations.
+
+### Changed
+- Reworked the README to reflect the actual feature inventory, support matrix, validation modes, and CLI surface.
+- Tightened the release pipeline so the pushed tag must match `project.version` before build or publish.
+- Improved release notes generation to extract the matching section from `CHANGELOG.md`.
+
+### Fixed
+- Resolved CI failures in `CodeCaveInjector` and aligned platform handler expectations with the current PE section creation behavior.
+- Stabilized real-binary mutation tests by forcing a deterministic seed in flaky multi-pass scenarios.
+- Fixed release packaging checksums and asset upload flow so the generated release artifacts are reproducible and auditable.
+
 ## [0.2.0] - 2025-01-XX
 
 ### Added
