@@ -23,6 +23,8 @@ from r2morph.core.config import EngineConfig
 
 pytestmark = pytest.mark.skipif(os.environ.get("SKIP_REAL_BINARY_TESTS") == "1", reason="Real binary tests disabled")
 
+REAL_BINARY_TEST_SEED = 1337
+
 
 def get_system_binaries():
     """Get list of system binaries available for testing."""
@@ -221,6 +223,7 @@ class TestRealBinaryMutation:
             result = engine.run(
                 validation_mode="structural",
                 rollback_policy="skip-invalid-pass",
+                seed=REAL_BINARY_TEST_SEED,
             )
 
             # Should succeed with at least some mutations
@@ -384,6 +387,7 @@ class TestRecoveryAndRollback:
             engine.run(
                 validation_mode="structural",
                 rollback_policy="skip-invalid-pass",
+                seed=REAL_BINARY_TEST_SEED,
             )
 
             # Should succeed with rollback
