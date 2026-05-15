@@ -159,8 +159,8 @@ class CFGIntegrityChecker:
 
             if hasattr(cfg, "edges"):
                 for edge in cfg.edges:
-                    src = edge[0] if hasattr(edge, "src") else edge[0]
-                    dst = edge[1] if hasattr(edge, "dst") else edge[1]
+                    src = edge.src if hasattr(edge, "src") else edge[0]
+                    dst = edge.dst if hasattr(edge, "dst") else edge[1]
                     edge_type = (
                         getattr(edge, "type", "") if hasattr(edge, "type") else edge[2] if len(edge) > 2 else "normal"
                     )

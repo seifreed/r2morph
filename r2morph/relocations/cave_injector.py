@@ -557,8 +557,15 @@ class CodeCaveInjector:
         return allocation
 
     def _get_jmp_size(self, bits: int) -> int:
-        """Get size of a jump instruction."""
-        return 5 if bits == 64 else 5
+        """Size in bytes of the trampoline jump.
+
+        _create_trampoline_jump only emits the x86 near jump
+        ``E9 <rel32>`` (5 bytes) and returns None for every other
+        architecture, so the stride is 5 regardless of bit width.
+        Kept as a method so the layout code and the encoder stay
+        coupled if non-x86 trampolines are added later.
+        """
+        return 5
 
     def _create_trampoline_jump(self, from_addr: int, to_addr: int, arch: str, bits: int) -> bytes | None:
         """

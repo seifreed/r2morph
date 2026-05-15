@@ -776,7 +776,7 @@ class APIHashingPass(MutationPass):
                 if binary.write_bytes(call_site, patched_call):
                     patched += 1
 
-            if patched > 0 or True:
+            if patched > 0:
                 self._record_mutation(
                     function_address=None,
                     start_address=cave_addr,
