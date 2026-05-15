@@ -9,6 +9,7 @@ import random
 import time
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
+from itertools import zip_longest
 from typing import Any
 
 # Mutation passes accept any object satisfying BinaryAccessProtocol.
@@ -66,17 +67,25 @@ class MutationRecord:
         except ValueError:
             mutated = b""
 
-        changed_offsets = [index for index, (left, right) in enumerate(zip(original, mutated)) if left != right]
+        # original and mutated frequently differ in length (instruction
+        # expansion grows, NOP removal shrinks). Plain zip() would stop at
+        # the shorter sequence and silently drop every trailing
+        # insertion/deletion, undercounting the diff. zip_longest with a
+        # sentinel makes a byte present on only one side count as changed.
+        missing = object()
+        paired = list(zip_longest(original, mutated, fillvalue=missing))
+
+        changed_offsets = [index for index, (left, right) in enumerate(paired) if left != right]
         payload["address_range"] = [self.start_address, self.end_address]
         payload["byte_diff_count"] = len(changed_offsets)
         payload["changed_byte_offsets"] = changed_offsets
         payload["byte_diffs"] = [
             {
                 "offset": index,
-                "original": f"{left:02x}",
-                "mutated": f"{right:02x}",
+                "original": "--" if left is missing else f"{left:02x}",
+                "mutated": "--" if right is missing else f"{right:02x}",
             }
-            for index, (left, right) in enumerate(zip(original, mutated))
+            for index, (left, right) in enumerate(paired)
             if left != right
         ]
         payload["size"] = len(mutated)
