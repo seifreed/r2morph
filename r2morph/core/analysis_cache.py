@@ -243,7 +243,8 @@ class AnalysisCache:
                 with open(entry_path, "rb") as f:
                     old_entry: CacheEntry = _safe_pickle_load(f)
                 existing_size = old_entry.size_bytes
-            except Exception:
+            except (pickle.PickleError, OSError) as exc:
+                logger.warning("Cannot read existing cache entry %s for size accounting: %s", entry_path, exc)
                 existing_size = 0
 
         try:
@@ -255,8 +256,8 @@ class AnalysisCache:
                 else:
                     self._stats.total_size_bytes += entry.size_bytes
                     self._stats.entry_count += 1
-        except OSError:
-            pass
+        except OSError as exc:
+            logger.warning("Cache write failed for %s: %s", entry_path, exc)
 
     def invalidate(self, binary_data: bytes, analysis_type: str | None = None) -> int:
         binary_hash = self._hash_binary(binary_data)
@@ -339,10 +340,12 @@ class AnalysisCache:
             with self._stats_lock:
                 if self._stats.total_size_bytes <= self.max_size_bytes:
                     break
-                try:
-                    entry_path.unlink(missing_ok=True)
-                except OSError:
-                    pass
+            try:
+                entry_path.unlink(missing_ok=True)
+            except OSError as exc:
+                logger.warning("Cannot evict cache entry %s: %s — stats not updated", entry_path, exc)
+                continue
+            with self._stats_lock:
                 self._stats.total_size_bytes -= entry.size_bytes
                 self._stats.entry_count -= 1
                 self._stats.evictions += 1
@@ -528,8 +531,9 @@ class AnalysisCache:
         """Clean up resources on deletion."""
         try:
             self.stop_cleanup_thread()
-        except Exception:
-            pass
+        except (RuntimeError, AttributeError):
+            # Interpreter shutdown / partial init — nothing actionable to log.
+            return
 
 
 class CacheStorage:
