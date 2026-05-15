@@ -19,9 +19,11 @@ def get_endianness(binary: Any) -> ByteOrder:
     """
     try:
         info = binary.get_arch_info()
-        endian = info.get("endian", "little").lower()
-        if endian in ("big", "be"):
-            return "big"
-    except Exception:
-        pass
+    except (AttributeError, TypeError) as exc:
+        logger.warning("Cannot read arch info from binary (%s); defaulting to little-endian", exc)
+        return "little"
+
+    endian = info.get("endian", "little") if isinstance(info, dict) else "little"
+    if isinstance(endian, str) and endian.lower() in ("big", "be"):
+        return "big"
     return "little"
