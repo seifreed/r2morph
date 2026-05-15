@@ -272,29 +272,36 @@ class PatternMatcher:
         """
         assert self.binary.r2 is not None
         try:
-            imports = self.binary.r2.cmd("ii")
+            imports = self.binary.r2.cmdj("iij") or []
 
             if not imports:
-                return True  # No imports at all is suspicious
+                # Empty/missing import data is ambiguous: it can mean
+                # genuinely zero imports, but equally that analysis has
+                # not run, the command failed, or the format does not
+                # expose an import table. Absence of evidence is not
+                # evidence of hiding — do not raise a false positive.
+                logger.debug("No parseable import data from 'iij'; not flagging import hiding")
+                return False
 
-            dynamic_load_apis = [
+            dynamic_load_apis = {
                 "GetProcAddress",
                 "LoadLibrary",
                 "LoadLibraryA",
                 "LoadLibraryW",
                 "LdrLoadDll",
                 "LdrGetProcedureAddress",
-            ]
+            }
 
-            has_dynamic_loading = any(api in imports for api in dynamic_load_apis)
+            import_names = {str(entry.get("name", "")) for entry in imports if isinstance(entry, dict)}
+            has_dynamic_loading = bool(import_names & dynamic_load_apis)
 
-            import_count = len(imports.strip().split("\n"))
+            import_count = len(imports)
             if import_count < 20 and has_dynamic_loading:
                 return True
 
             return False
 
-        except Exception as e:
+        except (ValueError, TypeError, KeyError) as e:
             logger.debug(f"Error detecting import hiding: {e}")
             return False
 
