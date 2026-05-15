@@ -285,8 +285,9 @@ class BinaryIntegrityValidator:
                 try:
                     handler.mark_executable()
                     repairs.append("Marked executable")
-                except Exception:
-                    pass
+                except (OSError, ValueError, RuntimeError) as exc:
+                    logger.warning("mark_executable() failed during Mach-O repair: %s", exc)
+                    repairs.append(f"Failed to mark executable: {exc}")
 
             logger.info(f"Mach-O repairs: {repairs}")
             return True, repairs

@@ -514,8 +514,8 @@ class BinaryDiffer:
                 if f.get("offset", f.get("addr", 0)) == address:
                     func_name = f.get("name", func_name)
                     break
-        except Exception:
-            pass
+        except (AttributeError, TypeError, RuntimeError) as exc:
+            logger.debug("Could not resolve function name for 0x%x; using default label: %s", address, exc)
 
         return FunctionDiff(
             name=func_name,

@@ -157,8 +157,8 @@ class ConstraintCache:
             try:
                 if hasattr(entry.result, "addr") and entry.result.addr == address:
                     keys_to_remove.append(key)
-            except Exception:
-                pass
+            except (AttributeError, TypeError) as exc:
+                logger.debug("Skipping cache entry %r during invalidation at 0x%x: %s", key, address, exc)
 
         for key in keys_to_remove:
             del self._cache[key]
