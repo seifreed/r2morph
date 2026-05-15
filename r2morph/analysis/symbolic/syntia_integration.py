@@ -428,19 +428,14 @@ class SyntiaFramework:
         """
         logger.info(f"Simplifying MBA expression: {mba_expression}")
 
-        if SYNTIA_AVAILABLE:
-            # Real Syntia integration would go here
-            # Would use program synthesis to find simpler equivalent expressions
-            pass
-
-        # Try systematic simplification rules
+        # Try systematic simplification rules. Syntia-based program synthesis
+        # would live alongside this branch but is not yet wired up; the
+        # SYNTIA_AVAILABLE flag is preserved at module level so callers can
+        # detect capability, but this method always falls back to rule-based
+        # simplification.
         simplified = self._apply_mba_simplification_rules(mba_expression, variables)
         if simplified and simplified != mba_expression:
             return simplified
-
-        # Comprehensive simplification based on semantic analysis
-        if "+" in mba_expression and "*" in mba_expression:
-            return f"simplified({mba_expression})"
 
         return None
 

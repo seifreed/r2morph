@@ -183,8 +183,15 @@ class ExceptionInfoReader:
                 break
 
     def _parse_cie(self, data: bytes, offset: int, length: int, base_addr: int) -> None:
-        """Parse a Common Information Entry."""
-        pass
+        """Parse a Common Information Entry.
+
+        Intentional no-op: the current FDE parser uses fixed pointer sizes
+        derived from the binary architecture instead of CIE augmentation
+        and encoding fields, so no CIE state needs to be retained yet.
+        When CIE-aware FDE parsing is added, this method must populate a
+        per-CIE state dict that ``_parse_fde`` then consults.
+        """
+        return
 
     def _parse_fde(self, data: bytes, offset: int, length: int, base_addr: int, cie_offset: int) -> None:
         """Parse a Frame Description Entry and extract function bounds."""
@@ -294,13 +301,17 @@ class ExceptionInfoReader:
             if not data or len(data) < 12:
                 return
 
-            if len(data) >= 20:
-                personality_offset = struct.unpack("<I", data[8:12])[0]
-                if personality_offset and personality_offset < len(data):
-                    pass
+            # Full Mach-O __unwind_info parsing (level-1 / level-2 page indexes,
+            # compact encodings) is not yet implemented. Log what we found so
+            # the absence of frame data is traceable.
+            logger.debug(
+                "Found Mach-O __unwind_info at 0x%x (%d bytes); detailed parsing not implemented",
+                unwind_addr,
+                unwind_size,
+            )
 
-        except Exception as e:
-            logger.debug(f"Failed to read Mach-O unwind info: {e}")
+        except (OSError, struct.error) as e:
+            logger.debug("Failed to read Mach-O unwind info: %s", e)
 
     def _get_sections(self) -> list[dict]:
         """Get sections from the binary."""

@@ -13,10 +13,13 @@ Uses the rich library for terminal rendering with fallback to basic text mode.
 
 from __future__ import annotations
 
+import logging
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable
-import re
+
+logger = logging.getLogger(__name__)
 
 
 class _FallbackConsole:
@@ -379,7 +382,11 @@ class TUIConfigScreen:
                     try:
                         config[option] = int(value)
                     except ValueError:
-                        pass
+                        logger.warning(
+                            "Cannot parse %r as int for option %r; keeping previous value",
+                            value,
+                            option,
+                        )
                 else:
                     config[option] = value
 

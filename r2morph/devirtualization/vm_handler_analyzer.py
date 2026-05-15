@@ -486,21 +486,23 @@ class VMHandlerAnalyzer:
         return max(0.0, min(1.0, confidence))
 
     def _analyze_vm_context(self) -> None:
-        """Analyze VM context structure and registers."""
-        if not self.vm_architecture:
-            return
+        """Analyze VM context structure and registers.
 
-        # Analyze VM context and register allocation
-        self.vm_architecture.vm_registers = ["vr0", "vr1", "vr2", "vr3"]
-        self.vm_architecture.vm_context_size = 64  # Bytes
+        Detailed VM context inference (register allocation, context-pointer
+        recovery, spill slot identification) is not yet implemented. Leave
+        the VMArchitecture fields at their declared defaults (empty register
+        list, zero context size) rather than fabricating values that would
+        propagate downstream as if they were observed.
+        """
+        return
 
     def _locate_vm_bytecode(self) -> None:
-        """Try to locate VM bytecode in the binary."""
-        if not self.vm_architecture:
-            return
+        """Try to locate VM bytecode in the binary.
 
-        # Analyze memory references to locate bytecode sections
-        pass
+        Bytecode-section discovery (read-only data adjacent to the dispatcher
+        with high entropy and aligned chunk size) is not yet implemented.
+        """
+        return
 
     def get_handler_statistics(self) -> dict[str, Any]:
         """Get statistics about analyzed handlers."""
