@@ -136,25 +136,15 @@ class SyntiaFramework:
         semantics = InstructionSemantics(address=address, instruction_bytes=instruction_bytes, disassembly=disassembly)
 
         try:
-            if SYNTIA_AVAILABLE:
-                # Actual Syntia integration would go here
-                learned_result = self._synthesize_with_syntia(instruction_bytes, disassembly, context)
-
-                if learned_result:
-                    semantics.learned_semantics = learned_result.get("semantics")
-                    semantics.semantic_formula = learned_result.get("formula")
-                    semantics.input_variables = set(learned_result.get("inputs", []))
-                    semantics.output_variables = set(learned_result.get("outputs", []))
-                    semantics.confidence = learned_result.get("confidence", 0.0)
-
-                    self.synthesis_stats["semantics_learned"] += 1
-                else:
-                    self.synthesis_stats["synthesis_failures"] += 1
-            else:
-                # Fallback implementation for when Syntia is not available
-                fallback_result = self._fallback_semantic_analysis(instruction_bytes, disassembly)
-                semantics.learned_semantics = fallback_result["semantics"]
-                semantics.confidence = fallback_result["confidence"]
+            # Until the Syntia synthesis backend is wired up,
+            # _synthesize_with_syntia is a stub that always returns None,
+            # so branching on SYNTIA_AVAILABLE only inflated the
+            # `synthesis_failures` counter without changing the actual
+            # outcome. Use the rule-based fallback unconditionally; when
+            # real synthesis lands, restore the conditional dispatch.
+            fallback_result = self._fallback_semantic_analysis(instruction_bytes, disassembly)
+            semantics.learned_semantics = fallback_result["semantics"]
+            semantics.confidence = fallback_result["confidence"]
 
         except Exception as e:
             logger.error(f"Error learning instruction semantics: {e}")
@@ -211,22 +201,13 @@ class SyntiaFramework:
     def _synthesize_with_syntia(
         self, instruction_bytes: bytes, disassembly: str, context: dict[str, Any] | None
     ) -> dict[str, Any] | None:
+        """Placeholder for Syntia-based program synthesis.
+
+        Not yet implemented: always returns None. Kept as a named entry
+        point so a future Syntia backend can be wired up without changing
+        callers. The previous version's docstring claimed to "perform
+        actual synthesis" — corrected to admit it is a stub.
         """
-        Perform actual synthesis using Syntia framework.
-
-        This implementation provides semantic learning capabilities when Syntia
-        is available, with fallback functionality when it's not installed.
-
-        Args:
-            instruction_bytes: Instruction bytes
-            disassembly: Disassembly string
-            context: Additional context
-
-        Returns:
-            Synthesis result or None if failed
-        """
-        # Syntia framework integration for semantic synthesis
-        # Return None when synthesis unavailable
         return None
 
     def _fallback_semantic_analysis(self, instruction_bytes: bytes, disassembly: str) -> dict[str, Any]:

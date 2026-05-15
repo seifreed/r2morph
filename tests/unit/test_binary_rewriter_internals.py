@@ -47,9 +47,12 @@ def test_binary_rewriter_integrity_checks_for_elf(tmp_path: Path):
     checks = rewriter._perform_integrity_checks(str(output_path))
     assert checks["file_exists"] is True
     assert checks["valid_pe_header"] is True
-    assert checks["imports_intact"] is True
-    assert checks["exports_intact"] is True
-    assert checks["entry_point_valid"] is True
+    # The three checks below are not yet implemented and must stay False
+    # until real parsers populate them. Asserting True here would
+    # re-enshrine a placeholder that lied about binary integrity.
+    assert checks["imports_intact"] is False
+    assert checks["exports_intact"] is False
+    assert checks["entry_point_valid"] is False
 
 
 def test_binary_rewriter_address_validation_and_stats():

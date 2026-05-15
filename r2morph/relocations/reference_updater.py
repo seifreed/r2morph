@@ -231,8 +231,12 @@ class ReferenceUpdater:
             try:
                 xrefs = json.loads(xrefs_json)
                 refs.extend(xrefs)
-            except json.JSONDecodeError:
-                pass
+            except json.JSONDecodeError as exc:
+                logger.warning(
+                    "r2 returned non-JSON xref output for 0x%x (%s); references will be incomplete",
+                    target_addr,
+                    exc,
+                )
 
         logger.debug(f"Found {len(refs)} references to 0x{target_addr:x}")
         return refs

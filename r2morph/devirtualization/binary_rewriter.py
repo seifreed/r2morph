@@ -559,7 +559,18 @@ class BinaryRewriter:
             return False
 
     def _perform_integrity_checks(self, output_path: str) -> dict[str, bool]:
-        """Perform integrity checks on the rewritten binary."""
+        """Perform integrity checks on the rewritten binary.
+
+        Currently performs two real checks:
+          * ``file_exists`` — the rewritten file is on disk.
+          * ``valid_pe_header`` — magic bytes match the declared format.
+
+        The keys ``imports_intact``, ``exports_intact`` and
+        ``entry_point_valid`` are placeholders for future checks and
+        always remain ``False`` until parsers for the relevant
+        directories/sections are wired up. Consumers must treat a
+        ``False`` value as "not verified", not "definitely broken".
+        """
         checks = {
             "file_exists": False,
             "valid_pe_header": False,
@@ -569,28 +580,22 @@ class BinaryRewriter:
         }
 
         try:
-            # Check if file exists
             checks["file_exists"] = os.path.exists(output_path)
 
             if checks["file_exists"]:
-                # Basic format validation
                 with open(output_path, "rb") as f:
                     header = f.read(64)
 
-                    if self.binary_format == BinaryFormat.PE:
-                        checks["valid_pe_header"] = header.startswith(b"MZ")
-                    elif self.binary_format == BinaryFormat.ELF:
-                        checks["valid_pe_header"] = header.startswith(b"\x7fELF")
-                    else:
-                        checks["valid_pe_header"] = True  # Assume valid for other formats
+                if self.binary_format == BinaryFormat.PE:
+                    checks["valid_pe_header"] = header.startswith(b"MZ")
+                elif self.binary_format == BinaryFormat.ELF:
+                    checks["valid_pe_header"] = header.startswith(b"\x7fELF")
+                else:
+                    # No magic-byte check available for this format yet.
+                    checks["valid_pe_header"] = True
 
-                # Additional checks would go here
-                checks["imports_intact"] = True  # Basic integrity check
-                checks["exports_intact"] = True  # Basic integrity check
-                checks["entry_point_valid"] = True  # Basic integrity check
-
-        except Exception as e:
-            logger.error(f"Integrity check failed: {e}")
+        except OSError as e:
+            logger.error("Integrity check I/O failure for %s: %s", output_path, e)
 
         return checks
 
