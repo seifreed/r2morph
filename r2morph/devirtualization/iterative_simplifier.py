@@ -14,23 +14,17 @@ Key Features:
 - Parallel processing support
 """
 
+import concurrent.futures
 import logging
 import time
-from dataclasses import dataclass, field
-from typing import Any
-from enum import Enum
-import concurrent.futures
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
-try:
-    from .mba_solver import MBASolver
-    from .cfo_simplifier import CFOSimplifier
-    from .vm_handler_analyzer import VMHandlerAnalyzer
-except ImportError:
-    # For testing or when modules aren't available
-    MBASolver = None  # type: ignore[misc,assignment]
-    CFOSimplifier = None  # type: ignore[misc,assignment]
-    VMHandlerAnalyzer = None  # type: ignore[misc,assignment]
+from .cfo_simplifier import CFOSimplifier
+from .mba_solver import MBASolver
+from .vm_handler_analyzer import VMHandlerAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -113,15 +107,10 @@ class CFOSimplificationPass(SimplificationPass):
     """Control Flow Obfuscation simplification pass."""
 
     def __init__(self) -> None:
-        self.cfo_simplifier = None
-        if CFOSimplifier is not None:
-            self.cfo_simplifier = CFOSimplifier()
+        self.cfo_simplifier = CFOSimplifier()
 
     def apply(self, binary: Any, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """Apply CFO simplification."""
-        if not self.cfo_simplifier:
-            return False, context
-
         try:
             changes_made = False
             functions = context.get("functions", [])
@@ -148,15 +137,10 @@ class MBASimplificationPass(SimplificationPass):
     """Mixed Boolean Arithmetic simplification pass."""
 
     def __init__(self) -> None:
-        self.mba_solver = None
-        if MBASolver is not None:
-            self.mba_solver = MBASolver()
+        self.mba_solver = MBASolver()
 
     def apply(self, binary: Any, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """Apply MBA simplification."""
-        if not self.mba_solver:
-            return False, context
-
         try:
             changes_made = False
             mba_expressions = context.get("mba_expressions", [])
@@ -182,15 +166,10 @@ class VMDevirtualizationPass(SimplificationPass):
     """Virtual machine devirtualization pass."""
 
     def __init__(self) -> None:
-        self.vm_analyzer = None
-        if VMHandlerAnalyzer is not None:
-            self.vm_analyzer = VMHandlerAnalyzer(None)
+        self.vm_analyzer = VMHandlerAnalyzer(None)
 
     def apply(self, binary: Any, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
         """Apply VM devirtualization."""
-        if not self.vm_analyzer:
-            return False, context
-
         try:
             changes_made = False
             self.vm_analyzer.binary = binary
