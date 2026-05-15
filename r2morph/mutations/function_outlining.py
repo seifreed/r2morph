@@ -197,26 +197,42 @@ class FunctionOutliningPass(MutationPass):
 
             start_addr = chunk_blocks[0].get("addr", 0)
             instructions: list[dict[str, Any]] = []
+            disasm_ok = True
 
             for block in chunk_blocks:
                 try:
                     insns = binary.r2.cmdj(f"pdj {block.get('size', 0)} @ {block.get('addr', 0)}") or []
-                    instructions.extend(insns)
-                except Exception:
-                    pass
+                except (ValueError, OSError, RuntimeError) as exc:
+                    logger.warning(
+                        "Disassembly failed for block at 0x%x while outlining; "
+                        "skipping this chunk to avoid emitting truncated code: %s",
+                        block.get("addr", 0),
+                        exc,
+                    )
+                    disasm_ok = False
+                    break
+                instructions.extend(insns)
+
+            # Advance the cursor regardless so chunk boundaries stay
+            # consistent even when a chunk is skipped.
+            current_idx = end_idx
+
+            if not disasm_ok:
+                # Emitting a chunk whose body is missing instructions would
+                # corrupt control flow in the rewritten binary. Skip it.
+                chunk_id += 1
+                continue
 
             jump_target = None
             fallthrough_target = None
 
-            if len(chunk_blocks) > 0:
+            if chunk_blocks:
                 last_block = chunk_blocks[-1]
                 jump_target = last_block.get("jump", None)
                 fail = last_block.get("fail", None)
 
                 if fail:
                     fallthrough_target = fail
-                elif jump_target:
-                    jump_target = jump_target
 
             chunk = OutlinedChunk(
                 chunk_id=chunk_id,
@@ -228,7 +244,6 @@ class FunctionOutliningPass(MutationPass):
             chunks.append(chunk)
 
             chunk_id += 1
-            current_idx = end_idx
 
         return chunks
 

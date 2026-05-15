@@ -322,8 +322,11 @@ class ImportTableObfuscationPass(MutationPass):
         # Ensure r2 analysis is done for xrefs
         try:
             binary.r2.cmd("aaa")
-        except Exception:
-            pass
+        except (OSError, RuntimeError) as exc:
+            logger.warning(
+                "r2 'aaa' analysis failed before import obfuscation; " "xref-based rewriting may be incomplete: %s",
+                exc,
+            )
 
         if self._session is not None:
             self._create_mutation_checkpoint("import_obfuscation")
