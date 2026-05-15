@@ -479,8 +479,6 @@ class IterativeSimplifier:
 
     def _update_metrics(self, context: dict[str, Any]) -> None:
         """Update simplification metrics."""
-        # Count various improvements
-        context.get("cfo_results", [])
         mba_results = context.get("mba_results", [])
         vm_results = context.get("vm_results", [])
 
@@ -526,35 +524,53 @@ class IterativeSimplifier:
 
         return validation
 
+    # Heuristic threshold above which a function's basic-block count is high
+    # enough that it is likely a VM dispatcher loop (VMProtect/Themida-style
+    # switch dispatchers commonly have hundreds of blocks; legitimate
+    # functions rarely exceed this).
+    _VM_DISPATCHER_BLOCK_THRESHOLD = 40
+
     def _find_vm_dispatchers(self) -> list[int]:
-        """Find VM dispatcher addresses."""
-        try:
-            # Simple heuristic - look for functions with many successors
-            dispatchers: list[int] = []
+        """Locate candidate VM dispatcher addresses by basic-block count.
 
-            if hasattr(self.binary, "get_functions"):
-                functions = self.binary.get_functions()
-
-                for func in functions:
-                    func.get("offset", 0)
-                    # Advanced dispatcher detection algorithm
-                    # Pattern-based analysis implementation
-                    pass
-
-            return dispatchers
-
-        except Exception:
+        Returns offsets of functions whose basic-block count exceeds
+        ``_VM_DISPATCHER_BLOCK_THRESHOLD``. This is a coarse heuristic
+        intended to feed downstream analysis; it does not confirm a
+        dispatcher, only that the function is structurally suspicious.
+        """
+        if not hasattr(self.binary, "get_functions") or not hasattr(self.binary, "get_basic_blocks"):
             return []
+
+        try:
+            functions = self.binary.get_functions()
+        except Exception as exc:
+            logger.warning("Cannot enumerate functions for VM dispatcher search: %s", exc)
+            return []
+
+        dispatchers: list[int] = []
+        for func in functions:
+            offset = func.get("offset")
+            if not isinstance(offset, int):
+                continue
+            try:
+                blocks = self.binary.get_basic_blocks(offset)
+            except Exception as exc:
+                logger.debug("Skipping function 0x%x while searching dispatchers: %s", offset, exc)
+                continue
+            if len(blocks) > self._VM_DISPATCHER_BLOCK_THRESHOLD:
+                dispatchers.append(offset)
+
+        return dispatchers
 
     def _extract_mba_expressions(self) -> list[str]:
-        """Extract MBA expressions from the binary."""
-        try:
-            # Instruction analysis for MBA expression detection
-            # Return identified mixed boolean arithmetic patterns
-            return ["x + y", "x ^ y", "(x & y) + (x | y)"]
+        """Extract MBA expressions from the binary.
 
-        except Exception:
-            return []
+        Real extraction requires walking arithmetic-instruction chains and
+        symbolically lifting them to expressions. Until that walker exists,
+        return an empty list rather than hardcoded placeholders, which
+        previously caused MBASimplificationPass to operate on fake data.
+        """
+        return []
 
     def rollback_to_checkpoint(self, checkpoint_index: int = -1) -> bool:
         """Rollback to a previous checkpoint."""
