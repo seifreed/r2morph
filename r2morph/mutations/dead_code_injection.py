@@ -29,12 +29,9 @@ from __future__ import annotations
 
 import logging
 import random
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, UNCONDITIONAL_TRANSFERS
-
-if TYPE_CHECKING:
-    pass
 from r2morph.mutations.base import MutationPass
 from r2morph.utils.dead_code import (
     generate_dead_code_for_arch,

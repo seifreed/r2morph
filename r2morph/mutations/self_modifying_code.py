@@ -38,13 +38,10 @@ import random
 import struct
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from r2morph.mutations.base import MutationPass
 from r2morph.relocations.cave_injector import CodeCaveInjector
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

@@ -9,12 +9,9 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from r2morph.mutations.base import MutationPass
-
-if TYPE_CHECKING:
-    pass
 from r2morph.mutations.abi_hook import (
     ABIMutationHook,
     ABICheckResult,

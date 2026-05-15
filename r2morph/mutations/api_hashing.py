@@ -22,13 +22,10 @@ Example:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from r2morph.mutations.base import MutationPass
 from r2morph.relocations.cave_finder import CaveFinder
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

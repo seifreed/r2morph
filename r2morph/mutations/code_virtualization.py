@@ -45,12 +45,9 @@ import logging
 import random
 from dataclasses import dataclass, field
 from enum import IntEnum
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
-
-if TYPE_CHECKING:
-    pass
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)

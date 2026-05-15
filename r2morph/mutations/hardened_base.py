@@ -9,12 +9,9 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from r2morph.mutations.cfg_aware import CFGAwareMutationPass, CFGAwareMutationResult
-
-if TYPE_CHECKING:
-    pass
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
     PatternType,

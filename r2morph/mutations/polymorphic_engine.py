@@ -43,12 +43,9 @@ import logging
 import random
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import TYPE_CHECKING, Any, Callable
+from typing import Any, Callable
 
 from r2morph.mutations.base import MutationPass
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

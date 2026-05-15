@@ -9,13 +9,11 @@ import random
 import time
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 # Mutation passes accept any object satisfying BinaryAccessProtocol.
 # We use Any at runtime to avoid circular imports; the protocol is
 # enforced structurally via the methods called on binary.
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

@@ -38,10 +38,7 @@ from __future__ import annotations
 import logging
 import random
 import secrets
-from typing import TYPE_CHECKING, Any
-
-if TYPE_CHECKING:
-    pass
+from typing import Any
 from r2morph.crypto.aes import (
     aes_encrypt_string,
 )
