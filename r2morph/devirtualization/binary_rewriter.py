@@ -626,9 +626,16 @@ class BinaryRewriter:
             return b"\x90" * len(instructions)
 
     def _is_valid_address(self, address: int) -> bool:
-        """Check if an address is valid."""
+        """Check if an address falls within a loaded section.
+
+        This is a safety gate: callers use it to decide whether it is safe
+        to patch bytes at ``address``. It must therefore fail *closed* —
+        if the section table is malformed and we cannot verify the
+        address, the address is treated as invalid (return False), never
+        as valid. Returning True on error would let patches land at
+        unverified offsets and silently corrupt the output binary.
+        """
         try:
-            # Simple validation - check if it's within loaded segments
             for section in self.sections.values():
                 start = section.get("vaddr", 0)
                 size = section.get("vsize", 0)
@@ -636,8 +643,13 @@ class BinaryRewriter:
                     return True
             return False
 
-        except Exception:
-            return True  # Assume valid if can't verify
+        except (AttributeError, TypeError) as exc:
+            logger.warning(
+                "Malformed section table while validating address 0x%x (%s); treating as invalid",
+                address,
+                exc,
+            )
+            return False
 
     def _validate_instructions(self, instructions: list[str]) -> bool:
         """Validate assembly instructions."""
