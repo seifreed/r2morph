@@ -627,18 +627,33 @@ class BinaryRewriter:
             return b""
 
     def _assemble_instructions(self, instructions: list[str]) -> bytes:
-        """Assemble instructions to bytes."""
+        """Assemble instructions to bytes.
+
+        Returns b"" if assembly fails while an assembler is available, so
+        the caller's `if not new_bytes` guard refuses the patch.
+        Previously this returned b"\\x90" * len(instructions) on error:
+        non-empty NOP padding that defeated that guard, so a patch whose
+        instructions failed to assemble was still added — overwriting
+        real logic with unrelated NOPs in the rewritten binary.
+
+        The keystone-absent branch keeps its NOP placeholder: without an
+        assembler there is nothing better, and that degradation path is
+        an explicit, tested contract.
+        """
+        if not self.ks:
+            return b"\x90" * len(instructions)  # NOP placeholder: no assembler available
+
+        asm_code = "; ".join(instructions)
         try:
-            if not self.ks:
-                return b"\x90" * len(instructions)  # NOP replacement
-
-            asm_code = "; ".join(instructions)
             encoding, _ = self.ks.asm(asm_code)
-            return bytes(encoding)
+        except (keystone.KsError, TypeError, ValueError) as e:
+            logger.error("Assembly failed for %r: %s; refusing to fabricate bytes", asm_code, e)
+            return b""
 
-        except Exception as e:
-            logger.error(f"Assembly failed: {e}")
-            return b"\x90" * len(instructions)
+        if not encoding:
+            logger.error("Assembler produced no encoding for %r; refusing to fabricate bytes", asm_code)
+            return b""
+        return bytes(encoding)
 
     def _is_valid_address(self, address: int) -> bool:
         """Check if an address falls within a loaded section.
