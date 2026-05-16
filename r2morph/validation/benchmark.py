@@ -41,6 +41,13 @@ class BenchmarkCategory(Enum):
 class TestSeverity(Enum):
     """Test severity levels."""
 
+    # Domain enum, not a pytest test class. The ``Test`` prefix collides
+    # with pytest's default ``python_classes`` pattern; without this,
+    # pytest tries to collect it and emits a PytestCollectionWarning
+    # that `-W error` (CLAUDE.md s.3) turns into a fatal collection
+    # error wherever this class is imported into a test module.
+    __test__ = False
+
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -76,6 +83,11 @@ class AccuracyMetrics:
 @dataclass
 class TestSample:
     """Represents a test sample with known characteristics."""
+
+    # Not a pytest test class: see TestSeverity above. The bare (un
+    # annotated) assignment is a plain class attribute, so @dataclass
+    # does not treat it as a field.
+    __test__ = False
 
     file_path: str
     sample_hash: str

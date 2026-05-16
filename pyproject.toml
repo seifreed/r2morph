@@ -143,9 +143,10 @@ markers = [
     "slow: marks tests that take longer than 10 seconds",
     "unit: marks unit tests",
     "integration: marks integration tests",
+    "property: marks property-based (Hypothesis) tests",
 ]
 filterwarnings = [
-    "ignore::DeprecationWarning",
+    "error",
 ]
 
 [tool.coverage.run]

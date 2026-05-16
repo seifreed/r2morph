@@ -99,42 +99,69 @@ from r2morph.analysis.pattern_preservation import (
     Criticality,
 )
 
-# Symbolic execution and advanced analysis
+# Symbolic execution and advanced analysis.
+#
+# The symbolic subpackage pulls in angr, a heavy optional C-extension
+# dependency. Importing it eagerly here forced every consumer of
+# `r2morph.analysis` to load angr -- including the core import chain
+# (mutations.abi_hook -> analysis.abi_checker), which merely needs ABI
+# helpers. That eager import both violated adapter isolation (CLAUDE.md
+# section 7: heavy externals must stay isolated) and broke the entire
+# test suite at collection: angr imports `cle`, which emits a
+# third-party DeprecationWarning that `pytest -W error` turns fatal.
+#
+# Resolved with PEP 562 lazy attribute loading: angr is imported only
+# when a symbolic name is actually accessed, and the resolved values are
+# cached into module globals so subsequent lookups skip __getattr__.
 from typing import Any as _Any
 
-_AngrBridge: _Any = None
-_ConstraintSolver: _Any = None
-_PathExplorer: _Any = None
-_StateManager: _Any = None
-_SyntiaFramework: _Any = None
-_SYNTIA_AVAILABLE: bool = False
+_SYMBOLIC_NAMES = frozenset(
+    {
+        "AngrBridge",
+        "ConstraintSolver",
+        "PathExplorer",
+        "StateManager",
+        "SyntiaFramework",
+        "SYNTIA_AVAILABLE",
+        "SYMBOLIC_AVAILABLE",
+    }
+)
 
-try:
-    from r2morph.analysis.symbolic import (
-        AngrBridge as _AngrBridgeImport,
-        ConstraintSolver as _ConstraintSolverImport,
-        PathExplorer as _PathExplorerImport,
-        StateManager as _StateManagerImport,
-        SyntiaFramework as _SyntiaFrameworkImport,
-        SYNTIA_AVAILABLE as _SYNTIA_AVAILABLE_IMPORT,
-    )
 
-    SYMBOLIC_AVAILABLE = True
-    _AngrBridge = _AngrBridgeImport
-    _ConstraintSolver = _ConstraintSolverImport
-    _PathExplorer = _PathExplorerImport
-    _StateManager = _StateManagerImport
-    _SyntiaFramework = _SyntiaFrameworkImport
-    _SYNTIA_AVAILABLE = _SYNTIA_AVAILABLE_IMPORT
-except ImportError:
-    SYMBOLIC_AVAILABLE = False
+def __getattr__(name: str) -> _Any:
+    if name not in _SYMBOLIC_NAMES:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-AngrBridge = _AngrBridge
-ConstraintSolver = _ConstraintSolver
-PathExplorer = _PathExplorer
-StateManager = _StateManager
-SyntiaFramework = _SyntiaFramework
-SYNTIA_AVAILABLE = _SYNTIA_AVAILABLE
+    try:
+        from r2morph.analysis import symbolic as _symbolic
+    except ImportError:
+        resolved: dict[str, _Any] = {
+            "AngrBridge": None,
+            "ConstraintSolver": None,
+            "PathExplorer": None,
+            "StateManager": None,
+            "SyntiaFramework": None,
+            "SYNTIA_AVAILABLE": False,
+            "SYMBOLIC_AVAILABLE": False,
+        }
+    else:
+        resolved = {
+            "AngrBridge": _symbolic.AngrBridge,
+            "ConstraintSolver": _symbolic.ConstraintSolver,
+            "PathExplorer": _symbolic.PathExplorer,
+            "StateManager": _symbolic.StateManager,
+            "SyntiaFramework": _symbolic.SyntiaFramework,
+            "SYNTIA_AVAILABLE": _symbolic.SYNTIA_AVAILABLE,
+            "SYMBOLIC_AVAILABLE": True,
+        }
+
+    globals().update(resolved)
+    return resolved[name]
+
+
+def __dir__() -> list[str]:
+    return sorted(__all__)
+
 
 __all__ = [
     "BinaryAnalyzer",
