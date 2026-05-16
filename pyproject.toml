@@ -147,6 +147,11 @@ markers = [
 ]
 filterwarnings = [
     "error",
+    # EX-002 (CLAUDE.md > Excepciones aprobadas): ultra-narrow, scoped
+    # strictly to the third-party `cle` ctypes _layout_ DeprecationWarning
+    # emitted at `import angr` on Python 3.14+. Not r2morph code; no
+    # released cle/angr version fixes it. Everything else stays `error`.
+    "ignore:Due to '_pack_', the .* Structure will use memory layout compatible with MSVC:DeprecationWarning",
 ]
 
 [tool.coverage.run]
