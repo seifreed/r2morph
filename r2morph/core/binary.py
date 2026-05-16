@@ -13,12 +13,22 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import r2pipe
 
 from r2morph.core.constants import BATCH_MUTATION_CHECKPOINT
+
+# r2pipe spawns radare2 as a subprocess; that spawn + initial handshake
+# can transiently fail with BrokenPipeError / "Cannot open" under load
+# (a pipe race), even for a valid, existing file. Opening a binary for
+# analysis is idempotent, so a small bounded retry removes this flaky
+# failure mode without masking genuine open errors (a real failure still
+# raises after the attempts are exhausted).
+_R2PIPE_OPEN_ATTEMPTS = 3
+_R2PIPE_OPEN_RETRY_BACKOFF_SECONDS = 0.25
 
 if TYPE_CHECKING:
     from r2morph.adapters.disassembler import DisassemblerInterface
@@ -64,7 +74,14 @@ class Binary:
             disassembler: Optional DisassemblerInterface instance for DIP.
                           If provided, used instead of r2pipe.open() directly.
         """
-        self.path = Path(path)
+        # Normalize to an absolute path at the boundary. r2pipe spawns
+        # radare2 as a subprocess and resolving a *relative* path there
+        # is racy/cwd-sensitive: identical opens of the same valid file
+        # fail intermittently ("Cannot open <relative>"), causing flaky
+        # test failures with shifting victims. resolve() (strict=False)
+        # makes the path absolute without requiring existence yet, so
+        # the FileNotFoundError below still fires for a missing file.
+        self.path = Path(path).resolve()
         if not self.path.exists():
             raise FileNotFoundError(f"Binary not found: {self.path}")
 
@@ -141,6 +158,44 @@ class Binary:
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         self.close()
 
+    def _discard_failed_r2(self) -> None:
+        """Tear down a half-spawned r2 so a retry does not leak it."""
+        r2 = self.r2
+        self.r2 = None
+        if r2 is not None and hasattr(r2, "quit"):
+            try:
+                r2.quit()
+            except (BrokenPipeError, OSError) as exc:
+                # The pipe is already broken; nothing to gracefully close.
+                logger.debug("Ignoring teardown error on broken r2 pipe: %s", exc)
+
+    def _spawn_r2(self) -> Any:
+        """Spawn the radare2 subprocess (seam: overridable for testing)."""
+        return r2pipe.open(str(self.path), flags=self.flags)
+
+    def _open_r2pipe_with_retry(self) -> None:
+        """Spawn r2pipe + read initial info, retrying transient spawn races."""
+        last_error: Exception | None = None
+        for attempt in range(1, _R2PIPE_OPEN_ATTEMPTS + 1):
+            try:
+                self.r2 = self._spawn_r2()
+                self.info = self.r2.cmdj("ij") or {}
+                return
+            except (BrokenPipeError, ConnectionError, OSError) as exc:
+                last_error = exc
+                logger.warning(
+                    "r2pipe spawn failed for %s (attempt %d/%d): %s",
+                    self.path,
+                    attempt,
+                    _R2PIPE_OPEN_ATTEMPTS,
+                    exc,
+                )
+                self._discard_failed_r2()
+                if attempt < _R2PIPE_OPEN_ATTEMPTS:
+                    time.sleep(_R2PIPE_OPEN_RETRY_BACKOFF_SECONDS * attempt)
+        assert last_error is not None
+        raise last_error
+
     def open(self) -> "Binary":
         try:
             logger.info(f"Opening binary: {self.path}")
@@ -148,9 +203,9 @@ class Binary:
                 # Use injected disassembler (DIP: enables testing without r2pipe)
                 self._injected_disassembler.open(self.path, self.flags)
                 self.r2 = self._injected_disassembler
+                self.info = self.r2.cmdj("ij") or {}
             else:
-                self.r2 = r2pipe.open(str(self.path), flags=self.flags)
-            self.info = self.r2.cmdj("ij") or {}
+                self._open_r2pipe_with_retry()
 
             if self._low_memory:
                 logger.debug("Configuring r2 for low memory mode")
