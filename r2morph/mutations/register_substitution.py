@@ -328,10 +328,17 @@ class RegisterSubstitutionPass(MutationPass):
                         used_registers.add(reg)
 
         caller_saved = set(register_classes.get("caller_saved", []))
-        unused = list(caller_saved - used_registers)
+        # sorted() before the seeded shuffle: list(set) / set iteration
+        # order is PYTHONHASHSEED-randomized per process, so without a
+        # stable base order the same `seed=` produced different
+        # substitutions across processes -- breaking r2morph's core
+        # reproducibility guarantee and causing flaky symbolic-scope
+        # detection. Sorting fixes the base order; random.shuffle still
+        # provides the (now reproducible) randomization.
+        unused = sorted(caller_saved - used_registers)
         random.shuffle(unused)
 
-        for i, used_reg in enumerate(used_registers & caller_saved):
+        for i, used_reg in enumerate(sorted(used_registers & caller_saved)):
             if i < len(unused):
                 candidates.append((used_reg, unused[i]))
 
