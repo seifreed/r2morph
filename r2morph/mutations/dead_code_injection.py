@@ -194,14 +194,24 @@ class DeadCodeInjectionPass(MutationPass):
                 logger.debug(f"Could not generate dead code for {available_size} bytes at 0x{inject_addr:x}")
                 continue
 
+            original_bytes = binary.read_bytes(inject_addr, available_size)
+            if not original_bytes:
+                # Cannot read the bytes we would overwrite: we can
+                # neither confirm this is safe padding nor record an
+                # accurate original. The old code fabricated
+                # b"\x90" * available_size, producing a false mutation
+                # record and writing dead code over an unverified
+                # region. Fail safe: skip this injection point.
+                logger.debug(
+                    "Skipping dead-code injection at 0x%x: original bytes unreadable",
+                    inject_addr,
+                )
+                continue
+
             mutation_checkpoint = self._create_mutation_checkpoint("dead_code")
             baseline = {}
             if self._validation_manager is not None:
                 baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
-
-            original_bytes = binary.read_bytes(inject_addr, available_size)
-            if not original_bytes:
-                original_bytes = b"\x90" * available_size
 
             success = binary.write_bytes(inject_addr, dead_code)
 

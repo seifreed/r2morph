@@ -435,8 +435,28 @@ class InstructionExpansionPass(MutationPass):
                                     original_bytes = binary.read_bytes(addr, orig_size)
 
                                     if binary.write_bytes(addr, new_bytes):
-                                        if new_size < orig_size:
-                                            binary.nop_fill(addr + new_size, orig_size - new_size)
+                                        if new_size < orig_size and not binary.nop_fill(
+                                            addr + new_size, orig_size - new_size
+                                        ):
+                                            # Shorter replacement written but the
+                                            # trailing gap could not be NOP-filled,
+                                            # so leftover bytes of the original
+                                            # (longer) instruction remain -> corrupt
+                                            # stream. nop_fill's bool result was
+                                            # previously ignored and the patch
+                                            # recorded as success anyway. Roll back.
+                                            logger.warning(
+                                                "NOP fill failed at 0x%x after shorter expansion; rolling back",
+                                                addr + new_size,
+                                            )
+                                            if self._session is not None and mutation_checkpoint is not None:
+                                                self._session.rollback_to(mutation_checkpoint)
+                                            binary.reload()
+                                            if self._rollback_policy == "fail-fast":
+                                                raise RuntimeError(
+                                                    "Instruction-expansion NOP fill failed; aborting (fail-fast)"
+                                                )
+                                            continue
 
                                         mutated_bytes = binary.read_bytes(addr, orig_size)
                                         record = self._record_mutation(
