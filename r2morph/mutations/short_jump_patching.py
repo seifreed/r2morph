@@ -165,12 +165,29 @@ class ShortJumpPatchingPass(MutationPass):
 
                     if binary.write_bytes(insn_addr, assembled):
                         if len(assembled) < insn_size:
+                            # The shorter replacement is already written at
+                            # insn_addr; the tail still holds leftover bytes
+                            # from the longer original instruction. Those
+                            # bytes MUST be overwritten with NOPs or the
+                            # instruction stream is corrupt. If the padding
+                            # cannot be produced or written, roll the
+                            # already-written prefix back instead of
+                            # leaving (and recording) a broken patch.
                             nop_count = insn_size - len(assembled)
                             nop_pad = binary.assemble("\n".join(["nop"] * nop_count), function_addr=func.get("addr"))
-                            if nop_pad:
-                                if not binary.write_bytes(insn_addr + len(assembled), nop_pad):
-                                    logger.debug(f"Failed to write NOP padding at 0x{insn_addr + len(assembled):x}")
-                                    continue
+                            pad_ok = bool(nop_pad) and binary.write_bytes(insn_addr + len(assembled), nop_pad)
+                            if not pad_ok:
+                                logger.warning(
+                                    "NOP padding failed at 0x%x (need %d bytes); rolling back short-jump patch",
+                                    insn_addr + len(assembled),
+                                    nop_count,
+                                )
+                                if self._session is not None and mutation_checkpoint is not None:
+                                    self._session.rollback_to(mutation_checkpoint)
+                                binary.reload()
+                                if self._rollback_policy == "fail-fast":
+                                    raise RuntimeError("Short-jump NOP padding failed; aborting (fail-fast)")
+                                continue
 
                         mutated_bytes = binary.read_bytes(insn_addr, insn_size)
                         record = self._record_mutation(
@@ -235,7 +252,6 @@ def detect_rip_relative_displacement(insn: dict[str, Any]) -> bool:
         True if instruction uses RIP-relative addressing
     """
     disasm = insn.get("disasm", "") or insn.get("opstr", "") or ""
-    insn.get("mnemonic", "").lower()
 
     if "rip" in disasm.lower():
         return True
