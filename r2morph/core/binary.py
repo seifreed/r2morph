@@ -232,6 +232,30 @@ class Binary:
             self.r2 = None
             logger.info(f"Closed binary: {self.path}")
 
+    def __del__(self) -> None:
+        """Finalizer safety net: never leak the radare2 subprocess.
+
+        A Binary whose owner forgot to close() (no context manager, an
+        error path, an abandoned reference) would otherwise leak the
+        radare2 child process and its stdin/stdout pipe fds, reported as
+        an unraisable "Exception ignored while finalizing file <fd>"
+        under the mandated pytest -W error and attributed to a random
+        later test. __del__ must never raise, so this is a narrow
+        best-effort quit of a possibly-broken subprocess.
+        """
+        r2 = getattr(self, "r2", None)
+        if r2 is None:
+            return
+        try:
+            if hasattr(r2, "quit"):
+                r2.quit()
+        except Exception:
+            # Cleanup of a possibly-dead subprocess at finalization;
+            # nothing actionable remains and __del__ must not raise.
+            return
+        finally:
+            self.r2 = None
+
     def reload(self) -> None:
         logger.debug("Reloading r2 connection to free memory")
         was_analyzed = self._analyzed
