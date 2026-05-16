@@ -20,6 +20,7 @@ from r2morph.core.constants import (
     LARGE_FUNCTION_COUNT_THRESHOLD,
     MANY_FUNCTIONS_THRESHOLD,
     MEDIUM_FUNCTION_COUNT_THRESHOLD,
+    UNKNOWN_SEVERITY_RANK,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
 from r2morph.mutations.base import MutationPass  # Concrete type needed for isinstance checks in pipeline binding
@@ -362,7 +363,7 @@ def _summarize_symbolic_severity_by_pass(
     severity_order = SEVERITY_ORDER
     rows.sort(
         key=lambda item: (
-            severity_order.get(item["severity"], 99),
+            severity_order.get(item["severity"], UNKNOWN_SEVERITY_RANK),
             -item["issue_count"],
             -item["symbolic_requested"],
             item["pass_name"],
@@ -767,7 +768,7 @@ def _summarize_discarded_mutations(
             "discarded_count": count,
             "impact_severity": min(
                 (severity_by_reason.get(reason, "low") for reason in by_pass_reason.get(pass_name, {})),
-                key=lambda severity: severity_order.get(severity, 99),
+                key=lambda severity: severity_order.get(severity, UNKNOWN_SEVERITY_RANK),
                 default="low",
             ),
             "reasons": dict(
@@ -781,7 +782,7 @@ def _summarize_discarded_mutations(
     ]
     rows.sort(
         key=lambda item: (
-            severity_order.get(str(item.get("impact_severity", "low")), 99),
+            severity_order.get(str(item.get("impact_severity", "low")), UNKNOWN_SEVERITY_RANK),
             -item["discarded_count"],
             item["pass_name"],
         )
@@ -812,7 +813,7 @@ def _build_discarded_mutation_priority(
     rows = [dict(row) for row in discarded_summary.get("by_pass", [])]
     rows.sort(
         key=lambda item: (
-            severity_order.get(str(item.get("impact_severity", "low")), 99),
+            severity_order.get(str(item.get("impact_severity", "low")), UNKNOWN_SEVERITY_RANK),
             -int(item.get("discarded_count", 0)),
             -len(item.get("reasons", {})),
             str(item.get("pass_name", "")),
@@ -838,7 +839,7 @@ def _summarize_pass_triage_rows(
             {
                 "pass_name": pass_name,
                 "severity": severity,
-                "severity_order": severity_order.get(severity, 99),
+                "severity_order": severity_order.get(severity, UNKNOWN_SEVERITY_RANK),
                 "issue_count": int(symbolic_summary.get("issue_count", 0)),
                 "symbolic_requested": int(symbolic_summary.get("symbolic_requested", 0)),
                 "observable_match": int(symbolic_summary.get("observable_match", 0)),
@@ -860,7 +861,7 @@ def _summarize_pass_triage_rows(
         )
     rows.sort(
         key=lambda item: (
-            severity_order.get(item["severity"], 99),
+            severity_order.get(item["severity"], UNKNOWN_SEVERITY_RANK),
             -item["symbolic_binary_mismatched_regions"],
             -item["structural_issue_count"],
             -item["changed_region_count"],

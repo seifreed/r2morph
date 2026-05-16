@@ -19,6 +19,12 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from r2morph.core.constants import (
+    ANALYSIS_CACHE_CLEANUP_INTERVAL_SECONDS,
+    ANALYSIS_CACHE_MAX_AGE_DAYS,
+    ANALYSIS_CACHE_MAX_SIZE_MB,
+)
+
 logger = logging.getLogger(__name__)
 
 # Safe modules and classes allowed for unpickling cache data
@@ -132,9 +138,9 @@ class AnalysisCache:
     def __init__(
         self,
         cache_dir: Path | str | None = None,
-        max_size_mb: int = 500,
-        max_age_days: int = 30,
-        cleanup_interval_seconds: int = 3600,
+        max_size_mb: int = ANALYSIS_CACHE_MAX_SIZE_MB,
+        max_age_days: int = ANALYSIS_CACHE_MAX_AGE_DAYS,
+        cleanup_interval_seconds: int = ANALYSIS_CACHE_CLEANUP_INTERVAL_SECONDS,
         enable_background_cleanup: bool = True,
     ):
         if cache_dir is None:

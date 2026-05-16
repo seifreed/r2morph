@@ -25,5 +25,16 @@ PACKED_ENTROPY_THRESHOLD = 7.5
 # Instruction size estimation
 AVG_INSTRUCTION_SIZE_BYTES = 4
 
+# Severity ranking
+# Sentinel rank for an unknown/unrecognized severity. severity_order
+# maps known severities to ascending ranks (lower = more severe); an
+# unknown severity sorts after every known one.
+UNKNOWN_SEVERITY_RANK = 99
+
+# Analysis cache defaults
+ANALYSIS_CACHE_MAX_SIZE_MB = 500
+ANALYSIS_CACHE_MAX_AGE_DAYS = 30
+ANALYSIS_CACHE_CLEANUP_INTERVAL_SECONDS = 3600
+
 # Control flow transfer instructions (unconditional)
 UNCONDITIONAL_TRANSFERS = frozenset({"jmp", "ret", "retn", "b", "br", "bx", "blr"})
