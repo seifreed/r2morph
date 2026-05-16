@@ -176,7 +176,6 @@ def test_cli_warns_for_symbolic_validation_mode(
     assert "semantic equivalence" in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_prints_symbolic_mutation_summary(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -247,7 +246,6 @@ def test_cli_report_prints_symbolic_mutation_summary(tmp_path: Path) -> None:
     assert "eax, eflags" in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_surfaces_degraded_validation_mode(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -314,7 +312,6 @@ def test_cli_report_surfaces_degraded_validation_mode(tmp_path: Path) -> None:
     assert "trigger=yes" in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_degraded_filters_json(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -343,7 +340,6 @@ def test_cli_report_only_degraded_filters_json(tmp_path: Path) -> None:
     assert '"only_degraded": true' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_pass_accepts_mutation_alias(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -408,7 +404,6 @@ def test_cli_report_only_pass_accepts_mutation_alias(tmp_path: Path) -> None:
     assert '"pass_name": "NopInsertion"' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_degraded_keeps_degraded_pass_details(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -454,7 +449,6 @@ def test_cli_report_only_degraded_keeps_degraded_pass_details(tmp_path: Path) ->
     assert '"degradation-trigger": 1' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_failed_gates_filters_json(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -497,7 +491,6 @@ def test_cli_report_only_failed_gates_filters_json(tmp_path: Path) -> None:
     assert '"gate_failures": {' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_gate_failure_summary_groups_failures_by_pass(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -553,7 +546,6 @@ def test_cli_report_gate_failure_summary_groups_failures_by_pass(tmp_path: Path)
     assert gate_section.index("InstructionSubstitution") < gate_section.index("NopInsertion")
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_gate_failure_summary_breaks_same_severity_ties_by_failure_count(
     tmp_path: Path,
 ) -> None:
@@ -668,7 +660,6 @@ def test_cli_report_exports_gate_failure_priority_in_filtered_summary(tmp_path: 
     assert severity_counts == {"clean": 3}
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_expected_severity_filters_gate_summary(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     filtered_path = tmp_path / "filtered.json"
@@ -816,7 +807,6 @@ def test_cli_report_only_expected_severity_require_results_respects_filtered_gat
     assert failure.exit_code == 1
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_pass_failure_filters_gate_summary(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     filtered_path = tmp_path / "filtered.json"
@@ -1095,7 +1085,6 @@ def test_cli_report_require_results_respects_min_severity(tmp_path: Path) -> Non
     assert failure.exit_code == 1
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_distinguishes_triggering_vs_degraded_pass_roles(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -1174,7 +1163,6 @@ def test_cli_report_skips_symbolic_summary_when_not_present(tmp_path: Path) -> N
     assert "Symbolic Mismatches" not in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_mismatches_filters_json(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -1217,7 +1205,6 @@ def test_cli_report_only_mismatches_filters_json(tmp_path: Path) -> None:
     assert "0x401000" not in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_mismatches_preserves_degraded_context(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     output_path = tmp_path / "filtered.json"
@@ -1296,7 +1283,6 @@ def test_cli_report_only_mismatches_preserves_degraded_context(tmp_path: Path) -
     )
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_mismatches_handles_empty_set(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -1324,7 +1310,6 @@ def test_cli_report_only_mismatches_handles_empty_set(tmp_path: Path) -> None:
     assert "Filtered Mismatch Mutations: 0" in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_pass_filters_json(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -1360,7 +1345,6 @@ def test_cli_report_only_pass_filters_json(tmp_path: Path) -> None:
     assert '"only_pass": "InstructionSubstitution"' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_pass_shows_local_symbolic_summary(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     output_path = tmp_path / "filtered.json"
@@ -5086,7 +5070,6 @@ def test_cli_report_only_uncovered_passes_filters_to_uncovered_passes(tmp_path: 
     assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "ReportFixture"
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_pass_combines_with_only_mismatches(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -5139,7 +5122,6 @@ def test_cli_report_only_pass_combines_with_only_mismatches(tmp_path: Path) -> N
     assert '"only_mismatches": true' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_status_filters_json(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -5178,7 +5160,6 @@ def test_cli_report_only_status_filters_json(tmp_path: Path) -> None:
     assert '"only_status": "bounded-step-observable-mismatch"' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_status_combines_with_other_filters(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -5232,7 +5213,6 @@ def test_cli_report_only_status_combines_with_other_filters(tmp_path: Path) -> N
     assert '"only_mismatches": true' in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_summary_only_skips_json(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -5282,7 +5262,6 @@ def test_cli_report_summary_only_skips_json(tmp_path: Path) -> None:
     assert '"mutations"' not in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_summary_only_combines_with_only_mismatches(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -5318,7 +5297,6 @@ def test_cli_report_summary_only_combines_with_only_mismatches(tmp_path: Path) -
     assert '"mutations"' not in result.output
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_only_mismatches_prefers_persisted_mismatch_summary(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     report_path.write_text(
@@ -5496,7 +5474,6 @@ def test_cli_report_exports_symbolic_coverage_by_pass_summary(tmp_path: Path) ->
     assert payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["observable_mismatch"] == 1
 
 
-@pytest.mark.xfail(reason="Report rendering is environment-dependent", strict=False)
 def test_cli_report_exports_symbolic_severity_by_pass_summary(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     output_path = tmp_path / "filtered.json"
