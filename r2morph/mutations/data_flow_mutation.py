@@ -239,9 +239,17 @@ class DataFlowMutationPass(MutationPass):
             if not dead_regs:
                 continue
 
-            for reg in caller_saved:
+            # sorted() before iterating: caller_saved and dead_regs are
+            # sets (dead_regs = all_regs - live), so their iteration
+            # order is PYTHONHASHSEED-randomized per process. Without a
+            # stable order the `break` picked a non-deterministic
+            # dead_reg and the candidate list order varied, so the
+            # downstream seeded random.sample produced different
+            # mutations across processes with the same seed= -- the same
+            # reproducibility bug fixed in register_substitution.
+            for reg in sorted(caller_saved):
                 if reg in disasm and reg in live_in.get(addr, set()):
-                    for dead_reg in dead_regs:
+                    for dead_reg in sorted(dead_regs):
                         candidates.append((insn, reg, dead_reg))
                         break
 
@@ -362,8 +370,22 @@ class DataFlowMutationPass(MutationPass):
                         if not binary.write_bytes(addr, new_bytes):
                             continue
 
-                        if len(new_bytes) < size:
-                            binary.nop_fill(addr + len(new_bytes), size - len(new_bytes))
+                        if len(new_bytes) < size and not binary.nop_fill(addr + len(new_bytes), size - len(new_bytes)):
+                            # Shorter replacement written but trailing gap
+                            # not NOP-filled -> stale tail of the original
+                            # instruction remains. nop_fill's bool was
+                            # ignored and the patch recorded as success.
+                            # Roll back like the validation-failure path.
+                            logger.warning(
+                                "NOP fill failed at 0x%x after data-flow substitution; rolling back",
+                                addr + len(new_bytes),
+                            )
+                            if self._session is not None and mutation_checkpoint is not None:
+                                self._session.rollback_to(mutation_checkpoint)
+                            binary.reload()
+                            if self._rollback_policy == "fail-fast":
+                                raise RuntimeError("data_flow_mutation NOP fill failed; aborting (fail-fast)")
+                            continue
 
                         mutated_bytes = binary.read_bytes(addr, size)
                         record = self._record_mutation(
