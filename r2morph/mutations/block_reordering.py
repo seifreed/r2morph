@@ -274,8 +274,17 @@ class BlockReorderingPass(MutationPass):
                                         f"Skipping jump insert at 0x{write_addr:x}: " f"not on instruction boundary"
                                     )
                                     continue
-                        except (ValueError, OSError, BrokenPipeError):
-                            pass
+                        except (ValueError, OSError, BrokenPipeError) as exc:
+                            # The boundary check could not run. Writing the
+                            # jump without it risks bisecting an instruction
+                            # and corrupting the code. Fail safe: skip this
+                            # insertion rather than write unverified.
+                            logger.debug(
+                                "Skipping jump insert at 0x%x: boundary check unavailable (%s)",
+                                write_addr,
+                                exc,
+                            )
+                            continue
 
                         try:
                             if binary.write_bytes(write_addr, jmp_bytes):
