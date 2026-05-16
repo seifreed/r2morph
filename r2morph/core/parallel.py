@@ -351,9 +351,18 @@ class BinaryFileLock:
             return False
 
     def release(self) -> None:
-        """Release the file lock."""
-        if self._locked:
-            try:
+        """Release the file lock and always close the lock file.
+
+        The lock file must be closed even when ``_locked`` is False: the
+        file is opened in ``acquire`` before the lock is taken, so a
+        partial/failed acquire (or a double release) could otherwise
+        leave the fd open until GC finalized it, raising an unraisable
+        "Exception ignored while finalizing file" under ``pytest -W
+        error`` -- attributed to an unrelated test (flaky, shifting
+        victims).
+        """
+        try:
+            if self._locked:
                 if FCNTL_AVAILABLE and self._lock_file:
                     fcntl.flock(self._lock_file.fileno(), fcntl.LOCK_UN)
                 elif HAS_MSVCRT and self._lock_file:
@@ -364,13 +373,34 @@ class BinaryFileLock:
                         self._lock_dir_path.rmdir()
                 self._locked = False
                 logger.debug(f"Released lock for {self.binary_path}")
-            except Exception as e:
-                logger.error(f"Failed to release lock for {self.binary_path}: {e}")
-            finally:
-                if self._lock_file:
+        except OSError as e:
+            logger.error(f"Failed to release lock for {self.binary_path}: {e}")
+        finally:
+            if self._lock_file is not None:
+                try:
                     self._lock_file.close()
-                    self._lock_file = None
-                self._lock_dir_path = None
+                except OSError as e:
+                    logger.debug(f"Ignoring error closing lock file: {e}")
+                self._lock_file = None
+            self._lock_dir_path = None
+
+    def __del__(self) -> None:
+        """Finalizer safety net: never leak the lock fd.
+
+        If a BinaryFileLock is abandoned without release()/__exit__ the
+        open lock file would otherwise be reported as an unraisable
+        finalization warning. __del__ must never raise, so this is a
+        narrow best-effort close of a possibly-broken fd.
+        """
+        lock_file = getattr(self, "_lock_file", None)
+        if lock_file is None:
+            return
+        try:
+            lock_file.close()
+        except OSError:
+            # An fd broken at interpreter finalization is unrecoverable;
+            # there is nothing actionable to do here.
+            return
 
     def __enter__(self) -> "BinaryFileLock":
         """Context manager entry."""
