@@ -75,6 +75,28 @@ class R2PipeAdapter:
             finally:
                 self._r2 = None
 
+    def __del__(self) -> None:
+        """Finalizer safety net: never leak the radare2 subprocess.
+
+        An adapter whose owner forgot to close() (no context manager, an
+        error path, an abandoned reference) would otherwise leak the
+        radare2 child process and its stdin/stdout pipe fds, reported as
+        an unraisable "Exception ignored while finalizing file <fd>"
+        under the mandated pytest -W error and attributed to a random
+        later test. Mirrors Binary.__del__; __del__ must never raise.
+        """
+        r2 = getattr(self, "_r2", None)
+        if r2 is None:
+            return
+        try:
+            r2.quit()
+        except Exception:
+            # Best-effort cleanup of a possibly-dead subprocess at
+            # finalization; nothing actionable remains.
+            return
+        finally:
+            self._r2 = None
+
     def cmd(self, command: str) -> str:
         """Execute a command and return string result.
 
