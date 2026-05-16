@@ -6,6 +6,7 @@ using memory profiling and garbage collection tracking.
 """
 
 import gc
+import io
 import logging
 import tracemalloc
 from dataclasses import dataclass
@@ -420,11 +421,15 @@ class ResourceLeakDetector:
             except Exception:
                 resources["file_descriptors"] = 0
 
-        resources["open_files"] = sum(
-            1
-            for obj in gc.get_objects()
-            if hasattr(obj, "closed") and hasattr(obj, "name") and not getattr(obj, "closed", True)
-        )
+        # Filter by concrete type before touching attributes: probing
+        # `hasattr(obj, "closed")` over every gc object invokes
+        # __getattr__ on arbitrary objects, and on objects with
+        # side-effecting __getattr__ (e.g. pytest's MarkGenerator,
+        # `pytest.mark`) it would synthesize `pytest.mark.closed` and
+        # emit a PytestUnknownMarkWarning -- fatal under `pytest -W
+        # error`. io.IOBase.closed is a plain, side-effect-free property
+        # and covers the real OS-backed file objects we care about.
+        resources["open_files"] = sum(1 for obj in gc.get_objects() if isinstance(obj, io.IOBase) and not obj.closed)
 
         try:
             import psutil
