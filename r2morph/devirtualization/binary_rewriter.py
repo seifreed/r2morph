@@ -254,6 +254,11 @@ class BinaryRewriter:
         try:
             # Get original bytes at address
             original_bytes = self._get_bytes_at_address(address, 16)  # Get up to 16 bytes
+            if not original_bytes:
+                # Without the real original bytes we cannot compute a
+                # correct size delta or roll the patch back safely.
+                logger.error(f"Cannot read original bytes at 0x{address:x}; refusing to add patch")
+                return False
 
             # Assemble new instructions
             new_bytes = self._assemble_instructions(new_instructions)
@@ -600,16 +605,26 @@ class BinaryRewriter:
         return checks
 
     def _get_bytes_at_address(self, address: int, size: int) -> bytes:
-        """Get bytes at a specific address."""
-        try:
-            if hasattr(self.binary, "r2"):
-                hex_data = self.binary.r2.cmd(f"p8 {size} @ {address}")
-                return bytes.fromhex(hex_data.strip())
-            else:
-                return b"\x00" * size
+        """Read the actual bytes at an address.
 
-        except Exception:
-            return b"\x00" * size
+        Returns b"" if the bytes cannot be read. The previous behavior
+        of returning b"\\x00" * size on failure fabricated original
+        bytes: add_patch would store those zeros as CodePatch.
+        original_bytes, so a later rollback would write zeros over the
+        real instruction (corrupting the binary) and size_change would
+        be computed against fake data. Callers must treat b"" as
+        "unknown — do not patch".
+        """
+        if not hasattr(self.binary, "r2") or self.binary.r2 is None:
+            logger.warning("Cannot read bytes at 0x%x: no r2 backend on binary", address)
+            return b""
+
+        try:
+            hex_data = self.binary.r2.cmd(f"p8 {size} @ {address}")
+            return bytes.fromhex(hex_data.strip())
+        except (ValueError, OSError, RuntimeError) as exc:
+            logger.warning("Failed to read %d bytes at 0x%x: %s", size, address, exc)
+            return b""
 
     def _assemble_instructions(self, instructions: list[str]) -> bytes:
         """Assemble instructions to bytes."""
