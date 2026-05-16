@@ -875,7 +875,7 @@ def build_call_graph_cached(
 
     if cache is not None:
         try:
-            binary_data = binary.path.open("rb").read()
+            binary_data = binary.path.read_bytes()
             cached = cache.get(binary_data, "call_graph", options)
             if cached is not None:
                 logger.debug("Call graph cache hit")
@@ -887,7 +887,7 @@ def build_call_graph_cached(
 
     if cache is not None:
         try:
-            binary_data = binary.path.open("rb").read()
+            binary_data = binary.path.read_bytes()
             cache.set(binary_data, "call_graph", cg.to_json(), options)
             logger.debug("Call graph cached")
         except Exception as e:
