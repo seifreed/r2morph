@@ -261,10 +261,19 @@ class BinaryFileLock:
         self._lock_file: Any = None
         self._lock_dir_path: Path | None = None
         self._locked = False
+        # One BinaryFileLock instance is shared across the
+        # ThreadPoolExecutor pass-workers in _execute_stage. acquire()
+        # did a non-atomic check-then-open: concurrent threads each
+        # open()'d the lock file and the later assignment overwrote
+        # self._lock_file, orphaning the first file object. The orphaned
+        # fd was only reclaimed at GC, raising an unraisable
+        # "finalizing file '...lock'" under pytest -W error, attributed
+        # to a random later test (flaky, shifting victims). Serialize
+        # acquire/release so only one lock file is ever opened/tracked.
+        self._mutex = threading.RLock()
 
     def acquire(self, blocking: bool = True) -> bool:
-        """
-        Acquire the file lock.
+        """Acquire the file lock (thread-safe; serialized per instance).
 
         Args:
             blocking: Whether to block until lock is acquired
@@ -272,6 +281,10 @@ class BinaryFileLock:
         Returns:
             True if lock was acquired, False otherwise
         """
+        with self._mutex:
+            return self._acquire_locked(blocking)
+
+    def _acquire_locked(self, blocking: bool = True) -> bool:
         if self._locked:
             return True
 
@@ -361,6 +374,10 @@ class BinaryFileLock:
         error`` -- attributed to an unrelated test (flaky, shifting
         victims).
         """
+        with self._mutex:
+            self._release_locked()
+
+    def _release_locked(self) -> None:
         try:
             if self._locked:
                 if FCNTL_AVAILABLE and self._lock_file:
