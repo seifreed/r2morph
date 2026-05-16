@@ -75,7 +75,7 @@ def _safe_pickle_load(f: io.BufferedIOBase) -> Any:
     return RestrictedUnpickler(f).load()
 
 
-@dataclass
+@dataclass(frozen=True)
 class CacheKey:
     binary_hash: str
     analysis_type: str
