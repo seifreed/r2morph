@@ -567,6 +567,10 @@ def _render_general_only_pass_sections(
         pass_symbolic_summary=pass_symbolic_summary,
         pass_evidence=pass_evidence,
         pass_validation_context=pass_validation_context,
-        pass_region_evidence=[pass_region_evidence] if pass_region_evidence else None,
+        # _resolve_only_pass_view already returns region evidence as a
+        # list[dict]; wrapping it again ([pass_region_evidence]) produced
+        # a list-of-list so _render_only_pass_sections' `row.get(...)`
+        # crashed with "'list' object has no attribute 'get'".
+        pass_region_evidence=pass_region_evidence if pass_region_evidence else None,
         pass_capabilities=capability_row,
     )

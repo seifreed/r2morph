@@ -494,7 +494,12 @@ def _resolve_only_pass_view(
     filtered_summary: dict[str, Any],
     pass_results: dict[str, Any],
     pass_name: str,
-) -> tuple[dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None, dict[str, Any] | None]:
+) -> tuple[
+    dict[str, Any] | None,
+    dict[str, Any] | None,
+    dict[str, Any] | None,
+    list[dict[str, Any]] | None,
+]:
     """Resolve pass-scoped symbolic/evidence/context views with summary-first fallbacks."""
     report_views = dict(summary.get("report_views", {}) or {})
     only_pass_map = dict(report_views.get("only_pass", {}) or {})
