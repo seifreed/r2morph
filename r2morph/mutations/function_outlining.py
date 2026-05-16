@@ -382,7 +382,18 @@ class FunctionOutliningPass(MutationPass):
                 tramp_off = cave_addr - (first_addr + 5)
                 trampoline = b"\xe9" + tramp_off.to_bytes(4, "little", signed=True)
                 nops = b"\x90" * (chunk_size - 5)
-                binary.write_bytes(first_addr, trampoline + nops)
+                if not binary.write_bytes(first_addr, trampoline + nops):
+                    # The chunk is in the cave but the trampoline that
+                    # redirects the original site to it did not get
+                    # written, so the function was NOT actually
+                    # outlined. The original bytes at first_addr are
+                    # intact (no corruption); just don't record a
+                    # mutation that did not happen.
+                    logger.warning(
+                        "Trampoline write failed at 0x%x; chunk not outlined, skipping record",
+                        first_addr,
+                    )
+                    continue
 
                 self._record_mutation(
                     function_address=func_addr,

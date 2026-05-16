@@ -318,7 +318,16 @@ section {section_name} align=16
             trampoline = b"\xe9" + tramp_offset.to_bytes(4, "little", signed=True)
             nops = b"\x90" * (block.size - 5)
 
-            binary.write_bytes(block.original_address, trampoline + nops)
+            if not binary.write_bytes(block.original_address, trampoline + nops):
+                # Block copied to the cave but the redirect trampoline
+                # did not get written, so the block was NOT moved. The
+                # original bytes are intact; do not record a mutation
+                # that did not happen.
+                logger.warning(
+                    "Trampoline write failed at 0x%x; block not moved, skipping record",
+                    block.original_address,
+                )
+                continue
 
             self._record_mutation(
                 function_address=block.original_address,
