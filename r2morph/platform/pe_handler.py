@@ -584,7 +584,11 @@ class PEHandler:
                 return None
 
             section = lief.PE.Section(name[:8])
-            section.content = list(bytes(size))
+            # lief's Section.content setter is typed memoryview[int] and at
+            # runtime accepts a Sequence[int] (list/memoryview/bytearray —
+            # but not raw bytes). memoryview(bytes(size)) is both: a
+            # zero-filled buffer of `size` bytes that satisfies the type.
+            section.content = memoryview(bytes(size))
             section.characteristics = characteristics
             section.virtual_size = size
 

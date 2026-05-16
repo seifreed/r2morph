@@ -157,14 +157,23 @@ class CFGIntegrityChecker:
                 if block_info["is_exit"]:
                     exit_blocks.append(addr)
 
-            if hasattr(cfg, "edges"):
-                for edge in cfg.edges:
-                    src = edge.src if hasattr(edge, "src") else edge[0]
-                    dst = edge.dst if hasattr(edge, "dst") else edge[1]
-                    edge_type = (
-                        getattr(edge, "type", "") if hasattr(edge, "type") else edge[2] if len(edge) > 2 else "normal"
-                    )
-                    edges.append((src, dst, edge_type))
+            # ControlFlowGraph.edges is always list[tuple[int, int]]
+            # (add_edge stores only (from, to); the edge type goes to the
+            # block successor, never into this tuple). Unpack directly —
+            # the previous edge.src / edge[2] / hasattr dance was dead
+            # against the real type and tripped strict type checking.
+            for src, dst in getattr(cfg, "edges", []):
+                edges.append((src, dst, "normal"))
+
+            # Exception-handling edges live in a *separate* list
+            # (cfg.exception_edges: list[ExceptionEdge]) and were never
+            # captured here. As a result _check_critical_edges — whose
+            # whole purpose is to verify exception/unwind/landing_pad
+            # edges survive mutation — had no critical edges to check and
+            # silently passed. Ingest them with the "exception" type so
+            # critical-edge preservation is actually validated.
+            for exc_edge in getattr(cfg, "exception_edges", []):
+                edges.append((exc_edge.from_address, exc_edge.to_address, "exception"))
 
             preserved: list[PreservedPattern] = []
             if self._preservation_manager and self._preservation_manager._analyzed:
