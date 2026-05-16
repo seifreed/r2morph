@@ -188,7 +188,26 @@ class BlockReorderingPass(MutationPass):
                             bytes1 = bytes.fromhex(bytes1_hex.strip())
                             bytes2 = bytes.fromhex(bytes2_hex.strip())
 
-                            if binary.write_bytes(addr1, bytes2) and binary.write_bytes(addr2, bytes1):
+                            # The swap is two writes. With the old
+                            # `write(a) and write(b)` form, a failure of
+                            # the second write left the first applied:
+                            # block2's bytes ended up at BOTH addresses
+                            # and block1 was lost, with no rollback and
+                            # no error surfaced. Make it atomic: if the
+                            # second write fails, restore the first.
+                            if not binary.write_bytes(addr1, bytes2):
+                                logger.debug("Block swap aborted: first write to 0x%x failed", addr1)
+                            elif not binary.write_bytes(addr2, bytes1):
+                                logger.warning(
+                                    "Block swap half-applied at 0x%x; restoring original bytes to avoid corruption",
+                                    addr1,
+                                )
+                                if not binary.write_bytes(addr1, bytes1):
+                                    logger.error(
+                                        "Failed to restore 0x%x after partial block swap; binary may be inconsistent",
+                                        addr1,
+                                    )
+                            else:
                                 logger.info(f"Swapped blocks at 0x{addr1:x} <-> 0x{addr2:x} ({size1} bytes each)")
                                 blocks_swapped += 1
                                 mutations_applied += 1
