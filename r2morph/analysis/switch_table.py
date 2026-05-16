@@ -404,6 +404,7 @@ class SwitchTableAnalyzer:
                         bound = int(val, 0)
                         bounds_check_candidates[addr] = {"register": reg, "bound": bound, "address": addr}
                     except ValueError:
+                        # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                         pass
 
         for jump in indirect_jumps:

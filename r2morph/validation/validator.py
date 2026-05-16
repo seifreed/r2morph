@@ -310,6 +310,7 @@ class BinaryValidator:
             try:
                 binary_path.chmod(0o755)
             except (OSError, PermissionError):
+                # Best-effort chmod; some filesystems/permissions disallow it and execution still proceeds without it.
                 pass
 
             if test_case.working_dir:

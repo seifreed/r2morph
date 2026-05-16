@@ -635,6 +635,7 @@ class CFOSimplifier:
                     try:
                         return int(mem_ref, 16) if "x" in mem_ref else int(mem_ref)
                     except ValueError:
+                        # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                         pass
 
             return None

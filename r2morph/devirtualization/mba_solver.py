@@ -358,6 +358,7 @@ class MBASolver:
             num = int(operand)
             return z3.BitVecVal(num, 64)
         except ValueError:
+            # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
             pass
 
         return None

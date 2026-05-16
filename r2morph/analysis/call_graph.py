@@ -747,6 +747,7 @@ class CallGraphBuilder:
             try:
                 return int(operand, 16)
             except ValueError:
+                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                 pass
 
         if operand.startswith("[") and operand.endswith("]"):

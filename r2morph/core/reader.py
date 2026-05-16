@@ -285,6 +285,8 @@ class BinaryReader:
             try:
                 return int(paddr_result.strip(), 16)
             except ValueError:
+                # r2 returned a non-hex paddr (e.g. empty / "-1"); the
+                # address is simply unresolved -> fall through to None.
                 pass
 
         for section in self.get_sections():

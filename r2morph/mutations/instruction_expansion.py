@@ -233,6 +233,7 @@ class InstructionExpansionPass(MutationPass):
                                     if 0 <= val <= 255:
                                         expansions.extend(expansion_list)
                                 except ValueError:
+                                    # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                                     pass
                         elif second_pattern.isdigit() or second_pattern.startswith("-"):
                             if is_immediate_operand(second_op):
@@ -242,6 +243,7 @@ class InstructionExpansionPass(MutationPass):
                                     if expected == actual:
                                         expansions.extend(expansion_list)
                                 except ValueError:
+                                    # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                                     pass
                         else:
                             expansions.extend(expansion_list)

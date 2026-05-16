@@ -570,8 +570,11 @@ class ExtendedSemanticValidator(SemanticValidator):
                             if state.addr >= loop_end:
                                 simgr.active.remove(state)
                                 simgr.deadended.append(state)
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            # angr state internals are unpredictable; a
+                            # state that cannot be inspected/pruned here
+                            # is skipped, not fatal to loop bounding.
+                            logger.debug("Symbolic loop-bound state pruning skipped: %s", exc)
 
                     simgr.step()
                     step_count += 1

@@ -1120,6 +1120,7 @@ class PointerAnalysis:
             try:
                 return int(bracket_content, 16)
             except ValueError:
+                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                 pass
 
         return None

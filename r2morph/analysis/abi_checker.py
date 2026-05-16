@@ -235,6 +235,7 @@ class ABIChecker:
                             else:
                                 stack_delta += imm
                         except ValueError:
+                            # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                             pass
             elif mnemonic in ("call", "callq"):
                 alignment = self.abi.stack_alignment
@@ -363,6 +364,7 @@ class ABIChecker:
                                     found_shadow = True
                                     break
                             except ValueError:
+                                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                                 pass
 
                     if "push" in prev_disasm:

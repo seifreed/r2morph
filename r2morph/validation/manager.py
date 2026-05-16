@@ -758,8 +758,11 @@ class ValidationManager:
                 if original_bridge and hasattr(original_bridge, "angr_project"):
                     try:
                         original_bridge.angr_project.loader.close()
-                    except Exception:  # best-effort cleanup
-                        pass
+                    except Exception as exc:
+                        # Best-effort cleanup of the angr loader on the
+                        # error path; a close failure here must not mask
+                        # the original bridge_error reported below.
+                        logger.debug("angr loader close failed during cleanup: %s", exc)
                 logger.error(f"Failed to create mutated bridge: {bridge_error}")
                 return {
                     "symbolic_binary_check_performed": False,

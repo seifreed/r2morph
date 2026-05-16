@@ -314,8 +314,8 @@ class AnalysisCache:
             try:
                 entry_path.unlink(missing_ok=True)
                 removed += 1
-            except OSError:
-                pass
+            except OSError as exc:
+                logger.debug("Could not remove cache entry %s: %s", entry_path, exc)
         with self._stats_lock:
             self._stats = CacheStats()
         return removed
@@ -368,8 +368,8 @@ class AnalysisCache:
                     new_stats.oldest_entry = entry.created_at
                 if new_stats.newest_entry is None or entry.created_at > new_stats.newest_entry:
                     new_stats.newest_entry = entry.created_at
-            except (pickle.PickleError, OSError):
-                pass
+            except (pickle.PickleError, OSError) as exc:
+                logger.debug("Skipping unreadable/corrupt cache entry %s: %s", entry_path, exc)
 
         with self._stats_lock:
             self._stats = new_stats
@@ -423,8 +423,8 @@ class AnalysisCache:
                         "binary_hash": entry.key.binary_hash[:16],
                     }
                 )
-            except (pickle.PickleError, OSError):
-                pass
+            except (pickle.PickleError, OSError) as exc:
+                logger.debug("Skipping unreadable/corrupt cache entry %s: %s", entry_path, exc)
 
         return entries
 

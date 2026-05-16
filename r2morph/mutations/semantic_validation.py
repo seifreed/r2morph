@@ -217,6 +217,7 @@ class SemanticValidator:
                     else:
                         stack_adjustments.append(-imm)
                 except (ValueError, TypeError):
+                    # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                     pass
 
         for idx in range(len(instructions) - 1, -1, -1):
@@ -447,6 +448,7 @@ class SemanticValidator:
             try:
                 return int(jump, 0) if isinstance(jump, str) else jump
             except (ValueError, TypeError):
+                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                 pass
         return None
 

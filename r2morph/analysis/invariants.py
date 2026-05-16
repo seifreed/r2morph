@@ -108,6 +108,7 @@ class InvariantDetector:
                         ret_imm = int(ret_suffix.strip().rstrip(","), 0)
                         stack_delta += ret_imm
                     except ValueError:
+                        # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                         pass
                 if stack_delta != 0:
                     invariants.append(

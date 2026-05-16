@@ -369,6 +369,7 @@ class CFGIntegrityChecker:
             try:
                 return int(match.group(1), 16)
             except ValueError:
+                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
                 pass
         return None
 
