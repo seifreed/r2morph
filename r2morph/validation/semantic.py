@@ -13,7 +13,7 @@ This module provides:
 import json
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -497,7 +497,7 @@ class SemanticValidator:
 
         return SemanticValidationReport(
             binary_path=str(self.binary.path) if self.binary.path else "memory",
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             mode=self.mode,
             results=results,
         )
