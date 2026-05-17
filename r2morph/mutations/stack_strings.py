@@ -99,7 +99,7 @@ def generate_aes_decode_asm_x64(key: bytes, data_len: int, label_id: int) -> lis
         List of assembly lines for AES decryption
     """
     asm_lines = []
-    asm_lines.append(f"    ; AES-256 decryption ({data_len} bytes)")
+    asm_lines.append(f"    ; AES_256 (keyed-XOR obfuscation) decode ({data_len} bytes)")
     asm_lines.append("    lea rdi, [rsp]  ; destination")
     asm_lines.append(f"    lea rsi, [rsp + {data_len + 32}]  ; encrypted data source")
     asm_lines.append(f"    mov ecx, {(data_len + 15) // 16}  ; block count")
@@ -110,12 +110,14 @@ def generate_aes_decode_asm_x64(key: bytes, data_len: int, label_id: int) -> lis
         asm_lines.append(f"    mov r8, 0x{key_chunk[::-1].hex()}")
         asm_lines.append(f"    mov [rsp + {i}], r8")
 
+    asm_lines.append("    ; keystream = key[0:16] ^ key[16:32]  (matches aes._derive_block_keystream)")
+    asm_lines.append("    movdqu xmm1, [rsp]")
+    asm_lines.append("    movdqu xmm2, [rsp + 16]")
+    asm_lines.append("    pxor xmm1, xmm2")
     asm_lines.append(f"aes_decrypt_loop_{label_id:x}:")
-    asm_lines.append("    ; Load encrypted block")
+    asm_lines.append("    ; Decode block: cipher ^ keystream (involutive)")
     asm_lines.append("    movdqu xmm0, [rsi]")
-    asm_lines.append("    ; Simplified AES decryption (using hardware AES-NI if available)")
-    asm_lines.append("    ; For portability, this uses a simplified approach")
-    asm_lines.append("    pxor xmm0, [rsp]  ; XOR with first round key")
+    asm_lines.append("    pxor xmm0, xmm1")
     asm_lines.append("    movdqu [rdi], xmm0")
     asm_lines.append("    add rsi, 16")
     asm_lines.append("    add rdi, 16")
@@ -137,7 +139,7 @@ def generate_aes_decode_asm_x86(key: bytes, data_len: int, label_id: int) -> lis
         List of assembly lines for AES decryption
     """
     asm_lines = []
-    asm_lines.append(f"    ; AES-256 decryption ({data_len} bytes)")
+    asm_lines.append(f"    ; AES_256 (keyed-XOR obfuscation) decode ({data_len} bytes)")
     asm_lines.append("    lea edi, [esp]  ; destination")
     asm_lines.append(f"    lea esi, [esp + {data_len + 32}]  ; encrypted data source")
     asm_lines.append(f"    mov ecx, {(data_len + 15) // 16}  ; block count")
@@ -148,13 +150,17 @@ def generate_aes_decode_asm_x86(key: bytes, data_len: int, label_id: int) -> lis
         asm_lines.append(f"    mov eax, 0x{key_chunk[::-1].hex()}")
         asm_lines.append(f"    mov [esp + {i}], eax")
 
+    asm_lines.append("    ; keystream halves = key[0:16] ^ key[16:32]  (matches aes._derive_block_keystream)")
+    asm_lines.append("    movq mm2, [esp]")
+    asm_lines.append("    pxor mm2, [esp + 16]")
+    asm_lines.append("    movq mm3, [esp + 8]")
+    asm_lines.append("    pxor mm3, [esp + 24]")
     asm_lines.append(f"aes_decrypt_loop_{label_id:x}:")
-    asm_lines.append("    ; Load encrypted block")
+    asm_lines.append("    ; Decode block: cipher ^ keystream (involutive)")
     asm_lines.append("    movq mm0, [esi]")
     asm_lines.append("    movq mm1, [esi + 8]")
-    asm_lines.append("    ; XOR with round key")
-    asm_lines.append("    pxor mm0, [esp]")
-    asm_lines.append("    pxor mm1, [esp + 8]")
+    asm_lines.append("    pxor mm0, mm2")
+    asm_lines.append("    pxor mm1, mm3")
     asm_lines.append("    movq [edi], mm0")
     asm_lines.append("    movq [edi + 8], mm1")
     asm_lines.append("    add esi, 16")

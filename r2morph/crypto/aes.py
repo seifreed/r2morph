@@ -560,58 +560,63 @@ def aes_key_expansion(key: bytes) -> list:
     return [bytes(word) for word in w]
 
 
+def _derive_block_keystream(key: bytes) -> bytes:
+    """Fold the 256-bit key into the 16-byte block keystream.
+
+    The two 128-bit halves of the key are XOR-folded so every key byte
+    influences every block. This definition MUST stay identical to the
+    keystream the emitted runtime decode stubs compute
+    (r2morph.mutations.stack_strings.generate_aes_decode_asm_x64 / _x86):
+    if they diverge, StackStrings AES_256 output cannot be decoded at
+    runtime.
+    """
+    if len(key) != 32:
+        key = key[:32].ljust(32, b"\x00")
+    return bytes(key[i] ^ key[i + 16] for i in range(16))
+
+
 def aes_encrypt_block(block: bytes, key: bytes) -> bytes:
     """
-    Encrypt a single 16-byte block with AES-256 (simplified).
+    Obfuscate a 16-byte block by XOR with the key-derived keystream.
 
-    This is a simplified implementation for obfuscation purposes.
-    For production security, use a proper crypto library.
+    This is a deliberately reversible keyed-XOR obfuscation over the
+    256-bit key, NOT cryptographic AES (this module is an obfuscation
+    layer, not a security primitive). It is involutive, and the emitted
+    StackStrings AES_256 decode stub performs the exact inverse.
+
+    The previous round-based body indexed a 4-byte expanded word as if
+    it were a 16-byte round key, raising IndexError for every input, and
+    no decode stub ever implemented its inverse.
     """
     if len(block) != 16:
         block = block[:16].ljust(16, b"\x00")
-    if len(key) != 32:
-        key = key[:32].ljust(32, b"\x00")
-
-    state = list(block)
-    round_keys = aes_key_expansion(key)
-
-    for r in range(14):
-        for i in range(16):
-            state[i] ^= round_keys[r][(i % 4) * 4 + i // 4]
-        for i in range(16):
-            state[i] = SBOX[state[i]]
-
-    return bytes(state)
+    keystream = _derive_block_keystream(key)
+    return bytes(block[i] ^ keystream[i] for i in range(16))
 
 
 def aes_decrypt_block(block: bytes, key: bytes) -> bytes:
     """
-    Decrypt a single 16-byte block with AES-256 (simplified).
-
     Inverse of aes_encrypt_block.
+
+    The keyed-XOR keystream is involutive, so decryption is the same
+    operation as encryption.
     """
-    round_keys = aes_key_expansion(key)
-    state = list(block)
-
-    for r in range(13, -1, -1):
-        for i in range(16):
-            state[i] = INV_SBOX[state[i]]
-        for i in range(16):
-            state[i] ^= round_keys[r][(i % 4) * 4 + i // 4]
-
-    return bytes(state)
+    if len(block) != 16:
+        block = block[:16].ljust(16, b"\x00")
+    keystream = _derive_block_keystream(key)
+    return bytes(block[i] ^ keystream[i] for i in range(16))
 
 
 def aes_encrypt_string(data: bytes, key: bytes) -> tuple[bytes, bytes]:
     """
-    Encrypt string data with AES-256 in ECB mode.
+    Encrypt string data block-by-block (ECB-style, zero-padded).
 
     Args:
         data: String data to encrypt
-        key: 32-byte encryption key (generated if not provided)
+        key: encryption key (padded/truncated to 32 bytes)
 
     Returns:
-        Tuple of (encrypted_data, key)
+        Tuple of (encrypted_data, normalized_32_byte_key)
     """
     if len(key) != 32:
         key = key[:32].ljust(32, b"\x00")
