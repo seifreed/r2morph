@@ -9,11 +9,15 @@ ValidationIssue/ValidationOutcome) is not a circular import.
 
 from __future__ import annotations
 
+import logging
 from importlib import import_module
+from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.validation.manager import _parse_address
+
+logger = logging.getLogger(__name__)
 
 
 class SymbolicValidator:
@@ -477,3 +481,61 @@ class SymbolicValidator:
             "symbolic_transition_regions": compared_regions,
             "symbolic_transition_mismatches": mismatches,
         }
+
+    def _setup_symbolic_bridges(
+        self,
+        binary: Binary,
+        previous_binary_path: Path,
+        current_binary_path: Path,
+        bridge_module: Any,
+    ) -> dict[str, Any] | tuple[Any, Any, Any, Any, Any]:
+        """Create AngrBridge for original and mutated binaries.
+
+        Returns (original_bridge, mutated_bridge, angr_module, claripy, options)
+        on success, or a failure dict on error.
+        """
+        from r2morph.analysis.symbolic.angr_bridge import AngrBridge
+
+        original_bridge = None
+        with Binary(previous_binary_path, writable=False) as original_binary:
+            try:
+                original_binary.analyze("aa")
+            except (ValueError, OSError, BrokenPipeError, RuntimeError) as analyze_error:
+                logger.warning(f"Failed to analyze original binary: {analyze_error}")
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": f"Failed to analyze original binary: {analyze_error}",
+                }
+            try:
+                original_bridge = AngrBridge(original_binary)
+            except Exception as bridge_error:  # AngrBridge init may raise any angr error
+                logger.error(f"Failed to create original bridge: {bridge_error}")
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": f"Failed to create original bridge: {bridge_error}",
+                }
+            try:
+                mutated_bridge = AngrBridge(binary)
+            except Exception as bridge_error:  # AngrBridge init may raise any angr error
+                if original_bridge and hasattr(original_bridge, "angr_project"):
+                    try:
+                        original_bridge.angr_project.loader.close()
+                    except Exception as exc:
+                        # Best-effort cleanup of the angr loader on the
+                        # error path; a close failure here must not mask
+                        # the original bridge_error reported below.
+                        logger.debug("angr loader close failed during cleanup: %s", exc)
+                logger.error(f"Failed to create mutated bridge: {bridge_error}")
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": f"Failed to create mutated bridge: {bridge_error}",
+                }
+            angr_module = getattr(bridge_module, "angr", None)
+            if angr_module is None:
+                return {
+                    "symbolic_binary_check_performed": False,
+                    "symbolic_binary_reason": "angr module not available",
+                }
+            claripy = import_module("claripy")
+            options = angr_module.options
+            return (original_bridge, mutated_bridge, angr_module, claripy, options)
