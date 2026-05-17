@@ -50,6 +50,13 @@ class _ControlFlowFailureBinary(Binary):
         raise OSError("disassembly unavailable")
 
 
+class _ArchInfoFailureBinary(Binary):
+    """Real Binary whose arch probe fails, so invariant detection raises."""
+
+    def get_arch_info(self) -> dict[str, Any]:
+        raise OSError("arch info unavailable")
+
+
 def test_structural_mutation_happy_path_contract(tmp_path: Path) -> None:
     work = _work_copy(tmp_path)
     with Binary(work) as binary:
@@ -114,3 +121,54 @@ def test_structural_mutation_control_flow_failure(tmp_path: Path) -> None:
 
     assert outcome.passed is False
     assert "control_flow" in {issue.validator for issue in outcome.issues}
+
+
+def test_capture_baseline_mode_off_returns_empty(tmp_path: Path) -> None:
+    work = _work_copy(tmp_path)
+    with Binary(work) as binary:
+        binary.analyze()
+        addr = _first_function_address(binary)
+        result = ValidationManager(mode="off").capture_structural_baseline(binary, addr)
+    assert result == {}
+
+
+def test_capture_baseline_none_address_returns_empty(tmp_path: Path) -> None:
+    work = _work_copy(tmp_path)
+    with Binary(work) as binary:
+        result = ValidationManager(mode="structural").capture_structural_baseline(binary, None)
+    assert result == {}
+
+
+def test_capture_baseline_zero_address_returns_empty(tmp_path: Path) -> None:
+    work = _work_copy(tmp_path)
+    with Binary(work) as binary:
+        result = ValidationManager(mode="structural").capture_structural_baseline(binary, 0)
+    assert result == {}
+
+
+def test_capture_baseline_shape_contract(tmp_path: Path) -> None:
+    work = _work_copy(tmp_path)
+    with Binary(work) as binary:
+        binary.analyze()
+        addr = _first_function_address(binary)
+        result = ValidationManager(mode="structural").capture_structural_baseline(binary, addr)
+
+    assert set(result.keys()) == {"function_address", "invariant_count", "invariants"}
+    assert result["function_address"] == addr
+    assert result["invariant_count"] == len(result["invariants"])
+    for inv in result["invariants"]:
+        assert set(inv.keys()) == {"type", "location", "description", "details"}
+
+
+def test_capture_baseline_invariant_failure_yields_empty_invariants(tmp_path: Path) -> None:
+    work = _work_copy(tmp_path)
+    with _ArchInfoFailureBinary(work) as binary:
+        binary.analyze()
+        addr = _first_function_address(binary)
+        result = ValidationManager(mode="structural").capture_structural_baseline(binary, addr)
+
+    assert result == {
+        "function_address": addr,
+        "invariant_count": 0,
+        "invariants": [],
+    }
