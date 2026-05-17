@@ -239,6 +239,30 @@ class Pipeline:
             "support": mutation_pass.get_support().to_dict(),
         }
 
+    def _apply_pass(
+        self,
+        ctx: _RunContext,
+        mutation_pass: MutationPassProtocol,
+        *,
+        checkpoint_name: str | None,
+    ) -> dict[str, Any]:
+        """Run one pass and return its enriched pass_result."""
+        pass_started = time.perf_counter()
+        pass_result = mutation_pass.run(ctx.binary)
+        pass_result.setdefault("pass_name", mutation_pass.name)
+        pass_result.setdefault("mutations", [])
+        pass_result["execution_time_seconds"] = round(time.perf_counter() - pass_started, 6)
+        pass_result["support"] = mutation_pass.get_support().to_dict()
+        if ctx.session is not None and checkpoint_name is not None:
+            previous_binary = next(
+                (cp.binary_path for cp in ctx.session.list_checkpoints() if cp.name == checkpoint_name),
+                None,
+            )
+            if previous_binary is not None:
+                pass_result["previous_binary_path"] = str(previous_binary)
+        pass_result["diff_summary"] = self._build_diff_summary(pass_result)
+        return pass_result
+
     def _run_static_validation(
         self,
         ctx: _RunContext,
@@ -402,20 +426,7 @@ class Pipeline:
             )
 
             try:
-                pass_started = time.perf_counter()
-                pass_result = mutation_pass.run(binary)
-                pass_result.setdefault("pass_name", mutation_pass.name)
-                pass_result.setdefault("mutations", [])
-                pass_result["execution_time_seconds"] = round(time.perf_counter() - pass_started, 6)
-                pass_result["support"] = mutation_pass.get_support().to_dict()
-                if session is not None and checkpoint_name is not None:
-                    previous_binary = next(
-                        (cp.binary_path for cp in session.list_checkpoints() if cp.name == checkpoint_name),
-                        None,
-                    )
-                    if previous_binary is not None:
-                        pass_result["previous_binary_path"] = str(previous_binary)
-                pass_result["diff_summary"] = self._build_diff_summary(pass_result)
+                pass_result = self._apply_pass(ctx, mutation_pass, checkpoint_name=checkpoint_name)
                 self._run_static_validation(
                     ctx,
                     results=results,
