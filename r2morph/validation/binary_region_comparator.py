@@ -153,40 +153,13 @@ class BinaryRegionComparator:
         """
         from r2morph.analysis.symbolic.angr_bridge import AngrBridge
 
-        original_bridge = None
         with Binary(previous_binary_path, writable=False) as original_binary:
-            try:
-                original_binary.analyze("aa")
-            except (ValueError, OSError, BrokenPipeError, RuntimeError) as analyze_error:
-                logger.warning(f"Failed to analyze original binary: {analyze_error}")
-                return {
-                    "symbolic_binary_check_performed": False,
-                    "symbolic_binary_reason": f"Failed to analyze original binary: {analyze_error}",
-                }
-            try:
-                original_bridge = AngrBridge(original_binary)
-            except Exception as bridge_error:  # AngrBridge init may raise any angr error
-                logger.error(f"Failed to create original bridge: {bridge_error}")
-                return {
-                    "symbolic_binary_check_performed": False,
-                    "symbolic_binary_reason": f"Failed to create original bridge: {bridge_error}",
-                }
-            try:
-                mutated_bridge = AngrBridge(binary)
-            except Exception as bridge_error:  # AngrBridge init may raise any angr error
-                if original_bridge and hasattr(original_bridge, "angr_project"):
-                    try:
-                        original_bridge.angr_project.loader.close()
-                    except Exception as exc:
-                        # Best-effort cleanup of the angr loader on the
-                        # error path; a close failure here must not mask
-                        # the original bridge_error reported below.
-                        logger.debug("angr loader close failed during cleanup: %s", exc)
-                logger.error(f"Failed to create mutated bridge: {bridge_error}")
-                return {
-                    "symbolic_binary_check_performed": False,
-                    "symbolic_binary_reason": f"Failed to create mutated bridge: {bridge_error}",
-                }
+            original_bridge, error = self._create_original_bridge(original_binary, AngrBridge)
+            if error is not None:
+                return error
+            mutated_bridge, error = self._create_mutated_bridge(binary, original_bridge, AngrBridge)
+            if error is not None:
+                return error
             angr_module = getattr(bridge_module, "angr", None)
             if angr_module is None:
                 return {
@@ -196,6 +169,59 @@ class BinaryRegionComparator:
             claripy = import_module("claripy")
             options = angr_module.options
             return (original_bridge, mutated_bridge, angr_module, claripy, options)
+
+    def _create_original_bridge(
+        self,
+        original_binary: Binary,
+        angr_bridge_cls: Any,
+    ) -> tuple[Any, dict[str, Any] | None]:
+        """Analyze the original binary and build its AngrBridge.
+
+        Returns (bridge, None) on success or (None, error_dict).
+        """
+        try:
+            original_binary.analyze("aa")
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as analyze_error:
+            logger.warning(f"Failed to analyze original binary: {analyze_error}")
+            return None, {
+                "symbolic_binary_check_performed": False,
+                "symbolic_binary_reason": f"Failed to analyze original binary: {analyze_error}",
+            }
+        try:
+            return angr_bridge_cls(original_binary), None
+        except Exception as bridge_error:  # AngrBridge init may raise any angr error
+            logger.error(f"Failed to create original bridge: {bridge_error}")
+            return None, {
+                "symbolic_binary_check_performed": False,
+                "symbolic_binary_reason": f"Failed to create original bridge: {bridge_error}",
+            }
+
+    def _create_mutated_bridge(
+        self,
+        binary: Binary,
+        original_bridge: Any,
+        angr_bridge_cls: Any,
+    ) -> tuple[Any, dict[str, Any] | None]:
+        """Build the mutated AngrBridge; close the original bridge on failure.
+
+        Returns (bridge, None) on success or (None, error_dict).
+        """
+        try:
+            return angr_bridge_cls(binary), None
+        except Exception as bridge_error:  # AngrBridge init may raise any angr error
+            if original_bridge and hasattr(original_bridge, "angr_project"):
+                try:
+                    original_bridge.angr_project.loader.close()
+                except Exception as exc:
+                    # Best-effort cleanup of the angr loader on the error
+                    # path; a close failure here must not mask the
+                    # original bridge_error reported below.
+                    logger.debug("angr loader close failed during cleanup: %s", exc)
+            logger.error(f"Failed to create mutated bridge: {bridge_error}")
+            return None, {
+                "symbolic_binary_check_performed": False,
+                "symbolic_binary_reason": f"Failed to create mutated bridge: {bridge_error}",
+            }
 
     def _compare_single_region(
         self,
