@@ -91,10 +91,6 @@ class ValidationManager:
         """Validate a single mutation using structural checks."""
         return self._structural_validator.validate_mutation(binary, mutation, validator_type=validator_type)
 
-    def _run_symbolic_precheck(self, binary: Binary, pass_result: dict[str, Any]) -> dict[str, Any]:
-        """Run a bounded symbolic precheck for the experimental mode."""
-        return self._symbolic_validator._run_symbolic_precheck(binary, pass_result)
-
     def _estimate_symbolic_region_steps(
         self,
         pass_name: str,
@@ -114,15 +110,6 @@ class ValidationManager:
             binary, pass_result, bridge_module
         )
 
-    def _compare_real_binary_regions(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-        bridge_module: Any,
-    ) -> dict[str, Any]:
-        """Compare bounded symbolic effects on the real pre-pass and post-pass binaries."""
-        return self._symbolic_validator._compare_real_binary_regions(binary, pass_result, bridge_module)
-
     def _annotate_mutations_with_symbolic_metadata(
         self,
         pass_result: dict[str, Any],
@@ -139,7 +126,7 @@ class ValidationManager:
         """Validate a single mutation record."""
         if self.mode == "off":
             return ValidationOutcome(validator_type="off", passed=True, scope="mutation")
-        outcome = self._validate_structural_mutation(
+        outcome = self._structural_validator.validate_mutation(
             binary,
             mutation,
             validator_type=self.mode,
@@ -181,14 +168,16 @@ class ValidationManager:
             },
         )
         if self.mode == "symbolic":
-            result.metadata.update(self._run_symbolic_precheck(binary, pass_result))
+            result.metadata.update(self._symbolic_validator._run_symbolic_precheck(binary, pass_result))
             bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
             if pass_result.get("pass_name") in {
                 "InstructionSubstitution",
                 "NopInsertion",
                 "RegisterSubstitution",
             }:
-                result.metadata.update(self._compare_real_binary_regions(binary, pass_result, bridge_module))
+                result.metadata.update(
+                    self._symbolic_validator._compare_real_binary_regions(binary, pass_result, bridge_module)
+                )
                 if result.metadata.get("symbolic_binary_check_performed"):
                     if result.metadata.get("symbolic_binary_equivalent"):
                         result.metadata["symbolic_status"] = "real-binary-observables-match"
@@ -200,7 +189,7 @@ class ValidationManager:
                         result.metadata["symbolic_reason"] = (
                             "bounded real-binary symbolic effects diverged for the mutated regions"
                         )
-            self._annotate_mutations_with_symbolic_metadata(pass_result, result.metadata)
+            self._symbolic_validator._annotate_mutations_with_symbolic_metadata(pass_result, result.metadata)
 
         if self.check_abi:
             abi_issues = self._check_abi_violations(binary, pass_result)
