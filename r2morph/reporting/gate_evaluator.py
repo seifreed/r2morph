@@ -8,13 +8,7 @@ and pass severity requirements checking.
 from dataclasses import dataclass
 from typing import Any
 
-SEVERITY_ORDER: dict[str, int] = {
-    "mismatch": 0,
-    "without-coverage": 1,
-    "bounded-only": 2,
-    "clean": 3,
-    "not-requested": 4,
-}
+from r2morph.core.constants import SEVERITY_ORDER
 
 ROLLBACK_SEVERITY_ORDER: dict[str, int] = {
     "high": 0,

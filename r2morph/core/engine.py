@@ -21,12 +21,12 @@ from r2morph.core.constants import (
     LARGE_FUNCTION_COUNT_THRESHOLD,
     MANY_FUNCTIONS_THRESHOLD,
     MEDIUM_FUNCTION_COUNT_THRESHOLD,
+    SEVERITY_ORDER,
     UNKNOWN_SEVERITY_RANK,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
 from r2morph.protocols import BinarySignerProtocol, MutationPassProtocol, PipelineProtocol
 from r2morph.reporting.gate_evaluator import (
-    SEVERITY_ORDER,
     build_gate_failure_priority,
     build_gate_failure_severity_priority,
     summarize_gate_failures,

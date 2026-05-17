@@ -26,9 +26,16 @@ PACKED_ENTROPY_THRESHOLD = 7.5
 AVG_INSTRUCTION_SIZE_BYTES = 4
 
 # Severity ranking
-# Sentinel rank for an unknown/unrecognized severity. severity_order
-# maps known severities to ascending ranks (lower = more severe); an
-# unknown severity sorts after every known one.
+# SEVERITY_ORDER maps known severities to ascending ranks (lower = more
+# severe). UNKNOWN_SEVERITY_RANK is the sentinel rank for an
+# unknown/unrecognized severity; it sorts after every known one.
+SEVERITY_ORDER: dict[str, int] = {
+    "mismatch": 0,
+    "without-coverage": 1,
+    "bounded-only": 2,
+    "clean": 3,
+    "not-requested": 4,
+}
 UNKNOWN_SEVERITY_RANK = 99
 
 # Analysis cache defaults
