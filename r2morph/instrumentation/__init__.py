@@ -9,16 +9,20 @@ This module provides runtime analysis capabilities using Frida for:
 - Memory dumping and analysis
 """
 
+from typing import TYPE_CHECKING
+
 from r2morph.instrumentation.frida_engine import FridaEngine
 
 # Check Frida availability
-try:
+if TYPE_CHECKING:
     import frida
+else:
+    try:
+        import frida
+    except ImportError:
+        frida = None
 
-    FRIDA_AVAILABLE = True
-except ImportError:
-    FRIDA_AVAILABLE = False
-    frida = None  # type: ignore[assignment]
+FRIDA_AVAILABLE = frida is not None
 
 __all__ = [
     "FridaEngine",

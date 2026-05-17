@@ -10,16 +10,19 @@ import time
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-try:
+if TYPE_CHECKING:
     import frida
     import frida.core
+else:
+    try:
+        import frida
+        import frida.core
+    except ImportError:
+        frida = None
 
-    FRIDA_AVAILABLE = True
-except ImportError:
-    FRIDA_AVAILABLE = False
-    frida = None  # type: ignore[assignment]
+FRIDA_AVAILABLE = frida is not None
 
 logger = logging.getLogger(__name__)
 
