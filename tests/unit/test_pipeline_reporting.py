@@ -936,6 +936,10 @@ def test_symbolic_validation_reports_bounded_step_metadata(monkeypatch):
         "r2morph.validation.manager.import_module",
         lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
     )
+    monkeypatch.setattr(
+        "r2morph.validation.symbolic_validator.import_module",
+        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
+    )
 
     outcome = manager.validate_pass(
         binary,
@@ -994,6 +998,10 @@ def test_symbolic_pipeline_marks_known_instruction_equivalence_as_supported(monk
         "r2morph.validation.manager.import_module",
         lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
     )
+    monkeypatch.setattr(
+        "r2morph.validation.symbolic_validator.import_module",
+        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
+    )
 
     pipeline = Pipeline()
     pipeline.add_pass(_InstructionSubstitutionSemanticPass())
@@ -1036,8 +1044,11 @@ def test_symbolic_pipeline_marks_observable_match_as_supported(monkeypatch):
         lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge, angr=None),
     )
     monkeypatch.setattr(
-        ValidationManager,
-        "_compare_instruction_substitution_observables",
+        "r2morph.validation.symbolic_validator.import_module",
+        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge, angr=None),
+    )
+    monkeypatch.setattr(
+        "r2morph.validation.symbolic_validator.SymbolicValidator._compare_instruction_substitution_observables",
         lambda self, binary, pass_result, bridge_module: {
             "symbolic_observable_check_performed": True,
             "symbolic_observable_equivalent": True,
