@@ -234,6 +234,8 @@ class RelocationManager:
 
             assert self.binary.r2 is not None
             current_ptr_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ 0x{from_addr:x}")
+            if not current_ptr_hex:
+                return False
             endian = self._get_endianness()
             current_ptr = int.from_bytes(bytes.fromhex(current_ptr_hex.strip()), byteorder=endian)
 
