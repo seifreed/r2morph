@@ -616,12 +616,6 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return False
 
-    def _get_x86_opaque_predicates(self, bits: int) -> list[list[str]]:
-        return self._predicate_generator.get_x86(bits)
-
-    def _get_arm_opaque_predicates(self, bits: int) -> list[list[str]]:
-        return self._predicate_generator.get_arm(bits)
-
     def _obfuscate_jump(self, binary: Any, jump_insn: dict, block: dict, arch: str, bits: int) -> bool:
         """
         Obfuscate an unconditional jump instruction.

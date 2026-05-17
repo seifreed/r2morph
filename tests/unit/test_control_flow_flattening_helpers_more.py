@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 
 
@@ -32,14 +33,12 @@ def test_control_flow_flattening_nop_sequence_detection() -> None:
 
 
 def test_control_flow_flattening_opaque_predicate_lists() -> None:
-    pass_obj = ControlFlowFlatteningPass()
-
-    x86_preds = pass_obj._get_x86_opaque_predicates(64)
+    x86_preds = OpaquePredicateGenerator().get_x86(64)
     assert len(x86_preds) >= 3
     assert all(isinstance(seq, list) for seq in x86_preds)
     assert all(isinstance(insn, str) for seq in x86_preds for insn in seq)
 
-    arm_preds = pass_obj._get_arm_opaque_predicates(64)
+    arm_preds = OpaquePredicateGenerator().get_arm(64)
     assert len(arm_preds) >= 1
     assert all(isinstance(seq, list) for seq in arm_preds)
     assert all(isinstance(insn, str) for seq in arm_preds for insn in seq)

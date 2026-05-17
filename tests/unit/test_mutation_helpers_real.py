@@ -3,6 +3,7 @@ from pathlib import Path
 from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import BasicBlock
 from r2morph.mutations.block_reordering import BlockReorderingPass
+from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -39,8 +40,8 @@ def test_control_flow_flattening_helpers():
     sequences = cff._find_nop_sequences(instructions)
     assert sequences
 
-    x86_predicates = cff._get_x86_opaque_predicates(64)
-    arm_predicates = cff._get_arm_opaque_predicates(64)
+    x86_predicates = OpaquePredicateGenerator().get_x86(64)
+    arm_predicates = OpaquePredicateGenerator().get_arm(64)
     assert x86_predicates
     assert arm_predicates
 

@@ -1,3 +1,4 @@
+from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 
 
@@ -30,9 +31,8 @@ def test_find_nop_sequences():
 
 
 def test_arm_opaque_predicate_generation():
-    pass_obj = ControlFlowFlatteningPass(config={"probability": 1.0})
-    predicates_64 = pass_obj._get_arm_opaque_predicates(64)
-    predicates_32 = pass_obj._get_arm_opaque_predicates(32)
+    predicates_64 = OpaquePredicateGenerator().get_arm(64)
+    predicates_32 = OpaquePredicateGenerator().get_arm(32)
 
     assert predicates_64
     assert predicates_32

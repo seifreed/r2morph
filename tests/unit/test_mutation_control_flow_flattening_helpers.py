@@ -1,3 +1,4 @@
+from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 
 
@@ -21,8 +22,8 @@ def test_control_flow_flattening_helpers():
     assert start == 0x1000
     assert size >= 3
 
-    x86_preds = pass_obj._get_x86_opaque_predicates(64)
-    arm_preds = pass_obj._get_arm_opaque_predicates(64)
+    x86_preds = OpaquePredicateGenerator().get_x86(64)
+    arm_preds = OpaquePredicateGenerator().get_arm(64)
     assert x86_preds
     assert arm_preds
     assert all(isinstance(seq, list) for seq in x86_preds)
