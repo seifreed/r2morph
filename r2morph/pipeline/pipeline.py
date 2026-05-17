@@ -239,6 +239,45 @@ class Pipeline:
             "support": mutation_pass.get_support().to_dict(),
         }
 
+    def _run_static_validation(
+        self,
+        ctx: _RunContext,
+        *,
+        results: dict[str, Any],
+        pass_result: dict[str, Any],
+        mutation_pass: MutationPassProtocol,
+        checkpoint_name: str | None,
+    ) -> None:
+        """Statically validate the applied pass and roll back on failure."""
+        if ctx.validation_manager is not None and pass_result["mutations"]:
+            validation_result = ctx.validation_manager.validate_pass(ctx.binary, pass_result)
+            pass_result["validation"] = validation_result.to_dict()
+            results["validation"]["passes"].append(validation_result.to_dict())
+            results["validation"]["total_issues"] += len(validation_result.issues)
+            self._handle_symbolic_metadata(results, validation_result, mutation_pass)
+            if not validation_result.passed:
+                results["validation"]["all_passed"] = False
+                results["validation"]["failed_passes"].append(mutation_pass.name)
+                self._handle_validation_failure(
+                    results,
+                    pass_result,
+                    mutation_pass,
+                    ctx.binary,
+                    ctx.session,
+                    checkpoint_name,
+                    ctx.rollback_policy,
+                    reason="Validation failed",
+                )
+            else:
+                pass_result["rolled_back"] = False
+                pass_result["discarded_mutations"] = 0
+                pass_result["discarded_mutations_detail"] = []
+                pass_result["status"] = "applied"
+            pass_result["diff_summary"]["structural_regions"] = _summarize_validation_regions(
+                validation_result.to_dict()
+            )
+            pass_result["diff_summary"]["structural_issue_count"] = len(validation_result.issues)
+
     def _run_runtime_validation(
         self,
         ctx: _RunContext,
@@ -377,36 +416,13 @@ class Pipeline:
                     if previous_binary is not None:
                         pass_result["previous_binary_path"] = str(previous_binary)
                 pass_result["diff_summary"] = self._build_diff_summary(pass_result)
-                validation_result = None
-                if validation_manager is not None and pass_result["mutations"]:
-                    validation_result = validation_manager.validate_pass(binary, pass_result)
-                    pass_result["validation"] = validation_result.to_dict()
-                    results["validation"]["passes"].append(validation_result.to_dict())
-                    results["validation"]["total_issues"] += len(validation_result.issues)
-                    self._handle_symbolic_metadata(results, validation_result, mutation_pass)
-                    if not validation_result.passed:
-                        results["validation"]["all_passed"] = False
-                        results["validation"]["failed_passes"].append(mutation_pass.name)
-                        self._handle_validation_failure(
-                            results,
-                            pass_result,
-                            mutation_pass,
-                            binary,
-                            session,
-                            checkpoint_name,
-                            rollback_policy,
-                            reason="Validation failed",
-                        )
-                    else:
-                        pass_result["rolled_back"] = False
-                        pass_result["discarded_mutations"] = 0
-                        pass_result["discarded_mutations_detail"] = []
-                        pass_result["status"] = "applied"
-                    pass_result["diff_summary"]["structural_regions"] = _summarize_validation_regions(
-                        validation_result.to_dict()
-                    )
-                    pass_result["diff_summary"]["structural_issue_count"] = len(validation_result.issues)
-
+                self._run_static_validation(
+                    ctx,
+                    results=results,
+                    pass_result=pass_result,
+                    mutation_pass=mutation_pass,
+                    checkpoint_name=checkpoint_name,
+                )
                 self._run_runtime_validation(
                     ctx,
                     results=results,
