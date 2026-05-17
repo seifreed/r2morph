@@ -445,6 +445,47 @@ class BinaryRegionComparator:
         bridge_module: Any,
     ) -> dict[str, Any]:
         """Compare bounded symbolic effects on the real pre-pass and post-pass binaries."""
+        validated = self._validate_binary_paths(binary, pass_result)
+        if isinstance(validated, dict):
+            return validated
+        previous_binary_path, current_binary_path = validated
+
+        original_bridge = None
+        mutated_bridge = None
+        try:
+            bridge_result = self._setup_symbolic_bridges(
+                binary,
+                previous_binary_path,
+                current_binary_path,
+                bridge_module,
+            )
+            if isinstance(bridge_result, dict):
+                return bridge_result
+            original_bridge, mutated_bridge, angr_module, claripy, options = bridge_result
+            compared_regions, mismatches = self._run_region_comparison_loop(
+                previous_binary_path,
+                original_bridge,
+                mutated_bridge,
+                angr_module,
+                claripy,
+                options,
+                pass_result,
+            )
+        except Exception as e:  # angr symbolic comparison may raise any exception type
+            return {
+                "symbolic_binary_check_performed": False,
+                "symbolic_binary_reason": f"real binary symbolic comparison failed: {e}",
+            }
+        finally:
+            self._release_bridges(original_bridge, mutated_bridge)
+
+        return self._build_binary_comparison_result(
+            compared_regions, mismatches, previous_binary_path, current_binary_path
+        )
+
+    @staticmethod
+    def _validate_binary_paths(binary: Binary, pass_result: dict[str, Any]) -> tuple[Path, Path] | dict[str, Any]:
+        """Resolve the pre-pass and post-pass artifact paths or a failure payload."""
         previous_binary_path = pass_result.get("previous_binary_path")
         if not previous_binary_path:
             return {
@@ -466,65 +507,71 @@ class BinaryRegionComparator:
                 "symbolic_binary_check_performed": False,
                 "symbolic_binary_reason": "real binary artifacts not available on disk",
             }
+        return previous_binary_path, current_binary_path
 
-        original_bridge = None
-        mutated_bridge = None
-        try:
-            bridge_result = self._setup_symbolic_bridges(
-                binary,
-                previous_binary_path,
-                current_binary_path,
-                bridge_module,
-            )
-            if isinstance(bridge_result, dict):
-                return bridge_result
-            original_bridge, mutated_bridge, angr_module, claripy, options = bridge_result
+    def _run_region_comparison_loop(
+        self,
+        previous_binary_path: Path,
+        original_bridge: Any,
+        mutated_bridge: Any,
+        angr_module: Any,
+        claripy: Any,
+        options: Any,
+        pass_result: dict[str, Any],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Symbolically compare every mutation region on the pre-pass binary."""
+        compared_regions = []
+        mismatches = []
+        pass_name = pass_result.get("pass_name", "")
+        with Binary(previous_binary_path, writable=False) as original_binary:
+            original_binary.analyze("aa")
+            for mutation in pass_result.get("mutations", []):
+                result = self._compare_single_region(
+                    mutation,
+                    original_bridge,
+                    mutated_bridge,
+                    original_binary,
+                    angr_module,
+                    claripy,
+                    options,
+                    pass_name,
+                )
+                region_report, region_mismatches = result
+                if region_report is None:
+                    continue
+                compared_regions.append(region_report)
+                mismatches.extend(region_mismatches)
+        return compared_regions, mismatches
 
-            compared_regions = []
-            mismatches = []
-            pass_name = pass_result.get("pass_name", "")
-            with Binary(previous_binary_path, writable=False) as original_binary:
-                original_binary.analyze("aa")
-                for mutation in pass_result.get("mutations", []):
-                    result = self._compare_single_region(
-                        mutation,
-                        original_bridge,
-                        mutated_bridge,
-                        original_binary,
-                        angr_module,
-                        claripy,
-                        options,
-                        pass_name,
-                    )
-                    region_report, region_mismatches = result
-                    if region_report is None:
-                        continue
-                    compared_regions.append(region_report)
-                    mismatches.extend(region_mismatches)
-        except Exception as e:  # angr symbolic comparison may raise any exception type
-            return {
-                "symbolic_binary_check_performed": False,
-                "symbolic_binary_reason": f"real binary symbolic comparison failed: {e}",
-            }
-        finally:
-            cleanup_errors = []
-            if original_bridge is not None and hasattr(original_bridge, "angr_project"):
-                try:
-                    if hasattr(original_bridge.angr_project, "loader"):
-                        original_bridge.angr_project.loader.close()
-                except Exception as e:  # best-effort cleanup
-                    cleanup_errors.append(f"original: {e}")
-                    logger.warning(f"Error closing original angr project: {e}")
-            if mutated_bridge is not None and hasattr(mutated_bridge, "angr_project"):
-                try:
-                    if hasattr(mutated_bridge.angr_project, "loader"):
-                        mutated_bridge.angr_project.loader.close()
-                except Exception as e:  # best-effort cleanup
-                    cleanup_errors.append(f"mutated: {e}")
-                    logger.warning(f"Error closing mutated angr project: {e}")
-            if cleanup_errors:
-                logger.debug(f"Cleanup errors during angr resource release: {cleanup_errors}")
+    @staticmethod
+    def _release_bridges(original_bridge: Any, mutated_bridge: Any) -> None:
+        """Best-effort release of angr loader resources for both bridges."""
+        cleanup_errors = []
+        if original_bridge is not None and hasattr(original_bridge, "angr_project"):
+            try:
+                if hasattr(original_bridge.angr_project, "loader"):
+                    original_bridge.angr_project.loader.close()
+            except Exception as e:  # best-effort cleanup
+                cleanup_errors.append(f"original: {e}")
+                logger.warning(f"Error closing original angr project: {e}")
+        if mutated_bridge is not None and hasattr(mutated_bridge, "angr_project"):
+            try:
+                if hasattr(mutated_bridge.angr_project, "loader"):
+                    mutated_bridge.angr_project.loader.close()
+            except Exception as e:  # best-effort cleanup
+                cleanup_errors.append(f"mutated: {e}")
+                logger.warning(f"Error closing mutated angr project: {e}")
+        if cleanup_errors:
+            logger.debug(f"Cleanup errors during angr resource release: {cleanup_errors}")
 
+    @staticmethod
+    def _build_binary_comparison_result(
+        compared_regions: list[dict[str, Any]],
+        mismatches: list[dict[str, Any]],
+        previous_binary_path: Path,
+        current_binary_path: Path,
+    ) -> dict[str, Any]:
+        """Assemble the real-binary symbolic comparison result payload."""
         return {
             "symbolic_binary_check_performed": bool(compared_regions),
             "symbolic_binary_equivalent": not mismatches if compared_regions else False,
