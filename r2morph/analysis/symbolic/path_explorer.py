@@ -9,26 +9,26 @@ and control flow obfuscation patterns.
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-_angr: Any = None
-try:
-    import angr as _angr_mod
+if TYPE_CHECKING:
+    import angr
     from angr.exploration_techniques import ExplorationTechnique
+else:
+    try:
+        import angr
+        from angr.exploration_techniques import ExplorationTechnique
+    except ImportError:
+        angr = None
 
-    ANGR_AVAILABLE = True
-    _angr = _angr_mod
-except ImportError:
-    ANGR_AVAILABLE = False
+        class ExplorationTechnique:
+            """Fallback ExplorationTechnique when angr is not installed."""
 
-    class ExplorationTechnique:  # type: ignore[no-redef]
-        """Fallback ExplorationTechnique when angr is not installed."""
-
-        def __init__(self) -> None:
-            pass
+            def __init__(self) -> None:
+                pass
 
 
-angr = _angr
+ANGR_AVAILABLE = angr is not None
 
 
 logger = logging.getLogger(__name__)
