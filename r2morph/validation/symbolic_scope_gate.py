@@ -28,8 +28,20 @@ class SymbolicScopeGate:
         arch_info = binary.get_arch_info()
         mutations = pass_result.get("mutations", [])
         pass_name = pass_result.get("pass_name", "")
+        metadata = self._build_scope_metadata(mutations, pass_name)
+        rejection = self._check_scope_constraints(arch_info, mutations, pass_name)
+        if rejection is not None:
+            supported, reason = rejection
+            return supported, reason, metadata
+        return True, "supported", metadata
 
-        metadata = {
+    def _build_scope_metadata(
+        self,
+        mutations: list[dict[str, Any]],
+        pass_name: str,
+    ) -> dict[str, Any]:
+        """Build the symbolic-scope metadata block (independent of the verdict)."""
+        return {
             "symbolic_backend": "angr",
             "symbolic_pass_name": pass_name,
             "covered_functions": sorted(
@@ -45,25 +57,32 @@ class SymbolicScopeGate:
             ],
         }
 
+    def _check_scope_constraints(
+        self,
+        arch_info: dict[str, Any],
+        mutations: list[dict[str, Any]],
+        pass_name: str,
+    ) -> tuple[bool, str] | None:
+        """Return the (False, reason) rejection pair, or None when in scope."""
         binary_format = str(arch_info.get("format", ""))
         if not binary_format.startswith("ELF") or arch_info.get("bits") != 64:
-            return False, "unsupported-target", metadata
+            return False, "unsupported-target"
         if arch_info.get("arch") not in {"x86", "x86_64"}:
-            return False, "unsupported-target", metadata
+            return False, "unsupported-target"
         if pass_name not in {"NopInsertion", "InstructionSubstitution", "RegisterSubstitution"}:
-            return False, "unsupported-pass", metadata
+            return False, "unsupported-pass"
         if not mutations:
-            return False, "no-mutations", metadata
+            return False, "no-mutations"
         if len(mutations) > 8:
-            return False, "unsupported-scope", metadata
+            return False, "unsupported-scope"
         if any(
             (_parse_address(mutation["end_address"]) - _parse_address(mutation["start_address"]) + 1) > 16
             for mutation in mutations
         ):
-            return False, "unsupported-scope", metadata
+            return False, "unsupported-scope"
         if any(mutation.get("function_address") in (None, 0, "0x0") for mutation in mutations):
-            return False, "unsupported-scope", metadata
-        return True, "supported", metadata
+            return False, "unsupported-scope"
+        return None
 
     def _estimate_symbolic_region_steps(
         self,
