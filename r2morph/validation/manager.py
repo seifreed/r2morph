@@ -242,56 +242,7 @@ class ValidationManager:
 
     def _build_instruction_substitution_symbolic_hint(self, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Add a narrow semantic hint for instruction substitutions from known equivalence groups."""
-        if pass_result.get("pass_name") != "InstructionSubstitution":
-            return {}
-
-        mutations = pass_result.get("mutations", [])
-        if not mutations:
-            return {}
-
-        supported = []
-        unsupported = []
-        for mutation in mutations:
-            metadata = mutation.get("metadata", {})
-            members = metadata.get("equivalence_members") or []
-            original = metadata.get("equivalence_original_pattern")
-            replacement = metadata.get("equivalence_replacement_pattern")
-            group_index = metadata.get("equivalence_group_index")
-            if isinstance(group_index, int) and original in members and replacement in members and len(members) >= 2:
-                supported.append(
-                    {
-                        "start_address": mutation["start_address"],
-                        "end_address": mutation["end_address"],
-                        "equivalence_group_index": group_index,
-                        "equivalence_group_size": len(members),
-                    }
-                )
-            else:
-                unsupported.append(
-                    {
-                        "start_address": mutation["start_address"],
-                        "end_address": mutation["end_address"],
-                    }
-                )
-
-        if not supported:
-            return {
-                "symbolic_semantic_hint": "no-known-equivalence-group",
-                "symbolic_semantic_hint_supported": False,
-            }
-
-        hint = {
-            "symbolic_semantic_hint": "known-equivalence-group",
-            "symbolic_semantic_hint_supported": True,
-            "symbolic_semantic_hint_regions": supported,
-        }
-        if unsupported:
-            hint["symbolic_semantic_hint_partial"] = True
-            hint["symbolic_semantic_hint_unsupported_regions"] = unsupported
-        else:
-            hint["symbolic_semantic_hint_partial"] = False
-
-        return hint
+        return self._symbolic_validator._build_instruction_substitution_symbolic_hint(pass_result)
 
     def _compare_instruction_substitution_observables(
         self,
