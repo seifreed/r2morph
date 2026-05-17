@@ -61,22 +61,6 @@ class SymbolicValidator:
                 signatures.append(f"0x{addr_value:x}:{size_value}")
         return sorted(set(signatures))
 
-    def _estimate_symbolic_region_steps(
-        self,
-        pass_name: str,
-        mutation: dict[str, Any],
-    ) -> int:
-        """Estimate a small but useful symbolic step budget for a mutated region."""
-        return self._scope_gate._estimate_symbolic_region_steps(pass_name, mutation)
-
-    def _supports_symbolic_scope(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-    ) -> tuple[bool, str, dict[str, Any]]:
-        """Check whether the current pass is inside the experimental symbolic scope."""
-        return self._scope_gate._supports_symbolic_scope(binary, pass_result)
-
     def _build_instruction_substitution_symbolic_hint(self, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Add a narrow semantic hint for instruction substitutions from known equivalence groups."""
         if pass_result.get("pass_name") != "InstructionSubstitution":
@@ -505,7 +489,7 @@ class SymbolicValidator:
         mismatches: list[dict[str, Any]] = []
         start = mutation["start_address"]
         end = mutation["end_address"]
-        step_budget = self._estimate_symbolic_region_steps(pass_name, mutation)
+        step_budget = self._scope_gate._estimate_symbolic_region_steps(pass_name, mutation)
         region_width = max(1, end - start + 1)
         region_exit_budget = max(step_budget * 2, region_width + 1)
         resolved_original = original_bridge.resolve_loaded_address(start)
@@ -876,7 +860,7 @@ class SymbolicValidator:
 
     def _run_symbolic_precheck(self, binary: Binary, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Run a bounded symbolic precheck for the experimental mode."""
-        supported, reason, metadata = self._supports_symbolic_scope(binary, pass_result)
+        supported, reason, metadata = self._scope_gate._supports_symbolic_scope(binary, pass_result)
         payload = {
             "symbolic_requested": True,
             "symbolic_proven": False,
@@ -911,7 +895,7 @@ class SymbolicValidator:
                     break
 
                 initialized.append([start, end])
-                step_budget = self._estimate_symbolic_region_steps(
+                step_budget = self._scope_gate._estimate_symbolic_region_steps(
                     pass_result.get("pass_name", ""),
                     mutation,
                 )

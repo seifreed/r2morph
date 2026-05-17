@@ -40,7 +40,7 @@ def _pass(name: str, mutations: list[dict[str, Any]]) -> dict[str, Any]:
 
 def test_supported_elf64_x86_64_instruction_substitution() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
-    supported, reason, metadata = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, metadata = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
     assert supported is True
@@ -55,7 +55,7 @@ def test_supported_elf64_x86_64_instruction_substitution() -> None:
 
 def test_unsupported_target_non_elf_format() -> None:
     binary = _ArchBinary({"format": "PE", "bits": 64, "arch": "x86_64"})
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
     assert supported is False
@@ -64,7 +64,7 @@ def test_unsupported_target_non_elf_format() -> None:
 
 def test_unsupported_target_elf_but_32_bit() -> None:
     binary = _ArchBinary({"format": "ELF32", "bits": 32, "arch": "x86"})
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
     assert supported is False
@@ -73,7 +73,7 @@ def test_unsupported_target_elf_but_32_bit() -> None:
 
 def test_unsupported_target_elf64_wrong_arch() -> None:
     binary = _ArchBinary({"format": "ELF64", "bits": 64, "arch": "arm64"})
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
     assert supported is False
@@ -82,7 +82,7 @@ def test_unsupported_target_elf64_wrong_arch() -> None:
 
 def test_unsupported_pass_name() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("ControlFlowFlattening", [_mutation(0x401000, 0x401003)])
     )
     assert supported is False
@@ -91,7 +91,9 @@ def test_unsupported_pass_name() -> None:
 
 def test_no_mutations_returns_no_mutations() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
-    supported, reason, metadata = SymbolicValidator()._supports_symbolic_scope(binary, _pass("NopInsertion", []))
+    supported, reason, metadata = SymbolicValidator()._scope_gate._supports_symbolic_scope(
+        binary, _pass("NopInsertion", [])
+    )
     assert supported is False
     assert reason == "no-mutations"
     assert metadata["covered_functions"] == []
@@ -101,7 +103,9 @@ def test_no_mutations_returns_no_mutations() -> None:
 def test_more_than_eight_mutations_is_unsupported_scope() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
     mutations = [_mutation(0x401000 + i, 0x401001 + i) for i in range(9)]
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(binary, _pass("NopInsertion", mutations))
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
+        binary, _pass("NopInsertion", mutations)
+    )
     assert supported is False
     assert reason == "unsupported-scope"
 
@@ -109,7 +113,7 @@ def test_more_than_eight_mutations_is_unsupported_scope() -> None:
 def test_region_wider_than_sixteen_bytes_is_unsupported_scope() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
     # end - start + 1 == 17 > 16
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", [_mutation(0x401000, 0x401010)])
     )
     assert supported is False
@@ -119,7 +123,7 @@ def test_region_wider_than_sixteen_bytes_is_unsupported_scope() -> None:
 def test_exactly_sixteen_byte_region_is_supported() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
     # end - start + 1 == 16, the inclusive boundary
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", [_mutation(0x401000, 0x40100F)])
     )
     assert supported is True
@@ -128,7 +132,7 @@ def test_exactly_sixteen_byte_region_is_supported() -> None:
 
 def test_missing_function_address_is_unsupported_scope() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
-    supported, reason, _ = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", [_mutation(0x401000, 0x401003, function_address=0)])
     )
     assert supported is False
@@ -142,7 +146,7 @@ def test_metadata_covered_functions_sorted_unique_and_ranges_parse_hex() -> None
         _mutation("0x401000", "0x401003", function_address="0x401000"),
         _mutation("0x401020", "0x401023", function_address="0x401000"),
     ]
-    supported, reason, metadata = SymbolicValidator()._supports_symbolic_scope(
+    supported, reason, metadata = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("RegisterSubstitution", mutations)
     )
     assert supported is True

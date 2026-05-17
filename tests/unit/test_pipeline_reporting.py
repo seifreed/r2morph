@@ -476,7 +476,7 @@ def test_symbolic_region_step_budget_uses_pass_kind_and_disassembly():
     manager = ValidationManager(mode="symbolic")
 
     assert (
-        manager._symbolic_validator._estimate_symbolic_region_steps(
+        manager._symbolic_validator._scope_gate._estimate_symbolic_region_steps(
             "InstructionSubstitution",
             {
                 "start_address": 0x401000,
@@ -488,7 +488,7 @@ def test_symbolic_region_step_budget_uses_pass_kind_and_disassembly():
         == 1
     )
     assert (
-        manager._symbolic_validator._estimate_symbolic_region_steps(
+        manager._symbolic_validator._scope_gate._estimate_symbolic_region_steps(
             "RegisterSubstitution",
             {
                 "start_address": 0x401010,
@@ -500,7 +500,7 @@ def test_symbolic_region_step_budget_uses_pass_kind_and_disassembly():
         == 2
     )
     assert (
-        manager._symbolic_validator._estimate_symbolic_region_steps(
+        manager._symbolic_validator._scope_gate._estimate_symbolic_region_steps(
             "NopInsertion",
             {
                 "start_address": 0x401020,
