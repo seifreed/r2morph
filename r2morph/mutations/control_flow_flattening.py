@@ -717,24 +717,24 @@ class ControlFlowFlatteningPass(MutationPass):
         else:
             return False
 
-        # Try to assemble the dead code
+        assembled = self._assemble_bounded(binary, dead_code, size)
+        if not assembled:
+            return False
+
+        # Pad with NOPs using the shared utility
+        if len(assembled) < size:
+            assembled += generate_nop_sequence(arch, bits, size - len(assembled))
+
+        return bool(binary.write_bytes(addr, assembled))
+
+    def _assemble_bounded(self, binary: Any, instructions: list[str], max_size: int) -> bytes | None:
+        """Assemble ``instructions``; None if any fails or the total exceeds ``max_size``."""
         assembled = b""
-        for insn in dead_code:
+        for insn in instructions:
             insn_bytes = binary.assemble(insn)
             if insn_bytes is None:
-                # Fall back to NOPs
-                return False
+                return None
             assembled += insn_bytes
-
-            if len(assembled) > size:
-                # Too big, fall back
-                return False
-
-        if assembled:
-            # Pad with NOPs using shared utility
-            if len(assembled) < size:
-                assembled += generate_nop_sequence(arch, bits, size - len(assembled))
-
-            return bool(binary.write_bytes(addr, assembled))
-
-        return False
+            if len(assembled) > max_size:
+                return None
+        return assembled
