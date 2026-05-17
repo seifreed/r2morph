@@ -22,7 +22,7 @@ class SARIFLevel(str, Enum):
     NONE = "none"
 
 
-@dataclass
+@dataclass(frozen=True)
 class SARIFMessage:
     text: str
     markdown: str | None = None
@@ -34,7 +34,7 @@ class SARIFMessage:
         return d
 
 
-@dataclass
+@dataclass(frozen=True)
 class SARIFArtifactLocation:
     uri: str
     uri_base_id: str | None = None
@@ -49,7 +49,7 @@ class SARIFArtifactLocation:
         return d
 
 
-@dataclass
+@dataclass(frozen=True)
 class SARIFRegion:
     start_line: int | None = None
     start_column: int | None = None
