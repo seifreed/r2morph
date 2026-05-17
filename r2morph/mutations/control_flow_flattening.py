@@ -301,33 +301,39 @@ class ControlFlowFlatteningPass(MutationPass):
         candidates = []
 
         for func in functions:
-            func_addr = func.get("offset", func.get("addr", 0))
-            func_size = func.get("size", 0)
-            func_name = func.get("name", "")
-
-            # Skip tiny functions
-            if func_size < MINIMUM_FUNCTION_SIZE:
-                continue
-
-            # Skip imports and thunks
-            if func_name.startswith("sym.imp.") or func_name.startswith("sub."):
-                continue
-
-            try:
-                blocks = binary.get_basic_blocks(func_addr)
-
-                if len(blocks) >= self.min_blocks:
-                    # Store block count for sorting
-                    func["_block_count"] = len(blocks)
-                    candidates.append(func)
-
-            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                logger.debug(f"Failed to analyze function 0x{func_addr:x}: {e}")
+            block_count = self._candidate_block_count(binary, func)
+            if block_count is not None:
+                func["_block_count"] = block_count
+                candidates.append(func)
 
         # Sort by block count (more blocks = better candidate for obfuscation)
         candidates.sort(key=lambda f: f.get("_block_count", 0), reverse=True)
 
         return candidates
+
+    def _candidate_block_count(self, binary: Any, func: dict) -> int | None:
+        """Return the basic-block count if ``func`` is a flattening candidate.
+
+        Returns None when the function is too small, an import/thunk, has
+        too few blocks, or its blocks cannot be analyzed.
+        """
+        if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+            return None
+
+        func_name = func.get("name", "")
+        if func_name.startswith("sym.imp.") or func_name.startswith("sub."):
+            return None
+
+        func_addr = func.get("offset", func.get("addr", 0))
+        try:
+            blocks = binary.get_basic_blocks(func_addr)
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
+            logger.debug(f"Failed to analyze function 0x{func_addr:x}: {e}")
+            return None
+
+        if len(blocks) >= self.min_blocks:
+            return len(blocks)
+        return None
 
     def _flatten_function(self, binary: Any, func: dict) -> dict[str, int] | None:
         """
