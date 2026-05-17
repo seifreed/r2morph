@@ -239,6 +239,27 @@ class Pipeline:
             "support": mutation_pass.get_support().to_dict(),
         }
 
+    def _account_applied_pass(
+        self,
+        ctx: _RunContext,
+        *,
+        results: dict[str, Any],
+        pass_result: dict[str, Any],
+        mutation_pass: MutationPassProtocol,
+    ) -> None:
+        """Fold a non-rolled-back pass into the run totals and log it."""
+        if not pass_result.get("rolled_back", False):
+            results["passes_run"] += 1
+            results["total_mutations"] += pass_result.get("mutations_applied", 0)
+            results["mutations"].extend(pass_result.get("mutations", []))
+            if ctx.session is not None and hasattr(ctx.session, "mutations_count"):
+                ctx.session.mutations_count += pass_result.get("mutations_applied", 0)
+
+        results["pass_results"][mutation_pass.name] = pass_result
+
+        status_msg = "rolled back" if pass_result.get("rolled_back", False) else "complete"
+        logger.info(f"Pass {mutation_pass.name} {status_msg}: " f"{pass_result.get('mutations_applied', 0)} mutations")
+
     def _apply_pass(
         self,
         ctx: _RunContext,
@@ -442,18 +463,11 @@ class Pipeline:
                     checkpoint_name=checkpoint_name,
                 )
 
-                if not pass_result.get("rolled_back", False):
-                    results["passes_run"] += 1
-                    results["total_mutations"] += pass_result.get("mutations_applied", 0)
-                    results["mutations"].extend(pass_result.get("mutations", []))
-                    if session is not None and hasattr(session, "mutations_count"):
-                        session.mutations_count += pass_result.get("mutations_applied", 0)
-
-                results["pass_results"][mutation_pass.name] = pass_result
-
-                status_msg = "rolled back" if pass_result.get("rolled_back", False) else "complete"
-                logger.info(
-                    f"Pass {mutation_pass.name} {status_msg}: " f"{pass_result.get('mutations_applied', 0)} mutations"
+                self._account_applied_pass(
+                    ctx,
+                    results=results,
+                    pass_result=pass_result,
+                    mutation_pass=mutation_pass,
                 )
             except (
                 Exception
