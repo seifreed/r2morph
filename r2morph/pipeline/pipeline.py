@@ -53,6 +53,7 @@ class _RunContext:
     runtime_validator: Any | None
     runtime_validate_per_pass: bool
     rollback_policy: str
+    checkpoint_per_mutation: bool
 
 
 class Pipeline:
@@ -238,6 +239,25 @@ class Pipeline:
             "discarded_mutations_detail": [],
             "support": mutation_pass.get_support().to_dict(),
         }
+
+    def _prepare_pass(
+        self,
+        ctx: _RunContext,
+        i: int,
+        mutation_pass: MutationPassProtocol,
+    ) -> str | None:
+        """Checkpoint the session and bind runtime services for one pass."""
+        checkpoint_name = None
+        if ctx.session is not None:
+            checkpoint_name = f"pass_{i + 1}_{mutation_pass.name.lower()}"
+            ctx.session.checkpoint(checkpoint_name, f"Before pass {mutation_pass.name}")
+        mutation_pass.bind_runtime(
+            validation_manager=ctx.validation_manager,
+            session=ctx.session,
+            rollback_policy=ctx.rollback_policy,
+            checkpoint_per_mutation=ctx.checkpoint_per_mutation,
+        )
+        return checkpoint_name
 
     def _account_applied_pass(
         self,
@@ -431,20 +451,12 @@ class Pipeline:
             runtime_validator=runtime_validator,
             runtime_validate_per_pass=runtime_validate_per_pass,
             rollback_policy=rollback_policy,
+            checkpoint_per_mutation=checkpoint_per_mutation,
         )
 
         for i, mutation_pass in enumerate(self.passes):
             logger.info(f"Running pass {i + 1}/{len(self.passes)}: {mutation_pass.name}")
-            checkpoint_name = None
-            if session is not None:
-                checkpoint_name = f"pass_{i + 1}_{mutation_pass.name.lower()}"
-                session.checkpoint(checkpoint_name, f"Before pass {mutation_pass.name}")
-            mutation_pass.bind_runtime(
-                validation_manager=validation_manager,
-                session=session,
-                rollback_policy=rollback_policy,
-                checkpoint_per_mutation=checkpoint_per_mutation,
-            )
+            checkpoint_name = self._prepare_pass(ctx, i, mutation_pass)
 
             try:
                 pass_result = self._apply_pass(ctx, mutation_pass, checkpoint_name=checkpoint_name)
