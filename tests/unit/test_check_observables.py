@@ -69,7 +69,7 @@ def _run(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     region_report: dict[str, Any] = {"mismatches": []}
     mismatches: list[dict[str, Any]] = []
-    SymbolicValidator()._check_observables(
+    SymbolicValidator()._binary_comparator._check_observables(
         region_report,
         mismatches,
         _MUTATION,
