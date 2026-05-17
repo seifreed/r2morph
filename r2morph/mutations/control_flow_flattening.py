@@ -72,6 +72,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
@@ -83,6 +84,68 @@ from r2morph.utils.dead_code import (
 )
 
 logger = logging.getLogger(__name__)
+
+# Conditional jump / branch mnemonics, indexed by architecture family.
+_X86_CONDITIONAL_JUMPS = frozenset(
+    {
+        "je",
+        "jne",
+        "jz",
+        "jnz",
+        "ja",
+        "jae",
+        "jb",
+        "jbe",
+        "jg",
+        "jge",
+        "jl",
+        "jle",
+        "jo",
+        "jno",
+        "js",
+        "jns",
+        "jp",
+        "jnp",
+        "jcxz",
+        "jecxz",
+        "jrcxz",
+    }
+)
+
+_ARM_CONDITIONAL_BRANCHES = frozenset(
+    {
+        "beq",
+        "bne",
+        "bcs",
+        "bcc",
+        "bmi",
+        "bpl",
+        "bvs",
+        "bvc",
+        "bhi",
+        "bls",
+        "bge",
+        "blt",
+        "bgt",
+        "ble",
+        "b.eq",
+        "b.ne",
+        "b.cs",
+        "b.cc",
+        "b.mi",
+        "b.pl",
+        "b.vs",
+        "b.vc",
+        "b.hi",
+        "b.ls",
+        "b.ge",
+        "b.lt",
+        "b.gt",
+        "b.le",
+        "cbz",
+        "cbnz",
+    }
+)
 
 
 class ControlFlowFlatteningPass(MutationPass):
@@ -133,65 +196,6 @@ class ControlFlowFlatteningPass(MutationPass):
         - BasicBlock: Represents individual basic blocks in the CFG
         - BlockReorderingPass: Related mutation that reorders blocks
     """
-
-    # Conditional jump instructions (x86)
-    X86_CONDITIONAL_JUMPS = {
-        "je",
-        "jne",
-        "jz",
-        "jnz",
-        "ja",
-        "jae",
-        "jb",
-        "jbe",
-        "jg",
-        "jge",
-        "jl",
-        "jle",
-        "jo",
-        "jno",
-        "js",
-        "jns",
-        "jp",
-        "jnp",
-        "jcxz",
-        "jecxz",
-        "jrcxz",
-    }
-
-    # ARM conditional branch instructions
-    ARM_CONDITIONAL_BRANCHES = {
-        "beq",
-        "bne",
-        "bcs",
-        "bcc",
-        "bmi",
-        "bpl",
-        "bvs",
-        "bvc",
-        "bhi",
-        "bls",
-        "bge",
-        "blt",
-        "bgt",
-        "ble",
-        "b.eq",
-        "b.ne",
-        "b.cs",
-        "b.cc",
-        "b.mi",
-        "b.pl",
-        "b.vs",
-        "b.vc",
-        "b.hi",
-        "b.ls",
-        "b.ge",
-        "b.lt",
-        "b.gt",
-        "b.le",
-        "cbz",
-        "cbnz",
-    }
 
     def __init__(self, config: dict[str, Any] | None = None):
         """
@@ -506,9 +510,9 @@ class ControlFlowFlatteningPass(MutationPass):
         mnemonic = mnemonic.lower()
 
         if arch in ("x86", "x86_64"):
-            return mnemonic in self.X86_CONDITIONAL_JUMPS
+            return mnemonic in _X86_CONDITIONAL_JUMPS
         elif arch in ("arm", "arm64", "aarch64"):
-            return mnemonic in self.ARM_CONDITIONAL_BRANCHES
+            return mnemonic in _ARM_CONDITIONAL_BRANCHES
 
         # Generic check for jump-like mnemonics that aren't unconditional
         if mnemonic.startswith("j") and mnemonic not in ("jmp", "j"):
@@ -817,8 +821,6 @@ class ControlFlowFlatteningPass(MutationPass):
             jump_size = jump_insn.get("size", 0)
             if jump_size == 0:
                 return None
-
-            import re
 
             addr_match = re.search(r"0x([0-9a-fA-F]+)", disasm)
             if addr_match:
