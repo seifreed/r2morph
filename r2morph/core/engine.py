@@ -24,7 +24,7 @@ from r2morph.core.constants import (
     UNKNOWN_SEVERITY_RANK,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
-from r2morph.protocols import MutationPassProtocol, PipelineProtocol
+from r2morph.protocols import BinarySignerProtocol, MutationPassProtocol, PipelineProtocol
 from r2morph.reporting.gate_evaluator import (
     SEVERITY_ORDER,
     build_gate_failure_priority,
@@ -32,7 +32,6 @@ from r2morph.reporting.gate_evaluator import (
     summarize_gate_failures,
 )
 from r2morph.reporting.report_view_builder import build_report_views
-from r2morph.platform.codesign import CodeSigner
 from r2morph.core.support import PRODUCT_SUPPORT, classify_target_support
 from r2morph.session import MorphSession
 from r2morph.validation import BinaryValidator, ValidationManager
@@ -1042,17 +1041,25 @@ class MorphEngine:
         config: Engine configuration
     """
 
-    def __init__(self, config: dict[str, Any] | None = None) -> None:
+    def __init__(
+        self,
+        config: dict[str, Any] | None = None,
+        binary_signer: BinarySignerProtocol | None = None,
+    ) -> None:
         """
         Initialize the MorphEngine.
 
         Args:
             config: Optional configuration dictionary
+            binary_signer: Optional post-save binary signer; defaults to the
+                platform's signer (no-op off macOS)
         """
         from r2morph.pipeline.pipeline import Pipeline
+        from r2morph.platform.binary_signer import DarwinBinarySigner
 
         self.binary: Binary | None = None
         self.pipeline: PipelineProtocol = Pipeline()
+        self._binary_signer: BinarySignerProtocol = binary_signer if binary_signer is not None else DarwinBinarySigner()
         self.config = config or {}
         self._stats: dict[str, Any] = {}
         self._memory_efficient_mode = False
@@ -1396,41 +1403,7 @@ class MorphEngine:
             shutil.copy2(self.binary.path, output_path)
             logger.info(f"Binary successfully saved to: {output_path}")
 
-        if platform.system() == "Darwin":
-            entitlements = self.config.get("codesign_entitlements")
-            if entitlements:
-                entitlements = Path(entitlements)
-            hardened = bool(self.config.get("codesign_hardened", False))
-            timestamp = bool(self.config.get("codesign_timestamp", False))
-
-            from r2morph.platform.macho_handler import MachOHandler
-
-            handler = MachOHandler(output_path)
-            if handler.is_macho():
-                ok, msg = handler.validate_integrity()
-                if not ok:
-                    logger.warning(f"Mach-O layout check failed: {msg}")
-                repaired = handler.repair_integrity(
-                    entitlements=entitlements,
-                    hardened=hardened,
-                    timestamp=timestamp,
-                )
-                if not repaired:
-                    logger.warning(f"Mach-O repair/signing failed for: {output_path}")
-                try:
-                    output_path.chmod(output_path.stat().st_mode | 0o111)
-                except OSError as e:
-                    logger.warning(f"Failed to mark Mach-O executable: {e}")
-            else:
-                signer = CodeSigner()
-                if not signer.sign_binary(
-                    output_path,
-                    adhoc=True,
-                    entitlements=entitlements,
-                    hardened=hardened,
-                    timestamp=timestamp,
-                ):
-                    logger.warning(f"Ad-hoc signing failed for: {output_path}")
+        self._binary_signer.sign_output(output_path, self.config)
 
     def close(self) -> None:
         """Close and cleanup resources."""

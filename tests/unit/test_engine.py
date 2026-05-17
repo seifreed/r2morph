@@ -17,6 +17,7 @@ if importlib.util.find_spec("yaml") is None:
 
 from r2morph import MorphEngine
 from r2morph.mutations import InstructionSubstitutionPass, NopInsertionPass
+from tests._doubles.recording_binary_signer import RecordingBinarySigner
 
 
 class TestMorphEngine:
@@ -53,6 +54,26 @@ class TestMorphEngine:
         names_after = [pass_.name for pass_ in engine.mutations]
         assert "NopInsertion" not in names_after
         assert names_after == ["InstructionSubstitution"]
+
+    def test_save_delegates_to_injected_binary_signer(self, tmp_path):
+        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        if not test_file.exists():
+            pytest.skip("Test binary not available")
+
+        source = tmp_path / "simple_signer_src"
+        source.write_bytes(test_file.read_bytes())
+        output = tmp_path / "simple_signer_out"
+        recorder = RecordingBinarySigner()
+
+        with MorphEngine(binary_signer=recorder) as engine:
+            engine.load_binary(source)
+            engine.save(output)
+
+            assert output.exists()
+            assert len(recorder.calls) == 1
+            signed_path, used_config = recorder.calls[0]
+            assert signed_path == output
+            assert used_config is engine.config
 
     def test_engine_run_and_save(self, tmp_path):
         test_file = Path(__file__).parent.parent / "fixtures" / "simple"

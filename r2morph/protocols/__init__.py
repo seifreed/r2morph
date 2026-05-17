@@ -331,6 +331,15 @@ class SummaryAggregatorProtocol(Protocol):
 
 
 @runtime_checkable
+class BinarySignerProtocol(Protocol):
+    """Protocol for post-save binary signing/repair on the host platform."""
+
+    def sign_output(self, output_path: Path, config: dict[str, Any]) -> None:
+        """Sign or repair the saved binary as the target platform requires."""
+        ...
+
+
+@runtime_checkable
 class PipelineProtocol(Protocol):
     """Protocol for the mutation-pass pipeline orchestrator."""
 
@@ -370,6 +379,7 @@ __all__ = [
     "AssemblyServiceProtocol",
     "MemoryManagerProtocol",
     "ReportEmitterProtocol",
+    "BinarySignerProtocol",
     "MutationPassProtocol",
     "PipelineProtocol",
     "ValidatorProtocol",
