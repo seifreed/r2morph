@@ -319,15 +319,31 @@ class ConstantUnfoldingPass(MutationPass):
         if not all_bytes or len(all_bytes) > orig_size:
             return False
 
+        # Capture the original bytes and the rollback checkpoint BEFORE
+        # any write. Previously both were taken *after* write_bytes /
+        # nop_fill, so (a) original_bytes was actually a copy of the
+        # mutated bytes (record showed a zero-byte diff and an
+        # original==mutated restore target) and (b) the validation
+        # rollback restored the already-mutated state, never the real
+        # original — the mutation-level rollback was inert.
+        original_bytes = binary.read_bytes(addr, orig_size)
+        mutation_checkpoint = self._create_mutation_checkpoint("unfold")
+
         if not binary.write_bytes(addr, all_bytes):
             return False
 
-        if len(all_bytes) < orig_size:
-            binary.nop_fill(addr + len(all_bytes), orig_size - len(all_bytes))
+        if len(all_bytes) < orig_size and not binary.nop_fill(addr + len(all_bytes), orig_size - len(all_bytes)):
+            # Shorter replacement written but trailing gap not NOP-filled
+            # -> stale tail of the original instruction remains. Roll back.
+            logger.warning("NOP fill failed at 0x%x after shorter unfold; rolling back", addr + len(all_bytes))
+            if self._session is not None and mutation_checkpoint is not None:
+                self._session.rollback_to(mutation_checkpoint)
+            binary.reload()
+            if self._rollback_policy == "fail-fast":
+                raise RuntimeError("constant_unfolding NOP fill failed; aborting (fail-fast)")
+            return False
 
-        original_bytes = binary.read_bytes(addr, orig_size)
         mutated_bytes = binary.read_bytes(addr, orig_size)
-        mutation_checkpoint = self._create_mutation_checkpoint("unfold")
         record = self._record_mutation(
             function_address=func["addr"],
             start_address=addr,
