@@ -151,7 +151,7 @@ class ValidationManager:
             self._symbolic_validator._annotate_mutations_with_symbolic_metadata(pass_result, result.metadata)
 
         if self.check_abi:
-            abi_issues = self._check_abi_violations(binary, pass_result)
+            abi_issues = self._abi_validator.collect_violations(binary, pass_result)
             issues.extend(abi_issues)
             if abi_issues:
                 result.issues.extend(abi_issues)
@@ -175,7 +175,3 @@ class ValidationManager:
             Dictionary with ABI validation results
         """
         return self._abi_validator.validate(binary, function_address, mutation_regions)
-
-    def _check_abi_violations(self, binary: Binary, pass_result: dict[str, Any]) -> list[ValidationIssue]:
-        """Check for ABI violations in a pass."""
-        return self._abi_validator.collect_violations(binary, pass_result)
