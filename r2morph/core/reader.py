@@ -12,7 +12,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from r2morph.adapters.disassembler import DisassemblerInterface
+    from r2morph.protocols import DisassemblerInterface
 
 logger = logging.getLogger(__name__)
 

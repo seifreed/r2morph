@@ -1,6 +1,6 @@
 """Tests demonstrating DIP: mutation passes work with mock disassembler."""
 
-from r2morph.adapters.disassembler import DisassemblerInterface
+from r2morph.protocols import DisassemblerInterface
 
 
 class MockDisassembler:

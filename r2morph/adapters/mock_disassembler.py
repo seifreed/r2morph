@@ -8,7 +8,7 @@ and binary analysis.
 from pathlib import Path
 from typing import Any
 
-from .disassembler import DisassemblerInterface
+from r2morph.protocols import DisassemblerInterface
 
 
 class MockDisassembler:

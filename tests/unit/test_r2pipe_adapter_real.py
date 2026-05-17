@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.adapters.disassembler import DisassemblerInterface
+from r2morph.protocols import DisassemblerInterface
 from r2morph.adapters.r2pipe_adapter import R2PipeAdapter
 
 

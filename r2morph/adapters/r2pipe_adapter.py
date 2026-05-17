@@ -9,7 +9,7 @@ import r2pipe
 from pathlib import Path
 from typing import Any
 
-from .disassembler import DisassemblerInterface
+from r2morph.protocols import DisassemblerInterface
 
 logger = logging.getLogger(__name__)
 

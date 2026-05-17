@@ -28,7 +28,7 @@ Example usage:
     result = analyze(mock, Path("/fake/path"))
 """
 
-from .disassembler import DisassemblerInterface
+from r2morph.protocols import DisassemblerInterface
 from .r2pipe_adapter import R2PipeAdapter
 from .mock_disassembler import MockDisassembler
 

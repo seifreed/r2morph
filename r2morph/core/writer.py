@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from r2morph.adapters.disassembler import DisassemblerInterface
+    from r2morph.protocols import DisassemblerInterface
 
 logger = logging.getLogger(__name__)
 

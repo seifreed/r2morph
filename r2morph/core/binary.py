@@ -31,7 +31,7 @@ _R2PIPE_OPEN_ATTEMPTS = 3
 _R2PIPE_OPEN_RETRY_BACKOFF_SECONDS = 0.25
 
 if TYPE_CHECKING:
-    from r2morph.adapters.disassembler import DisassemblerInterface
+    from r2morph.protocols import DisassemblerInterface
     from r2morph.core.assembly import AssemblyService
     from r2morph.core.memory_manager import MemoryManager
     from r2morph.core.reader import BinaryReader
