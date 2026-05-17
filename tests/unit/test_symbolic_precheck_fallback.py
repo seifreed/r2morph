@@ -65,7 +65,9 @@ def test_precheck_unsupported_pass_returns_unsupported_pass_status() -> None:
 
 def test_transition_returns_guard_when_bridge_has_no_angr_attribute() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
-    result = SymbolicValidator()._compare_instruction_substitution_transition(binary, {}, SimpleNamespace())
+    result = SymbolicValidator()._shellcode_checker._compare_instruction_substitution_transition(
+        binary, {}, SimpleNamespace()
+    )
     assert result == {
         "symbolic_transition_check_performed": False,
         "symbolic_transition_reason": "angr module not available",
@@ -74,7 +76,9 @@ def test_transition_returns_guard_when_bridge_has_no_angr_attribute() -> None:
 
 def test_transition_returns_guard_when_bridge_angr_is_none() -> None:
     binary = _ArchBinary(_ELF64_X86_64)
-    result = SymbolicValidator()._compare_instruction_substitution_transition(binary, {}, SimpleNamespace(angr=None))
+    result = SymbolicValidator()._shellcode_checker._compare_instruction_substitution_transition(
+        binary, {}, SimpleNamespace(angr=None)
+    )
     assert result == {
         "symbolic_transition_check_performed": False,
         "symbolic_transition_reason": "angr module not available",

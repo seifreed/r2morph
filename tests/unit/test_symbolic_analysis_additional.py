@@ -172,7 +172,7 @@ def test_instruction_substitution_observables_match_for_known_zeroing_pair():
     manager = ValidationManager(mode="symbolic")
     bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
 
-    result = manager._symbolic_validator._compare_instruction_substitution_observables(
+    result = manager._symbolic_validator._shellcode_checker._compare_instruction_substitution_observables(
         _ObservableCheckBinary(),
         {
             "pass_name": "InstructionSubstitution",
@@ -204,7 +204,7 @@ def test_instruction_substitution_observables_detect_mismatch():
     manager = ValidationManager(mode="symbolic")
     bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
 
-    result = manager._symbolic_validator._compare_instruction_substitution_observables(
+    result = manager._symbolic_validator._shellcode_checker._compare_instruction_substitution_observables(
         _ObservableCheckBinary(),
         {
             "pass_name": "InstructionSubstitution",

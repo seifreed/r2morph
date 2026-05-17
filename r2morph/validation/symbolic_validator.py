@@ -171,15 +171,6 @@ class SymbolicValidator:
         if original_writes != mutated_writes:
             _record("memory_writes")
 
-    def _compare_instruction_substitution_transition(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-        bridge_module: Any,
-    ) -> dict[str, Any]:
-        """Compare successor address and stack delta for supported substitution snippets."""
-        return self._shellcode_checker._compare_instruction_substitution_transition(binary, pass_result, bridge_module)
-
     def _setup_symbolic_bridges(
         self,
         binary: Binary,
@@ -483,15 +474,6 @@ class SymbolicValidator:
             },
         }
 
-    def _compare_instruction_substitution_observables(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-        bridge_module: Any,
-    ) -> dict[str, Any]:
-        """Compare a small set of observable register/flag effects for InstructionSubstitution snippets."""
-        return self._shellcode_checker._compare_instruction_substitution_observables(binary, pass_result, bridge_module)
-
     def _run_symbolic_precheck(self, binary: Binary, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Run a bounded symbolic precheck for the experimental mode."""
         supported, reason, metadata = self._scope_gate._supports_symbolic_scope(binary, pass_result)
@@ -578,10 +560,14 @@ class SymbolicValidator:
                 payload["symbolic_reason"] = step_error
                 if payload.get("symbolic_semantic_hint_supported"):
                     payload.update(
-                        self._compare_instruction_substitution_observables(binary, pass_result, bridge_module)
+                        self._shellcode_checker._compare_instruction_substitution_observables(
+                            binary, pass_result, bridge_module
+                        )
                     )
                     payload.update(
-                        self._compare_instruction_substitution_transition(binary, pass_result, bridge_module)
+                        self._shellcode_checker._compare_instruction_substitution_transition(
+                            binary, pass_result, bridge_module
+                        )
                     )
                     if payload.get("symbolic_observable_check_performed"):
                         transition_ok = payload.get("symbolic_transition_equivalent", True)
@@ -601,8 +587,16 @@ class SymbolicValidator:
                 payload["symbolic_reason"] = (
                     "symbolic bounded step passed and substitutions map to a known equivalence group"
                 )
-                payload.update(self._compare_instruction_substitution_observables(binary, pass_result, bridge_module))
-                payload.update(self._compare_instruction_substitution_transition(binary, pass_result, bridge_module))
+                payload.update(
+                    self._shellcode_checker._compare_instruction_substitution_observables(
+                        binary, pass_result, bridge_module
+                    )
+                )
+                payload.update(
+                    self._shellcode_checker._compare_instruction_substitution_transition(
+                        binary, pass_result, bridge_module
+                    )
+                )
                 if payload.get("symbolic_observable_check_performed"):
                     transition_ok = payload.get("symbolic_transition_equivalent", True)
                     if payload.get("symbolic_observable_equivalent") and transition_ok:

@@ -1048,7 +1048,7 @@ def test_symbolic_pipeline_marks_observable_match_as_supported(monkeypatch):
         lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge, angr=None),
     )
     monkeypatch.setattr(
-        "r2morph.validation.symbolic_validator.SymbolicValidator._compare_instruction_substitution_observables",
+        "r2morph.validation.shellcode_equivalence.ShellcodeEquivalenceChecker._compare_instruction_substitution_observables",
         lambda self, binary, pass_result, bridge_module: {
             "symbolic_observable_check_performed": True,
             "symbolic_observable_equivalent": True,
