@@ -73,43 +73,17 @@ class ValidationManager:
     def __init__(self, mode: str = "structural", check_abi: bool = False) -> None:
         from r2morph.validation.abi_validator import AbiValidator
         from r2morph.validation.structural_validator import StructuralValidator
+        from r2morph.validation.symbolic_validator import SymbolicValidator
 
         self.mode = mode
         self.check_abi = check_abi
         self._structural_validator = StructuralValidator()
         self._abi_validator = AbiValidator()
+        self._symbolic_validator = SymbolicValidator()
 
     def _collect_memory_write_signatures(self, state: Any) -> list[str]:
         """Collect a compact, best-effort signature of memory writes from an angr state."""
-        signatures: list[str] = []
-        history = getattr(state, "history", None)
-        actions = getattr(history, "actions", None)
-        if not actions:
-            return signatures
-        for action in actions:
-            action_type = getattr(action, "type", "")
-            action_action = getattr(action, "action", "")
-            if action_type != "mem" or action_action not in {"write", "store"}:
-                continue
-            addr = getattr(action, "addr", None)
-            size = getattr(action, "size", None)
-            try:
-                raw_addr = getattr(addr, "concrete_value", addr)
-                addr_value = int(raw_addr) if raw_addr is not None else None
-            except (TypeError, ValueError):
-                addr_value = None
-            try:
-                raw_size = getattr(size, "concrete_value", size)
-                size_value = int(raw_size) if raw_size is not None else None
-            except (TypeError, ValueError):
-                size_value = None
-            if addr_value is None:
-                signatures.append("unknown")
-            elif size_value is None:
-                signatures.append(f"0x{addr_value:x}")
-            else:
-                signatures.append(f"0x{addr_value:x}:{size_value}")
-        return sorted(set(signatures))
+        return self._symbolic_validator._collect_memory_write_signatures(state)
 
     def _validate_structural_mutation(
         self,
@@ -302,28 +276,7 @@ class ValidationManager:
         mutation: dict[str, Any],
     ) -> int:
         """Estimate a small but useful symbolic step budget for a mutated region."""
-        candidates: list[int] = []
-        for key in ("original_disasm", "mutated_disasm"):
-            disasm = mutation.get(key)
-            if not disasm:
-                continue
-            if isinstance(disasm, str):
-                instructions = [part.strip() for part in disasm.replace("\n", ";").split(";") if part.strip()]
-                if instructions:
-                    candidates.append(len(instructions))
-
-        region_size = (
-            _parse_address(mutation.get("end_address", 0)) - _parse_address(mutation.get("start_address", 0)) + 1
-        )
-        if region_size > 0:
-            candidates.append(1 if region_size <= 4 else 2 if region_size <= 8 else 3)
-
-        step_budget = max(candidates or [1])
-        if pass_name == "RegisterSubstitution":
-            step_budget = max(step_budget, 2)
-        if pass_name == "NopInsertion":
-            step_budget = max(step_budget, 2)
-        return max(1, min(step_budget, 4))
+        return self._symbolic_validator._estimate_symbolic_region_steps(pass_name, mutation)
 
     def _build_instruction_substitution_symbolic_hint(self, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Add a narrow semantic hint for instruction substitutions from known equivalence groups."""
