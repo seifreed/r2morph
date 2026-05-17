@@ -426,128 +426,16 @@ class ValidationManager:
 
         Returns (region_report, mismatches) for this region.
         """
-        mismatches: list[dict[str, Any]] = []
-        start = mutation["start_address"]
-        end = mutation["end_address"]
-        step_budget = self._estimate_symbolic_region_steps(pass_name, mutation)
-        region_width = max(1, end - start + 1)
-        region_exit_budget = max(step_budget * 2, region_width + 1)
-        resolved_original = original_bridge.resolve_loaded_address(start)
-        resolved_mutated = mutated_bridge.resolve_loaded_address(start)
-        if resolved_original is None or resolved_mutated is None:
-            logger.warning(f"Failed to resolve loaded address for mutation at 0x{start:x}")
-            return {"skipped": True, "reason": "resolve_failed"}, []
-
-        original_state = original_bridge.angr_project.factory.blank_state(
-            addr=resolved_original,
-            add_options={
-                options.ZERO_FILL_UNCONSTRAINED_MEMORY,
-                options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
-            },
-        )
-        mutated_state = mutated_bridge.angr_project.factory.blank_state(
-            addr=resolved_mutated,
-            add_options={
-                options.ZERO_FILL_UNCONSTRAINED_MEMORY,
-                options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
-            },
-        )
-        bit_width = 64 if original_binary.get_arch_info().get("bits") == 64 else 32
-        stack_reg = "rsp" if bit_width == 64 else "esp"
-        base_reg = "rbp" if bit_width == 64 else "ebp"
-        setattr(original_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-        setattr(mutated_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-        setattr(original_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
-        setattr(mutated_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
-
-        compared_registers = ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
-        if bit_width == 32:
-            compared_registers = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
-        for reg_name in compared_registers:
-            shared = claripy.BVS(f"{reg_name}_{start:x}", bit_width)
-            if hasattr(original_state.regs, reg_name):
-                setattr(original_state.regs, reg_name, shared)
-            if hasattr(mutated_state.regs, reg_name):
-                setattr(mutated_state.regs, reg_name, shared)
-
-        step_strategy = "region-exit"
-
-        def _step_to_exit(state: Any, bridge: Any, resolved_addr: Any) -> tuple[Any, int, str | None, list[Any]]:
-            """Step symbolic state until it exits the region. Returns (final, steps, error, trace)."""
-            final, steps, error, trace = state, 0, None, [resolved_addr]
-            for _ in range(region_exit_budget):
-                addr = getattr(final, "addr", None)
-                if addr is None or addr > resolved_addr + region_width - 1:
-                    break
-                succ = list(bridge.angr_project.factory.successors(final, num_inst=1).flat_successors)
-                if len(succ) != 1:
-                    error = "successor_count"
-                    break
-                final = succ[0]
-                steps += 1
-                nxt = getattr(final, "addr", None)
-                if nxt is not None:
-                    trace.append(nxt)
-            else:
-                error = "region_exit_budget_exhausted"
-            return final, steps, error, trace
-
-        original_final, original_steps, original_exit_error, original_trace_addresses = _step_to_exit(
-            original_state,
-            original_bridge,
-            resolved_original,
-        )
-        mutated_final, mutated_steps, mutated_exit_error, mutated_trace_addresses = _step_to_exit(
-            mutated_state,
-            mutated_bridge,
-            resolved_mutated,
-        )
-
-        region_report = {
-            "start_address": mutation["start_address"],
-            "end_address": mutation["end_address"],
-            "original_loaded_address": resolved_original,
-            "mutated_loaded_address": resolved_mutated,
-            "step_budget": step_budget,
-            "region_exit_budget": region_exit_budget,
-            "step_strategy": step_strategy,
-            "original_region_exit_steps": original_steps,
-            "mutated_region_exit_steps": mutated_steps,
-            "original_trace_addresses": original_trace_addresses,
-            "mutated_trace_addresses": mutated_trace_addresses,
-            "registers_checked": list(compared_registers) + ["eflags", "stack_delta"],
-            "mismatches": [],
-        }
-        if original_exit_error or mutated_exit_error:
-            step_strategy = "region-exit-fallback-budget"
-            region_report["step_strategy"] = step_strategy
-            exit_error = original_exit_error or mutated_exit_error
-            if original_exit_error and mutated_exit_error and original_exit_error != mutated_exit_error:
-                exit_error = f"{original_exit_error}|{mutated_exit_error}"
-            region_report["mismatches"].append(exit_error)
-            mismatches.append(
-                {
-                    "start_address": mutation["start_address"],
-                    "end_address": mutation["end_address"],
-                    "observable": exit_error,
-                }
-            )
-            return region_report, mismatches
-
-        region_report["original_region_exit_address"] = getattr(original_final, "addr", None)
-        region_report["mutated_region_exit_address"] = getattr(mutated_final, "addr", None)
-        region_report["control_flow_observables"] = ["region_exit_address", "region_exit_steps"]
-
-        self._check_observables(
-            region_report,
-            mismatches,
+        return self._symbolic_validator._compare_single_region(
             mutation,
-            original_final,
-            mutated_final,
-            compared_registers,
-            stack_reg,
+            original_bridge,
+            mutated_bridge,
+            original_binary,
+            angr_module,
+            claripy,
+            options,
+            pass_name,
         )
-        return region_report, mismatches
 
     def _check_observables(
         self,
