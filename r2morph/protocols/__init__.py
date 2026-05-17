@@ -243,6 +243,25 @@ class MutationPassProtocol(Protocol):
         """Get support information for this pass."""
         ...
 
+    def configure_for_memory_constraints(self, factor: float) -> None:
+        """Adjust pass configuration for memory-efficient mode (0.0-1.0)."""
+        ...
+
+    def bind_runtime(
+        self,
+        *,
+        validation_manager: Any | None = None,
+        session: Any | None = None,
+        rollback_policy: str = "skip-invalid-pass",
+        checkpoint_per_mutation: bool = False,
+    ) -> None:
+        """Bind runtime services for a pipeline execution."""
+        ...
+
+    def clear_runtime(self) -> None:
+        """Clear runtime services after execution."""
+        ...
+
 
 @runtime_checkable
 class ValidatorProtocol(Protocol):
