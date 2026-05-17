@@ -40,8 +40,16 @@ class SymbolicValidator:
         if not mutations:
             return {}
 
-        supported = []
-        unsupported = []
+        supported, unsupported = self._classify_substitution_regions(mutations)
+        return self._assemble_substitution_hint(supported, unsupported)
+
+    @staticmethod
+    def _classify_substitution_regions(
+        mutations: list[dict[str, Any]],
+    ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+        """Partition substitution mutations into known-equivalence vs unsupported regions."""
+        supported: list[dict[str, Any]] = []
+        unsupported: list[dict[str, Any]] = []
         for mutation in mutations:
             metadata = mutation.get("metadata", {})
             members = metadata.get("equivalence_members") or []
@@ -64,7 +72,14 @@ class SymbolicValidator:
                         "end_address": mutation["end_address"],
                     }
                 )
+        return supported, unsupported
 
+    @staticmethod
+    def _assemble_substitution_hint(
+        supported: list[dict[str, Any]],
+        unsupported: list[dict[str, Any]],
+    ) -> dict[str, Any]:
+        """Build the semantic-hint payload from the classified substitution regions."""
         if not supported:
             return {
                 "symbolic_semantic_hint": "no-known-equivalence-group",
