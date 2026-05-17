@@ -147,6 +147,10 @@ class R2PipeAdapter:
 
 
 # Type assertion to verify R2PipeAdapter implements DisassemblerInterface
-def _verify_protocol() -> None:
-    """Static verification that R2PipeAdapter implements DisassemblerInterface."""
-    adapter: DisassemblerInterface = R2PipeAdapter()  # noqa: F841
+def _verify_protocol() -> DisassemblerInterface:
+    """Static verification that R2PipeAdapter implements DisassemblerInterface.
+
+    Never called; mypy checks the return type to assert structural
+    conformance of R2PipeAdapter to DisassemblerInterface.
+    """
+    return R2PipeAdapter()

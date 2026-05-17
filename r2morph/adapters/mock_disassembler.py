@@ -172,6 +172,10 @@ class MockDisassembler:
 
 
 # Type assertion to verify MockDisassembler implements DisassemblerInterface
-def _verify_protocol() -> None:
-    """Static verification that MockDisassembler implements DisassemblerInterface."""
-    mock: DisassemblerInterface = MockDisassembler()  # noqa: F841
+def _verify_protocol() -> DisassemblerInterface:
+    """Static verification that MockDisassembler implements DisassemblerInterface.
+
+    Never called; mypy checks the return type to assert structural
+    conformance of MockDisassembler to DisassemblerInterface.
+    """
+    return MockDisassembler()
