@@ -489,31 +489,15 @@ class ControlFlowFlatteningPass(MutationPass):
             # Get last instruction of block
             last_insn = block_instrs[-1]
             last_addr = last_insn.get("offset", 0)
-            last_insn.get("size", 0)
             mnemonic = last_insn.get("mnemonic", "").lower()
 
             # Strategy 1: Add opaque predicate before conditional jumps
-            if self._is_conditional_jump(mnemonic, arch_family):
-                # Look for space before the conditional jump
-                if len(block_instrs) >= 2:
-                    prev_insn = block_instrs[-2]
-                    prev_addr = prev_insn.get("offset", 0)
-                    prev_size = prev_insn.get("size", 0)
-
-                    available_space = last_addr - (prev_addr + prev_size)
-
-                    if available_space >= 2:
-                        # We have slack space, use it
-                        if self._add_opaque_predicate(
-                            binary, prev_addr + prev_size, available_space, arch_family, bits
-                        ):
-                            predicates_added += 1
-                            mutations["opaque_predicates"] += 1
-                            mutations["total"] += 1
-                            logger.debug(
-                                f"Added opaque predicate at 0x{prev_addr + prev_size:x} "
-                                f"(slack space: {available_space} bytes)"
-                            )
+            if self._is_conditional_jump(mnemonic, arch_family) and self._try_add_opaque_predicate(
+                binary, block_instrs, last_addr, arch_family, bits
+            ):
+                predicates_added += 1
+                mutations["opaque_predicates"] += 1
+                mutations["total"] += 1
 
             # Strategy 2: Insert jump obfuscation for unconditional jumps
             if mnemonic == "jmp" and i < len(blocks) - 1:
@@ -523,6 +507,37 @@ class ControlFlowFlatteningPass(MutationPass):
                     mutations["total"] += 1
 
         return predicates_added
+
+    def _try_add_opaque_predicate(
+        self,
+        binary: Any,
+        block_instrs: list[Any],
+        last_addr: int,
+        arch_family: str,
+        bits: int,
+    ) -> bool:
+        """Insert an opaque predicate into the slack space before a conditional jump.
+
+        Returns True when a predicate was added.
+        """
+        if len(block_instrs) < 2:
+            return False
+
+        prev_insn = block_instrs[-2]
+        prev_addr = prev_insn.get("offset", 0)
+        prev_size = prev_insn.get("size", 0)
+        available_space = last_addr - (prev_addr + prev_size)
+
+        if available_space < 2:
+            return False
+
+        if not self._add_opaque_predicate(binary, prev_addr + prev_size, available_space, arch_family, bits):
+            return False
+
+        logger.debug(
+            f"Added opaque predicate at 0x{prev_addr + prev_size:x} " f"(slack space: {available_space} bytes)"
+        )
+        return True
 
     def _is_conditional_jump(self, mnemonic: str, arch: str) -> bool:
         """
