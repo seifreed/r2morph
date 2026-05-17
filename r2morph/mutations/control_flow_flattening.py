@@ -666,26 +666,15 @@ class ControlFlowFlatteningPass(MutationPass):
 
         # Try each predicate until one fits
         for predicate_insns in predicates:
-            assembled = b""
-            success = True
+            assembled = self._assemble_bounded(binary, predicate_insns, available_size)
+            if assembled is None:
+                continue
 
-            for insn in predicate_insns:
-                insn_bytes = binary.assemble(insn)
-                if insn_bytes is None:
-                    success = False
-                    break
-                assembled += insn_bytes
+            # Pad with NOPs if needed using shared utility
+            if len(assembled) < available_size:
+                assembled += generate_nop_sequence(arch, bits, available_size - len(assembled))
 
-                if len(assembled) > available_size:
-                    success = False
-                    break
-
-            if success and len(assembled) <= available_size:
-                # Pad with NOPs if needed using shared utility
-                if len(assembled) < available_size:
-                    assembled += generate_nop_sequence(arch, bits, available_size - len(assembled))
-
-                return bool(binary.write_bytes(addr, assembled))
+            return bool(binary.write_bytes(addr, assembled))
 
         return False
 
