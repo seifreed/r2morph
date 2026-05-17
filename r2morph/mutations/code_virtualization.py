@@ -681,15 +681,34 @@ class CodeVirtualizationPass(MutationPass):
                         baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
 
                     original_bytes = binary.read_bytes(block_addr, block_size)
+                    if not original_bytes:
+                        logger.debug(
+                            "Skipping virtualization at 0x%x: cannot read %d original "
+                            "bytes (no safe rollback target)",
+                            block_addr,
+                            block_size,
+                        )
+                        continue
 
                     if binary.write_bytes(block_addr, bytecode):
                         mutated_bytes = binary.read_bytes(block_addr, block_size)
+                        if not mutated_bytes:
+                            logger.debug(
+                                "Virtualization wrote 0x%x but read-back failed; rolling back",
+                                block_addr,
+                            )
+                            if self._session is not None and mutation_checkpoint is not None:
+                                self._session.rollback_to(mutation_checkpoint)
+                            binary.reload()
+                            if self._rollback_policy == "fail-fast":
+                                raise RuntimeError("code_virtualization read-back failed; aborting (fail-fast)")
+                            continue
                         record = self._record_mutation(
                             function_address=func["addr"],
                             start_address=block_addr,
                             end_address=block_addr + block_size - 1,
-                            original_bytes=original_bytes if original_bytes else bytecode,
-                            mutated_bytes=mutated_bytes if mutated_bytes else bytecode,
+                            original_bytes=original_bytes,
+                            mutated_bytes=mutated_bytes,
                             original_disasm=f"; {len(insns)} instructions virtualized",
                             mutated_disasm=f"; VM bytecode ({len(bytecode)} bytes)",
                             mutation_kind="code_virtualization",
