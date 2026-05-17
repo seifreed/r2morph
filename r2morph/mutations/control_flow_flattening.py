@@ -602,30 +602,33 @@ class ControlFlowFlatteningPass(MutationPass):
         i = 0
 
         while i < len(instructions):
-            insn = instructions[i]
-            mnemonic = insn.get("mnemonic", "").lower()
-
-            if mnemonic == "nop":
-                start_addr = insn.get("offset", insn.get("addr", 0))
-                total_size = insn.get("size", 1)
-                j = i + 1
-
-                # Accumulate consecutive NOPs
-                while j < len(instructions):
-                    next_insn = instructions[j]
-                    if next_insn.get("mnemonic", "").lower() != "nop":
-                        break
-                    total_size += next_insn.get("size", 1)
-                    j += 1
-
-                if total_size >= 3:  # Only track sequences of 3+ bytes
-                    sequences.append((start_addr, total_size))
-
-                i = j
-            else:
+            if instructions[i].get("mnemonic", "").lower() != "nop":
                 i += 1
+                continue
+
+            start_addr, total_size, i = self._consume_nop_run(instructions, i)
+            if total_size >= 3:  # Only track sequences of 3+ bytes
+                sequences.append((start_addr, total_size))
 
         return sequences
+
+    def _consume_nop_run(self, instructions: list[dict], i: int) -> tuple[int, int, int]:
+        """Accumulate the consecutive NOP run starting at index ``i``.
+
+        ``instructions[i]`` must be a NOP. Returns
+        ``(start_address, total_size, index_after_run)``.
+        """
+        insn = instructions[i]
+        start_addr = insn.get("offset", insn.get("addr", 0))
+        total_size = insn.get("size", 1)
+        j = i + 1
+        while j < len(instructions):
+            next_insn = instructions[j]
+            if next_insn.get("mnemonic", "").lower() != "nop":
+                break
+            total_size += next_insn.get("size", 1)
+            j += 1
+        return start_addr, total_size, j
 
     def _add_opaque_predicate(self, binary: Any, addr: int, available_size: int, arch: str, bits: int) -> bool:
         """
