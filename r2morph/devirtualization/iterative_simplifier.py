@@ -16,6 +16,7 @@ Key Features:
 
 import concurrent.futures
 import logging
+import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -408,11 +409,24 @@ class IterativeSimplifier:
         """Apply simplification passes in parallel."""
         iteration_changes = False
 
+        # Every pass drives the one shared radare2 instance
+        # (self.binary.r2), which is a single duplex pipe and not
+        # thread-safe. Without serialization, concurrent commands
+        # interleave on the pipe so a worker can read another worker's
+        # response, silently corrupting analysis, and the desync trips
+        # the BrokenPipe respawn path (churning transient r2 processes).
+        # Hold a lock so only one worker drives radare2 at a time.
+        r2_lock = threading.Lock()
+
+        def _run(pass_obj: SimplificationPass) -> tuple[bool, dict[str, Any]]:
+            with r2_lock:
+                return pass_obj.apply(self.binary, context.copy())
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
             futures = []
 
             for pass_obj in self.passes:
-                future = executor.submit(pass_obj.apply, self.binary, context.copy())
+                future = executor.submit(_run, pass_obj)
                 futures.append((pass_obj, future))
 
             for pass_obj, future in futures:
