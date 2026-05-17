@@ -154,7 +154,9 @@ class ValidationManager:
             "RegisterSubstitution",
         }:
             result.metadata.update(
-                self._symbolic_validator._compare_real_binary_regions(binary, pass_result, bridge_module)
+                self._symbolic_validator._binary_comparator._compare_real_binary_regions(
+                    binary, pass_result, bridge_module
+                )
             )
             if result.metadata.get("symbolic_binary_check_performed"):
                 if result.metadata.get("symbolic_binary_equivalent"):

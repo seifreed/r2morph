@@ -84,15 +84,6 @@ class SymbolicValidator:
 
         return hint
 
-    def _compare_real_binary_regions(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-        bridge_module: Any,
-    ) -> dict[str, Any]:
-        """Compare bounded symbolic effects on the real pre-pass and post-pass binaries."""
-        return self._binary_comparator._compare_real_binary_regions(binary, pass_result, bridge_module)
-
     def _run_symbolic_precheck(self, binary: Binary, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Run a bounded symbolic precheck for the experimental mode."""
         supported, reason, metadata = self._scope_gate._supports_symbolic_scope(binary, pass_result)
