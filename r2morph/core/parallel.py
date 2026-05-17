@@ -24,7 +24,7 @@ import time
 import sys
 
 from r2morph.core.binary import Binary
-from r2morph.mutations.base import MutationPass
+from r2morph.protocols import MutationPassProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class PassDependency:
 class ExecutionPlan:
     """Execution plan for parallel mutations."""
 
-    passes: list[MutationPass]
+    passes: list[MutationPassProtocol]
     dependencies: dict[str, PassDependency] = field(default_factory=dict)
     stages: list[list[str]] = field(default_factory=list)
 
@@ -157,7 +157,7 @@ class DependencyResolver:
         if custom_dependencies:
             self.dependencies.update(custom_dependencies)
 
-    def resolve(self, passes: list[MutationPass]) -> ExecutionPlan:
+    def resolve(self, passes: list[MutationPassProtocol]) -> ExecutionPlan:
         """
         Resolve dependencies and create execution plan.
 
@@ -214,7 +214,7 @@ class DependencyResolver:
             stages=stages,
         )
 
-    def check_conflicts(self, passes: list[MutationPass]) -> list[tuple[str, str]]:
+    def check_conflicts(self, passes: list[MutationPassProtocol]) -> list[tuple[str, str]]:
         """
         Check for conflicts between passes.
 
@@ -493,7 +493,7 @@ class ParallelMutationEngine:
 
     def execute(
         self,
-        passes: list[MutationPass],
+        passes: list[MutationPassProtocol],
         stop_on_error: bool = True,
         progress_callback: Callable[[str, float], None] | None = None,
     ) -> dict[str, PassResult]:
@@ -566,7 +566,7 @@ class ParallelMutationEngine:
     def _execute_stage(
         self,
         stage: list[str],
-        passes: list[MutationPass],
+        passes: list[MutationPassProtocol],
         stage_num: int,
         total_stages: int,
         progress_callback: Callable[[str, float], None] | None,
@@ -606,7 +606,7 @@ class ParallelMutationEngine:
 
     def _execute_pass(
         self,
-        pass_obj: MutationPass,
+        pass_obj: MutationPassProtocol,
         progress_callback: Callable[[str, float], None] | None,
     ) -> PassResult:
         """Execute a single mutation pass with optional file locking."""
@@ -740,7 +740,7 @@ class ParallelMutationEngine:
 
 def execute_parallel(
     binary: Binary,
-    passes: list[MutationPass],
+    passes: list[MutationPassProtocol],
     max_workers: int = 4,
     stop_on_error: bool = True,
 ) -> dict[str, PassResult]:
