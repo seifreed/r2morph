@@ -30,15 +30,6 @@ else:
 
 PSUTIL_AVAILABLE = psutil is not None
 
-try:
-    import ctypes
-    import ctypes.wintypes
-
-    WINDOWS_API_AVAILABLE = True
-except ImportError:
-    WINDOWS_API_AVAILABLE = False
-    ctypes = None  # type: ignore[assignment]  # optional dependency
-
 logger = logging.getLogger(__name__)
 
 
