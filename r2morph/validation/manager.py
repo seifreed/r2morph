@@ -167,7 +167,9 @@ class ValidationManager:
                     result.metadata["symbolic_reason"] = (
                         "bounded real-binary symbolic effects diverged for the mutated regions"
                     )
-        self._symbolic_validator._annotate_mutations_with_symbolic_metadata(pass_result, result.metadata)
+        self._symbolic_validator._mutation_annotator._annotate_mutations_with_symbolic_metadata(
+            pass_result, result.metadata
+        )
 
     def validate_abi(
         self, binary: Binary, function_address: int, mutation_regions: list[tuple[int, int]] | None = None

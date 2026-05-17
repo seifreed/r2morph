@@ -169,14 +169,6 @@ class SymbolicValidator:
         if original_writes != mutated_writes:
             _record("memory_writes")
 
-    def _annotate_mutations_with_symbolic_metadata(
-        self,
-        pass_result: dict[str, Any],
-        metadata: dict[str, Any],
-    ) -> None:
-        """Attach pass-level symbolic evidence to each eligible mutation record."""
-        self._mutation_annotator._annotate_mutations_with_symbolic_metadata(pass_result, metadata)
-
     def _compare_instruction_substitution_transition(
         self,
         binary: Binary,
