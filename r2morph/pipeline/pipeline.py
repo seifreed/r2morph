@@ -8,7 +8,7 @@ from copy import deepcopy
 from typing import Any
 
 from r2morph.core.binary import Binary
-from r2morph.mutations.base import MutationPass
+from r2morph.protocols import MutationPassProtocol
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +55,9 @@ class Pipeline:
 
     def __init__(self) -> None:
         """Initialize an empty pipeline."""
-        self.passes: list[MutationPass] = []
+        self.passes: list[MutationPassProtocol] = []
 
-    def add_pass(self, mutation_pass: MutationPass) -> "Pipeline":
+    def add_pass(self, mutation_pass: MutationPassProtocol) -> "Pipeline":
         """
         Add a mutation pass to the pipeline.
 
@@ -122,7 +122,7 @@ class Pipeline:
         self,
         results: dict[str, Any],
         pass_result: dict[str, Any],
-        mutation_pass: MutationPass,
+        mutation_pass: MutationPassProtocol,
         binary: Binary,
         session: Any | None,
         checkpoint_name: str | None,
@@ -159,7 +159,7 @@ class Pipeline:
         self,
         results: dict[str, Any],
         validation_result: Any,
-        mutation_pass: MutationPass,
+        mutation_pass: MutationPassProtocol,
     ) -> None:
         """Update results['validation']['symbolic'] with pass status."""
         symbolic = results["validation"]["symbolic"]

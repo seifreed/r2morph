@@ -9,6 +9,7 @@ import random
 import shutil
 import tempfile
 import time
+from collections.abc import Sequence
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -23,8 +24,8 @@ from r2morph.core.constants import (
     UNKNOWN_SEVERITY_RANK,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
-from r2morph.mutations.base import MutationPass  # Concrete type needed for isinstance checks in pipeline binding
 from r2morph.pipeline.pipeline import Pipeline
+from r2morph.protocols import MutationPassProtocol
 from r2morph.reporting.gate_evaluator import (
     SEVERITY_ORDER,
     build_gate_failure_priority,
@@ -1058,12 +1059,12 @@ class MorphEngine:
         self._last_result: dict[str, Any] | None = None
 
     @property
-    def mutations(self) -> list[MutationPass]:
+    def mutations(self) -> Sequence[MutationPassProtocol]:
         """
-        Get list of registered mutation passes.
+        Get the registered mutation passes.
 
         Returns:
-            List of mutation passes in the pipeline
+            Registered mutation passes in the pipeline
         """
         return self.pipeline.passes
 
@@ -1222,7 +1223,7 @@ class MorphEngine:
 
         return level
 
-    def add_mutation(self, mutation: "MutationPass | str") -> "MorphEngine":
+    def add_mutation(self, mutation: "MutationPassProtocol | str") -> "MorphEngine":
         """
         Add a mutation pass to the pipeline.
 
@@ -1246,7 +1247,7 @@ class MorphEngine:
         return self
 
     @staticmethod
-    def _resolve_mutation_pass(name: str) -> MutationPass:
+    def _resolve_mutation_pass(name: str) -> MutationPassProtocol:
         """Resolve a mutation pass name to an instance."""
         from r2morph.mutations import (
             BlockReorderingPass,
@@ -1266,7 +1267,7 @@ class MorphEngine:
         cls = pass_map.get(name)
         if cls is None:
             raise ValueError(f"Unknown mutation pass: {name!r}. Valid names: {list(pass_map)}")
-        result: MutationPass = cls()
+        result: MutationPassProtocol = cls()
         return result
 
     def remove_mutation(self, mutation_name: str) -> "MorphEngine":
