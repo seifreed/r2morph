@@ -355,19 +355,9 @@ class ControlFlowFlatteningPass(MutationPass):
 
         logger.info(f"Flattening function {func_name}")
 
-        # Get basic blocks
-        try:
-            blocks = binary.get_basic_blocks(func_addr)
-        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-            logger.error(f"Failed to get blocks for {func_name}: {e}")
+        blocks = self._collect_blocks(binary, func_addr, func_name)
+        if blocks is None:
             return None
-
-        if not blocks or len(blocks) < self.min_blocks:
-            logger.debug(f"Function {func_name} has too few blocks")
-            return None
-
-        # Sort blocks by address
-        blocks = sorted(blocks, key=lambda b: b.get("addr", 0))
 
         # Get architecture info
         arch_family, bits = binary.get_arch_family()
@@ -500,6 +490,20 @@ class ControlFlowFlatteningPass(MutationPass):
 
         logger.debug(f"No mutations applied to {func_name}")
         return None
+
+    def _collect_blocks(self, binary: Any, func_addr: int, func_name: str) -> list[Any] | None:
+        """Fetch, size-guard, and address-sort the function's basic blocks."""
+        try:
+            blocks = binary.get_basic_blocks(func_addr)
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
+            logger.error(f"Failed to get blocks for {func_name}: {e}")
+            return None
+
+        if not blocks or len(blocks) < self.min_blocks:
+            logger.debug(f"Function {func_name} has too few blocks")
+            return None
+
+        return sorted(blocks, key=lambda b: b.get("addr", 0))
 
     def _is_conditional_jump(self, mnemonic: str, arch: str) -> bool:
         """
