@@ -347,7 +347,7 @@ class Pipeline:
                 )
             except (
                 Exception
-            ) as e:  # noqa: BLE001 - intentionally broad: passes may raise any error and we must rollback + continue
+            ) as e:  # noqa: BLE001 - approved exception EX-003 (CLAUDE.md): pipeline fault-isolation boundary
                 logger.error(f"Pass {mutation_pass.name} failed: {e}")
                 if session is not None and checkpoint_name is not None:
                     session.rollback_to(checkpoint_name)

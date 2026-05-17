@@ -240,3 +240,20 @@ Esta regla aplica también a PRs generados con asistencia IA: el cuerpo del comm
 - **Owner**: Marc Rivero.
 - **Fecha**: 2026-05-16.
 - **Commit**: pendiente (commit que añade el filtro EX-002 en `pyproject.toml`).
+
+### EX-003 — `noqa: BLE001` acotado a la frontera de aislamiento de fallos del pipeline
+
+- **Ámbito**: una única línea, el `except Exception as e:` del bucle por-pass en `r2morph/pipeline/pipeline.py` (método `Pipeline.run`, el `try` que envuelve la ejecución completa de un `MutationPass`: apply + validación + record). El `# noqa: BLE001` está acotado a esa línea; el resto del fichero y del proyecto sigue sujeto a `BLE` sin excepción.
+- **Justificación técnica**: los `MutationPass` son un **punto de extensión abierto** (26 módulos de pass: nop, substitute, register, control_flow_flattening, code_virtualization, api_hashing, …) que operan sobre el binario a través de `r2pipe` (subproceso → `BrokenPipeError`/`OSError`/`TimeoutExpired`), `keystone`/`capstone` (clases de excepción propias), `lief`, y `struct` (`struct.error`), además de `RuntimeError`/`ValueError`/`KeyError`/`IndexError` internos. El conjunto de excepciones no está centralizado ni acotado y crece con cada pass o versión de dependencia. Este `except` **es** la frontera de aislamiento de fallos del pipeline: un pass que falle debe quedar contenido (log con nombre del pass + rollback al checkpoint de sesión + registro estructurado del error + respeto de `rollback_policy == "fail-fast"` que re-lanza + `finally` que limpia runtime) y el pipeline debe continuar con los passes restantes. No es un swallow silencioso (el patrón prohibido por §6 es `except Exception: pass`; aquí se loguea, se registra y se re-lanza condicionalmente). `BaseException` **no** se captura: `KeyboardInterrupt`/`SystemExit` se propagan correctamente.
+- **Alternativas evaluadas**:
+  1. Acotar a una tupla de tipos concretos → **regresión de corrección**: por diseño es un conjunto abierto; un tipo no enumerado escaparía y abortaría todo el pipeline, rompiendo el contrato de rollback+continue y los tests que lo verifican. No es un fix, es trasladar un fallo de lint a un bug.
+  2. Extraer la ejecución del pass a un helper que devuelva `Result`/error → el `except Exception` sigue existiendo dentro del helper; `BLE001` se dispara igual. Solo mueve el problema.
+  3. `ignore` global de `BLE001` en `[tool.ruff.lint]` o `per-file-ignores` → explícitamente prohibido por §1 (peor que un noqa acotado a una línea).
+- **Mitigaciones**:
+  - Acotado a **una línea**; cualquier otro `except` ancho del proyecto sigue siendo error de `BLE`.
+  - El handler es observable y accionable: log con nombre de pass, rollback determinista al checkpoint, error estructurado en `pass_results`, y `raise` en modo `fail-fast`.
+  - `BaseException` fuera de alcance (no se traga `KeyboardInterrupt`/`SystemExit`).
+  - Revisar en cada release: si el conjunto de excepciones de los passes llegara a centralizarse en una jerarquía propia (p. ej. una `MutationPassError` base que todos los passes garanticen), acotar el `except` a esa base y eliminar EX-003.
+- **Owner**: Marc Rivero.
+- **Fecha**: 2026-05-17.
+- **Commit**: pendiente (commit que documenta EX-003 y acota el comentario inline en `pipeline.py`).
