@@ -198,6 +198,35 @@ class Pipeline:
                 symbolic["fallback_passes"].append(mutation_pass.name)
             symbolic["proven"] = symbolic["proven"] or bool(validation_result.metadata.get("symbolic_proven", False))
 
+    @staticmethod
+    def _new_run_results(rollback_policy: str) -> dict[str, Any]:
+        """Build the initial run-results accumulator."""
+        return {
+            "passes_run": 0,
+            "total_mutations": 0,
+            "rolled_back_passes": 0,
+            "failed_passes": 0,
+            "discarded_mutations": 0,
+            "discarded_mutations_detail": [],
+            "pass_results": {},
+            "mutations": [],
+            "validation": {
+                "passes": [],
+                "all_passed": True,
+                "failed_passes": [],
+                "total_issues": 0,
+                "runtime_passes": [],
+                "symbolic": {
+                    "requested": False,
+                    "proven": False,
+                    "supported_passes": [],
+                    "fallback_passes": [],
+                    "statuses": [],
+                },
+            },
+            "rollback_policy": rollback_policy,
+        }
+
     def run(
         self,
         binary: Binary,
@@ -224,31 +253,7 @@ class Pipeline:
 
         logger.info(f"Running pipeline with {len(self.passes)} passes")
 
-        results: dict[str, Any] = {
-            "passes_run": 0,
-            "total_mutations": 0,
-            "rolled_back_passes": 0,
-            "failed_passes": 0,
-            "discarded_mutations": 0,
-            "discarded_mutations_detail": [],
-            "pass_results": {},
-            "mutations": [],
-            "validation": {
-                "passes": [],
-                "all_passed": True,
-                "failed_passes": [],
-                "total_issues": 0,
-                "runtime_passes": [],
-                "symbolic": {
-                    "requested": False,
-                    "proven": False,
-                    "supported_passes": [],
-                    "fallback_passes": [],
-                    "statuses": [],
-                },
-            },
-            "rollback_policy": rollback_policy,
-        }
+        results: dict[str, Any] = self._new_run_results(rollback_policy)
 
         for i, mutation_pass in enumerate(self.passes):
             logger.info(f"Running pass {i + 1}/{len(self.passes)}: {mutation_pass.name}")
