@@ -262,7 +262,10 @@ class RelocationManager:
         assert self.binary.r2 is not None
         insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{address:x}")
 
-        insns = json.loads(insn_json)
+        try:
+            insns = json.loads(insn_json) if insn_json else []
+        except ValueError:
+            return False
         if not insns:
             return False
 
@@ -271,7 +274,15 @@ class RelocationManager:
 
         assert self.binary.r2 is not None
         next_bytes_hex = self.binary.r2.cmd(f"p8 {additional_bytes} @ 0x{next_addr:x}")
-        next_bytes = bytes.fromhex(next_bytes_hex.strip())
+        if not next_bytes_hex:
+            return False
+        try:
+            next_bytes = bytes.fromhex(next_bytes_hex.strip())
+        except ValueError:
+            return False
+
+        if not next_bytes:
+            return False
 
         if all(b == 0x90 for b in next_bytes):
             return True
