@@ -82,7 +82,7 @@ def test_annotate_instruction_substitution_observable_transition_match() -> None
         "symbolic_transition_regions": [{"start_address": 0x1000, "end_address": 0x1010, "mismatches": []}],
     }
 
-    vm._annotate_mutations_with_symbolic_metadata(_instr_sub_pass(mutation), metadata)
+    vm._symbolic_validator._annotate_mutations_with_symbolic_metadata(_instr_sub_pass(mutation), metadata)
 
     md = mutation["metadata"]
     assert md["symbolic_requested"] is True
@@ -107,7 +107,7 @@ def test_annotate_instruction_substitution_observable_key_miss() -> None:
         "symbolic_observable_regions": [{"start_address": 0x2000, "end_address": 0x2010, "mismatches": []}],
     }
 
-    vm._annotate_mutations_with_symbolic_metadata(_instr_sub_pass(mutation), metadata)
+    vm._symbolic_validator._annotate_mutations_with_symbolic_metadata(_instr_sub_pass(mutation), metadata)
 
     md = mutation["metadata"]
     assert md["symbolic_observable_check_performed"] is False

@@ -551,7 +551,7 @@ def test_symbolic_binary_region_metadata_is_attached_to_mutations():
         ],
     }
 
-    manager._annotate_mutations_with_symbolic_metadata(pass_result, metadata)
+    manager._symbolic_validator._annotate_mutations_with_symbolic_metadata(pass_result, metadata)
     mutation_metadata = pass_result["mutations"][0]["metadata"]
     assert mutation_metadata["symbolic_binary_region_exit_budget"] == 4
     assert mutation_metadata["symbolic_binary_original_region_exit_steps"] == 1

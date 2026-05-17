@@ -87,14 +87,6 @@ class ValidationManager:
         """Validate a single mutation using structural checks."""
         return self._structural_validator.validate_mutation(binary, mutation, validator_type=validator_type)
 
-    def _annotate_mutations_with_symbolic_metadata(
-        self,
-        pass_result: dict[str, Any],
-        metadata: dict[str, Any],
-    ) -> None:
-        """Attach pass-level symbolic evidence to each eligible mutation record."""
-        self._symbolic_validator._annotate_mutations_with_symbolic_metadata(pass_result, metadata)
-
     def capture_structural_baseline(self, binary: Binary, function_address: int | None) -> dict[str, Any]:
         """Capture a lightweight baseline before mutation."""
         return self._structural_validator.capture_baseline(binary, function_address, mode=self.mode)
