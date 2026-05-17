@@ -752,6 +752,17 @@ class APIHashingPass(MutationPass):
             jmp_plt = b"\xe9" + jmp_off.to_bytes(4, "little", signed=True)
             stub_bytes = mov_eax + jmp_plt
 
+            original_cave = binary.read_bytes(cave_addr, stub_size)
+            if not original_cave:
+                logger.debug(
+                    "Skipping API hashing for %s: cannot read %d cave bytes at 0x%x "
+                    "(no faithful original to record)",
+                    api_name,
+                    stub_size,
+                    cave_addr,
+                )
+                continue
+
             if not binary.write_bytes(cave_addr, stub_bytes):
                 continue
 
@@ -763,6 +774,7 @@ class APIHashingPass(MutationPass):
                     xrefs = []
 
             patched = 0
+            patched_sites: list[dict[str, str]] = []
             for xref in xrefs:
                 call_site = xref.get("from", 0)
                 if call_site == 0:
@@ -775,17 +787,25 @@ class APIHashingPass(MutationPass):
                 patched_call = b"\xe8" + new_off.to_bytes(4, "little", signed=True)
                 if binary.write_bytes(call_site, patched_call):
                     patched += 1
+                    patched_sites.append(
+                        {
+                            "address": hex(call_site),
+                            "original_bytes": original_call.hex(),
+                            "patched_bytes": patched_call.hex(),
+                        }
+                    )
 
             if patched > 0:
                 self._record_mutation(
                     function_address=None,
                     start_address=cave_addr,
                     end_address=cave_addr + stub_size,
-                    original_bytes=b"\x00" * stub_size,
+                    original_bytes=original_cave,
                     mutated_bytes=stub_bytes,
                     original_disasm=f"import {api_name} @ 0x{plt_addr:x}",
                     mutated_disasm=f"mov eax, 0x{hash_value:08x}; jmp 0x{plt_addr:x}",
                     mutation_kind="api_hashing",
+                    metadata={"patched_call_sites": patched_sites},
                 )
                 hashed_count += 1
                 logger.debug(f"Hashed {api_name} -> 0x{hash_value:08X} ({patched} call sites patched)")
