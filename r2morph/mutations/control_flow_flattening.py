@@ -448,21 +448,22 @@ class ControlFlowFlatteningPass(MutationPass):
             },
         )
 
-        if self._validation_manager is not None and mutation_checkpoint is not None:
-            if self._records:
-                outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
-                if not outcome.passed:
-                    if self._session is not None:
-                        self._session.rollback_to(mutation_checkpoint)
-                    binary.reload()
-                    if self._records:
-                        self._records.pop()
-                    if self._rollback_policy == "fail-fast":
-                        raise RuntimeError("Mutation-level validation failed")
-                    logger.debug(f"CFF validation failed for {func_name}, rolled back")
-                    return False
+        if self._validation_manager is None or mutation_checkpoint is None or not self._records:
+            return True
 
-        return True
+        outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
+        if outcome.passed:
+            return True
+
+        if self._session is not None:
+            self._session.rollback_to(mutation_checkpoint)
+        binary.reload()
+        if self._records:
+            self._records.pop()
+        if self._rollback_policy == "fail-fast":
+            raise RuntimeError("Mutation-level validation failed")
+        logger.debug(f"CFF validation failed for {func_name}, rolled back")
+        return False
 
     def _collect_blocks(self, binary: Any, func_addr: int, func_name: str) -> list[Any] | None:
         """Fetch, size-guard, and address-sort the function's basic blocks."""
