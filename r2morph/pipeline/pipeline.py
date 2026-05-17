@@ -5,6 +5,7 @@ Pipeline for orchestrating multiple transformation passes.
 import logging
 import time
 from copy import deepcopy
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -40,6 +41,18 @@ def _summarize_validation_regions(validation_payload: dict[str, Any]) -> list[di
         if severity and severity not in entry["severities"]:
             entry["severities"].append(severity)
     return sorted(grouped.values(), key=lambda item: tuple(item["address_range"]))
+
+
+@dataclass(frozen=True)
+class _RunContext:
+    """Run-invariant collaborators and config for one Pipeline.run call."""
+
+    binary: Binary
+    session: Any | None
+    validation_manager: Any | None
+    runtime_validator: Any | None
+    runtime_validate_per_pass: bool
+    rollback_policy: str
 
 
 class Pipeline:
@@ -226,6 +239,51 @@ class Pipeline:
             "support": mutation_pass.get_support().to_dict(),
         }
 
+    def _run_runtime_validation(
+        self,
+        ctx: _RunContext,
+        *,
+        results: dict[str, Any],
+        pass_result: dict[str, Any],
+        mutation_pass: MutationPassProtocol,
+        checkpoint_name: str | None,
+    ) -> None:
+        """Runtime-validate the applied pass and roll back on failure."""
+        if (
+            ctx.runtime_validate_per_pass
+            and ctx.runtime_validator is not None
+            and ctx.session is not None
+            and checkpoint_name is not None
+            and pass_result.get("mutations")
+        ):
+            previous_binary = next(
+                (cp.binary_path for cp in ctx.session.list_checkpoints() if cp.name == checkpoint_name),
+                None,
+            )
+            if previous_binary is not None:
+                runtime_pass_result = ctx.runtime_validator.validate(previous_binary, ctx.binary.path)
+                pass_result.setdefault("validation", {})
+                pass_result["validation"]["runtime"] = runtime_pass_result.to_dict()
+                results["validation"]["runtime_passes"].append(
+                    {
+                        "pass_name": mutation_pass.name,
+                        **runtime_pass_result.to_dict(),
+                    }
+                )
+                if not runtime_pass_result.passed and not pass_result.get("rolled_back", False):
+                    results["validation"]["all_passed"] = False
+                    results["validation"]["failed_passes"].append(mutation_pass.name)
+                    self._handle_validation_failure(
+                        results,
+                        pass_result,
+                        mutation_pass,
+                        ctx.binary,
+                        ctx.session,
+                        checkpoint_name,
+                        ctx.rollback_policy,
+                        reason="Runtime validation failed",
+                    )
+
     @staticmethod
     def _new_run_results(rollback_policy: str) -> dict[str, Any]:
         """Build the initial run-results accumulator."""
@@ -282,6 +340,14 @@ class Pipeline:
         logger.info(f"Running pipeline with {len(self.passes)} passes")
 
         results: dict[str, Any] = self._new_run_results(rollback_policy)
+        ctx = _RunContext(
+            binary=binary,
+            session=session,
+            validation_manager=validation_manager,
+            runtime_validator=runtime_validator,
+            runtime_validate_per_pass=runtime_validate_per_pass,
+            rollback_policy=rollback_policy,
+        )
 
         for i, mutation_pass in enumerate(self.passes):
             logger.info(f"Running pass {i + 1}/{len(self.passes)}: {mutation_pass.name}")
@@ -312,7 +378,6 @@ class Pipeline:
                         pass_result["previous_binary_path"] = str(previous_binary)
                 pass_result["diff_summary"] = self._build_diff_summary(pass_result)
                 validation_result = None
-                runtime_pass_result = None
                 if validation_manager is not None and pass_result["mutations"]:
                     validation_result = validation_manager.validate_pass(binary, pass_result)
                     pass_result["validation"] = validation_result.to_dict()
@@ -342,40 +407,13 @@ class Pipeline:
                     )
                     pass_result["diff_summary"]["structural_issue_count"] = len(validation_result.issues)
 
-                if (
-                    runtime_validate_per_pass
-                    and runtime_validator is not None
-                    and session is not None
-                    and checkpoint_name is not None
-                    and pass_result.get("mutations")
-                ):
-                    previous_binary = next(
-                        (cp.binary_path for cp in session.list_checkpoints() if cp.name == checkpoint_name),
-                        None,
-                    )
-                    if previous_binary is not None:
-                        runtime_pass_result = runtime_validator.validate(previous_binary, binary.path)
-                        pass_result.setdefault("validation", {})
-                        pass_result["validation"]["runtime"] = runtime_pass_result.to_dict()
-                        results["validation"]["runtime_passes"].append(
-                            {
-                                "pass_name": mutation_pass.name,
-                                **runtime_pass_result.to_dict(),
-                            }
-                        )
-                        if not runtime_pass_result.passed and not pass_result.get("rolled_back", False):
-                            results["validation"]["all_passed"] = False
-                            results["validation"]["failed_passes"].append(mutation_pass.name)
-                            self._handle_validation_failure(
-                                results,
-                                pass_result,
-                                mutation_pass,
-                                binary,
-                                session,
-                                checkpoint_name,
-                                rollback_policy,
-                                reason="Runtime validation failed",
-                            )
+                self._run_runtime_validation(
+                    ctx,
+                    results=results,
+                    pass_result=pass_result,
+                    mutation_pass=mutation_pass,
+                    checkpoint_name=checkpoint_name,
+                )
 
                 if not pass_result.get("rolled_back", False):
                     results["passes_run"] += 1
