@@ -309,12 +309,18 @@ section {section_name} align=16
 
             return_target = block.original_address + block.size
             ret_offset = return_target - (cave_addr + block.size + 5)
+            if ret_offset < -2147483648 or ret_offset > 2147483647:
+                logger.debug(f"Return offset out of range for block at 0x{block.original_address:x}")
+                continue
             return_jmp = b"\xe9" + ret_offset.to_bytes(4, "little", signed=True)
 
             if not binary.write_bytes(cave_addr, original_bytes + return_jmp):
                 continue
 
             tramp_offset = cave_addr - (block.original_address + 5)
+            if tramp_offset < -2147483648 or tramp_offset > 2147483647:
+                logger.debug(f"Trampoline offset out of range for block at 0x{block.original_address:x}")
+                continue
             trampoline = b"\xe9" + tramp_offset.to_bytes(4, "little", signed=True)
             nops = b"\x90" * (block.size - 5)
 
