@@ -418,6 +418,21 @@ class PipelineProtocol(Protocol):
         ...
 
 
+@runtime_checkable
+class ReportBuilderProtocol(Protocol):
+    """Protocol for the report-assembly collaborator injected into MorphEngine."""
+
+    def assemble_report(
+        self,
+        result: dict[str, Any] | None,
+        *,
+        pipeline_passes: Sequence[MutationPassProtocol],
+        last_result: dict[str, Any] | None,
+    ) -> dict[str, Any]:
+        """Assemble and return the full machine-readable engine report."""
+        ...
+
+
 __all__ = [
     "DisassemblerInterface",
     "BinaryReaderProtocol",
@@ -430,6 +445,7 @@ __all__ = [
     "BinarySignerProtocol",
     "MutationPassProtocol",
     "PipelineProtocol",
+    "ReportBuilderProtocol",
     "ValidatorProtocol",
     "ConsoleRendererProtocol",
     "GateEvaluatorProtocol",
