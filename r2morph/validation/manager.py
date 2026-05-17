@@ -4,15 +4,12 @@ Validation management for mutation passes.
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from dataclasses import asdict, dataclass, field
 from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
-
-logger = logging.getLogger(__name__)
 
 
 def _parse_address(value: int | str | None) -> int:
