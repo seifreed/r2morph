@@ -749,6 +749,9 @@ class APIHashingPass(MutationPass):
 
             mov_eax = b"\xb8" + (hash_value & 0xFFFFFFFF).to_bytes(4, "little")
             jmp_off = plt_addr - (cave_addr + 5 + 5)
+            if jmp_off < -2147483648 or jmp_off > 2147483647:
+                logger.debug(f"Stub jump offset out of range for {api_name} (cave 0x{cave_addr:x})")
+                continue
             jmp_plt = b"\xe9" + jmp_off.to_bytes(4, "little", signed=True)
             stub_bytes = mov_eax + jmp_plt
 
@@ -784,6 +787,9 @@ class APIHashingPass(MutationPass):
                     continue
 
                 new_off = cave_addr - (call_site + 5)
+                if new_off < -2147483648 or new_off > 2147483647:
+                    logger.debug(f"Call-site offset out of range for call at 0x{call_site:x}")
+                    continue
                 patched_call = b"\xe8" + new_off.to_bytes(4, "little", signed=True)
                 if binary.write_bytes(call_site, patched_call):
                     patched += 1
