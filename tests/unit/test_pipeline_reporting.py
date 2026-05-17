@@ -7,11 +7,8 @@ from r2morph.core.engine import (
     MorphEngine,
     _build_pass_region_evidence_map,
     _build_pass_validation_context,
-    _build_gate_failure_priority,
-    _build_gate_failure_severity_priority,
     _summarize_structural_evidence,
     _summarize_diff_digest,
-    _summarize_gate_failures,
     _summarize_pass_timings,
     _build_symbolic_summary_for_pass,
     _build_evidence_summary_for_pass,
@@ -23,6 +20,11 @@ from r2morph.core.engine import (
     _summarize_degradation_roles,
     _summarize_pass_coverage_buckets,
     _summarize_pass_risk_buckets,
+)
+from r2morph.reporting.gate_evaluator import (
+    build_gate_failure_priority as _build_gate_failure_priority,
+    build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
+    summarize_gate_failures as _summarize_gate_failures,
 )
 from r2morph.core.support import classify_target_support
 from r2morph.mutations.base import MutationPass

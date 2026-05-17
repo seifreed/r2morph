@@ -25,21 +25,16 @@ from r2morph.core.constants import (
     UNKNOWN_SEVERITY_RANK,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
-from r2morph.protocols import BinarySignerProtocol, MutationPassProtocol, PipelineProtocol
-from r2morph.reporting.gate_evaluator import (
-    build_gate_failure_priority,
-    build_gate_failure_severity_priority,
-    summarize_gate_failures,
+from r2morph.protocols import (
+    BinarySignerProtocol,
+    GateFailureReporterProtocol,
+    MutationPassProtocol,
+    PipelineProtocol,
 )
 from r2morph.reporting.report_view_builder import build_report_views
 from r2morph.core.support import PRODUCT_SUPPORT, classify_target_support
 from r2morph.session import MorphSession
 from r2morph.validation import BinaryValidator, ValidationManager
-
-# Backward-compatible aliases (underscore-prefixed names used throughout engine)
-_summarize_gate_failures = summarize_gate_failures
-_build_gate_failure_priority = build_gate_failure_priority
-_build_gate_failure_severity_priority = build_gate_failure_severity_priority
 
 logger = logging.getLogger(__name__)
 
@@ -1045,6 +1040,7 @@ class MorphEngine:
         self,
         config: dict[str, Any] | None = None,
         binary_signer: BinarySignerProtocol | None = None,
+        gate_failure_reporter: GateFailureReporterProtocol | None = None,
     ) -> None:
         """
         Initialize the MorphEngine.
@@ -1053,13 +1049,19 @@ class MorphEngine:
             config: Optional configuration dictionary
             binary_signer: Optional post-save binary signer; defaults to the
                 platform's signer (no-op off macOS)
+            gate_failure_reporter: Optional gate-failure report summarizer;
+                defaults to the reporting layer's implementation
         """
         from r2morph.pipeline.pipeline import Pipeline
         from r2morph.platform.binary_signer import DarwinBinarySigner
+        from r2morph.reporting.gate_evaluator import GateFailureReporter
 
         self.binary: Binary | None = None
         self.pipeline: PipelineProtocol = Pipeline()
         self._binary_signer: BinarySignerProtocol = binary_signer if binary_signer is not None else DarwinBinarySigner()
+        self._gate_failure_reporter: GateFailureReporterProtocol = (
+            gate_failure_reporter if gate_failure_reporter is not None else GateFailureReporter()
+        )
         self.config = config or {}
         self._stats: dict[str, Any] = {}
         self._memory_efficient_mode = False
@@ -1550,9 +1552,11 @@ class MorphEngine:
             observable_mismatch_priority=enrichments["observable_mismatch_priority"],
             observable_mismatch_map=enrichments["observable_mismatch_map"],
             symbolic_severity_by_pass=enrichments["symbolic_severity_by_pass"],
-            gate_failure_priority=_build_gate_failure_priority(gate_failures),
+            gate_failure_priority=self._gate_failure_reporter.build_gate_failure_priority(gate_failures),
             gate_failure_summary=gate_failures if isinstance(gate_failures, dict) else {},
-            gate_failure_severity_priority=_build_gate_failure_severity_priority(gate_failures),
+            gate_failure_severity_priority=self._gate_failure_reporter.build_gate_failure_severity_priority(
+                gate_failures
+            ),
             discarded_mutation_priority=discarded_mutation_priority,
             discarded_mutation_summary=discarded_mutation_summary,
             validation_adjustment_rows=validation_adjustment_rows,
@@ -1601,12 +1605,12 @@ class MorphEngine:
         diff_digest = _summarize_diff_digest(pass_results)
         gate_evaluation = payload.get("gate_evaluation")
         gate_failures = (
-            _summarize_gate_failures(gate_evaluation)
+            self._gate_failure_reporter.summarize_gate_failures(gate_evaluation)
             if isinstance(gate_evaluation, dict)
             else payload.get("gate_failures")
         )
-        gate_failure_priority = _build_gate_failure_priority(gate_failures)
-        gate_failure_severity_priority = _build_gate_failure_severity_priority(gate_failures)
+        gate_failure_priority = self._gate_failure_reporter.build_gate_failure_priority(gate_failures)
+        gate_failure_severity_priority = self._gate_failure_reporter.build_gate_failure_severity_priority(gate_failures)
         enrichments = self._enrich_pass_results(pass_results, mutations)
         artifacts = self._compute_report_artifacts(
             payload,

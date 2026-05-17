@@ -14,6 +14,7 @@ constructed and ``build_report`` is exercised with real dict payloads.
 from datetime import datetime
 
 from r2morph.core.engine import MorphEngine
+from tests._doubles.recording_gate_failure_reporter import RecordingGateFailureReporter
 
 # Frozen contract captured from the pre-refactor implementation.
 EXPECTED_TOP_LEVEL_KEYS = {
@@ -176,3 +177,18 @@ class TestBuildReportContract:
         first["metadata"].pop("timestamp")
         second["metadata"].pop("timestamp")
         assert first == second
+
+    def test_build_report_routes_gate_failures_through_injected_reporter(self) -> None:
+        reporter = RecordingGateFailureReporter()
+        engine = MorphEngine(gate_failure_reporter=reporter)
+
+        report = engine.build_report({"gate_evaluation": {"requested": {}, "results": {}}})
+
+        assert reporter.summarize_calls
+        assert reporter.summarize_calls[0] == {"requested": {}, "results": {}}
+        assert reporter.priority_calls
+        assert reporter.severity_priority_calls
+        assert report["gate_failures"] == {"sentinel": "summary"}
+        assert report["gate_failure_priority"] == [{"sentinel": "priority"}]
+        assert report["gate_failure_severity_priority"] == [{"sentinel": "severity"}]
+        assert set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS

@@ -312,6 +312,23 @@ class GateEvaluatorProtocol(Protocol):
 
 
 @runtime_checkable
+class GateFailureReporterProtocol(Protocol):
+    """Protocol for gate-failure report summarization and prioritization."""
+
+    def summarize_gate_failures(self, gate_evaluation: dict[str, Any]) -> dict[str, Any]:
+        """Build a compact summary of persisted gate failures for reports."""
+        ...
+
+    def build_gate_failure_priority(self, gate_failures: dict[str, Any] | None) -> list[dict[str, Any]]:
+        """Build an ordered machine-readable priority list for pass gate failures."""
+        ...
+
+    def build_gate_failure_severity_priority(self, gate_failures: dict[str, Any] | None) -> list[dict[str, Any]]:
+        """Build an ordered severity-first summary for gate failures."""
+        ...
+
+
+@runtime_checkable
 class SummaryAggregatorProtocol(Protocol):
     """Protocol for summary aggregation services."""
 
@@ -385,5 +402,6 @@ __all__ = [
     "ValidatorProtocol",
     "ConsoleRendererProtocol",
     "GateEvaluatorProtocol",
+    "GateFailureReporterProtocol",
     "SummaryAggregatorProtocol",
 ]

@@ -13,10 +13,10 @@ from typing import Any
 import typer
 from rich.console import Console
 
-from r2morph.core.engine import (
-    _build_gate_failure_priority,
-    _build_gate_failure_severity_priority,
-    _summarize_gate_failures,
+from r2morph.reporting.gate_evaluator import (
+    build_gate_failure_priority as _build_gate_failure_priority,
+    build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
+    summarize_gate_failures as _summarize_gate_failures,
 )
 
 console = Console()

@@ -361,3 +361,16 @@ def build_gate_failure_severity_priority(
         )
     )
     return rows
+
+
+class GateFailureReporter:
+    """Service adapter over the module-level gate-failure report helpers."""
+
+    def summarize_gate_failures(self, gate_evaluation: dict[str, Any]) -> dict[str, Any]:
+        return summarize_gate_failures(gate_evaluation)
+
+    def build_gate_failure_priority(self, gate_failures: dict[str, Any] | None) -> list[dict[str, Any]]:
+        return build_gate_failure_priority(gate_failures)
+
+    def build_gate_failure_severity_priority(self, gate_failures: dict[str, Any] | None) -> list[dict[str, Any]]:
+        return build_gate_failure_severity_priority(gate_failures)
