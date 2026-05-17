@@ -374,12 +374,18 @@ class FunctionOutliningPass(MutationPass):
 
                 return_target = first_addr + chunk_size
                 ret_off = return_target - (cave_addr + chunk_size + 5)
+                if ret_off < -2147483648 or ret_off > 2147483647:
+                    logger.debug(f"Return offset out of range for chunk at 0x{first_addr:x}")
+                    continue
                 return_jmp = b"\xe9" + ret_off.to_bytes(4, "little", signed=True)
 
                 if not binary.write_bytes(cave_addr, original_bytes + return_jmp):
                     continue
 
                 tramp_off = cave_addr - (first_addr + 5)
+                if tramp_off < -2147483648 or tramp_off > 2147483647:
+                    logger.debug(f"Trampoline offset out of range for chunk at 0x{first_addr:x}")
+                    continue
                 trampoline = b"\xe9" + tramp_off.to_bytes(4, "little", signed=True)
                 nops = b"\x90" * (chunk_size - 5)
                 if not binary.write_bytes(first_addr, trampoline + nops):
