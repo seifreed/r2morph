@@ -3,6 +3,7 @@ from pathlib import Path
 from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import BasicBlock
 from r2morph.mutations.block_reordering import BlockReorderingPass
+from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.instruction_expansion import InstructionExpansionPass
@@ -48,7 +49,7 @@ def test_control_flow_flattening_helpers():
     binary_path = Path("dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         blocks = [BasicBlock(address=0x1000, size=4), BasicBlock(address=0x1004, size=4)]
-        dispatcher = cff._generate_dispatcher(bin_obj, blocks)
+        dispatcher = DispatcherGenerator().generate(bin_obj, blocks)
         assert dispatcher
 
 

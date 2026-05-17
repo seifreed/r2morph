@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 
 
@@ -37,9 +38,8 @@ def test_control_flow_flattening_dispatcher_generation(tmp_path: Path):
     binary_path = _copy_binary(tmp_path, "elf_dispatcher")
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
-        mutator = ControlFlowFlatteningPass()
         blocks = [SimpleNamespace(address=0x1000), SimpleNamespace(address=0x2000)]
-        dispatcher = mutator._generate_dispatcher(bin_obj, blocks)
+        dispatcher = DispatcherGenerator().generate(bin_obj, blocks)
         assert dispatcher
 
 

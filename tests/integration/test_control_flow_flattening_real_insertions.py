@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 
 
@@ -73,8 +74,7 @@ def test_control_flow_flattening_dispatcher_arm() -> None:
 
     with Binary(binary_path) as binary:
         binary.analyze()
-        pass_obj = ControlFlowFlatteningPass()
-        dispatcher = pass_obj._generate_dispatcher(
+        dispatcher = DispatcherGenerator().generate(
             binary, [type("B", (), {"address": 0x1000})(), type("B", (), {"address": 0x2000})()]
         )
 
@@ -89,8 +89,7 @@ def test_control_flow_flattening_dispatcher_x86() -> None:
 
     with Binary(binary_path) as binary:
         binary.analyze()
-        pass_obj = ControlFlowFlatteningPass()
-        dispatcher = pass_obj._generate_dispatcher(
+        dispatcher = DispatcherGenerator().generate(
             binary, [type("B", (), {"address": 0x1000})(), type("B", (), {"address": 0x2000})()]
         )
 

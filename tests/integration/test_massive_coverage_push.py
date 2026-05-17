@@ -16,6 +16,7 @@ if importlib.util.find_spec("yaml") is None:
 
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
@@ -72,8 +73,6 @@ class TestControlFlowFlatteningExtensive:
 
         with Binary(ls_elf) as binary:
             binary.analyze()
-            pass_obj = ControlFlowFlatteningPass()
-
             # Mock blocks for dispatcher generation
             from r2morph.analysis.cfg import BasicBlock
 
@@ -83,7 +82,7 @@ class TestControlFlowFlatteningExtensive:
                 BasicBlock(address=0x1020, size=16),
             ]
 
-            dispatcher = pass_obj._generate_x86_dispatcher(mock_blocks, 64)
+            dispatcher = DispatcherGenerator().generate_x86(mock_blocks, 64)
             assert isinstance(dispatcher, list)
             assert len(dispatcher) > 0
             assert any("mov" in line for line in dispatcher)
@@ -95,12 +94,10 @@ class TestControlFlowFlatteningExtensive:
 
         with Binary(ls_elf) as binary:
             binary.analyze()
-            pass_obj = ControlFlowFlatteningPass()
-
             from r2morph.analysis.cfg import BasicBlock
 
             mock_blocks = [BasicBlock(address=0x1000, size=16)]
-            dispatcher = pass_obj._generate_x86_dispatcher(mock_blocks, 32)
+            dispatcher = DispatcherGenerator().generate_x86(mock_blocks, 32)
             assert isinstance(dispatcher, list)
             assert any("eax" in line for line in dispatcher)
 
@@ -111,8 +108,6 @@ class TestControlFlowFlatteningExtensive:
 
         with Binary(ls_elf) as binary:
             binary.analyze()
-            pass_obj = ControlFlowFlatteningPass()
-
             from r2morph.analysis.cfg import BasicBlock
 
             mock_blocks = [
@@ -120,7 +115,7 @@ class TestControlFlowFlatteningExtensive:
                 BasicBlock(address=0x1010, size=16),
             ]
 
-            dispatcher = pass_obj._generate_arm_dispatcher(mock_blocks, 64)
+            dispatcher = DispatcherGenerator().generate_arm(mock_blocks, 64)
             assert isinstance(dispatcher, list)
             assert len(dispatcher) > 0
 

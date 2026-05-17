@@ -668,13 +668,3 @@ class ControlFlowFlatteningPass(MutationPass):
             return bool(binary.write_bytes(addr, assembled))
 
         return False
-
-    # Keep the dispatcher generation methods for reference/future use
-    def _generate_dispatcher(self, binary: Any, blocks: list[Any]) -> list[str]:
-        return self._dispatcher_gen.generate(binary, blocks)
-
-    def _generate_x86_dispatcher(self, blocks: list[Any], bits: int) -> list[str]:
-        return self._dispatcher_gen.generate_x86(blocks, bits)
-
-    def _generate_arm_dispatcher(self, blocks: list[Any], bits: int) -> list[str]:
-        return self._dispatcher_gen.generate_arm(blocks, bits)
