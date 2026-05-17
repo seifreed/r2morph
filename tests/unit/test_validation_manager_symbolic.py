@@ -26,12 +26,12 @@ def _state(actions: object) -> SimpleNamespace:
 
 def test_collect_signatures_no_history_returns_empty() -> None:
     vm = ValidationManager()
-    assert vm._collect_memory_write_signatures(SimpleNamespace(history=None)) == []
+    assert vm._symbolic_validator._collect_memory_write_signatures(SimpleNamespace(history=None)) == []
 
 
 def test_collect_signatures_actions_none_returns_empty() -> None:
     vm = ValidationManager()
-    assert vm._collect_memory_write_signatures(_state(None)) == []
+    assert vm._symbolic_validator._collect_memory_write_signatures(_state(None)) == []
 
 
 def test_collect_signatures_sorted_deduped_write_and_store() -> None:
@@ -44,7 +44,7 @@ def test_collect_signatures_sorted_deduped_write_and_store() -> None:
         _mem_write(SimpleNamespace(concrete_value=0x3000), SimpleNamespace(concrete_value=1), action="store"),
         SimpleNamespace(type="mem", action="read", addr=None, size=None),  # mem-read skipped
     ]
-    assert vm._collect_memory_write_signatures(_state(actions)) == [
+    assert vm._symbolic_validator._collect_memory_write_signatures(_state(actions)) == [
         "0x1000:8",
         "0x2000:4",
         "0x3000:1",
@@ -54,13 +54,13 @@ def test_collect_signatures_sorted_deduped_write_and_store() -> None:
 def test_collect_signatures_unconvertible_addr_is_unknown() -> None:
     vm = ValidationManager()
     actions = [_mem_write(SimpleNamespace(concrete_value=object()), SimpleNamespace(concrete_value=8))]
-    assert vm._collect_memory_write_signatures(_state(actions)) == ["unknown"]
+    assert vm._symbolic_validator._collect_memory_write_signatures(_state(actions)) == ["unknown"]
 
 
 def test_collect_signatures_missing_size_is_addr_only() -> None:
     vm = ValidationManager()
     actions = [_mem_write(SimpleNamespace(concrete_value=0x4000), None)]
-    assert vm._collect_memory_write_signatures(_state(actions)) == ["0x4000"]
+    assert vm._symbolic_validator._collect_memory_write_signatures(_state(actions)) == ["0x4000"]
 
 
 def _instr_sub_pass(mutation: dict[str, object]) -> dict[str, object]:

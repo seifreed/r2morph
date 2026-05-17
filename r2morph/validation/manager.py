@@ -77,10 +77,6 @@ class ValidationManager:
         self._abi_validator = AbiValidator()
         self._symbolic_validator = SymbolicValidator()
 
-    def _collect_memory_write_signatures(self, state: Any) -> list[str]:
-        """Collect a compact, best-effort signature of memory writes from an angr state."""
-        return self._symbolic_validator._collect_memory_write_signatures(state)
-
     def _validate_structural_mutation(
         self,
         binary: Binary,
