@@ -91,14 +91,6 @@ class ValidationManager:
         """Validate a single mutation using structural checks."""
         return self._structural_validator.validate_mutation(binary, mutation, validator_type=validator_type)
 
-    def _estimate_symbolic_region_steps(
-        self,
-        pass_name: str,
-        mutation: dict[str, Any],
-    ) -> int:
-        """Estimate a small but useful symbolic step budget for a mutated region."""
-        return self._symbolic_validator._estimate_symbolic_region_steps(pass_name, mutation)
-
     def _annotate_mutations_with_symbolic_metadata(
         self,
         pass_result: dict[str, Any],
