@@ -17,16 +17,18 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from enum import Enum
 
-try:
+if TYPE_CHECKING:
     import psutil
+else:
+    try:
+        import psutil
+    except ImportError:
+        psutil = None
 
-    PSUTIL_AVAILABLE = True
-except ImportError:
-    PSUTIL_AVAILABLE = False
-    psutil = None  # type: ignore[assignment]  # optional dependency
+PSUTIL_AVAILABLE = psutil is not None
 
 try:
     import ctypes
