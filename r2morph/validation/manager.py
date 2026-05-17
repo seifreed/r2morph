@@ -10,7 +10,6 @@ from dataclasses import asdict, dataclass, field
 from importlib import import_module
 from typing import Any
 
-from r2morph.analysis.abi_checker import ABIChecker
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -72,12 +71,13 @@ class ValidationManager:
     """
 
     def __init__(self, mode: str = "structural", check_abi: bool = False) -> None:
+        from r2morph.validation.abi_validator import AbiValidator
         from r2morph.validation.structural_validator import StructuralValidator
 
         self.mode = mode
         self.check_abi = check_abi
-        self._abi_checker: ABIChecker | None = None
         self._structural_validator = StructuralValidator()
+        self._abi_validator = AbiValidator()
 
     def _collect_memory_write_signatures(self, state: Any) -> list[str]:
         """Collect a compact, best-effort signature of memory writes from an angr state."""
@@ -1217,55 +1217,8 @@ class ValidationManager:
         Returns:
             Dictionary with ABI validation results
         """
-        if self._abi_checker is None:
-            self._abi_checker = ABIChecker(binary)
-
-        violations = self._abi_checker.check_all(function_address, mutation_regions)
-
-        return {
-            "passed": len(violations) == 0,
-            "violations": [
-                {
-                    "type": v.violation_type.value,
-                    "description": v.description,
-                    "location": v.location,
-                    "details": v.details,
-                }
-                for v in violations
-            ],
-            "violation_count": len(violations),
-        }
+        return self._abi_validator.validate(binary, function_address, mutation_regions)
 
     def _check_abi_violations(self, binary: Binary, pass_result: dict[str, Any]) -> list[ValidationIssue]:
         """Check for ABI violations in a pass."""
-        issues: list[ValidationIssue] = []
-
-        if self._abi_checker is None:
-            self._abi_checker = ABIChecker(binary)
-
-        mutations = pass_result.get("mutations", [])
-        mutation_regions: list[tuple[int, int]] = []
-
-        for mutation in mutations:
-            start = mutation.get("start_address")
-            end = mutation.get("end_address")
-            if start is not None and end is not None:
-                mutation_regions.append((start, end))
-
-        functions = binary.get_functions() if hasattr(binary, "get_functions") else []
-        for func in functions[:5]:
-            func_addr = func.get("offset") or func.get("addr", 0)
-            violations = self._abi_checker.check_all(func_addr, mutation_regions if mutation_regions else None)
-
-            for v in violations:
-                issues.append(
-                    ValidationIssue(
-                        validator="abi",
-                        message=v.description,
-                        address_range=(v.location, v.location + 8),
-                        severity="warning",
-                        evidence=v.details,
-                    )
-                )
-
-        return issues
+        return self._abi_validator.collect_violations(binary, pass_result)
