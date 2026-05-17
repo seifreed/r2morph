@@ -386,58 +386,9 @@ class ControlFlowFlatteningPass(MutationPass):
 
         # Track how many predicates we've added
         predicates_to_add = min(self.opaque_density, len(blocks) - 1)
-        predicates_added = 0
-
-        # Process each block looking for opportunities
-        for i, block in enumerate(blocks):
-            if predicates_added >= predicates_to_add:
-                break
-
-            block_addr = block.get("addr", 0)
-            block_size = block.get("size", 0)
-            block_end = block_addr + block_size
-
-            # Find instructions in this block
-            block_instrs = [ins for ins in all_instrs if block_addr <= ins.get("offset", 0) < block_end]
-
-            if not block_instrs:
-                continue
-
-            # Get last instruction of block
-            last_insn = block_instrs[-1]
-            last_addr = last_insn.get("offset", 0)
-            last_insn.get("size", 0)
-            mnemonic = last_insn.get("mnemonic", "").lower()
-
-            # Strategy 1: Add opaque predicate before conditional jumps
-            if self._is_conditional_jump(mnemonic, arch_family):
-                # Look for space before the conditional jump
-                if len(block_instrs) >= 2:
-                    prev_insn = block_instrs[-2]
-                    prev_addr = prev_insn.get("offset", 0)
-                    prev_size = prev_insn.get("size", 0)
-
-                    available_space = last_addr - (prev_addr + prev_size)
-
-                    if available_space >= 2:
-                        # We have slack space, use it
-                        if self._add_opaque_predicate(
-                            binary, prev_addr + prev_size, available_space, arch_family, bits
-                        ):
-                            predicates_added += 1
-                            mutations["opaque_predicates"] += 1
-                            mutations["total"] += 1
-                            logger.debug(
-                                f"Added opaque predicate at 0x{prev_addr + prev_size:x} "
-                                f"(slack space: {available_space} bytes)"
-                            )
-
-            # Strategy 2: Insert jump obfuscation for unconditional jumps
-            if mnemonic == "jmp" and i < len(blocks) - 1:
-                # Try to obfuscate the jump target
-                if self._jump_obfuscator.obfuscate_jump(binary, last_insn, block, arch_family, bits):
-                    mutations["jump_obfuscations"] += 1
-                    mutations["total"] += 1
+        predicates_added = self._apply_block_strategies(
+            binary, blocks, all_instrs, arch_family, bits, predicates_to_add, mutations
+        )
 
         # Strategy 3: Look for NOP sleds we can replace with dead code + opaque predicates
         nop_sequences = self._find_nop_sequences(all_instrs)
@@ -504,6 +455,74 @@ class ControlFlowFlatteningPass(MutationPass):
             return None
 
         return sorted(blocks, key=lambda b: b.get("addr", 0))
+
+    def _apply_block_strategies(
+        self,
+        binary: Any,
+        blocks: list[Any],
+        all_instrs: list[Any],
+        arch_family: str,
+        bits: int,
+        predicates_to_add: int,
+        mutations: dict[str, int],
+    ) -> int:
+        """Apply per-block opaque-predicate and jump-obfuscation strategies.
+
+        Mutates ``mutations`` in place; returns the number of predicates added.
+        """
+        predicates_added = 0
+        # Process each block looking for opportunities
+        for i, block in enumerate(blocks):
+            if predicates_added >= predicates_to_add:
+                break
+
+            block_addr = block.get("addr", 0)
+            block_size = block.get("size", 0)
+            block_end = block_addr + block_size
+
+            # Find instructions in this block
+            block_instrs = [ins for ins in all_instrs if block_addr <= ins.get("offset", 0) < block_end]
+
+            if not block_instrs:
+                continue
+
+            # Get last instruction of block
+            last_insn = block_instrs[-1]
+            last_addr = last_insn.get("offset", 0)
+            last_insn.get("size", 0)
+            mnemonic = last_insn.get("mnemonic", "").lower()
+
+            # Strategy 1: Add opaque predicate before conditional jumps
+            if self._is_conditional_jump(mnemonic, arch_family):
+                # Look for space before the conditional jump
+                if len(block_instrs) >= 2:
+                    prev_insn = block_instrs[-2]
+                    prev_addr = prev_insn.get("offset", 0)
+                    prev_size = prev_insn.get("size", 0)
+
+                    available_space = last_addr - (prev_addr + prev_size)
+
+                    if available_space >= 2:
+                        # We have slack space, use it
+                        if self._add_opaque_predicate(
+                            binary, prev_addr + prev_size, available_space, arch_family, bits
+                        ):
+                            predicates_added += 1
+                            mutations["opaque_predicates"] += 1
+                            mutations["total"] += 1
+                            logger.debug(
+                                f"Added opaque predicate at 0x{prev_addr + prev_size:x} "
+                                f"(slack space: {available_space} bytes)"
+                            )
+
+            # Strategy 2: Insert jump obfuscation for unconditional jumps
+            if mnemonic == "jmp" and i < len(blocks) - 1:
+                # Try to obfuscate the jump target
+                if self._jump_obfuscator.obfuscate_jump(binary, last_insn, block, arch_family, bits):
+                    mutations["jump_obfuscations"] += 1
+                    mutations["total"] += 1
+
+        return predicates_added
 
     def _is_conditional_jump(self, mnemonic: str, arch: str) -> bool:
         """
