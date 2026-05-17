@@ -127,28 +127,7 @@ class ValidationManager:
             },
         )
         if self.mode == "symbolic":
-            result.metadata.update(self._symbolic_validator._run_symbolic_precheck(binary, pass_result))
-            bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
-            if pass_result.get("pass_name") in {
-                "InstructionSubstitution",
-                "NopInsertion",
-                "RegisterSubstitution",
-            }:
-                result.metadata.update(
-                    self._symbolic_validator._compare_real_binary_regions(binary, pass_result, bridge_module)
-                )
-                if result.metadata.get("symbolic_binary_check_performed"):
-                    if result.metadata.get("symbolic_binary_equivalent"):
-                        result.metadata["symbolic_status"] = "real-binary-observables-match"
-                        result.metadata["symbolic_reason"] = (
-                            "bounded real-binary symbolic effects matched for the mutated regions"
-                        )
-                    else:
-                        result.metadata["symbolic_status"] = "real-binary-observable-mismatch"
-                        result.metadata["symbolic_reason"] = (
-                            "bounded real-binary symbolic effects diverged for the mutated regions"
-                        )
-            self._symbolic_validator._annotate_mutations_with_symbolic_metadata(pass_result, result.metadata)
+            self._run_symbolic_validation(binary, pass_result, result)
 
         if self.check_abi:
             abi_issues = self._abi_validator.collect_violations(binary, pass_result)
@@ -159,6 +138,36 @@ class ValidationManager:
                 result.metadata["abi_violations"] = len(abi_issues)
 
         return result
+
+    def _run_symbolic_validation(
+        self,
+        binary: Binary,
+        pass_result: dict[str, Any],
+        result: ValidationOutcome,
+    ) -> None:
+        """Augment a pass outcome with bounded symbolic-equivalence evidence."""
+        result.metadata.update(self._symbolic_validator._run_symbolic_precheck(binary, pass_result))
+        bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
+        if pass_result.get("pass_name") in {
+            "InstructionSubstitution",
+            "NopInsertion",
+            "RegisterSubstitution",
+        }:
+            result.metadata.update(
+                self._symbolic_validator._compare_real_binary_regions(binary, pass_result, bridge_module)
+            )
+            if result.metadata.get("symbolic_binary_check_performed"):
+                if result.metadata.get("symbolic_binary_equivalent"):
+                    result.metadata["symbolic_status"] = "real-binary-observables-match"
+                    result.metadata["symbolic_reason"] = (
+                        "bounded real-binary symbolic effects matched for the mutated regions"
+                    )
+                else:
+                    result.metadata["symbolic_status"] = "real-binary-observable-mismatch"
+                    result.metadata["symbolic_reason"] = (
+                        "bounded real-binary symbolic effects diverged for the mutated regions"
+                    )
+        self._symbolic_validator._annotate_mutations_with_symbolic_metadata(pass_result, result.metadata)
 
     def validate_abi(
         self, binary: Binary, function_address: int, mutation_regions: list[tuple[int, int]] | None = None
