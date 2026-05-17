@@ -68,7 +68,7 @@ def test_structural_mutation_happy_path_contract(tmp_path: Path) -> None:
             "end_address": addr + len(original),
             "mutated_bytes": original.hex(),
         }
-        outcome = ValidationManager(mode="structural")._validate_structural_mutation(
+        outcome = ValidationManager(mode="structural")._structural_validator.validate_mutation(
             binary, mutation, validator_type="structural"
         )
 
@@ -91,7 +91,7 @@ def test_structural_mutation_patch_integrity_mismatch(tmp_path: Path) -> None:
             "end_address": addr + len(original),
             "mutated_bytes": flipped.hex(),
         }
-        outcome = ValidationManager(mode="structural")._validate_structural_mutation(
+        outcome = ValidationManager(mode="structural")._structural_validator.validate_mutation(
             binary, mutation, validator_type="structural"
         )
 
@@ -115,7 +115,7 @@ def test_structural_mutation_control_flow_failure(tmp_path: Path) -> None:
             "mutated_bytes": original.hex(),
             "function_address": addr,
         }
-        outcome = ValidationManager(mode="structural")._validate_structural_mutation(
+        outcome = ValidationManager(mode="structural")._structural_validator.validate_mutation(
             binary, mutation, validator_type="structural"
         )
 

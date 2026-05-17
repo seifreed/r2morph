@@ -77,16 +77,6 @@ class ValidationManager:
         self._abi_validator = AbiValidator()
         self._symbolic_validator = SymbolicValidator()
 
-    def _validate_structural_mutation(
-        self,
-        binary: Binary,
-        mutation: dict[str, Any],
-        *,
-        validator_type: str,
-    ) -> ValidationOutcome:
-        """Validate a single mutation using structural checks."""
-        return self._structural_validator.validate_mutation(binary, mutation, validator_type=validator_type)
-
     def capture_structural_baseline(self, binary: Binary, function_address: int | None) -> dict[str, Any]:
         """Capture a lightweight baseline before mutation."""
         return self._structural_validator.capture_baseline(binary, function_address, mode=self.mode)
