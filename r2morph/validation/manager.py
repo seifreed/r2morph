@@ -99,17 +99,6 @@ class ValidationManager:
         """Estimate a small but useful symbolic step budget for a mutated region."""
         return self._symbolic_validator._estimate_symbolic_region_steps(pass_name, mutation)
 
-    def _compare_instruction_substitution_observables(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-        bridge_module: Any,
-    ) -> dict[str, Any]:
-        """Compare a small set of observable register/flag effects for InstructionSubstitution snippets."""
-        return self._symbolic_validator._compare_instruction_substitution_observables(
-            binary, pass_result, bridge_module
-        )
-
     def _annotate_mutations_with_symbolic_metadata(
         self,
         pass_result: dict[str, Any],
