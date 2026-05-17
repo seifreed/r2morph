@@ -24,8 +24,7 @@ from r2morph.core.constants import (
     UNKNOWN_SEVERITY_RANK,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
-from r2morph.pipeline.pipeline import Pipeline
-from r2morph.protocols import MutationPassProtocol
+from r2morph.protocols import MutationPassProtocol, PipelineProtocol
 from r2morph.reporting.gate_evaluator import (
     SEVERITY_ORDER,
     build_gate_failure_priority,
@@ -1050,8 +1049,10 @@ class MorphEngine:
         Args:
             config: Optional configuration dictionary
         """
+        from r2morph.pipeline.pipeline import Pipeline
+
         self.binary: Binary | None = None
-        self.pipeline = Pipeline()
+        self.pipeline: PipelineProtocol = Pipeline()
         self.config = config or {}
         self._stats: dict[str, Any] = {}
         self._memory_efficient_mode = False
@@ -1280,9 +1281,7 @@ class MorphEngine:
         Returns:
             Self for method chaining
         """
-        self.pipeline.passes = [
-            p for p in self.pipeline.passes if getattr(p, "name", p.__class__.__name__) != mutation_name
-        ]
+        self.pipeline.remove_pass_by_name(mutation_name)
         logger.debug(f"Removed mutation: {mutation_name}")
         return self
 

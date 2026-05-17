@@ -88,6 +88,18 @@ class Pipeline:
                 return True
         return False
 
+    def remove_pass_by_name(self, name: str) -> None:
+        """
+        Remove every registered pass whose name matches ``name``.
+
+        Unlike :meth:`remove_pass`, this drops all matching passes (not just
+        the first) and does not report whether anything was removed.
+
+        Args:
+            name: Name of the mutation pass(es) to remove
+        """
+        self.passes = [p for p in self.passes if p.name != name]
+
     def clear(self) -> None:
         """Clear all passes from the pipeline."""
         self.passes.clear()

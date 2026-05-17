@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.pipeline.pipeline import Pipeline
 
@@ -24,6 +25,31 @@ def test_pipeline_basic_lifecycle() -> None:
     assert pipeline.remove_pass("missing") is False
     pipeline.clear()
     assert len(pipeline) == 0
+
+
+def test_remove_pass_by_name_removes_all_matching() -> None:
+    pipeline = Pipeline()
+    first_nop = NopInsertionPass(config={"probability": 0.0})
+    second_nop = NopInsertionPass(config={"probability": 0.0})
+    other = InstructionSubstitutionPass(config={"probability": 0.0})
+    pipeline.add_pass(first_nop)
+    pipeline.add_pass(second_nop)
+    pipeline.add_pass(other)
+
+    result = pipeline.remove_pass_by_name(first_nop.name)
+
+    assert result is None
+    assert pipeline.get_pass_names() == [other.name]
+
+
+def test_remove_pass_by_name_no_match_is_noop() -> None:
+    pipeline = Pipeline()
+    nop_pass = NopInsertionPass(config={"probability": 0.0})
+    pipeline.add_pass(nop_pass)
+
+    pipeline.remove_pass_by_name("does-not-exist")
+
+    assert pipeline.get_pass_names() == [nop_pass.name]
 
 
 def test_pipeline_run_with_real_pass(tmp_path: Path) -> None:

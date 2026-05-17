@@ -13,6 +13,7 @@ Usage:
             pass
 """
 
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
@@ -329,6 +330,38 @@ class SummaryAggregatorProtocol(Protocol):
         ...
 
 
+@runtime_checkable
+class PipelineProtocol(Protocol):
+    """Protocol for the mutation-pass pipeline orchestrator."""
+
+    @property
+    def passes(self) -> Sequence[MutationPassProtocol]:
+        """Registered mutation passes, in execution order."""
+        ...
+
+    def add_pass(self, mutation_pass: MutationPassProtocol) -> "PipelineProtocol":
+        """Append a mutation pass to the pipeline."""
+        ...
+
+    def remove_pass_by_name(self, name: str) -> None:
+        """Remove every registered pass whose name matches ``name``."""
+        ...
+
+    def run(
+        self,
+        binary: Any,
+        *,
+        session: Any | None = None,
+        validation_manager: Any | None = None,
+        runtime_validator: Any | None = None,
+        runtime_validate_per_pass: bool = False,
+        rollback_policy: str = "skip-invalid-pass",
+        checkpoint_per_mutation: bool = False,
+    ) -> dict[str, Any]:
+        """Execute every registered pass on the binary and return statistics."""
+        ...
+
+
 __all__ = [
     "DisassemblerInterface",
     "BinaryReaderProtocol",
@@ -338,6 +371,7 @@ __all__ = [
     "MemoryManagerProtocol",
     "ReportEmitterProtocol",
     "MutationPassProtocol",
+    "PipelineProtocol",
     "ValidatorProtocol",
     "ConsoleRendererProtocol",
     "GateEvaluatorProtocol",

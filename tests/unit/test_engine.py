@@ -16,7 +16,7 @@ if importlib.util.find_spec("yaml") is None:
 
 
 from r2morph import MorphEngine
-from r2morph.mutations import NopInsertionPass
+from r2morph.mutations import InstructionSubstitutionPass, NopInsertionPass
 
 
 class TestMorphEngine:
@@ -37,6 +37,22 @@ class TestMorphEngine:
 
         assert isinstance(stats, dict)
         assert "functions" in stats
+
+    def test_remove_mutation_drops_all_matching_and_chains(self):
+        engine = MorphEngine()
+        engine.add_mutation(NopInsertionPass(config={"probability": 0.0}))
+        engine.add_mutation(NopInsertionPass(config={"probability": 0.0}))
+        engine.add_mutation(InstructionSubstitutionPass(config={"probability": 0.0}))
+
+        names_before = [pass_.name for pass_ in engine.mutations]
+        assert names_before.count("NopInsertion") == 2
+
+        returned = engine.remove_mutation("NopInsertion")
+
+        assert returned is engine
+        names_after = [pass_.name for pass_ in engine.mutations]
+        assert "NopInsertion" not in names_after
+        assert names_after == ["InstructionSubstitution"]
 
     def test_engine_run_and_save(self, tmp_path):
         test_file = Path(__file__).parent.parent / "fixtures" / "simple"
