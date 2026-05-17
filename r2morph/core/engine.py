@@ -30,8 +30,8 @@ from r2morph.protocols import (
     GateFailureReporterProtocol,
     MutationPassProtocol,
     PipelineProtocol,
+    ReportViewBuilderProtocol,
 )
-from r2morph.reporting.report_view_builder import build_report_views
 from r2morph.core.support import PRODUCT_SUPPORT, classify_target_support
 from r2morph.session import MorphSession
 from r2morph.validation import BinaryValidator, ValidationManager
@@ -1041,6 +1041,7 @@ class MorphEngine:
         config: dict[str, Any] | None = None,
         binary_signer: BinarySignerProtocol | None = None,
         gate_failure_reporter: GateFailureReporterProtocol | None = None,
+        report_view_builder: ReportViewBuilderProtocol | None = None,
     ) -> None:
         """
         Initialize the MorphEngine.
@@ -1051,16 +1052,22 @@ class MorphEngine:
                 platform's signer (no-op off macOS)
             gate_failure_reporter: Optional gate-failure report summarizer;
                 defaults to the reporting layer's implementation
+            report_view_builder: Optional precomputed-report-views builder;
+                defaults to the reporting layer's implementation
         """
         from r2morph.pipeline.pipeline import Pipeline
         from r2morph.platform.binary_signer import DarwinBinarySigner
         from r2morph.reporting.gate_evaluator import GateFailureReporter
+        from r2morph.reporting.report_view_builder import ReportViewBuilder
 
         self.binary: Binary | None = None
         self.pipeline: PipelineProtocol = Pipeline()
         self._binary_signer: BinarySignerProtocol = binary_signer if binary_signer is not None else DarwinBinarySigner()
         self._gate_failure_reporter: GateFailureReporterProtocol = (
             gate_failure_reporter if gate_failure_reporter is not None else GateFailureReporter()
+        )
+        self._report_view_builder: ReportViewBuilderProtocol = (
+            report_view_builder if report_view_builder is not None else ReportViewBuilder()
         )
         self.config = config or {}
         self._stats: dict[str, Any] = {}
@@ -1539,7 +1546,7 @@ class MorphEngine:
             validation_adjustments,
             gate_failures if isinstance(gate_failures, dict) else {},
         )
-        report_views = build_report_views(
+        report_views = self._report_view_builder.build_report_views(
             pass_risk_buckets=enrichments["pass_risk_buckets"],
             pass_coverage_buckets=enrichments["pass_coverage_buckets"],
             pass_triage_rows=pass_triage_rows,

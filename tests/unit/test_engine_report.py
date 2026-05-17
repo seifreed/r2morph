@@ -15,6 +15,7 @@ from datetime import datetime
 
 from r2morph.core.engine import MorphEngine
 from tests._doubles.recording_gate_failure_reporter import RecordingGateFailureReporter
+from tests._doubles.recording_report_view_builder import RecordingReportViewBuilder
 
 # Frozen contract captured from the pre-refactor implementation.
 EXPECTED_TOP_LEVEL_KEYS = {
@@ -191,4 +192,14 @@ class TestBuildReportContract:
         assert report["gate_failures"] == {"sentinel": "summary"}
         assert report["gate_failure_priority"] == [{"sentinel": "priority"}]
         assert report["gate_failure_severity_priority"] == [{"sentinel": "severity"}]
+        assert set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS
+
+    def test_build_report_routes_views_through_injected_builder(self) -> None:
+        builder = RecordingReportViewBuilder()
+        engine = MorphEngine(report_view_builder=builder)
+
+        report = engine.build_report({})
+
+        assert builder.calls
+        assert report["report_views"] == {"sentinel": "report_views"}
         assert set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS

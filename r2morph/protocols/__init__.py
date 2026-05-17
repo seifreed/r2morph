@@ -221,6 +221,36 @@ class ReportEmitterProtocol(Protocol):
 
 
 @runtime_checkable
+class ReportViewBuilderProtocol(Protocol):
+    """Protocol for precomputing the persisted report views."""
+
+    def build_report_views(
+        self,
+        *,
+        pass_risk_buckets: dict[str, list[str]],
+        pass_coverage_buckets: dict[str, list[str]],
+        pass_triage_rows: list[dict[str, Any]],
+        normalized_pass_results: list[dict[str, Any]],
+        pass_symbolic_summary: dict[str, Any],
+        pass_evidence_map: dict[str, Any],
+        pass_region_evidence_map: dict[str, list[dict[str, Any]]],
+        pass_validation_context: dict[str, Any],
+        pass_capability_summary_map: dict[str, Any],
+        observable_mismatch_priority: list[dict[str, Any]],
+        observable_mismatch_map: dict[str, dict[str, Any]],
+        symbolic_severity_by_pass: list[dict[str, Any]],
+        gate_failure_priority: list[dict[str, Any]],
+        gate_failure_summary: dict[str, Any] | None,
+        gate_failure_severity_priority: list[dict[str, Any]],
+        discarded_mutation_priority: list[dict[str, Any]],
+        discarded_mutation_summary: dict[str, Any],
+        validation_adjustment_rows: list[dict[str, Any]],
+    ) -> Any:
+        """Build and return the precomputed report views."""
+        ...
+
+
+@runtime_checkable
 class MutationPassProtocol(Protocol):
     """Protocol for mutation passes.
 
@@ -396,6 +426,7 @@ __all__ = [
     "AssemblyServiceProtocol",
     "MemoryManagerProtocol",
     "ReportEmitterProtocol",
+    "ReportViewBuilderProtocol",
     "BinarySignerProtocol",
     "MutationPassProtocol",
     "PipelineProtocol",
