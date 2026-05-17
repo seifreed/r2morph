@@ -15,7 +15,6 @@ from typing import Any, TYPE_CHECKING
 
 if TYPE_CHECKING:
     import angr
-    import archinfo
     from angr import Project, SimState
     from angr.analyses import CFGFast
 
@@ -23,7 +22,6 @@ if TYPE_CHECKING:
 else:
     try:
         import angr
-        import archinfo  # noqa: F401 - required runtime dependency for angr
         from angr import Project, SimState
         from angr.analyses import CFGFast
 
