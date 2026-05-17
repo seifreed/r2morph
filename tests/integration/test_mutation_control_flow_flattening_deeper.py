@@ -4,6 +4,7 @@ import shutil
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 
 
@@ -36,7 +37,7 @@ def test_control_flow_flattening_obfuscate_jump_and_dead_code(tmp_path: Path):
 
         jump_insn = _find_jump_instruction(bin_obj)
         if jump_insn:
-            obfuscated = pass_obj._obfuscate_jump(bin_obj, jump_insn, {}, arch, bits)
+            obfuscated = JumpObfuscator().obfuscate_jump(bin_obj, jump_insn, {}, arch, bits)
             assert isinstance(obfuscated, bool)
 
         # Create a NOP sled and attempt dead-code insert

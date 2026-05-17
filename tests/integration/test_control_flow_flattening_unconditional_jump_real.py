@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 
 
 def test_control_flow_flattening_obfuscate_unconditional_jump(tmp_path: Path) -> None:
@@ -27,8 +27,7 @@ def test_control_flow_flattening_obfuscate_unconditional_jump(tmp_path: Path) ->
         # Reserve space for jump obfuscation
         binary.write_bytes(vaddr, b"\x90" * 8)
 
-        pass_obj = ControlFlowFlatteningPass()
-        ok = pass_obj._obfuscate_jump(
+        ok = JumpObfuscator().obfuscate_jump(
             binary,
             {"offset": vaddr, "size": 5, "disasm": f"jmp 0x{vaddr + 2:x}"},
             {},

@@ -13,11 +13,11 @@ and exercises the real code path.
 
 from __future__ import annotations
 
-from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 
 
 def _analyze(jump_insn: dict) -> dict | None:
-    return ControlFlowFlatteningPass()._analyze_jump_target(None, jump_insn, 0x1000, "x86", 64)
+    return JumpObfuscator().analyze_jump_target(None, jump_insn, 0x1000, "x86", 64)
 
 
 def test_valid_jmp_with_hex_target_returns_target_and_size() -> None:

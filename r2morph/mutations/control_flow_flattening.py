@@ -617,12 +617,6 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return False
 
-    def _obfuscate_jump(self, binary: Any, jump_insn: dict, block: dict, arch: str, bits: int) -> bool:
-        return self._jump_obfuscator.obfuscate_jump(binary, jump_insn, block, arch, bits)
-
-    def _analyze_jump_target(self, binary: Any, jump_insn: dict, jump_addr: int, arch: str, bits: int) -> dict | None:
-        return self._jump_obfuscator.analyze_jump_target(binary, jump_insn, jump_addr, arch, bits)
-
     def _insert_dead_code_with_predicate(self, binary: Any, addr: int, size: int, arch: str, bits: int) -> bool:
         """
         Insert dead code containing an opaque predicate into a NOP sled.

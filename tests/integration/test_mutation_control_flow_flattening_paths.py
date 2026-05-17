@@ -4,6 +4,7 @@ import shutil
 import pytest
 
 from r2morph.core.binary import Binary
+from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 
 
@@ -32,17 +33,15 @@ def test_control_flow_flattening_obfuscate_jump_guard(tmp_path: Path):
 
     with Binary(temp_binary, writable=True) as bin_obj:
         bin_obj.analyze()
-        pass_obj = ControlFlowFlatteningPass()
-
         # Guard paths: too small jump or missing disasm should be False
         small_jump = {"offset": 0x1000, "size": 2, "disasm": "jmp 0x1002"}
-        assert pass_obj._obfuscate_jump(bin_obj, small_jump, {}, "x86", 64) is False
+        assert JumpObfuscator().obfuscate_jump(bin_obj, small_jump, {}, "x86", 64) is False
 
         no_disasm = {"offset": 0x1000, "size": 6, "disasm": ""}
-        assert pass_obj._obfuscate_jump(bin_obj, no_disasm, {}, "x86", 64) is False
+        assert JumpObfuscator().obfuscate_jump(bin_obj, no_disasm, {}, "x86", 64) is False
 
         bad_target = {"offset": 0x1000, "size": 6, "disasm": "jmp sym.func"}
-        assert pass_obj._obfuscate_jump(bin_obj, bad_target, {}, "x86", 64) is False
+        assert JumpObfuscator().obfuscate_jump(bin_obj, bad_target, {}, "x86", 64) is False
 
 
 def test_control_flow_flattening_dead_code_insert_guard(tmp_path: Path):
