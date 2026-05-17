@@ -21,6 +21,7 @@ from r2morph.core.constants import (
     MEDIUM_FUNCTION_COUNT_THRESHOLD,
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
+from r2morph.core.constants import SEVERITY_ORDER as SEVERITY_ORDER
 from r2morph.protocols import (
     BinarySignerProtocol,
     GateFailureReporterProtocol,
