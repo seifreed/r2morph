@@ -10,15 +10,17 @@ import logging
 import re
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-try:
+if TYPE_CHECKING:
     import z3
+else:
+    try:
+        import z3
+    except ImportError:
+        z3 = None
 
-    Z3_AVAILABLE = True
-except ImportError:
-    Z3_AVAILABLE = False
-    z3 = None  # type: ignore[assignment]
+Z3_AVAILABLE = z3 is not None
 
 logger = logging.getLogger(__name__)
 
