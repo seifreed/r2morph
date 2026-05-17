@@ -72,11 +72,11 @@ from __future__ import annotations
 
 import logging
 import random
-import re
 from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.utils.dead_code import (
     generate_arm_dead_code_for_size,
@@ -207,6 +207,7 @@ class ControlFlowFlatteningPass(MutationPass):
         """
         super().__init__(name="ControlFlowFlattening", config=config)
         self._predicate_generator = OpaquePredicateGenerator()
+        self._jump_obfuscator = JumpObfuscator()
         self.max_functions = self.config.get("max_functions_to_flatten", 5)
         self.min_blocks = self.config.get("min_blocks_required", 3)
         self.probability = self.config.get("probability", 0.5)
@@ -442,7 +443,7 @@ class ControlFlowFlatteningPass(MutationPass):
             # Strategy 2: Insert jump obfuscation for unconditional jumps
             if mnemonic == "jmp" and i < len(blocks) - 1:
                 # Try to obfuscate the jump target
-                if self._obfuscate_jump(binary, last_insn, block, arch_family, bits):
+                if self._jump_obfuscator.obfuscate_jump(binary, last_insn, block, arch_family, bits):
                     mutations["jump_obfuscations"] += 1
                     mutations["total"] += 1
 
@@ -617,125 +618,10 @@ class ControlFlowFlatteningPass(MutationPass):
         return False
 
     def _obfuscate_jump(self, binary: Any, jump_insn: dict, block: dict, arch: str, bits: int) -> bool:
-        """
-        Obfuscate an unconditional jump instruction.
-
-        Techniques:
-        1. Replace direct jump with computed jump (harder to analyze)
-        2. Add unnecessary intermediate jumps
-        3. Use indirect addressing where possible
-
-        Note: This is limited by available space - we can only transform
-        the jump in-place without expanding the function.
-
-        Args:
-            binary: Any instance
-            jump_insn: The jump instruction dictionary
-            block: The containing basic block
-            arch: Architecture family
-            bits: Bit width
-
-        Returns:
-            True if successfully obfuscated
-        """
-        jump_addr = jump_insn.get("offset", 0)
-        jump_size = jump_insn.get("size", 0)
-
-        # For now, we can only do in-place transformations
-        # Skip if jump is too small to modify meaningfully
-        if jump_size < 5:
-            return False
-
-        disasm = jump_insn.get("disasm", "")
-        if not disasm:
-            return False
-
-        # Try to parse the target address
-        try:
-            # Format is usually "jmp 0x12345678" or "jmp target_name"
-            parts = disasm.split()
-            if len(parts) >= 2:
-                target_str = parts[1]
-                if target_str.startswith("0x"):
-                    target_addr = int(target_str, 16)
-                else:
-                    # Named target - skip for now
-                    return False
-            else:
-                return False
-        except (ValueError, IndexError):
-            return False
-
-        if arch == "x86":
-            jump_info = self._analyze_jump_target(binary, jump_insn, jump_addr, arch, bits)
-            if jump_info is None:
-                return False
-
-            target_addr = jump_info["target"]
-            current_jump_size = jump_info["size"]
-
-            if current_jump_size < 5:
-                logger.debug(f"Jump at 0x{jump_addr:x} too small for obfuscation")
-                return False
-
-            rel_offset = target_addr - (jump_addr + 2)
-            if -128 <= rel_offset <= 127:
-                new_insn = f"jmp 0x{target_addr:x}"
-                assembled = binary.assemble(new_insn, jump_addr)
-
-                if assembled and len(assembled) <= current_jump_size:
-                    padded = assembled + generate_nop_sequence(arch, bits, current_jump_size - len(assembled))
-                    return bool(binary.write_bytes(jump_addr, padded))
-
-            long_rel_offset = target_addr - (jump_addr + 5)
-            if -2147483648 <= long_rel_offset <= 2147483647:
-                new_insn = f"jmp 0x{target_addr:x}"
-                assembled = binary.assemble(new_insn, jump_addr)
-
-                if assembled and len(assembled) <= current_jump_size:
-                    padded = assembled + generate_nop_sequence(arch, bits, current_jump_size - len(assembled))
-                    return bool(binary.write_bytes(jump_addr, padded))
-
-            logger.debug(f"Could not obfuscate jump at 0x{jump_addr:x} - assembly failed or size mismatch")
-            return False
-
-        logger.debug(f"Jump obfuscation not supported for architecture: {arch}")
-        return False
+        return self._jump_obfuscator.obfuscate_jump(binary, jump_insn, block, arch, bits)
 
     def _analyze_jump_target(self, binary: Any, jump_insn: dict, jump_addr: int, arch: str, bits: int) -> dict | None:
-        """
-        Analyze jump instruction to extract target and size.
-
-        Args:
-            binary: Any instance
-            jump_insn: Jump instruction dictionary
-            jump_addr: Address of jump instruction
-            arch: Architecture family
-            bits: Bit width
-
-        Returns:
-            Dict with 'target' and 'size', or None if analysis fails
-        """
-        try:
-            disasm = jump_insn.get("disasm", "")
-            if not disasm:
-                return None
-
-            if "jmp" not in disasm.lower()[:3]:
-                return None
-
-            jump_size = jump_insn.get("size", 0)
-            if jump_size == 0:
-                return None
-
-            addr_match = re.search(r"0x([0-9a-fA-F]+)", disasm)
-            if addr_match:
-                return {"target": int(addr_match.group(1), 16), "size": jump_size}
-
-            return None
-        except (ValueError, KeyError, TypeError) as e:
-            logger.debug(f"Failed to analyze jump target: {e}")
-            return None
+        return self._jump_obfuscator.analyze_jump_target(binary, jump_insn, jump_addr, arch, bits)
 
     def _insert_dead_code_with_predicate(self, binary: Any, addr: int, size: int, arch: str, bits: int) -> bool:
         """
