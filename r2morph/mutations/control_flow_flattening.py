@@ -403,35 +403,10 @@ class ControlFlowFlatteningPass(MutationPass):
                     mutations["total"] += 1
 
         if mutations["total"] > 0:
-            self._record_mutation(
-                function_address=func_addr,
-                start_address=blocks[0].get("addr", 0) if blocks else func_addr,
-                end_address=blocks[-1].get("addr", 0) + blocks[-1].get("size", 0) if blocks else func_addr,
-                original_bytes=b"",
-                mutated_bytes=b"",
-                original_disasm="function before CFF",
-                mutated_disasm=f"CFF: {mutations['opaque_predicates']} predicates, {mutations['jump_obfuscations']} jumps",
-                mutation_kind="control_flow_flattening",
-                metadata={
-                    "opaque_predicates": mutations["opaque_predicates"],
-                    "jump_obfuscations": mutations["jump_obfuscations"],
-                    "structural_baseline": baseline,
-                },
-            )
-
-            if self._validation_manager is not None and mutation_checkpoint is not None:
-                if self._records:
-                    outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
-                    if not outcome.passed:
-                        if self._session is not None:
-                            self._session.rollback_to(mutation_checkpoint)
-                        binary.reload()
-                        if self._records:
-                            self._records.pop()
-                        if self._rollback_policy == "fail-fast":
-                            raise RuntimeError("Mutation-level validation failed")
-                        logger.debug(f"CFF validation failed for {func_name}, rolled back")
-                        return None
+            if not self._apply_validation_and_rollback(
+                binary, func_addr, func_name, blocks, mutations, baseline, mutation_checkpoint
+            ):
+                return None
 
             logger.info(
                 f"Flattened {func_name}: {mutations['opaque_predicates']} opaque predicates, "
@@ -441,6 +416,53 @@ class ControlFlowFlatteningPass(MutationPass):
 
         logger.debug(f"No mutations applied to {func_name}")
         return None
+
+    def _apply_validation_and_rollback(
+        self,
+        binary: Any,
+        func_addr: int,
+        func_name: str,
+        blocks: list[Any],
+        mutations: dict[str, int],
+        baseline: dict[str, Any],
+        mutation_checkpoint: str | None,
+    ) -> bool:
+        """Record the CFF mutation and validate it, rolling back on failure.
+
+        Returns True if the mutation is kept, False if it was rolled back
+        (the caller must then abandon the function).
+        """
+        self._record_mutation(
+            function_address=func_addr,
+            start_address=blocks[0].get("addr", 0) if blocks else func_addr,
+            end_address=blocks[-1].get("addr", 0) + blocks[-1].get("size", 0) if blocks else func_addr,
+            original_bytes=b"",
+            mutated_bytes=b"",
+            original_disasm="function before CFF",
+            mutated_disasm=f"CFF: {mutations['opaque_predicates']} predicates, {mutations['jump_obfuscations']} jumps",
+            mutation_kind="control_flow_flattening",
+            metadata={
+                "opaque_predicates": mutations["opaque_predicates"],
+                "jump_obfuscations": mutations["jump_obfuscations"],
+                "structural_baseline": baseline,
+            },
+        )
+
+        if self._validation_manager is not None and mutation_checkpoint is not None:
+            if self._records:
+                outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
+                if not outcome.passed:
+                    if self._session is not None:
+                        self._session.rollback_to(mutation_checkpoint)
+                    binary.reload()
+                    if self._records:
+                        self._records.pop()
+                    if self._rollback_policy == "fail-fast":
+                        raise RuntimeError("Mutation-level validation failed")
+                    logger.debug(f"CFF validation failed for {func_name}, rolled back")
+                    return False
+
+        return True
 
     def _collect_blocks(self, binary: Any, func_addr: int, func_name: str) -> list[Any] | None:
         """Fetch, size-guard, and address-sort the function's basic blocks."""
