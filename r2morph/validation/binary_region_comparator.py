@@ -309,8 +309,6 @@ class BinaryRegionComparator:
             start,
         )
 
-        step_strategy = "region-exit"
-
         original_final, original_steps, original_exit_error, original_trace_addresses = _step_to_exit(
             original_state,
             original_bridge,
@@ -326,14 +324,52 @@ class BinaryRegionComparator:
             region_exit_budget,
         )
 
-        region_report = {
+        region_report = self._build_region_report(
+            mutation,
+            resolved_original,
+            resolved_mutated,
+            step_budget,
+            region_exit_budget,
+            original_steps,
+            mutated_steps,
+            original_trace_addresses,
+            mutated_trace_addresses,
+            compared_registers,
+        )
+        return self._finalize_region_outcome(
+            region_report,
+            mismatches,
+            mutation,
+            original_exit_error,
+            mutated_exit_error,
+            original_final,
+            mutated_final,
+            compared_registers,
+            stack_reg,
+        )
+
+    def _build_region_report(
+        self,
+        mutation: dict[str, Any],
+        resolved_original: Any,
+        resolved_mutated: Any,
+        step_budget: int,
+        region_exit_budget: int,
+        original_steps: int,
+        mutated_steps: int,
+        original_trace_addresses: list[Any],
+        mutated_trace_addresses: list[Any],
+        compared_registers: list[str],
+    ) -> dict[str, Any]:
+        """Build the region-report skeleton (pre-finalization)."""
+        return {
             "start_address": mutation["start_address"],
             "end_address": mutation["end_address"],
             "original_loaded_address": resolved_original,
             "mutated_loaded_address": resolved_mutated,
             "step_budget": step_budget,
             "region_exit_budget": region_exit_budget,
-            "step_strategy": step_strategy,
+            "step_strategy": "region-exit",
             "original_region_exit_steps": original_steps,
             "mutated_region_exit_steps": mutated_steps,
             "original_trace_addresses": original_trace_addresses,
@@ -341,9 +377,22 @@ class BinaryRegionComparator:
             "registers_checked": list(compared_registers) + ["eflags", "stack_delta"],
             "mismatches": [],
         }
+
+    def _finalize_region_outcome(
+        self,
+        region_report: dict[str, Any],
+        mismatches: list[dict[str, Any]],
+        mutation: dict[str, Any],
+        original_exit_error: str | None,
+        mutated_exit_error: str | None,
+        original_final: Any,
+        mutated_final: Any,
+        compared_registers: list[str],
+        stack_reg: str,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Apply the exit-error or observable-comparison outcome to the region report."""
         if original_exit_error or mutated_exit_error:
-            step_strategy = "region-exit-fallback-budget"
-            region_report["step_strategy"] = step_strategy
+            region_report["step_strategy"] = "region-exit-fallback-budget"
             exit_error = original_exit_error or mutated_exit_error
             if original_exit_error and mutated_exit_error and original_exit_error != mutated_exit_error:
                 exit_error = f"{original_exit_error}|{mutated_exit_error}"
