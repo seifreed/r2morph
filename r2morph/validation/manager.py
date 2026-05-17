@@ -101,45 +101,7 @@ class ValidationManager:
         pass_result: dict[str, Any],
     ) -> tuple[bool, str, dict[str, Any]]:
         """Check whether the current pass is inside the experimental symbolic scope."""
-        arch_info = binary.get_arch_info()
-        mutations = pass_result.get("mutations", [])
-        pass_name = pass_result.get("pass_name", "")
-
-        metadata = {
-            "symbolic_backend": "angr",
-            "symbolic_pass_name": pass_name,
-            "covered_functions": sorted(
-                {
-                    _parse_address(mutation["function_address"])
-                    for mutation in mutations
-                    if mutation.get("function_address") not in (None, 0)
-                }
-            ),
-            "covered_address_ranges": [
-                [_parse_address(mutation["start_address"]), _parse_address(mutation["end_address"])]
-                for mutation in mutations
-            ],
-        }
-
-        binary_format = str(arch_info.get("format", ""))
-        if not binary_format.startswith("ELF") or arch_info.get("bits") != 64:
-            return False, "unsupported-target", metadata
-        if arch_info.get("arch") not in {"x86", "x86_64"}:
-            return False, "unsupported-target", metadata
-        if pass_name not in {"NopInsertion", "InstructionSubstitution", "RegisterSubstitution"}:
-            return False, "unsupported-pass", metadata
-        if not mutations:
-            return False, "no-mutations", metadata
-        if len(mutations) > 8:
-            return False, "unsupported-scope", metadata
-        if any(
-            (_parse_address(mutation["end_address"]) - _parse_address(mutation["start_address"]) + 1) > 16
-            for mutation in mutations
-        ):
-            return False, "unsupported-scope", metadata
-        if any(mutation.get("function_address") in (None, 0, "0x0") for mutation in mutations):
-            return False, "unsupported-scope", metadata
-        return True, "supported", metadata
+        return self._symbolic_validator._supports_symbolic_scope(binary, pass_result)
 
     def _run_symbolic_precheck(self, binary: Binary, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Run a bounded symbolic precheck for the experimental mode."""

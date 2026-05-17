@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.binary import Binary
 from r2morph.validation.manager import _parse_address
 
 
@@ -77,3 +78,49 @@ class SymbolicValidator:
         if pass_name == "NopInsertion":
             step_budget = max(step_budget, 2)
         return max(1, min(step_budget, 4))
+
+    def _supports_symbolic_scope(
+        self,
+        binary: Binary,
+        pass_result: dict[str, Any],
+    ) -> tuple[bool, str, dict[str, Any]]:
+        """Check whether the current pass is inside the experimental symbolic scope."""
+        arch_info = binary.get_arch_info()
+        mutations = pass_result.get("mutations", [])
+        pass_name = pass_result.get("pass_name", "")
+
+        metadata = {
+            "symbolic_backend": "angr",
+            "symbolic_pass_name": pass_name,
+            "covered_functions": sorted(
+                {
+                    _parse_address(mutation["function_address"])
+                    for mutation in mutations
+                    if mutation.get("function_address") not in (None, 0)
+                }
+            ),
+            "covered_address_ranges": [
+                [_parse_address(mutation["start_address"]), _parse_address(mutation["end_address"])]
+                for mutation in mutations
+            ],
+        }
+
+        binary_format = str(arch_info.get("format", ""))
+        if not binary_format.startswith("ELF") or arch_info.get("bits") != 64:
+            return False, "unsupported-target", metadata
+        if arch_info.get("arch") not in {"x86", "x86_64"}:
+            return False, "unsupported-target", metadata
+        if pass_name not in {"NopInsertion", "InstructionSubstitution", "RegisterSubstitution"}:
+            return False, "unsupported-pass", metadata
+        if not mutations:
+            return False, "no-mutations", metadata
+        if len(mutations) > 8:
+            return False, "unsupported-scope", metadata
+        if any(
+            (_parse_address(mutation["end_address"]) - _parse_address(mutation["start_address"]) + 1) > 16
+            for mutation in mutations
+        ):
+            return False, "unsupported-scope", metadata
+        if any(mutation.get("function_address") in (None, 0, "0x0") for mutation in mutations):
+            return False, "unsupported-scope", metadata
+        return True, "supported", metadata
