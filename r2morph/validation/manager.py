@@ -11,7 +11,6 @@ from importlib import import_module
 from typing import Any
 
 from r2morph.analysis.abi_checker import ABIChecker
-from r2morph.analysis.invariants import InvariantDetector
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -73,9 +72,12 @@ class ValidationManager:
     """
 
     def __init__(self, mode: str = "structural", check_abi: bool = False) -> None:
+        from r2morph.validation.structural_validator import StructuralValidator
+
         self.mode = mode
         self.check_abi = check_abi
         self._abi_checker: ABIChecker | None = None
+        self._structural_validator = StructuralValidator()
 
     def _collect_memory_write_signatures(self, state: Any) -> list[str]:
         """Collect a compact, best-effort signature of memory writes from an angr state."""
@@ -117,77 +119,7 @@ class ValidationManager:
         validator_type: str,
     ) -> ValidationOutcome:
         """Validate a single mutation using structural checks."""
-        issues: list[ValidationIssue] = []
-        start = mutation["start_address"]
-        end = mutation["end_address"]
-        expected_bytes = bytes.fromhex(mutation["mutated_bytes"])
-        readback = binary.read_bytes(start, len(expected_bytes))
-
-        if readback != expected_bytes:
-            issues.append(
-                ValidationIssue(
-                    validator="patch_integrity",
-                    message="Mutated bytes do not match readback from binary",
-                    address_range=(start, end),
-                    evidence={
-                        "expected": mutation["mutated_bytes"],
-                        "actual": readback.hex(),
-                    },
-                )
-            )
-
-        raw_function_address = mutation.get("function_address")
-        baseline = mutation.get("metadata", {}).get("structural_baseline", {})
-        if raw_function_address is not None and raw_function_address != 0:
-            function_address: int = int(raw_function_address)
-            detector = InvariantDetector(binary)
-            expected = baseline.get("invariants", [])
-            try:
-                current = detector.detect_all_invariants(function_address)
-            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                issues.append(
-                    ValidationIssue(
-                        validator="structural",
-                        message="Failed to analyze mutated function",
-                        address_range=(start, end),
-                        evidence={"error": str(e), "function_address": function_address},
-                    )
-                )
-                current = []
-
-            if expected:
-                current_keys = {(inv.invariant_type.value, inv.location) for inv in current}
-                missing = [inv for inv in expected if (inv["type"], inv["location"]) not in current_keys]
-                if missing:
-                    issues.append(
-                        ValidationIssue(
-                            validator="invariants",
-                            message="Mutation invalidated previously observed invariants",
-                            address_range=(start, end),
-                            evidence={"missing_invariants": missing},
-                        )
-                    )
-
-            try:
-                binary.get_function_disasm(function_address)
-                binary.get_basic_blocks(function_address)
-            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                issues.append(
-                    ValidationIssue(
-                        validator="control_flow",
-                        message="Failed to recover function control-flow after mutation",
-                        address_range=(start, end),
-                        evidence={"error": str(e), "function_address": function_address},
-                    )
-                )
-
-        return ValidationOutcome(
-            validator_type=validator_type,
-            passed=not issues,
-            scope="mutation",
-            issues=issues,
-            metadata={"pass_name": mutation.get("pass_name")},
-        )
+        return self._structural_validator.validate_mutation(binary, mutation, validator_type=validator_type)
 
     def _supports_symbolic_scope(
         self,
@@ -1192,30 +1124,7 @@ class ValidationManager:
 
     def capture_structural_baseline(self, binary: Binary, function_address: int | None) -> dict[str, Any]:
         """Capture a lightweight baseline before mutation."""
-        if self.mode == "off" or function_address in (None, 0):
-            return {}
-
-        detector = InvariantDetector(binary)
-        try:
-            assert function_address is not None
-            invariants = detector.detect_all_invariants(function_address)
-        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-            logger.debug(f"Failed to capture invariants for 0x{function_address:x}: {e}")
-            invariants = []
-
-        return {
-            "function_address": function_address,
-            "invariant_count": len(invariants),
-            "invariants": [
-                {
-                    "type": inv.invariant_type.value,
-                    "location": inv.location,
-                    "description": inv.description,
-                    "details": dict(inv.details),
-                }
-                for inv in invariants
-            ],
-        }
+        return self._structural_validator.capture_baseline(binary, function_address, mode=self.mode)
 
     def validate_mutation(self, binary: Binary, mutation: dict[str, Any]) -> ValidationOutcome:
         """Validate a single mutation record."""
