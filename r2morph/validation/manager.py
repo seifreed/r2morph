@@ -4,7 +4,6 @@ Validation management for mutation passes.
 
 from __future__ import annotations
 
-from pathlib import Path
 from dataclasses import asdict, dataclass, field
 from importlib import import_module
 from typing import Any
@@ -92,14 +91,6 @@ class ValidationManager:
         """Validate a single mutation using structural checks."""
         return self._structural_validator.validate_mutation(binary, mutation, validator_type=validator_type)
 
-    def _supports_symbolic_scope(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-    ) -> tuple[bool, str, dict[str, Any]]:
-        """Check whether the current pass is inside the experimental symbolic scope."""
-        return self._symbolic_validator._supports_symbolic_scope(binary, pass_result)
-
     def _run_symbolic_precheck(self, binary: Binary, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Run a bounded symbolic precheck for the experimental mode."""
         return self._symbolic_validator._run_symbolic_precheck(binary, pass_result)
@@ -112,10 +103,6 @@ class ValidationManager:
         """Estimate a small but useful symbolic step budget for a mutated region."""
         return self._symbolic_validator._estimate_symbolic_region_steps(pass_name, mutation)
 
-    def _build_instruction_substitution_symbolic_hint(self, pass_result: dict[str, Any]) -> dict[str, Any]:
-        """Add a narrow semantic hint for instruction substitutions from known equivalence groups."""
-        return self._symbolic_validator._build_instruction_substitution_symbolic_hint(pass_result)
-
     def _compare_instruction_substitution_observables(
         self,
         binary: Binary,
@@ -125,78 +112,6 @@ class ValidationManager:
         """Compare a small set of observable register/flag effects for InstructionSubstitution snippets."""
         return self._symbolic_validator._compare_instruction_substitution_observables(
             binary, pass_result, bridge_module
-        )
-
-    def _compare_instruction_substitution_transition(
-        self,
-        binary: Binary,
-        pass_result: dict[str, Any],
-        bridge_module: Any,
-    ) -> dict[str, Any]:
-        """Compare successor address and stack delta for supported substitution snippets."""
-        return self._symbolic_validator._compare_instruction_substitution_transition(binary, pass_result, bridge_module)
-
-    def _setup_symbolic_bridges(
-        self,
-        binary: Binary,
-        previous_binary_path: Path,
-        current_binary_path: Path,
-        bridge_module: Any,
-    ) -> dict[str, Any] | tuple[Any, Any, Any, Any, Any]:
-        """Create AngrBridge for original and mutated binaries.
-
-        Returns (original_bridge, mutated_bridge, angr_module, claripy, options)
-        on success, or a failure dict on error.
-        """
-        return self._symbolic_validator._setup_symbolic_bridges(
-            binary, previous_binary_path, current_binary_path, bridge_module
-        )
-
-    def _compare_single_region(
-        self,
-        mutation: dict[str, Any],
-        original_bridge: Any,
-        mutated_bridge: Any,
-        original_binary: Binary,
-        angr_module: Any,
-        claripy: Any,
-        options: Any,
-        pass_name: str,
-    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        """Compare symbolic effects for a single mutation region.
-
-        Returns (region_report, mismatches) for this region.
-        """
-        return self._symbolic_validator._compare_single_region(
-            mutation,
-            original_bridge,
-            mutated_bridge,
-            original_binary,
-            angr_module,
-            claripy,
-            options,
-            pass_name,
-        )
-
-    def _check_observables(
-        self,
-        region_report: dict[str, Any],
-        mismatches: list[dict[str, Any]],
-        mutation: dict[str, Any],
-        original_final: Any,
-        mutated_final: Any,
-        compared_registers: list[str],
-        stack_reg: str,
-    ) -> None:
-        """Compare observables between original and mutated final states."""
-        self._symbolic_validator._check_observables(
-            region_report,
-            mismatches,
-            mutation,
-            original_final,
-            mutated_final,
-            compared_registers,
-            stack_reg,
         )
 
     def _compare_real_binary_regions(
