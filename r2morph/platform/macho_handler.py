@@ -6,17 +6,19 @@ import logging
 import platform
 import struct
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 logger = logging.getLogger(__name__)
 
-try:
+if TYPE_CHECKING:
     import lief
+else:
+    try:
+        import lief
+    except ImportError:
+        lief = None
 
-    LIEF_AVAILABLE = True
-except Exception:  # pragma: no cover - optional dependency
-    lief = None  # type: ignore[assignment]
-    LIEF_AVAILABLE = False
+LIEF_AVAILABLE = lief is not None
 
 
 class MachOHandler:
