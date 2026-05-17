@@ -725,47 +725,15 @@ class ValidationManager:
         stack_reg: str,
     ) -> None:
         """Compare observables between original and mutated final states."""
-        start, end = mutation["start_address"], mutation["end_address"]
-
-        def _record(observable: str) -> None:
-            region_report["mismatches"].append(observable)
-            mismatches.append({"start_address": start, "end_address": end, "observable": observable})
-
-        # Control flow: exit address
-        if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
-            _record("successor_address")
-
-        # Registers
-        for reg_name in compared_registers:
-            if not hasattr(original_final.regs, reg_name) or not hasattr(mutated_final.regs, reg_name):
-                continue
-            left = getattr(original_final.regs, reg_name)
-            right = getattr(mutated_final.regs, reg_name)
-            if original_final.solver.satisfiable(extra_constraints=[left != right]):
-                _record(reg_name)
-
-        # Flags
-        if hasattr(original_final.regs, "eflags") and hasattr(mutated_final.regs, "eflags"):
-            if original_final.solver.satisfiable(
-                extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
-            ):
-                _record("eflags")
-
-        # Stack pointer
-        original_stack = getattr(original_final.regs, stack_reg)
-        mutated_stack = getattr(mutated_final.regs, stack_reg)
-        if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
-            _record("stack_delta")
-
-        # Memory writes
-        original_writes = self._collect_memory_write_signatures(original_final)
-        mutated_writes = self._collect_memory_write_signatures(mutated_final)
-        region_report["original_memory_writes"] = original_writes
-        region_report["mutated_memory_writes"] = mutated_writes
-        region_report["original_memory_write_count"] = len(original_writes)
-        region_report["mutated_memory_write_count"] = len(mutated_writes)
-        if original_writes != mutated_writes:
-            _record("memory_writes")
+        self._symbolic_validator._check_observables(
+            region_report,
+            mismatches,
+            mutation,
+            original_final,
+            mutated_final,
+            compared_registers,
+            stack_reg,
+        )
 
     def _compare_real_binary_regions(
         self,
