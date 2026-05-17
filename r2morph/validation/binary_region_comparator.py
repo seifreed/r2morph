@@ -223,33 +223,21 @@ class BinaryRegionComparator:
                 "symbolic_binary_reason": f"Failed to create mutated bridge: {bridge_error}",
             }
 
-    def _compare_single_region(
+    def _build_state_pair(
         self,
-        mutation: dict[str, Any],
         original_bridge: Any,
         mutated_bridge: Any,
         original_binary: Binary,
-        angr_module: Any,
         claripy: Any,
         options: Any,
-        pass_name: str,
-    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-        """Compare symbolic effects for a single mutation region.
+        resolved_original: Any,
+        resolved_mutated: Any,
+        start: int,
+    ) -> tuple[Any, Any, list[str], str]:
+        """Build seeded original/mutated blank states.
 
-        Returns (region_report, mismatches) for this region.
+        Returns (original_state, mutated_state, compared_registers, stack_reg).
         """
-        mismatches: list[dict[str, Any]] = []
-        start = mutation["start_address"]
-        end = mutation["end_address"]
-        step_budget = self._scope_gate._estimate_symbolic_region_steps(pass_name, mutation)
-        region_width = max(1, end - start + 1)
-        region_exit_budget = max(step_budget * 2, region_width + 1)
-        resolved_original = original_bridge.resolve_loaded_address(start)
-        resolved_mutated = mutated_bridge.resolve_loaded_address(start)
-        if resolved_original is None or resolved_mutated is None:
-            logger.warning(f"Failed to resolve loaded address for mutation at 0x{start:x}")
-            return {"skipped": True, "reason": "resolve_failed"}, []
-
         original_state = original_bridge.angr_project.factory.blank_state(
             addr=resolved_original,
             add_options={
@@ -281,6 +269,45 @@ class BinaryRegionComparator:
                 setattr(original_state.regs, reg_name, shared)
             if hasattr(mutated_state.regs, reg_name):
                 setattr(mutated_state.regs, reg_name, shared)
+        return original_state, mutated_state, compared_registers, stack_reg
+
+    def _compare_single_region(
+        self,
+        mutation: dict[str, Any],
+        original_bridge: Any,
+        mutated_bridge: Any,
+        original_binary: Binary,
+        angr_module: Any,
+        claripy: Any,
+        options: Any,
+        pass_name: str,
+    ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+        """Compare symbolic effects for a single mutation region.
+
+        Returns (region_report, mismatches) for this region.
+        """
+        mismatches: list[dict[str, Any]] = []
+        start = mutation["start_address"]
+        end = mutation["end_address"]
+        step_budget = self._scope_gate._estimate_symbolic_region_steps(pass_name, mutation)
+        region_width = max(1, end - start + 1)
+        region_exit_budget = max(step_budget * 2, region_width + 1)
+        resolved_original = original_bridge.resolve_loaded_address(start)
+        resolved_mutated = mutated_bridge.resolve_loaded_address(start)
+        if resolved_original is None or resolved_mutated is None:
+            logger.warning(f"Failed to resolve loaded address for mutation at 0x{start:x}")
+            return {"skipped": True, "reason": "resolve_failed"}, []
+
+        original_state, mutated_state, compared_registers, stack_reg = self._build_state_pair(
+            original_bridge,
+            mutated_bridge,
+            original_binary,
+            claripy,
+            options,
+            resolved_original,
+            resolved_mutated,
+            start,
+        )
 
         step_strategy = "region-exit"
 
