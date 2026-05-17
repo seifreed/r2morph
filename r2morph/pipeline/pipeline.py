@@ -198,6 +198,34 @@ class Pipeline:
                 symbolic["fallback_passes"].append(mutation_pass.name)
             symbolic["proven"] = symbolic["proven"] or bool(validation_result.metadata.get("symbolic_proven", False))
 
+    def _record_pass_failure(
+        self,
+        results: dict[str, Any],
+        mutation_pass: MutationPassProtocol,
+        error: Exception,
+        *,
+        session: Any | None,
+        checkpoint_name: str | None,
+        binary: Binary,
+    ) -> None:
+        """Roll back and record a failed pass in the run results."""
+        logger.error(f"Pass {mutation_pass.name} failed: {error}")
+        if session is not None and checkpoint_name is not None:
+            session.rollback_to(checkpoint_name)
+            binary.reload()
+        results["validation"]["all_passed"] = False
+        results["failed_passes"] += 1
+        results["validation"]["failed_passes"].append(mutation_pass.name)
+        results["pass_results"][mutation_pass.name] = {
+            "error": str(error),
+            "rolled_back": checkpoint_name is not None,
+            "rollback_reason": "pass_error",
+            "status": "failed",
+            "discarded_mutations": 0,
+            "discarded_mutations_detail": [],
+            "support": mutation_pass.get_support().to_dict(),
+        }
+
     @staticmethod
     def _new_run_results(rollback_policy: str) -> dict[str, Any]:
         """Build the initial run-results accumulator."""
@@ -365,22 +393,14 @@ class Pipeline:
             except (
                 Exception
             ) as e:  # noqa: BLE001 - approved exception EX-003 (CLAUDE.md): pipeline fault-isolation boundary
-                logger.error(f"Pass {mutation_pass.name} failed: {e}")
-                if session is not None and checkpoint_name is not None:
-                    session.rollback_to(checkpoint_name)
-                    binary.reload()
-                results["validation"]["all_passed"] = False
-                results["failed_passes"] += 1
-                results["validation"]["failed_passes"].append(mutation_pass.name)
-                results["pass_results"][mutation_pass.name] = {
-                    "error": str(e),
-                    "rolled_back": checkpoint_name is not None,
-                    "rollback_reason": "pass_error",
-                    "status": "failed",
-                    "discarded_mutations": 0,
-                    "discarded_mutations_detail": [],
-                    "support": mutation_pass.get_support().to_dict(),
-                }
+                self._record_pass_failure(
+                    results,
+                    mutation_pass,
+                    e,
+                    session=session,
+                    checkpoint_name=checkpoint_name,
+                    binary=binary,
+                )
                 if rollback_policy == "fail-fast":
                     mutation_pass.clear_runtime()
                     raise
