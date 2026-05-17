@@ -76,6 +76,7 @@ from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.utils.dead_code import (
@@ -208,6 +209,7 @@ class ControlFlowFlatteningPass(MutationPass):
         super().__init__(name="ControlFlowFlattening", config=config)
         self._predicate_generator = OpaquePredicateGenerator()
         self._jump_obfuscator = JumpObfuscator()
+        self._dispatcher_gen = DispatcherGenerator()
         self.max_functions = self.config.get("max_functions_to_flatten", 5)
         self.min_blocks = self.config.get("min_blocks_required", 3)
         self.probability = self.config.get("probability", 0.5)
@@ -669,115 +671,10 @@ class ControlFlowFlatteningPass(MutationPass):
 
     # Keep the dispatcher generation methods for reference/future use
     def _generate_dispatcher(self, binary: Any, blocks: list[Any]) -> list[str]:
-        """
-        Generate dispatcher code (for reference/analysis purposes).
-
-        Note: This generates dispatcher code but doesn't apply it to the binary.
-        Full dispatcher-based flattening would require binary expansion which
-        is not currently implemented.
-
-        Args:
-            binary: Any instance
-            blocks: List of basic blocks
-
-        Returns:
-            List of assembly instructions
-        """
-        arch_family, bits = binary.get_arch_family()
-
-        if arch_family == "x86":
-            return self._generate_x86_dispatcher(blocks, bits)
-        elif arch_family == "arm":
-            return self._generate_arm_dispatcher(blocks, bits)
-
-        return []
+        return self._dispatcher_gen.generate(binary, blocks)
 
     def _generate_x86_dispatcher(self, blocks: list[Any], bits: int) -> list[str]:
-        """
-        Generate x86 dispatcher code template.
-
-        Args:
-            blocks: Basic blocks
-            bits: Bit width
-
-        Returns:
-            Assembly instructions
-        """
-        reg = "rax" if bits == 64 else "eax"
-
-        code = [
-            "; Flattened control flow dispatcher",
-            f"mov {reg}, 0  ; Initial state",
-            ".dispatcher_loop:",
-        ]
-
-        for i, block in enumerate(blocks):
-            code.extend(
-                [
-                    f"cmp {reg}, {i}",
-                    f"je .block_{i}",
-                ]
-            )
-
-        code.append("jmp .dispatcher_end")
-
-        for i, block in enumerate(blocks):
-            code.append(f".block_{i}:")
-            code.append(f"; Original block at 0x{block.address:x}")
-            code.append("; ... block code here ...")
-
-            if i < len(blocks) - 1:
-                code.append(f"mov {reg}, {i + 1}")
-            else:
-                code.append(f"mov {reg}, -1")
-
-            code.append("jmp .dispatcher_loop")
-
-        code.append(".dispatcher_end:")
-
-        return code
+        return self._dispatcher_gen.generate_x86(blocks, bits)
 
     def _generate_arm_dispatcher(self, blocks: list[Any], bits: int) -> list[str]:
-        """
-        Generate ARM dispatcher code template.
-
-        Args:
-            blocks: Basic blocks
-            bits: Bit width
-
-        Returns:
-            Assembly instructions
-        """
-        reg = "x0" if bits == 64 else "r0"
-
-        code = [
-            "; Flattened control flow dispatcher",
-            f"mov {reg}, #0  ; Initial state",
-            ".dispatcher_loop:",
-        ]
-
-        for i, block in enumerate(blocks):
-            code.extend(
-                [
-                    f"cmp {reg}, #{i}",
-                    f"b.eq .block_{i}",
-                ]
-            )
-
-        code.append("b .dispatcher_end")
-
-        for i, block in enumerate(blocks):
-            code.append(f".block_{i}:")
-            code.append(f"; Original block at 0x{block.address:x}")
-            code.append("; ... block code here ...")
-
-            if i < len(blocks) - 1:
-                code.append(f"mov {reg}, #{i + 1}")
-            else:
-                code.append(f"mov {reg}, #-1")
-
-            code.append("b .dispatcher_loop")
-
-        code.append(".dispatcher_end:")
-
-        return code
+        return self._dispatcher_gen.generate_arm(blocks, bits)
