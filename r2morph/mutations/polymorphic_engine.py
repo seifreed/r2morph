@@ -558,4 +558,9 @@ class NoOp(MutationPass):
         super().__init__(name="NoOp", config=config)
 
     def apply(self, binary: Any) -> dict[str, Any]:
-        return {"mutations": 0, "reason": "NoOp pass"}
+        # `mutations` must be the list of mutation records (Pipeline does
+        # len()/iterates it; base.run only setdefaults it when absent).
+        # Returning the int 0 here left a non-list in place and crashed
+        # the pipeline with "object of type 'int' has no len()". A no-op
+        # contributes zero mutations -> empty list.
+        return {"mutations": [], "reason": "NoOp pass"}

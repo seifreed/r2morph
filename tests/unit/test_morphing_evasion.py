@@ -510,7 +510,12 @@ class TestPolymorphicEngine:
     def test_no_op_mutation(self):
         p = NoOp()
         result = p.apply(None)
-        assert result["mutations"] == 0
+        # `mutations` is the list of mutation records (Pipeline len()s and
+        # iterates it; base.run only setdefaults it when absent). The old
+        # `== 0` assertion pinned a contract violation that crashed the
+        # pipeline with "object of type 'int' has no len()"; a no-op
+        # contributes zero mutations -> empty list.
+        assert result["mutations"] == []
 
 
 class TestSelfModifyingCode:
