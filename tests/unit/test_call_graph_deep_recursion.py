@@ -75,3 +75,54 @@ def test_topological_sort_diamond_is_valid() -> None:
     position = {addr: idx for idx, addr in enumerate(order)}
     for caller, callee in ((a, b), (a, c), (b, d), (c, d)):
         assert position[callee] < position[caller]
+
+
+def test_get_depth_deep_chain_no_recursion_error() -> None:
+    cg, addresses = _build_linear_chain(CHAIN_LENGTH)
+
+    # Depth of the root of an N-node linear chain is N - 1.
+    assert cg.get_depth(addresses[0]) == CHAIN_LENGTH - 1
+    assert cg.get_depth(addresses[-1]) == 0
+
+
+def test_get_depth_small_chain_values() -> None:
+    """Behavior-preservation: same contract as the pre-existing
+    test_get_depth (callee-distance values), mock-free."""
+    cg, addresses = _build_linear_chain(4)
+
+    assert cg.get_depth(addresses[0]) == 3
+    assert cg.get_depth(addresses[1]) == 2
+    assert cg.get_depth(addresses[2]) == 1
+    assert cg.get_depth(addresses[3]) == 0
+
+
+def test_get_depth_diamond_preserves_shared_visited_semantics() -> None:
+    """Diamond a->b, a->c, b->d, c->d. The recursive implementation shares
+    one `visited` set across the whole descent (d, reached first via b, is
+    pruned when reached again via c), yielding depth 2. The iterative
+    rewrite must reproduce this exact value, not a pure longest path."""
+    a, b, c, d = 0x1000, 0x1010, 0x1020, 0x1030
+    cg = CallGraph()
+    for addr, name in ((a, "a"), (b, "b"), (c, "c"), (d, "d")):
+        cg.add_node(CallNode(address=addr, name=name))
+    cg.add_edge(CallEdge(a, b, CallType.DIRECT))
+    cg.add_edge(CallEdge(a, c, CallType.DIRECT))
+    cg.add_edge(CallEdge(b, d, CallType.DIRECT))
+    cg.add_edge(CallEdge(c, d, CallType.DIRECT))
+
+    assert cg.get_depth(a) == 2
+    assert cg.get_depth(b) == 1
+    assert cg.get_depth(d) == 0
+
+
+def test_get_depth_handles_cycles() -> None:
+    """Self-referential cycle a->b, b->a. The shared `visited` set breaks
+    the cycle; get_depth(a) is 2 (a -> b -> a, second a pruned)."""
+    a, b = 0x2000, 0x2010
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+    cg.add_node(CallNode(address=b, name="b"))
+    cg.add_edge(CallEdge(a, b, CallType.DIRECT))
+    cg.add_edge(CallEdge(b, a, CallType.DIRECT))
+
+    assert cg.get_depth(a) == 2

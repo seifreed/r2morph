@@ -134,6 +134,15 @@ class CallEdge:
         }
 
 
+@dataclass
+class _DepthFrame:
+    """One in-progress get_depth() recursion, simulated on an explicit stack."""
+
+    callees: list[int]
+    idx: int = 0
+    best: int = 0
+
+
 class CallGraph:
     """
     Directed call graph for inter-procedural analysis.
@@ -455,21 +464,49 @@ class CallGraph:
         """
         visited: set[int] = set()
 
-        def depth(node: int) -> int:
+        def descend(node: int) -> int | None:
+            # Mirrors the recursive base cases: returns the immediate
+            # depth() value, or None when `node` needs its own frame
+            # (passed the guards and has callees). `visited` is marked in
+            # pre-order, exactly as the recursive implementation did.
             if node in visited:
                 return 0
             if node not in self.nodes:
                 return 0
-
             visited.add(node)
-            node_obj = self.nodes[node]
-
-            if not node_obj.callees:
+            if not self.nodes[node].callees:
                 return 0
+            return None
 
-            return 1 + max(depth(callee) for callee in node_obj.callees)
+        # An explicit stack replaces the interpreter call stack so deep
+        # call graphs (routine in real binaries) no longer raise
+        # RecursionError. The simulation is mechanically equivalent to the
+        # recursive descent — same shared `visited` set, same left-to-right
+        # max over callees — so the returned depth is identical for every
+        # input.
+        root = descend(address)
+        if root is not None:
+            return root
 
-        return depth(address)
+        stack: list[_DepthFrame] = [_DepthFrame(list(self.nodes[address].callees))]
+        returned = 0
+        while stack:
+            frame = stack[-1]
+            if frame.idx < len(frame.callees):
+                callee = frame.callees[frame.idx]
+                frame.idx += 1
+                child = descend(callee)
+                if child is None:
+                    stack.append(_DepthFrame(list(self.nodes[callee].callees)))
+                elif child > frame.best:
+                    frame.best = child
+            else:
+                returned = 1 + frame.best
+                stack.pop()
+                if stack and returned > stack[-1].best:
+                    stack[-1].best = returned
+
+        return returned
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary representation."""
