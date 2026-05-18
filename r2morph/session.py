@@ -55,6 +55,11 @@ class MorphSession:
         self.checkpoints: list[Checkpoint] = []
         self.current_binary: Path | None = None
         self.mutations_count = 0
+        # Monotonic per-session counter so each checkpoint gets a distinct
+        # file even when the same name is reused (e.g. apply_mutation always
+        # names its pre-state "pre_mutation"). Without it, same-named
+        # checkpoints shared one path and silently clobbered each other.
+        self._checkpoint_seq = 0
 
         logger.info(f"Created mutation session: {self.session_id}")
 
@@ -104,7 +109,8 @@ class MorphSession:
 
         logger.info(f"Creating checkpoint: {name}")
 
-        checkpoint_path = self.session_dir / f"checkpoint_{name}.bin"
+        self._checkpoint_seq += 1
+        checkpoint_path = self.session_dir / f"checkpoint_{self._checkpoint_seq:04d}_{name}.bin"
         shutil.copy2(self.current_binary, checkpoint_path)
 
         checkpoint = Checkpoint(
@@ -133,8 +139,12 @@ class MorphSession:
         """
         logger.info(f"Rolling back to checkpoint: {checkpoint_name}")
 
+        # Resolve a reused name to the most recent checkpoint with that
+        # name (its latest snapshot), which is the intuitive rollback
+        # target and matches the pre-fix effective behaviour back when
+        # same-named checkpoints shared one repeatedly-overwritten file.
         checkpoint = None
-        for cp in self.checkpoints:
+        for cp in reversed(self.checkpoints):
             if cp.name == checkpoint_name:
                 checkpoint = cp
                 break
@@ -221,7 +231,9 @@ class MorphSession:
         try:
             if checkpoint.binary_path.exists():
                 checkpoint.binary_path.unlink()
-            self.checkpoints = [cp for cp in self.checkpoints if cp.name != checkpoint.name]
+            # Remove this specific checkpoint by identity. Removing by name
+            # would also drop unrelated checkpoints that reuse the name.
+            self.checkpoints = [cp for cp in self.checkpoints if cp is not checkpoint]
         except Exception as e:
             logger.debug(f"Failed to remove checkpoint {checkpoint.name}: {e}")
 
