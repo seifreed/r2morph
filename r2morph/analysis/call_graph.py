@@ -373,22 +373,29 @@ class CallGraph:
         visited: set[int] = set()
         result: list[int] = []
 
-        def visit(node: int) -> None:
-            if node in visited:
-                return
-            if node not in self.nodes:
-                return
-
-            visited.add(node)
-            node_obj = self.nodes[node]
-
-            for callee in node_obj.callees:
-                visit(callee)
-
-            result.append(node)
-
-        for addr in sorted(self.nodes.keys()):
-            visit(addr)
+        # Iterative post-order DFS. An explicit stack is used instead of
+        # recursion because real (often malicious) binaries can produce call
+        # chains far deeper than CPython's recursion limit; a recursive
+        # walker would raise RecursionError on such input. Each node is
+        # pushed once for expansion and once (post=True) for emission, so a
+        # node is appended only after all its callees, preserving the exact
+        # post-order the recursive implementation produced.
+        for start in sorted(self.nodes.keys()):
+            if start in visited or start not in self.nodes:
+                continue
+            stack: list[tuple[int, bool]] = [(start, False)]
+            while stack:
+                node, post = stack.pop()
+                if post:
+                    result.append(node)
+                    continue
+                if node in visited or node not in self.nodes:
+                    continue
+                visited.add(node)
+                stack.append((node, True))
+                for callee in reversed(self.nodes[node].callees):
+                    if callee not in visited:
+                        stack.append((callee, False))
 
         return result
 
