@@ -126,3 +126,57 @@ def test_get_depth_handles_cycles() -> None:
     cg.add_edge(CallEdge(b, a, CallType.DIRECT))
 
     assert cg.get_depth(a) == 2
+
+
+def test_find_call_path_deep_chain_no_recursion_error() -> None:
+    cg, addresses = _build_linear_chain(CHAIN_LENGTH)
+
+    path = cg.find_call_path(addresses[0], addresses[-1])
+
+    assert path == addresses
+
+
+def test_find_call_path_deep_chain_unreachable_returns_none() -> None:
+    """Deep backtracking path must also survive: the recursive DFS
+    descended the whole chain (RecursionError pre-fix) before reporting
+    no path. Post-fix it returns None without raising."""
+    cg, addresses = _build_linear_chain(CHAIN_LENGTH)
+    isolated = addresses[-1] + 0x10
+    cg.add_node(CallNode(address=isolated, name="isolated"))
+
+    assert cg.find_call_path(addresses[0], isolated) is None
+
+
+def test_find_call_path_src_equals_dst() -> None:
+    """Behavior-preservation: src == dst yields the single-node path."""
+    a = 0x1000
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+
+    assert cg.find_call_path(a, a) == [a]
+
+
+def test_find_call_path_leftmost_dfs_order_preserved() -> None:
+    """a -> b (dead end), a -> c -> d. The recursive DFS tries the
+    leftmost callee first, backtracks out of b, then finds [a, c, d].
+    The iterative rewrite must return the identical first-found path."""
+    a, b, c, d = 0x1000, 0x1010, 0x1020, 0x1030
+    cg = CallGraph()
+    for addr, name in ((a, "a"), (b, "b"), (c, "c"), (d, "d")):
+        cg.add_node(CallNode(address=addr, name=name))
+    cg.add_edge(CallEdge(a, b, CallType.DIRECT))
+    cg.add_edge(CallEdge(a, c, CallType.DIRECT))
+    cg.add_edge(CallEdge(c, d, CallType.DIRECT))
+
+    assert cg.find_call_path(a, d) == [a, c, d]
+
+
+def test_find_call_path_no_path_small() -> None:
+    """Behavior-preservation: same contract as the pre-existing
+    test_find_call_path_no_path, mock-free."""
+    a, b = 0x1000, 0x2000
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+    cg.add_node(CallNode(address=b, name="b"))
+
+    assert cg.find_call_path(a, b) is None

@@ -143,6 +143,14 @@ class _DepthFrame:
     best: int = 0
 
 
+@dataclass
+class _PathFrame:
+    """One in-progress find_call_path() recursion, simulated on a stack."""
+
+    callees: list[int]
+    idx: int = 0
+
+
 class CallGraph:
     """
     Directed call graph for inter-procedural analysis.
@@ -425,31 +433,51 @@ class CallGraph:
         visited: set[int] = set()
         path: list[int] = []
 
-        def dfs(current: int) -> bool:
+        def descend(current: int) -> bool | None:
+            # Mirrors the recursive dfs() early returns: True/False is the
+            # value the recursive call would return immediately; None means
+            # `current` passed the guards and needs its own frame (iterate
+            # its callees). `visited`/`path` are mutated in exactly the same
+            # order as the recursive implementation.
             if current == dst:
                 path.append(current)
                 return True
-
             if current in visited:
                 return False
-
             visited.add(current)
             path.append(current)
-
             node = self.nodes.get(current)
             if node is None:
                 path.pop()
                 return False
+            return None
 
-            for callee in node.callees:
-                if dfs(callee):
-                    return True
-
-            path.pop()
-            return False
-
-        if dfs(src):
+        # An explicit stack replaces the interpreter call stack so deep
+        # call graphs (routine in real binaries) no longer raise
+        # RecursionError. The simulation is mechanically equivalent to the
+        # recursive depth-first search, so it returns the identical
+        # first-found path for every input.
+        start = descend(src)
+        if start is True:
             return path
+        if start is False:
+            return None
+
+        stack: list[_PathFrame] = [_PathFrame(list(self.nodes[src].callees))]
+        while stack:
+            frame = stack[-1]
+            if frame.idx < len(frame.callees):
+                callee = frame.callees[frame.idx]
+                frame.idx += 1
+                result = descend(callee)
+                if result is True:
+                    return path
+                if result is None:
+                    stack.append(_PathFrame(list(self.nodes[callee].callees)))
+            else:
+                path.pop()
+                stack.pop()
+
         return None
 
     def get_depth(self, address: int) -> int:
