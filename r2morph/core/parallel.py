@@ -474,6 +474,12 @@ class ParallelMutationEngine:
         self.lock_timeout = lock_timeout
         self.resolver = DependencyResolver()
         self._lock = threading.Lock()
+        # In-process serialization of binary mutation. BinaryFileLock only
+        # coordinates across processes (one instance per process, and its
+        # acquire() is a no-op for a second thread once _locked is set), so
+        # it cannot prevent concurrent ThreadPoolExecutor pass-workers from
+        # mutating the shared, non-thread-safe Binary/r2pipe at once.
+        self._binary_mutation_lock = threading.Lock()
         self._results: dict[str, PassResult] = {}
         self._stop_on_error = False
         self._file_lock: BinaryFileLock | None = None
@@ -637,7 +643,8 @@ class ParallelMutationEngine:
                     )
 
             try:
-                result = pass_obj.apply(self.binary)
+                with self._binary_mutation_lock:
+                    result = pass_obj.apply(self.binary)
             finally:
                 # Always release the lock after pass execution
                 if self._file_lock and self._file_lock.is_locked():
