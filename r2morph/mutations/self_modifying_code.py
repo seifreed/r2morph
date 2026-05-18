@@ -345,7 +345,19 @@ class SelfModifyingCodePass(MutationPass):
         super().__init__(name="SelfModifyingCode", config=config)
         self.probability = self.config.get("probability", 0.3)
         self.max_functions = self.config.get("max_functions", 10)
-        self.encryption_scheme = self.config.get("encryption_scheme", EncryptionScheme.XOR_KEY)
+        # encryption_scheme is documented as a string config option, but
+        # the rest of the pass treats it as an EncryptionScheme enum
+        # (e.g. .value, == comparisons). Coerce a string to the enum so a
+        # JSON/dict config does not raise "'str' object has no attribute
+        # 'value'"; fall back to the documented default for anything
+        # unrecognised.
+        scheme = self.config.get("encryption_scheme", EncryptionScheme.XOR_KEY)
+        if not isinstance(scheme, EncryptionScheme):
+            try:
+                scheme = EncryptionScheme(scheme)
+            except ValueError:
+                scheme = EncryptionScheme.XOR_KEY
+        self.encryption_scheme = scheme
         self.polymorphic = self.config.get("polymorphic", True)
         self.key_size = self.config.get("key_size", 8)
         self.set_support(
