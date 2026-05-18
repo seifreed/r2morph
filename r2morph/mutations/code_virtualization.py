@@ -383,7 +383,7 @@ vm_handler_f1:                 ; VM_EXIT
     return handlers.get(opcode, f"vm_handler_{opcode:02x}: jmp vm_execute\n")
 
 
-def translate_instruction_to_vm(insn: dict[str, Any], arch: str = "x64") -> VMInstruction | None:
+def _translate_instruction_to_vm(insn: dict[str, Any], arch: str = "x64") -> VMInstruction | None:
     """
     Translate a native instruction to VM bytecode.
 
@@ -505,6 +505,29 @@ def translate_instruction_to_vm(insn: dict[str, Any], arch: str = "x64") -> VMIn
             return VMInstruction(VMOpcode.XCHG_REG_REG, [op1, op2], f"xchg {op1}, {op2}")
 
     return None
+
+
+def translate_instruction_to_vm(insn: dict[str, Any], arch: str = "x64") -> VMInstruction | None:
+    """Translate a native instruction to a VM instruction.
+
+    VMInstruction.to_bytecode encodes integer operands in at most 4
+    signed bytes, so an operand outside signed-32-bit range cannot be
+    encoded (it would raise OverflowError during bytecode generation).
+    Such an instruction cannot be virtualized; return None so callers
+    route it through the existing VM_NOP fallback, exactly like any
+    other untranslatable instruction.
+    """
+    vm_insn = _translate_instruction_to_vm(insn, arch)
+    if vm_insn is not None:
+        for op in vm_insn.operands:
+            if isinstance(op, int) and (op < -2147483648 or op > 2147483647):
+                logger.debug(
+                    "Operand %d exceeds VM 32-bit encoding for %r; skipping virtualization",
+                    op,
+                    insn.get("mnemonic", "?"),
+                )
+                return None
+    return vm_insn
 
 
 class CodeVirtualizationPass(MutationPass):
