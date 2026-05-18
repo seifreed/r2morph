@@ -243,28 +243,40 @@ class ParallelMutator:
         with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             future_to_task = {executor.submit(self._execute_task, task, binary_path): task for task in tasks}
 
-            for future in concurrent.futures.as_completed(future_to_task, timeout=self.timeout):
-                task = future_to_task[future]
+            try:
+                for future in concurrent.futures.as_completed(future_to_task, timeout=self.timeout):
+                    task = future_to_task[future]
 
-                try:
-                    result = future.result()
+                    try:
+                        result = future.result()
 
-                    if result.success:
-                        stats.tasks_completed += 1
-                        stats.total_mutations += result.mutations_applied
-                        all_records.extend(result.records)
-                    else:
+                        if result.success:
+                            stats.tasks_completed += 1
+                            stats.total_mutations += result.mutations_applied
+                            all_records.extend(result.records)
+                        else:
+                            stats.tasks_failed += 1
+                            for error in result.errors:
+                                logger.warning(f"Task {task.pass_name} error: {error}")
+
+                    except Exception as e:
                         stats.tasks_failed += 1
-                        for error in result.errors:
-                            logger.warning(f"Task {task.pass_name} error: {error}")
+                        logger.error(f"Task {task.pass_name} failed: {e}")
 
-                except concurrent.futures.TimeoutError:
-                    stats.tasks_failed += 1
-                    logger.error(f"Task {task.pass_name} timed out")
-
-                except Exception as e:
-                    stats.tasks_failed += 1
-                    logger.error(f"Task {task.pass_name} failed: {e}")
+            except concurrent.futures.TimeoutError:
+                # The whole batch exceeded self.timeout. as_completed raises
+                # from the loop itself (not future.result()), so handle it
+                # here: count every task that has not finished as failed,
+                # cancel the ones not yet started, and return the partial
+                # results rather than letting the timeout escape this method.
+                unfinished = [f for f in future_to_task if not f.done()]
+                for pending in unfinished:
+                    pending.cancel()
+                stats.tasks_failed += len(unfinished)
+                logger.error(
+                    f"Parallel execution timed out after {self.timeout}s; "
+                    f"{len(unfinished)} task(s) did not complete"
+                )
 
         elapsed = time.perf_counter() - start_time
         stats.total_time = elapsed
