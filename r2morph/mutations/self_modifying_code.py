@@ -420,7 +420,7 @@ class SelfModifyingCodePass(MutationPass):
         func_size: int,
         key_byte: int,
         saved_prologue: bytes,
-    ) -> bytes:
+    ) -> bytes | None:
         """
         Build a raw x86_64 XOR decryption stub.
 
@@ -509,6 +509,9 @@ class SelfModifyingCodePass(MutationPass):
         # Offset is relative to the address after the jmp instruction
         jmp_from = cave_addr + len(stub) + 5  # 5 = size of jmp rel32
         rel_offset = jmp_target - jmp_from
+        if rel_offset < -2147483648 or rel_offset > 2147483647:
+            logger.debug(f"Stub jmp rel32 out of range ({rel_offset}) for func 0x{func_addr:x}; skipping")
+            return None
         stub += b"\xe9" + struct.pack("<i", rel_offset)
 
         return bytes(stub)
@@ -569,18 +572,21 @@ class SelfModifyingCodePass(MutationPass):
             body_bytes = original_bytes[5:]
             encrypted_body = self._encrypt_data(body_bytes, key, EncryptionScheme.XOR_KEY)
 
-            # Build the raw decryption stub (needs cave_addr, estimated first)
-            # We need to know stub size to find a cave, but stub size depends
-            # on cave_addr for the final jmp offset. Build a provisional stub
-            # with a dummy cave_addr to measure its size (the size is constant
-            # regardless of cave_addr because all immediates are 64-bit).
+            # Build a provisional stub only to measure its size before a
+            # cave is known. The size is constant regardless of cave_addr
+            # (the final jmp is always a 5-byte rel32), so pass
+            # cave_addr=func_addr: that keeps the provisional rel32 in
+            # range (a dummy cave_addr=0 would make rel_offset ~= func_addr
+            # and overflow int32 for any high-address binary).
             provisional_stub = self._build_xor_decrypt_stub(
-                cave_addr=0,
+                cave_addr=func_addr,
                 func_addr=func_addr,
                 func_size=func_size,
                 key_byte=key_byte,
                 saved_prologue=saved_prologue,
             )
+            if provisional_stub is None:
+                continue
             stub_size = len(provisional_stub)
 
             # Find a code cave for the stub
@@ -599,6 +605,8 @@ class SelfModifyingCodePass(MutationPass):
                 key_byte=key_byte,
                 saved_prologue=saved_prologue,
             )
+            if stub_bytes is None:
+                continue
 
             # 1. Write the decryption stub into the cave
             if not binary.write_bytes(cave_addr, stub_bytes):
@@ -612,6 +620,9 @@ class SelfModifyingCodePass(MutationPass):
 
             # 3. Write a 5-byte jmp from func_addr to the stub
             jmp_rel = cave_addr - (func_addr + 5)
+            if jmp_rel < -2147483648 or jmp_rel > 2147483647:
+                logger.debug(f"func->cave jmp rel32 out of range ({jmp_rel}) for func 0x{func_addr:x}; skipping")
+                continue
             jmp_bytes = b"\xe9" + struct.pack("<i", jmp_rel)
             if not binary.write_bytes(func_addr, jmp_bytes):
                 logger.debug(f"Failed to write jmp at 0x{func_addr:x}")
