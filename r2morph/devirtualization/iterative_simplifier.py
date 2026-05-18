@@ -19,7 +19,7 @@ import logging
 import threading
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any
 
@@ -494,7 +494,11 @@ class IterativeSimplifier:
             "iteration": self.metrics.iteration,
             "timestamp": time.time(),
             "context": context.copy(),
-            "metrics": self.metrics,
+            # Snapshot the metrics. self.metrics is mutated in place every
+            # iteration, so storing the live reference would make every
+            # checkpoint alias the latest metrics and rollback_to_checkpoint
+            # a no-op.
+            "metrics": replace(self.metrics),
         }
 
     def _update_metrics(self, context: dict[str, Any]) -> None:
