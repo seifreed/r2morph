@@ -221,7 +221,6 @@ class BlockReorderingPass(MutationPass):
                     break
 
                 block = blocks[i]
-                blocks[i + 1]
 
                 addr = block.get("addr", 0)
                 size = block.get("size", 0)

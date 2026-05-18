@@ -453,8 +453,6 @@ def build_report_views(
         normalized_pass_map=normalized_pass_map,
     )
     failed_gates_rows = gates["failed_gates_rows"]
-    gates["failed_gates_compact_rows"]
-    gates["failed_gates_final_rows"]
     failed_gates_by_pass = gates["failed_gates_by_pass"]
     failed_gates_expected_severity = gates["failed_gates_expected_severity"]
 

@@ -252,7 +252,6 @@ class DefUseAnalyzer:
 
         block = self.cfg.blocks.get(block_addr)
         if block:
-            block.address + block.size
             max_search_distance = max(100, block.size * 2)
 
             for prev_addr in range(address - 1, max(block.address, address - max_search_distance), -1):

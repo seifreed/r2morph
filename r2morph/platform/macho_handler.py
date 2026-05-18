@@ -68,7 +68,6 @@ class MachOHandler:
                 macho_magics_native_le = {0xFEEDFACE, 0xFEEDFACF}
                 # When read as little-endian, these (byte-swapped) indicate a BE binary
                 macho_magics_native_be = {0xCEFAEDFE, 0xCFFAEDFE}
-                macho_magics_native_le | macho_magics_native_be
                 fat_magics_be = {0xCAFEBABE, 0xCAFEBABF, 0xBEBAFECA, 0xBFBAFECA}
 
                 endian = "<"

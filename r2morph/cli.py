@@ -1289,13 +1289,10 @@ def report(
     )
     summary = context["summary"]
     resolved_only_pass = context["resolved_only_pass"]
-    context["resolved_only_pass_failure"]
     requested_validation_mode = context["requested_validation_mode"]
     effective_validation_mode = context["effective_validation_mode"]
     validation_policy = context["validation_policy"]
     gate_evaluation = context["gate_evaluation"]
-    context["gate_requested"]
-    context["gate_results"]
     gate_failure_summary = context["gate_failure_summary"]
     gate_failure_priority = context["gate_failure_priority"]
     gate_failure_severity_priority = context["gate_failure_severity_priority"]
