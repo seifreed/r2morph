@@ -160,6 +160,15 @@ class _SccFrame:
     idx: int = 0
 
 
+@dataclass
+class _RecursionFrame:
+    """One in-progress _detect_recursion() dfs(), simulated on a stack."""
+
+    node_addr: int
+    callees: list[int]
+    idx: int = 0
+
+
 class CallGraph:
     """
     Directed call graph for inter-procedural analysis.
@@ -305,31 +314,55 @@ class CallGraph:
         visited: set[int] = set()
         rec_stack: set[int] = set()
 
-        def dfs(node_addr: int, path: list[int]) -> None:
+        def enter(node_addr: int) -> CallNode | None:
+            # Mirrors dfs() entry. When the node is missing, the recursive
+            # version returns WITHOUT popping rec_stack, so the address
+            # stays in both `visited` and `rec_stack` for the rest of the
+            # traversal; that quirk is preserved by not removing it here.
             visited.add(node_addr)
             rec_stack.add(node_addr)
+            return self.nodes.get(node_addr)
 
-            node = self.nodes.get(node_addr)
-            if node is None:
-                return
+        def record_cycle(path: list[int], callee: int) -> None:
+            cycle_start = path.index(callee) if callee in path else -1
+            if cycle_start >= 0:
+                cycle = path[cycle_start:] + [callee]
+                self._recursive_chains.append(cycle)
+                for addr in cycle:
+                    if addr in self.nodes:
+                        self.nodes[addr].is_recursive = True
 
-            for callee in node.callees:
-                if callee not in visited:
-                    dfs(callee, path + [callee])
-                elif callee in rec_stack:
-                    cycle_start = path.index(callee) if callee in path else -1
-                    if cycle_start >= 0:
-                        cycle = path[cycle_start:] + [callee]
-                        self._recursive_chains.append(cycle)
-                        for addr in cycle:
-                            if addr in self.nodes:
-                                self.nodes[addr].is_recursive = True
+        # An explicit stack replaces the interpreter call stack so deep
+        # call graphs (routine in real binaries) no longer raise
+        # RecursionError. `path` is kept in lockstep with the work stack,
+        # so it is exactly the list the recursive dfs() carried; the
+        # simulation is mechanically equivalent and produces identical
+        # chains, is_recursive flags and recursion_depth for every input.
+        for root in self.nodes:
+            if root in visited:
+                continue
+            root_node = enter(root)
+            if root_node is None:
+                continue
 
-            rec_stack.remove(node_addr)
-
-        for addr in self.nodes:
-            if addr not in visited:
-                dfs(addr, [addr])
+            path: list[int] = [root]
+            work: list[_RecursionFrame] = [_RecursionFrame(root, list(root_node.callees))]
+            while work:
+                frame = work[-1]
+                if frame.idx < len(frame.callees):
+                    callee = frame.callees[frame.idx]
+                    frame.idx += 1
+                    if callee not in visited:
+                        callee_node = enter(callee)
+                        if callee_node is not None:
+                            path.append(callee)
+                            work.append(_RecursionFrame(callee, list(callee_node.callees)))
+                    elif callee in rec_stack:
+                        record_cycle(path, callee)
+                else:
+                    rec_stack.remove(frame.node_addr)
+                    work.pop()
+                    path.pop()
 
         for chain in self._recursive_chains:
             for addr in chain:

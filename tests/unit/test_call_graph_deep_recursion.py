@@ -257,3 +257,80 @@ def test_scc_edge_to_absent_callee_node() -> None:
     sccs = cg.find_strongly_connected_components()
 
     assert [set(s) for s in sccs] == [{a, b, absent}]
+
+
+def test_detect_recursion_deep_acyclic_chain_no_recursion_error() -> None:
+    cg, addresses = _build_linear_chain(CHAIN_LENGTH)
+
+    assert cg.find_recursive_chains() == []
+    assert cg.find_recursive_functions() == []
+
+
+def test_detect_recursion_deep_cycle_chain_reconstructed() -> None:
+    addresses = [BASE_ADDRESS + i * STRIDE for i in range(CHAIN_LENGTH)]
+    cg = _build_cycle(addresses)
+
+    chains = cg.find_recursive_chains()
+
+    assert len(chains) == 1
+    # The recursive implementation reconstructs the cycle as the full
+    # path from the entry node back to it (closing node repeated).
+    assert chains[0] == addresses + [addresses[0]]
+    assert sorted(cg.find_recursive_functions()) == sorted(addresses)
+    depth_node = cg.get_node(addresses[0])
+    assert depth_node is not None
+    assert depth_node.recursion_depth == CHAIN_LENGTH
+
+
+def test_detect_recursion_self_loop_pins_behavior() -> None:
+    """Behavior-preservation: self-edge yields the [addr, addr] chain,
+    is_recursive set, recursion_depth == 1 (len(chain) - 1)."""
+    a = 0x1000
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+    cg.add_edge(CallEdge(a, a, CallType.DIRECT))
+
+    assert cg.find_recursive_chains() == [[a, a]]
+    assert cg.find_recursive_functions() == [a]
+    node = cg.get_node(a)
+    assert node is not None
+    assert node.recursion_depth == 1
+
+
+def test_detect_recursion_mutual_pins_chain_shape() -> None:
+    """Behavior-preservation: a <-> b reconstructs the [a, b, a] chain."""
+    a, b = 0x1000, 0x2000
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+    cg.add_node(CallNode(address=b, name="b"))
+    cg.add_edge(CallEdge(a, b, CallType.DIRECT))
+    cg.add_edge(CallEdge(b, a, CallType.DIRECT))
+
+    assert cg.find_recursive_chains() == [[a, b, a]]
+    assert sorted(cg.find_recursive_functions()) == [a, b]
+
+
+def test_detect_recursion_multiple_chains_append_order() -> None:
+    """Behavior-preservation: two independent self-loops are appended in
+    node-insertion DFS order."""
+    a, b = 0x1000, 0x2000
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+    cg.add_node(CallNode(address=b, name="b"))
+    cg.add_edge(CallEdge(a, a, CallType.DIRECT))
+    cg.add_edge(CallEdge(b, b, CallType.DIRECT))
+
+    assert cg.find_recursive_chains() == [[a, a], [b, b]]
+
+
+def test_detect_recursion_acyclic_branch_reports_nothing() -> None:
+    """Behavior-preservation: a tree (a -> b, a -> c) has no recursion."""
+    a, b, c = 0x1000, 0x2000, 0x3000
+    cg = CallGraph()
+    for addr, name in ((a, "a"), (b, "b"), (c, "c")):
+        cg.add_node(CallNode(address=addr, name=name))
+    cg.add_edge(CallEdge(a, b, CallType.DIRECT))
+    cg.add_edge(CallEdge(a, c, CallType.DIRECT))
+
+    assert cg.find_recursive_chains() == []
+    assert cg.find_recursive_functions() == []
