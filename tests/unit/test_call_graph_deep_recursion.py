@@ -180,3 +180,80 @@ def test_find_call_path_no_path_small() -> None:
     cg.add_node(CallNode(address=b, name="b"))
 
     assert cg.find_call_path(a, b) is None
+
+
+def _build_cycle(addresses: list[int]) -> CallGraph:
+    """Build a single directed cycle over the given addresses."""
+    cg = CallGraph()
+    for i, addr in enumerate(addresses):
+        cg.add_node(CallNode(address=addr, name=f"n{i}"))
+    for src, dst in zip(addresses, addresses[1:] + addresses[:1]):
+        cg.add_edge(CallEdge(src, dst, CallType.DIRECT))
+    return cg
+
+
+def test_scc_deep_acyclic_chain_no_recursion_error() -> None:
+    cg, addresses = _build_linear_chain(CHAIN_LENGTH)
+
+    sccs = cg.find_strongly_connected_components()
+
+    # An acyclic chain has no multi-node strongly connected component.
+    assert sccs == []
+
+
+def test_scc_deep_cycle_single_component_no_recursion_error() -> None:
+    addresses = [BASE_ADDRESS + i * STRIDE for i in range(CHAIN_LENGTH)]
+    cg = _build_cycle(addresses)
+
+    sccs = cg.find_strongly_connected_components()
+
+    assert len(sccs) == 1
+    assert sccs[0] == set(addresses)
+
+
+def test_scc_two_disjoint_cycles_membership_and_order() -> None:
+    """Behavior-preservation: two independent 2-cycles yield exactly two
+    SCCs, finalized in DFS-completion order (first-inserted node first)."""
+    a, b, c, d = 0x1000, 0x2000, 0x3000, 0x4000
+    cg = CallGraph()
+    for addr, name in ((a, "a"), (b, "b"), (c, "c"), (d, "d")):
+        cg.add_node(CallNode(address=addr, name=name))
+    cg.add_edge(CallEdge(a, b, CallType.DIRECT))
+    cg.add_edge(CallEdge(b, a, CallType.DIRECT))
+    cg.add_edge(CallEdge(c, d, CallType.DIRECT))
+    cg.add_edge(CallEdge(d, c, CallType.DIRECT))
+
+    sccs = cg.find_strongly_connected_components()
+
+    assert [set(s) for s in sccs] == [{a, b}, {c, d}]
+
+
+def test_scc_self_loop_excluded_by_size_filter() -> None:
+    """Behavior-preservation: a lone self-loop is a 1-element SCC and is
+    filtered out by the `len(scc) > 1` rule (no SCC reported)."""
+    a = 0x1000
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+    cg.add_edge(CallEdge(a, a, CallType.DIRECT))
+
+    assert cg.find_strongly_connected_components() == []
+
+
+def test_scc_edge_to_absent_callee_node() -> None:
+    """Behavior-preservation: add_edge records a callee address even when
+    no node exists for it, so strongconnect indexes the dangling target,
+    pushes it on the SCC stack and hits its node_obj-is-None early return.
+    The recursive implementation then absorbs that dangling address into
+    the ancestor's component (it is popped together when `a` is the SCC
+    root). The iterative rewrite must reproduce this exact quirk."""
+    a, b, absent = 0x1000, 0x2000, 0x9999
+    cg = CallGraph()
+    cg.add_node(CallNode(address=a, name="a"))
+    cg.add_node(CallNode(address=b, name="b"))
+    cg.add_edge(CallEdge(a, b, CallType.DIRECT))
+    cg.add_edge(CallEdge(b, a, CallType.DIRECT))
+    cg.add_edge(CallEdge(b, absent, CallType.DIRECT))  # callee node absent
+
+    sccs = cg.find_strongly_connected_components()
+
+    assert [set(s) for s in sccs] == [{a, b, absent}]

@@ -151,6 +151,15 @@ class _PathFrame:
     idx: int = 0
 
 
+@dataclass
+class _SccFrame:
+    """One in-progress strongconnect() recursion, simulated on a stack."""
+
+    node: int
+    callees: list[int]
+    idx: int = 0
+
+
 class CallGraph:
     """
     Directed call graph for inter-procedural analysis.
@@ -339,44 +348,69 @@ class CallGraph:
         if self._strongly_connected:
             return self._strongly_connected
 
-        index_counter = [0]
+        index_counter = 0
         stack: list[int] = []
         lowlinks: dict[int, int] = {}
         index: dict[int, int] = {}
         on_stack: set[int] = set()
 
-        def strongconnect(node: int) -> None:
-            index[node] = index_counter[0]
-            lowlinks[node] = index_counter[0]
-            index_counter[0] += 1
+        def begin(node: int) -> None:
+            nonlocal index_counter
+            index[node] = index_counter
+            lowlinks[node] = index_counter
+            index_counter += 1
             stack.append(node)
             on_stack.add(node)
 
-            node_obj = self.nodes.get(node)
-            if node_obj is None:
-                return
+        def close_scc(root_node: int) -> None:
+            scc: set[int] = set()
+            while True:
+                member = stack.pop()
+                on_stack.remove(member)
+                scc.add(member)
+                if member == root_node:
+                    break
+            if len(scc) > 1:
+                self._strongly_connected.append(scc)
 
-            for successor in node_obj.callees:
-                if successor not in index:
-                    strongconnect(successor)
-                    lowlinks[node] = min(lowlinks[node], lowlinks[successor])
-                elif successor in on_stack:
-                    lowlinks[node] = min(lowlinks[node], index[successor])
+        # Iterative Tarjan. An explicit work stack replaces the interpreter
+        # call stack so deep call graphs (routine in real binaries) no
+        # longer raise RecursionError. The simulation is mechanically
+        # equivalent to the recursive strongconnect(): the post-recursion
+        # `lowlink = min(lowlink, child lowlink)` is applied when each child
+        # frame completes, so index/lowlink, SCC membership, the `len > 1`
+        # filter and the append order are identical for every input.
+        for root in self.nodes:
+            if root in index:
+                continue
+            begin(root)
+            root_obj = self.nodes.get(root)
+            if root_obj is None:
+                continue
 
-            if lowlinks[node] == index[node]:
-                scc: set[int] = set()
-                while True:
-                    successor = stack.pop()
-                    on_stack.remove(successor)
-                    scc.add(successor)
-                    if successor == node:
-                        break
-                if len(scc) > 1:
-                    self._strongly_connected.append(scc)
-
-        for node in self.nodes:
-            if node not in index:
-                strongconnect(node)
+            work: list[_SccFrame] = [_SccFrame(root, list(root_obj.callees))]
+            while work:
+                frame = work[-1]
+                node = frame.node
+                if frame.idx < len(frame.callees):
+                    successor = frame.callees[frame.idx]
+                    frame.idx += 1
+                    if successor not in index:
+                        begin(successor)
+                        successor_obj = self.nodes.get(successor)
+                        if successor_obj is None:
+                            lowlinks[node] = min(lowlinks[node], lowlinks[successor])
+                        else:
+                            work.append(_SccFrame(successor, list(successor_obj.callees)))
+                    elif successor in on_stack:
+                        lowlinks[node] = min(lowlinks[node], index[successor])
+                else:
+                    if lowlinks[node] == index[node]:
+                        close_scc(node)
+                    work.pop()
+                    if work:
+                        parent = work[-1].node
+                        lowlinks[parent] = min(lowlinks[parent], lowlinks[node])
 
         return self._strongly_connected
 
