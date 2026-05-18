@@ -294,9 +294,15 @@ class IterativeSimplifier:
                 else:
                     iteration_changes = self._apply_passes_sequential(context)
 
-                # Check for convergence
+                # Check for convergence. A zero prev_complexity means there is
+                # no measurable complexity to reduce (a clean or trivial binary
+                # with no detected functions/patterns/MBA/VM): treat it as
+                # trivially converged instead of dividing by zero.
                 current_complexity = self._calculate_complexity(context)
-                improvement = (prev_complexity - current_complexity) / prev_complexity
+                if prev_complexity == 0.0:
+                    improvement = 0.0
+                else:
+                    improvement = (prev_complexity - current_complexity) / prev_complexity
 
                 if not iteration_changes or improvement < self.convergence_threshold:
                     logger.info(f"Simplification converged after {iteration} iterations")
