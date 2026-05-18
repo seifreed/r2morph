@@ -254,24 +254,43 @@ class ExceptionInfoReader:
 
             for i in range(num_entries):
                 entry_offset = i * entry_size
+                if entry_offset + entry_size > len(data):
+                    # Section's declared size exceeds the bytes actually
+                    # readable (truncated/crafted binary): stop instead of
+                    # letting struct.unpack raise on a short slice.
+                    break
                 if bits == 32:
-                    begin, end, unwind_info = struct.unpack("<III", data[entry_offset : entry_offset + 12])
+                    # ARM IMAGE_ARM_RUNTIME_FUNCTION_ENTRY is 8 bytes:
+                    # BeginAddress (u32) + a u32 that is either packed unwind
+                    # data or an .xdata RVA. Unlike the x64 RUNTIME_FUNCTION
+                    # there is no explicit End field; the function length is
+                    # only present in the entry when it is in packed form.
+                    begin, second = struct.unpack("<II", data[entry_offset : entry_offset + 8])
                     if begin == 0:
                         continue
-                    frame = ExceptionFrame(
+                    if second & 0x3:
+                        # Packed form: bits [12:2] hold Function Length in
+                        # 2-byte units (ARM exception-data layout).
+                        function_length = ((second >> 2) & 0x7FF) * 2
+                        function_end = begin + function_length
+                    else:
+                        # Unpacked form: the u32 is an .xdata RVA, so the
+                        # extent is not derivable from the .pdata entry
+                        # alone. Record the start with an unknown (zero)
+                        # extent rather than fabricating an end.
+                        function_end = begin
+                    self._frames[begin] = ExceptionFrame(
                         function_start=begin,
-                        function_end=end,
+                        function_end=function_end,
                     )
-                    self._frames[begin] = frame
                 else:
                     begin_rva, end_rva, unwind_rva = struct.unpack("<III", data[entry_offset : entry_offset + 12])
                     if begin_rva == 0:
                         continue
-                    frame = ExceptionFrame(
+                    self._frames[begin_rva] = ExceptionFrame(
                         function_start=begin_rva,
                         function_end=end_rva,
                     )
-                    self._frames[begin_rva] = frame
 
         except Exception as e:
             logger.debug(f"Failed to read PE exception data: {e}")
