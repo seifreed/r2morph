@@ -181,6 +181,8 @@ class RelocationManager:
         try:
             assert self.binary.r2 is not None
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{from_addr:x}")
+            if not insn_json:
+                return False
             import json
 
             insns = json.loads(insn_json)
@@ -311,6 +313,8 @@ class RelocationManager:
 
             assert self.binary.r2 is not None
             block_hex = self.binary.r2.cmd(f"p8 {size} @ 0x{start_address:x}")
+            if not block_hex:
+                return False
             block_bytes = bytes.fromhex(block_hex.strip())
 
             new_address = start_address + shift_amount
