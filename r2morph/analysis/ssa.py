@@ -85,6 +85,15 @@ class SSABlock:
         }
 
 
+@dataclass
+class _RenameFrame:
+    """One in-progress _rename_in_block() recursion, simulated on a stack."""
+
+    block_addr: int
+    successors: list[int]
+    idx: int = 0
+
+
 class SSAConverter:
     """
     Convert control flow graphs to SSA form.
@@ -302,15 +311,55 @@ class SSAConverter:
         block_addr: int,
         visited: set[int],
     ) -> None:
-        """Rename variables in a block using DFS traversal."""
-        if block_addr in visited:
+        """Rename variables in a block using DFS traversal.
+
+        An explicit stack replaces the interpreter call stack so deep
+        control-flow graphs (routine in real, often obfuscated binaries)
+        no longer raise RecursionError. The simulation is mechanically
+        equivalent to the recursive DFS: the per-path `visited` set is
+        still added on entry and discarded once a block's successors are
+        exhausted, so blocks reachable by multiple acyclic paths are
+        reprocessed in exactly the same order and multiplicity as before.
+        """
+        root_block = self._enter_block(ssa_blocks, block_addr, visited)
+        if root_block is None:
             return
+
+        stack: list[_RenameFrame] = [_RenameFrame(block_addr, list(root_block.successors))]
+        while stack:
+            frame = stack[-1]
+            if frame.idx < len(frame.successors):
+                succ_addr = frame.successors[frame.idx]
+                frame.idx += 1
+                child = self._enter_block(ssa_blocks, succ_addr, visited)
+                if child is not None:
+                    stack.append(_RenameFrame(succ_addr, list(child.successors)))
+            else:
+                visited.discard(frame.block_addr)
+                stack.pop()
+
+    def _enter_block(
+        self,
+        ssa_blocks: dict[int, SSABlock],
+        block_addr: int,
+        visited: set[int],
+    ) -> SSABlock | None:
+        """Mirror the entry of the recursive _rename_in_block().
+
+        Returns the block to descend into, or None when the recursive
+        version would have returned immediately. As before, a block whose
+        SSABlock is missing is added to `visited` but never discarded
+        (the recursion returned before its discard), and an
+        already-on-path block is skipped without reprocessing.
+        """
+        if block_addr in visited:
+            return None
 
         visited.add(block_addr)
         ssa_block = ssa_blocks.get(block_addr)
 
         if not ssa_block:
-            return
+            return None
 
         for instruction in ssa_block.instructions:
             self._rename_instruction(instruction, ssa_block)
@@ -324,10 +373,7 @@ class SSAConverter:
             )
             ssa_block.definitions[phi.result.base_name] = new_var
 
-        for succ_addr in ssa_block.successors:
-            self._rename_in_block(ssa_blocks, succ_addr, visited)
-
-        visited.discard(block_addr)
+        return ssa_block
 
     def _rename_instruction(
         self,
