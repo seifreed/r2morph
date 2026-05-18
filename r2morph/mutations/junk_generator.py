@@ -171,9 +171,15 @@ class JunkGenerator:
             regs, weights = self.get_register_choice()
             reg = random.choices(regs, weights=weights, k=1)[0]
 
-            if not self._reg_tracker.is_stored(reg):
-                if available <= 16:
-                    continue
+            # Only emit a store/restore pair when there is budget for it
+            # (it costs > 16 bytes). Previously `available <= 16` did a
+            # bare `continue`, which restarted the loop without consuming
+            # `available`, emitting code, or breaking -- an infinite loop
+            # for any 0 < size <= 16 (no register is stored at entry).
+            # Skipping only the store branch lets control fall through to
+            # the junk-instruction emission below, which decrements
+            # `available` and guarantees termination.
+            if not self._reg_tracker.is_stored(reg) and available > 16:
                 store_code, store_size = self.store_register(reg)
                 restore_code = (
                     self._reg_tracker.get_stored_registers()[-1] if self._reg_tracker.get_stored_registers() else None
