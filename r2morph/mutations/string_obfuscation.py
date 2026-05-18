@@ -289,7 +289,12 @@ class StringObfuscationPass(MutationPass):
         ]
 
         if not data_sections:
-            data_sections = [s for s in sections if s.get("perm", 0) & 0x2]
+            # radare2 reports section ``perm`` as a string (e.g. "-rw-",
+            # "-r-x", "----"), not an int bitmask. Select writable
+            # sections by testing the write flag in that string; the old
+            # ``s.get("perm", 0) & 0x2`` raised TypeError ("str & int")
+            # for every real binary, making this pass non-functional.
+            data_sections = [s for s in sections if "w" in str(s.get("perm", ""))]
 
         strings_obfuscated = 0
         bytes_encoded = 0
