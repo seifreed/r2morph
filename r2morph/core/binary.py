@@ -222,6 +222,11 @@ class Binary:
                 self._writer.set_r2(self.r2)
 
         except Exception as e:
+            # A spawn that succeeded but failed a later step (low-memory
+            # config cmd, set_r2, ...) would otherwise leave a live
+            # radare2 subprocess + pipe fds attached to self until GC.
+            # Tear it down before raising, like the retry path does.
+            self._discard_failed_r2()
             raise RuntimeError(f"Failed to open binary with r2pipe: {e}")
         return self
 
