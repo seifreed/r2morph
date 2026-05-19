@@ -623,32 +623,37 @@ class ParallelMutationEngine:
             if progress_callback:
                 progress_callback(pass_name, 0.0)
 
-            if self.use_checkpoints:
-                checkpoint_path = self._save_checkpoint(pass_name)
-            else:
-                checkpoint_path = None
-
             logger.debug(f"Executing pass: {pass_name}")
 
-            # Acquire file lock before modifying binary if using file locking
-            if self._file_lock and self.use_file_lock:
-                acquired = self._file_lock.acquire()
-                if not acquired:
-                    logger.error(f"Failed to acquire file lock for pass {pass_name}")
-                    return PassResult(
-                        pass_name=pass_name,
-                        status=PassStatus.FAILED,
-                        error="Failed to acquire file lock",
-                        duration_seconds=time.time() - start_time,
-                    )
+            # Snapshot the pre-pass binary and mutate it under one lock.
+            # _save_checkpoint reads self.binary.path; pass_obj.apply
+            # writes it. If the snapshot were outside this lock, another
+            # worker could shutil.copy2 the shared binary mid-write and
+            # save a torn checkpoint that a later rollback would restore.
+            with self._binary_mutation_lock:
+                if self.use_checkpoints:
+                    checkpoint_path = self._save_checkpoint(pass_name)
+                else:
+                    checkpoint_path = None
 
-            try:
-                with self._binary_mutation_lock:
+                # Acquire file lock before modifying binary if using file locking
+                if self._file_lock and self.use_file_lock:
+                    acquired = self._file_lock.acquire()
+                    if not acquired:
+                        logger.error(f"Failed to acquire file lock for pass {pass_name}")
+                        return PassResult(
+                            pass_name=pass_name,
+                            status=PassStatus.FAILED,
+                            error="Failed to acquire file lock",
+                            duration_seconds=time.time() - start_time,
+                        )
+
+                try:
                     result = pass_obj.apply(self.binary)
-            finally:
-                # Always release the lock after pass execution
-                if self._file_lock and self._file_lock.is_locked():
-                    self._file_lock.release()
+                finally:
+                    # Always release the lock after pass execution
+                    if self._file_lock and self._file_lock.is_locked():
+                        self._file_lock.release()
 
             duration = time.time() - start_time
             mutations_applied = result.get("mutations_applied", 0) if result else 0
