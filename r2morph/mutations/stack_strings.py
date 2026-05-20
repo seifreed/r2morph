@@ -431,6 +431,62 @@ def generate_stack_string_x86(
         ]
         asm_lines.extend(decode_loop)
 
+    elif encoding == EncodingScheme.XOR_ROLLING:
+        # Pre-fix the x86 generator was missing this branch -- it computed
+        # ``encoded_data`` and emitted the sub-esp prologue but never wrote
+        # the bytes onto the stack nor produced a decode loop, leaving the
+        # caller with uninitialised stack memory in place of the "stack
+        # string". Mirrors the x64 layout above, with esp/edi/ecx instead
+        # of rsp/rdi/rcx. ``imul dl, 7`` is left as the rolling-key step
+        # because radare2's assembler accepts it (emits a 32-bit IMUL
+        # whose low-byte result is correct for the (key*7) mod 256
+        # invariant that ``xor_rolling`` encodes against).
+        for i, b in enumerate(encoded_data):
+            asm_lines.append(f"    mov byte [esp+{i}], 0x{b:02X}")
+
+            if interleave_junk and random.random() < junk_probability:
+                junk = random.choice(junk_instructions)
+                asm_lines.append(f"    {junk[1]}  ; junk")
+                junk_used.append(junk[0])
+
+        decode_loop = [
+            "    ; Decode rolling XOR string",
+            "    lea edi, [esp]",
+            f"    mov ecx, {len(encoded_data)}",
+            f"    mov dl, 0x{xor_key:02X}",
+            f".decode_loop_{id(encoded_data):x}:",
+            "    xor byte [edi], dl",
+            "    inc edi",
+            "    imul dl, 7",
+            "    inc dl",
+            "    and dl, 0xFF",
+            f"    loop .decode_loop_{id(encoded_data):x}",
+        ]
+        asm_lines.extend(decode_loop)
+
+    elif encoding == EncodingScheme.ADD_SHIFT:
+        # Pre-fix the x86 generator was missing this branch too -- same
+        # silent-incomplete-asm problem as XOR_ROLLING above. Mirrors the
+        # x64 ADD_SHIFT layout.
+        for i, b in enumerate(encoded_data):
+            asm_lines.append(f"    mov byte [esp+{i}], 0x{b:02X}")
+
+            if interleave_junk and random.random() < junk_probability:
+                junk = random.choice(junk_instructions)
+                asm_lines.append(f"    {junk[1]}  ; junk")
+                junk_used.append(junk[0])
+
+        decode_loop = [
+            "    ; Decode ADD-shift'd string",
+            "    lea edi, [esp]",
+            f"    mov ecx, {len(encoded_data)}",
+            f".decode_loop_{id(encoded_data):x}:",
+            f"    sub byte [edi], {add_shift}",
+            "    inc edi",
+            f"    loop .decode_loop_{id(encoded_data):x}",
+        ]
+        asm_lines.extend(decode_loop)
+
     elif encoding == EncodingScheme.AES_256:
         aes_key = secrets.token_bytes(32)
         encoded_data, aes_key = aes_encrypt_string(string_data, aes_key)
