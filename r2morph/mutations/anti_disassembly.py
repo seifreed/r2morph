@@ -209,19 +209,32 @@ db 0x83, 0xC4, 0x08, 0xC3, 0x48, 0x31, 0xC0, 0x90, 0xFF, 0xC0
 TRAMPOLINE_X64 = [
     AntiDisasmSnippet(
         asm="""
-; Trampoline: indirect jump through calculated address
-call get_pc
-get_pc:
-pop rax
-add rax, 0x10
-jmp rax              ; Jump forward
-db 0x90, 0x90, 0x90  ; Never executed
-db 0x90, 0x90, 0x90
-real_code:
-xor eax, eax
+; Trampoline: indirect jump through calculated address.
+; Layout (offsets relative to start of snippet):
+;   0x00 call get_pc          ; 5 bytes -- pushes return = block+5
+;   0x05 get_pc: pop rax      ; 1 byte  -- rax = block+5
+;   0x06 add rax, 0x0F        ; 4 bytes -- rax = block+0x14 (= block+20)
+;   0x0A jmp rax              ; 2 bytes -- lands at block+0x14 = end of
+;                             ;            snippet, so the snippet behaves
+;                             ;            as a semantic NOP and execution
+;                             ;            continues with whatever followed
+;                             ;            the original block.
+;   0x0C db 0x90, 0x90, 0x90  ; 3 bytes -- decoy NOPs (never executed)
+;   0x0F db 0x90, 0x90, 0x90  ; 3 bytes -- decoy NOPs (never executed)
+;   0x12 real_code:
+;        xor eax, eax         ; 2 bytes -- decoy (never executed); a linear
+;                             ;            disassembler reads it as the
+;                             ;            real entry.
 """,
-        bytes_hex="E800000000588D400A4A90C4831C0FFC031C0",
-        size=16,
+        # Previously this string was 37 hex characters (odd), so
+        # ``bytes.fromhex`` raised ValueError and _inject_snippet caught the
+        # exception, silently returning False. The trampoline technique was
+        # therefore completely inert (no bytes ever written). The corrected
+        # encoding below is 40 chars / 20 bytes; it implements the layout
+        # documented in ``asm`` above and is a semantic NOP (control flow
+        # falls through to the byte immediately after the snippet).
+        bytes_hex="E800000000584883C00FFFE090909090909031C0",
+        size=20,
         disasm_type=AntiDisasmType.TRAMPOLINE,
         description="Trampoline through calculated address",
     ),
