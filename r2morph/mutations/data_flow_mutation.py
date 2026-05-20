@@ -116,8 +116,18 @@ class DataFlowMutationPass(MutationPass):
             defined = set()
 
             if "call" in disasm:
-                used.update(["rax", "rcx", "rdx", "r8", "r9", "r10", "r11"])
-                defined.add("rax")
+                # SysV AMD64 calling convention: integer arguments are passed
+                # in rdi, rsi, rdx, rcx, r8, r9 (read by the callee) and
+                # every caller-saved register is clobbered (defined by the
+                # call from the caller's perspective). The previous list
+                # confused the two roles -- it used the caller-saved set as
+                # ``used`` and dropped rdi/rsi entirely. Between an arg-load
+                # and the call, rdi/rsi were therefore treated as dead and
+                # ``_find_safe_substitution_candidates`` picked them as
+                # substitute targets, rewriting neighbouring instructions to
+                # write into the very register holding the call argument.
+                used.update(["rdi", "rsi", "rdx", "rcx", "r8", "r9"])
+                defined.update(["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"])
 
             parts = disasm.replace(",", " ").replace("[", " [ ").replace("]", " ] ").split()
 
