@@ -390,10 +390,34 @@ class PolymorphicEnginePass(MutationPass):
         )
 
     def _setup_engine(self) -> None:
-        """Setup default state transitions."""
+        """Setup default state transitions and register the matching
+        mutation passes with the engine.
+
+        Every transition added below references a mutation by name;
+        ``PolymorphicEngine.run`` then looks the name up in
+        ``engine.mutations``. Previously this method only added the
+        transitions and never populated ``engine.mutations``, so
+        ``run`` aborted at the first iteration with
+        ``"Mutation 'InstructionSubstitution' not registered"`` and the
+        whole pass returned ``mutations_applied == 0`` regardless of
+        the binary. The mutation classes are imported lazily inside this
+        method to keep the module's import surface narrow and avoid
+        forcing every importer of ``polymorphic_engine`` to drag in the
+        whole ``r2morph.mutations`` subtree.
+        """
+        from r2morph.mutations.block_reordering import BlockReorderingPass
+        from r2morph.mutations.code_mobility import CodeMobilityPass
+        from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+        from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+        from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
+        from r2morph.mutations.function_outlining import FunctionOutliningPass
+        from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+        from r2morph.mutations.string_obfuscation import StringObfuscationPass
+
         state = EngineState.INIT
 
         if self.enable_substitution:
+            self.engine.add_mutation("InstructionSubstitution", InstructionSubstitutionPass())
             self.engine.add_transition(
                 EngineState.INIT,
                 EngineState.SUBSTITUTED,
@@ -405,6 +429,7 @@ class PolymorphicEnginePass(MutationPass):
         if self.enable_dead_code:
             from_state = state
             to_state = EngineState.DEAD_CODE_INJECTED
+            self.engine.add_mutation("DeadCodeInjection", DeadCodeInjectionPass())
             self.engine.add_transition(
                 from_state,
                 to_state,
@@ -416,6 +441,7 @@ class PolymorphicEnginePass(MutationPass):
         if self.enable_reordering:
             from_state = state
             to_state = EngineState.REORDERED
+            self.engine.add_mutation("BlockReordering", BlockReorderingPass())
             self.engine.add_transition(
                 from_state,
                 to_state,
@@ -427,6 +453,7 @@ class PolymorphicEnginePass(MutationPass):
         if self.enable_flattening:
             from_state = state
             to_state = EngineState.FLATTENED
+            self.engine.add_mutation("ControlFlowFlattening", ControlFlowFlatteningPass())
             self.engine.add_transition(
                 from_state,
                 to_state,
@@ -438,6 +465,7 @@ class PolymorphicEnginePass(MutationPass):
         if self.enable_string_obfuscation:
             from_state = state
             to_state = EngineState.STRING_OBFUSCATED
+            self.engine.add_mutation("StringObfuscation", StringObfuscationPass())
             self.engine.add_transition(
                 from_state,
                 to_state,
@@ -449,6 +477,7 @@ class PolymorphicEnginePass(MutationPass):
         if self.enable_virtualization:
             from_state = state
             to_state = EngineState.VIRTUALIZED
+            self.engine.add_mutation("CodeVirtualization", CodeVirtualizationPass())
             self.engine.add_transition(
                 from_state,
                 to_state,
@@ -460,6 +489,7 @@ class PolymorphicEnginePass(MutationPass):
         if self.enable_mobility:
             from_state = state
             to_state = EngineState.MOBILIZED
+            self.engine.add_mutation("CodeMobility", CodeMobilityPass())
             self.engine.add_transition(
                 from_state,
                 to_state,
@@ -471,6 +501,7 @@ class PolymorphicEnginePass(MutationPass):
         if self.enable_outlining:
             from_state = state
             to_state = EngineState.OUTLINED
+            self.engine.add_mutation("FunctionOutlining", FunctionOutliningPass())
             self.engine.add_transition(
                 from_state,
                 to_state,
@@ -479,6 +510,7 @@ class PolymorphicEnginePass(MutationPass):
             )
             state = to_state
 
+        self.engine.add_mutation("NoOp", NoOp())
         self.engine.add_transition(
             state,
             EngineState.FINAL,
