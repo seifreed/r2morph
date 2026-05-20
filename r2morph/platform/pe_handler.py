@@ -104,6 +104,18 @@ class PEHandler:
                 optional_header = f.read(header_size)
 
                 if is_pe32_plus:
+                    # PE32+ optional header (Microsoft PE spec, sans data
+                    # directories) is 112 bytes. Previous format had 24
+                    # fields summing to 96 bytes and the slice was [:120];
+                    # struct.unpack rejected the size mismatch and the
+                    # whole function silently returned None on every real
+                    # PE binary. Layout matches lief/pefile field-by-field:
+                    # H Magic, B B MajorLinker MinorLinker, 5xI through
+                    # BaseOfCode, Q ImageBase (8 bytes -- PE32+ specific),
+                    # 2xI alignments, 6xH version fields, 4xI through
+                    # CheckSum, 2xH subsystem/dll-characteristics, 4xQ
+                    # stack/heap reserve+commit (also 8 bytes in PE32+),
+                    # 2xI loader flags + num_rva_sizes.
                     (
                         _magic,
                         _major_linker,
@@ -134,8 +146,17 @@ class PEHandler:
                         _size_heap_commit,
                         _loader_flags,
                         num_rva_sizes,
-                    ) = struct.unpack("<HHIIIIIIIIIIIIIIIQIIIIII", optional_header[:120])
+                    ) = struct.unpack("<HBBIIIIIQIIHHHHHHIIIIHHQQQQII", optional_header[:112])
                 else:
+                    # PE32 optional header (Microsoft PE spec, sans data
+                    # directories) is 96 bytes. Previous format had 20
+                    # fields summing to 76 bytes, vs a 29-name
+                    # destructuring -- struct.unpack rejected the buffer
+                    # size and the function silently returned None.
+                    # PE32 has BaseOfData (4 bytes) BETWEEN BaseOfCode and
+                    # ImageBase -- not present in PE32+ -- which is
+                    # consumed by the ``4x`` padding-skip below so the
+                    # destructuring stays in sync with the PE32+ branch.
                     (
                         _magic,
                         _major_linker,
@@ -166,7 +187,7 @@ class PEHandler:
                         _size_heap_commit,
                         _loader_flags,
                         num_rva_sizes,
-                    ) = struct.unpack("<HHIIIIIIIIIIIIIIIIII", optional_header[:96])
+                    ) = struct.unpack("<HBBIIIII4xIIIHHHHHHIIIIHHIIIIII", optional_header[:96])
 
                 num_data_directories = num_rva_sizes
 
@@ -371,6 +392,18 @@ class PEHandler:
                     if len(section) != 40:
                         break
                     name = section[0:8].split(b"\x00", 1)[0].decode("ascii", errors="ignore")
+                    # Per the PE spec each section header is 40 bytes:
+                    # 8-byte name (split above) + 6xI (VirtualSize,
+                    # VirtualAddress, SizeOfRawData, PointerToRawData,
+                    # PointerToRelocations, PointerToLineNumbers) + 2xH
+                    # (NumberOfRelocations, NumberOfLineNumbers; both
+                    # u16, not u32 as the previous "<IIIIIIII" format
+                    # assumed) + 1xI Characteristics = 32 bytes for the
+                    # post-name fields. The old format produced 8 values
+                    # for a 9-name destructuring, raising
+                    # ``ValueError: not enough values to unpack (expected
+                    # 9, got 8)`` on every section in the lief-free
+                    # fallback path.
                     (
                         virtual_size,
                         virtual_address,
@@ -381,7 +414,7 @@ class PEHandler:
                         _num_relocs,
                         _num_linenos,
                         characteristics,
-                    ) = struct.unpack("<IIIIIIII", section[8:40])
+                    ) = struct.unpack("<IIIIIIHHI", section[8:40])
 
                     # Validate section values to prevent unreasonable sizes
                     MAX_SECTION_SIZE = 0x10000000  # 256MB
