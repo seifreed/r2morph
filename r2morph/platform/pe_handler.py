@@ -81,100 +81,120 @@ class PEHandler:
                 coff_header = f.read(20)
                 if len(coff_header) != 20:
                     return None
-
-                (
-                    machine,
-                    num_sections,
-                    timestamp,
-                    ptr_symbols,
-                    num_symbols,
-                    size_optional,
-                    characteristics,
-                ) = struct.unpack("<HHIIIHH", coff_header)
+                coff = self._parse_coff_header(coff_header)
 
                 optional_header_offset = pe_offset + 24
-
                 f.seek(optional_header_offset)
                 magic = struct.unpack("<H", f.read(2))[0]
-
                 is_pe32_plus = magic == 0x20B
                 header_size = 240 if is_pe32_plus else 96
 
                 f.seek(optional_header_offset)
                 optional_header = f.read(header_size)
+                optional = self._parse_optional_header(optional_header, is_pe32_plus)
 
-                # PE32 and PE32+ optional headers destructure to the same 29
-                # fields (sans data directories); only the struct format and
-                # length differ. PE32+ widens ImageBase and the four stack/heap
-                # sizes to 8 bytes (``Q``); PE32 instead carries a 4-byte
-                # BaseOfData between BaseOfCode and ImageBase, skipped with
-                # ``4x`` so both layouts stay field-aligned. Both match
-                # lief/pefile field-for-field (verified on dataset/pe_x86_64.exe,
-                # a PE32+ x86_64 file).
-                if is_pe32_plus:
-                    optional_format = "<HBBIIIIIQIIHHHHHHIIIIHHQQQQII"
-                    optional_size = 112
-                else:
-                    optional_format = "<HBBIIIII4xIIIHHHHHHIIIIHHIIIIII"
-                    optional_size = 96
-
-                (
-                    _magic,
-                    _major_linker,
-                    _minor_linker,
-                    _size_code,
-                    _size_init_data,
-                    _size_uninit_data,
-                    entry_point,
-                    _base_code,
-                    image_base,
-                    section_alignment,
-                    file_alignment,
-                    _major_os,
-                    _minor_os,
-                    _major_image,
-                    _minor_image,
-                    _major_subsys,
-                    _minor_subsys,
-                    _win32_version,
-                    _size_image,
-                    _size_headers,
-                    checksum_offset_raw,
-                    _subsystem,
-                    _dll_characteristics,
-                    _size_stack_reserve,
-                    _size_stack_commit,
-                    _size_heap_reserve,
-                    _size_heap_commit,
-                    _loader_flags,
-                    num_rva_sizes,
-                ) = struct.unpack(optional_format, optional_header[:optional_size])
-
-                num_data_directories = num_rva_sizes
-
-                # Checksum is always at offset 64 from start of optional header,
-                # regardless of PE32 vs PE32+
+                # Checksum is always at offset 64 from the start of the optional
+                # header, regardless of PE32 vs PE32+.
                 checksum_offset = optional_header_offset + 64
 
                 return {
                     "pe_offset": pe_offset,
-                    "machine": machine,
-                    "num_sections": num_sections,
-                    "timestamp": timestamp,
-                    "size_optional": size_optional,
-                    "characteristics": characteristics,
+                    "machine": coff["machine"],
+                    "num_sections": coff["num_sections"],
+                    "timestamp": coff["timestamp"],
+                    "size_optional": coff["size_optional"],
+                    "characteristics": coff["characteristics"],
                     "is_pe32_plus": is_pe32_plus,
-                    "image_base": image_base,
-                    "entry_point": entry_point,
-                    "section_alignment": section_alignment,
-                    "file_alignment": file_alignment,
+                    "image_base": optional["image_base"],
+                    "entry_point": optional["entry_point"],
+                    "section_alignment": optional["section_alignment"],
+                    "file_alignment": optional["file_alignment"],
                     "checksum_offset": checksum_offset,
-                    "num_data_directories": num_data_directories,
+                    "num_data_directories": optional["num_data_directories"],
                     "optional_header_offset": optional_header_offset,
                 }
         except Exception as e:
             logger.error(f"Failed to read PE header: {e}")
             return None
+
+    @staticmethod
+    def _parse_coff_header(coff_header: bytes) -> dict[str, int]:
+        """Extract the COFF file-header fields the loader needs."""
+        (
+            machine,
+            num_sections,
+            timestamp,
+            _ptr_symbols,
+            _num_symbols,
+            size_optional,
+            characteristics,
+        ) = struct.unpack("<HHIIIHH", coff_header)
+        return {
+            "machine": machine,
+            "num_sections": num_sections,
+            "timestamp": timestamp,
+            "size_optional": size_optional,
+            "characteristics": characteristics,
+        }
+
+    @staticmethod
+    def _parse_optional_header(optional_header: bytes, is_pe32_plus: bool) -> dict[str, int]:
+        """Extract the optional-header fields the loader needs.
+
+        PE32 and PE32+ optional headers destructure to the same 29 fields
+        (sans data directories); only the struct format and length differ.
+        PE32+ widens ImageBase and the four stack/heap sizes to 8 bytes
+        (``Q``); PE32 instead carries a 4-byte BaseOfData between BaseOfCode
+        and ImageBase, skipped with ``4x`` so both layouts stay field-aligned.
+        Both match lief/pefile field-for-field (verified on
+        dataset/pe_x86_64.exe, a PE32+ x86_64 file).
+        """
+        if is_pe32_plus:
+            optional_format = "<HBBIIIIIQIIHHHHHHIIIIHHQQQQII"
+            optional_size = 112
+        else:
+            optional_format = "<HBBIIIII4xIIIHHHHHHIIIIHHIIIIII"
+            optional_size = 96
+
+        (
+            _magic,
+            _major_linker,
+            _minor_linker,
+            _size_code,
+            _size_init_data,
+            _size_uninit_data,
+            entry_point,
+            _base_code,
+            image_base,
+            section_alignment,
+            file_alignment,
+            _major_os,
+            _minor_os,
+            _major_image,
+            _minor_image,
+            _major_subsys,
+            _minor_subsys,
+            _win32_version,
+            _size_image,
+            _size_headers,
+            _checksum_offset_raw,
+            _subsystem,
+            _dll_characteristics,
+            _size_stack_reserve,
+            _size_stack_commit,
+            _size_heap_reserve,
+            _size_heap_commit,
+            _loader_flags,
+            num_rva_sizes,
+        ) = struct.unpack(optional_format, optional_header[:optional_size])
+
+        return {
+            "entry_point": entry_point,
+            "image_base": image_base,
+            "section_alignment": section_alignment,
+            "file_alignment": file_alignment,
+            "num_data_directories": num_rva_sizes,
+        }
 
     def is_pe(self) -> bool:
         """Check if the file is a PE binary."""
