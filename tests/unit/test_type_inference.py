@@ -350,6 +350,55 @@ class TestTypeInference:
         second = inferrer._get_calling_convention("x86_64", 64)
         assert "polluted" not in second["callee_saved"]
 
+    def test_infer_arm64_register_types_branches(self):
+        """Characterize ARM64 per-instruction register typing.
+
+        Drives _infer_arm64_register_types with one instruction per dispatch
+        branch and pins the resulting register categories. This is the oracle
+        for moving the per-branch ``import re`` to a single module-level import.
+        Only deterministic branches are asserted (the ``fmov`` branch is dead —
+        ``"fmov"`` contains ``"mov"`` so the earlier ``mov`` branch claims it).
+        """
+        inferrer = TypeInference()
+        regs: dict = {}
+
+        # ldr into a general register -> pointer; into a vector register -> float.
+        inferrer._infer_arm64_register_types("ldr x0, [x1]", regs)
+        assert regs["x0"].is_pointer()
+        inferrer._infer_arm64_register_types("ldr d3, [x1]", regs)
+        assert regs["d3"].primitive == PrimitiveType.FLOAT64
+
+        # str records an unseen destination as a 64-bit integer.
+        inferrer._infer_arm64_register_types("str x2, [sp]", regs)
+        assert regs["x2"].primitive == PrimitiveType.UINT64
+
+        # mov copies a known source register's type to the destination.
+        inferrer._infer_arm64_register_types("mov x9, x0", regs)
+        assert regs["x9"].is_pointer()
+
+        # add/sub default an unseen destination to a 64-bit integer.
+        inferrer._infer_arm64_register_types("add x6, x6, #1", regs)
+        assert regs["x6"].primitive == PrimitiveType.INT64
+
+    def test_infer_arm32_register_types_branches(self):
+        """Characterize ARM32 per-instruction register typing.
+
+        Oracle for the module-level ``re`` import move; pins the ldr/str
+        branches per register class.
+        """
+        inferrer = TypeInference()
+        regs: dict = {}
+
+        inferrer._infer_arm32_register_types("ldr r0, [sp]", regs)
+        assert regs["r0"].is_pointer()
+        inferrer._infer_arm32_register_types("ldr s2, [sp]", regs)
+        assert regs["s2"].primitive == PrimitiveType.FLOAT32
+        inferrer._infer_arm32_register_types("ldr d4, [sp]", regs)
+        assert regs["d4"].primitive == PrimitiveType.FLOAT64
+
+        inferrer._infer_arm32_register_types("str r1, [sp]", regs)
+        assert regs["r1"].primitive == PrimitiveType.UINT32
+
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
         inferrer = TypeInference()

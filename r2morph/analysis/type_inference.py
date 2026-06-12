@@ -10,6 +10,7 @@ Provides type analysis capabilities:
 
 import copy
 import logging
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -900,8 +901,6 @@ class TypeInference:
     ) -> None:
         """Infer types for ARM64 registers from instruction."""
         if "ldr" in disasm_str:
-            import re
-
             match = re.search(r"ldr\s+(\w+)", disasm_str)
             if match:
                 reg = match.group(1).lower()
@@ -911,8 +910,6 @@ class TypeInference:
                     register_types[reg] = self.create_primitive_type(PrimitiveType.FLOAT64)
 
         elif "str" in disasm_str:
-            import re
-
             match = re.search(r"str\s+(\w+)", disasm_str)
             if match:
                 reg = match.group(1).lower()
@@ -920,8 +917,6 @@ class TypeInference:
                     register_types[reg] = self.create_primitive_type(PrimitiveType.UINT64)
 
         elif "mov" in disasm_str:
-            import re
-
             match = re.search(r"mov\s+(\w+)\s*,\s*(\w+)", disasm_str)
             if match:
                 dest, src = match.group(1).lower(), match.group(2).lower()
@@ -931,16 +926,12 @@ class TypeInference:
                     register_types[dest] = register_types[src]
 
         elif "fmov" in disasm_str:
-            import re
-
             match = re.search(r"fmov\s+(\w+)", disasm_str)
             if match:
                 reg = match.group(1).lower()
                 register_types[reg] = self.create_primitive_type(PrimitiveType.FLOAT64)
 
         elif "add" in disasm_str or "sub" in disasm_str:
-            import re
-
             match = re.search(r"(add|sub)\s+(\w+)", disasm_str)
             if match:
                 reg = match.group(2).lower()
@@ -954,8 +945,6 @@ class TypeInference:
     ) -> None:
         """Infer types for ARM32 registers from instruction."""
         if "ldr" in disasm_str:
-            import re
-
             match = re.search(r"ldr\s+(\w+)", disasm_str)
             if match:
                 reg = match.group(1).lower()
@@ -967,8 +956,6 @@ class TypeInference:
                     register_types[reg] = self.create_primitive_type(PrimitiveType.FLOAT64)
 
         elif "str" in disasm_str:
-            import re
-
             match = re.search(r"str\s+(\w+)", disasm_str)
             if match:
                 reg = match.group(1).lower()
@@ -976,8 +963,6 @@ class TypeInference:
                     register_types[reg] = self.create_primitive_type(PrimitiveType.UINT32)
 
         elif "mov" in disasm_str:
-            import re
-
             match = re.search(r"mov\s+(\w+)\s*,\s*(\w+)", disasm_str)
             if match:
                 dest, src = match.group(1).lower(), match.group(2).lower()
