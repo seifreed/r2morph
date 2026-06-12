@@ -264,6 +264,38 @@ class TestTypeInference:
         assert inferrer._get_operand_size("ax") == 2
         assert inferrer._get_operand_size("al") == 1
 
+    def test_get_operand_size_contract(self):
+        """Characterize the full operand-size contract.
+
+        Guards the module-level ``_X86_REGISTER_SIZES`` lookup: the size is
+        resolved by ``str.startswith`` over the table in declaration order and
+        the first match wins. The wider names are declared first, so a
+        sub-register whose name extends a wider one (``r8d`` starts with the
+        8-byte ``r8``) resolves to the wider size. This pins that order-sensitive
+        behavior so a future re-sort of the table is caught as a regression.
+        """
+        inferrer = TypeInference()
+
+        # Extended (numeric) registers across all widths.
+        assert inferrer._get_operand_size("r15") == 8
+        assert inferrer._get_operand_size("esi") == 4
+
+        # Order-sensitive prefix match: r8d/r8w start with the 8-byte "r8" key,
+        # which is declared first, so they resolve to 8 (not 4 / 2).
+        assert inferrer._get_operand_size("r8d") == 8
+        assert inferrer._get_operand_size("r8w") == 8
+
+        # Case-insensitive and whitespace-trimmed.
+        assert inferrer._get_operand_size("RAX") == 8
+        assert inferrer._get_operand_size("  rax  ") == 8
+
+        # Matches on the leading register of a multi-token operand.
+        assert inferrer._get_operand_size("rax, rbx") == 8
+
+        # Unknown operands fall back to the default width.
+        assert inferrer._get_operand_size("xmm0") == 4
+        assert inferrer._get_operand_size("not_a_register") == 4
+
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
         inferrer = TypeInference()

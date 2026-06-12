@@ -17,6 +17,81 @@ from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 
+# x86/x86-64 general-purpose register byte sizes, keyed by register name.
+# Order is significant: _get_operand_size matches with ``str.startswith`` and
+# returns the first hit, so the wider names are listed first. This means a
+# sub-register whose name extends a wider register (e.g. "r8d" starts with the
+# 8-byte "r8") resolves to the wider size — preserved here as the established
+# contract; see test_get_operand_size for the pinned behavior.
+_X86_REGISTER_SIZES: dict[str, int] = {
+    "rax": 8,
+    "rbx": 8,
+    "rcx": 8,
+    "rdx": 8,
+    "rsi": 8,
+    "rdi": 8,
+    "rbp": 8,
+    "rsp": 8,
+    "r8": 8,
+    "r9": 8,
+    "r10": 8,
+    "r11": 8,
+    "r12": 8,
+    "r13": 8,
+    "r14": 8,
+    "r15": 8,
+    "eax": 4,
+    "ebx": 4,
+    "ecx": 4,
+    "edx": 4,
+    "esi": 4,
+    "edi": 4,
+    "ebp": 4,
+    "esp": 4,
+    "r8d": 4,
+    "r9d": 4,
+    "r10d": 4,
+    "r11d": 4,
+    "r12d": 4,
+    "r13d": 4,
+    "r14d": 4,
+    "r15d": 4,
+    "ax": 2,
+    "bx": 2,
+    "cx": 2,
+    "dx": 2,
+    "si": 2,
+    "di": 2,
+    "bp": 2,
+    "sp": 2,
+    "r8w": 2,
+    "r9w": 2,
+    "r10w": 2,
+    "r11w": 2,
+    "r12w": 2,
+    "r13w": 2,
+    "r14w": 2,
+    "r15w": 2,
+    "al": 1,
+    "bl": 1,
+    "cl": 1,
+    "dl": 1,
+    "sil": 1,
+    "dil": 1,
+    "bpl": 1,
+    "spl": 1,
+    "r8b": 1,
+    "r9b": 1,
+    "r10b": 1,
+    "r11b": 1,
+    "r12b": 1,
+    "r13b": 1,
+    "r14b": 1,
+    "r15b": 1,
+}
+
+_DEFAULT_OPERAND_SIZE = 4
+
 
 class TypeCategory(Enum):
     """Category of a type."""
@@ -384,78 +459,11 @@ class TypeInference:
         """Get the size of an operand based on register name."""
         operand = operand.lower().strip()
 
-        size_map = {
-            "rax": 8,
-            "rbx": 8,
-            "rcx": 8,
-            "rdx": 8,
-            "rsi": 8,
-            "rdi": 8,
-            "rbp": 8,
-            "rsp": 8,
-            "r8": 8,
-            "r9": 8,
-            "r10": 8,
-            "r11": 8,
-            "r12": 8,
-            "r13": 8,
-            "r14": 8,
-            "r15": 8,
-            "eax": 4,
-            "ebx": 4,
-            "ecx": 4,
-            "edx": 4,
-            "esi": 4,
-            "edi": 4,
-            "ebp": 4,
-            "esp": 4,
-            "r8d": 4,
-            "r9d": 4,
-            "r10d": 4,
-            "r11d": 4,
-            "r12d": 4,
-            "r13d": 4,
-            "r14d": 4,
-            "r15d": 4,
-            "ax": 2,
-            "bx": 2,
-            "cx": 2,
-            "dx": 2,
-            "si": 2,
-            "di": 2,
-            "bp": 2,
-            "sp": 2,
-            "r8w": 2,
-            "r9w": 2,
-            "r10w": 2,
-            "r11w": 2,
-            "r12w": 2,
-            "r13w": 2,
-            "r14w": 2,
-            "r15w": 2,
-            "al": 1,
-            "bl": 1,
-            "cl": 1,
-            "dl": 1,
-            "sil": 1,
-            "dil": 1,
-            "bpl": 1,
-            "spl": 1,
-            "r8b": 1,
-            "r9b": 1,
-            "r10b": 1,
-            "r11b": 1,
-            "r12b": 1,
-            "r13b": 1,
-            "r14b": 1,
-            "r15b": 1,
-        }
-
-        for reg, size in size_map.items():
+        for reg, size in _X86_REGISTER_SIZES.items():
             if operand.startswith(reg):
                 return size
 
-        return 4
+        return _DEFAULT_OPERAND_SIZE
 
     def _extract_operand_size(self, disasm: str) -> int:
         """Extract operand size from instruction."""
