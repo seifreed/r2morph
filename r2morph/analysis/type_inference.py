@@ -8,6 +8,7 @@ Provides type analysis capabilities:
 - Array bounds detection
 """
 
+import copy
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -91,6 +92,77 @@ _X86_REGISTER_SIZES: dict[str, int] = {
 }
 
 _DEFAULT_OPERAND_SIZE = 4
+
+# Calling-convention register sets keyed by architecture. _get_calling_convention
+# selects one of these and returns a fresh copy so callers never share mutable
+# state. Keys: param_registers (arg-passing order), return_register, callee_saved,
+# caller_saved; the 32-bit x86 cdecl entry additionally carries stack_params.
+_SYSV_AMD64_CONVENTION: dict[str, Any] = {
+    "param_registers": ["rdi", "rsi", "rdx", "rcx", "r8", "r9"],
+    "return_register": "rax",
+    "callee_saved": ["rbx", "rbp", "r12", "r13", "r14", "r15"],
+    "caller_saved": ["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"],
+}
+
+_CDECL_X86_32_CONVENTION: dict[str, Any] = {
+    "param_registers": [],
+    "return_register": "eax",
+    "callee_saved": ["ebx", "esi", "edi", "ebp"],
+    "caller_saved": ["eax", "ecx", "edx"],
+    "stack_params": True,
+}
+
+_AAPCS_ARM32_CONVENTION: dict[str, Any] = {
+    "param_registers": ["r0", "r1", "r2", "r3"],
+    "return_register": "r0",
+    "callee_saved": ["r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"],
+    "caller_saved": ["r0", "r1", "r2", "r3", "r12", "lr"],
+}
+
+_AAPCS64_ARM64_CONVENTION: dict[str, Any] = {
+    "param_registers": ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"],
+    "return_register": "x0",
+    "callee_saved": [
+        "x19",
+        "x20",
+        "x21",
+        "x22",
+        "x23",
+        "x24",
+        "x25",
+        "x26",
+        "x27",
+        "x28",
+    ],
+    "caller_saved": [
+        "x0",
+        "x1",
+        "x2",
+        "x3",
+        "x4",
+        "x5",
+        "x6",
+        "x7",
+        "x8",
+        "x9",
+        "x10",
+        "x11",
+        "x12",
+        "x13",
+        "x14",
+        "x15",
+        "x16",
+        "x17",
+        "x18",
+    ],
+}
+
+_EMPTY_CONVENTION: dict[str, Any] = {
+    "param_registers": [],
+    "return_register": "",
+    "callee_saved": [],
+    "caller_saved": [],
+}
 
 
 class TypeCategory(Enum):
@@ -683,64 +755,21 @@ class TypeInference:
         return function_types
 
     def _get_calling_convention(self, arch: str, bits: int) -> dict[str, Any]:
-        """Get calling convention registers for architecture."""
-        if arch in ("x86", "amd64", "x86_64"):
-            if bits == 64:
-                return {
-                    "param_registers": ["rdi", "rsi", "rdx", "rcx", "r8", "r9"],
-                    "return_register": "rax",
-                    "callee_saved": ["rbx", "rbp", "r12", "r13", "r14", "r15"],
-                    "caller_saved": ["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"],
-                }
-            else:
-                return {
-                    "param_registers": [],
-                    "return_register": "eax",
-                    "callee_saved": ["ebx", "esi", "edi", "ebp"],
-                    "caller_saved": ["eax", "ecx", "edx"],
-                    "stack_params": True,
-                }
-        elif arch in ("arm", "arm32"):
-            return {
-                "param_registers": ["r0", "r1", "r2", "r3"],
-                "return_register": "r0",
-                "callee_saved": ["r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"],
-                "caller_saved": ["r0", "r1", "r2", "r3", "r12", "lr"],
-            }
-        elif arch in ("arm64", "aarch64"):
-            return {
-                "param_registers": ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"],
-                "return_register": "x0",
-                "callee_saved": ["x19", "x20", "x21", "x22", "x23", "x24", "x25", "x26", "x27", "x28"],
-                "caller_saved": [
-                    "x0",
-                    "x1",
-                    "x2",
-                    "x3",
-                    "x4",
-                    "x5",
-                    "x6",
-                    "x7",
-                    "x8",
-                    "x9",
-                    "x10",
-                    "x11",
-                    "x12",
-                    "x13",
-                    "x14",
-                    "x15",
-                    "x16",
-                    "x17",
-                    "x18",
-                ],
-            }
+        """Get calling convention registers for architecture.
 
-        return {
-            "param_registers": [],
-            "return_register": "",
-            "callee_saved": [],
-            "caller_saved": [],
-        }
+        Returns an independent copy so callers may read or mutate the result
+        without affecting the shared convention tables or each other.
+        """
+        if arch in ("x86", "amd64", "x86_64"):
+            convention = _SYSV_AMD64_CONVENTION if bits == 64 else _CDECL_X86_32_CONVENTION
+        elif arch in ("arm", "arm32"):
+            convention = _AAPCS_ARM32_CONVENTION
+        elif arch in ("arm64", "aarch64"):
+            convention = _AAPCS64_ARM64_CONVENTION
+        else:
+            convention = _EMPTY_CONVENTION
+
+        return copy.deepcopy(convention)
 
     def _infer_function_params(
         self,

@@ -296,6 +296,60 @@ class TestTypeInference:
         assert inferrer._get_operand_size("xmm0") == 4
         assert inferrer._get_operand_size("not_a_register") == 4
 
+    def test_get_calling_convention_contract(self):
+        """Characterize the calling-convention table for every architecture.
+
+        Pins the exact register sets returned per arch/bits so the move of the
+        tables to module-level constants stays behavior-preserving, and asserts
+        that each call returns an independent (non-aliased) copy.
+        """
+        inferrer = TypeInference()
+
+        assert inferrer._get_calling_convention("x86_64", 64) == {
+            "param_registers": ["rdi", "rsi", "rdx", "rcx", "r8", "r9"],
+            "return_register": "rax",
+            "callee_saved": ["rbx", "rbp", "r12", "r13", "r14", "r15"],
+            "caller_saved": ["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"],
+        }
+        # amd64/x86 aliases resolve to the same 64-bit convention.
+        assert inferrer._get_calling_convention("amd64", 64) == inferrer._get_calling_convention("x86", 64)
+
+        assert inferrer._get_calling_convention("x86", 32) == {
+            "param_registers": [],
+            "return_register": "eax",
+            "callee_saved": ["ebx", "esi", "edi", "ebp"],
+            "caller_saved": ["eax", "ecx", "edx"],
+            "stack_params": True,
+        }
+
+        assert inferrer._get_calling_convention("arm32", 32) == {
+            "param_registers": ["r0", "r1", "r2", "r3"],
+            "return_register": "r0",
+            "callee_saved": ["r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"],
+            "caller_saved": ["r0", "r1", "r2", "r3", "r12", "lr"],
+        }
+
+        arm64 = inferrer._get_calling_convention("aarch64", 64)
+        assert arm64["param_registers"] == ["x0", "x1", "x2", "x3", "x4", "x5", "x6", "x7"]
+        assert arm64["return_register"] == "x0"
+        assert arm64["callee_saved"] == [f"x{n}" for n in range(19, 29)]
+        assert arm64["caller_saved"] == [f"x{n}" for n in range(0, 19)]
+
+        # Unknown architecture falls back to the empty convention.
+        assert inferrer._get_calling_convention("mips", 32) == {
+            "param_registers": [],
+            "return_register": "",
+            "callee_saved": [],
+            "caller_saved": [],
+        }
+
+        # Each call yields an independent copy: mutating one must not affect
+        # the shared table or a subsequent call.
+        first = inferrer._get_calling_convention("x86_64", 64)
+        first["callee_saved"].append("polluted")
+        second = inferrer._get_calling_convention("x86_64", 64)
+        assert "polluted" not in second["callee_saved"]
+
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
         inferrer = TypeInference()
