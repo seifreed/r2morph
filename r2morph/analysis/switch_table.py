@@ -318,48 +318,7 @@ class SwitchTableAnalyzer:
         bits = arch_info.get("bits", 64)
         ptr_size = bits // 8
 
-        entries: list[JumpTableEntry] = []
-        seen_targets: set[int] = set()
-
-        try:
-            offset = 0
-            case_value = 0
-
-            while len(entries) < max_entries:
-                target_bytes = self.binary.read_bytes(effective_address + offset, ptr_size)
-                if not target_bytes or len(target_bytes) != ptr_size:
-                    break
-
-                if bits == 64:
-                    target = int.from_bytes(target_bytes, "little", signed=False)
-                    if target > 0x7FFFFFFFFFFF:
-                        target = target - (1 << 64)
-                else:
-                    target = int.from_bytes(target_bytes, "little", signed=False)
-                    if target > 0x7FFFFFFF:
-                        target = target - (1 << 32)
-
-                if target == 0 or target in seen_targets:
-                    break
-
-                normalized = self._normalize_address(target, bits)
-
-                entry = JumpTableEntry(
-                    index=len(entries),
-                    target_address=normalized,
-                    case_value=case_value,
-                )
-                entries.append(entry)
-                seen_targets.add(normalized)
-
-                offset += ptr_size
-                case_value += 1
-
-        except Exception as e:
-            logger.debug(f"Failed to read jump table at 0x{effective_address:x}: {e}")
-            if not entries:
-                return None
-
+        entries = self._read_jump_table_entries(effective_address, ptr_size, bits, max_entries)
         if not entries:
             return None
 
@@ -378,6 +337,51 @@ class SwitchTableAnalyzer:
             offset=jump.displacement,
             function_address=jump.function_address,
         )
+
+    def _read_jump_table_entries(
+        self,
+        effective_address: int,
+        ptr_size: int,
+        bits: int,
+        max_entries: int,
+    ) -> list[JumpTableEntry]:
+        """Read pointer-sized targets from the table until a stop condition.
+
+        Stops at the first short read, a zero/out-of-table target, or a repeated
+        target (a back-reference that would otherwise loop). Read failures are
+        contained, returning whatever entries were collected so far.
+        """
+        entries: list[JumpTableEntry] = []
+        seen_targets: set[int] = set()
+
+        try:
+            offset = 0
+            case_value = 0
+
+            while len(entries) < max_entries:
+                target_bytes = self.binary.read_bytes(effective_address + offset, ptr_size)
+                if not target_bytes or len(target_bytes) != ptr_size:
+                    break
+
+                target = int.from_bytes(target_bytes, "little", signed=False)
+                if bits == 64 and target > 0x7FFFFFFFFFFF:
+                    target -= 1 << 64
+                elif bits != 64 and target > 0x7FFFFFFF:
+                    target -= 1 << 32
+
+                if target == 0 or target in seen_targets:
+                    break
+
+                normalized = self._normalize_address(target, bits)
+                entries.append(JumpTableEntry(index=len(entries), target_address=normalized, case_value=case_value))
+                seen_targets.add(normalized)
+
+                offset += ptr_size
+                case_value += 1
+        except Exception as e:
+            logger.debug(f"Failed to read jump table at 0x{effective_address:x}: {e}")
+
+        return entries
 
     def _normalize_address(self, addr: int, bits: int) -> int:
         """Normalize an address to valid range."""
