@@ -350,49 +350,21 @@ class ELFHandler:
                         logger.warning(f"Truncated section header at index {i}")
                         break
 
-                    if is_64bit:
-                        # 64-bit section header format
-                        # sh_name(4) sh_type(4) sh_flags(8) sh_addr(8) sh_offset(8)
-                        # sh_size(8) sh_link(4) sh_info(4) sh_addralign(8) sh_entsize(8)
-                        sh_name = struct.unpack(f"{endian}I", sh_data[0:4])[0]
-                        sh_type = struct.unpack(f"{endian}I", sh_data[4:8])[0]
-                        sh_flags = struct.unpack(f"{endian}Q", sh_data[8:16])[0]
-                        sh_addr = struct.unpack(f"{endian}Q", sh_data[16:24])[0]
-                        sh_offset = struct.unpack(f"{endian}Q", sh_data[24:32])[0]
-                        sh_size = struct.unpack(f"{endian}Q", sh_data[32:40])[0]
-                        sh_link = struct.unpack(f"{endian}I", sh_data[40:44])[0]
-                        sh_info = struct.unpack(f"{endian}I", sh_data[44:48])[0]
-                        sh_addralign = struct.unpack(f"{endian}Q", sh_data[48:56])[0]
-                        sh_entsize = struct.unpack(f"{endian}Q", sh_data[56:64])[0]
-                    else:
-                        # 32-bit section header format
-                        # sh_name(4) sh_type(4) sh_flags(4) sh_addr(4) sh_offset(4)
-                        # sh_size(4) sh_link(4) sh_info(4) sh_addralign(4) sh_entsize(4)
-                        sh_name = struct.unpack(f"{endian}I", sh_data[0:4])[0]
-                        sh_type = struct.unpack(f"{endian}I", sh_data[4:8])[0]
-                        sh_flags = struct.unpack(f"{endian}I", sh_data[8:12])[0]
-                        sh_addr = struct.unpack(f"{endian}I", sh_data[12:16])[0]
-                        sh_offset = struct.unpack(f"{endian}I", sh_data[16:20])[0]
-                        sh_size = struct.unpack(f"{endian}I", sh_data[20:24])[0]
-                        sh_link = struct.unpack(f"{endian}I", sh_data[24:28])[0]
-                        sh_info = struct.unpack(f"{endian}I", sh_data[28:32])[0]
-                        sh_addralign = struct.unpack(f"{endian}I", sh_data[32:36])[0]
-                        sh_entsize = struct.unpack(f"{endian}I", sh_data[36:40])[0]
-
-                    section_name = self._get_section_name(sh_name, shstrtab_data)
+                    entry = self._parse_section_header_entry(sh_data, is_64bit, endian)
+                    section_name = self._get_section_name(entry["sh_name"], shstrtab_data)
 
                     sections.append(
                         {
                             "name": section_name,
-                            "vaddr": sh_addr,
-                            "size": sh_size,
-                            "offset": sh_offset,
-                            "flags": sh_flags,
-                            "type": sh_type,
-                            "link": sh_link,
-                            "info": sh_info,
-                            "align": sh_addralign,
-                            "entsize": sh_entsize,
+                            "vaddr": entry["sh_addr"],
+                            "size": entry["sh_size"],
+                            "offset": entry["sh_offset"],
+                            "flags": entry["sh_flags"],
+                            "type": entry["sh_type"],
+                            "link": entry["sh_link"],
+                            "info": entry["sh_info"],
+                            "align": entry["sh_addralign"],
+                            "entsize": entry["sh_entsize"],
                             "index": i,
                         }
                     )
@@ -403,6 +375,49 @@ class ELFHandler:
         except Exception as e:
             logger.error(f"Failed to get sections: {e}")
             return []
+
+    @staticmethod
+    def _parse_section_header_entry(sh_data: bytes, is_64bit: bool, endian: str) -> dict[str, int]:
+        """Unpack one ELF section-header table entry.
+
+        The 32- and 64-bit layouts carry the same ten fields in the same
+        order; sh_flags/sh_addr/sh_offset/sh_size/sh_addralign/sh_entsize widen
+        from 4 to 8 bytes in the 64-bit format. The ``endian`` byte-order prefix
+        ("<" or ">") selects standard sizes with no struct padding, so the
+        combined format matches the field offsets exactly.
+        """
+        if is_64bit:
+            fmt = f"{endian}IIQQQQIIQQ"
+            entry_size = 64
+        else:
+            fmt = f"{endian}IIIIIIIIII"
+            entry_size = 40
+
+        (
+            sh_name,
+            sh_type,
+            sh_flags,
+            sh_addr,
+            sh_offset,
+            sh_size,
+            sh_link,
+            sh_info,
+            sh_addralign,
+            sh_entsize,
+        ) = struct.unpack(fmt, sh_data[:entry_size])
+
+        return {
+            "sh_name": sh_name,
+            "sh_type": sh_type,
+            "sh_flags": sh_flags,
+            "sh_addr": sh_addr,
+            "sh_offset": sh_offset,
+            "sh_size": sh_size,
+            "sh_link": sh_link,
+            "sh_info": sh_info,
+            "sh_addralign": sh_addralign,
+            "sh_entsize": sh_entsize,
+        }
 
     def get_segments(self) -> list[dict[str, Any]]:
         """Retrieve all program segments (program headers) from the ELF binary.
