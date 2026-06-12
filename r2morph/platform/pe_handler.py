@@ -325,23 +325,27 @@ class PEHandler:
         logger.debug("Getting PE sections")
         binary = self._parse_lief()
         if binary is not None:
-            sections: list[dict] = []
-            for section in binary.sections:
-                sections.append(
-                    {
-                        "name": section.name,
-                        "virtual_address": section.virtual_address,
-                        "virtual_size": section.virtual_size,
-                        "raw_size": section.size,
-                        "offset": section.offset,
-                        "characteristics": section.characteristics,
-                    }
-                )
-            self._sections_cache = sections
-            return sections
+            sections = [
+                {
+                    "name": section.name,
+                    "virtual_address": section.virtual_address,
+                    "virtual_size": section.virtual_size,
+                    "raw_size": section.size,
+                    "offset": section.offset,
+                    "characteristics": section.characteristics,
+                }
+                for section in binary.sections
+            ]
+        else:
+            sections = self._get_sections_fallback()
 
+        self._sections_cache = sections
+        return sections
+
+    def _get_sections_fallback(self) -> list[dict]:
+        """Parse PE sections without lief by walking the section header table."""
         try:
-            sections = []
+            sections: list[dict] = []
             with open(self.binary_path, "rb") as f:
                 if f.read(2) != b"MZ":
                     return []
@@ -353,71 +357,60 @@ class PEHandler:
                 coff_header = f.read(20)
                 if len(coff_header) != 20:
                     return []
-                (
-                    _machine,
-                    num_sections,
-                    _timestamp,
-                    _ptr_symbols,
-                    _num_symbols,
-                    size_optional,
-                    _characteristics,
-                ) = struct.unpack("<HHIIIHH", coff_header)
+                _machine, num_sections, _ts, _ptr_sym, _num_sym, size_optional, _chars = struct.unpack(
+                    "<HHIIIHH", coff_header
+                )
                 f.seek(size_optional, 1)
-                MAX_SECTIONS = 10000
-                if num_sections > MAX_SECTIONS:
-                    logger.warning(f"Excessive section count {num_sections}, limiting to {MAX_SECTIONS}")
-                    num_sections = MAX_SECTIONS
+
+                max_sections = 10000
+                if num_sections > max_sections:
+                    logger.warning(f"Excessive section count {num_sections}, limiting to {max_sections}")
+                    num_sections = max_sections
 
                 for _ in range(num_sections):
                     section = f.read(40)
                     if len(section) != 40:
                         break
-                    name = section[0:8].split(b"\x00", 1)[0].decode("ascii", errors="ignore")
-                    # Per the PE spec each section header is 40 bytes:
-                    # 8-byte name (split above) + 6xI (VirtualSize,
-                    # VirtualAddress, SizeOfRawData, PointerToRawData,
-                    # PointerToRelocations, PointerToLineNumbers) + 2xH
-                    # (NumberOfRelocations, NumberOfLineNumbers; both
-                    # u16, not u32 as the previous "<IIIIIIII" format
-                    # assumed) + 1xI Characteristics = 32 bytes for the
-                    # post-name fields. The old format produced 8 values
-                    # for a 9-name destructuring, raising
-                    # ``ValueError: not enough values to unpack (expected
-                    # 9, got 8)`` on every section in the lief-free
-                    # fallback path.
-                    (
-                        virtual_size,
-                        virtual_address,
-                        raw_size,
-                        raw_ptr,
-                        _ptr_relocs,
-                        _ptr_linenos,
-                        _num_relocs,
-                        _num_linenos,
-                        characteristics,
-                    ) = struct.unpack("<IIIIIIHHI", section[8:40])
-
-                    # Validate section values to prevent unreasonable sizes
-                    MAX_SECTION_SIZE = 0x10000000  # 256MB
-                    if virtual_size > MAX_SECTION_SIZE:
-                        virtual_size = MAX_SECTION_SIZE
-                    if raw_size > MAX_SECTION_SIZE:
-                        raw_size = MAX_SECTION_SIZE
-
-                    sections.append(
-                        {
-                            "name": name,
-                            "virtual_address": virtual_address,
-                            "size": max(virtual_size, raw_size),
-                            "offset": raw_ptr,
-                            "characteristics": characteristics,
-                        }
-                    )
-            self._sections_cache = sections
+                    sections.append(self._parse_pe_section_entry(section))
             return sections
         except Exception as e:
             logger.error(f"Failed to parse PE sections fallback: {e}")
             return []
+
+    @staticmethod
+    def _parse_pe_section_entry(section: bytes) -> dict:
+        """Parse one 40-byte PE section header into a section dict.
+
+        Layout: 8-byte name + 6xI (VirtualSize, VirtualAddress, SizeOfRawData,
+        PointerToRawData, PointerToRelocations, PointerToLineNumbers) + 2xH
+        (NumberOfRelocations, NumberOfLineNumbers -- u16, not u32) + 1xI
+        Characteristics. VirtualSize and SizeOfRawData are clamped to 256 MB to
+        reject corrupt headers.
+        """
+        name = section[0:8].split(b"\x00", 1)[0].decode("ascii", errors="ignore")
+        (
+            virtual_size,
+            virtual_address,
+            raw_size,
+            raw_ptr,
+            _ptr_relocs,
+            _ptr_linenos,
+            _num_relocs,
+            _num_linenos,
+            characteristics,
+        ) = struct.unpack("<IIIIIIHHI", section[8:40])
+
+        max_section_size = 0x10000000  # 256 MB
+        virtual_size = min(virtual_size, max_section_size)
+        raw_size = min(raw_size, max_section_size)
+
+        return {
+            "name": name,
+            "virtual_address": virtual_address,
+            "size": max(virtual_size, raw_size),
+            "offset": raw_ptr,
+            "characteristics": characteristics,
+        }
 
     def get_imports(self) -> list[dict]:
         """Get PE imports."""
