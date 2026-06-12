@@ -44,3 +44,36 @@ def test_get_sections_parses_real_elf64() -> None:
     assert text["type"] == 1  # SHT_PROGBITS
     assert text["align"] == 4
     assert text["index"] == 1
+
+
+_EXPECTED_SEGMENT_KEYS = {
+    "type",
+    "type_name",
+    "vaddr",
+    "paddr",
+    "filesz",
+    "memsz",
+    "offset",
+    "flags",
+    "align",
+    "index",
+}
+
+
+def test_get_segments_parses_real_elf64() -> None:
+    handler = ELFHandler(Path("dataset/elf_x86_64"))
+
+    segments = handler.get_segments()
+
+    assert [segment["type_name"] for segment in segments] == ["PHDR", "LOAD", "LOAD", "GNU_STACK"]
+
+    for segment in segments:
+        assert set(segment.keys()) == _EXPECTED_SEGMENT_KEYS
+
+    # The first LOAD pins the 64-bit field order, including p_flags (which the
+    # ELF spec moves relative to the 32-bit layout).
+    first_load = next(segment for segment in segments if segment["type_name"] == "LOAD")
+    assert first_load["vaddr"] == 0x200000
+    assert first_load["filesz"] == 288
+    assert first_load["flags"] == 4
+    assert first_load["align"] == 4096

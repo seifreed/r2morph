@@ -478,42 +478,19 @@ class ELFHandler:
                         logger.warning(f"Truncated program header at index {i}")
                         break
 
-                    if is_64bit:
-                        # 64-bit program header format
-                        # p_type(4) p_flags(4) p_offset(8) p_vaddr(8) p_paddr(8)
-                        # p_filesz(8) p_memsz(8) p_align(8)
-                        p_type = struct.unpack(f"{endian}I", ph_data[0:4])[0]
-                        p_flags = struct.unpack(f"{endian}I", ph_data[4:8])[0]
-                        p_offset = struct.unpack(f"{endian}Q", ph_data[8:16])[0]
-                        p_vaddr = struct.unpack(f"{endian}Q", ph_data[16:24])[0]
-                        p_paddr = struct.unpack(f"{endian}Q", ph_data[24:32])[0]
-                        p_filesz = struct.unpack(f"{endian}Q", ph_data[32:40])[0]
-                        p_memsz = struct.unpack(f"{endian}Q", ph_data[40:48])[0]
-                        p_align = struct.unpack(f"{endian}Q", ph_data[48:56])[0]
-                    else:
-                        # 32-bit program header format
-                        # p_type(4) p_offset(4) p_vaddr(4) p_paddr(4)
-                        # p_filesz(4) p_memsz(4) p_flags(4) p_align(4)
-                        p_type = struct.unpack(f"{endian}I", ph_data[0:4])[0]
-                        p_offset = struct.unpack(f"{endian}I", ph_data[4:8])[0]
-                        p_vaddr = struct.unpack(f"{endian}I", ph_data[8:12])[0]
-                        p_paddr = struct.unpack(f"{endian}I", ph_data[12:16])[0]
-                        p_filesz = struct.unpack(f"{endian}I", ph_data[16:20])[0]
-                        p_memsz = struct.unpack(f"{endian}I", ph_data[20:24])[0]
-                        p_flags = struct.unpack(f"{endian}I", ph_data[24:28])[0]
-                        p_align = struct.unpack(f"{endian}I", ph_data[28:32])[0]
+                    entry = self._parse_program_header_entry(ph_data, is_64bit, endian)
 
                     segments.append(
                         {
-                            "type": p_type,
-                            "type_name": type_names.get(p_type, f"UNKNOWN({p_type})"),
-                            "vaddr": p_vaddr,
-                            "paddr": p_paddr,
-                            "filesz": p_filesz,
-                            "memsz": p_memsz,
-                            "offset": p_offset,
-                            "flags": p_flags,
-                            "align": p_align,
+                            "type": entry["p_type"],
+                            "type_name": type_names.get(entry["p_type"], f"UNKNOWN({entry['p_type']})"),
+                            "vaddr": entry["p_vaddr"],
+                            "paddr": entry["p_paddr"],
+                            "filesz": entry["p_filesz"],
+                            "memsz": entry["p_memsz"],
+                            "offset": entry["p_offset"],
+                            "flags": entry["p_flags"],
+                            "align": entry["p_align"],
                             "index": i,
                         }
                     )
@@ -524,6 +501,36 @@ class ELFHandler:
         except Exception as e:
             logger.error(f"Failed to get segments: {e}")
             return []
+
+    @staticmethod
+    def _parse_program_header_entry(ph_data: bytes, is_64bit: bool, endian: str) -> dict[str, int]:
+        """Unpack one ELF program-header table entry.
+
+        ELF32 and ELF64 reorder p_flags: it follows p_type in the 64-bit
+        layout but sits between p_memsz and p_align in the 32-bit layout. The
+        offset/vaddr/paddr/filesz/memsz/align fields widen from 4 to 8 bytes in
+        the 64-bit format. With an explicit "<"/">" byte order struct adds no
+        padding, so each combined format matches the field offsets exactly.
+        """
+        if is_64bit:
+            p_type, p_flags, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_align = struct.unpack(
+                f"{endian}IIQQQQQQ", ph_data[:56]
+            )
+        else:
+            p_type, p_offset, p_vaddr, p_paddr, p_filesz, p_memsz, p_flags, p_align = struct.unpack(
+                f"{endian}IIIIIIII", ph_data[:32]
+            )
+
+        return {
+            "p_type": p_type,
+            "p_flags": p_flags,
+            "p_offset": p_offset,
+            "p_vaddr": p_vaddr,
+            "p_paddr": p_paddr,
+            "p_filesz": p_filesz,
+            "p_memsz": p_memsz,
+            "p_align": p_align,
+        }
 
     def add_section(self, name: str, size: int, flags: int = 0x6) -> int | None:
         """Add a new section to the ELF binary.
