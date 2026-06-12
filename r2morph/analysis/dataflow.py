@@ -15,76 +15,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from r2morph.analysis._register_names import X86_REGISTER_NAMES
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
-
-# x86/x86-64 general-purpose register names, widest first, used to scan an
-# operand string for register mentions in _extract_registers_from_operand.
-_X86_REGISTER_NAMES = (
-    "rax",
-    "rbx",
-    "rcx",
-    "rdx",
-    "rsi",
-    "rdi",
-    "rbp",
-    "rsp",
-    "r8",
-    "r9",
-    "r10",
-    "r11",
-    "r12",
-    "r13",
-    "r14",
-    "r15",
-    "eax",
-    "ebx",
-    "ecx",
-    "edx",
-    "esi",
-    "edi",
-    "ebp",
-    "esp",
-    "r8d",
-    "r9d",
-    "r10d",
-    "r11d",
-    "r12d",
-    "r13d",
-    "r14d",
-    "r15d",
-    "ax",
-    "bx",
-    "cx",
-    "dx",
-    "si",
-    "di",
-    "bp",
-    "sp",
-    "r8w",
-    "r9w",
-    "r10w",
-    "r11w",
-    "r12w",
-    "r13w",
-    "r14w",
-    "r15w",
-    "al",
-    "bl",
-    "cl",
-    "dl",
-    "sil",
-    "dil",
-    "bpl",
-    "spl",
-    "r8b",
-    "r9b",
-    "r10b",
-    "r11b",
-    "r12b",
-    "r13b",
-    "r14b",
-    "r15b",
-)
 
 # Register alias families used by Register.aliases(): each set lists every
 # sub-register name that aliases the same physical register. The families are
@@ -465,7 +397,7 @@ class DataFlowAnalyzer:
         registers = set()
         operand = operand.lower()
 
-        for reg in _X86_REGISTER_NAMES:
+        for reg in X86_REGISTER_NAMES:
             if reg in operand:
                 size = 64 if reg.startswith("r") and "d" not in reg and "w" not in reg and "b" not in reg else 32
                 if reg.endswith("d"):

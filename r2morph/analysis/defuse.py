@@ -12,6 +12,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
+from r2morph.analysis._register_names import X86_REGISTER_NAMES
 from r2morph.analysis.cfg import ControlFlowGraph
 from r2morph.analysis.dataflow import DataFlowAnalyzer, Definition, Use, Register
 from r2morph.analysis.liveness import LivenessAnalysis
@@ -156,74 +157,7 @@ class DefUseAnalyzer:
         regs = set()
         disasm = insn.get("disasm", "").lower()
 
-        x86_regs = [
-            "rax",
-            "rbx",
-            "rcx",
-            "rdx",
-            "rsi",
-            "rdi",
-            "rbp",
-            "rsp",
-            "r8",
-            "r9",
-            "r10",
-            "r11",
-            "r12",
-            "r13",
-            "r14",
-            "r15",
-            "eax",
-            "ebx",
-            "ecx",
-            "edx",
-            "esi",
-            "edi",
-            "ebp",
-            "esp",
-            "r8d",
-            "r9d",
-            "r10d",
-            "r11d",
-            "r12d",
-            "r13d",
-            "r14d",
-            "r15d",
-            "ax",
-            "bx",
-            "cx",
-            "dx",
-            "si",
-            "di",
-            "bp",
-            "sp",
-            "r8w",
-            "r9w",
-            "r10w",
-            "r11w",
-            "r12w",
-            "r13w",
-            "r14w",
-            "r15w",
-            "al",
-            "bl",
-            "cl",
-            "dl",
-            "sil",
-            "dil",
-            "bpl",
-            "spl",
-            "r8b",
-            "r9b",
-            "r10b",
-            "r11b",
-            "r12b",
-            "r13b",
-            "r14b",
-            "r15b",
-        ]
-
-        for reg in x86_regs:
+        for reg in X86_REGISTER_NAMES:
             if reg in disasm:
                 if reg.endswith("d"):
                     size = 32
