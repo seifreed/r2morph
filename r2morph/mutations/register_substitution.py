@@ -16,6 +16,20 @@ from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
 
+# x86/x86-64 register families: every sub-register that aliases the same
+# physical register, keyed by a short family name. Used to decide whether a
+# size-extension (movzx/movsx) substitution would collide with the destination.
+_X86_REGISTER_FAMILIES: dict[str, list[str]] = {
+    "a": ["al", "ah", "ax", "eax", "rax"],
+    "b": ["bl", "bh", "bx", "ebx", "rbx"],
+    "c": ["cl", "ch", "cx", "ecx", "rcx"],
+    "d": ["dl", "dh", "dx", "edx", "rdx"],
+    "si": ["sil", "si", "esi", "rsi"],
+    "di": ["dil", "di", "edi", "rdi"],
+    "sp": ["spl", "sp", "esp", "rsp"],
+    "bp": ["bpl", "bp", "ebp", "rbp"],
+}
+
 
 class RegisterSubstitutionPass(MutationPass):
     """
@@ -406,24 +420,11 @@ class RegisterSubstitutionPass(MutationPass):
             )
             return False
 
-        register_families = {
-            "a": ["al", "ah", "ax", "eax", "rax"],
-            "b": ["bl", "bh", "bx", "ebx", "rbx"],
-            "c": ["cl", "ch", "cx", "ecx", "rcx"],
-            "d": ["dl", "dh", "dx", "edx", "rdx"],
-            "si": ["sil", "si", "esi", "rsi"],
-            "di": ["dil", "di", "edi", "rdi"],
-            "sp": ["spl", "sp", "esp", "rsp"],
-            "bp": ["bpl", "bp", "ebp", "rbp"],
-        }
-
         source_family = None
         orig_family = None
         subst_family = None
 
-        for family, regs in register_families.items():
-            if dest in regs:
-                pass
+        for family, regs in _X86_REGISTER_FAMILIES.items():
             if source in regs:
                 source_family = family
             if orig_reg in regs:

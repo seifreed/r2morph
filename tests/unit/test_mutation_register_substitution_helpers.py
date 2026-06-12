@@ -31,6 +31,17 @@ def test_register_substitution_helpers():
     # dest family differs from source family and sizes are compatible
     assert pass_obj._is_safe_size_extension_substitution("movzx edx, al", "edx", "ecx") is True
 
+    # Characterize the family/size contract guarded by _X86_REGISTER_FAMILIES
+    # (actual behavior, captured against the implementation):
+    # substituting the destination with a same-family register is unsafe.
+    assert pass_obj._is_safe_size_extension_substitution("movzx eax, al", "eax", "rax") is False
+    # a size mismatch between original and substitute is unsafe.
+    assert pass_obj._is_safe_size_extension_substitution("movzx eax, al", "eax", "bx") is False
+    # when destination size is not greater than source size, unsafe.
+    assert pass_obj._is_safe_size_extension_substitution("mov eax, ebx", "eax", "ecx") is False
+    # cross-family substitutions of compatible sizes are safe.
+    assert pass_obj._is_safe_size_extension_substitution("movzx eax, bl", "bl", "cl") is True
+
     # LEA substitution safety
     assert pass_obj._is_safe_lea_substitution("lea rax, [rbx + rcx*4]", "rax", "r10") is True
     assert pass_obj._is_safe_lea_substitution("lea rax, [rbx + rcx*4]", "rbx", "r10") is False
