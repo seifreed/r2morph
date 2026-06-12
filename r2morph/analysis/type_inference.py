@@ -758,21 +758,32 @@ class TypeInference:
         Returns:
             Dictionary mapping function addresses to their parameter/return types
         """
-        functions = binary.get_functions()
-        function_types: dict[int, dict[str, TypeInfo]] = {}
-
         arch_info = binary.get_arch_info()
         arch = arch_info.get("arch", "x86").lower()
         bits = arch_info.get("bits", 64)
-
         calling_convention = self._get_calling_convention(arch, bits)
 
-        for func in functions:
+        function_types = self._infer_all_function_param_types(binary, calling_convention)
+
+        if call_graph:
+            self._propagate_through_calls(binary, call_graph, function_types, calling_convention)
+
+        return function_types
+
+    def _infer_all_function_param_types(
+        self,
+        binary: Binary,
+        calling_convention: dict[str, Any],
+    ) -> dict[int, dict[str, TypeInfo]]:
+        """Infer parameter types for every function, isolating per-function
+        disassembly failures so one bad function never aborts the others."""
+        function_types: dict[int, dict[str, TypeInfo]] = {}
+
+        for func in binary.get_functions():
             func_addr = func.get("offset", func.get("addr", 0))
             func_name = func.get("name", f"func_{func_addr:x}")
 
             param_types: dict[str, TypeInfo] = {}
-
             try:
                 disasm = binary.get_function_disasm(func_addr)
                 if disasm:
@@ -781,9 +792,6 @@ class TypeInference:
                 logger.debug(f"Failed to infer params for {func_name}: {e}")
 
             function_types[func_addr] = param_types
-
-        if call_graph:
-            self._propagate_through_calls(binary, call_graph, function_types, calling_convention)
 
         return function_types
 

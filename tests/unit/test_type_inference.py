@@ -533,6 +533,36 @@ class TestTypeInference:
         assert unknown4[0x50].primitive == PrimitiveType.INT32
         assert unknown4[0x50].size == 4
 
+    def test_propagate_interprocedural_types_per_function(self):
+        """Characterize the per-function inference loop, no mocks.
+
+        Pins that the result has exactly one entry per function, the happy path
+        infers parameters from the calling convention, and a function whose
+        disassembly raises is recorded with an empty parameter map (graceful
+        error path). This is the oracle for extracting the loop into a helper.
+        """
+        from tests._doubles.in_memory_typed_binary import InMemoryTypedBinary
+
+        inferrer = TypeInference()
+        binary = InMemoryTypedBinary(
+            arch="x86_64",
+            bits=64,
+            functions=[
+                {"offset": 0x1000, "name": "good"},
+                {"offset": 0x2000, "name": "broken"},
+            ],
+            disasm_by_addr={0x1000: [{"disasm": "mov rdi, rax"}]},
+            failing_addrs={0x2000},
+        )
+
+        result = inferrer.propagate_interprocedural_types(binary)
+
+        assert set(result.keys()) == {0x1000, 0x2000}
+        # Happy path: rdi is the first SysV AMD64 parameter register.
+        assert "param_0" in result[0x1000]
+        # Error path: disassembly raised -> empty parameter map, no crash.
+        assert result[0x2000] == {}
+
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
         inferrer = TypeInference()
