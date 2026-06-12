@@ -172,25 +172,9 @@ class MachOHandler:
                 header = f.read(header_size - 4)
                 if len(header) != header_size - 4:
                     return [], []
-                if is_64:
-                    (
-                        _cputype,
-                        _cpusubtype,
-                        _filetype,
-                        ncmds,
-                        _sizeofcmds,
-                        _flags,
-                        _reserved,
-                    ) = struct.unpack(endian + "IIIIIII", header)
-                else:
-                    (
-                        _cputype,
-                        _cpusubtype,
-                        _filetype,
-                        ncmds,
-                        _sizeofcmds,
-                        _flags,
-                    ) = struct.unpack(endian + "IIIIII", header)
+                # Only ncmds is needed; it is the 4th u32 of the mach_header and
+                # sits at the same offset in the 32- and 64-bit layouts.
+                ncmds = struct.unpack(endian + "I", header[12:16])[0]
 
                 commands: list[dict] = []
                 segments: list[dict] = []
