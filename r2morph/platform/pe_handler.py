@@ -103,91 +103,52 @@ class PEHandler:
                 f.seek(optional_header_offset)
                 optional_header = f.read(header_size)
 
+                # PE32 and PE32+ optional headers destructure to the same 29
+                # fields (sans data directories); only the struct format and
+                # length differ. PE32+ widens ImageBase and the four stack/heap
+                # sizes to 8 bytes (``Q``); PE32 instead carries a 4-byte
+                # BaseOfData between BaseOfCode and ImageBase, skipped with
+                # ``4x`` so both layouts stay field-aligned. Both match
+                # lief/pefile field-for-field (verified on dataset/pe_x86_64.exe,
+                # a PE32+ x86_64 file).
                 if is_pe32_plus:
-                    # PE32+ optional header (Microsoft PE spec, sans data
-                    # directories) is 112 bytes. Previous format had 24
-                    # fields summing to 96 bytes and the slice was [:120];
-                    # struct.unpack rejected the size mismatch and the
-                    # whole function silently returned None on every real
-                    # PE binary. Layout matches lief/pefile field-by-field:
-                    # H Magic, B B MajorLinker MinorLinker, 5xI through
-                    # BaseOfCode, Q ImageBase (8 bytes -- PE32+ specific),
-                    # 2xI alignments, 6xH version fields, 4xI through
-                    # CheckSum, 2xH subsystem/dll-characteristics, 4xQ
-                    # stack/heap reserve+commit (also 8 bytes in PE32+),
-                    # 2xI loader flags + num_rva_sizes.
-                    (
-                        _magic,
-                        _major_linker,
-                        _minor_linker,
-                        _size_code,
-                        _size_init_data,
-                        _size_uninit_data,
-                        entry_point,
-                        _base_code,
-                        image_base,
-                        section_alignment,
-                        file_alignment,
-                        _major_os,
-                        _minor_os,
-                        _major_image,
-                        _minor_image,
-                        _major_subsys,
-                        _minor_subsys,
-                        _win32_version,
-                        _size_image,
-                        _size_headers,
-                        checksum_offset_raw,
-                        _subsystem,
-                        _dll_characteristics,
-                        _size_stack_reserve,
-                        _size_stack_commit,
-                        _size_heap_reserve,
-                        _size_heap_commit,
-                        _loader_flags,
-                        num_rva_sizes,
-                    ) = struct.unpack("<HBBIIIIIQIIHHHHHHIIIIHHQQQQII", optional_header[:112])
+                    optional_format = "<HBBIIIIIQIIHHHHHHIIIIHHQQQQII"
+                    optional_size = 112
                 else:
-                    # PE32 optional header (Microsoft PE spec, sans data
-                    # directories) is 96 bytes. Previous format had 20
-                    # fields summing to 76 bytes, vs a 29-name
-                    # destructuring -- struct.unpack rejected the buffer
-                    # size and the function silently returned None.
-                    # PE32 has BaseOfData (4 bytes) BETWEEN BaseOfCode and
-                    # ImageBase -- not present in PE32+ -- which is
-                    # consumed by the ``4x`` padding-skip below so the
-                    # destructuring stays in sync with the PE32+ branch.
-                    (
-                        _magic,
-                        _major_linker,
-                        _minor_linker,
-                        _size_code,
-                        _size_init_data,
-                        _size_uninit_data,
-                        entry_point,
-                        _base_code,
-                        image_base,
-                        section_alignment,
-                        file_alignment,
-                        _major_os,
-                        _minor_os,
-                        _major_image,
-                        _minor_image,
-                        _major_subsys,
-                        _minor_subsys,
-                        _win32_version,
-                        _size_image,
-                        _size_headers,
-                        checksum_offset_raw,
-                        _subsystem,
-                        _dll_characteristics,
-                        _size_stack_reserve,
-                        _size_stack_commit,
-                        _size_heap_reserve,
-                        _size_heap_commit,
-                        _loader_flags,
-                        num_rva_sizes,
-                    ) = struct.unpack("<HBBIIIII4xIIIHHHHHHIIIIHHIIIIII", optional_header[:96])
+                    optional_format = "<HBBIIIII4xIIIHHHHHHIIIIHHIIIIII"
+                    optional_size = 96
+
+                (
+                    _magic,
+                    _major_linker,
+                    _minor_linker,
+                    _size_code,
+                    _size_init_data,
+                    _size_uninit_data,
+                    entry_point,
+                    _base_code,
+                    image_base,
+                    section_alignment,
+                    file_alignment,
+                    _major_os,
+                    _minor_os,
+                    _major_image,
+                    _minor_image,
+                    _major_subsys,
+                    _minor_subsys,
+                    _win32_version,
+                    _size_image,
+                    _size_headers,
+                    checksum_offset_raw,
+                    _subsystem,
+                    _dll_characteristics,
+                    _size_stack_reserve,
+                    _size_stack_commit,
+                    _size_heap_reserve,
+                    _size_heap_commit,
+                    _loader_flags,
+                    num_rva_sizes,
+                ) = struct.unpack(optional_format, optional_header[:optional_size])
 
                 num_data_directories = num_rva_sizes
 
