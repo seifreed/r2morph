@@ -500,6 +500,34 @@ class SARIFFormatter:
         output_path.write_text(self.to_json(report_data))
 
 
+def _coerce_bytes(raw: Any) -> bytes:
+    """Accept either a hex string or a bytes-like for the wire-format
+    bytes fields on a mutation dict.
+
+    ``MutationRecord.to_dict`` (the only producer of report mutations)
+    stores ``original_bytes``/``mutated_bytes`` as **hex strings** -- they
+    have to be JSON-serializable, and the dataclass field is typed
+    ``str``. The CLI's ``report --format sarif`` path then loads the JSON
+    and hands the dicts straight to this function. Previously the
+    formatter assumed ``bytes``, called ``.hex()`` on whatever came in,
+    and crashed with ``AttributeError: 'str' object has no attribute
+    'hex'`` for every real mutation report. Accept both shapes so the
+    bytes-input fast path keeps working for in-process callers while the
+    hex-string path the CLI uses just works.
+    """
+    if isinstance(raw, (bytes, bytearray, memoryview)):
+        return bytes(raw)
+    if isinstance(raw, str):
+        try:
+            return bytes.fromhex(raw)
+        except ValueError:
+            # Mutation passes never produce non-hex strings here, but a
+            # malformed report shouldn't crash the SARIF output -- treat
+            # an unparseable string the same as a missing field.
+            return b""
+    return b""
+
+
 def format_as_sarif(
     mutations: list[dict[str, Any]],
     validations: list[dict[str, Any]],
@@ -512,8 +540,8 @@ def format_as_sarif(
     mutation_results = [
         MutationResult(
             address=m.get("address", 0),
-            original_bytes=m.get("original_bytes", b""),
-            mutated_bytes=m.get("mutated_bytes", b""),
+            original_bytes=_coerce_bytes(m.get("original_bytes", b"")),
+            mutated_bytes=_coerce_bytes(m.get("mutated_bytes", b"")),
             pass_name=m.get("pass_name", "unknown"),
             description=m.get("description"),
             function=m.get("function"),
