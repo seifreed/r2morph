@@ -20,6 +20,16 @@ else:
 
 LIEF_AVAILABLE = lief is not None
 
+# Mach-O magic numbers as read little-endian. ``_NATIVE_LE`` values mark a
+# little-endian thin binary (MH_MAGIC / MH_MAGIC_64); ``_NATIVE_BE`` are the
+# byte-swapped forms that mark a big-endian thin binary; ``_FAT_BE`` are the
+# fat-binary magics as read big-endian. ``_MAGIC_64`` selects the 64-bit
+# header/segment layout.
+_MACHO_MAGICS_NATIVE_LE = {0xFEEDFACE, 0xFEEDFACF}
+_MACHO_MAGICS_NATIVE_BE = {0xCEFAEDFE, 0xCFFAEDFE}
+_FAT_MAGICS_BE = {0xCAFEBABE, 0xCAFEBABF, 0xBEBAFECA, 0xBFBAFECA}
+_MACHO_MAGICS_64 = {0xFEEDFACF, 0xCFFAEDFE}
+
 
 class MachOHandler:
     """
@@ -48,6 +58,81 @@ class MachOHandler:
             logger.error(f"Failed to parse Mach-O with LIEF: {e}")
             return None
 
+    @staticmethod
+    def _resolve_macho_arch(f: Any, file_size: int) -> tuple[str, int, int] | None:
+        """Resolve the thin Mach-O slice to parse.
+
+        Reads the leading magic and returns ``(endian, offset, magic)`` for the
+        thin Mach-O image: directly for a thin binary, or after seeking to the
+        first architecture slice of a fat binary. Returns ``None`` when the file
+        is not a recognizable Mach-O / fat binary or an offset is out of range.
+        """
+        magic_bytes = f.read(4)
+        if len(magic_bytes) != 4:
+            return None
+        le_magic = struct.unpack("<I", magic_bytes)[0]
+        be_magic = struct.unpack(">I", magic_bytes)[0]
+
+        endian = "<"
+        offset = 0
+        magic = le_magic
+
+        if be_magic in _FAT_MAGICS_BE:
+            endian = ">" if be_magic in {0xCAFEBABE, 0xCAFEBABF} else "<"
+            f.seek(0)
+            magic = struct.unpack(endian + "I", f.read(4))[0]
+            if magic in {0xCAFEBABE, 0xBEBAFECA}:
+                nfat = struct.unpack(endian + "I", f.read(4))[0]
+                if nfat < 1 or nfat > 100:
+                    logger.warning(f"Invalid nfat count: {nfat}")
+                    return None
+                arch_data = f.read(20)
+                if len(arch_data) != 20:
+                    return None
+                _, _, arch_offset, _, _ = struct.unpack(endian + "IIIII", arch_data)
+                if arch_offset >= file_size:
+                    logger.warning(f"Invalid arch_offset 0x{arch_offset:x} exceeds file size 0x{file_size:x}")
+                    return None
+                offset = arch_offset
+            elif magic in {0xCAFEBABF, 0xBFBAFECA}:
+                nfat = struct.unpack(endian + "I", f.read(4))[0]
+                if nfat < 1 or nfat > 100:
+                    logger.warning(f"Invalid nfat count: {nfat}")
+                    return None
+                arch_data = f.read(32)
+                if len(arch_data) != 32:
+                    return None
+                _, _, arch_offset, _, _, _ = struct.unpack(endian + "IIQQII", arch_data)
+                if arch_offset >= file_size:
+                    logger.warning(f"Invalid arch_offset 0x{arch_offset:x} exceeds file size 0x{file_size:x}")
+                    return None
+                offset = arch_offset
+            else:
+                return None
+            f.seek(offset)
+            magic_bytes = f.read(4)
+            if len(magic_bytes) != 4:
+                return None
+            le_magic = struct.unpack("<I", magic_bytes)[0]
+            be_magic = struct.unpack(">I", magic_bytes)[0]
+            if le_magic in _MACHO_MAGICS_NATIVE_LE:
+                endian = "<"
+                magic = le_magic
+            elif le_magic in _MACHO_MAGICS_NATIVE_BE:
+                endian = ">"
+                magic = be_magic
+            else:
+                return None
+        elif le_magic in _MACHO_MAGICS_NATIVE_LE:
+            endian = "<"
+        elif le_magic in _MACHO_MAGICS_NATIVE_BE:
+            endian = ">"
+            magic = be_magic
+        else:
+            return None
+
+        return endian, offset, magic
+
     def _parse_macho_basic(self) -> tuple[list[dict], list[dict]]:
         """
         Minimal Mach-O parser fallback when LIEF is unavailable.
@@ -58,77 +143,12 @@ class MachOHandler:
         try:
             file_size = self.binary_path.stat().st_size
             with open(self.binary_path, "rb") as f:
-                magic_bytes = f.read(4)
-                if len(magic_bytes) != 4:
+                arch = self._resolve_macho_arch(f, file_size)
+                if arch is None:
                     return [], []
-                le_magic = struct.unpack("<I", magic_bytes)[0]
-                be_magic = struct.unpack(">I", magic_bytes)[0]
+                endian, offset, magic = arch
 
-                # When read as little-endian, these indicate an LE binary
-                macho_magics_native_le = {0xFEEDFACE, 0xFEEDFACF}
-                # When read as little-endian, these (byte-swapped) indicate a BE binary
-                macho_magics_native_be = {0xCEFAEDFE, 0xCFFAEDFE}
-                fat_magics_be = {0xCAFEBABE, 0xCAFEBABF, 0xBEBAFECA, 0xBFBAFECA}
-
-                endian = "<"
-                offset = 0
-                magic = le_magic
-
-                if be_magic in fat_magics_be:
-                    endian = ">" if be_magic in {0xCAFEBABE, 0xCAFEBABF} else "<"
-                    f.seek(0)
-                    magic = struct.unpack(endian + "I", f.read(4))[0]
-                    if magic in {0xCAFEBABE, 0xBEBAFECA}:
-                        nfat = struct.unpack(endian + "I", f.read(4))[0]
-                        if nfat < 1 or nfat > 100:
-                            logger.warning(f"Invalid nfat count: {nfat}")
-                            return [], []
-                        arch_data = f.read(20)
-                        if len(arch_data) != 20:
-                            return [], []
-                        _, _, arch_offset, _, _ = struct.unpack(endian + "IIIII", arch_data)
-                        if arch_offset >= file_size:
-                            logger.warning(f"Invalid arch_offset 0x{arch_offset:x} exceeds file size 0x{file_size:x}")
-                            return [], []
-                        offset = arch_offset
-                    elif magic in {0xCAFEBABF, 0xBFBAFECA}:
-                        nfat = struct.unpack(endian + "I", f.read(4))[0]
-                        if nfat < 1 or nfat > 100:
-                            logger.warning(f"Invalid nfat count: {nfat}")
-                            return [], []
-                        arch_data = f.read(32)
-                        if len(arch_data) != 32:
-                            return [], []
-                        _, _, arch_offset, _, _, _ = struct.unpack(endian + "IIQQII", arch_data)
-                        if arch_offset >= file_size:
-                            logger.warning(f"Invalid arch_offset 0x{arch_offset:x} exceeds file size 0x{file_size:x}")
-                            return [], []
-                        offset = arch_offset
-                    else:
-                        return [], []
-                    f.seek(offset)
-                    magic_bytes = f.read(4)
-                    if len(magic_bytes) != 4:
-                        return [], []
-                    le_magic = struct.unpack("<I", magic_bytes)[0]
-                    be_magic = struct.unpack(">I", magic_bytes)[0]
-                    if le_magic in macho_magics_native_le:
-                        endian = "<"
-                        magic = le_magic
-                    elif le_magic in macho_magics_native_be:
-                        endian = ">"
-                        magic = be_magic
-                    else:
-                        return [], []
-                elif le_magic in macho_magics_native_le:
-                    endian = "<"
-                elif le_magic in macho_magics_native_be:
-                    endian = ">"
-                    magic = be_magic
-                else:
-                    return [], []
-
-                is_64 = magic in {0xFEEDFACF, 0xCFFAEDFE}
+                is_64 = magic in _MACHO_MAGICS_64
                 header_size = 32 if is_64 else 28
                 f.seek(offset + 4)
                 header = f.read(header_size - 4)
