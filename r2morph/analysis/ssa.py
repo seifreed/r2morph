@@ -534,25 +534,29 @@ class SSAConverter:
         Returns:
             Dictionary mapping block address to (live_in, live_out)
         """
+        live_info = self._seed_block_liveness(ssa_blocks)
+        self._propagate_live_out(ssa_blocks, live_info)
+        return live_info
+
+    def _seed_block_liveness(
+        self,
+        ssa_blocks: dict[int, SSABlock],
+    ) -> dict[int, tuple[set[SSAVariable], set[SSAVariable]]]:
+        """Seed each block's live-in from the registers and phi operands it uses.
+
+        live-out starts empty and is filled by the propagation pass.
+        """
         live_info: dict[int, tuple[set[SSAVariable], set[SSAVariable]]] = {}
 
         for block_addr, ssa_block in ssa_blocks.items():
             used: set[str | SSAVariable] = set()
-            defined: set[str | SSAVariable] = set()
-
             for instruction in ssa_block.instructions:
                 disasm = instruction.get("disasm", "").lower()
                 used.update(self._extract_used_registers(disasm))
-                defined.update(self._extract_defined_registers(disasm))
-
             for phi in ssa_block.phi_functions:
-                for operand in phi.operands:
-                    used.add(operand)
-                defined.add(phi.result)
+                used.update(phi.operands)
 
-            live_out: set[SSAVariable] = set()
             live_in: set[SSAVariable] = set()
-
             for reg in used:
                 if isinstance(reg, SSAVariable):
                     live_in.add(reg)
@@ -560,8 +564,17 @@ class SSAConverter:
                     version = self._get_current_version(reg)
                     live_in.add(SSAVariable(base_name=reg, version=version))
 
-            live_info[block_addr] = (live_in, live_out)
+            live_info[block_addr] = (live_in, set())
 
+        return live_info
+
+    def _propagate_live_out(
+        self,
+        ssa_blocks: dict[int, SSABlock],
+        live_info: dict[int, tuple[set[SSAVariable], set[SSAVariable]]],
+    ) -> None:
+        """Fixpoint: each block's live-out is the union of its successors'
+        live-in. Mutates the live-out sets in ``live_info`` in place."""
         changed = True
         max_iterations = 100
         iteration = 0
@@ -571,14 +584,13 @@ class SSAConverter:
             iteration += 1
 
             for block_addr, ssa_block in ssa_blocks.items():
-                live_in, live_out = live_info[block_addr]
+                _, live_out = live_info[block_addr]
 
                 for succ_addr in ssa_block.successors:
-                    if succ_addr in live_info:
-                        succ_live_in, _ = live_info[succ_addr]
-                        for ssa_var in succ_live_in:
-                            if ssa_var not in live_out:
-                                live_out.add(ssa_var)
-                                changed = True
-
-        return live_info
+                    if succ_addr not in live_info:
+                        continue
+                    succ_live_in, _ = live_info[succ_addr]
+                    for ssa_var in succ_live_in:
+                        if ssa_var not in live_out:
+                            live_out.add(ssa_var)
+                            changed = True
