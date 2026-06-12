@@ -86,6 +86,53 @@ _X86_REGISTER_NAMES = (
     "r15b",
 )
 
+# Register alias families used by Register.aliases(): each set lists every
+# sub-register name that aliases the same physical register. The families are
+# scanned in order (x86 before ARM), so a name shared across architectures
+# resolves to the first matching family -- preserve this order.
+_X86_ALIAS_FAMILIES = (
+    {"rax", "eax", "ax", "al"},
+    {"rbx", "ebx", "bx", "bl"},
+    {"rcx", "ecx", "cx", "cl"},
+    {"rdx", "edx", "dx", "dl"},
+    {"rsi", "esi", "si", "sil"},
+    {"rdi", "edi", "di", "dil"},
+    {"rbp", "ebp", "bp", "bpl"},
+    {"rsp", "esp", "sp", "spl"},
+    {"r8", "r8d", "r8w", "r8b"},
+    {"r9", "r9d", "r9w", "r9b"},
+    {"r10", "r10d", "r10w", "r10b"},
+    {"r11", "r11d", "r11w", "r11b"},
+    {"r12", "r12d", "r12w", "r12b"},
+    {"r13", "r13d", "r13w", "r13b"},
+    {"r14", "r14d", "r14w", "r14b"},
+    {"r15", "r15d", "r15w", "r15b"},
+)
+
+_ARM64_ALIAS_FAMILIES = tuple({f"x{n}", f"w{n}"} for n in range(31)) + (
+    {"sp", "wsp"},
+    {"lr", "x30"},
+)
+
+_ARM32_ALIAS_FAMILIES = (
+    {"r0"},
+    {"r1"},
+    {"r2"},
+    {"r3"},
+    {"r4"},
+    {"r5"},
+    {"r6"},
+    {"r7"},
+    {"r8"},
+    {"r9", "sb"},
+    {"r10", "sl"},
+    {"r11", "fp"},
+    {"r12", "ip"},
+    {"r13", "sp"},
+    {"r14", "lr"},
+    {"r15", "pc"},
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -115,113 +162,32 @@ class Register:
         aliases: set[Register] = {self}
         name = self.name.lower()
 
-        x86_alias_map = {
-            "rax": {"rax", "eax", "ax", "al"},
-            "rbx": {"rbx", "ebx", "bx", "bl"},
-            "rcx": {"rcx", "ecx", "cx", "cl"},
-            "rdx": {"rdx", "edx", "dx", "dl"},
-            "rsi": {"rsi", "esi", "si", "sil"},
-            "rdi": {"rdi", "edi", "di", "dil"},
-            "rbp": {"rbp", "ebp", "bp", "bpl"},
-            "rsp": {"rsp", "esp", "sp", "spl"},
-            "r8": {"r8", "r8d", "r8w", "r8b"},
-            "r9": {"r9", "r9d", "r9w", "r9b"},
-            "r10": {"r10", "r10d", "r10w", "r10b"},
-            "r11": {"r11", "r11d", "r11w", "r11b"},
-            "r12": {"r12", "r12d", "r12w", "r12b"},
-            "r13": {"r13", "r13d", "r13w", "r13b"},
-            "r14": {"r14", "r14d", "r14w", "r14b"},
-            "r15": {"r15", "r15d", "r15w", "r15b"},
-        }
-
-        arm64_alias_map = {
-            "x0": {"x0", "w0"},
-            "x1": {"x1", "w1"},
-            "x2": {"x2", "w2"},
-            "x3": {"x3", "w3"},
-            "x4": {"x4", "w4"},
-            "x5": {"x5", "w5"},
-            "x6": {"x6", "w6"},
-            "x7": {"x7", "w7"},
-            "x8": {"x8", "w8"},
-            "x9": {"x9", "w9"},
-            "x10": {"x10", "w10"},
-            "x11": {"x11", "w11"},
-            "x12": {"x12", "w12"},
-            "x13": {"x13", "w13"},
-            "x14": {"x14", "w14"},
-            "x15": {"x15", "w15"},
-            "x16": {"x16", "w16"},
-            "x17": {"x17", "w17"},
-            "x18": {"x18", "w18"},
-            "x19": {"x19", "w19"},
-            "x20": {"x20", "w20"},
-            "x21": {"x21", "w21"},
-            "x22": {"x22", "w22"},
-            "x23": {"x23", "w23"},
-            "x24": {"x24", "w24"},
-            "x25": {"x25", "w25"},
-            "x26": {"x26", "w26"},
-            "x27": {"x27", "w27"},
-            "x28": {"x28", "w28"},
-            "x29": {"x29", "w29"},
-            "x30": {"x30", "w30"},
-            "sp": {"sp", "wsp"},
-            "lr": {"lr", "x30"},
-        }
-
-        arm32_alias_map = {
-            "r0": {"r0"},
-            "r1": {"r1"},
-            "r2": {"r2"},
-            "r3": {"r3"},
-            "r4": {"r4"},
-            "r5": {"r5"},
-            "r6": {"r6"},
-            "r7": {"r7"},
-            "r8": {"r8"},
-            "r9": {"r9", "sb"},
-            "r10": {"r10", "sl"},
-            "r11": {"r11", "fp"},
-            "r12": {"r12", "ip"},
-            "r13": {"r13", "sp"},
-            "r14": {"r14", "lr"},
-            "r15": {"r15", "pc"},
-        }
-
-        for base, alias_set in x86_alias_map.items():
+        for alias_set in _X86_ALIAS_FAMILIES:
             if name in alias_set:
-                result: set[Register] = set()
-                for a in alias_set:
-                    if a.startswith("r") and "d" not in a and "w" not in a and "b" not in a:
-                        size = 64
-                    elif "d" in a or a.startswith("e"):
-                        size = 32
-                    elif "w" in a or a.endswith("w"):
-                        size = 16
-                    elif "b" in a:
-                        size = 8
-                    else:
-                        size = 64
-                    result.add(Register(a, size))
-                return result
+                return {Register(a, self._x86_alias_size(a)) for a in alias_set}
 
-        for base, alias_set in arm64_alias_map.items():
+        for alias_set in _ARM64_ALIAS_FAMILIES:
             if name in alias_set:
-                arm64_result: set[Register] = set()
-                for a in alias_set:
-                    size = 64 if a.startswith("x") or a == "sp" or a == "lr" else 32
-                    arm64_result.add(Register(a, size))
-                return arm64_result
+                return {Register(a, 64 if a.startswith("x") or a in ("sp", "lr") else 32) for a in alias_set}
 
-        for base, alias_set in arm32_alias_map.items():
+        for alias_set in _ARM32_ALIAS_FAMILIES:
             if name in alias_set:
-                arm32_result: set[Register] = set()
-                for a in alias_set:
-                    arm32_result.add(Register(a, 32))
-                return arm32_result
+                return {Register(a, 32) for a in alias_set}
 
         return aliases
+
+    @staticmethod
+    def _x86_alias_size(alias: str) -> int:
+        """Bit width of an x86 sub-register name within its alias family."""
+        if alias.startswith("r") and "d" not in alias and "w" not in alias and "b" not in alias:
+            return 64
+        if "d" in alias or alias.startswith("e"):
+            return 32
+        if "w" in alias or alias.endswith("w"):
+            return 16
+        if "b" in alias:
+            return 8
+        return 64
 
 
 @dataclass
