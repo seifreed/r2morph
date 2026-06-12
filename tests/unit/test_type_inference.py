@@ -399,6 +399,87 @@ class TestTypeInference:
         inferrer._infer_arm32_register_types("str r1, [sp]", regs)
         assert regs["r1"].primitive == PrimitiveType.UINT32
 
+    def test_propagate_through_phis_contract(self):
+        """Characterize the two phases of _propagate_through_phis.
+
+        Phase 1 walks sorted-adjacent addresses and unifies same-category
+        same-size types (higher confidence wins) and promotes a pointer that
+        follows a 64-bit integer. Phase 2 promotes any 64-bit integer within 32
+        bytes of a pointer to a pointer. Each scenario isolates one path; this
+        is the oracle for extracting the two phases into helpers.
+        """
+        inferrer = TypeInference()
+
+        # Phase 1: same category + size, prev higher confidence -> curr unified
+        # (alignment becomes the max, confidence the average).
+        unify = {
+            0x10: TypeInfo(
+                type_id=1,
+                category=TypeCategory.PRIMITIVE,
+                size=4,
+                alignment=2,
+                primitive=PrimitiveType.INT32,
+                confidence=0.9,
+            ),
+            0x14: TypeInfo(
+                type_id=2,
+                category=TypeCategory.PRIMITIVE,
+                size=4,
+                alignment=4,
+                primitive=None,
+                confidence=0.3,
+            ),
+        }
+        inferrer._propagate_through_phis(unify)
+        assert unify[0x14].primitive == PrimitiveType.INT32
+        assert unify[0x14].alignment == 4
+        assert abs(unify[0x14].confidence - 0.6) < 1e-9
+
+        # Phase 1: a pointer following a 64-bit integer in sorted order is
+        # re-confidenced to prev*0.9. Addresses are 64 bytes apart so the phase-2
+        # neighborhood rule (<32) stays inert and the phase-1 effect is isolated.
+        adj_ptr = {
+            0x300: TypeInfo(
+                type_id=1,
+                category=TypeCategory.PRIMITIVE,
+                size=8,
+                primitive=PrimitiveType.INT64,
+                confidence=0.8,
+            ),
+            0x340: TypeInfo(
+                type_id=2,
+                category=TypeCategory.POINTER,
+                size=8,
+                alignment=8,
+                confidence=0.5,
+            ),
+        }
+        inferrer._propagate_through_phis(adj_ptr)
+        assert adj_ptr[0x340].is_pointer()
+        assert abs(adj_ptr[0x340].confidence - 0.72) < 1e-9
+        assert adj_ptr[0x300].is_primitive()  # too far for the phase-2 rule
+
+        # Phase 2: a 64-bit integer within 32 bytes of a pointer is promoted.
+        neighbor = {
+            0x100: TypeInfo(
+                type_id=1,
+                category=TypeCategory.POINTER,
+                size=8,
+                alignment=8,
+                confidence=0.9,
+            ),
+            0x110: TypeInfo(
+                type_id=2,
+                category=TypeCategory.PRIMITIVE,
+                size=8,
+                primitive=PrimitiveType.UINT64,
+                confidence=0.4,
+            ),
+        }
+        inferrer._propagate_through_phis(neighbor)
+        assert neighbor[0x110].is_pointer()
+        assert abs(neighbor[0x110].confidence - 0.7) < 1e-9
+
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
         inferrer = TypeInference()

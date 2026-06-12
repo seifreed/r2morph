@@ -592,6 +592,16 @@ class TypeInference:
         if not types:
             return
 
+        self._unify_adjacent_types(types)
+        self._promote_pointer_neighbors(types)
+
+    def _unify_adjacent_types(self, types: dict[int, TypeInfo]) -> None:
+        """Unify the types of values at adjacent (sorted) addresses.
+
+        Where two neighbours share a category and size, the higher-confidence
+        type wins (merging alignment/primitive/confidence); a pointer that
+        follows a 64-bit integer is re-confidenced.
+        """
         addr_list = sorted(types.keys())
 
         for i in range(1, len(addr_list)):
@@ -604,43 +614,50 @@ class TypeInference:
             if prev_type.category == TypeCategory.UNKNOWN or curr_type.category == TypeCategory.UNKNOWN:
                 continue
 
-            if prev_type.category == curr_type.category:
-                if prev_type.size == curr_type.size:
-                    if prev_type.confidence > curr_type.confidence:
-                        types[curr_addr] = TypeInfo(
-                            type_id=curr_type.type_id,
-                            category=curr_type.category,
-                            size=curr_type.size,
-                            alignment=max(prev_type.alignment, curr_type.alignment),
-                            primitive=prev_type.primitive if prev_type.primitive else curr_type.primitive,
-                            confidence=(prev_type.confidence + curr_type.confidence) / 2,
-                        )
+            if (
+                prev_type.category == curr_type.category
+                and prev_type.size == curr_type.size
+                and prev_type.confidence > curr_type.confidence
+            ):
+                types[curr_addr] = TypeInfo(
+                    type_id=curr_type.type_id,
+                    category=curr_type.category,
+                    size=curr_type.size,
+                    alignment=max(prev_type.alignment, curr_type.alignment),
+                    primitive=prev_type.primitive if prev_type.primitive else curr_type.primitive,
+                    confidence=(prev_type.confidence + curr_type.confidence) / 2,
+                )
 
-            if curr_type.category == TypeCategory.POINTER and prev_type.category == TypeCategory.PRIMITIVE:
-                if prev_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64):
-                    types[curr_addr] = TypeInfo(
-                        type_id=curr_type.type_id,
+            if (
+                curr_type.category == TypeCategory.POINTER
+                and prev_type.category == TypeCategory.PRIMITIVE
+                and prev_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64)
+            ):
+                types[curr_addr] = TypeInfo(
+                    type_id=curr_type.type_id,
+                    category=TypeCategory.POINTER,
+                    size=8,
+                    alignment=8,
+                    confidence=max(prev_type.confidence, curr_type.confidence) * 0.9,
+                )
+
+    def _promote_pointer_neighbors(self, types: dict[int, TypeInfo]) -> None:
+        """Promote a 64-bit integer within 32 bytes of a pointer to a pointer."""
+        for addr, type_info in types.items():
+            if type_info.category != TypeCategory.POINTER:
+                continue
+            for other_addr, other_type in types.items():
+                if other_addr == addr:
+                    continue
+                if other_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64) and abs(other_addr - addr) < 32:
+                    types[other_addr] = TypeInfo(
+                        type_id=other_type.type_id,
                         category=TypeCategory.POINTER,
                         size=8,
                         alignment=8,
-                        confidence=max(prev_type.confidence, curr_type.confidence) * 0.9,
+                        confidence=0.7,
                     )
-
-        for addr, type_info in types.items():
-            if type_info.category == TypeCategory.POINTER:
-                for other_addr, other_type in types.items():
-                    if other_addr == addr:
-                        continue
-                    if other_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64):
-                        if abs(other_addr - addr) < 32:
-                            types[other_addr] = TypeInfo(
-                                type_id=other_type.type_id,
-                                category=TypeCategory.POINTER,
-                                size=8,
-                                alignment=8,
-                                confidence=0.7,
-                            )
-                            break
+                    break
 
     def _refine_types(self, types: dict[int, TypeInfo]) -> None:
         """
