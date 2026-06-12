@@ -480,6 +480,59 @@ class TestTypeInference:
         assert neighbor[0x110].is_pointer()
         assert abs(neighbor[0x110].confidence - 0.7) < 1e-9
 
+    def test_refine_types_contract(self):
+        """Characterize the three refinement rules of _refine_types.
+
+        The loop refines every address except the last (it needs a successor).
+        Rules: a 64-bit integer 8 bytes before a <=4-byte primitive becomes a
+        pointer; an unknown 8-byte value becomes a pointer; an unknown 4-byte
+        value becomes an int32. This is the oracle for splitting the rules into
+        helpers and dropping the dead type_counts aggregation.
+        """
+        inferrer = TypeInference()
+
+        # 64-bit int immediately followed (8 bytes on) by a small primitive
+        # -> reinterpreted as a pointer with confidence * 0.8.
+        promote = {
+            0x10: TypeInfo(
+                type_id=1,
+                category=TypeCategory.PRIMITIVE,
+                size=8,
+                primitive=PrimitiveType.INT64,
+                confidence=0.9,
+            ),
+            0x18: TypeInfo(
+                type_id=2,
+                category=TypeCategory.PRIMITIVE,
+                size=4,
+                primitive=PrimitiveType.INT32,
+                confidence=0.5,
+            ),
+        }
+        inferrer._refine_types(promote)
+        assert promote[0x10].is_pointer()
+        assert abs(promote[0x10].confidence - 0.72) < 1e-9
+        assert promote[0x18].is_primitive()  # last address is never refined
+
+        # Unknown 8-byte value -> pointer (confidence 0.5).
+        unknown8 = {
+            0x20: TypeInfo(type_id=1, category=TypeCategory.UNKNOWN, size=8),
+            0x40: TypeInfo(type_id=2, category=TypeCategory.PRIMITIVE, size=4),
+        }
+        inferrer._refine_types(unknown8)
+        assert unknown8[0x20].is_pointer()
+        assert abs(unknown8[0x20].confidence - 0.5) < 1e-9
+
+        # Unknown 4-byte value -> int32 (confidence 0.5).
+        unknown4 = {
+            0x50: TypeInfo(type_id=1, category=TypeCategory.UNKNOWN, size=4),
+            0x90: TypeInfo(type_id=2, category=TypeCategory.PRIMITIVE, size=4),
+        }
+        inferrer._refine_types(unknown4)
+        assert unknown4[0x50].is_primitive()
+        assert unknown4[0x50].primitive == PrimitiveType.INT32
+        assert unknown4[0x50].size == 4
+
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
         inferrer = TypeInference()

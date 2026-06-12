@@ -674,56 +674,71 @@ class TypeInference:
         if not types:
             return
 
-        addr_list = list(types.keys())
-
-        for i in range(len(addr_list) - 1):
-            curr_addr = addr_list[i]
-            next_addr = addr_list[i + 1] if i + 1 < len(addr_list) else None
-
-            curr_type = types[curr_addr]
-
-            if curr_type.category == TypeCategory.PRIMITIVE:
-                if curr_type.size == 8 and curr_type.primitive in (PrimitiveType.INT64, PrimitiveType.UINT64):
-                    if next_addr and (next_addr - curr_addr) == 8:
-                        next_type = types[next_addr]
-                        if next_type.category == TypeCategory.PRIMITIVE:
-                            if next_type.size <= 4:
-                                types[curr_addr] = TypeInfo(
-                                    type_id=curr_type.type_id,
-                                    category=TypeCategory.POINTER,
-                                    size=8,
-                                    alignment=8,
-                                    confidence=curr_type.confidence * 0.8,
-                                )
-
-            if curr_type.category == TypeCategory.UNKNOWN:
-                if curr_type.size == 8:
-                    types[curr_addr] = TypeInfo(
-                        type_id=curr_type.type_id,
-                        category=TypeCategory.POINTER,
-                        size=8,
-                        alignment=8,
-                        confidence=0.5,
-                    )
-                elif curr_type.size == 4:
-                    types[curr_addr] = TypeInfo(
-                        type_id=curr_type.type_id,
-                        category=TypeCategory.PRIMITIVE,
-                        size=4,
-                        alignment=4,
-                        primitive=PrimitiveType.INT32,
-                        confidence=0.5,
-                    )
-
-        type_counts: dict[TypeCategory, int] = {}
-        for type_info in types.values():
-            type_counts[type_info.category] = type_counts.get(type_info.category, 0) + 1
-
         # NOTE: Do NOT blindly promote all 8-byte primitives to pointers.
         # Only values with evidence of pointer usage (dereferences, lea patterns)
         # should be classified as pointers. Blanket promotion causes 64-bit
         # integers to be misclassified, leading to incorrect mutation safety
         # decisions downstream.
+        addr_list = list(types.keys())
+
+        for i in range(len(addr_list) - 1):
+            curr_addr = addr_list[i]
+            next_addr = addr_list[i + 1] if i + 1 < len(addr_list) else None
+            curr_type = types[curr_addr]
+
+            if curr_type.category == TypeCategory.PRIMITIVE:
+                self._refine_primitive_to_pointer(types, curr_addr, curr_type, next_addr)
+            elif curr_type.category == TypeCategory.UNKNOWN:
+                self._refine_unknown_type(types, curr_addr, curr_type)
+
+    def _refine_primitive_to_pointer(
+        self,
+        types: dict[int, TypeInfo],
+        curr_addr: int,
+        curr_type: TypeInfo,
+        next_addr: int | None,
+    ) -> None:
+        """Reinterpret a 64-bit integer as a pointer when the value 8 bytes
+        later is a small (<=4-byte) primitive."""
+        if not (curr_type.size == 8 and curr_type.primitive in (PrimitiveType.INT64, PrimitiveType.UINT64)):
+            return
+        if not (next_addr and (next_addr - curr_addr) == 8):
+            return
+        next_type = types[next_addr]
+        if next_type.category == TypeCategory.PRIMITIVE and next_type.size <= 4:
+            types[curr_addr] = TypeInfo(
+                type_id=curr_type.type_id,
+                category=TypeCategory.POINTER,
+                size=8,
+                alignment=8,
+                confidence=curr_type.confidence * 0.8,
+            )
+
+    def _refine_unknown_type(
+        self,
+        types: dict[int, TypeInfo],
+        curr_addr: int,
+        curr_type: TypeInfo,
+    ) -> None:
+        """Assume an unknown 8-byte value is a pointer and an unknown 4-byte
+        value a 32-bit integer."""
+        if curr_type.size == 8:
+            types[curr_addr] = TypeInfo(
+                type_id=curr_type.type_id,
+                category=TypeCategory.POINTER,
+                size=8,
+                alignment=8,
+                confidence=0.5,
+            )
+        elif curr_type.size == 4:
+            types[curr_addr] = TypeInfo(
+                type_id=curr_type.type_id,
+                category=TypeCategory.PRIMITIVE,
+                size=4,
+                alignment=4,
+                primitive=PrimitiveType.INT32,
+                confidence=0.5,
+            )
 
     def propagate_interprocedural_types(
         self,
