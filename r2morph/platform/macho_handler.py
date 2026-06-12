@@ -30,6 +30,24 @@ _MACHO_MAGICS_NATIVE_BE = {0xCEFAEDFE, 0xCFFAEDFE}
 _FAT_MAGICS_BE = {0xCAFEBABE, 0xCAFEBABF, 0xBEBAFECA, 0xBFBAFECA}
 _MACHO_MAGICS_64 = {0xFEEDFACF, 0xCFFAEDFE}
 
+# Load-command type -> human-readable name (the subset the fallback parser
+# reports; unknown commands are rendered as their hex value).
+_MACHO_LOAD_COMMAND_NAMES = {
+    0x1: "LC_SEGMENT",
+    0x2: "LC_SYMTAB",
+    0xB: "LC_DYSYMTAB",
+    0x19: "LC_SEGMENT_64",
+    0x1B: "LC_UUID",
+    0x1D: "LC_CODE_SIGNATURE",
+    0x21: "LC_DYLD_INFO_ONLY",
+    0x2A: "LC_SOURCE_VERSION",
+    0x32: "LC_BUILD_VERSION",
+}
+
+# LC_SEGMENT command type (32-bit) and LC_SEGMENT_64 (64-bit).
+_LC_SEGMENT = 0x1
+_LC_SEGMENT_64 = 0x19
+
 
 class MachOHandler:
     """
@@ -176,20 +194,7 @@ class MachOHandler:
 
                 commands: list[dict] = []
                 segments: list[dict] = []
-                cmd_offset = offset + header_size
-                f.seek(cmd_offset)
-
-                cmd_name_map = {
-                    0x1: "LC_SEGMENT",
-                    0x2: "LC_SYMTAB",
-                    0xB: "LC_DYSYMTAB",
-                    0x19: "LC_SEGMENT_64",
-                    0x1B: "LC_UUID",
-                    0x1D: "LC_CODE_SIGNATURE",
-                    0x21: "LC_DYLD_INFO_ONLY",
-                    0x2A: "LC_SOURCE_VERSION",
-                    0x32: "LC_BUILD_VERSION",
-                }
+                f.seek(offset + header_size)
 
                 for _ in range(ncmds):
                     cmd_header = f.read(8)
@@ -202,59 +207,54 @@ class MachOHandler:
                         logger.warning(f"Unusually large cmdsize: {cmdsize}, skipping")
                         f.seek(cmdsize - 8, 1)
                         continue
-                    name = cmd_name_map.get(cmd, f"0x{cmd:08x}")
-                    commands.append({"command": name})
+                    commands.append({"command": _MACHO_LOAD_COMMAND_NAMES.get(cmd, f"0x{cmd:08x}")})
 
-                    if cmd in {0x1, 0x19}:
-                        seg_header_size = 56 if cmd == 0x1 else 72
-                        seg_data = f.read(seg_header_size - 8)
-                        if len(seg_data) == seg_header_size - 8:
-                            if cmd == 0x1:
-                                (
-                                    segname,
-                                    vmaddr,
-                                    vmsize,
-                                    fileoff,
-                                    filesize,
-                                    _maxprot,
-                                    _initprot,
-                                    _nsects,
-                                    _flags,
-                                ) = struct.unpack(endian + "16sIIIIIIII", seg_data)
-                            else:
-                                (
-                                    segname,
-                                    vmaddr,
-                                    vmsize,
-                                    fileoff,
-                                    filesize,
-                                    _maxprot,
-                                    _initprot,
-                                    _nsects,
-                                    _flags,
-                                ) = struct.unpack(endian + "16sQQQQIIII", seg_data)
-                            segments.append(
-                                {
-                                    "name": segname.split(b"\x00", 1)[0].decode("ascii", errors="ignore"),
-                                    "virtual_address": vmaddr,
-                                    "virtual_size": vmsize,
-                                    "file_offset": fileoff,
-                                    "file_size": filesize,
-                                }
-                            )
-                        remaining = cmdsize - seg_header_size
-                        if remaining > 0 and remaining < 0x100000:
-                            f.seek(remaining, 1)
-                        elif remaining < 0:
-                            logger.warning(f"Invalid remaining size: {remaining}")
-                            break
-                    else:
+                    if cmd not in (_LC_SEGMENT, _LC_SEGMENT_64):
                         f.seek(cmdsize - 8, 1)
+                        continue
+
+                    seg_header_size = 56 if cmd == _LC_SEGMENT else 72
+                    seg_data = f.read(seg_header_size - 8)
+                    if len(seg_data) == seg_header_size - 8:
+                        segments.append(self._parse_macho_segment(seg_data, cmd, endian))
+                    remaining = cmdsize - seg_header_size
+                    if remaining > 0 and remaining < 0x100000:
+                        f.seek(remaining, 1)
+                    elif remaining < 0:
+                        logger.warning(f"Invalid remaining size: {remaining}")
+                        break
 
                 return commands, segments
         except Exception as e:
             logger.error(f"Failed to parse Mach-O fallback: {e}")
             return [], []
+
+    @staticmethod
+    def _parse_macho_segment(seg_data: bytes, cmd: int, endian: str) -> dict[str, Any]:
+        """Parse an LC_SEGMENT / LC_SEGMENT_64 command body into a segment dict.
+
+        The two layouts share the same nine fields; LC_SEGMENT_64 widens
+        vmaddr/vmsize/fileoff/filesize from 4 to 8 bytes.
+        """
+        fmt = endian + ("16sQQQQIIII" if cmd == _LC_SEGMENT_64 else "16sIIIIIIII")
+        (
+            segname,
+            vmaddr,
+            vmsize,
+            fileoff,
+            filesize,
+            _maxprot,
+            _initprot,
+            _nsects,
+            _flags,
+        ) = struct.unpack(fmt, seg_data)
+        return {
+            "name": segname.split(b"\x00", 1)[0].decode("ascii", errors="ignore"),
+            "virtual_address": vmaddr,
+            "virtual_size": vmsize,
+            "file_offset": fileoff,
+            "file_size": filesize,
+        }
 
     def _iter_macho_binaries(self, binary: Any) -> list[Any]:
         if lief is None or binary is None:
