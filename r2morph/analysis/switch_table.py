@@ -179,6 +179,49 @@ class SwitchTableAnalyzer:
         logger.debug(f"Found {len(indirect_jumps)} indirect jumps in 0x{function_address:x}")
         return indirect_jumps
 
+    def _match_jumptable_operands(self, disasm: str) -> dict[str, Any] | None:
+        """Match a jump-table addressing pattern and extract its operands.
+
+        Returns the operand fields (base/index registers, scale, displacement
+        and resolved table address) when any jump-table pattern matches -- the
+        bare register/absolute forms match with empty operands -- or None when
+        none does.
+        """
+        for pattern, ptype in self.JUMP_TABLE_PATTERNS:
+            match = re.search(pattern, disasm, re.IGNORECASE)
+            if not match:
+                continue
+
+            groups = match.groups()
+            base_register = None
+            index_register = None
+            scale = 1
+            displacement = 0
+
+            if ptype == "indexed_scaled_offset" and len(groups) >= 3:
+                index_register = groups[0]
+                scale = int(groups[1])
+                displacement = int(groups[2], 16)
+            elif ptype == "indexed_scaled" and len(groups) >= 2:
+                index_register = groups[0]
+                scale = int(groups[1])
+            elif ptype == "indexed_offset" and len(groups) >= 2:
+                base_register = groups[0]
+                displacement = int(groups[1], 16)
+            elif ptype == "indexed":
+                base_register = groups[0] if groups[0] else None
+                index_register = groups[0] if not base_register else None
+
+            return {
+                "base_register": base_register,
+                "index_register": index_register,
+                "scale": scale,
+                "displacement": displacement,
+                "table_address": displacement if (base_register and displacement) else None,
+            }
+
+        return None
+
     def _classify_indirect_jump(self, address: int, disasm: str, function_address: int) -> IndirectJump | None:
         """
         Classify an indirect jump instruction.
@@ -191,37 +234,23 @@ class SwitchTableAnalyzer:
         Returns:
             IndirectJump instance or None if not classified
         """
-        jump_type = "unknown"
-        base_register = None
-        index_register = None
-        scale = 1
-        displacement = 0
-        table_address = None
-
-        for pattern, ptype in self.JUMP_TABLE_PATTERNS:
-            match = re.search(pattern, disasm, re.IGNORECASE)
-            if match:
-                jump_type = "jumptable"
-                groups = match.groups()
-
-                if ptype == "indexed_scaled_offset" and len(groups) >= 3:
-                    index_register = groups[0]
-                    scale = int(groups[1])
-                    displacement = int(groups[2], 16)
-                elif ptype == "indexed_scaled" and len(groups) >= 2:
-                    index_register = groups[0]
-                    scale = int(groups[1])
-                elif ptype == "indexed_offset" and len(groups) >= 2:
-                    base_register = groups[0]
-                    displacement = int(groups[1], 16)
-                elif ptype == "indexed":
-                    base_register = groups[0] if groups[0] else None
-                    index_register = groups[0] if not base_register else None
-
-                if base_register and displacement:
-                    table_address = displacement
-
-                break
+        operands = self._match_jumptable_operands(disasm)
+        if operands is not None:
+            jump_type = "jumptable"
+        else:
+            jump_type = "unknown"
+            operands = {
+                "base_register": None,
+                "index_register": None,
+                "scale": 1,
+                "displacement": 0,
+                "table_address": None,
+            }
+        base_register = operands["base_register"]
+        index_register = operands["index_register"]
+        scale = operands["scale"]
+        displacement = operands["displacement"]
+        table_address = operands["table_address"]
 
         if jump_type == "unknown":
             for pattern, ptype in self.TAIL_CALL_PATTERNS:
