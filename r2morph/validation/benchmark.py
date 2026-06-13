@@ -832,29 +832,3 @@ class ValidationFramework:
         report.append("=" * 80)
 
         return "\n".join(report)
-
-
-def main() -> None:
-    """Example usage of the validation framework."""
-    framework = ValidationFramework()
-
-    print("Starting r2morph validation suite...")
-
-    try:
-        framework.run_validation_suite([BenchmarkCategory.DETECTION, BenchmarkCategory.FULL_PIPELINE])
-
-        report = framework.generate_report()
-        print(report)
-
-        framework.export_results("validation_results.json", "json")
-        print("\nResults exported to validation_results.json")
-
-    except Exception as e:
-        print(f"Validation failed: {e}")
-        import traceback
-
-        traceback.print_exc()
-
-
-if __name__ == "__main__":
-    main()
