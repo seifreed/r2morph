@@ -146,6 +146,22 @@ def _build_section_dict(entry: dict[str, int], section_name: str, index: int) ->
     }
 
 
+def _find_null_run(data: bytes, min_size: int) -> int | None:
+    """Return the start offset of the first run of at least min_size null bytes."""
+    null_run = 0
+    null_start = -1
+    for i, byte in enumerate(data):
+        if byte == 0:
+            if null_run == 0:
+                null_start = i
+            null_run += 1
+            if null_run >= min_size:
+                return null_start
+        else:
+            null_run = 0
+    return None
+
+
 class ELFHandler:
     """Handles ELF-specific operations for binary analysis and transformation.
 
@@ -791,21 +807,11 @@ class ELFHandler:
                     f.seek(section["offset"])
                     data = f.read(section["size"])
 
-                    # Search for runs of null bytes
-                    null_run = 0
-                    null_start = -1
-
-                    for i, byte in enumerate(data):
-                        if byte == 0:
-                            if null_run == 0:
-                                null_start = i
-                            null_run += 1
-                            if null_run >= min_size:
-                                vaddr = section["vaddr"] + null_start
-                                logger.info(f"Found code cave: {null_run} bytes at 0x{vaddr:x} in {section['name']}")
-                                return int(vaddr)
-                        else:
-                            null_run = 0
+                    null_start = _find_null_run(data, min_size)
+                    if null_start is not None:
+                        vaddr = section["vaddr"] + null_start
+                        logger.info(f"Found code cave: {min_size} bytes at 0x{vaddr:x} in {section['name']}")
+                        return int(vaddr)
 
             logger.debug(f"No code cave of {min_size}+ bytes found")
             return None
