@@ -129,6 +129,23 @@ def _build_segment_dict(entry: dict[str, int], index: int) -> dict[str, Any]:
     }
 
 
+def _build_section_dict(entry: dict[str, int], section_name: str, index: int) -> dict[str, Any]:
+    """Assemble a section dict from a parsed section-header entry."""
+    return {
+        "name": section_name,
+        "vaddr": entry["sh_addr"],
+        "size": entry["sh_size"],
+        "offset": entry["sh_offset"],
+        "flags": entry["sh_flags"],
+        "type": entry["sh_type"],
+        "link": entry["sh_link"],
+        "info": entry["sh_info"],
+        "align": entry["sh_addralign"],
+        "entsize": entry["sh_entsize"],
+        "index": index,
+    }
+
+
 class ELFHandler:
     """Handles ELF-specific operations for binary analysis and transformation.
 
@@ -384,22 +401,7 @@ class ELFHandler:
 
                     entry = self._parse_section_header_entry(sh_data, is_64bit, endian)
                     section_name = self._get_section_name(entry["sh_name"], shstrtab_data)
-
-                    sections.append(
-                        {
-                            "name": section_name,
-                            "vaddr": entry["sh_addr"],
-                            "size": entry["sh_size"],
-                            "offset": entry["sh_offset"],
-                            "flags": entry["sh_flags"],
-                            "type": entry["sh_type"],
-                            "link": entry["sh_link"],
-                            "info": entry["sh_info"],
-                            "align": entry["sh_addralign"],
-                            "entsize": entry["sh_entsize"],
-                            "index": i,
-                        }
-                    )
+                    sections.append(_build_section_dict(entry, section_name, i))
 
                 logger.debug(f"Parsed {len(sections)} sections from {self.binary_path}")
                 return sections
