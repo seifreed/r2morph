@@ -9,12 +9,15 @@ sequences and VM handler semantics.
 Reference: "Syntia: Synthesizing the Semantics of Obfuscated Code" by Blazytko et al.
 """
 
+import json
 import logging
+import random
+import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any
 from pathlib import Path
-import json
+from typing import Any
 
 try:
     # Syntia integration - requires separate installation of Syntia framework
@@ -119,7 +122,6 @@ class SyntiaFramework:
         Returns:
             Learned instruction semantics
         """
-        import time
 
         start_time = time.time()
 
@@ -436,7 +438,6 @@ class SyntiaFramework:
         Returns:
             Simplified expression or None
         """
-        import re
 
         expr_lower = expression.lower().replace(" ", "")
 
@@ -505,7 +506,6 @@ class SyntiaFramework:
 
     def _normalize_expression(self, expression: str) -> str:
         """Normalize an expression for comparison."""
-        import re
 
         expr = expression.lower().strip()
         expr = re.sub(r"\s+", "", expr)
@@ -548,7 +548,6 @@ class SyntiaFramework:
         Returns:
             Confidence score (0-1)
         """
-        import random
 
         test_count = 10
         matches = 0
