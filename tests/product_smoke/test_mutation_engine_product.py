@@ -470,7 +470,7 @@ def test_product_fail_fast_rolls_back_invalid_pass(
     if not stable_elf_binary.exists():
         pytest.skip("Stable ELF fixture not available")
 
-    from r2morph.validation.manager import ValidationIssue, ValidationOutcome, ValidationManager
+    from r2morph.validation.manager import ValidationIssue, ValidationManager, ValidationOutcome
 
     def _always_fail(self, binary, pass_result):
         return ValidationOutcome(
@@ -504,7 +504,7 @@ def test_product_skip_invalid_pass_reports_discarded_mutations(
     if not stable_elf_binary.exists():
         pytest.skip("Stable ELF fixture not available")
 
-    from r2morph.validation.manager import ValidationIssue, ValidationOutcome, ValidationManager
+    from r2morph.validation.manager import ValidationIssue, ValidationManager, ValidationOutcome
 
     def _always_fail(self, binary, pass_result):
         return ValidationOutcome(

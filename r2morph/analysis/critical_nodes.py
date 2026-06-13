@@ -13,7 +13,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-from r2morph.analysis.cfg import ControlFlowGraph, BlockType
+from r2morph.analysis.cfg import BlockType, ControlFlowGraph
 
 logger = logging.getLogger(__name__)
 

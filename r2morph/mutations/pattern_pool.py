@@ -7,7 +7,7 @@ equivalent replacement code with weighted probabilities.
 
 import random
 from dataclasses import dataclass, field
-from typing import Callable, Any
+from typing import Any, Callable
 
 
 @dataclass
@@ -155,7 +155,7 @@ def clear_pattern_pools() -> None:
 
 
 def match_mov_reg_reg_reg64_reg16(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP, REG_64, REG_16
+    from r2morph.analysis.register_tracker import REG_16, REG_64, REG_SIZES_MAP
 
     matches = []
 
@@ -374,7 +374,7 @@ def match_sub_reg_same(instructions: list[Instruction]) -> list[MatchResult]:
 
 
 def match_inc_reg(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP, REG_64, REG_32
+    from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
 
     matches = []
 
@@ -403,7 +403,7 @@ def match_inc_reg(instructions: list[Instruction]) -> list[MatchResult]:
 
 
 def match_dec_reg(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP, REG_64, REG_32
+    from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
 
     matches = []
 
@@ -432,7 +432,7 @@ def match_dec_reg(instructions: list[Instruction]) -> list[MatchResult]:
 
 
 def match_shl_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP, REG_64, REG_32
+    from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
 
     matches = []
     shift_values = {"1", "2", "4", "8"}
@@ -467,7 +467,7 @@ def match_shl_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
 
 
 def match_shr_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP, REG_64, REG_32
+    from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
 
     matches = []
     shift_values = {"1", "2", "4", "8"}
@@ -574,7 +574,7 @@ def match_sub_reg_imm_small(instructions: list[Instruction]) -> list[MatchResult
 
 
 def match_lea_reg_off(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP, REG_64
+    from r2morph.analysis.register_tracker import REG_64, REG_SIZES_MAP
 
     matches = []
 

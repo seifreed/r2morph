@@ -10,7 +10,6 @@ Refactored following Single Responsibility Principle:
 
 from __future__ import annotations
 
-
 import logging
 import threading
 import time
@@ -31,11 +30,11 @@ _R2PIPE_OPEN_ATTEMPTS = 3
 _R2PIPE_OPEN_RETRY_BACKOFF_SECONDS = 0.25
 
 if TYPE_CHECKING:
-    from r2morph.protocols import DisassemblerInterface
     from r2morph.core.assembly import AssemblyService
     from r2morph.core.memory_manager import MemoryManager
     from r2morph.core.reader import BinaryReader
     from r2morph.core.writer import BinaryWriter
+    from r2morph.protocols import DisassemblerInterface
 
 logger = logging.getLogger(__name__)
 

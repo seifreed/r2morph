@@ -16,13 +16,12 @@ of workers in that binary critical section at once.
 
 from pathlib import Path
 
+from r2morph.core.parallel import ParallelMutationEngine, PassStatus
 from tests._doubles.checkpoint_race_doubles import (
     BinaryAccessRecorder,
     CriticalSectionPass,
     ProbeBinary,
 )
-
-from r2morph.core.parallel import ParallelMutationEngine, PassStatus
 
 
 def test_checkpoint_and_apply_are_mutually_exclusive(tmp_path: Path) -> None:

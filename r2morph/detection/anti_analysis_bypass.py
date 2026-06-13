@@ -17,8 +17,8 @@ import logging
 import os
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any
 from enum import Enum
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import psutil

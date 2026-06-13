@@ -1,24 +1,24 @@
-from pathlib import Path
-
 import importlib.util
 from importlib import import_module
+from pathlib import Path
+
 import pytest
 import z3
 
 if importlib.util.find_spec("angr") is None:
     pytest.skip("angr not available", allow_module_level=True)
 
-from r2morph.core.binary import Binary
-from r2morph.analysis.cfg import ControlFlowGraph, BasicBlock
+from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.symbolic.angr_bridge import AngrBridge
+from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver, MBAExpression
 from r2morph.analysis.symbolic.path_explorer import (
-    PathExplorer,
     ExplorationStrategy,
-    VMHandlerDetectionTechnique,
     OpaquePredicateDetectionTechnique,
+    PathExplorer,
+    VMHandlerDetectionTechnique,
 )
 from r2morph.analysis.symbolic.state_manager import StateManager, StateSchedulingStrategy
-from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver, MBAExpression
+from r2morph.core.binary import Binary
 from r2morph.validation.manager import ValidationManager
 
 

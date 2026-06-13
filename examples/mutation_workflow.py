@@ -18,8 +18,8 @@ from pathlib import Path
 from r2morph import __version__
 from r2morph.core.config import (
     EngineConfig,
-    NopInsertionConfig,
     InstructionSubstitutionConfig,
+    NopInsertionConfig,
     RegisterSubstitutionConfig,
 )
 from r2morph.core.engine import MorphEngine

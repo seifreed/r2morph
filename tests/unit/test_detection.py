@@ -7,15 +7,15 @@ from unittest.mock import Mock
 from r2morph.detection.control_flow_detector import (
     ControlFlowAnalysisResult,
 )
+from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
+from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
 from r2morph.detection.obfuscation_detector import (
-    ObfuscationDetector,
     ObfuscationAnalysisResult,
+    ObfuscationDetector,
     ObfuscationType,
 )
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
 from r2morph.detection.pattern_matcher import PatternMatcher, PatternMatchResult
-from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
-from r2morph.detection.evasion_scorer import EvasionScorer, EvasionScore
 
 
 class TestControlFlowAnalysisResult:

@@ -1,8 +1,8 @@
 from r2morph.devirtualization.vm_handler_analyzer import (
-    VMHandlerAnalyzer,
-    VMHandler,
-    VMHandlerType,
     VMArchitecture,
+    VMHandler,
+    VMHandlerAnalyzer,
+    VMHandlerType,
 )
 
 

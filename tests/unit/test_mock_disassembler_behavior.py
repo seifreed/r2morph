@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.protocols import DisassemblerInterface
 from r2morph.adapters.mock_disassembler import MockDisassembler
+from r2morph.protocols import DisassemblerInterface
 
 
 def test_mock_disassembler_open_close_and_history(tmp_path):

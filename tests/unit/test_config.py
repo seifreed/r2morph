@@ -12,12 +12,12 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 from r2morph.core.config import (
-    MutationConfig,
-    NopInsertionConfig,
-    InstructionSubstitutionConfig,
-    RegisterSubstitutionConfig,
     AnalysisConfig,
     EngineConfig,
+    InstructionSubstitutionConfig,
+    MutationConfig,
+    NopInsertionConfig,
+    RegisterSubstitutionConfig,
 )
 
 

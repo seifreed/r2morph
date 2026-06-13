@@ -9,7 +9,6 @@ no-address short circuit.
 import struct
 
 from r2morph.analysis.switch_table import IndirectJump, JumpTableType, SwitchTableAnalyzer
-
 from tests._doubles.in_memory_jump_table_binary import InMemoryJumpTableBinary
 
 _TABLE_ADDRESS = 0x405000

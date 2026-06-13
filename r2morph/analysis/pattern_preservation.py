@@ -15,9 +15,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.exception import ExceptionInfoReader
 from r2morph.analysis.switch_table import SwitchTableAnalyzer
+from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 

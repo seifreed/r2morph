@@ -390,6 +390,7 @@ class TestBackgroundCleanup:
 
     def test_cleanup_expired_removes_old_entries(self, temp_cache_dir):
         from datetime import timedelta
+
         from r2morph.core.analysis_cache import CacheEntry
 
         cache = AnalysisCache(cache_dir=temp_cache_dir, enable_background_cleanup=False)
@@ -424,6 +425,7 @@ class TestBackgroundCleanup:
 
     def test_cleanup_low_access_removes_unused(self, temp_cache_dir):
         from datetime import timedelta
+
         from r2morph.core.analysis_cache import CacheEntry
 
         cache = AnalysisCache(cache_dir=temp_cache_dir, enable_background_cleanup=False)

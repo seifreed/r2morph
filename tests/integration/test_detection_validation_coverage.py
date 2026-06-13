@@ -2,11 +2,11 @@
 Tests for detection and validation modules to increase coverage.
 """
 
+import importlib.util
 import shutil
 from pathlib import Path
 
 import pytest
-import importlib.util
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)

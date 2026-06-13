@@ -1,5 +1,4 @@
-from r2morph.mutations import arm_rules
-from r2morph.mutations import arm_expansion_rules
+from r2morph.mutations import arm_expansion_rules, arm_rules
 
 
 def test_arm_equivalence_groups_non_empty():

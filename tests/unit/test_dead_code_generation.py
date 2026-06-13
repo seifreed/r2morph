@@ -1,11 +1,11 @@
 from r2morph.utils.dead_code import (
-    generate_x86_dead_code,
     generate_arm_dead_code,
-    generate_nop_sequence,
-    generate_register_preserving_sequence,
-    generate_x86_dead_code_for_size,
     generate_arm_dead_code_for_size,
     generate_dead_code_for_arch,
+    generate_nop_sequence,
+    generate_register_preserving_sequence,
+    generate_x86_dead_code,
+    generate_x86_dead_code_for_size,
 )
 
 

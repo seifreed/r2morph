@@ -15,10 +15,9 @@ real MutationPass subclass whose apply() sleeps past the timeout.
 
 from pathlib import Path
 
-from tests._doubles.slow_mutation_pass import SlowMutationPass
-
 from r2morph.core.binary import Binary
 from r2morph.mutations.parallel_executor import ParallelMutator, ParallelStats
+from tests._doubles.slow_mutation_pass import SlowMutationPass
 
 
 def test_execute_parallel_returns_partial_results_on_timeout() -> None:

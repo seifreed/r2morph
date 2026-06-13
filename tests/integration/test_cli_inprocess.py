@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import typer
 
-from r2morph.cli import app, analyze, analyze_enhanced, functions, version
+from r2morph.cli import analyze, analyze_enhanced, app, functions, version
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)

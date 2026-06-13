@@ -12,88 +12,86 @@ Tests for:
 - Anti-Disassembly (anti_disassembly.py)
 """
 
-from r2morph.mutations.api_hashing import (
-    hash_ror13,
-    hash_ror7,
-    hash_djb2,
-    hash_fnv1a,
-    hash_crc32,
-    HASH_ALGORITHMS,
-    COMMON_WINDOWS_APIS,
-    COMMON_LINUX_APIS,
-    APIHashingPass,
-    generate_resolver_x64,
-    generate_resolver_x86,
-)
-from r2morph.mutations.stack_strings import (
-    StackStringsPass,
-    EncodingScheme,
-    generate_stack_string_x64,
-    generate_stack_string_x86,
-    find_printable_strings,
-    xor_bytes,
-    xor_rolling,
-    add_shift_encode,
-)
-from r2morph.mutations.code_virtualization import (
-    VMOpcode,
-    VMInstruction,
-    VMContext,
-    REG_MAP_X64,
-    REG_MAP_X86,
-    CodeVirtualizationPass,
-    translate_instruction_to_vm,
-    generate_vm_dispatcher_x64,
-    generate_vm_handler_x64,
-)
-from r2morph.mutations.function_outlining import (
-    OutlinedChunk,
-    OutlinedFunction,
-    FunctionOutliningPass,
-    calculate_chunk_layout,
-    generate_interleaved_layout,
-)
-from r2morph.mutations.code_mobility import (
-    MobileBlock,
-    CodeMobilityPass,
-    calculate_section_offsets,
-    estimate_size_with_jumps,
-)
-from r2morph.mutations.polymorphic_engine import (
-    EngineState,
-    StateTransition,
-    MutationResult,
-    EngineRunResult,
-    PolymorphicEngine,
-    PolymorphicEnginePass,
-    NoOp,
-)
-from r2morph.mutations.self_modifying_code import (
-    EncryptionScheme,
-    EncryptedSection,
-    DecryptStub,
-    xor_encrypt,
-    xor_rolling_encrypt,
-    add_sub_encrypt,
-    rol_encrypt,
-    rc4_crypt,
-    generate_polymorphic_stub_x64,
-    SelfModifyingCodePass,
-    create_packed_binary,
-)
 from r2morph.mutations.anti_disassembly import (
-    AntiDisasmType,
-    AntiDisasmSnippet,
-    OVERLAPPING_X64,
-    JUMP_MIDDLE_X64,
     FALSE_BRANCH_X64,
+    JUMP_MIDDLE_X64,
+    OVERLAPPING_X64,
+    AntiDisasmSnippet,
+    AntiDisasmType,
+    AntiDisassemblyPass,
     generate_false_disasm_sequence,
     generate_opaque_predicate_x64,
     generate_sled_obfuscation,
-    AntiDisassemblyPass,
+)
+from r2morph.mutations.api_hashing import (
+    COMMON_LINUX_APIS,
+    COMMON_WINDOWS_APIS,
+    HASH_ALGORITHMS,
+    APIHashingPass,
+    generate_resolver_x64,
+    generate_resolver_x86,
+    hash_crc32,
+    hash_djb2,
+    hash_fnv1a,
+    hash_ror7,
+    hash_ror13,
 )
 from r2morph.mutations.code_mobility import (
+    CodeMobilityPass,
+    MobileBlock,
     MobilityPlan,
+    calculate_section_offsets,
+    estimate_size_with_jumps,
+)
+from r2morph.mutations.code_virtualization import (
+    REG_MAP_X64,
+    REG_MAP_X86,
+    CodeVirtualizationPass,
+    VMContext,
+    VMInstruction,
+    VMOpcode,
+    generate_vm_dispatcher_x64,
+    generate_vm_handler_x64,
+    translate_instruction_to_vm,
+)
+from r2morph.mutations.function_outlining import (
+    FunctionOutliningPass,
+    OutlinedChunk,
+    OutlinedFunction,
+    calculate_chunk_layout,
+    generate_interleaved_layout,
+)
+from r2morph.mutations.polymorphic_engine import (
+    EngineRunResult,
+    EngineState,
+    MutationResult,
+    NoOp,
+    PolymorphicEngine,
+    PolymorphicEnginePass,
+    StateTransition,
+)
+from r2morph.mutations.self_modifying_code import (
+    DecryptStub,
+    EncryptedSection,
+    EncryptionScheme,
+    SelfModifyingCodePass,
+    add_sub_encrypt,
+    create_packed_binary,
+    generate_polymorphic_stub_x64,
+    rc4_crypt,
+    rol_encrypt,
+    xor_encrypt,
+    xor_rolling_encrypt,
+)
+from r2morph.mutations.stack_strings import (
+    EncodingScheme,
+    StackStringsPass,
+    add_shift_encode,
+    find_printable_strings,
+    generate_stack_string_x64,
+    generate_stack_string_x86,
+    xor_bytes,
+    xor_rolling,
 )
 
 

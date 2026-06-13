@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer, VMHandler, VMHandlerType
+from r2morph.devirtualization.vm_handler_analyzer import VMHandler, VMHandlerAnalyzer, VMHandlerType
 
 
 def test_vm_handler_analyzer_internal_helpers():

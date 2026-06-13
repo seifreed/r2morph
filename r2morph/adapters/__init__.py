@@ -29,8 +29,9 @@ Example usage:
 """
 
 from r2morph.protocols import DisassemblerInterface
-from .r2pipe_adapter import R2PipeAdapter
+
 from .mock_disassembler import MockDisassembler
+from .r2pipe_adapter import R2PipeAdapter
 
 __all__ = [
     "DisassemblerInterface",

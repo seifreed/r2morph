@@ -6,17 +6,17 @@ junk code that preserves program semantics.
 """
 
 import random
-from typing import Callable
 from dataclasses import dataclass
+from typing import Callable
 
-from r2morph.analysis.register_tracker import (
-    RegTracker,
-    REG_64,
-    REG_32,
-    REG_16,
-    REG_ALL,
-)
 from r2morph.analysis.os_flags import OSFlags
+from r2morph.analysis.register_tracker import (
+    REG_16,
+    REG_32,
+    REG_64,
+    REG_ALL,
+    RegTracker,
+)
 
 
 @dataclass

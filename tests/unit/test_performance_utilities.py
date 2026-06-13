@@ -1,12 +1,11 @@
-from pathlib import Path
-
 import time
+from pathlib import Path
 
 from r2morph.performance import (
     IncrementalAnalyzer,
     OptimizedAnalysisFramework,
-    PerformanceConfig,
     ParallelAnalysisEngine,
+    PerformanceConfig,
     ResultCache,
 )
 

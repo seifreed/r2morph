@@ -8,15 +8,15 @@ This module provides comprehensive testing capabilities including:
 - Real-world validation scenarios
 """
 
-import time
-import json
-import statistics
-from typing import Any
-from dataclasses import dataclass, asdict
-from pathlib import Path
-from enum import Enum
 import hashlib
+import json
 import logging
+import statistics
+import time
+from dataclasses import asdict, dataclass
+from enum import Enum
+from pathlib import Path
+from typing import Any
 
 try:
     import psutil
@@ -447,7 +447,7 @@ class ValidationFramework:
             BenchmarkResult
         """
         from r2morph import Binary
-        from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass
+        from r2morph.detection import AntiAnalysisBypass, ObfuscationDetector
         from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier
         from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
 

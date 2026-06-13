@@ -1,5 +1,5 @@
-from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 from r2morph.core.constants import UNCONDITIONAL_TRANSFERS
+from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 
 
 def test_dead_code_injection_safe_point_unconditional():

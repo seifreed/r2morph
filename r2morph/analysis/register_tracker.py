@@ -5,9 +5,9 @@ Tracks which registers are stored on the stack to ensure
 junk code generation preserves program semantics.
 """
 
+from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Optional
-from collections import OrderedDict
 
 
 @dataclass

@@ -4,7 +4,7 @@ Unit tests for SSA (Static Single Assignment) form generation.
 
 import pytest
 
-from r2morph.analysis.ssa import SSAVariable, PhiFunction, SSABlock, SSAConverter
+from r2morph.analysis.ssa import PhiFunction, SSABlock, SSAConverter, SSAVariable
 
 
 class TestSSAVariable:

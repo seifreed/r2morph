@@ -6,9 +6,9 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
+from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
 from r2morph.detection.pattern_matcher import PatternMatcher
-from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 
 
 def test_pattern_matcher_scans_strings_and_imports(tmp_path: Path) -> None:

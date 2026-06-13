@@ -1,6 +1,6 @@
 import pytest
 
-from r2morph.instrumentation.frida_engine import FridaEngine, InstrumentationMode, FRIDA_AVAILABLE
+from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine, InstrumentationMode
 
 
 def test_frida_engine_initialization_and_unsupported_mode():

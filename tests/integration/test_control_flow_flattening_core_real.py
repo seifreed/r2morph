@@ -4,7 +4,7 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
-from tests.utils.platform_binaries import get_platform_binary, ensure_exists
+from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 
 def test_control_flow_flattening_core_paths(tmp_path):

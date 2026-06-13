@@ -13,15 +13,15 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import ControlFlowGraph
+from r2morph.core.binary import Binary
 from r2morph.validation.semantic import (
-    SemanticValidator,
-    ValidationMode,
-    ValidationResultStatus,
     MutationRegion,
     SemanticCheck,
     SemanticValidationResult,
+    SemanticValidator,
+    ValidationMode,
+    ValidationResultStatus,
 )
 from r2morph.validation.semantic_invariants import (
     InvariantCategory,

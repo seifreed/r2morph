@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RewriteOperation, BinaryFormat
+from r2morph.devirtualization.binary_rewriter import BinaryFormat, BinaryRewriter, CodePatch, RewriteOperation
 
 
 def test_binary_rewriter_helpers_with_real_binary(tmp_path: Path):

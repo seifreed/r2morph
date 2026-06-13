@@ -3,21 +3,21 @@ Tests for pattern_pool module.
 """
 
 from r2morph.mutations.pattern_pool import (
-    MutationPatternPool,
-    MatchResult,
-    Instruction,
     BasicBlock,
-    get_pattern_pools,
-    clear_pattern_pools,
-    register_pattern_pool,
-    match_mov_reg_0_all,
-    match_xor_reg_reg_all,
-    match_and_reg_0_all,
-    match_inc_reg,
-    match_dec_reg,
-    match_shl_reg_imm,
-    match_add_reg_imm_small,
+    Instruction,
+    MatchResult,
+    MutationPatternPool,
     _create_instruction,
+    clear_pattern_pools,
+    get_pattern_pools,
+    match_add_reg_imm_small,
+    match_and_reg_0_all,
+    match_dec_reg,
+    match_inc_reg,
+    match_mov_reg_0_all,
+    match_shl_reg_imm,
+    match_xor_reg_reg_all,
+    register_pattern_pool,
 )
 
 

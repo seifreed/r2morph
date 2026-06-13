@@ -2,17 +2,18 @@
 Tests for parallel executor module.
 """
 
-import pytest
 from unittest.mock import Mock
 
+import pytest
+
 from r2morph.core.parallel_executor import (
-    TaskStatus,
-    ResolutionStrategy,
-    MutationTask,
     MutationResult,
-    WorkQueue,
-    ResultMerger,
+    MutationTask,
     ParallelMutator,
+    ResolutionStrategy,
+    ResultMerger,
+    TaskStatus,
+    WorkQueue,
     create_parallel_mutator,
 )
 

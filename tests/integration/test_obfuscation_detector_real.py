@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.detection.obfuscation_detector import ObfuscationDetector, ObfuscationAnalysisResult
+from r2morph.detection.obfuscation_detector import ObfuscationAnalysisResult, ObfuscationDetector
 
 
 def test_obfuscation_detector_analyze_binary_real():

@@ -4,9 +4,18 @@ Core module for r2morph.
 Contains the fundamental classes for binary analysis and transformation.
 """
 
+from r2morph.core.analysis_cache import (
+    AnalysisCache,
+    CacheEntry,
+    CacheKey,
+    CacheStats,
+    CacheStorage,
+    compute_binary_hash,
+    compute_partial_hash,
+)
 from r2morph.core.assembly import (
-    AssemblyService,
     REGISTER_ENCODING,
+    AssemblyService,
     get_assembly_service,
 )
 from r2morph.core.binary import Binary
@@ -59,15 +68,6 @@ from r2morph.core.parallel_executor import (
 )
 from r2morph.core.reader import BinaryReader
 from r2morph.core.writer import BinaryWriter
-from r2morph.core.analysis_cache import (
-    AnalysisCache,
-    CacheEntry,
-    CacheKey,
-    CacheStats,
-    CacheStorage,
-    compute_binary_hash,
-    compute_partial_hash,
-)
 
 __all__ = [
     # Core classes

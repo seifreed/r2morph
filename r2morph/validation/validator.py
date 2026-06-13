@@ -2,15 +2,15 @@
 Binary validation to ensure mutations preserve semantics.
 """
 
-import logging
-import subprocess
 import hashlib
+import logging
 import os
+import shutil
+import subprocess
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-import tempfile
-import shutil
 
 logger = logging.getLogger(__name__)
 

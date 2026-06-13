@@ -13,13 +13,12 @@ No mocks (CLAUDE.md SS4): a real in-memory Binary double whose
 get_functions() yields an empty address space.
 """
 
-from tests._doubles.zero_complexity_binary import ZeroComplexityBinary
-
 from r2morph.devirtualization.iterative_simplifier import (
     IterativeSimplifier,
     SimplificationPhase,
     SimplificationStrategy,
 )
+from tests._doubles.zero_complexity_binary import ZeroComplexityBinary
 
 
 def test_zero_complexity_binary_converges_without_division_error() -> None:

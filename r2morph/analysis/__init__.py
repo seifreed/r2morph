@@ -2,103 +2,6 @@
 Analysis module for binary analysis utilities.
 """
 
-from r2morph.analysis.abi_checker import (
-    ABIChecker,
-    ABISpec,
-    ABIType,
-    ABIViolation,
-    ABIViolationType,
-    detect_abi,
-    ABI_SPECS,
-)
-from r2morph.analysis.analyzer import BinaryAnalyzer
-from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph
-from r2morph.analysis.call_graph import (
-    CallGraph,
-    CallGraphBuilder,
-    CallNode,
-    CallEdge,
-    CallType,
-    RecursionType,
-    build_call_graph,
-    build_call_graph_cached,
-)
-from r2morph.analysis.dependencies import Dependency, DependencyAnalyzer, DependencyType
-from r2morph.analysis.diff_analyzer import DiffAnalyzer, DiffStats
-from r2morph.analysis.enhanced_analyzer import (
-    AnalysisOptions,
-    AnalysisResults,
-    EnhancedAnalysisOrchestrator,
-    check_enhanced_dependencies,
-)
-from r2morph.analysis.invariants import (
-    Invariant,
-    InvariantDetector,
-    InvariantType,
-    SemanticValidator,
-)
-from r2morph.analysis.switch_table import (
-    IndirectJump,
-    JumpTable,
-    JumpTableEntry,
-    JumpTableType,
-    SwitchTableAnalyzer,
-)
-from r2morph.analysis.exception import (
-    ExceptionAction,
-    ExceptionFrame,
-    ExceptionInfoReader,
-    ExceptionTableEntry,
-    ExceptionAwareCFGBuilder,
-    LandingPad,
-)
-from r2morph.analysis.type_inference import (
-    TypeCategory,
-    PrimitiveType,
-    TypeInfo,
-    StructField,
-    TypeInferenceResult,
-    TypeInference,
-    PointerAnalysis,
-    infer_type,
-    propagate_types,
-)
-from r2morph.analysis.dataflow import (
-    DataFlowDirection,
-    Register,
-    Definition,
-    Use,
-    DefUseChain,
-    DataFlowResult,
-    DataFlowAnalyzer,
-)
-from r2morph.analysis.liveness import (
-    LiveRange,
-    InstructionLiveness,
-    InterferenceGraph,
-    LivenessAnalysis,
-)
-from r2morph.analysis.defuse import (
-    DefWeb,
-    UseWeb,
-    DefUseAnalyzer,
-)
-from r2morph.analysis.critical_nodes import (
-    AddressRange,
-    CriticalNode,
-    CriticalNodeDetector,
-    MutationSafetyScorer,
-    create_exclusion_zones,
-    get_safe_mutation_addresses,
-)
-from r2morph.analysis.pattern_preservation import (
-    PatternPreservationManager,
-    PatternType,
-    PreservedPattern,
-    ExclusionZone,
-    Criticality,
-)
-
 # Symbolic execution and advanced analysis.
 #
 # The symbolic subpackage pulls in angr, a heavy optional C-extension
@@ -114,6 +17,103 @@ from r2morph.analysis.pattern_preservation import (
 # when a symbolic name is actually accessed, and the resolved values are
 # cached into module globals so subsequent lookups skip __getattr__.
 from typing import Any as _Any
+
+from r2morph.analysis.abi_checker import (
+    ABI_SPECS,
+    ABIChecker,
+    ABISpec,
+    ABIType,
+    ABIViolation,
+    ABIViolationType,
+    detect_abi,
+)
+from r2morph.analysis.analyzer import BinaryAnalyzer
+from r2morph.analysis.call_graph import (
+    CallEdge,
+    CallGraph,
+    CallGraphBuilder,
+    CallNode,
+    CallType,
+    RecursionType,
+    build_call_graph,
+    build_call_graph_cached,
+)
+from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph
+from r2morph.analysis.critical_nodes import (
+    AddressRange,
+    CriticalNode,
+    CriticalNodeDetector,
+    MutationSafetyScorer,
+    create_exclusion_zones,
+    get_safe_mutation_addresses,
+)
+from r2morph.analysis.dataflow import (
+    DataFlowAnalyzer,
+    DataFlowDirection,
+    DataFlowResult,
+    Definition,
+    DefUseChain,
+    Register,
+    Use,
+)
+from r2morph.analysis.defuse import (
+    DefUseAnalyzer,
+    DefWeb,
+    UseWeb,
+)
+from r2morph.analysis.dependencies import Dependency, DependencyAnalyzer, DependencyType
+from r2morph.analysis.diff_analyzer import DiffAnalyzer, DiffStats
+from r2morph.analysis.enhanced_analyzer import (
+    AnalysisOptions,
+    AnalysisResults,
+    EnhancedAnalysisOrchestrator,
+    check_enhanced_dependencies,
+)
+from r2morph.analysis.exception import (
+    ExceptionAction,
+    ExceptionAwareCFGBuilder,
+    ExceptionFrame,
+    ExceptionInfoReader,
+    ExceptionTableEntry,
+    LandingPad,
+)
+from r2morph.analysis.invariants import (
+    Invariant,
+    InvariantDetector,
+    InvariantType,
+    SemanticValidator,
+)
+from r2morph.analysis.liveness import (
+    InstructionLiveness,
+    InterferenceGraph,
+    LivenessAnalysis,
+    LiveRange,
+)
+from r2morph.analysis.pattern_preservation import (
+    Criticality,
+    ExclusionZone,
+    PatternPreservationManager,
+    PatternType,
+    PreservedPattern,
+)
+from r2morph.analysis.switch_table import (
+    IndirectJump,
+    JumpTable,
+    JumpTableEntry,
+    JumpTableType,
+    SwitchTableAnalyzer,
+)
+from r2morph.analysis.type_inference import (
+    PointerAnalysis,
+    PrimitiveType,
+    StructField,
+    TypeCategory,
+    TypeInference,
+    TypeInferenceResult,
+    TypeInfo,
+    infer_type,
+    propagate_types,
+)
 
 _SYMBOLIC_NAMES = frozenset(
     {

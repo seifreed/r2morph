@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier, SimplificationStrategy
 

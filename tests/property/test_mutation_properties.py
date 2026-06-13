@@ -7,7 +7,8 @@ Tests that mutations preserve semantic properties using Hypothesis.
 import pytest
 
 try:
-    from hypothesis import given, settings, assume, strategies as st
+    from hypothesis import assume, given, settings
+    from hypothesis import strategies as st
 
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
@@ -15,20 +16,19 @@ except ImportError:
     pytestmark = pytest.mark.skip(reason="Hypothesis not installed")
 
 if HYPOTHESIS_AVAILABLE:
-    from tests.property.strategies import (
-        create_function_strategy,
-        create_function_with_loops_strategy,
-        create_function_with_branches_strategy,
-        create_x86_register_strategy,
-        create_mutation_seed_strategy,
-        Function,
-    )
-
     from r2morph.mutations.conflict_detector import (
-        MutationRegion,
         ConflictDetector,
         ConflictType,
+        MutationRegion,
         analyze_mutations_for_conflicts,
+    )
+    from tests.property.strategies import (
+        Function,
+        create_function_strategy,
+        create_function_with_branches_strategy,
+        create_function_with_loops_strategy,
+        create_mutation_seed_strategy,
+        create_x86_register_strategy,
     )
 
     @pytest.mark.property

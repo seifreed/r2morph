@@ -2,8 +2,8 @@
 Unit tests for PE handler module.
 """
 
-from unittest.mock import patch
 import struct
+from unittest.mock import patch
 
 from r2morph.platform.pe_handler import PEHandler
 

@@ -6,13 +6,13 @@ constraint solving with Z3, and integration with the Syntia framework
 for semantic learning during devirtualization.
 """
 
+# Syntia integration will be added in subsequent implementations
+from typing import Any as _Any
+
 from r2morph.analysis.symbolic.angr_bridge import AngrBridge
 from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver
 from r2morph.analysis.symbolic.path_explorer import PathExplorer
 from r2morph.analysis.symbolic.state_manager import StateManager
-
-# Syntia integration will be added in subsequent implementations
-from typing import Any as _Any
 
 _SyntiaFramework: _Any = None
 try:

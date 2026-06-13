@@ -12,12 +12,12 @@ Covers:
 
 from r2morph.mutations.pass_dependencies import (
     DependencyType,
-    PassDependency,
     DependencyViolation,
+    PassDependency,
     PassDependencyRegistry,
     get_pass_dependency_registry,
-    validate_pipeline_order,
     suggest_pipeline_order,
+    validate_pipeline_order,
 )
 
 

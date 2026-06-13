@@ -16,9 +16,8 @@ from pathlib import Path
 
 import pytest
 
-from tests._doubles.failing_post_spawn_disassembler import FailingPostSpawnDisassembler
-
 from r2morph.core.binary import Binary
+from tests._doubles.failing_post_spawn_disassembler import FailingPostSpawnDisassembler
 
 
 def test_failed_open_tears_down_spawned_connection(tmp_path: Path) -> None:

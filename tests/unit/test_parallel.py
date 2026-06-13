@@ -2,8 +2,8 @@
 Tests for parallel mutation execution.
 """
 
-from unittest.mock import MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from r2morph.core.parallel import (
     DependencyResolver,

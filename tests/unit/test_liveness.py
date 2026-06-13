@@ -2,12 +2,12 @@
 Unit tests for liveness analysis module.
 """
 
-from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph, BlockType
+from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.analysis.liveness import (
-    LivenessAnalysis,
-    LiveRange,
     InstructionLiveness,
     InterferenceGraph,
+    LivenessAnalysis,
+    LiveRange,
     Register,
 )
 

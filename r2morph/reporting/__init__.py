@@ -4,77 +4,93 @@ Reporting subpackage for report building, filtering, and rendering.
 Extracted from cli.py and engine.py following Single Responsibility Principle.
 """
 
-from r2morph.reporting.sarif_schema import (
-    SARIFReport,
-    SARIFRun,
-    SARIFResult,
-    SARIFRule,
-    SARIFTool,
-    SARIFToolComponent,
-    SARIFArtifact,
-    SARIFArtifactLocation,
-    SARIFLocation,
-    SARIFPhysicalLocation,
-    SARIFRegion,
-    SARIFMessage,
-    SARIFLevel,
-    SARIFFix,
-    SARIFInvocation,
-    SARIFNotification,
-    SARIFSnippet,
-    SARIFLogicalLocation,
-    SARIFFileChange,
-    SARIFReplacement,
-)
-from r2morph.reporting.sarif_formatter import (
-    SARIFFormatter,
-    MutationResult,
-    ValidationResult,
-    ReportData,
-    format_as_sarif,
-)
 from r2morph.reporting.gate_evaluator import (
     SEVERITY_ORDER,
     GateEvaluator,
     GateFailure,
 )
-from r2morph.reporting.summary_aggregator import (
-    SummaryAggregator,
-    SymbolicAggregator,
-    EvidenceAggregator,
-)
-from r2morph.reporting.report_filters import (
-    ReportFilters,
-    PassFilterResolver,
-)
 from r2morph.reporting.report_builder import (
+    FilteredReport,
     ReportBuilder,
     ReportContext,
-    FilteredReport,
+)
+from r2morph.reporting.report_emitter import (
+    emit_report_payload,
+    enforce_report_requirements,
+    gate_failure_result_count,
+    report_view_has_results,
+    severity_threshold_met,
+)
+from r2morph.reporting.report_filters import (
+    PassFilterResolver,
+    ReportFilters,
 )
 from r2morph.reporting.report_renderer import (
-    ReportRenderer,
     ConsoleRenderer,
+    ReportRenderer,
+)
+from r2morph.reporting.report_state import (
+    _has_structural_risk as _has_structural_risk,
+)
+from r2morph.reporting.report_state import (
+    _has_symbolic_risk as _has_symbolic_risk,
+)
+from r2morph.reporting.report_state import (
+    _is_clean_pass as _is_clean_pass,
+)
+from r2morph.reporting.report_state import (
+    _is_covered_pass as _is_covered_pass,
+)
+from r2morph.reporting.report_state import (
+    _is_risky_pass as _is_risky_pass,
+)
+from r2morph.reporting.report_state import (
+    _is_uncovered_pass as _is_uncovered_pass,
+)
+from r2morph.reporting.report_state import (
+    _normalized_pass_map as _normalized_pass_map,
+)
+from r2morph.reporting.report_state import (
+    _summary_first as _summary_first,
 )
 from r2morph.reporting.report_state import (
     resolve_general_symbolic_state,
     resolve_mismatch_view,
     resolve_pass_filter_sets,
-    _normalized_pass_map as _normalized_pass_map,
-    _summary_first as _summary_first,
-    _is_risky_pass as _is_risky_pass,
-    _has_structural_risk as _has_structural_risk,
-    _has_symbolic_risk as _has_symbolic_risk,
-    _is_clean_pass as _is_clean_pass,
-    _is_covered_pass as _is_covered_pass,
-    _is_uncovered_pass as _is_uncovered_pass,
 )
-from r2morph.reporting.report_emitter import (
-    emit_report_payload,
-    enforce_report_requirements,
-    severity_threshold_met,
-    report_view_has_results,
-    gate_failure_result_count,
+from r2morph.reporting.sarif_formatter import (
+    MutationResult,
+    ReportData,
+    SARIFFormatter,
+    ValidationResult,
+    format_as_sarif,
+)
+from r2morph.reporting.sarif_schema import (
+    SARIFArtifact,
+    SARIFArtifactLocation,
+    SARIFFileChange,
+    SARIFFix,
+    SARIFInvocation,
+    SARIFLevel,
+    SARIFLocation,
+    SARIFLogicalLocation,
+    SARIFMessage,
+    SARIFNotification,
+    SARIFPhysicalLocation,
+    SARIFRegion,
+    SARIFReplacement,
+    SARIFReport,
+    SARIFResult,
+    SARIFRule,
+    SARIFRun,
+    SARIFSnippet,
+    SARIFTool,
+    SARIFToolComponent,
+)
+from r2morph.reporting.summary_aggregator import (
+    EvidenceAggregator,
+    SummaryAggregator,
+    SymbolicAggregator,
 )
 
 # Console rendering functions are lazily imported via __getattr__ below

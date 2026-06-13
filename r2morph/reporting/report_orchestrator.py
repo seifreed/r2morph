@@ -8,29 +8,28 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from r2morph.reporting.report_context import ReportFlowContext
-
-from r2morph.reporting.report_resolver import (
-    _resolve_only_mismatches_state,
-    _resolve_only_pass_view,
-)
 from r2morph.reporting.filtered_summary_builder import (
     _build_general_report_payload,
     _build_only_mismatches_payload,
     _build_report_filters,
 )
+from r2morph.reporting.report_context import ReportFlowContext
 from r2morph.reporting.report_helpers import (
     _finalize_report_output,
 )
 from r2morph.reporting.report_rendering import (
-    _render_report_filter_messages,
-    _render_only_mismatches_sections,
-    _render_symbolic_sections,
     _render_degradation_sections,
     _render_gate_sections,
+    _render_only_mismatches_sections,
+    _render_only_pass_sections,
     _render_pass_capabilities,
     _render_pass_validation_contexts,
-    _render_only_pass_sections,
+    _render_report_filter_messages,
+    _render_symbolic_sections,
+)
+from r2morph.reporting.report_resolver import (
+    _resolve_only_mismatches_state,
+    _resolve_only_pass_view,
 )
 
 

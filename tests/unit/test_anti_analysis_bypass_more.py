@@ -2,9 +2,9 @@ import os
 
 from r2morph.detection.anti_analysis_bypass import (
     AntiAnalysisBypass,
+    AntiAnalysisPattern,
     AntiAnalysisType,
     BypassTechnique,
-    AntiAnalysisPattern,
 )
 
 

@@ -5,16 +5,16 @@ ConstantUnfolding, and ParallelExecutor.
 
 from unittest.mock import MagicMock
 
-from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
-from r2morph.mutations.string_obfuscation import StringObfuscationPass
-from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
+from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
+from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass
 from r2morph.mutations.parallel_executor import (
-    ParallelMutator,
     MutationTask,
+    ParallelMutator,
     ParallelStats,
     create_parallel_executor,
 )
+from r2morph.mutations.string_obfuscation import StringObfuscationPass
 
 
 class TestDataFlowMutationPass:

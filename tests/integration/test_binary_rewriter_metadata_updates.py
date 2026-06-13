@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RewriteOperation, RelocationEntry
+from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RelocationEntry, RewriteOperation
 
 
 @pytest.mark.parametrize(

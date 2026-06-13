@@ -12,11 +12,11 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
-from r2morph.mutations.cfg_aware import CFGAwareMutationPass, CFGAwareMutationResult
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
     PatternType,
 )
+from r2morph.mutations.cfg_aware import CFGAwareMutationPass, CFGAwareMutationResult
 from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
     HardenedMutationValidator,

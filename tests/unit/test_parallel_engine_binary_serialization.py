@@ -16,13 +16,12 @@ binary-mutation critical section an observable, deterministic value.
 
 from pathlib import Path
 
+from r2morph.core.parallel import ParallelMutationEngine, PassStatus
 from tests._doubles.concurrency_recording_mutation_pass import (
     ConcurrencyRecorder,
     PathOnlyBinary,
     RecordingMutationPass,
 )
-
-from r2morph.core.parallel import ParallelMutationEngine, PassStatus
 
 
 def test_parallel_engine_serializes_binary_mutation(tmp_path: Path) -> None:

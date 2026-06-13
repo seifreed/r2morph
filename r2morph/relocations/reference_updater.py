@@ -7,7 +7,7 @@ import logging
 from enum import Enum
 
 from r2morph.core.binary import Binary
-from r2morph.relocations.utils import get_endianness, ByteOrder
+from r2morph.relocations.utils import ByteOrder, get_endianness
 
 logger = logging.getLogger(__name__)
 

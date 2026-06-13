@@ -9,14 +9,15 @@ Tests for Issue #4:
 - Entitlements and hardened runtime
 """
 
-import pytest
 import platform
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
 
-from r2morph.platform.macho_handler import MachOHandler
+import pytest
+
 from r2morph.platform.codesign import CodeSigner
+from r2morph.platform.macho_handler import MachOHandler
 
 
 class TestMachOIntegrityBasic:

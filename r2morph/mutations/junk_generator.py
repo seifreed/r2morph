@@ -6,10 +6,10 @@ and the gadgets library.
 """
 
 import random
-from typing import Any, Optional
 from dataclasses import dataclass
+from typing import Any, Optional
 
-from r2morph.analysis.register_tracker import RegTracker, REG_SIZES_MAP
+from r2morph.analysis.register_tracker import REG_SIZES_MAP, RegTracker
 from r2morph.mutations.gadgets import Gadgets, create_gadgets
 
 
@@ -38,7 +38,7 @@ class JunkGenerator:
 
     def _init_assembler(self) -> None:
         try:
-            from keystone import Ks, KS_ARCH_X86, KS_MODE_64
+            from keystone import KS_ARCH_X86, KS_MODE_64, Ks
 
             self._assembler = Ks(KS_ARCH_X86, KS_MODE_64)
         except ImportError:

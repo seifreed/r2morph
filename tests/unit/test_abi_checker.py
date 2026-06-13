@@ -10,11 +10,11 @@ These tests verify:
 """
 
 from r2morph.analysis.abi_checker import (
+    ABI_SPECS,
     ABIChecker,
     ABIType,
     ABIViolationType,
     detect_abi,
-    ABI_SPECS,
 )
 
 

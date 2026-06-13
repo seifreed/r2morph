@@ -9,10 +9,10 @@ This example shows how to use the complete validation framework including:
 """
 
 import argparse
+import logging
 import sys
 import time
 from pathlib import Path
-import logging
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -44,7 +44,7 @@ def run_performance_benchmarks():
     print("=" * 80)
 
     try:
-        from r2morph.validation import ValidationFramework, BenchmarkCategory
+        from r2morph.validation import BenchmarkCategory, ValidationFramework
 
         # Initialize validation framework
         framework = ValidationFramework("dataset")

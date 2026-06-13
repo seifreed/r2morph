@@ -12,10 +12,10 @@ import random
 from dataclasses import dataclass
 from typing import Any
 
+from r2morph.mutations.junk_generator import JunkGenerator, create_junk_generator
 from r2morph.mutations.pattern_pool import (
     get_pattern_pools,
 )
-from r2morph.mutations.junk_generator import JunkGenerator, create_junk_generator
 
 
 @dataclass

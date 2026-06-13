@@ -23,7 +23,7 @@ from r2morph.mutations import (
     NopInsertionPass,
     RegisterSubstitutionPass,
 )
-from tests.utils.platform_binaries import get_platform_binary, ensure_exists
+from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 
 class TestRealMutations:

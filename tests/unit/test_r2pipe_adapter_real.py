@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.protocols import DisassemblerInterface
 from r2morph.adapters.r2pipe_adapter import R2PipeAdapter
+from r2morph.protocols import DisassemblerInterface
 
 
 def test_r2pipe_adapter_open_and_commands():

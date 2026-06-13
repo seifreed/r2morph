@@ -3,7 +3,9 @@ from pathlib import Path
 from click.testing import CliRunner
 from typer.main import get_command
 
-from r2morph.cli import app, analyze as analyze_cmd, functions as functions_cmd
+from r2morph.cli import analyze as analyze_cmd
+from r2morph.cli import app
+from r2morph.cli import functions as functions_cmd
 
 runner = CliRunner()
 app_cmd = get_command(app)

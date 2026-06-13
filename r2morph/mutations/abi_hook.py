@@ -11,6 +11,7 @@ import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
+
 from r2morph.analysis.abi_checker import (
     ABIChecker,
     ABISpec,

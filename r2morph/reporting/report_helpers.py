@@ -15,7 +15,11 @@ from rich.console import Console
 
 from r2morph.reporting.gate_evaluator import (
     build_gate_failure_priority as _build_gate_failure_priority,
+)
+from r2morph.reporting.gate_evaluator import (
     build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
+)
+from r2morph.reporting.gate_evaluator import (
     summarize_gate_failures as _summarize_gate_failures,
 )
 

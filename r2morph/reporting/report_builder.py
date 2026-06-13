@@ -8,7 +8,7 @@ and filtered report generation.
 from dataclasses import dataclass
 from typing import Any
 
-from r2morph.reporting.gate_evaluator import GateEvaluator, SEVERITY_ORDER
+from r2morph.reporting.gate_evaluator import SEVERITY_ORDER, GateEvaluator
 
 
 @dataclass

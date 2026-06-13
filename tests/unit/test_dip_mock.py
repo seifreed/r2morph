@@ -31,9 +31,10 @@ def test_mock_satisfies_protocol():
 
 
 def test_binary_accepts_mock_disassembler():
-    from r2morph.core.binary import Binary
-    import tempfile
     import os
+    import tempfile
+
+    from r2morph.core.binary import Binary
 
     # Create a minimal temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:

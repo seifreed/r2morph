@@ -8,10 +8,10 @@ This example shows the performance improvements achieved through:
 - Result caching
 """
 
-import time
 import argparse
-from pathlib import Path
 import logging
+import time
+from pathlib import Path
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -50,7 +50,7 @@ def benchmark_parallel_analysis(file_paths, analysis_func):
     """Benchmark parallel analysis with optimizations."""
     print("Running parallel analysis (optimized)...")
 
-    from r2morph.performance import PerformanceConfig, OptimizedAnalysisFramework
+    from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
 
     # Configure for performance
     config = PerformanceConfig(
@@ -84,7 +84,7 @@ def benchmark_incremental_analysis(file_paths, analysis_func):
     """Benchmark incremental analysis (second run)."""
     print("Running incremental analysis (cached results)...")
 
-    from r2morph.performance import PerformanceConfig, OptimizedAnalysisFramework
+    from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
 
     # Configure for incremental analysis
     config = PerformanceConfig(
@@ -300,7 +300,7 @@ def run_performance_comparison():
     print(f"{'-' * 40}")
 
     try:
-        from r2morph.performance import PerformanceConfig, OptimizedAnalysisFramework
+        from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
 
         # Test with smaller memory limit
         memory_config = PerformanceConfig(
@@ -358,7 +358,7 @@ def run_scalability_test():
     print(f"{'=' * 80}")
 
     try:
-        from r2morph.performance import PerformanceConfig, OptimizedAnalysisFramework
+        from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
 
         config = PerformanceConfig(
             max_workers=4, memory_limit_mb=1024, enable_parallel=True, enable_caching=True, chunk_size=20

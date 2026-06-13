@@ -1,4 +1,4 @@
-from r2morph.devirtualization.mba_solver import MBASolver, MBAExpression
+from r2morph.devirtualization.mba_solver import MBAExpression, MBASolver
 
 
 def test_mba_solver_truth_table_simplification():

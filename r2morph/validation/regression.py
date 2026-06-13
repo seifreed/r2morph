@@ -7,15 +7,14 @@ that new changes don't break existing functionality.
 
 from __future__ import annotations
 
-
+import hashlib
 import json
 import logging
 import time
-import hashlib
 from dataclasses import asdict, dataclass
 from datetime import datetime
-from pathlib import Path
 from enum import Enum
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from r2morph.validation.validator import BinaryValidator, ValidationResult

@@ -15,12 +15,12 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from r2morph.analysis.call_graph import (
-    CallType,
-    RecursionType,
-    CallNode,
     CallEdge,
     CallGraph,
     CallGraphBuilder,
+    CallNode,
+    CallType,
+    RecursionType,
     build_call_graph,
 )
 
@@ -670,9 +670,10 @@ class TestCallGraphCaching:
 
     def test_build_call_graph_cached_with_cache(self):
         """Test cached build with cache object."""
+        import tempfile
+
         from r2morph.analysis.call_graph import build_call_graph_cached
         from r2morph.core.analysis_cache import AnalysisCache
-        import tempfile
 
         binary = MagicMock()
         binary.is_analyzed.return_value = True
@@ -692,9 +693,10 @@ class TestCallGraphCaching:
 
     def test_cache_hit_on_second_call(self):
         """Test that cache hit returns same call graph."""
+        import tempfile
+
         from r2morph.analysis.call_graph import build_call_graph_cached
         from r2morph.core.analysis_cache import AnalysisCache
-        import tempfile
 
         binary = MagicMock()
         binary.is_analyzed.return_value = True

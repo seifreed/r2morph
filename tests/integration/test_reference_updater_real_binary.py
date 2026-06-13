@@ -3,7 +3,7 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceUpdater
-from tests.utils.platform_binaries import get_platform_binary, ensure_exists
+from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 
 def _find_writable_code_region(bin_obj, minimum_size: int = 16) -> int:

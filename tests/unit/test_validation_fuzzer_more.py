@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.validation.fuzzer import MutationFuzzer, FuzzResult
+from r2morph.validation.fuzzer import FuzzResult, MutationFuzzer
 
 
 def test_fuzz_result_string_and_success_rate():

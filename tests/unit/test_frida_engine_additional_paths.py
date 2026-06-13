@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 
 from r2morph.instrumentation.frida_engine import (
+    FRIDA_AVAILABLE,
     FridaEngine,
     InstrumentationMode,
-    FRIDA_AVAILABLE,
 )
 
 if not FRIDA_AVAILABLE:

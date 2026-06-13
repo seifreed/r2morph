@@ -1,6 +1,7 @@
 """Verify no circular imports in reporting/ and core/ packages."""
 
 import importlib
+
 import pytest
 
 REPORTING_MODULES = [

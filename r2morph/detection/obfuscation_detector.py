@@ -17,9 +17,9 @@ from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
-from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
 from r2morph.detection.pattern_matcher import PatternMatcher
 
 logger = logging.getLogger(__name__)

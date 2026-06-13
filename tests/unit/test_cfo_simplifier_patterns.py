@@ -1,9 +1,9 @@
 import networkx as nx
 
 from r2morph.devirtualization.cfo_simplifier import (
+    CFOPattern,
     CFOSimplifier,
     ControlFlowBlock,
-    CFOPattern,
 )
 
 

@@ -2,10 +2,10 @@
 Integration tests for CLI.
 """
 
+import importlib.util
 import json
 import subprocess
 import sys
-import importlib.util
 from pathlib import Path
 
 import pytest

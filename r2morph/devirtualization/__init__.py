@@ -10,29 +10,39 @@ commercial packers like VMProtect and Themida, including:
 - Binary rewriting and reconstruction
 """
 
-from .vm_handler_analyzer import VMHandlerAnalyzer
-from .mba_solver import MBASolver
+from .binary_rewriter import BinaryRewriter
 from .cfo_simplifier import CFOSimplifier
 from .iterative_simplifier import IterativeSimplifier
-from .binary_rewriter import BinaryRewriter
+from .mba_solver import MBASolver
+from .vm_handler_analyzer import VMHandlerAnalyzer
 
 # Import types for better IDE support
 try:
-    from .vm_handler_analyzer import VMHandlerType as VMHandlerType, VMArchitecture as VMArchitecture
-    from .mba_solver import MBAExpression as MBAExpression, SimplificationResult as SimplificationResult
+    from .binary_rewriter import (
+        BinaryFormat as BinaryFormat,
+    )
+    from .binary_rewriter import (
+        RewriteOperation as RewriteOperation,
+    )
+    from .binary_rewriter import (
+        RewriteResult as RewriteResult,
+    )
     from .cfo_simplifier import (
         CFOPattern as CFOPattern,
+    )
+    from .cfo_simplifier import (
         CFOSimplificationResult as CFOSimplificationResult,
+    )
+    from .cfo_simplifier import (
         DispatcherInfo as DispatcherInfo,
     )
     from .iterative_simplifier import (
         SimplificationStrategy as SimplificationStrategy,
     )
-    from .binary_rewriter import (
-        BinaryFormat as BinaryFormat,
-        RewriteOperation as RewriteOperation,
-        RewriteResult as RewriteResult,
-    )
+    from .mba_solver import MBAExpression as MBAExpression
+    from .mba_solver import SimplificationResult as SimplificationResult
+    from .vm_handler_analyzer import VMArchitecture as VMArchitecture
+    from .vm_handler_analyzer import VMHandlerType as VMHandlerType
 except ImportError:
     # Graceful degradation if imports fail
     pass

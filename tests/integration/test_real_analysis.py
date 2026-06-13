@@ -2,10 +2,10 @@
 Real integration tests for analysis modules.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
-import importlib.util
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)

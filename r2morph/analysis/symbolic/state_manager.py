@@ -6,12 +6,12 @@ including state pruning, merging, and scheduling strategies optimized
 for analyzing obfuscated binaries.
 """
 
+import heapq
 import logging
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
-import time
-import heapq
 
 _angr: Any = None
 try:

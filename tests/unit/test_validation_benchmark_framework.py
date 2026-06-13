@@ -2,11 +2,11 @@ import hashlib
 from pathlib import Path
 
 from r2morph.validation.benchmark import (
-    ValidationFramework,
-    TestSample,
-    TestSeverity,
     BenchmarkCategory,
     BenchmarkResult,
+    TestSample,
+    TestSeverity,
+    ValidationFramework,
 )
 
 

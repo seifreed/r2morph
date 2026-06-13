@@ -9,9 +9,10 @@ Tests for Issue #4:
 - Section overlap detection
 """
 
-import pytest
 import platform
 import struct
+
+import pytest
 
 from r2morph.platform.pe_handler import PEHandler
 

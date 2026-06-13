@@ -7,7 +7,6 @@ Handles all read operations: bytes, functions, disassembly, sections, etc.
 
 from __future__ import annotations
 
-
 import logging
 from typing import TYPE_CHECKING, Any
 

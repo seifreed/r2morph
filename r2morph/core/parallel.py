@@ -13,15 +13,15 @@ Features:
 """
 
 import logging
-import threading
+import sys
 import tempfile
-from concurrent.futures import ThreadPoolExecutor, as_completed, Future
+import threading
+import time
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Callable
 from pathlib import Path
-import time
-import sys
+from typing import Any, Callable
 
 from r2morph.core.binary import Binary
 from r2morph.protocols import MutationPassProtocol

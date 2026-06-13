@@ -9,23 +9,24 @@ Tests for Issue #3 acceptance criteria:
 - CFG integrity validation
 """
 
-import pytest
 import subprocess
 from pathlib import Path
 
-from r2morph.core.binary import Binary
+import pytest
+
 from r2morph.analysis.pattern_preservation import (
+    Criticality,
     PatternPreservationManager,
     PatternType,
-    Criticality,
+)
+from r2morph.core.binary import Binary
+from r2morph.mutations.hardened_base import (
+    HardenedControlFlowFlattening,
+    HardenedOpaquePredicates,
 )
 from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
     HardenedMutationValidator,
-)
-from r2morph.mutations.hardened_base import (
-    HardenedControlFlowFlattening,
-    HardenedOpaquePredicates,
 )
 
 

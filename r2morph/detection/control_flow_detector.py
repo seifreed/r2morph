@@ -10,7 +10,6 @@ This module provides detection of control flow-based obfuscation including:
 
 from __future__ import annotations
 
-
 import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any

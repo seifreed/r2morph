@@ -4,16 +4,16 @@ Unit tests for extended semantic validation module.
 
 from unittest.mock import Mock, patch
 
+from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.validation.extended_semantic import (
     ConstraintCache,
     ConstraintCacheEntry,
-    ImprovedStateMerging,
     ExtendedSemanticValidator,
+    ImprovedStateMerging,
     ValidationResult,
     create_extended_validator,
 )
 from r2morph.validation.semantic import ValidationMode
-from r2morph.analysis.cfg import ControlFlowGraph, BasicBlock, BlockType
 
 
 class TestConstraintCache:

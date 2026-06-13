@@ -9,15 +9,15 @@ Tests for architecture support:
 - Architecture detection
 """
 
-from r2morph.mutations.nop_insertion import NopInsertionPass
-from r2morph.mutations.register_substitution import RegisterSubstitutionPass
-from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.analysis.abi_checker import ABI_SPECS, ABIType
 from r2morph.core.support import (
     PRODUCT_SUPPORT,
-    classify_target_support,
     _normalize_architecture_name,
+    classify_target_support,
 )
+from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+from r2morph.mutations.nop_insertion import NopInsertionPass
+from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
 
 class TestArchitectureSupport:

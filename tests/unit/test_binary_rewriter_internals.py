@@ -1,10 +1,10 @@
 from pathlib import Path
 
 from r2morph.devirtualization.binary_rewriter import (
+    BinaryFormat,
     BinaryRewriter,
     CodePatch,
     RewriteOperation,
-    BinaryFormat,
 )
 
 

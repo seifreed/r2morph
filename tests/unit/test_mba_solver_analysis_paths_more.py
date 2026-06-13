@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from r2morph.devirtualization.mba_solver import MBASolver, MBAComplexity
+from r2morph.devirtualization.mba_solver import MBAComplexity, MBASolver
 
 
 def test_mba_solver_analysis_metrics_complexity() -> None:

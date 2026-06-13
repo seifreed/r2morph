@@ -11,12 +11,12 @@ Covers:
 from unittest.mock import MagicMock
 
 from r2morph.analysis.type_inference import (
-    TypeCategory,
-    PrimitiveType,
-    TypeInfo,
-    StructField,
-    TypeInference,
     PointerAnalysis,
+    PrimitiveType,
+    StructField,
+    TypeCategory,
+    TypeInference,
+    TypeInfo,
     infer_type,
     propagate_types,
 )

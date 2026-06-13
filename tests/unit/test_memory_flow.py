@@ -5,12 +5,12 @@ Unit tests for memory flow analysis.
 import pytest
 
 from r2morph.analysis.memory_flow import (
-    MemoryAccessType,
-    MemoryLocation,
+    InterproceduralDataFlowAnalyzer,
     MemoryAccess,
+    MemoryAccessType,
     MemoryDependency,
     MemoryFlowAnalyzer,
-    InterproceduralDataFlowAnalyzer,
+    MemoryLocation,
 )
 
 

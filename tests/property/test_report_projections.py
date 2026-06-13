@@ -4,8 +4,10 @@ import pytest
 
 pytest.importorskip("hypothesis")
 
-from hypothesis import given, strategies as st
-from r2morph.reporting.report_view_builder import _project_rows, _build_category_views
+from hypothesis import given
+from hypothesis import strategies as st
+
+from r2morph.reporting.report_view_builder import _build_category_views, _project_rows
 
 
 @given(st.lists(st.dictionaries(st.text(min_size=1, max_size=10), st.text(max_size=20)), max_size=5))

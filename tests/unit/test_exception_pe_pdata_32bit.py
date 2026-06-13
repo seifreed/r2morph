@@ -16,9 +16,8 @@ synthetic .pdata buffer with packed-form entries.
 
 import struct
 
-from tests._doubles.in_memory_pe_pdata_binary import InMemoryPEPdataBinary
-
 from r2morph.analysis.exception import ExceptionInfoReader
+from tests._doubles.in_memory_pe_pdata_binary import InMemoryPEPdataBinary
 
 
 def _packed_entry(begin: int, function_length_units: int) -> bytes:

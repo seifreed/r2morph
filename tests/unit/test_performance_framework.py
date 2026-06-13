@@ -1,12 +1,12 @@
 from pathlib import Path
 
 from r2morph.performance import (
-    PerformanceConfig,
-    MemoryManager,
-    ResultCache,
-    ParallelAnalysisEngine,
     IncrementalAnalyzer,
+    MemoryManager,
     OptimizedAnalysisFramework,
+    ParallelAnalysisEngine,
+    PerformanceConfig,
+    ResultCache,
     create_detection_analysis_func,
     create_devirtualization_analysis_func,
 )

@@ -8,8 +8,8 @@ Primary product flow:
 
 import argparse
 import json
-from pathlib import Path
 import sys
+from pathlib import Path
 from typing import Any
 
 import typer
@@ -21,24 +21,23 @@ from r2morph import __version__
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT, is_experimental_mutation
-from r2morph.utils.logging import setup_logging
-from r2morph.validation import BinaryValidator
-from r2morph.validation.validator import RuntimeComparisonConfig
-
+from r2morph.reporting.filtered_summary_builder import (
+    _build_report_dispatch_state,
+)
 from r2morph.reporting.report_helpers import (
     _attach_gate_evaluation,
     _pass_severity_requirements_met,
     _severity_threshold_met,
 )
-from r2morph.reporting.report_resolver import (
-    _resolve_general_report_flow_state,
-)
-from r2morph.reporting.filtered_summary_builder import (
-    _build_report_dispatch_state,
-)
 from r2morph.reporting.report_orchestrator import (
     _dispatch_report_flow,
 )
+from r2morph.reporting.report_resolver import (
+    _resolve_general_report_flow_state,
+)
+from r2morph.utils.logging import setup_logging
+from r2morph.validation import BinaryValidator
+from r2morph.validation.validator import RuntimeComparisonConfig
 
 app = typer.Typer(
     name="r2morph",
@@ -647,8 +646,8 @@ def analyze_enhanced(
     setup_logging("DEBUG" if verbose else "INFO")
 
     from r2morph.analysis.enhanced_analyzer import (
-        EnhancedAnalysisOrchestrator,
         AnalysisOptions,
+        EnhancedAnalysisOrchestrator,
         check_enhanced_dependencies,
     )
 

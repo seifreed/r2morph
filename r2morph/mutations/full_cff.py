@@ -27,9 +27,9 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
-from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph
 from r2morph.relocations.cave_injector import CodeCaveInjector
 
 logger = logging.getLogger(__name__)

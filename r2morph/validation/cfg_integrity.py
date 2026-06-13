@@ -13,13 +13,13 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
     PatternType,
     PreservedPattern,
 )
+from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 

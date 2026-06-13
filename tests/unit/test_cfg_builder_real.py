@@ -1,7 +1,7 @@
 from pathlib import Path
 
+from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph
 from r2morph.core.binary import Binary
-from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph, CFGBuilder
 
 
 def test_cfg_basic_operations():

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver
 
 

@@ -4,8 +4,8 @@ Code signing utilities for different platforms.
 
 import logging
 import platform
-import subprocess
 import shutil
+import subprocess
 from pathlib import Path
 
 logger = logging.getLogger(__name__)

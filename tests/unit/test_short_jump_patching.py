@@ -3,11 +3,11 @@ Tests for short jump patching functionality.
 """
 
 from r2morph.mutations.short_jump_patching import (
-    ShortJumpPatchingPass,
+    SHORT_JUMP_EXCLUSIVE,
     RIPRelativeValidationPass,
+    ShortJumpPatchingPass,
     detect_rip_relative_displacement,
     validate_instructions_for_rip_relative,
-    SHORT_JUMP_EXCLUSIVE,
 )
 
 

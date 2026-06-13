@@ -17,8 +17,8 @@ import sys
 from pathlib import Path
 
 from r2morph import __version__
-from r2morph.core.engine import MorphEngine
 from r2morph.core.config import EngineConfig
+from r2morph.core.engine import MorphEngine
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator import RuntimeComparisonConfig
 

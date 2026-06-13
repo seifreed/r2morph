@@ -14,7 +14,7 @@ from typing import Any
 
 from r2morph.analysis._register_names import X86_REGISTER_NAMES
 from r2morph.analysis.cfg import ControlFlowGraph
-from r2morph.analysis.dataflow import DataFlowAnalyzer, Definition, Use, Register
+from r2morph.analysis.dataflow import DataFlowAnalyzer, Definition, Register, Use
 from r2morph.analysis.liveness import LivenessAnalysis
 
 logger = logging.getLogger(__name__)

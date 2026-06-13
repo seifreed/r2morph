@@ -2,9 +2,9 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter import (
+    BinaryFormat,
     BinaryRewriter,
     RewriteOperation,
-    BinaryFormat,
 )
 
 

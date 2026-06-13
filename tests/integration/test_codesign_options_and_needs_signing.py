@@ -1,6 +1,6 @@
-from pathlib import Path
 import platform
 import shutil
+from pathlib import Path
 
 import pytest
 

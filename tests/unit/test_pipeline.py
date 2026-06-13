@@ -14,8 +14,8 @@ if importlib.util.find_spec("yaml") is None:
 
 
 from r2morph.core.binary import Binary
-from r2morph.pipeline import Pipeline
 from r2morph.mutations import NopInsertionPass, RegisterSubstitutionPass
+from r2morph.pipeline import Pipeline
 
 
 class TestPipeline:

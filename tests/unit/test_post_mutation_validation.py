@@ -4,8 +4,8 @@ Tests for semantic_validation module (post-mutation validation).
 
 from r2morph.mutations.semantic_validation import (
     SemanticValidator,
-    ValidationResult,
     ValidationIssue,
+    ValidationResult,
     ValidationSeverity,
     create_validator,
 )

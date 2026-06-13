@@ -22,6 +22,105 @@ from r2morph.core.constants import (
     VERY_MANY_FUNCTIONS_THRESHOLD,
 )
 from r2morph.core.constants import SEVERITY_ORDER as SEVERITY_ORDER
+from r2morph.core.report_helpers import (
+    REPORT_SCHEMA_VERSION as REPORT_SCHEMA_VERSION,
+)
+from r2morph.core.report_helpers import (
+    _build_discarded_mutation_priority as _build_discarded_mutation_priority,
+)
+from r2morph.core.report_helpers import (
+    _build_evidence_summary_for_pass as _build_evidence_summary_for_pass,
+)
+from r2morph.core.report_helpers import (
+    _build_observable_mismatch_map as _build_observable_mismatch_map,
+)
+from r2morph.core.report_helpers import (
+    _build_observable_mismatch_priority as _build_observable_mismatch_priority,
+)
+from r2morph.core.report_helpers import (
+    _build_pass_capability_summary_map as _build_pass_capability_summary_map,
+)
+from r2morph.core.report_helpers import (
+    _build_pass_region_evidence_map as _build_pass_region_evidence_map,
+)
+from r2morph.core.report_helpers import (
+    _build_pass_triage_map as _build_pass_triage_map,
+)
+from r2morph.core.report_helpers import (
+    _build_pass_validation_context as _build_pass_validation_context,
+)
+from r2morph.core.report_helpers import (
+    _build_symbolic_summary_for_pass as _build_symbolic_summary_for_pass,
+)
+from r2morph.core.report_helpers import (
+    _build_validation_role_map as _build_validation_role_map,
+)
+from r2morph.core.report_helpers import (
+    _enrich_validation_policy as _enrich_validation_policy,
+)
+from r2morph.core.report_helpers import (
+    _summarize_degradation_roles as _summarize_degradation_roles,
+)
+from r2morph.core.report_helpers import (
+    _summarize_diff_digest as _summarize_diff_digest,
+)
+from r2morph.core.report_helpers import (
+    _summarize_discarded_mutations as _summarize_discarded_mutations,
+)
+from r2morph.core.report_helpers import (
+    _summarize_normalized_pass_results as _summarize_normalized_pass_results,
+)
+from r2morph.core.report_helpers import (
+    _summarize_observable_mismatches_by_pass as _summarize_observable_mismatches_by_pass,
+)
+from r2morph.core.report_helpers import (
+    _summarize_pass_capability_rows as _summarize_pass_capability_rows,
+)
+from r2morph.core.report_helpers import (
+    _summarize_pass_coverage_buckets as _summarize_pass_coverage_buckets,
+)
+from r2morph.core.report_helpers import (
+    _summarize_pass_evidence as _summarize_pass_evidence,
+)
+from r2morph.core.report_helpers import (
+    _summarize_pass_evidence_compact as _summarize_pass_evidence_compact,
+)
+from r2morph.core.report_helpers import (
+    _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
+)
+from r2morph.core.report_helpers import (
+    _summarize_pass_timings as _summarize_pass_timings,
+)
+from r2morph.core.report_helpers import (
+    _summarize_pass_triage_rows as _summarize_pass_triage_rows,
+)
+from r2morph.core.report_helpers import (
+    _summarize_structural_evidence as _summarize_structural_evidence,
+)
+from r2morph.core.report_helpers import (
+    _summarize_symbolic_coverage_by_pass as _summarize_symbolic_coverage_by_pass,
+)
+from r2morph.core.report_helpers import (
+    _summarize_symbolic_issue_passes as _summarize_symbolic_issue_passes,
+)
+from r2morph.core.report_helpers import (
+    _summarize_symbolic_overview as _summarize_symbolic_overview,
+)
+from r2morph.core.report_helpers import (
+    _summarize_symbolic_severity_by_pass as _summarize_symbolic_severity_by_pass,
+)
+from r2morph.core.report_helpers import (
+    _summarize_symbolic_statuses as _summarize_symbolic_statuses,
+)
+from r2morph.core.report_helpers import (
+    _summarize_validation_adjustment_rows as _summarize_validation_adjustment_rows,
+)
+from r2morph.core.report_helpers import (
+    _summarize_validation_adjustments as _summarize_validation_adjustments,
+)
+from r2morph.core.report_helpers import (
+    _summarize_validation_role_rows as _summarize_validation_role_rows,
+)
 from r2morph.protocols import (
     BinarySignerProtocol,
     GateFailureReporterProtocol,
@@ -32,41 +131,6 @@ from r2morph.protocols import (
 )
 from r2morph.session import MorphSession
 from r2morph.validation import BinaryValidator, ValidationManager
-from r2morph.core.report_helpers import (
-    REPORT_SCHEMA_VERSION as REPORT_SCHEMA_VERSION,
-    _build_discarded_mutation_priority as _build_discarded_mutation_priority,
-    _build_evidence_summary_for_pass as _build_evidence_summary_for_pass,
-    _build_observable_mismatch_map as _build_observable_mismatch_map,
-    _build_observable_mismatch_priority as _build_observable_mismatch_priority,
-    _build_pass_capability_summary_map as _build_pass_capability_summary_map,
-    _build_pass_region_evidence_map as _build_pass_region_evidence_map,
-    _build_pass_triage_map as _build_pass_triage_map,
-    _build_pass_validation_context as _build_pass_validation_context,
-    _build_symbolic_summary_for_pass as _build_symbolic_summary_for_pass,
-    _build_validation_role_map as _build_validation_role_map,
-    _enrich_validation_policy as _enrich_validation_policy,
-    _summarize_degradation_roles as _summarize_degradation_roles,
-    _summarize_diff_digest as _summarize_diff_digest,
-    _summarize_discarded_mutations as _summarize_discarded_mutations,
-    _summarize_normalized_pass_results as _summarize_normalized_pass_results,
-    _summarize_observable_mismatches_by_pass as _summarize_observable_mismatches_by_pass,
-    _summarize_pass_capability_rows as _summarize_pass_capability_rows,
-    _summarize_pass_coverage_buckets as _summarize_pass_coverage_buckets,
-    _summarize_pass_evidence as _summarize_pass_evidence,
-    _summarize_pass_evidence_compact as _summarize_pass_evidence_compact,
-    _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
-    _summarize_pass_timings as _summarize_pass_timings,
-    _summarize_pass_triage_rows as _summarize_pass_triage_rows,
-    _summarize_structural_evidence as _summarize_structural_evidence,
-    _summarize_symbolic_coverage_by_pass as _summarize_symbolic_coverage_by_pass,
-    _summarize_symbolic_issue_passes as _summarize_symbolic_issue_passes,
-    _summarize_symbolic_overview as _summarize_symbolic_overview,
-    _summarize_symbolic_severity_by_pass as _summarize_symbolic_severity_by_pass,
-    _summarize_symbolic_statuses as _summarize_symbolic_statuses,
-    _summarize_validation_adjustment_rows as _summarize_validation_adjustment_rows,
-    _summarize_validation_adjustments as _summarize_validation_adjustments,
-    _summarize_validation_role_rows as _summarize_validation_role_rows,
-)
 
 logger = logging.getLogger(__name__)
 

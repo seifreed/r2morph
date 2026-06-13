@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.instrumentation.frida_engine import FridaEngine, FRIDA_AVAILABLE
+from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine
 
 
 def test_frida_engine_spawn_with_args_and_env() -> None:

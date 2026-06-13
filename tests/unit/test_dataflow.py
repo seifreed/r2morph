@@ -2,15 +2,15 @@
 Unit tests for data flow analysis module.
 """
 
-from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph, BlockType
+from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.analysis.dataflow import (
     DataFlowAnalyzer,
-    DataFlowResult,
     DataFlowDirection,
-    Register,
+    DataFlowResult,
     Definition,
-    Use,
     DefUseChain,
+    Register,
+    Use,
 )
 
 

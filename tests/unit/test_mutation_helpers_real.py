@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import BasicBlock
+from r2morph.core.binary import Binary
 from r2morph.mutations.block_reordering import BlockReorderingPass
 from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator

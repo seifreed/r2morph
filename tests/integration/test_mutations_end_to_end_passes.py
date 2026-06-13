@@ -3,10 +3,10 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
-from r2morph.mutations.register_substitution import RegisterSubstitutionPass
-from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
+from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
+from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:

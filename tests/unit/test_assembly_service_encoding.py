@@ -2,8 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.core.binary import Binary
 from r2morph.core.assembly import AssemblyService
+from r2morph.core.binary import Binary
 
 
 @pytest.mark.parametrize(

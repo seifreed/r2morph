@@ -8,22 +8,24 @@ from typing import Any
 
 from r2morph.reporting.gate_evaluator import (
     build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
+)
+from r2morph.reporting.gate_evaluator import (
     summarize_gate_failures as _summarize_gate_failures,
 )
 from r2morph.reporting.report_helpers import (
+    _expected_severity_rank_from_failure,
+    _filter_failed_gates_view,
     _first_available,
-    _is_risky_pass,
     _has_structural_risk,
     _has_symbolic_risk,
     _is_clean_pass,
     _is_covered_pass,
+    _is_risky_pass,
     _is_uncovered_pass,
+    _normalized_pass_map,
     _pass_names_from_triage_rows,
     _select_report_mutations,
     _summarize_symbolic_view_from_mutations,
-    _filter_failed_gates_view,
-    _expected_severity_rank_from_failure,
-    _normalized_pass_map,
     _summary_first,
 )
 

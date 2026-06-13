@@ -3,11 +3,11 @@ Test suite for control flow graph, dependencies, invariants, and relocations mod
 Targets low-coverage modules: CFG (53%), dependencies (49%), invariants (62%).
 """
 
+import importlib.util
 import shutil
 from pathlib import Path
 
 import pytest
-import importlib.util
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -19,10 +19,10 @@ from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.dependencies import DependencyAnalyzer, InstructionDef
 from r2morph.analysis.invariants import InvariantDetector, InvariantType
 from r2morph.core.binary import Binary
+from r2morph.platform.codesign import CodeSigner
 from r2morph.relocations.cave_finder import CaveFinder
 from r2morph.relocations.manager import RelocationManager
 from r2morph.relocations.reference_updater import ReferenceUpdater
-from r2morph.platform.codesign import CodeSigner
 
 
 class TestControlFlowGraph:

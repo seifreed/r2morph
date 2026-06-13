@@ -3,8 +3,8 @@ Unit tests for os_flags module.
 """
 
 from r2morph.analysis.os_flags import (
-    WINFLAGS,
     LINFLAGS,
+    WINFLAGS,
     OSFlags,
     get_flags,
 )

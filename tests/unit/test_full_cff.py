@@ -9,13 +9,13 @@ Covers:
 - Dispatcher code generation
 """
 
-from unittest.mock import MagicMock, patch
 from dataclasses import asdict
+from unittest.mock import MagicMock, patch
 
 from r2morph.mutations.full_cff import (
-    DispatcherType,
-    DispatcherBlock,
     CFFConfig,
+    DispatcherBlock,
+    DispatcherType,
     FullControlFlowFlatteningPass,
 )
 
@@ -140,7 +140,7 @@ class TestFullControlFlowFlatteningPass:
 
     def _create_mock_cfg(self, num_blocks=5, func_addr=0x1000):
         """Create a mock CFG object."""
-        from r2morph.analysis.cfg import ControlFlowGraph, BasicBlock, BlockType
+        from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 
         cfg = MagicMock(spec=ControlFlowGraph)
         cfg.function_address = func_addr

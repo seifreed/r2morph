@@ -3,18 +3,18 @@ Unit tests for TUI (Terminal User Interface).
 """
 
 from r2morph.tui import (
+    MutationTUI,
     TUIAction,
     TUIFunction,
+    TUIFunctionScreen,
+    TUIMainScreen,
     TUIMutation,
     TUIPass,
-    TUIProgress,
-    TUIResult,
-    TUIMainScreen,
-    TUIFunctionScreen,
     TUIPassScreen,
     TUIPreviewScreen,
+    TUIProgress,
     TUIProgressIndicator,
-    MutationTUI,
+    TUIResult,
     create_default_passes,
 )
 

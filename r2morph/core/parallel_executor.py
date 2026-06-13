@@ -7,11 +7,11 @@ to improve performance on multi-core systems.
 
 import logging
 import multiprocessing
+import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
-import time
 
 from r2morph.core.binary import Binary
 

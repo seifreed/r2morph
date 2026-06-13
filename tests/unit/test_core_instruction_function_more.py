@@ -1,5 +1,5 @@
-from r2morph.core.instruction import Instruction
 from r2morph.core.function import Function
+from r2morph.core.instruction import Instruction
 
 
 def test_instruction_helpers_and_repr():

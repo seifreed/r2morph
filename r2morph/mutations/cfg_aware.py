@@ -12,14 +12,14 @@ from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
 
-from r2morph.mutations.base import MutationPass, MutationResult
-from r2morph.analysis.cfg import ControlFlowGraph, CFGBuilder
+from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph
 from r2morph.analysis.critical_nodes import (
-    CriticalNodeDetector,
     AddressRange,
     CriticalNode,
+    CriticalNodeDetector,
     MutationSafetyScorer,
 )
+from r2morph.mutations.base import MutationPass, MutationResult
 
 logger = logging.getLogger(__name__)
 

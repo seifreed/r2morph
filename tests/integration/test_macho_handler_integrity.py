@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.codesign import CodeSigner
+from r2morph.platform.macho_handler import MachOHandler
 
 
 def test_macho_handler_basic_integrity(tmp_path: Path):

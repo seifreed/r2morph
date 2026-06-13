@@ -7,12 +7,12 @@ This module handles writing and printing report payloads:
 """
 
 import json
-
-from r2morph.reporting.gate_evaluator import SEVERITY_ORDER
 from pathlib import Path
 from typing import Any
 
 from rich.console import Console
+
+from r2morph.reporting.gate_evaluator import SEVERITY_ORDER
 
 console = Console()
 

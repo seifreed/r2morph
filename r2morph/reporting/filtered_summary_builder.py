@@ -7,11 +7,11 @@ from pathlib import Path
 from typing import Any
 
 from r2morph.reporting.report_helpers import (
+    _resolve_general_report_views,
+    _resolve_summary_pass_sources,
     _sort_pass_evidence,
     _summary_first,
     _visible_rows,
-    _resolve_general_report_views,
-    _resolve_summary_pass_sources,
 )
 
 

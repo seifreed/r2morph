@@ -1,10 +1,10 @@
-from pathlib import Path
 import subprocess
 import time
+from pathlib import Path
 
 import pytest
 
-from r2morph.instrumentation.frida_engine import FridaEngine, InstrumentationMode, FRIDA_AVAILABLE
+from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine, InstrumentationMode
 
 
 def test_frida_engine_spawn_success_path():

@@ -2,14 +2,14 @@
 Unit tests for def-use chain analysis module.
 """
 
-from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph, BlockType
+from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.analysis.defuse import (
+    Definition,
     DefUseAnalyzer,
     DefWeb,
-    UseWeb,
-    Definition,
-    Use,
     Register,
+    Use,
+    UseWeb,
 )
 
 

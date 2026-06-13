@@ -8,10 +8,9 @@ by radare2.
 
 from __future__ import annotations
 
-
 import logging
 from pathlib import Path
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import angr
@@ -33,8 +32,8 @@ else:
         SimState = None
         CFGFast = None
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.cfg import ControlFlowGraph
+from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import pytest
 
-from r2morph.instrumentation.frida_engine import FridaEngine, FRIDA_AVAILABLE
+from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine
 
 
 def test_frida_script_generation_and_export(tmp_path):

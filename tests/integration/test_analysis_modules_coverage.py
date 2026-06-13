@@ -2,10 +2,10 @@
 Tests for analysis modules to increase coverage.
 """
 
+import importlib.util
 from pathlib import Path
 
 import pytest
-import importlib.util
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -13,7 +13,7 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 
-from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph, BlockType
+from r2morph.analysis.cfg import BasicBlock, BlockType, CFGBuilder, ControlFlowGraph
 from r2morph.analysis.dependencies import (
     Dependency,
     DependencyAnalyzer,

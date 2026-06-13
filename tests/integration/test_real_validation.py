@@ -18,7 +18,7 @@ from r2morph import MorphEngine
 from r2morph.mutations import InstructionSubstitutionPass, NopInsertionPass
 from r2morph.validation.fuzzer import MutationFuzzer
 from r2morph.validation.validator import BinaryValidator
-from tests.utils.platform_binaries import get_platform_binary, ensure_exists
+from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 
 class TestRealValidation:

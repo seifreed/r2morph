@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.codesign import CodeSigner
-from r2morph.platform.elf_handler import ELFHandler, SHF_EXECINSTR
+from r2morph.platform.elf_handler import SHF_EXECINSTR, ELFHandler
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.pe_handler import PEHandler
 

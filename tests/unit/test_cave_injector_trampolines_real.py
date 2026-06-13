@@ -11,9 +11,8 @@ real in-memory Binary double (CLAUDE.md SS4: no mocks) and gives the
 previously-untested API real coverage.
 """
 
-from tests._doubles.in_memory_cave_binary import InMemoryCaveBinary
-
 from r2morph.relocations.cave_injector import CodeCaveInjector
+from tests._doubles.in_memory_cave_binary import InMemoryCaveBinary
 
 
 def test_inject_with_trampolines_writes_direct_site_to_destination_jumps() -> None:

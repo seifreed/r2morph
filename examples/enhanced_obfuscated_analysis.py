@@ -22,10 +22,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from r2morph import Binary
-from r2morph.detection import ObfuscationDetector
 from r2morph.analysis.symbolic import AngrBridge, PathExplorer, SyntiaFramework
-from r2morph.instrumentation import FridaEngine, FRIDA_AVAILABLE
-from r2morph.devirtualization import VMHandlerAnalyzer, MBASolver
+from r2morph.detection import ObfuscationDetector
+from r2morph.devirtualization import MBASolver, VMHandlerAnalyzer
+from r2morph.instrumentation import FRIDA_AVAILABLE, FridaEngine
 
 
 def analyze_obfuscation_techniques(binary: Binary):

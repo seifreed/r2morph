@@ -1,4 +1,4 @@
-from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RewriteOperation, RelocationEntry
+from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RelocationEntry, RewriteOperation
 
 
 def test_binary_rewriter_updates_relocations_with_shifts():

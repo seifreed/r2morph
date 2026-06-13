@@ -14,14 +14,14 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 from r2morph.validation.differ import (
-    DiffType,
-    ChangeSeverity,
-    ByteDiff,
-    SectionDiff,
-    FunctionDiff,
     BinaryDiff,
-    DiffReport,
     BinaryDiffer,
+    ByteDiff,
+    ChangeSeverity,
+    DiffReport,
+    DiffType,
+    FunctionDiff,
+    SectionDiff,
     compare_binaries,
 )
 

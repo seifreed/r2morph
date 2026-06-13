@@ -1,6 +1,6 @@
-from pathlib import Path
 import random
 import shutil
+from pathlib import Path
 
 import pytest
 

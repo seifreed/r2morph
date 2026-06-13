@@ -5,15 +5,15 @@ This module provides parallel processing, memory management, and incremental
 analysis capabilities for large-scale deployment scenarios.
 """
 
+import gc
+import logging
 import os
-import time
 import threading
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
-from typing import Any, Callable, Iterator
+import time
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-import logging
-import gc
+from typing import Any, Callable, Iterator
 
 # Type checking for optional dependencies
 try:

@@ -14,8 +14,8 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.core.engine import MorphEngine
 from r2morph.core.config import EngineConfig
+from r2morph.core.engine import MorphEngine
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("SKIP_CROSS_VALIDATION_TESTS") == "1", reason="Cross-validation tests disabled"

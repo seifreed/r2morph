@@ -15,10 +15,10 @@ Key Features:
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Any
-from enum import Enum
 import os
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any
 
 capstone: Any
 try:

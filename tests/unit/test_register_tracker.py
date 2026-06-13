@@ -3,15 +3,15 @@ Unit tests for register_tracker module.
 """
 
 from r2morph.analysis.register_tracker import (
-    RegTracker,
-    REG_64,
-    REG_32,
-    REG_16,
     REG_8H,
     REG_8L,
+    REG_16,
+    REG_32,
+    REG_64,
     REG_ALL,
     REG_SIZES_MAP,
     REG_WEIGHTS_MAP,
+    RegTracker,
 )
 
 

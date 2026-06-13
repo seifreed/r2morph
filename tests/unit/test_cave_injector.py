@@ -10,6 +10,7 @@ Covers:
 
 from unittest.mock import MagicMock, patch
 
+from r2morph.relocations.cave_finder import CodeCave
 from r2morph.relocations.cave_injector import (
     CaveCreationOptions,
     CaveType,
@@ -17,7 +18,6 @@ from r2morph.relocations.cave_injector import (
     CodeCaveInjector,
     SectionPermissions,
 )
-from r2morph.relocations.cave_finder import CodeCave
 
 
 class TestCodeCaveAllocation:

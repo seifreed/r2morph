@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.detection.evasion_scorer import EvasionScorer, EvasionScore
+from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
 
 
 def test_evasion_score_string_formatting():

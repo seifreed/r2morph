@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from r2morph.instrumentation.frida_engine import FridaEngine, FRIDA_AVAILABLE
+from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine
 
 if not FRIDA_AVAILABLE:
     pytest.skip("Frida not available", allow_module_level=True)

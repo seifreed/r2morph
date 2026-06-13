@@ -11,10 +11,10 @@ Covers:
 from unittest.mock import MagicMock
 
 from r2morph.analysis.switch_table import (
+    IndirectJump,
     JumpTable,
     JumpTableEntry,
     JumpTableType,
-    IndirectJump,
     SwitchTableAnalyzer,
 )
 

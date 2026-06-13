@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.detection.control_flow_detector import ControlFlowAnalyzer, ControlFlowAnalysisResult
+from r2morph.detection.control_flow_detector import ControlFlowAnalysisResult, ControlFlowAnalyzer
 
 
 def test_control_flow_analyzer_basic_outputs_real():

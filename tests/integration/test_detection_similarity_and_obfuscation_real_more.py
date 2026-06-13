@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.detection.evasion_scorer import EvasionScorer, EvasionScore
+from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
 from r2morph.detection.obfuscation_detector import ObfuscationDetector
 from r2morph.detection.similarity_hasher import SimilarityHasher
 

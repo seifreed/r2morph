@@ -3,9 +3,9 @@ Unit tests for Mach-O handler module.
 """
 
 import platform
+import struct
 from pathlib import Path
 from unittest.mock import patch
-import struct
 
 import pytest
 

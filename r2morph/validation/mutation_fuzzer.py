@@ -12,7 +12,7 @@ import random
 import statistics
 import tempfile
 import time
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Any
@@ -294,6 +294,7 @@ class MutationPassFuzzer:
             FuzzCampaignResult
         """
         import subprocess
+
         from r2morph.validation.validator import BinaryValidator
 
         start_time = time.time()

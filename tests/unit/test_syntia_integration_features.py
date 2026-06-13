@@ -1,6 +1,6 @@
 import pytest
 
-from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework, InstructionSemantics, VMHandlerSemantics
+from r2morph.analysis.symbolic.syntia_integration import InstructionSemantics, SyntiaFramework, VMHandlerSemantics
 
 pytestmark = [pytest.mark.experimental]
 

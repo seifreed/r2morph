@@ -9,8 +9,8 @@ Validates that mutations preserve program semantics:
 """
 
 from dataclasses import dataclass, field
-from typing import Any
 from enum import Enum
+from typing import Any
 
 
 class ValidationSeverity(Enum):

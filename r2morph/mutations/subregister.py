@@ -5,8 +5,8 @@ Provides functions for working with register sizes and subregisters
 in x86-64, enabling size-aware code transformations.
 """
 
-from typing import Optional, Final
 from dataclasses import dataclass
+from typing import Final, Optional
 
 
 @dataclass

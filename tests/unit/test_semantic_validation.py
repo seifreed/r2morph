@@ -9,26 +9,26 @@ Covers:
 
 from unittest.mock import MagicMock
 
+from r2morph.validation.semantic import (
+    MutationRegion,
+    ObservableComparison,
+    SemanticValidationReport,
+    SemanticValidationResult,
+    SemanticValidator,
+    ValidationMode,
+    ValidationResultStatus,
+    validate_semantic_equivalence,
+)
 from r2morph.validation.semantic_invariants import (
+    ControlFlowPreservationChecker,
     InvariantCategory,
     InvariantSeverity,
     InvariantSpec,
     InvariantViolation,
+    RegisterPreservationChecker,
+    SemanticInvariantChecker,
     SemanticInvariantRegistry,
     StackBalanceChecker,
-    RegisterPreservationChecker,
-    ControlFlowPreservationChecker,
-    SemanticInvariantChecker,
-)
-from r2morph.validation.semantic import (
-    ValidationMode,
-    ValidationResultStatus,
-    MutationRegion,
-    ObservableComparison,
-    SemanticValidationResult,
-    SemanticValidationReport,
-    SemanticValidator,
-    validate_semantic_equivalence,
 )
 
 

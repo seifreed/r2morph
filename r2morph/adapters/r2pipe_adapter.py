@@ -5,9 +5,10 @@ using r2pipe for actual radare2 interaction.
 """
 
 import logging
-import r2pipe
 from pathlib import Path
 from typing import Any
+
+import r2pipe
 
 from r2morph.protocols import DisassemblerInterface
 

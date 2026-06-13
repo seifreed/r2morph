@@ -219,8 +219,8 @@ class PerformanceBenchmark:
         """
         from r2morph import Binary
         from r2morph.mutations import (
-            NopInsertionPass,
             InstructionSubstitutionPass,
+            NopInsertionPass,
             RegisterSubstitutionPass,
         )
 

@@ -8,24 +8,25 @@ Tests for Issue #3:
 - Tests with optimized binaries
 """
 
-import pytest
 from unittest.mock import patch
 
+import pytest
+
 from r2morph.analysis.pattern_preservation import (
+    Criticality,
+    ExclusionZone,
     PatternPreservationManager,
     PatternType,
     PreservedPattern,
-    ExclusionZone,
-    Criticality,
 )
 from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
-    IntegrityStatus,
-    IntegrityViolation,
-    IntegrityReport,
-    IntegrityCheck,
     CFGSnapshot,
     HardenedMutationValidator,
+    IntegrityCheck,
+    IntegrityReport,
+    IntegrityStatus,
+    IntegrityViolation,
 )
 
 

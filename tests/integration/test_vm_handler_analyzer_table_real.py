@@ -3,7 +3,7 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer
-from tests.utils.platform_binaries import get_platform_binary, ensure_exists
+from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 
 def _choose_binary_with_room(tmp_path: Path) -> Path | None:

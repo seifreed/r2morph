@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.invariants import InvariantDetector, SemanticValidator
+from r2morph.core.binary import Binary
 
 
 def test_invariant_detection_on_real_function():

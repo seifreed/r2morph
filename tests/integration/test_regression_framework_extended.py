@@ -6,8 +6,8 @@ import pytest
 
 from r2morph.validation.regression import (
     RegressionResult,
-    RegressionTestFramework,
     RegressionTester,
+    RegressionTestFramework,
     RegressionTestType,
 )
 from r2morph.validation.validator import ValidationResult

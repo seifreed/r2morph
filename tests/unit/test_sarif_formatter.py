@@ -8,6 +8,13 @@ from pathlib import Path
 
 import pytest
 
+from r2morph.reporting.sarif_formatter import (
+    MutationResult,
+    ReportData,
+    SARIFFormatter,
+    ValidationResult,
+    format_as_sarif,
+)
 from r2morph.reporting.sarif_schema import (
     SARIFArtifact,
     SARIFArtifactLocation,
@@ -26,13 +33,6 @@ from r2morph.reporting.sarif_schema import (
     SARIFSnippet,
     SARIFTool,
     SARIFToolComponent,
-)
-from r2morph.reporting.sarif_formatter import (
-    MutationResult,
-    ReportData,
-    ValidationResult,
-    SARIFFormatter,
-    format_as_sarif,
 )
 
 

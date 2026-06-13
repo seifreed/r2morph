@@ -1,6 +1,6 @@
 import pytest
 
-from r2morph.devirtualization.cfo_simplifier import CFOSimplifier, ControlFlowBlock, NETWORKX_AVAILABLE
+from r2morph.devirtualization.cfo_simplifier import NETWORKX_AVAILABLE, CFOSimplifier, ControlFlowBlock
 
 
 @pytest.mark.skipif(not NETWORKX_AVAILABLE, reason="NetworkX not available")

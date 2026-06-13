@@ -2,19 +2,20 @@
 Tests for NASM export functionality.
 """
 
-import tempfile
 import os
 import random
+import tempfile
+
 from r2morph.export.nasm_export import (
-    NASMExporter,
-    Instruction,
     BasicBlock,
+    Instruction,
+    NASMExporter,
+    _replace_target_with_label,
+    assemble_nasm,
     generate_block_asm,
     generate_final_asm,
-    shuffle_blocks,
     remove_redundant_fallthrough,
-    assemble_nasm,
-    _replace_target_with_label,
+    shuffle_blocks,
 )
 
 

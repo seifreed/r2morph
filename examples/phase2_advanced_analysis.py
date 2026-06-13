@@ -27,9 +27,9 @@ from typing import Any
 
 # r2morph imports
 from r2morph import Binary
-from r2morph.detection import ObfuscationDetector, AntiAnalysisBypass
-from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, BinaryRewriter, SimplificationStrategy
-from r2morph.analysis.symbolic import AngrBridge, PathExplorer, ConstraintSolver
+from r2morph.analysis.symbolic import AngrBridge, ConstraintSolver, PathExplorer
+from r2morph.detection import AntiAnalysisBypass, ObfuscationDetector
+from r2morph.devirtualization import BinaryRewriter, CFOSimplifier, IterativeSimplifier, SimplificationStrategy
 
 
 def print_banner():

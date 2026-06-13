@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from r2morph.core.binary import Binary
 from r2morph.analysis.dependencies import DependencyAnalyzer
+from r2morph.core.binary import Binary
 
 
 def test_dependency_analysis_on_real_function():

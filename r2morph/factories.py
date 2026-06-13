@@ -153,19 +153,19 @@ def create_console_renderer(
         Dict with render functions
     """
     from r2morph.reporting.report_rendering import (
-        render_pass_capabilities,
-        render_pass_validation_contexts,
-        render_symbolic_sections,
-        render_gate_sections,
         render_degradation_sections,
+        render_gate_evaluation_sections,
+        render_gate_sections,
+        render_general_only_pass_sections,
+        render_general_report_sections,
+        render_mismatch_summary_sections,
         render_only_mismatches_sections,
         render_only_pass_sections,
+        render_pass_capabilities,
+        render_pass_validation_contexts,
         render_report_filter_messages,
         render_summary_table,
-        render_gate_evaluation_sections,
-        render_general_report_sections,
-        render_general_only_pass_sections,
-        render_mismatch_summary_sections,
+        render_symbolic_sections,
         render_validation_context_table,
     )
 
