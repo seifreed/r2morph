@@ -1,18 +1,27 @@
-"""
-Report rendering logic for CLI output.
+"""Legacy report renderer facade.
 
-This module handles console rendering of report summaries
-using rich tables and formatting.
+The modern reporting stack renders through :mod:`r2morph.reporting.report_rendering`
+and its split helper modules. This compatibility layer keeps the historical
+``ConsoleRenderer`` and ``ReportRenderer`` entry points available while routing
+the shared rendering paths through the modular implementation.
 """
+
+from __future__ import annotations
 
 from typing import Any
 
+from r2morph.reporting.report_rendering import (
+    create_table,
+    render_degradation_sections,
+    render_gate_sections,
+    render_symbolic_sections,
+)
+
 
 class ConsoleRenderer:
-    """Renders report summaries to console using rich formatting."""
+    """Compatibility wrapper around the modular report rendering helpers."""
 
     def __init__(self, console: Any):
-        """Initialize with a rich Console instance."""
         self._console = console
 
     def render_symbolic_sections(
@@ -28,22 +37,17 @@ class ConsoleRenderer:
         mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
     ) -> None:
         """Render symbolic validation summary sections."""
-        from rich.table import Table
-
         if symbolic_requested == 0:
             return
 
-        table = Table(title="Symbolic Validation Summary")
-        table.add_column("Metric", style="cyan")
-        table.add_column("Count", style="green", justify="right")
-
-        table.add_row("Symbolic Regions Checked", str(symbolic_requested))
-        table.add_row("Observable Match", str(observable_match))
-        table.add_row("Observable Mismatch", str(observable_mismatch))
-        table.add_row("Bounded Only", str(bounded_only))
-        table.add_row("Without Coverage", str(observable_not_run))
-
-        self._console.print(table)
+        render_symbolic_sections(
+            symbolic_requested=symbolic_requested,
+            observable_match=observable_match,
+            observable_mismatch=observable_mismatch,
+            bounded_only=bounded_only,
+            without_coverage=observable_not_run,
+            console=self._console,
+        )
 
         if mismatch_rows:
             self._render_mismatch_table(mismatch_rows)
@@ -53,12 +57,14 @@ class ConsoleRenderer:
         mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
     ) -> None:
         """Render a table of observable mismatches."""
-        from rich.table import Table
-
-        table = Table(title="Observable Mismatches by Pass")
-        table.add_column("Pass", style="cyan")
-        table.add_column("Count", style="red", justify="right")
-        table.add_column("Observables", style="yellow")
+        table = create_table(
+            "Observable Mismatches by Pass",
+            [
+                ("Pass", "cyan"),
+                ("Count", "red"),
+                ("Observables", "yellow"),
+            ],
+        )
 
         for pass_name, start_addr, end_addr, observables in mismatch_rows:
             table.add_row(
@@ -74,14 +80,16 @@ class ConsoleRenderer:
         pass_results: dict[str, Any],
     ) -> None:
         """Render a table of pass evidence summaries."""
-        from rich.table import Table
-
-        table = Table(title="Pass Evidence Summary")
-        table.add_column("Pass", style="cyan")
-        table.add_column("Changed Regions", style="blue", justify="right")
-        table.add_column("Structural Issues", style="red", justify="right")
-        table.add_column("Symbolic Mismatches", style="red", justify="right")
-        table.add_column("Status", style="yellow")
+        table = create_table(
+            "Pass Evidence Summary",
+            [
+                ("Pass", "cyan"),
+                ("Changed Regions", "blue"),
+                ("Structural Issues", "red"),
+                ("Symbolic Mismatches", "red"),
+                ("Status", "yellow"),
+            ],
+        )
 
         for pass_name, result in pass_results.items():
             evidence = result.get("evidence_summary", {})
@@ -101,25 +109,11 @@ class ConsoleRenderer:
         gate_failure_priority: list[dict[str, Any]],
     ) -> None:
         """Render a summary of gate failures."""
-        from rich.table import Table
-
-        if not gate_failure_summary.get("require_pass_severity_failure_count", 0):
-            self._console.print("[green]All gate checks passed[/green]")
-            return
-
-        table = Table(title="Gate Failures")
-        table.add_column("Pass", style="cyan")
-        table.add_column("Failure Count", style="red", justify="right")
-        table.add_column("Strictest Severity", style="yellow")
-
-        for row in gate_failure_priority:
-            table.add_row(
-                row.get("pass_name", "unknown"),
-                str(row.get("failure_count", 0)),
-                row.get("strictest_expected_severity", "unknown"),
-            )
-
-        self._console.print(table)
+        render_gate_sections(
+            gate_failure_summary,
+            gate_failure_priority,
+            console=self._console,
+        )
 
     def render_degradation_summary(
         self,
@@ -127,19 +121,10 @@ class ConsoleRenderer:
         degradation_roles: dict[str, int],
     ) -> None:
         """Render a summary of validation mode degradations."""
-        from rich.table import Table
-
-        if not validation_adjustments.get("degraded_validation"):
-            return
-
-        table = Table(title="Validation Mode Degradation")
-        table.add_column("Role", style="cyan")
-        table.add_column("Count", style="yellow", justify="right")
-
-        for role, count in degradation_roles.items():
-            table.add_row(role, str(count))
-
-        self._console.print(table)
+        render_degradation_sections(
+            {"degraded_validation": validation_adjustments.get("degraded_validation"), "roles": degradation_roles},
+            console=self._console,
+        )
 
     def render_filtered_summary(
         self,
@@ -148,17 +133,19 @@ class ConsoleRenderer:
         only_failed_gates: bool = False,
     ) -> None:
         """Render a filtered report summary."""
-        from rich.table import Table
-
         title = "Filtered Report Summary"
         if only_mismatches:
             title = "Mismatch Summary"
         elif only_failed_gates:
             title = "Failed Gates Summary"
 
-        table = Table(title=title)
-        table.add_column("Metric", style="cyan")
-        table.add_column("Value", style="green")
+        table = create_table(
+            title,
+            [
+                ("Metric", "cyan"),
+                ("Value", "green"),
+            ],
+        )
 
         for key, value in filtered_summary.items():
             if isinstance(value, (int, float, str)):
@@ -171,7 +158,6 @@ class ReportRenderer:
     """Main report renderer that coordinates console output."""
 
     def __init__(self, console: Any):
-        """Initialize with a rich Console instance."""
         self._console_renderer = ConsoleRenderer(console)
 
     def render_report(
@@ -185,9 +171,10 @@ class ReportRenderer:
         summary = payload.get("summary", {})
 
         if only_failed_gates:
-            gate_failure_summary = payload.get("gate_failures", {})
-            gate_failure_priority = payload.get("gate_failure_priority", [])
-            self._console_renderer.render_gate_failure_summary(gate_failure_summary, gate_failure_priority)
+            self._console_renderer.render_gate_failure_summary(
+                payload.get("gate_failures", {}),
+                payload.get("gate_failure_priority", []),
+            )
             return
 
         if only_mismatches:
@@ -254,23 +241,3 @@ class ReportRenderer:
 
         if not summary_only:
             self._render_mismatches_only(payload, summary)
-
-    def render_summary(
-        self,
-        summary: dict[str, Any],
-    ) -> None:
-        """Render just the summary section of a report."""
-        from rich.table import Table
-
-        table = Table(title="Report Summary")
-        table.add_column("Metric", style="cyan")
-        table.add_column("Value", style="green")
-
-        for key, value in summary.items():
-            if isinstance(value, dict):
-                continue
-            if isinstance(value, list):
-                continue
-            table.add_row(key.replace("_", " ").title(), str(value))
-
-        self._console_renderer._console.print(table)
