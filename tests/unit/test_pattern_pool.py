@@ -4,14 +4,14 @@ Tests for pattern_pool module.
 
 import logging
 
+from r2morph.mutations.pattern_generators import _create_instruction
 from r2morph.mutations.pattern_pool import (
-    BasicBlock,
-    Instruction,
-    MatchResult,
     MutationPatternPool,
-    _create_instruction,
     clear_pattern_pools,
     get_pattern_pools,
+    register_pattern_pool,
+)
+from r2morph.mutations.pattern_rules import (
     match_add_reg_imm_small,
     match_and_reg_0_all,
     match_dec_reg,
@@ -19,8 +19,8 @@ from r2morph.mutations.pattern_pool import (
     match_mov_reg_0_all,
     match_shl_reg_imm,
     match_xor_reg_reg_all,
-    register_pattern_pool,
 )
+from r2morph.mutations.pattern_types import BasicBlock, Instruction, MatchResult
 
 
 class TestInstruction:
@@ -209,7 +209,7 @@ class TestPatternPoolRegistry:
 
 class TestGenerators:
     def test_generator_mov_reg_0(self):
-        from r2morph.mutations.pattern_pool import generator_mov_reg_0
+        from r2morph.mutations.pattern_generators import generator_mov_reg_0
 
         result = generator_mov_reg_0(["rax"], "linux")
         assert len(result) == 1
@@ -218,7 +218,7 @@ class TestGenerators:
         assert result[0].operand_2 == "0"
 
     def test_generator_xor_reg_reg(self):
-        from r2morph.mutations.pattern_pool import generator_xor_reg_reg
+        from r2morph.mutations.pattern_generators import generator_xor_reg_reg
 
         result = generator_xor_reg_reg(["rbx"], "linux")
         assert len(result) == 1
@@ -227,14 +227,14 @@ class TestGenerators:
         assert result[0].operand_2 == "rbx"
 
     def test_generator_and_reg_0(self):
-        from r2morph.mutations.pattern_pool import generator_and_reg_0
+        from r2morph.mutations.pattern_generators import generator_and_reg_0
 
         result = generator_and_reg_0(["rcx"], "linux")
         assert len(result) == 1
         assert result[0].mnemonic == "and"
 
     def test_generator_inc_to_add(self):
-        from r2morph.mutations.pattern_pool import generator_inc_to_add
+        from r2morph.mutations.pattern_generators import generator_inc_to_add
 
         result = generator_inc_to_add(["rax"], "linux")
         assert len(result) == 1

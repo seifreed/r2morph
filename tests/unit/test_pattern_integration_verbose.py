@@ -9,16 +9,16 @@ import logging
 
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 from r2morph.mutations.pattern_pool import (
-    Instruction,
     MutationPatternPool,
     clear_pattern_pools,
-    match_mov_reg_0_all,
     register_pattern_pool,
 )
+from r2morph.mutations.pattern_rules import match_mov_reg_0_all
+from r2morph.mutations.pattern_types import Instruction
 
 
 def _mov_zero_generator(operands, os_type):
-    from r2morph.mutations.pattern_pool import _create_instruction
+    from r2morph.mutations.pattern_generators import _create_instruction
 
     return [_create_instruction("xor", [operands[0], operands[0]], "xor")]
 

@@ -70,7 +70,7 @@ class PatternMatchIntegration:
         Returns:
             Tuple of (mutated_instructions, mutation_log)
         """
-        from r2morph.mutations.pattern_pool import Instruction
+        from r2morph.mutations.pattern_types import Instruction
 
         converted = []
         for ins in block_instructions:
