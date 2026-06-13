@@ -25,6 +25,10 @@ from r2morph.validation.semantic_invariants import (
     InvariantViolation,
     SemanticInvariantChecker,
 )
+from r2morph.validation.semantic_symbolic import (
+    ANGR_AVAILABLE,
+    run_symbolic_validation,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -318,15 +322,7 @@ class SemanticValidator:
         self.binary = binary
         self.mode = mode
         self.invariant_checker = SemanticInvariantChecker(binary)
-        self._angr_available = False
-
-        try:
-            import importlib.util
-
-            self._angr_available = importlib.util.find_spec("angr") is not None
-        except Exception as e:
-            self._angr_available = False
-            logger.debug(f"angr not available: {e}")
+        self._angr_available = ANGR_AVAILABLE
 
     def validate_mutation(
         self,
@@ -401,75 +397,7 @@ class SemanticValidator:
         observables: list[str] | None = None,
     ) -> None:
         """Run symbolic execution validation using angr."""
-        if not self._angr_available:
-            result.symbolic_status = "angr_unavailable"
-            return
-
-        try:
-            from r2morph.analysis.symbolic import AngrBridge
-
-            arch_info = self.binary.get_arch_info()
-            bits = arch_info.get("bits", 64)
-            arch = arch_info.get("arch", "")
-
-            if arch not in ("x86", "x86_64"):
-                result.symbolic_status = "unsupported_arch"
-                return
-
-            observables = observables or self._default_observables(bits)
-            bridge = AngrBridge(self.binary)
-
-            original_project = bridge.angr_project
-            original_state = self._create_symbolic_state(
-                original_project, result.region.start_address, bits, observables
-            )
-
-            if original_state is None:
-                result.symbolic_status = "state_creation_failed"
-                return
-
-            result.symbolic_status = "symbolic_check_performed"
-            result.observables = ObservableComparison()
-
-        except Exception as e:
-            logger.debug(f"Symbolic validation failed: {e}")
-            result.symbolic_status = f"error: {str(e)}"
-
-    def _create_symbolic_state(
-        self,
-        project: Any,
-        address: int,
-        bits: int,
-        observables: list[str],
-    ) -> Any | None:
-        """Create symbolic state for comparison."""
-        try:
-            import claripy
-
-            state = project.factory.blank_state(addr=address)
-            stack_reg = "rsp" if bits == 64 else "esp"
-            base_reg = "rbp" if bits == 64 else "ebp"
-
-            setattr(state.regs, stack_reg, claripy.BVV(0x100000, bits))
-            setattr(state.regs, base_reg, claripy.BVV(0x100000, bits))
-
-            for reg in observables:
-                if reg in ("eflags", "flags"):
-                    continue
-                if hasattr(state.regs, reg):
-                    size = 64 if reg.startswith("r") or reg.startswith("e") else 32
-                    symbolic = claripy.BVS(f"{reg}_{address:x}", size)
-                    setattr(state.regs, reg, symbolic)
-
-            return state
-        except Exception:
-            return None
-
-    def _default_observables(self, bits: int) -> list[str]:
-        """Get default observables for architecture."""
-        if bits == 64:
-            return ["rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rbp", "rsp", "eflags"]
-        return ["eax", "ebx", "ecx", "edx", "esi", "edi", "ebp", "esp", "eflags"]
+        run_symbolic_validation(self.binary, result, observables)
 
     def validate_mutations(
         self,
