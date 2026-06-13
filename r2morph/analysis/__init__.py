@@ -31,10 +31,12 @@ from r2morph.analysis.analyzer import BinaryAnalyzer
 from r2morph.analysis.call_graph import (
     CallEdge,
     CallGraph,
-    CallGraphBuilder,
     CallNode,
     CallType,
     RecursionType,
+)
+from r2morph.analysis.call_graph_builder import (
+    CallGraphBuilder,
     build_call_graph,
     build_call_graph_cached,
 )

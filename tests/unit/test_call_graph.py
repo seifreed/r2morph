@@ -17,10 +17,12 @@ from unittest.mock import MagicMock
 from r2morph.analysis.call_graph import (
     CallEdge,
     CallGraph,
-    CallGraphBuilder,
     CallNode,
     CallType,
     RecursionType,
+)
+from r2morph.analysis.call_graph_builder import (
+    CallGraphBuilder,
     build_call_graph,
 )
 
@@ -654,7 +656,7 @@ class TestCallGraphCaching:
 
     def test_build_call_graph_cached_no_cache(self):
         """Test cached build without cache object."""
-        from r2morph.analysis.call_graph import build_call_graph_cached
+        from r2morph.analysis.call_graph_builder import build_call_graph_cached
 
         binary = MagicMock()
         binary.is_analyzed.return_value = True
@@ -672,7 +674,7 @@ class TestCallGraphCaching:
         """Test cached build with cache object."""
         import tempfile
 
-        from r2morph.analysis.call_graph import build_call_graph_cached
+        from r2morph.analysis.call_graph_builder import build_call_graph_cached
         from r2morph.core.analysis_cache import AnalysisCache
 
         binary = MagicMock()
@@ -695,7 +697,7 @@ class TestCallGraphCaching:
         """Test that cache hit returns same call graph."""
         import tempfile
 
-        from r2morph.analysis.call_graph import build_call_graph_cached
+        from r2morph.analysis.call_graph_builder import build_call_graph_cached
         from r2morph.core.analysis_cache import AnalysisCache
 
         binary = MagicMock()
