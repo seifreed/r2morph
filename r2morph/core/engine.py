@@ -3,9 +3,7 @@ Main morphing engine for binary transformations.
 """
 
 import logging
-import random
 import shutil
-import time
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -14,105 +12,7 @@ from r2morph.core.binary import Binary
 from r2morph.core.constants import SEVERITY_ORDER as SEVERITY_ORDER
 from r2morph.core.engine_lifecycle import analyze as analyze_lifecycle
 from r2morph.core.engine_lifecycle import load_binary as load_binary_lifecycle
-from r2morph.core.report_helpers import (
-    REPORT_SCHEMA_VERSION as REPORT_SCHEMA_VERSION,
-)
-from r2morph.core.report_helpers import (
-    _build_discarded_mutation_priority as _build_discarded_mutation_priority,
-)
-from r2morph.core.report_helpers import (
-    _build_evidence_summary_for_pass as _build_evidence_summary_for_pass,
-)
-from r2morph.core.report_helpers import (
-    _build_observable_mismatch_map as _build_observable_mismatch_map,
-)
-from r2morph.core.report_helpers import (
-    _build_observable_mismatch_priority as _build_observable_mismatch_priority,
-)
-from r2morph.core.report_helpers import (
-    _build_pass_capability_summary_map as _build_pass_capability_summary_map,
-)
-from r2morph.core.report_helpers import (
-    _build_pass_region_evidence_map as _build_pass_region_evidence_map,
-)
-from r2morph.core.report_helpers import (
-    _build_pass_triage_map as _build_pass_triage_map,
-)
-from r2morph.core.report_helpers import (
-    _build_pass_validation_context as _build_pass_validation_context,
-)
-from r2morph.core.report_helpers import (
-    _build_symbolic_summary_for_pass as _build_symbolic_summary_for_pass,
-)
-from r2morph.core.report_helpers import (
-    _build_validation_role_map as _build_validation_role_map,
-)
-from r2morph.core.report_helpers import (
-    _enrich_validation_policy as _enrich_validation_policy,
-)
-from r2morph.core.report_helpers import (
-    _summarize_degradation_roles as _summarize_degradation_roles,
-)
-from r2morph.core.report_helpers import (
-    _summarize_diff_digest as _summarize_diff_digest,
-)
-from r2morph.core.report_helpers import (
-    _summarize_discarded_mutations as _summarize_discarded_mutations,
-)
-from r2morph.core.report_helpers import (
-    _summarize_normalized_pass_results as _summarize_normalized_pass_results,
-)
-from r2morph.core.report_helpers import (
-    _summarize_observable_mismatches_by_pass as _summarize_observable_mismatches_by_pass,
-)
-from r2morph.core.report_helpers import (
-    _summarize_pass_capability_rows as _summarize_pass_capability_rows,
-)
-from r2morph.core.report_helpers import (
-    _summarize_pass_coverage_buckets as _summarize_pass_coverage_buckets,
-)
-from r2morph.core.report_helpers import (
-    _summarize_pass_evidence as _summarize_pass_evidence,
-)
-from r2morph.core.report_helpers import (
-    _summarize_pass_evidence_compact as _summarize_pass_evidence_compact,
-)
-from r2morph.core.report_helpers import (
-    _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
-)
-from r2morph.core.report_helpers import (
-    _summarize_pass_timings as _summarize_pass_timings,
-)
-from r2morph.core.report_helpers import (
-    _summarize_pass_triage_rows as _summarize_pass_triage_rows,
-)
-from r2morph.core.report_helpers import (
-    _summarize_structural_evidence as _summarize_structural_evidence,
-)
-from r2morph.core.report_helpers import (
-    _summarize_symbolic_coverage_by_pass as _summarize_symbolic_coverage_by_pass,
-)
-from r2morph.core.report_helpers import (
-    _summarize_symbolic_issue_passes as _summarize_symbolic_issue_passes,
-)
-from r2morph.core.report_helpers import (
-    _summarize_symbolic_overview as _summarize_symbolic_overview,
-)
-from r2morph.core.report_helpers import (
-    _summarize_symbolic_severity_by_pass as _summarize_symbolic_severity_by_pass,
-)
-from r2morph.core.report_helpers import (
-    _summarize_symbolic_statuses as _summarize_symbolic_statuses,
-)
-from r2morph.core.report_helpers import (
-    _summarize_validation_adjustment_rows as _summarize_validation_adjustment_rows,
-)
-from r2morph.core.report_helpers import (
-    _summarize_validation_adjustments as _summarize_validation_adjustments,
-)
-from r2morph.core.report_helpers import (
-    _summarize_validation_role_rows as _summarize_validation_role_rows,
-)
+from r2morph.core.engine_run import run as run_lifecycle
 from r2morph.protocols import (
     BinarySignerProtocol,
     GateFailureReporterProtocol,
@@ -122,7 +22,7 @@ from r2morph.protocols import (
     ReportViewBuilderProtocol,
 )
 from r2morph.session import MorphSession
-from r2morph.validation import BinaryValidator, ValidationManager
+from r2morph.validation import BinaryValidator
 
 logger = logging.getLogger(__name__)
 
@@ -283,84 +183,16 @@ class MorphEngine:
         report_path: str | Path | None = None,
         seed: int | None = None,
     ) -> dict[str, Any]:
-        """
-        Run the transformation pipeline on the binary.
-
-        Returns:
-            Dictionary with transformation statistics and results
-        """
-        if not self.binary:
-            raise RuntimeError("No binary loaded. Call load_binary() first.")
-
-        if not self.binary.is_analyzed():
-            logger.warning("Binary not analyzed. Running automatic analysis...")
-            self.analyze()
-
-        logger.info("Starting transformation pipeline...")
-        start_time = time.time()
-        if seed is not None:
-            self.config["seed"] = int(seed)
-            random.seed(seed)
-            for index, mutation in enumerate(self.pipeline.passes):
-                pass_seed = int(seed) + index
-                mutation.config["_pass_seed"] = pass_seed
-                mutation.config["_use_derived_seed"] = True
-
-        validation_manager = None
-        if validation_mode not in {"off", "runtime"}:
-            validation_manager = ValidationManager(mode=validation_mode)
-
-        result = self.pipeline.run(
-            self.binary,
-            session=self._session,
-            validation_manager=validation_manager,
-            runtime_validator=runtime_validator,
-            runtime_validate_per_pass=runtime_validate_per_pass or validation_mode == "runtime",
+        return run_lifecycle(
+            self,
+            validation_mode=validation_mode,
             rollback_policy=rollback_policy,
             checkpoint_per_mutation=checkpoint_per_mutation,
+            runtime_validator=runtime_validator,
+            runtime_validate_per_pass=runtime_validate_per_pass,
+            report_path=report_path,
+            seed=seed,
         )
-
-        if runtime_validator is not None and self._original_path is not None:
-            assert self.binary is not None
-            runtime_result = runtime_validator.validate(self._original_path, self.binary.path)
-            result["validation"]["runtime"] = runtime_result.to_dict()
-            result["validation"]["all_passed"] = result["validation"].get("all_passed", True) and runtime_result.passed
-            if not runtime_result.passed and self._session is not None:
-                self._session.rollback_to("initial")
-                self.binary.reload()
-                if rollback_policy == "fail-fast":
-                    raise RuntimeError("Runtime validation failed after pipeline execution")
-
-        requested_validation_mode = self.config.get("requested_validation_mode", validation_mode)
-        effective_validation_mode = self.config.get("effective_validation_mode", validation_mode)
-        validation_policy = self.config.get("validation_policy")
-        for pass_name, pass_result in result.get("pass_results", {}).items():
-            pass_result["validation_context"] = _build_pass_validation_context(
-                pass_name,
-                requested_mode=requested_validation_mode,
-                effective_mode=effective_validation_mode,
-                validation_policy=validation_policy,
-            )
-        result["requested_validation_mode"] = requested_validation_mode
-        result["validation_mode"] = effective_validation_mode
-        enriched_validation_policy = _enrich_validation_policy(
-            validation_policy,
-            result.get("pass_results", {}),
-        )
-        if enriched_validation_policy is not None:
-            result["validation_policy"] = enriched_validation_policy
-        result["execution_time_seconds"] = round(time.time() - start_time, 3)
-        assert self.binary is not None
-        result["input_path"] = str(self._original_path or self.binary.path)
-        result["working_path"] = str(self.binary.path)
-        result["config"] = dict(self.config)
-        self._last_result = {**self._stats, **result}
-
-        if report_path is not None:
-            self.save_report(report_path, self._last_result)
-
-        logger.info("Transformation complete")
-        return self._last_result
 
     def save(self, output_path: str | Path) -> None:
         """

@@ -62,6 +62,7 @@ REPORTING_MODULES = [
     "r2morph.factories",
     "r2morph.cli_workflows",
     "r2morph.core.engine_lifecycle",
+    "r2morph.core.engine_run",
     "r2morph.core.report_helpers_evidence",
     "r2morph.core.report_helpers_projection",
     "r2morph.core.report_helpers_validation",
