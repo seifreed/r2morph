@@ -586,10 +586,10 @@ def analyze(
 
     with console.status("[bold green]Analyzing binary..."):
         try:
-            BinaryAnalyzer = _load_binary_analyzer()
+            binary_analyzer_cls = _load_binary_analyzer()
             with MorphEngine() as engine:
                 engine.load_binary(binary).analyze()
-                analyzer = BinaryAnalyzer(engine.binary)
+                analyzer = binary_analyzer_cls(engine.binary)
                 stats = analyzer.get_statistics()
 
             table = Table(title=f"Binary Analysis: {binary.name}")
@@ -699,10 +699,10 @@ def functions(
 
     with console.status("[bold green]Loading binary..."):
         try:
-            BinaryAnalyzer = _load_binary_analyzer()
+            binary_analyzer_cls = _load_binary_analyzer()
             with MorphEngine() as engine:
                 engine.load_binary(binary).analyze()
-                analyzer = BinaryAnalyzer(engine.binary)
+                analyzer = binary_analyzer_cls(engine.binary)
                 funcs = analyzer.get_functions_list()
 
             table = Table(title=f"Functions in {binary.name}")
@@ -1168,8 +1168,8 @@ def diff(
     """
     Show a lightweight diff summary between two binaries.
     """
-    DiffAnalyzer = _load_diff_analyzer()
-    analyzer = DiffAnalyzer()
+    diff_analyzer_cls = _load_diff_analyzer()
+    analyzer = diff_analyzer_cls()
     result = analyzer.compare(original, mutated)
     console.print_json(json.dumps(result.__dict__))
     raise typer.Exit(0)

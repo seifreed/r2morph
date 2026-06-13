@@ -456,9 +456,9 @@ class ParallelMutator:
         completed = 0
         total = len(task_ids)
 
-        ExecutorClass = ThreadPoolExecutor if self.use_threads else ProcessPoolExecutor
+        executor_cls = ThreadPoolExecutor if self.use_threads else ProcessPoolExecutor
 
-        with ExecutorClass(max_workers=self.max_workers) as executor:
+        with executor_cls(max_workers=self.max_workers) as executor:
             futures = {}
             running_tasks: dict[Any, MutationTask] = {}
 
