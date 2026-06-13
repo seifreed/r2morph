@@ -63,6 +63,38 @@ MAX_SECTION_ENTRY_SIZE = 1024
 MAX_SYMBOLS = 100000
 
 
+def _build_elf_header_dict(
+    e_ident: bytes,
+    unpacked: tuple[int, ...],
+    *,
+    is_64bit: bool,
+    is_little_endian: bool,
+) -> dict[str, Any]:
+    """Assemble the ELF header dict from the unpacked fixed-size fields.
+
+    The 64-bit and 32-bit headers share this field order; only the width of
+    e_entry/e_phoff/e_shoff differs, which is handled by the caller's format.
+    """
+    return {
+        "e_ident": e_ident,
+        "e_type": unpacked[0],
+        "e_machine": unpacked[1],
+        "e_version": unpacked[2],
+        "e_entry": unpacked[3],
+        "e_phoff": unpacked[4],
+        "e_shoff": unpacked[5],
+        "e_flags": unpacked[6],
+        "e_ehsize": unpacked[7],
+        "e_phentsize": unpacked[8],
+        "e_phnum": unpacked[9],
+        "e_shentsize": unpacked[10],
+        "e_shnum": unpacked[11],
+        "e_shstrndx": unpacked[12],
+        "is_64bit": is_64bit,
+        "is_little_endian": is_little_endian,
+    }
+
+
 class ELFHandler:
     """Handles ELF-specific operations for binary analysis and transformation.
 
@@ -176,74 +208,26 @@ class ELFHandler:
                     return None
 
                 # Determine class (32/64-bit) and endianness
-                elf_class = e_ident[4]
-                elf_data = e_ident[5]
-
-                self._is_64bit = elf_class == ELFCLASS64
-                self._is_little_endian = elf_data == ELFDATA2LSB
+                self._is_64bit = e_ident[4] == ELFCLASS64
+                self._is_little_endian = e_ident[5] == ELFDATA2LSB
 
                 endian = "<" if self._is_little_endian else ">"
+                # The header after e_ident shares one field order across classes;
+                # only e_entry/e_phoff/e_shoff change width (8 bytes vs 4 bytes).
+                offset_fields = "QQQ" if self._is_64bit else "III"
+                fmt = f"{endian}HHI {offset_fields} IHHHHHH"
 
-                if self._is_64bit:
-                    # 64-bit ELF header format after e_ident
-                    # e_type, e_machine, e_version (2+2+4 = 8 bytes)
-                    # e_entry, e_phoff, e_shoff (8+8+8 = 24 bytes)
-                    # e_flags, e_ehsize, e_phentsize, e_phnum, e_shentsize, e_shnum, e_shstrndx
-                    # (4+2+2+2+2+2+2 = 16 bytes)
-                    fmt = f"{endian}HHI QQQ IHHHHHH"
-                    data = f.read(struct.calcsize(fmt))
-                    if len(data) < struct.calcsize(fmt):
-                        logger.error("Truncated ELF header")
-                        return None
+                data = f.read(struct.calcsize(fmt))
+                if len(data) < struct.calcsize(fmt):
+                    logger.error("Truncated ELF header")
+                    return None
 
-                    unpacked = struct.unpack(fmt, data)
-                    self._elf_header = {
-                        "e_ident": e_ident,
-                        "e_type": unpacked[0],
-                        "e_machine": unpacked[1],
-                        "e_version": unpacked[2],
-                        "e_entry": unpacked[3],
-                        "e_phoff": unpacked[4],
-                        "e_shoff": unpacked[5],
-                        "e_flags": unpacked[6],
-                        "e_ehsize": unpacked[7],
-                        "e_phentsize": unpacked[8],
-                        "e_phnum": unpacked[9],
-                        "e_shentsize": unpacked[10],
-                        "e_shnum": unpacked[11],
-                        "e_shstrndx": unpacked[12],
-                        "is_64bit": True,
-                        "is_little_endian": self._is_little_endian,
-                    }
-                else:
-                    # 32-bit ELF header format after e_ident
-                    fmt = f"{endian}HHI III IHHHHHH"
-                    data = f.read(struct.calcsize(fmt))
-                    if len(data) < struct.calcsize(fmt):
-                        logger.error("Truncated ELF header")
-                        return None
-
-                    # Fix: 32-bit format has 13 fields, not 12
-                    unpacked = struct.unpack(fmt, data)
-                    self._elf_header = {
-                        "e_ident": e_ident,
-                        "e_type": unpacked[0],
-                        "e_machine": unpacked[1],
-                        "e_version": unpacked[2],
-                        "e_entry": unpacked[3],
-                        "e_phoff": unpacked[4],
-                        "e_shoff": unpacked[5],
-                        "e_flags": unpacked[6],
-                        "e_ehsize": unpacked[7],
-                        "e_phentsize": unpacked[8],
-                        "e_phnum": unpacked[9],
-                        "e_shentsize": unpacked[10],
-                        "e_shnum": unpacked[11],
-                        "e_shstrndx": unpacked[12],
-                        "is_64bit": False,
-                        "is_little_endian": self._is_little_endian,
-                    }
-
+                self._elf_header = _build_elf_header_dict(
+                    e_ident,
+                    struct.unpack(fmt, data),
+                    is_64bit=self._is_64bit,
+                    is_little_endian=self._is_little_endian,
+                )
                 return self._elf_header
 
         except Exception as e:
