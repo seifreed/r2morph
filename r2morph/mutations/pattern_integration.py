@@ -8,8 +8,9 @@ Provides unified interface for:
 - Semantic preservation validation
 """
 
-from typing import Any
+import random
 from dataclasses import dataclass
+from typing import Any
 
 from r2morph.mutations.pattern_pool import (
     get_pattern_pools,
@@ -95,8 +96,6 @@ class PatternMatchIntegration:
                 matches = rule(converted)
 
                 for match in reversed(matches):
-                    import random
-
                     if random.randint(0, 100) <= pool.mutation_probability:
                         old_insns = converted[match.index : match.index + match.length]
 
@@ -154,8 +153,6 @@ class PatternMatchIntegration:
         generator = self.get_junk_generator(os_type)
 
         if size is None:
-            import random
-
             size = random.randint(self.config.junk_min_size, self.config.junk_max_size)
 
         return generator.generate_junk_code(size)
@@ -180,8 +177,6 @@ class PatternMatchIntegration:
         generator = self.get_junk_generator(os_type)
 
         if size is None:
-            import random
-
             size = random.randint(self.config.junk_min_size, self.config.junk_max_size)
 
         store_code, store_size = generator.store_register(reg)
