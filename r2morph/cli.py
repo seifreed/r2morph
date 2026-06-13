@@ -24,6 +24,7 @@ from r2morph.core.support import PRODUCT_SUPPORT, is_experimental_mutation
 from r2morph.reporting.filtered_summary_builder import (
     _build_report_dispatch_state,
 )
+from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
 from r2morph.reporting.report_helpers import (
     _attach_gate_evaluation,
     _pass_severity_requirements_met,
@@ -32,9 +33,7 @@ from r2morph.reporting.report_helpers import (
 from r2morph.reporting.report_orchestrator import (
     _dispatch_report_flow,
 )
-from r2morph.reporting.report_resolver import (
-    _resolve_general_report_flow_state,
-)
+from r2morph.reporting.report_resolver import _resolve_general_report_flow_state
 from r2morph.utils.logging import setup_logging
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator import RuntimeComparisonConfig
@@ -184,9 +183,7 @@ def _resolve_report_context(
     only_expected_severity: str | None,
 ) -> dict[str, Any]:
     """Thin CLI wrapper: resolves pass aliases then delegates to reporting layer."""
-    from r2morph.reporting.report_resolver import _resolve_report_context as _resolve_ctx
-
-    return _resolve_ctx(
+    return _resolve_report_context_impl(
         payload=payload,
         resolved_only_pass=_resolve_report_pass_filter(only_pass),
         resolved_only_pass_failure=_resolve_report_pass_filter(only_pass_failure),
