@@ -95,6 +95,40 @@ def _build_elf_header_dict(
     }
 
 
+# Program-header (segment) type values mapped to their human-readable names.
+_PT_TYPE_NAMES = {
+    PT_NULL: "NULL",
+    PT_LOAD: "LOAD",
+    PT_DYNAMIC: "DYNAMIC",
+    PT_INTERP: "INTERP",
+    PT_NOTE: "NOTE",
+    PT_SHLIB: "SHLIB",
+    PT_PHDR: "PHDR",
+    PT_TLS: "TLS",
+    PT_GNU_EH_FRAME: "GNU_EH_FRAME",
+    PT_GNU_STACK: "GNU_STACK",
+    PT_GNU_RELRO: "GNU_RELRO",
+    PT_GNU_PROPERTY: "GNU_PROPERTY",
+}
+
+
+def _build_segment_dict(entry: dict[str, int], index: int) -> dict[str, Any]:
+    """Assemble a program-segment dict from a parsed program-header entry."""
+    p_type = entry["p_type"]
+    return {
+        "type": p_type,
+        "type_name": _PT_TYPE_NAMES.get(p_type, f"UNKNOWN({p_type})"),
+        "vaddr": entry["p_vaddr"],
+        "paddr": entry["p_paddr"],
+        "filesz": entry["p_filesz"],
+        "memsz": entry["p_memsz"],
+        "offset": entry["p_offset"],
+        "flags": entry["p_flags"],
+        "align": entry["p_align"],
+        "index": index,
+    }
+
+
 class ELFHandler:
     """Handles ELF-specific operations for binary analysis and transformation.
 
@@ -446,22 +480,6 @@ class ELFHandler:
             logger.error(f"Failed to parse ELF header for: {self.binary_path}")
             return []
 
-        # Map segment types to names
-        type_names = {
-            PT_NULL: "NULL",
-            PT_LOAD: "LOAD",
-            PT_DYNAMIC: "DYNAMIC",
-            PT_INTERP: "INTERP",
-            PT_NOTE: "NOTE",
-            PT_SHLIB: "SHLIB",
-            PT_PHDR: "PHDR",
-            PT_TLS: "TLS",
-            PT_GNU_EH_FRAME: "GNU_EH_FRAME",
-            PT_GNU_STACK: "GNU_STACK",
-            PT_GNU_RELRO: "GNU_RELRO",
-            PT_GNU_PROPERTY: "GNU_PROPERTY",
-        }
-
         try:
             with open(self.binary_path, "rb") as f:
                 is_64bit = header["is_64bit"]
@@ -477,21 +495,7 @@ class ELFHandler:
                         break
 
                     entry = self._parse_program_header_entry(ph_data, is_64bit, endian)
-
-                    segments.append(
-                        {
-                            "type": entry["p_type"],
-                            "type_name": type_names.get(entry["p_type"], f"UNKNOWN({entry['p_type']})"),
-                            "vaddr": entry["p_vaddr"],
-                            "paddr": entry["p_paddr"],
-                            "filesz": entry["p_filesz"],
-                            "memsz": entry["p_memsz"],
-                            "offset": entry["p_offset"],
-                            "flags": entry["p_flags"],
-                            "align": entry["p_align"],
-                            "index": i,
-                        }
-                    )
+                    segments.append(_build_segment_dict(entry, i))
 
                 logger.debug(f"Parsed {len(segments)} segments from {self.binary_path}")
                 return segments
