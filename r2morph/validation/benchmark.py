@@ -13,6 +13,10 @@ import time
 from pathlib import Path
 from typing import Any
 
+from r2morph.validation.benchmark_metrics import (
+    calculate_accuracy_metrics,
+    measure_performance,
+)
 from r2morph.validation.benchmark_reporting import (
     export_results as export_benchmark_results,
 )
@@ -22,21 +26,14 @@ from r2morph.validation.benchmark_reporting import (
 from r2morph.validation.benchmark_reporting import (
     generate_validation_summary,
 )
+from r2morph.validation.benchmark_samples import DEFAULT_TEST_SAMPLES
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
     BenchmarkResult,
     PerformanceMetrics,
     TestSample,
-    TestSeverity,
 )
-
-try:
-    import psutil
-
-    HAS_PSUTIL = True
-except ImportError:
-    HAS_PSUTIL = False
 
 logger = logging.getLogger(__name__)
 
@@ -61,70 +58,21 @@ class ValidationFramework:
 
     def _load_test_samples(self) -> None:
         """Load predefined test samples."""
-        test_samples_data: list[dict[str, Any]] = [
-            {
-                "file_path": str(self.test_data_dir / "vmprotect_sample.exe"),
-                "sample_hash": "abcd1234567890abcd1234567890abcd1234567890abcd1234567890abcd1234",
-                "expected_packer": "VMProtect",
-                "expected_vm_protection": True,
-                "expected_anti_analysis": True,
-                "expected_cfo": True,
-                "expected_mba": True,
-                "severity": TestSeverity.CRITICAL,
-                "description": "VMProtect 3.x protected binary with full virtualization",
-                "source": "research_collection",
-            },
-            {
-                "file_path": str(self.test_data_dir / "themida_sample.exe"),
-                "sample_hash": "efgh5678901234efgh5678901234efgh5678901234efgh5678901234efgh5678",
-                "expected_packer": "Themida",
-                "expected_vm_protection": True,
-                "expected_anti_analysis": True,
-                "expected_cfo": True,
-                "expected_mba": False,
-                "severity": TestSeverity.CRITICAL,
-                "description": "Themida protected binary with anti-debugging",
-                "source": "malware_zoo",
-            },
-            {
-                "file_path": str(self.test_data_dir / "upx_sample.exe"),
-                "sample_hash": "ijkl9012345678ijkl9012345678ijkl9012345678ijkl9012345678ijkl9012",
-                "expected_packer": "UPX",
-                "expected_vm_protection": False,
-                "expected_anti_analysis": False,
-                "expected_cfo": False,
-                "expected_mba": False,
-                "severity": TestSeverity.LOW,
-                "description": "Simple UPX compressed binary",
-                "source": "test_samples",
-            },
-            {
-                "file_path": str(self.test_data_dir / "custom_vm_sample.exe"),
-                "sample_hash": "mnop3456789012mnop3456789012mnop3456789012mnop3456789012mnop3456",
-                "expected_packer": "Custom",
-                "expected_vm_protection": True,
-                "expected_anti_analysis": True,
-                "expected_cfo": True,
-                "expected_mba": True,
-                "severity": TestSeverity.HIGH,
-                "description": "Custom virtualization engine with MBA obfuscation",
-                "source": "academic_research",
-            },
-            {
-                "file_path": str(self.test_data_dir / "clean_sample.exe"),
-                "sample_hash": "qrst7890123456qrst7890123456qrst7890123456qrst7890123456qrst7890",
-                "expected_packer": None,
-                "expected_vm_protection": False,
-                "expected_anti_analysis": False,
-                "expected_cfo": False,
-                "expected_mba": False,
-                "severity": TestSeverity.LOW,
-                "description": "Clean unobfuscated binary",
-                "source": "control_group",
-            },
+        self.test_samples = [
+            TestSample(
+                file_path=str(self.test_data_dir / Path(data["file_path"])),
+                sample_hash=str(data["sample_hash"]),
+                expected_packer=data["expected_packer"],
+                expected_vm_protection=bool(data["expected_vm_protection"]),
+                expected_anti_analysis=bool(data["expected_anti_analysis"]),
+                expected_cfo=bool(data["expected_cfo"]),
+                expected_mba=bool(data["expected_mba"]),
+                severity=data["severity"],
+                description=str(data["description"]),
+                source=str(data["source"]),
+            )
+            for data in DEFAULT_TEST_SAMPLES
         ]
-
-        self.test_samples = [TestSample(**data) for data in test_samples_data]
 
     def add_test_sample(self, sample: TestSample) -> None:
         """Add a new test sample."""
@@ -142,52 +90,7 @@ class ValidationFramework:
         Returns:
             PerformanceMetrics object
         """
-        start_memory: float = 0
-        peak_memory: float = 0
-        cpu_percent: float = 0
-
-        if HAS_PSUTIL:
-            process = psutil.Process()
-            start_memory = process.memory_info().rss / 1024 / 1024  # MB
-
-        start_time = time.time()
-        success = True
-        error_message = None
-
-        try:
-            result = func(*args, **kwargs)
-
-            if HAS_PSUTIL:
-                peak_memory = process.memory_info().rss / 1024 / 1024  # MB
-                cpu_percent = process.cpu_percent()
-
-        except Exception as e:
-            success = False
-            error_message = str(e)
-            result = None
-
-        end_time = time.time()
-        execution_time = end_time - start_time
-
-        if HAS_PSUTIL:
-            end_memory = process.memory_info().rss / 1024 / 1024  # MB
-            memory_usage = end_memory - start_memory
-        else:
-            memory_usage = 0
-            peak_memory = 0
-            cpu_percent = 0
-
-        return (
-            PerformanceMetrics(
-                execution_time=execution_time,
-                memory_usage_mb=memory_usage,
-                cpu_usage_percent=cpu_percent,
-                peak_memory_mb=peak_memory,
-                success=success,
-                error_message=error_message,
-            ),
-            result,
-        )
+        return measure_performance(func, *args, **kwargs)
 
     def _calculate_percentile(self, values: list[float], percentile: int) -> float:
         """Compatibility delegator for benchmark percentile calculations."""
@@ -206,38 +109,7 @@ class ValidationFramework:
         Returns:
             AccuracyMetrics object
         """
-        fields = ["packer_detected", "vm_protection", "anti_analysis", "cfo_detected", "mba_detected"]
-
-        tp = fp = tn = fn = 0
-
-        for field in fields:
-            exp_val = expected.get(field, False)
-            act_val = actual.get(field, False)
-
-            if exp_val and act_val:
-                tp += 1
-            elif not exp_val and act_val:
-                fp += 1
-            elif not exp_val and not act_val:
-                tn += 1
-            else:  # exp_val and not act_val
-                fn += 1
-
-        precision = tp / (tp + fp) if (tp + fp) > 0 else 0.0
-        recall = tp / (tp + fn) if (tp + fn) > 0 else 0.0
-        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
-        accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0.0
-
-        return AccuracyMetrics(
-            true_positives=tp,
-            false_positives=fp,
-            true_negatives=tn,
-            false_negatives=fn,
-            precision=precision,
-            recall=recall,
-            f1_score=f1_score,
-            accuracy=accuracy,
-        )
+        return calculate_accuracy_metrics(expected, actual)
 
     def benchmark_detection(self, sample: TestSample) -> BenchmarkResult:
         """
