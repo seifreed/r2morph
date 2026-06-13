@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from r2morph.reporting.filtered_summary_builder import (
+from r2morph.reporting.filtered_summary_payloads import (
     _build_general_report_payload,
     _build_only_mismatches_payload,
     _build_report_filters,
