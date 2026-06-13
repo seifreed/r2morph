@@ -5,6 +5,7 @@ Provides Windows and Linux flags/constants that can be used
 in junk code generation while preserving program semantics.
 """
 
+import random
 from typing import Final
 
 WINFLAGS: Final[list[int]] = [
@@ -157,8 +158,6 @@ class OSFlags:
         return self._os_type
 
     def get_random_flag(self) -> int:
-        import random
-
         return random.choice(self.flags)
 
     def get_flags_count(self) -> int:
@@ -172,19 +171,13 @@ class OSFlags:
         return [f for f in self.flags if f <= max_val]
 
     def get_safe_imm32(self) -> int:
-        import random
-
         return random.choice(self.flags)
 
     def get_safe_imm16(self) -> int:
-        import random
-
         flags_16 = [f for f in self.flags if f <= 0xFFFF]
         return random.choice(flags_16) if flags_16 else 0
 
     def get_safe_imm8(self) -> int:
-        import random
-
         flags_8 = [f for f in self.flags if f <= 0xFF]
         return random.choice(flags_8) if flags_8 else 0
 
