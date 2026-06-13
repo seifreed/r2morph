@@ -11,6 +11,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.benchmark",
     "r2morph.validation.semantic_symbolic",
     "r2morph.validation.semantic_models",
+    "r2morph.validation.symbolic_precheck_flow",
     "r2morph.validation.validator_runtime",
     "r2morph.validation.state_merging",
     "r2morph.validation.benchmark_reporting",
