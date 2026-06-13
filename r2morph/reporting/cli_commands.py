@@ -1,17 +1,27 @@
-"""
-CLI command handlers extracted from cli.py.
-
-This module follows Interface Segregation Principle by separating
-command handling logic from CLI entry points.
-"""
+"""CLI command handlers extracted from `r2morph.cli`."""
 
 import json
 from pathlib import Path
 from typing import Any
 
-from rich.console import Console
+import typer
+from rich import print as rprint
 
-console = Console()
+from r2morph.reporting import SEVERITY_ORDER
+from r2morph.reporting.filtered_summary_builder import _build_report_dispatch_state
+from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
+from r2morph.reporting.report_orchestrator import _dispatch_report_flow
+from r2morph.reporting.report_resolver import _resolve_general_report_flow_state
+
+
+def _resolve_min_severity(min_severity: str | None) -> tuple[str | None, int | None]:
+    """Validate and normalize a minimum severity option."""
+    if min_severity is None:
+        return None, None
+    if min_severity not in SEVERITY_ORDER:
+        rprint(f"[bold red]Error:[/bold red] Invalid --min-severity: {min_severity}")
+        raise typer.Exit(2)
+    return min_severity, SEVERITY_ORDER[min_severity]
 
 
 def handle_mutate_command(
@@ -56,50 +66,138 @@ def handle_mutate_command(
 def handle_report_command(
     report_file: Path,
     only_pass: str | None = None,
+    only_status: str | None = None,
+    only_mismatches: bool = False,
+    summary_only: bool = False,
+    output: Path | None = None,
     require_results: bool = False,
+    min_severity: str | None = None,
+    only_expected_severity: str | None = None,
+    only_pass_failure: str | None = None,
+    only_degraded: bool = False,
+    only_failed_gates: bool = False,
+    only_risky_passes: bool = False,
+    only_structural_risk: bool = False,
+    only_symbolic_risk: bool = False,
+    only_clean_passes: bool = False,
+    only_covered_passes: bool = False,
+    only_uncovered_passes: bool = False,
+    output_format: str = "json",
     **kwargs: Any,
 ) -> dict[str, Any]:
-    """
-    Handle the report command.
-
-    Args:
-        report_file: Path to report JSON file
-        only_pass: Optional pass name filter
-        require_results: Exit with code 1 if empty results
-        **kwargs: Additional options
-
-    Returns:
-        Dict with report payload
-    """
-    from r2morph.reporting import enforce_report_requirements
-
+    """Handle the report command."""
     with open(report_file, encoding="utf-8") as handle:
         payload: dict[str, Any] = json.load(handle)
 
-    if only_pass:
-        mutations = [m for m in payload.get("mutations", []) if m.get("pass_name") == only_pass]
-        payload["mutations"] = mutations
-        payload["filtered_summary"] = {
-            "passes": [only_pass] if mutations else [],
+    from r2morph.cli import _resolve_report_pass_filter
+
+    resolved_only_pass = _resolve_report_pass_filter(only_pass)
+    resolved_only_pass_failure = _resolve_report_pass_filter(only_pass_failure)
+    _, min_severity_rank = _resolve_min_severity(min_severity)
+
+    return_payload: dict[str, Any] = dict(payload)
+    if resolved_only_pass:
+        mutations = [m for m in payload.get("mutations", []) if m.get("pass_name") == resolved_only_pass]
+        return_payload["mutations"] = mutations
+        return_payload["filtered_summary"] = {
+            "passes": [resolved_only_pass] if mutations else [],
             "mutations": len(mutations),
         }
 
-    if require_results:
-        severity_rows = payload.get("summary", {}).get("symbolic_severity_by_pass", [])
-        enforce_report_requirements(
-            require_results=True,
-            severity_rows=severity_rows,
-            min_severity_rank=None,
-            mutation_count=len(payload.get("mutations", [])),
-            only_failed_gates=False,
-            failed_gates=False,
-            gate_failure_count=None,
-            only_risky_passes=False,
-            risky_pass_count=0,
-            pass_count=len(payload.get("summary", {}).get("passes", [])),
-        )
+    context = _resolve_report_context_impl(
+        payload=payload,
+        resolved_only_pass=resolved_only_pass,
+        resolved_only_pass_failure=resolved_only_pass_failure,
+        only_expected_severity=only_expected_severity,
+    )
+    summary = context["summary"]
+    requested_validation_mode = context["requested_validation_mode"]
+    effective_validation_mode = context["effective_validation_mode"]
+    validation_policy = context["validation_policy"]
+    gate_evaluation = context["gate_evaluation"]
+    gate_failure_summary = context["gate_failure_summary"]
+    gate_failure_priority = context["gate_failure_priority"]
+    gate_failure_severity_priority = context["gate_failure_severity_priority"]
+    failed_gates = context["failed_gates"]
+    degraded_validation = context["degraded_validation"]
+    degraded_passes = context["degraded_passes"]
 
-    return payload
+    pass_results = payload.get("passes", {})
+    general_state = _resolve_general_report_flow_state(
+        payload=payload,
+        summary=summary,
+        pass_results=pass_results,
+        requested_validation_mode=requested_validation_mode,
+        effective_validation_mode=effective_validation_mode,
+        degraded_validation=degraded_validation,
+        degraded_passes=degraded_passes,
+        failed_gates=failed_gates,
+        validation_policy=validation_policy,
+        gate_evaluation=gate_evaluation,
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+        resolved_only_pass=resolved_only_pass,
+        only_status=only_status,
+        only_degraded=only_degraded,
+        only_failed_gates=only_failed_gates,
+        only_risky_passes=only_risky_passes,
+        only_structural_risk=only_structural_risk,
+        only_symbolic_risk=only_symbolic_risk,
+        only_uncovered_passes=only_uncovered_passes,
+        only_covered_passes=only_covered_passes,
+        only_clean_passes=only_clean_passes,
+    )
+
+    dispatch_state = _build_report_dispatch_state(
+        context=context,
+        general_state=general_state,
+        payload=payload,
+        pass_results=pass_results,
+        only_pass=only_pass,
+        only_pass_failure=only_pass_failure,
+        only_status=only_status,
+        only_degraded=only_degraded,
+        only_failed_gates=only_failed_gates,
+        only_risky_passes=only_risky_passes,
+        only_structural_risk=only_structural_risk,
+        only_symbolic_risk=only_symbolic_risk,
+        only_uncovered_passes=only_uncovered_passes,
+        only_covered_passes=only_covered_passes,
+        only_clean_passes=only_clean_passes,
+        output=output,
+        summary_only=summary_only,
+        require_results=require_results,
+        min_severity=min_severity,
+        min_severity_rank=min_severity_rank,
+        only_expected_severity=only_expected_severity,
+        only_mismatches=only_mismatches,
+    )
+
+    if require_results:
+        filtered_mutations = return_payload.get("mutations", payload.get("mutations", []))
+        if isinstance(filtered_mutations, list):
+            return_payload["mutations"] = filtered_mutations
+        return_payload["filtered_summary"] = dispatch_state.get("filtered_summary", {})
+
+    if output_format.lower() == "sarif":
+        from r2morph.reporting.sarif_formatter import format_as_sarif
+
+        sarif_report = format_as_sarif(
+            payload.get("mutations", []),
+            payload.get("validations", []),
+            payload.get("binary_path", ""),
+        )
+        if output:
+            with open(output, "w", encoding="utf-8") as handle:
+                handle.write(sarif_report.to_json())
+            rprint(f"[green]SARIF report written to[/green] {output}")
+        else:
+            print(sarif_report.to_json())
+        return return_payload
+
+    _dispatch_report_flow(**dispatch_state)
+    return return_payload
 
 
 def handle_version_command() -> str:

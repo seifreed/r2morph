@@ -21,19 +21,13 @@ from r2morph import __version__
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT, is_experimental_mutation
-from r2morph.reporting.filtered_summary_builder import (
-    _build_report_dispatch_state,
-)
+from r2morph.reporting.cli_commands import handle_report_command
 from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
 from r2morph.reporting.report_gate_helpers import (
     _attach_gate_evaluation,
     _pass_severity_requirements_met,
     _severity_threshold_met,
 )
-from r2morph.reporting.report_orchestrator import (
-    _dispatch_report_flow,
-)
-from r2morph.reporting.report_resolver import _resolve_general_report_flow_state
 from r2morph.utils.logging import setup_logging
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator import RuntimeComparisonConfig
@@ -1271,98 +1265,27 @@ def report(
     """
     Display a previously generated engine report.
     """
-    if output_format.lower() == "sarif":
-        from r2morph.reporting.sarif_formatter import format_as_sarif
-
-    with open(report_file, encoding="utf-8") as handle:
-        payload = json.load(handle)
-
-    context = _resolve_report_context(
-        payload=payload,
+    handle_report_command(
+        report_file=report_file,
         only_pass=only_pass,
-        only_pass_failure=only_pass_failure,
-        only_expected_severity=only_expected_severity,
-    )
-    summary = context["summary"]
-    resolved_only_pass = context["resolved_only_pass"]
-    requested_validation_mode = context["requested_validation_mode"]
-    effective_validation_mode = context["effective_validation_mode"]
-    validation_policy = context["validation_policy"]
-    gate_evaluation = context["gate_evaluation"]
-    gate_failure_summary = context["gate_failure_summary"]
-    gate_failure_priority = context["gate_failure_priority"]
-    gate_failure_severity_priority = context["gate_failure_severity_priority"]
-    failed_gates = context["failed_gates"]
-    degraded_validation = context["degraded_validation"]
-    degraded_passes = context["degraded_passes"]
-
-    pass_results = payload.get("passes", {})
-    general_state = _resolve_general_report_flow_state(
-        payload=payload,
-        summary=summary,
-        pass_results=pass_results,
-        requested_validation_mode=requested_validation_mode,
-        effective_validation_mode=effective_validation_mode,
-        degraded_validation=degraded_validation,
-        degraded_passes=degraded_passes,
-        failed_gates=failed_gates,
-        validation_policy=validation_policy,
-        gate_evaluation=gate_evaluation,
-        gate_failure_summary=gate_failure_summary,
-        gate_failure_priority=gate_failure_priority,
-        gate_failure_severity_priority=gate_failure_severity_priority,
-        resolved_only_pass=resolved_only_pass,
         only_status=only_status,
-        only_degraded=only_degraded,
-        only_failed_gates=only_failed_gates,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
-    )
-    _, min_severity_rank = _resolve_min_severity(min_severity)
-    dispatch_state = _build_report_dispatch_state(
-        context=context,
-        general_state=general_state,
-        payload=payload,
-        pass_results=pass_results,
-        only_pass=only_pass,
-        only_pass_failure=only_pass_failure,
-        only_status=only_status,
-        only_degraded=only_degraded,
-        only_failed_gates=only_failed_gates,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
-        output=output,
+        only_mismatches=only_mismatches,
         summary_only=summary_only,
+        output=output,
         require_results=require_results,
         min_severity=min_severity,
-        min_severity_rank=min_severity_rank,
         only_expected_severity=only_expected_severity,
-        only_mismatches=only_mismatches,
+        only_pass_failure=only_pass_failure,
+        only_degraded=only_degraded,
+        only_failed_gates=only_failed_gates,
+        only_risky_passes=only_risky_passes,
+        only_structural_risk=only_structural_risk,
+        only_symbolic_risk=only_symbolic_risk,
+        only_clean_passes=only_clean_passes,
+        only_covered_passes=only_covered_passes,
+        only_uncovered_passes=only_uncovered_passes,
+        output_format=output_format,
     )
-    if output_format.lower() == "sarif":
-        from r2morph.reporting.sarif_formatter import format_as_sarif
-
-        mutations_list = payload.get("mutations", [])
-        validations_list = payload.get("validations", [])
-        binary_path_str = payload.get("binary_path", "")
-        sarif_report = format_as_sarif(mutations_list, validations_list, binary_path_str)
-        if output:
-            with open(output, "w", encoding="utf-8") as f:
-                f.write(sarif_report.to_json())
-            rprint(f"[green]SARIF report written to[/green] {output}")
-        else:
-            print(sarif_report.to_json())
-        return
-
-    _dispatch_report_flow(**dispatch_state)
 
 
 @app.command()
