@@ -10,6 +10,10 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
+# RFC 3161 timestamp authority used by signtool to countersign Authenticode
+# signatures so they remain valid after the signing certificate expires.
+SIGNTOOL_TIMESTAMP_URL = "http://timestamp.digicert.com"
+
 
 class CodeSigner:
     """
@@ -170,7 +174,7 @@ class CodeSigner:
                 "/fd",
                 "SHA256",
                 "/t",
-                "http://timestamp.digicert.com",
+                SIGNTOOL_TIMESTAMP_URL,
                 str(binary_path),
             ]
 
