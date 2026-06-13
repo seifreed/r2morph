@@ -14,6 +14,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_rendering_flow_sections",
     "r2morph.reporting.report_rendering_pass_sections",
     "r2morph.reporting.report_rendering_tables",
+    "r2morph.reporting.report_rendering_flow_text_sections",
     "r2morph.reporting.report_rendering_text_sections",
     "r2morph.reporting.report_flow_executor",
     "r2morph.reporting.report_flow_rendering",

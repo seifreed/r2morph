@@ -8,6 +8,11 @@ report_rendering_primitives.
 
 from __future__ import annotations
 
+from r2morph.reporting.report_rendering_flow_text_sections import (
+    render_gate_evaluation_sections,
+    render_general_only_pass_sections,
+    render_general_report_sections,
+)
 from r2morph.reporting.report_rendering_primitives import CONSOLE, create_table
 from r2morph.reporting.report_rendering_tables import (
     render_degradation_sections,
@@ -21,9 +26,6 @@ from r2morph.reporting.report_rendering_tables import (
     render_validation_context_table,
 )
 from r2morph.reporting.report_rendering_text_sections import (
-    render_gate_evaluation_sections,
-    render_general_only_pass_sections,
-    render_general_report_sections,
     render_mismatch_summary_sections,
     render_report_filter_messages,
 )
