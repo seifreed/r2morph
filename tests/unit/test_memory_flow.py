@@ -189,6 +189,37 @@ class TestMemoryFlowAnalyzer:
         assert "frame_size" in frame
         assert frame["frame_size"] > 0
 
+    def test_analyze_stack_frame_exact_output(self, analyzer):
+        """Characterize the exact stack-frame dict (§5 oracle for refactors).
+
+        Pins current behavior: a ``mov reg, [rbp-N]`` load reaches the
+        ``[rbp`` branch but that branch's regex only matches the *store*
+        form ``mov [mem], reg``, so the load records no local var.
+        """
+        instructions = [
+            {"offset": 0x1000, "disasm": "push rbp"},
+            {"offset": 0x1004, "disasm": "mov [rbp-8], eax"},
+            {"offset": 0x1008, "disasm": "mov eax, [rbp-16]"},
+        ]
+
+        frame = analyzer._analyze_stack_frame(instructions, 0x1000)
+
+        assert frame == {
+            "saved_regs": [{"register": "rbp", "offset": 0, "address": "0x1000"}],
+            "local_vars": [
+                {
+                    "name": "var_8",
+                    "offset": -8,
+                    "size": 4,
+                    "access_type": "write",
+                    "address": "0x1004",
+                }
+            ],
+            "arguments": [],
+            "frame_size": 8,
+            "allocations": [],
+        }
+
     def test_extract_access_size_byte(self, analyzer):
         size = analyzer._extract_access_size("movzx eax, byte ptr [ebx]")
         assert size == 1

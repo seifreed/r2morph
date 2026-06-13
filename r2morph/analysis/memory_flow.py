@@ -216,21 +216,6 @@ class MemoryFlowAnalyzer:
                             "address": f"0x{addr:x}",
                         }
 
-            elif "mov" in disasm and ("[sp" in disasm or "[rbp" in disasm) and "," in disasm:
-                match = re.search(r"mov\s+(\w+),\s+\[.*?([+-]?\d+).*?\]", disasm)
-                if match:
-                    reg = match.group(1)
-                    offset = int(match.group(2))
-                    var_name = f"var_{abs(offset)}"
-                    if var_name not in local_vars:
-                        local_vars[var_name] = {
-                            "name": var_name,
-                            "offset": offset,
-                            "size": 4,
-                            "access_type": "read",
-                            "address": f"0x{addr:x}",
-                        }
-
         stack_frame["local_vars"] = list(local_vars.values())
         stack_frame["frame_size"] = frame_size
 
