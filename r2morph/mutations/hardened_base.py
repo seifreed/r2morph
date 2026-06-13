@@ -9,45 +9,20 @@ from __future__ import annotations
 import logging
 import random
 from abc import abstractmethod
-from dataclasses import dataclass, field
 from typing import Any
 
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
     PatternType,
 )
-from r2morph.mutations.cfg_aware import CFGAwareMutationPass, CFGAwareMutationResult
+from r2morph.mutations.cfg_aware import CFGAwareMutationPass
+from r2morph.mutations.hardened_models import HardenedMutationResult
 from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
     HardenedMutationValidator,
 )
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class HardenedMutationResult(CFGAwareMutationResult):
-    """Result of a hardened mutation with pattern preservation."""
-
-    patterns_preserved: int = 0
-    patterns_avoided: int = 0
-    integrity_violations: int = 0
-    preservation_report: dict[str, Any] = field(default_factory=dict)
-    integrity_report: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        """Convert to dictionary."""
-        base = super().to_dict()
-        base.update(
-            {
-                "patterns_preserved": self.patterns_preserved,
-                "patterns_avoided": self.patterns_avoided,
-                "integrity_violations": self.integrity_violations,
-                "preservation_report": self.preservation_report,
-                "integrity_report": self.integrity_report,
-            }
-        )
-        return base
 
 
 class HardenedMutationPass(CFGAwareMutationPass):
