@@ -220,6 +220,34 @@ class TestMemoryFlowAnalyzer:
             "allocations": [],
         }
 
+    def test_analyze_stack_frame_all_branches_exact(self, analyzer):
+        """§5 oracle covering all three decode branches of _analyze_stack_frame:
+        push (saved reg + frame growth), ARM ``sub sp, #N`` allocation, and a
+        ``mov [sp-N], reg`` local-var store."""
+        instructions = [
+            {"offset": 0x1000, "disasm": "push rbp"},
+            {"offset": 0x1004, "disasm": "sub sp, #32"},
+            {"offset": 0x1008, "disasm": "mov [sp-4], w0"},
+        ]
+
+        frame = analyzer._analyze_stack_frame(instructions, 0x1000)
+
+        assert frame == {
+            "saved_regs": [{"register": "rbp", "offset": 0, "address": "0x1000"}],
+            "allocations": [{"size": 32, "address": "0x1004"}],
+            "local_vars": [
+                {
+                    "name": "var_4",
+                    "offset": -4,
+                    "size": 4,
+                    "access_type": "write",
+                    "address": "0x1008",
+                }
+            ],
+            "arguments": [],
+            "frame_size": 40,
+        }
+
     def test_analyze_instruction_records_exact_accesses(self, analyzer):
         """Characterize _analyze_instruction's effect on _accesses/_locations.
 

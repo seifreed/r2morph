@@ -108,6 +108,42 @@ class _DecodedAccess:
     registers: list[str]
 
 
+def _record_saved_register(disasm: str, addr: int, frame_size: int, stack_frame: dict[str, Any]) -> int:
+    """Record a ``push`` of a saved register; return the grown frame size."""
+    match = re.search(r"push\s+(\w+)", disasm)
+    if match:
+        stack_frame["saved_regs"].append({"register": match.group(1), "offset": frame_size, "address": f"0x{addr:x}"})
+        frame_size += 8  # Assume 64-bit
+    return frame_size
+
+
+def _record_stack_allocation(disasm: str, addr: int, frame_size: int, stack_frame: dict[str, Any]) -> int:
+    """Record a ``sub sp, #N`` stack allocation; return the grown frame size."""
+    match = re.search(r"sub\s+sp,\s+#?(\d+)", disasm)
+    if match:
+        size = int(match.group(1))
+        frame_size += size
+        stack_frame["allocations"].append({"size": size, "address": f"0x{addr:x}"})
+    return frame_size
+
+
+def _record_stack_local(disasm: str, addr: int, local_vars: dict[str, dict[str, Any]]) -> None:
+    """Record a ``mov [sp/rbp-N], reg`` store as a local variable."""
+    match = re.search(r"mov\s+\[.*?([+-]?\d+).*?\],\s+(\w+)", disasm)
+    if not match:
+        return
+    offset = int(match.group(1))
+    var_name = f"var_{abs(offset)}"
+    if var_name not in local_vars:
+        local_vars[var_name] = {
+            "name": var_name,
+            "offset": offset,
+            "size": 4,  # Default size
+            "access_type": "write",
+            "address": f"0x{addr:x}",
+        }
+
+
 class MemoryFlowAnalyzer:
     """
     Analyzes memory flow patterns in binary code.
@@ -186,51 +222,39 @@ class MemoryFlowAnalyzer:
         for insn in instructions:
             addr = insn.get("offset", 0)
             disasm = insn.get("disasm", "").lower()
-
-            if "push" in disasm:
-                match = re.search(r"push\s+(\w+)", disasm)
-                if match:
-                    reg = match.group(1)
-                    stack_frame["saved_regs"].append(
-                        {
-                            "register": reg,
-                            "offset": frame_size,
-                            "address": f"0x{addr:x}",
-                        }
-                    )
-                    frame_size += 8  # Assume 64-bit
-
-            elif "sub" in disasm and "sp" in disasm:
-                match = re.search(r"sub\s+sp,\s+#?(\d+)", disasm)
-                if match:
-                    size = int(match.group(1))
-                    frame_size += size
-                    stack_frame["allocations"].append(
-                        {
-                            "size": size,
-                            "address": f"0x{addr:x}",
-                        }
-                    )
-
-            elif "mov" in disasm and ("[sp" in disasm or "[rbp" in disasm):
-                match = re.search(r"mov\s+\[.*?([+-]?\d+).*?\],\s+(\w+)", disasm)
-                if match:
-                    offset = int(match.group(1))
-                    match.group(2)
-                    var_name = f"var_{abs(offset)}"
-                    if var_name not in local_vars:
-                        local_vars[var_name] = {
-                            "name": var_name,
-                            "offset": offset,
-                            "size": 4,  # Default size
-                            "access_type": "write",
-                            "address": f"0x{addr:x}",
-                        }
+            frame_size = self._scan_stack_instruction(
+                disasm,
+                addr,
+                frame_size,
+                stack_frame=stack_frame,
+                local_vars=local_vars,
+            )
 
         stack_frame["local_vars"] = list(local_vars.values())
         stack_frame["frame_size"] = frame_size
 
         return stack_frame
+
+    @staticmethod
+    def _scan_stack_instruction(
+        disasm: str,
+        addr: int,
+        frame_size: int,
+        *,
+        stack_frame: dict[str, Any],
+        local_vars: dict[str, dict[str, Any]],
+    ) -> int:
+        """Update the stack-frame accumulators for one instruction.
+
+        Returns the (possibly grown) frame size.
+        """
+        if "push" in disasm:
+            return _record_saved_register(disasm, addr, frame_size, stack_frame)
+        if "sub" in disasm and "sp" in disasm:
+            return _record_stack_allocation(disasm, addr, frame_size, stack_frame)
+        if "mov" in disasm and ("[sp" in disasm or "[rbp" in disasm):
+            _record_stack_local(disasm, addr, local_vars)
+        return frame_size
 
     def _analyze_instruction(
         self,
