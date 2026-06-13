@@ -11,6 +11,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_helpers",
     "r2morph.reporting.report_rendering",
     "r2morph.reporting.report_rendering_sections",
+    "r2morph.reporting.report_flow_executor",
     "r2morph.reporting.report_resolver",
     "r2morph.reporting.report_orchestrator",
     "r2morph.reporting.filtered_summary_builder",
