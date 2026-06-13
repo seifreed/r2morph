@@ -7,6 +7,7 @@ target processes and collecting runtime information.
 
 import logging
 import time
+from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -25,6 +26,11 @@ else:
 FRIDA_AVAILABLE = frida is not None
 
 logger = logging.getLogger(__name__)
+
+# Bound on retained runtime events per category; the oldest are evicted once
+# reached so a long instrumentation session cannot grow memory without limit.
+# Running totals are kept separately in self.stats, unaffected by this cap.
+MAX_RUNTIME_EVENTS = 10000
 
 
 class InstrumentationMode(Enum):
@@ -76,9 +82,9 @@ class FridaEngine:
         self.session: Any | None = None
         self.scripts: dict[str, Any] = {}
 
-        self.api_calls: list[dict[str, Any]] = []
-        self.memory_accesses: list[dict[str, Any]] = []
-        self.anti_analysis_events: list[dict[str, Any]] = []
+        self.api_calls: deque[dict[str, Any]] = deque(maxlen=MAX_RUNTIME_EVENTS)
+        self.memory_accesses: deque[dict[str, Any]] = deque(maxlen=MAX_RUNTIME_EVENTS)
+        self.anti_analysis_events: deque[dict[str, Any]] = deque(maxlen=MAX_RUNTIME_EVENTS)
         self.stats = {
             "processes_instrumented": 0,
             "scripts_loaded": 0,
@@ -541,9 +547,9 @@ class FridaEngine:
 
             export_data = {
                 "statistics": self.get_runtime_statistics(),
-                "api_calls": self.api_calls,
-                "memory_accesses": self.memory_accesses,
-                "anti_analysis_events": self.anti_analysis_events,
+                "api_calls": list(self.api_calls),
+                "memory_accesses": list(self.memory_accesses),
+                "anti_analysis_events": list(self.anti_analysis_events),
                 "timestamp": time.time(),
             }
 
