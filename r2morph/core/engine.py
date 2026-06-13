@@ -15,6 +15,7 @@ from r2morph.core.engine_output import build_report as build_report_output
 from r2morph.core.engine_output import save_binary as save_binary_output
 from r2morph.core.engine_output import save_report as save_report_output
 from r2morph.core.engine_run import run as run_lifecycle
+from r2morph.core.engine_wiring import build_engine_wiring
 from r2morph.protocols import (
     BinarySignerProtocol,
     GateFailureReporterProtocol,
@@ -65,27 +66,16 @@ class MorphEngine:
                 ReportAssembler wired with the gate-failure reporter and
                 report-view builder above
         """
-        from r2morph.pipeline.pipeline import Pipeline
-        from r2morph.platform.binary_signer import DarwinBinarySigner
-        from r2morph.reporting.gate_evaluator import GateFailureReporter
-        from r2morph.reporting.report_assembler import ReportAssembler
-        from r2morph.reporting.report_view_builder import ReportViewBuilder
-
-        resolved_gate_failure_reporter: GateFailureReporterProtocol = (
-            gate_failure_reporter if gate_failure_reporter is not None else GateFailureReporter()
-        )
-        resolved_report_view_builder: ReportViewBuilderProtocol = (
-            report_view_builder if report_view_builder is not None else ReportViewBuilder()
-        )
-
         self.binary: Binary | None = None
-        self.pipeline: PipelineProtocol = Pipeline()
-        self._binary_signer: BinarySignerProtocol = binary_signer if binary_signer is not None else DarwinBinarySigner()
-        self._report_builder: ReportBuilderProtocol = (
-            report_builder
-            if report_builder is not None
-            else ReportAssembler(resolved_gate_failure_reporter, resolved_report_view_builder)
+        wiring = build_engine_wiring(
+            binary_signer=binary_signer,
+            gate_failure_reporter=gate_failure_reporter,
+            report_view_builder=report_view_builder,
+            report_builder=report_builder,
         )
+        self.pipeline: PipelineProtocol = wiring.pipeline
+        self._binary_signer: BinarySignerProtocol = wiring.binary_signer
+        self._report_builder: ReportBuilderProtocol = wiring.report_builder
         self.config = config or {}
         self._stats: dict[str, Any] = {}
         self._memory_efficient_mode = False
