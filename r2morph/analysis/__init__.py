@@ -98,6 +98,7 @@ from r2morph.analysis.pattern_preservation import (
     PatternType,
     PreservedPattern,
 )
+from r2morph.analysis.pointer_analysis import PointerAnalysis
 from r2morph.analysis.switch_table import (
     IndirectJump,
     JumpTable,
@@ -106,7 +107,6 @@ from r2morph.analysis.switch_table import (
     SwitchTableAnalyzer,
 )
 from r2morph.analysis.type_inference import (
-    PointerAnalysis,
     PrimitiveType,
     StructField,
     TypeCategory,
