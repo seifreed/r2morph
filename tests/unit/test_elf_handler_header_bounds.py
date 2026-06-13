@@ -1,6 +1,6 @@
 """Unit tests for _header_table_within_file, the validate() bounds check."""
 
-from r2morph.platform.elf_handler import _header_table_within_file
+from r2morph.platform.elf_structs import _header_table_within_file
 
 
 def test_table_within_file():

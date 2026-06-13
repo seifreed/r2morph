@@ -1,6 +1,6 @@
 """Unit tests for _find_null_run, the code-cave null-run scanner."""
 
-from r2morph.platform.elf_handler import _find_null_run
+from r2morph.platform.elf_structs import _find_null_run
 
 
 def test_no_nulls_returns_none():
