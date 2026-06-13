@@ -13,14 +13,16 @@ from r2morph.reporting.report_rendering_flow_text_sections import (
     render_general_only_pass_sections,
     render_general_report_sections,
 )
+from r2morph.reporting.report_rendering_pass_tables import (
+    render_only_pass_sections,
+    render_pass_capabilities,
+    render_pass_validation_contexts,
+)
 from r2morph.reporting.report_rendering_primitives import CONSOLE, create_table
 from r2morph.reporting.report_rendering_tables import (
     render_degradation_sections,
     render_gate_sections,
     render_only_mismatches_sections,
-    render_only_pass_sections,
-    render_pass_capabilities,
-    render_pass_validation_contexts,
     render_summary_table,
     render_symbolic_sections,
     render_validation_context_table,

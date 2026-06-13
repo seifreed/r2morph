@@ -6,11 +6,9 @@ from typing import Any
 
 from rich.console import Console
 
+from r2morph.reporting.report_rendering_pass_tables import render_only_pass_sections
 from r2morph.reporting.report_rendering_primitives import _get_console
-from r2morph.reporting.report_rendering_tables import (
-    render_degradation_sections,
-    render_only_pass_sections,
-)
+from r2morph.reporting.report_rendering_tables import render_degradation_sections
 
 
 def render_gate_evaluation_sections(
