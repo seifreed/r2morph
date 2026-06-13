@@ -8,6 +8,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.constraint_cache",
     "r2morph.validation.binary_region_memory",
     "r2morph.validation.binary_region_comparator",
+    "r2morph.validation.differ_models",
     "r2morph.validation.benchmark",
     "r2morph.validation.semantic_symbolic",
     "r2morph.validation.semantic_models",
