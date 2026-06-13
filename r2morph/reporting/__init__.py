@@ -162,9 +162,9 @@ def __getattr__(name: str) -> Any:
         "SARIFSnippet": ("r2morph.reporting.sarif_schema", "SARIFSnippet"),
         "SARIFTool": ("r2morph.reporting.sarif_schema", "SARIFTool"),
         "SARIFToolComponent": ("r2morph.reporting.sarif_schema", "SARIFToolComponent"),
-        "EvidenceAggregator": ("r2morph.reporting.summary_aggregator", "EvidenceAggregator"),
-        "SummaryAggregator": ("r2morph.reporting.summary_aggregator", "SummaryAggregator"),
-        "SymbolicAggregator": ("r2morph.reporting.summary_aggregator", "SymbolicAggregator"),
+        "EvidenceAggregator": ("r2morph.reporting.summary_aggregator_evidence", "EvidenceAggregator"),
+        "SummaryAggregator": ("r2morph.reporting.summary_aggregator_summary", "SummaryAggregator"),
+        "SymbolicAggregator": ("r2morph.reporting.summary_aggregator_symbolic", "SymbolicAggregator"),
     }
     if name in _LAZY_RENDERING_NAMES:
         value = getattr(import_module("r2morph.reporting.report_rendering"), name)
