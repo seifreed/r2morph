@@ -99,10 +99,8 @@ class PatternMatchIntegration:
                     if random.randint(0, 100) <= pool.mutation_probability:
                         old_insns = converted[match.index : match.index + match.length]
 
-                        import random as rand
-
                         gen_list, weights = zip(*pool.generators)
-                        chosen_gen = rand.choices(gen_list, weights=weights, k=1)[0]
+                        chosen_gen = random.choices(gen_list, weights=weights, k=1)[0]
 
                         new_insns = chosen_gen(match.operands, os_type)
 
