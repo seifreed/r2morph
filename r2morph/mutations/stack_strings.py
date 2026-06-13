@@ -81,6 +81,21 @@ _JUNK_INSTRUCTIONS_X86 = [
 ]
 
 
+def _append_optional_junk(
+    asm_lines: list[str],
+    junk_used: list[str],
+    junk_table: list[tuple[str, str]],
+    *,
+    interleave_junk: bool,
+    junk_probability: float,
+) -> None:
+    """Append one random junk instruction from junk_table with junk_probability."""
+    if interleave_junk and random.random() < junk_probability:
+        junk = random.choice(junk_table)
+        asm_lines.append(f"    {junk[1]}  ; junk")
+        junk_used.append(junk[0])
+
+
 def xor_bytes(data: bytes, key: int) -> bytes:
     """XOR each byte with a single key."""
     return bytes(b ^ key for b in data)
@@ -221,7 +236,7 @@ def generate_stack_string_x64(
 
     size = len(string_data)
     asm_lines = []
-    junk_used = []
+    junk_used: list[str] = []
 
     junk_instructions = _JUNK_INSTRUCTIONS_X64
 
@@ -256,10 +271,13 @@ def generate_stack_string_x64(
             else:
                 asm_lines.append(f"    mov byte [rsp+{i}], 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
     elif encoding == EncodingScheme.XOR_SINGLE:
         for i, b in enumerate(encoded_data):
@@ -269,10 +287,13 @@ def generate_stack_string_x64(
             else:
                 asm_lines.append(f"    mov byte [rsp+{i}], 0x{b:02X}  ; XOR'd")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         decode_loop = [
             "    ; Decode XOR'd string",
@@ -290,10 +311,13 @@ def generate_stack_string_x64(
         for i, b in enumerate(encoded_data):
             asm_lines.append(f"    mov byte [rsp+{i}], 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         decode_loop = [
             "    ; Decode rolling XOR string",
@@ -314,10 +338,13 @@ def generate_stack_string_x64(
         for i, b in enumerate(encoded_data):
             asm_lines.append(f"    mov byte [rsp+{i}], 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         decode_loop = [
             "    ; Decode ADD-shift'd string",
@@ -344,10 +371,13 @@ def generate_stack_string_x64(
                 asm_lines.append(f"    ; Block {i // 16}")
             asm_lines.append(f"    db 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         aes_decode_lines = generate_aes_decode_asm_x64(aes_key, len(encoded_data), id(encoded_data))
         asm_lines.extend(aes_decode_lines)
@@ -378,7 +408,7 @@ def generate_stack_string_x86(
 
     size = len(string_data)
     asm_lines = []
-    junk_used = []
+    junk_used: list[str] = []
 
     encoded_data = string_data
     decode_header = ""
@@ -413,19 +443,25 @@ def generate_stack_string_x86(
             else:
                 asm_lines.append(f"    mov byte [esp+{i}], 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
     elif encoding == EncodingScheme.XOR_SINGLE:
         for i, b in enumerate(encoded_data):
             asm_lines.append(f"    mov byte [esp+{i}], 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         decode_loop = [
             "    lea edi, [esp]",
@@ -451,10 +487,13 @@ def generate_stack_string_x86(
         for i, b in enumerate(encoded_data):
             asm_lines.append(f"    mov byte [esp+{i}], 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         decode_loop = [
             "    ; Decode rolling XOR string",
@@ -478,10 +517,13 @@ def generate_stack_string_x86(
         for i, b in enumerate(encoded_data):
             asm_lines.append(f"    mov byte [esp+{i}], 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         decode_loop = [
             "    ; Decode ADD-shift'd string",
@@ -508,10 +550,13 @@ def generate_stack_string_x86(
                 asm_lines.append(f"    ; Block {i // 16}")
             asm_lines.append(f"    db 0x{b:02X}")
 
-            if interleave_junk and random.random() < junk_probability:
-                junk = random.choice(junk_instructions)
-                asm_lines.append(f"    {junk[1]}  ; junk")
-                junk_used.append(junk[0])
+            _append_optional_junk(
+                asm_lines,
+                junk_used,
+                junk_instructions,
+                interleave_junk=interleave_junk,
+                junk_probability=junk_probability,
+            )
 
         aes_decode_lines = generate_aes_decode_asm_x86(aes_key, len(encoded_data), id(encoded_data))
         asm_lines.extend(aes_decode_lines)
