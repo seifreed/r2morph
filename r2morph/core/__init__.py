@@ -103,13 +103,13 @@ __all__ = [
     "SMALL_FUNCTION_THRESHOLD",
     "VERY_LARGE_BINARY_THRESHOLD_MB",
     "VERY_MANY_FUNCTIONS_THRESHOLD",
-    # Parallel execution
+    # Parallel planning/execution
     "DependencyResolver",
     "ExecutionPlan",
-    "ParallelMutationEngine",
     "PassDependency",
     "PassResult",
     "PassStatus",
+    "ParallelMutationEngine",
     "execute_parallel",
     # Parallel executor
     "MutationResult",

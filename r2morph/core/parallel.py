@@ -19,13 +19,25 @@ import threading
 import time
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.parallel_planner import (
+    DependencyResolver,
+    PassResult,
+    PassStatus,
+)
+from r2morph.core.parallel_planner import (
+    ExecutionPlan as _ExecutionPlan,
+)
+from r2morph.core.parallel_planner import (
+    PassDependency as _PassDependency,
+)
 from r2morph.protocols import MutationPassProtocol
+
+ExecutionPlan = _ExecutionPlan
+PassDependency = _PassDependency
 
 logger = logging.getLogger(__name__)
 
@@ -46,197 +58,6 @@ else:
     except ImportError:
         FCNTL_AVAILABLE = False
     HAS_MSVCRT = False
-
-
-class PassStatus(Enum):
-    """Status of a mutation pass."""
-
-    PENDING = "pending"
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    SKIPPED = "skipped"
-    ROLLED_BACK = "rolled_back"
-
-
-@dataclass
-class PassResult:
-    """Result of executing a mutation pass."""
-
-    pass_name: str
-    status: PassStatus
-    result: dict[str, Any] | None = None
-    error: str | None = None
-    duration_seconds: float = 0.0
-    mutations_applied: int = 0
-    checkpoint_path: Path | None = None
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "pass_name": self.pass_name,
-            "status": self.status.value,
-            "result": self.result,
-            "error": self.error,
-            "duration_seconds": self.duration_seconds,
-            "mutations_applied": self.mutations_applied,
-            "checkpoint_path": str(self.checkpoint_path) if self.checkpoint_path else None,
-        }
-
-
-@dataclass
-class PassDependency:
-    """Declares dependencies between mutation passes."""
-
-    pass_name: str
-    requires: list[str] = field(default_factory=list)
-    conflicts: list[str] = field(default_factory=list)
-    optional: bool = False
-
-
-@dataclass
-class ExecutionPlan:
-    """Execution plan for parallel mutations."""
-
-    passes: list[MutationPassProtocol]
-    dependencies: dict[str, PassDependency] = field(default_factory=dict)
-    stages: list[list[str]] = field(default_factory=list)
-
-    def get_stage(self, pass_name: str) -> int:
-        """Get the stage number for a pass."""
-        for i, stage in enumerate(self.stages):
-            if pass_name in stage:
-                return i
-        return -1
-
-
-class DependencyResolver:
-    """Resolves dependencies between mutation passes."""
-
-    # Known pass dependencies
-    KNOWN_DEPENDENCIES: dict[str, PassDependency] = {
-        "nop": PassDependency("nop", requires=[], conflicts=[]),
-        "substitute": PassDependency(
-            "substitute",
-            requires=[],
-            conflicts=[],  # Can run with other independent passes
-        ),
-        "register": PassDependency(
-            "register",
-            requires=[],
-            conflicts=["substitute"],  # Register substitution conflicts with instruction substitution
-        ),
-        "block": PassDependency(
-            "block",
-            requires=[],
-            conflicts=["nop", "substitute", "register"],  # Block reordering conflicts with most passes
-        ),
-        "cff": PassDependency(
-            "cff",
-            requires=[],
-            conflicts=["block", "nop"],  # Control flow flattening conflicts
-        ),
-        "dead-code": PassDependency(
-            "dead-code",
-            requires=[],
-            conflicts=[],  # Dead code injection is mostly independent
-        ),
-        "opaque": PassDependency(
-            "opaque",
-            requires=[],
-            conflicts=["cff"],  # Opaque predicates conflict with CFF
-        ),
-    }
-
-    def __init__(self, custom_dependencies: dict[str, PassDependency] | None = None) -> None:
-        """
-        Initialize dependency resolver.
-
-        Args:
-            custom_dependencies: Custom dependencies to add/override
-        """
-        self.dependencies = dict(self.KNOWN_DEPENDENCIES)
-        if custom_dependencies:
-            self.dependencies.update(custom_dependencies)
-
-    def resolve(self, passes: list[MutationPassProtocol]) -> ExecutionPlan:
-        """
-        Resolve dependencies and create execution plan.
-
-        Args:
-            passes: List of mutation passes
-
-        Returns:
-            ExecutionPlan with staged passes
-        """
-        pass_names = {p.name for p in passes}
-
-        for p in passes:
-            if p.name not in self.dependencies:
-                self.dependencies[p.name] = PassDependency(p.name, requires=[], conflicts=[])
-
-        stages: list[list[str]] = []
-        scheduled: set[str] = set()
-
-        while len(scheduled) < len(pass_names):
-            stage: list[str] = []
-
-            for pass_name in pass_names:
-                if pass_name in scheduled:
-                    continue
-
-                dep = self.dependencies.get(pass_name, PassDependency(pass_name))
-
-                can_schedule = True
-                for req in dep.requires:
-                    if req not in scheduled:
-                        can_schedule = False
-                        break
-
-                if can_schedule:
-                    for conflict in dep.conflicts:
-                        if conflict in scheduled:
-                            can_schedule = False
-                            break
-
-                if can_schedule:
-                    stage.append(pass_name)
-
-            if not stage:
-                remaining = pass_names - scheduled
-                logger.warning(f"Circular dependency detected. Forcing remaining passes: {remaining}")
-                stage = list(remaining)
-
-            scheduled.update(stage)
-            stages.append(stage)
-
-        return ExecutionPlan(
-            passes=passes,
-            dependencies=self.dependencies,
-            stages=stages,
-        )
-
-    def check_conflicts(self, passes: list[MutationPassProtocol]) -> list[tuple[str, str]]:
-        """
-        Check for conflicts between passes.
-
-        Args:
-            passes: List of mutation passes
-
-        Returns:
-            List of (pass1, pass2) conflict pairs
-        """
-        conflicts: list[tuple[str, str]] = []
-        pass_names = [p.name for p in passes]
-
-        for i, name1 in enumerate(pass_names):
-            for name2 in pass_names[i + 1 :]:
-                dep1 = self.dependencies.get(name1, PassDependency(name1))
-                dep2 = self.dependencies.get(name2, PassDependency(name2))
-
-                if name2 in dep1.conflicts or name1 in dep2.conflicts:
-                    conflicts.append((name1, name2))
-
-        return conflicts
 
 
 class BinaryFileLock:
@@ -525,7 +346,7 @@ class ParallelMutationEngine:
                 logger.warning(f"Conflicting passes: {name1} conflicts with {name2}")
                 logger.warning("Consider running these passes separately")
 
-        plan = self.resolver.resolve(passes)
+        plan: ExecutionPlan = self.resolver.resolve(passes)
 
         logger.info(f"Execution plan: {len(plan.stages)} stages")
         for i, stage in enumerate(plan.stages):
