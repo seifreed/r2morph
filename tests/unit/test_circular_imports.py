@@ -25,6 +25,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.filtered_summary_sections",
     "r2morph.reporting.filtered_summary_symbolic",
     "r2morph.reporting.report_view_builder",
+    "r2morph.reporting.report_view_details",
     "r2morph.reporting.report_context",
     "r2morph.reporting.report_view_resolution",
     "r2morph.reporting.report_output_policy",
