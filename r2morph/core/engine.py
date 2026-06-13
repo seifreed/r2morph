@@ -3,25 +3,17 @@ Main morphing engine for binary transformations.
 """
 
 import logging
-import os
 import random
 import shutil
-import tempfile
 import time
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
-from r2morph.core.constants import (
-    BATCH_MUTATION_CHECKPOINT,
-    LARGE_BINARY_THRESHOLD_MB,
-    LARGE_FUNCTION_COUNT_THRESHOLD,
-    MANY_FUNCTIONS_THRESHOLD,
-    MEDIUM_FUNCTION_COUNT_THRESHOLD,
-    VERY_MANY_FUNCTIONS_THRESHOLD,
-)
 from r2morph.core.constants import SEVERITY_ORDER as SEVERITY_ORDER
+from r2morph.core.engine_lifecycle import analyze as analyze_lifecycle
+from r2morph.core.engine_lifecycle import load_binary as load_binary_lifecycle
 from r2morph.core.report_helpers import (
     REPORT_SCHEMA_VERSION as REPORT_SCHEMA_VERSION,
 )
@@ -208,160 +200,16 @@ class MorphEngine:
         """
         return self.pipeline.passes
 
-    def _should_use_low_memory(self, path: Path) -> bool:
-        """Determine if low-memory mode should be enabled based on file size."""
-        binary_size_mb = os.path.getsize(path) / (1024 * 1024)
-        return binary_size_mb > LARGE_BINARY_THRESHOLD_MB
-
-    def _create_working_copy(self, original_path: Path) -> Path:
-        """Create a temporary working copy of the binary."""
-        temp_dir = Path(tempfile.gettempdir()) / "r2morph"
-        temp_dir.mkdir(exist_ok=True)
-        working_copy = temp_dir / f"{original_path.name}.working"
-        shutil.copy2(original_path, working_copy)
-        return working_copy
-
-    def _get_binary_size_mb(self, path: Path) -> float:
-        """Get binary file size in megabytes."""
-        return os.path.getsize(path) / (1024 * 1024)
-
-    def _should_enable_memory_efficient_mode(self, binary_size_mb: float, function_count: int) -> bool:
-        """Determine if memory-efficient mode should be enabled."""
-        return binary_size_mb > LARGE_BINARY_THRESHOLD_MB or function_count > LARGE_FUNCTION_COUNT_THRESHOLD
-
     def load_binary(self, path: str | Path, writable: bool = True) -> "MorphEngine":
-        """
-        Load a binary for transformation.
-
-        Args:
-            path: Path to binary file
-            writable: Open in write mode for mutations (default: True)
-
-        Returns:
-            Self for method chaining
-        """
-        path = Path(path)
-        logger.info(f"Loading binary: {path}")
-
-        if writable:
-            self._session = MorphSession()
-            working_copy = self._session.start(path)
-            logger.debug(f"Created session working copy: {working_copy}")
-            self._original_path: Path | None = path
-            target_path = working_copy
-        else:
-            self._original_path = None
-            target_path = path
-
-        low_memory = self._should_use_low_memory(target_path)
-        self.binary = Binary(target_path, writable=writable, low_memory=low_memory)
-        self.binary.open()
-
-        return self
+        return load_binary_lifecycle(self, path, writable=writable)
 
     def analyze(self, level: str = "auto") -> "MorphEngine":
-        """
-        Analyze the loaded binary.
-
-        Args:
-            level: Analysis level (aa, aac, aaa, aaaa, or "auto" for adaptive)
-                - aa: Basic analysis (fast, ~5s for 7k functions)
-                - aac: Call analysis (fast, finds most functions)
-                - aaa: Full analysis (SLOW on large binaries, recommended < 1000 functions)
-                - aaaa: Experimental (very slow)
-                - auto: Automatically choose based on binary size (default)
-
-        Returns:
-            Self for method chaining
-        """
-        if not self.binary:
-            raise RuntimeError("No binary loaded. Call load_binary() first.")
-
-        # Auto-detect best analysis level based on function count and size
-        if level == "auto":
-            level = self._auto_detect_analysis_level()
-        else:
-            # Manual level specified
-            logger.info(f"Analyzing binary with level: {level}...")
-            assert self.binary is not None
-            self.binary.analyze(level)
-
-        functions = self.binary.get_functions()
-        arch_info = self.binary.get_arch_info()
-
-        self._stats = {
-            "functions": len(functions),
-            "arch": arch_info.get("arch"),
-            "bits": arch_info.get("bits"),
-            "format": arch_info.get("format"),
-        }
-
-        logger.info(f"Analysis complete. Found {len(functions)} functions")
-        logger.debug(f"Architecture: {arch_info}")
-
-        # Enable memory-efficient mode for large binaries to prevent OOM
-        assert self.binary is not None
-        binary_size_mb = self._get_binary_size_mb(self.binary.path)
-        if self._should_enable_memory_efficient_mode(binary_size_mb, len(functions)):
-            self._memory_efficient_mode = True
-            logger.warning(
-                f"Large binary detected ({binary_size_mb:.1f} MB, {len(functions)} functions). "
-                f"Enabling memory-efficient mode to prevent OOM crashes."
-            )
-            logger.info(
-                f"Memory-efficient mode: reduced mutations per function, "
-                f"batch processing with r2 restarts every {BATCH_MUTATION_CHECKPOINT} mutations."
-            )
-
-        return self
+        return analyze_lifecycle(self, level)
 
     def _auto_detect_analysis_level(self) -> str:
-        """Auto-detect optimal analysis level based on binary complexity."""
-        import time
+        from r2morph.core.engine_lifecycle import auto_detect_analysis_level
 
-        # Step 1: Quick basic analysis to count functions
-        logger.info("Running quick analysis to estimate complexity...")
-        start = time.time()
-        assert self.binary is not None
-        self.binary.analyze("aa")
-        quick_funcs = len(self.binary.get_functions())
-        aa_time = time.time() - start
-
-        binary_size_mb = self._get_binary_size_mb(self.binary.path)
-        avg_func_size = (binary_size_mb * 1024 * 1024) / quick_funcs if quick_funcs > 0 else 0
-
-        logger.info(
-            f"Binary stats: {quick_funcs} functions, {binary_size_mb:.1f} MB, "
-            f"avg {avg_func_size:.0f} bytes/func (aa took {aa_time:.1f}s)"
-        )
-
-        # Step 2: Decide analysis level based on complexity
-        if quick_funcs > VERY_MANY_FUNCTIONS_THRESHOLD:
-            level = "aa"  # Already done
-            logger.warning(
-                f"Very large binary ({quick_funcs} functions). Using fast analysis level 'aa' (already complete)."
-            )
-        elif quick_funcs > MANY_FUNCTIONS_THRESHOLD:
-            level = "aac"  # Add call analysis
-            logger.warning(
-                f"Large binary ({quick_funcs} functions). Using 'aac' analysis (adds ~10-20s for call analysis)."
-            )
-            assert self.binary is not None
-            self.binary.analyze("aac")
-        elif quick_funcs > MEDIUM_FUNCTION_COUNT_THRESHOLD:
-            level = "aac"
-            logger.info(f"Medium binary ({quick_funcs} functions). Using 'aac' analysis.")
-            assert self.binary is not None
-            self.binary.analyze("aac")
-        else:
-            level = "aaa"
-            logger.info(
-                f"Small binary ({quick_funcs} functions). Using full 'aaa' analysis (~{int(aa_time * 3)}s estimated)."
-            )
-            assert self.binary is not None
-            self.binary.analyze("aaa")
-
-        return level
+        return auto_detect_analysis_level(self)
 
     def add_mutation(self, mutation: "MutationPassProtocol | str") -> "MorphEngine":
         """
