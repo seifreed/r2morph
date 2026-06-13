@@ -11,6 +11,7 @@ Provides SSA conversion for improved precision in:
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -407,8 +408,6 @@ class SSAConverter:
         defined = set()
 
         if "mov" in disasm or "lea" in disasm or "pop" in disasm:
-            import re
-
             match = re.match(r"\w+\s+(\w+)", disasm)
             if match:
                 defined.add(match.group(1).lower())
@@ -418,8 +417,6 @@ class SSAConverter:
     def _extract_used_registers(self, disasm: str) -> set[str]:
         """Extract registers that are used (read from) in an instruction."""
         used = set()
-
-        import re
 
         reg_pattern = r"\b([a-z][a-z0-9]*)\b"
         operands = disasm.split(",") if "," in disasm else [disasm]
