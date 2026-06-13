@@ -67,3 +67,11 @@ def test_reporting_package_defers_heavy_exports():
 
     assert "r2morph.reporting.report_builder" in sys.modules
     assert "r2morph.reporting.sarif_formatter" in sys.modules
+
+
+def test_report_builder_only_keeps_payload_construction_helpers():
+    from r2morph.reporting.report_builder import ReportBuilder
+
+    assert not hasattr(ReportBuilder, "resolve_report_context")
+    assert not hasattr(ReportBuilder, "resolve_min_severity")
+    assert not hasattr(ReportBuilder, "resolve_report_pass_filter")
