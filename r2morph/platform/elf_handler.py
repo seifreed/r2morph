@@ -162,6 +162,14 @@ def _find_null_run(data: bytes, min_size: int) -> int | None:
     return None
 
 
+def _header_table_within_file(offset: int, size: int, file_size: int, label: str) -> bool:
+    """Return whether a header table fits in the file, warning if it overflows."""
+    if offset + size > file_size:
+        logger.warning(f"{label} extends beyond file: offset={offset}, size={size}, file_size={file_size}")
+        return False
+    return True
+
+
 class ELFHandler:
     """Handles ELF-specific operations for binary analysis and transformation.
 
@@ -230,24 +238,13 @@ class ELFHandler:
                 return False
 
             file_size = self.binary_path.stat().st_size
-            sh_offset = header["e_shoff"]
-            sh_size = header["e_shentsize"] * header["e_shnum"]
 
-            if sh_offset + sh_size > file_size:
-                logger.warning(
-                    f"Section header table extends beyond file: "
-                    f"offset={sh_offset}, size={sh_size}, file_size={file_size}"
-                )
+            sh_size = header["e_shentsize"] * header["e_shnum"]
+            if not _header_table_within_file(header["e_shoff"], sh_size, file_size, "Section header table"):
                 return False
 
-            ph_offset = header["e_phoff"]
             ph_size = header["e_phentsize"] * header["e_phnum"]
-
-            if ph_offset + ph_size > file_size:
-                logger.warning(
-                    f"Program header table extends beyond file: "
-                    f"offset={ph_offset}, size={ph_size}, file_size={file_size}"
-                )
+            if not _header_table_within_file(header["e_phoff"], ph_size, file_size, "Program header table"):
                 return False
 
             logger.debug(f"ELF validation passed for: {self.binary_path}")
