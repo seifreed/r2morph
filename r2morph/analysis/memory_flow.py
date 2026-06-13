@@ -11,6 +11,7 @@ Provides analysis of memory access patterns for:
 from __future__ import annotations
 
 import logging
+import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -176,8 +177,6 @@ class MemoryFlowAnalyzer:
             disasm = insn.get("disasm", "").lower()
 
             if "push" in disasm:
-                import re
-
                 match = re.search(r"push\s+(\w+)", disasm)
                 if match:
                     reg = match.group(1)
@@ -191,8 +190,6 @@ class MemoryFlowAnalyzer:
                     frame_size += 8  # Assume 64-bit
 
             elif "sub" in disasm and "sp" in disasm:
-                import re
-
                 match = re.search(r"sub\s+sp,\s+#?(\d+)", disasm)
                 if match:
                     size = int(match.group(1))
@@ -205,8 +202,6 @@ class MemoryFlowAnalyzer:
                     )
 
             elif "mov" in disasm and ("[sp" in disasm or "[rbp" in disasm):
-                import re
-
                 match = re.search(r"mov\s+\[.*?([+-]?\d+).*?\],\s+(\w+)", disasm)
                 if match:
                     offset = int(match.group(1))
@@ -222,8 +217,6 @@ class MemoryFlowAnalyzer:
                         }
 
             elif "mov" in disasm and ("[sp" in disasm or "[rbp" in disasm) and "," in disasm:
-                import re
-
                 match = re.search(r"mov\s+(\w+),\s+\[.*?([+-]?\d+).*?\]", disasm)
                 if match:
                     reg = match.group(1)
@@ -259,8 +252,6 @@ class MemoryFlowAnalyzer:
         location_name = ""
 
         if "mov" in disasm and "[" in disasm:
-            import re
-
             read_match = re.search(r"mov\s+(\w+),\s+\[([^\]]+)\]", disasm)
             write_match = re.search(r"mov\s+\[([^\]]+)\],\s+(\w+)", disasm)
 
@@ -281,7 +272,6 @@ class MemoryFlowAnalyzer:
 
         elif "ldr" in disasm:
             access_type = MemoryAccessType.READ
-            import re
 
             match = re.search(r"ldr\s+\w+,\s+\[([^\]]+)\]", disasm)
             if match:
@@ -294,7 +284,6 @@ class MemoryFlowAnalyzer:
 
         elif "str" in disasm:
             access_type = MemoryAccessType.WRITE
-            import re
 
             match = re.search(r"str\s+\w+,\s+\[([^\]]+)\]", disasm)
             if match:
@@ -306,8 +295,6 @@ class MemoryFlowAnalyzer:
                 registers = [str_match.group(1)] if str_match else []
 
         elif any(op in disasm for op in ["push", "pop"]):
-            import re
-
             match = re.search(r"(push|pop)\s+(\w+)", disasm)
             if match:
                 op = match.group(1)
@@ -345,7 +332,6 @@ class MemoryFlowAnalyzer:
 
     def _extract_memory_address(self, operand: str, stack_frame: dict[str, Any]) -> int:
         """Extract memory address from operand."""
-        import re
 
         operand = operand.strip()
 
@@ -573,15 +559,11 @@ class InterproceduralDataFlowAnalyzer:
             addr = insn.get("offset", 0)
 
             if "mov" in disasm or "ldr" in disasm:
-                import re
-
                 match = re.search(r"(mov|ldr)\s+(\w+),", disasm)
                 if match:
                     summary["modified_registers"].add(match.group(2))
 
             if "push" in disasm or "pop" in disasm:
-                import re
-
                 match = re.search(r"(push|pop)\s+(\w+)", disasm)
                 if match:
                     summary["modified_registers"].add(match.group(2))
@@ -596,8 +578,6 @@ class InterproceduralDataFlowAnalyzer:
                 )
 
             if "ret" in disasm or "bx lr" in disasm:
-                import re
-
                 match = re.search(r"mov\s+(\w+),", disasm)
                 if match:
                     summary["return_values"].append(
