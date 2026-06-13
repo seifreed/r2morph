@@ -33,6 +33,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_view_resolution",
     "r2morph.reporting.report_output_policy",
     "r2morph.reporting.summary_aggregator",
+    "r2morph.factories",
     "r2morph.cli_workflows",
     "r2morph.core.report_helpers_evidence",
     "r2morph.core.report_helpers_validation",
