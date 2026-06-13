@@ -30,6 +30,18 @@ from r2morph.analysis.type_inference_arm import (
 from r2morph.analysis.type_inference_arm import (
     propagate_arm_aliases as _propagate_arm_aliases_impl,
 )
+from r2morph.analysis.type_inference_queries import (
+    get_struct_layout as _get_struct_layout_impl,
+)
+from r2morph.analysis.type_inference_queries import (
+    get_value_range as _get_value_range_impl,
+)
+from r2morph.analysis.type_inference_queries import (
+    infer_access_type as _infer_access_type_impl,
+)
+from r2morph.analysis.type_inference_queries import (
+    is_safe_to_mutate as _is_safe_to_mutate_impl,
+)
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -939,36 +951,11 @@ class TypeInference:
         Returns:
             List of StructField if struct is detected, None otherwise
         """
-        fields: list[StructField] = []
-
-        try:
-            xrefs = binary.r2.cmdj(f"axtj @ {address}") if binary.r2 else []
-        except Exception:
-            xrefs = []
-
-        if not xrefs:
-            return None
-
-        for xref in xrefs:
-            offset = xref.get("offset", 0) if isinstance(xref, dict) else 0
-            access_type = self._infer_access_type(binary, xref if isinstance(xref, dict) else {})
-
-            if access_type:
-                fields.append(
-                    StructField(
-                        name=f"field_{offset:x}",
-                        offset=offset,
-                        type_info=access_type,
-                    )
-                )
-
-        fields.sort(key=lambda f: f.offset)
-
-        return fields if fields else None
+        return _get_struct_layout_impl(self, binary, address)
 
     def _infer_access_type(self, binary: Binary, xref: dict) -> TypeInfo | None:
         """Infer the type of a memory access."""
-        return self.create_primitive_type(PrimitiveType.UINT64)
+        return _infer_access_type_impl(self, binary, xref)
 
     def get_value_range(self, binary: Binary, address: int) -> tuple[int, int] | None:
         """
@@ -982,19 +969,7 @@ class TypeInference:
             Tuple of (min, max) if determinable, None otherwise
         """
         type_info = self.infer_type(binary, address)
-
-        if type_info.is_integer():
-            size = type_info.size
-            if size == 1:
-                return (0, 255)
-            if size == 2:
-                return (0, 65535)
-            if size == 4:
-                return (0, 2**32 - 1)
-            if size == 8:
-                return (0, 2**64 - 1)
-
-        return None
+        return _get_value_range_impl(type_info)
 
     def is_safe_to_mutate(self, binary: Binary, address: int, mutation_type: str) -> tuple[bool, str]:
         """
@@ -1009,16 +984,7 @@ class TypeInference:
             Tuple of (is_safe, reason)
         """
         type_info = self.infer_type(binary, address)
-
-        if mutation_type == "register_substitution":
-            if type_info.is_pointer():
-                return (False, "Register holds pointer - unsafe to substitute")
-
-        if mutation_type == "instruction_expansion":
-            if type_info.is_pointer():
-                return (False, "Pointer arithmetic - expansion may break semantics")
-
-        return (True, "Safe to mutate")
+        return _is_safe_to_mutate_impl(type_info, mutation_type)
 
 
 def infer_type(binary: Binary, address: int) -> TypeInfo:
