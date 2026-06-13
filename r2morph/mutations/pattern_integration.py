@@ -8,6 +8,7 @@ Provides unified interface for:
 - Semantic preservation validation
 """
 
+import logging
 import random
 from dataclasses import dataclass
 from typing import Any
@@ -16,6 +17,8 @@ from r2morph.mutations.junk_generator import JunkGenerator, create_junk_generato
 from r2morph.mutations.pattern_pool import (
     get_pattern_pools,
 )
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -62,7 +65,7 @@ class PatternMatchIntegration:
         Args:
             block_instructions: List of instruction dicts or objects
             os_type: Operating system type for constants
-            verbose: Print mutation details
+            verbose: Log mutation details at DEBUG level
 
         Returns:
             Tuple of (mutated_instructions, mutation_log)
@@ -114,9 +117,14 @@ class PatternMatchIntegration:
                         )
 
                         if verbose:
-                            print(f"[{pool.name}] Mutation at 0x{old_insns[0].address:x if old_insns else 0:x}")
-                            print(f"  old: {' -> '.join([ins.mnemonic for ins in old_insns])}")
-                            print(f"  new: {' -> '.join([ins.mnemonic for ins in new_insns])}")
+                            mutation_addr = old_insns[0].address if old_insns else 0
+                            logger.debug(
+                                "[%s] Mutation at 0x%x\n  old: %s\n  new: %s",
+                                pool.name,
+                                mutation_addr,
+                                " -> ".join(ins.mnemonic for ins in old_insns),
+                                " -> ".join(ins.mnemonic for ins in new_insns),
+                            )
 
                         converted[match.index : match.index + match.length] = new_insns
 
