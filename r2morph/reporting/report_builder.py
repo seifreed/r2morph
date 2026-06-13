@@ -8,7 +8,24 @@ and filtered report generation.
 from dataclasses import dataclass
 from typing import Any
 
-from r2morph.reporting.gate_evaluator import SEVERITY_ORDER, GateEvaluator
+from r2morph.reporting.filtered_summary_builder import (
+    _build_only_mismatches_payload as _build_only_mismatches_payload_impl,
+)
+from r2morph.reporting.filtered_summary_builder import (
+    _build_report_filters as _build_report_filters_impl,
+)
+from r2morph.reporting.report_context_resolver import (
+    _resolve_failed_gates_view as _resolve_failed_gates_view_impl,
+)
+from r2morph.reporting.report_context_resolver import (
+    _resolve_report_gate_state as _resolve_report_gate_state_impl,
+)
+from r2morph.reporting.report_gate_helpers import (
+    _expected_severity_rank_from_failure as _expected_severity_rank_from_failure_impl,
+)
+from r2morph.reporting.report_gate_helpers import (
+    _filter_failed_gates_view as _filter_failed_gates_view_impl,
+)
 
 
 @dataclass
@@ -59,69 +76,17 @@ class ReportBuilder:
         resolved_only_pass_failure: str | None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], bool]:
         """Resolve persisted gate summaries and filtered gate state for report()."""
-        gate_failure_summary = GateEvaluator.summarize_gate_failures(gate_evaluation) if gate_evaluation else {}
-        gate_failure_priority = list(summary.get("gate_failure_priority", payload.get("gate_failure_priority", [])))
-        gate_failure_severity_priority = list(
-            summary.get(
-                "gate_failure_severity_priority",
-                payload.get("gate_failure_severity_priority", []),
-            )
-        )
-
-        gate_failure_summary, gate_failure_priority, gate_failure_severity_priority = (
-            ReportBuilder._resolve_failed_gates_view(
-                summary=summary,
-                gate_failure_summary=gate_failure_summary,
-                gate_failure_priority=gate_failure_priority,
-                gate_failure_severity_priority=gate_failure_severity_priority,
-            )
-        )
-
-        if gate_failure_summary.get("require_pass_severity_failures_by_pass"):
-
-            ordered_failures = sorted(
-                gate_failure_summary["require_pass_severity_failures_by_pass"].items(),
-                key=lambda item: (
-                    min(ReportBuilder._expected_severity_rank_from_failure(failure) for failure in item[1]),
-                    -len(item[1]),
-                    item[0],
-                ),
-            )
-            gate_failure_summary["require_pass_severity_failures_by_pass"] = {
-                pass_name: failures for pass_name, failures in ordered_failures
-            }
-
-        if not gate_failure_priority:
-            gate_failure_priority = GateEvaluator.build_gate_failure_priority(gate_failure_summary)
-
-        (
-            gate_failure_summary,
-            gate_failure_priority,
-            gate_failure_severity_priority,
-            filtered_gate_failed,
-        ) = ReportBuilder._filter_failed_gates_view(
-            gate_failure_summary=gate_failure_summary,
-            gate_failure_priority=gate_failure_priority,
-            gate_failure_severity_priority=gate_failure_severity_priority,
+        return _resolve_report_gate_state_impl(
+            summary=summary,
+            payload=payload,
+            gate_evaluation=gate_evaluation,
             only_expected_severity=only_expected_severity,
             resolved_only_pass_failure=resolved_only_pass_failure,
         )
 
-        return (
-            gate_failure_summary,
-            gate_failure_priority,
-            gate_failure_severity_priority,
-            filtered_gate_failed,
-        )
-
     @staticmethod
     def _expected_severity_rank_from_failure(failure: str) -> int:
-        marker = "expected <= "
-        if marker not in failure:
-            return 99
-        severity = failure.split(marker, 1)[1].rstrip(") ").strip()
-        severity_order = SEVERITY_ORDER
-        return severity_order.get(severity, 99)
+        return _expected_severity_rank_from_failure_impl(failure)
 
     @staticmethod
     def _resolve_failed_gates_view(
@@ -131,23 +96,12 @@ class ReportBuilder:
         gate_failure_severity_priority: list[dict[str, Any]],
     ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
         """Resolve failed-gates summary and ordering from persisted report views first."""
-        report_views = dict(summary.get("report_views", {}) or {})
-        failed_gates_view = dict(report_views.get("only_failed_gates", {}) or {})
-        persisted_summary = dict(failed_gates_view.get("summary", {}) or {})
-        persisted_priority = list(failed_gates_view.get("priority", []) or [])
-        persisted_severity_priority = list(failed_gates_view.get("severity_priority", []) or [])
-
-        if persisted_summary:
-            gate_failure_summary = persisted_summary
-        if persisted_priority:
-            gate_failure_priority = persisted_priority
-        if persisted_severity_priority:
-            gate_failure_severity_priority = persisted_severity_priority
-
-        if not gate_failure_severity_priority:
-            gate_failure_severity_priority = GateEvaluator.build_gate_failure_severity_priority(gate_failure_summary)
-
-        return gate_failure_summary, gate_failure_priority, gate_failure_severity_priority
+        return _resolve_failed_gates_view_impl(
+            summary=summary,
+            gate_failure_summary=gate_failure_summary,
+            gate_failure_priority=gate_failure_priority,
+            gate_failure_severity_priority=gate_failure_severity_priority,
+        )
 
     @staticmethod
     def _filter_failed_gates_view(
@@ -158,45 +112,13 @@ class ReportBuilder:
         resolved_only_pass_failure: str | None,
     ) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]], bool]:
         """Apply gate filters to the normalized failed-gates view."""
-        filtered_summary = dict(gate_failure_summary)
-        filtered_priority = list(gate_failure_priority)
-        filtered_severity_priority = list(gate_failure_severity_priority)
-
-        if only_expected_severity:
-            filtered_severity_priority = [
-                row for row in filtered_severity_priority if row.get("severity") == only_expected_severity
-            ]
-            filtered_priority = [
-                row for row in filtered_priority if row.get("strictest_expected_severity") == only_expected_severity
-            ]
-            filtered_summary["require_pass_severity_failures_by_expected_severity"] = {
-                row.get("severity", "unknown"): row.get("failure_count", 0) for row in filtered_severity_priority
-            }
-
-        if resolved_only_pass_failure:
-            filtered_priority = [row for row in filtered_priority if row.get("pass_name") == resolved_only_pass_failure]
-
-        filtered_summary["require_pass_severity_failures_by_pass"] = {
-            row.get("pass_name", "unknown"): list(row.get("failures", [])) for row in filtered_priority
-        }
-        filtered_summary["require_pass_severity_failures"] = [
-            failure for row in filtered_priority for failure in row.get("failures", [])
-        ]
-        filtered_summary["require_pass_severity_failure_count"] = len(
-            filtered_summary["require_pass_severity_failures"]
+        return _filter_failed_gates_view_impl(
+            gate_failure_summary=gate_failure_summary,
+            gate_failure_priority=gate_failure_priority,
+            gate_failure_severity_priority=gate_failure_severity_priority,
+            only_expected_severity=only_expected_severity,
+            resolved_only_pass_failure=resolved_only_pass_failure,
         )
-        filtered_summary["require_pass_severity_failed"] = bool(filtered_summary["require_pass_severity_failures"])
-
-        if resolved_only_pass_failure:
-            severity_counts: dict[str, int] = {}
-            for row in filtered_priority:
-                severity = row.get("strictest_expected_severity", "unknown")
-                severity_counts[severity] = severity_counts.get(severity, 0) + int(row.get("failure_count", 0))
-            filtered_summary["require_pass_severity_failures_by_expected_severity"] = severity_counts
-            filtered_severity_priority = GateEvaluator.build_gate_failure_severity_priority(filtered_summary)
-
-        filtered_failed = bool(filtered_summary.get("require_pass_severity_failure_count", 0))
-        return filtered_summary, filtered_priority, filtered_severity_priority, filtered_failed
 
     @staticmethod
     def build_only_mismatches_payload(
@@ -228,33 +150,34 @@ class ReportBuilder:
         validation_policy: dict[str, Any] | None,
     ) -> dict[str, Any]:
         """Build the filtered payload for --only-mismatches view."""
-        filtered_payload = dict(payload)
-        filtered_payload["mutations"] = filtered_mutations
-        filtered_payload["summary"] = {
-            **filtered_summary,
-            "only_mismatches": True,
-            "filtered_passes": filtered_passes,
-            "mismatch_count_by_pass": mismatch_counts_by_pass,
-            "mismatch_observables_by_pass": mismatch_observables_by_pass,
-        }
-        filtered_payload["only_mismatches_view"] = {
-            "passes": filtered_passes,
-            "counts_by_pass": mismatch_counts_by_pass,
-            "observables_by_pass": mismatch_observables_by_pass,
-            "priority": persisted_mismatch_priority,
-            "severity_rows": mismatch_severity_rows,
-            "pass_context": mismatch_pass_context,
-            "degraded_passes": mismatch_degraded_passes,
-            "requested_validation_mode": requested_validation_mode,
-            "effective_validation_mode": effective_validation_mode,
-            "degraded_validation": degraded_validation,
-            "failed_gates": failed_gates,
-        }
-        filtered_payload["gate_evaluation"] = gate_evaluation
-        filtered_payload["gate_failures"] = gate_failure_summary
-        filtered_payload["gate_failure_priority"] = gate_failure_priority
-        filtered_payload["gate_failure_severity_priority"] = gate_failure_severity_priority
-        return filtered_payload
+        return _build_only_mismatches_payload_impl(
+            payload=payload,
+            summary=summary,
+            filtered_summary=filtered_summary,
+            filtered_mutations=filtered_mutations,
+            filtered_passes=filtered_passes,
+            mismatch_counts_by_pass=mismatch_counts_by_pass,
+            mismatch_observables_by_pass=mismatch_observables_by_pass,
+            persisted_mismatch_priority=persisted_mismatch_priority,
+            mismatch_severity_rows=mismatch_severity_rows,
+            mismatch_pass_context=mismatch_pass_context,
+            requested_validation_mode=requested_validation_mode,
+            effective_validation_mode=effective_validation_mode,
+            degraded_validation=degraded_validation,
+            mismatch_degraded_passes=mismatch_degraded_passes,
+            degraded_passes=degraded_passes,
+            degradation_roles=degradation_roles,
+            failed_gates=failed_gates,
+            pass_support=pass_support,
+            gate_evaluation=gate_evaluation,
+            gate_failure_summary=gate_failure_summary,
+            gate_failure_priority=gate_failure_priority,
+            gate_failure_severity_priority=gate_failure_severity_priority,
+            min_severity=min_severity,
+            only_expected_severity=only_expected_severity,
+            resolved_only_pass_failure=resolved_only_pass_failure,
+            validation_policy=validation_policy,
+        )
 
     @staticmethod
     def build_report_filters(
@@ -274,19 +197,19 @@ class ReportBuilder:
         resolved_only_pass_failure: str | None,
     ) -> dict[str, Any]:
         """Build a report_filters dict for machine-readable consumers."""
-        return {
-            "only_pass": resolved_only_pass,
-            "only_status": only_status,
-            "only_degraded": only_degraded,
-            "only_failed_gates": only_failed_gates,
-            "only_risky_passes": only_risky_passes,
-            "only_uncovered_passes": only_uncovered_passes,
-            "only_covered_passes": only_covered_passes,
-            "only_clean_passes": only_clean_passes,
-            "only_structural_risk": only_structural_risk,
-            "only_symbolic_risk": only_symbolic_risk,
-            "only_mismatches": only_mismatches,
-            "min_severity": min_severity,
-            "only_expected_severity": only_expected_severity,
-            "only_pass_failure": resolved_only_pass_failure,
-        }
+        return _build_report_filters_impl(
+            resolved_only_pass=resolved_only_pass,
+            only_status=only_status,
+            only_degraded=only_degraded,
+            only_failed_gates=only_failed_gates,
+            only_risky_passes=only_risky_passes,
+            only_uncovered_passes=only_uncovered_passes,
+            only_covered_passes=only_covered_passes,
+            only_clean_passes=only_clean_passes,
+            only_structural_risk=only_structural_risk,
+            only_symbolic_risk=only_symbolic_risk,
+            only_mismatches=only_mismatches,
+            min_severity=min_severity,
+            only_expected_severity=only_expected_severity,
+            resolved_only_pass_failure=resolved_only_pass_failure,
+        )
