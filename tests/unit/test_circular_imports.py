@@ -67,6 +67,7 @@ REPORTING_MODULES = [
     "r2morph.core.engine_wiring",
     "r2morph.core.engine_mutations",
     "r2morph.core.parallel_planner",
+    "r2morph.core.parallel_executor_models",
     "r2morph.core.binary_file_lock",
     "r2morph.core.analysis_cache_models",
     "r2morph.core.analysis_cache_storage",
