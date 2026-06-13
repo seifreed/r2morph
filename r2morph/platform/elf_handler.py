@@ -631,52 +631,40 @@ class ELFHandler:
 
         try:
             elf = lief.parse(str(self.binary_path))
-            if elf is None:
+            if elf is None or not isinstance(elf, lief.ELF.Binary):
                 return {"symtab": [], "dynsym": []}
 
-            result: dict[str, list[dict[str, Any]]] = {"symtab": [], "dynsym": []}
-
-            if not isinstance(elf, lief.ELF.Binary):
-                return result
-
-            for sym in elf.symtab_symbols:
-                if len(result["symtab"]) >= MAX_SYMBOLS:
-                    logger.warning(f"Truncating symbol table at {MAX_SYMBOLS} entries")
-                    break
-                result["symtab"].append(
-                    {
-                        "name": sym.name,
-                        "value": sym.value,
-                        "size": sym.size,
-                        "type": str(sym.type).split(".")[-1],
-                        "binding": str(sym.binding).split(".")[-1],
-                        "visibility": str(sym.visibility).split(".")[-1],
-                        "shndx": sym.shndx,
-                    }
-                )
-
-            for sym in elf.dynamic_symbols:
-                if len(result["dynsym"]) >= MAX_SYMBOLS:
-                    logger.warning(f"Truncating dynamic symbol table at {MAX_SYMBOLS} entries")
-                    break
-                result["dynsym"].append(
-                    {
-                        "name": sym.name,
-                        "value": sym.value,
-                        "size": sym.size,
-                        "type": str(sym.type).split(".")[-1],
-                        "binding": str(sym.binding).split(".")[-1],
-                        "visibility": str(sym.visibility).split(".")[-1],
-                        "shndx": sym.shndx,
-                    }
-                )
-
+            result = {
+                "symtab": self._collect_symbols(elf.symtab_symbols, label="symbol table"),
+                "dynsym": self._collect_symbols(elf.dynamic_symbols, label="dynamic symbol table"),
+            }
             logger.debug(f"Found {len(result['symtab'])} static and {len(result['dynsym'])} dynamic symbols")
             return result
 
         except Exception as e:
             logger.error(f"Failed to get symbol tables: {e}")
             return {"symtab": [], "dynsym": []}
+
+    @staticmethod
+    def _collect_symbols(symbols: Any, *, label: str) -> list[dict[str, Any]]:
+        """Build symbol dicts from a lief symbol iterable, capped at MAX_SYMBOLS."""
+        collected: list[dict[str, Any]] = []
+        for sym in symbols:
+            if len(collected) >= MAX_SYMBOLS:
+                logger.warning(f"Truncating {label} at {MAX_SYMBOLS} entries")
+                break
+            collected.append(
+                {
+                    "name": sym.name,
+                    "value": sym.value,
+                    "size": sym.size,
+                    "type": str(sym.type).split(".")[-1],
+                    "binding": str(sym.binding).split(".")[-1],
+                    "visibility": str(sym.visibility).split(".")[-1],
+                    "shndx": sym.shndx,
+                }
+            )
+        return collected
 
     def preserve_symbols(self) -> bool:
         """Preserve symbol table integrity after binary transformations.
