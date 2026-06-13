@@ -13,12 +13,10 @@ from r2morph.reporting.filtered_summary_symbolic import (
     _populate_symbolic_coverage_and_severity,
     _populate_symbolic_issue_passes,
 )
-from r2morph.reporting.report_helpers import (
+from r2morph.reporting.report_helpers import _sort_pass_evidence, _summary_first, _visible_rows
+from r2morph.reporting.report_view_resolution import (
     _resolve_general_report_views,
     _resolve_summary_pass_sources,
-    _sort_pass_evidence,
-    _summary_first,
-    _visible_rows,
 )
 
 

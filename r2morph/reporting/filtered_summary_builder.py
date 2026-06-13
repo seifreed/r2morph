@@ -12,9 +12,7 @@ from r2morph.reporting.filtered_summary_sections import (
     _build_filtered_summary_risk_coverage_sections,
     _populate_filtered_summary_pass_sections,
 )
-from r2morph.reporting.report_helpers import (
-    _resolve_general_report_views,
-)
+from r2morph.reporting.report_view_resolution import _resolve_general_report_views
 
 
 def _build_base_filtered_summary(
@@ -268,7 +266,7 @@ def _build_general_filtered_summary(
     summary_general_summary = dict(summary_report_views.get("general_summary", {}) or {})
     if not summary_general_summary:
         summary_general_summary = dict(filtered_summary.get("general_summary", {}) or {})
-    from r2morph.reporting.report_helpers import _resolve_general_filtered_passes
+    from r2morph.reporting.report_view_resolution import _resolve_general_filtered_passes
 
     filtered_summary["passes"] = _resolve_general_filtered_passes(
         existing_passes=filtered_summary["passes"],

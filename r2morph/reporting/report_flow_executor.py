@@ -10,7 +10,7 @@ from r2morph.reporting.filtered_summary_builder import (
     _build_only_mismatches_payload,
     _build_report_filters,
 )
-from r2morph.reporting.report_helpers import _finalize_report_output
+from r2morph.reporting.report_output_policy import _finalize_report_output
 from r2morph.reporting.report_rendering_sections import (
     _render_degradation_sections,
     _render_gate_sections,
