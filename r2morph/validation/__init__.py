@@ -23,7 +23,7 @@ _LAZY_EXPORTS = {
     "ContinuousFuzzer": "r2morph.validation.mutation_fuzzer",
     "create_fuzzer": "r2morph.validation.mutation_fuzzer",
     "create_continuous_fuzzer": "r2morph.validation.mutation_fuzzer",
-    "RegressionTester": "r2morph.validation.regression",
+    "RegressionTester": "r2morph.validation.regression_legacy",
     "RegressionTest": "r2morph.validation.regression",
     "RegressionResult": "r2morph.validation.regression",
     "RegressionTestFramework": "r2morph.validation.regression",
