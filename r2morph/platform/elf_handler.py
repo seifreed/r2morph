@@ -56,6 +56,12 @@ PT_GNU_STACK = 0x6474E551
 PT_GNU_RELRO = 0x6474E552
 PT_GNU_PROPERTY = 0x6474E553
 
+# Sanity bounds when parsing untrusted ELF data
+MAX_SECTION_NAME = 256
+MAX_SECTIONS = 10000
+MAX_SECTION_ENTRY_SIZE = 1024
+MAX_SYMBOLS = 100000
+
 
 class ELFHandler:
     """Handles ELF-specific operations for binary analysis and transformation.
@@ -261,7 +267,6 @@ class ELFHandler:
         if end == -1:
             end = len(shstrtab_data)
 
-        MAX_SECTION_NAME = 256
         if end - name_offset > MAX_SECTION_NAME:
             end = name_offset + MAX_SECTION_NAME
 
@@ -332,8 +337,6 @@ class ELFHandler:
                 sections = []
                 f.seek(header["e_shoff"])
 
-                MAX_SECTIONS = 10000
-                MAX_SECTION_ENTRY_SIZE = 1024
                 section_count = min(header["e_shnum"], MAX_SECTIONS)
                 section_entry_size = min(header["e_shentsize"], MAX_SECTION_ENTRY_SIZE)
 
@@ -635,7 +638,6 @@ class ELFHandler:
             if not isinstance(elf, lief.ELF.Binary):
                 return result
 
-            MAX_SYMBOLS = 100000
             for sym in elf.symtab_symbols:
                 if len(result["symtab"]) >= MAX_SYMBOLS:
                     logger.warning(f"Truncating symbol table at {MAX_SYMBOLS} entries")
