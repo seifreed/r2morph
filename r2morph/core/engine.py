@@ -11,6 +11,9 @@ from r2morph.core.binary import Binary
 from r2morph.core.constants import SEVERITY_ORDER as SEVERITY_ORDER
 from r2morph.core.engine_lifecycle import analyze as analyze_lifecycle
 from r2morph.core.engine_lifecycle import load_binary as load_binary_lifecycle
+from r2morph.core.engine_mutations import add_mutation as add_mutation_lifecycle
+from r2morph.core.engine_mutations import mutations as mutations_lifecycle
+from r2morph.core.engine_mutations import remove_mutation as remove_mutation_lifecycle
 from r2morph.core.engine_output import build_report as build_report_output
 from r2morph.core.engine_output import save_binary as save_binary_output
 from r2morph.core.engine_output import save_report as save_report_output
@@ -84,13 +87,7 @@ class MorphEngine:
 
     @property
     def mutations(self) -> Sequence[MutationPassProtocol]:
-        """
-        Get the registered mutation passes.
-
-        Returns:
-            Registered mutation passes in the pipeline
-        """
-        return self.pipeline.passes
+        return mutations_lifecycle(self)
 
     def load_binary(self, path: str | Path, writable: bool = True) -> "MorphEngine":
         return load_binary_lifecycle(self, path, writable=writable)
@@ -104,65 +101,10 @@ class MorphEngine:
         return auto_detect_analysis_level(self)
 
     def add_mutation(self, mutation: "MutationPassProtocol | str") -> "MorphEngine":
-        """
-        Add a mutation pass to the pipeline.
-
-        Automatically adjusts mutation parameters when in memory-efficient mode.
-
-        Args:
-            mutation: Mutation pass instance or pass name (e.g. "nop", "substitute",
-                      "register", "expand", "block")
-
-        Returns:
-            Self for method chaining
-        """
-        if isinstance(mutation, str):
-            mutation = self._resolve_mutation_pass(mutation)
-        # Adjust mutation config for large binaries to prevent OOM
-        if self._memory_efficient_mode:
-            mutation.configure_for_memory_constraints(0.4)
-
-        self.pipeline.add_pass(mutation)
-        logger.debug(f"Added mutation: {mutation.__class__.__name__}")
-        return self
-
-    @staticmethod
-    def _resolve_mutation_pass(name: str) -> MutationPassProtocol:
-        """Resolve a mutation pass name to an instance."""
-        from r2morph.mutations import (
-            BlockReorderingPass,
-            InstructionExpansionPass,
-            InstructionSubstitutionPass,
-            NopInsertionPass,
-            RegisterSubstitutionPass,
-        )
-
-        pass_map: dict[str, type] = {
-            "nop": NopInsertionPass,
-            "substitute": InstructionSubstitutionPass,
-            "register": RegisterSubstitutionPass,
-            "expand": InstructionExpansionPass,
-            "block": BlockReorderingPass,
-        }
-        cls = pass_map.get(name)
-        if cls is None:
-            raise ValueError(f"Unknown mutation pass: {name!r}. Valid names: {list(pass_map)}")
-        result: MutationPassProtocol = cls()
-        return result
+        return add_mutation_lifecycle(self, mutation)
 
     def remove_mutation(self, mutation_name: str) -> "MorphEngine":
-        """
-        Remove a mutation pass from the pipeline by name.
-
-        Args:
-            mutation_name: Name of the mutation to remove
-
-        Returns:
-            Self for method chaining
-        """
-        self.pipeline.remove_pass_by_name(mutation_name)
-        logger.debug(f"Removed mutation: {mutation_name}")
-        return self
+        return remove_mutation_lifecycle(self, mutation_name)
 
     def run(
         self,
