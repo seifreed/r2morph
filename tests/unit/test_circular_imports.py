@@ -31,6 +31,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.filtered_summary_payloads",
     "r2morph.reporting.filtered_summary_population",
     "r2morph.reporting.filtered_summary_discarded",
+    "r2morph.reporting.filtered_summary_pass_details",
     "r2morph.reporting.filtered_summary_risk",
     "r2morph.reporting.filtered_summary_triage",
     "r2morph.reporting.filtered_summary_sections",
