@@ -8,6 +8,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.code_virtualization_vm",
     "r2morph.mutations.code_virtualization_multi_vm",
     "r2morph.mutations.code_virtualization",
+    "r2morph.mutations.semantic_validation_models",
 ]
 
 
