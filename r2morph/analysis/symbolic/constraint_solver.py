@@ -39,6 +39,11 @@ claripy = _claripy
 
 logger = logging.getLogger(__name__)
 
+# Bound recursion when translating a parsed expression tree into Z3 so that an
+# adversarially nested expression from a sample cannot exhaust the stack. 256 is
+# far above any real constraint yet well under Python's default recursion limit.
+MAX_CONSTRAINT_AST_DEPTH = 256
+
 
 class ConstraintType(Enum):
     """Types of constraints in symbolic execution."""
@@ -471,7 +476,9 @@ class ConstraintSolver:
 
         logger.debug(f"Parsing expression: {expr}")
 
-        def to_z3(node: ast.AST) -> Any | None:
+        def to_z3(node: ast.AST, _depth: int = 0) -> Any | None:
+            if _depth > MAX_CONSTRAINT_AST_DEPTH:
+                return None
             if isinstance(node, ast.Name):
                 if node.id not in z3_vars:
                     z3_vars[node.id] = z3.BitVec(node.id, bit_width)
@@ -483,7 +490,7 @@ class ConstraintSolver:
                     return z3.BitVecVal(node.value, bit_width)
                 return None
             if isinstance(node, ast.UnaryOp):
-                operand = to_z3(node.operand)
+                operand = to_z3(node.operand, _depth + 1)
                 if operand is None:
                     return None
                 if isinstance(node.op, ast.Invert):
@@ -493,8 +500,8 @@ class ConstraintSolver:
                 if isinstance(node.op, ast.USub):
                     return -operand
             if isinstance(node, ast.BinOp):
-                left = to_z3(node.left)
-                right = to_z3(node.right)
+                left = to_z3(node.left, _depth + 1)
+                right = to_z3(node.right, _depth + 1)
                 if left is None or right is None:
                     return None
                 if isinstance(node.op, ast.Add):
@@ -516,7 +523,7 @@ class ConstraintSolver:
                 if isinstance(node.op, ast.Mod):
                     return left % right
             if isinstance(node, ast.BoolOp):
-                values = [to_z3(value) for value in node.values]
+                values = [to_z3(value, _depth + 1) for value in node.values]
                 if any(value is None for value in values):
                     return None
                 if isinstance(node.op, ast.And):
@@ -524,8 +531,8 @@ class ConstraintSolver:
                 if isinstance(node.op, ast.Or):
                     return z3.Or(*values)
             if isinstance(node, ast.Compare) and len(node.ops) == 1 and len(node.comparators) == 1:
-                left = to_z3(node.left)
-                right = to_z3(node.comparators[0])
+                left = to_z3(node.left, _depth + 1)
+                right = to_z3(node.comparators[0], _depth + 1)
                 if left is None or right is None:
                     return None
                 op = node.ops[0]
