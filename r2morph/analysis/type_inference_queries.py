@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.analysis.type_inference_types import PrimitiveType, StructField
 from r2morph.core.binary import Binary
 
 
 def get_struct_layout(factory: Any, binary: Binary, address: int) -> list[Any] | None:
     """Infer struct layout from access patterns."""
-    from r2morph.analysis.type_inference import StructField
 
     fields: list[Any] = []
 
@@ -40,8 +40,6 @@ def get_struct_layout(factory: Any, binary: Binary, address: int) -> list[Any] |
 
 def infer_access_type(factory: Any, binary: Binary, xref: dict) -> Any | None:
     """Infer the type of a memory access."""
-    from r2morph.analysis.type_inference import PrimitiveType
-
     return factory.create_primitive_type(PrimitiveType.UINT64)
 
 

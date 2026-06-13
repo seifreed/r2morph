@@ -106,15 +106,13 @@ from r2morph.analysis.switch_table import (
     JumpTableType,
     SwitchTableAnalyzer,
 )
-from r2morph.analysis.type_inference import (
+from r2morph.analysis.type_inference import TypeInference, infer_type, propagate_types
+from r2morph.analysis.type_inference_types import (
     PrimitiveType,
     StructField,
     TypeCategory,
-    TypeInference,
     TypeInferenceResult,
     TypeInfo,
-    infer_type,
-    propagate_types,
 )
 
 _SYMBOLIC_NAMES = frozenset(
