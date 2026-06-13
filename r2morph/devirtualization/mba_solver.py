@@ -14,6 +14,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from r2morph.core.safe_eval import safe_eval_arithmetic_node
+
 if TYPE_CHECKING:
     import z3
 else:
@@ -25,23 +27,6 @@ else:
 Z3_AVAILABLE = z3 is not None
 
 logger = logging.getLogger(__name__)
-
-# Safe operator tables for evaluating arithmetic AST nodes (see _safe_eval_node)
-_SAFE_BINOPS = {
-    ast.BitAnd: lambda a, b: a & b,
-    ast.BitOr: lambda a, b: a | b,
-    ast.BitXor: lambda a, b: a ^ b,
-    ast.Add: lambda a, b: a + b,
-    ast.Sub: lambda a, b: a - b,
-    ast.Mult: lambda a, b: a * b,
-    ast.LShift: lambda a, b: a << b,
-    ast.RShift: lambda a, b: a >> b,
-}
-_SAFE_UNARYOPS = {
-    ast.Invert: lambda a: ~a,
-    ast.USub: lambda a: -a,
-    ast.UAdd: lambda a: +a,
-}
 
 
 class MBAComplexity(Enum):
@@ -431,32 +416,11 @@ class MBASolver:
 
         try:
             tree = ast.parse(expr, mode="eval")
-            result = self._safe_eval_node(tree.body)
+            result = safe_eval_arithmetic_node(tree.body)
             return int(result)
         except Exception as e:
             logger.debug(f"Failed to evaluate expression '{expr}': {e}")
             return 0
-
-    @staticmethod
-    def _safe_eval_node(node: Any) -> int:
-        """Recursively evaluate an AST node, allowing only safe operations."""
-        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
-            return int(node.value)
-        elif isinstance(node, ast.BinOp):
-            op_func = _SAFE_BINOPS.get(type(node.op))
-            if op_func is None:
-                raise ValueError(f"Unsupported binary operator: {type(node.op).__name__}")
-            left = MBASolver._safe_eval_node(node.left)
-            right = MBASolver._safe_eval_node(node.right)
-            return int(op_func(left, right))
-        elif isinstance(node, ast.UnaryOp):
-            unary_func = _SAFE_UNARYOPS.get(type(node.op))
-            if unary_func is None:
-                raise ValueError(f"Unsupported unary operator: {type(node.op).__name__}")
-            operand = MBASolver._safe_eval_node(node.operand)
-            return int(unary_func(operand))
-        else:
-            raise ValueError(f"Unsupported AST node type: {type(node).__name__}")
 
     def _find_simple_equivalent(self, truth_table: dict[tuple, int], variables: list[str]) -> str | None:
         """Find simple equivalent expression from truth table."""

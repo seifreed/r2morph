@@ -45,3 +45,17 @@ def test_syntia_vm_handler_analysis_and_exports(tmp_path):
     )
     native = framework._generate_equivalent_native_code(handler_sem)
     assert native is not None
+
+
+def test_syntia_evaluate_expression_characterization():
+    """Pin SyntiaFramework._evaluate_expression: variable substitution, the
+    32-bit mask, and the safe-character guard (oracle for routing it through
+    the shared safe_eval_arithmetic_node helper)."""
+    framework = SyntiaFramework()
+
+    assert framework._evaluate_expression("x ^ y", {"x": 5, "y": 3}) == 6
+    assert framework._evaluate_expression("x * y", {"x": 4, "y": 3}) == 12
+    # ~0 is -1, masked to 32 bits
+    assert framework._evaluate_expression("~x", {"x": 0}) == 0xFFFFFFFF
+    # disallowed characters short-circuit to None
+    assert framework._evaluate_expression("x and y", {"x": 1, "y": 1}) is None
