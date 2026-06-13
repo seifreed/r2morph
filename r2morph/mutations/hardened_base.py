@@ -7,6 +7,7 @@ Extends CFG-aware mutations with pattern preservation and integrity validation.
 from __future__ import annotations
 
 import logging
+import random
 from abc import abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
@@ -364,7 +365,6 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
         Returns:
             Mutation result dictionary
         """
-        import random
 
         mutations: list[dict[str, Any]] = []
         safe_mutations = 0
@@ -549,7 +549,6 @@ class HardenedOpaquePredicates(HardenedMutationPass):
         Returns:
             List of mutation opportunities
         """
-        import random
 
         opportunities: list[dict[str, Any]] = []
 
