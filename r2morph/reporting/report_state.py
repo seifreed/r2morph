@@ -11,10 +11,17 @@ This module handles resolution of report state including:
 from collections.abc import Callable
 from typing import Any
 
-
-def _normalized_pass_map(normalized_results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """Build a normalized pass map from results."""
-    return {str(row.get("pass_name", "")): dict(row) for row in normalized_results if row.get("pass_name")}
+from r2morph.reporting.report_helpers import (
+    _has_structural_risk,
+    _has_symbolic_risk,
+    _is_clean_pass,
+    _is_covered_pass,
+    _is_risky_pass,
+    _is_uncovered_pass,
+    _normalized_pass_map,
+    _pass_names_from_triage_rows,
+    _summary_first,
+)
 
 
 def resolve_general_symbolic_state(
@@ -147,18 +154,6 @@ def resolve_mismatch_view(
             observables_by_pass[pass_name] = sorted(merged)
 
     return counts_by_pass, observables_by_pass, mismatch_priority or mismatch_view
-
-
-def _summary_first(summary: dict[str, Any], key: str, fallback: Any) -> Any:
-    """Return a persisted summary value when present, otherwise the fallback."""
-    value = summary.get(key)
-    if value is None:
-        return fallback
-    if isinstance(value, (list, dict)) and not value:
-        return fallback
-    return value
-
-
 def resolve_pass_filter_sets(
     *,
     summary: dict[str, Any],
@@ -298,108 +293,3 @@ def resolve_pass_filter_sets(
         resolved[kind] = matches
 
     return resolved
-
-
-def _pass_names_from_triage_rows(
-    triage_rows: list[dict[str, Any]],
-    kind: str,
-) -> set[str]:
-    """Derive pass sets from persisted triage rows when buckets are missing."""
-    selected: set[str] = set()
-    for row in triage_rows:
-        pass_name = str(row.get("pass_name", "")).strip()
-        if not pass_name:
-            continue
-        severity = str(row.get("severity", "not-requested"))
-        structural_issue_count = int(row.get("structural_issue_count", 0))
-        symbolic_mismatch = int(row.get("symbolic_binary_mismatched_regions", 0))
-        symbolic_requested = int(row.get("symbolic_requested", 0))
-        without_coverage = int(row.get("without_coverage", 0))
-        issue_count = int(row.get("issue_count", 0))
-        clean = (
-            structural_issue_count == 0
-            and symbolic_mismatch == 0
-            and severity in {"clean", "not-requested"}
-            and issue_count == 0
-        )
-        covered = clean and symbolic_requested > 0 and without_coverage == 0
-        uncovered = clean and not covered
-        symbolic_risk = (
-            symbolic_mismatch > 0 or severity in {"mismatch", "without-coverage", "bounded-only"} or issue_count > 0
-        )
-        structural_risk = structural_issue_count > 0
-        risky = symbolic_risk or structural_risk
-
-        if kind == "risky" and risky:
-            selected.add(pass_name)
-        elif kind == "structural" and structural_risk:
-            selected.add(pass_name)
-        elif kind == "symbolic" and symbolic_risk:
-            selected.add(pass_name)
-        elif kind == "clean" and clean:
-            selected.add(pass_name)
-        elif kind == "covered" and covered:
-            selected.add(pass_name)
-        elif kind == "uncovered" and uncovered:
-            selected.add(pass_name)
-
-    return selected
-
-
-def _is_risky_pass(evidence: dict[str, Any] | None, symbolic: dict[str, Any] | None) -> bool:
-    e = evidence or {}
-    s = symbolic or {}
-    structural_issues = int(e.get("structural_issue_count", 0))
-    symbolic_mismatch = int(e.get("symbolic_binary_mismatched_regions", 0))
-    severity = str(s.get("severity", "not-requested"))
-    issue_count = int(s.get("issue_count", 0))
-    return (
-        structural_issues > 0
-        or symbolic_mismatch > 0
-        or severity in {"mismatch", "without-coverage", "bounded-only"}
-        or issue_count > 0
-    )
-
-
-def _has_structural_risk(evidence: dict[str, Any] | None, symbolic: dict[str, Any] | None) -> bool:
-    e = evidence or {}
-    return int(e.get("structural_issue_count", 0)) > 0
-
-
-def _has_symbolic_risk(evidence: dict[str, Any] | None, symbolic: dict[str, Any] | None) -> bool:
-    e = evidence or {}
-    s = symbolic or {}
-    symbolic_mismatch = int(e.get("symbolic_binary_mismatched_regions", 0))
-    severity = str(s.get("severity", "not-requested"))
-    issue_count = int(s.get("issue_count", 0))
-    return symbolic_mismatch > 0 or severity in {"mismatch", "without-coverage", "bounded-only"} or issue_count > 0
-
-
-def _is_clean_pass(evidence: dict[str, Any] | None, symbolic: dict[str, Any] | None) -> bool:
-    e = evidence or {}
-    s = symbolic or {}
-    structural_issues = int(e.get("structural_issue_count", 0))
-    symbolic_mismatch = int(e.get("symbolic_binary_mismatched_regions", 0))
-    severity = str(s.get("severity", "not-requested"))
-    issue_count = int(s.get("issue_count", 0))
-    return (
-        structural_issues == 0
-        and symbolic_mismatch == 0
-        and severity in {"clean", "not-requested"}
-        and issue_count == 0
-    )
-
-
-def _is_covered_pass(evidence: dict[str, Any] | None, symbolic: dict[str, Any] | None) -> bool:
-    e = evidence or {}
-    s = symbolic or {}
-    symbolic_requested = int(s.get("symbolic_requested", 0))
-    without_coverage = int(s.get("without_coverage", 0))
-    checked_regions = int(e.get("symbolic_binary_regions_checked", 0))
-    return (
-        _is_clean_pass(evidence, symbolic) and symbolic_requested > 0 and without_coverage == 0 and checked_regions > 0
-    )
-
-
-def _is_uncovered_pass(evidence: dict[str, Any] | None, symbolic: dict[str, Any] | None) -> bool:
-    return _is_clean_pass(evidence, symbolic) and not _is_covered_pass(evidence, symbolic)
