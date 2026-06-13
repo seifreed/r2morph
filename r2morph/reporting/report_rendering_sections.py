@@ -13,17 +13,10 @@ from r2morph.reporting.report_helpers import _sort_pass_evidence
 from r2morph.reporting.report_rendering_flow_sections import (
     _render_degradation_sections as _render_degradation_sections,
 )
-from r2morph.reporting.report_rendering_flow_sections import _render_gate_sections as _render_gate_sections
-
-_console: Console | None = None
-
-
-def _get_console() -> Console:
-    global _console
-    if _console is None:
-        _console = Console()
-    return _console
-
+from r2morph.reporting.report_rendering_flow_sections import (
+    _render_gate_sections as _render_gate_sections,
+)
+from r2morph.reporting.report_rendering_primitives import _get_console
 
 SEVERITY_ORDER = {
     "mismatch": 0,

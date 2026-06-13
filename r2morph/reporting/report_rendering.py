@@ -8,38 +8,16 @@ depends on them one-way (never the reverse).
 from typing import Any
 
 from rich.console import Console
-from rich.table import Table
 
-from r2morph.reporting.report_rendering_sections import _get_console
+from r2morph.reporting.report_rendering_primitives import (
+    CONSOLE as _CONSOLE,
+)
+from r2morph.reporting.report_rendering_primitives import (
+    _get_console,
+    create_table,
+)
 
-# Backward-compatible alias; prefer _get_console() for lazy initialization.
-
-
-class _LazyConsole:
-    """Thin proxy so ``CONSOLE.print(...)`` keeps working."""
-
-    def __getattr__(self, name: str) -> Any:
-        return getattr(_get_console(), name)
-
-
-CONSOLE = _LazyConsole()
-
-
-def create_table(title: str, columns: list[tuple[str, str]]) -> Table:
-    """
-    Create a styled table with columns.
-
-    Args:
-        title: Table title
-        columns: List of (column_name, style) tuples
-
-    Returns:
-        Configured Table instance
-    """
-    table = Table(title=title)
-    for name, style in columns:
-        table.add_column(name, style=style)
-    return table
+CONSOLE = _CONSOLE
 
 
 def render_pass_capabilities(

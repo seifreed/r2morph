@@ -4,16 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from rich.console import Console
-
-_console: Console | None = None
-
-
-def _get_console() -> Console:
-    global _console
-    if _console is None:
-        _console = Console()
-    return _console
+from r2morph.reporting.report_rendering_primitives import _get_console
 
 
 def _render_degradation_sections(
