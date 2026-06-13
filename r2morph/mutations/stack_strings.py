@@ -96,6 +96,18 @@ def _append_optional_junk(
         junk_used.append(junk[0])
 
 
+def _format_plain_stack_byte(offset: int, byte: int, stack_reg: str) -> str:
+    """Format a single plain (unencoded) byte store onto the stack."""
+    if byte == 0:
+        return f"    mov byte [{stack_reg}+{offset}], 0"
+    if 32 < byte < 128:
+        char = chr(byte)
+        if char in "'\\":
+            return f"    mov byte [{stack_reg}+{offset}], {byte}  ; '{char}'"
+        return f"    mov byte [{stack_reg}+{offset}], '{char}'"
+    return f"    mov byte [{stack_reg}+{offset}], 0x{byte:02X}"
+
+
 def xor_bytes(data: bytes, key: int) -> bytes:
     """XOR each byte with a single key."""
     return bytes(b ^ key for b in data)
@@ -260,16 +272,7 @@ def generate_stack_string_x64(
 
     if encoding == EncodingScheme.PLAIN:
         for i, b in enumerate(string_data):
-            if b == 0:
-                asm_lines.append(f"    mov byte [rsp+{i}], 0")
-            elif b < 128 and b > 32:
-                char = chr(b)
-                if char in "'\\":
-                    asm_lines.append(f"    mov byte [rsp+{i}], {b}  ; '{char}'")
-                else:
-                    asm_lines.append(f"    mov byte [rsp+{i}], '{char}'")
-            else:
-                asm_lines.append(f"    mov byte [rsp+{i}], 0x{b:02X}")
+            asm_lines.append(_format_plain_stack_byte(i, b, "rsp"))
 
             _append_optional_junk(
                 asm_lines,
@@ -432,16 +435,7 @@ def generate_stack_string_x86(
 
     if encoding == EncodingScheme.PLAIN:
         for i, b in enumerate(string_data):
-            if b == 0:
-                asm_lines.append(f"    mov byte [esp+{i}], 0")
-            elif 32 < b < 128:
-                char = chr(b)
-                if char in "'\\":
-                    asm_lines.append(f"    mov byte [esp+{i}], {b}  ; '{char}'")
-                else:
-                    asm_lines.append(f"    mov byte [esp+{i}], '{char}'")
-            else:
-                asm_lines.append(f"    mov byte [esp+{i}], 0x{b:02X}")
+            asm_lines.append(_format_plain_stack_byte(i, b, "esp"))
 
             _append_optional_junk(
                 asm_lines,
