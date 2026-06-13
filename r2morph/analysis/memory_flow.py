@@ -250,6 +250,7 @@ class MemoryFlowAnalyzer:
         size = 4  # Default size
         address = 0
         location_name = ""
+        registers: list[str] = []
 
         if "mov" in disasm and "[" in disasm:
             read_match = re.search(r"mov\s+(\w+),\s+\[([^\]]+)\]", disasm)
@@ -322,7 +323,7 @@ class MemoryFlowAnalyzer:
                 location=location,
                 access_type=access_type,
                 instruction=disasm,
-                registers_involved=registers if "registers" in dir() else [],
+                registers_involved=registers,
             )
 
             if addr not in self._accesses:
