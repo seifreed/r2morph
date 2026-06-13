@@ -9,7 +9,7 @@ symbol table management, and dynamic linking information.
 import logging
 import struct
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
 logger = logging.getLogger(__name__)
 
@@ -256,6 +256,42 @@ class ELFHandler:
 
         return shstrtab_data[name_offset:end].decode("utf-8", errors="replace")
 
+    @staticmethod
+    def _read_shstrtab(f: BinaryIO, header: dict[str, Any], file_size: int) -> bytes:
+        """Read the section header string table bytes, or b'' if unavailable.
+
+        Each failed bounds check logs a warning and yields an empty table, so
+        section names simply fall back to offsets downstream.
+        """
+        if header["e_shstrndx"] >= header["e_shnum"]:
+            return b""
+
+        endian = "<" if header["is_little_endian"] else ">"
+        shstrtab_offset = header["e_shoff"] + header["e_shstrndx"] * header["e_shentsize"]
+        if shstrtab_offset > file_size or shstrtab_offset < header["e_shoff"]:
+            logger.warning(f"Invalid shstrtab offset: {shstrtab_offset}")
+            return b""
+
+        f.seek(shstrtab_offset)
+        shstrtab_header = f.read(header["e_shentsize"])
+        if len(shstrtab_header) < header["e_shentsize"]:
+            logger.warning("Truncated shstrtab header")
+            return b""
+
+        if header["is_64bit"]:
+            sh_offset = struct.unpack(f"{endian}Q", shstrtab_header[24:32])[0]
+            sh_size = struct.unpack(f"{endian}Q", shstrtab_header[32:40])[0]
+        else:
+            sh_offset = struct.unpack(f"{endian}I", shstrtab_header[16:20])[0]
+            sh_size = struct.unpack(f"{endian}I", shstrtab_header[20:24])[0]
+
+        if sh_offset + sh_size > file_size:
+            logger.warning(f"shstrtab extends beyond file: offset={sh_offset}, size={sh_size}")
+            return b""
+
+        f.seek(sh_offset)
+        return f.read(sh_size)
+
     def get_sections(self) -> list[dict[str, Any]]:
         """Retrieve all sections from the ELF binary.
 
@@ -290,32 +326,7 @@ class ELFHandler:
 
                 file_size = self.binary_path.stat().st_size
 
-                # First, read the section header string table
-                shstrtab_data = b""
-                if header["e_shstrndx"] < header["e_shnum"]:
-                    # Validate offset calculation doesn't overflow
-                    shstrtab_offset = header["e_shoff"] + header["e_shstrndx"] * header["e_shentsize"]
-                    if shstrtab_offset > file_size or shstrtab_offset < header["e_shoff"]:
-                        logger.warning(f"Invalid shstrtab offset: {shstrtab_offset}")
-                    else:
-                        f.seek(shstrtab_offset)
-                        shstrtab_header = f.read(header["e_shentsize"])
-
-                        if len(shstrtab_header) < header["e_shentsize"]:
-                            logger.warning("Truncated shstrtab header")
-                        else:
-                            if is_64bit:
-                                sh_offset = struct.unpack(f"{endian}Q", shstrtab_header[24:32])[0]
-                                sh_size = struct.unpack(f"{endian}Q", shstrtab_header[32:40])[0]
-                            else:
-                                sh_offset = struct.unpack(f"{endian}I", shstrtab_header[16:20])[0]
-                                sh_size = struct.unpack(f"{endian}I", shstrtab_header[20:24])[0]
-
-                            if sh_offset + sh_size > file_size:
-                                logger.warning(f"shstrtab extends beyond file: offset={sh_offset}, size={sh_size}")
-                            else:
-                                f.seek(sh_offset)
-                                shstrtab_data = f.read(sh_size)
+                shstrtab_data = self._read_shstrtab(f, header, file_size)
 
                 # Now read all section headers
                 sections = []
