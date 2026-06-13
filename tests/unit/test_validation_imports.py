@@ -7,6 +7,7 @@ import pytest
 VALIDATION_MODULES = [
     "r2morph.validation.constraint_cache",
     "r2morph.validation.binary_region_memory",
+    "r2morph.validation.binary_region_bridges",
     "r2morph.validation.binary_region_comparator",
     "r2morph.validation.differ_models",
     "r2morph.validation.benchmark",
