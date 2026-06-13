@@ -7,37 +7,23 @@ with tools like GitHub Security, Azure DevOps, and SonarQube.
 
 from __future__ import annotations
 
-import hashlib
-from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from r2morph.reporting.sarif_result_builder import SARIFResultBuilder
 from r2morph.reporting.sarif_schema import (
     SARIFArtifact,
     SARIFArtifactLocation,
-    SARIFCodeFlow,
-    SARIFFix,
-    SARIFFileChange,
     SARIFInvocation,
     SARIFLevel,
-    SARIFLocation,
-    SARIFLogicalLocation,
     SARIFMessage,
-    SARIFPhysicalLocation,
-    SARIFRegion,
-    SARIFReplacement,
     SARIFReport,
-    SARIFResult,
     SARIFRule,
     SARIFRun,
-    SARIFSnippet,
     SARIFTaxon,
     SARIFTaxonomy,
-    SARIFTaxonReference,
-    SARIFThreadFlow,
-    SARIFThreadFlowLocation,
     SARIFTool,
     SARIFToolComponent,
 )
@@ -196,6 +182,7 @@ class SARIFFormatter:
         self.information_uri = information_uri
         self._mutation_rules = self._build_rules(MUTATION_RULES)
         self._validation_rules = self._build_rules(VALIDATION_RULES)
+        self._result_builder = SARIFResultBuilder(self._mutation_rules, self._validation_rules)
 
     def _build_rules(self, rule_defs: list[dict[str, Any]]) -> list[SARIFRule]:
         rules = []
@@ -236,7 +223,7 @@ class SARIFFormatter:
         )
         tool = SARIFTool(driver=driver)
 
-        results = self._build_results(report_data)
+        results = self._result_builder.build_results(report_data)
         artifacts = self._build_artifacts(report_data)
         invocations = self._build_invocations(report_data)
         taxonomy = self._build_mitre_taxonomy()
@@ -251,193 +238,6 @@ class SARIFFormatter:
         )
 
         return SARIFReport(runs=[run])
-
-    def _build_results(self, report_data: ReportData) -> list[SARIFResult]:
-        results: list[SARIFResult] = []
-
-        validation_by_addr: dict[int, list[ValidationResult]] = defaultdict(list)
-        if report_data.validations:
-            for v in report_data.validations:
-                if v.address is not None and not v.passed:
-                    validation_by_addr[v.address].append(v)
-
-        mutation_results: list[SARIFResult] = []
-        if report_data.mutations:
-            for mutation in report_data.mutations:
-                related = validation_by_addr.get(mutation.address, [])
-                result = self._mutation_to_result(mutation, report_data.binary_path, related)
-                mutation_results.append(result)
-
-        code_flows = self._build_code_flows(report_data.mutations or [], report_data.binary_path)
-        if code_flows and mutation_results:
-            mutation_results[0].code_flows = code_flows
-
-        results.extend(mutation_results)
-
-        if report_data.validations:
-            for validation in report_data.validations:
-                if not validation.passed:
-                    result = self._validation_to_result(validation, report_data.binary_path)
-                    results.append(result)
-
-        return results
-
-    def _mutation_to_result(
-        self,
-        mutation: MutationResult,
-        binary_path: str,
-        related_validations: list[ValidationResult],
-    ) -> SARIFResult:
-        rule_id = self._get_mutation_rule_id(mutation.pass_name)
-
-        logical_locations = []
-        if mutation.function:
-            logical_locations.append(SARIFLogicalLocation(name=mutation.function, kind="function"))
-
-        snippet_text = mutation.original_bytes.hex()
-        snippet_rendered = None
-        if mutation.disassembly:
-            snippet_rendered = SARIFMessage(text=mutation.disassembly)
-
-        artifact_loc = SARIFArtifactLocation(uri=binary_path)
-        region = SARIFRegion(
-            byte_offset=mutation.address,
-            byte_length=len(mutation.original_bytes),
-            snippet=SARIFSnippet(text=snippet_text, rendered=snippet_rendered),
-        )
-        physical_loc = SARIFPhysicalLocation(artifact_location=artifact_loc, region=region)
-
-        location = SARIFLocation(
-            physical_location=physical_loc,
-            logical_locations=logical_locations if logical_locations else None,
-            message=SARIFMessage(
-                text=f"Mutation applied at address 0x{mutation.address:x}",
-                markdown=f"**{mutation.pass_name}** mutation at `0x{mutation.address:x}`",
-            ),
-        )
-
-        fix = self._build_fix(mutation, binary_path)
-
-        related_locs = self._build_related_locations(related_validations, binary_path)
-
-        fingerprint = hashlib.sha256(
-            f"{mutation.pass_name}:{mutation.address}:{mutation.original_bytes.hex()}".encode()
-        ).hexdigest()[:16]
-
-        mitre = MITRE_ATTACK.get(mutation.pass_name)
-        taxa_refs = None
-        if mitre:
-            taxa_refs = [SARIFTaxonReference(id=mitre["id"], tool_component={"name": "MITRE ATT&CK"})]
-
-        return SARIFResult(
-            rule_id=rule_id,
-            level=SARIFLevel.NOTE,
-            message=SARIFMessage(
-                text=mutation.description or f"Applied {mutation.pass_name} mutation",
-                markdown=mutation.description or f"Applied **{mutation.pass_name}** mutation",
-            ),
-            locations=[location],
-            related_locations=related_locs,
-            fixes=[fix],
-            partial_fingerprints={"primaryLocationLineHash/v1": fingerprint},
-            taxa=taxa_refs,
-            properties={
-                "pass_name": mutation.pass_name,
-                "original_size": len(mutation.original_bytes),
-                "mutated_size": len(mutation.mutated_bytes),
-                "section": mutation.section or "unknown",
-            },
-        )
-
-    def _build_related_locations(self, validations: list[ValidationResult], binary_path: str) -> list[SARIFLocation]:
-        related: list[SARIFLocation] = []
-        for v in validations:
-            region = None
-            if v.address is not None:
-                region = SARIFRegion(byte_offset=v.address)
-            loc = SARIFLocation(
-                physical_location=SARIFPhysicalLocation(
-                    artifact_location=SARIFArtifactLocation(uri=binary_path),
-                    region=region,
-                ),
-                message=SARIFMessage(text=v.message or f"Validation {v.validation_type} failed"),
-            )
-            related.append(loc)
-        return related
-
-    def _build_code_flows(self, mutations: list[MutationResult], binary_path: str) -> list[SARIFCodeFlow]:
-        by_function: dict[str, list[MutationResult]] = defaultdict(list)
-        for m in mutations:
-            key = m.function or "__global__"
-            by_function[key].append(m)
-
-        flows: list[SARIFCodeFlow] = []
-        for func_name, func_mutations in by_function.items():
-            if len(func_mutations) < 2:
-                continue
-            sorted_mutations = sorted(func_mutations, key=lambda m: m.address)
-            thread_locs: list[SARIFThreadFlowLocation] = []
-            for i, m in enumerate(sorted_mutations):
-                loc = SARIFLocation(
-                    physical_location=SARIFPhysicalLocation(
-                        artifact_location=SARIFArtifactLocation(uri=binary_path),
-                        region=SARIFRegion(byte_offset=m.address),
-                    ),
-                    message=SARIFMessage(text=f"{m.pass_name} at 0x{m.address:x}"),
-                )
-                thread_locs.append(SARIFThreadFlowLocation(location=loc, index=i))
-
-            flow = SARIFCodeFlow(
-                message=SARIFMessage(text=f"Mutation chain in {func_name}"),
-                thread_flows=[SARIFThreadFlow(locations=thread_locs)],
-            )
-            flows.append(flow)
-        return flows
-
-    def _build_fix(self, mutation: MutationResult, binary_path: str) -> SARIFFix:
-        artifact_loc = SARIFArtifactLocation(uri=binary_path)
-        replacement = SARIFReplacement(
-            deleted_region=SARIFRegion(
-                byte_offset=mutation.address,
-                byte_length=len(mutation.original_bytes),
-            ),
-            inserted_content=mutation.mutated_bytes.hex(),
-        )
-        file_change = SARIFFileChange(artifact_location=artifact_loc, replacements=[replacement])
-        return SARIFFix(
-            description=SARIFMessage(text=f"Applied {mutation.pass_name} mutation"),
-            file_changes=[file_change],
-        )
-
-    def _validation_to_result(self, validation: ValidationResult, binary_path: str) -> SARIFResult:
-        rule_id = self._get_validation_rule_id(validation.validation_type)
-        artifact_loc = SARIFArtifactLocation(uri=binary_path)
-
-        region = None
-        if validation.address is not None:
-            region = SARIFRegion(
-                byte_offset=validation.address,
-                snippet=SARIFSnippet(text=f"address: 0x{validation.address:x}"),
-            )
-
-        physical_loc = SARIFPhysicalLocation(artifact_location=artifact_loc, region=region)
-        location = SARIFLocation(physical_location=physical_loc)
-        level = SARIFLevel.ERROR if validation.severity == "error" else SARIFLevel.WARNING
-
-        properties: dict[str, Any] = {"validation_type": validation.validation_type}
-        if validation.details:
-            properties.update(validation.details)
-
-        return SARIFResult(
-            rule_id=rule_id,
-            level=level,
-            message=SARIFMessage(
-                text=validation.message or "Validation failed",
-                markdown=validation.message or "Validation failed",
-            ),
-            locations=[location],
-            properties=properties,
-        )
 
     def _build_artifacts(self, report_data: ReportData) -> list[SARIFArtifact]:
         artifacts = []

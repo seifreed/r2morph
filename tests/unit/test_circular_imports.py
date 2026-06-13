@@ -42,6 +42,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.summary_aggregator_symbolic",
     "r2morph.reporting.summary_aggregator_evidence",
     "r2morph.reporting.summary_aggregator_summary",
+    "r2morph.reporting.sarif_result_builder",
     "r2morph.factories",
     "r2morph.cli_workflows",
     "r2morph.core.report_helpers_evidence",
