@@ -8,8 +8,6 @@ Provides type analysis capabilities:
 - Array bounds detection
 """
 
-import copy
-import logging
 from typing import Any
 
 from r2morph.analysis.pointer_analysis import PointerAnalysis as _PointerAnalysis
@@ -82,6 +80,21 @@ from r2morph.analysis.type_inference_core import (
 from r2morph.analysis.type_inference_core import (
     propagate_types as _propagate_types_impl,
 )
+from r2morph.analysis.type_inference_interprocedural import (
+    _get_calling_convention as _get_calling_convention_impl,
+)
+from r2morph.analysis.type_inference_interprocedural import (
+    _infer_all_function_param_types as _infer_all_function_param_types_impl,
+)
+from r2morph.analysis.type_inference_interprocedural import (
+    _infer_function_params as _infer_function_params_impl,
+)
+from r2morph.analysis.type_inference_interprocedural import (
+    _propagate_through_calls as _propagate_through_calls_impl,
+)
+from r2morph.analysis.type_inference_interprocedural import (
+    propagate_interprocedural_types as _propagate_interprocedural_types_impl,
+)
 from r2morph.analysis.type_inference_queries import (
     get_struct_layout as _get_struct_layout_impl,
 )
@@ -94,23 +107,11 @@ from r2morph.analysis.type_inference_queries import (
 from r2morph.analysis.type_inference_queries import (
     is_safe_to_mutate as _is_safe_to_mutate_impl,
 )
-from r2morph.analysis.type_inference_types import (
-    _AAPCS64_ARM64_CONVENTION,
-    _AAPCS_ARM32_CONVENTION,
-    _CDECL_X86_32_CONVENTION,
-    _EMPTY_CONVENTION,
-    _SYSV_AMD64_CONVENTION,
-    PrimitiveType,
-    StructField,
-    TypeCategory,
-    TypeInfo,
-)
+from r2morph.analysis.type_inference_types import PrimitiveType, StructField, TypeCategory, TypeInfo
 from r2morph.analysis.type_inference_types import (
     TypeInferenceResult as _TypeInferenceResult,
 )
 from r2morph.core.binary import Binary
-
-logger = logging.getLogger(__name__)
 
 PointerAnalysis = _PointerAnalysis
 TypeInferenceResult = _TypeInferenceResult
@@ -293,17 +294,7 @@ class TypeInference:
         Returns:
             Dictionary mapping function addresses to their parameter/return types
         """
-        arch_info = binary.get_arch_info()
-        arch = arch_info.get("arch", "x86").lower()
-        bits = arch_info.get("bits", 64)
-        calling_convention = self._get_calling_convention(arch, bits)
-
-        function_types = self._infer_all_function_param_types(binary, calling_convention)
-
-        if call_graph:
-            self._propagate_through_calls(binary, call_graph, function_types, calling_convention)
-
-        return function_types
+        return _propagate_interprocedural_types_impl(self, binary, call_graph)
 
     def _infer_all_function_param_types(
         self,
@@ -312,23 +303,7 @@ class TypeInference:
     ) -> dict[int, dict[str, TypeInfo]]:
         """Infer parameter types for every function, isolating per-function
         disassembly failures so one bad function never aborts the others."""
-        function_types: dict[int, dict[str, TypeInfo]] = {}
-
-        for func in binary.get_functions():
-            func_addr = func.get("offset", func.get("addr", 0))
-            func_name = func.get("name", f"func_{func_addr:x}")
-
-            param_types: dict[str, TypeInfo] = {}
-            try:
-                disasm = binary.get_function_disasm(func_addr)
-                if disasm:
-                    param_types = self._infer_function_params(binary, func_addr, disasm, calling_convention)
-            except Exception as e:
-                logger.debug(f"Failed to infer params for {func_name}: {e}")
-
-            function_types[func_addr] = param_types
-
-        return function_types
+        return _infer_all_function_param_types_impl(self, binary, calling_convention)
 
     def _get_calling_convention(self, arch: str, bits: int) -> dict[str, Any]:
         """Get calling convention registers for architecture.
@@ -336,16 +311,7 @@ class TypeInference:
         Returns an independent copy so callers may read or mutate the result
         without affecting the shared convention tables or each other.
         """
-        if arch in ("x86", "amd64", "x86_64"):
-            convention = _SYSV_AMD64_CONVENTION if bits == 64 else _CDECL_X86_32_CONVENTION
-        elif arch in ("arm", "arm32"):
-            convention = _AAPCS_ARM32_CONVENTION
-        elif arch in ("arm64", "aarch64"):
-            convention = _AAPCS64_ARM64_CONVENTION
-        else:
-            convention = _EMPTY_CONVENTION
-
-        return copy.deepcopy(convention)
+        return _get_calling_convention_impl(arch, bits)
 
     def _infer_function_params(
         self,
@@ -355,21 +321,7 @@ class TypeInference:
         calling_conv: dict[str, Any],
     ) -> dict[str, TypeInfo]:
         """Infer function parameter types from disassembly."""
-        param_types: dict[str, TypeInfo] = {}
-        param_regs = calling_conv.get("param_registers", [])
-
-        for insn in disasm[:20]:
-            disasm_str = insn.get("disasm", "").lower()
-
-            for i, reg in enumerate(param_regs):
-                reg_lower = reg.lower()
-                if reg_lower in disasm_str:
-                    if "mov" in disasm_str and "mem" not in disasm_str:
-                        param_types[f"param_{i}"] = self.create_primitive_type(PrimitiveType.INT64)
-                    elif "ldr" in disasm_str or "mov" in disasm_str:
-                        param_types[f"param_{i}"] = self.create_pointer_type()
-
-        return param_types
+        return _infer_function_params_impl(self, binary, func_addr, disasm, calling_conv)
 
     def _propagate_through_calls(
         self,
@@ -379,20 +331,7 @@ class TypeInference:
         calling_conv: dict[str, Any],
     ) -> None:
         """Propagate type information through call graph edges."""
-        calling_conv.get("return_register", "")
-
-        for caller_addr, callees in call_graph.items():
-            caller_types = function_types.get(caller_addr, {})
-
-            for callee_addr in callees:
-                callee_types = function_types.get(callee_addr, {})
-
-                for param_name, param_type in callee_types.items():
-                    if param_name not in caller_types:
-                        caller_types[param_name] = param_type
-
-        for func_addr, types in function_types.items():
-            self._address_types.update({func_addr + i: t for i, (n, t) in enumerate(types.items())})
+        _propagate_through_calls_impl(self, binary, call_graph, function_types, calling_conv)
 
     def infer_arm_register_types(
         self,
