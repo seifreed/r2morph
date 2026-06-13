@@ -85,7 +85,7 @@ def run_symbolic_validation(binary: Any, result: Any, observables: list[str] | N
             return
 
         result.symbolic_status = "symbolic_check_performed"
-        from r2morph.validation.semantic import ObservableComparison
+        from r2morph.validation.semantic_models import ObservableComparison
 
         result.observables = ObservableComparison()
 
