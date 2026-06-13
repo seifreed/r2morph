@@ -16,6 +16,18 @@ from r2morph.reporting.report_rendering_primitives import (
     _get_console,
     create_table,
 )
+from r2morph.reporting.report_rendering_tables import (
+    render_pass_capabilities as _render_pass_capabilities,
+)
+from r2morph.reporting.report_rendering_tables import (
+    render_pass_validation_contexts as _render_pass_validation_contexts,
+)
+from r2morph.reporting.report_rendering_tables import (
+    render_summary_table as _render_summary_table,
+)
+from r2morph.reporting.report_rendering_tables import (
+    render_validation_context_table as _render_validation_context_table,
+)
 
 CONSOLE = _CONSOLE
 
@@ -25,34 +37,8 @@ def render_pass_capabilities(
     *,
     console: Console | None = None,
 ) -> None:
-    """
-    Render pass capabilities table.
-
-    Args:
-        capabilities: List of capability dictionaries
-        console: Optional console instance (uses default if None)
-    """
-    if not capabilities:
-        return
-
-    c = console or _get_console()
-    table = create_table(
-        "Pass Capabilities",
-        [
-            ("Pass", "cyan"),
-            ("Category", "blue"),
-            ("Support", "green"),
-        ],
-    )
-
-    for cap in capabilities:
-        table.add_row(
-            cap.get("pass_name", "unknown"),
-            cap.get("category", "unknown"),
-            cap.get("support", "unknown"),
-        )
-
-    c.print(table)
+    """Compatibility wrapper for the table renderer."""
+    _render_pass_capabilities(capabilities, console=console)
 
 
 def render_pass_validation_contexts(
@@ -60,36 +46,8 @@ def render_pass_validation_contexts(
     *,
     console: Console | None = None,
 ) -> None:
-    """
-    Render pass validation contexts table.
-
-    Args:
-        contexts: List of validation context dictionaries
-        console: Optional console instance
-    """
-    if not contexts:
-        return
-
-    c = console or _get_console()
-    table = create_table(
-        "Pass Validation Contexts",
-        [
-            ("Pass", "cyan"),
-            ("Mode", "blue"),
-            ("Degraded", "yellow"),
-            ("Gate Failures", "red"),
-        ],
-    )
-
-    for ctx in contexts:
-        table.add_row(
-            ctx.get("pass_name", "unknown"),
-            ctx.get("validation_mode", "unknown"),
-            "Yes" if ctx.get("degraded_execution") else "No",
-            str(ctx.get("gate_failure_count", 0)),
-        )
-
-    c.print(table)
+    """Compatibility wrapper for the table renderer."""
+    _render_pass_validation_contexts(contexts, console=console)
 
 
 def render_symbolic_sections(
@@ -271,6 +229,15 @@ def render_only_pass_sections(
         c.print(table)
 
 
+def render_summary_table(
+    summary: dict[str, Any],
+    *,
+    console: Console | None = None,
+) -> None:
+    """Compatibility wrapper for the table renderer."""
+    _render_summary_table(summary, console=console)
+
+
 def render_report_filter_messages(
     only_pass: str | None,
     resolved_only_pass: str | None,
@@ -316,38 +283,6 @@ def render_report_filter_messages(
 
     if only_clean_passes:
         c.print("[bold]Filter[/bold]: Showing only passes with no structural issues and clean symbolic evidence")
-
-
-def render_summary_table(
-    summary: dict[str, Any],
-    *,
-    console: Console | None = None,
-) -> None:
-    """
-    Render a generic summary table.
-
-    Args:
-        summary: Summary dictionary
-        console: Optional console instance
-    """
-    c = console or _get_console()
-
-    table = create_table(
-        "Report Summary",
-        [
-            ("Metric", "cyan"),
-            ("Value", "green"),
-        ],
-    )
-
-    for key, value in summary.items():
-        if isinstance(value, dict):
-            continue
-        if isinstance(value, list):
-            continue
-        table.add_row(key.replace("_", " ").title(), str(value))
-
-    c.print(table)
 
 
 def render_gate_evaluation_sections(
@@ -439,6 +374,15 @@ def render_gate_evaluation_sections(
                 f"  [yellow]{pass_name}[/yellow] "
                 f"(count={failure_count}, strictest_expected={strictest}): " + ", ".join(failures_list)
             )
+
+
+def render_validation_context_table(
+    validation_contexts: list[dict[str, Any]],
+    *,
+    console: Console | None = None,
+) -> None:
+    """Compatibility wrapper for the table renderer."""
+    _render_validation_context_table(validation_contexts, console=console)
 
 
 def render_general_report_sections(
@@ -578,40 +522,5 @@ def render_mismatch_summary_sections(
         if len(mismatch_observables_by_pass.get(pass_name, [])) > 3:
             obs_str += "..."
         table.add_row(pass_name, str(count), obs_str)
-
-    c.print(table)
-
-
-def render_validation_context_table(
-    validation_contexts: list[dict[str, Any]],
-    *,
-    console: Console | None = None,
-) -> None:
-    """
-    Render validation context table.
-
-    Args:
-        validation_contexts: List of validation context dicts
-        console: Optional console instance
-    """
-    if not validation_contexts:
-        return
-
-    c = console or _get_console()
-    table = create_table(
-        "Validation Context",
-        [
-            ("Pass", "cyan"),
-            ("Mode", "blue"),
-            ("Degraded", "yellow"),
-        ],
-    )
-
-    for ctx in validation_contexts:
-        table.add_row(
-            ctx.get("pass_name", "unknown"),
-            ctx.get("validation_mode", "unknown"),
-            "Yes" if ctx.get("degraded_execution") else "No",
-        )
 
     c.print(table)
