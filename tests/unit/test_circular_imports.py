@@ -29,6 +29,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_orchestrator",
     "r2morph.reporting.filtered_summary_builder",
     "r2morph.reporting.filtered_summary_payloads",
+    "r2morph.reporting.filtered_summary_mismatch_payloads",
     "r2morph.reporting.filtered_summary_population",
     "r2morph.reporting.filtered_summary_discarded",
     "r2morph.reporting.filtered_summary_pass_details",
