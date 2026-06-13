@@ -571,41 +571,45 @@ class InterproceduralDataFlowAnalyzer:
         for insn in instructions:
             disasm = insn.get("disasm", "").lower()
             addr = insn.get("offset", 0)
-
-            if "mov" in disasm or "ldr" in disasm:
-                match = re.search(r"(mov|ldr)\s+(\w+),", disasm)
-                if match:
-                    summary["modified_registers"].add(match.group(2))
-
-            if "push" in disasm or "pop" in disasm:
-                match = re.search(r"(push|pop)\s+(\w+)", disasm)
-                if match:
-                    summary["modified_registers"].add(match.group(2))
-
-            if "call" in disasm or "bl" in disasm:
-                summary["side_effects"].append(
-                    {
-                        "type": "call",
-                        "address": f"0x{addr:x}",
-                        "instruction": disasm,
-                    }
-                )
-
-            if "ret" in disasm or "bx lr" in disasm:
-                match = re.search(r"mov\s+(\w+),", disasm)
-                if match:
-                    summary["return_values"].append(
-                        {
-                            "register": match.group(1),
-                            "type": "return",
-                        }
-                    )
+            self._record_instruction_effects(summary, disasm, addr)
 
         summary["modified_registers"] = list(summary["modified_registers"])
         summary["read_globals"] = list(summary["read_globals"])
         summary["written_globals"] = list(summary["written_globals"])
 
         return summary
+
+    @staticmethod
+    def _record_instruction_effects(summary: dict[str, Any], disasm: str, addr: int) -> None:
+        """Record the side effects of a single instruction into a summary."""
+        if "mov" in disasm or "ldr" in disasm:
+            match = re.search(r"(mov|ldr)\s+(\w+),", disasm)
+            if match:
+                summary["modified_registers"].add(match.group(2))
+
+        if "push" in disasm or "pop" in disasm:
+            match = re.search(r"(push|pop)\s+(\w+)", disasm)
+            if match:
+                summary["modified_registers"].add(match.group(2))
+
+        if "call" in disasm or "bl" in disasm:
+            summary["side_effects"].append(
+                {
+                    "type": "call",
+                    "address": f"0x{addr:x}",
+                    "instruction": disasm,
+                }
+            )
+
+        if "ret" in disasm or "bx lr" in disasm:
+            match = re.search(r"mov\s+(\w+),", disasm)
+            if match:
+                summary["return_values"].append(
+                    {
+                        "register": match.group(1),
+                        "type": "return",
+                    }
+                )
 
     def _propagate_through_call_graph(self) -> dict[str, Any]:
         """Propagate data flow information through the call graph."""

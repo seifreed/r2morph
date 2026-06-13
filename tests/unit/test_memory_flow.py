@@ -407,6 +407,37 @@ class TestInterproceduralDataFlowAnalyzer:
 
         assert len(result["function_summaries"]) == 2
 
+    def test_analyze_function_summary_exact_output(self, analyzer):
+        """§5 oracle: pin _analyze_function_summary's effect classification.
+
+        modified_registers is a set materialized to a list, so its order is
+        not deterministic across runs; assert it order-independently.
+        """
+        instructions = [
+            {"offset": 0x1000, "disasm": "mov eax, 1"},
+            {"offset": 0x1004, "disasm": "push rbx"},
+            {"offset": 0x1008, "disasm": "call 0x2000"},
+            {"offset": 0x100C, "disasm": "ret"},
+        ]
+
+        summary = analyzer._analyze_function_summary(0x1000, instructions)
+
+        assert summary["address"] == "0x1000"
+        assert set(summary["modified_registers"]) == {"eax", "rbx"}
+        assert summary["side_effects"] == [{"type": "call", "address": "0x1008", "instruction": "call 0x2000"}]
+        assert summary["return_values"] == []
+        assert summary["parameters"] == []
+        assert summary["read_globals"] == []
+        assert summary["written_globals"] == []
+
+    def test_analyze_function_summary_ret_branch_records_return_value(self, analyzer):
+        """Pin the ret-branch: when a 'ret' instruction also matches `mov X,`
+        it records both a modified register and a return value."""
+        summary = analyzer._analyze_function_summary(0x2000, [{"offset": 0x2000, "disasm": "mov r0, ret"}])
+
+        assert set(summary["modified_registers"]) == {"r0"}
+        assert summary["return_values"] == [{"register": "r0", "type": "return"}]
+
 
 class TestMemoryFlowIntegration:
     @pytest.fixture
