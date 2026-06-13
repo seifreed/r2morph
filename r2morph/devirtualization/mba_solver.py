@@ -8,6 +8,7 @@ commonly used in obfuscation to make simple arithmetic operations appear complex
 
 import logging
 import re
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
@@ -138,7 +139,6 @@ class MBASolver:
 
     def _extract_variables(self, expression: str) -> set[str]:
         """Extract variable names from expression."""
-        import re
 
         var_pattern = r"\b[a-zA-Z][a-zA-Z0-9_]*\b"
         potential_vars = re.findall(var_pattern, expression)
@@ -201,7 +201,6 @@ class MBASolver:
 
     def _count_coefficients(self, expression: str) -> int:
         """Count numeric coefficients in expression."""
-        import re
 
         number_pattern = r"\b\d+\b"
         numbers = re.findall(number_pattern, expression)
@@ -219,7 +218,6 @@ class MBASolver:
         Returns:
             Simplification result
         """
-        import time
 
         start_time = time.time()
 
