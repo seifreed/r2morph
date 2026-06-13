@@ -19,13 +19,15 @@ from r2morph.reporting.report_rendering_pass_tables import (
     render_pass_validation_contexts,
 )
 from r2morph.reporting.report_rendering_primitives import CONSOLE, create_table
+from r2morph.reporting.report_rendering_summary_tables import (
+    render_summary_table,
+    render_validation_context_table,
+)
 from r2morph.reporting.report_rendering_tables import (
     render_degradation_sections,
     render_gate_sections,
     render_only_mismatches_sections,
-    render_summary_table,
     render_symbolic_sections,
-    render_validation_context_table,
 )
 from r2morph.reporting.report_rendering_text_sections import (
     render_mismatch_summary_sections,
