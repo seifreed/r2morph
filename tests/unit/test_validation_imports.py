@@ -15,6 +15,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.shellcode_equivalence_common",
     "r2morph.validation.shellcode_observables",
     "r2morph.validation.shellcode_transition",
+    "r2morph.validation.mutation_annotator_binary",
     "r2morph.validation.symbolic_scope_policy",
     "r2morph.validation.validator_runtime",
     "r2morph.validation.state_merging",

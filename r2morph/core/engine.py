@@ -19,6 +19,29 @@ from r2morph.core.engine_output import save_binary as save_binary_output
 from r2morph.core.engine_output import save_report as save_report_output
 from r2morph.core.engine_run import run as run_lifecycle
 from r2morph.core.engine_wiring import build_engine_wiring
+from r2morph.core.report_helpers_evidence import (
+    _build_evidence_summary_for_pass,  # noqa: F401
+    _summarize_diff_digest,  # noqa: F401
+    _summarize_pass_evidence,  # noqa: F401
+    _summarize_pass_timings,  # noqa: F401
+    _summarize_structural_evidence,  # noqa: F401
+)
+from r2morph.core.report_helpers_projection import _build_pass_region_evidence_map  # noqa: F401
+from r2morph.core.report_helpers_risk import (
+    _summarize_pass_coverage_buckets,  # noqa: F401
+    _summarize_pass_risk_buckets,  # noqa: F401
+)
+from r2morph.core.report_helpers_symbolic import (
+    _build_symbolic_summary_for_pass,  # noqa: F401
+    _summarize_symbolic_coverage_by_pass,  # noqa: F401
+    _summarize_symbolic_issue_passes,  # noqa: F401
+    _summarize_symbolic_severity_by_pass,  # noqa: F401
+)
+from r2morph.core.report_helpers_validation import (
+    _build_pass_validation_context,  # noqa: F401
+    _enrich_validation_policy,  # noqa: F401
+    _summarize_degradation_roles,  # noqa: F401
+)
 from r2morph.protocols import (
     BinarySignerProtocol,
     GateFailureReporterProtocol,

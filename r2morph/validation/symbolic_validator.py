@@ -9,6 +9,7 @@ ValidationIssue/ValidationOutcome) is not a circular import.
 
 from __future__ import annotations
 
+from importlib import import_module  # noqa: F401
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -109,4 +110,5 @@ class SymbolicValidator:
             build_hint=self._build_instruction_substitution_symbolic_hint,
             compare_observables=self._shellcode_checker._compare_instruction_substitution_observables,
             compare_transition=self._shellcode_checker._compare_instruction_substitution_transition,
+            import_module_fn=import_module,
         )

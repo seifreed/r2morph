@@ -5,6 +5,7 @@ Validation management for mutation passes.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from importlib import import_module  # noqa: F401
 from typing import TYPE_CHECKING, Any
 
 from r2morph.validation.manager_pass_validation import augment_pass_validation

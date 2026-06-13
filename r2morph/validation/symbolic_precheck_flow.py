@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -18,6 +19,7 @@ def run_symbolic_precheck(
     build_hint: Callable[[dict[str, Any]], dict[str, Any]],
     compare_observables: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
     compare_transition: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
+    import_module_fn: Callable[[str], Any] = import_module,
 ) -> dict[str, Any]:
     """Run a bounded symbolic precheck for the experimental mode."""
     supported, payload = _init_scope_payload(binary, pass_result, supports_scope)
@@ -25,9 +27,7 @@ def run_symbolic_precheck(
         return payload
 
     try:
-        from importlib import import_module
-
-        bridge_module = import_module("r2morph.analysis.symbolic.angr_bridge")
+        bridge_module = import_module_fn("r2morph.analysis.symbolic.angr_bridge")
         if not getattr(bridge_module, "ANGR_AVAILABLE", False):
             payload["symbolic_status"] = "backend-unavailable"
             payload["symbolic_reason"] = "angr is not installed"
