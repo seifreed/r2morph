@@ -23,9 +23,6 @@ from r2morph.core.report_helpers_evidence import (
     _build_pass_region_evidence_map as _build_pass_region_evidence_map,
 )
 from r2morph.core.report_helpers_evidence import (
-    _build_pass_triage_map as _build_pass_triage_map,
-)
-from r2morph.core.report_helpers_evidence import (
     _summarize_diff_digest as _summarize_diff_digest,
 )
 from r2morph.core.report_helpers_evidence import (
@@ -47,16 +44,10 @@ from r2morph.core.report_helpers_evidence import (
     _summarize_pass_evidence as _summarize_pass_evidence,
 )
 from r2morph.core.report_helpers_evidence import (
-    _summarize_pass_evidence_compact as _summarize_pass_evidence_compact,
-)
-from r2morph.core.report_helpers_evidence import (
     _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
 )
 from r2morph.core.report_helpers_evidence import (
     _summarize_pass_timings as _summarize_pass_timings,
-)
-from r2morph.core.report_helpers_evidence import (
-    _summarize_pass_triage_rows as _summarize_pass_triage_rows,
 )
 from r2morph.core.report_helpers_evidence import (
     _summarize_structural_evidence as _summarize_structural_evidence,
@@ -78,6 +69,15 @@ from r2morph.core.report_helpers_symbolic import (
 )
 from r2morph.core.report_helpers_symbolic import (
     _summarize_symbolic_statuses as _summarize_symbolic_statuses,
+)
+from r2morph.core.report_helpers_triage import (
+    _build_pass_triage_map as _build_pass_triage_map,
+)
+from r2morph.core.report_helpers_triage import (
+    _summarize_pass_evidence_compact as _summarize_pass_evidence_compact,
+)
+from r2morph.core.report_helpers_triage import (
+    _summarize_pass_triage_rows as _summarize_pass_triage_rows,
 )
 from r2morph.core.report_helpers_validation import (
     _build_pass_validation_context as _build_pass_validation_context,

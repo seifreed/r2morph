@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from r2morph.core import engine as engine_mod
 from r2morph.core import report_helpers as helpers_mod
+from r2morph.core import report_helpers_triage as triage_mod
 
 REEXPORTED_NAMES = [
     "REPORT_SCHEMA_VERSION",
@@ -32,10 +33,8 @@ REEXPORTED_NAMES = [
     "_summarize_pass_capability_rows",
     "_summarize_pass_coverage_buckets",
     "_summarize_pass_evidence",
-    "_summarize_pass_evidence_compact",
     "_summarize_pass_risk_buckets",
     "_summarize_pass_timings",
-    "_summarize_pass_triage_rows",
     "_summarize_structural_evidence",
     "_summarize_symbolic_coverage_by_pass",
     "_summarize_symbolic_issue_passes",
@@ -47,10 +46,21 @@ REEXPORTED_NAMES = [
     "_summarize_validation_role_rows",
 ]
 
+TRIAGE_NAMES = [
+    "_build_pass_triage_map",
+    "_summarize_pass_evidence_compact",
+    "_summarize_pass_triage_rows",
+]
+
 
 def test_canonical_module_defines_all_helpers() -> None:
     for name in REEXPORTED_NAMES:
         assert hasattr(helpers_mod, name), f"core.report_helpers missing {name}"
+
+
+def test_canonical_triage_module_defines_triage_helpers() -> None:
+    for name in TRIAGE_NAMES:
+        assert hasattr(triage_mod, name), f"core.report_helpers_triage missing {name}"
 
 
 def test_engine_reexports_are_the_same_objects() -> None:
@@ -59,6 +69,17 @@ def test_engine_reexports_are_the_same_objects() -> None:
         assert getattr(engine_mod, name) is getattr(
             helpers_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers.{name}"
+
+
+def test_triage_helpers_are_reexported_from_facade() -> None:
+    for name in TRIAGE_NAMES:
+        assert getattr(helpers_mod, name) is getattr(
+            triage_mod, name
+        ), f"core.report_helpers.{name} diverged from core.report_helpers_triage.{name}"
+        assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
+        assert getattr(engine_mod, name) is getattr(
+            triage_mod, name
+        ), f"core.engine.{name} diverged from core.report_helpers_triage.{name}"
 
 
 def test_report_schema_version_value() -> None:
