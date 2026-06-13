@@ -12,6 +12,7 @@ from r2morph.core import engine as engine_mod
 from r2morph.core import report_helpers as helpers_mod
 from r2morph.core import report_helpers_adjustment as adjustment_mod
 from r2morph.core import report_helpers_projection as projection_mod
+from r2morph.core import report_helpers_risk as risk_mod
 from r2morph.core import report_helpers_triage as triage_mod
 
 REEXPORTED_NAMES = [
@@ -54,6 +55,11 @@ ADJUSTMENT_NAMES = [
     "_summarize_validation_adjustments",
 ]
 
+RISK_NAMES = [
+    "_summarize_pass_coverage_buckets",
+    "_summarize_pass_risk_buckets",
+]
+
 TRIAGE_NAMES = [
     "_build_pass_triage_map",
     "_summarize_pass_evidence_compact",
@@ -79,6 +85,11 @@ def test_canonical_projection_module_defines_projection_helpers() -> None:
 def test_canonical_adjustment_module_defines_adjustment_helpers() -> None:
     for name in ADJUSTMENT_NAMES:
         assert hasattr(adjustment_mod, name), f"core.report_helpers_adjustment missing {name}"
+
+
+def test_canonical_risk_module_defines_risk_helpers() -> None:
+    for name in RISK_NAMES:
+        assert hasattr(risk_mod, name), f"core.report_helpers_risk missing {name}"
 
 
 def test_engine_reexports_are_the_same_objects() -> None:
@@ -120,6 +131,17 @@ def test_adjustment_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             adjustment_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_adjustment.{name}"
+
+
+def test_risk_helpers_are_reexported_from_facade() -> None:
+    for name in RISK_NAMES:
+        assert getattr(helpers_mod, name) is getattr(
+            risk_mod, name
+        ), f"core.report_helpers.{name} diverged from core.report_helpers_risk.{name}"
+        assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
+        assert getattr(engine_mod, name) is getattr(
+            risk_mod, name
+        ), f"core.engine.{name} diverged from core.report_helpers_risk.{name}"
 
 
 def test_report_schema_version_value() -> None:

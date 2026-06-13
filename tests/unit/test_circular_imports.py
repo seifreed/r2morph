@@ -63,6 +63,7 @@ REPORTING_MODULES = [
     "r2morph.core.report_helpers_projection",
     "r2morph.core.report_helpers_validation",
     "r2morph.core.report_helpers_adjustment",
+    "r2morph.core.report_helpers_risk",
     "r2morph.core.report_helpers_triage",
     "r2morph.analysis.pointer_analysis",
     "r2morph.analysis.type_inference_types",

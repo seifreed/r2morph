@@ -32,13 +32,7 @@ from r2morph.core.report_helpers_evidence import (
     _summarize_observable_mismatches_by_pass as _summarize_observable_mismatches_by_pass,
 )
 from r2morph.core.report_helpers_evidence import (
-    _summarize_pass_coverage_buckets as _summarize_pass_coverage_buckets,
-)
-from r2morph.core.report_helpers_evidence import (
     _summarize_pass_evidence as _summarize_pass_evidence,
-)
-from r2morph.core.report_helpers_evidence import (
-    _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
 )
 from r2morph.core.report_helpers_evidence import (
     _summarize_pass_timings as _summarize_pass_timings,
@@ -57,6 +51,12 @@ from r2morph.core.report_helpers_projection import (
 )
 from r2morph.core.report_helpers_projection import (
     _summarize_pass_capability_rows as _summarize_pass_capability_rows,
+)
+from r2morph.core.report_helpers_risk import (
+    _summarize_pass_coverage_buckets as _summarize_pass_coverage_buckets,
+)
+from r2morph.core.report_helpers_risk import (
+    _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
 )
 from r2morph.core.report_helpers_symbolic import (
     _build_symbolic_summary_for_pass as _build_symbolic_summary_for_pass,
