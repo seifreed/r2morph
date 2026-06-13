@@ -17,7 +17,7 @@ from r2morph.reporting.report_context import ReportFlowContext
 from r2morph.reporting.report_helpers import (
     _finalize_report_output,
 )
-from r2morph.reporting.report_rendering import (
+from r2morph.reporting.report_rendering_sections import (
     _render_degradation_sections,
     _render_gate_sections,
     _render_only_mismatches_sections,
