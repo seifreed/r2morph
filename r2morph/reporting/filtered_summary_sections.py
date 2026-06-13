@@ -8,14 +8,14 @@ reverse. Symbolic-specific helpers live in filtered_summary_symbolic.
 
 from typing import Any
 
+from r2morph.reporting.filtered_summary_discarded import _populate_filtered_summary_discarded_sections  # noqa: F401
 from r2morph.reporting.filtered_summary_population import (  # noqa: F401
     _apply_risk_filters,
-    _populate_filtered_summary_discarded_sections,
     _populate_filtered_summary_pass_sections,
     _populate_pass_capabilities_and_context,
     _populate_pass_evidence,
-    _populate_triage_and_results,
 )
+from r2morph.reporting.filtered_summary_triage import _populate_triage_and_results  # noqa: F401
 from r2morph.reporting.report_helpers import _summary_first
 from r2morph.reporting.report_view_resolution import _resolve_general_report_views
 
