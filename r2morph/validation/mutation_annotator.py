@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.validation.mutation_annotator_binary import annotate_binary_region_evidence
+from r2morph.validation.mutation_annotator_instruction import annotate_instruction_substitution_evidence
 
 
 class MutationAnnotator:
@@ -47,7 +48,17 @@ class MutationAnnotator:
             self._annotate_step_metadata(mutation_metadata, key, stepped_by_range)
 
             if pass_result.get("pass_name") == "InstructionSubstitution":
-                self._annotate_instruction_substitution_metadata(mutation_metadata, key, metadata, observable_by_range)
+                transition_regions = {
+                    (region["start_address"], region["end_address"]): region
+                    for region in metadata.get("symbolic_transition_regions", [])
+                }
+                annotate_instruction_substitution_evidence(
+                    mutation_metadata,
+                    key,
+                    metadata,
+                    observable_by_range,
+                    transition_regions,
+                )
 
             binary_region = binary_by_range.get(key)
             if binary_region is not None:
@@ -77,37 +88,3 @@ class MutationAnnotator:
                 "unsat_successors": stepped.get("unsat_successors", 0),
                 "successor_addresses": list(stepped.get("successor_addresses", [])),
             }
-
-    def _annotate_instruction_substitution_metadata(
-        self,
-        mutation_metadata: dict[str, Any],
-        key: tuple[Any, Any],
-        metadata: dict[str, Any],
-        observable_by_range: dict[tuple[Any, Any], dict[str, Any]],
-    ) -> None:
-        """Attach InstructionSubstitution semantic/observable/transition evidence."""
-        mutation_metadata["symbolic_semantic_hint"] = metadata.get("symbolic_semantic_hint", "none")
-        mutation_metadata["symbolic_semantic_hint_supported"] = bool(
-            metadata.get("symbolic_semantic_hint_supported", False)
-        )
-
-        observable = observable_by_range.get(key)
-        if observable is not None:
-            mutation_metadata["symbolic_observable_check_performed"] = True
-            mutation_metadata["symbolic_observable_equivalent"] = len(observable.get("mismatches", [])) == 0
-            mutation_metadata["symbolic_observable_mismatches"] = list(observable.get("mismatches", []))
-            mutation_metadata["symbolic_observables_checked"] = list(observable.get("observables_checked", []))
-        elif metadata.get("symbolic_observable_check_performed"):
-            mutation_metadata["symbolic_observable_check_performed"] = False
-            mutation_metadata["symbolic_observable_equivalent"] = False
-            mutation_metadata["symbolic_observable_mismatches"] = []
-
-        transition_regions = {
-            (region["start_address"], region["end_address"]): region
-            for region in metadata.get("symbolic_transition_regions", [])
-        }
-        transition = transition_regions.get(key)
-        if transition is not None:
-            mutation_metadata["symbolic_transition_check_performed"] = True
-            mutation_metadata["symbolic_transition_equivalent"] = len(transition.get("mismatches", [])) == 0
-            mutation_metadata["symbolic_transition_mismatches"] = list(transition.get("mismatches", []))
