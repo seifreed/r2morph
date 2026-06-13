@@ -31,6 +31,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_output_policy",
     "r2morph.reporting.summary_aggregator",
     "r2morph.cli_workflows",
+    "r2morph.core.report_helpers_validation",
     "r2morph.analysis.pointer_analysis",
     "r2morph.analysis.type_inference_core",
     "r2morph.analysis.type_inference_arm",
