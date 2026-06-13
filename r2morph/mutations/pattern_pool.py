@@ -5,10 +5,13 @@ Provides a system for matching instruction patterns and generating
 equivalent replacement code with weighted probabilities.
 """
 
+import logging
 import random
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -97,7 +100,7 @@ class MutationPatternPool:
         new_instructions = selected_generator(operands, os_type)
 
         if verbose:
-            self._print_mutation(
+            self._log_mutation(
                 block.instructions[ins_idx].address if ins_idx < len(block.instructions) else 0,
                 block.instructions[ins_idx : ins_idx + n_match_ins],
                 new_instructions,
@@ -107,7 +110,7 @@ class MutationPatternPool:
 
         return block
 
-    def _print_mutation(
+    def _log_mutation(
         self,
         mutation_addr: int,
         old_instructions: list[Instruction],
@@ -125,19 +128,21 @@ class MutationPatternPool:
             else:
                 new_opcodes.append([str(ins)])
 
-        print(f"[v] mutation at {hex(mutation_addr)}:")
-        print(f"{'old':<35} | {'new':<35}")
-        print("-" * 75)
-
+        lines = [
+            f"[v] mutation at {hex(mutation_addr)}:",
+            f"{'old':<35} | {'new':<35}",
+            "-" * 75,
+        ]
         max_len = max(len(old_opcodes), len(new_opcodes))
         for i in range(max_len):
             old = old_opcodes[i] if i < len(old_opcodes) else ""
             new = new_opcodes[i] if i < len(new_opcodes) else [""]
             if i == 0 and old == "":
                 old = "[insertion]"
-            print(f"{old:<35} | {new[0]:<35}")
-            for line in new[1:]:
-                print(f"{'':<35} | {line:<35}")
+            lines.append(f"{old:<35} | {new[0]:<35}")
+            lines.extend(f"{'':<35} | {line:<35}" for line in new[1:])
+
+        logger.debug("\n".join(lines))
 
 
 _pattern_pool_registry: list[MutationPatternPool] = []

@@ -2,6 +2,8 @@
 Tests for pattern_pool module.
 """
 
+import logging
+
 from r2morph.mutations.pattern_pool import (
     BasicBlock,
     Instruction,
@@ -130,6 +132,29 @@ class TestMutationPatternPool:
         mutated_block = pool.match(block, "linux", verbose=False)
         assert len(mutated_block.instructions) == 2
         assert mutated_block.instructions[0].mnemonic == "xor"
+
+    def test_pool_verbose_logs_mutation_at_debug(self, caplog):
+        """verbose=True emits the mutation detail to the module logger at DEBUG
+        (no stdout printing), and the mutation itself still applies."""
+
+        def gen(operands, os_type):
+            return [_create_instruction("xor", [operands[0], operands[0]], "xor")]
+
+        pool = MutationPatternPool(
+            name="test_pool",
+            match_rules=[match_mov_reg_0_all],
+            generators=[(gen, 10)],
+            mutation_probability=100,
+        )
+        ins1 = Instruction(address=0x1000, mnemonic="mov", operand_1="rax", operand_2="0", type="mov")
+        ins2 = Instruction(address=0x1005, mnemonic="mov", operand_1="rbx", operand_2="1", type="mov")
+        block = BasicBlock(address=0x1000, instructions=[ins1, ins2])
+
+        with caplog.at_level(logging.DEBUG, logger="r2morph.mutations.pattern_pool"):
+            mutated_block = pool.match(block, "linux", verbose=True)
+
+        assert mutated_block.instructions[0].mnemonic == "xor"
+        assert any("mutation at 0x1000" in record.message for record in caplog.records)
 
     def test_pool_probability(self):
         def mock_generator(operands, os_type):
