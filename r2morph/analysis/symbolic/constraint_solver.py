@@ -6,6 +6,7 @@ with the Syntia framework for instruction semantics learning.
 """
 
 import logging
+import time
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -110,7 +111,6 @@ class ConstraintSolver:
         Returns:
             SolverResult with solution
         """
-        import time
 
         start_time = time.time()
 
@@ -320,7 +320,6 @@ class ConstraintSolver:
         Returns:
             SolverResult with simplified expression
         """
-        import time
 
         start_time = time.time()
 
@@ -409,7 +408,6 @@ class ConstraintSolver:
         Returns:
             SolverResult indicating equivalence
         """
-        import time
 
         start_time = time.time()
 
