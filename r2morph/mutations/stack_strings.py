@@ -59,6 +59,28 @@ class EncodingScheme:
     CUSTOM = "custom"
 
 
+# (label, emitted_instruction) pairs interleaved as junk during stack-string
+# construction. Defined once at module scope rather than rebuilt on each call.
+_JUNK_INSTRUCTIONS_X64 = [
+    ("nop", "nop"),
+    ("pushf", "pushfq"),
+    ("popf", "popfq"),
+    ("inc rax", "inc rax"),
+    ("dec rbx", "dec rbx"),
+    ("xchg rax, rbx", "xchg rax, rbx"),
+    ("xor r15, r15", "xor r15, r15"),
+    ("push rax", "push rax\npop rax"),
+]
+_JUNK_INSTRUCTIONS_X86 = [
+    ("nop", "nop"),
+    ("pushfd", "pushfd"),
+    ("popfd", "popfd"),
+    ("inc eax", "inc eax"),
+    ("dec ebx", "dec ebx"),
+    ("xchg eax, ebx", "xchg eax, ebx"),
+]
+
+
 def xor_bytes(data: bytes, key: int) -> bytes:
     """XOR each byte with a single key."""
     return bytes(b ^ key for b in data)
@@ -201,16 +223,7 @@ def generate_stack_string_x64(
     asm_lines = []
     junk_used = []
 
-    junk_instructions = [
-        ("nop", "nop"),
-        ("pushf", "pushfq"),
-        ("popf", "popfq"),
-        ("inc rax", "inc rax"),
-        ("dec rbx", "dec rbx"),
-        ("xchg rax, rbx", "xchg rax, rbx"),
-        ("xor r15, r15", "xor r15, r15"),
-        ("push rax", "push rax\npop rax"),
-    ]
+    junk_instructions = _JUNK_INSTRUCTIONS_X64
 
     encoded_data = string_data
     decode_header = ""
@@ -385,14 +398,7 @@ def generate_stack_string_x86(
         asm_lines.append(decode_header.rstrip())
     asm_lines.append(f"    sub esp, {size + 8}")
 
-    junk_instructions = [
-        ("nop", "nop"),
-        ("pushfd", "pushfd"),
-        ("popfd", "popfd"),
-        ("inc eax", "inc eax"),
-        ("dec ebx", "dec ebx"),
-        ("xchg eax, ebx", "xchg eax, ebx"),
-    ]
+    junk_instructions = _JUNK_INSTRUCTIONS_X86
 
     if encoding == EncodingScheme.PLAIN:
         for i, b in enumerate(string_data):
