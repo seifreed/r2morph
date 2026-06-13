@@ -33,10 +33,14 @@ from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
 from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 from r2morph.mutations.hardened_base import (
-    HardenedControlFlowFlattening,
     HardenedMutationPass,
-    HardenedOpaquePredicates,
+)
+from r2morph.mutations.hardened_cff import (
+    HardenedControlFlowFlattening,
     create_hardened_cff_pass,
+)
+from r2morph.mutations.hardened_opaque import (
+    HardenedOpaquePredicates,
     create_hardened_opaque_pass,
 )
 from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass

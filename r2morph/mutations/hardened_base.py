@@ -1,13 +1,10 @@
-"""
-Hardened mutation pass base class.
+"""Hardened mutation pass base class."""
 
-Extends CFG-aware mutations with pattern preservation and integrity validation.
-"""
+# ruff: noqa: I001
 
 from __future__ import annotations
 
 import logging
-import random
 from abc import abstractmethod
 from typing import Any
 
@@ -161,14 +158,7 @@ class HardenedMutationPass(CFGAwareMutationPass):
             ]
             exclusion_zones = func_zones
 
-        result = self.apply_hardened(
-            binary,
-            cfg,
-            safe_regions,
-            exclusion_zones,
-        )
-
-        return result
+        return self.apply_hardened(binary, cfg, safe_regions, exclusion_zones)
 
     def _get_safe_regions_with_patterns(self, func_addr: int) -> list[tuple[int, int]]:
         """
@@ -197,7 +187,10 @@ class HardenedMutationPass(CFGAwareMutationPass):
     ) -> dict[str, Any]:
         """Delegate to apply_hardened with empty exclusion zones."""
         return self.apply_hardened(
-            binary, cfg, [(r.start, r.end) if hasattr(r, "start") else r for r in safe_regions], []
+            binary,
+            cfg,
+            [(r.start, r.end) if hasattr(r, "start") else r for r in safe_regions],
+            [],
         )
 
     @abstractmethod
@@ -212,367 +205,45 @@ class HardenedMutationPass(CFGAwareMutationPass):
         Apply the mutation with pattern preservation.
 
         Subclasses must implement this method.
-
-        Args:
-            binary: Any to mutate
-            cfg: Control flow graph
-            safe_regions: Safe (start, end) address ranges
-            exclusion_zones: Exclusion zones to avoid
-
-        Returns:
-            Dictionary with mutation results
         """
         pass
 
     def should_preserve(self, address: int) -> bool:
-        """
-        Check if address should be preserved.
-
-        Args:
-            address: Address to check
-
-        Returns:
-            True if address must be preserved
-        """
         if self._preservation_manager:
             return self._preservation_manager.should_preserve(address)
         return False
 
     def should_avoid_pattern(self, address: int) -> bool:
-        """
-        Check if address should be avoided due to pattern preservation.
-
-        Args:
-            address: Address to check
-
-        Returns:
-            True if address should be avoided
-        """
         if self._preservation_manager:
             return self._preservation_manager.should_avoid(address)
         return False
 
     def get_preserved_pattern_at(self, address: int) -> Any:
-        """
-        Get preserved pattern at address.
-
-        Args:
-            address: Address to query
-
-        Returns:
-            PreservedPattern if found, None otherwise
-        """
         if self._preservation_manager:
             return self._preservation_manager.get_pattern_at(address)
         return None
 
     def get_exclusion_zones_for_type(self, pattern_type: PatternType) -> list[Any]:
-        """
-        Get exclusion zones for a specific pattern type.
-
-        Args:
-            pattern_type: Type of pattern
-
-        Returns:
-            List of exclusion zones
-        """
         if self._preservation_manager:
             return self._preservation_manager.get_exclusion_zones_for_type(pattern_type)
         return []
 
 
-class HardenedControlFlowFlattening(HardenedMutationPass):
-    """
-    Hardened control flow flattening with pattern preservation.
-
-    Preserves critical patterns (jump tables, exception handlers, PLT/GOT)
-    during CFF transformations.
-    """
-
-    def __init__(
-        self,
-        name: str = "hardened_cff",
-        enabled: bool = True,
-        preserve_patterns: bool = True,
-        validate_integrity: bool = True,
-        max_functions: int = 5,
-        min_blocks: int = 3,
-        probability: float = 0.5,
-    ):
-        """
-        Initialize hardened CFF pass.
-
-        Args:
-            name: Pass name
-            enabled: Whether pass is enabled
-            preserve_patterns: Whether to preserve critical patterns
-            validate_integrity: Whether to validate integrity
-            max_functions: Maximum functions to transform
-            min_blocks: Minimum blocks required
-            probability: Transformation probability
-        """
-        super().__init__(
-            name=name,
-            enabled=enabled,
-            preserve_patterns=preserve_patterns,
-            validate_integrity=validate_integrity,
-        )
-        self.max_functions = max_functions
-        self.min_blocks = min_blocks
-        self.probability = probability
-
-    def apply_hardened(
-        self,
-        binary: Any,
-        cfg: Any,
-        safe_regions: list[tuple[int, int]],
-        exclusion_zones: list[Any],
-    ) -> dict[str, Any]:
-        """
-        Apply hardened CFF transformation.
-
-        Args:
-            binary: Any to mutate
-            cfg: Control flow graph
-            safe_regions: Safe address ranges
-            exclusion_zones: Exclusion zones
-
-        Returns:
-            Mutation result dictionary
-        """
-
-        mutations: list[dict[str, Any]] = []
-        safe_mutations = 0
-        skipped_mutations = 0
-        patterns_preserved = 0
-        patterns_avoided = 0
-
-        def _build_result() -> dict[str, Any]:
-            return {
-                "mutations": mutations,
-                "safe_mutations": safe_mutations,
-                "skipped_mutations": skipped_mutations,
-                "patterns_preserved": patterns_preserved,
-                "patterns_avoided": patterns_avoided,
-            }
-
-        if random.random() > self.probability:
-            return _build_result()
-
-        blocks = list(cfg.blocks.items()) if hasattr(cfg, "blocks") else []
-
-        if len(blocks) < self.min_blocks:
-            return _build_result()
-
-        for block_addr, block in blocks:
-            if self.should_avoid_pattern(block_addr):
-                skipped_mutations += 1
-                patterns_avoided += 1
-                continue
-
-            if self.should_preserve(block_addr):
-                patterns_preserved += 1
-                continue
-
-            in_safe_region = any(start <= block_addr < end for start, end in safe_regions)
-
-            if not in_safe_region and safe_regions:
-                skipped_mutations += 1
-                continue
-
-            mutation = self._try_flatten_block(binary, block_addr, block, exclusion_zones)
-            if mutation:
-                mutations.append(mutation)
-                safe_mutations += 1
-
-        return _build_result()
-
-    def _try_flatten_block(
-        self,
-        binary: Any,
-        block_addr: int,
-        block: Any,
-        exclusion_zones: list[Any],
-    ) -> dict[str, Any] | None:
-        """
-        Try to flatten a block.
-
-        Args:
-            binary: Any to mutate
-            block_addr: Block address
-            block: Block object
-            exclusion_zones: Exclusion zones
-
-        Returns:
-            Mutation info if successful, None otherwise
-        """
-        for zone in exclusion_zones:
-            if zone.contains(block_addr):
-                return None
-
-        return {
-            "type": "cff",
-            "address": f"0x{block_addr:x}",
-            "description": "Control flow flattening candidate",
-        }
+from r2morph.mutations.hardened_cff import (  # noqa: E402,F401
+    create_hardened_cff_pass,
+    HardenedControlFlowFlattening,
+)
+from r2morph.mutations.hardened_opaque import (  # noqa: E402,F401
+    create_hardened_opaque_pass,
+    HardenedOpaquePredicates,
+)
 
 
-class HardenedOpaquePredicates(HardenedMutationPass):
-    """
-    Hardened opaque predicate insertion with pattern preservation.
-
-    Safely inserts opaque predicates avoiding critical patterns.
-    """
-
-    def __init__(
-        self,
-        name: str = "hardened_opaque",
-        enabled: bool = True,
-        preserve_patterns: bool = True,
-        validate_integrity: bool = True,
-        density: float = 0.3,
-    ):
-        """
-        Initialize hardened opaque predicates pass.
-
-        Args:
-            name: Pass name
-            enabled: Whether pass is enabled
-            preserve_patterns: Whether to preserve critical patterns
-            validate_integrity: Whether to validate integrity
-            density: Predicate density (0.0 to 1.0)
-        """
-        super().__init__(
-            name=name,
-            enabled=enabled,
-            preserve_patterns=preserve_patterns,
-            validate_integrity=validate_integrity,
-        )
-        self.density = density
-
-    def apply_hardened(
-        self,
-        binary: Any,
-        cfg: Any,
-        safe_regions: list[tuple[int, int]],
-        exclusion_zones: list[Any],
-    ) -> dict[str, Any]:
-        """
-        Apply hardened opaque predicate insertion.
-
-        Args:
-            binary: Any to mutate
-            cfg: Control flow graph
-            safe_regions: Safe address ranges
-            exclusion_zones: Exclusion zones
-
-        Returns:
-            Mutation result dictionary
-        """
-        all_mutations: list[dict[str, Any]] = []
-        safe_mutations = 0
-        skipped_mutations = 0
-        patterns_preserved = 0
-        patterns_avoided = 0
-
-        blocks = list(cfg.blocks.items()) if hasattr(cfg, "blocks") else []
-
-        for block_addr, block in blocks:
-            if self.should_avoid_pattern(block_addr):
-                skipped_mutations += 1
-                patterns_avoided += 1
-                continue
-
-            if self.should_preserve(block_addr):
-                patterns_preserved += 1
-                continue
-
-            in_safe_region = any(start <= block_addr < end for start, end in safe_regions)
-
-            if not in_safe_region and safe_regions:
-                skipped_mutations += 1
-                continue
-
-            found_mutations = self._find_opaque_opportunities(binary, block_addr, block, exclusion_zones)
-            all_mutations.extend(found_mutations)
-            safe_mutations += len(found_mutations)
-
-        return {
-            "mutations": all_mutations,
-            "safe_mutations": safe_mutations,
-            "skipped_mutations": skipped_mutations,
-            "patterns_preserved": patterns_preserved,
-            "patterns_avoided": patterns_avoided,
-        }
-
-    def _find_opaque_opportunities(
-        self,
-        binary: Any,
-        block_addr: int,
-        block: Any,
-        exclusion_zones: list[Any],
-    ) -> list[dict[str, Any]]:
-        """
-        Find opportunities for opaque predicate insertion.
-
-        Args:
-            binary: Any to mutate
-            block_addr: Block address
-            block: Block object
-            exclusion_zones: Exclusion zones
-
-        Returns:
-            List of mutation opportunities
-        """
-
-        opportunities: list[dict[str, Any]] = []
-
-        if not hasattr(block, "instructions"):
-            return opportunities
-
-        for i, insn in enumerate(block.instructions):
-            insn_addr = insn.get("offset", insn.get("addr", 0))
-
-            if self.should_avoid_pattern(insn_addr):
-                continue
-
-            in_zone = any(zone.contains(insn_addr) for zone in exclusion_zones)
-            if in_zone:
-                continue
-
-            if random.random() < self.density:
-                opportunities.append(
-                    {
-                        "type": "opaque_predicate",
-                        "address": f"0x{insn_addr:x}",
-                        "position": i,
-                    }
-                )
-
-        return opportunities
-
-
-def create_hardened_cff_pass(**kwargs: Any) -> HardenedControlFlowFlattening:
-    """
-    Create a hardened CFF pass.
-
-    Args:
-        **kwargs: Pass arguments
-
-    Returns:
-        HardenedControlFlowFlattening instance
-    """
-    return HardenedControlFlowFlattening(**kwargs)
-
-
-def create_hardened_opaque_pass(**kwargs: Any) -> HardenedOpaquePredicates:
-    """
-    Create a hardened opaque predicates pass.
-
-    Args:
-        **kwargs: Pass arguments
-
-    Returns:
-        HardenedOpaquePredicates instance
-    """
-    return HardenedOpaquePredicates(**kwargs)
+__all__ = [
+    "HardenedMutationPass",
+    "HardenedMutationResult",
+    "HardenedControlFlowFlattening",
+    "HardenedOpaquePredicates",
+    "create_hardened_cff_pass",
+    "create_hardened_opaque_pass",
+]
