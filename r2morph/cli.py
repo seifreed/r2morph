@@ -25,7 +25,7 @@ from r2morph.reporting.filtered_summary_builder import (
     _build_report_dispatch_state,
 )
 from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
-from r2morph.reporting.report_helpers import (
+from r2morph.reporting.report_gate_helpers import (
     _attach_gate_evaluation,
     _pass_severity_requirements_met,
     _severity_threshold_met,
