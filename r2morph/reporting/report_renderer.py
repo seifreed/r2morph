@@ -10,8 +10,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.reporting.report_renderer_tables import (
+    render_filtered_summary_table,
+    render_mismatch_table,
+    render_pass_evidence_table,
+)
 from r2morph.reporting.report_rendering import (
-    create_table,
     render_degradation_sections,
     render_gate_sections,
     render_symbolic_sections,
@@ -50,58 +54,14 @@ class ConsoleRenderer:
         )
 
         if mismatch_rows:
-            self._render_mismatch_table(mismatch_rows)
-
-    def _render_mismatch_table(
-        self,
-        mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
-    ) -> None:
-        """Render a table of observable mismatches."""
-        table = create_table(
-            "Observable Mismatches by Pass",
-            [
-                ("Pass", "cyan"),
-                ("Count", "red"),
-                ("Observables", "yellow"),
-            ],
-        )
-
-        for pass_name, start_addr, end_addr, observables in mismatch_rows:
-            table.add_row(
-                pass_name,
-                str(len(observables)),
-                ", ".join(observables[:5]) + ("..." if len(observables) > 5 else ""),
-            )
-
-        self._console.print(table)
+            render_mismatch_table(self._console, mismatch_rows)
 
     def render_pass_evidence_table(
         self,
         pass_results: dict[str, Any],
     ) -> None:
         """Render a table of pass evidence summaries."""
-        table = create_table(
-            "Pass Evidence Summary",
-            [
-                ("Pass", "cyan"),
-                ("Changed Regions", "blue"),
-                ("Structural Issues", "red"),
-                ("Symbolic Mismatches", "red"),
-                ("Status", "yellow"),
-            ],
-        )
-
-        for pass_name, result in pass_results.items():
-            evidence = result.get("evidence_summary", {})
-            table.add_row(
-                pass_name,
-                str(evidence.get("changed_region_count", 0)),
-                str(evidence.get("structural_issue_count", 0)),
-                str(evidence.get("symbolic_binary_mismatched_regions", 0)),
-                result.get("status", "unknown"),
-            )
-
-        self._console.print(table)
+        render_pass_evidence_table(self._console, pass_results)
 
     def render_gate_failure_summary(
         self,
@@ -133,25 +93,12 @@ class ConsoleRenderer:
         only_failed_gates: bool = False,
     ) -> None:
         """Render a filtered report summary."""
-        title = "Filtered Report Summary"
-        if only_mismatches:
-            title = "Mismatch Summary"
-        elif only_failed_gates:
-            title = "Failed Gates Summary"
-
-        table = create_table(
-            title,
-            [
-                ("Metric", "cyan"),
-                ("Value", "green"),
-            ],
+        render_filtered_summary_table(
+            self._console,
+            filtered_summary,
+            only_mismatches=only_mismatches,
+            only_failed_gates=only_failed_gates,
         )
-
-        for key, value in filtered_summary.items():
-            if isinstance(value, (int, float, str)):
-                table.add_row(key.replace("_", " ").title(), str(value))
-
-        self._console.print(table)
 
 
 class ReportRenderer:
