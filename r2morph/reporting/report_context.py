@@ -5,9 +5,10 @@ These context objects group related parameters into cohesive units,
 following Clean Code principles for function argument lists.
 """
 
+from collections.abc import Iterator
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any
 
 
 @dataclass

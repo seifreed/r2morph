@@ -110,7 +110,7 @@ class PatternMatcher:
         "HARDWARE\\DESCRIPTION\\System",
     ]
 
-    def __init__(self, binary: "Binary"):
+    def __init__(self, binary: Binary):
         """
         Initialize pattern matcher.
 

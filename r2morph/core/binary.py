@@ -61,7 +61,7 @@ class Binary:
         flags: list[str] | None = None,
         writable: bool = False,
         low_memory: bool = False,
-        disassembler: "DisassemblerInterface | None" = None,
+        disassembler: DisassemblerInterface | None = None,
     ):
         """Initialize Binary.
 
@@ -101,13 +101,13 @@ class Binary:
         self._lock = threading.Lock()
 
         # Lazy-loaded services
-        self._assembly_service: "AssemblyService | None" = None
-        self._memory_manager: "MemoryManager | None" = None
-        self._reader: "BinaryReader | None" = None
-        self._writer: "BinaryWriter | None" = None
+        self._assembly_service: AssemblyService | None = None
+        self._memory_manager: MemoryManager | None = None
+        self._reader: BinaryReader | None = None
+        self._writer: BinaryWriter | None = None
 
     @property
-    def assembly(self) -> "AssemblyService":
+    def assembly(self) -> AssemblyService:
         """Get the AssemblyService instance (lazy-loaded)."""
         if self._assembly_service is None:
             with self._lock:
@@ -118,7 +118,7 @@ class Binary:
         return self._assembly_service
 
     @property
-    def memory_manager(self) -> "MemoryManager":
+    def memory_manager(self) -> MemoryManager:
         """Get the MemoryManager instance (lazy-loaded)."""
         if self._memory_manager is None:
             with self._lock:
@@ -129,7 +129,7 @@ class Binary:
         return self._memory_manager
 
     @property
-    def reader(self) -> "BinaryReader":
+    def reader(self) -> BinaryReader:
         """Get the BinaryReader instance (lazy-loaded)."""
         if self._reader is None:
             with self._lock:
@@ -140,7 +140,7 @@ class Binary:
         return self._reader
 
     @property
-    def writer(self) -> "BinaryWriter":
+    def writer(self) -> BinaryWriter:
         """Get the BinaryWriter instance (lazy-loaded)."""
         if self._writer is None:
             with self._lock:
@@ -150,7 +150,7 @@ class Binary:
                     self._writer = BinaryWriter(self.r2, self.path, self._writable)
         return self._writer
 
-    def __enter__(self) -> "Binary":
+    def __enter__(self) -> Binary:
         self.open()
         return self
 
@@ -195,7 +195,7 @@ class Binary:
         assert last_error is not None
         raise last_error
 
-    def open(self) -> "Binary":
+    def open(self) -> Binary:
         try:
             logger.info(f"Opening binary: {self.path}")
             if self._injected_disassembler is not None:
@@ -275,7 +275,7 @@ class Binary:
             self._analyzed = False
             self._functions_cache = None
 
-    def analyze(self, level: str = "aaa") -> "Binary":
+    def analyze(self, level: str = "aaa") -> Binary:
         if not self.r2:
             raise RuntimeError("Binary not opened. Call open() first.")
 

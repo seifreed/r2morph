@@ -17,7 +17,7 @@ import random
 import subprocess
 import tempfile
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -246,7 +246,7 @@ def assemble_nasm(
     output_path: str,
     save_asm: bool = False,
     nasm_path: str = "nasm",
-) -> tuple[bool, str, Optional[str]]:
+) -> tuple[bool, str, str | None]:
     """
     Assemble NASM code using the NASM assembler.
 
@@ -419,7 +419,7 @@ def export_shellcode(
     shuffle: bool = False,
     save_asm: bool = False,
     verbose: bool = False,
-) -> tuple[bool, str, Optional[str]]:
+) -> tuple[bool, str, str | None]:
     """
     Convenience function to export shellcode to NASM.
 

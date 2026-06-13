@@ -7,7 +7,6 @@ junk code generation preserves program semantics.
 
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -106,7 +105,7 @@ class RegTracker:
         self._stack[reg] = StackEntry(register=reg, restore_code=restore_code, size=8)
         self._stack_depth += 1
 
-    def restore_register(self, reg: str) -> Optional[bytes]:
+    def restore_register(self, reg: str) -> bytes | None:
         if reg not in self._stack:
             return None
         entry = self._stack.pop(reg)
@@ -119,7 +118,7 @@ class RegTracker:
     def get_stored_registers(self) -> list[str]:
         return list(self._stack.keys())
 
-    def get_top_stack_register(self) -> tuple[Optional[str], bytes]:
+    def get_top_stack_register(self) -> tuple[str | None, bytes]:
         if not self._stack:
             return None, b""
         reg = list(self._stack.keys())[-1]
@@ -132,7 +131,7 @@ class RegTracker:
         self._stack.clear()
         self._stack_depth = 0
 
-    def get_subregisters(self, reg: str) -> Optional[tuple]:
+    def get_subregisters(self, reg: str) -> tuple | None:
         return self.X86_64_GPR.get(reg)
 
     def get_register_size(self, reg: str) -> int:

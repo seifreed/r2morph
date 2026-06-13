@@ -669,7 +669,7 @@ class CallGraph:
         return json.dumps(self.to_dict(), indent=2)
 
     @classmethod
-    def from_json(cls, json_str: str) -> "CallGraph":
+    def from_json(cls, json_str: str) -> CallGraph:
         """
         Deserialize from JSON string.
 
@@ -685,7 +685,7 @@ class CallGraph:
         return cls.from_dict(data)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "CallGraph":
+    def from_dict(cls, data: dict[str, Any]) -> CallGraph:
         """
         Create from dictionary representation.
 
@@ -988,7 +988,7 @@ def build_call_graph(binary: Binary, include_indirect: bool = True, include_plt:
 
 def build_call_graph_cached(
     binary: Binary,
-    cache: "AnalysisCache | None" = None,
+    cache: AnalysisCache | None = None,
     include_indirect: bool = True,
     include_plt: bool = True,
 ) -> CallGraph:

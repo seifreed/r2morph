@@ -6,8 +6,8 @@ junk code that preserves program semantics.
 """
 
 import random
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from r2morph.analysis.os_flags import OSFlags
 from r2morph.analysis.register_tracker import (

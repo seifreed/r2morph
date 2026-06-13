@@ -28,16 +28,16 @@ class BinaryReader:
     - Architecture info
     """
 
-    def __init__(self, r2: "DisassemblerInterface | None"):
+    def __init__(self, r2: DisassemblerInterface | None):
         """
         Initialize BinaryReader.
 
         Args:
             r2: Disassembler connection (r2pipe or DisassemblerInterface)
         """
-        self._r2: "DisassemblerInterface | None" = r2
+        self._r2: DisassemblerInterface | None = r2
 
-    def set_r2(self, r2: "DisassemblerInterface | None") -> None:
+    def set_r2(self, r2: DisassemblerInterface | None) -> None:
         """Update the disassembler connection after reload."""
         self._r2 = r2
 

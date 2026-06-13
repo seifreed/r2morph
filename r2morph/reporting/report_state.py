@@ -8,7 +8,8 @@ This module handles resolution of report state including:
 - Mismatch view resolution
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 def _normalized_pass_map(normalized_results: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:

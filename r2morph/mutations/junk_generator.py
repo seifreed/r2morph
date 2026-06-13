@@ -7,7 +7,7 @@ and the gadgets library.
 
 import random
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from r2morph.analysis.register_tracker import REG_SIZES_MAP, RegTracker
 from r2morph.mutations.gadgets import Gadgets, create_gadgets
@@ -17,8 +17,8 @@ from r2morph.mutations.gadgets import Gadgets, create_gadgets
 class GeneratedCode:
     code: bytes
     size: int
-    store_gadget: Optional[bytes] = None
-    restore_gadget: Optional[bytes] = None
+    store_gadget: bytes | None = None
+    restore_gadget: bytes | None = None
 
 
 class JunkGenerator:
@@ -32,7 +32,7 @@ class JunkGenerator:
     def __init__(self, os_type: str = "linux"):
         self.os_type = os_type
         self._reg_tracker = RegTracker()
-        self._gadgets: Optional[Gadgets] = None
+        self._gadgets: Gadgets | None = None
         self._assembler: Any = None
         self._init_assembler()
 

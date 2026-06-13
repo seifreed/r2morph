@@ -26,7 +26,7 @@ class ConcurrencyRecorder:
         self._mutex = threading.Lock()
         self.max_active = 0
 
-    def __enter__(self) -> "ConcurrencyRecorder":
+    def __enter__(self) -> ConcurrencyRecorder:
         with self._mutex:
             self._active += 1
             self.max_active = max(self.max_active, self._active)

@@ -303,7 +303,7 @@ class PerformanceBenchmark:
             logger.warning(f"Baseline not found: {baseline_file}")
             return None
 
-        with open(baseline_file, "r") as f:
+        with open(baseline_file) as f:
             data = json.load(f)
 
         return PerformanceSnapshot(

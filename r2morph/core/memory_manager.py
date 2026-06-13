@@ -55,7 +55,7 @@ class MemoryManager:
         """Reset the mutation counter to zero."""
         self._mutation_counter = 0
 
-    def track_mutation(self, binary: "Binary") -> None:
+    def track_mutation(self, binary: Binary) -> None:
         """
         Track a mutation and reload r2 periodically for batch processing.
 
@@ -74,7 +74,7 @@ class MemoryManager:
             )
             self._reload_binary(binary)
 
-    def _reload_binary(self, binary: "Binary") -> None:
+    def _reload_binary(self, binary: Binary) -> None:
         """
         Reload r2 connection (close and reopen).
 
@@ -91,7 +91,7 @@ class MemoryManager:
         # Restore analyzed state (cache is preserved separately)
         binary._analyzed = was_analyzed
 
-    def force_reload(self, binary: "Binary") -> None:
+    def force_reload(self, binary: Binary) -> None:
         """
         Force a reload of the r2 connection.
 

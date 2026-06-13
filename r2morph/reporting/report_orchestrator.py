@@ -33,7 +33,7 @@ from r2morph.reporting.report_resolver import (
 )
 
 
-def _dispatch_report_flow_ctx(ctx: "ReportFlowContext") -> None:
+def _dispatch_report_flow_ctx(ctx: ReportFlowContext) -> None:
     """Dispatch between general and mismatch-specific report flows.
 
     Uses ReportFlowContext dataclass to pass structured state instead

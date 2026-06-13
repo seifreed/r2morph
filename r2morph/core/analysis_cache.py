@@ -611,7 +611,7 @@ class CacheStorage:
 
     def _load_json(self, path: Path) -> Any | None:
         try:
-            with open(path, "r") as f:
+            with open(path) as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
             return None

@@ -208,7 +208,7 @@ class MutationPassFuzzer:
             "%d" * random.randint(1, 10),
             "%x" * random.randint(1, 10),
             "%n" * random.randint(1, 5),
-            "%{0}".format(random.randint(1, 1000)) + "s",
+            f"%{random.randint(1, 1000)}" + "s",
             "AAAA%08x.%08x.%08x.%08x",
             "%p" * random.randint(1, 5),
         ]

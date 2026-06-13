@@ -6,8 +6,9 @@ equivalent replacement code with weighted probabilities.
 """
 
 import random
+from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass

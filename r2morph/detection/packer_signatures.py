@@ -322,7 +322,7 @@ class PackerSignatureDatabase:
 
         return signatures
 
-    def detect(self, binary: "Binary", entropy_analyzer: "EntropyAnalyzer") -> PackerType:
+    def detect(self, binary: Binary, entropy_analyzer: EntropyAnalyzer) -> PackerType:
         """
         Detect specific packer type using signatures.
 
@@ -360,7 +360,7 @@ class PackerSignatureDatabase:
 
         return best_match
 
-    def _get_entry_bytes(self, binary: "Binary", entry_point: int, size: int = 32) -> bytes:
+    def _get_entry_bytes(self, binary: Binary, entry_point: int, size: int = 32) -> bytes:
         """Get bytes at entry point."""
         try:
             if binary.r2 is None:
@@ -375,8 +375,8 @@ class PackerSignatureDatabase:
         signature: PackerSignature,
         sections: list[dict[str, Any]],
         entry_bytes: bytes,
-        binary: "Binary",
-        entropy_analyzer: "EntropyAnalyzer",
+        binary: Binary,
+        entropy_analyzer: EntropyAnalyzer,
     ) -> float:
         """Calculate confidence score for a packer signature."""
         confidence = 0.0
@@ -412,7 +412,7 @@ class PackerSignatureDatabase:
 
         return confidence / max(total_checks, 1)
 
-    def detect_packing_layers(self, binary: "Binary", entropy_analyzer: "EntropyAnalyzer") -> dict[str, Any]:
+    def detect_packing_layers(self, binary: Binary, entropy_analyzer: EntropyAnalyzer) -> dict[str, Any]:
         """
         Detect multiple packing layers.
 

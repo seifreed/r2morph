@@ -99,7 +99,7 @@ def test_apply_attempts_the_first_transition_with_default_config() -> None:
         def is_analyzed(self) -> bool:
             return True
 
-        def analyze(self) -> "_BinaryStandIn":
+        def analyze(self) -> _BinaryStandIn:
             return self
 
         def get_functions(self) -> list[dict[str, object]]:

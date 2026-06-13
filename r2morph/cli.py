@@ -128,7 +128,7 @@ def _build_runtime_validator(
         ),
     )
     if corpus is not None:
-        with open(corpus, "r", encoding="utf-8") as handle:
+        with open(corpus, encoding="utf-8") as handle:
             validator.load_test_cases(json.load(handle))
     return validator
 
@@ -1277,7 +1277,7 @@ def report(
     if output_format.lower() == "sarif":
         from r2morph.reporting.sarif_formatter import format_as_sarif
 
-    with open(report_file, "r", encoding="utf-8") as handle:
+    with open(report_file, encoding="utf-8") as handle:
         payload = json.load(handle)
 
     context = _resolve_report_context(

@@ -83,7 +83,7 @@ class AssemblyService:
         """Initialize AssemblyService."""
         pass
 
-    def assemble(self, binary: "Binary", instruction: str, function_addr: int | None = None) -> bytes | None:
+    def assemble(self, binary: Binary, instruction: str, function_addr: int | None = None) -> bytes | None:
         """
         Assemble an instruction using radare2's rasm2 with intelligent fallbacks.
 
@@ -143,7 +143,7 @@ class AssemblyService:
             logger.error(f"Assembly error for '{instruction}': {e}")
             return None
 
-    def _resolve_symbolic_vars(self, binary: "Binary", instruction: str, function_addr: int | None = None) -> str:
+    def _resolve_symbolic_vars(self, binary: Binary, instruction: str, function_addr: int | None = None) -> str:
         """Resolve symbolic variable names in instruction to actual addresses.
 
         Delegates to BinaryReader.resolve_symbolic_vars() to avoid duplication.
@@ -227,7 +227,7 @@ class AssemblyService:
             return bytes([rex]) + opcode + bytes([modrm])
         return opcode + bytes([modrm])
 
-    def _assemble_segment_prefix_fallback(self, binary: "Binary", instruction: str) -> bytes | None:
+    def _assemble_segment_prefix_fallback(self, binary: Binary, instruction: str) -> bytes | None:
         """
         Manually encode instructions with segment prefixes (fs:, gs:, etc.).
 

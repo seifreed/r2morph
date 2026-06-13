@@ -10,10 +10,11 @@ import logging
 import os
 import threading
 import time
+from collections.abc import Callable, Iterator
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any
 
 # Type checking for optional dependencies
 try:
@@ -327,7 +328,7 @@ class IncrementalAnalyzer:
             try:
                 import json
 
-                with open(self.state_file, "r") as f:
+                with open(self.state_file) as f:
                     self.file_states = json.load(f)
                 logger.debug(f"Loaded state for {len(self.file_states)} files")
             except Exception as e:

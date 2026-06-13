@@ -127,7 +127,7 @@ class RegressionTestFramework:
 
         for baseline_file in baseline_files:
             try:
-                with open(baseline_file, "r") as f:
+                with open(baseline_file) as f:
                     data = json.load(f)
                     test_type = data.get("test_type")
                     if isinstance(test_type, str):
@@ -737,7 +737,7 @@ class RegressionTester:
 
         logger.info(f"Saved regression results to {output_file}")
 
-    def _get_mutation_pass(self, name: str) -> "MutationPass":
+    def _get_mutation_pass(self, name: str) -> MutationPass:
         """
         Get a mutation pass instance by name.
 

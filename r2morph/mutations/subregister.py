@@ -6,7 +6,7 @@ in x86-64, enabling size-aware code transformations.
 """
 
 from dataclasses import dataclass
-from typing import Final, Optional
+from typing import Final
 
 
 @dataclass
@@ -14,7 +14,7 @@ class RegisterInfo:
     name: str
     size_bits: int
     base_register: str
-    subregisters: tuple[Optional[str], ...]
+    subregisters: tuple[str | None, ...]
     index: int
 
 
@@ -25,7 +25,7 @@ REG_8H: Final[int] = 8
 REG_8L: Final[int] = 16
 REG_ALL: Final[int] = REG_64 | REG_32 | REG_16 | REG_8H | REG_8L
 
-REGISTER_MAP: dict[str, tuple[Optional[str], Optional[str], Optional[str], str]] = {
+REGISTER_MAP: dict[str, tuple[str | None, str | None, str | None, str]] = {
     "rax": (None, "eax", "ax", "al"),
     "rbx": (None, "ebx", "bx", "bl"),
     "rcx": (None, "ecx", "cx", "cl"),
@@ -131,7 +131,7 @@ def _init_caches() -> None:
 _init_caches()
 
 
-def get_register_info(reg: str) -> Optional[RegisterInfo]:
+def get_register_info(reg: str) -> RegisterInfo | None:
     return _register_info_cache.get(reg.lower())
 
 
@@ -158,12 +158,12 @@ def get_size_flag(reg: str) -> int:
     return 0
 
 
-def get_subregisters(reg: str) -> tuple[Optional[str], ...]:
+def get_subregisters(reg: str) -> tuple[str | None, ...]:
     base = get_base_register(reg)
     return REGISTER_MAP.get(base, (None, None, None, None))
 
 
-def get_subregister_by_size(reg: str, size_bits: int) -> Optional[str]:
+def get_subregister_by_size(reg: str, size_bits: int) -> str | None:
     base = get_base_register(reg)
     subregs = REGISTER_MAP.get(base)
 
@@ -212,7 +212,7 @@ def get_compatible_registers(reg: str, same_size: bool = True) -> list[str]:
     return result
 
 
-def get_random_compatible_register(reg: str, exclude: Optional[list[str]] = None) -> Optional[str]:
+def get_random_compatible_register(reg: str, exclude: list[str] | None = None) -> str | None:
     import random
 
     compat = get_compatible_registers(reg, same_size=True)

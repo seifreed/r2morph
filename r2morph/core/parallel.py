@@ -17,11 +17,12 @@ import sys
 import tempfile
 import threading
 import time
+from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.protocols import MutationPassProtocol
@@ -303,7 +304,7 @@ class BinaryFileLock:
                         self._locked = True
                         logger.debug(f"Acquired lock for {self.binary_path}")
                         return True
-                    except (IOError, OSError):
+                    except OSError:
                         if not blocking:
                             lock_file.close()
                             return False
@@ -322,7 +323,7 @@ class BinaryFileLock:
                         self._locked = True
                         logger.debug(f"Acquired lock for {self.binary_path}")
                         return True
-                    except (IOError, OSError):
+                    except OSError:
                         if not blocking:
                             lock_file.close()
                             return False

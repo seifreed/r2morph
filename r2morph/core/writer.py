@@ -28,7 +28,7 @@ class BinaryWriter:
     - Batch mutation tracking
     """
 
-    def __init__(self, r2: "DisassemblerInterface | None", path: Path, writable: bool = False):
+    def __init__(self, r2: DisassemblerInterface | None, path: Path, writable: bool = False):
         """
         Initialize BinaryWriter.
 
@@ -37,12 +37,12 @@ class BinaryWriter:
             path: Path to the binary file
             writable: Whether the binary was opened in write mode
         """
-        self._r2: "DisassemblerInterface | None" = r2
+        self._r2: DisassemblerInterface | None = r2
         self._path = path
         self._writable = writable
         self._mutation_counter = 0
 
-    def set_r2(self, r2: "DisassemblerInterface | None") -> None:
+    def set_r2(self, r2: DisassemblerInterface | None) -> None:
         """Update the disassembler connection after reload."""
         self._r2 = r2
 

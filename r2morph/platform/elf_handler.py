@@ -100,7 +100,7 @@ class ELFHandler:
                 if len(magic) < 4:
                     return False
                 return magic == ELF_MAGIC
-        except (OSError, IOError) as e:
+        except OSError as e:
             logger.error(f"Failed to read file for ELF check: {e}")
             return False
 

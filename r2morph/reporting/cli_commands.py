@@ -73,7 +73,7 @@ def handle_report_command(
     """
     from r2morph.reporting import enforce_report_requirements
 
-    with open(report_file, "r", encoding="utf-8") as handle:
+    with open(report_file, encoding="utf-8") as handle:
         payload: dict[str, Any] = json.load(handle)
 
     if only_pass:
