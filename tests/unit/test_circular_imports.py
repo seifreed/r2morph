@@ -67,6 +67,7 @@ REPORTING_MODULES = [
     "r2morph.core.engine_wiring",
     "r2morph.core.engine_mutations",
     "r2morph.core.analysis_cache_models",
+    "r2morph.core.analysis_cache_storage",
     "r2morph.core.binary_lifecycle",
     "r2morph.core.report_helpers_evidence",
     "r2morph.core.report_helpers_projection",
