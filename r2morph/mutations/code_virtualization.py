@@ -47,6 +47,10 @@ from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.code_virtualization_multi_vm import (
+    apply_multi_vm_virtualization,
+    resolve_multi_vm_profiles,
+)
 from r2morph.mutations.code_virtualization_vm import (  # noqa: F401
     CONDITION_CODES,
     MULTI_VM_PROFILES,
@@ -59,10 +63,12 @@ from r2morph.mutations.code_virtualization_vm import (  # noqa: F401
     VMProfile,
     generate_multi_vm_dispatcher_x64,
     generate_multi_vm_handler_x64,
+    generate_vm_bytecode,
     generate_vm_dispatcher_x64,
     generate_vm_dispatcher_x86,
     generate_vm_handler_x64,
     translate_instruction_to_vm,
+    virtualize_block_to_vm_instructions,
 )
 
 logger = logging.getLogger(__name__)
@@ -151,30 +157,11 @@ class CodeVirtualizationPass(MutationPass):
 
     def _virtualize_block(self, instructions: list[dict[str, Any]], arch: str) -> list[VMInstruction]:
         """Virtualize a basic block to VM bytecode."""
-        vm_insns = []
-
-        vm_insns.append(VMInstruction(VMOpcode.VM_ENTER, [], "vm_enter"))
-
-        for insn in instructions:
-            vm_insn = translate_instruction_to_vm(insn, arch)
-            if vm_insn:
-                vm_insns.append(vm_insn)
-            else:
-                vm_insns.append(VMInstruction(VMOpcode.VM_NOP, [], f"; skipped: {insn.get('mnemonic', 'unknown')}"))
-
-        vm_insns.append(VMInstruction(VMOpcode.VM_EXIT, [], "vm_exit"))
-
-        return vm_insns
+        return virtualize_block_to_vm_instructions(instructions, arch)
 
     def _generate_bytecode(self, vm_insns: list[VMInstruction]) -> bytes:
         """Generate bytecode from VM instructions."""
-        bytecode = bytearray()
-
-        for vm_insn in vm_insns:
-            vm_insn.bytecode_offset = len(bytecode)
-            bytecode.extend(vm_insn.to_bytecode())
-
-        return bytes(bytecode)
+        return generate_vm_bytecode(vm_insns)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -336,136 +323,8 @@ class MultiVMVirtualizationPass(CodeVirtualizationPass):
         self.num_vms = self.config.get("num_vms", 2)
         self.profile_names = self.config.get("profiles", ["simple", "obfuscated"])
         self.randomize_selection = self.config.get("randomize_selection", True)
-        self.active_profiles: list[VMProfile] = []
-        self._init_profiles()
-
-    def _init_profiles(self) -> None:
-        """Initialize VM profiles."""
-        available = {p.name: p for p in MULTI_VM_PROFILES}
-        self.active_profiles = []
-
-        for name in self.profile_names[: self.num_vms]:
-            if name in available:
-                self.active_profiles.append(available[name])
-            else:
-                self.active_profiles.append(MULTI_VM_PROFILES[0])
-
-        if not self.active_profiles:
-            self.active_profiles = [MULTI_VM_PROFILES[0]]
-
-    def _select_vm_profile(self, func_addr: int) -> VMProfile:
-        """Select a VM profile for a function."""
-        if self.randomize_selection:
-            return random.choice(self.active_profiles)
-        return self.active_profiles[func_addr % len(self.active_profiles)]
-
-    def _virtualize_with_profile(
-        self, instructions: list[dict[str, Any]], arch: str, profile: VMProfile
-    ) -> tuple[list[VMInstruction], bytes]:
-        """Virtualize instructions using a specific VM profile."""
-        vm_insns = []
-
-        opcode_offset = profile.opcode_base
-
-        vm_insns.append(VMInstruction(VMOpcode.VM_ENTER, [], "vm_enter"))
-
-        for insn in instructions:
-            vm_insn = translate_instruction_to_vm(insn, arch)
-            if vm_insn:
-                adjusted_opcode_value = int(vm_insn.opcode) + opcode_offset
-                adjusted_opcode = VMOpcode(adjusted_opcode_value)
-                vm_insn_adjusted = VMInstruction(
-                    adjusted_opcode,
-                    vm_insn.operands,
-                    vm_insn.original_asm,
-                )
-                vm_insns.append(vm_insn_adjusted)
-            else:
-                vm_insns.append(VMInstruction(VMOpcode.VM_NOP, [], f"; skipped: {insn.get('mnemonic', 'unknown')}"))
-
-        vm_insns.append(VMInstruction(VMOpcode.VM_EXIT, [], "vm_exit"))
-
-        bytecode = bytearray()
-        for vm_insn in vm_insns:
-            vm_insn.bytecode_offset = len(bytecode)
-            bytecode.extend(vm_insn.to_bytecode())
-
-        return vm_insns, bytes(bytecode)
+        self.active_profiles: list[VMProfile] = resolve_multi_vm_profiles(self.profile_names, self.num_vms)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """Apply multi-VM virtualization."""
-        self._reset_random()
-        logger.info(f"Applying multi-VM virtualization with {len(self.active_profiles)} VMs")
-
-        functions = binary.get_functions()
-        virtualized_count = 0
-        skipped_count = 0
-        total_insns = 0
-        total_bytecode = 0
-        profiles_used: dict[str, int] = {p.name: 0 for p in self.active_profiles}
-
-        arch_info = binary.get_arch_info()
-        arch = "x64" if arch_info.get("arch") in ("x86_64", "x64", "amd64") else "x86"
-
-        for func in functions:
-            if virtualized_count >= self.max_functions:
-                break
-
-            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-                continue
-
-            if random.random() > self.probability:
-                skipped_count += 1
-                continue
-
-            try:
-                blocks = binary.get_basic_blocks(func["addr"])
-            except Exception as e:
-                logger.debug(f"Failed to get blocks: {e}")
-                continue
-
-            profile = self._select_vm_profile(func.get("addr", 0))
-            profiles_used[profile.name] += 1
-
-            for block in blocks:
-                try:
-                    insns = binary.r2.cmdj(f"pdj {block['size']} @ {block['addr']}")
-                except Exception:
-                    continue
-
-                if not insns:
-                    continue
-
-                can_virt, reason = self._can_virtualize(insns)
-                if not can_virt:
-                    logger.debug(f"Cannot virtualize: {reason}")
-                    continue
-
-                vm_insns, bytecode = self._virtualize_with_profile(insns, arch, profile)
-
-                total_insns += len(insns)
-                total_bytecode += len(bytecode)
-                virtualized_count += 1
-
-                logger.debug(
-                    f"Virtualized block at 0x{block['addr']:x} with VM '{profile.name}': "
-                    f"{len(insns)} insns -> {len(bytecode)} bytes bytecode"
-                )
-
-        dispatchers = {}
-        if self.include_dispatcher and virtualized_count > 0:
-            for profile in self.active_profiles:
-                dispatcher_asm = generate_multi_vm_dispatcher_x64(profile)
-                dispatchers[profile.name] = dispatcher_asm
-                logger.debug(f"Generated VM dispatcher for '{profile.name}'")
-
-        return {
-            "functions_virtualized": virtualized_count,
-            "functions_skipped": skipped_count,
-            "total_instructions": total_insns,
-            "total_bytecode_bytes": total_bytecode,
-            "architecture": arch,
-            "profiles_used": profiles_used,
-            "dispatchers_generated": len(dispatchers),
-            "active_profiles": [p.name for p in self.active_profiles],
-        }
+        return apply_multi_vm_virtualization(self, binary)

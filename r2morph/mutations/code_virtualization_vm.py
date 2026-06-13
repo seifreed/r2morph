@@ -22,6 +22,8 @@ __all__ = [
     "generate_vm_dispatcher_x64",
     "generate_vm_dispatcher_x86",
     "generate_vm_handler_x64",
+    "virtualize_block_to_vm_instructions",
+    "generate_vm_bytecode",
     "translate_instruction_to_vm",
     "VMProfile",
     "MULTI_VM_PROFILES",
@@ -315,6 +317,30 @@ vm_handler_f1:                 ; VM_EXIT
 """,
     }
     return handlers.get(opcode, f"vm_handler_{opcode:02x}: jmp vm_execute\n")
+
+
+def virtualize_block_to_vm_instructions(
+    instructions: list[dict[str, Any]], arch: str
+) -> list[VMInstruction]:
+    vm_insns: list[VMInstruction] = [VMInstruction(VMOpcode.VM_ENTER, [], "vm_enter")]
+
+    for insn in instructions:
+        vm_insn = translate_instruction_to_vm(insn, arch)
+        if vm_insn:
+            vm_insns.append(vm_insn)
+        else:
+            vm_insns.append(VMInstruction(VMOpcode.VM_NOP, [], f"; skipped: {insn.get('mnemonic', 'unknown')}"))
+
+    vm_insns.append(VMInstruction(VMOpcode.VM_EXIT, [], "vm_exit"))
+    return vm_insns
+
+
+def generate_vm_bytecode(vm_insns: list[VMInstruction]) -> bytes:
+    bytecode = bytearray()
+    for vm_insn in vm_insns:
+        vm_insn.bytecode_offset = len(bytecode)
+        bytecode.extend(vm_insn.to_bytecode())
+    return bytes(bytecode)
 
 
 def _translate_instruction_to_vm(insn: dict[str, Any], arch: str = "x64") -> VMInstruction | None:
