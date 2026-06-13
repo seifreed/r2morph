@@ -28,3 +28,20 @@ def test_mba_solver_internal_helpers():
     assert 0.0 <= reduction <= 1.0
 
     assert solver._generate_native_equivalent("x ^ y") == "xor eax, ebx"
+
+
+def test_safe_eval_node_all_operators():
+    """Characterize every binary/unary operator path of _safe_eval_node
+    (oracle for hoisting its operator tables to module scope)."""
+    solver = MBASolver(timeout=1)
+
+    assert solver._evaluate_expression("x & y", {"x": 6, "y": 3}) == 2
+    assert solver._evaluate_expression("x | y", {"x": 4, "y": 1}) == 5
+    assert solver._evaluate_expression("x ^ y", {"x": 5, "y": 3}) == 6
+    assert solver._evaluate_expression("x + y", {"x": 2, "y": 3}) == 5
+    assert solver._evaluate_expression("x - y", {"x": 7, "y": 4}) == 3
+    assert solver._evaluate_expression("x * y", {"x": 4, "y": 3}) == 12
+    assert solver._evaluate_expression("x << y", {"x": 1, "y": 4}) == 16
+    assert solver._evaluate_expression("x >> y", {"x": 16, "y": 2}) == 4
+    assert solver._evaluate_expression("-x", {"x": 5}) == -5
+    assert solver._evaluate_expression("~x", {"x": 0}) == -1

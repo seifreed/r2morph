@@ -6,6 +6,7 @@ using Z3 SMT solver and pattern matching techniques. MBA expressions are
 commonly used in obfuscation to make simple arithmetic operations appear complex.
 """
 
+import ast
 import logging
 import re
 import time
@@ -24,6 +25,23 @@ else:
 Z3_AVAILABLE = z3 is not None
 
 logger = logging.getLogger(__name__)
+
+# Safe operator tables for evaluating arithmetic AST nodes (see _safe_eval_node)
+_SAFE_BINOPS = {
+    ast.BitAnd: lambda a, b: a & b,
+    ast.BitOr: lambda a, b: a | b,
+    ast.BitXor: lambda a, b: a ^ b,
+    ast.Add: lambda a, b: a + b,
+    ast.Sub: lambda a, b: a - b,
+    ast.Mult: lambda a, b: a * b,
+    ast.LShift: lambda a, b: a << b,
+    ast.RShift: lambda a, b: a >> b,
+}
+_SAFE_UNARYOPS = {
+    ast.Invert: lambda a: ~a,
+    ast.USub: lambda a: -a,
+    ast.UAdd: lambda a: +a,
+}
 
 
 class MBAComplexity(Enum):
@@ -405,8 +423,6 @@ class MBASolver:
 
     def _evaluate_expression(self, expression: str, assignment: dict[str, int]) -> int:
         """Evaluate expression with given variable assignment using safe AST evaluation."""
-        import ast
-
         expr = expression
         for var, value in assignment.items():
             expr = expr.replace(var, str(value))
@@ -424,24 +440,6 @@ class MBASolver:
     @staticmethod
     def _safe_eval_node(node: Any) -> int:
         """Recursively evaluate an AST node, allowing only safe operations."""
-        import ast
-
-        _SAFE_BINOPS = {
-            ast.BitAnd: lambda a, b: a & b,
-            ast.BitOr: lambda a, b: a | b,
-            ast.BitXor: lambda a, b: a ^ b,
-            ast.Add: lambda a, b: a + b,
-            ast.Sub: lambda a, b: a - b,
-            ast.Mult: lambda a, b: a * b,
-            ast.LShift: lambda a, b: a << b,
-            ast.RShift: lambda a, b: a >> b,
-        }
-        _SAFE_UNARYOPS = {
-            ast.Invert: lambda a: ~a,
-            ast.USub: lambda a: -a,
-            ast.UAdd: lambda a: +a,
-        }
-
         if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
             return int(node.value)
         elif isinstance(node, ast.BinOp):
