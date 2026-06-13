@@ -5,6 +5,8 @@ import importlib
 import pytest
 
 VALIDATION_MODULES = [
+    "r2morph.validation.binary_region_memory",
+    "r2morph.validation.binary_region_comparator",
     "r2morph.validation.benchmark",
     "r2morph.validation.benchmark_reporting",
 ]
