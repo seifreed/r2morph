@@ -7,6 +7,7 @@ from typing import Any
 import typer
 from rich import print as rprint
 
+from r2morph.cli_workflows import _resolve_report_pass_filter
 from r2morph.reporting import SEVERITY_ORDER
 from r2morph.reporting.filtered_summary_builder import _build_report_dispatch_state
 from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
@@ -88,8 +89,6 @@ def handle_report_command(
     """Handle the report command."""
     with open(report_file, encoding="utf-8") as handle:
         payload: dict[str, Any] = json.load(handle)
-
-    from r2morph.cli import _resolve_report_pass_filter
 
     resolved_only_pass = _resolve_report_pass_filter(only_pass)
     resolved_only_pass_failure = _resolve_report_pass_filter(only_pass_failure)
