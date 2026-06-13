@@ -24,6 +24,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_flow_rendering",
     "r2morph.reporting.report_renderer",
     "r2morph.reporting.report_renderer_tables",
+    "r2morph.reporting.report_renderer_orchestrator",
     "r2morph.reporting.report_rendering_primitives",
     "r2morph.reporting.cli_commands",
     "r2morph.reporting.report_context_resolver",
