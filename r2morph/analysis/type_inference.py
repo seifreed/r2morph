@@ -30,6 +30,60 @@ from r2morph.analysis.type_inference_arm import (
 from r2morph.analysis.type_inference_arm import (
     propagate_arm_aliases as _propagate_arm_aliases_impl,
 )
+from r2morph.analysis.type_inference_core import (
+    _create_int_type as _create_int_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _extract_operand_size as _extract_operand_size_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _get_operand_size as _get_operand_size_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _infer_arithmetic_type as _infer_arithmetic_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _infer_from_instruction as _infer_from_instruction_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _infer_from_mov as _infer_from_mov_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _promote_pointer_neighbors as _promote_pointer_neighbors_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _propagate_through_phis as _propagate_through_phis_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _refine_primitive_to_pointer as _refine_primitive_to_pointer_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _refine_types as _refine_types_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _refine_unknown_type as _refine_unknown_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    _unify_adjacent_types as _unify_adjacent_types_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    create_array_type as _create_array_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    create_pointer_type as _create_pointer_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    create_primitive_type as _create_primitive_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    create_struct_type as _create_struct_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    infer_type as _infer_type_impl,
+)
+from r2morph.analysis.type_inference_core import (
+    propagate_types as _propagate_types_impl,
+)
 from r2morph.analysis.type_inference_queries import (
     get_struct_layout as _get_struct_layout_impl,
 )
@@ -47,81 +101,6 @@ from r2morph.core.binary import Binary
 logger = logging.getLogger(__name__)
 
 PointerAnalysis = _PointerAnalysis
-
-# x86/x86-64 general-purpose register byte sizes, keyed by register name.
-# Order is significant: _get_operand_size matches with ``str.startswith`` and
-# returns the first hit, so the wider names are listed first. This means a
-# sub-register whose name extends a wider register (e.g. "r8d" starts with the
-# 8-byte "r8") resolves to the wider size — preserved here as the established
-# contract; see test_get_operand_size for the pinned behavior.
-_X86_REGISTER_SIZES: dict[str, int] = {
-    "rax": 8,
-    "rbx": 8,
-    "rcx": 8,
-    "rdx": 8,
-    "rsi": 8,
-    "rdi": 8,
-    "rbp": 8,
-    "rsp": 8,
-    "r8": 8,
-    "r9": 8,
-    "r10": 8,
-    "r11": 8,
-    "r12": 8,
-    "r13": 8,
-    "r14": 8,
-    "r15": 8,
-    "eax": 4,
-    "ebx": 4,
-    "ecx": 4,
-    "edx": 4,
-    "esi": 4,
-    "edi": 4,
-    "ebp": 4,
-    "esp": 4,
-    "r8d": 4,
-    "r9d": 4,
-    "r10d": 4,
-    "r11d": 4,
-    "r12d": 4,
-    "r13d": 4,
-    "r14d": 4,
-    "r15d": 4,
-    "ax": 2,
-    "bx": 2,
-    "cx": 2,
-    "dx": 2,
-    "si": 2,
-    "di": 2,
-    "bp": 2,
-    "sp": 2,
-    "r8w": 2,
-    "r9w": 2,
-    "r10w": 2,
-    "r11w": 2,
-    "r12w": 2,
-    "r13w": 2,
-    "r14w": 2,
-    "r15w": 2,
-    "al": 1,
-    "bl": 1,
-    "cl": 1,
-    "dl": 1,
-    "sil": 1,
-    "dil": 1,
-    "bpl": 1,
-    "spl": 1,
-    "r8b": 1,
-    "r9b": 1,
-    "r10b": 1,
-    "r11b": 1,
-    "r12b": 1,
-    "r13b": 1,
-    "r14b": 1,
-    "r15b": 1,
-}
-
-_DEFAULT_OPERAND_SIZE = 4
 
 # Calling-convention register sets keyed by architecture. _get_calling_convention
 # selects one of these and returns a fresh copy so callers never share mutable
@@ -375,6 +354,10 @@ class TypeInference:
         types = inferrer.propagate_types(binary, function)
     """
 
+    TypeInfo = TypeInfo
+    TypeCategory = TypeCategory
+    PrimitiveType = PrimitiveType
+
     def __init__(self) -> None:
         self._type_counter: int = 0
         self._type_cache: dict[int, TypeInfo] = {}
@@ -388,71 +371,19 @@ class TypeInference:
 
     def create_primitive_type(self, primitive: PrimitiveType) -> TypeInfo:
         """Create a primitive type."""
-        size_map = {
-            PrimitiveType.INT8: 1,
-            PrimitiveType.INT16: 2,
-            PrimitiveType.INT32: 4,
-            PrimitiveType.INT64: 8,
-            PrimitiveType.UINT8: 1,
-            PrimitiveType.UINT16: 2,
-            PrimitiveType.UINT32: 4,
-            PrimitiveType.UINT64: 8,
-            PrimitiveType.FLOAT32: 4,
-            PrimitiveType.FLOAT64: 8,
-            PrimitiveType.BOOL: 1,
-            PrimitiveType.VOID: 0,
-        }
-        return TypeInfo(
-            type_id=self._new_type_id(),
-            category=TypeCategory.PRIMITIVE,
-            size=size_map.get(primitive, 0),
-            alignment=size_map.get(primitive, 1),
-            primitive=primitive,
-            confidence=1.0,
-        )
+        return _create_primitive_type_impl(self, primitive)
 
     def create_pointer_type(self, pointee: TypeInfo | None = None) -> TypeInfo:
         """Create a pointer type."""
-        ptr_size = 8
-        return TypeInfo(
-            type_id=self._new_type_id(),
-            category=TypeCategory.POINTER,
-            size=ptr_size,
-            alignment=ptr_size,
-            pointee=pointee,
-            confidence=0.9 if pointee else 0.5,
-        )
+        return _create_pointer_type_impl(self, pointee)
 
     def create_array_type(self, element_type: TypeInfo, count: int) -> TypeInfo:
         """Create an array type."""
-        return TypeInfo(
-            type_id=self._new_type_id(),
-            category=TypeCategory.ARRAY,
-            size=element_type.size * count,
-            alignment=element_type.alignment,
-            element_type=element_type,
-            element_count=count,
-            confidence=element_type.confidence * 0.9,
-        )
+        return _create_array_type_impl(self, element_type, count)
 
     def create_struct_type(self, fields: list[tuple[str, TypeInfo, int]]) -> TypeInfo:
         """Create a struct type."""
-        total_size = 0
-        max_alignment = 1
-        for name, type_info, offset in fields:
-            if offset + type_info.size > total_size:
-                total_size = offset + type_info.size
-            if type_info.alignment > max_alignment:
-                max_alignment = type_info.alignment
-
-        return TypeInfo(
-            type_id=self._new_type_id(),
-            category=TypeCategory.STRUCT,
-            size=total_size,
-            alignment=max_alignment,
-            fields=fields,
-            confidence=0.8,
-        )
+        return _create_struct_type_impl(self, fields)
 
     def infer_type(self, binary: Binary, address: int) -> TypeInfo:
         """
@@ -465,119 +396,31 @@ class TypeInference:
         Returns:
             TypeInfo for the address
         """
-        if address in self._address_types:
-            return self._address_types[address]
-
-        disasm = binary.get_function_disasm(address)
-        if not disasm:
-            return TypeInfo(
-                type_id=self._new_type_id(),
-                category=TypeCategory.UNKNOWN,
-                confidence=0.0,
-            )
-
-        for insn in disasm:
-            if insn.get("offset", 0) == address:
-                return self._infer_from_instruction(binary, insn)
-
-        return TypeInfo(
-            type_id=self._new_type_id(),
-            category=TypeCategory.UNKNOWN,
-            confidence=0.0,
-        )
+        return _infer_type_impl(self, binary, address)
 
     def _infer_from_instruction(self, binary: Binary, insn: dict) -> TypeInfo:
         """Infer type from an instruction."""
-        disasm = insn.get("disasm", "").lower()
-
-        if "mov" in disasm:
-            return self._infer_from_mov(binary, insn, disasm)
-        elif "lea" in disasm:
-            return self.create_pointer_type()
-        elif "cmp" in disasm or "test" in disasm:
-            return self.create_primitive_type(PrimitiveType.BOOL)
-        elif any(x in disasm for x in ["add", "sub", "imul", "mul"]):
-            return self._infer_arithmetic_type(binary, insn, disasm)
-        elif any(x in disasm for x in ["xmm", "ymm", "zmm"]):
-            return self.create_primitive_type(PrimitiveType.FLOAT64)
-
-        return TypeInfo(
-            type_id=self._new_type_id(),
-            category=TypeCategory.UNKNOWN,
-            confidence=0.0,
-        )
+        return _infer_from_instruction_impl(self, binary, insn)
 
     def _infer_from_mov(self, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
         """Infer type from mov instruction."""
-        parts = disasm.split(None, 1)
-        if len(parts) < 2:
-            return TypeInfo(
-                type_id=self._new_type_id(),
-                category=TypeCategory.UNKNOWN,
-            )
-
-        operands = parts[1].split(",")
-        if len(operands) < 2:
-            return TypeInfo(
-                type_id=self._new_type_id(),
-                category=TypeCategory.UNKNOWN,
-            )
-
-        dest = operands[0].strip()
-        src = operands[1].strip()
-
-        if src.startswith("0x") or src.startswith("-0x"):
-            size = self._get_operand_size(dest)
-            return self._create_int_type(size)
-
-        if src.startswith("["):
-            return self.create_pointer_type()
-
-        if "[" in dest:
-            return self.create_pointer_type()
-
-        return TypeInfo(
-            type_id=self._new_type_id(),
-            category=TypeCategory.UNKNOWN,
-        )
+        return _infer_from_mov_impl(self, binary, insn, disasm)
 
     def _infer_arithmetic_type(self, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
         """Infer type from arithmetic instruction."""
-        operand_size = self._extract_operand_size(disasm)
-        return self._create_int_type(operand_size)
+        return _infer_arithmetic_type_impl(self, binary, insn, disasm)
 
     def _create_int_type(self, size: int) -> TypeInfo:
         """Create an integer type of given size."""
-        size_to_type = {
-            1: PrimitiveType.INT8,
-            2: PrimitiveType.INT16,
-            4: PrimitiveType.INT32,
-            8: PrimitiveType.INT64,
-        }
-        primitive = size_to_type.get(size, PrimitiveType.INT32)
-        return self.create_primitive_type(primitive)
+        return _create_int_type_impl(self, size)
 
     def _get_operand_size(self, operand: str) -> int:
         """Get the size of an operand based on register name."""
-        operand = operand.lower().strip()
-
-        for reg, size in _X86_REGISTER_SIZES.items():
-            if operand.startswith(reg):
-                return size
-
-        return _DEFAULT_OPERAND_SIZE
+        return _get_operand_size_impl(self, operand)
 
     def _extract_operand_size(self, disasm: str) -> int:
         """Extract operand size from instruction."""
-        if "qword" in disasm:
-            return 8
-        if "dword" in disasm:
-            return 4
-        if "word" in disasm:
-            return 2
-        if "byte" in disasm:
-            return 1
-        return 4
+        return _extract_operand_size_impl(disasm)
 
     def propagate_types(self, binary: Binary, func_addr: int) -> dict[int, TypeInfo]:
         """
@@ -590,22 +433,7 @@ class TypeInference:
         Returns:
             Dictionary mapping addresses to TypeInfo
         """
-        types: dict[int, TypeInfo] = {}
-
-        disasm = binary.get_function_disasm(func_addr)
-        if not disasm:
-            return types
-
-        for insn in disasm:
-            addr = insn.get("offset", 0)
-            type_info = self._infer_from_instruction(binary, insn)
-            if type_info.category != TypeCategory.UNKNOWN:
-                types[addr] = type_info
-
-        self._propagate_through_phis(types)
-        self._refine_types(types)
-
-        return types
+        return _propagate_types_impl(self, binary, func_addr)
 
     def _propagate_through_phis(self, types: dict[int, TypeInfo]) -> None:
         """
@@ -618,11 +446,7 @@ class TypeInference:
         Args:
             types: Dictionary mapping addresses to TypeInfo (modified in place)
         """
-        if not types:
-            return
-
-        self._unify_adjacent_types(types)
-        self._promote_pointer_neighbors(types)
+        _propagate_through_phis_impl(self, types)
 
     def _unify_adjacent_types(self, types: dict[int, TypeInfo]) -> None:
         """Unify the types of values at adjacent (sorted) addresses.
@@ -631,62 +455,11 @@ class TypeInference:
         type wins (merging alignment/primitive/confidence); a pointer that
         follows a 64-bit integer is re-confidenced.
         """
-        addr_list = sorted(types.keys())
-
-        for i in range(1, len(addr_list)):
-            prev_addr = addr_list[i - 1]
-            curr_addr = addr_list[i]
-
-            prev_type = types[prev_addr]
-            curr_type = types[curr_addr]
-
-            if prev_type.category == TypeCategory.UNKNOWN or curr_type.category == TypeCategory.UNKNOWN:
-                continue
-
-            if (
-                prev_type.category == curr_type.category
-                and prev_type.size == curr_type.size
-                and prev_type.confidence > curr_type.confidence
-            ):
-                types[curr_addr] = TypeInfo(
-                    type_id=curr_type.type_id,
-                    category=curr_type.category,
-                    size=curr_type.size,
-                    alignment=max(prev_type.alignment, curr_type.alignment),
-                    primitive=prev_type.primitive if prev_type.primitive else curr_type.primitive,
-                    confidence=(prev_type.confidence + curr_type.confidence) / 2,
-                )
-
-            if (
-                curr_type.category == TypeCategory.POINTER
-                and prev_type.category == TypeCategory.PRIMITIVE
-                and prev_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64)
-            ):
-                types[curr_addr] = TypeInfo(
-                    type_id=curr_type.type_id,
-                    category=TypeCategory.POINTER,
-                    size=8,
-                    alignment=8,
-                    confidence=max(prev_type.confidence, curr_type.confidence) * 0.9,
-                )
+        _unify_adjacent_types_impl(self, types)
 
     def _promote_pointer_neighbors(self, types: dict[int, TypeInfo]) -> None:
         """Promote a 64-bit integer within 32 bytes of a pointer to a pointer."""
-        for addr, type_info in types.items():
-            if type_info.category != TypeCategory.POINTER:
-                continue
-            for other_addr, other_type in types.items():
-                if other_addr == addr:
-                    continue
-                if other_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64) and abs(other_addr - addr) < 32:
-                    types[other_addr] = TypeInfo(
-                        type_id=other_type.type_id,
-                        category=TypeCategory.POINTER,
-                        size=8,
-                        alignment=8,
-                        confidence=0.7,
-                    )
-                    break
+        _promote_pointer_neighbors_impl(self, types)
 
     def _refine_types(self, types: dict[int, TypeInfo]) -> None:
         """
@@ -700,25 +473,7 @@ class TypeInference:
         Args:
             types: Dictionary mapping addresses to TypeInfo (modified in place)
         """
-        if not types:
-            return
-
-        # NOTE: Do NOT blindly promote all 8-byte primitives to pointers.
-        # Only values with evidence of pointer usage (dereferences, lea patterns)
-        # should be classified as pointers. Blanket promotion causes 64-bit
-        # integers to be misclassified, leading to incorrect mutation safety
-        # decisions downstream.
-        addr_list = list(types.keys())
-
-        for i in range(len(addr_list) - 1):
-            curr_addr = addr_list[i]
-            next_addr = addr_list[i + 1] if i + 1 < len(addr_list) else None
-            curr_type = types[curr_addr]
-
-            if curr_type.category == TypeCategory.PRIMITIVE:
-                self._refine_primitive_to_pointer(types, curr_addr, curr_type, next_addr)
-            elif curr_type.category == TypeCategory.UNKNOWN:
-                self._refine_unknown_type(types, curr_addr, curr_type)
+        _refine_types_impl(self, types)
 
     def _refine_primitive_to_pointer(
         self,
@@ -729,19 +484,7 @@ class TypeInference:
     ) -> None:
         """Reinterpret a 64-bit integer as a pointer when the value 8 bytes
         later is a small (<=4-byte) primitive."""
-        if not (curr_type.size == 8 and curr_type.primitive in (PrimitiveType.INT64, PrimitiveType.UINT64)):
-            return
-        if not (next_addr and (next_addr - curr_addr) == 8):
-            return
-        next_type = types[next_addr]
-        if next_type.category == TypeCategory.PRIMITIVE and next_type.size <= 4:
-            types[curr_addr] = TypeInfo(
-                type_id=curr_type.type_id,
-                category=TypeCategory.POINTER,
-                size=8,
-                alignment=8,
-                confidence=curr_type.confidence * 0.8,
-            )
+        _refine_primitive_to_pointer_impl(self, types, curr_addr, curr_type, next_addr)
 
     def _refine_unknown_type(
         self,
@@ -751,23 +494,7 @@ class TypeInference:
     ) -> None:
         """Assume an unknown 8-byte value is a pointer and an unknown 4-byte
         value a 32-bit integer."""
-        if curr_type.size == 8:
-            types[curr_addr] = TypeInfo(
-                type_id=curr_type.type_id,
-                category=TypeCategory.POINTER,
-                size=8,
-                alignment=8,
-                confidence=0.5,
-            )
-        elif curr_type.size == 4:
-            types[curr_addr] = TypeInfo(
-                type_id=curr_type.type_id,
-                category=TypeCategory.PRIMITIVE,
-                size=4,
-                alignment=4,
-                primitive=PrimitiveType.INT32,
-                confidence=0.5,
-            )
+        _refine_unknown_type_impl(self, types, curr_addr, curr_type)
 
     def propagate_interprocedural_types(
         self,
