@@ -9,6 +9,7 @@ REPORTING_MODULES = [
     "r2morph.reporting",
     "r2morph.reporting.gate_evaluator",
     "r2morph.reporting.report_helpers",
+    "r2morph.reporting.report_helpers_classification",
     "r2morph.reporting.report_rendering",
     "r2morph.reporting.report_rendering_sections",
     "r2morph.reporting.report_rendering_flow_sections",

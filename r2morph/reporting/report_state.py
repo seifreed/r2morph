@@ -11,16 +11,15 @@ This module handles resolution of report state including:
 from collections.abc import Callable
 from typing import Any
 
-from r2morph.reporting.report_helpers import (
+from r2morph.reporting.report_helpers import _normalized_pass_map, _summary_first
+from r2morph.reporting.report_helpers_classification import (
     _has_structural_risk,
     _has_symbolic_risk,
     _is_clean_pass,
     _is_covered_pass,
     _is_risky_pass,
     _is_uncovered_pass,
-    _normalized_pass_map,
     _pass_names_from_triage_rows,
-    _summary_first,
 )
 
 
