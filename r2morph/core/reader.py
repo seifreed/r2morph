@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Upper bound on a single read request to avoid pathological allocations
+MAX_READ_SIZE = 100 * 1024 * 1024  # 100MB
+
 
 class BinaryReader:
     """
@@ -58,7 +61,6 @@ class BinaryReader:
         if size <= 0:
             return b""
 
-        MAX_READ_SIZE = 100 * 1024 * 1024  # 100MB
         if size > MAX_READ_SIZE:
             logger.warning(f"Truncating large read request: {size} -> {MAX_READ_SIZE}")
             size = MAX_READ_SIZE
