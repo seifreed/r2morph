@@ -125,24 +125,24 @@ def rol_encrypt(data: bytes, shift: int) -> bytes:
 
 def rc4_init(key: bytes) -> list:
     """Initialize RC4 S-box."""
-    S = list(range(256))
+    s_box = list(range(256))
     j = 0
     for i in range(256):
-        j = (j + S[i] + key[i % len(key)]) & 0xFF
-        S[i], S[j] = S[j], S[i]
-    return S
+        j = (j + s_box[i] + key[i % len(key)]) & 0xFF
+        s_box[i], s_box[j] = s_box[j], s_box[i]
+    return s_box
 
 
 def rc4_crypt(data: bytes, key: bytes) -> bytes:
     """RC4 encrypt/decrypt."""
-    S = rc4_init(key)
+    s_box = rc4_init(key)
     result = bytearray(len(data))
     i = j = 0
     for k, b in enumerate(data):
         i = (i + 1) & 0xFF
-        j = (j + S[i]) & 0xFF
-        S[i], S[j] = S[j], S[i]
-        result[k] = b ^ S[(S[i] + S[j]) & 0xFF]
+        j = (j + s_box[i]) & 0xFF
+        s_box[i], s_box[j] = s_box[j], s_box[i]
+        result[k] = b ^ s_box[(s_box[i] + s_box[j]) & 0xFF]
     return bytes(result)
 
 
