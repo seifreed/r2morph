@@ -4,12 +4,14 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.reporting.report_rendering_sections import (
-    _render_degradation_sections,
-    _render_gate_sections,
+from r2morph.reporting.report_rendering_pass_sections import (
     _render_only_pass_sections,
     _render_pass_capabilities,
     _render_pass_validation_contexts,
+)
+from r2morph.reporting.report_rendering_sections import (
+    _render_degradation_sections,
+    _render_gate_sections,
     _render_symbolic_sections,
 )
 from r2morph.reporting.report_rendering_sections import (
