@@ -3,7 +3,6 @@ Main morphing engine for binary transformations.
 """
 
 import logging
-import shutil
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
@@ -12,6 +11,9 @@ from r2morph.core.binary import Binary
 from r2morph.core.constants import SEVERITY_ORDER as SEVERITY_ORDER
 from r2morph.core.engine_lifecycle import analyze as analyze_lifecycle
 from r2morph.core.engine_lifecycle import load_binary as load_binary_lifecycle
+from r2morph.core.engine_output import build_report as build_report_output
+from r2morph.core.engine_output import save_binary as save_binary_output
+from r2morph.core.engine_output import save_report as save_report_output
 from r2morph.core.engine_run import run as run_lifecycle
 from r2morph.protocols import (
     BinarySignerProtocol,
@@ -195,27 +197,7 @@ class MorphEngine:
         )
 
     def save(self, output_path: str | Path) -> None:
-        """
-        Save the transformed binary.
-
-        Args:
-            output_path: Output file path
-        """
-        if not self.binary:
-            raise RuntimeError("No binary loaded.")
-
-        output_path = Path(output_path)
-
-        logger.info(f"Saving transformed binary to: {output_path}")
-
-        if self._session is not None:
-            self._session.finalize(output_path)
-        else:
-            assert self.binary is not None
-            shutil.copy2(self.binary.path, output_path)
-            logger.info(f"Binary successfully saved to: {output_path}")
-
-        self._binary_signer.sign_output(output_path, self.config)
+        save_binary_output(self, output_path)
 
     def close(self) -> None:
         """Close and cleanup resources."""
@@ -231,24 +213,10 @@ class MorphEngine:
         return self._stats
 
     def build_report(self, result: dict[str, Any] | None = None) -> dict[str, Any]:
-        """Build a stable machine-readable engine report."""
-        return self._report_builder.assemble_report(
-            result,
-            pipeline_passes=self.pipeline.passes,
-            last_result=self._last_result,
-        )
+        return build_report_output(self, result)
 
     def save_report(self, output_path: str | Path, result: dict[str, Any] | None = None) -> Path:
-        """Save a JSON report for the last engine run."""
-        import json
-
-        output = Path(output_path)
-        report = self.build_report(result)
-        output.parent.mkdir(parents=True, exist_ok=True)
-        with open(output, "w", encoding="utf-8") as handle:
-            json.dump(report, handle, indent=2)
-        logger.info(f"Saved engine report to: {output}")
-        return output
+        return save_report_output(self, output_path, result)
 
     def __enter__(self) -> "MorphEngine":
         """Context manager entry."""
