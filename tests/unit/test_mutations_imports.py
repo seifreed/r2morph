@@ -12,6 +12,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.hardened_opaque",
     "r2morph.mutations.hardened_models",
     "r2morph.mutations.polymorphic_engine_models",
+    "r2morph.mutations.polymorphic_engine_noop",
     "r2morph.mutations.semantic_validation_models",
 ]
 

@@ -51,6 +51,7 @@ from r2morph.mutations.polymorphic_engine_models import (
     MutationResult,
     StateTransition,
 )
+from r2morph.mutations.polymorphic_engine_noop import NoOp
 
 logger = logging.getLogger(__name__)
 
@@ -524,29 +525,3 @@ class PolymorphicEnginePass(MutationPass):
         )
 
         return stats
-
-
-class NoOpMutation(MutationPass):
-    """No-operation mutation pass for state transitions."""
-
-    def __init__(self, config: dict[str, Any] | None = None):
-        super().__init__(name="NoOp", config=config)
-
-    def apply(self, binary: Any) -> dict[str, Any]:
-        """Apply no-op mutation."""
-        return {"applied": False, "reason": "NoOp mutation"}
-
-
-class NoOp(MutationPass):
-    """No-operation pass for identity transitions."""
-
-    def __init__(self, config: dict[str, Any] | None = None):
-        super().__init__(name="NoOp", config=config)
-
-    def apply(self, binary: Any) -> dict[str, Any]:
-        # `mutations` must be the list of mutation records (Pipeline does
-        # len()/iterates it; base.run only setdefaults it when absent).
-        # Returning the int 0 here left a non-list in place and crashed
-        # the pipeline with "object of type 'int' has no len()". A no-op
-        # contributes zero mutations -> empty list.
-        return {"mutations": [], "reason": "NoOp pass"}
