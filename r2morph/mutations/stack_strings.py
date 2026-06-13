@@ -108,6 +108,50 @@ def _format_plain_stack_byte(offset: int, byte: int, stack_reg: str) -> str:
     return f"    mov byte [{stack_reg}+{offset}], 0x{byte:02X}"
 
 
+def _xor_single_decode_loop_x64(length: int, xor_key: int, label_id: int) -> list[str]:
+    """Build the x64 runtime decode loop for a single-key XOR'd stack string."""
+    return [
+        "    ; Decode XOR'd string",
+        "    lea rdi, [rsp]",
+        f"    mov rcx, {length}",
+        f"    mov dl, 0x{xor_key:02X}",
+        f".decode_loop_{label_id:x}:",
+        "    xor byte [rdi], dl",
+        "    inc rdi",
+        f"    loop .decode_loop_{label_id:x}",
+    ]
+
+
+def _xor_rolling_decode_loop_x64(length: int, xor_key: int, label_id: int) -> list[str]:
+    """Build the x64 runtime decode loop for a rolling-key XOR'd stack string."""
+    return [
+        "    ; Decode rolling XOR string",
+        "    lea rdi, [rsp]",
+        f"    mov rcx, {length}",
+        f"    mov dl, 0x{xor_key:02X}",
+        f".decode_loop_{label_id:x}:",
+        "    xor byte [rdi], dl",
+        "    inc rdi",
+        "    imul dl, 7",
+        "    inc dl",
+        "    and dl, 0xFF",
+        f"    loop .decode_loop_{label_id:x}",
+    ]
+
+
+def _add_shift_decode_loop_x64(length: int, add_shift: int, label_id: int) -> list[str]:
+    """Build the x64 runtime decode loop for an ADD-shift encoded stack string."""
+    return [
+        "    ; Decode ADD-shift'd string",
+        "    lea rdi, [rsp]",
+        f"    mov rcx, {length}",
+        f".decode_loop_{label_id:x}:",
+        f"    sub byte [rdi], {add_shift}",
+        "    inc rdi",
+        f"    loop .decode_loop_{label_id:x}",
+    ]
+
+
 def xor_bytes(data: bytes, key: int) -> bytes:
     """XOR each byte with a single key."""
     return bytes(b ^ key for b in data)
@@ -298,17 +342,7 @@ def generate_stack_string_x64(
                 junk_probability=junk_probability,
             )
 
-        decode_loop = [
-            "    ; Decode XOR'd string",
-            "    lea rdi, [rsp]",
-            f"    mov rcx, {len(encoded_data)}",
-            f"    mov dl, 0x{xor_key:02X}",
-            f".decode_loop_{id(encoded_data):x}:",
-            "    xor byte [rdi], dl",
-            "    inc rdi",
-            f"    loop .decode_loop_{id(encoded_data):x}",
-        ]
-        asm_lines.extend(decode_loop)
+        asm_lines.extend(_xor_single_decode_loop_x64(len(encoded_data), xor_key, id(encoded_data)))
 
     elif encoding == EncodingScheme.XOR_ROLLING:
         for i, b in enumerate(encoded_data):
@@ -322,20 +356,7 @@ def generate_stack_string_x64(
                 junk_probability=junk_probability,
             )
 
-        decode_loop = [
-            "    ; Decode rolling XOR string",
-            "    lea rdi, [rsp]",
-            f"    mov rcx, {len(encoded_data)}",
-            f"    mov dl, 0x{xor_key:02X}",
-            f".decode_loop_{id(encoded_data):x}:",
-            "    xor byte [rdi], dl",
-            "    inc rdi",
-            "    imul dl, 7",
-            "    inc dl",
-            "    and dl, 0xFF",
-            f"    loop .decode_loop_{id(encoded_data):x}",
-        ]
-        asm_lines.extend(decode_loop)
+        asm_lines.extend(_xor_rolling_decode_loop_x64(len(encoded_data), xor_key, id(encoded_data)))
 
     elif encoding == EncodingScheme.ADD_SHIFT:
         for i, b in enumerate(encoded_data):
@@ -349,16 +370,7 @@ def generate_stack_string_x64(
                 junk_probability=junk_probability,
             )
 
-        decode_loop = [
-            "    ; Decode ADD-shift'd string",
-            "    lea rdi, [rsp]",
-            f"    mov rcx, {len(encoded_data)}",
-            f".decode_loop_{id(encoded_data):x}:",
-            f"    sub byte [rdi], {add_shift}",
-            "    inc rdi",
-            f"    loop .decode_loop_{id(encoded_data):x}",
-        ]
-        asm_lines.extend(decode_loop)
+        asm_lines.extend(_add_shift_decode_loop_x64(len(encoded_data), add_shift, id(encoded_data)))
 
     elif encoding == EncodingScheme.AES_256:
         aes_key = secrets.token_bytes(32)
