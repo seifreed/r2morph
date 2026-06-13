@@ -52,6 +52,7 @@ from r2morph.mutations.polymorphic_engine_models import (
     StateTransition,
 )
 from r2morph.mutations.polymorphic_engine_noop import NoOp
+from r2morph.mutations.polymorphic_engine_setup import setup_default_engine
 
 logger = logging.getLogger(__name__)
 
@@ -360,117 +361,16 @@ class PolymorphicEnginePass(MutationPass):
         forcing every importer of ``polymorphic_engine`` to drag in the
         whole ``r2morph.mutations`` subtree.
         """
-        from r2morph.mutations.block_reordering import BlockReorderingPass
-        from r2morph.mutations.code_mobility import CodeMobilityPass
-        from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-        from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
-        from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
-        from r2morph.mutations.function_outlining import FunctionOutliningPass
-        from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
-        from r2morph.mutations.string_obfuscation import StringObfuscationPass
-
-        state = EngineState.INIT
-
-        if self.enable_substitution:
-            self.engine.add_mutation("InstructionSubstitution", InstructionSubstitutionPass())
-            self.engine.add_transition(
-                EngineState.INIT,
-                EngineState.SUBSTITUTED,
-                "InstructionSubstitution",
-                probability=0.8,
-            )
-            state = EngineState.SUBSTITUTED
-
-        if self.enable_dead_code:
-            from_state = state
-            to_state = EngineState.DEAD_CODE_INJECTED
-            self.engine.add_mutation("DeadCodeInjection", DeadCodeInjectionPass())
-            self.engine.add_transition(
-                from_state,
-                to_state,
-                "DeadCodeInjection",
-                probability=0.7,
-            )
-            state = to_state
-
-        if self.enable_reordering:
-            from_state = state
-            to_state = EngineState.REORDERED
-            self.engine.add_mutation("BlockReordering", BlockReorderingPass())
-            self.engine.add_transition(
-                from_state,
-                to_state,
-                "BlockReordering",
-                probability=0.6,
-            )
-            state = to_state
-
-        if self.enable_flattening:
-            from_state = state
-            to_state = EngineState.FLATTENED
-            self.engine.add_mutation("ControlFlowFlattening", ControlFlowFlatteningPass())
-            self.engine.add_transition(
-                from_state,
-                to_state,
-                "ControlFlowFlattening",
-                probability=0.5,
-            )
-            state = to_state
-
-        if self.enable_string_obfuscation:
-            from_state = state
-            to_state = EngineState.STRING_OBFUSCATED
-            self.engine.add_mutation("StringObfuscation", StringObfuscationPass())
-            self.engine.add_transition(
-                from_state,
-                to_state,
-                "StringObfuscation",
-                probability=0.6,
-            )
-            state = to_state
-
-        if self.enable_virtualization:
-            from_state = state
-            to_state = EngineState.VIRTUALIZED
-            self.engine.add_mutation("CodeVirtualization", CodeVirtualizationPass())
-            self.engine.add_transition(
-                from_state,
-                to_state,
-                "CodeVirtualization",
-                probability=0.3,
-            )
-            state = to_state
-
-        if self.enable_mobility:
-            from_state = state
-            to_state = EngineState.MOBILIZED
-            self.engine.add_mutation("CodeMobility", CodeMobilityPass())
-            self.engine.add_transition(
-                from_state,
-                to_state,
-                "CodeMobility",
-                probability=0.4,
-            )
-            state = to_state
-
-        if self.enable_outlining:
-            from_state = state
-            to_state = EngineState.OUTLINED
-            self.engine.add_mutation("FunctionOutlining", FunctionOutliningPass())
-            self.engine.add_transition(
-                from_state,
-                to_state,
-                "FunctionOutlining",
-                probability=0.3,
-            )
-            state = to_state
-
-        self.engine.add_mutation("NoOp", NoOp())
-        self.engine.add_transition(
-            state,
-            EngineState.FINAL,
-            "NoOp",
-            probability=1.0,
+        setup_default_engine(
+            self.engine,
+            enable_substitution=self.enable_substitution,
+            enable_dead_code=self.enable_dead_code,
+            enable_reordering=self.enable_reordering,
+            enable_flattening=self.enable_flattening,
+            enable_virtualization=self.enable_virtualization,
+            enable_string_obfuscation=self.enable_string_obfuscation,
+            enable_mobility=self.enable_mobility,
+            enable_outlining=self.enable_outlining,
         )
 
     def register_mutation(self, name: str, mutation: MutationPass) -> None:
@@ -525,3 +425,6 @@ class PolymorphicEnginePass(MutationPass):
         )
 
         return stats
+
+
+__all__ = ["PolymorphicEngine", "PolymorphicEnginePass", "NoOp"]
