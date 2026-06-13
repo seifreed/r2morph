@@ -427,7 +427,7 @@ class TestABIValidationError:
 
 
 @pytest.mark.integration
-class TestABIRegressionX86_64:
+class TestABIRegressionX8664:
     """Regression tests for x86_64 ABI."""
 
     def test_sysv_abi_spec(self):
