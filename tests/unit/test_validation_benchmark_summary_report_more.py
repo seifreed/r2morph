@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from r2morph.validation.benchmark import (
+from r2morph.validation.benchmark import ValidationFramework
+from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
     BenchmarkResult,
     PerformanceMetrics,
     TestSample,
     TestSeverity,
-    ValidationFramework,
 )
 
 

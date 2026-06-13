@@ -26,7 +26,7 @@ from __future__ import annotations
 import subprocess
 import sys
 
-from r2morph.validation.benchmark import TestSample, TestSeverity
+from r2morph.validation.benchmark_types import TestSample, TestSeverity
 
 
 def test_importing_r2morph_does_not_eagerly_import_angr() -> None:

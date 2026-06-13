@@ -11,12 +11,12 @@ This module provides comprehensive testing and validation capabilities:
 - Memory leak detection
 """
 
-from r2morph.validation.benchmark import (
+from r2morph.validation.benchmark import ValidationFramework
+from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkResult,
     PerformanceMetrics,
     TestSample,
-    ValidationFramework,
 )
 from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
