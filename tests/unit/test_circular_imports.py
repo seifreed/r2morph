@@ -24,6 +24,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_context",
     "r2morph.reporting.summary_aggregator",
     "r2morph.analysis.pointer_analysis",
+    "r2morph.analysis.type_inference_arm",
 ]
 
 
