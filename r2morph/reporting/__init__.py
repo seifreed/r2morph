@@ -1,100 +1,16 @@
 """
 Reporting subpackage for report building, filtering, and rendering.
 
-Extracted from cli.py and engine.py following Single Responsibility Principle.
+The package root stays thin and resolves symbols lazily so importing
+``r2morph.reporting`` does not eagerly pull the whole reporting graph
+into memory.
 """
 
-from r2morph.reporting.gate_evaluator import (
-    SEVERITY_ORDER,
-    GateEvaluator,
-    GateFailure,
-)
-from r2morph.reporting.report_builder import (
-    FilteredReport,
-    ReportBuilder,
-    ReportContext,
-)
-from r2morph.reporting.report_emitter import (
-    emit_report_payload,
-    enforce_report_requirements,
-    gate_failure_result_count,
-    report_view_has_results,
-    severity_threshold_met,
-)
-from r2morph.reporting.report_filters import (
-    PassFilterResolver,
-    ReportFilters,
-)
-from r2morph.reporting.report_renderer import (
-    ConsoleRenderer,
-    ReportRenderer,
-)
-from r2morph.reporting.report_state import (
-    _has_structural_risk as _has_structural_risk,
-)
-from r2morph.reporting.report_state import (
-    _has_symbolic_risk as _has_symbolic_risk,
-)
-from r2morph.reporting.report_state import (
-    _is_clean_pass as _is_clean_pass,
-)
-from r2morph.reporting.report_state import (
-    _is_covered_pass as _is_covered_pass,
-)
-from r2morph.reporting.report_state import (
-    _is_risky_pass as _is_risky_pass,
-)
-from r2morph.reporting.report_state import (
-    _is_uncovered_pass as _is_uncovered_pass,
-)
-from r2morph.reporting.report_state import (
-    _normalized_pass_map as _normalized_pass_map,
-)
-from r2morph.reporting.report_state import (
-    _summary_first as _summary_first,
-)
-from r2morph.reporting.report_state import (
-    resolve_general_symbolic_state,
-    resolve_mismatch_view,
-    resolve_pass_filter_sets,
-)
-from r2morph.reporting.sarif_formatter import (
-    MutationResult,
-    ReportData,
-    SARIFFormatter,
-    ValidationResult,
-    format_as_sarif,
-)
-from r2morph.reporting.sarif_schema import (
-    SARIFArtifact,
-    SARIFArtifactLocation,
-    SARIFFileChange,
-    SARIFFix,
-    SARIFInvocation,
-    SARIFLevel,
-    SARIFLocation,
-    SARIFLogicalLocation,
-    SARIFMessage,
-    SARIFNotification,
-    SARIFPhysicalLocation,
-    SARIFRegion,
-    SARIFReplacement,
-    SARIFReport,
-    SARIFResult,
-    SARIFRule,
-    SARIFRun,
-    SARIFSnippet,
-    SARIFTool,
-    SARIFToolComponent,
-)
-from r2morph.reporting.summary_aggregator import (
-    EvidenceAggregator,
-    SummaryAggregator,
-    SymbolicAggregator,
-)
+from __future__ import annotations
 
-# Console rendering functions are lazily imported via __getattr__ below
-# to avoid a circular import with r2morph.core.engine.
+from importlib import import_module
+from typing import Any
+
 _LAZY_RENDERING_NAMES = {
     "CONSOLE",
     "create_table",
@@ -189,12 +105,78 @@ __all__ = [
 ]
 
 
-def __getattr__(name: str) -> object:
-    """Lazily resolve rendering symbols to avoid circular imports."""
+def __getattr__(name: str) -> Any:
+    """Resolve public reporting symbols lazily on first access."""
+    lazy_exports: dict[str, tuple[str, str]] = {
+        "SEVERITY_ORDER": ("r2morph.reporting.gate_evaluator", "SEVERITY_ORDER"),
+        "GateEvaluator": ("r2morph.reporting.gate_evaluator", "GateEvaluator"),
+        "GateFailure": ("r2morph.reporting.gate_evaluator", "GateFailure"),
+        "FilteredReport": ("r2morph.reporting.report_builder", "FilteredReport"),
+        "ReportBuilder": ("r2morph.reporting.report_builder", "ReportBuilder"),
+        "ReportContext": ("r2morph.reporting.report_builder", "ReportContext"),
+        "emit_report_payload": ("r2morph.reporting.report_emitter", "emit_report_payload"),
+        "enforce_report_requirements": ("r2morph.reporting.report_emitter", "enforce_report_requirements"),
+        "gate_failure_result_count": ("r2morph.reporting.report_emitter", "gate_failure_result_count"),
+        "report_view_has_results": ("r2morph.reporting.report_emitter", "report_view_has_results"),
+        "severity_threshold_met": ("r2morph.reporting.report_emitter", "severity_threshold_met"),
+        "PassFilterResolver": ("r2morph.reporting.report_filters", "PassFilterResolver"),
+        "ReportFilters": ("r2morph.reporting.report_filters", "ReportFilters"),
+        "ConsoleRenderer": ("r2morph.reporting.report_renderer", "ConsoleRenderer"),
+        "ReportRenderer": ("r2morph.reporting.report_renderer", "ReportRenderer"),
+        "_has_structural_risk": ("r2morph.reporting.report_state", "_has_structural_risk"),
+        "_has_symbolic_risk": ("r2morph.reporting.report_state", "_has_symbolic_risk"),
+        "_is_clean_pass": ("r2morph.reporting.report_state", "_is_clean_pass"),
+        "_is_covered_pass": ("r2morph.reporting.report_state", "_is_covered_pass"),
+        "_is_risky_pass": ("r2morph.reporting.report_state", "_is_risky_pass"),
+        "_is_uncovered_pass": ("r2morph.reporting.report_state", "_is_uncovered_pass"),
+        "_normalized_pass_map": ("r2morph.reporting.report_state", "_normalized_pass_map"),
+        "_summary_first": ("r2morph.reporting.report_state", "_summary_first"),
+        "resolve_general_symbolic_state": (
+            "r2morph.reporting.report_state",
+            "resolve_general_symbolic_state",
+        ),
+        "resolve_mismatch_view": ("r2morph.reporting.report_state", "resolve_mismatch_view"),
+        "resolve_pass_filter_sets": ("r2morph.reporting.report_state", "resolve_pass_filter_sets"),
+        "MutationResult": ("r2morph.reporting.sarif_formatter", "MutationResult"),
+        "ReportData": ("r2morph.reporting.sarif_formatter", "ReportData"),
+        "SARIFFormatter": ("r2morph.reporting.sarif_formatter", "SARIFFormatter"),
+        "ValidationResult": ("r2morph.reporting.sarif_formatter", "ValidationResult"),
+        "format_as_sarif": ("r2morph.reporting.sarif_formatter", "format_as_sarif"),
+        "SARIFArtifact": ("r2morph.reporting.sarif_schema", "SARIFArtifact"),
+        "SARIFArtifactLocation": ("r2morph.reporting.sarif_schema", "SARIFArtifactLocation"),
+        "SARIFFileChange": ("r2morph.reporting.sarif_schema", "SARIFFileChange"),
+        "SARIFFix": ("r2morph.reporting.sarif_schema", "SARIFFix"),
+        "SARIFInvocation": ("r2morph.reporting.sarif_schema", "SARIFInvocation"),
+        "SARIFLevel": ("r2morph.reporting.sarif_schema", "SARIFLevel"),
+        "SARIFLocation": ("r2morph.reporting.sarif_schema", "SARIFLocation"),
+        "SARIFLogicalLocation": ("r2morph.reporting.sarif_schema", "SARIFLogicalLocation"),
+        "SARIFMessage": ("r2morph.reporting.sarif_schema", "SARIFMessage"),
+        "SARIFNotification": ("r2morph.reporting.sarif_schema", "SARIFNotification"),
+        "SARIFPhysicalLocation": ("r2morph.reporting.sarif_schema", "SARIFPhysicalLocation"),
+        "SARIFRegion": ("r2morph.reporting.sarif_schema", "SARIFRegion"),
+        "SARIFReplacement": ("r2morph.reporting.sarif_schema", "SARIFReplacement"),
+        "SARIFReport": ("r2morph.reporting.sarif_schema", "SARIFReport"),
+        "SARIFResult": ("r2morph.reporting.sarif_schema", "SARIFResult"),
+        "SARIFRule": ("r2morph.reporting.sarif_schema", "SARIFRule"),
+        "SARIFRun": ("r2morph.reporting.sarif_schema", "SARIFRun"),
+        "SARIFSnippet": ("r2morph.reporting.sarif_schema", "SARIFSnippet"),
+        "SARIFTool": ("r2morph.reporting.sarif_schema", "SARIFTool"),
+        "SARIFToolComponent": ("r2morph.reporting.sarif_schema", "SARIFToolComponent"),
+        "EvidenceAggregator": ("r2morph.reporting.summary_aggregator", "EvidenceAggregator"),
+        "SummaryAggregator": ("r2morph.reporting.summary_aggregator", "SummaryAggregator"),
+        "SymbolicAggregator": ("r2morph.reporting.summary_aggregator", "SymbolicAggregator"),
+    }
     if name in _LAZY_RENDERING_NAMES:
-        from r2morph.reporting import report_rendering as _rr
-
-        value = getattr(_rr, name)
-        globals()[name] = value  # cache for subsequent access
+        value = getattr(import_module("r2morph.reporting.report_rendering"), name)
+        globals()[name] = value
+        return value
+    if name in lazy_exports:
+        module_name, attr_name = lazy_exports[name]
+        value = getattr(import_module(module_name), attr_name)
+        globals()[name] = value
         return value
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))
