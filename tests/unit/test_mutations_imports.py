@@ -13,6 +13,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.hardened_models",
     "r2morph.mutations.conflict_models",
     "r2morph.mutations.conflict_semantic",
+    "r2morph.mutations.api_hashing_hashes",
     "r2morph.mutations.polymorphic_engine_models",
     "r2morph.mutations.polymorphic_engine_noop",
     "r2morph.mutations.polymorphic_engine_setup",
