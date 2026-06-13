@@ -22,6 +22,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.filtered_summary_symbolic",
     "r2morph.reporting.report_view_builder",
     "r2morph.reporting.report_context",
+    "r2morph.reporting.report_view_resolution",
     "r2morph.reporting.summary_aggregator",
     "r2morph.analysis.pointer_analysis",
     "r2morph.analysis.type_inference_arm",
