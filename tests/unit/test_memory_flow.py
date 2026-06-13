@@ -220,6 +220,112 @@ class TestMemoryFlowAnalyzer:
             "allocations": [],
         }
 
+    def test_analyze_instruction_records_exact_accesses(self, analyzer):
+        """Characterize _analyze_instruction's effect on _accesses/_locations.
+
+        §5 oracle pinning the exact MemoryAccess/MemoryLocation produced for
+        each decode branch (x86 mov read/write, ARM ldr/str, push/pop) plus
+        the two no-op paths (empty disasm, instruction with no memory access).
+        """
+        stack_frame = {"local_vars": [], "arguments": []}
+        cases = [
+            (0x100, "mov eax, [0x2000]"),
+            (0x200, "mov [0x3000], ebx"),
+            (0x300, "ldr x0, [sp, #8]"),
+            (0x400, "str w1, [sp, #16]"),
+            (0x500, "push rbp"),
+            (0x600, "pop rbp"),
+            (0x700, ""),
+            (0x800, "add eax, ebx"),
+        ]
+        for addr, disasm in cases:
+            analyzer._analyze_instruction(addr, disasm, stack_frame)
+
+        assert 0x700 not in analyzer._accesses
+        assert 0x800 not in analyzer._accesses
+
+        def summarize(addr):
+            (access,) = analyzer._accesses[addr]
+            loc = access.location
+            return (
+                access.access_type,
+                access.instruction,
+                access.registers_involved,
+                loc.address,
+                loc.size,
+                loc.name,
+                loc.location_type,
+            )
+
+        assert summarize(0x100) == (
+            MemoryAccessType.READ,
+            "mov eax, [0x2000]",
+            ["eax"],
+            0x2000,
+            4,
+            "unknown_8192",
+            "unknown",
+        )
+        assert summarize(0x200) == (
+            MemoryAccessType.WRITE,
+            "mov [0x3000], ebx",
+            ["ebx"],
+            0x3000,
+            4,
+            "unknown_12288",
+            "unknown",
+        )
+        assert summarize(0x300) == (
+            MemoryAccessType.READ,
+            "ldr x0, [sp, #8]",
+            ["x0"],
+            8,
+            8,
+            "stack_8",
+            "stack",
+        )
+        assert summarize(0x400) == (
+            MemoryAccessType.WRITE,
+            "str w1, [sp, #16]",
+            ["w1"],
+            16,
+            4,
+            "stack_16",
+            "stack",
+        )
+        assert summarize(0x500) == (
+            MemoryAccessType.WRITE,
+            "push rbp",
+            ["rbp"],
+            -8,
+            8,
+            "stack",
+            "stack",
+        )
+        assert summarize(0x600) == (
+            MemoryAccessType.READ,
+            "pop rbp",
+            ["rbp"],
+            0,
+            8,
+            "stack",
+            "stack",
+        )
+
+    def test_analyze_instruction_unmatched_ldr_records_degenerate_access(self, analyzer):
+        """Pin the subtle ARM ldr/str default: access_type is set before the
+        bracket regex, so an ldr without a ``[mem]`` operand still records a
+        degenerate read at address 0 (default size 4, empty name/registers)."""
+        analyzer._analyze_instruction(0xA00, "ldr x0, x1", {"local_vars": []})
+
+        (access,) = analyzer._accesses[0xA00]
+        assert access.access_type == MemoryAccessType.READ
+        assert access.registers_involved == []
+        assert access.location.address == 0
+        assert access.location.size == 4
+        assert access.location.name == ""
+        assert access.location.location_type == "unknown"
+
     def test_extract_access_size_byte(self, analyzer):
         size = analyzer._extract_access_size("movzx eax, byte ptr [ebx]")
         assert size == 1

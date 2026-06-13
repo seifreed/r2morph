@@ -97,6 +97,17 @@ class MemoryDependency:
         }
 
 
+@dataclass(frozen=True)
+class _DecodedAccess:
+    """A memory access decoded from a single instruction, before recording."""
+
+    access_type: MemoryAccessType
+    size: int
+    address: int
+    location_name: str
+    registers: list[str]
+
+
 class MemoryFlowAnalyzer:
     """
     Analyzes memory flow patterns in binary code.
@@ -231,90 +242,107 @@ class MemoryFlowAnalyzer:
         if not disasm:
             return
 
-        access_type = None
-        size = 4  # Default size
+        decoded = self._decode_memory_access(disasm, stack_frame)
+        if decoded is None:
+            return
+
+        location = MemoryLocation(
+            address=decoded.address,
+            size=decoded.size,
+            name=decoded.location_name,
+            location_type=("stack" if "stack" in decoded.location_name or decoded.address < 0 else "unknown"),
+        )
+        access = MemoryAccess(
+            address=addr,
+            location=location,
+            access_type=decoded.access_type,
+            instruction=disasm,
+            registers_involved=decoded.registers,
+        )
+
+        self._accesses.setdefault(addr, []).append(access)
+        self._locations[decoded.address] = location
+
+    def _decode_memory_access(self, disasm: str, stack_frame: dict[str, Any]) -> _DecodedAccess | None:
+        """Decode the memory access described by an instruction, if any."""
+        if "mov" in disasm and "[" in disasm:
+            return self._decode_x86_mov(disasm, stack_frame)
+        if "ldr" in disasm:
+            return self._decode_arm_ldr(disasm, stack_frame)
+        if "str" in disasm:
+            return self._decode_arm_str(disasm, stack_frame)
+        if any(op in disasm for op in ("push", "pop")):
+            return self._decode_push_pop(disasm)
+        return None
+
+    def _decode_x86_mov(self, disasm: str, stack_frame: dict[str, Any]) -> _DecodedAccess | None:
+        read_match = re.search(r"mov\s+(\w+),\s+\[([^\]]+)\]", disasm)
+        write_match = re.search(r"mov\s+\[([^\]]+)\],\s+(\w+)", disasm)
+
+        if read_match:
+            access_type = MemoryAccessType.READ
+            operand = read_match.group(2)
+            registers = [read_match.group(1)]
+        elif write_match:
+            access_type = MemoryAccessType.WRITE
+            operand = write_match.group(1)
+            registers = [write_match.group(2)]
+        else:
+            return None
+
+        address = self._extract_memory_address(operand, stack_frame)
+        size = self._extract_access_size(disasm)
+        location_name = self._identify_location(operand, address, stack_frame)
+        return _DecodedAccess(access_type, size, address, location_name, registers)
+
+    def _decode_arm_ldr(self, disasm: str, stack_frame: dict[str, Any]) -> _DecodedAccess:
+        size = 4
         address = 0
         location_name = ""
         registers: list[str] = []
 
-        if "mov" in disasm and "[" in disasm:
-            read_match = re.search(r"mov\s+(\w+),\s+\[([^\]]+)\]", disasm)
-            write_match = re.search(r"mov\s+\[([^\]]+)\],\s+(\w+)", disasm)
-
-            if read_match:
-                access_type = MemoryAccessType.READ
-                operand = read_match.group(2)
-                registers = [read_match.group(1)]
-            elif write_match:
-                access_type = MemoryAccessType.WRITE
-                operand = write_match.group(1)
-                registers = [write_match.group(2)]
-            else:
-                return
-
+        match = re.search(r"ldr\s+\w+,\s+\[([^\]]+)\]", disasm)
+        if match:
+            operand = match.group(1)
             address = self._extract_memory_address(operand, stack_frame)
-            size = self._extract_access_size(disasm)
+            size = self._extract_arm_access_size(disasm)
             location_name = self._identify_location(operand, address, stack_frame)
+            ldr_match = re.search(r"ldr\s+(\w+)", disasm)
+            registers = [ldr_match.group(1)] if ldr_match else []
 
-        elif "ldr" in disasm:
-            access_type = MemoryAccessType.READ
+        return _DecodedAccess(MemoryAccessType.READ, size, address, location_name, registers)
 
-            match = re.search(r"ldr\s+\w+,\s+\[([^\]]+)\]", disasm)
-            if match:
-                operand = match.group(1)
-                address = self._extract_memory_address(operand, stack_frame)
-                size = self._extract_arm_access_size(disasm)
-                location_name = self._identify_location(operand, address, stack_frame)
-                ldr_match = re.search(r"ldr\s+(\w+)", disasm)
-                registers = [ldr_match.group(1)] if ldr_match else []
+    def _decode_arm_str(self, disasm: str, stack_frame: dict[str, Any]) -> _DecodedAccess:
+        size = 4
+        address = 0
+        location_name = ""
+        registers: list[str] = []
 
-        elif "str" in disasm:
+        match = re.search(r"str\s+\w+,\s+\[([^\]]+)\]", disasm)
+        if match:
+            operand = match.group(1)
+            address = self._extract_memory_address(operand, stack_frame)
+            size = self._extract_arm_access_size(disasm)
+            location_name = self._identify_location(operand, address, stack_frame)
+            str_match = re.search(r"str\s+(\w+)", disasm)
+            registers = [str_match.group(1)] if str_match else []
+
+        return _DecodedAccess(MemoryAccessType.WRITE, size, address, location_name, registers)
+
+    def _decode_push_pop(self, disasm: str) -> _DecodedAccess | None:
+        match = re.search(r"(push|pop)\s+(\w+)", disasm)
+        if not match:
+            return None
+
+        op = match.group(1)
+        reg = match.group(2)
+        if op == "push":
             access_type = MemoryAccessType.WRITE
-
-            match = re.search(r"str\s+\w+,\s+\[([^\]]+)\]", disasm)
-            if match:
-                operand = match.group(1)
-                address = self._extract_memory_address(operand, stack_frame)
-                size = self._extract_arm_access_size(disasm)
-                location_name = self._identify_location(operand, address, stack_frame)
-                str_match = re.search(r"str\s+(\w+)", disasm)
-                registers = [str_match.group(1)] if str_match else []
-
-        elif any(op in disasm for op in ["push", "pop"]):
-            match = re.search(r"(push|pop)\s+(\w+)", disasm)
-            if match:
-                op = match.group(1)
-                reg = match.group(2)
-                if op == "push":
-                    access_type = MemoryAccessType.WRITE
-                    address = -8  # Stack pointer offset
-                else:
-                    access_type = MemoryAccessType.READ
-                    address = 0
-                size = 8
-                location_name = "stack"
-                registers = [reg]
-
-        if access_type and address is not None:
-            location = MemoryLocation(
-                address=address,
-                size=size,
-                name=location_name,
-                location_type="stack" if "stack" in location_name or address < 0 else "unknown",
-            )
-
-            access = MemoryAccess(
-                address=addr,
-                location=location,
-                access_type=access_type,
-                instruction=disasm,
-                registers_involved=registers,
-            )
-
-            if addr not in self._accesses:
-                self._accesses[addr] = []
-            self._accesses[addr].append(access)
-            self._locations[address] = location
+            address = -8  # Stack pointer offset
+        else:
+            access_type = MemoryAccessType.READ
+            address = 0
+        return _DecodedAccess(access_type, 8, address, "stack", [reg])
 
     def _extract_memory_address(self, operand: str, stack_frame: dict[str, Any]) -> int:
         """Extract memory address from operand."""
