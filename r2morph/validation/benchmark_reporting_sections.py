@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.validation.benchmark_reporting_recommendations import build_recommendation_lines
+
 
 def build_benchmark_report_lines(summary: dict[str, Any]) -> list[str]:
     """Render a benchmark summary dict into report lines."""
@@ -72,28 +74,6 @@ def build_severity_breakdown_lines(summary: dict[str, Any]) -> list[str]:
         lines.append(f"  Tests:       {stats['total']}")
         lines.append(f"  Success:     {stats['successful']} ({stats['success_rate']:.1%})")
         lines.append("")
-    return lines
-
-
-def build_recommendation_lines(summary: dict[str, Any]) -> list[str]:
-    lines = ["RECOMMENDATIONS", "-" * 40]
-
-    if summary["success_rate"] < 0.8:
-        lines.append("⚠️  Success rate below 80% - review failed tests")
-    else:
-        lines.append("✅ Good success rate")
-
-    if summary["avg_execution_time"] > 30:
-        lines.append("⚠️  Average execution time > 30s - consider optimization")
-    else:
-        lines.append("✅ Good performance")
-
-    if summary["avg_accuracy"] < 0.8:
-        lines.append("⚠️  Average accuracy below 80% - review detection algorithms")
-    else:
-        lines.append("✅ Good accuracy")
-
-    lines.append("")
     return lines
 
 
