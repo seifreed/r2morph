@@ -53,44 +53,34 @@ def unfold_one(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | 
     return [f"mov {reg}, 1"]
 
 
-def unfold_constant_add(reg: str, value: int, bits: int, max_sequence: int) -> list[str] | None:
-    """Unfold add reg, value into multiple operations."""
+def _unfold_constant_step(reg: str, value: int, max_sequence: int, unit_op: str, bulk_op: str) -> list[str] | None:
+    """Unfold a signed constant adjustment into unit (inc/dec) and bulk (add/sub) steps."""
     if value <= 0 or value > max_sequence:
         return None
 
     if value == 1:
-        return [f"inc {reg}"]
+        return [f"{unit_op} {reg}"]
 
     if value <= 3:
-        return [f"inc {reg}"] * value
+        return [f"{unit_op} {reg}"] * value
 
     half = value // 2
     remainder = value % 2
 
-    result = [f"add {reg}, {half}"]
+    result = [f"{bulk_op} {reg}, {half}"]
     if remainder:
-        result.append(f"inc {reg}")
+        result.append(f"{unit_op} {reg}")
     return result
+
+
+def unfold_constant_add(reg: str, value: int, bits: int, max_sequence: int) -> list[str] | None:
+    """Unfold add reg, value into multiple operations."""
+    return _unfold_constant_step(reg, value, max_sequence, "inc", "add")
 
 
 def unfold_constant_sub(reg: str, value: int, bits: int, max_sequence: int) -> list[str] | None:
     """Unfold sub reg, value into multiple operations."""
-    if value <= 0 or value > max_sequence:
-        return None
-
-    if value == 1:
-        return [f"dec {reg}"]
-
-    if value <= 3:
-        return [f"dec {reg}"] * value
-
-    half = value // 2
-    remainder = value % 2
-
-    result = [f"sub {reg}, {half}"]
-    if remainder:
-        result.append(f"dec {reg}")
-    return result
+    return _unfold_constant_step(reg, value, max_sequence, "dec", "sub")
 
 
 def calculate_sequence_size(instructions: list[str], binary: Any, base_addr: int) -> int:
