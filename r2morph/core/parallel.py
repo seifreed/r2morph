@@ -15,7 +15,6 @@ Features:
 import logging
 import tempfile
 import threading
-import time
 from collections.abc import Callable
 from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -23,8 +22,9 @@ from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.core.binary_file_lock import BinaryFileLock
-from r2morph.core.parallel_checkpointing import has_failures, rollback_checkpoint, save_checkpoint
+from r2morph.core.parallel_checkpointing import has_failures, rollback_checkpoint
 from r2morph.core.parallel_execution_summary import build_parallel_results_summary
+from r2morph.core.parallel_pass_execution import execute_checkpointed_pass
 from r2morph.core.parallel_planner import (
     DependencyResolver,
     PassResult,
@@ -225,71 +225,17 @@ class ParallelMutationEngine:
         progress_callback: Callable[[str, float], None] | None,
     ) -> PassResult:
         """Execute a single mutation pass with optional file locking."""
-        pass_name = pass_obj.name
-        start_time = time.time()
-
-        try:
-            if progress_callback:
-                progress_callback(pass_name, 0.0)
-
-            logger.debug(f"Executing pass: {pass_name}")
-
-            # Snapshot the pre-pass binary and mutate it under one lock.
-            # _save_checkpoint reads self.binary.path; pass_obj.apply
-            # writes it. If the snapshot were outside this lock, another
-            # worker could shutil.copy2 the shared binary mid-write and
-            # save a torn checkpoint that a later rollback would restore.
-            with self._binary_mutation_lock:
-                checkpoint_path = save_checkpoint(self.binary.path, self.checkpoint_dir, pass_name, logger) if self.use_checkpoints else None
-
-                # Acquire file lock before modifying binary if using file locking
-                if self._file_lock and self.use_file_lock:
-                    acquired = self._file_lock.acquire()
-                    if not acquired:
-                        logger.error(f"Failed to acquire file lock for pass {pass_name}")
-                        return PassResult(
-                            pass_name=pass_name,
-                            status=PassStatus.FAILED,
-                            error="Failed to acquire file lock",
-                            duration_seconds=time.time() - start_time,
-                        )
-
-                try:
-                    result = pass_obj.apply(self.binary)
-                finally:
-                    # Always release the lock after pass execution
-                    if self._file_lock and self._file_lock.is_locked():
-                        self._file_lock.release()
-
-            duration = time.time() - start_time
-            mutations_applied = result.get("mutations_applied", 0) if result else 0
-
-            if progress_callback:
-                progress_callback(pass_name, 1.0)
-
-            return PassResult(
-                pass_name=pass_name,
-                status=PassStatus.COMPLETED,
-                result=result,
-                duration_seconds=duration,
-                mutations_applied=mutations_applied,
-                checkpoint_path=checkpoint_path,
-            )
-
-        except Exception as e:
-            logger.error(f"Pass {pass_name} failed: {e}")
-            duration = time.time() - start_time
-
-            # Ensure lock is released on failure
-            if self._file_lock and self._file_lock.is_locked():
-                self._file_lock.release()
-
-            return PassResult(
-                pass_name=pass_name,
-                status=PassStatus.FAILED,
-                error=str(e),
-                duration_seconds=duration,
-            )
+        return execute_checkpointed_pass(
+            binary=self.binary,
+            pass_obj=pass_obj,
+            checkpoint_dir=self.checkpoint_dir,
+            use_checkpoints=self.use_checkpoints,
+            file_lock=self._file_lock,
+            use_file_lock=self.use_file_lock,
+            binary_mutation_lock=self._binary_mutation_lock,
+            progress_callback=progress_callback,
+            logger=logger,
+        )
 
     def rollback(self, pass_name: str) -> bool:
         """
