@@ -116,6 +116,7 @@ REPORTING_MODULES = [
     "r2morph.validation.benchmark_reporting_summary",
     "r2morph.validation.benchmark_reporting_text",
     "r2morph.validation.leak_detection_models",
+    "r2morph.validation.performance_regression_models",
     "r2morph.validation.mutation_fuzzer_inputs",
     "r2morph.validation.mutation_fuzzer_types",
     "r2morph.analysis.type_inference_types",
