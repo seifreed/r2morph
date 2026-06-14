@@ -17,6 +17,11 @@ from r2morph.core.parallel_executor_models import (  # noqa: F401
     ResolutionStrategy,
     TaskStatus,
 )
+from r2morph.core.parallel_executor_task_helpers import (
+    build_failed_mutation_result,
+    build_mutation_result,
+    create_tasks_from_call_graph,
+)
 from r2morph.core.parallel_result_merger import ResultMerger
 from r2morph.core.parallel_work_queue import WorkQueue
 
@@ -69,32 +74,7 @@ class ParallelMutator:
         Returns:
             List of task IDs
         """
-        task_ids = []
-        func_to_task: dict[int, int] = {}
-
-        for func in functions:
-            addr = func.get("offset", func.get("addr", 0))
-            name = func.get("name", f"func_{addr:x}")
-            passes = func.get("passes", [])
-
-            deps = []
-            if call_graph and addr in call_graph:
-                for caller in call_graph:
-                    if addr in call_graph[caller] and caller in func_to_task:
-                        deps.append(func_to_task[caller])
-
-            task_id = self._work_queue.add_task(
-                function_address=addr,
-                function_name=name,
-                passes=passes,
-                dependencies=deps,
-                priority=len(deps),
-            )
-
-            task_ids.append(task_id)
-            func_to_task[addr] = task_id
-
-        return task_ids
+        return create_tasks_from_call_graph(self._work_queue, functions, call_graph)
 
     def execute_parallel(
         self,
@@ -152,16 +132,7 @@ class ParallelMutator:
 
                     try:
                         result_data = future.result()
-
-                        result = MutationResult(
-                            task_id=task_id,
-                            function_address=task.function_address,
-                            function_name=task.function_name,
-                            success=result_data.get("success", True),
-                            mutations_applied=result_data.get("mutations", []),
-                            bytes_modified=result_data.get("bytes_modified", 0),
-                            execution_time=result_data.get("execution_time", 0.0),
-                        )
+                        result = build_mutation_result(task_id, task, result_data)
 
                         self._work_queue.mark_completed(task_id, result)
                         self._result_merger.add_result(result)
@@ -170,14 +141,7 @@ class ParallelMutator:
                     except Exception as e:
                         logger.error(f"Task {task_id} failed: {e}")
                         self._work_queue.mark_failed(task_id, str(e))
-
-                        result = MutationResult(
-                            task_id=task_id,
-                            function_address=task.function_address,
-                            function_name=task.function_name,
-                            success=False,
-                            error=str(e),
-                        )
+                        result = build_failed_mutation_result(task_id, task, e)
                         results.append(result)
 
                     completed += 1

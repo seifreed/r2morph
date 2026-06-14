@@ -76,6 +76,7 @@ REPORTING_MODULES = [
     "r2morph.core.engine_mutations",
     "r2morph.core.parallel_planner",
     "r2morph.core.parallel_executor_models",
+    "r2morph.core.parallel_executor_task_helpers",
     "r2morph.core.parallel_work_queue",
     "r2morph.core.parallel_result_merger",
     "r2morph.core.parallel_checkpointing",
