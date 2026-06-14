@@ -18,6 +18,10 @@ from r2morph.analysis.switch_table_models import (
     JumpTableEntry,
     JumpTableType,
 )
+from r2morph.analysis.switch_table_parsing import (
+    classify_indirect_jump,
+    match_jumptable_operands,
+)
 from r2morph.analysis.switch_table_patterns import JUMP_TABLE_PATTERNS, PLT_PATTERNS, TAIL_CALL_PATTERNS
 from r2morph.core.binary import Binary
 
@@ -92,40 +96,7 @@ class SwitchTableAnalyzer:
         bare register/absolute forms match with empty operands -- or None when
         none does.
         """
-        for pattern, ptype in self.JUMP_TABLE_PATTERNS:
-            match = re.search(pattern, disasm, re.IGNORECASE)
-            if not match:
-                continue
-
-            groups = match.groups()
-            base_register = None
-            index_register = None
-            scale = 1
-            displacement = 0
-
-            if ptype == "indexed_scaled_offset" and len(groups) >= 3:
-                index_register = groups[0]
-                scale = int(groups[1])
-                displacement = int(groups[2], 16)
-            elif ptype == "indexed_scaled" and len(groups) >= 2:
-                index_register = groups[0]
-                scale = int(groups[1])
-            elif ptype == "indexed_offset" and len(groups) >= 2:
-                base_register = groups[0]
-                displacement = int(groups[1], 16)
-            elif ptype == "indexed":
-                base_register = groups[0] if groups[0] else None
-                index_register = groups[0] if not base_register else None
-
-            return {
-                "base_register": base_register,
-                "index_register": index_register,
-                "scale": scale,
-                "displacement": displacement,
-                "table_address": displacement if (base_register and displacement) else None,
-            }
-
-        return None
+        return match_jumptable_operands(disasm)
 
     def _classify_indirect_jump(self, address: int, disasm: str, function_address: int) -> IndirectJump | None:
         """
@@ -139,63 +110,7 @@ class SwitchTableAnalyzer:
         Returns:
             IndirectJump instance or None if not classified
         """
-        operands = self._match_jumptable_operands(disasm)
-        if operands is not None:
-            jump_type = "jumptable"
-        else:
-            jump_type = "unknown"
-            operands = {
-                "base_register": None,
-                "index_register": None,
-                "scale": 1,
-                "displacement": 0,
-                "table_address": None,
-            }
-        base_register = operands["base_register"]
-        index_register = operands["index_register"]
-        scale = operands["scale"]
-        displacement = operands["displacement"]
-        table_address = operands["table_address"]
-
-        if jump_type == "unknown":
-            for pattern, ptype in self.TAIL_CALL_PATTERNS:
-                match = re.search(pattern, disasm, re.IGNORECASE)
-                if match:
-                    jump_type = "tailcall"
-                    groups = match.groups()
-                    if ptype == "absolute":
-                        target = int(groups[0], 16)
-                        return IndirectJump(
-                            address=address,
-                            instruction=disasm,
-                            jump_type=jump_type,
-                            target_candidates=[target],
-                            function_address=function_address,
-                        )
-                    break
-
-        for pattern in self.PLT_PATTERNS:
-            if re.search(pattern, disasm, re.IGNORECASE):
-                jump_type = "plt"
-                break
-
-        if jump_type == "unknown" and ("[" in disasm or "rip" in disasm):
-            jump_type = "indirect"
-
-        if jump_type == "unknown":
-            return None
-
-        return IndirectJump(
-            address=address,
-            instruction=disasm,
-            jump_type=jump_type,
-            base_register=base_register,
-            index_register=index_register,
-            scale=scale,
-            displacement=displacement,
-            table_address=table_address,
-            function_address=function_address,
-        )
+        return classify_indirect_jump(address, disasm, function_address)
 
     def resolve_jump_table(
         self,
