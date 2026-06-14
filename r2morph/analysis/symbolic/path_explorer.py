@@ -14,6 +14,15 @@ else:
         angr = None
 
 from r2morph.analysis.symbolic.path_explorer_models import ExplorationResult, ExplorationStrategy
+from r2morph.analysis.symbolic.path_explorer_results import (
+    build_opaque_predicates as _build_opaque_predicates,
+)
+from r2morph.analysis.symbolic.path_explorer_results import (
+    build_vm_handlers as _build_vm_handlers,
+)
+from r2morph.analysis.symbolic.path_explorer_results import (
+    collect_exploration_results as _collect_exploration_results,
+)
 from r2morph.analysis.symbolic.path_explorer_techniques import (
     OpaquePredicateDetectionTechnique,
     VMHandlerDetectionTechnique,
@@ -124,51 +133,8 @@ class PathExplorer:
     def _collect_exploration_results(
         self, simgr: Any, strategy: ExplorationStrategy, execution_time: float
     ) -> ExplorationResult:
-        """
-        Collect and analyze results from path exploration.
-
-        Args:
-            simgr: Simulation manager
-            strategy: Exploration strategy used
-            execution_time: Time spent exploring
-
-        Returns:
-            ExplorationResult with analysis
-        """
-        result = ExplorationResult(execution_time=execution_time)
-
-        # Collect interesting states
-        interesting_states = []
-        if hasattr(simgr, "found"):
-            interesting_states.extend(simgr.found)
-        if hasattr(simgr, "deadended"):
-            interesting_states.extend(simgr.deadended)
-
-        result.interesting_paths = interesting_states
-
-        # Strategy-specific result collection
-        if strategy == ExplorationStrategy.VM_HANDLER:
-            technique = self.exploration_techniques[strategy]
-            if isinstance(technique, VMHandlerDetectionTechnique):
-                result.vm_handlers_found = len(technique.handler_patterns)
-
-        elif strategy == ExplorationStrategy.OPAQUE_PREDICATE:
-            technique = self.exploration_techniques[strategy]
-            if isinstance(technique, OpaquePredicateDetectionTechnique):
-                result.opaque_predicates_found = len(technique.opaque_candidates)
-
-        # Collect constraints from all states
-        constraints = []
-        for state in interesting_states:
-            try:
-                if hasattr(state, "solver"):
-                    constraints.extend(state.solver.constraints)
-            except Exception as e:
-                logger.debug(f"Error collecting constraints: {e}")
-
-        result.constraints_collected = constraints
-
-        return result
+        """Collect and analyze results from path exploration."""
+        return _collect_exploration_results(simgr, strategy, execution_time, self.exploration_techniques)
 
     def find_vm_handlers(self, dispatcher_addr: int, max_handlers: int = 50) -> list[dict[str, Any]]:
         """
@@ -185,18 +151,8 @@ class PathExplorer:
 
         self.explore_function(dispatcher_addr, strategy=ExplorationStrategy.VM_HANDLER, max_paths=max_handlers * 2)
 
-        handlers = []
         technique = self.exploration_techniques[ExplorationStrategy.VM_HANDLER]
-
-        if isinstance(technique, VMHandlerDetectionTechnique):
-            for handler_addr in technique.handler_patterns:
-                handlers.append(
-                    {
-                        "address": handler_addr,
-                        "type": "unknown",  # Will be determined by further analysis
-                        "confidence": 0.8,  # Based on detection heuristics
-                    }
-                )
+        handlers = _build_vm_handlers(technique)
 
         logger.info(f"Found {len(handlers)} potential VM handlers")
         return handlers
@@ -215,20 +171,8 @@ class PathExplorer:
 
         self.explore_function(function_addr, strategy=ExplorationStrategy.OPAQUE_PREDICATE, max_paths=200)
 
-        predicates = []
         technique = self.exploration_techniques[ExplorationStrategy.OPAQUE_PREDICATE]
-
-        if isinstance(technique, OpaquePredicateDetectionTechnique):
-            for predicate_addr in technique.opaque_candidates:
-                outcomes = technique.branch_outcomes.get(predicate_addr, [])
-                predicates.append(
-                    {
-                        "address": predicate_addr,
-                        "always_taken": all(outcomes) if outcomes else None,
-                        "sample_count": len(outcomes),
-                        "confidence": min(1.0, len(outcomes) / 10.0),
-                    }
-                )
+        predicates = _build_opaque_predicates(technique)
 
         logger.info(f"Found {len(predicates)} potential opaque predicates")
         return predicates
