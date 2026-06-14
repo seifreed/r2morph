@@ -8,11 +8,11 @@ to speed up mutation processing on multi-core systems.
 import logging
 import multiprocessing
 import threading
-from dataclasses import dataclass, field
 from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass, MutationRecord
+from r2morph.mutations.parallel_executor_models import MutationResult, MutationTask, ParallelStats
 from r2morph.mutations.parallel_executor_planning import build_task_plans
 from r2morph.mutations.parallel_executor_runtime import execute_parallel_runs
 from r2morph.mutations.parallel_executor_speedup import estimate_parallel_speedup
@@ -21,39 +21,6 @@ from r2morph.mutations.parallel_executor_speedup import estimate_parallel_speedu
 _binary_write_lock = threading.Lock()
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class MutationTask:
-    """A mutation task for parallel execution."""
-
-    pass_name: str
-    pass_instance: MutationPass
-    function_addresses: list[int] = field(default_factory=list)
-    config: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class MutationResult:
-    """Result of a mutation task."""
-
-    success: bool = True
-    mutations_applied: int = 0
-    records: list[MutationRecord] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class ParallelStats:
-    """Statistics from parallel execution."""
-
-    total_time: float = 0.0
-    worker_count: int = 0
-    tasks_completed: int = 0
-    tasks_failed: int = 0
-    total_mutations: int = 0
-    speedup_factor: float = 1.0
 
 
 class ParallelMutator:

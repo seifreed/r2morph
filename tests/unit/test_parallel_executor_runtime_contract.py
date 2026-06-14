@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 
-from r2morph.mutations.parallel_executor import ParallelStats
+from r2morph.mutations.parallel_executor_models import ParallelStats
 from r2morph.mutations.parallel_executor_runtime import execute_parallel_runs
 
 
