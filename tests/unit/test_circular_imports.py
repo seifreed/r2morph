@@ -10,6 +10,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.gate_evaluator",
     "r2morph.reporting.report_helpers",
     "r2morph.reporting.report_helpers_classification",
+    "r2morph.reporting.report_pass_classification",
     "r2morph.reporting.report_helpers_symbolic_view",
     "r2morph.reporting.report_evidence_sorting",
     "r2morph.reporting.report_summary_lookup",
