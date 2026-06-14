@@ -9,7 +9,6 @@ sequences and VM handler semantics.
 Reference: "Syntia: Synthesizing the Semantics of Obfuscated Code" by Blazytko et al.
 """
 
-import json
 import logging
 import time
 from pathlib import Path
@@ -30,6 +29,10 @@ from r2morph.analysis.symbolic.syntia_models import (
     InstructionSemantics,
     SemanticComplexity,
     VMHandlerSemantics,
+)
+from r2morph.analysis.symbolic.syntia_reporting import (
+    build_learned_semantics_export,
+    write_learned_semantics_export,
 )
 from r2morph.analysis.symbolic.syntia_runtime_helpers import (
     analyze_syntia_state,
@@ -426,21 +429,11 @@ class SyntiaFramework:
             True if export successful
         """
         try:
-            export_data = {"statistics": self.get_synthesis_statistics(), "semantics": {}}
-
-            for inst_bytes, semantics in self.semantics_cache.items():
-                key = inst_bytes.hex()
-                export_data["semantics"][key] = {
-                    "address": semantics.address,
-                    "disassembly": semantics.disassembly,
-                    "learned_semantics": semantics.learned_semantics,
-                    "semantic_formula": semantics.semantic_formula,
-                    "confidence": semantics.confidence,
-                    "complexity": semantics.complexity.value,
-                }
-
-            with open(output_path, "w") as f:
-                json.dump(export_data, f, indent=2)
+            export_data = build_learned_semantics_export(
+                self.semantics_cache,
+                self.get_synthesis_statistics(),
+            )
+            write_learned_semantics_export(output_path, export_data)
 
             logger.info(f"Exported learned semantics to {output_path}")
             return True
