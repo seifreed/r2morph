@@ -14,6 +14,24 @@ from typing import Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.nop_insertion_helpers import (
+    CALLER_SAVED_32BIT as _CALLER_SAVED_32BIT,
+)
+from r2morph.mutations.nop_insertion_helpers import (
+    CALLER_SAVED_64BIT as _CALLER_SAVED_64BIT,
+)
+from r2morph.mutations.nop_insertion_helpers import (
+    CALLER_SAVED_ARM32 as _CALLER_SAVED_ARM32,
+)
+from r2morph.mutations.nop_insertion_helpers import (
+    NOP_EQUIVALENTS_BASE as _NOP_EQUIVALENTS_BASE,
+)
+from r2morph.mutations.nop_insertion_helpers import (
+    REGISTERS_32BIT as _REGISTERS_32BIT,
+)
+from r2morph.mutations.nop_insertion_helpers import (
+    REGISTERS_64BIT as _REGISTERS_64BIT,
+)
+from r2morph.mutations.nop_insertion_helpers import (
     generate_jmp_dead_code,
     init_nop_equivalents,
     is_safe_self_redundancy,
@@ -37,60 +55,13 @@ class NopInsertionPass(MutationPass):
         - use_creative_nops: Use creative NOP equivalents instead of plain NOPs (default: True)
     """
 
-    NOP_EQUIVALENTS_BASE = {
-        "x86": [
-            "xchg eax, eax",
-            "xchg ebx, ebx",
-            "xchg ecx, ecx",
-            "xchg edx, edx",
-            "lea eax, [eax]",
-            "lea ebx, [ebx]",
-            "lea ecx, [ecx]",
-            "lea edx, [edx]",
-            "mov eax, eax",
-            "mov ebx, ebx",
-            "mov ecx, ecx",
-            "mov edx, edx",
-            "xchg rax, rax",
-            "xchg rbx, rbx",
-            "xchg rcx, rcx",
-            "xchg rdx, rdx",
-            "lea rax, [rax]",
-            "lea rbx, [rbx]",
-            "lea rcx, [rcx]",
-            "lea rdx, [rdx]",
-        ],
-        "arm": [
-            "mov r0, r0",
-            "mov r1, r1",
-            "mov r2, r2",
-            "mov r3, r3",
-            "orr r0, r0, #0",
-            "orr r1, r1, #0",
-            "add r0, r0, #0",
-            "add r1, r1, #0",
-            "sub r0, r0, #0",
-            "lsl r0, r0, #0",
-            "lsl r1, r1, #0",
-        ],
-    }
-
-    REGISTERS_32BIT = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
-    REGISTERS_64BIT = ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
+    NOP_EQUIVALENTS_BASE = _NOP_EQUIVALENTS_BASE
+    REGISTERS_32BIT = _REGISTERS_32BIT
+    REGISTERS_64BIT = _REGISTERS_64BIT
     REGISTERS_ARM32 = ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"]
-    CALLER_SAVED_32BIT = {"eax", "ecx", "edx"}
-    CALLER_SAVED_ARM32 = {"r0", "r1", "r2", "r3"}
-    CALLER_SAVED_64BIT = {
-        "rax",
-        "rcx",
-        "rdx",
-        "rsi",
-        "rdi",
-        "r8",
-        "r9",
-        "r10",
-        "r11",
-    }
+    CALLER_SAVED_32BIT = _CALLER_SAVED_32BIT
+    CALLER_SAVED_ARM32 = _CALLER_SAVED_ARM32
+    CALLER_SAVED_64BIT = _CALLER_SAVED_64BIT
 
     def _init_nop_equivalents(self) -> None:
         self.NOP_EQUIVALENTS = init_nop_equivalents()
