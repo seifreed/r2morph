@@ -7,9 +7,9 @@ with the Syntia framework for instruction semantics learning.
 
 import logging
 import time
-from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any
+
+from r2morph.analysis.symbolic import constraint_solver_models as _constraint_solver_models
 
 _z3: Any = None
 _angr: Any = None
@@ -36,6 +36,9 @@ except ImportError:
 z3 = _z3
 angr = _angr
 claripy = _claripy
+ConstraintType = _constraint_solver_models.ConstraintType
+SolverResult = _constraint_solver_models.SolverResult
+MBAExpression = _constraint_solver_models.MBAExpression
 
 logger = logging.getLogger(__name__)
 
@@ -43,39 +46,6 @@ logger = logging.getLogger(__name__)
 # adversarially nested expression from a sample cannot exhaust the stack. 256 is
 # far above any real constraint yet well under Python's default recursion limit.
 MAX_CONSTRAINT_AST_DEPTH = 256
-
-
-class ConstraintType(Enum):
-    """Types of constraints in symbolic execution."""
-
-    PATH_CONSTRAINT = "path"
-    OPAQUE_PREDICATE = "opaque"
-    MBA_EXPRESSION = "mba"
-    SEMANTIC_EQUIVALENCE = "semantic"
-    VM_HANDLER_DISPATCH = "vm_dispatch"
-
-
-@dataclass
-class SolverResult:
-    """Result from constraint solving."""
-
-    satisfiable: bool = False
-    model: dict[str, Any] | None = None
-    simplified_expression: str | None = None
-    solving_time: float = 0.0
-    solver_used: str = "unknown"
-    confidence: float = 0.0
-
-
-@dataclass
-class MBAExpression:
-    """Mixed Boolean Arithmetic expression representation."""
-
-    expression: str
-    variables: set[str] = field(default_factory=set)
-    bit_width: int = 64
-    complexity_score: float = 0.0
-    simplified_form: str | None = None
 
 
 class ConstraintSolver:
