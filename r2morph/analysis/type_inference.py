@@ -26,6 +26,9 @@ from r2morph.analysis.type_inference_arm import (
 from r2morph.analysis.type_inference_arm import (
     propagate_arm_aliases as _propagate_arm_aliases_impl,
 )
+from r2morph.analysis.type_inference_convention_resolver import (
+    get_calling_convention as _get_calling_convention_impl,
+)
 from r2morph.analysis.type_inference_core import (
     _create_int_type as _create_int_type_impl,
 )
@@ -79,9 +82,6 @@ from r2morph.analysis.type_inference_core import (
 )
 from r2morph.analysis.type_inference_core import (
     propagate_types as _propagate_types_impl,
-)
-from r2morph.analysis.type_inference_interprocedural import (
-    _get_calling_convention as _get_calling_convention_impl,
 )
 from r2morph.analysis.type_inference_interprocedural import (
     _infer_all_function_param_types as _infer_all_function_param_types_impl,

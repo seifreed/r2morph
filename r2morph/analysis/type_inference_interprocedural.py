@@ -2,17 +2,10 @@
 
 from __future__ import annotations
 
-import copy
 import logging
 from typing import Any
 
-from r2morph.analysis.type_inference_conventions import (
-    _AAPCS64_ARM64_CONVENTION,
-    _AAPCS_ARM32_CONVENTION,
-    _CDECL_X86_32_CONVENTION,
-    _EMPTY_CONVENTION,
-    _SYSV_AMD64_CONVENTION,
-)
+from r2morph.analysis.type_inference_convention_resolver import get_calling_convention
 from r2morph.analysis.type_inference_types import (
     PrimitiveType,
     TypeInfo,
@@ -20,19 +13,6 @@ from r2morph.analysis.type_inference_types import (
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
-
-
-def _get_calling_convention(arch: str, bits: int) -> dict[str, Any]:
-    """Get calling convention registers for architecture."""
-    if arch in ("x86", "amd64", "x86_64"):
-        convention = _SYSV_AMD64_CONVENTION if bits == 64 else _CDECL_X86_32_CONVENTION
-    elif arch in ("arm", "arm32"):
-        convention = _AAPCS_ARM32_CONVENTION
-    elif arch in ("arm64", "aarch64"):
-        convention = _AAPCS64_ARM64_CONVENTION
-    else:
-        convention = _EMPTY_CONVENTION
-    return copy.deepcopy(convention)
 
 
 def _infer_function_params(
@@ -118,7 +98,7 @@ def propagate_interprocedural_types(
     arch_info = binary.get_arch_info()
     arch = arch_info.get("arch", "x86").lower()
     bits = arch_info.get("bits", 64)
-    calling_convention = _get_calling_convention(arch, bits)
+    calling_convention = get_calling_convention(arch, bits)
 
     function_types = _infer_all_function_param_types(factory, binary, calling_convention)
 
