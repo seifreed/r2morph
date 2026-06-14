@@ -13,6 +13,7 @@ from typing import Any, BinaryIO
 from r2morph.platform.elf_handler_metadata import get_architecture as project_architecture
 from r2morph.platform.elf_handler_metadata import get_entry_point as project_entry_point
 from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
+from r2morph.platform.elf_handler_symbol_preservation import preserve_symbols as check_symbol_preservation
 from r2morph.platform.elf_handler_symbols import collect_symbol_tables
 from r2morph.platform.elf_handler_tables import collect_sections, collect_segments
 from r2morph.platform.elf_handler_validation import validate_elf_file_structure
@@ -305,37 +306,7 @@ class ELFHandler:
             For actual address remapping after transformations, additional
             tracking of code movements would be required.
         """
-        try:
-            import lief
-        except ImportError:
-            logger.warning("lief library required for symbol preservation. Install with: pip install lief")
-            return False
-
-        try:
-            elf = lief.parse(str(self.binary_path))
-            if elf is None:
-                logger.error(f"Failed to parse ELF for symbol preservation: {self.binary_path}")
-                return False
-
-            # Verify symbol tables are accessible (lief API varies by version)
-            if hasattr(elf, "static_symbols"):
-                static_symbols = list(elf.static_symbols)
-            else:
-                static_symbols = list(getattr(elf, "symbols", []))
-            if hasattr(elf, "dynamic_symbols"):
-                dynamic_symbols = list(elf.dynamic_symbols)
-            else:
-                dynamic_symbols = list(getattr(elf, "dynamic_symbols", []))
-
-            static_count = len(static_symbols)
-            dynamic_count = len(dynamic_symbols)
-
-            logger.info(f"Symbol tables intact: {static_count} static, {dynamic_count} dynamic symbols")
-            return True
-
-        except Exception as e:
-            logger.error(f"Symbol preservation check failed: {e}")
-            return False
+        return check_symbol_preservation(self.binary_path)
 
     def get_entry_point(self) -> int | None:
         """Get the entry point address of the ELF binary.
