@@ -5,16 +5,20 @@ Provides fuzz testing capabilities integrated with the mutation pipeline
 to discover edge cases and validate mutation correctness.
 """
 
-import hashlib
-import json
 import logging
 import random
 import time
-from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from r2morph.validation.mutation_fuzzer_campaign import (
+    build_campaign_result,
+    build_exception_fuzz_result,
+    build_success_fuzz_result,
+    build_timeout_fuzz_result,
+    save_failing_case,
+)
 from r2morph.validation.mutation_fuzzer_inputs import (
     generate_ascii_input,
     generate_binary_input,
@@ -161,19 +165,10 @@ class MutationPassFuzzer:
                 result = validator.validate(original_path, mutated_path)
                 execution_time_ms = (time.perf_counter() - start_exec) * 1000
 
-                fuzz_result = FuzzResult(
-                    test_id=test_case.test_id,
-                    passed=result.passed,
-                    original_exit_code=result.original_exitcode,
-                    mutated_exit_code=result.mutated_exitcode,
-                    original_output_hash=hashlib.sha256(result.original_output.encode()).hexdigest()[:16],
-                    mutated_output_hash=hashlib.sha256(result.mutated_output.encode()).hexdigest()[:16],
-                    original_error=result.to_dict().get("original_error", ""),
-                    mutated_error=result.to_dict().get("mutated_error", ""),
+                fuzz_result = build_success_fuzz_result(
+                    test_case=test_case,
+                    result=result,
                     execution_time_ms=execution_time_ms,
-                    crash=result.mutated_exitcode < 0 and "TIMEOUT" not in result.mutated_output,
-                    timeout="TIMEOUT" in result.mutated_output,
-                    mutation_count=len(mutation_names),
                     mutation_names=mutation_names,
                 )
 
@@ -183,7 +178,7 @@ class MutationPassFuzzer:
                     failed += 1
 
                     if self.config.save_failing_cases and output_dir:
-                        self._save_failing_case(test_case, fuzz_result, output_dir)
+                        save_failing_case(test_case, fuzz_result, output_dir)
 
                 if fuzz_result.crash:
                     crashes += 1
@@ -197,20 +192,10 @@ class MutationPassFuzzer:
                 timeouts += 1
                 failed += 1
 
-                fuzz_result = FuzzResult(
-                    test_id=test_case.test_id,
-                    passed=False,
-                    original_exit_code=-1,
-                    mutated_exit_code=-1,
-                    original_output_hash="",
-                    mutated_output_hash="",
-                    original_error="Timeout",
-                    mutated_error="Timeout",
-                    execution_time_ms=self.config.timeout * 1000,
-                    crash=False,
-                    timeout=True,
-                    mutation_count=len(mutation_names),
+                fuzz_result = build_timeout_fuzz_result(
+                    test_case=test_case,
                     mutation_names=mutation_names,
+                    timeout_seconds=self.config.timeout,
                 )
                 results.append(fuzz_result)
 
@@ -218,19 +203,9 @@ class MutationPassFuzzer:
                 logger.error(f"Fuzz test {i} failed with exception: {e}")
                 failed += 1
 
-                fuzz_result = FuzzResult(
-                    test_id=test_case.test_id,
-                    passed=False,
-                    original_exit_code=-1,
-                    mutated_exit_code=-1,
-                    original_output_hash="",
-                    mutated_output_hash="",
-                    original_error=str(e),
-                    mutated_error=str(e),
-                    execution_time_ms=0,
-                    crash=True,
-                    timeout=False,
-                    mutation_count=len(mutation_names),
+                fuzz_result = build_exception_fuzz_result(
+                    test_case=test_case,
+                    error=e,
                     mutation_names=mutation_names,
                 )
                 results.append(fuzz_result)
@@ -240,7 +215,7 @@ class MutationPassFuzzer:
 
         end_time = time.time()
 
-        return FuzzCampaignResult(
+        return build_campaign_result(
             total_tests=self.config.num_tests,
             passed=passed,
             failed=failed,
@@ -253,20 +228,6 @@ class MutationPassFuzzer:
             end_time=datetime.fromtimestamp(end_time).isoformat(),
             duration_seconds=end_time - start_time,
         )
-
-    def _save_failing_case(self, test_case: FuzzTestCase, result: FuzzResult, output_dir: Path) -> None:
-        """Save a failing test case for later analysis."""
-        case_file = output_dir / f"{test_case.test_id}_failure.json"
-
-        failure_data = {
-            "test_case": asdict(test_case),
-            "result": asdict(result),
-        }
-
-        with open(case_file, "w") as f:
-            json.dump(failure_data, f, indent=2, default=str)
-
-        logger.debug(f"Saved failing case: {case_file}")
 
 
 def create_fuzzer(

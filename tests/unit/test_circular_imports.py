@@ -130,6 +130,7 @@ REPORTING_MODULES = [
     "r2morph.cli_workflows",
     "r2morph.tui_progress_indicator",
     "r2morph.validation.performance_regression_execution",
+    "r2morph.validation.mutation_fuzzer_campaign",
     "r2morph.core.engine_lifecycle",
     "r2morph.core.engine_run",
     "r2morph.core.engine_output",
