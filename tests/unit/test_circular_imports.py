@@ -158,6 +158,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.pointer_analysis",
     "r2morph.analysis.call_graph_cache",
     "r2morph.analysis.call_graph_models",
+    "r2morph.analysis.call_graph_serialization",
     "r2morph.analysis.call_graph_parsing",
     "r2morph.analysis.call_graph_entry_points",
     "r2morph.analysis.dataflow_parsing",
