@@ -5,11 +5,11 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from r2morph.reporting.report_helpers_classification import _pass_names_from_triage_rows
 from r2morph.reporting.report_pass_filter_fallbacks import (
     _resolve_pass_filter_fallbacks as _resolve_pass_filter_fallbacks,
 )
 from r2morph.reporting.report_pass_filter_views import _normalize_pass_filter_views
+from r2morph.reporting.report_pass_triage_rows import _pass_names_from_triage_rows
 from r2morph.reporting.report_summary_lookup import _summary_first
 
 

@@ -12,8 +12,8 @@ from r2morph.reporting.report_helpers_classification import (
     _is_covered_pass,
     _is_risky_pass,
     _is_uncovered_pass,
-    _pass_names_from_triage_rows,
 )
+from r2morph.reporting.report_pass_triage_rows import _pass_names_from_triage_rows
 
 PassFilterBuckets = dict[str, set[str]]
 

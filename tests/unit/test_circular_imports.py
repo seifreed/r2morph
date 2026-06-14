@@ -47,6 +47,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_mismatch_state",
     "r2morph.reporting.report_pass_filters",
     "r2morph.reporting.report_pass_filter_fallbacks",
+    "r2morph.reporting.report_pass_triage_rows",
     "r2morph.reporting.report_gate_filters",
     "r2morph.reporting.report_severity_parsing",
     "r2morph.reporting.report_gate_severity_policy",
