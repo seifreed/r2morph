@@ -245,11 +245,11 @@ class CodeVirtualizationPass(MutationPass):
                                 "Virtualization wrote 0x%x but read-back failed; rolling back",
                                 block_addr,
                             )
-                            if self._session is not None and mutation_checkpoint is not None:
-                                self._session.rollback_to(mutation_checkpoint)
-                            binary.reload()
-                            if self._rollback_policy == "fail-fast":
-                                raise RuntimeError("code_virtualization read-back failed; aborting (fail-fast)")
+                            self._rollback_uncommitted(
+                                binary,
+                                mutation_checkpoint,
+                                reason="code_virtualization read-back failed; aborting (fail-fast)",
+                            )
                             continue
                         record = self._record_mutation(
                             function_address=func["addr"],

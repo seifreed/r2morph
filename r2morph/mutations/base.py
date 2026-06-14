@@ -224,6 +224,20 @@ class MutationPass(ABC):
         if self._rollback_policy == "fail-fast":
             raise RuntimeError("Mutation-level validation failed")
 
+    def _rollback_uncommitted(self, binary: Any, mutation_checkpoint: Any, *, reason: str) -> None:
+        """Roll back an in-progress mutation that was never recorded.
+
+        Restores the session checkpoint and reloads the binary, then re-raises
+        with ``reason`` under the fail-fast rollback policy. Unlike
+        _rollback_mutation this does not drop a record, because the failure
+        happens before the mutation is recorded.
+        """
+        if self._session is not None and mutation_checkpoint is not None:
+            self._session.rollback_to(mutation_checkpoint)
+        binary.reload()
+        if self._rollback_policy == "fail-fast":
+            raise RuntimeError(reason)
+
     def _validate_mutation_or_rollback(self, binary: Any, record: MutationRecord, mutation_checkpoint: Any) -> bool:
         """Validate a recorded mutation, rolling back to the checkpoint on failure.
 

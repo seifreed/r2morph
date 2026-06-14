@@ -181,11 +181,11 @@ class ShortJumpPatchingPass(MutationPass):
                                     insn_addr + len(assembled),
                                     nop_count,
                                 )
-                                if self._session is not None and mutation_checkpoint is not None:
-                                    self._session.rollback_to(mutation_checkpoint)
-                                binary.reload()
-                                if self._rollback_policy == "fail-fast":
-                                    raise RuntimeError("Short-jump NOP padding failed; aborting (fail-fast)")
+                                self._rollback_uncommitted(
+                                    binary,
+                                    mutation_checkpoint,
+                                    reason="Short-jump NOP padding failed; aborting (fail-fast)",
+                                )
                                 continue
 
                         mutated_bytes = binary.read_bytes(insn_addr, insn_size)

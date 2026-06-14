@@ -181,11 +181,11 @@ class DataFlowMutationPass(MutationPass):
                                 "NOP fill failed at 0x%x after data-flow substitution; rolling back",
                                 addr + len(new_bytes),
                             )
-                            if self._session is not None and mutation_checkpoint is not None:
-                                self._session.rollback_to(mutation_checkpoint)
-                            binary.reload()
-                            if self._rollback_policy == "fail-fast":
-                                raise RuntimeError("data_flow_mutation NOP fill failed; aborting (fail-fast)")
+                            self._rollback_uncommitted(
+                                binary,
+                                mutation_checkpoint,
+                                reason="data_flow_mutation NOP fill failed; aborting (fail-fast)",
+                            )
                             continue
 
                         mutated_bytes = binary.read_bytes(addr, size)

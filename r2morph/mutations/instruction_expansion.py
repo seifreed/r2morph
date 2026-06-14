@@ -212,13 +212,11 @@ class InstructionExpansionPass(MutationPass):
                                                 "NOP fill failed at 0x%x after shorter expansion; rolling back",
                                                 addr + new_size,
                                             )
-                                            if self._session is not None and mutation_checkpoint is not None:
-                                                self._session.rollback_to(mutation_checkpoint)
-                                            binary.reload()
-                                            if self._rollback_policy == "fail-fast":
-                                                raise RuntimeError(
-                                                    "Instruction-expansion NOP fill failed; aborting (fail-fast)"
-                                                )
+                                            self._rollback_uncommitted(
+                                                binary,
+                                                mutation_checkpoint,
+                                                reason="Instruction-expansion NOP fill failed; aborting (fail-fast)",
+                                            )
                                             continue
 
                                         mutated_bytes = binary.read_bytes(addr, orig_size)
