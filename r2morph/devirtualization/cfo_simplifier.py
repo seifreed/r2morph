@@ -16,6 +16,14 @@ Key Features:
 import logging
 from typing import Any
 
+from .cfo_simplifier_detection import (
+    detect_dispatcher_flattening,
+    detect_fake_control_flow,
+    detect_indirect_jumps,
+    detect_obfuscation_patterns,
+    detect_opaque_predicates,
+    detect_switch_case_obfuscation,
+)
 from .cfo_simplifier_models import CFOPattern, CFOSimplificationResult, ControlFlowBlock, DispatcherInfo
 
 nx: Any
@@ -197,168 +205,22 @@ class CFOSimplifier:
             logger.error(f"Failed to build CFG: {e}")
 
     def _detect_obfuscation_patterns(self) -> list[CFOPattern]:
-        """Detect various control flow obfuscation patterns."""
-        patterns = []
-
-        try:
-            # Detect dispatcher-based flattening
-            if self._detect_dispatcher_flattening():
-                patterns.append(CFOPattern.DISPATCHER_FLATTENING)
-
-            # Detect opaque predicates
-            if self._detect_opaque_predicates():
-                patterns.append(CFOPattern.OPAQUE_PREDICATES)
-
-            # Detect indirect jumps
-            if self._detect_indirect_jumps():
-                patterns.append(CFOPattern.INDIRECT_JUMPS)
-
-            # Detect fake control flow
-            if self._detect_fake_control_flow():
-                patterns.append(CFOPattern.FAKE_CONTROL_FLOW)
-
-            # Detect switch-case obfuscation
-            if self._detect_switch_case_obfuscation():
-                patterns.append(CFOPattern.SWITCH_CASE_OBFUSCATION)
-
-            logger.info(f"Detected {len(patterns)} obfuscation patterns: {[p.value for p in patterns]}")
-
-        except Exception as e:
-            logger.error(f"Pattern detection failed: {e}")
-
-        return patterns
+        return detect_obfuscation_patterns(self)
 
     def _detect_dispatcher_flattening(self) -> bool:
-        """Detect dispatcher-based control flow flattening."""
-        try:
-            dispatcher_candidates = []
-
-            for address, block in self.blocks.items():
-                # Look for blocks with many predecessors (potential dispatchers)
-                if len(block.predecessors) >= 3:
-                    # Check if block contains switch-like instructions
-                    has_switch_pattern = False
-                    state_variable = None
-
-                    for instr in block.instructions:
-                        opcode = instr.get("opcode", "").lower()
-
-                        # Look for comparison and conditional jump patterns
-                        if any(op in opcode for op in ["cmp", "test", "je", "jne", "jmp"]):
-                            has_switch_pattern = True
-
-                        # Try to identify state variable
-                        if "cmp" in opcode and "operands" in instr:
-                            # Extract potential state variable
-                            operands = instr.get("operands", [])
-                            if operands and len(operands) >= 2:
-                                state_variable = operands[0].get("value", "")
-
-                    if has_switch_pattern:
-                        dispatcher_info = DispatcherInfo(
-                            dispatcher_address=address,
-                            state_variable=state_variable or f"var_{address:x}",
-                            pattern_confidence=0.7,
-                        )
-
-                        # Analyze dispatch targets
-                        self._analyze_dispatch_targets(dispatcher_info)
-
-                        if dispatcher_info.pattern_confidence >= self.dispatcher_threshold:
-                            dispatcher_candidates.append(dispatcher_info)
-                            block.is_dispatcher = True
-
-            self.dispatchers.extend(dispatcher_candidates)
-            return len(dispatcher_candidates) > 0
-
-        except Exception as e:
-            logger.error(f"Dispatcher detection failed: {e}")
-            return False
+        return detect_dispatcher_flattening(self)
 
     def _detect_opaque_predicates(self) -> bool:
-        """Detect opaque predicates (always true/false conditions)."""
-        try:
-            opaque_count = 0
-
-            for address, block in self.blocks.items():
-                for instr in block.instructions:
-                    opcode = instr.get("opcode", "").lower()
-
-                    # Look for suspicious comparison patterns
-                    if "cmp" in opcode or "test" in opcode:
-                        operands = instr.get("operands", [])
-                        if len(operands) >= 2:
-                            op1 = operands[0].get("value", "")
-                            op2 = operands[1].get("value", "")
-
-                            # Detect always-true/false comparisons
-                            if op1 == op2:  # x == x (always true)
-                                opaque_count += 1
-                            elif self._is_constant_expression(op1, op2):
-                                opaque_count += 1
-
-            return opaque_count > 0
-
-        except Exception as e:
-            logger.error(f"Opaque predicate detection failed: {e}")
-            return False
+        return detect_opaque_predicates(self)
 
     def _detect_indirect_jumps(self) -> bool:
-        """Detect indirect jumps that may hide control flow."""
-        try:
-            indirect_count = 0
-
-            for address, block in self.blocks.items():
-                for instr in block.instructions:
-                    opcode = instr.get("opcode", "").lower()
-
-                    # Look for indirect jumps
-                    if "jmp" in opcode and "[" in opcode:
-                        indirect_count += 1
-                    elif "call" in opcode and "[" in opcode:
-                        indirect_count += 1
-
-            return indirect_count > 0
-
-        except Exception as e:
-            logger.error(f"Indirect jump detection failed: {e}")
-            return False
+        return detect_indirect_jumps(self)
 
     def _detect_fake_control_flow(self) -> bool:
-        """Detect fake control flow (unreachable code paths)."""
-        try:
-            if not NETWORKX_AVAILABLE or not self.cfg:
-                return False
-
-            # Use graph analysis to find unreachable nodes
-            entry_node = min(self.blocks.keys()) if self.blocks else 0
-            reachable = set(nx.descendants(self.cfg, entry_node))
-            reachable.add(entry_node)
-
-            unreachable_count = len(self.blocks) - len(reachable)
-            return unreachable_count > 0
-
-        except Exception as e:
-            logger.error(f"Fake control flow detection failed: {e}")
-            return False
+        return detect_fake_control_flow(self)
 
     def _detect_switch_case_obfuscation(self) -> bool:
-        """Detect obfuscated switch-case statements."""
-        try:
-            # Look for patterns indicating obfuscated switch statements
-            for address, block in self.blocks.items():
-                if len(block.successors) > 3:  # Many successors suggest switch
-                    # Check for computed jumps
-                    for instr in block.instructions:
-                        opcode = instr.get("opcode", "").lower()
-                        if "jmp" in opcode and any(reg in opcode for reg in ["eax", "rax", "ebx", "rbx"]):
-                            return True
-
-            return False
-
-        except Exception as e:
-            logger.error(f"Switch-case detection failed: {e}")
-            return False
+        return detect_switch_case_obfuscation(self)
 
     def _simplify_dispatcher_flattening(self) -> bool:
         """Simplify dispatcher-based control flow flattening."""
