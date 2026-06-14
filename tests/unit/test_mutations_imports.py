@@ -38,6 +38,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.polymorphic_engine_setup",
     "r2morph.mutations.semantic_validation_models",
     "r2morph.mutations.pass_dependency_models",
+    "r2morph.mutations.pass_dependency_catalogs",
 ]
 
 

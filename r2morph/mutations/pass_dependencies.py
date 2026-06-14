@@ -14,6 +14,7 @@ This module provides:
 import logging
 from typing import Any
 
+from r2morph.mutations.pass_dependency_catalogs import default_pass_dependencies
 from r2morph.mutations.pass_dependency_models import (
     DependencyType,
     DependencyViolation,
@@ -48,70 +49,14 @@ class PassDependencyRegistry:
 
     def _initialize_default_dependencies(self) -> None:
         """Initialize with known pass dependencies."""
-        self.register(
-            "control_flow_flattening",
-            "block_reordering",
-            DependencyType.REQUIRES_ABSENCE,
-            "Control flow flattening should run before block reordering",
-        )
-
-        self.register(
-            "full_control_flow_flattening",
-            "block_reordering",
-            DependencyType.REQUIRES_ABSENCE,
-            "Full CFF should run before block reordering",
-        )
-
-        self.register(
-            "block_reordering",
-            "nop_insertion",
-            DependencyType.RECOMMENDS,
-            "Block reordering works better after nop insertion",
-        )
-
-        self.register(
-            "dead_code_injection",
-            "nop_insertion",
-            DependencyType.RECOMMENDS,
-            "Dead code injection benefits from nop padding",
-        )
-
-        self.register(
-            "instruction_substitution",
-            "register_substitution",
-            DependencyType.CONFLICTS_WITH,
-            "Instruction and register substitution may conflict on same instructions",
-            optional=True,
-        )
-
-        self.register(
-            "control_flow_flattening",
-            "instruction_substitution",
-            DependencyType.REQUIRES,
-            "CFF requires substitution support for dispatcher code",
-            optional=True,
-        )
-
-        self.register(
-            "block_reordering",
-            "control_flow_flattening",
-            DependencyType.CONFLICTS_WITH,
-            "Block reordering invalidates CFF state mapping",
-        )
-
-        self.register(
-            "register_substitution",
-            "nop_insertion",
-            DependencyType.RECOMMENDS,
-            "Register substitution provides more opportunities for nop insertion",
-        )
-
-        self.register(
-            "instruction_expansion",
-            "dead_code_injection",
-            DependencyType.RECOMMENDS,
-            "Instruction expansion creates more space for dead code",
-        )
+        for dependency in default_pass_dependencies():
+            self.register(
+                dependency.source_pass,
+                dependency.target_pass,
+                dependency.dep_type,
+                dependency.reason,
+                dependency.optional,
+            )
 
     def register(
         self,
