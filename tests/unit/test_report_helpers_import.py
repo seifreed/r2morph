@@ -11,6 +11,7 @@ from __future__ import annotations
 from r2morph.core import engine as engine_mod
 from r2morph.core import report_helpers as helpers_mod
 from r2morph.core import report_helpers_adjustment as adjustment_mod
+from r2morph.core import report_helpers_coverage as coverage_mod
 from r2morph.core import report_helpers_discarded as discarded_mod
 from r2morph.core import report_helpers_evidence_summary as evidence_summary_mod
 from r2morph.core import report_helpers_observables as observables_mod
@@ -116,6 +117,13 @@ def test_canonical_adjustment_module_defines_adjustment_helpers() -> None:
 def test_canonical_risk_module_defines_risk_helpers() -> None:
     for name in RISK_NAMES:
         assert hasattr(risk_mod, name), f"core.report_helpers_risk missing {name}"
+
+
+def test_canonical_coverage_module_defines_coverage_helper() -> None:
+    assert hasattr(
+        coverage_mod,
+        "_summarize_pass_coverage_buckets",
+    ), "core.report_helpers_coverage missing _summarize_pass_coverage_buckets"
 
 
 def test_canonical_evidence_summary_module_defines_evidence_helpers() -> None:
@@ -262,6 +270,18 @@ def test_summary_metrics_helpers_are_reexported_from_canonical_module() -> None:
         ), f"core.engine.{name} diverged from core.report_helpers_summary_metrics.{name}"
 
 
+def test_coverage_helper_is_reexported_from_canonical_module() -> None:
+    assert getattr(helpers_mod, "_summarize_pass_coverage_buckets") is getattr(
+        coverage_mod,
+        "_summarize_pass_coverage_buckets",
+    ), "core.report_helpers._summarize_pass_coverage_buckets diverged from core.report_helpers_coverage"
+    assert hasattr(engine_mod, "_summarize_pass_coverage_buckets"), "core.engine no longer re-exports _summarize_pass_coverage_buckets"
+    assert getattr(engine_mod, "_summarize_pass_coverage_buckets") is getattr(
+        coverage_mod,
+        "_summarize_pass_coverage_buckets",
+    ), "core.engine._summarize_pass_coverage_buckets diverged from core.report_helpers_coverage"
+
+
 def test_adjustment_helpers_are_reexported_from_facade() -> None:
     for name in ADJUSTMENT_NAMES:
         assert getattr(helpers_mod, name) is getattr(
@@ -274,7 +294,7 @@ def test_adjustment_helpers_are_reexported_from_facade() -> None:
 
 
 def test_risk_helpers_are_reexported_from_facade() -> None:
-    for name in RISK_NAMES:
+    for name in ("_summarize_pass_risk_buckets",):
         assert getattr(helpers_mod, name) is getattr(
             risk_mod, name
         ), f"core.report_helpers.{name} diverged from core.report_helpers_risk.{name}"

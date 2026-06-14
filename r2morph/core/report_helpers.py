@@ -10,6 +10,9 @@ from r2morph.core.report_helpers_adjustment import (
 from r2morph.core.report_helpers_adjustment import (
     _summarize_validation_adjustments as _summarize_validation_adjustments,
 )
+from r2morph.core.report_helpers_coverage import (
+    _summarize_pass_coverage_buckets as _summarize_pass_coverage_buckets,
+)
 from r2morph.core.report_helpers_evidence import (
     _build_discarded_mutation_priority as _build_discarded_mutation_priority,
 )
@@ -42,9 +45,6 @@ from r2morph.core.report_helpers_projection import (
 )
 from r2morph.core.report_helpers_projection import (
     _summarize_pass_capability_rows as _summarize_pass_capability_rows,
-)
-from r2morph.core.report_helpers_risk import (
-    _summarize_pass_coverage_buckets as _summarize_pass_coverage_buckets,
 )
 from r2morph.core.report_helpers_risk import (
     _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
