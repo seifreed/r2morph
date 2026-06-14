@@ -100,6 +100,7 @@ REPORTING_MODULES = [
     "r2morph.core.report_helpers_triage",
     "r2morph.analysis.pointer_analysis",
     "r2morph.analysis.call_graph_cache",
+    "r2morph.analysis.call_graph_models",
     "r2morph.analysis.pattern_preservation_models",
     "r2morph.analysis.switch_table_models",
     "r2morph.validation.cfg_integrity_models",
