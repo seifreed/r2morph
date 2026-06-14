@@ -83,6 +83,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_pass_resolution",
     "r2morph.reporting.report_output_policy",
     "r2morph.reporting.report_builder_models",
+    "r2morph.reporting.report_view_selection",
     "r2morph.reporting.summary_aggregator",
     "r2morph.reporting.summary_aggregator_symbolic",
     "r2morph.reporting.summary_aggregator_symbolic_metrics",

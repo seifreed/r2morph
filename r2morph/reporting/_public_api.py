@@ -53,6 +53,7 @@ LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     ),
     "resolve_mismatch_view": ("r2morph.reporting.report_state", "resolve_mismatch_view"),
     "resolve_pass_filter_sets": ("r2morph.reporting.report_state", "resolve_pass_filter_sets"),
+    "_first_available": ("r2morph.reporting.report_view_selection", "_first_available"),
     "MutationResult": ("r2morph.reporting.sarif_formatter", "MutationResult"),
     "ReportData": ("r2morph.reporting.sarif_formatter", "ReportData"),
     "SARIFFormatter": ("r2morph.reporting.sarif_formatter", "SARIFFormatter"),

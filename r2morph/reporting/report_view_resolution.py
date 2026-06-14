@@ -7,14 +7,7 @@ from typing import Any
 from r2morph.reporting.report_pass_list_resolution import (
     resolve_general_filtered_passes as _resolve_general_filtered_passes_impl,
 )
-
-
-def _first_available(*sources: Any) -> Any:
-    """Return the first truthy value from sources, or the last one."""
-    for source in sources:
-        if source:
-            return source
-    return sources[-1] if sources else None
+from r2morph.reporting.report_view_selection import _first_available
 
 
 def _resolve_general_report_views(summary: dict[str, Any]) -> dict[str, Any]:
