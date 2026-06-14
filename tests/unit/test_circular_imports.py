@@ -31,6 +31,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_rendering_primitives",
     "r2morph.reporting.cli_commands",
     "r2morph.reporting.report_context_resolver",
+    "r2morph.reporting.report_context_compat",
     "r2morph.reporting.report_gate_helpers",
     "r2morph.reporting.report_assembler",
     "r2morph.reporting.report_assembler_artifacts",
