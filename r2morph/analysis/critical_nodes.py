@@ -11,7 +11,18 @@ Identifies critical control flow points that should not be mutated:
 
 import logging
 
-from r2morph.analysis.cfg import BlockType, ControlFlowGraph
+from r2morph.analysis.cfg import ControlFlowGraph
+from r2morph.analysis.critical_nodes_detection import (
+    build_critical_nodes,
+    compute_exclusion_zones,
+    compute_safe_regions,
+    find_back_edges,
+    find_branch_targets,
+    find_call_sites,
+    find_entry_exits,
+    find_exception_handlers,
+    find_loop_headers,
+)
 from r2morph.analysis.critical_nodes_models import AddressRange, CriticalNode
 from r2morph.analysis.critical_nodes_scorer import get_all_scores, get_safest_addresses, score_address
 
@@ -54,63 +65,7 @@ class CriticalNodeDetector:
         Returns:
             Dictionary mapping addresses to CriticalNode instances
         """
-        self._critical_nodes.clear()
-
-        branch_targets = self.find_branch_targets()
-        for addr in branch_targets:
-            self._critical_nodes[addr] = CriticalNode(
-                address=addr,
-                node_type="branch_target",
-                reason="Target of a branch instruction",
-                exclusion_radius=self.default_exclusion_radius,
-            )
-
-        call_sites = self.find_call_sites()
-        for addr in call_sites:
-            self._critical_nodes[addr] = CriticalNode(
-                address=addr,
-                node_type="call_site",
-                reason="Call instruction site",
-                exclusion_radius=self.default_exclusion_radius,
-            )
-
-        entry_exits = self.find_entry_exits()
-        for addr in entry_exits:
-            self._critical_nodes[addr] = CriticalNode(
-                address=addr,
-                node_type="entry_exit",
-                reason="Function entry or exit point",
-                exclusion_radius=self.default_exclusion_radius + 2,
-            )
-
-        exception_handlers = self.find_exception_handlers()
-        for addr in exception_handlers:
-            self._critical_nodes[addr] = CriticalNode(
-                address=addr,
-                node_type="exception_handler",
-                reason="Exception handling code",
-                exclusion_radius=self.default_exclusion_radius + 1,
-            )
-
-        loop_headers = self.find_loop_headers()
-        for addr in loop_headers:
-            self._critical_nodes[addr] = CriticalNode(
-                address=addr,
-                node_type="loop_header",
-                reason="Loop header block",
-                exclusion_radius=self.default_exclusion_radius,
-            )
-
-        back_edges = self.find_back_edges()
-        for from_addr, to_addr in back_edges:
-            if from_addr not in self._critical_nodes:
-                self._critical_nodes[from_addr] = CriticalNode(
-                    address=from_addr,
-                    node_type="back_edge",
-                    reason="Source of loop back edge",
-                    exclusion_radius=self.default_exclusion_radius,
-                )
-
+        self._critical_nodes = build_critical_nodes(self.cfg, self.default_exclusion_radius)
         return self._critical_nodes
 
     def find_branch_targets(self) -> set[int]:
@@ -120,18 +75,7 @@ class CriticalNodeDetector:
         Returns:
             Set of addresses that are targets of branch instructions
         """
-        targets: set[int] = set()
-
-        for from_addr, to_addr in self.cfg.edges:
-            targets.add(to_addr)
-
-        for addr, block in self.cfg.blocks.items():
-            for insn in block.instructions:
-                jump_target = insn.get("jump")
-                if jump_target and isinstance(jump_target, int):
-                    targets.add(jump_target)
-
-        return targets
+        return find_branch_targets(self.cfg)
 
     def find_call_sites(self) -> set[int]:
         """
@@ -140,19 +84,7 @@ class CriticalNodeDetector:
         Returns:
             Set of addresses containing call instructions
         """
-        call_sites: set[int] = set()
-
-        for addr, block in self.cfg.blocks.items():
-            for insn in block.instructions:
-                insn_type = insn.get("type", "").lower()
-                if insn_type == "call":
-                    call_sites.add(insn.get("offset", addr))
-
-                disasm = insn.get("disasm", "").lower()
-                if disasm.startswith("call"):
-                    call_sites.add(insn.get("offset", addr))
-
-        return call_sites
+        return find_call_sites(self.cfg)
 
     def find_entry_exits(self) -> set[int]:
         """
@@ -161,19 +93,7 @@ class CriticalNodeDetector:
         Returns:
             Set of entry and exit addresses
         """
-        entry_exits: set[int] = set()
-
-        if self.cfg.entry_block:
-            entry_exits.add(self.cfg.entry_block.address)
-
-        for addr, block in self.cfg.blocks.items():
-            if block.block_type == BlockType.RETURN:
-                entry_exits.add(addr)
-
-            if len(block.successors) == 0 and block.block_type != BlockType.RETURN:
-                entry_exits.add(addr)
-
-        return entry_exits
+        return find_entry_exits(self.cfg)
 
     def find_exception_handlers(self) -> set[int]:
         """
@@ -182,21 +102,7 @@ class CriticalNodeDetector:
         Returns:
             Set of exception handler addresses
         """
-        handlers: set[int] = set()
-
-        for edge in self.cfg.exception_edges:
-            if edge.to_address:
-                handlers.add(edge.to_address)
-
-        for addr, block in self.cfg.blocks.items():
-            if block.block_type == BlockType.EXCEPTION_HANDLER:
-                handlers.add(addr)
-            if block.block_type == BlockType.LANDING_PAD:
-                handlers.add(addr)
-            if block.metadata.get("is_landing_pad"):
-                handlers.add(addr)
-
-        return handlers
+        return find_exception_handlers(self.cfg)
 
     def find_loop_headers(self) -> set[int]:
         """
@@ -205,19 +111,7 @@ class CriticalNodeDetector:
         Returns:
             Set of loop header addresses
         """
-        loop_headers: set[int] = set()
-
-        loops = self.cfg.find_loops()
-
-        for from_addr, to_addr in loops:
-            loop_headers.add(to_addr)
-
-        dominators = self.cfg.compute_dominators()
-        for from_addr, to_addr in self.cfg.edges:
-            if to_addr in dominators.get(from_addr, set()):
-                loop_headers.add(to_addr)
-
-        return loop_headers
+        return find_loop_headers(self.cfg)
 
     def find_back_edges(self) -> list[tuple[int, int]]:
         """
@@ -226,7 +120,7 @@ class CriticalNodeDetector:
         Returns:
             List of (from_addr, to_addr) tuples for back edges
         """
-        return self.cfg.find_loops()
+        return find_back_edges(self.cfg)
 
     def get_exclusion_zones(self) -> list[AddressRange]:
         """
@@ -238,30 +132,7 @@ class CriticalNodeDetector:
         if self._exclusion_zones:
             return self._exclusion_zones
 
-        ranges: list[AddressRange] = []
-
-        for addr, node in self._critical_nodes.items():
-            radius = node.exclusion_radius
-            start = addr - (radius * 4)
-            end = addr + (radius * 4)
-
-            block = self.cfg.get_block(addr)
-            if block:
-                start = max(start, block.address)
-                end = min(end, block.address + block.size - 1)
-
-            ranges.append(AddressRange(start=start, end=end))
-
-        ranges.sort(key=lambda r: r.start)
-
-        merged: list[AddressRange] = []
-        for r in ranges:
-            if merged and merged[-1].overlaps(r):
-                merged[-1] = merged[-1].merge(r)
-            else:
-                merged.append(r)
-
-        self._exclusion_zones = merged
+        self._exclusion_zones = compute_exclusion_zones(self.cfg, self._critical_nodes)
         return self._exclusion_zones
 
     def get_safe_regions(self) -> list[AddressRange]:
@@ -277,27 +148,7 @@ class CriticalNodeDetector:
         if not self._exclusion_zones:
             self.get_exclusion_zones()
 
-        all_blocks = sorted(
-            [(addr, block) for addr, block in self.cfg.blocks.items()],
-            key=lambda x: x[0],
-        )
-
-        safe: list[AddressRange] = []
-
-        for addr, block in all_blocks:
-            block_start = addr
-            block_end = addr + block.size - 1
-
-            in_exclusion = False
-            for zone in self._exclusion_zones:
-                if zone.overlaps(AddressRange(start=block_start, end=block_end)):
-                    in_exclusion = True
-                    break
-
-            if not in_exclusion:
-                safe.append(AddressRange(start=block_start, end=block_end))
-
-        self._safe_regions = safe
+        self._safe_regions = compute_safe_regions(self.cfg, self._exclusion_zones)
         return self._safe_regions
 
     def is_critical(self, address: int) -> bool:

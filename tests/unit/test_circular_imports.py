@@ -205,6 +205,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.cfg_models",
     "r2morph.analysis.cfg_builder_helpers",
     "r2morph.analysis.cfg_exception_helpers",
+    "r2morph.analysis.critical_nodes_detection",
     "r2morph.platform.elf_handler_parsing",
     "r2morph.platform.elf_handler_metadata",
     "r2morph.platform.elf_handler_symbols",
