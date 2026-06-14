@@ -7,8 +7,8 @@ from typing import Any
 from r2morph.reporting.report_context import ReportViews
 from r2morph.reporting.report_view_details import _assemble_report_views
 from r2morph.reporting.report_view_gate_views import build_gate_views
-from r2morph.reporting.report_view_pass_views import build_pass_views
 from r2morph.reporting.report_view_mismatch_views import build_mismatch_views
+from r2morph.reporting.report_view_pass_views import build_pass_views
 from r2morph.reporting.report_view_projections import _build_lookup_maps
 from r2morph.reporting.report_view_summary_payload import build_summary_payload
 
@@ -71,7 +71,7 @@ def build_report_views(
     general_pass_rows = passes["general_pass_rows"]
     only_pass = passes["only_pass"]
 
-    mismatches = _build_mismatch_views(
+    mismatches = build_mismatch_views(
         observable_mismatch_priority=observable_mismatch_priority,
         normalized_pass_map=normalized_pass_map,
         symbolic_severity_map=symbolic_severity_map,

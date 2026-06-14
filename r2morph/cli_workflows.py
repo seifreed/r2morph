@@ -11,9 +11,15 @@ from rich import print as rprint
 from rich.console import Console
 from rich.table import Table
 
+from r2morph.cli_workflow_selection import (
+    build_config,
+    limited_symbolic_passes,
+    mutation_pass_alias_map,
+    selected_mutation_passes,
+)
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
-from r2morph.core.support import PRODUCT_SUPPORT, is_experimental_mutation
+from r2morph.core.support import is_experimental_mutation
 from r2morph.reporting import SEVERITY_ORDER
 from r2morph.reporting.report_gate_helpers import (
     _attach_gate_evaluation,
@@ -25,25 +31,6 @@ from r2morph.validation import BinaryValidator
 from r2morph.validation.validator import RuntimeComparisonConfig
 
 console = Console()
-
-
-def _build_config(aggressive: bool, force: bool) -> EngineConfig:
-    config = EngineConfig.create_aggressive() if aggressive else EngineConfig.create_default()
-    if force:
-        config.force_different = True
-        config.nop.force_different = True
-        config.substitution.force_different = True
-        config.register.force_different = True
-        config.expansion.force_different = True
-        config.block.force_different = True
-    return config
-
-
-def _mutation_config(section: Any, seed: int | None, offset: int) -> dict[str, Any]:
-    cfg: dict[str, Any] = section.to_dict()
-    if seed is not None:
-        cfg["seed"] = seed + offset
-    return cfg
 
 
 def _warn_experimental_mutations(mutations: list[str]) -> None:
@@ -83,112 +70,12 @@ def _build_runtime_validator(
     return validator
 
 
-def _load_mutation_pass_types() -> dict[str, type]:
-    """Lazy import mutation passes so stable report/validate flows avoid extra imports."""
-    from r2morph.mutations import (
-        BlockReorderingPass,
-        InstructionExpansionPass,
-        InstructionSubstitutionPass,
-        NopInsertionPass,
-        RegisterSubstitutionPass,
-    )
-
-    return {
-        "nop": NopInsertionPass,
-        "substitute": InstructionSubstitutionPass,
-        "register": RegisterSubstitutionPass,
-        "expand": InstructionExpansionPass,
-        "block": BlockReorderingPass,
-    }
-
-
-def _selected_mutation_passes(
-    mutations: list[str],
-    config: EngineConfig,
-    *,
-    seed: int | None = None,
-) -> list[tuple[str, Any]]:
-    """Build pass instances for the selected mutation names."""
-    pass_types = _load_mutation_pass_types()
-    selected: list[tuple[str, Any]] = []
-    offset = 0
-    if "nop" in mutations:
-        selected.append(("nop", pass_types["nop"](config=_mutation_config(config.nop, seed, offset))))
-        offset += 1
-    if "substitute" in mutations:
-        selected.append(
-            (
-                "substitute",
-                pass_types["substitute"](config=_mutation_config(config.substitution, seed, offset)),
-            )
-        )
-        offset += 1
-    if "register" in mutations:
-        selected.append(
-            (
-                "register",
-                pass_types["register"](config=_mutation_config(config.register, seed, offset)),
-            )
-        )
-        offset += 1
-    if "expand" in mutations:
-        selected.append(
-            (
-                "expand",
-                pass_types["expand"](config=_mutation_config(config.expansion, seed, offset)),
-            )
-        )
-        offset += 1
-    if "block" in mutations:
-        selected.append(("block", pass_types["block"](config=_mutation_config(config.block, seed, offset))))
-    return selected
-
-
-def _mutation_pass_alias_map(
-    config: EngineConfig,
-    *,
-    seed: int | None = None,
-) -> dict[str, str]:
-    """Build aliases from short mutation names to concrete pass names."""
-    aliases: dict[str, str] = {}
-    all_mutations = list(set(PRODUCT_SUPPORT.stable_mutations) | set(PRODUCT_SUPPORT.experimental_mutations))
-    for mutation_name, mutation_pass in _selected_mutation_passes(
-        all_mutations,
-        config,
-        seed=seed,
-    ):
-        aliases[mutation_name] = mutation_pass.name
-        aliases[mutation_pass.name] = mutation_pass.name
-    return aliases
-
-
 def _resolve_report_pass_filter(pass_name: str | None) -> str | None:
     """Resolve report-side pass filters using the product alias map."""
     if pass_name is None:
         return None
-    alias_map = _mutation_pass_alias_map(_build_config(False, False), seed=None)
+    alias_map = mutation_pass_alias_map(build_config(False, False), seed=None)
     return alias_map.get(pass_name.strip(), pass_name.strip())
-
-
-def _limited_symbolic_passes(
-    mutations: list[str],
-    config: EngineConfig,
-    *,
-    seed: int | None,
-) -> list[dict[str, str]]:
-    """Return passes that declare symbolic support as limited."""
-    limited = []
-    for mutation_name, mutation_pass in _selected_mutation_passes(mutations, config, seed=seed):
-        symbolic_support = mutation_pass.get_support().validator_capabilities.get("symbolic", {})
-        if symbolic_support.get("recommended") is False:
-            limited.append(
-                {
-                    "mutation": mutation_name,
-                    "pass_name": mutation_pass.name,
-                    "confidence": str(symbolic_support.get("confidence", "unknown")),
-                }
-            )
-    return limited
 
 
 def _warn_or_block_limited_symbolic(
@@ -200,7 +87,7 @@ def _warn_or_block_limited_symbolic(
 ) -> None:
     """Block symbolic mode for passes that declare limited symbolic support unless explicitly allowed."""
     limited = []
-    for mutation_name, mutation_pass in _selected_mutation_passes(mutations, config, seed=seed):
+    for mutation_name, mutation_pass in selected_mutation_passes(mutations, config, seed=seed):
         symbolic_support = mutation_pass.get_support().validator_capabilities.get("symbolic", {})
         if symbolic_support.get("recommended") is False:
             limited.append(
@@ -278,7 +165,7 @@ def _resolve_validation_mode(
     if requested_mode != "symbolic":
         return requested_mode, None
 
-    limited = _limited_symbolic_passes(mutations, config, seed=seed)
+    limited = limited_symbolic_passes(mutations, config, seed=seed)
     if not limited:
         return requested_mode, None
 
@@ -335,7 +222,7 @@ def _add_mutations(
     *,
     seed: int | None = None,
 ) -> None:
-    for _mutation_name, mutation_pass in _selected_mutation_passes(
+    for _mutation_name, mutation_pass in selected_mutation_passes(
         mutations,
         config,
         seed=seed,
@@ -458,7 +345,7 @@ def _run_simple_mode(
     with console.status("[bold green]Transforming binary..."):
         with MorphEngine(config={"seed": seed, "requested_mutations": ["nop", "substitute", "register"]}) as engine:
             engine.load_binary(input_file).analyze()
-            config = _build_config(aggressive, force)
+            config = build_config(aggressive, force)
             _add_mutations(engine, ["nop", "substitute", "register"], config, seed=seed)
 
             report_path = output_file.parent / f"{output_file.stem}.report.json"
@@ -507,10 +394,10 @@ def _run_morph_workflow(
     _warn_experimental_mutations(experimental)
     _warn_experimental_validation_mode(validation_mode)
     _, min_severity_rank = _resolve_min_severity(min_severity)
-    config = _build_config(aggressive, force)
+    config = build_config(aggressive, force)
     pass_severity_requirements = _resolve_pass_severity_requirements(
         require_pass_severity,
-        alias_map=_mutation_pass_alias_map(config, seed=seed),
+        alias_map=mutation_pass_alias_map(config, seed=seed),
     )
     effective_validation_mode, validation_policy = _resolve_validation_mode(
         requested_mode=validation_mode,
