@@ -18,6 +18,7 @@ from r2morph.analysis.switch_table_models import (
     JumpTableEntry,
     JumpTableType,
 )
+from r2morph.analysis.switch_table_patterns import JUMP_TABLE_PATTERNS, PLT_PATTERNS, TAIL_CALL_PATTERNS
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -34,24 +35,9 @@ class SwitchTableAnalyzer:
     - PLT/GOT identification
     """
 
-    JUMP_TABLE_PATTERNS = [
-        (r"jmp\s+\[([a-z]+)\s*\*\s*(\d+)\s*\+\s*(0x[0-9a-f]+)\]", "indexed_scaled_offset"),
-        (r"jmp\s+\[([a-z]+)\s*\*\s*(\d+)\]", "indexed_scaled"),
-        (r"jmp\s+\[([a-z]+)\s*\+\s*(0x[0-9a-f]+)\]", "indexed_offset"),
-        (r"jmp\s+\[([a-z]+)\]", "indexed"),
-        (r"jmp\s+([a-z]+)", "register"),
-        (r"jmp\s+(0x[0-9a-f]+)", "absolute"),
-    ]
-
-    TAIL_CALL_PATTERNS = [
-        (r"jmp\s+([a-z]+\.[a-zA-Z0-9_]+)", "symbolic"),
-        (r"jmp\s+(0x[0-9a-f]+)", "absolute"),
-    ]
-
-    PLT_PATTERNS = [
-        r"jmp\s+\[rip\s*\+\s*0x[0-9a-f]+\]",
-        r"jmp\s+\[([a-z]+)\s*\+\s*0x[0-9a-f]+\].*;.*plt",
-    ]
+    JUMP_TABLE_PATTERNS = JUMP_TABLE_PATTERNS
+    TAIL_CALL_PATTERNS = TAIL_CALL_PATTERNS
+    PLT_PATTERNS = PLT_PATTERNS
 
     def __init__(self, binary: Binary):
         """
