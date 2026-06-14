@@ -16,6 +16,7 @@ from enum import Enum
 from typing import Any
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
+from r2morph.analysis.dataflow_block_sets import compute_block_def, compute_block_use
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 
 # Register alias families used by Register.aliases(): each set lists every
@@ -314,29 +315,11 @@ class DataFlowAnalyzer:
 
     def _get_block_use(self, block: BasicBlock) -> set[Register]:
         """Get registers used before being defined in a block."""
-        used: set[Register] = set()
-        defined: set[Register] = set()
-
-        for insn in block.instructions:
-            regs_used = self._extract_used_registers(insn)
-            for reg in regs_used:
-                if reg not in defined and not any(r.name == reg.name for r in defined):
-                    used.add(reg)
-
-            regs_defined = self._extract_defined_registers(insn)
-            defined.update(regs_defined)
-
-        return used
+        return {Register(reg, size) for reg, size in compute_block_use(block.instructions)}
 
     def _get_block_def(self, block: BasicBlock) -> set[Register]:
         """Get registers defined in a block."""
-        defined: set[Register] = set()
-
-        for insn in block.instructions:
-            regs_def = self._extract_defined_registers(insn)
-            defined.update(regs_def)
-
-        return defined
+        return {Register(reg, size) for reg, size in compute_block_def(block.instructions)}
 
     def _extract_used_registers(self, insn: dict) -> set[Register]:
         """Extract registers used by an instruction."""

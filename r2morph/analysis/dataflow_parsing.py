@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from r2morph.analysis._register_names import X86_REGISTER_NAMES
 
 
@@ -11,7 +13,7 @@ def extract_registers_from_operand(operand: str) -> set[tuple[str, int]]:
     operand = operand.lower()
 
     for reg in X86_REGISTER_NAMES:
-        if reg in operand:
+        if re.search(rf"(?<![a-z0-9_]){re.escape(reg)}(?![a-z0-9_])", operand):
             size = 64 if reg.startswith("r") and "d" not in reg and "w" not in reg and "b" not in reg else 32
             if reg.endswith("d"):
                 size = 32
