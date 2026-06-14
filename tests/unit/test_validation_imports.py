@@ -67,6 +67,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.validator_execution",
     "r2morph.validation.validator_execution_files",
     "r2morph.validation.validator_execution_text",
+    "r2morph.validation.validator_results_artifacts",
     "r2morph.validation.validator_results",
     "r2morph.validation.cfg_integrity_helpers",
     "r2morph.validation.state_merging",

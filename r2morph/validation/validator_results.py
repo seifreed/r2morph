@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.validation.validator_execution_text import hash_text, normalize_output
+from r2morph.validation.validator_results_artifacts import build_compared_signals, build_output_hashes
 from r2morph.validation.validator_runtime import RuntimeComparisonConfig, ValidationResult, ValidationTestCase
 
 
@@ -74,26 +74,9 @@ def build_validation_result(
         mutated_exitcode=mut_exitcode,
         errors=errors,
         similarity_score=similarity,
-        compared_signals={
-            "exitcode": comparison.compare_exitcode,
-            "stdout": comparison.compare_stdout,
-            "stderr": comparison.compare_stderr,
-            "files": comparison.compare_files,
-            "normalize_whitespace": comparison.normalize_whitespace,
-        },
+        compared_signals=build_compared_signals(comparison),
         file_differences=file_differences,
-        output_hashes={
-            "original_stdout_sha256": hash_text(orig_combined),
-            "mutated_stdout_sha256": hash_text(mut_combined),
-            "original_stderr_sha256": hash_text("\n".join(o["stderr"] for o in original_outputs)),
-            "mutated_stderr_sha256": hash_text("\n".join(o["stderr"] for o in mutated_outputs)),
-            "normalized_original_stdout_sha256": hash_text(
-                "\n".join(normalize_output(o["stdout"], comparison.normalize_whitespace) for o in original_outputs)
-            ),
-            "normalized_mutated_stdout_sha256": hash_text(
-                "\n".join(normalize_output(o["stdout"], comparison.normalize_whitespace) for o in mutated_outputs)
-            ),
-        },
+        output_hashes=build_output_hashes(original_outputs, mutated_outputs, comparison),
         runtime_details=runtime_details,
         test_cases=[case.to_dict() for case in test_cases],
     )

@@ -126,6 +126,7 @@ REPORTING_MODULES = [
     "r2morph.validation.integrity_validation_helpers",
     "r2morph.validation.validator_execution_files",
     "r2morph.validation.validator_execution_text",
+    "r2morph.validation.validator_results_artifacts",
     "r2morph.cli_workflow_validation_policy",
     "r2morph.reporting.sarif_result_builder",
     "r2morph.reporting.sarif_schema_core",
