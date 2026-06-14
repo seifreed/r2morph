@@ -17,6 +17,7 @@ from r2morph.core import report_helpers_observables as observables_mod
 from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
 from r2morph.core import report_helpers_structural_evidence as structural_evidence_mod
+from r2morph.core import report_helpers_summary_metrics as summary_metrics_mod
 from r2morph.core import report_helpers_symbolic_summary as symbolic_summary_mod
 from r2morph.core import report_helpers_triage as triage_mod
 from r2morph.reporting import report_evidence_sorting as evidence_sorting_mod
@@ -132,6 +133,14 @@ def test_canonical_structural_evidence_module_defines_structural_helper() -> Non
     ), "core.report_helpers_structural_evidence missing _summarize_structural_evidence"
 
 
+def test_canonical_summary_metrics_module_defines_summary_helpers() -> None:
+    for name in ("_summarize_pass_timings", "_summarize_diff_digest"):
+        assert hasattr(
+            summary_metrics_mod,
+            name,
+        ), f"core.report_helpers_summary_metrics missing {name}"
+
+
 def test_canonical_discarded_module_defines_discarded_helpers() -> None:
     for name in ("_summarize_discarded_mutations", "_build_discarded_mutation_priority"):
         assert hasattr(
@@ -238,6 +247,19 @@ def test_structural_evidence_helper_is_reexported_from_canonical_module() -> Non
         structural_evidence_mod,
         "_summarize_structural_evidence",
     ), "core.engine._summarize_structural_evidence diverged from core.report_helpers_structural_evidence"
+
+
+def test_summary_metrics_helpers_are_reexported_from_canonical_module() -> None:
+    for name in ("_summarize_pass_timings", "_summarize_diff_digest"):
+        assert getattr(helpers_mod, name) is getattr(
+            summary_metrics_mod,
+            name,
+        ), f"core.report_helpers.{name} diverged from core.report_helpers_summary_metrics.{name}"
+        assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
+        assert getattr(engine_mod, name) is getattr(
+            summary_metrics_mod,
+            name,
+        ), f"core.engine.{name} diverged from core.report_helpers_summary_metrics.{name}"
 
 
 def test_adjustment_helpers_are_reexported_from_facade() -> None:

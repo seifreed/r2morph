@@ -23,9 +23,6 @@ from r2morph.core.report_helpers_evidence import (
     _build_observable_mismatch_priority as _build_observable_mismatch_priority,
 )
 from r2morph.core.report_helpers_evidence import (
-    _summarize_diff_digest as _summarize_diff_digest,
-)
-from r2morph.core.report_helpers_evidence import (
     _summarize_discarded_mutations as _summarize_discarded_mutations,
 )
 from r2morph.core.report_helpers_evidence import (
@@ -33,9 +30,6 @@ from r2morph.core.report_helpers_evidence import (
 )
 from r2morph.core.report_helpers_evidence import (
     _summarize_pass_evidence as _summarize_pass_evidence,
-)
-from r2morph.core.report_helpers_evidence import (
-    _summarize_pass_timings as _summarize_pass_timings,
 )
 from r2morph.core.report_helpers_projection import (
     _build_pass_capability_summary_map as _build_pass_capability_summary_map,
@@ -57,6 +51,12 @@ from r2morph.core.report_helpers_risk import (
 )
 from r2morph.core.report_helpers_structural_evidence import (
     _summarize_structural_evidence as _summarize_structural_evidence,
+)
+from r2morph.core.report_helpers_summary_metrics import (
+    _summarize_diff_digest as _summarize_diff_digest,
+)
+from r2morph.core.report_helpers_summary_metrics import (
+    _summarize_pass_timings as _summarize_pass_timings,
 )
 from r2morph.core.report_helpers_symbolic import (
     _build_symbolic_summary_for_pass as _build_symbolic_summary_for_pass,
