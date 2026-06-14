@@ -1,4 +1,4 @@
-from r2morph.validation.semantic_invariants import (
+from r2morph.validation.semantic_invariant_models import (
     InvariantCategory,
     InvariantSeverity,
     InvariantViolation,

@@ -29,7 +29,7 @@ from r2morph.validation.semantic import (
     ValidationMode,
     ValidationResultStatus,
 )
-from r2morph.validation.semantic_invariants import InvariantCategory
+from r2morph.validation.semantic_invariant_models import InvariantCategory
 from r2morph.validation.state_merging import (
     ANGR_AVAILABLE as _ANGR_AVAILABLE,
 )

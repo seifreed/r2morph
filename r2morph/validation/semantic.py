@@ -18,6 +18,7 @@ from r2morph.core.binary import Binary
 from r2morph.validation.semantic_invariants import InvariantSeverity, SemanticInvariantChecker
 from r2morph.validation.semantic_models import (
     MutationRegion,
+    ObservableComparison,
     SemanticCheck,
     SemanticValidationReport,
     SemanticValidationResult,
@@ -30,6 +31,18 @@ from r2morph.validation.semantic_symbolic import (
 )
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "ValidationMode",
+    "ValidationResultStatus",
+    "MutationRegion",
+    "SemanticCheck",
+    "SemanticValidationReport",
+    "SemanticValidationResult",
+    "ObservableComparison",
+    "SemanticValidator",
+    "validate_semantic_equivalence",
+]
 
 
 class SemanticValidator:
