@@ -21,6 +21,11 @@ from enum import Enum
 from typing import Any
 
 from r2morph import tui_rendering as _tui_rendering
+from r2morph.tui_diff_helpers import (
+    build_disasm_diff_rows,
+    count_byte_differences,
+    count_disasm_changed_lines,
+)
 
 Console = _tui_rendering.Console
 Confirm = _tui_rendering.Confirm
@@ -582,43 +587,18 @@ class DiffView:
             self._render_rich()
             return
 
-        max_lines = max(len(orig_lines), len(mut_lines), 1)
-
         table = Table(title="Disassembly Comparison", show_header=True, expand=True)
         table.add_column("#", style="dim", width=3)
         table.add_column("Original", style="red", ratio=1)
         table.add_column("Mutated", style="green", ratio=1)
         table.add_column("Status", style="yellow", width=8)
 
-        for i in range(max_lines):
-            orig_line = orig_lines[i] if i < len(orig_lines) else ""
-            mut_line = mut_lines[i] if i < len(mut_lines) else ""
-
-            if orig_line == mut_line:
-                status = "same"
-            elif not orig_line:
-                status = "added"
-            elif not mut_line:
-                status = "removed"
-            else:
-                status = "changed"
-
-            table.add_row(
-                str(i + 1),
-                orig_line[:50] if orig_line else "",
-                mut_line[:50] if mut_line else "",
-                status,
-            )
+        for row in build_disasm_diff_rows(orig_lines, mut_lines, limit=50, display_width=50):
+            table.add_row(str(row.index), row.original, row.mutated, row.status)
 
         self.console.print(table)
 
-        changed_count = sum(
-            1
-            for i in range(max_lines)
-            if (i < len(orig_lines) and i < len(mut_lines) and orig_lines[i] != mut_lines[i])
-            or (i >= len(orig_lines) and i < len(mut_lines))
-            or (i < len(orig_lines) and i >= len(mut_lines))
-        )
+        changed_count = count_disasm_changed_lines(orig_lines, mut_lines)
         self.console.print(f"\n[bold]Stats:[/bold] {changed_count} lines changed")
 
         self._render_byte_diff_summary(mutation)
@@ -631,16 +611,10 @@ class DiffView:
         if orig_bytes == mut_bytes:
             return
 
-        diff_count = 0
-        for i in range(max(len(orig_bytes), len(mut_bytes))):
-            orig_byte = orig_bytes[i] if i < len(orig_bytes) else None
-            mut_byte = mut_bytes[i] if i < len(mut_bytes) else None
-
-            if orig_byte != mut_byte:
-                diff_count += 1
+        diff_count, total = count_byte_differences(orig_bytes, mut_bytes)
 
         if diff_count > 0:
-            self.console.print(f"[dim]Byte changes: {diff_count} / {max(len(orig_bytes), len(mut_bytes))} bytes[/dim]")
+            self.console.print(f"[dim]Byte changes: {diff_count} / {total} bytes[/dim]")
 
     def _render_disasm_basic(self, mutation: TUIMutation) -> None:
         """Render disassembly diff with basic formatting."""
@@ -660,28 +634,12 @@ class DiffView:
             self._render_basic()
             return
 
-        max_lines = max(len(orig_lines), len(mut_lines), 1)
-
         print(f"\n{'#':<3} {'Original':<40} {'Mutated':<40} {'Status'}")
         print("-" * 100)
 
-        for i in range(max_lines):
-            orig_line = orig_lines[i] if i < len(orig_lines) else ""
-            mut_line = mut_lines[i] if i < len(mut_lines) else ""
-
-            if orig_line == mut_line:
-                status = "same"
-            elif not orig_line:
-                status = "added"
-            elif not mut_line:
-                status = "removed"
-            else:
-                status = "changed"
-
-            orig_display = orig_line[:38] if orig_line else ""
-            mut_display = mut_line[:38] if mut_line else ""
-
-            print(f"{i + 1:<3} {orig_display:<40} {mut_display:<40} {status}")
+        max_lines = max(len(orig_lines), len(mut_lines), 1)
+        for row in build_disasm_diff_rows(orig_lines, mut_lines, limit=max_lines, display_width=38):
+            print(f"{row.index:<3} {row.original:<40} {row.mutated:<40} {row.status}")
 
         print("\nn: next | p: previous | d: bytes | q: quit")
 
