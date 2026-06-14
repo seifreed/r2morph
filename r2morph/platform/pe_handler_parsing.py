@@ -5,23 +5,36 @@ from __future__ import annotations
 import logging
 import struct
 from pathlib import Path
-from typing import Any
+from typing import Any, BinaryIO
 
 logger = logging.getLogger(__name__)
+
+
+def seek_to_pe_header(f: BinaryIO) -> int | None:
+    """Validate the MZ stub, follow e_lfanew, and validate the PE signature.
+
+    Leaves the stream positioned just past the PE signature and returns the PE
+    header offset, or None if the stream is not a valid PE image.
+    """
+    if f.read(2) != b"MZ":
+        return None
+    f.seek(0x3C)
+    pe_offset_bytes = f.read(4)
+    if len(pe_offset_bytes) != 4:
+        return None
+    pe_offset: int = struct.unpack("<I", pe_offset_bytes)[0]
+    f.seek(pe_offset)
+    if f.read(4) != b"PE\x00\x00":
+        return None
+    return pe_offset
 
 
 def read_pe_header(binary_path: Path) -> dict[str, Any] | None:
     """Read PE header information from a binary path."""
     try:
         with open(binary_path, "rb") as f:
-            if f.read(2) != b"MZ":
-                return None
-
-            f.seek(0x3C)
-            pe_offset = struct.unpack("<I", f.read(4))[0]
-
-            f.seek(pe_offset)
-            if f.read(4) != b"PE\x00\x00":
+            pe_offset = seek_to_pe_header(f)
+            if pe_offset is None:
                 return None
 
             coff_header = f.read(20)
@@ -66,16 +79,8 @@ def get_checksum_offset(binary_path: Path) -> int | None:
     """Get the offset of the PE checksum in the file."""
     try:
         with open(binary_path, "rb") as f:
-            if f.read(2) != b"MZ":
-                return None
-            f.seek(0x3C)
-            pe_offset_bytes = f.read(4)
-            if len(pe_offset_bytes) != 4:
-                return None
-            pe_offset = struct.unpack("<I", pe_offset_bytes)[0]
-
-            f.seek(pe_offset)
-            if f.read(4) != b"PE\x00\x00":
+            pe_offset = seek_to_pe_header(f)
+            if pe_offset is None:
                 return None
 
             checksum_offset = pe_offset + 24 + 64
@@ -129,12 +134,8 @@ def get_sections_fallback(binary_path: Path) -> list[dict[str, Any]]:
     try:
         sections: list[dict[str, Any]] = []
         with open(binary_path, "rb") as f:
-            if f.read(2) != b"MZ":
-                return []
-            f.seek(0x3C)
-            pe_offset = struct.unpack("<I", f.read(4))[0]
-            f.seek(pe_offset)
-            if f.read(4) != b"PE\x00\x00":
+            pe_offset = seek_to_pe_header(f)
+            if pe_offset is None:
                 return []
             coff_header = f.read(20)
             if len(coff_header) != 20:
@@ -256,4 +257,3 @@ def parse_pe_section_entry(section: bytes) -> dict[str, Any]:
         "offset": raw_ptr,
         "characteristics": characteristics,
     }
-

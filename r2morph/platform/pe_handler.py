@@ -22,6 +22,7 @@ from r2morph.platform.pe_handler_parsing import (
     parse_optional_header,
     parse_pe_section_entry,
     read_pe_header,
+    seek_to_pe_header,
 )
 from r2morph.platform.pe_handler_projection import (
     project_exports,
@@ -135,12 +136,7 @@ class PEHandler:
         """Check if the file is a PE binary."""
         try:
             with open(self.binary_path, "rb") as f:
-                if f.read(2) != b"MZ":
-                    return False
-                f.seek(0x3C)
-                pe_offset = int.from_bytes(f.read(4), "little")
-                f.seek(pe_offset)
-                return f.read(4) == b"PE\x00\x00"
+                return seek_to_pe_header(f) is not None
         except Exception:
             return False
 
