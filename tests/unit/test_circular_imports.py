@@ -129,6 +129,7 @@ REPORTING_MODULES = [
     "r2morph.validation.benchmark_runners_detection",
     "r2morph.validation.benchmark_runners_devirtualization",
     "r2morph.validation.benchmark_runners_full_pipeline",
+    "r2morph.validation.benchmark_reporting_breakdown",
     "r2morph.cli_workflow_selection",
     "r2morph.analysis.switch_table_patterns",
     "r2morph.analysis.memory_flow_helpers",

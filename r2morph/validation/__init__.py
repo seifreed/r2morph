@@ -37,6 +37,8 @@ _LAZY_EXPORTS = {
     "TestSeverity": "r2morph.validation.benchmark_models",
     "PerformanceMetrics": "r2morph.validation.benchmark_models",
     "AccuracyMetrics": "r2morph.validation.benchmark_models",
+    "build_category_breakdown": "r2morph.validation.benchmark_reporting_breakdown",
+    "build_severity_breakdown": "r2morph.validation.benchmark_reporting_breakdown",
     "PerformanceBenchmark": "r2morph.validation.performance_regression",
     "PerformanceMetric": "r2morph.validation.performance_regression_models",
     "PerformanceSnapshot": "r2morph.validation.performance_regression_models",
