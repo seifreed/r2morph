@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 
 from r2morph.core.binary import Binary
+from r2morph.validation.differ_helpers import compare_section_bytes, compute_byte_diffs
 from r2morph.validation.differ_models import (
     BinaryDiff,
     ByteDiff,
@@ -148,41 +149,7 @@ class BinaryDiffer:
 
     def _compare_section_bytes(self, orig_section: dict, mut_section: dict) -> list[ByteDiff]:
         """Compare bytes within a section."""
-        diffs: list[ByteDiff] = []
-
-        orig_addr = orig_section.get("addr", orig_section.get("virtual_address", 0))
-        orig_size = orig_section.get("size", orig_section.get("virtual_size", 0))
-        mut_size = mut_section.get("size", mut_section.get("virtual_size", 0))
-
-        try:
-            orig_data = self.original.read_bytes(orig_addr, min(orig_size, mut_size, 4096))
-            mut_data = self.mutated.read_bytes(
-                mut_section.get("addr", mut_section.get("virtual_address", 0)), min(orig_size, mut_size, 4096)
-            )
-        except Exception:
-            return diffs
-
-        min_len = min(len(orig_data), len(mut_data))
-
-        for i in range(min_len):
-            if orig_data[i] != mut_data[i]:
-                context_start = max(0, i - self.context_bytes)
-                context_end = min(min_len, i + self.context_bytes + 1)
-
-                context_before = orig_data[context_start:i]
-                context_after = orig_data[i + 1 : context_end]
-
-                diffs.append(
-                    ByteDiff(
-                        offset=orig_addr + i,
-                        original=bytes([orig_data[i]]),
-                        mutated=bytes([mut_data[i]]),
-                        context_before=context_before,
-                        context_after=context_after,
-                    )
-                )
-
-        return diffs
+        return compare_section_bytes(self.original, self.mutated, orig_section, mut_section, self.context_bytes)
 
     def _compare_functions(self) -> list[BinaryDiff]:
         """Compare functions between binaries."""
@@ -363,35 +330,7 @@ class BinaryDiffer:
 
     def _compute_byte_diffs(self, orig: bytes, mut: bytes, base_addr: int) -> list[ByteDiff]:
         """Compute byte-level differences."""
-        diffs: list[ByteDiff] = []
-        min_len = min(len(orig), len(mut))
-
-        for i in range(min_len):
-            if orig[i] != mut[i]:
-                context_start = max(0, i - self.context_bytes)
-                context_end = min(min_len, i + self.context_bytes + 1)
-
-                diffs.append(
-                    ByteDiff(
-                        offset=base_addr + i,
-                        original=bytes([orig[i]]),
-                        mutated=bytes([mut[i]]),
-                        context_before=orig[context_start:i],
-                        context_after=orig[i + 1 : context_end],
-                    )
-                )
-
-        if len(orig) != len(mut):
-            start = min_len
-            diffs.append(
-                ByteDiff(
-                    offset=base_addr + start,
-                    original=orig[start:] if start < len(orig) else b"",
-                    mutated=mut[start:] if start < len(mut) else b"",
-                )
-            )
-
-        return diffs
+        return compute_byte_diffs(orig, mut, base_addr, self.context_bytes)
 
 
 def compare_binaries(original: Binary, mutated: Binary) -> DiffReport:
