@@ -4,12 +4,12 @@ from __future__ import annotations
 
 LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     "ABIChecker": ("r2morph.analysis.abi_checker", "ABIChecker"),
-    "ABISpec": ("r2morph.analysis.abi_checker", "ABISpec"),
-    "ABIType": ("r2morph.analysis.abi_checker", "ABIType"),
-    "ABIViolation": ("r2morph.analysis.abi_checker", "ABIViolation"),
-    "ABIViolationType": ("r2morph.analysis.abi_checker", "ABIViolationType"),
-    "ABI_SPECS": ("r2morph.analysis.abi_checker", "ABI_SPECS"),
-    "detect_abi": ("r2morph.analysis.abi_checker", "detect_abi"),
+    "ABISpec": ("r2morph.analysis.abi_models", "ABISpec"),
+    "ABIType": ("r2morph.analysis.abi_models", "ABIType"),
+    "ABIViolation": ("r2morph.analysis.abi_models", "ABIViolation"),
+    "ABIViolationType": ("r2morph.analysis.abi_models", "ABIViolationType"),
+    "ABI_SPECS": ("r2morph.analysis.abi_models", "ABI_SPECS"),
+    "detect_abi": ("r2morph.analysis.abi_detection", "detect_abi"),
     "AnalysisOptions": ("r2morph.analysis.enhanced_analyzer", "AnalysisOptions"),
     "AnalysisResults": ("r2morph.analysis.enhanced_analyzer", "AnalysisResults"),
     "BinaryAnalyzer": ("r2morph.analysis.analyzer", "BinaryAnalyzer"),
