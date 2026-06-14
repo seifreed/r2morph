@@ -23,6 +23,11 @@ from r2morph.platform.pe_handler_parsing import (
     parse_pe_section_entry,
     read_pe_header,
 )
+from r2morph.platform.pe_handler_projection import (
+    project_exports,
+    project_imports,
+    project_relocations,
+)
 from r2morph.platform.pe_handler_repair import (
     fix_checksum as repair_fix_checksum,
 )
@@ -219,32 +224,14 @@ class PEHandler:
         binary = self._parse_lief()
         if binary is None:
             return []
-        imports: list[dict] = []
-        for entry in binary.imports:
-            items = []
-            for func in entry.entries:
-                if func.name:
-                    items.append(func.name)
-                else:
-                    items.append(func.ordinal)
-            imports.append({"library": entry.name, "entries": items})
-        return imports
+        return project_imports(binary)
 
     def get_exports(self) -> list[dict]:
         """Get PE exports."""
         binary = self._parse_lief()
         if binary is None:
             return []
-        exports: list[dict] = []
-        for func in binary.exported_functions:
-            exports.append(
-                {
-                    "name": func.name if hasattr(func, "name") else None,
-                    "address": func.address if hasattr(func, "address") else None,
-                    "ordinal": func.ordinal if hasattr(func, "ordinal") else None,
-                }
-            )
-        return exports
+        return project_exports(binary)
 
     def get_relocations(self) -> list[dict]:
         """
@@ -256,17 +243,7 @@ class PEHandler:
         binary = self._parse_lief()
         if binary is None:
             return []
-
-        relocations: list[dict] = []
-        for reloc in binary.relocations:
-            relocations.append(
-                {
-                    "address": reloc.address,
-                    "size": reloc.size,
-                    "type": str(reloc.type),
-                }
-            )
-        return relocations
+        return project_relocations(binary)
 
     def validate_integrity(self) -> tuple[bool, list[str]]:
         """Validate PE integrity after mutation."""
