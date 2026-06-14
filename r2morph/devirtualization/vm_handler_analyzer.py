@@ -10,6 +10,7 @@ from typing import Any
 
 from r2morph.analysis.cfg import CFGBuilder
 
+from .vm_handler_metrics import build_handler_statistics, calculate_handler_confidence
 from .vm_handler_models import VMArchitecture, VMHandler, VMHandlerType
 from .vm_handler_patterns import load_vm_handler_patterns
 
@@ -385,23 +386,7 @@ class VMHandlerAnalyzer:
 
     def _calculate_handler_confidence(self, handler: VMHandler) -> float:
         """Calculate confidence score for handler classification."""
-        confidence = 0.5  # Base confidence
-
-        # Boost confidence for well-known patterns
-        if handler.handler_type != VMHandlerType.UNKNOWN:
-            confidence += 0.3
-
-        # Boost confidence if we have equivalent x86
-        if handler.equivalent_x86:
-            confidence += 0.2
-
-        # Penalize very short or very long handlers
-        if len(handler.instructions) < 3:
-            confidence -= 0.2
-        elif len(handler.instructions) > 50:
-            confidence -= 0.1
-
-        return max(0.0, min(1.0, confidence))
+        return calculate_handler_confidence(handler)
 
     def _analyze_vm_context(self) -> None:
         """Analyze VM context structure and registers.
@@ -424,24 +409,4 @@ class VMHandlerAnalyzer:
 
     def get_handler_statistics(self) -> dict[str, Any]:
         """Get statistics about analyzed handlers."""
-        if not self.vm_architecture:
-            return {}
-
-        type_counts: dict[str, int] = {}
-        total_handlers = len(self.vm_architecture.handlers)
-
-        for handler in self.vm_architecture.handlers.values():
-            handler_type = handler.handler_type.value
-            type_counts[handler_type] = type_counts.get(handler_type, 0) + 1
-
-        avg_confidence = 0.0
-        if total_handlers > 0:
-            avg_confidence = sum(h.confidence for h in self.vm_architecture.handlers.values()) / total_handlers
-
-        return {
-            "total_handlers": total_handlers,
-            "handler_types": type_counts,
-            "average_confidence": avg_confidence,
-            "dispatcher_address": self.vm_architecture.dispatcher_address,
-            "handler_table_address": self.vm_architecture.handler_table_address,
-        }
+        return build_handler_statistics(self.vm_architecture)
