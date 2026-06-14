@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 import time
-from dataclasses import dataclass
 from typing import Any
+
+from r2morph.validation.constraint_cache_models import ConstraintCacheEntry
 
 angr: Any
 claripy: Any
@@ -20,17 +21,6 @@ except ImportError:
     claripy = None
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class ConstraintCacheEntry:
-    """Cached constraint solution."""
-
-    constraint_hash: int
-    result: Any
-    is_satisfiable: bool
-    timestamp: float
-    hit_count: int = 0
 
 
 class ConstraintCache:
