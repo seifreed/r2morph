@@ -74,9 +74,7 @@ class ShortJumpPatchingPass(MutationPass):
             Dictionary with patching statistics
         """
         self._reset_random()
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         functions = binary.get_functions()
         total_patched = 0
@@ -314,9 +312,7 @@ class RIPRelativeValidationPass(MutationPass):
             Dictionary with validation results
         """
         self._reset_random()
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         functions = binary.get_functions()
         rip_relative_found = []

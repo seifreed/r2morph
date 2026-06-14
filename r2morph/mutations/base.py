@@ -297,6 +297,12 @@ class MutationPass(ABC):
         self._rollback_policy = "skip-invalid-pass"
         self._checkpoint_per_mutation = False
 
+    def _ensure_analyzed(self, binary: Any) -> None:
+        """Analyze the binary if it has not been analyzed yet."""
+        if not binary.is_analyzed():
+            logger.warning("Binary not analyzed, analyzing now...")
+            binary.analyze()
+
     def _create_mutation_checkpoint(self, label: str) -> str | None:
         """Create a checkpoint for a single mutation when enabled."""
         if not (self._checkpoint_per_mutation and self._session is not None):

@@ -107,9 +107,7 @@ class FullControlFlowFlatteningPass(MutationPass):
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """Apply full control flow flattening."""
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         functions = binary.get_functions()
         total_mutations = 0

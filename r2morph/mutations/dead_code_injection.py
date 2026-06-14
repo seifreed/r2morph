@@ -110,9 +110,7 @@ class DeadCodeInjectionPass(MutationPass):
         Returns:
             Statistics dict
         """
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         logger.info("Applying dead code injection mutations")
 

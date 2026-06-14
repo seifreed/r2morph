@@ -142,9 +142,7 @@ class InstructionSubstitutionPass(MutationPass):
         if self._reset_random() is not None:
             self._init_substitution_rules()
 
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         arch_family, bits = binary.get_arch_family()
 

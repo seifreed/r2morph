@@ -276,9 +276,7 @@ class StringObfuscationPass(MutationPass):
         """
         self._reset_random()
 
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         sections = binary.get_sections()
         if not sections:

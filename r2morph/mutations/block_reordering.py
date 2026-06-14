@@ -76,9 +76,7 @@ class BlockReorderingPass(MutationPass):
         Returns:
             Dictionary with mutation statistics
         """
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         functions = binary.get_functions()
         mutations_applied = 0

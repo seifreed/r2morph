@@ -205,9 +205,7 @@ class ConstantUnfoldingPass(MutationPass):
         """
         self._reset_random()
 
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         arch_info = binary.get_arch_info()
         arch = arch_info.get("arch", "unknown")

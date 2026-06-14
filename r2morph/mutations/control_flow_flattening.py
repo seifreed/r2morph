@@ -177,9 +177,7 @@ class ControlFlowFlatteningPass(MutationPass):
             Statistics dict with mutation counts and details
         """
         self._reset_random()
-        if not binary.is_analyzed():
-            logger.warning("Binary not analyzed, analyzing now...")
-            binary.analyze()
+        self._ensure_analyzed(binary)
 
         logger.info("Applying control flow flattening")
 
