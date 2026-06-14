@@ -112,6 +112,7 @@ REPORTING_MODULES = [
     "r2morph.detection.pattern_matcher_models",
     "r2morph.validation.differ_helpers",
     "r2morph.validation.benchmark_samples",
+    "r2morph.validation.performance_regression_storage",
     "r2morph.validation.benchmark_reporting_exports",
     "r2morph.validation.benchmark_reporting_summary",
     "r2morph.validation.benchmark_reporting_text",

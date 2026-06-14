@@ -6,7 +6,6 @@ and ensure mutation passes remain efficient.
 """
 
 import gc
-import json
 import logging
 import statistics
 import time
@@ -20,6 +19,10 @@ from r2morph.validation.performance_regression_models import (
     PerformanceMetric,
     PerformanceRegression,
     PerformanceSnapshot,
+)
+from r2morph.validation.performance_regression_storage import (
+    load_baseline_snapshot,
+    save_baseline_snapshot,
 )
 
 logger = logging.getLogger(__name__)
@@ -230,13 +233,11 @@ class PerformanceBenchmark:
         Returns:
             Path to saved baseline
         """
-        baseline_file = self.baseline_dir / f"{baseline_name}.json"
-
-        with open(baseline_file, "w") as f:
-            json.dump(snapshot.to_dict(), f, indent=2)
-
-        logger.info(f"Saved performance baseline: {baseline_file}")
-        return baseline_file
+        return save_baseline_snapshot(
+            snapshot=snapshot,
+            baseline_dir=self.baseline_dir,
+            baseline_name=baseline_name,
+        )
 
     def load_baseline(self, baseline_name: str) -> PerformanceSnapshot | None:
         """
@@ -248,21 +249,9 @@ class PerformanceBenchmark:
         Returns:
             PerformanceSnapshot or None if not found
         """
-        baseline_file = self.baseline_dir / f"{baseline_name}.json"
-
-        if not baseline_file.exists():
-            logger.warning(f"Baseline not found: {baseline_file}")
-            return None
-
-        with open(baseline_file) as f:
-            data = json.load(f)
-
-        return PerformanceSnapshot(
-            commit_hash=data["commit_hash"],
-            timestamp=data["timestamp"],
-            metrics=data["metrics"],
-            environment=data["environment"],
-            metadata=data.get("metadata", {}),
+        return load_baseline_snapshot(
+            baseline_dir=self.baseline_dir,
+            baseline_name=baseline_name,
         )
 
     def compare_against_baseline(
