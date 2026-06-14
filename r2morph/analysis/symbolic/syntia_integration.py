@@ -12,12 +12,16 @@ Reference: "Syntia: Synthesizing the Semantics of Obfuscated Code" by Blazytko e
 import ast
 import json
 import logging
-import random
 import re
 import time
 from pathlib import Path
 from typing import Any
 
+from r2morph.analysis.symbolic.syntia_equivalence_helpers import (
+    check_mba_equivalence,
+    normalize_expression,
+    synthesis_equivalence_check,
+)
 from r2morph.analysis.symbolic.syntia_models import (
     InstructionSemantics,
     SemanticComplexity,
@@ -474,33 +478,11 @@ class SyntiaFramework:
 
     def _normalize_expression(self, expression: str) -> str:
         """Normalize an expression for comparison."""
-
-        expr = expression.lower().strip()
-        expr = re.sub(r"\s+", "", expr)
-        expr = re.sub(r"\b0x([0-9a-f]+)\b", lambda m: str(int(m.group(1), 16)), expr)
-
-        return expr
+        return normalize_expression(expression)
 
     def _check_mba_equivalence(self, expr1: str, expr2: str) -> float:
         """Check if expressions are known MBA equivalents."""
-        mba_equivalences = [
-            # x + ~x = -1
-            (("x+~x", "~x+x"), ("-1",)),
-            # x XOR 1 = ~x (for single bit)
-            (("x^1", "~x"), ()),
-            # x AND x = x
-            (("x&x", "x"), ()),
-            # x OR x = x
-            (("x|x", "x"), ()),
-            # x + (y AND 1) variations
-            (("x+(y&1)", "x+(y&1)"), ()),
-        ]
-
-        for equiv_group, _ in mba_equivalences:
-            if expr1 in equiv_group and expr2 in equiv_group:
-                return 0.9
-
-        return 0.0
+        return check_mba_equivalence(expr1, expr2)
 
     def _synthesis_equivalence_check(self, expr1: str, expr2: str, variables: set[str]) -> float:
         """
@@ -517,22 +499,7 @@ class SyntiaFramework:
             Confidence score (0-1)
         """
 
-        test_count = 10
-        matches = 0
-
-        for _ in range(test_count):
-            test_values = {var: random.randint(0, 0xFFFF) for var in variables}
-
-            try:
-                val1 = self._evaluate_expression(expr1, test_values)
-                val2 = self._evaluate_expression(expr2, test_values)
-
-                if val1 == val2:
-                    matches += 1
-            except Exception:
-                continue
-
-        return matches / test_count if test_count > 0 else 0.0
+        return synthesis_equivalence_check(expr1, expr2, variables, self._evaluate_expression)
 
     def _evaluate_expression(self, expression: str, values: dict[str, int]) -> int | None:
         """
