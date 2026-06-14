@@ -50,6 +50,7 @@ from r2morph.core.report_helpers import (  # noqa: F401
     _summarize_symbolic_overview,
     _summarize_symbolic_severity_by_pass,
     _summarize_symbolic_statuses,
+    _summarize_symbolic_view_from_mutations,
     _summarize_validation_adjustment_rows,
     _summarize_validation_adjustments,
     _summarize_validation_role_rows,

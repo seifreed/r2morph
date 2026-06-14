@@ -18,6 +18,7 @@ from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
 from r2morph.core import report_helpers_symbolic_summary as symbolic_summary_mod
 from r2morph.core import report_helpers_triage as triage_mod
+from r2morph.reporting import report_helpers_symbolic_view as symbolic_view_mod
 
 REEXPORTED_NAMES = [
     "REPORT_SCHEMA_VERSION",
@@ -44,6 +45,7 @@ REEXPORTED_NAMES = [
     "_summarize_symbolic_overview",
     "_summarize_symbolic_severity_by_pass",
     "_summarize_symbolic_statuses",
+    "_summarize_symbolic_view_from_mutations",
     "_summarize_validation_role_rows",
 ]
 
@@ -138,6 +140,13 @@ def test_canonical_symbolic_summary_module_defines_symbolic_helpers() -> None:
         ), f"core.report_helpers_symbolic_summary missing {name}"
 
 
+def test_canonical_symbolic_view_module_defines_symbolic_view_helpers() -> None:
+    assert hasattr(
+        symbolic_view_mod,
+        "_summarize_symbolic_view_from_mutations",
+    ), "report_helpers_symbolic_view missing _summarize_symbolic_view_from_mutations"
+
+
 def test_engine_reexports_are_the_same_objects() -> None:
     for name in REEXPORTED_NAMES:
         assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
@@ -228,6 +237,12 @@ def test_symbolic_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             symbolic_summary_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_symbolic_summary.{name}"
+
+
+def test_symbolic_view_helper_is_reexported_from_report_helpers() -> None:
+    assert getattr(helpers_mod, "_summarize_symbolic_view_from_mutations") is getattr(
+        symbolic_view_mod, "_summarize_symbolic_view_from_mutations"
+    )
 
 
 def test_report_schema_version_value() -> None:
