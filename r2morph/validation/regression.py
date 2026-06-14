@@ -15,7 +15,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation import regression_models
+from r2morph.validation import regression_comparison, regression_models
 
 BaselineResult = regression_models.BaselineResult
 NewRegressionResult = regression_models.NewRegressionResult
@@ -357,57 +357,15 @@ class RegressionTestFramework:
         self, expected: dict[str, Any], actual: dict[str, Any], test_type: RegressionTestType
     ) -> list[str]:
         """Compare expected vs actual outputs."""
-        issues = []
-
-        missing_keys = set(expected.keys()) - set(actual.keys())
-        if missing_keys:
-            issues.append(f"Missing output keys: {missing_keys}")
-
-        extra_keys = set(actual.keys()) - set(expected.keys())
-        if extra_keys:
-            issues.append(f"Extra output keys: {extra_keys}")
-
-        for key in expected.keys():
-            if key not in actual:
-                continue
-
-            expected_val = expected[key]
-            actual_val = actual[key]
-
-            if self._values_differ(expected_val, actual_val, key):
-                issues.append(f"Value mismatch for '{key}': expected {expected_val}, got {actual_val}")
-
-        return issues
+        return regression_comparison.compare_outputs(expected, actual)
 
     def _values_differ(self, expected: Any, actual: Any, key: str) -> bool:
         """Check if two values differ significantly."""
-        if isinstance(expected, float) and isinstance(actual, float):
-            tolerance = 0.1 if "score" in key else 0.001
-            return abs(expected - actual) > tolerance
-
-        if isinstance(expected, list) and isinstance(actual, list):
-            if "techniques" in key:
-                return set(expected) != set(actual)
-            else:
-                return expected != actual
-
-        return bool(expected != actual)
+        return regression_comparison.values_differ(expected, actual, key)
 
     def _compare_performance(self, baseline: dict[str, float], actual: dict[str, float]) -> list[str]:
         """Compare performance metrics against baseline."""
-        issues = []
-
-        for metric, baseline_value in baseline.items():
-            if metric.endswith("_max"):
-                base_metric = metric[:-4]  # Remove '_max' suffix
-                if base_metric in actual:
-                    if actual[base_metric] > baseline_value:
-                        issues.append(
-                            f"Performance regression: {base_metric} = {actual[base_metric]:.3f}s "
-                            f"exceeds maximum {baseline_value:.3f}s"
-                        )
-
-        return issues
+        return regression_comparison.compare_performance(baseline, actual)
 
     def generate_regression_report(self) -> str:
         """Generate a human-readable regression test report."""
