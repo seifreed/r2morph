@@ -46,6 +46,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_emitter",
     "r2morph.reporting.report_assembler",
     "r2morph.reporting.report_assembler_artifacts",
+    "r2morph.reporting.report_assembler_document",
     "r2morph.reporting.report_resolver",
     "r2morph.reporting.report_orchestrator",
     "r2morph.reporting.filtered_summary_builder",
