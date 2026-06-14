@@ -3,32 +3,12 @@ Entropy analysis for detecting suspicious patterns.
 """
 
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 
+from r2morph.detection.entropy_analyzer_models import EntropyResult
 from r2morph.utils.entropy import calculate_entropy, calculate_file_entropy
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class EntropyResult:
-    """Entropy analysis result."""
-
-    overall_entropy: float
-    section_entropies: dict[str, float]
-    suspicious_sections: list[str]
-    is_packed: bool
-    analysis: str
-
-    def __str__(self) -> str:
-        status = "🔴 Likely packed/encrypted" if self.is_packed else "✅ Normal"
-        return (
-            f"Entropy Analysis:\n"
-            f"  Overall: {self.overall_entropy:.4f}\n"
-            f"  Status: {status}\n"
-            f"  Suspicious sections: {len(self.suspicious_sections)}"
-        )
 
 
 class EntropyAnalyzer:

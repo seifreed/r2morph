@@ -3,34 +3,13 @@ Score how effective mutations are at evading detection.
 """
 
 import logging
-from dataclasses import dataclass
 from pathlib import Path
 
+from r2morph.detection.evasion_scorer_models import EvasionScore
 from r2morph.utils.entropy import calculate_file_entropy
 from r2morph.utils.hashing import hash_file
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class EvasionScore:
-    """Evasion effectiveness score."""
-
-    overall_score: float
-    hash_change_score: float
-    entropy_score: float
-    structure_score: float
-    signature_score: float
-    details: dict[str, float]
-
-    def __str__(self) -> str:
-        return (
-            f"Evasion Score: {self.overall_score:.1f}/100\n"
-            f"  Hash Change: {self.hash_change_score:.1f}/100\n"
-            f"  Entropy: {self.entropy_score:.1f}/100\n"
-            f"  Structure: {self.structure_score:.1f}/100\n"
-            f"  Signature: {self.signature_score:.1f}/100"
-        )
 
 
 class EvasionScorer:
