@@ -82,6 +82,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.pointer_analysis",
     "r2morph.analysis.call_graph_cache",
     "r2morph.analysis.pattern_preservation_models",
+    "r2morph.validation.cfg_integrity_models",
     "r2morph.analysis.type_inference_types",
     "r2morph.analysis.type_inference_interprocedural",
     "r2morph.analysis.type_inference_core",
