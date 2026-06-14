@@ -51,6 +51,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_view_sections",
     "r2morph.reporting.report_view_summary",
     "r2morph.reporting.report_view_details",
+    "r2morph.reporting.report_view_pass_views",
     "r2morph.reporting.report_view_mismatch_detail",
     "r2morph.reporting.report_view_validation_detail",
     "r2morph.reporting.report_view_gate_detail",
