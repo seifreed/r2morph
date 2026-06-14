@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
-from r2morph.reporting.summary_aggregator_evidence_rows import _build_pass_evidence_summary
+from r2morph.reporting.summary_aggregator_evidence_rows import (
+    _build_pass_evidence_summary,
+    _summarize_pass_evidence_rows,
+)
 
 
 def test_build_pass_evidence_summary_compacts_symbolic_rows() -> None:
@@ -73,3 +76,42 @@ def test_build_pass_evidence_summary_compacts_symbolic_rows() -> None:
         "rolled_back": True,
         "status": "ok",
     }
+
+
+def test_summarize_pass_evidence_rows_orders_mismatches_first() -> None:
+    rows = _summarize_pass_evidence_rows(
+        {
+            "clean-pass": {"evidence_summary": {"changed_region_count": 0, "structural_issue_count": 0}},
+            "mismatch-pass": {
+                "evidence_summary": {
+                    "changed_region_count": 1,
+                    "structural_issue_count": 0,
+                    "symbolic_binary_regions_checked": 1,
+                    "symbolic_binary_mismatched_regions": 2,
+                    "rolled_back": True,
+                    "status": "ok",
+                }
+            },
+        }
+    )
+
+    assert rows == [
+        {
+            "pass_name": "mismatch-pass",
+            "changed_region_count": 1,
+            "structural_issue_count": 0,
+            "symbolic_binary_regions_checked": 1,
+            "symbolic_binary_mismatched_regions": 2,
+            "rolled_back": True,
+            "status": "ok",
+        },
+        {
+            "pass_name": "clean-pass",
+            "changed_region_count": 0,
+            "structural_issue_count": 0,
+            "symbolic_binary_regions_checked": 0,
+            "symbolic_binary_mismatched_regions": 0,
+            "rolled_back": False,
+            "status": "unknown",
+        },
+    ]
