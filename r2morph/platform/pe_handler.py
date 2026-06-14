@@ -23,6 +23,33 @@ from r2morph.platform.pe_handler_parsing import (
     parse_pe_section_entry,
     read_pe_header,
 )
+from r2morph.platform.pe_handler_repair import (
+    fix_checksum as repair_fix_checksum,
+)
+from r2morph.platform.pe_handler_repair import (
+    fix_exports as repair_fix_exports,
+)
+from r2morph.platform.pe_handler_repair import (
+    fix_imports as repair_fix_imports,
+)
+from r2morph.platform.pe_handler_repair import (
+    fix_resources as repair_fix_resources,
+)
+from r2morph.platform.pe_handler_repair import (
+    full_repair as repair_full_repair,
+)
+from r2morph.platform.pe_handler_repair import (
+    get_stored_checksum as repair_get_stored_checksum,
+)
+from r2morph.platform.pe_handler_repair import (
+    refresh_headers as repair_refresh_headers,
+)
+from r2morph.platform.pe_handler_repair import (
+    repair_integrity as repair_repair_integrity,
+)
+from r2morph.platform.pe_handler_repair import (
+    validate_integrity as repair_validate_integrity,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -125,31 +152,8 @@ class PEHandler:
         return get_checksum_offset(self.binary_path)
 
     def fix_checksum(self) -> bool:
-        """
-        Recalculate and fix PE checksum.
-
-        Returns:
-            True if successful
-        """
-        logger.info("Fixing PE checksum")
-
-        try:
-            checksum = self._calculate_pe_checksum()
-
-            checksum_offset = self.get_checksum_offset()
-            if checksum_offset is None:
-                return False
-
-            with open(self.binary_path, "r+b") as f:
-                f.seek(checksum_offset)
-                f.write(checksum.to_bytes(4, "little"))
-
-            logger.info(f"Updated PE checksum to 0x{checksum:08x}")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to fix checksum: {e}")
-            return False
+        """Recalculate and fix PE checksum."""
+        return repair_fix_checksum(self)
 
     def _calculate_pe_checksum(self) -> int:
         """
@@ -265,100 +269,16 @@ class PEHandler:
         return relocations
 
     def validate_integrity(self) -> tuple[bool, list[str]]:
-        """
-        Validate PE integrity after mutation.
-
-        Returns:
-            (is_valid, list of issues)
-        """
-        issues: list[str] = []
-
-        if not self.is_pe():
-            issues.append("Not a PE binary")
-            return False, issues
-
-        binary = self._parse_lief()
-        if binary is None:
-            return True, []
-
-        if not getattr(binary, "has_header", True):
-            issues.append("Missing PE header")
-
-        sections = self.get_sections()
-        if not sections:
-            issues.append("No sections found")
-
-        section_bounds: dict[int, int] = {}
-        for i, section in enumerate(sections):
-            va = section.get("virtual_address", 0)
-            size = section.get("size", 0)
-            for other_va, other_size in section_bounds.items():
-                if va < other_va + other_size and va + size > other_va:
-                    issues.append(f"Overlapping sections at index {i}")
-                    break
-            section_bounds[va] = size
-
-        for reloc in self.get_relocations():
-            addr = reloc.get("address", 0)
-            in_section = False
-            for section in sections:
-                va = section.get("virtual_address", 0)
-                size = section.get("size", 0)
-                if va <= addr < va + size:
-                    in_section = True
-                    break
-            if not in_section:
-                issues.append(f"Relocation at 0x{addr:x} outside any section")
-
-        current_checksum = self._get_stored_checksum()
-        calculated_checksum = self._calculate_pe_checksum()
-        if current_checksum != calculated_checksum:
-            issues.append(f"Checksum mismatch: stored 0x{current_checksum:08x}, calculated 0x{calculated_checksum:08x}")
-
-        return len(issues) == 0, issues
+        """Validate PE integrity after mutation."""
+        return repair_validate_integrity(self)
 
     def _get_stored_checksum(self) -> int:
         """Get the stored checksum from the PE header."""
-        try:
-            checksum_offset = self.get_checksum_offset()
-            if checksum_offset is None:
-                return 0
-            with open(self.binary_path, "rb") as f:
-                f.seek(checksum_offset)
-                return int.from_bytes(f.read(4), "little")
-        except Exception:
-            return 0
+        return repair_get_stored_checksum(self)
 
     def repair_integrity(self) -> tuple[bool, list[str]]:
-        """
-        Repair PE integrity after mutation.
-
-        Returns:
-            (success, list of repairs made)
-        """
-        repairs: list[str] = []
-        success = True
-
-        if not self.is_pe():
-            return False, ["Not a PE binary"]
-
-        if self.fix_checksum():
-            repairs.append("Updated PE checksum")
-        else:
-            success = False
-            repairs.append("Failed to update checksum")
-
-        binary = self._parse_lief()
-        if binary is not None and hasattr(binary, "write"):
-            try:
-                tmp_path = self.binary_path.with_suffix(".repaired")
-                binary.write(str(tmp_path))
-                tmp_path.replace(self.binary_path)
-                repairs.append("Rebuilt PE with LIEF")
-            except Exception as e:
-                logger.warning(f"LIEF rebuild failed: {e}")
-
-        return success, repairs
+        """Repair PE integrity after mutation."""
+        return repair_repair_integrity(self)
 
     def validate(self) -> bool:
         """Validate PE structure."""
@@ -416,152 +336,21 @@ class PEHandler:
             return None
 
     def refresh_headers(self) -> bool:
-        """
-        Refresh PE headers after mutation.
-
-        This recalculates:
-        - Size of image
-        - Size of headers
-        - Checksum
-        - Data directories
-
-        Returns:
-            True if successful
-        """
-        binary = self._parse_lief()
-        if binary is None:
-            return self.fix_checksum()
-
-        try:
-            if hasattr(binary, "size"):
-                pass
-
-            tmp_path = self.binary_path.with_suffix(".refreshed")
-            binary.write(str(tmp_path))
-            tmp_path.replace(self.binary_path)
-
-            if lief is not None:
-                parsed = lief.parse(str(self.binary_path))
-                if isinstance(parsed, lief.PE.Binary):
-                    self._binary = parsed
-            self._sections_cache = None
-
-            self.fix_checksum()
-
-            logger.info("Refreshed PE headers")
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to refresh PE headers: {e}")
-            return False
+        """Refresh PE headers after mutation."""
+        return repair_refresh_headers(self)
 
     def fix_imports(self) -> tuple[bool, list[str]]:
-        """
-        Fix import table after mutation.
-
-        Returns:
-            (success, list of fixes applied)
-        """
-        fixes: list[str] = []
-        binary = self._parse_lief()
-
-        if binary is None:
-            return True, fixes
-
-        try:
-            imports_valid = True
-            for imported_binary in list(getattr(binary, "imports", [])):
-                try:
-                    if hasattr(imported_binary, "name") and imported_binary.name:
-                        fixes.append(f"Verified import: {imported_binary.name}")
-                except Exception:
-                    imports_valid = False
-
-            return imports_valid, fixes
-        except Exception as e:
-            logger.debug(f"Import fix failed: {e}")
-            return False, fixes
+        """Fix import table after mutation."""
+        return repair_fix_imports(self)
 
     def fix_exports(self) -> tuple[bool, list[str]]:
-        """
-        Fix export table after mutation.
-
-        Returns:
-            (success, list of fixes applied)
-        """
-        fixes: list[str] = []
-        binary = self._parse_lief()
-
-        if binary is None:
-            return True, fixes
-
-        try:
-            if hasattr(binary, "has_exports") and binary.has_exports:
-                for export in binary.exported_functions:
-                    fixes.append(f"Verified export: {export.name}")
-            return True, fixes
-        except Exception as e:
-            logger.debug(f"Export fix failed: {e}")
-            return False, fixes
+        """Fix export table after mutation."""
+        return repair_fix_exports(self)
 
     def fix_resources(self) -> tuple[bool, list[str]]:
-        """
-        Fix resource section after mutation.
-
-        Returns:
-            (success, list of fixes applied)
-        """
-        fixes: list[str] = []
-        binary = self._parse_lief()
-
-        if binary is None:
-            return True, fixes
-
-        try:
-            resources = getattr(binary, "resources", None)
-            if resources:
-                fixes.append("Resources verified")
-            return True, fixes
-        except Exception as e:
-            logger.debug(f"Resource fix failed: {e}")
-            return False, fixes
+        """Fix resource section after mutation."""
+        return repair_fix_resources(self)
 
     def full_repair(self) -> tuple[bool, list[str]]:
-        """
-        Full PE repair after mutation.
-
-        Performs all necessary repairs:
-        - Checksum
-        - Imports
-        - Exports
-        - Resources
-        - Relocations
-        - Headers
-
-        Returns:
-            (success, list of all repairs)
-        """
-        all_repairs: list[str] = []
-        all_success = True
-
-        checksum_result = self.fix_checksum()
-        checks = [
-            ("checksum", (checksum_result if isinstance(checksum_result, tuple) else (checksum_result, []))),
-            ("imports", self.fix_imports()),
-            ("exports", self.fix_exports()),
-            ("resources", self.fix_resources()),
-            ("headers", (self.refresh_headers(), ["Headers refreshed"])),
-        ]
-
-        for name, result in checks:
-            if isinstance(result, tuple):
-                success, repairs = result
-            else:
-                success, repairs = result, []
-            if repairs:
-                all_repairs.extend(repairs)
-            if not success:
-                all_success = False
-                all_repairs.append(f"Warning: {name} repair may have issues")
-
-        return all_success, all_repairs
+        """Full PE repair after mutation."""
+        return repair_full_repair(self)
