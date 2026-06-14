@@ -16,8 +16,8 @@ from r2morph.reporting.filtered_summary_symbolic import (
     _populate_symbolic_coverage_and_severity,
     _populate_symbolic_issue_passes,
 )
-from r2morph.reporting.filtered_summary_symbolic_fallbacks import (
-    _build_filtered_summary_symbolic_fallback_sections,
+from r2morph.reporting.filtered_summary_symbolic_fallback_population import (
+    _apply_filtered_summary_symbolic_fallback_sections,
 )
 from r2morph.reporting.filtered_summary_triage import _populate_triage_and_results
 from r2morph.reporting.report_view_resolution import _resolve_summary_pass_sources
@@ -182,21 +182,6 @@ def _populate_filtered_summary_pass_sections(
         selected_risk_pass_names=selected_risk_pass_names,
         only_risky_filters=only_risky_filters,
     )
-
-    if not filtered_summary["symbolic_issue_passes"] and by_pass:
-        filtered_summary["symbolic_issue_passes"] = _build_filtered_summary_symbolic_fallback_sections(
-            by_pass=by_pass,
-        )["symbolic_issue_passes"]
-    if not filtered_summary["symbolic_coverage_by_pass"] and by_pass:
-        filtered_summary["symbolic_coverage_by_pass"] = _build_filtered_summary_symbolic_fallback_sections(
-            by_pass=by_pass,
-        )["symbolic_coverage_by_pass"]
-    if by_pass and (
-        not filtered_summary["symbolic_severity_by_pass"]
-        or all(row.get("severity") == "not-requested" for row in filtered_summary["symbolic_severity_by_pass"])
-    ):
-        filtered_summary["symbolic_severity_by_pass"] = _build_filtered_summary_symbolic_fallback_sections(
-            by_pass=by_pass,
-        )["symbolic_severity_by_pass"]
+    _apply_filtered_summary_symbolic_fallback_sections(filtered_summary=filtered_summary, by_pass=by_pass)
 
     return degradation_roles
