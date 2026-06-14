@@ -54,6 +54,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_view_gate_views",
     "r2morph.reporting.report_view_pass_views",
     "r2morph.reporting.report_view_mismatch_detail",
+    "r2morph.reporting.report_view_mismatch_views",
     "r2morph.reporting.report_view_validation_detail",
     "r2morph.reporting.report_view_gate_detail",
     "r2morph.reporting.report_view_summary_payload",
