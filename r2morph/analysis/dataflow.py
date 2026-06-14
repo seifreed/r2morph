@@ -26,6 +26,8 @@ from r2morph.analysis.dataflow_models import (
     Use,
 )
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
+from r2morph.analysis.dataflow_queries import get_value_at as _get_value_at
+from r2morph.analysis.dataflow_queries import is_safe_to_mutate as _is_safe_to_mutate
 
 DataFlowDirection = _DataFlowDirection
 
@@ -315,28 +317,7 @@ class DataFlowAnalyzer:
         Returns:
             Set of possible values
         """
-        values: set[Any] = set()
-        block_addr = None
-
-        for baddr, block in self.cfg.blocks.items():
-            for insn in block.instructions:
-                if insn.get("offset", 0) == address:
-                    block_addr = baddr
-                    break
-            if block_addr is not None:
-                break
-
-        if block_addr is None:
-            return values
-
-        reaching = self._result.reaching_in.get(block_addr, set())
-
-        for defn in reaching:
-            if defn.register and defn.register.name == register.name:
-                if defn.value is not None:
-                    values.add(defn.value)
-
-        return values
+        return _get_value_at(self.cfg, self._result, address, register)
 
     def is_safe_to_mutate(self, address: int, mutation_type: str) -> tuple[bool, str]:
         """
@@ -349,53 +330,4 @@ class DataFlowAnalyzer:
         Returns:
             Tuple of (is_safe, reason)
         """
-        block_addr = None
-        for baddr, block in self.cfg.blocks.items():
-            for insn in block.instructions:
-                if insn.get("offset", 0) == address:
-                    block_addr = baddr
-                    break
-            if block_addr is not None:
-                break
-
-        if block_addr is None:
-            return (False, "Address not found in CFG")
-
-        live_regs = self._result.live_in.get(block_addr, set())
-
-        if mutation_type in ("register_swap", "register_substitution"):
-            critical_regs = {"rsp", "rbp", "esp", "ebp"}
-            for reg in live_regs:
-                if reg.name.lower() in critical_regs:
-                    aliases = reg.aliases()
-                    for alias in aliases:
-                        if alias.name.lower() in critical_regs:
-                            return (False, f"Critical register {reg.name} is live")
-
-        reaching = self._result.reaching_in.get(block_addr, set())
-
-        if mutation_type == "instruction_expansion":
-            for defn in reaching:
-                if defn.register:
-                    if self._is_address_calculation(defn):
-                        return (False, "Address calculation nearby - expansion may break pointer references")
-
-        return (True, "Safe to mutate")
-
-    def _is_address_calculation(self, defn: Definition) -> bool:
-        """Check if a definition is part of address calculation."""
-        if not defn.instruction:
-            return False
-
-        insn = defn.instruction.lower()
-
-        if "lea" in insn:
-            return True
-
-        if "add" in insn and any(r in insn for r in ["rbp", "rsp", "ebp", "esp"]):
-            return True
-
-        if "sub" in insn and any(r in insn for r in ["rbp", "rsp", "ebp", "esp"]):
-            return True
-
-        return False
+        return _is_safe_to_mutate(self.cfg, self._result, address, mutation_type)

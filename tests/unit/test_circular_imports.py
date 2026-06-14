@@ -120,6 +120,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.dataflow_block_sets",
     "r2morph.analysis.dataflow_models",
     "r2morph.analysis.defuse_models",
+    "r2morph.analysis.dataflow_queries",
     "r2morph.analysis.switch_table_parsing",
     "r2morph.analysis.pattern_preservation_models",
     "r2morph.analysis.pattern_preservation_detection",
