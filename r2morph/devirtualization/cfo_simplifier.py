@@ -25,6 +25,15 @@ from .cfo_simplifier_detection import (
     detect_switch_case_obfuscation,
 )
 from .cfo_simplifier_models import CFOPattern, CFOSimplificationResult, ControlFlowBlock, DispatcherInfo
+from .cfo_simplifier_transforms import (
+    analyze_dispatch_targets,
+    calculate_complexity,
+    eliminate_opaque_predicates,
+    reconstruct_control_flow,
+    remove_fake_control_flow,
+    resolve_indirect_jumps,
+    simplify_dispatcher_flattening,
+)
 
 nx: Any
 try:
@@ -223,175 +232,25 @@ class CFOSimplifier:
         return detect_switch_case_obfuscation(self)
 
     def _simplify_dispatcher_flattening(self) -> bool:
-        """Simplify dispatcher-based control flow flattening."""
-        try:
-            changes_made = False
-
-            for dispatcher in self.dispatchers:
-                # Analyze the dispatcher pattern
-                dispatcher_block = self.blocks.get(dispatcher.dispatcher_address)
-                if not dispatcher_block:
-                    continue
-
-                # Try to reconstruct original control flow
-                reconstructed_edges = self._reconstruct_control_flow(dispatcher)
-
-                if reconstructed_edges:
-                    # Update CFG with reconstructed edges
-                    for source, target in reconstructed_edges:
-                        if source in self.blocks and target in self.blocks:
-                            self.blocks[source].successors.add(target)
-                            self.blocks[target].predecessors.add(source)
-                            changes_made = True
-
-                    # Mark dispatcher as bypassed
-                    dispatcher_block.is_dispatcher = False
-                    logger.debug(f"Simplified dispatcher at 0x{dispatcher.dispatcher_address:x}")
-
-            return changes_made
-
-        except Exception as e:
-            logger.error(f"Dispatcher simplification failed: {e}")
-            return False
+        return simplify_dispatcher_flattening(self)
 
     def _eliminate_opaque_predicates(self) -> bool:
-        """Eliminate opaque predicates from control flow."""
-        try:
-            changes_made = False
-
-            for address, block in self.blocks.items():
-                # Look for conditional jumps with opaque predicates
-                for i, instr in enumerate(block.instructions):
-                    opcode = instr.get("opcode", "").lower()
-
-                    if any(jmp in opcode for jmp in ["je", "jne", "jz", "jnz", "jg", "jl"]):
-                        # Check if the preceding comparison is opaque
-                        if i > 0:
-                            prev_instr = block.instructions[i - 1]
-                            if self._is_opaque_comparison(prev_instr):
-                                # Remove the opaque predicate
-                                block.instructions[i - 1] = {"opcode": "nop", "comment": "removed_opaque_cmp"}
-                                block.instructions[i] = {"opcode": "jmp", "comment": "simplified_jump"}
-                                changes_made = True
-
-            return changes_made
-
-        except Exception as e:
-            logger.error(f"Opaque predicate elimination failed: {e}")
-            return False
+        return eliminate_opaque_predicates(self)
 
     def _resolve_indirect_jumps(self) -> bool:
-        """Resolve indirect jumps to direct jumps where possible."""
-        try:
-            changes_made = False
-
-            for address, block in self.blocks.items():
-                for i, instr in enumerate(block.instructions):
-                    opcode = instr.get("opcode", "").lower()
-
-                    if "jmp" in opcode and "[" in opcode:
-                        # Try to resolve the indirect jump target
-                        target = self._resolve_jump_target(instr)
-                        if target:
-                            # Replace with direct jump
-                            block.instructions[i] = {"opcode": f"jmp 0x{target:x}", "comment": "resolved_indirect_jump"}
-                            changes_made = True
-
-            return changes_made
-
-        except Exception as e:
-            logger.error(f"Indirect jump resolution failed: {e}")
-            return False
+        return resolve_indirect_jumps(self)
 
     def _remove_fake_control_flow(self) -> bool:
-        """Remove fake control flow edges."""
-        try:
-            if not NETWORKX_AVAILABLE or not self.cfg:
-                return False
-
-            changes_made = False
-
-            # Identify unreachable blocks
-            entry_node = min(self.blocks.keys()) if self.blocks else 0
-            reachable = set(nx.descendants(self.cfg, entry_node))
-            reachable.add(entry_node)
-
-            # Remove unreachable blocks
-            unreachable_blocks = set(self.blocks.keys()) - reachable
-            for block_addr in unreachable_blocks:
-                if block_addr in self.blocks:
-                    del self.blocks[block_addr]
-                    changes_made = True
-
-            return changes_made
-
-        except Exception as e:
-            logger.error(f"Fake control flow removal failed: {e}")
-            return False
+        return remove_fake_control_flow(self)
 
     def _analyze_dispatch_targets(self, dispatcher_info: DispatcherInfo) -> None:
-        """Analyze dispatch targets for a dispatcher."""
-        try:
-            dispatcher_block = self.blocks.get(dispatcher_info.dispatcher_address)
-            if not dispatcher_block:
-                return
-
-            # Analyze successors to build dispatch table
-            for successor in dispatcher_block.successors:
-                successor_block = self.blocks.get(successor)
-                if successor_block:
-                    # Try to determine the state value that leads to this block
-                    state_value = self._extract_state_value(successor_block)
-                    if state_value is not None:
-                        dispatcher_info.dispatch_table[state_value] = successor
-
-            # Update confidence based on dispatch table completeness
-            if len(dispatcher_info.dispatch_table) >= 2:
-                dispatcher_info.pattern_confidence = min(1.0, 0.5 + (len(dispatcher_info.dispatch_table) * 0.1))
-
-        except Exception as e:
-            logger.error(f"Dispatch target analysis failed: {e}")
+        analyze_dispatch_targets(self, dispatcher_info)
 
     def _reconstruct_control_flow(self, dispatcher: DispatcherInfo) -> list[tuple[int, int]]:
-        """Reconstruct original control flow from dispatcher pattern."""
-        try:
-            reconstructed_edges = []
-
-            # Use dispatch table to create direct edges
-            for state_value, target in dispatcher.dispatch_table.items():
-                # Find blocks that set this state value
-                source_blocks = self._find_state_setters(state_value, dispatcher.state_variable)
-
-                for source in source_blocks:
-                    if source != dispatcher.dispatcher_address:
-                        reconstructed_edges.append((source, target))
-
-            return reconstructed_edges
-
-        except Exception as e:
-            logger.error(f"Control flow reconstruction failed: {e}")
-            return []
+        return reconstruct_control_flow(self, dispatcher)
 
     def _calculate_complexity(self) -> int:
-        """Calculate control flow complexity metric."""
-        try:
-            if not NETWORKX_AVAILABLE or not self.cfg:
-                # Fallback: use simple edge count
-                edge_count = sum(len(block.successors) for block in self.blocks.values())
-                return edge_count
-
-            # Use cyclomatic complexity
-            num_edges = self.cfg.number_of_edges()
-            num_nodes = self.cfg.number_of_nodes()
-            num_components = nx.number_weakly_connected_components(self.cfg)
-
-            # Cyclomatic complexity: M = E - N + 2P
-            complexity = num_edges - num_nodes + (2 * num_components)
-            return int(max(1, complexity))
-
-        except Exception as e:
-            logger.error(f"Complexity calculation failed: {e}")
-            return len(self.blocks)
+        return calculate_complexity(self)
 
     def _is_constant_expression(self, op1: str, op2: str) -> bool:
         """Check if operands form a constant expression."""

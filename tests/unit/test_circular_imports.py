@@ -110,6 +110,7 @@ REPORTING_MODULES = [
     "r2morph.devirtualization.binary_rewriter_models",
     "r2morph.devirtualization.cfo_simplifier_detection",
     "r2morph.devirtualization.cfo_simplifier_models",
+    "r2morph.devirtualization.cfo_simplifier_transforms",
     "r2morph.devirtualization.iterative_simplifier_models",
     "r2morph.detection.anti_analysis_bypass_models",
     "r2morph.detection.anti_analysis_bypass_methods",
