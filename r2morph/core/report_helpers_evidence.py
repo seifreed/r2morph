@@ -16,96 +16,21 @@ from r2morph.core.report_helpers_evidence_summary import (
 from r2morph.core.report_helpers_evidence_summary import (
     _summarize_pass_evidence as _summarize_pass_evidence_impl,
 )
-
-
-def _summarize_observable_mismatches_by_pass(
-    mutations: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Aggregate observable symbolic mismatches by pass for report triage."""
-    counts: dict[str, dict[str, Any]] = {}
-    for mutation in mutations:
-        metadata = mutation.get("metadata", {})
-        if not metadata.get("symbolic_observable_check_performed"):
-            continue
-        if metadata.get("symbolic_observable_equivalent", False):
-            continue
-        pass_name = mutation.get("pass_name", "unknown")
-        row = counts.setdefault(
-            pass_name,
-            {
-                "pass_name": pass_name,
-                "mismatch_count": 0,
-                "observables": set(),
-            },
-        )
-        row["mismatch_count"] += 1
-        row["observables"].update(metadata.get("symbolic_observable_mismatches", []))
-
-    rows = [
-        {
-            "pass_name": row["pass_name"],
-            "mismatch_count": row["mismatch_count"],
-            "observables": sorted(row["observables"]),
-        }
-        for row in counts.values()
-    ]
-    rows.sort(key=lambda item: (-item["mismatch_count"], item["pass_name"]))
-    return rows
-
-
-def _build_observable_mismatch_map(
-    rows: list[dict[str, Any]],
-) -> dict[str, dict[str, Any]]:
-    """Build a machine-readable lookup for observable mismatches by pass."""
-    return {str(row.get("pass_name")): dict(row) for row in rows if row.get("pass_name")}
-
-
-def _build_observable_mismatch_priority(
-    rows: list[dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Build a stable priority view for observable mismatches."""
-    priority = [dict(row) for row in rows]
-    priority.sort(
-        key=lambda item: (
-            -int(item.get("mismatch_count", 0)),
-            -len(item.get("observables", [])),
-            str(item.get("pass_name", "")),
-        )
-    )
-    return priority
-
-
-def _summarize_pass_capability_rows(
-    pass_capabilities: dict[str, dict[str, Any]],
-) -> list[dict[str, Any]]:
-    """Build a compact triage-oriented capabilities summary."""
-    rows = []
-    for pass_name, capabilities in pass_capabilities.items():
-        runtime = dict(capabilities.get("runtime", {}) or {})
-        symbolic = dict(capabilities.get("symbolic", {}) or {})
-        rows.append(
-            {
-                "pass_name": pass_name,
-                "runtime_recommended": bool(runtime.get("recommended", False)),
-                "symbolic_recommended": bool(symbolic.get("recommended", False)),
-                "symbolic_confidence": symbolic.get("confidence", "unknown"),
-            }
-        )
-    rows.sort(
-        key=lambda item: (
-            0 if item["runtime_recommended"] else 1,
-            0 if item["symbolic_recommended"] else 1,
-            item["pass_name"],
-        )
-    )
-    return rows
-
-
-def _build_pass_capability_summary_map(
-    rows: list[dict[str, Any]],
-) -> dict[str, dict[str, Any]]:
-    """Index capability rows by pass name."""
-    return {str(row.get("pass_name")): dict(row) for row in rows if row.get("pass_name")}
+from r2morph.core.report_helpers_observables import (
+    _build_observable_mismatch_map as _build_observable_mismatch_map,
+)
+from r2morph.core.report_helpers_observables import (
+    _build_observable_mismatch_priority as _build_observable_mismatch_priority,
+)
+from r2morph.core.report_helpers_observables import (
+    _summarize_observable_mismatches_by_pass as _summarize_observable_mismatches_by_pass,
+)
+from r2morph.core.report_helpers_projection import (
+    _build_pass_capability_summary_map as _build_pass_capability_summary_map,
+)
+from r2morph.core.report_helpers_projection import (
+    _summarize_pass_capability_rows as _summarize_pass_capability_rows,
+)
 
 
 def _summarize_pass_timings(pass_results: dict[str, Any]) -> list[dict[str, Any]]:

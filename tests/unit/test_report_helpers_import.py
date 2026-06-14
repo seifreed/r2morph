@@ -13,6 +13,7 @@ from r2morph.core import report_helpers as helpers_mod
 from r2morph.core import report_helpers_adjustment as adjustment_mod
 from r2morph.core import report_helpers_discarded as discarded_mod
 from r2morph.core import report_helpers_evidence_summary as evidence_summary_mod
+from r2morph.core import report_helpers_observables as observables_mod
 from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
 from r2morph.core import report_helpers_symbolic_summary as symbolic_summary_mod
@@ -53,6 +54,12 @@ PROJECTION_NAMES = [
     "_summarize_pass_capability_rows",
 ]
 
+OBSERVABLE_NAMES = [
+    "_build_observable_mismatch_map",
+    "_build_observable_mismatch_priority",
+    "_summarize_observable_mismatches_by_pass",
+]
+
 ADJUSTMENT_NAMES = [
     "_summarize_validation_adjustment_rows",
     "_summarize_validation_adjustments",
@@ -83,6 +90,11 @@ def test_canonical_triage_module_defines_triage_helpers() -> None:
 def test_canonical_projection_module_defines_projection_helpers() -> None:
     for name in PROJECTION_NAMES:
         assert hasattr(projection_mod, name), f"core.report_helpers_projection missing {name}"
+
+
+def test_canonical_observable_module_defines_observable_helpers() -> None:
+    for name in OBSERVABLE_NAMES:
+        assert hasattr(observables_mod, name), f"core.report_helpers_observables missing {name}"
 
 
 def test_canonical_adjustment_module_defines_adjustment_helpers() -> None:
@@ -154,6 +166,17 @@ def test_projection_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             projection_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_projection.{name}"
+
+
+def test_observable_helpers_are_reexported_from_facade() -> None:
+    for name in OBSERVABLE_NAMES:
+        assert getattr(helpers_mod, name) is getattr(
+            observables_mod, name
+        ), f"core.report_helpers.{name} diverged from core.report_helpers_observables.{name}"
+        assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
+        assert getattr(engine_mod, name) is getattr(
+            observables_mod, name
+        ), f"core.engine.{name} diverged from core.report_helpers_observables.{name}"
 
 
 def test_adjustment_helpers_are_reexported_from_facade() -> None:
