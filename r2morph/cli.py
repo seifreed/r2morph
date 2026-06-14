@@ -17,11 +17,7 @@ from rich.console import Console
 from rich.table import Table
 
 from r2morph import __version__
-from r2morph.cli_cache_output import (
-    build_cache_cleared_message,
-    build_cache_statistics_lines,
-    build_cache_usage_hint,
-)
+from r2morph.cli_cache_command import handle_cache_command
 from r2morph.cli_output_helpers import (
     build_binary_analysis_rows,
     build_function_limit_notice,
@@ -714,27 +710,10 @@ def cache(
         r2morph cache --clear          # Clear all cached data
         r2morph cache --clear --path /custom/cache  # Clear specific cache directory
     """
-    from r2morph.core.analysis_cache import AnalysisCache
-
-    cache_dir = path if path else None
-    cache_instance = AnalysisCache(cache_dir=cache_dir)
-
-    if stats:
-        statistics = cache_instance.get_stats()
-        for line in build_cache_statistics_lines(statistics):
-            if line == "Cache Statistics:":
-                console.print(f"[cyan]{line}[/cyan]")
-            else:
-                console.print(line)
-        return
-
-    if clear:
-        cleared = cache_instance.clear()
-        console.print(f"[green]{build_cache_cleared_message(cleared)}[/green]")
-        return
-
-    console.print(f"[yellow]{build_cache_usage_hint()}[/yellow]")
-    raise typer.Exit(1)
+    try:
+        handle_cache_command(clear=clear, stats=stats, path=path, console=console)
+    except SystemExit as exc:
+        raise typer.Exit(exc.code)
 
 
 def main() -> None:
