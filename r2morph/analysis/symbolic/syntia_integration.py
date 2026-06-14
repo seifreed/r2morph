@@ -10,7 +10,6 @@ Reference: "Syntia: Synthesizing the Semantics of Obfuscated Code" by Blazytko e
 """
 
 import logging
-import time
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +26,9 @@ from r2morph.analysis.symbolic.syntia_equivalence_helpers import (
 )
 from r2morph.analysis.symbolic.syntia_handler_analysis import (
     analyze_vm_handler as analyze_vm_handler_impl,
+)
+from r2morph.analysis.symbolic.syntia_learning import (
+    learn_instruction_semantics as learn_instruction_semantics_impl,
 )
 from r2morph.analysis.symbolic.syntia_models import (
     InstructionSemantics,
@@ -97,55 +99,7 @@ class SyntiaFramework:
     def learn_instruction_semantics(
         self, instruction_bytes: bytes, address: int, disassembly: str, context: dict[str, Any] | None = None
     ) -> InstructionSemantics:
-        """
-        Learn semantics of a single instruction or instruction sequence.
-
-        Args:
-            instruction_bytes: Raw instruction bytes
-            address: Instruction address
-            disassembly: Disassembly string
-            context: Additional context (registers, memory state, etc.)
-
-        Returns:
-            Learned instruction semantics
-        """
-
-        start_time = time.time()
-
-        # Check cache first
-        if instruction_bytes in self.semantics_cache:
-            self.synthesis_stats["cache_hits"] += 1
-            cached = self.semantics_cache[instruction_bytes]
-            logger.debug(f"Cache hit for instruction at 0x{address:x}")
-            return cached
-
-        self.synthesis_stats["instructions_analyzed"] += 1
-
-        # Create initial semantics object
-        semantics = InstructionSemantics(address=address, instruction_bytes=instruction_bytes, disassembly=disassembly)
-
-        try:
-            # Until the Syntia synthesis backend is wired up,
-            # _synthesize_with_syntia is a stub that always returns None,
-            # so branching on SYNTIA_AVAILABLE only inflated the
-            # `synthesis_failures` counter without changing the actual
-            # outcome. Use the rule-based fallback unconditionally; when
-            # real synthesis lands, restore the conditional dispatch.
-            fallback_result = self._fallback_semantic_analysis(instruction_bytes, disassembly)
-            semantics.learned_semantics = fallback_result["semantics"]
-            semantics.confidence = fallback_result["confidence"]
-
-        except Exception as e:
-            logger.error(f"Error learning instruction semantics: {e}")
-            self.synthesis_stats["synthesis_failures"] += 1
-
-        semantics.learning_time = time.time() - start_time
-        semantics.complexity = self._assess_semantic_complexity(semantics)
-
-        # Cache the result
-        self.semantics_cache[instruction_bytes] = semantics
-
-        return semantics
+        return learn_instruction_semantics_impl(self, instruction_bytes, address, disassembly)
 
     def synthesize_semantics(
         self, instructions: list[dict[str, Any]], address: int

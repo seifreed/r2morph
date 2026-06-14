@@ -234,6 +234,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.symbolic.syntia_runtime_helpers",
     "r2morph.analysis.symbolic.syntia_reporting",
     "r2morph.analysis.symbolic.syntia_handler_analysis",
+    "r2morph.analysis.symbolic.syntia_learning",
     "r2morph.analysis.symbolic.syntia_models",
     "r2morph.analysis.symbolic.syntia_equivalence_helpers",
     "r2morph.analysis.symbolic.syntia_analysis_helpers",
