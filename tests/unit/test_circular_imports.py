@@ -303,6 +303,7 @@ REPORTING_MODULES = [
     "r2morph.platform.elf_handler_section_mutation",
     "r2morph.platform.elf_handler_tables",
     "r2morph.reporting.sarif_rule_ids",
+    "r2morph.reporting.sarif_catalogs",
     "r2morph.validation.benchmark_reporting_sections",
     "r2morph.platform.pe_handler_projection",
     "r2morph.analysis.symbolic.constraint_solver_models",

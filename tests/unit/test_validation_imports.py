@@ -30,6 +30,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.benchmark_suite",
     "r2morph.validation.benchmark_runners",
     "r2morph.validation.benchmark_metrics",
+    "r2morph.reporting.sarif_catalogs",
     "r2morph.validation.benchmark_samples",
     "r2morph.validation.performance_regression_storage",
     "r2morph.validation.performance_regression_metadata",

@@ -6,6 +6,7 @@ import hashlib
 from collections import defaultdict
 from typing import Any
 
+from r2morph.reporting.sarif_catalogs import MITRE_ATTACK
 from r2morph.reporting.sarif_rule_ids import get_mutation_rule_id, get_validation_rule_id
 from r2morph.reporting.sarif_schema import (
     SARIFArtifactLocation,
@@ -25,25 +26,6 @@ from r2morph.reporting.sarif_schema import (
     SARIFThreadFlow,
     SARIFThreadFlowLocation,
 )
-
-MITRE_ATTACK: dict[str, dict[str, str]] = {
-    "nop": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "nop-insertion": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "substitute": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "instruction-substitution": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "register": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "register-substitution": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "block": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "block-reordering": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "dead-code": {"id": "T1027.001", "name": "Binary Padding"},
-    "dead-code-injection": {"id": "T1027.001", "name": "Binary Padding"},
-    "opaque": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "opaque-predicates": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "expand": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "instruction-expansion": {"id": "T1027", "name": "Obfuscated Files or Information"},
-    "cff": {"id": "T1027.002", "name": "Software Packing"},
-    "control-flow-flattening": {"id": "T1027.002", "name": "Software Packing"},
-}
 
 
 class SARIFResultBuilder:

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from r2morph.reporting.sarif_formatter import MITRE_ATTACK
+from r2morph.reporting.sarif_catalogs import MITRE_ATTACK
 from r2morph.reporting.sarif_formatter_builders import (
     ReportData,
     build_artifacts,
