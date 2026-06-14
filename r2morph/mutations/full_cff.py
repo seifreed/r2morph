@@ -37,6 +37,7 @@ from r2morph.mutations.full_cff_helpers import (
     generate_x86_dispatcher,
     select_candidates,
 )
+from r2morph.mutations.full_cff_patching import patch_function_blocks
 from r2morph.relocations.cave_injector import CodeCaveInjector
 
 logger = logging.getLogger(__name__)
@@ -211,7 +212,18 @@ class FullControlFlowFlatteningPass(MutationPass):
 
         dispatcher_addr = allocation.address
 
-        patched = self._patch_function_blocks(binary, cfg, dispatcher_blocks, state_table, dispatcher_addr)
+        patched = patch_function_blocks(
+            binary=binary,
+            cfg=cfg,
+            dispatcher_blocks=dispatcher_blocks,
+            dispatcher_addr=dispatcher_addr,
+            validation_manager=self._validation_manager,
+            create_mutation_checkpoint=self._create_mutation_checkpoint,
+            record_mutation=self._record_mutation,
+            session=self._session,
+            records=self._records,
+            rollback_policy=self._rollback_policy,
+        )
 
         return {
             "total_mutations": patched,
@@ -290,80 +302,15 @@ class FullControlFlowFlatteningPass(MutationPass):
         state_table: dict[int, tuple[int, int | None]],
         dispatcher_addr: int,
     ) -> int:
-        """Patch function blocks to jump to dispatcher."""
-        patches_applied = 0
-        func_addr = cfg.function_address
-
-        mutation_checkpoint = self._create_mutation_checkpoint("full_cff")
-        baseline = {}
-        if self._validation_manager is not None:
-            baseline = self._validation_manager.capture_structural_baseline(binary, func_addr)
-
-        for db in dispatcher_blocks:
-            if db.is_exit:
-                continue
-
-            block_addr = db.block_address
-
-            try:
-                block_instrs = binary.get_function_disasm(func_addr)
-                block_end = None
-
-                for insn in block_instrs:
-                    insn_addr = insn.get("offset", 0)
-                    if insn_addr >= block_addr and insn_addr < block_addr + db.block_size:
-                        if insn_addr + insn.get("size", 0) > block_addr + db.block_size:
-                            block_end = insn_addr
-                            break
-                        block_end = insn_addr + insn.get("size", 0)
-
-                if block_end:
-                    jump_target = dispatcher_addr
-                    arch_info = binary.get_arch_info()
-                    arch = arch_info.get("arch", "")
-                    arch_info.get("bits", 64)
-
-                    if arch in ("x86", "x86_64"):
-                        rel_offset = jump_target - (block_end + 5)
-                        if rel_offset < -2147483648 or rel_offset > 2147483647:
-                            logger.debug(f"Jump offset out of range for block at 0x{block_addr:x}")
-                            continue
-                        jmp_bytes = b"\xe9" + rel_offset.to_bytes(4, "little", signed=True)
-
-                        original_bytes = binary.read_bytes(block_end, 5)
-                        if binary.write_bytes(block_end, jmp_bytes):
-                            if original_bytes:
-                                self._record_mutation(
-                                    function_address=func_addr,
-                                    start_address=block_end,
-                                    end_address=block_end + 4,
-                                    original_bytes=original_bytes,
-                                    mutated_bytes=jmp_bytes,
-                                    original_disasm="original_block_end",
-                                    mutated_disasm=f"jmp 0x{jump_target:x}",
-                                    mutation_kind="full_cff",
-                                    metadata={
-                                        "block_addr": block_addr,
-                                        "dispatcher_addr": dispatcher_addr,
-                                        "structural_baseline": baseline,
-                                    },
-                                )
-                            patches_applied += 1
-
-            except Exception as e:
-                logger.debug(f"Failed to patch block at 0x{block_addr:x}: {e}")
-
-        if patches_applied > 0 and self._validation_manager is not None and mutation_checkpoint is not None:
-            if self._records:
-                outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
-                if not outcome.passed:
-                    if self._session is not None:
-                        self._session.rollback_to(mutation_checkpoint)
-                    binary.reload()
-                    if self._records:
-                        self._records.pop()
-                    if self._rollback_policy == "fail-fast":
-                        raise RuntimeError("Mutation-level validation failed")
-                    return 0
-
-        return patches_applied
+        return patch_function_blocks(
+            binary=binary,
+            cfg=cfg,
+            dispatcher_blocks=dispatcher_blocks,
+            dispatcher_addr=dispatcher_addr,
+            validation_manager=self._validation_manager,
+            create_mutation_checkpoint=self._create_mutation_checkpoint,
+            record_mutation=self._record_mutation,
+            session=self._session,
+            records=self._records,
+            rollback_policy=self._rollback_policy,
+        )
