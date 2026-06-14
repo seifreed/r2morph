@@ -13,6 +13,12 @@ from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.nop_insertion_helpers import (
+    generate_jmp_dead_code,
+    init_nop_equivalents,
+    is_safe_self_redundancy,
+    select_candidates,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,106 +93,12 @@ class NopInsertionPass(MutationPass):
     }
 
     def _init_nop_equivalents(self) -> None:
-        """
-        Initialize and shuffle NOP equivalents (r2morph-style re-seeding).
-
-        This method is called during initialization and when random seed
-        is reset to ensure reproducible randomness across runs.
-        """
-        self.NOP_EQUIVALENTS = {}
-        for arch, patterns in self.NOP_EQUIVALENTS_BASE.items():
-            shuffled = patterns.copy()
-            random.shuffle(shuffled)
-            self.NOP_EQUIVALENTS[arch] = shuffled
+        self.NOP_EQUIVALENTS = init_nop_equivalents()
 
     def _generate_jmp_dead_code(
         self, size: int, bits: int, binary: Any, function_addr: int | None = None
     ) -> bytes | None:
-        """
-        Generate jmp + dead code pattern (r2morph-STYLE).
-
-        Creates a short jump that skips over dead code instructions that never execute.
-        This is the signature obfuscation technique used by r2morph.
-
-        Args:
-            size: Total size needed in bytes
-            bits: Architecture bits (32 or 64)
-            binary: Any instance for assembling
-            function_addr: Function address for resolving symbolic variables (optional)
-
-        Returns:
-            Assembled bytes or None if not possible
-
-        Examples:
-            size=3, bits=32 → "jmp 1; inc eax"  (jmp skips inc)
-            size=4, bits=64 → "jmp 2; pop rax"  (jmp skips pop)
-        """
-        regs = self.REGISTERS_32BIT if bits == 32 else self.REGISTERS_64BIT
-
-        patterns = []
-
-        # x86-32 patterns: inc/dec are 1-byte opcodes (0x40-0x4F),
-        # push/pop are 1-byte (0x50-0x5F). jmp rel8 is 2 bytes (EB xx).
-        # Note: on x86-64 these same opcodes are REX prefixes, so
-        # inc/dec become 2-byte (FF /0, FF /1). Patterns below are
-        # sized for the correct encoding per bits value.
-        if size == 3 and bits == 32:
-            patterns = [
-                f"jmp 1; inc {random.choice(regs)}",
-                f"jmp 1; push {random.choice(regs)}",
-                f"jmp 1; pop {random.choice(regs)}",
-            ]
-
-        elif size == 4 and bits == 32:
-            patterns = [
-                f"jmp 2; inc {random.choice(regs)}; inc {random.choice(regs)}",
-                f"jmp 2; push {random.choice(regs)}; pop {random.choice(regs)}",
-                f"jmp 2; pop {random.choice(regs)}; push {random.choice(regs)}",
-            ]
-
-        elif size == 3 and bits == 64:
-            patterns = [
-                f"jmp 1; push {random.choice(regs)}",
-                f"jmp 1; pop {random.choice(regs)}",
-            ]
-
-        elif size == 4 and bits == 64:
-            patterns = [
-                f"jmp 2; pop {random.choice(regs)}; pop {random.choice(regs)}",
-                f"jmp 2; push {random.choice(regs)}; push {random.choice(regs)}",
-                f"jmp 2; push {random.choice(regs)}; pop {random.choice(regs)}",
-                f"jmp 2; pop {random.choice(regs)}; push {random.choice(regs)}",
-            ]
-
-        elif size == 5 and bits == 64:
-            patterns = [
-                f"jmp 3; push {random.choice(regs)}; push {random.choice(regs)}",
-                f"jmp 3; pop {random.choice(regs)}; pop {random.choice(regs)}",
-            ]
-
-        if not patterns:
-            return None
-
-        random.shuffle(patterns)
-        for pattern in patterns:
-            try:
-                instructions = [i.strip() for i in pattern.split(";")]
-                all_bytes = b""
-
-                for inst in instructions:
-                    inst_bytes = binary.assemble(inst, function_addr)
-                    if inst_bytes is None:
-                        break
-                    all_bytes += inst_bytes
-
-                if all_bytes and len(all_bytes) == size:
-                    return all_bytes
-
-            except (ValueError, OSError, BrokenPipeError) as e:
-                logger.debug(f"Failed to assemble jmp pattern '{pattern}': {e}")
-                continue
-
-        return None
+        return generate_jmp_dead_code(size, bits, binary, function_addr)
 
     def __init__(self, config: dict[str, Any] | None = None):
         """
@@ -249,96 +161,12 @@ class NopInsertionPass(MutationPass):
         self._init_nop_equivalents()
 
     def _is_safe_self_redundancy(self, register: str, bits: int) -> bool:
-        """Restrict stable NOP substitution to caller-saved self-operations."""
-        if bits == 64:
-            return register in self.CALLER_SAVED_64BIT
-        return register in self.CALLER_SAVED_32BIT
+        return is_safe_self_redundancy(register, bits)
 
     def _select_candidates(
         self, binary: Any, functions: list[dict[str, Any]], arch_family: str, bits: int
     ) -> list[tuple[dict, list]]:
-        """
-        Iterate functions, get disasm, and filter redundant instruction candidates.
-
-        Args:
-            binary: Any instance
-            functions: List of function dicts
-            arch_family: Architecture family string
-            bits: Architecture bit width
-
-        Returns:
-            List of (func, selected_candidates) tuples
-        """
-        result = []
-        for func in functions:
-            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-                continue
-
-            func_addr = func.get("offset", func.get("addr", 0))
-            try:
-                instructions = binary.get_function_disasm(func_addr)
-            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
-                continue
-
-            candidates = []
-            for _i, insn in enumerate(instructions):
-                disasm = insn.get("disasm", "").lower()
-                insn_type = insn.get("type", "")
-
-                is_redundant = False
-
-                if arch_family == "x86":
-                    if "mov" in disasm:
-                        parts = disasm.split(",")
-                        if len(parts) == 2:
-                            src = parts[1].strip()
-                            mnemonic_parts = parts[0].split()
-                            dst = mnemonic_parts[-1].strip() if len(mnemonic_parts) >= 2 else ""
-                            if dst and src == dst and self._is_safe_self_redundancy(dst, bits):
-                                is_redundant = True
-                    elif "lea" in disasm:
-                        parts = disasm.split(",")
-                        if len(parts) == 2:
-                            mnemonic_parts = parts[0].split()
-                            dst = mnemonic_parts[-1].strip() if len(mnemonic_parts) >= 2 else ""
-                            src = parts[1].strip().strip("[]")
-                            if dst and src == dst and self._is_safe_self_redundancy(dst, bits):
-                                is_redundant = True
-                    elif "xchg" in disasm:
-                        parts = disasm.split(",")
-                        if len(parts) == 2:
-                            mnemonic_parts = parts[0].split()
-                            dst = mnemonic_parts[-1].strip() if len(mnemonic_parts) >= 2 else ""
-                            src = parts[1].strip()
-                            if dst and src == dst and self._is_safe_self_redundancy(dst, bits):
-                                is_redundant = True
-
-                elif arch_family == "arm":
-                    if disasm == "nop":
-                        is_redundant = True
-                    elif disasm.startswith("mov "):
-                        parts = disasm.replace("#", "").split(",")
-                        if len(parts) == 2 and parts[0].split()[-1] == parts[1].strip():
-                            is_redundant = True
-                    elif disasm.startswith(("add ", "sub ")):
-                        parts = disasm.replace("#", "").split(",")
-                        if len(parts) == 3:
-                            imm = parts[2].strip()
-                            if imm in ("0", "0x0"):
-                                is_redundant = True
-
-                if insn_type in ["jmp", "cjmp", "call", "ret", "ujmp", "rcall"]:
-                    is_redundant = False
-
-                if is_redundant:
-                    candidates.append(insn)
-
-            nops_to_insert = min(self.max_nops, len(candidates))
-            selected = random.sample(candidates, min(nops_to_insert, len(candidates)))
-            if selected:
-                result.append((func, selected))
-        return result
+        return select_candidates(binary, functions, arch_family, bits, self.max_nops)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """

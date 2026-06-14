@@ -19,6 +19,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.register_substitution_helpers",
     "r2morph.mutations.instruction_substitution_helpers",
     "r2morph.mutations.constant_unfolding_helpers",
+    "r2morph.mutations.nop_insertion_helpers",
     "r2morph.mutations.polymorphic_engine_models",
     "r2morph.mutations.polymorphic_engine_noop",
     "r2morph.mutations.polymorphic_engine_setup",
