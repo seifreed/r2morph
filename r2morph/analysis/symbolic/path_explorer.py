@@ -1,191 +1,27 @@
-"""
-Path exploration module for guided symbolic execution.
+"""Path exploration module for guided symbolic execution."""
 
-This module provides intelligent path exploration strategies for
-analyzing obfuscated binaries, with special focus on VM handlers
-and control flow obfuscation patterns.
-"""
+from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import angr
-    from angr.exploration_techniques import ExplorationTechnique
 else:
     try:
         import angr
-        from angr.exploration_techniques import ExplorationTechnique
     except ImportError:
         angr = None
 
-        class ExplorationTechnique:
-            """Fallback ExplorationTechnique when angr is not installed."""
-
-            def __init__(self) -> None:
-                pass
-
+from r2morph.analysis.symbolic.path_explorer_models import ExplorationResult, ExplorationStrategy
+from r2morph.analysis.symbolic.path_explorer_techniques import (
+    OpaquePredicateDetectionTechnique,
+    VMHandlerDetectionTechnique,
+)
 
 ANGR_AVAILABLE = angr is not None
 
-
 logger = logging.getLogger(__name__)
-
-
-class ExplorationStrategy(Enum):
-    """Path exploration strategies for different analysis goals."""
-
-    BFS = "breadth_first"  # Breadth-first search
-    DFS = "depth_first"  # Depth-first search
-    GUIDED = "guided"  # Guided by heuristics
-    VM_HANDLER = "vm_handler"  # Specialized for VM handler analysis
-    OPAQUE_PREDICATE = "opaque_predicate"  # Focus on opaque predicate detection
-
-
-@dataclass
-class ExplorationResult:
-    """Result of path exploration."""
-
-    paths_explored: int = 0
-    vm_handlers_found: int = 0
-    opaque_predicates_found: int = 0
-    interesting_paths: list[Any] = field(default_factory=list)
-    execution_time: float = 0.0
-    constraints_collected: list[Any] = field(default_factory=list)
-    coverage_info: dict[str, Any] = field(default_factory=dict)
-
-
-class VMHandlerDetectionTechnique(ExplorationTechnique):
-    """
-    Exploration technique specialized for VM handler detection.
-
-    This technique prioritizes paths that exhibit VM-like behavior:
-    - Indirect jumps with computed targets
-    - Switch-like instruction dispatching
-    - Frequent memory accesses to handler tables
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.handler_patterns: set[int] = set()
-        self.switch_tables: dict[int, list[int]] = {}
-
-    def step(self, simgr: Any, stash: str = "active", **kwargs: Any) -> Any:
-        """
-        Custom stepping logic for VM handler detection.
-
-        Args:
-            simgr: Simulation manager
-            stash: Stash name
-
-        Returns:
-            Updated simulation manager
-        """
-        if not ANGR_AVAILABLE:
-            return simgr
-
-        # Prioritize states that show VM handler patterns
-        if stash in simgr.stashes:
-            states = simgr.stashes[stash]
-            scored_states = []
-
-            for state in states:
-                score = self._score_vm_likelihood(state)
-                scored_states.append((score, state))
-
-            # Sort by VM likelihood score (higher is more likely)
-            scored_states.sort(key=lambda x: x[0], reverse=True)
-
-            # Keep top N states to prevent state explosion
-            max_states = 10
-            simgr.stashes[stash] = [state for _, state in scored_states[:max_states]]
-
-        return simgr
-
-    def _score_vm_likelihood(self, state: Any) -> float:
-        """
-        Score state based on VM handler likelihood.
-
-        Args:
-            state: Symbolic state
-
-        Returns:
-            Score (higher = more likely VM handler)
-        """
-        score = 0.0
-
-        try:
-            # Check for indirect jumps
-            if state.solver.symbolic(state.regs.rip):
-                score += 2.0
-
-            # Check for switch-like patterns (high number of successors)
-            if hasattr(state, "history") and state.history.jump_kind == "Ijk_Boring":
-                score += 1.0
-
-            # Check for memory access patterns
-            if len(state.history.mem_reads.hardcopy) > 5:
-                score += 1.5
-
-            # Penalize very deep paths (likely not VM handlers)
-            if state.history.depth > 50:
-                score -= 1.0
-
-        except Exception as e:
-            logger.debug(f"Error scoring VM likelihood: {e}")
-
-        return score
-
-
-class OpaquePredicateDetectionTechnique(ExplorationTechnique):
-    """
-    Exploration technique for detecting opaque predicates.
-
-    Focuses on identifying branches that always take the same path
-    regardless of input values.
-    """
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.branch_outcomes: dict[int, list[bool]] = {}
-        self.opaque_candidates: set[int] = set()
-
-    def step(self, simgr: Any, stash: str = "active", **kwargs: Any) -> Any:
-        """Custom stepping for opaque predicate detection."""
-        if not ANGR_AVAILABLE:
-            return simgr
-
-        # Track branch outcomes
-        if stash in simgr.stashes:
-            for state in simgr.stashes[stash]:
-                self._track_branch_outcomes(state)
-
-        return simgr
-
-    def _track_branch_outcomes(self, state: Any) -> None:
-        """Track outcomes of conditional branches."""
-        try:
-            if hasattr(state, "history") and state.history.jump_kind == "Ijk_Conditional":
-                branch_addr = state.history.addr
-
-                # Record this branch outcome
-                if branch_addr not in self.branch_outcomes:
-                    self.branch_outcomes[branch_addr] = []
-
-                # Determine if branch was taken
-                taken = state.history.jumpkind == "Ijk_Conditional"
-                self.branch_outcomes[branch_addr].append(taken)
-
-                # Check if this looks like an opaque predicate
-                outcomes = self.branch_outcomes[branch_addr]
-                if len(outcomes) >= 5 and len(set(outcomes)) == 1:
-                    self.opaque_candidates.add(branch_addr)
-                    logger.info(f"Potential opaque predicate at 0x{branch_addr:x}")
-
-        except Exception as e:
-            logger.debug(f"Error tracking branch outcomes: {e}")
 
 
 class PathExplorer:

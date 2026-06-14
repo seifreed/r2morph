@@ -208,6 +208,8 @@ REPORTING_MODULES = [
     "r2morph.analysis.memory_flow_helpers",
     "r2morph.analysis.memory_flow_models",
     "r2morph.analysis.symbolic.constraint_solver_parsing",
+    "r2morph.analysis.symbolic.path_explorer_models",
+    "r2morph.analysis.symbolic.path_explorer_techniques",
     "r2morph.analysis.symbolic.syntia_models",
     "r2morph.analysis.symbolic.syntia_equivalence_helpers",
     "r2morph.analysis.symbolic.syntia_analysis_helpers",
