@@ -210,6 +210,20 @@ class MutationPass(ABC):
         finally:
             self._run_started_at = None
 
+    def _rollback_mutation(self, binary: Any, mutation_checkpoint: Any) -> None:
+        """Undo the last mutation after a failed validation.
+
+        Restores the session checkpoint, reloads the binary, drops the pending
+        record, and re-raises under the fail-fast rollback policy.
+        """
+        if self._session is not None:
+            self._session.rollback_to(mutation_checkpoint)
+        binary.reload()
+        if self._records:
+            self._records.pop()
+        if self._rollback_policy == "fail-fast":
+            raise RuntimeError("Mutation-level validation failed")
+
     def enable(self) -> None:
         """Enable this mutation pass."""
         self.enabled = True

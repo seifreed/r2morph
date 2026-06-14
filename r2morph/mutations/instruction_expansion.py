@@ -244,13 +244,7 @@ class InstructionExpansionPass(MutationPass):
                                                 binary, record.to_dict()
                                             )
                                             if not outcome.passed and mutation_checkpoint is not None:
-                                                if self._session is not None:
-                                                    self._session.rollback_to(mutation_checkpoint)
-                                                binary.reload()
-                                                if self._records:
-                                                    self._records.pop()
-                                                if self._rollback_policy == "fail-fast":
-                                                    raise RuntimeError("Mutation-level validation failed")
+                                                self._rollback_mutation(binary, mutation_checkpoint)
                                                 continue
 
                                         size_inc = new_size - orig_size

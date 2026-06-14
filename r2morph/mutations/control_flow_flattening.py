@@ -366,13 +366,7 @@ class ControlFlowFlatteningPass(MutationPass):
         if outcome.passed:
             return True
 
-        if self._session is not None:
-            self._session.rollback_to(mutation_checkpoint)
-        binary.reload()
-        if self._records:
-            self._records.pop()
-        if self._rollback_policy == "fail-fast":
-            raise RuntimeError("Mutation-level validation failed")
+        self._rollback_mutation(binary, mutation_checkpoint)
         logger.debug(f"CFF validation failed for {func_name}, rolled back")
         return False
 

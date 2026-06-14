@@ -210,13 +210,7 @@ class ShortJumpPatchingPass(MutationPass):
                         if self._validation_manager is not None:
                             outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
                             if not outcome.passed and mutation_checkpoint is not None:
-                                if self._session is not None:
-                                    self._session.rollback_to(mutation_checkpoint)
-                                binary.reload()
-                                if self._records:
-                                    self._records.pop()
-                                if self._rollback_policy == "fail-fast":
-                                    raise RuntimeError("Mutation-level validation failed")
+                                self._rollback_mutation(binary, mutation_checkpoint)
                                 continue
 
                         patches_in_func += 1

@@ -158,13 +158,7 @@ class OpaquePredicatePass(MutationPass):
             if self._records:
                 outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
                 if not outcome.passed:
-                    if self._session is not None:
-                        self._session.rollback_to(mutation_checkpoint)
-                    binary.reload()
-                    if self._records:
-                        self._records.pop()
-                    if self._rollback_policy == "fail-fast":
-                        raise RuntimeError("Mutation-level validation failed")
+                    self._rollback_mutation(binary, mutation_checkpoint)
                     return 0
 
         return mutations
