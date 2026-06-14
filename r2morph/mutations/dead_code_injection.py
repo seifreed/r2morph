@@ -31,11 +31,14 @@ import logging
 import random
 from typing import Any
 
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, UNCONDITIONAL_TRANSFERS
+from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
-from r2morph.utils.dead_code import (
-    generate_dead_code_for_arch,
+from r2morph.mutations.dead_code_injection_helpers import (
+    find_injection_points,
+    generate_dead_code,
+    generate_dead_code_for_size,
     generate_nop_sequence,
+    is_safe_injection_point,
 )
 
 logger = logging.getLogger(__name__)
@@ -255,172 +258,16 @@ class DeadCodeInjectionPass(MutationPass):
         return mutations, len(injection_points)
 
     def _find_injection_points(self, instructions: list[dict[str, Any]]) -> list[dict[str, Any]]:
-        """
-        Find safe injection points in the instruction stream.
-
-        Looks for:
-        1. Consecutive padding instructions (NOPs, INT3s)
-        2. Instructions following unconditional control flow transfers
-           (code that is unreachable and can be safely overwritten)
-
-        Args:
-            instructions: List of instruction dictionaries
-
-        Returns:
-            List of injection point dictionaries with addr, size, and type
-        """
-        injection_points = []
-        i = 0
-
-        while i < len(instructions):
-            insn = instructions[i]
-            mnemonic = insn.get("mnemonic", "").lower()
-
-            if mnemonic in self.PADDING_INSTRUCTIONS:
-                padding_start = insn.get("offset", insn.get("addr", 0))
-                padding_size = insn.get("size", 1)
-                j = i + 1
-
-                while j < len(instructions):
-                    next_insn = instructions[j]
-                    next_mnemonic = next_insn.get("mnemonic", "").lower()
-
-                    if next_mnemonic not in self.PADDING_INSTRUCTIONS:
-                        break
-
-                    padding_size += next_insn.get("size", 1)
-                    j += 1
-
-                if padding_size >= self.min_padding_size:
-                    injection_points.append(
-                        {
-                            "addr": padding_start,
-                            "size": padding_size,
-                            "type": "padding",
-                        }
-                    )
-
-                i = j
-                continue
-
-            if mnemonic in UNCONDITIONAL_TRANSFERS:
-                if i + 1 < len(instructions):
-                    next_insn = instructions[i + 1]
-                    next_insn.get("offset", next_insn.get("addr", 0))
-                    next_mnemonic = next_insn.get("mnemonic", "").lower()
-
-                    if next_mnemonic in self.PADDING_INSTRUCTIONS:
-                        pass
-
-            i += 1
-
-        return injection_points
+        return find_injection_points(instructions, self.min_padding_size, self.PADDING_INSTRUCTIONS)
 
     def _is_safe_injection_point(self, insn: dict[str, Any], instructions: list[dict[str, Any]], index: int) -> bool:
-        """
-        Check if we can safely inject code after this instruction.
-
-        An instruction is a safe injection point if:
-        1. It's a padding instruction (NOP, INT3, etc.)
-        2. It follows an unconditional control flow transfer
-        3. It's not a jump target (no references point to it)
-
-        Args:
-            insn: Current instruction
-            instructions: Full instruction list
-            index: Index of current instruction
-
-        Returns:
-            True if safe to inject after this instruction
-        """
-        mnemonic = insn.get("mnemonic", "").lower()
-
-        if mnemonic in self.PADDING_INSTRUCTIONS:
-            return True
-
-        if index > 0:
-            prev_insn = instructions[index - 1]
-            prev_mnemonic = prev_insn.get("mnemonic", "").lower()
-
-            if prev_mnemonic in UNCONDITIONAL_TRANSFERS:
-                return mnemonic in self.PADDING_INSTRUCTIONS
-
-        return False
+        return is_safe_injection_point(insn, instructions, index, self.PADDING_INSTRUCTIONS)
 
     def _generate_dead_code_for_size(self, binary: Any, max_size: int, func_addr: int) -> bytes | None:
-        """
-        Generate dead code that fits within the specified size.
-
-        Tries to generate dead code and assemble it, ensuring the result
-        fits within max_size bytes.
-
-        Args:
-            binary: Any instance for assembly
-            max_size: Maximum size in bytes for the dead code
-            func_addr: Function address for assembly context
-
-        Returns:
-            Assembled bytes or None if cannot fit
-        """
-        arch_family, bits = binary.get_arch_family()
-
-        for _attempt in range(5):  # Multiple attempts with different random choices
-            dead_code_insns = self._generate_dead_code(binary)
-
-            assemblable_insns = [
-                insn for insn in dead_code_insns if not insn.startswith(".") and not insn.endswith(":")
-            ]
-
-            if not assemblable_insns:
-                return self._generate_nop_sequence(max_size, arch_family, bits)
-
-            assembled_bytes: bytes | None = b""
-            for insn in assemblable_insns:
-                insn_bytes = binary.assemble(insn, func_addr)
-                if insn_bytes is None:
-                    assembled_bytes = None
-                    break
-                assembled_bytes += insn_bytes
-
-                if len(assembled_bytes) > max_size:
-                    assembled_bytes = None
-                    break
-
-            if assembled_bytes and len(assembled_bytes) <= max_size:
-                if len(assembled_bytes) < max_size:
-                    padding_size = max_size - len(assembled_bytes)
-                    assembled_bytes += self._generate_nop_sequence(padding_size, arch_family, bits)
-                return assembled_bytes
-
-        return self._generate_nop_sequence(max_size, arch_family, bits)
+        return generate_dead_code_for_size(binary, max_size, func_addr, self.code_complexity)
 
     def _generate_nop_sequence(self, size: int, arch: str, bits: int) -> bytes:
-        """
-        Generate a NOP sequence of the specified size.
-
-        Uses architecture-appropriate NOP instructions via shared utility.
-
-        Args:
-            size: Number of bytes
-            arch: Architecture (x86, arm, etc.)
-            bits: Bit width (32 or 64)
-
-        Returns:
-            NOP bytes
-        """
         return generate_nop_sequence(arch, bits, size)
 
     def _generate_dead_code(self, binary: Any) -> list[str]:
-        """
-        Generate dead code based on complexity setting.
-
-        Uses the shared dead code generation utility.
-
-        Args:
-            binary: Any instance
-
-        Returns:
-            List of assembly instructions (without labels/directives for assembly)
-        """
-        arch_family, bits = binary.get_arch_family()
-        return generate_dead_code_for_arch(arch_family, bits, self.code_complexity)
+        return generate_dead_code(binary, self.code_complexity)
