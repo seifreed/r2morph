@@ -189,6 +189,8 @@ REPORTING_MODULES = [
     "r2morph.analysis.invariant_models",
     "r2morph.analysis.pattern_preservation_models",
     "r2morph.analysis.pattern_preservation_detection",
+    "r2morph.analysis.exception_models",
+    "r2morph.analysis.exception_reader",
     "r2morph.analysis.switch_table_models",
     "r2morph.analysis.critical_nodes_models",
     "r2morph.analysis.abi_models",

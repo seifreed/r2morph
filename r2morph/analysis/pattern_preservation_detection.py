@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from r2morph.analysis.exception import ExceptionInfoReader
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.analysis.pattern_preservation_models import Criticality, PatternType, PreservedPattern
 from r2morph.analysis.switch_table import SwitchTableAnalyzer
 
