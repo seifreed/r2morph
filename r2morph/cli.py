@@ -17,6 +17,11 @@ from rich.console import Console
 from rich.table import Table
 
 from r2morph import __version__
+from r2morph.cli_cache_output import (
+    build_cache_cleared_message,
+    build_cache_statistics_lines,
+    build_cache_usage_hint,
+)
 from r2morph.cli_workflows import _build_runtime_validator, _run_morph_workflow, _run_simple_mode
 from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT
@@ -730,24 +735,19 @@ def cache(
 
     if stats:
         statistics = cache_instance.get_stats()
-        console.print("[cyan]Cache Statistics:[/cyan]")
-        console.print(f"  Hits: {statistics.hits}")
-        console.print(f"  Misses: {statistics.misses}")
-        console.print(f"  Hit Rate: {statistics.hit_rate:.2%}")
-        console.print(f"  Entries: {statistics.entry_count}")
-        console.print(f"  Size: {statistics.total_size_bytes / (1024 * 1024):.2f} MB")
-        if statistics.oldest_entry:
-            console.print(f"  Oldest Entry: {statistics.oldest_entry.isoformat()}")
-        if statistics.newest_entry:
-            console.print(f"  Newest Entry: {statistics.newest_entry.isoformat()}")
+        for line in build_cache_statistics_lines(statistics):
+            if line == "Cache Statistics:":
+                console.print(f"[cyan]{line}[/cyan]")
+            else:
+                console.print(line)
         return
 
     if clear:
         cleared = cache_instance.clear()
-        console.print(f"[green]Cleared {cleared} cache entries[/green]")
+        console.print(f"[green]{build_cache_cleared_message(cleared)}[/green]")
         return
 
-    console.print("[yellow]Specify --clear or --stats[/yellow]")
+    console.print(f"[yellow]{build_cache_usage_hint()}[/yellow]")
     raise typer.Exit(1)
 
 
