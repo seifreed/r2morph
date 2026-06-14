@@ -9,7 +9,7 @@ from r2morph.reporting.report_view_details import _assemble_report_views
 from r2morph.reporting.report_view_gate_views import build_gate_views
 from r2morph.reporting.report_view_pass_views import build_pass_views
 from r2morph.reporting.report_view_projections import _build_lookup_maps
-from r2morph.reporting.report_view_summary import _build_summary_views
+from r2morph.reporting.report_view_summary_payload import build_summary_payload
 
 
 def _build_mismatch_views(
@@ -137,7 +137,7 @@ def build_report_views(
         "uncovered": list(pass_coverage_buckets.get("uncovered", [])),
     }
 
-    summary = _build_summary_views(
+    summary = build_summary_payload(
         normalized_pass_results=normalized_pass_results,
         symbolic_severity_by_pass=symbolic_severity_by_pass,
         gate_failure_priority=gate_failure_priority,
