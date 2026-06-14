@@ -36,6 +36,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_context_compat",
     "r2morph.reporting.report_context_mapping",
     "r2morph.reporting.report_orchestrator_context",
+    "r2morph.reporting.report_orchestrator_args",
     "r2morph.reporting.report_filter_messages",
     "r2morph.reporting.report_command_io",
     "r2morph.reporting.report_mismatch_state",
