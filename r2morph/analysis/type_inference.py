@@ -99,17 +99,17 @@ from r2morph.analysis.type_inference_queries import (
     get_struct_layout as _get_struct_layout_impl,
 )
 from r2morph.analysis.type_inference_queries import (
-    get_value_range as _get_value_range_impl,
-)
-from r2morph.analysis.type_inference_queries import (
     infer_access_type as _infer_access_type_impl,
-)
-from r2morph.analysis.type_inference_queries import (
-    is_safe_to_mutate as _is_safe_to_mutate_impl,
 )
 from r2morph.analysis.type_inference_types import PrimitiveType, StructField, TypeCategory, TypeInfo
 from r2morph.analysis.type_inference_types import (
     TypeInferenceResult as _TypeInferenceResult,
+)
+from r2morph.analysis.type_inference_value_analysis import (
+    get_value_range as _get_value_range_impl,
+)
+from r2morph.analysis.type_inference_value_analysis import (
+    is_safe_to_mutate as _is_safe_to_mutate_impl,
 )
 from r2morph.core.binary import Binary
 
