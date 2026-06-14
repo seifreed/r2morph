@@ -11,6 +11,7 @@ from __future__ import annotations
 from r2morph.core import engine as engine_mod
 from r2morph.core import report_helpers as helpers_mod
 from r2morph.core import report_helpers_adjustment as adjustment_mod
+from r2morph.core import report_helpers_evidence_summary as evidence_summary_mod
 from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
 from r2morph.core import report_helpers_triage as triage_mod
@@ -90,6 +91,14 @@ def test_canonical_adjustment_module_defines_adjustment_helpers() -> None:
 def test_canonical_risk_module_defines_risk_helpers() -> None:
     for name in RISK_NAMES:
         assert hasattr(risk_mod, name), f"core.report_helpers_risk missing {name}"
+
+
+def test_canonical_evidence_summary_module_defines_evidence_helpers() -> None:
+    for name in ("_summarize_pass_evidence", "_build_pass_region_evidence_map"):
+        assert hasattr(
+            evidence_summary_mod,
+            name,
+        ), f"core.report_helpers_evidence_summary missing {name}"
 
 
 def test_engine_reexports_are_the_same_objects() -> None:

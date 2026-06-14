@@ -19,28 +19,37 @@ from r2morph.core.engine_output import save_binary as save_binary_output
 from r2morph.core.engine_output import save_report as save_report_output
 from r2morph.core.engine_run import run as run_lifecycle
 from r2morph.core.engine_wiring import build_engine_wiring
-from r2morph.core.report_helpers_evidence import (
-    _build_evidence_summary_for_pass,  # noqa: F401
-    _summarize_diff_digest,  # noqa: F401
-    _summarize_pass_evidence,  # noqa: F401
-    _summarize_pass_timings,  # noqa: F401
-    _summarize_structural_evidence,  # noqa: F401
-)
-from r2morph.core.report_helpers_projection import _build_pass_region_evidence_map  # noqa: F401
-from r2morph.core.report_helpers_risk import (
-    _summarize_pass_coverage_buckets,  # noqa: F401
-    _summarize_pass_risk_buckets,  # noqa: F401
-)
-from r2morph.core.report_helpers_symbolic import (
-    _build_symbolic_summary_for_pass,  # noqa: F401
-    _summarize_symbolic_coverage_by_pass,  # noqa: F401
-    _summarize_symbolic_issue_passes,  # noqa: F401
-    _summarize_symbolic_severity_by_pass,  # noqa: F401
-)
-from r2morph.core.report_helpers_validation import (
-    _build_pass_validation_context,  # noqa: F401
-    _enrich_validation_policy,  # noqa: F401
-    _summarize_degradation_roles,  # noqa: F401
+from r2morph.core.report_helpers import (  # noqa: F401
+    REPORT_SCHEMA_VERSION,
+    _build_discarded_mutation_priority,
+    _build_evidence_summary_for_pass,
+    _build_observable_mismatch_map,
+    _build_observable_mismatch_priority,
+    _build_pass_capability_summary_map,
+    _build_pass_region_evidence_map,
+    _build_pass_triage_map,
+    _build_pass_validation_context,
+    _build_symbolic_summary_for_pass,
+    _build_validation_role_map,
+    _enrich_validation_policy,
+    _summarize_degradation_roles,
+    _summarize_diff_digest,
+    _summarize_discarded_mutations,
+    _summarize_observable_mismatches_by_pass,
+    _summarize_pass_capability_rows,
+    _summarize_pass_evidence,
+    _summarize_pass_evidence_compact,
+    _summarize_pass_risk_buckets,
+    _summarize_pass_timings,
+    _summarize_structural_evidence,
+    _summarize_symbolic_coverage_by_pass,
+    _summarize_symbolic_issue_passes,
+    _summarize_symbolic_overview,
+    _summarize_symbolic_severity_by_pass,
+    _summarize_symbolic_statuses,
+    _summarize_validation_adjustment_rows,
+    _summarize_validation_adjustments,
+    _summarize_validation_role_rows,
 )
 from r2morph.protocols import (
     BinarySignerProtocol,

@@ -83,6 +83,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.summary_aggregator_summary",
     "r2morph.reporting.summary_aggregator_details",
     "r2morph.reporting.summary_aggregator_overview",
+    "r2morph.core.report_helpers_evidence_summary",
     "r2morph.validation.binary_region_comparator_results",
     "r2morph.validation.binary_region_comparator_observables",
     "r2morph.cli_workflow_validation_policy",
