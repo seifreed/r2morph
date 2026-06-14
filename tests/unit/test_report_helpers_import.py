@@ -14,6 +14,7 @@ from r2morph.core import report_helpers_adjustment as adjustment_mod
 from r2morph.core import report_helpers_evidence_summary as evidence_summary_mod
 from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
+from r2morph.core import report_helpers_symbolic_summary as symbolic_summary_mod
 from r2morph.core import report_helpers_triage as triage_mod
 
 REEXPORTED_NAMES = [
@@ -22,9 +23,9 @@ REEXPORTED_NAMES = [
     "_build_evidence_summary_for_pass",
     "_build_observable_mismatch_map",
     "_build_observable_mismatch_priority",
+    "_build_symbolic_summary_for_pass",
     "_build_pass_triage_map",
     "_build_pass_validation_context",
-    "_build_symbolic_summary_for_pass",
     "_build_validation_role_map",
     "_enrich_validation_policy",
     "_summarize_degradation_roles",
@@ -101,6 +102,21 @@ def test_canonical_evidence_summary_module_defines_evidence_helpers() -> None:
         ), f"core.report_helpers_evidence_summary missing {name}"
 
 
+def test_canonical_symbolic_summary_module_defines_symbolic_helpers() -> None:
+    for name in (
+        "_build_symbolic_summary_for_pass",
+        "_summarize_symbolic_coverage_by_pass",
+        "_summarize_symbolic_issue_passes",
+        "_summarize_symbolic_overview",
+        "_summarize_symbolic_severity_by_pass",
+        "_summarize_symbolic_statuses",
+    ):
+        assert hasattr(
+            symbolic_summary_mod,
+            name,
+        ), f"core.report_helpers_symbolic_summary missing {name}"
+
+
 def test_engine_reexports_are_the_same_objects() -> None:
     for name in REEXPORTED_NAMES:
         assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
@@ -151,6 +167,24 @@ def test_risk_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             risk_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_risk.{name}"
+
+
+def test_symbolic_helpers_are_reexported_from_facade() -> None:
+    for name in (
+        "_build_symbolic_summary_for_pass",
+        "_summarize_symbolic_coverage_by_pass",
+        "_summarize_symbolic_issue_passes",
+        "_summarize_symbolic_overview",
+        "_summarize_symbolic_severity_by_pass",
+        "_summarize_symbolic_statuses",
+    ):
+        assert getattr(helpers_mod, name) is getattr(
+            symbolic_summary_mod, name
+        ), f"core.report_helpers.{name} diverged from core.report_helpers_symbolic_summary.{name}"
+        assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
+        assert getattr(engine_mod, name) is getattr(
+            symbolic_summary_mod, name
+        ), f"core.engine.{name} diverged from core.report_helpers_symbolic_summary.{name}"
 
 
 def test_report_schema_version_value() -> None:
