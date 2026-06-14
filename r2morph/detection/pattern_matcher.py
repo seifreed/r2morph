@@ -11,6 +11,13 @@ import logging
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
+from r2morph.detection.pattern_catalogs import (
+    ANTI_ANALYSIS_REGISTRY,
+    ANTI_DEBUG_APIS,
+    DEBUGGER_WINDOWS,
+    VM_ARTIFACTS,
+)
+
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
 
@@ -39,76 +46,10 @@ class PatternMatcher:
     artifacts, and other suspicious patterns.
     """
 
-    # Anti-debug API patterns
-    ANTI_DEBUG_APIS = [
-        "IsDebuggerPresent",
-        "CheckRemoteDebuggerPresent",
-        "NtQueryInformationProcess",
-        "OutputDebugString",
-        "GetTickCount",
-        "QueryPerformanceCounter",
-        "NtSetInformationThread",
-        "CloseHandle",
-        "UnhandledExceptionFilter",
-        "SetUnhandledExceptionFilter",
-        "RaiseException",
-        "NtQuerySystemInformation",
-        "FindWindow",
-        "EnumWindows",
-        "GetForegroundWindow",
-        "NtClose",
-        "CreateToolhelp32Snapshot",
-        "Process32First",
-        "Process32Next",
-    ]
-
-    # VM/Sandbox detection artifacts
-    VM_ARTIFACTS = [
-        "vmware",
-        "virtualbox",
-        "vbox",
-        "qemu",
-        "xen",
-        "sandboxie",
-        "wine",
-        "bochs",
-        "parallels",
-        "vboxservice",
-        "vmtools",
-        "vmmouse",
-        "vmhgfs",
-        "vboxguest",
-        "sbiedll",
-        "dbghelp",
-        "api_log",
-        "dir_watch",
-        "pstorec",
-        "vmguestnativeprocessor",
-        "hyper-v",
-        "virtual hd",
-        "qemuvga",
-    ]
-
-    # Debugger window class names
-    DEBUGGER_WINDOWS = [
-        "OLLYDBG",
-        "WinDbgFrameClass",
-        "ID",  # IDA
-        "Zeta Debugger",
-        "Rock Debugger",
-        "ObsidianGUI",
-        "x64dbg",
-        "x32dbg",
-    ]
-
-    # Anti-analysis registry keys
-    ANTI_ANALYSIS_REGISTRY = [
-        "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\Oracle VM VirtualBox",
-        "SOFTWARE\\Oracle\\VirtualBox Guest Additions",
-        "SOFTWARE\\VMware, Inc.\\VMware Tools",
-        "SYSTEM\\ControlSet001\\Services\\Disk\\Enum",
-        "HARDWARE\\DESCRIPTION\\System",
-    ]
+    ANTI_DEBUG_APIS = ANTI_DEBUG_APIS
+    VM_ARTIFACTS = VM_ARTIFACTS
+    DEBUGGER_WINDOWS = DEBUGGER_WINDOWS
+    ANTI_ANALYSIS_REGISTRY = ANTI_ANALYSIS_REGISTRY
 
     def __init__(self, binary: Binary):
         """

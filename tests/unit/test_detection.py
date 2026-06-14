@@ -15,6 +15,7 @@ from r2morph.detection.obfuscation_detector import (
     ObfuscationType,
 )
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
+from r2morph.detection.pattern_catalogs import ANTI_DEBUG_APIS, VM_ARTIFACTS
 from r2morph.detection.pattern_matcher import PatternMatcher, PatternMatchResult
 
 
@@ -98,12 +99,14 @@ class TestPatternMatcher:
         matcher = PatternMatcher(binary)
         assert hasattr(matcher, "ANTI_DEBUG_APIS")
         assert "IsDebuggerPresent" in matcher.ANTI_DEBUG_APIS
+        assert matcher.ANTI_DEBUG_APIS is ANTI_DEBUG_APIS
 
     def test_matcher_has_vm_artifacts(self):
         binary = Mock()
         matcher = PatternMatcher(binary)
         assert hasattr(matcher, "VM_ARTIFACTS")
         assert "vmware" in matcher.VM_ARTIFACTS
+        assert matcher.VM_ARTIFACTS is VM_ARTIFACTS
 
 
 class TestEntropyAnalyzer:
