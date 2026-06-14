@@ -8,8 +8,6 @@ based on binary hash and analysis parameters.
 
 from __future__ import annotations
 
-import hashlib
-import json
 import logging
 import pickle
 import threading
@@ -22,6 +20,7 @@ from r2morph.core.analysis_cache_cleanup import (
     enforce_size_limit,
 )
 from r2morph.core.analysis_cache_entries import iter_cache_entries, load_cache_entry
+from r2morph.core.analysis_cache_keys import build_cache_key, get_entry_path, hash_binary, hash_options
 from r2morph.core.analysis_cache_models import CacheEntry, CacheKey, CacheStats
 from r2morph.core.analysis_cache_models import compute_binary_hash as _compute_binary_hash
 from r2morph.core.analysis_cache_models import compute_partial_hash as _compute_partial_hash
@@ -71,14 +70,13 @@ class AnalysisCache:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def _hash_binary(self, binary_data: bytes) -> str:
-        return hashlib.sha256(binary_data).hexdigest()[:64]
+        return hash_binary(binary_data)
 
     def _hash_options(self, options: dict[str, Any]) -> str:
-        opts_str = json.dumps(options, sort_keys=True)
-        return hashlib.sha256(opts_str.encode()).hexdigest()[:16]
+        return hash_options(options)
 
     def _get_entry_path(self, key: CacheKey) -> Path:
-        return self.cache_dir / key.to_path()
+        return get_entry_path(self.cache_dir, key)
 
     def get(
         self,
@@ -86,12 +84,7 @@ class AnalysisCache:
         analysis_type: str,
         options: dict[str, Any] | None = None,
     ) -> Any | None:
-        options = options or {}
-        key = CacheKey(
-            binary_hash=self._hash_binary(binary_data),
-            analysis_type=analysis_type,
-            options_hash=self._hash_options(options),
-        )
+        key = build_cache_key(binary_data, analysis_type, options)
 
         entry_path = self._get_entry_path(key)
 
@@ -121,14 +114,9 @@ class AnalysisCache:
         options: dict[str, Any] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        options = options or {}
         metadata = metadata or {}
 
-        key = CacheKey(
-            binary_hash=self._hash_binary(binary_data),
-            analysis_type=analysis_type,
-            options_hash=self._hash_options(options),
-        )
+        key = build_cache_key(binary_data, analysis_type, options)
 
         try:
             pickled = pickle.dumps(result)
