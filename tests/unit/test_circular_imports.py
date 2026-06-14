@@ -179,6 +179,7 @@ REPORTING_MODULES = [
     "r2morph.core.report_helpers_adjustment",
     "r2morph.core.report_helpers_risk",
     "r2morph.core.report_helpers_triage",
+    "r2morph.reporting.gate_failure_summary",
     "r2morph.analysis.pointer_analysis",
     "r2morph.analysis.call_graph_cache",
     "r2morph.analysis.call_graph_models",
