@@ -4,7 +4,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from r2morph.core.analysis_cache_entries import iter_cache_entries, load_cache_entry
+from r2morph.core.analysis_cache_entries import evict_cache_entry, iter_cache_entries, load_cache_entry
 from r2morph.core.analysis_cache_keys import get_entry_path
 from r2morph.core.analysis_cache_models import CacheKey, CacheStats
 
@@ -23,11 +23,7 @@ def invalidate_entries(
     for entry_path, entry in iter_cache_entries(cache_dir):
         if entry.key.binary_hash == binary_hash:
             if analysis_type is None or entry.key.analysis_type == analysis_type:
-                entry_path.unlink(missing_ok=True)
-                with stats_lock:
-                    stats.total_size_bytes -= entry.size_bytes
-                    stats.entry_count -= 1
-                    stats.evictions += 1
+                evict_cache_entry(entry_path, entry, stats, stats_lock)
                 removed += 1
 
     return removed
@@ -57,11 +53,7 @@ def invalidate_region_entries(
                 break
 
         if overlaps:
-            entry_path.unlink(missing_ok=True)
-            with stats_lock:
-                stats.total_size_bytes -= entry.size_bytes
-                stats.entry_count -= 1
-                stats.evictions += 1
+            evict_cache_entry(entry_path, entry, stats, stats_lock)
             removed += 1
 
     return removed

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from r2morph.core.analysis_cache_entries import evict_cache_entry
 from r2morph.core.analysis_cache_models import CacheEntry, CacheStats
 from r2morph.core.analysis_cache_storage import _safe_pickle_load
 
@@ -31,11 +32,7 @@ def cleanup_expired_entries(
                 entry: CacheEntry = _safe_pickle_load(f)
 
             if entry.created_at < cutoff:
-                entry_path.unlink(missing_ok=True)
-                with stats_lock:
-                    stats.total_size_bytes -= entry.size_bytes
-                    stats.entry_count -= 1
-                    stats.evictions += 1
+                evict_cache_entry(entry_path, entry, stats, stats_lock)
                 removed += 1
                 logger.debug("Removed expired cache entry: %s", entry_path)
         except (pickle.PickleError, OSError):
@@ -65,11 +62,7 @@ def cleanup_low_access_entries(
                 entry: CacheEntry = _safe_pickle_load(f)
 
             if entry.created_at < cutoff and entry.access_count < min_access_count:
-                entry_path.unlink(missing_ok=True)
-                with stats_lock:
-                    stats.total_size_bytes -= entry.size_bytes
-                    stats.entry_count -= 1
-                    stats.evictions += 1
+                evict_cache_entry(entry_path, entry, stats, stats_lock)
                 removed += 1
                 logger.debug("Removed low-access cache entry: %s", entry_path)
         except (pickle.PickleError, OSError):
