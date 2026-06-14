@@ -86,7 +86,10 @@ LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     "SARIFToolComponent": ("r2morph.reporting.sarif_schema", "SARIFToolComponent"),
     "EvidenceAggregator": ("r2morph.reporting.summary_aggregator_evidence", "EvidenceAggregator"),
     "SummaryAggregator": ("r2morph.reporting.summary_aggregator_summary", "SummaryAggregator"),
-    "SymbolicAggregator": ("r2morph.reporting.summary_aggregator_symbolic", "SymbolicAggregator"),
+    "SymbolicAggregator": (
+        "r2morph.reporting.summary_aggregator_symbolic_metrics",
+        "SymbolicAggregator",
+    ),
 }
 
 __all__ = sorted(LAZY_EXPORTS) + sorted(LAZY_RENDERING_NAMES)
