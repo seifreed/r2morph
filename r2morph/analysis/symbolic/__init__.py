@@ -12,6 +12,7 @@ from typing import Any as _Any
 from r2morph.analysis.symbolic.angr_bridge import AngrBridge
 from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver
 from r2morph.analysis.symbolic.constraint_solver_models import ConstraintType, MBAExpression, SolverResult
+from r2morph.analysis.symbolic.constraint_solver_parsing import MAX_CONSTRAINT_AST_DEPTH
 from r2morph.analysis.symbolic.path_explorer import PathExplorer
 from r2morph.analysis.symbolic.state_manager import StateManager
 
@@ -30,6 +31,7 @@ __all__ = [
     "AngrBridge",
     "ConstraintSolver",
     "ConstraintType",
+    "MAX_CONSTRAINT_AST_DEPTH",
     "MBAExpression",
     "PathExplorer",
     "SolverResult",

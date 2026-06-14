@@ -9,7 +9,8 @@ import logging
 import time
 from typing import Any
 
-from r2morph.analysis.symbolic import constraint_solver_models as _constraint_solver_models
+from . import constraint_solver_models as _constraint_solver_models
+from . import constraint_solver_parsing as _constraint_solver_parsing
 
 _z3: Any = None
 _angr: Any = None
@@ -39,13 +40,9 @@ claripy = _claripy
 ConstraintType = _constraint_solver_models.ConstraintType
 SolverResult = _constraint_solver_models.SolverResult
 MBAExpression = _constraint_solver_models.MBAExpression
+MAX_CONSTRAINT_AST_DEPTH = _constraint_solver_parsing.MAX_CONSTRAINT_AST_DEPTH
 
 logger = logging.getLogger(__name__)
-
-# Bound recursion when translating a parsed expression tree into Z3 so that an
-# adversarially nested expression from a sample cannot exhaust the stack. 256 is
-# far above any real constraint yet well under Python's default recursion limit.
-MAX_CONSTRAINT_AST_DEPTH = 256
 
 
 class ConstraintSolver:
@@ -126,71 +123,10 @@ class ConstraintSolver:
             return SolverResult(satisfiable=False, solving_time=time.time() - start_time, solver_used="z3")
 
     def _convert_angr_to_z3(self, constraints: list[Any]) -> list[Any]:
-        """
-        Convert angr/claripy constraints to Z3 format.
-
-        Args:
-            constraints: Angr constraints
-
-        Returns:
-            List of Z3 constraints
-        """
-        z3_constraints: list[Any] = []
-
-        if not Z3_AVAILABLE:
-            return z3_constraints
-
-        try:
-            for constraint in constraints:
-                # This is a simplified conversion - real implementation would
-                # need comprehensive constraint type handling
-                if isinstance(constraint, z3.ExprRef):
-                    z3_constraints.append(constraint)
-                elif hasattr(constraint, "to_z3"):
-                    z3_constraints.append(constraint.to_z3())
-                else:
-                    # Fallback: try to extract constraint information
-                    logger.debug(f"Could not convert constraint: {constraint}")
-
-        except Exception as e:
-            logger.debug(f"Error converting constraints: {e}")
-
-        return z3_constraints
+        return _constraint_solver_parsing.convert_angr_to_z3(constraints, z3)
 
     def _extract_model(self, z3_model: Any) -> dict[str, Any]:
-        """
-        Extract model values from Z3 solution.
-
-        Args:
-            z3_model: Z3 model
-
-        Returns:
-            Dictionary of variable assignments
-        """
-        model: dict[str, Any] = {}
-
-        if not Z3_AVAILABLE or z3_model is None:
-            return model
-
-        try:
-            for decl in z3_model:
-                var_name = str(decl)
-                value = z3_model[decl]
-
-                # Convert Z3 values to Python values
-                if z3.is_int_value(value):
-                    model[var_name] = value.as_long()
-                elif z3.is_bv_value(value):
-                    model[var_name] = value.as_long()
-                elif z3.is_bool(value):
-                    model[var_name] = z3.is_true(value)
-                else:
-                    model[var_name] = str(value)
-
-        except Exception as e:
-            logger.debug(f"Error extracting model: {e}")
-
-        return model
+        return _constraint_solver_parsing.extract_model(z3_model, z3)
 
     def detect_opaque_predicates(self, branch_constraints: list[Any]) -> list[dict[str, Any]]:
         """
@@ -268,19 +204,7 @@ class ConstraintSolver:
         return False
 
     def _convert_single_constraint(self, constraint: Any) -> Any | None:
-        """Convert single constraint to Z3 format."""
-        if not Z3_AVAILABLE:
-            return None
-        try:
-            if isinstance(constraint, bool):
-                return z3.BoolVal(constraint)
-            if isinstance(constraint, z3.ExprRef):
-                return constraint
-            if hasattr(constraint, "to_z3"):
-                return constraint.to_z3()
-        except Exception as e:
-            logger.debug(f"Error converting single constraint: {e}")
-        return None
+        return _constraint_solver_parsing.convert_single_constraint(constraint, z3)
 
     def simplify_mba_expression(self, mba: MBAExpression) -> SolverResult:
         """
@@ -429,103 +353,7 @@ class ConstraintSolver:
             return SolverResult(satisfiable=False, solving_time=time.time() - start_time, solver_used="z3")
 
     def _parse_expression_to_z3(self, expr: str, z3_vars: dict[str, Any], bit_width: int = 64) -> Any | None:
-        """
-        Parse expression string to Z3 format.
-
-        Args:
-            expr: Expression string
-            z3_vars: Dictionary of Z3 variables
-
-        Returns:
-            Z3 expression or None
-        """
-        import ast
-
-        if not Z3_AVAILABLE:
-            return None
-
-        logger.debug(f"Parsing expression: {expr}")
-
-        def to_z3(node: ast.AST, _depth: int = 0) -> Any | None:
-            if _depth > MAX_CONSTRAINT_AST_DEPTH:
-                return None
-            if isinstance(node, ast.Name):
-                if node.id not in z3_vars:
-                    z3_vars[node.id] = z3.BitVec(node.id, bit_width)
-                return z3_vars[node.id]
-            if isinstance(node, ast.Constant):
-                if isinstance(node.value, bool):
-                    return z3.BoolVal(node.value)
-                if isinstance(node.value, int):
-                    return z3.BitVecVal(node.value, bit_width)
-                return None
-            if isinstance(node, ast.UnaryOp):
-                operand = to_z3(node.operand, _depth + 1)
-                if operand is None:
-                    return None
-                if isinstance(node.op, ast.Invert):
-                    return ~operand
-                if isinstance(node.op, ast.UAdd):
-                    return operand
-                if isinstance(node.op, ast.USub):
-                    return -operand
-            if isinstance(node, ast.BinOp):
-                left = to_z3(node.left, _depth + 1)
-                right = to_z3(node.right, _depth + 1)
-                if left is None or right is None:
-                    return None
-                if isinstance(node.op, ast.Add):
-                    return left + right
-                if isinstance(node.op, ast.Sub):
-                    return left - right
-                if isinstance(node.op, ast.Mult):
-                    return left * right
-                if isinstance(node.op, ast.BitAnd):
-                    return left & right
-                if isinstance(node.op, ast.BitOr):
-                    return left | right
-                if isinstance(node.op, ast.BitXor):
-                    return left ^ right
-                if isinstance(node.op, ast.LShift):
-                    return left << right
-                if isinstance(node.op, ast.RShift):
-                    return left >> right
-                if isinstance(node.op, ast.Mod):
-                    return left % right
-            if isinstance(node, ast.BoolOp):
-                values = [to_z3(value, _depth + 1) for value in node.values]
-                if any(value is None for value in values):
-                    return None
-                if isinstance(node.op, ast.And):
-                    return z3.And(*values)
-                if isinstance(node.op, ast.Or):
-                    return z3.Or(*values)
-            if isinstance(node, ast.Compare) and len(node.ops) == 1 and len(node.comparators) == 1:
-                left = to_z3(node.left, _depth + 1)
-                right = to_z3(node.comparators[0], _depth + 1)
-                if left is None or right is None:
-                    return None
-                op = node.ops[0]
-                if isinstance(op, ast.Eq):
-                    return left == right
-                if isinstance(op, ast.NotEq):
-                    return left != right
-                if isinstance(op, ast.Lt):
-                    return left < right
-                if isinstance(op, ast.LtE):
-                    return left <= right
-                if isinstance(op, ast.Gt):
-                    return left > right
-                if isinstance(op, ast.GtE):
-                    return left >= right
-            return None
-
-        try:
-            parsed = ast.parse(expr, mode="eval")
-            return to_z3(parsed.body)
-        except Exception as e:
-            logger.debug(f"Error parsing expression '{expr}': {e}")
-            return None
+        return _constraint_solver_parsing.parse_expression_to_z3(expr, z3_vars, z3, bit_width=bit_width)
 
     def get_solver_statistics(self) -> dict[str, Any]:
         """Get solver performance statistics."""
