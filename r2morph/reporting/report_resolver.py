@@ -5,13 +5,11 @@ Extracted from cli.py -- no logic changes.
 
 from typing import Any
 
-from r2morph.reporting.report_helpers import (
-    _select_report_mutations,
-    _summarize_symbolic_view_from_mutations,
-)
+from r2morph.reporting.report_helpers import _summarize_symbolic_view_from_mutations
 from r2morph.reporting.report_mismatch_state import (
     resolve_only_mismatches_state as _resolve_only_mismatches_state_impl,
 )
+from r2morph.reporting.report_mutation_selection import _select_report_mutations
 from r2morph.reporting.report_pass_resolution import resolve_only_pass_view
 from r2morph.reporting.report_rendering_sections import (
     _render_symbolic_sections as _render_symbolic_sections_impl,

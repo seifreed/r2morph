@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from r2morph.reporting.report_helpers import _select_report_mutations
+from r2morph.reporting.report_mutation_selection import _select_report_mutations
 from r2morph.reporting.report_pass_filters import resolve_pass_filter_sets as _resolve_pass_filter_sets
 from r2morph.reporting.report_state import resolve_mismatch_view as _resolve_mismatch_view
 
