@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.reporting.filtered_summary_discarded import _populate_filtered_summary_discarded_sections
-from r2morph.reporting.report_helpers import _summary_first, _visible_rows
+from r2morph.reporting.report_helpers import _summary_first, _visible_rows, _visible_rows_from_map
 
 
 def _populate_triage_and_results(
@@ -34,12 +34,9 @@ def _populate_triage_and_results(
             set(filtered_summary["passes"]),
         )
     elif summary_pass_triage_map:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_triage_rows"] = [
-            dict(row)
-            for pass_name, row in summary_pass_triage_map.items()
-            if not visible_passes or pass_name in visible_passes
-        ]
+        filtered_summary["pass_triage_rows"] = _visible_rows_from_map(
+            summary_pass_triage_map, set(filtered_summary["passes"])
+        )
     if summary_normalized_pass_results:
         filtered_summary["normalized_pass_results"] = _visible_rows(
             summary_normalized_pass_results,
@@ -63,12 +60,9 @@ def _populate_triage_and_results(
             dict(row) for row in capability_rows if not visible_passes or row.get("pass_name") in visible_passes
         ]
     elif summary_pass_capability_summary_map:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_capability_summary"] = [
-            dict(row)
-            for pass_name, row in summary_pass_capability_summary_map.items()
-            if not visible_passes or pass_name in visible_passes
-        ]
+        filtered_summary["pass_capability_summary"] = _visible_rows_from_map(
+            summary_pass_capability_summary_map, set(filtered_summary["passes"])
+        )
     elif summary_general_pass_rows:
         visible_passes = set(filtered_summary["passes"])
         filtered_summary["pass_capability_summary"] = [
@@ -89,12 +83,9 @@ def _populate_triage_and_results(
             dict(row) for row in validation_role_rows if not visible_passes or row.get("pass_name") in visible_passes
         ]
     elif summary_validation_role_map:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["validation_role_rows"] = [
-            dict(row)
-            for pass_name, row in summary_validation_role_map.items()
-            if not visible_passes or pass_name in visible_passes
-        ]
+        filtered_summary["validation_role_rows"] = _visible_rows_from_map(
+            summary_validation_role_map, set(filtered_summary["passes"])
+        )
 
     _populate_filtered_summary_discarded_sections(
         filtered_summary=filtered_summary,

@@ -50,6 +50,16 @@ def _visible_rows(
     return [dict(row) for row in rows if row.get("pass_name") and str(row.get("pass_name")) in visible_passes]
 
 
+def _visible_rows_from_map(
+    source_map: dict[str, Any],
+    visible_passes: set[str] | None = None,
+) -> list[dict[str, Any]]:
+    """Filter pass-keyed map rows by visible pass names, returning dict copies."""
+    if not visible_passes:
+        return [dict(row) for row in source_map.values()]
+    return [dict(row) for pass_name, row in source_map.items() if pass_name in visible_passes]
+
+
 def _normalized_pass_map(
     normalized_pass_results: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:

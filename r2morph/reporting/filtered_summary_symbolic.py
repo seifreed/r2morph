@@ -7,13 +7,7 @@ changes. Called only by the pass-section orchestrator; never call back into it.
 
 from typing import Any
 
-from r2morph.reporting.report_helpers import _sort_pass_evidence
-
-
-def _visible_rows_from_map(filtered_summary: dict[str, Any], source_map: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return dict-copied rows from a pass-keyed map, keeping only visible passes."""
-    visible_passes = set(filtered_summary["passes"])
-    return [dict(row) for pass_name, row in source_map.items() if not visible_passes or pass_name in visible_passes]
+from r2morph.reporting.report_helpers import _sort_pass_evidence, _visible_rows_from_map
 
 
 def _symbolic_issue_passes_from_by_pass(by_pass: dict[str, dict[str, int]]) -> list[dict[str, Any]]:
@@ -102,7 +96,9 @@ def _populate_symbolic_issue_passes(
             dict(row) for row in list(summary_general_symbolic.get("triage_rows", []))
         ]
     if not filtered_summary["symbolic_issue_passes"]:
-        filtered_summary["symbolic_issue_passes"] = _visible_rows_from_map(filtered_summary, summary_symbolic_issue_map)
+        filtered_summary["symbolic_issue_passes"] = _visible_rows_from_map(
+            summary_symbolic_issue_map, set(filtered_summary["passes"])
+        )
     if not filtered_summary["symbolic_issue_passes"]:
         filtered_summary["symbolic_issue_passes"] = [
             issue
@@ -126,7 +122,7 @@ def _populate_symbolic_coverage_and_severity(
     """Populate symbolic_coverage_by_pass and symbolic_severity_by_pass sections."""
     if not filtered_summary["symbolic_coverage_by_pass"]:
         filtered_summary["symbolic_coverage_by_pass"] = _visible_rows_from_map(
-            filtered_summary, summary_symbolic_coverage_map
+            summary_symbolic_coverage_map, set(filtered_summary["passes"])
         )
     if not filtered_summary["symbolic_coverage_by_pass"]:
         filtered_summary["symbolic_coverage_by_pass"] = [
@@ -139,7 +135,7 @@ def _populate_symbolic_coverage_and_severity(
 
     if not filtered_summary["symbolic_severity_by_pass"]:
         filtered_summary["symbolic_severity_by_pass"] = _visible_rows_from_map(
-            filtered_summary, summary_symbolic_severity_map
+            summary_symbolic_severity_map, set(filtered_summary["passes"])
         )
     if not filtered_summary["symbolic_severity_by_pass"]:
         filtered_summary["symbolic_severity_by_pass"] = [
@@ -189,7 +185,9 @@ def _populate_filtered_summary_symbolic_sections(
     filtered_summary["symbolic_severity_by_pass"] = list(summary.get("symbolic_severity_by_pass", []))
 
     if not filtered_summary["symbolic_issue_passes"]:
-        filtered_summary["symbolic_issue_passes"] = _visible_rows_from_map(filtered_summary, summary_symbolic_issue_map)
+        filtered_summary["symbolic_issue_passes"] = _visible_rows_from_map(
+            summary_symbolic_issue_map, set(filtered_summary["passes"])
+        )
     if not filtered_summary["symbolic_issue_passes"]:
         filtered_summary["symbolic_issue_passes"] = [
             issue
@@ -201,7 +199,7 @@ def _populate_filtered_summary_symbolic_sections(
 
     if not filtered_summary["symbolic_coverage_by_pass"]:
         filtered_summary["symbolic_coverage_by_pass"] = _visible_rows_from_map(
-            filtered_summary, summary_symbolic_coverage_map
+            summary_symbolic_coverage_map, set(filtered_summary["passes"])
         )
     if not filtered_summary["symbolic_coverage_by_pass"]:
         filtered_summary["symbolic_coverage_by_pass"] = [
@@ -214,7 +212,7 @@ def _populate_filtered_summary_symbolic_sections(
 
     if not filtered_summary["symbolic_severity_by_pass"]:
         filtered_summary["symbolic_severity_by_pass"] = _visible_rows_from_map(
-            filtered_summary, summary_symbolic_severity_map
+            summary_symbolic_severity_map, set(filtered_summary["passes"])
         )
     if not filtered_summary["symbolic_severity_by_pass"]:
         filtered_summary["symbolic_severity_by_pass"] = [
