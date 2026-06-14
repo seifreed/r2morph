@@ -26,8 +26,8 @@ from r2morph.detection.packer_signatures import (
 )
 from r2morph.detection.pattern_matcher import (
     PatternMatcher,
-    PatternMatchResult,
 )
+from r2morph.detection.pattern_matcher_models import PatternMatchResult
 from r2morph.detection.similarity_hasher import SimilarityHasher
 
 __all__ = [

@@ -8,7 +8,6 @@ and other anti-analysis techniques through string and pattern matching.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from r2morph.detection.pattern_catalogs import (
@@ -17,25 +16,12 @@ from r2morph.detection.pattern_catalogs import (
     DEBUGGER_WINDOWS,
     VM_ARTIFACTS,
 )
+from r2morph.detection.pattern_matcher_models import PatternMatchResult
 
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class PatternMatchResult:
-    """Result of pattern matching analysis."""
-
-    anti_debug_detected: bool = False
-    anti_debug_confidence: float = 0.0
-    anti_debug_apis: list[str] = field(default_factory=list)
-    anti_vm_detected: bool = False
-    anti_vm_confidence: float = 0.0
-    anti_vm_artifacts: list[str] = field(default_factory=list)
-    string_encryption_detected: bool = False
-    import_hiding_detected: bool = False
 
 
 class PatternMatcher:
