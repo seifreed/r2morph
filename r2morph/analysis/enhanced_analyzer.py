@@ -12,6 +12,7 @@ from typing import Any
 
 from rich.console import Console
 
+from r2morph.analysis.enhanced_analyzer_detection import run_detection as run_detection_impl
 from r2morph.analysis.enhanced_analyzer_lifecycle import cleanup_binary, ensure_dependencies, load_binary
 from r2morph.analysis.enhanced_analyzer_models import AnalysisOptions, AnalysisResults
 from r2morph.analysis.enhanced_analyzer_phases import (
@@ -69,21 +70,8 @@ class EnhancedAnalysisOrchestrator:
         self._binary = None
 
     def run_detection(self) -> Any:
-        """
-        Run obfuscation detection on the binary.
-
-        Returns:
-            ObfuscationAnalysisResult from the detector
-        """
-        from r2morph.detection import ObfuscationDetector
-
-        self._detector = ObfuscationDetector()
-        self.results.detection_result = self._detector.analyze_binary(self._binary)
-
-        self.results.custom_vm = self._detector.detect_custom_virtualizer(self._binary)
-        self.results.layers = self._detector.detect_code_packing_layers(self._binary)
-        self.results.metamorphic = self._detector.detect_metamorphic_engine(self._binary)
-
+        """Run obfuscation detection on the binary."""
+        self._detector, self.results.detection_result = run_detection_impl(self._binary, self.results)
         return self.results.detection_result
 
     def display_detection_results(self, verbose: bool = False) -> None:
