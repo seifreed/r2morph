@@ -15,6 +15,7 @@ from r2morph.analysis.symbolic.constraint_solver_models import ConstraintType, M
 from r2morph.analysis.symbolic.constraint_solver_parsing import MAX_CONSTRAINT_AST_DEPTH
 from r2morph.analysis.symbolic.path_explorer import PathExplorer
 from r2morph.analysis.symbolic.state_manager import StateManager
+from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
 
 _SyntiaFramework: _Any = None
 try:
@@ -34,8 +35,10 @@ __all__ = [
     "MAX_CONSTRAINT_AST_DEPTH",
     "MBAExpression",
     "PathExplorer",
+    "StateMetrics",
     "SolverResult",
     "StateManager",
+    "StateSchedulingStrategy",
     "SyntiaFramework",
     "SYNTIA_AVAILABLE",
 ]

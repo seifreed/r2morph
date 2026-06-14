@@ -9,9 +9,9 @@ for analyzing obfuscated binaries.
 import heapq
 import logging
 import time
-from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any
+
+from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
 
 _angr: Any = None
 try:
@@ -25,28 +25,6 @@ except ImportError:
 angr = _angr
 
 logger = logging.getLogger(__name__)
-
-
-class StateSchedulingStrategy(Enum):
-    """Strategies for scheduling state exploration."""
-
-    RANDOM = "random"
-    DEPTH_FIRST = "depth_first"
-    BREADTH_FIRST = "breadth_first"
-    COVERAGE_GUIDED = "coverage_guided"
-    PRIORITY_BASED = "priority_based"
-
-
-@dataclass
-class StateMetrics:
-    """Metrics for evaluating state quality."""
-
-    depth: int = 0
-    coverage_new_blocks: int = 0
-    constraint_complexity: float = 0.0
-    vm_likelihood_score: float = 0.0
-    last_access_time: float = field(default_factory=time.time)
-    priority_score: float = 0.0
 
 
 class StateManager:
