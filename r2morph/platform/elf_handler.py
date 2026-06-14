@@ -13,9 +13,10 @@ from typing import Any, BinaryIO
 from r2morph.platform.elf_handler_metadata import get_architecture as project_architecture
 from r2morph.platform.elf_handler_metadata import get_entry_point as project_entry_point
 from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
+from r2morph.platform.elf_handler_symbols import collect_symbol_tables
 from r2morph.platform.elf_handler_tables import collect_sections, collect_segments
 from r2morph.platform.elf_handler_validation import validate_elf_file_structure
-from r2morph.platform.elf_structs import ELF_MAGIC, MAX_SYMBOLS, SHF_EXECINSTR, _find_null_run
+from r2morph.platform.elf_structs import ELF_MAGIC, SHF_EXECINSTR, _find_null_run
 
 logger = logging.getLogger(__name__)
 
@@ -283,48 +284,7 @@ class ELFHandler:
             Dictionary with keys 'symtab' and 'dynsym', each containing a list
             of symbol dictionaries with name, value, size, type, and binding.
         """
-        try:
-            import lief
-        except ImportError:
-            logger.warning("lief library recommended for symbol table parsing. Install with: pip install lief")
-            return {"symtab": [], "dynsym": []}
-
-        try:
-            elf = lief.parse(str(self.binary_path))
-            if elf is None or not isinstance(elf, lief.ELF.Binary):
-                return {"symtab": [], "dynsym": []}
-
-            result = {
-                "symtab": self._collect_symbols(elf.symtab_symbols, label="symbol table"),
-                "dynsym": self._collect_symbols(elf.dynamic_symbols, label="dynamic symbol table"),
-            }
-            logger.debug(f"Found {len(result['symtab'])} static and {len(result['dynsym'])} dynamic symbols")
-            return result
-
-        except Exception as e:
-            logger.error(f"Failed to get symbol tables: {e}")
-            return {"symtab": [], "dynsym": []}
-
-    @staticmethod
-    def _collect_symbols(symbols: Any, *, label: str) -> list[dict[str, Any]]:
-        """Build symbol dicts from a lief symbol iterable, capped at MAX_SYMBOLS."""
-        collected: list[dict[str, Any]] = []
-        for sym in symbols:
-            if len(collected) >= MAX_SYMBOLS:
-                logger.warning(f"Truncating {label} at {MAX_SYMBOLS} entries")
-                break
-            collected.append(
-                {
-                    "name": sym.name,
-                    "value": sym.value,
-                    "size": sym.size,
-                    "type": str(sym.type).split(".")[-1],
-                    "binding": str(sym.binding).split(".")[-1],
-                    "visibility": str(sym.visibility).split(".")[-1],
-                    "shndx": sym.shndx,
-                }
-            )
-        return collected
+        return collect_symbol_tables(self.binary_path)
 
     def preserve_symbols(self) -> bool:
         """Preserve symbol table integrity after binary transformations.
