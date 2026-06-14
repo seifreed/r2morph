@@ -16,6 +16,7 @@ from r2morph.validation.semantic_models import (
     ValidationMode,
     ValidationResultStatus,
 )
+from r2morph.validation.semantic_report_summary import build_semantic_report_summary
 
 
 @dataclass
@@ -65,39 +66,7 @@ class SemanticValidationReport:
 
     def _compute_summary(self) -> None:
         """Compute summary statistics."""
-        passed = sum(1 for r in self.results if r.status == ValidationResultStatus.PASS)
-        failed = sum(1 for r in self.results if r.status == ValidationResultStatus.FAIL)
-        errors = sum(1 for r in self.results if r.status == ValidationResultStatus.ERROR)
-        skipped = sum(1 for r in self.results if r.status == ValidationResultStatus.SKIP)
-
-        total_violations = sum(len(r.violations) for r in self.results)
-        critical_violations = sum(
-            1 for r in self.results for v in r.violations if v.severity == InvariantSeverity.CRITICAL
-        )
-
-        by_pass: dict[str, dict[str, int]] = {}
-        for result in self.results:
-            pass_name = result.region.pass_name
-            if pass_name not in by_pass:
-                by_pass[pass_name] = {"passed": 0, "failed": 0, "total": 0}
-            by_pass[pass_name]["total"] += 1
-            if result.status == ValidationResultStatus.PASS:
-                by_pass[pass_name]["passed"] += 1
-            elif result.status == ValidationResultStatus.FAIL:
-                by_pass[pass_name]["failed"] += 1
-
-        self.summary = {
-            "total_mutations": len(self.results),
-            "passed": passed,
-            "failed": failed,
-            "errors": errors,
-            "skipped": skipped,
-            "total_violations": total_violations,
-            "critical_violations": critical_violations,
-            "pass_rate": passed / len(self.results) if self.results else 1.0,
-            "by_pass_type": by_pass,
-            "overall_status": "pass" if failed == 0 and errors == 0 else "fail",
-        }
+        self.summary = build_semantic_report_summary(self.results)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""

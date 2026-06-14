@@ -15,6 +15,7 @@ VALIDATION_MODULES = [
     "r2morph.analysis.invariant_models",
     "r2morph.validation.manager_models",
     "r2morph.validation.semantic_report_models",
+    "r2morph.validation.semantic_report_summary",
     "r2morph.validation.semantic_invariant_helpers",
     "r2morph.validation.semantic_invariant_catalogs",
     "r2morph.validation.benchmark",
