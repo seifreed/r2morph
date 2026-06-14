@@ -22,6 +22,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.nop_insertion_helpers",
     "r2morph.mutations.dead_code_injection_helpers",
     "r2morph.mutations.instruction_expansion_helpers",
+    "r2morph.mutations.block_reordering_helpers",
     "r2morph.mutations.polymorphic_engine_models",
     "r2morph.mutations.polymorphic_engine_noop",
     "r2morph.mutations.polymorphic_engine_setup",

@@ -14,6 +14,12 @@ from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.block_reordering_helpers import (
+    calculate_jump_cost,
+    can_reorder_function,
+    generate_reordering,
+    should_consider_function,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -52,64 +58,13 @@ class BlockReorderingPass(MutationPass):
         self.preserve_fallthrough = self.config.get("preserve_fallthrough", True)
 
     def _can_reorder_function(self, func: dict[str, Any], blocks: list[dict[str, Any]]) -> bool:
-        """
-        Check if a function is safe to reorder.
-
-        Args:
-            func: Function dictionary
-            blocks: Basic blocks in the function
-
-        Returns:
-            True if function can be safely reordered
-        """
-        if len(blocks) < 2:
-            return False
-
-        if func.get("size", 0) < 20:
-            return False
-
-        if len(blocks) > 50:
-            return False
-
-        return True
+        return can_reorder_function(func, blocks)
 
     def _generate_reordering(self, blocks: list[dict[str, Any]]) -> list[int]:
-        """
-        Generate a random reordering of basic blocks.
-
-        Args:
-            blocks: List of basic blocks
-
-        Returns:
-            List of indices representing new order
-        """
-        indices = list(range(len(blocks)))
-
-        if len(indices) > 1:
-            reorderable = indices[1:]
-            random.shuffle(reorderable)
-            return [indices[0]] + reorderable
-
-        return indices
+        return generate_reordering(blocks)
 
     def _calculate_jump_cost(self, original_order: list[int], new_order: list[int]) -> int:
-        """
-        Calculate how many jumps we need to add to maintain control flow.
-
-        Args:
-            original_order: Original block order
-            new_order: New block order
-
-        Returns:
-            Number of additional jumps needed
-        """
-        jumps_needed = 0
-
-        for i, block_idx in enumerate(new_order[:-1]):
-            if new_order[i + 1] != block_idx + 1:
-                jumps_needed += 1
-
-        return jumps_needed
+        return calculate_jump_cost(original_order, new_order)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -143,7 +98,7 @@ class BlockReorderingPass(MutationPass):
                 logger.debug(f"Failed to get blocks for {func.get('name')}: {e}")
                 continue
 
-            if not self._can_reorder_function(func, blocks):
+            if not should_consider_function(func, blocks):
                 continue
 
             functions_processed += 1
