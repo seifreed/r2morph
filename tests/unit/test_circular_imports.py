@@ -199,6 +199,7 @@ REPORTING_MODULES = [
     "r2morph.platform.macho_handler_repair",
     "r2morph.devirtualization.binary_rewriter_models",
     "r2morph.devirtualization.binary_rewriter_planning",
+    "r2morph.devirtualization.binary_rewriter_io",
     "r2morph.devirtualization.cfo_simplifier_detection",
     "r2morph.devirtualization.cfo_simplifier_models",
     "r2morph.devirtualization.cfo_simplifier_transforms",

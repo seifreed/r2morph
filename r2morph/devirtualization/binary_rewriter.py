@@ -15,9 +15,13 @@ Key Features:
 """
 
 import logging
-import os
 from typing import Any
 
+from r2morph.devirtualization.binary_rewriter_io import (
+    create_backup,
+    perform_integrity_checks,
+    write_output_binary,
+)
 from r2morph.devirtualization.binary_rewriter_models import (
     BinaryFormat,
     CodePatch,
@@ -439,29 +443,8 @@ class BinaryRewriter:
 
     def _write_output_binary(self, output_path: str) -> bool:
         """Write the modified binary to output file."""
-        try:
-            # Simplified implementation for binary output
-            # Advanced reconstruction for complex modifications
-
-            # Copy original and apply modifications
-            if hasattr(self.binary, "filepath"):
-                import shutil
-
-                shutil.copy2(self.binary.filepath, output_path)
-
-                # Add a simple marker to show it was processed
-                with open(output_path, "ab") as f:
-                    f.write(b"\x00\x00R2MORPH_REWRITTEN\x00\x00")
-
-                logger.info(f"Written rewritten binary to {output_path}")
-                return True
-            else:
-                logger.error("Original binary path not available")
-                return False
-
-        except Exception as e:
-            logger.error(f"Failed to write output binary: {e}")
-            return False
+        source_path = getattr(self.binary, "filepath", None)
+        return write_output_binary(source_path, output_path)
 
     def _perform_integrity_checks(self, output_path: str) -> dict[str, bool]:
         """Perform integrity checks on the rewritten binary.
@@ -476,33 +459,7 @@ class BinaryRewriter:
         directories/sections are wired up. Consumers must treat a
         ``False`` value as "not verified", not "definitely broken".
         """
-        checks = {
-            "file_exists": False,
-            "valid_pe_header": False,
-            "imports_intact": False,
-            "exports_intact": False,
-            "entry_point_valid": False,
-        }
-
-        try:
-            checks["file_exists"] = os.path.exists(output_path)
-
-            if checks["file_exists"]:
-                with open(output_path, "rb") as f:
-                    header = f.read(64)
-
-                if self.binary_format == BinaryFormat.PE:
-                    checks["valid_pe_header"] = header.startswith(b"MZ")
-                elif self.binary_format == BinaryFormat.ELF:
-                    checks["valid_pe_header"] = header.startswith(b"\x7fELF")
-                else:
-                    # No magic-byte check available for this format yet.
-                    checks["valid_pe_header"] = True
-
-        except OSError as e:
-            logger.error("Integrity check I/O failure for %s: %s", output_path, e)
-
-        return checks
+        return perform_integrity_checks(self.binary_format, output_path)
 
     def _get_bytes_at_address(self, address: int, size: int) -> bytes:
         """Read the actual bytes at an address.
@@ -577,16 +534,7 @@ class BinaryRewriter:
 
     def _create_backup(self) -> None:
         """Create backup of original binary."""
-        try:
-            if hasattr(self.binary, "filepath"):
-                backup_path = self.binary.filepath + ".backup"
-                import shutil
-
-                shutil.copy2(self.binary.filepath, backup_path)
-                logger.info(f"Created backup at {backup_path}")
-
-        except Exception as e:
-            logger.warning(f"Failed to create backup: {e}")
+        create_backup(getattr(self.binary, "filepath", None))
 
     def _update_pe_metadata(self) -> None:
         """Update PE-specific metadata."""
