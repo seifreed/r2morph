@@ -20,8 +20,12 @@ from r2morph.analysis.symbolic.syntia_analysis_helpers import (
     generate_equivalent_native_code,
     synthesize_handler_semantics,
 )
+from r2morph.analysis.symbolic.syntia_equivalence import (
+    check_semantic_equivalence as check_semantic_equivalence_impl,
+)
 from r2morph.analysis.symbolic.syntia_equivalence_helpers import (
     check_mba_equivalence,
+    normalize_expression,
     synthesis_equivalence_check,
 )
 from r2morph.analysis.symbolic.syntia_handler_analysis import (
@@ -255,41 +259,10 @@ class SyntiaFramework:
         return apply_mba_simplification_rules(expression, variables)
 
     def check_semantic_equivalence(self, expr1: str, expr2: str, variables: set[str]) -> float:
-        """
-        Check if two expressions are semantically equivalent.
-
-        Uses pattern matching and known identities to determine equivalence
-        probability. Returns confidence score between 0 and 1.
-
-        Args:
-            expr1: First expression
-            expr2: Second expression
-            variables: Set of variables in expressions
-
-        Returns:
-            Confidence score for equivalence (0-1)
-        """
-        if expr1.strip() == expr2.strip():
-            return 1.0
-
-        expr1_normalized = self._normalize_expression(expr1)
-        expr2_normalized = self._normalize_expression(expr2)
-
-        if expr1_normalized == expr2_normalized:
-            return 1.0
-
-        # Check known MBA equivalences
-        equivalence_confidence = self._check_mba_equivalence(expr1_normalized, expr2_normalized)
-        if equivalence_confidence > 0:
-            return equivalence_confidence
-
-        # Try synthesis-based equivalence checking
-        return self._synthesis_equivalence_check(expr1_normalized, expr2_normalized, variables)
+        return check_semantic_equivalence_impl(expr1, expr2, variables, self._evaluate_expression)
 
     def _normalize_expression(self, expression: str) -> str:
         """Normalize an expression for comparison."""
-        from r2morph.analysis.symbolic.syntia_equivalence_helpers import normalize_expression
-
         return normalize_expression(expression)
 
     def _check_mba_equivalence(self, expr1: str, expr2: str) -> float:
