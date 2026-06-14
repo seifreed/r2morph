@@ -16,6 +16,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+from r2morph.analysis.memory_flow_helpers import record_saved_register, record_stack_allocation, record_stack_local
+
 logger = logging.getLogger(__name__)
 
 
@@ -106,42 +108,6 @@ class _DecodedAccess:
     address: int
     location_name: str
     registers: list[str]
-
-
-def _record_saved_register(disasm: str, addr: int, frame_size: int, stack_frame: dict[str, Any]) -> int:
-    """Record a ``push`` of a saved register; return the grown frame size."""
-    match = re.search(r"push\s+(\w+)", disasm)
-    if match:
-        stack_frame["saved_regs"].append({"register": match.group(1), "offset": frame_size, "address": f"0x{addr:x}"})
-        frame_size += 8  # Assume 64-bit
-    return frame_size
-
-
-def _record_stack_allocation(disasm: str, addr: int, frame_size: int, stack_frame: dict[str, Any]) -> int:
-    """Record a ``sub sp, #N`` stack allocation; return the grown frame size."""
-    match = re.search(r"sub\s+sp,\s+#?(\d+)", disasm)
-    if match:
-        size = int(match.group(1))
-        frame_size += size
-        stack_frame["allocations"].append({"size": size, "address": f"0x{addr:x}"})
-    return frame_size
-
-
-def _record_stack_local(disasm: str, addr: int, local_vars: dict[str, dict[str, Any]]) -> None:
-    """Record a ``mov [sp/rbp-N], reg`` store as a local variable."""
-    match = re.search(r"mov\s+\[.*?([+-]?\d+).*?\],\s+(\w+)", disasm)
-    if not match:
-        return
-    offset = int(match.group(1))
-    var_name = f"var_{abs(offset)}"
-    if var_name not in local_vars:
-        local_vars[var_name] = {
-            "name": var_name,
-            "offset": offset,
-            "size": 4,  # Default size
-            "access_type": "write",
-            "address": f"0x{addr:x}",
-        }
 
 
 class MemoryFlowAnalyzer:
@@ -249,11 +215,11 @@ class MemoryFlowAnalyzer:
         Returns the (possibly grown) frame size.
         """
         if "push" in disasm:
-            return _record_saved_register(disasm, addr, frame_size, stack_frame)
+            return record_saved_register(disasm, addr, frame_size, stack_frame)
         if "sub" in disasm and "sp" in disasm:
-            return _record_stack_allocation(disasm, addr, frame_size, stack_frame)
+            return record_stack_allocation(disasm, addr, frame_size, stack_frame)
         if "mov" in disasm and ("[sp" in disasm or "[rbp" in disasm):
-            _record_stack_local(disasm, addr, local_vars)
+            record_stack_local(disasm, addr, local_vars)
         return frame_size
 
     def _analyze_instruction(
