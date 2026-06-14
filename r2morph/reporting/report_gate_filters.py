@@ -5,17 +5,10 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from r2morph.core.constants import SEVERITY_ORDER
 from r2morph.reporting.gate_evaluator import (
     build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
 )
-
-SEVERITY_ORDER = {
-    "mismatch": 0,
-    "without-coverage": 1,
-    "bounded-only": 2,
-    "clean": 3,
-    "not-requested": 4,
-}
 
 
 def _filter_failed_gates_view(

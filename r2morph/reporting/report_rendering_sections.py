@@ -25,14 +25,6 @@ from r2morph.reporting.report_rendering_symbolic_tables import (
     _render_mismatch_table as _render_mismatch_table,
 )
 
-SEVERITY_ORDER = {
-    "mismatch": 0,
-    "without-coverage": 1,
-    "bounded-only": 2,
-    "clean": 3,
-    "not-requested": 4,
-}
-
 
 def _render_report_filter_messages(
     *,
