@@ -23,6 +23,18 @@ from r2morph.reporting.filtered_summary_triage import _populate_triage_and_resul
 from r2morph.reporting.report_view_resolution import _resolve_summary_pass_sources
 
 
+def _fill_pass_map_from_summary(filtered_summary: dict[str, Any], key: str, source_map: dict[str, Any]) -> None:
+    """Fill an empty filtered_summary pass-map from a summary source, keeping visible passes."""
+    if filtered_summary[key] or not source_map:
+        return
+    visible_passes = set(filtered_summary["passes"])
+    filtered_summary[key] = {
+        pass_name: dict(value)
+        for pass_name, value in source_map.items()
+        if not visible_passes or pass_name in visible_passes
+    }
+
+
 def _populate_filtered_summary_pass_sections(
     *,
     filtered_summary: dict[str, Any],
@@ -129,27 +141,9 @@ def _populate_filtered_summary_pass_sections(
         if pass_symbolic_summary:
             filtered_summary["pass_symbolic_summary"][pass_name] = dict(pass_symbolic_summary)
 
-    if not filtered_summary["pass_validation_context"] and summary_pass_validation_context:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_validation_context"] = {
-            pass_name: dict(context)
-            for pass_name, context in summary_pass_validation_context.items()
-            if not visible_passes or pass_name in visible_passes
-        }
-    if not filtered_summary["pass_symbolic_summary"] and summary_pass_symbolic_summary:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_symbolic_summary"] = {
-            pass_name: dict(summary_row)
-            for pass_name, summary_row in summary_pass_symbolic_summary.items()
-            if not visible_passes or pass_name in visible_passes
-        }
-    if not filtered_summary["pass_capabilities"] and summary_pass_capabilities:
-        visible_passes = set(filtered_summary["passes"])
-        filtered_summary["pass_capabilities"] = {
-            pass_name: dict(capabilities)
-            for pass_name, capabilities in summary_pass_capabilities.items()
-            if not visible_passes or pass_name in visible_passes
-        }
+    _fill_pass_map_from_summary(filtered_summary, "pass_validation_context", summary_pass_validation_context)
+    _fill_pass_map_from_summary(filtered_summary, "pass_symbolic_summary", summary_pass_symbolic_summary)
+    _fill_pass_map_from_summary(filtered_summary, "pass_capabilities", summary_pass_capabilities)
 
     _populate_triage_and_results(
         filtered_summary=filtered_summary,
