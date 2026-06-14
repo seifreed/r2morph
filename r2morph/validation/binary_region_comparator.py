@@ -22,6 +22,10 @@ from r2morph.validation.binary_region_bridges import (
     step_to_exit,
     validate_binary_paths,
 )
+from r2morph.validation.binary_region_comparator_results import (
+    build_binary_comparison_result,
+    build_region_report,
+)
 from r2morph.validation.binary_region_memory import collect_memory_write_signatures
 
 logger = logging.getLogger(__name__)
@@ -161,7 +165,7 @@ class BinaryRegionComparator:
             region_exit_budget,
         )
 
-        region_report = self._build_region_report(
+        region_report = build_region_report(
             mutation,
             resolved_original,
             resolved_mutated,
@@ -184,36 +188,6 @@ class BinaryRegionComparator:
             compared_registers,
             stack_reg,
         )
-
-    def _build_region_report(
-        self,
-        mutation: dict[str, Any],
-        resolved_original: Any,
-        resolved_mutated: Any,
-        step_budget: int,
-        region_exit_budget: int,
-        original_steps: int,
-        mutated_steps: int,
-        original_trace_addresses: list[Any],
-        mutated_trace_addresses: list[Any],
-        compared_registers: list[str],
-    ) -> dict[str, Any]:
-        """Build the region-report skeleton (pre-finalization)."""
-        return {
-            "start_address": mutation["start_address"],
-            "end_address": mutation["end_address"],
-            "original_loaded_address": resolved_original,
-            "mutated_loaded_address": resolved_mutated,
-            "step_budget": step_budget,
-            "region_exit_budget": region_exit_budget,
-            "step_strategy": "region-exit",
-            "original_region_exit_steps": original_steps,
-            "mutated_region_exit_steps": mutated_steps,
-            "original_trace_addresses": original_trace_addresses,
-            "mutated_trace_addresses": mutated_trace_addresses,
-            "registers_checked": list(compared_registers) + ["eflags", "stack_delta"],
-            "mismatches": [],
-        }
 
     def _finalize_region_outcome(
         self,
@@ -299,7 +273,7 @@ class BinaryRegionComparator:
         finally:
             release_bridges(original_bridge, mutated_bridge)
 
-        return self._build_binary_comparison_result(
+        return build_binary_comparison_result(
             compared_regions, mismatches, previous_binary_path, current_binary_path
         )
 
@@ -336,31 +310,3 @@ class BinaryRegionComparator:
                 compared_regions.append(region_report)
                 mismatches.extend(region_mismatches)
         return compared_regions, mismatches
-
-    @staticmethod
-    def _build_binary_comparison_result(
-        compared_regions: list[dict[str, Any]],
-        mismatches: list[dict[str, Any]],
-        previous_binary_path: Path,
-        current_binary_path: Path,
-    ) -> dict[str, Any]:
-        """Assemble the real-binary symbolic comparison result payload."""
-        return {
-            "symbolic_binary_check_performed": bool(compared_regions),
-            "symbolic_binary_equivalent": not mismatches if compared_regions else False,
-            "symbolic_binary_reason": (
-                "bounded real-binary symbolic effects matched"
-                if compared_regions and not mismatches
-                else (
-                    "bounded real-binary symbolic effects diverged"
-                    if compared_regions
-                    else "no eligible regions for real-binary symbolic comparison"
-                )
-            ),
-            "symbolic_binary_regions": compared_regions,
-            "symbolic_binary_mismatches": mismatches,
-            "symbolic_binary_paths": {
-                "original": str(previous_binary_path),
-                "mutated": str(current_binary_path),
-            },
-        }
