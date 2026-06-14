@@ -20,7 +20,12 @@ from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
-from r2morph.mutations.equivalences import load_equivalence_rules
+from r2morph.mutations.instruction_substitution_helpers import (
+    get_equivalents,
+    init_substitution_rules,
+    normalize_instruction,
+    select_candidates,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -90,53 +95,10 @@ class InstructionSubstitutionPass(MutationPass):
         self._init_substitution_rules()
 
     def _init_substitution_rules(self) -> None:
-        """
-        Initialize substitution rules with r2morph-style equivalence groups.
-
-        Each equivalence group is a list of patterns that are all equivalent to each other.
-        Any pattern in the group can match, and can be replaced by any other pattern.
-
-        This method shuffles each equivalence group for randomness (r2morph-style re-seeding).
-        Called after each successful mutation to ensure different patterns are used.
-
-        Rules are loaded from YAML files in the equivalences/ directory.
-        """
-        self.equivalence_groups = {
-            "x86": load_equivalence_rules("x86"),
-            "arm": load_equivalence_rules("arm"),
-            "arm64": load_equivalence_rules("arm64"),
-        }
-
-        for arch in self.equivalence_groups:
-            for group in self.equivalence_groups[arch]:
-                random.shuffle(group)
-
-        self.pattern_to_group: dict[str, dict[str, int]] = {}
-        for arch, groups in self.equivalence_groups.items():
-            if arch not in self.pattern_to_group:
-                self.pattern_to_group[arch] = {}
-
-            for group_idx, group in enumerate(groups):
-                for pattern in group:
-                    normalized = self._normalize_instruction(pattern)
-                    self.pattern_to_group[arch][normalized] = group_idx
+        self.equivalence_groups, self.pattern_to_group = init_substitution_rules()
 
     def _normalize_instruction(self, disasm: str) -> str:
-        """
-        Normalize instruction for pattern matching.
-
-        Args:
-            disasm: Disassembly string
-
-        Returns:
-            Normalized instruction
-        """
-        normalized = " ".join(disasm.lower().split())
-
-        normalized = normalized.replace("0x0", "0")
-        normalized = normalized.replace("0x1", "1")
-
-        return normalized
+        return normalize_instruction(disasm)
 
     def _get_equivalents(self, instruction: dict[str, Any], arch: str) -> tuple[str, list[str], int | None]:
         """
@@ -149,18 +111,7 @@ class InstructionSubstitutionPass(MutationPass):
         Returns:
             Tuple of (original_pattern, list of equivalent patterns)
         """
-        if arch not in self.pattern_to_group:
-            return ("", [], None)
-
-        disasm = instruction.get("disasm", "")
-        normalized = self._normalize_instruction(disasm)
-
-        if normalized in self.pattern_to_group[arch]:
-            group_idx = self.pattern_to_group[arch][normalized]
-            equivalents = self.equivalence_groups[arch][group_idx]
-            return (normalized, equivalents, group_idx)
-
-        return ("", [], None)
+        return get_equivalents(instruction, arch, self.pattern_to_group, self.equivalence_groups)
 
     def _select_candidates(
         self, binary: Any, functions: list[dict[str, Any]], arch_family: str
@@ -176,26 +127,7 @@ class InstructionSubstitutionPass(MutationPass):
         Returns:
             List of (func, candidate_instructions) tuples
         """
-        result = []
-        for func in functions:
-            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-                continue
-
-            try:
-                func_addr = func.get("offset", func.get("addr", 0))
-                instructions = binary.get_function_disasm(func_addr)
-            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
-                continue
-
-            candidates = []
-            for insn in instructions:
-                original_pattern, equivalents, group_idx = self._get_equivalents(insn, arch_family)
-                if equivalents and len(equivalents) > 1:
-                    candidates.append(insn)
-            if candidates:
-                result.append((func, candidates))
-        return result
+        return select_candidates(binary, functions, arch_family, self.pattern_to_group, self.equivalence_groups)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
