@@ -7,11 +7,10 @@ from r2morph.validation.semantic_models import (
     MutationRegion,
     ObservableComparison,
     SemanticCheck,
-    SemanticValidationReport,
-    SemanticValidationResult,
     ValidationMode,
     ValidationResultStatus,
 )
+from r2morph.validation.semantic_report_models import SemanticValidationReport, SemanticValidationResult
 
 
 def test_semantic_models_round_trip() -> None:

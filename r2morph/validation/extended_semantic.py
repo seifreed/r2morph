@@ -24,12 +24,12 @@ from r2morph.validation.constraint_cache import (
 from r2morph.validation.semantic import (
     MutationRegion,
     SemanticCheck,
-    SemanticValidationResult,
     SemanticValidator,
     ValidationMode,
     ValidationResultStatus,
 )
 from r2morph.validation.semantic_invariant_models import InvariantCategory
+from r2morph.validation.semantic_report_models import SemanticValidationResult
 from r2morph.validation.state_merging import (
     ANGR_AVAILABLE as _ANGR_AVAILABLE,
 )
