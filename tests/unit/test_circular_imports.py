@@ -104,6 +104,7 @@ REPORTING_MODULES = [
     "r2morph.core.report_helpers_evidence_summary",
     "r2morph.core.report_helpers_discarded",
     "r2morph.core.report_helpers_observables",
+    "r2morph.core.report_helpers_structural_evidence",
     "r2morph.core.report_helpers_symbolic_summary",
     "r2morph.validation.binary_region_comparator_results",
     "r2morph.validation.binary_region_comparator_observables",

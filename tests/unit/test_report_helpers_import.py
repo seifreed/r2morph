@@ -16,6 +16,7 @@ from r2morph.core import report_helpers_evidence_summary as evidence_summary_mod
 from r2morph.core import report_helpers_observables as observables_mod
 from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
+from r2morph.core import report_helpers_structural_evidence as structural_evidence_mod
 from r2morph.core import report_helpers_symbolic_summary as symbolic_summary_mod
 from r2morph.core import report_helpers_triage as triage_mod
 from r2morph.reporting import report_evidence_sorting as evidence_sorting_mod
@@ -124,6 +125,13 @@ def test_canonical_evidence_summary_module_defines_evidence_helpers() -> None:
         ), f"core.report_helpers_evidence_summary missing {name}"
 
 
+def test_canonical_structural_evidence_module_defines_structural_helper() -> None:
+    assert hasattr(
+        structural_evidence_mod,
+        "_summarize_structural_evidence",
+    ), "core.report_helpers_structural_evidence missing _summarize_structural_evidence"
+
+
 def test_canonical_discarded_module_defines_discarded_helpers() -> None:
     for name in ("_summarize_discarded_mutations", "_build_discarded_mutation_priority"):
         assert hasattr(
@@ -218,6 +226,18 @@ def test_observable_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             observables_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_observables.{name}"
+
+
+def test_structural_evidence_helper_is_reexported_from_canonical_module() -> None:
+    assert getattr(helpers_mod, "_summarize_structural_evidence") is getattr(
+        structural_evidence_mod,
+        "_summarize_structural_evidence",
+    ), "core.report_helpers._summarize_structural_evidence diverged from core.report_helpers_structural_evidence"
+    assert hasattr(engine_mod, "_summarize_structural_evidence"), "core.engine no longer re-exports _summarize_structural_evidence"
+    assert getattr(engine_mod, "_summarize_structural_evidence") is getattr(
+        structural_evidence_mod,
+        "_summarize_structural_evidence",
+    ), "core.engine._summarize_structural_evidence diverged from core.report_helpers_structural_evidence"
 
 
 def test_adjustment_helpers_are_reexported_from_facade() -> None:

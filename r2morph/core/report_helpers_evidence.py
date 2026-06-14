@@ -31,6 +31,9 @@ from r2morph.core.report_helpers_projection import (
 from r2morph.core.report_helpers_projection import (
     _summarize_pass_capability_rows as _summarize_pass_capability_rows,
 )
+from r2morph.core.report_helpers_structural_evidence import (
+    _summarize_structural_evidence as _summarize_structural_evidence_summary,
+)
 
 
 def _summarize_pass_timings(pass_results: dict[str, Any]) -> list[dict[str, Any]]:
@@ -88,23 +91,7 @@ def _summarize_structural_evidence(
     structural_regions: list[dict[str, Any]],
 ) -> dict[str, Any]:
     """Build a compact structural-evidence digest from region-level findings."""
-    validators: set[str] = set()
-    severities: dict[str, int] = {}
-    messages: list[str] = []
-    for region in structural_regions:
-        validators.update(region.get("validators", []))
-        for severity in region.get("severities", []):
-            severities[severity] = severities.get(severity, 0) + 1
-        messages.extend(str(message) for message in region.get("messages", []))
-    unique_messages = sorted({message for message in messages if message})
-    return {
-        "region_count": len(structural_regions),
-        "validators": sorted(validators),
-        "severity_counts": {
-            key: severities[key] for key in sorted(severities, key=lambda item: (-severities[item], item))
-        },
-        "sample_messages": unique_messages[:5],
-    }
+    return _summarize_structural_evidence_summary(structural_regions)
 
 
 def _build_evidence_summary_for_pass(
