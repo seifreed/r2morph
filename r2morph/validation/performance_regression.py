@@ -5,7 +5,6 @@ Tracks performance metrics across code changes to detect regressions
 and ensure mutation passes remain efficient.
 """
 
-import statistics
 from datetime import datetime
 from importlib import import_module
 from pathlib import Path
@@ -15,6 +14,11 @@ from r2morph.validation import (
     performance_regression_comparison,
     performance_regression_measurement,
     performance_regression_metadata,
+)
+from r2morph.validation.performance_regression_execution import (
+    build_mutation_class_map,
+    build_performance_snapshot,
+    create_mutation_pipeline,
 )
 from r2morph.validation.performance_regression_models import (
     BenchmarkConfig,
@@ -117,51 +121,20 @@ class PerformanceBenchmark:
         Returns:
             PerformanceSnapshot with metrics
         """
-        from r2morph import Binary
-        from r2morph.mutations import (
-            InstructionSubstitutionPass,
-            NopInsertionPass,
-            RegisterSubstitutionPass,
-        )
-
-        mutation_classes: dict[str, Any] = {
-            "nop": NopInsertionPass,
-            "substitute": InstructionSubstitutionPass,
-            "register": RegisterSubstitutionPass,
-        }
-
-        def run_mutation_pipeline() -> None:
-            with Binary(binary_path) as binary:
-                binary.analyze()
-                for mutation_name in mutations:
-                    mutation_class = mutation_classes.get(mutation_name.lower())
-                    if mutation_class:
-                        mutation = mutation_class()
-                        mutation.apply(binary)
+        mutation_classes = build_mutation_class_map()
+        run_mutation_pipeline = create_mutation_pipeline(binary_path, mutations, mutation_classes)
 
         exec_times = self.measure_execution_time(run_mutation_pipeline)
         memory_metrics = self.measure_memory_usage(run_mutation_pipeline)
-
-        metrics = {
-            "execution_time_ms_mean": statistics.mean(exec_times) if exec_times else 0,
-            "execution_time_ms_median": statistics.median(exec_times) if exec_times else 0,
-            "execution_time_ms_stdev": statistics.stdev(exec_times) if len(exec_times) > 1 else 0,
-            "execution_time_ms_min": min(exec_times) if exec_times else 0,
-            "execution_time_ms_max": max(exec_times) if exec_times else 0,
-            "peak_memory_mb": memory_metrics["peak_memory_mb"],
-            "current_memory_mb": memory_metrics["current_memory_mb"],
-        }
-
-        return PerformanceSnapshot(
+        return build_performance_snapshot(
+            config=self.config,
+            binary_path=binary_path,
+            mutations=mutations,
+            exec_times=exec_times,
+            memory_metrics=memory_metrics,
             commit_hash=self._get_git_hash(),
-            timestamp=datetime.now().isoformat(),
-            metrics=metrics,
             environment=self._get_environment_info(),
-            metadata={
-                "binary": str(binary_path),
-                "mutations": mutations,
-                "runs": self.config.measured_runs,
-            },
+            timestamp=datetime.now().isoformat(),
         )
 
     def save_baseline(
