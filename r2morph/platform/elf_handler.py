@@ -10,6 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any, BinaryIO
 
+from r2morph.platform.elf_handler_code_caves import find_code_cave as project_find_code_cave
 from r2morph.platform.elf_handler_metadata import get_architecture as project_architecture
 from r2morph.platform.elf_handler_metadata import get_entry_point as project_entry_point
 from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
@@ -17,7 +18,7 @@ from r2morph.platform.elf_handler_symbol_preservation import preserve_symbols as
 from r2morph.platform.elf_handler_symbols import collect_symbol_tables
 from r2morph.platform.elf_handler_tables import collect_sections, collect_segments
 from r2morph.platform.elf_handler_validation import validate_elf_file_structure
-from r2morph.platform.elf_structs import ELF_MAGIC, SHF_EXECINSTR, _find_null_run
+from r2morph.platform.elf_structs import ELF_MAGIC, SHF_EXECINSTR
 
 logger = logging.getLogger(__name__)
 
@@ -340,31 +341,7 @@ class ELFHandler:
         Returns:
             Virtual address of the code cave, or None if not found.
         """
-        sections = self.get_sections()
+        return project_find_code_cave(self.binary_path, self.get_sections(), min_size)
 
-        try:
-            with open(self.binary_path, "rb") as f:
-                for section in sections:
-                    # Look in executable sections
-                    if not (section["flags"] & SHF_EXECINSTR):
-                        continue
 
-                    # Skip sections that are too small
-                    if section["size"] < min_size:
-                        continue
-
-                    f.seek(section["offset"])
-                    data = f.read(section["size"])
-
-                    null_start = _find_null_run(data, min_size)
-                    if null_start is not None:
-                        vaddr = section["vaddr"] + null_start
-                        logger.info(f"Found code cave: {min_size} bytes at 0x{vaddr:x} in {section['name']}")
-                        return int(vaddr)
-
-            logger.debug(f"No code cave of {min_size}+ bytes found")
-            return None
-
-        except Exception as e:
-            logger.error(f"Failed to find code cave: {e}")
-            return None
+__all__ = ["ELFHandler", "SHF_EXECINSTR"]

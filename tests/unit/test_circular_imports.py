@@ -176,6 +176,7 @@ REPORTING_MODULES = [
     "r2morph.platform.elf_handler_metadata",
     "r2morph.platform.elf_handler_symbols",
     "r2morph.platform.elf_handler_symbol_preservation",
+    "r2morph.platform.elf_handler_code_caves",
     "r2morph.platform.elf_handler_tables",
     "r2morph.platform.pe_handler_projection",
     "r2morph.analysis.symbolic.constraint_solver_models",
