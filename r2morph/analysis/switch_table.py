@@ -12,6 +12,15 @@ import logging
 import re
 from typing import Any
 
+from r2morph.analysis.switch_table_detection import (
+    detect_plt_got_thunks as detect_plt_got_thunks_impl,
+)
+from r2morph.analysis.switch_table_detection import (
+    detect_tail_calls as detect_tail_calls_impl,
+)
+from r2morph.analysis.switch_table_detection import (
+    is_plt_stub_pattern,
+)
 from r2morph.analysis.switch_table_models import (
     IndirectJump,
     JumpTable,
@@ -220,130 +229,21 @@ class SwitchTableAnalyzer:
         return jump_tables, other_jumps
 
     def detect_tail_calls(self, function_address: int) -> list[tuple[int, int]]:
-        """
-        Detect tail calls in a function.
-
-        A tail call is a jmp to another function entry point.
-
-        Args:
-            function_address: Address of the function
-
-        Returns:
-            List of (jump_address, target_address) tuples
-        """
-        tail_calls: list[tuple[int, int]] = []
-
         if self._known_functions is None:
             self._cache_functions()
 
-        if not self._known_functions:
-            return tail_calls
-
-        try:
-            instructions = self.binary.get_function_disasm(function_address)
-        except Exception as e:
-            logger.debug(f"Failed to get disassembly: {e}")
-            return tail_calls
-
-        for insn in instructions:
-            addr = insn.get("offset", 0)
-            mnemonic = insn.get("type", "").lower()
-            disasm = insn.get("opcode", insn.get("disasm", ""))
-
-            if mnemonic != "jmp":
-                continue
-
-            match = re.search(r"jmp\s+(0x[0-9a-f]+)", disasm, re.IGNORECASE)
-            if not match:
-                continue
-
-            try:
-                target = int(match.group(1), 16)
-            except ValueError:
-                continue
-
-            if target in self._known_functions:
-                tail_calls.append((addr, target))
-                logger.debug(f"Tail call at 0x{addr:x} -> 0x{target:x} ({self._known_functions[target]})")
-
-        return tail_calls
+        return detect_tail_calls_impl(self.binary, self._known_functions, function_address)
 
     def detect_plt_got_thunks(self) -> dict[int, dict[str, Any]]:
-        """
-        Detect PLT/GOT thunk entries.
-
-        Returns:
-            Dictionary mapping thunk address to thunk info
-        """
         if self._plt_entries is not None:
             return self._plt_entries
 
-        self._plt_entries = {}
-
-        try:
-            sections = self.binary.get_sections()
-        except Exception:
-            sections = []
-
-        plt_sections = [
-            s for s in sections if "plt" in s.get("name", "").lower() or ".plt" in s.get("name", "").lower()
-        ]
-
-        if not plt_sections:
-            logger.debug("No PLT section found")
-            return self._plt_entries
-
-        for section in plt_sections:
-            start = section.get("addr", section.get("virtual_address", 0))
-            size = section.get("size", section.get("virtual_size", 0))
-
-            if start == 0 or size == 0:
-                continue
-
-            try:
-                data = self.binary.read_bytes(start, min(size, 0x1000))
-            except Exception:
-                continue
-
-            if not data:
-                continue
-
-            offset = 0
-            while offset < len(data) - 16:
-                chunk = data[offset : offset + 16]
-
-                if self._is_plt_stub_pattern(chunk):
-                    thunk_addr = start + offset
-                    self._plt_entries[thunk_addr] = {
-                        "address": thunk_addr,
-                        "section": section.get("name", ""),
-                        "type": "plt_stub",
-                    }
-                    offset += 16
-                else:
-                    offset += 1
-
-        logger.debug(f"Found {len(self._plt_entries)} PLT entries")
+        self._plt_entries = detect_plt_got_thunks_impl(self.binary)
         return self._plt_entries
 
     def _is_plt_stub_pattern(self, data: bytes) -> bool:
         """Check if bytes match common PLT stub patterns."""
-        if len(data) < 6:
-            return False
-
-        if data[:2] == b"\xff\x25":
-            return True
-
-        if data[:2] == b"\xff\x27":
-            return True
-
-        if len(data) >= 10 and data[:6] == b"\xff\x35" and data[6:10] == b"\x48\x8d\x3d":
-            return True
-
-        if data[:6] == b"\x48\x8b\x1d" or data[:6] == b"\x48\x8b\x05":
-            return True
-
-        return False
+        return is_plt_stub_pattern(data)
 
     def _cache_functions(self) -> None:
         """Cache function addresses for quick lookup."""

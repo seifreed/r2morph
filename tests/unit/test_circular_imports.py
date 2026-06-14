@@ -162,6 +162,7 @@ REPORTING_MODULES = [
     "r2morph.mutations.parallel_executor_runtime",
     "r2morph.mutations.parallel_executor_speedup",
     "r2morph.mutations.parallel_executor_models",
+    "r2morph.analysis.switch_table_detection",
     "r2morph.core.binary_file_lock",
     "r2morph.core.analysis_cache_models",
     "r2morph.core.analysis_cache_storage",
