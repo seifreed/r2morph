@@ -3,10 +3,28 @@ Mach-O format specific handling (macOS/iOS).
 """
 
 import logging
-import platform
 import struct
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from r2morph.platform.macho_handler_repair import (
+    fix_bind_symbols as repair_fix_bind_symbols,
+)
+from r2morph.platform.macho_handler_repair import (
+    fix_load_commands as repair_fix_load_commands,
+)
+from r2morph.platform.macho_handler_repair import (
+    fix_segment_permissions as repair_fix_segment_permissions,
+)
+from r2morph.platform.macho_handler_repair import (
+    full_repair as repair_full_repair,
+)
+from r2morph.platform.macho_handler_repair import (
+    repair_integrity as repair_repair_integrity,
+)
+from r2morph.platform.macho_handler_repair import (
+    validate_integrity as repair_validate_integrity,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -354,25 +372,8 @@ class MachOHandler:
             return False
 
     def validate_integrity(self) -> tuple[bool, str]:
-        """
-        Validate Mach-O layout integrity (load commands, offsets, and sizes).
-
-        Returns:
-            (ok, message)
-        """
-        if not self.is_macho():
-            return False, "Not a Mach-O binary"
-        if lief is None:
-            return True, "LIEF not available for deep integrity checks"
-        binary = self._parse_lief()
-        if binary is None:
-            return False, "Failed to parse Mach-O"
-        ok, msg = lief.MachO.check_layout(binary)
-        if not ok:
-            return False, msg or "Mach-O layout invalid"
-        if not self._relocations_in_segments(binary):
-            return False, "Mach-O relocations out of segment bounds"
-        return True, ""
+        """Validate Mach-O layout integrity (load commands, offsets, and sizes)."""
+        return repair_validate_integrity(self)
 
     def repair_integrity(
         self,
@@ -380,45 +381,13 @@ class MachOHandler:
         hardened: bool = False,
         timestamp: bool = False,
     ) -> bool:
-        """
-        Best-effort repair of Mach-O integrity post-mutation.
-
-        This focuses on refreshing LC_CODE_SIGNATURE and re-signing the binary.
-        LIEF builder is not available in this environment, so structural repairs
-        are limited to re-signing.
-        """
-        if platform.system() != "Darwin":
-            return False
-        if not self.is_macho():
-            return False
-        try:
-            from r2morph.platform.codesign import CodeSigner
-
-            signer = CodeSigner()
-
-            if lief is not None:
-                binary = self._parse_lief()
-                if binary is not None:
-                    try:
-                        if getattr(binary, "has_code_signature", False):
-                            binary.remove_signature()
-                        tmp_path = self.binary_path.with_suffix(self.binary_path.suffix + ".repaired")
-                        binary.write(str(tmp_path))
-                        tmp_path.replace(self.binary_path)
-                    except Exception as e:
-                        logger.error(f"Failed to rewrite Mach-O with LIEF: {e}")
-
-            signer.remove_signature(self.binary_path)
-            return signer.sign_binary(
-                self.binary_path,
-                adhoc=True,
-                entitlements=entitlements,
-                hardened=hardened,
-                timestamp=timestamp,
-            )
-        except Exception as e:
-            logger.error(f"Failed to repair Mach-O signature: {e}")
-            return False
+        """Best-effort repair of Mach-O integrity post-mutation."""
+        return repair_repair_integrity(
+            self,
+            entitlements=entitlements,
+            hardened=hardened,
+            timestamp=timestamp,
+        )
 
     def is_fat_binary(self) -> bool:
         """
@@ -536,117 +505,17 @@ class MachOHandler:
         return sections
 
     def fix_load_commands(self) -> tuple[bool, list[str]]:
-        """
-        Fix Mach-O load commands after mutation.
-
-        Returns:
-            (success, list of fixes)
-        """
-        fixes: list[str] = []
-        binary = self._parse_lief()
-
-        if binary is None:
-            return True, fixes
-
-        try:
-            changed = False
-
-            if hasattr(binary, "has_code_signature") and binary.has_code_signature:
-                fixes.append("Code signature will be removed and re-signed")
-                changed = True
-
-            if hasattr(binary, "has_linkedit") and binary.has_linkedit:
-                fixes.append("__LINKEDIT segment verified")
-
-            return not changed or True, fixes
-        except Exception as e:
-            logger.debug(f"Load command fix failed: {e}")
-            return False, fixes
+        """Fix Mach-O load commands after mutation."""
+        return repair_fix_load_commands(self)
 
     def fix_bind_symbols(self) -> tuple[bool, list[str]]:
-        """
-        Fix bind symbol information after mutation.
-
-        Returns:
-            (success, list of fixes)
-        """
-        fixes: list[str] = []
-        binary = self._parse_lief()
-
-        if binary is None:
-            return True, fixes
-
-        try:
-            for macho in self._iter_macho_binaries(binary):
-                if hasattr(macho, "symbols"):
-                    sym_count = len(list(getattr(macho, "symbols", [])))
-                    fixes.append(f"Verified {sym_count} symbols")
-
-            return True, fixes
-        except Exception as e:
-            logger.debug(f"Bind symbol fix failed: {e}")
-            return False, fixes
+        """Fix bind symbol information after mutation."""
+        return repair_fix_bind_symbols(self)
 
     def fix_segment_permissions(self) -> tuple[bool, list[str]]:
-        """
-        Fix segment permissions after mutation.
-
-        Returns:
-            (success, list of fixes)
-        """
-        fixes: list[str] = []
-        binary = self._parse_lief()
-
-        if binary is None:
-            return True, fixes
-
-        try:
-            for macho in self._iter_macho_binaries(binary):
-                for seg in getattr(macho, "segments", []):
-                    name = getattr(seg, "name", "")
-                    if name in ("__TEXT", "__DATA", "__LINKEDIT"):
-                        fixes.append(f"Segment {name} permissions verified")
-
-            return True, fixes
-        except Exception as e:
-            logger.debug(f"Segment permission fix failed: {e}")
-            return False, fixes
+        """Fix segment permissions after mutation."""
+        return repair_fix_segment_permissions(self)
 
     def full_repair(self, entitlements: Path | None = None) -> tuple[bool, list[str]]:
-        """
-        Full Mach-O repair after mutation.
-
-        Performs all necessary repairs:
-        - Load commands
-        - Bind symbols
-        - Segment permissions
-        - Code signature
-
-        Returns:
-            (success, list of all repairs)
-        """
-        all_repairs: list[str] = []
-        all_success = True
-
-        checks = [
-            ("load_commands", self.fix_load_commands()),
-            ("bind_symbols", self.fix_bind_symbols()),
-            ("segment_permissions", self.fix_segment_permissions()),
-        ]
-
-        for name, (success, repairs) in checks:
-            if repairs:
-                all_repairs.extend(repairs)
-            if not success:
-                all_success = False
-                all_repairs.append(f"Warning: {name} repair may have issues")
-
-        if platform.system() == "Darwin":
-            repair_success = self.repair_integrity(entitlements=entitlements)
-            if repair_success:
-                all_repairs.append("Code signature rebuilt")
-            else:
-                all_success = False
-                all_repairs.append("Warning: Code signature rebuild failed")
-
-        return all_success, all_repairs
+        """Full Mach-O repair after mutation."""
+        return repair_full_repair(self, entitlements=entitlements)
