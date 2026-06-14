@@ -22,6 +22,10 @@ from r2morph.cli_cache_output import (
     build_cache_statistics_lines,
     build_cache_usage_hint,
 )
+from r2morph.cli_path_resolution import (
+    build_missing_input_help_lines,
+    resolve_main_cli_paths,
+)
 from r2morph.cli_workflows import _build_runtime_validator, _run_morph_workflow, _run_simple_mode
 from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT
@@ -105,21 +109,15 @@ def main_callback(
     if ctx.invoked_subcommand is not None:
         return
 
-    input_file = input_opt
-    output_file = output_opt
-    positional = [arg for arg in ctx.args if not arg.startswith("-")]
-    if input_file is None and positional:
-        input_file = Path(positional[0])
-        if len(positional) > 1:
-            output_file = Path(positional[1])
+    input_file, output_file = resolve_main_cli_paths(
+        input_opt,
+        output_opt,
+        [arg for arg in ctx.args if not arg.startswith("-")],
+    )
 
     if input_file is None:
-        console.print("[yellow]No input file provided.[/yellow]")
-        console.print("\nUsage:")
-        console.print("  Simple:   [cyan]r2morph input.exe [output.exe][/cyan]")
-        console.print("  Alternative:   [cyan]r2morph -i input.exe -o output.exe[/cyan]")
-        console.print("  Aggressive: [cyan]r2morph -i input.exe -o output.exe --aggressive[/cyan]")
-        console.print("\nRun [cyan]r2morph --help[/cyan] for more options")
+        for line in build_missing_input_help_lines():
+            console.print(line)
         raise typer.Exit(0)
 
     try:

@@ -201,6 +201,7 @@ REPORTING_MODULES = [
     "r2morph.platform.elf_handler_validation",
     "r2morph.tui_diff_helpers",
     "r2morph.cli_cache_output",
+    "r2morph.cli_path_resolution",
 ]
 
 
