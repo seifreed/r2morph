@@ -6,7 +6,12 @@ from typing import Any
 
 from rich.console import Console
 
-from r2morph.reporting.report_helpers import _sort_pass_evidence
+from r2morph.reporting.report_rendering_symbolic_table_helpers import (
+    build_pass_evidence_rows,
+    build_symbolic_coverage_rows,
+    build_symbolic_issue_rows,
+    build_symbolic_severity_rows,
+)
 
 
 def _render_match_table(
@@ -28,19 +33,7 @@ def _render_match_table(
         f"{bounded_only} bounded-step only, "
         f"{observable_not_run} without symbolic coverage"
     )
-    coverage_rows = list(summary.get("symbolic_coverage_by_pass", []))
-    if not coverage_rows:
-        coverage_rows = [
-            pass_result.get("symbolic_summary", {})
-            for pass_result in pass_results.values()
-            if pass_result.get("symbolic_summary", {}).get("symbolic_requested", 0) > 0
-        ]
-    if not coverage_rows:
-        coverage_rows = [
-            {"pass_name": pass_name, **pass_stats}
-            for pass_name, pass_stats in by_pass.items()
-            if pass_stats["symbolic_requested"] > 0
-        ]
+    coverage_rows = build_symbolic_coverage_rows(summary=summary, pass_results=pass_results, by_pass=by_pass)
     for row in coverage_rows:
         console.print(
             f"  [cyan]{row['pass_name']}[/cyan]: "
@@ -60,47 +53,13 @@ def _render_mismatch_table(
     coverage_rows: list[dict[str, Any]],
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Render severity priority and issue rows; return (severity_rows, issue_rows)."""
-    issue_rows = list(summary.get("symbolic_issue_passes", []))
-    severity_rows = list(summary.get("symbolic_severity_by_pass", []))
-    if not severity_rows:
-        issue_severity_map = {row.get("pass_name"): row.get("severity") for row in issue_rows if row.get("pass_name")}
-        severity_rows = [
-            {
-                "pass_name": row.get("pass_name", "unknown"),
-                "severity": issue_severity_map.get(row.get("pass_name")) or row.get("severity", "not-requested"),
-                "issue_count": row.get("issue_count", 0),
-                "symbolic_requested": row.get("symbolic_requested", 0),
-            }
-            for row in coverage_rows
-        ]
-    if not severity_rows and issue_rows:
-        severity_rows = [
-            {
-                "pass_name": row.get("pass_name", "unknown"),
-                "severity": row.get("severity", "not-requested"),
-                "issue_count": row.get("issue_count", 0),
-                "symbolic_requested": row.get("symbolic_requested", 0),
-            }
-            for row in issue_rows
-        ]
-    if not severity_rows:
-        severity_rows = [
-            {
-                "pass_name": pass_name,
-                "severity": (
-                    "mismatch"
-                    if pass_stats["observable_mismatch"] > 0
-                    else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-                ),
-                "issue_count": (
-                    pass_stats["observable_mismatch"] + pass_stats["without_coverage"] + pass_stats["bounded_only"]
-                ),
-                "symbolic_requested": pass_stats["symbolic_requested"],
-            }
-            for pass_name, pass_stats in by_pass.items()
-            if pass_stats["symbolic_requested"] > 0
-        ]
-        severity_rows.sort(key=lambda item: item["pass_name"])
+    issue_rows = build_symbolic_issue_rows(summary=summary, by_pass=by_pass)
+    severity_rows = build_symbolic_severity_rows(
+        summary=summary,
+        by_pass=by_pass,
+        coverage_rows=coverage_rows,
+        issue_rows=issue_rows,
+    )
     if not severity_rows:
         pass_evidence_rows = list(summary.get("pass_evidence", []))
         severity_rows = [
@@ -139,36 +98,6 @@ def _render_mismatch_table(
                 f"issue_count={row.get('issue_count', 0)}, "
                 f"symbolic_requested={row.get('symbolic_requested', 0)}"
             )
-    if not issue_rows:
-        pass_evidence_rows = list(summary.get("pass_evidence", []))
-        issue_rows = [
-            {
-                "pass_name": row.get("pass_name", "unknown"),
-                "severity": (
-                    "mismatch"
-                    if int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                    else "without-coverage" if int(row.get("without_coverage", 0)) > 0 else "bounded-only"
-                ),
-                "observable_mismatch": int(row.get("symbolic_binary_mismatched_regions", 0)),
-                "without_coverage": int(row.get("without_coverage", 0)),
-                "bounded_only": int(row.get("bounded_only", 0)),
-            }
-            for row in pass_evidence_rows
-            if row.get("pass_name")
-            and (
-                int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                or int(row.get("without_coverage", 0)) > 0
-                or int(row.get("bounded_only", 0)) > 0
-            )
-        ]
-        issue_rows.sort(
-            key=lambda item: (
-                -item["observable_mismatch"],
-                -item["without_coverage"],
-                -item["bounded_only"],
-                item["pass_name"],
-            )
-        )
     if issue_rows:
         console.print("[bold]Passes With Symbolic Issues[/bold]:")
         for row in issue_rows:
@@ -212,22 +141,7 @@ def _render_coverage_table(
                 f"role={row.get('role', 'unknown')}, "
                 f"symbolic_confidence={row.get('symbolic_confidence', 'unknown')}"
             )
-    pass_evidence_rows = list(summary.get("pass_evidence_compact", []))
-    pass_evidence_priority_rows = list(summary.get("pass_evidence_priority", []))
-    if pass_evidence_priority_rows:
-        pass_evidence_rows = [dict(row) for row in pass_evidence_priority_rows if row.get("pass_name")]
-    elif not pass_evidence_rows:
-        pass_evidence_rows = _sort_pass_evidence(
-            [row for row in list(summary.get("pass_evidence", [])) if row.get("pass_name")]
-        )
-    if not pass_evidence_rows:
-        pass_evidence_rows = _sort_pass_evidence(
-            [
-                dict(pass_results.get(pass_name, {}).get("evidence_summary", {}))
-                for pass_name in sorted(pass_results)
-                if pass_results.get(pass_name, {}).get("evidence_summary")
-            ]
-        )
+    pass_evidence_rows = build_pass_evidence_rows(summary, pass_results)
     if pass_evidence_rows:
         console.print("[bold]Pass Evidence[/bold]:")
         for row in pass_evidence_rows:
