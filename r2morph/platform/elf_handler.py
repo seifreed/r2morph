@@ -10,6 +10,8 @@ import logging
 from pathlib import Path
 from typing import Any, BinaryIO
 
+from r2morph.platform.elf_handler_metadata import get_architecture as project_architecture
+from r2morph.platform.elf_handler_metadata import get_entry_point as project_entry_point
 from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
 from r2morph.platform.elf_handler_tables import collect_sections, collect_segments
 from r2morph.platform.elf_handler_validation import validate_elf_file_structure
@@ -381,11 +383,7 @@ class ELFHandler:
         Returns:
             The virtual address of the entry point, or None if parsing fails.
         """
-        header = self._parse_elf_header()
-        if header is None:
-            return None
-        entry = header.get("e_entry")
-        return int(entry) if entry is not None else None
+        return project_entry_point(self._parse_elf_header())
 
     def get_architecture(self) -> dict[str, Any]:
         """Get architecture information from the ELF binary.
@@ -397,29 +395,7 @@ class ELFHandler:
                 - bits (int): 32 or 64
                 - endian (str): "little" or "big"
         """
-        header = self._parse_elf_header()
-        if header is None:
-            return {}
-
-        # Common machine types
-        machine_names = {
-            0x03: "x86",
-            0x3E: "x86_64",
-            0x28: "ARM",
-            0xB7: "AArch64",
-            0x08: "MIPS",
-            0x14: "PowerPC",
-            0x15: "PowerPC64",
-            0xF3: "RISC-V",
-        }
-
-        machine = header.get("e_machine", 0)
-        return {
-            "machine": machine,
-            "machine_name": machine_names.get(machine, f"Unknown({machine})"),
-            "bits": 64 if header.get("is_64bit") else 32,
-            "endian": "little" if header.get("is_little_endian") else "big",
-        }
+        return project_architecture(self._parse_elf_header())
 
     def find_code_cave(self, min_size: int = 64) -> int | None:
         """Find a code cave (unused space) in the ELF binary.
