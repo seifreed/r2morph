@@ -5,9 +5,9 @@ Tracks performance metrics across code changes to detect regressions
 and ensure mutation passes remain efficient.
 """
 
-import logging
 import statistics
 from datetime import datetime
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -22,8 +22,6 @@ from r2morph.validation.performance_regression_storage import (
     load_baseline_snapshot,
     save_baseline_snapshot,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class PerformanceBenchmark:
@@ -274,81 +272,6 @@ class PerformanceBenchmark:
         return current, regressions
 
 
-class PerformanceRegressionSuite:
-    """
-    Suite of performance regression tests.
-    """
-
-    def __init__(self, config: BenchmarkConfig | None = None) -> None:
-        self.config = config or BenchmarkConfig()
-        self.benchmark = PerformanceBenchmark(self.config)
-        self.test_binaries: list[tuple[Path, list[str], str]] = []
-
-    def add_test(
-        self,
-        binary_path: Path,
-        mutations: list[str],
-        baseline_name: str,
-    ) -> None:
-        """
-        Add a performance test.
-
-        Args:
-            binary_path: Path to test binary
-            mutations: List of mutation names
-            baseline_name: Baseline name for comparison
-        """
-        self.test_binaries.append((binary_path, mutations, baseline_name))
-
-    def run_all(self) -> dict[str, Any]:
-        """
-        Run all performance tests.
-
-        Returns:
-            Dictionary with results and any regressions
-        """
-        results: dict[str, Any] = {
-            "passed": 0,
-            "failed": 0,
-            "regressions": [],
-            "snapshots": [],
-        }
-
-        for binary_path, mutations, baseline_name in self.test_binaries:
-            try:
-                snapshot, regressions = self.benchmark.run_performance_test(binary_path, mutations, baseline_name)
-
-                results["snapshots"].append(snapshot.to_dict())
-
-                if regressions:
-                    results["failed"] += 1
-                    for reg in regressions:
-                        results["regressions"].append(
-                            {
-                                "binary": str(binary_path),
-                                "metric": reg.metric_name,
-                                "baseline": reg.baseline_value,
-                                "current": reg.current_value,
-                                "change": f"{reg.percentage_change:.1f}%",
-                                "severity": reg.severity,
-                            }
-                        )
-                else:
-                    results["passed"] += 1
-
-            except Exception as e:
-                logger.error(f"Performance test failed for {binary_path}: {e}")
-                results["failed"] += 1
-
-        results["success_rate"] = (
-            results["passed"] / (results["passed"] + results["failed"]) * 100
-            if (results["passed"] + results["failed"]) > 0
-            else 0
-        )
-
-        return results
-
-
 def create_benchmark(
     warmup_runs: int = 3,
     measured_runs: int = 10,
@@ -371,6 +294,9 @@ def create_benchmark(
         regression_threshold_percent=regression_threshold,
     )
     return PerformanceBenchmark(config)
+PerformanceRegressionSuite = import_module(
+    "r2morph.validation.performance_regression_suite",
+).PerformanceRegressionSuite
 
 
 __all__ = [

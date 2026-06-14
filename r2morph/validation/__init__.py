@@ -39,7 +39,7 @@ _LAZY_EXPORTS = {
     "PerformanceSnapshot": "r2morph.validation.performance_regression_models",
     "PerformanceRegression": "r2morph.validation.performance_regression_models",
     "BenchmarkConfig": "r2morph.validation.performance_regression_models",
-    "PerformanceRegressionSuite": "r2morph.validation.performance_regression",
+    "PerformanceRegressionSuite": "r2morph.validation.performance_regression_suite",
     "create_benchmark": "r2morph.validation.performance_regression",
     "MemorySnapshot": "r2morph.validation.leak_detection_models",
     "MemoryLeak": "r2morph.validation.leak_detection_models",
