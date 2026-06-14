@@ -199,6 +199,7 @@ REPORTING_MODULES = [
     "r2morph.validation.semantic_invariant_models",
     "r2morph.validation.constraint_cache_models",
     "r2morph.analysis.type_inference_types",
+    "r2morph.analysis.type_inference_conventions",
     "r2morph.analysis.type_inference_factory",
     "r2morph.analysis.type_inference_value_analysis",
     "r2morph.analysis.type_inference_arm_aliases",

@@ -6,12 +6,14 @@ import copy
 import logging
 from typing import Any
 
-from r2morph.analysis.type_inference_types import (
+from r2morph.analysis.type_inference_conventions import (
     _AAPCS64_ARM64_CONVENTION,
     _AAPCS_ARM32_CONVENTION,
     _CDECL_X86_32_CONVENTION,
     _EMPTY_CONVENTION,
     _SYSV_AMD64_CONVENTION,
+)
+from r2morph.analysis.type_inference_types import (
     PrimitiveType,
     TypeInfo,
 )
