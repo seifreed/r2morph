@@ -42,6 +42,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.sarif_schema_core",
     "r2morph.reporting.sarif_formatter_builders",
     "r2morph.reporting.sarif_formatter_run",
+    "r2morph.tui_models",
     "r2morph.reporting._public_api",
     "r2morph.reporting.report_rendering_primitives",
     "r2morph.reporting.cli_commands",

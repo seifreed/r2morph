@@ -15,10 +15,9 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any
 
+from r2morph import tui_models as _tui_models
 from r2morph import tui_rendering as _tui_rendering
 from r2morph.tui_diff_helpers import (
     build_disasm_diff_rows,
@@ -26,6 +25,13 @@ from r2morph.tui_diff_helpers import (
     count_disasm_changed_lines,
 )
 from r2morph.tui_filters import FunctionFilter
+
+TUIAction = _tui_models.TUIAction
+TUIMutation = _tui_models.TUIMutation
+TUIFunction = _tui_models.TUIFunction
+TUIPass = _tui_models.TUIPass
+TUIResult = _tui_models.TUIResult
+TUIProgress = _tui_models.TUIProgress
 
 Console = _tui_rendering.Console
 Confirm = _tui_rendering.Confirm
@@ -48,60 +54,6 @@ TextColumn = _tui_rendering.TextColumn
 TimeElapsedColumn = _tui_rendering.TimeElapsedColumn
 
 logger = logging.getLogger(__name__)
-
-
-class TUIAction(str, Enum):
-    SELECT_FUNCTIONS = "select_functions"
-    SELECT_PASSES = "select_passes"
-    PREVIEW_MUTATIONS = "preview_mutations"
-    CONFIRM = "confirm"
-    EXECUTE = "execute"
-    CANCEL = "cancel"
-
-
-@dataclass
-class TUIMutation:
-    address: int
-    function: str | None
-    pass_name: str
-    original_bytes: bytes
-    mutated_bytes: bytes
-    description: str | None = None
-    original_disasm: list[str] | None = None
-    mutated_disasm: list[str] | None = None
-
-
-@dataclass
-class TUIFunction:
-    address: int
-    name: str
-    size: int
-    selected: bool = False
-
-
-@dataclass
-class TUIPass:
-    name: str
-    description: str
-    is_stable: bool
-    selected: bool = False
-    configurable: bool = False
-    config: dict[str, Any] = field(default_factory=dict)
-
-
-@dataclass
-class TUIResult:
-    functions: list[TUIFunction]
-    passes: list[TUIPass]
-    confirmed: bool = False
-
-
-@dataclass
-class TUIProgress:
-    total: int = 0
-    current: int = 0
-    message: str = ""
-    status: str = "running"
 
 
 class MutationTUI:
