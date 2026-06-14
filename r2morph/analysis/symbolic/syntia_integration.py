@@ -25,6 +25,9 @@ from r2morph.analysis.symbolic.syntia_equivalence_helpers import (
     check_mba_equivalence,
     synthesis_equivalence_check,
 )
+from r2morph.analysis.symbolic.syntia_handler_analysis import (
+    analyze_vm_handler as analyze_vm_handler_impl,
+)
 from r2morph.analysis.symbolic.syntia_models import (
     InstructionSemantics,
     SemanticComplexity,
@@ -226,46 +229,7 @@ class SyntiaFramework:
     def analyze_vm_handler(
         self, handler_instructions: list[tuple[int, bytes, str]], handler_id: int
     ) -> VMHandlerSemantics:
-        """
-        Analyze a complete VM handler using semantic learning.
-
-        Args:
-            handler_instructions: List of (address, bytes, disasm) tuples
-            handler_id: Unique handler identifier
-
-        Returns:
-            Complete handler semantics
-        """
-        logger.info(f"Analyzing VM handler {handler_id} with {len(handler_instructions)} instructions")
-
-        handler_semantics = VMHandlerSemantics(
-            handler_id=handler_id,
-            entry_address=handler_instructions[0][0] if handler_instructions else 0,
-            handler_type="unknown",
-        )
-
-        # Learn semantics for each instruction
-        for address, inst_bytes, disasm in handler_instructions:
-            semantics = self.learn_instruction_semantics(inst_bytes, address, disasm)
-            handler_semantics.instruction_semantics.append(semantics)
-
-        # Synthesize overall handler semantics
-        handler_semantics.overall_semantic_formula = self._synthesize_handler_semantics(
-            handler_semantics.instruction_semantics
-        )
-
-        # Determine handler type based on learned semantics
-        handler_semantics.handler_type = self._classify_handler_type(handler_semantics.instruction_semantics)
-
-        # Calculate overall confidence
-        if handler_semantics.instruction_semantics:
-            confidences = [s.confidence for s in handler_semantics.instruction_semantics]
-            handler_semantics.confidence = sum(confidences) / len(confidences)
-
-        # Attempt to generate equivalent native code
-        handler_semantics.equivalent_native_code = self._generate_equivalent_native_code(handler_semantics)
-
-        return handler_semantics
+        return analyze_vm_handler_impl(handler_instructions, handler_id, self.learn_instruction_semantics)
 
     def _synthesize_handler_semantics(self, instruction_semantics: list[InstructionSemantics]) -> str | None:
         """
