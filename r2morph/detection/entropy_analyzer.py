@@ -5,6 +5,7 @@ Entropy analysis for detecting suspicious patterns.
 import logging
 from pathlib import Path
 
+from r2morph.core.constants import HIGH_ENTROPY_THRESHOLD as _HIGH_ENTROPY_THRESHOLD
 from r2morph.detection.entropy_analyzer_models import EntropyResult
 from r2morph.utils.entropy import calculate_entropy, calculate_file_entropy
 
@@ -18,7 +19,7 @@ class EntropyAnalyzer:
     High entropy (>7.0) often indicates compression or encryption.
     """
 
-    HIGH_ENTROPY_THRESHOLD = 7.0
+    HIGH_ENTROPY_THRESHOLD = _HIGH_ENTROPY_THRESHOLD
     SUSPICIOUS_ENTROPY_THRESHOLD = 6.5
 
     def __init__(self) -> None:
