@@ -9,9 +9,13 @@ section names, strings, and entropy analysis.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from r2morph.detection.packer_signature_analysis import (
+    calculate_signature_confidence,
+    detect_packing_layers,
+    get_entry_bytes,
+)
 from r2morph.detection.packer_signature_catalogs import (
     compressor_signatures,
     other_signatures,
@@ -19,7 +23,6 @@ from r2morph.detection.packer_signature_catalogs import (
     vm_protector_signatures,
 )
 from r2morph.detection.packer_signature_models import PackerSignature, PackerType
-from r2morph.utils.entropy import calculate_entropy
 
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
@@ -68,12 +71,10 @@ class PackerSignatureDatabase:
         try:
             sections = binary.get_sections()
             entry_point = binary.info.get("bin", {}).get("baddr", 0)
-            entry_bytes = self._get_entry_bytes(binary, entry_point)
+            entry_bytes = get_entry_bytes(binary, entry_point)
 
             for signature in self.signatures:
-                confidence = self._calculate_signature_confidence(
-                    signature, sections, entry_bytes, binary, entropy_analyzer
-                )
+                confidence = calculate_signature_confidence(signature, sections, entry_bytes, binary, entropy_analyzer)
 
                 if confidence > best_confidence and confidence >= signature.confidence_threshold:
                     best_confidence = confidence
@@ -87,58 +88,6 @@ class PackerSignatureDatabase:
 
         return best_match
 
-    def _get_entry_bytes(self, binary: Binary, entry_point: int, size: int = 32) -> bytes:
-        """Get bytes at entry point."""
-        try:
-            if binary.r2 is None:
-                return b""
-            entry_hex = binary.r2.cmd(f"p8 {size} @ {entry_point}")
-            return bytes.fromhex(entry_hex.strip()) if entry_hex.strip() else b""
-        except Exception:
-            return b""
-
-    def _calculate_signature_confidence(
-        self,
-        signature: PackerSignature,
-        sections: list[dict[str, Any]],
-        entry_bytes: bytes,
-        binary: Binary,
-        entropy_analyzer: EntropyAnalyzer,
-    ) -> float:
-        """Calculate confidence score for a packer signature."""
-        confidence = 0.0
-        total_checks = 0
-
-        if signature.section_names:
-            section_names = [s.get("name", "") for s in sections]
-            for sig_section in signature.section_names:
-                total_checks += 1
-                if any(sig_section in name for name in section_names):
-                    confidence += 1.0
-
-        if signature.entry_patterns and entry_bytes:
-            for pattern in signature.entry_patterns:
-                total_checks += 1
-                if pattern in entry_bytes:
-                    confidence += 1.0
-
-        if signature.string_patterns:
-            try:
-                strings_output = binary.r2.cmd("izz") if binary.r2 is not None else ""
-                for str_pattern in signature.string_patterns:
-                    total_checks += 1
-                    if str_pattern.lower() in strings_output.lower():
-                        confidence += 1.0
-            except Exception as e:
-                logger.debug(f"Failed to check string patterns: {e}")
-
-        entropy_result = entropy_analyzer.analyze_file(Path(binary.path))
-        if entropy_result.overall_entropy >= signature.entropy_threshold:
-            total_checks += 1
-            confidence += 1.0
-
-        return confidence / max(total_checks, 1)
-
     def detect_packing_layers(self, binary: Binary, entropy_analyzer: EntropyAnalyzer) -> dict[str, Any]:
         """
         Detect multiple packing layers.
@@ -150,76 +99,4 @@ class PackerSignatureDatabase:
         Returns:
             Dictionary with layer analysis
         """
-        result: dict[str, Any] = {
-            "layers_detected": 0,
-            "packers": [],
-            "confidence": 0.0,
-            "requires_unpacking": False,
-        }
-
-        try:
-            sections = binary.get_sections()
-            high_entropy_sections = []
-
-            for section in sections:
-                if section.get("size", 0) > 0:
-                    addr = section.get("vaddr", 0)
-                    size = min(section.get("size", 0), 1024)  # Limit for performance
-
-                    try:
-                        if binary.r2 is None:
-                            continue
-                        data_hex = binary.r2.cmd(f"p8 {size} @ {addr}")
-                        if data_hex and data_hex.strip():
-                            data = bytes.fromhex(data_hex.strip())
-                            entropy = self._calculate_entropy(data)
-
-                            if entropy > 7.0:  # High entropy threshold
-                                high_entropy_sections.append(
-                                    {
-                                        "name": section.get("name", ""),
-                                        "entropy": entropy,
-                                        "size": size,
-                                    }
-                                )
-                    except Exception as e:
-                        logger.debug(f"Failed to analyze section entropy: {e}")
-                        continue
-
-            if len(high_entropy_sections) > 1:
-                result["layers_detected"] = len(high_entropy_sections)
-                result["requires_unpacking"] = True
-                result["confidence"] = min(1.0, len(high_entropy_sections) / 5.0)
-
-            sections_list = binary.get_sections()
-            entry_bytes = self._get_entry_bytes(binary, binary.info.get("bin", {}).get("baddr", 0))
-
-            for signature in self.signatures:
-                confidence = self._calculate_signature_confidence(
-                    signature, sections_list, entry_bytes, binary, entropy_analyzer
-                )
-
-                if confidence > 0.5:
-                    result["packers"].append(
-                        {
-                            "name": signature.name,
-                            "type": signature.packer_type.value,
-                            "confidence": confidence,
-                        }
-                    )
-
-            if len(result["packers"]) > 1:
-                result["layers_detected"] = max(result["layers_detected"], len(result["packers"]))
-                result["requires_unpacking"] = True
-
-        except Exception as e:
-            logger.error(f"Layer detection failed: {e}")
-
-        return result
-
-    def _calculate_entropy(self, data: bytes) -> float:
-        """Calculate Shannon entropy of data.
-
-        Delegates to shared utility in r2morph.utils.entropy.
-        """
-        return calculate_entropy(data)
+        return detect_packing_layers(self.signatures, binary, entropy_analyzer)
