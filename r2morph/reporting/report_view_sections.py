@@ -6,6 +6,7 @@ from typing import Any
 
 from r2morph.reporting.report_context import ReportViews
 from r2morph.reporting.report_view_details import _assemble_report_views
+from r2morph.reporting.report_view_gate_views import build_gate_views
 from r2morph.reporting.report_view_pass_views import build_pass_views
 from r2morph.reporting.report_view_projections import _build_lookup_maps
 from r2morph.reporting.report_view_summary import _build_summary_views
@@ -59,61 +60,6 @@ def _build_mismatch_views(
     }
 
 
-def _build_gate_views(
-    *,
-    gate_failure_priority: list[dict[str, Any]],
-    gate_failure_summary: dict[str, Any] | None,
-    gate_failure_severity_priority: list[dict[str, Any]],
-    normalized_pass_map: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
-    """Build failed_gates_rows, failed_gates_compact_rows, failed_gates_final_rows, failed_gates_by_pass."""
-    failed_gates_rows = [
-        {
-            "pass_name": row.get("pass_name"),
-            "failure_count": int(row.get("failure_count", 0)),
-            "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-            "failures": list(row.get("failures", [])),
-            "role": normalized_pass_map.get(str(row.get("pass_name", "")), {}).get("role", "requested-mode"),
-        }
-        for row in gate_failure_priority
-        if row.get("pass_name")
-    ]
-    failed_gates_compact_rows = [
-        {
-            "pass_name": str(row.get("pass_name")),
-            "failure_count": int(row.get("failure_count", 0)),
-            "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-            "role": row.get("role", "requested-mode"),
-            "failed": bool(row.get("failures")),
-        }
-        for row in failed_gates_rows
-        if row.get("pass_name")
-    ]
-    failed_gates_final_rows = [
-        {
-            "pass_name": str(row.get("pass_name")),
-            "failure_count": int(row.get("failure_count", 0)),
-            "strictest_expected_severity": row.get("strictest_expected_severity", "unknown"),
-            "role": row.get("role", "requested-mode"),
-            "failed": bool(row.get("failures")),
-            "failures": list(row.get("failures", [])),
-        }
-        for row in failed_gates_rows
-        if row.get("pass_name")
-    ]
-    failed_gates_by_pass = {str(row.get("pass_name")): dict(row) for row in failed_gates_rows if row.get("pass_name")}
-    failed_gates_expected_severity = dict(
-        (gate_failure_summary or {}).get("require_pass_severity_failures_by_expected_severity", {})
-    )
-    return {
-        "failed_gates_rows": failed_gates_rows,
-        "failed_gates_compact_rows": failed_gates_compact_rows,
-        "failed_gates_final_rows": failed_gates_final_rows,
-        "failed_gates_by_pass": failed_gates_by_pass,
-        "failed_gates_expected_severity": failed_gates_expected_severity,
-    }
-
-
 def build_report_views(
     *,
     pass_risk_buckets: dict[str, list[str]],
@@ -147,7 +93,7 @@ def build_report_views(
     symbolic_severity_map = lookups["symbolic_severity_map"]
     discarded_by_pass = lookups["discarded_by_pass"]
 
-    gates = _build_gate_views(
+    gates = build_gate_views(
         gate_failure_priority=gate_failure_priority,
         gate_failure_summary=gate_failure_summary,
         gate_failure_severity_priority=gate_failure_severity_priority,
