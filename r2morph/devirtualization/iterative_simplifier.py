@@ -18,90 +18,21 @@ import concurrent.futures
 import logging
 import threading
 import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, replace
-from enum import Enum
+from dataclasses import replace
 from typing import Any
 
 from .cfo_simplifier import CFOSimplifier
+from .iterative_simplifier_models import (
+    SimplificationMetrics,
+    SimplificationPass,
+    SimplificationPhase,
+    SimplificationResult,
+    SimplificationStrategy,
+)
 from .mba_solver import MBASolver
 from .vm_handler_analyzer import VMHandlerAnalyzer
 
 logger = logging.getLogger(__name__)
-
-
-class SimplificationStrategy(Enum):
-    """Different simplification strategies."""
-
-    CONSERVATIVE = "conservative"  # Safe, minimal changes
-    AGGRESSIVE = "aggressive"  # Maximum simplification
-    ADAPTIVE = "adaptive"  # Adapt based on results
-    TARGETED = "targeted"  # Focus on specific patterns
-
-
-class SimplificationPhase(Enum):
-    """Phases of the simplification process."""
-
-    ANALYSIS = "analysis"  # Initial analysis
-    PREPROCESSING = "preprocessing"  # Prepare for simplification
-    CFO_REMOVAL = "cfo_removal"  # Control flow obfuscation
-    MBA_SIMPLIFICATION = "mba_simplification"  # Mixed Boolean Arithmetic
-    VM_DEVIRTUALIZATION = "vm_devirtualization"  # VM handlers
-    OPTIMIZATION = "optimization"  # Final optimizations
-    VALIDATION = "validation"  # Verify results
-
-
-@dataclass
-class SimplificationMetrics:
-    """Metrics for tracking simplification progress."""
-
-    iteration: int = 0
-    total_instructions: int = 0
-    removed_instructions: int = 0
-    simplified_expressions: int = 0
-    resolved_jumps: int = 0
-    eliminated_predicates: int = 0
-    devirtualized_handlers: int = 0
-    complexity_reduction: float = 0.0
-    execution_time: float = 0.0
-    memory_usage: int = 0
-
-
-@dataclass
-class SimplificationResult:
-    """Result of iterative simplification."""
-
-    success: bool
-    strategy_used: SimplificationStrategy
-    phases_completed: list[SimplificationPhase] = field(default_factory=list)
-    metrics: SimplificationMetrics = field(default_factory=SimplificationMetrics)
-    warnings: list[str] = field(default_factory=list)
-    errors: list[str] = field(default_factory=list)
-    intermediate_results: dict[str, Any] = field(default_factory=dict)
-    final_binary: bytes | None = None
-
-
-class SimplificationPass(ABC):
-    """Abstract base class for simplification passes."""
-
-    @abstractmethod
-    def apply(self, binary: Any, context: dict[str, Any]) -> tuple[bool, dict[str, Any]]:
-        """
-        Apply the simplification pass.
-
-        Args:
-            binary: Binary object to simplify
-            context: Context information from previous passes
-
-        Returns:
-            Tuple of (changes_made, updated_context)
-        """
-        pass
-
-    @abstractmethod
-    def get_name(self) -> str:
-        """Get the name of this pass."""
-        pass
 
 
 class CFOSimplificationPass(SimplificationPass):
