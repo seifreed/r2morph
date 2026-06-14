@@ -15,8 +15,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from r2morph.analysis._register_names import X86_REGISTER_NAMES
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
+from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 
 # Register alias families used by Register.aliases(): each set lists every
 # sub-register name that aliases the same physical register. The families are
@@ -394,21 +394,7 @@ class DataFlowAnalyzer:
 
     def _extract_registers_from_operand(self, operand: str) -> set[Register]:
         """Extract register names from an operand string."""
-        registers = set()
-        operand = operand.lower()
-
-        for reg in X86_REGISTER_NAMES:
-            if reg in operand:
-                size = 64 if reg.startswith("r") and "d" not in reg and "w" not in reg and "b" not in reg else 32
-                if reg.endswith("d"):
-                    size = 32
-                elif reg.endswith("w"):
-                    size = 16
-                elif reg.endswith("b"):
-                    size = 8
-                registers.add(Register(reg, size))
-
-        return registers
+        return {Register(reg, size) for reg, size in extract_registers_from_operand(operand)}
 
     def _compute_reaching_definitions(self) -> None:
         """Compute reaching definitions (forward data flow)."""
