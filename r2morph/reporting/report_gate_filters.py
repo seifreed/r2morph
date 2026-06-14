@@ -2,13 +2,17 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
-from r2morph.core.constants import SEVERITY_ORDER
+from r2morph.core.constants import SEVERITY_ORDER as CORE_SEVERITY_ORDER
 from r2morph.reporting.gate_evaluator import (
     build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
 )
+from r2morph.reporting.report_severity_parsing import (
+    _expected_severity_rank_from_failure as _expected_severity_rank_from_failure,
+)
+
+SEVERITY_ORDER = CORE_SEVERITY_ORDER
 
 
 def _filter_failed_gates_view(
@@ -52,11 +56,3 @@ def _filter_failed_gates_view(
         filtered_severity_priority = _build_gate_failure_severity_priority(filtered_summary)
     filtered_failed = bool(filtered_summary.get("require_pass_severity_failure_count", 0))
     return filtered_summary, filtered_priority, filtered_severity_priority, filtered_failed
-
-
-def _expected_severity_rank_from_failure(failure: str) -> int:
-    """Map a gate failure string to a severity rank."""
-    match = re.search(r"expected <= ([^)]+)", failure)
-    if match:
-        return SEVERITY_ORDER.get(match.group(1), 99)
-    return 99
