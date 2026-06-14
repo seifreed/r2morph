@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.reporting.report_helpers import _symbolic_summary_from_normalized_row
+from r2morph.reporting.report_helpers import _pass_evidence_from_row, _symbolic_summary_from_normalized_row
 from r2morph.reporting.report_state import _normalized_pass_map as _normalized_pass_map_state
 
 
@@ -45,13 +45,7 @@ def resolve_only_pass_view(
         pass_evidence = compact_row.get("evidence")
         normalized_row = normalized_pass_map.get(pass_name) or compact_row.get("normalized") or compact_row
         if normalized_row:
-            pass_evidence = pass_evidence or {
-                "pass_name": pass_name,
-                "changed_region_count": normalized_row.get("changed_region_count", 0),
-                "changed_bytes": normalized_row.get("changed_bytes", 0),
-                "structural_issue_count": normalized_row.get("structural_issue_count", 0),
-                "symbolic_binary_mismatched_regions": normalized_row.get("symbolic_binary_mismatched_regions", 0),
-            }
+            pass_evidence = pass_evidence or _pass_evidence_from_row(pass_name, normalized_row)
     context = filtered_summary.get("pass_validation_context", {}).get(pass_name)
     if context is None:
         compact_row = dict(only_pass_map.get(pass_name, {}) or {})

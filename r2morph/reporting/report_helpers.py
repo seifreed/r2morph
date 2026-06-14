@@ -67,6 +67,17 @@ def _normalized_pass_map(
     return {str(row.get("pass_name")): dict(row) for row in normalized_pass_results if row.get("pass_name")}
 
 
+def _pass_evidence_from_row(pass_name: Any, row: dict[str, Any]) -> dict[str, Any]:
+    """Project a normalized/general pass row into a pass-evidence dict."""
+    return {
+        "pass_name": pass_name,
+        "changed_region_count": row.get("changed_region_count", 0),
+        "changed_bytes": row.get("changed_bytes", 0),
+        "structural_issue_count": row.get("structural_issue_count", 0),
+        "symbolic_binary_mismatched_regions": row.get("symbolic_binary_mismatched_regions", 0),
+    }
+
+
 def _symbolic_summary_from_normalized_row(pass_name: str, normalized_row: dict[str, Any]) -> dict[str, Any]:
     """Project a normalized per-pass row into a symbolic-summary dict."""
     return {

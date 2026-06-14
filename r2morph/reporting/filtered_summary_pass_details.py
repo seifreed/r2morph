@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.reporting.report_helpers import _sort_pass_evidence
+from r2morph.reporting.report_helpers import _pass_evidence_from_row, _sort_pass_evidence
 
 
 def _populate_pass_capabilities_and_context(
@@ -107,13 +107,7 @@ def _populate_pass_evidence(
     if not filtered_summary["pass_evidence"] and summary_general_pass_rows:
         filtered_summary["pass_evidence"] = _sort_pass_evidence(
             [
-                {
-                    "pass_name": row.get("pass_name"),
-                    "changed_region_count": row.get("changed_region_count", 0),
-                    "changed_bytes": row.get("changed_bytes", 0),
-                    "structural_issue_count": row.get("structural_issue_count", 0),
-                    "symbolic_binary_mismatched_regions": row.get("symbolic_binary_mismatched_regions", 0),
-                }
+                _pass_evidence_from_row(row.get("pass_name"), row)
                 for row in summary_general_pass_rows
                 if row.get("pass_name") and (not visible_passes or row.get("pass_name") in visible_passes)
             ]
@@ -121,13 +115,7 @@ def _populate_pass_evidence(
     if not filtered_summary["pass_evidence"] and filtered_summary["normalized_pass_results"]:
         filtered_summary["pass_evidence"] = _sort_pass_evidence(
             [
-                {
-                    "pass_name": row.get("pass_name"),
-                    "changed_region_count": row.get("changed_region_count", 0),
-                    "changed_bytes": row.get("changed_bytes", 0),
-                    "structural_issue_count": row.get("structural_issue_count", 0),
-                    "symbolic_binary_mismatched_regions": row.get("symbolic_binary_mismatched_regions", 0),
-                }
+                _pass_evidence_from_row(row.get("pass_name"), row)
                 for row in filtered_summary["normalized_pass_results"]
                 if row.get("pass_name")
             ]
@@ -135,13 +123,7 @@ def _populate_pass_evidence(
     if not filtered_summary["pass_evidence"] and normalized_pass_map:
         filtered_summary["pass_evidence"] = _sort_pass_evidence(
             [
-                {
-                    "pass_name": pass_name,
-                    "changed_region_count": row.get("changed_region_count", 0),
-                    "changed_bytes": row.get("changed_bytes", 0),
-                    "structural_issue_count": row.get("structural_issue_count", 0),
-                    "symbolic_binary_mismatched_regions": row.get("symbolic_binary_mismatched_regions", 0),
-                }
+                _pass_evidence_from_row(pass_name, row)
                 for pass_name, row in normalized_pass_map.items()
                 if pass_name in set(filtered_summary["passes"])
             ]
