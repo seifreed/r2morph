@@ -115,6 +115,7 @@ REPORTING_MODULES = [
     "r2morph.validation.performance_regression_storage",
     "r2morph.validation.performance_regression_metadata",
     "r2morph.validation.performance_regression_measurement",
+    "r2morph.validation.fuzzer_inputs",
     "r2morph.validation.benchmark_reporting_exports",
     "r2morph.validation.benchmark_reporting_summary",
     "r2morph.validation.benchmark_reporting_text",

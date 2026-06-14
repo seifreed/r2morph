@@ -8,6 +8,7 @@ import string
 from dataclasses import dataclass
 from pathlib import Path
 
+from r2morph.validation import fuzzer_inputs
 from r2morph.validation.validator import BinaryValidator, ValidationResult
 
 logger = logging.getLogger(__name__)
@@ -125,28 +126,7 @@ class MutationFuzzer:
         Returns:
             Generated input string
         """
-        length = random.randint(0, 1000)
-
-        if input_type == "random":
-            return "".join(chr(random.randint(0, 255)) for _ in range(length))
-
-        elif input_type == "ascii":
-            return "".join(random.choice(string.printable) for _ in range(length))
-
-        elif input_type == "binary":
-            return bytes(random.randint(0, 255) for _ in range(length)).decode(errors="replace")
-
-        elif input_type == "structured":
-            templates = [
-                lambda: str(random.randint(-1000000, 1000000)),
-                lambda: str(random.random()),
-                lambda: "".join(random.choices(string.ascii_letters, k=random.randint(1, 100))),
-                lambda: " ".join(str(random.randint(0, 100)) for _ in range(random.randint(1, 10))),
-            ]
-            return random.choice(templates)()
-
-        else:
-            return ""
+        return fuzzer_inputs.generate_fuzz_input(input_type)
 
     def fuzz_with_args(self, original_path: Path, mutated_path: Path, arg_count: int = 5) -> FuzzResult:
         """
