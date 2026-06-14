@@ -100,6 +100,9 @@ from r2morph.core.report_helpers_validation import (
 from r2morph.core.report_helpers_validation import (
     _summarize_validation_role_rows as _summarize_validation_role_rows,
 )
+from r2morph.reporting.report_summary_lookup import (
+    _summary_first as _summary_first,
+)
 from r2morph.reporting.report_evidence_sorting import (
     _sort_pass_evidence as _sort_pass_evidence,
 )

@@ -2,10 +2,11 @@
 
 from typing import Any
 
-from r2morph.reporting.report_helpers import _normalized_pass_map, _summary_first
+from r2morph.reporting.report_helpers import _normalized_pass_map
 from r2morph.reporting.report_pass_filters import (
     resolve_pass_filter_sets as _resolve_pass_filter_sets_impl,
 )
+from r2morph.reporting.report_summary_lookup import _summary_first
 
 
 def resolve_general_symbolic_state(

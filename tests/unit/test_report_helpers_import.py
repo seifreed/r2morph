@@ -20,6 +20,7 @@ from r2morph.core import report_helpers_symbolic_summary as symbolic_summary_mod
 from r2morph.core import report_helpers_triage as triage_mod
 from r2morph.reporting import report_evidence_sorting as evidence_sorting_mod
 from r2morph.reporting import report_helpers_symbolic_view as symbolic_view_mod
+from r2morph.reporting import report_summary_lookup as summary_lookup_mod
 
 REEXPORTED_NAMES = [
     "REPORT_SCHEMA_VERSION",
@@ -42,6 +43,7 @@ REEXPORTED_NAMES = [
     "_summarize_pass_timings",
     "_summarize_structural_evidence",
     "_sort_pass_evidence",
+    "_summary_first",
     "_summarize_symbolic_coverage_by_pass",
     "_summarize_symbolic_issue_passes",
     "_summarize_symbolic_overview",
@@ -156,6 +158,13 @@ def test_canonical_evidence_sorting_module_defines_evidence_sorting_helper() -> 
     ), "report_evidence_sorting missing _sort_pass_evidence"
 
 
+def test_canonical_summary_lookup_module_defines_summary_lookup_helper() -> None:
+    assert hasattr(
+        summary_lookup_mod,
+        "_summary_first",
+    ), "report_summary_lookup missing _summary_first"
+
+
 def test_engine_reexports_are_the_same_objects() -> None:
     for name in REEXPORTED_NAMES:
         assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
@@ -240,6 +249,18 @@ def test_evidence_sorting_helper_is_reexported_from_facade() -> None:
         evidence_sorting_mod,
         "_sort_pass_evidence",
     ), "core.engine._sort_pass_evidence diverged from report_evidence_sorting._sort_pass_evidence"
+
+
+def test_summary_lookup_helper_is_reexported_from_facade() -> None:
+    assert getattr(helpers_mod, "_summary_first") is getattr(
+        summary_lookup_mod,
+        "_summary_first",
+    ), "core.report_helpers._summary_first diverged from report_summary_lookup._summary_first"
+    assert hasattr(engine_mod, "_summary_first"), "core.engine no longer re-exports _summary_first"
+    assert getattr(engine_mod, "_summary_first") is getattr(
+        summary_lookup_mod,
+        "_summary_first",
+    ), "core.engine._summary_first diverged from report_summary_lookup._summary_first"
 
 
 def test_symbolic_helpers_are_reexported_from_facade() -> None:

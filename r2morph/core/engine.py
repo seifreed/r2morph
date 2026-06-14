@@ -55,6 +55,7 @@ from r2morph.core.report_helpers import (  # noqa: F401
     _summarize_validation_adjustment_rows,
     _summarize_validation_adjustments,
     _summarize_validation_role_rows,
+    _summary_first,
 )
 from r2morph.protocols import (
     BinarySignerProtocol,

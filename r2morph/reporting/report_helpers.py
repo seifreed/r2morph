@@ -28,6 +28,7 @@ from r2morph.reporting.report_helpers_symbolic_view import (
 from r2morph.reporting.report_mutation_selection import (
     _select_report_mutations as _select_report_mutations,
 )
+from r2morph.reporting.report_summary_lookup import _summary_first as _summary_first_impl
 
 console = Console()
 
@@ -37,13 +38,7 @@ def _summary_first(
     key: str,
     fallback: Any,
 ) -> Any:
-    """Return a persisted summary value when present, otherwise the fallback."""
-    value = summary.get(key)
-    if value is None:
-        return fallback
-    if isinstance(value, (list, dict)) and not value:
-        return fallback
-    return value
+    return _summary_first_impl(summary, key, fallback)
 
 
 def _visible_rows(

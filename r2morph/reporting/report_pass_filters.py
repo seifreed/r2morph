@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from r2morph.reporting.report_helpers import _summary_first
 from r2morph.reporting.report_helpers_classification import (
     _has_structural_risk,
     _has_symbolic_risk,
@@ -15,6 +14,7 @@ from r2morph.reporting.report_helpers_classification import (
     _is_uncovered_pass,
     _pass_names_from_triage_rows,
 )
+from r2morph.reporting.report_summary_lookup import _summary_first
 
 
 def resolve_pass_filter_sets(
