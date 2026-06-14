@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.core.constants import SEVERITY_ORDER
+from r2morph.core.constants import SEVERITY_ORDER, UNKNOWN_SEVERITY_RANK
+from r2morph.reporting.report_severity_parsing import (
+    _expected_severity_from_failure,
+    _expected_severity_rank_from_failure,
+)
 
 
 def summarize_gate_failures(gate_evaluation: dict[str, Any]) -> dict[str, Any]:
@@ -19,9 +23,8 @@ def summarize_gate_failures(gate_evaluation: dict[str, Any]) -> dict[str, Any]:
         failure_text = str(failure)
         pass_name = failure_text.split("=", 1)[0].strip() or "unknown"
         pass_failure_map.setdefault(pass_name, []).append(failure_text)
-        marker = "expected <= "
-        if marker in failure_text:
-            severity = failure_text.split(marker, 1)[1].rstrip(") ").strip()
+        severity = _expected_severity_from_failure(failure_text)
+        if severity is not None:
             failures_by_expected_severity[severity] = failures_by_expected_severity.get(severity, 0) + 1
     min_severity_failed = requested.get("min_severity") is not None and not results.get("min_severity_passed", True)
     require_pass_failed = bool(pass_failures)
@@ -46,36 +49,24 @@ def build_gate_failure_priority(gate_failures: dict[str, Any] | None) -> list[di
     """Build an ordered machine-readable priority list for pass gate failures."""
     if not gate_failures:
         return []
-    severity_order = SEVERITY_ORDER
-
-    def _expected_severity_rank(failure: str) -> int:
-        marker = "expected <= "
-        if marker not in failure:
-            return 99
-        severity = failure.split(marker, 1)[1].rstrip(") ").strip()
-        return severity_order.get(severity, 99)
-
     ordered_failures = sorted(
         gate_failures.get("require_pass_severity_failures_by_pass", {}).items(),
         key=lambda item: (
-            min(_expected_severity_rank(failure) for failure in item[1]),
+            min(_expected_severity_rank_from_failure(failure) for failure in item[1]),
             -len(item[1]),
             item[0],
         ),
     )
     priority = []
     for pass_name, failures in ordered_failures:
-        strictest = "unknown"
-        if failures:
-            strictest = min(
-                (
-                    failure.split("expected <= ", 1)[1].rstrip(") ").strip()
-                    for failure in failures
-                    if "expected <= " in failure
-                ),
-                key=lambda sev: severity_order.get(sev, 99),
-                default="unknown",
-            )
+        severities = [
+            severity for failure in failures if (severity := _expected_severity_from_failure(failure)) is not None
+        ]
+        strictest = min(
+            severities,
+            key=lambda sev: SEVERITY_ORDER.get(sev, UNKNOWN_SEVERITY_RANK),
+            default="unknown",
+        )
         priority.append(
             {
                 "pass_name": pass_name,

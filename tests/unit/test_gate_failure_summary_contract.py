@@ -24,6 +24,7 @@ def test_gate_failure_summary_contract() -> None:
 
     priority = build_gate_failure_priority(summary)
     assert priority[0]["pass_name"] == "fuzz"
+    assert priority[0]["strictest_expected_severity"] == "bounded-only"
 
     severity_priority = build_gate_failure_severity_priority(summary)
     assert severity_priority[0]["severity"] == "bounded-only"
