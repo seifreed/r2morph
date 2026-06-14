@@ -64,8 +64,8 @@ from r2morph.core.parallel_executor import (
     ResolutionStrategy,
     ResultMerger,
     TaskStatus,
-    WorkQueue,
 )
+from r2morph.core.parallel_work_queue import WorkQueue
 from r2morph.core.reader import BinaryReader
 from r2morph.core.writer import BinaryWriter
 
