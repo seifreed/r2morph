@@ -8,6 +8,8 @@ in x86-64, enabling size-aware code transformations.
 from dataclasses import dataclass
 from typing import Final
 
+from r2morph.analysis.register_tracker import REG_8H, REG_8L, REG_16, REG_32, REG_64
+
 
 @dataclass
 class RegisterInfo:
@@ -17,13 +19,6 @@ class RegisterInfo:
     subregisters: tuple[str | None, ...]
     index: int
 
-
-REG_64: Final[int] = 1
-REG_32: Final[int] = 2
-REG_16: Final[int] = 4
-REG_8H: Final[int] = 8
-REG_8L: Final[int] = 16
-REG_ALL: Final[int] = REG_64 | REG_32 | REG_16 | REG_8H | REG_8L
 
 REGISTER_MAP: dict[str, tuple[str | None, str | None, str | None, str]] = {
     "rax": (None, "eax", "ax", "al"),
