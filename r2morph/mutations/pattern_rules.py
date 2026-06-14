@@ -181,7 +181,7 @@ def match_dec_reg(instructions: list[Instruction]) -> list[MatchResult]:
     return _match_unary_reg(instructions, "dec")
 
 
-def match_shl_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
+def _match_shift_reg_imm(instructions: list[Instruction], mnemonics: tuple[str, ...]) -> list[MatchResult]:
     from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
 
     matches = []
@@ -191,7 +191,7 @@ def match_shl_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
         ins = instructions[idx]
         next_ins = instructions[idx + 1]
 
-        if not hasattr(ins, "mnemonic") or ins.mnemonic not in ("shl", "sal"):
+        if not hasattr(ins, "mnemonic") or ins.mnemonic not in mnemonics:
             continue
 
         op1 = getattr(ins, "operand_1", "")
@@ -214,41 +214,14 @@ def match_shl_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
         matches.append(MatchResult(index=idx, length=1, operands=[op1, op2]))
 
     return matches
+
+
+def match_shl_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
+    return _match_shift_reg_imm(instructions, ("shl", "sal"))
 
 
 def match_shr_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
-
-    matches = []
-    shift_values = {"1", "2", "4", "8"}
-
-    for idx in range(len(instructions) - 1):
-        ins = instructions[idx]
-        next_ins = instructions[idx + 1]
-
-        if not hasattr(ins, "mnemonic") or ins.mnemonic != "shr":
-            continue
-
-        op1 = getattr(ins, "operand_1", "")
-        op2 = getattr(ins, "operand_2", "")
-
-        if not isinstance(op1, str) or not isinstance(op2, str):
-            continue
-
-        reg_size = REG_SIZES_MAP.get(op1.lower() if op1 else "", 0)
-        if not (reg_size & (REG_64 | REG_32)):
-            continue
-
-        op2_clean = op2.strip().lower().lstrip("0x")
-        if op2_clean not in shift_values and op2 not in shift_values:
-            continue
-
-        if hasattr(next_ins, "type") and next_ins.type == "cjmp":
-            continue
-
-        matches.append(MatchResult(index=idx, length=1, operands=[op1, op2]))
-
-    return matches
+    return _match_shift_reg_imm(instructions, ("shr",))
 
 
 def _match_binary_reg_imm_small(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
