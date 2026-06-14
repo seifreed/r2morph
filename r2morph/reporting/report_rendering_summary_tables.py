@@ -7,6 +7,10 @@ from typing import Any
 from rich.console import Console
 
 from r2morph.reporting.report_rendering_primitives import _get_console, create_table
+from r2morph.reporting.report_rendering_summary_table_helpers import (
+    build_summary_rows,
+    build_validation_context_rows,
+)
 
 
 def render_summary_table(
@@ -25,12 +29,8 @@ def render_summary_table(
         ],
     )
 
-    for key, value in summary.items():
-        if isinstance(value, dict):
-            continue
-        if isinstance(value, list):
-            continue
-        table.add_row(key.replace("_", " ").title(), str(value))
+    for label, value in build_summary_rows(summary):
+        table.add_row(label, value)
 
     c.print(table)
 
@@ -54,11 +54,7 @@ def render_validation_context_table(
         ],
     )
 
-    for ctx in validation_contexts:
-        table.add_row(
-            ctx.get("pass_name", "unknown"),
-            ctx.get("validation_mode", "unknown"),
-            "Yes" if ctx.get("degraded_execution") else "No",
-        )
+    for pass_name, mode, degraded in build_validation_context_rows(validation_contexts):
+        table.add_row(pass_name, mode, degraded)
 
     c.print(table)
