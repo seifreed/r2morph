@@ -6,7 +6,6 @@ using Z3 SMT solver and pattern matching techniques. MBA expressions are
 commonly used in obfuscation to make simple arithmetic operations appear complex.
 """
 
-import ast
 import logging
 import re
 import time
@@ -14,7 +13,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
-from r2morph.core.safe_eval import safe_eval_arithmetic_node
+from .mba_solver_helpers import (
+    assess_complexity,
+    calculate_complexity_reduction,
+    calculate_parentheses_depth,
+    calculate_polynomial_degree,
+    cleanup_z3_output,
+    count_coefficients,
+    evaluate_expression,
+    extract_variables,
+    find_simple_equivalent,
+    generate_native_equivalent,
+    is_linear_mba,
+    load_mba_patterns,
+)
 
 if TYPE_CHECKING:
     import z3
@@ -91,7 +103,7 @@ class MBASolver:
 
         self.timeout = timeout
         self.max_variables = max_variables
-        self.known_patterns = self._load_mba_patterns()
+        self.known_patterns = load_mba_patterns()
 
         self.stats = {
             "expressions_analyzed": 0,
@@ -99,22 +111,6 @@ class MBASolver:
             "pattern_matches": 0,
             "z3_simplifications": 0,
         }
-
-    def _load_mba_patterns(self) -> dict[str, str]:
-        """Load known MBA patterns and their simplified forms."""
-        patterns = {
-            # Linear MBA patterns
-            r"(.+)\s*\+\s*(.+)\s*-\s*(.+)\s*&\s*(.+)": r"\1 + \2",  # x + y - (x & y) = x | y
-            r"(.+)\s*\^\s*(.+)\s*\+\s*2\s*\*\s*\((.+)\s*&\s*(.+)\)": r"\1 + \2",  # x ^ y + 2*(x & y) = x + y
-            r"(.+)\s*\|\s*(.+)\s*\+\s*(.+)\s*&\s*(.+)": r"2*(\1) + 2*(\2) - (\1 + \2)",  # (x | y) + (x & y) = x + y
-            # Boolean to arithmetic conversions
-            r"(.+)\s*\&\s*(.+)\s*\|\s*\~\((.+)\s*\^\s*(.+)\)": r"\1 == \2",  # (x & y) | ~(x ^ y) = x == y
-            r"\~\((.+)\s*\^\s*(.+)\)": r"\1 == \2",  # ~(x ^ y) = x == y
-            # Common obfuscation patterns
-            r"(.+)\s*\*\s*2\s*-\s*(.+)": r"\1 + (\1 - \2)",  # x*2 - y = x + (x - y)
-            r"(.+)\s*\+\s*(.+)\s*\*\s*(.+)\s*-\s*(.+)": r"optimize_complex",  # Mark for complex optimization
-        }
-        return patterns
 
     def analyze_mba_expression(self, expression: str) -> MBAExpression:
         """
@@ -142,73 +138,27 @@ class MBASolver:
 
     def _extract_variables(self, expression: str) -> set[str]:
         """Extract variable names from expression."""
-
-        var_pattern = r"\b[a-zA-Z][a-zA-Z0-9_]*\b"
-        potential_vars = re.findall(var_pattern, expression)
-
-        operators = {"and", "or", "xor", "not", "shl", "shr", "add", "sub", "mul", "div"}
-        variables = set()
-
-        for var in potential_vars:
-            if var.lower() not in operators and not var.isdigit():
-                variables.add(var)
-
-        return variables
+        return extract_variables(expression)
 
     def _assess_complexity(self, expression: str) -> MBAComplexity:
         """Assess the complexity of an MBA expression."""
-        op_count = sum(expression.count(op) for op in ["+", "-", "*", "/", "&", "|", "^", "~"])
-        paren_depth = self._calculate_parentheses_depth(expression)
-
-        if op_count <= 3 and paren_depth <= 2:
-            return MBAComplexity.SIMPLE
-        elif op_count <= 10 and paren_depth <= 4:
-            return MBAComplexity.MEDIUM
-        else:
-            return MBAComplexity.COMPLEX
+        return MBAComplexity(assess_complexity(expression))
 
     def _calculate_parentheses_depth(self, expression: str) -> int:
         """Calculate maximum parentheses nesting depth."""
-        max_depth = 0
-        current_depth = 0
-
-        for char in expression:
-            if char == "(":
-                current_depth += 1
-                max_depth = max(max_depth, current_depth)
-            elif char == ")":
-                current_depth -= 1
-
-        return max_depth
+        return calculate_parentheses_depth(expression)
 
     def _is_linear_mba(self, expression: str) -> bool:
         """Check if expression is a linear MBA."""
-        # Linear MBA contains no multiplication between variables
-        # This is a simplified check
-        return "*" not in expression or not any(
-            var1 + "*" + var2 in expression or var2 + "*" + var1 in expression
-            for var1 in self._extract_variables(expression)
-            for var2 in self._extract_variables(expression)
-            if var1 != var2
-        )
+        return is_linear_mba(expression)
 
     def _calculate_polynomial_degree(self, expression: str) -> int:
         """Calculate polynomial degree (simplified estimation)."""
-        max_degree = 1
-        mult_parts = expression.split("*")
-        for part in mult_parts:
-            var_count = len(self._extract_variables(part))
-            max_degree = max(max_degree, var_count)
-
-        return max_degree
+        return calculate_polynomial_degree(expression)
 
     def _count_coefficients(self, expression: str) -> int:
         """Count numeric coefficients in expression."""
-
-        number_pattern = r"\b\d+\b"
-        numbers = re.findall(number_pattern, expression)
-
-        return len(numbers)
+        return count_coefficients(expression)
 
     def simplify_mba(self, expression: str, method: str = "auto") -> SimplificationResult:
         """
@@ -368,10 +318,7 @@ class MBASolver:
 
     def _cleanup_z3_output(self, z3_output: str) -> str:
         """Clean up Z3 output formatting."""
-        cleaned = z3_output.replace("BitVecRef", "").replace("BitVecVal", "")
-        cleaned = re.sub(r"\b(\w+)#64\b", r"\1", cleaned)
-
-        return cleaned.strip()
+        return cleanup_z3_output(z3_output)
 
     def _simplify_with_truth_table(self, mba: MBAExpression) -> str | None:
         """Simplify using truth table analysis (for small expressions)."""
@@ -408,78 +355,19 @@ class MBASolver:
 
     def _evaluate_expression(self, expression: str, assignment: dict[str, int]) -> int:
         """Evaluate expression with given variable assignment using safe AST evaluation."""
-        expr = expression
-        for var, value in assignment.items():
-            expr = expr.replace(var, str(value))
-
-        expr = expr.replace("&", " & ").replace("|", " | ").replace("^", " ^ ")
-
-        try:
-            tree = ast.parse(expr, mode="eval")
-            result = safe_eval_arithmetic_node(tree.body)
-            return int(result)
-        except Exception as e:
-            logger.debug(f"Failed to evaluate expression '{expr}': {e}")
-            return 0
+        return evaluate_expression(expression, assignment)
 
     def _find_simple_equivalent(self, truth_table: dict[tuple, int], variables: list[str]) -> str | None:
         """Find simple equivalent expression from truth table."""
-        values = list(truth_table.values())
-        if all(v == 0 for v in values):
-            return "0"
-        if all(v == 1 for v in values):
-            return "1"
-
-        for i, var in enumerate(variables):
-            if all(truth_table[inputs] == inputs[i] for inputs in truth_table):
-                return var
-
-        if len(variables) >= 2:
-            var1, var2 = variables[0], variables[1]
-
-            xor_match = all(truth_table[inputs] == (inputs[0] ^ inputs[1]) for inputs in truth_table)
-            if xor_match:
-                return f"{var1} ^ {var2}"
-
-            and_match = all(truth_table[inputs] == (inputs[0] & inputs[1]) for inputs in truth_table)
-            if and_match:
-                return f"{var1} & {var2}"
-
-            or_match = all(truth_table[inputs] == (inputs[0] | inputs[1]) for inputs in truth_table)
-            if or_match:
-                return f"{var1} | {var2}"
-
-        return None
+        return find_simple_equivalent(truth_table, variables)
 
     def _calculate_complexity_reduction(self, original: str, simplified: str) -> float:
         """Calculate complexity reduction percentage."""
-        original_complexity = len(original) + original.count("(") * 2
-        simplified_complexity = len(simplified) + simplified.count("(") * 2
-
-        if original_complexity == 0:
-            return 0.0
-
-        reduction = (original_complexity - simplified_complexity) / original_complexity
-        return max(0.0, reduction)
+        return calculate_complexity_reduction(original, simplified)
 
     def _generate_native_equivalent(self, simplified_expr: str) -> str | None:
         """Generate equivalent native assembly code."""
-        if simplified_expr == "0":
-            return "xor eax, eax"
-        elif simplified_expr == "1":
-            return "mov eax, 1"
-        elif "^" in simplified_expr:
-            return "xor eax, ebx"
-        elif "&" in simplified_expr:
-            return "and eax, ebx"
-        elif "|" in simplified_expr:
-            return "or eax, ebx"
-        elif "+" in simplified_expr:
-            return "add eax, ebx"
-        elif "-" in simplified_expr:
-            return "sub eax, ebx"
-
-        return None
+        return generate_native_equivalent(simplified_expr)
 
     def get_solver_statistics(self) -> dict[str, Any]:
         """Get solver performance statistics."""

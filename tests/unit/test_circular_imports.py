@@ -115,6 +115,7 @@ REPORTING_MODULES = [
     "r2morph.devirtualization.vm_handler_models",
     "r2morph.devirtualization.vm_handler_metrics",
     "r2morph.devirtualization.vm_handler_patterns",
+    "r2morph.devirtualization.mba_solver_helpers",
     "r2morph.detection.anti_analysis_bypass_models",
     "r2morph.detection.anti_analysis_bypass_methods",
     "r2morph.detection.anti_analysis_detection",
