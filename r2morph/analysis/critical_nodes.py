@@ -13,6 +13,7 @@ import logging
 
 from r2morph.analysis.cfg import BlockType, ControlFlowGraph
 from r2morph.analysis.critical_nodes_models import AddressRange, CriticalNode
+from r2morph.analysis.critical_nodes_scorer import get_all_scores, get_safest_addresses, score_address
 
 logger = logging.getLogger(__name__)
 
@@ -400,27 +401,7 @@ class MutationSafetyScorer:
                 self._detector = CriticalNodeDetector(cfg)
             critical_nodes = self._detector.find_all_critical_nodes()
 
-        if address in critical_nodes:
-            return 0.0
-
-        for node in critical_nodes.values():
-            if abs(address - node.address) <= node.exclusion_radius * 4:
-                distance = max(1, abs(address - node.address))
-                proximity_factor = node.exclusion_radius * 4 / distance
-                return max(0.0, min(1.0, 1.0 - proximity_factor * 0.5))
-
-        block = cfg.get_block(address)
-        if block:
-            if block.block_type == BlockType.CONDITIONAL:
-                return 0.3
-
-            if block.block_type == BlockType.CALL:
-                return 0.4
-
-            if len(block.predecessors) > 2:
-                return 0.5
-
-        return 0.8
+        return score_address(address, cfg, critical_nodes)
 
     def get_safest_addresses(
         self,
@@ -443,15 +424,7 @@ class MutationSafetyScorer:
             detector = CriticalNodeDetector(cfg)
             critical_nodes = detector.find_all_critical_nodes()
 
-        scores: list[tuple[int, float]] = []
-
-        for addr, block in cfg.blocks.items():
-            score = self.score_address(addr, cfg, critical_nodes)
-            scores.append((addr, score))
-
-        scores.sort(key=lambda x: x[1], reverse=True)
-
-        return scores[:count]
+        return get_safest_addresses(cfg, count=count, critical_nodes=critical_nodes)
 
     def get_all_scores(
         self,
@@ -472,12 +445,7 @@ class MutationSafetyScorer:
             detector = CriticalNodeDetector(cfg)
             critical_nodes = detector.find_all_critical_nodes()
 
-        scores: dict[int, float] = {}
-
-        for addr in cfg.blocks:
-            scores[addr] = self.score_address(addr, cfg, critical_nodes)
-
-        return scores
+        return get_all_scores(cfg, critical_nodes)
 
 
 def create_exclusion_zones(
