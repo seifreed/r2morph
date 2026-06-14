@@ -57,13 +57,15 @@ from r2morph.mutations.parallel_executor import (
     create_parallel_executor,
 )
 from r2morph.mutations.pass_dependencies import (
-    DependencyType,
-    DependencyViolation,
-    PassDependency,
     PassDependencyRegistry,
     get_pass_dependency_registry,
     suggest_pipeline_order,
     validate_pipeline_order,
+)
+from r2morph.mutations.pass_dependency_models import (
+    DependencyType,
+    DependencyViolation,
+    PassDependency,
 )
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
