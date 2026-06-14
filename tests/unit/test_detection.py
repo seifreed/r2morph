@@ -14,6 +14,12 @@ from r2morph.detection.obfuscation_detector import (
     ObfuscationDetector,
     ObfuscationType,
 )
+from r2morph.detection.packer_signature_catalogs import (
+    compressor_signatures,
+    other_signatures,
+    protector_signatures,
+    vm_protector_signatures,
+)
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
 from r2morph.detection.pattern_catalogs import ANTI_DEBUG_APIS, VM_ARTIFACTS
 from r2morph.detection.pattern_matcher import PatternMatcher, PatternMatchResult
@@ -63,6 +69,15 @@ class TestPackerSignatureDatabase:
         db = PackerSignatureDatabase()
         assert db is not None
         assert hasattr(db, "signatures")
+
+    def test_database_signature_count_matches_catalogs(self):
+        db = PackerSignatureDatabase()
+        assert len(db.signatures) == len(
+            vm_protector_signatures()
+            + compressor_signatures()
+            + protector_signatures()
+            + other_signatures()
+        )
 
 
 class TestPatternMatchResult:
