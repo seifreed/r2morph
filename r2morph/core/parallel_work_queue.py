@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 from r2morph.core.parallel_executor_models import MutationResult, MutationTask, TaskStatus
+from r2morph.core.parallel_work_queue_helpers import (
+    count_tasks_with_status,
+    get_dependencies,
+    is_queue_empty,
+    select_ready_tasks,
+)
 
 
 class WorkQueue:
@@ -40,18 +46,7 @@ class WorkQueue:
 
     def get_ready_tasks(self, max_tasks: int = 0) -> list[MutationTask]:
         """Get tasks that are ready to run."""
-        ready = []
-
-        for task_id, task in self._tasks.items():
-            if task.status == TaskStatus.PENDING and task.is_ready(self._completed):
-                ready.append(task)
-
-        ready.sort(key=lambda t: t.priority, reverse=True)
-
-        if max_tasks > 0:
-            ready = ready[:max_tasks]
-
-        return ready
+        return select_ready_tasks(self._tasks, self._completed, max_tasks)
 
     def mark_running(self, task_id: int) -> None:
         """Mark a task as running."""
@@ -81,11 +76,11 @@ class WorkQueue:
 
     def get_dependencies(self, task_id: int) -> list[int]:
         """Get dependencies for a task."""
-        return self._tasks.get(task_id, MutationTask(task_id=task_id, function_address=0)).dependencies
+        return get_dependencies(self._tasks, task_id)
 
     def get_pending_count(self) -> int:
         """Get count of pending tasks."""
-        return sum(1 for t in self._tasks.values() if t.status == TaskStatus.PENDING)
+        return count_tasks_with_status(self._tasks, TaskStatus.PENDING)
 
     def get_running_count(self) -> int:
         """Get count of running tasks."""
@@ -93,15 +88,15 @@ class WorkQueue:
 
     def get_completed_count(self) -> int:
         """Get count of completed tasks."""
-        return len(self._completed)
+        return count_tasks_with_status(self._tasks, TaskStatus.COMPLETED)
 
     def get_failed_count(self) -> int:
         """Get count of failed tasks."""
-        return sum(1 for t in self._tasks.values() if t.status == TaskStatus.FAILED)
+        return count_tasks_with_status(self._tasks, TaskStatus.FAILED)
 
     def is_empty(self) -> bool:
         """Check if queue is empty (no pending or running tasks)."""
-        return self.get_pending_count() == 0 and self.get_running_count() == 0
+        return is_queue_empty(self._tasks, self._running)
 
     def clear(self) -> None:
         """Clear all tasks."""
