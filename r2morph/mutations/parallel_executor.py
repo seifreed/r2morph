@@ -15,6 +15,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass, MutationRecord
 from r2morph.mutations.parallel_executor_planning import build_task_plans
 from r2morph.mutations.parallel_executor_runtime import execute_parallel_runs
+from r2morph.mutations.parallel_executor_speedup import estimate_parallel_speedup
 
 # File-level write lock to prevent concurrent binary corruption
 _binary_write_lock = threading.Lock()
@@ -180,32 +181,13 @@ class ParallelMutator:
         passes: list[MutationPass],
         function_count: int,
     ) -> float:
-        """
-        Estimate potential speedup from parallel execution.
-
-        Args:
-            passes: List of mutation passes
-            function_count: Number of functions in binary
-
-        Returns:
-            Estimated speedup factor
-        """
-        enabled_count = sum(1 for p in passes if p.enabled)
-
-        if enabled_count == 0:
-            return 1.0
-
-        chunk_count = max(1, function_count // self.chunk_size)
-        task_count = enabled_count * chunk_count
-
-        if task_count <= 1:
-            return 1.0
-
-        effective_workers = min(self.max_workers, task_count)
-
-        overhead_factor = 1.0 + (0.1 * effective_workers)
-
-        return float(effective_workers / overhead_factor)
+        """Estimate potential speedup from parallel execution."""
+        return estimate_parallel_speedup(
+            passes,
+            function_count=function_count,
+            max_workers=self.max_workers,
+            chunk_size=self.chunk_size,
+        )
 
 
 def create_parallel_executor(config: dict[str, Any] | None = None) -> ParallelMutator:
