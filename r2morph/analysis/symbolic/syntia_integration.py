@@ -9,10 +9,8 @@ sequences and VM handler semantics.
 Reference: "Syntia: Synthesizing the Semantics of Obfuscated Code" by Blazytko et al.
 """
 
-import ast
 import json
 import logging
-import re
 import time
 from pathlib import Path
 from typing import Any
@@ -26,7 +24,6 @@ from r2morph.analysis.symbolic.syntia_analysis_helpers import (
 )
 from r2morph.analysis.symbolic.syntia_equivalence_helpers import (
     check_mba_equivalence,
-    normalize_expression,
     synthesis_equivalence_check,
 )
 from r2morph.analysis.symbolic.syntia_models import (
@@ -34,7 +31,12 @@ from r2morph.analysis.symbolic.syntia_models import (
     SemanticComplexity,
     VMHandlerSemantics,
 )
-from r2morph.core.safe_eval import safe_eval_arithmetic_node
+from r2morph.analysis.symbolic.syntia_runtime_helpers import (
+    analyze_syntia_state,
+    apply_mba_simplification_rules,
+    evaluate_expression,
+    synthesize_obfuscated_sequence,
+)
 
 try:
     # Syntia integration - requires separate installation of Syntia framework
@@ -329,54 +331,7 @@ class SyntiaFramework:
         return None
 
     def _apply_mba_simplification_rules(self, expression: str, variables: set[str]) -> str | None:
-        """
-        Apply known MBA simplification rules.
-
-        Common MBA identities:
-        - x + y = (x XOR y) + 2*(x AND y)
-        - x - y = (x XOR y) - 2*((NOT x) AND y)
-        - x XOR y = (x OR y) - (x AND y)
-
-        Args:
-            expression: MBA expression to simplify
-            variables: Variables in the expression
-
-        Returns:
-            Simplified expression or None
-        """
-
-        expr_lower = expression.lower().replace(" ", "")
-
-        # Common MBA simplification patterns
-        patterns = [
-            # x XOR x = 0
-            (r"(\w+)\s*\^\s*\1\b", "0"),
-            # x OR 0 = x
-            (r"(\w+)\s*\|\s*0\b", r"\1"),
-            # x AND 0 = 0
-            (r"(\w+)\s*&\s*0\b", "0"),
-            # x XOR 0 = x
-            (r"(\w+)\s*\^\s*0\b", r"\1"),
-            # x AND ~0 = x
-            (r"(\w+)\s*&\s*~0\b", r"\1"),
-            # x OR ~0 = ~0
-            (r"(\w+)\s*\|\s*~0\b", "~0"),
-            # x AND x = x
-            (r"(\w+)\s*&\s*\1\b", r"\1"),
-            # x OR x = x
-            (r"(\w+)\s*\|\s*\1\b", r"\1"),
-            # Double negation
-            (r"~~(\w+)", r"\1"),
-        ]
-
-        simplified = expr_lower
-        for pattern, replacement in patterns:
-            simplified = re.sub(pattern, replacement, simplified)
-
-        if simplified != expr_lower:
-            return simplified
-
-        return None
+        return apply_mba_simplification_rules(expression, variables)
 
     def check_semantic_equivalence(self, expr1: str, expr2: str, variables: set[str]) -> float:
         """
@@ -412,6 +367,8 @@ class SyntiaFramework:
 
     def _normalize_expression(self, expression: str) -> str:
         """Normalize an expression for comparison."""
+        from r2morph.analysis.symbolic.syntia_equivalence_helpers import normalize_expression
+
         return normalize_expression(expression)
 
     def _check_mba_equivalence(self, expr1: str, expr2: str) -> float:
@@ -436,87 +393,22 @@ class SyntiaFramework:
         return synthesis_equivalence_check(expr1, expr2, variables, self._evaluate_expression)
 
     def _evaluate_expression(self, expression: str, values: dict[str, int]) -> int | None:
-        """
-        Safely evaluate an expression with given variable values.
-
-        Uses AST-based evaluation that only allows safe numeric operations.
-
-        Args:
-            expression: Expression to evaluate
-            values: Variable name to value mapping
-
-        Returns:
-            Evaluation result or None on error
-        """
-        expr = expression.lower()
-
-        for var, val in values.items():
-            expr = expr.replace(var.lower(), str(val))
-
-        safe_chars = set("0123456789+-*&|^~() ")
-        if not all(c in safe_chars for c in expr):
-            return None
-
-        try:
-            tree = ast.parse(expr, mode="eval")
-            result = safe_eval_arithmetic_node(tree.body)
-            return int(result) & 0xFFFFFFFF
-        except Exception:
-            return None
+        return evaluate_expression(expression, values)
 
     def synthesize_obfuscated_sequence(
         self, input_registers: list[str], output_registers: list[str], target_semantics: str
     ) -> list[str] | None:
-        """
-        Synthesize an instruction sequence that implements target semantics.
-
-        Useful for generating semantically equivalent obfuscated code.
-
-        Args:
-            input_registers: Input register names
-            output_registers: Output register names
-            target_semantics: Target semantic formula
-
-        Returns:
-            List of instruction strings or None if synthesis failed
-        """
-        synthesized = []
-
-        semantic_lower = target_semantics.lower()
-
-        if "add" in semantic_lower or "arithmetic" in semantic_lower:
-            if input_registers and output_registers:
-                synthesized.append(f"mov {output_registers[0]}, {input_registers[0]}")
-                if len(input_registers) > 1:
-                    synthesized.append(f"add {output_registers[0]}, {input_registers[1]}")
-
-        elif "xor" in semantic_lower or "logic" in semantic_lower:
-            if input_registers and output_registers:
-                synthesized.append(f"mov {output_registers[0]}, {input_registers[0]}")
-                if len(input_registers) > 1:
-                    synthesized.append(f"xor {output_registers[0]}, {input_registers[1]}")
-
-        elif "mov" in semantic_lower or "move" in semantic_lower:
-            if input_registers and output_registers:
-                synthesized.append(f"mov {output_registers[0]}, {input_registers[0]}")
-
-        return synthesized if synthesized else None
+        return synthesize_obfuscated_sequence(input_registers, output_registers, target_semantics)
 
     def get_synthesis_statistics(self) -> dict[str, Any]:
         """Get synthesis performance statistics."""
-        total_analyzed = int(self.synthesis_stats["instructions_analyzed"])
-
-        stats: dict[str, Any] = dict(self.synthesis_stats)
-        if total_analyzed > 0:
-            stats["success_rate"] = int(self.synthesis_stats["semantics_learned"]) / total_analyzed
-            stats["cache_hit_rate"] = int(self.synthesis_stats["cache_hits"]) / total_analyzed
-        else:
-            stats["success_rate"] = 0.0
-            stats["cache_hit_rate"] = 0.0
-
-        stats["cache_size"] = len(self.semantics_cache)
-
-        return stats
+        return analyze_syntia_state(
+            instructions_analyzed=int(self.synthesis_stats["instructions_analyzed"]),
+            semantics_learned=int(self.synthesis_stats["semantics_learned"]),
+            synthesis_failures=int(self.synthesis_stats["synthesis_failures"]),
+            cache_hits=int(self.synthesis_stats["cache_hits"]),
+            cache_size=len(self.semantics_cache),
+        )
 
     def clear_cache(self) -> None:
         """Clear the semantics cache."""
