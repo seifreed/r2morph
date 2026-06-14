@@ -71,6 +71,7 @@ REPORTING_MODULES = [
     "r2morph.core.binary_file_lock",
     "r2morph.core.analysis_cache_models",
     "r2morph.core.analysis_cache_storage",
+    "r2morph.core.analysis_cache_entries",
     "r2morph.core.analysis_cache_cleanup",
     "r2morph.core.binary_lifecycle",
     "r2morph.core.report_helpers_evidence",

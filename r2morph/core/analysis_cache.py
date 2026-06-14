@@ -21,11 +21,11 @@ from r2morph.core.analysis_cache_cleanup import (
     cleanup_low_access_entries,
     enforce_size_limit,
 )
+from r2morph.core.analysis_cache_entries import iter_cache_entries, load_cache_entry
 from r2morph.core.analysis_cache_models import CacheEntry, CacheKey, CacheStats
 from r2morph.core.analysis_cache_models import compute_binary_hash as _compute_binary_hash
 from r2morph.core.analysis_cache_models import compute_partial_hash as _compute_partial_hash
 from r2morph.core.analysis_cache_storage import CacheStorage as _CacheStorage
-from r2morph.core.analysis_cache_storage import _safe_pickle_load
 from r2morph.core.constants import (
     ANALYSIS_CACHE_CLEANUP_INTERVAL_SECONDS,
     ANALYSIS_CACHE_MAX_AGE_DAYS,
@@ -100,19 +100,18 @@ class AnalysisCache:
                 self._stats.misses += 1
             return None
 
-        try:
-            with open(entry_path, "rb") as f:
-                entry: CacheEntry = _safe_pickle_load(f)
-            entry.touch()
-            self._save_entry(entry)
-            with self._stats_lock:
-                self._stats.hits += 1
-            return entry.data
-        except (pickle.PickleError, EOFError, OSError):
+        entry = load_cache_entry(entry_path)
+        if entry is None:
             with self._stats_lock:
                 self._stats.misses += 1
             entry_path.unlink(missing_ok=True)
             return None
+
+        entry.touch()
+        self._save_entry(entry)
+        with self._stats_lock:
+            self._stats.hits += 1
+        return entry.data
 
     def set(
         self,
@@ -155,8 +154,9 @@ class AnalysisCache:
         already_exists = entry_path.exists()
         if already_exists:
             try:
-                with open(entry_path, "rb") as f:
-                    old_entry: CacheEntry = _safe_pickle_load(f)
+                old_entry = load_cache_entry(entry_path)
+                if old_entry is None:
+                    raise pickle.PickleError("unable to reload existing entry")
                 existing_size = old_entry.size_bytes
             except (pickle.PickleError, OSError) as exc:
                 logger.warning("Cannot read existing cache entry %s for size accounting: %s", entry_path, exc)
@@ -178,48 +178,38 @@ class AnalysisCache:
         binary_hash = self._hash_binary(binary_data)
         removed = 0
 
-        for entry_path in self.cache_dir.rglob("*.cache"):
-            try:
-                with open(entry_path, "rb") as f:
-                    entry: CacheEntry = _safe_pickle_load(f)
-                if entry.key.binary_hash == binary_hash:
-                    if analysis_type is None or entry.key.analysis_type == analysis_type:
-                        entry_path.unlink(missing_ok=True)
-                        with self._stats_lock:
-                            self._stats.total_size_bytes -= entry.size_bytes
-                            self._stats.entry_count -= 1
-                            self._stats.evictions += 1
-                        removed += 1
-            except (pickle.PickleError, OSError):
-                entry_path.unlink(missing_ok=True)
+        for entry_path, entry in iter_cache_entries(self.cache_dir):
+            if entry.key.binary_hash == binary_hash:
+                if analysis_type is None or entry.key.analysis_type == analysis_type:
+                    entry_path.unlink(missing_ok=True)
+                    with self._stats_lock:
+                        self._stats.total_size_bytes -= entry.size_bytes
+                        self._stats.entry_count -= 1
+                        self._stats.evictions += 1
+                    removed += 1
 
         return removed
 
     def invalidate_region(self, binary_hash: str, offset: int, size: int) -> int:
         removed = 0
 
-        for entry_path in self.cache_dir.rglob("*.cache"):
-            try:
-                with open(entry_path, "rb") as f:
-                    entry: CacheEntry = _safe_pickle_load(f)
-                if entry.key.binary_hash == binary_hash:
-                    cached_regions = entry.metadata.get("regions", [])
-                    overlaps = False
-                    for region in cached_regions:
-                        roffset = region.get("offset", 0)
-                        rsize = region.get("size", 0)
-                        if not (offset + size < roffset or offset > roffset + rsize):
-                            overlaps = True
-                            break
-                    if overlaps:
-                        entry_path.unlink(missing_ok=True)
-                        with self._stats_lock:
-                            self._stats.total_size_bytes -= entry.size_bytes
-                            self._stats.entry_count -= 1
-                            self._stats.evictions += 1
-                        removed += 1
-            except (pickle.PickleError, OSError):
-                entry_path.unlink(missing_ok=True)
+        for entry_path, entry in iter_cache_entries(self.cache_dir):
+            if entry.key.binary_hash == binary_hash:
+                cached_regions = entry.metadata.get("regions", [])
+                overlaps = False
+                for region in cached_regions:
+                    roffset = region.get("offset", 0)
+                    rsize = region.get("size", 0)
+                    if not (offset + size < roffset or offset > roffset + rsize):
+                        overlaps = True
+                        break
+                if overlaps:
+                    entry_path.unlink(missing_ok=True)
+                    with self._stats_lock:
+                        self._stats.total_size_bytes -= entry.size_bytes
+                        self._stats.entry_count -= 1
+                        self._stats.evictions += 1
+                    removed += 1
 
         return removed
 
@@ -250,19 +240,14 @@ class AnalysisCache:
     def refresh_stats(self) -> CacheStats:
         new_stats = CacheStats()
 
-        for entry_path in self.cache_dir.rglob("*.cache"):
-            try:
-                with open(entry_path, "rb") as f:
-                    entry: CacheEntry = _safe_pickle_load(f)
-                new_stats.entry_count += 1
-                new_stats.total_size_bytes += entry.size_bytes
+        for entry_path, entry in iter_cache_entries(self.cache_dir):
+            new_stats.entry_count += 1
+            new_stats.total_size_bytes += entry.size_bytes
 
-                if new_stats.oldest_entry is None or entry.created_at < new_stats.oldest_entry:
-                    new_stats.oldest_entry = entry.created_at
-                if new_stats.newest_entry is None or entry.created_at > new_stats.newest_entry:
-                    new_stats.newest_entry = entry.created_at
-            except (pickle.PickleError, OSError) as exc:
-                logger.debug("Skipping unreadable/corrupt cache entry %s: %s", entry_path, exc)
+            if new_stats.oldest_entry is None or entry.created_at < new_stats.oldest_entry:
+                new_stats.oldest_entry = entry.created_at
+            if new_stats.newest_entry is None or entry.created_at > new_stats.newest_entry:
+                new_stats.newest_entry = entry.created_at
 
         with self._stats_lock:
             self._stats = new_stats
@@ -282,42 +267,35 @@ class AnalysisCache:
         if not entry_path.exists():
             return None
 
-        try:
-            with open(entry_path, "rb") as f:
-                entry: CacheEntry = _safe_pickle_load(f)
-            return {
-                "created_at": entry.created_at.isoformat(),
-                "accessed_at": entry.accessed_at.isoformat(),
-                "access_count": entry.access_count,
-                "size_bytes": entry.size_bytes,
-                "metadata": entry.metadata,
-            }
-        except (pickle.PickleError, OSError):
+        entry = load_cache_entry(entry_path)
+        if entry is None:
             return None
+
+        return {
+            "created_at": entry.created_at.isoformat(),
+            "accessed_at": entry.accessed_at.isoformat(),
+            "access_count": entry.access_count,
+            "size_bytes": entry.size_bytes,
+            "metadata": entry.metadata,
+        }
 
     def list_entries(self, analysis_type: str | None = None) -> list[dict[str, Any]]:
         entries = []
 
-        for entry_path in self.cache_dir.rglob("*.cache"):
-            try:
-                with open(entry_path, "rb") as f:
-                    entry: CacheEntry = _safe_pickle_load(f)
+        for entry_path, entry in iter_cache_entries(self.cache_dir):
+            if analysis_type and entry.key.analysis_type != analysis_type:
+                continue
 
-                if analysis_type and entry.key.analysis_type != analysis_type:
-                    continue
-
-                entries.append(
-                    {
-                        "analysis_type": entry.key.analysis_type,
-                        "created_at": entry.created_at.isoformat(),
-                        "accessed_at": entry.accessed_at.isoformat(),
-                        "access_count": entry.access_count,
-                        "size_bytes": entry.size_bytes,
-                        "binary_hash": entry.key.binary_hash[:16],
-                    }
-                )
-            except (pickle.PickleError, OSError) as exc:
-                logger.debug("Skipping unreadable/corrupt cache entry %s: %s", entry_path, exc)
+            entries.append(
+                {
+                    "analysis_type": entry.key.analysis_type,
+                    "created_at": entry.created_at.isoformat(),
+                    "accessed_at": entry.accessed_at.isoformat(),
+                    "access_count": entry.access_count,
+                    "size_bytes": entry.size_bytes,
+                    "binary_hash": entry.key.binary_hash[:16],
+                }
+            )
 
         return entries
 
