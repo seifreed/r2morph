@@ -90,7 +90,6 @@ REPORTING_MODULES = [
     "r2morph.reporting.filtered_summary_symbolic",
     "r2morph.reporting.report_view_builder",
     "r2morph.reporting.report_view_sections",
-    "r2morph.reporting.report_view_summary",
     "r2morph.reporting.report_view_details",
     "r2morph.reporting.report_view_gate_views",
     "r2morph.reporting.report_view_pass_views",
