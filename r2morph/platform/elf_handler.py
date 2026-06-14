@@ -11,6 +11,7 @@ import struct
 from pathlib import Path
 from typing import Any, BinaryIO
 
+from r2morph.platform.elf_handler_validation import validate_elf_file_structure
 from r2morph.platform.elf_structs import (
     ELF_MAGIC,
     ELFCLASS64,
@@ -24,7 +25,6 @@ from r2morph.platform.elf_structs import (
     _build_section_dict,
     _build_segment_dict,
     _find_null_run,
-    _header_table_within_file,
     _parse_program_header_entry,
     _parse_section_header_entry,
 )
@@ -99,18 +99,7 @@ class ELFHandler:
             if header is None:
                 return False
 
-            file_size = self.binary_path.stat().st_size
-
-            sh_size = header["e_shentsize"] * header["e_shnum"]
-            if not _header_table_within_file(header["e_shoff"], sh_size, file_size, "Section header table"):
-                return False
-
-            ph_size = header["e_phentsize"] * header["e_phnum"]
-            if not _header_table_within_file(header["e_phoff"], ph_size, file_size, "Program header table"):
-                return False
-
-            logger.debug(f"ELF validation passed for: {self.binary_path}")
-            return True
+            return validate_elf_file_structure(self.binary_path, header)
 
         except Exception as e:
             logger.error(f"ELF validation failed: {e}")
