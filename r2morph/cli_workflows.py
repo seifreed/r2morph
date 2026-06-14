@@ -6,20 +6,23 @@ import json
 from pathlib import Path
 
 import typer
-from rich import print as rprint
 from rich.console import Console
 
 from r2morph.cli_workflow_output import evaluate_and_write_gates, print_mutation_summary
 from r2morph.cli_workflow_selection import (
     build_config,
-    limited_symbolic_passes,
     mutation_pass_alias_map,
     selected_mutation_passes,
+)
+from r2morph.cli_workflow_validation import (
+    resolve_min_severity,
+    resolve_pass_severity_requirements,
+    resolve_validation_mode,
+    warn_experimental_validation_mode,
 )
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.support import is_experimental_mutation
-from r2morph.reporting import SEVERITY_ORDER
 from r2morph.utils.logging import setup_logging
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator import RuntimeComparisonConfig
@@ -32,15 +35,6 @@ def _warn_experimental_mutations(mutations: list[str]) -> None:
         return
     console.print(f"[yellow]Experimental mutations selected:[/yellow] {', '.join(mutations)}")
     console.print("[yellow]These passes are outside the stable core and validation coverage is best-effort.[/yellow]")
-
-
-def _warn_experimental_validation_mode(validation_mode: str) -> None:
-    if validation_mode != "symbolic":
-        return
-    console.print("[yellow]Experimental validation mode selected:[/yellow] symbolic")
-    console.print(
-        "[yellow]This mode performs bounded symbolic prechecks and structural fallback; it does not prove general semantic equivalence.[/yellow]"
-    )
 
 
 def _build_runtime_validator(
@@ -72,141 +66,6 @@ def _resolve_report_pass_filter(pass_name: str | None) -> str | None:
     return alias_map.get(pass_name.strip(), pass_name.strip())
 
 
-def _warn_or_block_limited_symbolic(
-    mutations: list[str],
-    config: EngineConfig,
-    *,
-    seed: int | None,
-    allow_limited_symbolic: bool,
-) -> None:
-    """Block symbolic mode for passes that declare limited symbolic support unless explicitly allowed."""
-    limited = []
-    for mutation_name, mutation_pass in selected_mutation_passes(mutations, config, seed=seed):
-        symbolic_support = mutation_pass.get_support().validator_capabilities.get("symbolic", {})
-        if symbolic_support.get("recommended") is False:
-            limited.append(
-                {
-                    "mutation": mutation_name,
-                    "pass_name": mutation_pass.name,
-                    "confidence": symbolic_support.get("confidence", "unknown"),
-                }
-            )
-    if not limited:
-        return
-
-    names = ", ".join(item["pass_name"] for item in limited)
-    if not allow_limited_symbolic:
-        console.print(f"[bold red]Error:[/bold red] symbolic validation is marked limited for: {names}")
-        console.print("[yellow]Use structural/runtime, or pass --allow-limited-symbolic to continue anyway.[/yellow]")
-        raise typer.Exit(2)
-
-    console.print(f"[yellow]Limited symbolic coverage explicitly allowed for:[/yellow] {names}")
-    for item in limited:
-        console.print(f"[yellow]- {item['pass_name']}: symbolic confidence={item['confidence']}[/yellow]")
-
-
-def _resolve_min_severity(min_severity: str | None) -> tuple[str | None, int | None]:
-    """Validate and normalize a minimum severity option."""
-    if min_severity is None:
-        return None, None
-    if min_severity not in SEVERITY_ORDER:
-        rprint(f"[bold red]Error:[/bold red] Invalid --min-severity: {min_severity}")
-        raise typer.Exit(2)
-    return min_severity, SEVERITY_ORDER[min_severity]
-
-
-def _resolve_pass_severity_requirements(
-    requirements: list[str] | None,
-    *,
-    alias_map: dict[str, str] | None = None,
-) -> list[tuple[str, str, int]]:
-    """Parse repeated PassName=severity requirements for mutate gating."""
-    resolved: list[tuple[str, str, int]] = []
-    aliases = {key.strip(): value for key, value in (alias_map or {}).items()}
-    valid_pass_names = set(aliases.values())
-    for item in requirements or []:
-        if "=" not in item:
-            console.print(
-                f"[bold red]Error:[/bold red] Invalid --require-pass-severity: {item}. Expected PassName=severity"
-            )
-            raise typer.Exit(2)
-        pass_name, severity = item.split("=", 1)
-        pass_name = pass_name.strip()
-        severity = severity.strip()
-        pass_name = aliases.get(pass_name, pass_name)
-        if not pass_name or severity not in SEVERITY_ORDER or (valid_pass_names and pass_name not in valid_pass_names):
-            console.print(
-                "[bold red]Error:[/bold red] "
-                f"Invalid --require-pass-severity: {item}. "
-                "Expected PassName=severity with severity in "
-                "mismatch, without-coverage, bounded-only, clean, not-requested"
-            )
-            raise typer.Exit(2)
-        resolved.append((pass_name, severity, SEVERITY_ORDER[severity]))
-    return resolved
-
-
-def _resolve_validation_mode(
-    *,
-    requested_mode: str,
-    mutations: list[str],
-    config: EngineConfig,
-    seed: int | None,
-    allow_limited_symbolic: bool,
-    limited_symbolic_policy: str,
-) -> tuple[str, dict[str, object] | None]:
-    """Resolve requested vs effective validation mode for limited symbolic passes."""
-    if requested_mode != "symbolic":
-        return requested_mode, None
-
-    limited = limited_symbolic_passes(mutations, config, seed=seed)
-    if not limited:
-        return requested_mode, None
-
-    if allow_limited_symbolic:
-        names = ", ".join(item["pass_name"] for item in limited)
-        console.print(f"[yellow]Limited symbolic coverage explicitly allowed for:[/yellow] {names}")
-        for item in limited:
-            console.print(f"[yellow]- {item['pass_name']}: symbolic confidence={item['confidence']}[/yellow]")
-        return requested_mode, {
-            "requested_mode": requested_mode,
-            "effective_mode": requested_mode,
-            "policy": "allow",
-            "reason": "explicit-override",
-            "limited_passes": limited,
-        }
-
-    if limited_symbolic_policy == "degrade-runtime":
-        names = ", ".join(item["pass_name"] for item in limited)
-        console.print(f"[yellow]Limited symbolic support detected for:[/yellow] {names}")
-        console.print("[yellow]Degrading validation mode from symbolic to runtime.[/yellow]")
-        return "runtime", {
-            "requested_mode": requested_mode,
-            "effective_mode": "runtime",
-            "policy": limited_symbolic_policy,
-            "reason": "limited-symbolic-support",
-            "limited_passes": limited,
-        }
-
-    if limited_symbolic_policy == "degrade-structural":
-        names = ", ".join(item["pass_name"] for item in limited)
-        console.print(f"[yellow]Limited symbolic support detected for:[/yellow] {names}")
-        console.print("[yellow]Degrading validation mode from symbolic to structural.[/yellow]")
-        return "structural", {
-            "requested_mode": requested_mode,
-            "effective_mode": "structural",
-            "policy": limited_symbolic_policy,
-            "reason": "limited-symbolic-support",
-            "limited_passes": limited,
-        }
-
-    _warn_or_block_limited_symbolic(
-        mutations,
-        config,
-        seed=seed,
-        allow_limited_symbolic=allow_limited_symbolic,
-    )
-    return requested_mode, None
 
 
 def _add_mutations(
@@ -296,14 +155,14 @@ def _run_morph_workflow(
 
     experimental = [m for m in mutations if is_experimental_mutation(m)]
     _warn_experimental_mutations(experimental)
-    _warn_experimental_validation_mode(validation_mode)
-    _, min_severity_rank = _resolve_min_severity(min_severity)
+    warn_experimental_validation_mode(validation_mode)
+    _, min_severity_rank = resolve_min_severity(min_severity)
     config = build_config(aggressive, force)
-    pass_severity_requirements = _resolve_pass_severity_requirements(
+    pass_severity_requirements = resolve_pass_severity_requirements(
         require_pass_severity,
         alias_map=mutation_pass_alias_map(config, seed=seed),
     )
-    effective_validation_mode, validation_policy = _resolve_validation_mode(
+    effective_validation_mode, validation_policy = resolve_validation_mode(
         requested_mode=validation_mode,
         mutations=mutations,
         config=config,
