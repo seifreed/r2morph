@@ -182,21 +182,6 @@ class ImportTableObfuscationPass(MutationPass):
         result = binary.assemble(stub, None)
         return bytes(result) if result else None
 
-    def _generate_jump_stub_x86(self, binary: Any, target_addr: int) -> bytes | None:
-        """
-        Generate a jump stub for x86.
-
-        Args:
-            binary: Any instance for assembly
-            target_addr: Target address to jump to
-
-        Returns:
-            Assembled jump stub bytes or None
-        """
-        stub = f"jmp 0x{target_addr:x}"
-        result = binary.assemble(stub, None)
-        return bytes(result) if result else None
-
     def _find_call_xrefs(self, binary: Any, plt_addr: int) -> list[dict[str, Any]]:
         """
         Find cross-references to an import PLT address that are call instructions.
