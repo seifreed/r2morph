@@ -74,8 +74,12 @@ def build_detection_baseline(test_id: str, binary_path: str, input_hash: str) ->
     )
 
 
-def build_api_compatibility_baseline(test_id: str) -> BaselineResult:
-    """Build an API compatibility baseline."""
+def compute_api_checks() -> dict[str, Any]:
+    """Probe the public API surface and return availability flags.
+
+    Shared by API-compatibility baseline construction and the live API test so the
+    two projections cannot drift.
+    """
     api_checks: dict[str, Any] = {}
 
     api_checks["binary_import"] = importlib.util.find_spec("r2morph") is not None
@@ -104,11 +108,16 @@ def build_api_compatibility_baseline(test_id: str) -> BaselineResult:
         api_checks["packer_type_enum"] = False
         api_checks["packer_type_count"] = 0
 
+    return api_checks
+
+
+def build_api_compatibility_baseline(test_id: str) -> BaselineResult:
+    """Build an API compatibility baseline."""
     return BaselineResult(
         test_id=test_id,
         test_type=RegressionTestType.API_COMPATIBILITY,
         input_hash="api_compatibility",
-        expected_output=api_checks,
+        expected_output=compute_api_checks(),
         performance_baseline={},
         timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
         version="2.0.0-phase2",

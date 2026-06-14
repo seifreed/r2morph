@@ -161,38 +161,7 @@ class RegressionTestFramework:
 
     def _run_api_test(self) -> tuple[dict[str, Any], dict[str, float]]:
         """Run API compatibility test."""
-        import importlib.util
-
-        api_checks: dict[str, Any] = {}
-
-        api_checks["binary_import"] = importlib.util.find_spec("r2morph") is not None
-        api_checks["detection_import"] = importlib.util.find_spec("r2morph.detection") is not None
-        api_checks["devirtualization_import"] = importlib.util.find_spec("r2morph.devirtualization") is not None
-
-        try:
-            from r2morph.detection import ObfuscationDetector
-
-            detector = ObfuscationDetector()
-            api_checks["detector_instantiation"] = True
-
-            api_checks["analyze_binary_method"] = hasattr(detector, "analyze_binary")
-            api_checks["detect_custom_virtualizer_method"] = hasattr(detector, "detect_custom_virtualizer")
-            api_checks["get_comprehensive_report_method"] = hasattr(detector, "get_comprehensive_report")
-
-        except Exception:
-            api_checks["detector_instantiation"] = False
-            api_checks["analyze_binary_method"] = False
-
-        try:
-            from r2morph.detection import PackerType
-
-            api_checks["packer_type_enum"] = True
-            api_checks["packer_type_count"] = len(list(PackerType))
-        except ImportError:
-            api_checks["packer_type_enum"] = False
-            api_checks["packer_type_count"] = 0
-
-        return api_checks, {}  # No performance metrics for API tests
+        return regression_baselines.compute_api_checks(), {}  # No performance metrics for API tests
 
     def _compare_outputs(
         self, expected: dict[str, Any], actual: dict[str, Any], test_type: RegressionTestType
