@@ -5,6 +5,11 @@ Score how effective mutations are at evading detection.
 import logging
 from pathlib import Path
 
+from r2morph.detection.evasion_scorer_helpers import (
+    DEFAULT_EVASION_WEIGHTS,
+    compose_evasion_score,
+    recommend_improvements,
+)
 from r2morph.detection.evasion_scorer_models import EvasionScore
 from r2morph.utils.entropy import calculate_file_entropy
 from r2morph.utils.hashing import hash_file
@@ -25,12 +30,7 @@ class EvasionScorer:
 
     def __init__(self) -> None:
         """Initialize evasion scorer."""
-        self.weights = {
-            "hash_change": 0.25,
-            "entropy": 0.20,
-            "structure": 0.30,
-            "signature": 0.25,
-        }
+        self.weights = dict(DEFAULT_EVASION_WEIGHTS)
 
     def score(self, original_path: Path, morphed_path: Path) -> EvasionScore:
         """
@@ -50,24 +50,12 @@ class EvasionScorer:
         structure_score = self._score_structure(original_path, morphed_path)
         signature_score = self._score_signatures(original_path, morphed_path)
 
-        overall = (
-            hash_score * self.weights["hash_change"]
-            + entropy_score * self.weights["entropy"]
-            + structure_score * self.weights["structure"]
-            + signature_score * self.weights["signature"]
-        )
-
-        return EvasionScore(
-            overall_score=overall,
-            hash_change_score=hash_score,
+        return compose_evasion_score(
+            hash_score=hash_score,
             entropy_score=entropy_score,
             structure_score=structure_score,
             signature_score=signature_score,
-            details={
-                "hash_changed": hash_score == 100.0,
-                "entropy_similar": entropy_score > 70.0,
-                "structure_changed": structure_score > 50.0,
-            },
+            weights=self.weights,
         )
 
     def _score_hash_change(self, original_path: Path, morphed_path: Path) -> float:
@@ -207,27 +195,4 @@ class EvasionScorer:
         Returns:
             List of recommendations
         """
-        recommendations = []
-
-        if score.hash_change_score < 100:
-            recommendations.append("⚠️ Hash didn't change - ensure mutations are applied")
-
-        if score.entropy_score < 50:
-            recommendations.append("⚠️ Entropy changed significantly - may look suspicious")
-
-        if score.structure_score < 30:
-            recommendations.append("💡 Consider more aggressive mutations to change structure")
-
-        if score.signature_score < 40:
-            recommendations.append("💡 Byte patterns too similar - add more instruction substitutions")
-
-        if score.overall_score > 80:
-            recommendations.append("✅ Excellent evasion score!")
-        elif score.overall_score > 60:
-            recommendations.append("👍 Good evasion score")
-        elif score.overall_score > 40:
-            recommendations.append("⚠️ Moderate evasion - consider more mutations")
-        else:
-            recommendations.append("🔴 Low evasion score - mutations may be ineffective")
-
-        return recommendations
+        return recommend_improvements(score)
