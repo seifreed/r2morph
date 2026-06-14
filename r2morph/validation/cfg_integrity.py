@@ -4,7 +4,14 @@ from typing import Any
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.pattern_preservation import PatternPreservationManager
 from r2morph.core.binary import Binary
-from r2morph.validation.cfg_integrity_helpers import create_cfg_snapshot, validate_cfg_snapshot
+from r2morph.validation.cfg_integrity_helpers import (
+    _check_edge_preservation,
+    _check_jump_targets,
+    _check_preserved_patterns,
+    _check_reachability,
+    create_cfg_snapshot,
+    validate_cfg_snapshot,
+)
 from r2morph.validation.cfg_integrity_models import (
     CFGSnapshot,
     IntegrityReport,
@@ -69,6 +76,18 @@ class CFGIntegrityChecker:
             )
 
         return validate_cfg_snapshot(snapshot)
+
+    def _check_reachability(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
+        _check_reachability(snapshot, report)
+
+    def _check_edge_preservation(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
+        _check_edge_preservation(snapshot, report)
+
+    def _check_jump_targets(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
+        _check_jump_targets(snapshot, report)
+
+    def _check_preserved_patterns(self, snapshot: CFGSnapshot, report: IntegrityReport) -> None:
+        _check_preserved_patterns(snapshot, report)
 
     def analyze_preservation_before(
         self,

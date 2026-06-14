@@ -19,10 +19,13 @@ from r2morph.analysis.pattern_preservation_detection import (
     detect_plt_got_patterns,
     detect_tail_call_patterns,
 )
+from r2morph.analysis.pattern_preservation_models import Criticality as _Criticality
 from r2morph.analysis.pattern_preservation_models import ExclusionZone, PatternType, PreservedPattern
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+Criticality = _Criticality
 
 
 class PatternPreservationManager:
