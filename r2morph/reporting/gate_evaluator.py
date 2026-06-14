@@ -18,6 +18,7 @@ from r2morph.reporting.gate_failure_summary import (
 from r2morph.reporting.gate_failure_summary import (
     summarize_gate_failures as _summarize_gate_failures,
 )
+from r2morph.reporting.report_gate_severity_policy import _pass_severity_requirements_met
 
 ROLLBACK_SEVERITY_ORDER: dict[str, int] = {
     "high": 0,
@@ -85,23 +86,7 @@ class GateEvaluator:
         requirements: list[tuple[str, str, int]],
     ) -> tuple[bool, list[str]]:
         """Check whether all required passes meet their minimum allowed severity rank."""
-        if not requirements:
-            return True, []
-
-        by_pass = {str(row.get("pass_name", "")): row for row in severity_rows}
-        failures: list[str] = []
-
-        for pass_name, severity, rank in requirements:
-            row = by_pass.get(pass_name)
-            if row is None:
-                failures.append(f"{pass_name}=missing(expected <= {severity})")
-                continue
-            actual = str(row.get("severity", "not-requested"))
-            actual_rank = SEVERITY_ORDER.get(actual, 99)
-            if actual_rank > rank:
-                failures.append(f"{pass_name}={actual}(expected <= {severity})")
-
-        return not failures, failures
+        return _pass_severity_requirements_met(severity_rows, requirements)
 
     @staticmethod
     def summarize_gate_failures(gate_evaluation: dict[str, Any]) -> dict[str, Any]:
