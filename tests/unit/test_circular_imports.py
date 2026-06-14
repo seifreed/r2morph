@@ -179,6 +179,7 @@ REPORTING_MODULES = [
     "r2morph.platform.elf_handler_code_caves",
     "r2morph.platform.elf_handler_section_mutation",
     "r2morph.platform.elf_handler_tables",
+    "r2morph.reporting.sarif_rule_ids",
     "r2morph.platform.pe_handler_projection",
     "r2morph.analysis.symbolic.constraint_solver_models",
     "r2morph.analysis.symbolic.state_manager_models",

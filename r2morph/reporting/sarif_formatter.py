@@ -21,10 +21,8 @@ from r2morph.reporting.sarif_formatter_builders import (
     build_rules,
 )
 from r2morph.reporting.sarif_result_builder import SARIFResultBuilder
-from r2morph.reporting.sarif_schema import (
-    SARIFReport,
-    SARIFRun,
-)
+from r2morph.reporting.sarif_rule_ids import get_mutation_rule_id, get_validation_rule_id
+from r2morph.reporting.sarif_schema import SARIFReport, SARIFRun
 
 MUTATION_RULES: list[dict[str, Any]] = [
     {
@@ -172,35 +170,10 @@ class SARIFFormatter:
         return SARIFReport(runs=[run])
 
     def _get_mutation_rule_id(self, pass_name: str) -> str:
-        name_map = {
-            "nop": "RM001",
-            "nop-insertion": "RM001",
-            "substitute": "RM002",
-            "instruction-substitution": "RM002",
-            "register": "RM003",
-            "register-substitution": "RM003",
-            "block": "RM004",
-            "block-reordering": "RM004",
-            "dead-code": "RM005",
-            "dead-code-injection": "RM005",
-            "opaque": "RM006",
-            "opaque-predicates": "RM006",
-            "expand": "RM007",
-            "instruction-expansion": "RM007",
-            "cff": "RM008",
-            "control-flow-flattening": "RM008",
-        }
-        return name_map.get(pass_name, "RM001")
+        return get_mutation_rule_id(pass_name)
 
     def _get_validation_rule_id(self, validation_type: str) -> str:
-        type_map = {
-            "structural": "RV001",
-            "runtime": "RV002",
-            "semantic": "RV003",
-            "cfg": "RV004",
-            "cfg-integrity": "RV004",
-        }
-        return type_map.get(validation_type, "RV001")
+        return get_validation_rule_id(validation_type)
 
     def to_json(self, report_data: ReportData) -> str:
         report = self.format(report_data)
