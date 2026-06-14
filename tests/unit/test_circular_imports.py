@@ -173,6 +173,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.cfg_builder_helpers",
     "r2morph.analysis.cfg_exception_helpers",
     "r2morph.platform.elf_handler_parsing",
+    "r2morph.platform.elf_handler_tables",
     "r2morph.platform.pe_handler_projection",
     "r2morph.analysis.symbolic.constraint_solver_models",
     "r2morph.analysis.symbolic.state_manager_models",

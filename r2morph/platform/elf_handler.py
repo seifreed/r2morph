@@ -11,19 +11,9 @@ from pathlib import Path
 from typing import Any, BinaryIO
 
 from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
+from r2morph.platform.elf_handler_tables import collect_sections, collect_segments
 from r2morph.platform.elf_handler_validation import validate_elf_file_structure
-from r2morph.platform.elf_structs import (
-    ELF_MAGIC,
-    MAX_SECTION_ENTRY_SIZE,
-    MAX_SECTIONS,
-    MAX_SYMBOLS,
-    SHF_EXECINSTR,
-    _build_section_dict,
-    _build_segment_dict,
-    _find_null_run,
-    _parse_program_header_entry,
-    _parse_section_header_entry,
-)
+from r2morph.platform.elf_structs import ELF_MAGIC, MAX_SYMBOLS, SHF_EXECINSTR, _find_null_run
 
 logger = logging.getLogger(__name__)
 
@@ -163,40 +153,7 @@ class ELFHandler:
 
         try:
             with open(self.binary_path, "rb") as f:
-                is_64bit = header["is_64bit"]
-                endian = "<" if header["is_little_endian"] else ">"
-
-                file_size = self.binary_path.stat().st_size
-
-                shstrtab_data = self._read_shstrtab(f, header, file_size)
-
-                # Now read all section headers
-                sections = []
-                f.seek(header["e_shoff"])
-
-                section_count = min(header["e_shnum"], MAX_SECTIONS)
-                section_entry_size = min(header["e_shentsize"], MAX_SECTION_ENTRY_SIZE)
-
-                if header["e_shnum"] > MAX_SECTIONS:
-                    logger.warning(f"Excessive section count {header['e_shnum']}, limiting to {MAX_SECTIONS}")
-                if header["e_shentsize"] > MAX_SECTION_ENTRY_SIZE:
-                    logger.warning(
-                        f"Excessive section entry size {header['e_shentsize']}, limiting to {MAX_SECTION_ENTRY_SIZE}"
-                    )
-
-                for i in range(section_count):
-                    sh_data = f.read(section_entry_size)
-                    if len(sh_data) < section_entry_size:
-                        logger.warning(f"Truncated section header at index {i}")
-                        break
-
-                    entry = _parse_section_header_entry(sh_data, is_64bit, endian)
-                    section_name = self._get_section_name(entry["sh_name"], shstrtab_data)
-                    sections.append(_build_section_dict(entry, section_name, i))
-
-                logger.debug(f"Parsed {len(sections)} sections from {self.binary_path}")
-                return sections
-
+                return collect_sections(self.binary_path, header, f)
         except Exception as e:
             logger.error(f"Failed to get sections: {e}")
             return []
@@ -232,24 +189,7 @@ class ELFHandler:
 
         try:
             with open(self.binary_path, "rb") as f:
-                is_64bit = header["is_64bit"]
-                endian = "<" if header["is_little_endian"] else ">"
-
-                segments = []
-                f.seek(header["e_phoff"])
-
-                for i in range(header["e_phnum"]):
-                    ph_data = f.read(header["e_phentsize"])
-                    if len(ph_data) < header["e_phentsize"]:
-                        logger.warning(f"Truncated program header at index {i}")
-                        break
-
-                    entry = _parse_program_header_entry(ph_data, is_64bit, endian)
-                    segments.append(_build_segment_dict(entry, i))
-
-                logger.debug(f"Parsed {len(segments)} segments from {self.binary_path}")
-                return segments
-
+                return collect_segments(self.binary_path, header, f)
         except Exception as e:
             logger.error(f"Failed to get segments: {e}")
             return []
