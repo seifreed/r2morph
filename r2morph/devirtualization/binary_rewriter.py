@@ -25,6 +25,13 @@ from r2morph.devirtualization.binary_rewriter_models import (
     RewriteOperation,
     RewriteResult,
 )
+from r2morph.devirtualization.binary_rewriter_planning import (
+    calculate_address_shifts,
+    is_valid_address,
+    plan_rewrite_strategy,
+    validate_instructions,
+    validate_patches,
+)
 
 capstone: Any
 try:
@@ -339,65 +346,12 @@ class BinaryRewriter:
 
     def _validate_patches(self) -> dict[str, Any]:
         """Validate the patches before applying."""
-        errors: list[str] = []
-        warnings: list[str] = []
-        result: dict[str, Any] = {"valid": True, "errors": errors, "warnings": warnings}
-
-        try:
-            # Check for overlapping patches
-            addresses = [patch.address for patch in self.patches]
-            if len(addresses) != len(set(addresses)):
-                errors.append("Overlapping patches detected")
-                result["valid"] = False
-
-            # Validate each patch
-            for i, patch in enumerate(self.patches):
-                # Check if address is valid
-                if not self._is_valid_address(patch.address):
-                    warnings.append(f"Patch {i}: Invalid address 0x{patch.address:x}")
-
-                # Check if new instructions are valid
-                if patch.new_instructions and not self._validate_instructions(patch.new_instructions):
-                    warnings.append(f"Patch {i}: Invalid instructions")
-
-                # Check size constraints
-                if abs(patch.size_change) > 1024:  # Arbitrary limit
-                    warnings.append(f"Patch {i}: Large size change ({patch.size_change} bytes)")
-
-        except Exception as e:
-            errors.append(f"Patch validation failed: {e}")
-            result["valid"] = False
-
-        return result
+        return validate_patches(self.patches, self._is_valid_address, self._validate_instructions)
 
     def _plan_rewrite_strategy(self) -> dict[str, Any]:
         """Plan the rewrite strategy based on patches."""
-        strategy: dict[str, Any] = {
-            "use_code_caves": False,
-            "expand_sections": False,
-            "patch_order": [],
-            "requires_relocation_update": False,
-        }
-
-        try:
-            # Sort patches by address
-            sorted_patches = sorted(self.patches, key=lambda p: p.address)
-            strategy["patch_order"] = sorted_patches
-
-            # Check if we need code caves
-            total_size_increase = sum(max(0, p.size_change) for p in self.patches)
-            if total_size_increase > 100:  # Arbitrary threshold
-                strategy["use_code_caves"] = True
-
-            # Check if we need to update relocations
-            if any(p.size_change != 0 for p in self.patches):
-                strategy["requires_relocation_update"] = True
-
-            logger.debug(f"Planned rewrite strategy: {strategy}")
-
-        except Exception as e:
-            logger.error(f"Strategy planning failed: {e}")
-
+        strategy = plan_rewrite_strategy(self.patches)
+        logger.debug(f"Planned rewrite strategy: {strategy}")
         return strategy
 
     def _apply_patches(self, strategy: dict[str, Any]) -> dict[str, Any]:
@@ -611,52 +565,15 @@ class BinaryRewriter:
         as valid. Returning True on error would let patches land at
         unverified offsets and silently corrupt the output binary.
         """
-        try:
-            for section in self.sections.values():
-                start = section.get("vaddr", 0)
-                size = section.get("vsize", 0)
-                if start <= address < start + size:
-                    return True
-            return False
-
-        except (AttributeError, TypeError) as exc:
-            logger.warning(
-                "Malformed section table while validating address 0x%x (%s); treating as invalid",
-                address,
-                exc,
-            )
-            return False
+        return is_valid_address(self.sections, address)
 
     def _validate_instructions(self, instructions: list[str]) -> bool:
         """Validate assembly instructions."""
-        try:
-            if not self.ks:
-                return True  # Assume valid if can't verify
-
-            asm_code = "; ".join(instructions)
-            encoding, _ = self.ks.asm(asm_code)
-            return len(encoding) > 0
-
-        except Exception:
-            return False
+        return validate_instructions(self.ks, instructions)
 
     def _calculate_address_shifts(self) -> dict[int, int]:
         """Calculate how addresses shift due to patches."""
-        shifts = {}
-
-        try:
-            # Sort patches by address
-            sorted_patches = sorted(self.patches, key=lambda p: p.address)
-
-            current_shift = 0
-            for patch in sorted_patches:
-                shifts[patch.address] = current_shift
-                current_shift += patch.size_change
-
-        except Exception as e:
-            logger.error(f"Address shift calculation failed: {e}")
-
-        return shifts
+        return calculate_address_shifts(self.patches)
 
     def _create_backup(self) -> None:
         """Create backup of original binary."""
