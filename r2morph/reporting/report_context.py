@@ -117,6 +117,31 @@ class ReportViews(ReportViewsMappingMixin):
     validation_adjustments: dict[str, Any] = field(default_factory=dict)
     discarded_view: dict[str, Any] = field(default_factory=dict)
 
+
+@dataclass(frozen=True)
+class ReportViewInputs:
+    """Bundled inputs for build_report_views, replacing its repeated 18-parameter signature."""
+
+    pass_risk_buckets: dict[str, list[str]]
+    pass_coverage_buckets: dict[str, list[str]]
+    pass_triage_rows: list[dict[str, Any]]
+    normalized_pass_results: list[dict[str, Any]]
+    pass_symbolic_summary: dict[str, Any]
+    pass_evidence_map: dict[str, Any]
+    pass_region_evidence_map: dict[str, list[dict[str, Any]]]
+    pass_validation_context: dict[str, Any]
+    pass_capability_summary_map: dict[str, Any]
+    observable_mismatch_priority: list[dict[str, Any]]
+    observable_mismatch_map: dict[str, dict[str, Any]]
+    symbolic_severity_by_pass: list[dict[str, Any]]
+    gate_failure_priority: list[dict[str, Any]]
+    gate_failure_summary: dict[str, Any] | None
+    gate_failure_severity_priority: list[dict[str, Any]]
+    discarded_mutation_priority: list[dict[str, Any]]
+    discarded_mutation_summary: dict[str, Any]
+    validation_adjustment_rows: list[dict[str, Any]]
+
+
 @dataclass
 class ReportFlowContext:
     """Complete context for report flow dispatch.

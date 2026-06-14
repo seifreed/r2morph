@@ -16,8 +16,8 @@ class RecordingReportViewBuilder:
     """Records every build_report_views call; returns a sentinel view object."""
 
     def __init__(self) -> None:
-        self.calls: list[dict[str, Any]] = []
+        self.calls: list[Any] = []
 
-    def build_report_views(self, **kwargs: Any) -> _RecordedViews:
-        self.calls.append(kwargs)
+    def build_report_views(self, inputs: Any) -> _RecordedViews:
+        self.calls.append(inputs)
         return _RecordedViews()
