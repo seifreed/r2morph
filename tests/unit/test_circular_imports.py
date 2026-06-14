@@ -107,6 +107,7 @@ REPORTING_MODULES = [
     "r2morph.platform.pe_handler_parsing",
     "r2morph.platform.pe_handler_repair",
     "r2morph.platform.macho_handler_repair",
+    "r2morph.devirtualization.binary_rewriter_models",
     "r2morph.detection.anti_analysis_bypass_models",
     "r2morph.detection.anti_analysis_bypass_methods",
     "r2morph.detection.anti_analysis_detection",

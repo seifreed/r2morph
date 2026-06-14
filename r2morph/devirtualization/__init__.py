@@ -11,6 +11,7 @@ commercial packers like VMProtect and Themida, including:
 """
 
 from .binary_rewriter import BinaryRewriter
+from .binary_rewriter_models import BinaryFormat, CodePatch, RelocationEntry, RewriteOperation, RewriteResult
 from .cfo_simplifier import CFOSimplifier
 from .iterative_simplifier import IterativeSimplifier
 from .mba_solver import MBASolver
@@ -18,15 +19,6 @@ from .vm_handler_analyzer import VMHandlerAnalyzer
 
 # Import types for better IDE support
 try:
-    from .binary_rewriter import (
-        BinaryFormat as BinaryFormat,
-    )
-    from .binary_rewriter import (
-        RewriteOperation as RewriteOperation,
-    )
-    from .binary_rewriter import (
-        RewriteResult as RewriteResult,
-    )
     from .cfo_simplifier import (
         CFOPattern as CFOPattern,
     )
@@ -65,4 +57,6 @@ __all__ = [
     "BinaryFormat",
     "RewriteOperation",
     "RewriteResult",
+    "CodePatch",
+    "RelocationEntry",
 ]
