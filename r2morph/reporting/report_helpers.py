@@ -65,3 +65,18 @@ def _normalized_pass_map(
 ) -> dict[str, dict[str, Any]]:
     """Index normalized per-pass rows by pass name."""
     return {str(row.get("pass_name")): dict(row) for row in normalized_pass_results if row.get("pass_name")}
+
+
+def _symbolic_summary_from_normalized_row(pass_name: str, normalized_row: dict[str, Any]) -> dict[str, Any]:
+    """Project a normalized per-pass row into a symbolic-summary dict."""
+    return {
+        "pass_name": pass_name,
+        "severity": normalized_row.get("severity", "not-requested"),
+        "issue_count": normalized_row.get("issue_count", 0),
+        "symbolic_requested": normalized_row.get("symbolic_requested", 0),
+        "observable_match": normalized_row.get("observable_match", 0),
+        "observable_mismatch": normalized_row.get("observable_mismatch", 0),
+        "bounded_only": normalized_row.get("bounded_only", 0),
+        "without_coverage": normalized_row.get("without_coverage", 0),
+        "issues": [],
+    }

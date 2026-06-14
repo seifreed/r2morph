@@ -20,6 +20,7 @@ from r2morph.reporting.filtered_summary_symbolic_fallback_population import (
     _apply_filtered_summary_symbolic_fallback_sections,
 )
 from r2morph.reporting.filtered_summary_triage import _populate_triage_and_results
+from r2morph.reporting.report_helpers import _symbolic_summary_from_normalized_row
 from r2morph.reporting.report_view_resolution import _resolve_summary_pass_sources
 
 
@@ -127,17 +128,7 @@ def _populate_filtered_summary_pass_sections(
         if not pass_symbolic_summary:
             normalized_row = normalized_pass_map.get(pass_name, {})
             if normalized_row:
-                pass_symbolic_summary = {
-                    "pass_name": pass_name,
-                    "severity": normalized_row.get("severity", "not-requested"),
-                    "issue_count": normalized_row.get("issue_count", 0),
-                    "symbolic_requested": normalized_row.get("symbolic_requested", 0),
-                    "observable_match": normalized_row.get("observable_match", 0),
-                    "observable_mismatch": normalized_row.get("observable_mismatch", 0),
-                    "bounded_only": normalized_row.get("bounded_only", 0),
-                    "without_coverage": normalized_row.get("without_coverage", 0),
-                    "issues": [],
-                }
+                pass_symbolic_summary = _symbolic_summary_from_normalized_row(pass_name, normalized_row)
         if pass_symbolic_summary:
             filtered_summary["pass_symbolic_summary"][pass_name] = dict(pass_symbolic_summary)
 
