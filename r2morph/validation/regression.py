@@ -8,14 +8,12 @@ that new changes don't break existing functionality.
 from __future__ import annotations
 
 import hashlib
-import json
 import logging
 import time
-from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation import regression_comparison, regression_models
+from r2morph.validation import regression_comparison, regression_models, regression_storage
 
 BaselineResult = regression_models.BaselineResult
 NewRegressionResult = regression_models.NewRegressionResult
@@ -48,43 +46,12 @@ class RegressionTestFramework:
 
     def _load_baselines(self) -> None:
         """Load existing baseline results."""
-        baseline_files = list(self.baseline_dir.glob("*.json"))
-
-        for baseline_file in baseline_files:
-            try:
-                with open(baseline_file) as f:
-                    data = json.load(f)
-                    test_type = data.get("test_type")
-                    if isinstance(test_type, str):
-                        if test_type.startswith("RegressionTestType."):
-                            test_type = test_type.split(".", 1)[1]
-                        try:
-                            data["test_type"] = RegressionTestType(test_type)
-                        except ValueError:
-                            data["test_type"] = RegressionTestType.DETECTION_ACCURACY
-                    baseline = BaselineResult(**data)
-                    self.baselines[baseline.test_id] = baseline
-                    logger.debug(f"Loaded baseline: {baseline.test_id}")
-            except Exception as e:
-                logger.warning(f"Failed to load baseline {baseline_file}: {e}")
+        self.baselines = regression_storage.load_baselines(self.baseline_dir)
 
     def _save_baseline(self, baseline: BaselineResult) -> None:
         """Save a baseline result."""
-        baseline_file = self.baseline_dir / f"{baseline.test_id}.json"
-
-        try:
-            with open(baseline_file, "w") as f:
-                payload = asdict(baseline)
-                if isinstance(payload.get("test_type"), RegressionTestType):
-                    payload["test_type"] = payload["test_type"].value
-                json.dump(payload, f, indent=2, default=str)
-
-            self.baselines[baseline.test_id] = baseline
-            logger.info(f"Saved baseline: {baseline.test_id}")
-
-        except Exception as e:
-            logger.error(f"Failed to save baseline {baseline.test_id}: {e}")
-            raise
+        regression_storage.save_baseline(self.baseline_dir, baseline)
+        self.baselines[baseline.test_id] = baseline
 
     def _compute_input_hash(self, input_data: Any) -> str:
         """Compute hash of input data for consistency checking."""

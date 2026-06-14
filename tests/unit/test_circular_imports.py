@@ -118,6 +118,7 @@ REPORTING_MODULES = [
     "r2morph.validation.performance_regression_suite",
     "r2morph.validation.regression_models",
     "r2morph.validation.regression_comparison",
+    "r2morph.validation.regression_storage",
     "r2morph.validation.fuzzer_inputs",
     "r2morph.validation.fuzzer_models",
     "r2morph.validation.benchmark_reporting_exports",
