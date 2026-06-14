@@ -125,6 +125,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.sarif_schema_core",
     "r2morph.factories",
     "r2morph.tui_diff_view",
+    "r2morph.tui_config_screen",
     "r2morph.tui_pass_config",
     "r2morph.cli_workflows",
     "r2morph.tui_progress_indicator",
