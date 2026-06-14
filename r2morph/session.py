@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from r2morph.session_helpers import build_checkpoint_path, build_session_metadata
+from r2morph.session_mutation_flow import apply_mutation as apply_mutation_flow
 
 logger = logging.getLogger(__name__)
 
@@ -170,61 +171,8 @@ class MorphSession:
         return True
 
     def apply_mutation(self, mutation_pass: Any, description: str = "") -> dict[str, Any]:
-        """
-        Apply a mutation pass and track it.
-
-        Args:
-            mutation_pass: Mutation pass instance
-            description: Description of mutation
-
-        Returns:
-            Mutation result dict
-        """
-        from r2morph.core.binary import Binary
-
-        if self.current_binary is None:
-            raise ValueError("No active binary in session")
-
-        logger.info(f"Applying mutation: {mutation_pass.name}")
-
-        checkpoint_before = self.checkpoint("pre_mutation", description or f"Before {mutation_pass.name}")
-        mutations_before = self.mutations_count
-
-        binary = None
-        try:
-            binary = Binary(self.current_binary, writable=True)
-            binary.open()
-            binary.analyze()
-            result: dict[str, Any] = mutation_pass.apply(binary)
-
-            mutations_applied = result.get("mutations_applied", 0)
-            self.mutations_count += mutations_applied
-
-            logger.info(f"Applied {mutations_applied} mutations (total: {self.mutations_count})")
-
-            return result
-        except Exception as e:
-            logger.error(f"Mutation failed: {mutation_pass.name}: {e}")
-            self.mutations_count = mutations_before
-            rollback_ok = False
-            if self.current_binary and checkpoint_before.binary_path.exists():
-                try:
-                    shutil.copy2(checkpoint_before.binary_path, self.current_binary)
-                    rollback_ok = True
-                except FileNotFoundError:
-                    logger.warning(f"Checkpoint file disappeared: {checkpoint_before.binary_path}")
-                except Exception as rollback_error:
-                    logger.error(f"Failed to rollback: {rollback_error}")
-            # Only remove checkpoint after confirmed successful rollback
-            if rollback_ok:
-                self._remove_checkpoint(checkpoint_before)
-            raise
-        finally:
-            if binary is not None:
-                try:
-                    binary.close()
-                except Exception as close_error:
-                    logger.debug(f"Error closing binary: {close_error}")
+        """Apply a mutation pass and track it."""
+        return apply_mutation_flow(self, mutation_pass, description)
 
     def _remove_checkpoint(self, checkpoint: Checkpoint) -> None:
         """Remove a checkpoint file."""

@@ -156,6 +156,7 @@ REPORTING_MODULES = [
     "r2morph.core.parallel_result_merger",
     "r2morph.core.parallel_result_merger_helpers",
     "r2morph.session_helpers",
+    "r2morph.session_mutation_flow",
     "r2morph.core.parallel_checkpointing",
     "r2morph.core.binary_file_lock",
     "r2morph.core.analysis_cache_models",
