@@ -6,6 +6,16 @@ import ast
 import logging
 from typing import Any
 
+from r2morph.analysis.symbolic.constraint_solver_conversions import (
+    convert_angr_to_z3 as _convert_angr_to_z3,
+)
+from r2morph.analysis.symbolic.constraint_solver_conversions import (
+    convert_single_constraint as _convert_single_constraint,
+)
+from r2morph.analysis.symbolic.constraint_solver_conversions import (
+    extract_model as _extract_model,
+)
+
 logger = logging.getLogger(__name__)
 
 # Bound recursion when translating a parsed expression tree into Z3 so that an
@@ -15,66 +25,15 @@ MAX_CONSTRAINT_AST_DEPTH = 256
 
 
 def convert_angr_to_z3(constraints: list[Any], z3: Any | None) -> list[Any]:
-    """Convert angr/claripy constraints to Z3 format."""
-    z3_constraints: list[Any] = []
-
-    if z3 is None:
-        return z3_constraints
-
-    try:
-        for constraint in constraints:
-            if isinstance(constraint, z3.ExprRef):
-                z3_constraints.append(constraint)
-            elif hasattr(constraint, "to_z3"):
-                z3_constraints.append(constraint.to_z3())
-            else:
-                logger.debug("Could not convert constraint: %s", constraint)
-    except Exception as e:
-        logger.debug("Error converting constraints: %s", e)
-
-    return z3_constraints
+    return _convert_angr_to_z3(constraints, z3)
 
 
 def extract_model(z3_model: Any, z3: Any | None) -> dict[str, Any]:
-    """Extract model values from a Z3 solution."""
-    model: dict[str, Any] = {}
-
-    if z3 is None or z3_model is None:
-        return model
-
-    try:
-        for decl in z3_model:
-            var_name = str(decl)
-            value = z3_model[decl]
-
-            if z3.is_int_value(value):
-                model[var_name] = value.as_long()
-            elif z3.is_bv_value(value):
-                model[var_name] = value.as_long()
-            elif z3.is_bool(value):
-                model[var_name] = z3.is_true(value)
-            else:
-                model[var_name] = str(value)
-    except Exception as e:
-        logger.debug("Error extracting model: %s", e)
-
-    return model
+    return _extract_model(z3_model, z3)
 
 
 def convert_single_constraint(constraint: Any, z3: Any | None) -> Any | None:
-    """Convert a single constraint to Z3 format."""
-    if z3 is None:
-        return None
-    try:
-        if isinstance(constraint, bool):
-            return z3.BoolVal(constraint)
-        if isinstance(constraint, z3.ExprRef):
-            return constraint
-        if hasattr(constraint, "to_z3"):
-            return constraint.to_z3()
-    except Exception as e:
-        logger.debug("Error converting single constraint: %s", e)
-    return None
+    return _convert_single_constraint(constraint, z3)
 
 
 def parse_expression_to_z3(
