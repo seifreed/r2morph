@@ -224,6 +224,7 @@ REPORTING_MODULES = [
     "r2morph.validation.mutation_fuzzer_types",
     "r2morph.validation.mutation_fuzzer_continuous",
     "r2morph.validation.semantic_invariant_models",
+    "r2morph.validation.extended_semantic_models",
     "r2morph.validation.constraint_cache_models",
     "r2morph.analysis.type_inference_types",
     "r2morph.analysis.type_inference_conventions",

@@ -58,6 +58,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.mutation_annotator_binary",
     "r2morph.validation.mutation_annotator_instruction",
     "r2morph.validation.symbolic_scope_policy",
+    "r2morph.validation.extended_semantic_models",
     "r2morph.validation.validator_runtime",
     "r2morph.validation.validator_execution",
     "r2morph.validation.validator_results",

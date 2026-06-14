@@ -10,7 +10,6 @@ This module extends the base SemanticValidator with:
 
 import logging
 import time
-from dataclasses import dataclass, field
 from typing import Any
 
 from r2morph.analysis.cfg import ControlFlowGraph
@@ -21,6 +20,7 @@ from r2morph.validation.constraint_cache import (
 from r2morph.validation.constraint_cache import (
     ConstraintCacheEntry as _ConstraintCacheEntry,
 )
+from r2morph.validation.extended_semantic_models import ValidationResult
 from r2morph.validation.semantic import (
     MutationRegion,
     SemanticCheck,
@@ -45,17 +45,6 @@ ConstraintCacheEntry = _ConstraintCacheEntry
 ImprovedStateMerging = _ImprovedStateMerging
 ANGR_AVAILABLE = _ANGR_AVAILABLE
 
-
-@dataclass
-class ValidationResult:
-    """Result of validation with extended metadata."""
-
-    is_valid: bool
-    message: str
-    details: dict[str, Any] = field(default_factory=dict)
-    execution_time: float = 0.0
-    cache_hits: int = 0
-    cache_misses: int = 0
 
 class ExtendedSemanticValidator(SemanticValidator):
     """
