@@ -10,6 +10,11 @@ from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.validation.integrity_repair_helpers import (
+    repair_elf_integrity,
+    repair_macho_integrity,
+    repair_pe_integrity,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -240,82 +245,13 @@ class BinaryIntegrityValidator:
             return False, ["No handler available"]
 
         if self._format == "elf":
-            return self._repair_elf(handler)
+            return repair_elf_integrity(handler)
         elif self._format in ("macho", "fat_macho"):
-            return self._repair_macho(handler)
+            return repair_macho_integrity(handler)
         elif self._format == "pe":
-            return self._repair_pe(handler)
+            return repair_pe_integrity(handler)
 
         return False, ["No repair logic for format"]
-
-    def _repair_elf(self, handler: Any) -> tuple[bool, list[str]]:
-        """Repair ELF binary integrity."""
-        repairs: list[str] = []
-
-        try:
-            if hasattr(handler, "fix_section_headers"):
-                if handler.fix_section_headers():
-                    repairs.append("Fixed section headers")
-
-            if hasattr(handler, "fix_program_headers"):
-                if handler.fix_program_headers():
-                    repairs.append("Fixed program headers")
-
-            logger.info(f"ELF repairs: {repairs}")
-            return True, repairs
-
-        except Exception as e:
-            logger.error(f"ELF repair error: {e}")
-            repairs.append(f"Error: {e}")
-            return False, repairs
-
-    def _repair_macho(self, handler: Any) -> tuple[bool, list[str]]:
-        """Repair Mach-O binary integrity."""
-        repairs: list[str] = []
-
-        try:
-            if hasattr(handler, "repair_integrity"):
-                success = handler.repair_integrity()
-                if success:
-                    repairs.append("Repaired Mach-O signature")
-                else:
-                    repairs.append("Signature repair attempted")
-
-            if hasattr(handler, "mark_executable"):
-                try:
-                    handler.mark_executable()
-                    repairs.append("Marked executable")
-                except (OSError, ValueError, RuntimeError) as exc:
-                    logger.warning("mark_executable() failed during Mach-O repair: %s", exc)
-                    repairs.append(f"Failed to mark executable: {exc}")
-
-            logger.info(f"Mach-O repairs: {repairs}")
-            return True, repairs
-
-        except Exception as e:
-            logger.error(f"Mach-O repair error: {e}")
-            repairs.append(f"Error: {e}")
-            return False, repairs
-
-    def _repair_pe(self, handler: Any) -> tuple[bool, list[str]]:
-        """Repair PE binary integrity."""
-        repairs: list[str] = []
-
-        try:
-            success, repairs_made = handler.repair_integrity()
-            repairs.extend(repairs_made)
-
-            if hasattr(handler, "refresh_headers"):
-                handler.refresh_headers()
-                repairs.append("Refreshed PE headers")
-
-            logger.info(f"PE repairs: {repairs}")
-            return success, repairs
-
-        except Exception as e:
-            logger.error(f"PE repair error: {e}")
-            repairs.append(f"Error: {e}")
-            return False, repairs
 
     def validate_and_repair(self) -> tuple[bool, list[str], list[str]]:
         """
