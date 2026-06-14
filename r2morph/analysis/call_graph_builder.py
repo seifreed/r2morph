@@ -11,6 +11,7 @@ import logging
 from typing import Any
 
 from r2morph.analysis.call_graph import CallEdge, CallGraph, CallNode, CallType
+from r2morph.analysis.call_graph_entry_points import find_entry_points
 from r2morph.analysis.call_graph_parsing import (
     determine_call_type,
     extract_call_target,
@@ -82,7 +83,7 @@ class CallGraphBuilder:
             func_addr = func.get("offset", func.get("addr", 0))
             self._extract_calls(binary, func_addr, cg)
 
-        entry_points = self._find_entry_points(binary, cg)
+        entry_points = find_entry_points(binary, cg)
         cg.entry_points = entry_points
 
         cg._detect_recursion()
@@ -166,32 +167,7 @@ class CallGraphBuilder:
 
     def _find_entry_points(self, binary: Binary, cg: CallGraph) -> list[int]:
         """Find entry point functions."""
-        entry_points: list[int] = []
-
-        symbols = getattr(binary, "_symbols", {}) or {}
-        entry = symbols.get("entry0")
-        if entry:
-            entry_addr = entry if isinstance(entry, int) else entry.get("offset", 0)
-            if entry_addr in cg.nodes:
-                entry_points.append(entry_addr)
-
-        main_sym = symbols.get("main")
-        if main_sym:
-            main_addr = main_sym if isinstance(main_sym, int) else main_sym.get("offset", 0)
-            if main_addr in cg.nodes and main_addr not in entry_points:
-                entry_points.append(main_addr)
-
-        init_syms = [symbols.get("__libc_csu_init"), symbols.get("_init")]
-        for sym in init_syms:
-            if sym:
-                addr = sym if isinstance(sym, int) else sym.get("offset", 0)
-                if addr in cg.nodes and addr not in entry_points:
-                    entry_points.append(addr)
-
-        if not entry_points:
-            entry_points = cg.get_entry_points()
-
-        return entry_points
+        return find_entry_points(binary, cg)
 
     def resolve_indirect_call(self, binary: Binary, call_site: int, context: dict[str, Any] | None = None) -> list[int]:
         """
