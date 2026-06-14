@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
+
 
 def _summarize_observable_mismatches_by_pass(
     mutations: list[dict[str, Any]],
@@ -44,7 +46,7 @@ def _build_observable_mismatch_map(
     rows: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Build a machine-readable lookup for observable mismatches by pass."""
-    return {str(row.get("pass_name")): dict(row) for row in rows if row.get("pass_name")}
+    return _index_rows_by_pass_name(rows)
 
 
 def _build_observable_mismatch_priority(

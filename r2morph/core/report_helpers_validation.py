@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
+
 
 def _build_pass_validation_context(
     pass_name: str,
@@ -99,5 +101,4 @@ def _build_validation_role_map(
     rows: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Index validation role rows by pass name."""
-    return {str(row.get("pass_name")): dict(row) for row in rows if row.get("pass_name")}
-
+    return _index_rows_by_pass_name(rows)

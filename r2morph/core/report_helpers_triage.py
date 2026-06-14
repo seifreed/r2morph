@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.core.constants import SEVERITY_ORDER, UNKNOWN_SEVERITY_RANK
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
 
 
 def _summarize_pass_triage_rows(
@@ -81,4 +82,4 @@ def _build_pass_triage_map(
     rows: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Index triage rows by pass name."""
-    return {str(row.get("pass_name")): dict(row) for row in rows if row.get("pass_name")}
+    return _index_rows_by_pass_name(rows)

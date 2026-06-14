@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
 from r2morph.core.report_helpers_region_evidence import (
     _build_pass_region_evidence_map as _build_pass_region_evidence_map_summary,
 )
@@ -39,7 +40,7 @@ def _build_pass_capability_summary_map(
     rows: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Index capability rows by pass name."""
-    return {str(row.get("pass_name")): dict(row) for row in rows if row.get("pass_name")}
+    return _index_rows_by_pass_name(rows)
 
 
 def _build_pass_region_evidence_map(
