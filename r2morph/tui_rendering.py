@@ -5,7 +5,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from r2morph.tui_pass_config import TUIPassConfig
 from r2morph.tui_presets import CONFIG_OPTIONS, CONFIG_TYPES, DEFAULT_PASS_CONFIGS, PASS_DESCRIPTIONS
+from r2morph.tui_progress_indicator import TUIProgressIndicator as _TUIProgressIndicator
 from r2morph.tui_rendering_helpers import (
     build_config_basic_lines,
     build_config_rich_rows,
@@ -19,6 +21,8 @@ from r2morph.tui_rendering_helpers import (
 )
 
 logger = logging.getLogger(__name__)
+
+TUIProgressIndicator = _TUIProgressIndicator
 
 
 class _FallbackConsole:
@@ -43,20 +47,6 @@ except ImportError:
     RICH_AVAILABLE = False
     Console = _FallbackConsole
     Confirm = Prompt = Layout = Panel = Table = Text = Progress = SpinnerColumn = BarColumn = TextColumn = TimeElapsedColumn = None
-
-
-class TUIPassConfig:
-    """Configuration options for mutation passes."""
-
-    def __init__(self, pass_name: str, config: dict[str, Any] | None = None) -> None:
-        self.pass_name = pass_name
-        self.config = config or DEFAULT_PASS_CONFIGS.get(pass_name, {}).copy()
-
-    def get_option(self, key: str, default: Any = None) -> Any:
-        return self.config.get(key, default)
-
-    def set_option(self, key: str, value: Any) -> None:
-        self.config[key] = value
 
 
 class TUIMainScreen:
@@ -307,36 +297,3 @@ class TUIPreviewScreen:
             print(line)
 
         print("[N]ext [P]rev [E]xecute [Q]uit")
-
-
-class TUIProgressIndicator:
-    def __init__(self, console: Console | None = None) -> None:
-        self.console = console or Console()
-        self._progress: Progress | None = None
-        self._task_id: Any = None
-
-    def start(self, total: int, description: str = "Processing") -> None:
-        if RICH_AVAILABLE:
-            self._progress = Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                BarColumn(),
-                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-                TimeElapsedColumn(),
-                console=self.console,
-            )
-            self._progress.start()
-            self._task_id = self._progress.add_task(description, total=total)
-
-    def update(self, advance: int = 1, message: str | None = None) -> None:
-        if self._progress and self._task_id is not None:
-            self._progress.update(self._task_id, advance=advance, description=message)
-
-    def complete(self, message: str = "Complete") -> None:
-        if self._progress and self._task_id is not None:
-            self._progress.update(self._task_id, description=message)
-            self._progress.stop()
-
-    def stop(self) -> None:
-        if self._progress:
-            self._progress.stop()
