@@ -6,6 +6,17 @@ import logging
 from typing import Any
 
 from r2morph.tui_presets import CONFIG_OPTIONS, CONFIG_TYPES, DEFAULT_PASS_CONFIGS, PASS_DESCRIPTIONS
+from r2morph.tui_rendering_helpers import (
+    build_config_basic_lines,
+    build_config_rich_rows,
+    build_function_basic_lines,
+    build_function_rich_rows,
+    build_main_menu_actions,
+    build_pass_basic_lines,
+    build_pass_rich_rows,
+    build_preview_basic_lines,
+    build_preview_rich_rows,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,15 +85,7 @@ class TUIMainScreen:
         table.add_column("Action", style="green")
         table.add_column("Description")
 
-        actions = [
-            ("F", "Select Functions", "Choose functions to mutate"),
-            ("P", "Select Passes", "Choose mutation passes"),
-            ("V", "Preview", "Preview mutations"),
-            ("E", "Execute", "Run mutations"),
-            ("Q", "Quit", "Exit TUI"),
-        ]
-
-        for key, action, desc in actions:
+        for key, action, desc in build_main_menu_actions():
             table.add_row(key, action, desc)
 
         layout["body"].update(table)
@@ -117,18 +120,16 @@ class TUIFunctionScreen:
         table.add_column("Name", style="green")
         table.add_column("Size", style="blue")
 
-        for func in functions[:50]:
-            marker = "X" if func.selected else " "
-            table.add_row(marker, f"0x{func.address:x}", func.name, str(func.size))
+        for marker, address, name, size in build_function_rich_rows(functions):
+            table.add_row(marker, address, name, size)
 
         self.console.print(table)
         self.console.print("\n[Enter number to toggle, A for all, N for none, C to continue]")
 
     def _render_basic(self, functions: list[Any]) -> None:
         print("\n=== Select Functions ===\n")
-        for i, func in enumerate(functions[:30]):
-            marker = "[X]" if func.selected else "[ ]"
-            print(f"{marker} {i}: 0x{func.address:x} {func.name} ({func.size} bytes)")
+        for line in build_function_basic_lines(functions):
+            print(line)
         print("\n[Enter number to toggle, A for all, N for none, C to continue]")
 
 
@@ -151,23 +152,16 @@ class TUIPassScreen:
         table.add_column("Status", style="blue")
         table.add_column("Description")
 
-        for mp in passes:
-            marker = "X" if mp.selected else " "
-            status = "stable" if mp.is_stable else "experimental"
-            status_style = "green" if mp.is_stable else "yellow"
-            desc, _ = PASS_DESCRIPTIONS.get(mp.name, (mp.description, mp.is_stable))
-            table.add_row(marker, mp.name, f"[{status_style}]{status}[/{status_style}]", desc)
+        for marker, name, status, desc in build_pass_rich_rows(passes):
+            table.add_row(marker, name, status, desc)
 
         self.console.print(table)
         self.console.print("\n[Enter number to toggle, A for all, N for none, C to continue]")
 
     def _render_basic(self, passes: list[Any]) -> None:
         print("\n=== Select Mutation Passes ===\n")
-        for i, mp in enumerate(passes):
-            marker = "[X]" if mp.selected else "[ ]"
-            status = "stable" if mp.is_stable else "experimental"
-            desc, _ = PASS_DESCRIPTIONS.get(mp.name, (mp.description, mp.is_stable))
-            print(f"{marker} {i}: {mp.name} ({status}) - {desc}")
+        for line in build_pass_basic_lines(passes):
+            print(line)
         print("\n[Enter number to toggle, A for all, N for none, C to continue]")
 
 
@@ -197,41 +191,23 @@ class TUIConfigScreen:
             self._render_basic(pass_name, config)
 
     def _render_rich(self, pass_name: str, config: dict[str, Any] | None = None) -> None:
-        current_config = config or DEFAULT_PASS_CONFIGS.get(pass_name, {})
-        config_types = CONFIG_TYPES.get(pass_name, {})
-        config_options = CONFIG_OPTIONS.get(pass_name, {})
-
         table = Table(title=f"Configure {pass_name}")
         table.add_column("Option", style="cyan")
         table.add_column("Type", style="dim")
         table.add_column("Current", style="green")
         table.add_column("Options", style="yellow")
 
-        for key, val in current_config.items():
-            val_type = config_types.get(key, type(val))
-            type_str = val_type.__name__
-
-            if key in config_options:
-                options_str = " | ".join(config_options[key])
-            elif val_type is bool:
-                options_str = "true | false"
-            elif val_type is int:
-                options_str = "<number>"
-            else:
-                options_str = "<value>"
-
-            current_str = str(val) if not isinstance(val, bool) else ("true" if val else "false")
+        for key, type_str, current_str, options_str in build_config_rich_rows(pass_name, config):
             table.add_row(key, type_str, current_str, options_str)
 
         self.console.print(table)
         self.console.print("\n[Enter option=value to change, D for defaults, C to continue]")
 
     def _render_basic(self, pass_name: str, config: dict[str, Any] | None = None) -> None:
-        current_config = config or DEFAULT_PASS_CONFIGS.get(pass_name, {})
         print(f"\n=== Configure {pass_name} ===\n")
 
-        for key, val in current_config.items():
-            print(f"  {key}: {val}")
+        for line in build_config_basic_lines(pass_name, config):
+            print(line)
 
         print("\n[Enter option=value to change, D for defaults, C to continue]")
 
@@ -306,17 +282,12 @@ class TUIPreviewScreen:
         table.add_column("Original", style="red")
         table.add_column("Mutated", style="blue")
 
-        for m in mutations[start:end]:
-            orig_hex = m.original_bytes.hex()[:16]
-            mut_hex = m.mutated_bytes.hex()[:16]
-            func = m.function or "unknown"
-            table.add_row(
-                f"0x{m.address:x}",
-                func[:20],
-                m.pass_name,
-                orig_hex,
-                mut_hex,
-            )
+        for address, func, pass_name, orig_hex, mut_hex in build_preview_rich_rows(
+            mutations,
+            start=start,
+            end=end,
+        ):
+            table.add_row(address, func, pass_name, orig_hex, mut_hex)
 
         layout["mutations"].update(table)
 
@@ -332,16 +303,8 @@ class TUIPreviewScreen:
 
         print(f"\n=== Mutation Preview (Page {page + 1}/{max(total_pages, 1)}) ===\n")
 
-        for m in mutations[start:end]:
-            orig_hex = m.original_bytes.hex()[:16]
-            mut_hex = m.mutated_bytes.hex()[:16]
-            func = m.function or "unknown"
-            print(f"0x{m.address:x} | {func[:20]:20} | {m.pass_name:15}")
-            print(f"  Original: {orig_hex}")
-            print(f"  Mutated:  {mut_hex}")
-            if m.description:
-                print(f"  Note:     {m.description}")
-            print()
+        for line in build_preview_basic_lines(mutations, start=start, end=end):
+            print(line)
 
         print("[N]ext [P]rev [E]xecute [Q]uit")
 
