@@ -21,6 +21,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.instruction_substitution_helpers",
     "r2morph.mutations.instruction_substitution_arm64",
     "r2morph.mutations.code_mobility_models",
+    "r2morph.mutations.code_mobility_helpers",
     "r2morph.mutations.constant_unfolding_helpers",
     "r2morph.mutations.nop_insertion_helpers",
     "r2morph.mutations.dead_code_injection_helpers",
