@@ -24,6 +24,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.regression_models",
     "r2morph.validation.regression_comparison",
     "r2morph.validation.regression_storage",
+    "r2morph.validation.regression_baselines",
     "r2morph.validation.leak_detection_models",
     "r2morph.validation.object_tracker",
     "r2morph.validation.fuzzer_inputs",

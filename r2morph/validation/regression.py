@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation import regression_comparison, regression_models, regression_storage
+from r2morph.validation import regression_baselines, regression_comparison, regression_models, regression_storage
 
 BaselineResult = regression_models.BaselineResult
 NewRegressionResult = regression_models.NewRegressionResult
@@ -75,65 +75,15 @@ class RegressionTestFramework:
         Returns:
             BaselineResult object
         """
-        from r2morph import Binary
-        from r2morph.detection import ObfuscationDetector
-
-        start_time = time.time()
-
         try:
-            with Binary(binary_path) as bin_obj:
-                bin_obj.analyze()
-
-                detector = ObfuscationDetector()
-                result = detector.analyze_binary(bin_obj)
-
-                expected_output = {
-                    "packer_detected": result.packer_detected.value if result.packer_detected else None,
-                    "vm_detected": result.vm_detected,
-                    "anti_analysis_detected": result.anti_analysis_detected,
-                    "control_flow_flattened": result.control_flow_flattened,
-                    "mba_detected": result.mba_detected,
-                    "confidence_score": round(result.confidence_score, 3),  # Round for stability
-                    "techniques_count": len(result.obfuscation_techniques),
-                    "obfuscation_techniques": sorted(
-                        result.obfuscation_techniques[:20], key=lambda t: t.value
-                    ),  # Limited list
-                }
-
-                custom_vm = detector.detect_custom_virtualizer(bin_obj)
-                layers = detector.detect_code_packing_layers(bin_obj)
-                metamorphic = detector.detect_metamorphic_engine(bin_obj)
-
-                expected_output.update(
-                    {
-                        "custom_vm_detected": custom_vm["detected"],
-                        "custom_vm_type": custom_vm.get("vm_type", ""),
-                        "packing_layers": layers["layers_detected"],
-                        "metamorphic_detected": metamorphic["detected"],
-                        "polymorphic_ratio": round(metamorphic.get("polymorphic_ratio", 0.0), 3),
-                    }
-                )
-
+            baseline = regression_baselines.build_detection_baseline(
+                test_id,
+                binary_path,
+                self._compute_input_hash(binary_path),
+            )
         except Exception as e:
             logger.error(f"Failed to create detection baseline for {test_id}: {e}")
             raise
-
-        execution_time = time.time() - start_time
-
-        performance_baseline = {
-            "execution_time": round(execution_time, 3),
-            "max_allowed_time": round(execution_time * 2.0, 3),  # Allow 2x slowdown
-        }
-
-        baseline = BaselineResult(
-            test_id=test_id,
-            test_type=RegressionTestType.DETECTION_ACCURACY,
-            input_hash=self._compute_input_hash(binary_path),
-            expected_output=expected_output,
-            performance_baseline=performance_baseline,
-            timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
-            version="2.0.0-phase2",
-        )
 
         self._save_baseline(baseline)
         return baseline
@@ -148,46 +98,7 @@ class RegressionTestFramework:
         Returns:
             BaselineResult object
         """
-        import importlib.util
-
-        api_checks: dict[str, Any] = {}
-
-        api_checks["binary_import"] = importlib.util.find_spec("r2morph") is not None
-        api_checks["detection_import"] = importlib.util.find_spec("r2morph.detection") is not None
-        api_checks["devirtualization_import"] = importlib.util.find_spec("r2morph.devirtualization") is not None
-
-        try:
-            from r2morph.detection import ObfuscationDetector
-
-            detector = ObfuscationDetector()
-            api_checks["detector_instantiation"] = True
-
-            api_checks["analyze_binary_method"] = hasattr(detector, "analyze_binary")
-            api_checks["detect_custom_virtualizer_method"] = hasattr(detector, "detect_custom_virtualizer")
-            api_checks["get_comprehensive_report_method"] = hasattr(detector, "get_comprehensive_report")
-
-        except Exception:
-            api_checks["detector_instantiation"] = False
-            api_checks["analyze_binary_method"] = False
-
-        try:
-            from r2morph.detection import PackerType
-
-            api_checks["packer_type_enum"] = True
-            api_checks["packer_type_count"] = len(list(PackerType))
-        except ImportError:
-            api_checks["packer_type_enum"] = False
-            api_checks["packer_type_count"] = 0
-
-        baseline = BaselineResult(
-            test_id=test_id,
-            test_type=RegressionTestType.API_COMPATIBILITY,
-            input_hash="api_compatibility",  # Static hash for API tests
-            expected_output=api_checks,
-            performance_baseline={},  # No performance baselines for API tests
-            timestamp=time.strftime("%Y-%m-%d %H:%M:%S"),
-            version="2.0.0-phase2",
-        )
+        baseline = regression_baselines.build_api_compatibility_baseline(test_id)
 
         self._save_baseline(baseline)
         return baseline
