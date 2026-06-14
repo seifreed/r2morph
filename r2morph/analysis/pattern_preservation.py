@@ -13,14 +13,13 @@ during mutations:
 import logging
 from typing import Any
 
-from r2morph.analysis.exception import ExceptionInfoReader
-from r2morph.analysis.pattern_preservation_models import (
-    Criticality,
-    ExclusionZone,
-    PatternType,
-    PreservedPattern,
+from r2morph.analysis.pattern_preservation_detection import (
+    detect_exception_patterns,
+    detect_jump_table_patterns,
+    detect_plt_got_patterns,
+    detect_tail_call_patterns,
 )
-from r2morph.analysis.switch_table import SwitchTableAnalyzer
+from r2morph.analysis.pattern_preservation_models import ExclusionZone, PatternType, PreservedPattern
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -40,8 +39,8 @@ class PatternPreservationManager:
         self._patterns: list[PreservedPattern] = []
         self._exclusion_zones: list[ExclusionZone] = []
         self._address_index: dict[int, list[PreservedPattern]] = {}
-        self._exception_reader: ExceptionInfoReader | None = None
-        self._switch_analyzer: SwitchTableAnalyzer | None = None
+        self._exception_reader: Any | None = None
+        self._switch_analyzer: Any | None = None
         self._analyzed = False
 
     def analyze(self) -> dict[str, Any]:
@@ -66,148 +65,19 @@ class PatternPreservationManager:
 
     def _detect_exception_patterns(self) -> None:
         """Detect exception handling patterns (landing pads, handlers)."""
-        try:
-            self._exception_reader = ExceptionInfoReader(self.binary)
-            frames = self._exception_reader.read_exception_frames()
-
-            for func_addr, frame in frames.items():
-                if frame.landing_pads:
-                    pattern = PreservedPattern(
-                        type=PatternType.EXCEPTION_HANDLER,
-                        start_address=frame.function_start,
-                        end_address=frame.function_end,
-                        criticality=Criticality.PRESERVE,
-                        source="exception_analysis",
-                        metadata={"function_address": func_addr},
-                    )
-                    self._patterns.append(pattern)
-
-                    for pad in frame.landing_pads:
-                        landing_pattern = PreservedPattern(
-                            type=PatternType.LANDING_PAD,
-                            start_address=pad.address,
-                            end_address=pad.address + max(pad.size, 16),
-                            criticality=Criticality.PRESERVE,
-                            source="exception_analysis",
-                            metadata={"action": pad.action.value},
-                        )
-                        self._patterns.append(landing_pattern)
-
-        except Exception as e:
-            logger.debug(f"Exception pattern detection failed: {e}")
+        detect_exception_patterns(self)
 
     def _detect_jump_table_patterns(self) -> None:
         """Detect jump tables and switch dispatch patterns."""
-        try:
-            self._switch_analyzer = SwitchTableAnalyzer(self.binary)
-            functions = self.binary.get_functions()
-
-            for func in functions:
-                func_addr = func.get("offset", func.get("addr", 0))
-                if func_addr == 0:
-                    continue
-
-                try:
-                    jump_tables, other_jumps = self._switch_analyzer.detect_switch_pattern(func_addr)
-
-                    for table in jump_tables:
-                        table_pattern = PreservedPattern(
-                            type=PatternType.JUMP_TABLE,
-                            start_address=table.table_address,
-                            end_address=table.table_address + (len(table.entries) * 8),
-                            criticality=Criticality.PRESERVE,
-                            source="switch_analysis",
-                            metadata={
-                                "case_count": table.case_count,
-                                "is_dense": table.is_dense,
-                                "bounds_register": table.bounds_check_register,
-                            },
-                        )
-                        self._patterns.append(table_pattern)
-
-                        for target in table.unique_targets:
-                            target_pattern = PreservedPattern(
-                                type=PatternType.JUMP_TABLE_ENTRY,
-                                start_address=target,
-                                end_address=target + 16,
-                                criticality=Criticality.CAUTION,
-                                source="switch_analysis",
-                                metadata={"table_address": table.table_address},
-                            )
-                            self._patterns.append(target_pattern)
-
-                    for jump in other_jumps:
-                        if jump.jump_type in ("jumptable", "indirect"):
-                            jump_pattern = PreservedPattern(
-                                type=PatternType.INDIRECT_JUMP,
-                                start_address=jump.address,
-                                end_address=jump.address + 16,
-                                criticality=Criticality.AVOID,
-                                source="switch_analysis",
-                                metadata={"jump_type": jump.jump_type},
-                            )
-                            self._patterns.append(jump_pattern)
-
-                except Exception as e:
-                    logger.debug(f"Jump table detection failed for 0x{func_addr:x}: {e}")
-
-        except Exception as e:
-            logger.debug(f"Jump table pattern detection failed: {e}")
+        detect_jump_table_patterns(self)
 
     def _detect_plt_got_patterns(self) -> None:
         """Detect PLT thunks and GOT entries."""
-        try:
-            if self._switch_analyzer is None:
-                self._switch_analyzer = SwitchTableAnalyzer(self.binary)
-
-            plt_entries = self._switch_analyzer.detect_plt_got_thunks()
-
-            for addr, info in plt_entries.items():
-                pattern = PreservedPattern(
-                    type=PatternType.PLT_THUNK,
-                    start_address=addr,
-                    end_address=addr + 16,
-                    criticality=Criticality.PRESERVE,
-                    source="plt_got_analysis",
-                    metadata=info,
-                )
-                self._patterns.append(pattern)
-
-        except Exception as e:
-            logger.debug(f"PLT/GOT pattern detection failed: {e}")
+        detect_plt_got_patterns(self)
 
     def _detect_tail_call_patterns(self) -> None:
         """Detect tail call patterns."""
-        try:
-            if self._switch_analyzer is None:
-                self._switch_analyzer = SwitchTableAnalyzer(self.binary)
-
-            functions = self.binary.get_functions()
-
-            for func in functions:
-                func_addr = func.get("offset", func.get("addr", 0))
-                if func_addr == 0:
-                    continue
-
-                try:
-                    tail_calls = self._switch_analyzer.detect_tail_calls(func_addr)
-
-                    for jump_addr, target_addr in tail_calls:
-                        pattern = PreservedPattern(
-                            type=PatternType.TAIL_CALL,
-                            start_address=jump_addr,
-                            end_address=jump_addr + 5,
-                            criticality=Criticality.AVOID,
-                            source="tail_call_analysis",
-                            metadata={"target_address": target_addr},
-                        )
-                        self._patterns.append(pattern)
-
-                except Exception as e:
-                    logger.debug(f"Tail call detection failed for 0x{func_addr:x}: {e}")
-
-        except Exception as e:
-            logger.debug(f"Tail call pattern detection failed: {e}")
+        detect_tail_call_patterns(self)
 
     def _build_exclusion_zones(self) -> None:
         """Build exclusion zones from patterns."""

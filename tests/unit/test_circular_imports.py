@@ -105,6 +105,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.call_graph_cache",
     "r2morph.analysis.call_graph_models",
     "r2morph.analysis.pattern_preservation_models",
+    "r2morph.analysis.pattern_preservation_detection",
     "r2morph.analysis.switch_table_models",
     "r2morph.analysis.critical_nodes_models",
     "r2morph.analysis.switch_table_patterns",
