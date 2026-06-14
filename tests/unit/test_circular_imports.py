@@ -125,6 +125,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.abi_models",
     "r2morph.analysis.abi_detection",
     "r2morph.analysis.ssa_models",
+    "r2morph.validation.benchmark_models",
     "r2morph.analysis.switch_table_patterns",
     "r2morph.analysis.memory_flow_helpers",
     "r2morph.analysis.memory_flow_models",
