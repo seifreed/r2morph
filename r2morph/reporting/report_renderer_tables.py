@@ -7,6 +7,11 @@ from typing import Any
 from rich.console import Console
 
 from r2morph.reporting.report_rendering_primitives import create_table
+from r2morph.reporting.report_rendering_table_helpers import (
+    build_filtered_summary_rows,
+    build_mismatch_observable_rows,
+    build_pass_evidence_rows,
+)
 
 
 def render_mismatch_table(
@@ -23,12 +28,8 @@ def render_mismatch_table(
         ],
     )
 
-    for pass_name, start_addr, end_addr, observables in mismatch_rows:
-        table.add_row(
-            pass_name,
-            str(len(observables)),
-            ", ".join(observables[:5]) + ("..." if len(observables) > 5 else ""),
-        )
+    for pass_name, count, observables in build_mismatch_observable_rows(mismatch_rows):
+        table.add_row(pass_name, count, observables)
 
     console.print(table)
 
@@ -49,15 +50,10 @@ def render_pass_evidence_table(
         ],
     )
 
-    for pass_name, result in pass_results.items():
-        evidence = result.get("evidence_summary", {})
-        table.add_row(
-            pass_name,
-            str(evidence.get("changed_region_count", 0)),
-            str(evidence.get("structural_issue_count", 0)),
-            str(evidence.get("symbolic_binary_mismatched_regions", 0)),
-            result.get("status", "unknown"),
-        )
+    for pass_name, changed_regions, structural_issues, symbolic_mismatches, status in build_pass_evidence_rows(
+        pass_results
+    ):
+        table.add_row(pass_name, changed_regions, structural_issues, symbolic_mismatches, status)
 
     console.print(table)
 
@@ -84,8 +80,7 @@ def render_filtered_summary_table(
         ],
     )
 
-    for key, value in filtered_summary.items():
-        if isinstance(value, (int, float, str)):
-            table.add_row(key.replace("_", " ").title(), str(value))
+    for label, value in build_filtered_summary_rows(filtered_summary):
+        table.add_row(label, value)
 
     console.print(table)

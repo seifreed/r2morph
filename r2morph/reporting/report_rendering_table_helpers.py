@@ -63,3 +63,47 @@ def build_mismatch_rows(
         )
         for row in mismatch_rows
     ]
+
+
+def build_pass_evidence_rows(
+    pass_results: dict[str, Any],
+) -> list[tuple[str, str, str, str, str]]:
+    """Build the pass evidence rows in display order."""
+    rows: list[tuple[str, str, str, str, str]] = []
+    for pass_name, result in pass_results.items():
+        evidence = result.get("evidence_summary", {})
+        rows.append(
+            (
+                pass_name,
+                str(evidence.get("changed_region_count", 0)),
+                str(evidence.get("structural_issue_count", 0)),
+                str(evidence.get("symbolic_binary_mismatched_regions", 0)),
+                result.get("status", "unknown"),
+            )
+        )
+    return rows
+
+
+def build_filtered_summary_rows(
+    filtered_summary: dict[str, Any],
+) -> list[tuple[str, str]]:
+    """Build the filtered summary rows in display order."""
+    return [
+        (key.replace("_", " ").title(), str(value))
+        for key, value in filtered_summary.items()
+        if isinstance(value, (int, float, str))
+    ]
+
+
+def build_mismatch_observable_rows(
+    mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
+) -> list[tuple[str, str, str]]:
+    """Build the mismatch observable rows in display order."""
+    return [
+        (
+            pass_name,
+            str(len(observables)),
+            ", ".join(observables[:5]) + ("..." if len(observables) > 5 else ""),
+        )
+        for pass_name, _start_addr, _end_addr, observables in mismatch_rows
+    ]
