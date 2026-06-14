@@ -11,6 +11,7 @@ from typing import Any
 from r2morph.analysis.cfg import CFGBuilder
 
 from .vm_handler_models import VMArchitecture, VMHandler, VMHandlerType
+from .vm_handler_patterns import load_vm_handler_patterns
 
 logger = logging.getLogger(__name__)
 
@@ -32,46 +33,7 @@ class VMHandlerAnalyzer:
         """
         self.binary = binary
         self.vm_architecture: VMArchitecture | None = None
-        self.handler_patterns = self._load_handler_patterns()
-
-    def _load_handler_patterns(self) -> dict[VMHandlerType, list[dict[str, Any]]]:
-        """Load patterns for identifying different handler types."""
-        patterns = {
-            VMHandlerType.ARITHMETIC: [
-                {
-                    "pattern": ["add", "sub", "mul", "div", "inc", "dec"],
-                    "description": "Basic arithmetic operations",
-                    "confidence": 0.8,
-                },
-                {
-                    "pattern": ["add.*eax.*ebx", "mov.*eax"],
-                    "description": "Register arithmetic pattern",
-                    "confidence": 0.7,
-                },
-            ],
-            VMHandlerType.LOGICAL: [
-                {
-                    "pattern": ["and", "or", "xor", "not", "shl", "shr"],
-                    "description": "Logical and bitwise operations",
-                    "confidence": 0.8,
-                }
-            ],
-            VMHandlerType.MEMORY: [
-                {"pattern": ["mov.*\\[.*\\]", "lea"], "description": "Memory access patterns", "confidence": 0.7}
-            ],
-            VMHandlerType.STACK: [{"pattern": ["push", "pop"], "description": "Stack operations", "confidence": 0.9}],
-            VMHandlerType.BRANCH: [
-                {
-                    "pattern": ["jmp", "je", "jne", "jz", "jnz", "jc", "jnc"],
-                    "description": "Conditional and unconditional jumps",
-                    "confidence": 0.8,
-                }
-            ],
-            VMHandlerType.COMPARE: [
-                {"pattern": ["cmp", "test"], "description": "Comparison operations", "confidence": 0.9}
-            ],
-        }
-        return patterns
+        self.handler_patterns = load_vm_handler_patterns()
 
     def analyze_vm_architecture(self, suspected_dispatcher: int) -> VMArchitecture:
         """
