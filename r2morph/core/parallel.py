@@ -23,6 +23,7 @@ from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.core.binary_file_lock import BinaryFileLock
+from r2morph.core.parallel_checkpointing import has_failures, rollback_checkpoint, save_checkpoint
 from r2morph.core.parallel_planner import (
     DependencyResolver,
     PassResult,
@@ -142,7 +143,7 @@ class ParallelMutationEngine:
                 self._save_checkpoint("__initial__")
 
             for stage_num, stage in enumerate(plan.stages):
-                if self._stop_on_error and self._has_failures():
+                if self._stop_on_error and has_failures(self._results):
                     logger.warning("Stopping due to previous errors")
                     break
 
@@ -238,10 +239,7 @@ class ParallelMutationEngine:
             # worker could shutil.copy2 the shared binary mid-write and
             # save a torn checkpoint that a later rollback would restore.
             with self._binary_mutation_lock:
-                if self.use_checkpoints:
-                    checkpoint_path = self._save_checkpoint(pass_name)
-                else:
-                    checkpoint_path = None
+                checkpoint_path = save_checkpoint(self.binary.path, self.checkpoint_dir, pass_name, logger) if self.use_checkpoints else None
 
                 # Acquire file lock before modifying binary if using file locking
                 if self._file_lock and self.use_file_lock:
@@ -292,23 +290,6 @@ class ParallelMutationEngine:
                 duration_seconds=duration,
             )
 
-    def _save_checkpoint(self, pass_name: str) -> Path:
-        """Save a checkpoint of the current binary state."""
-        checkpoint_path = self.checkpoint_dir / f"checkpoint_{pass_name}.bin"
-        try:
-            import shutil
-
-            shutil.copy2(self.binary.path, checkpoint_path)
-            logger.debug(f"Saved checkpoint: {checkpoint_path}")
-            return checkpoint_path
-        except Exception as e:
-            logger.warning(f"Failed to save checkpoint: {e}")
-            return Path("")
-
-    def _has_failures(self) -> bool:
-        """Check if any pass has failed."""
-        return any(r.status == PassStatus.FAILED for r in self._results.values())
-
     def rollback(self, pass_name: str) -> bool:
         """
         Rollback to checkpoint before a specific pass.
@@ -324,16 +305,10 @@ class ParallelMutationEngine:
             logger.warning(f"No checkpoint for pass: {pass_name}")
             return False
 
-        try:
-            import shutil
-
-            shutil.copy2(result.checkpoint_path, self.binary.path)
+        if rollback_checkpoint(self.binary.path, result.checkpoint_path, logger):
             result.status = PassStatus.ROLLED_BACK
-            logger.info(f"Rolled back to checkpoint before {pass_name}")
             return True
-        except Exception as e:
-            logger.error(f"Rollback failed: {e}")
-            return False
+        return False
 
     def get_results_summary(self) -> dict[str, Any]:
         """Get summary of all execution results."""

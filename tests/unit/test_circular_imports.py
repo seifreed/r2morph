@@ -70,6 +70,7 @@ REPORTING_MODULES = [
     "r2morph.core.parallel_executor_models",
     "r2morph.core.parallel_work_queue",
     "r2morph.core.parallel_result_merger",
+    "r2morph.core.parallel_checkpointing",
     "r2morph.core.binary_file_lock",
     "r2morph.core.analysis_cache_models",
     "r2morph.core.analysis_cache_storage",
