@@ -10,6 +10,7 @@ from rich import print as rprint
 from r2morph.cli_workflows import _resolve_report_pass_filter
 from r2morph.reporting import SEVERITY_ORDER
 from r2morph.reporting.filtered_summary_builder import _build_report_dispatch_state
+from r2morph.reporting.report_command_io import emit_report_output, load_report_payload
 from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
 from r2morph.reporting.report_orchestrator import _dispatch_report_flow
 from r2morph.reporting.report_resolver import _resolve_general_report_flow_state
@@ -87,8 +88,7 @@ def handle_report_command(
     **kwargs: Any,
 ) -> dict[str, Any]:
     """Handle the report command."""
-    with open(report_file, encoding="utf-8") as handle:
-        payload: dict[str, Any] = json.load(handle)
+    payload = load_report_payload(report_file)
 
     resolved_only_pass = _resolve_report_pass_filter(only_pass)
     resolved_only_pass_failure = _resolve_report_pass_filter(only_pass_failure)
@@ -180,19 +180,13 @@ def handle_report_command(
         return_payload["filtered_summary"] = dispatch_state.get("filtered_summary", {})
 
     if output_format.lower() == "sarif":
-        from r2morph.reporting.sarif_formatter import format_as_sarif
-
-        sarif_report = format_as_sarif(
-            payload.get("mutations", []),
-            payload.get("validations", []),
-            payload.get("binary_path", ""),
+        emit_report_output(
+            output_format=output_format,
+            output=output,
+            mutations=payload.get("mutations", []),
+            validations=payload.get("validations", []),
+            binary_path=payload.get("binary_path", ""),
         )
-        if output:
-            with open(output, "w", encoding="utf-8") as handle:
-                handle.write(sarif_report.to_json())
-            rprint(f"[green]SARIF report written to[/green] {output}")
-        else:
-            print(sarif_report.to_json())
         return return_payload
 
     _dispatch_report_flow(**dispatch_state)
