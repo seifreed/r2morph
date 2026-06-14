@@ -17,6 +17,7 @@ from .cfo_simplifier_models import CFOPattern, CFOSimplificationResult, ControlF
 from .iterative_simplifier import IterativeSimplifier
 from .mba_solver import MBASolver
 from .vm_handler_analyzer import VMHandlerAnalyzer
+from .vm_handler_models import VMArchitecture, VMHandler, VMHandlerType
 
 # Import types for better IDE support
 try:
@@ -25,14 +26,16 @@ try:
     )
     from .mba_solver import MBAExpression as MBAExpression
     from .mba_solver import SimplificationResult as SimplificationResult
-    from .vm_handler_analyzer import VMArchitecture as VMArchitecture
-    from .vm_handler_analyzer import VMHandlerType as VMHandlerType
+    from .vm_handler_models import VMArchitecture as VMArchitecture
+    from .vm_handler_models import VMHandler as VMHandler
+    from .vm_handler_models import VMHandlerType as VMHandlerType
 except ImportError:
     # Graceful degradation if imports fail
     pass
 
 __all__ = [
     "VMHandlerAnalyzer",
+    "VMHandler",
     "MBASolver",
     "CFOSimplifier",
     "IterativeSimplifier",

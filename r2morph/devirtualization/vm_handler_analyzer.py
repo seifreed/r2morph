@@ -6,57 +6,13 @@ their semantic behavior using pattern matching and symbolic execution.
 """
 
 import logging
-from dataclasses import dataclass, field
-from enum import Enum
 from typing import Any
 
 from r2morph.analysis.cfg import CFGBuilder
 
+from .vm_handler_models import VMArchitecture, VMHandler, VMHandlerType
+
 logger = logging.getLogger(__name__)
-
-
-class VMHandlerType(Enum):
-    """Types of VM handlers."""
-
-    ARITHMETIC = "arithmetic"  # ADD, SUB, MUL, DIV operations
-    LOGICAL = "logical"  # AND, OR, XOR, NOT operations
-    MEMORY = "memory"  # LOAD, STORE operations
-    STACK = "stack"  # PUSH, POP operations
-    BRANCH = "branch"  # Conditional/unconditional jumps
-    CALL = "call"  # Function calls
-    COMPARE = "compare"  # Comparison operations
-    MOVE = "move"  # Data movement
-    NOP = "nop"  # No operation
-    DISPATCHER = "dispatcher"  # VM instruction dispatcher
-    UNKNOWN = "unknown"  # Unclassified handler
-
-
-@dataclass
-class VMHandler:
-    """Represents a virtual machine handler."""
-
-    handler_id: int
-    entry_address: int
-    size: int
-    handler_type: VMHandlerType = VMHandlerType.UNKNOWN
-    instructions: list[dict[str, Any]] = field(default_factory=list)
-    semantic_signature: str | None = None
-    equivalent_x86: str | None = None
-    confidence: float = 0.0
-    analysis_notes: list[str] = field(default_factory=list)
-
-
-@dataclass
-class VMArchitecture:
-    """Represents the overall VM architecture."""
-
-    dispatcher_address: int
-    handlers: dict[int, VMHandler] = field(default_factory=dict)
-    handler_table_address: int | None = None
-    vm_registers: list[str] = field(default_factory=list)
-    vm_stack_address: int | None = None
-    bytecode_address: int | None = None
-    vm_context_size: int = 0
 
 
 class VMHandlerAnalyzer:
