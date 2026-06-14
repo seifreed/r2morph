@@ -10,96 +10,30 @@ import json
 import logging
 import random
 import statistics
-import tempfile
 import time
-from dataclasses import asdict, dataclass, field
+from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from r2morph.validation.mutation_fuzzer_inputs import (
+    generate_ascii_input,
+    generate_binary_input,
+    generate_edge_case_input,
+    generate_format_string_input,
+    generate_path_like_input,
+    generate_random_input,
+    generate_structured_input,
+    generate_test_case,
+)
+from r2morph.validation.mutation_fuzzer_types import (
+    FuzzCampaignResult,
+    FuzzConfig,
+    FuzzResult,
+    FuzzTestCase,
+)
+
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class FuzzConfig:
-    """Configuration for fuzzer."""
-
-    num_tests: int = 100
-    timeout: int = 5
-    seed: int | None = None
-    input_types: list[str] = field(default_factory=lambda: ["random", "ascii", "structured"])
-    max_input_size: int = 4096
-    min_input_size: int = 0
-    crash_on_error: bool = False
-    save_failing_cases: bool = True
-    output_dir: str = "fuzz_results"
-
-
-@dataclass
-class FuzzTestCase:
-    """A single fuzz test case."""
-
-    test_id: str
-    input_data: bytes
-    input_type: str
-    args: list[str]
-    env: dict[str, str]
-    description: str
-
-
-@dataclass
-class FuzzResult:
-    """Result of a single fuzz test."""
-
-    test_id: str
-    passed: bool
-    original_exit_code: int
-    mutated_exit_code: int
-    original_output_hash: str
-    mutated_output_hash: str
-    original_error: str | None
-    mutated_error: str | None
-    execution_time_ms: float
-    crash: bool
-    timeout: bool
-    mutation_count: int
-    mutation_names: list[str]
-
-
-@dataclass
-class FuzzCampaignResult:
-    """Result of a complete fuzz campaign."""
-
-    total_tests: int
-    passed: int
-    failed: int
-    crashes: int
-    timeouts: int
-    results: list[FuzzResult]
-    seed: int
-    config: FuzzConfig
-    start_time: str
-    end_time: str
-    duration_seconds: float
-
-    @property
-    def success_rate(self) -> float:
-        return (self.passed / self.total_tests * 100) if self.total_tests > 0 else 0.0
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "total_tests": self.total_tests,
-            "passed": self.passed,
-            "failed": self.failed,
-            "crashes": self.crashes,
-            "timeouts": self.timeouts,
-            "success_rate": f"{self.success_rate:.2f}%",
-            "seed": self.seed,
-            "start_time": self.start_time,
-            "end_time": self.end_time,
-            "duration_seconds": self.duration_seconds,
-            "results": [asdict(r) for r in self.results],
-        }
 
 
 class MutationPassFuzzer:
@@ -123,122 +57,42 @@ class MutationPassFuzzer:
             random.seed(self.config.seed)
 
         self.test_case_generators = {
-            "random": self._generate_random_input,
-            "ascii": self._generate_ascii_input,
-            "binary": self._generate_binary_input,
-            "structured": self._generate_structured_input,
-            "edge_case": self._generate_edge_case_input,
-            "format_string": self._generate_format_string_input,
-            "path_like": self._generate_path_like_input,
+            "random": lambda size_hint, _self=self: _self._generate_random_input(size_hint),
+            "ascii": lambda size_hint, _self=self: _self._generate_ascii_input(size_hint),
+            "binary": lambda size_hint, _self=self: _self._generate_binary_input(size_hint),
+            "structured": lambda size_hint, _self=self: _self._generate_structured_input(size_hint),
+            "edge_case": lambda size_hint, _self=self: _self._generate_edge_case_input(size_hint),
+            "format_string": lambda size_hint, _self=self: _self._generate_format_string_input(size_hint),
+            "path_like": lambda size_hint, _self=self: _self._generate_path_like_input(size_hint),
         }
 
     def _generate_random_input(self, size_hint: int) -> bytes:
         """Generate random binary input."""
-        size = size_hint or random.randint(self.config.min_input_size, self.config.max_input_size)
-        return bytes(random.randint(0, 255) for _ in range(size))
+        return generate_random_input(self.config, size_hint)
 
     def _generate_ascii_input(self, size_hint: int) -> bytes:
         """Generate printable ASCII input."""
-        import string
-
-        size = size_hint or random.randint(self.config.min_input_size, min(self.config.max_input_size, 1024))
-        chars = string.printable
-        return "".join(random.choice(chars) for _ in range(size)).encode()
+        return generate_ascii_input(self.config, size_hint)
 
     def _generate_binary_input(self, size_hint: int) -> bytes:
         """Generate structured binary input."""
-        size = size_hint or random.randint(self.config.min_input_size, min(self.config.max_input_size, 512))
-
-        result = bytearray()
-
-        while len(result) < size:
-            pattern_type = random.choice(["zeros", "ones", "random", "sequence"])
-
-            if pattern_type == "zeros":
-                chunk_size = random.randint(1, min(64, size - len(result)))
-                result.extend(b"\x00" * chunk_size)
-            elif pattern_type == "ones":
-                chunk_size = random.randint(1, min(64, size - len(result)))
-                result.extend(b"\xff" * chunk_size)
-            elif pattern_type == "sequence":
-                chunk_size = random.randint(1, min(64, size - len(result)))
-                result.extend(bytes(range(chunk_size)))
-            else:
-                chunk_size = min(64, size - len(result))
-                result.extend(bytes(random.randint(0, 255) for _ in range(chunk_size)))
-
-        return bytes(result[:size])
+        return generate_binary_input(self.config, size_hint)
 
     def _generate_structured_input(self, size_hint: int) -> bytes:
         """Generate structured input (JSON-like)."""
-        structures = [
-            lambda: json.dumps({"value": random.randint(0, 1000000)}),
-            lambda: json.dumps({"values": [random.randint(0, 100) for _ in range(random.randint(1, 10))]}),
-            lambda: json.dumps({"nested": {"a": random.randint(0, 10), "b": random.choice(["x", "y", "z"])}}),
-            lambda: json.dumps([random.choice(["a", "b", "c"]) for _ in range(random.randint(1, 5))]),
-            lambda: str(random.randint(-1000000, 1000000)),
-            lambda: " ".join(str(random.randint(0, 100)) for _ in range(random.randint(1, 10))),
-            lambda: ",".join(str(random.random()) for _ in range(random.randint(1, 5))),
-        ]
-
-        return random.choice(structures)().encode()
+        return generate_structured_input(self.config, size_hint)
 
     def _generate_edge_case_input(self, size_hint: int) -> bytes:
         """Generate edge case inputs."""
-        edge_cases = [
-            b"",
-            b"\x00",
-            b"\xff",
-            b"\x00" * 1000,
-            b"\xff" * 1000,
-            b"a" * 10000,
-            b"\n" * 100,
-            b"\r\n" * 50,
-            b"\x00\xff" * 500,
-            bytes(range(256)),
-            bytes(range(255, -1, -1)),
-        ]
-
-        return random.choice(edge_cases)
+        return generate_edge_case_input(self.config, size_hint)
 
     def _generate_format_string_input(self, size_hint: int) -> bytes:
         """Generate format string inputs."""
-        format_patterns = [
-            "%s" * random.randint(1, 10),
-            "%d" * random.randint(1, 10),
-            "%x" * random.randint(1, 10),
-            "%n" * random.randint(1, 5),
-            f"%{random.randint(1, 1000)}" + "s",
-            "AAAA%08x.%08x.%08x.%08x",
-            "%p" * random.randint(1, 5),
-        ]
-
-        return random.choice(format_patterns).encode()
+        return generate_format_string_input(self.config, size_hint)
 
     def _generate_path_like_input(self, size_hint: int) -> bytes:
         """Generate path-like inputs."""
-        import string
-
-        path_chars = string.ascii_letters + string.digits + "/\\._-"
-
-        paths = [
-            "/".join(
-                "".join(random.choice(path_chars) for _ in range(random.randint(1, 10)))
-                for _ in range(random.randint(1, 5))
-            ),
-            "\\".join(
-                "".join(random.choice(path_chars) for _ in range(random.randint(1, 10)))
-                for _ in range(random.randint(1, 5))
-            ),
-            "C:\\" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 50))),
-            tempfile.gettempdir() + "/" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 30))),
-            "." * random.randint(1, 10)
-            + "/"
-            + "".join(random.choice(path_chars) for _ in range(random.randint(5, 20))),
-            ".." * random.randint(1, 20),
-        ]
-
-        return random.choice(paths).encode()
+        return generate_path_like_input(self.config, size_hint)
 
     def generate_test_case(self, index: int) -> FuzzTestCase:
         """
@@ -250,29 +104,7 @@ class MutationPassFuzzer:
         Returns:
             FuzzTestCase
         """
-        input_type = random.choice(list(self.test_case_generators.keys()))
-        size_hint = random.randint(self.config.min_input_size, self.config.max_input_size)
-
-        input_data = self.test_case_generators[input_type](size_hint)
-
-        num_args = random.randint(0, 5)
-        args = [
-            "".join(random.choice("abcdefghijklmnopqrstuvwxyz") for _ in range(random.randint(1, 20)))
-            for _ in range(num_args)
-        ]
-
-        env = {}
-        if random.random() < 0.3:
-            env["FUZZ_ENV"] = "test"
-
-        return FuzzTestCase(
-            test_id=f"fuzz_{index:04d}",
-            input_data=input_data,
-            input_type=input_type,
-            args=args,
-            env=env,
-            description=f"Fuzz test case {index} ({input_type})",
-        )
+        return generate_test_case(self.config, index)
 
     def fuzz_mutations(
         self,
