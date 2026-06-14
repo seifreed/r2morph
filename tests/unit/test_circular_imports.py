@@ -169,6 +169,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.type_inference_core",
     "r2morph.analysis.type_inference_arm",
     "r2morph.analysis.type_inference_queries",
+    "r2morph.analysis.cfg_models",
     "r2morph.analysis.symbolic.constraint_solver_models",
     "r2morph.analysis.symbolic.state_manager_models",
 ]
