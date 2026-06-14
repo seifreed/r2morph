@@ -21,6 +21,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.performance_regression_metadata",
     "r2morph.validation.performance_regression_measurement",
     "r2morph.validation.performance_regression_suite",
+    "r2morph.validation.regression_models",
     "r2morph.validation.leak_detection_models",
     "r2morph.validation.object_tracker",
     "r2morph.validation.fuzzer_inputs",
