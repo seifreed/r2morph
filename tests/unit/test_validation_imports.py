@@ -17,6 +17,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.benchmark_runners",
     "r2morph.validation.benchmark_metrics",
     "r2morph.validation.benchmark_samples",
+    "r2morph.validation.leak_detection_models",
     "r2morph.validation.mutation_fuzzer_types",
     "r2morph.validation.mutation_fuzzer_inputs",
     "r2morph.validation.semantic_symbolic",
