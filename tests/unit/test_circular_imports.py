@@ -131,6 +131,7 @@ REPORTING_MODULES = [
     "r2morph.core.parallel_planner",
     "r2morph.core.parallel_executor_models",
     "r2morph.core.parallel_executor_task_helpers",
+    "r2morph.core.parallel_executor_task_policies",
     "r2morph.core.parallel_execution_summary",
     "r2morph.core.parallel_pass_execution",
     "r2morph.core.parallel_rollback",

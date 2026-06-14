@@ -5,6 +5,12 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.core.parallel_executor_models import MutationResult, MutationTask
+from r2morph.core.parallel_executor_task_policies import (
+    build_task_priority,
+    infer_task_dependencies,
+    resolve_function_address,
+    resolve_function_name,
+)
 from r2morph.core.parallel_work_queue import WorkQueue
 
 
@@ -18,22 +24,17 @@ def create_tasks_from_call_graph(
     func_to_task: dict[int, int] = {}
 
     for func in functions:
-        addr = func.get("offset", func.get("addr", 0))
-        name = func.get("name", f"func_{addr:x}")
+        addr = resolve_function_address(func)
+        name = resolve_function_name(func, addr)
         passes = func.get("passes", [])
-
-        deps = []
-        if call_graph and addr in call_graph:
-            for caller in call_graph:
-                if addr in call_graph[caller] and caller in func_to_task:
-                    deps.append(func_to_task[caller])
+        deps = infer_task_dependencies(addr, call_graph, func_to_task)
 
         task_id = work_queue.add_task(
             function_address=addr,
             function_name=name,
             passes=passes,
             dependencies=deps,
-            priority=len(deps),
+            priority=build_task_priority(deps),
         )
 
         task_ids.append(task_id)
