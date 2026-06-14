@@ -17,6 +17,8 @@ from r2morph.detection.pattern_catalogs import (
     VM_ARTIFACTS,
 )
 from r2morph.detection.pattern_matcher_models import PatternMatchResult
+from r2morph.detection.pattern_matcher_search import find_patterns as _find_patterns
+from r2morph.detection.pattern_matcher_search import search_strings as _search_strings
 
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
@@ -242,32 +244,7 @@ class PatternMatcher:
         Returns:
             Dictionary mapping patterns to list of addresses found
         """
-        results: dict[bytes, list[int]] = {}
-
-        assert self.binary.r2 is not None
-        try:
-            for pattern in patterns:
-                cmd = f"/x {pattern.hex()}"
-                matches = self.binary.r2.cmd(cmd)
-
-                if matches and matches.strip():
-                    addresses = []
-                    for line in matches.strip().split("\n"):
-                        parts = line.split()
-                        if parts:
-                            try:
-                                addr = int(parts[0], 16)
-                                addresses.append(addr)
-                            except (ValueError, IndexError):
-                                continue
-
-                    if addresses:
-                        results[pattern] = addresses
-
-        except Exception as e:
-            logger.error(f"Pattern search failed: {e}")
-
-        return results
+        return _find_patterns(self.binary, patterns)
 
     def search_strings(self, search_terms: list[str], case_sensitive: bool = False) -> dict[str, bool]:
         """
@@ -280,22 +257,4 @@ class PatternMatcher:
         Returns:
             Dictionary mapping search terms to whether they were found
         """
-        results: dict[str, bool] = {}
-
-        assert self.binary.r2 is not None
-        try:
-            strings_output = self.binary.r2.cmd("izz")
-
-            if not case_sensitive:
-                strings_output = strings_output.lower()
-
-            for term in search_terms:
-                search_term = term if case_sensitive else term.lower()
-                results[term] = search_term in strings_output
-
-        except Exception as e:
-            logger.error(f"String search failed: {e}")
-            for term in search_terms:
-                results[term] = False
-
-        return results
+        return _search_strings(self.binary, search_terms, case_sensitive=case_sensitive)

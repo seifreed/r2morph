@@ -230,6 +230,7 @@ REPORTING_MODULES = [
     "r2morph.detection.anti_analysis_bypass_models",
     "r2morph.detection.anti_analysis_bypass_methods",
     "r2morph.detection.anti_analysis_detection",
+    "r2morph.detection.pattern_matcher_search",
     "r2morph.detection.evasion_scorer_helpers",
     "r2morph.detection.control_flow_detector_models",
     "r2morph.detection.entropy_analyzer_models",
