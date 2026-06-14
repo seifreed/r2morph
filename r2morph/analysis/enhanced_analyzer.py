@@ -6,14 +6,20 @@ including obfuscation detection, symbolic execution, dynamic instrumentation,
 devirtualization, and reporting.
 """
 
-import json
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from rich.console import Console
-from rich.table import Table
+
+from r2morph.analysis.enhanced_analyzer_reporting import (
+    display_analysis_results,
+    display_detection_results,
+    display_recommendations,
+    generate_report,
+    save_report,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -132,46 +138,15 @@ class EnhancedAnalysisOrchestrator:
         Args:
             verbose: Whether to show verbose output
         """
-        result = self.results.detection_result
-        if result is None:
-            return
-
-        table = Table(title=f"Enhanced Analysis: {self.binary_path.name}")
-        table.add_column("Detection", style="cyan")
-        table.add_column("Result", style="green")
-
-        table.add_row("Packer Detected", result.packer_detected.value if result.packer_detected else "None")
-        table.add_row("VM Protection", "Yes" if result.vm_detected else "No")
-        table.add_row("Anti-Analysis", "Yes" if result.anti_analysis_detected else "No")
-        table.add_row("Control Flow Flattening", "Yes" if result.control_flow_flattened else "No")
-        table.add_row("MBA Detected", "Yes" if result.mba_detected else "No")
-        table.add_row("Confidence Score", f"{result.confidence_score:.2f}")
-        table.add_row("Techniques Found", str(len(result.obfuscation_techniques)))
-
-        self.console.print(table)
-
-        self.console.print("\n[bold cyan]Extended Detection:[/bold cyan]")
-
-        if self.results.custom_vm.get("detected"):
-            vm_type = self.results.custom_vm.get("vm_type", "unknown")
-            confidence = self.results.custom_vm.get("confidence", 0)
-            self.console.print(f"  Custom Virtualizer: {vm_type} ({confidence:.2f})")
-
-        if self.results.layers.get("layers_detected", 0) > 0:
-            layers_count = self.results.layers["layers_detected"]
-            self.console.print(f"  Packing Layers: {layers_count}")
-
-        if self.results.metamorphic.get("detected"):
-            poly_ratio = self.results.metamorphic.get("polymorphic_ratio", 0)
-            self.console.print(f"  Metamorphic Engine: {poly_ratio:.1%}")
-
-        if result.obfuscation_techniques:
-            self.console.print("\n[bold cyan]Obfuscation Techniques:[/bold cyan]")
-            for i, technique in enumerate(result.obfuscation_techniques[:10], 1):
-                self.console.print(f"  {i}. {technique}")
-            if len(result.obfuscation_techniques) > 10:
-                remaining = len(result.obfuscation_techniques) - 10
-                self.console.print(f"  ... and {remaining} more")
+        display_detection_results(
+            self.console,
+            self.binary_path,
+            self.results.detection_result,
+            self.results.custom_vm,
+            self.results.layers,
+            self.results.metamorphic,
+            verbose=verbose,
+        )
 
     def run_anti_analysis_bypass(self) -> Any | None:
         """
@@ -370,10 +345,7 @@ class EnhancedAnalysisOrchestrator:
 
             self._detector = ObfuscationDetector()
 
-        self.console.print("\n[bold yellow]Generating comprehensive report...[/bold yellow]")
-        report: dict[str, Any] = self._detector.get_comprehensive_report(self._binary)
-        self.results.report = report
-        return report
+        return generate_report(self._detector, self._binary, self.results, self.console)
 
     def save_report(self, report: dict[str, Any]) -> Path | None:
         """
@@ -388,69 +360,15 @@ class EnhancedAnalysisOrchestrator:
         if not self.output_dir:
             return None
 
-        self.output_dir.mkdir(exist_ok=True)
-        report_path = self.output_dir / "analysis_report.json"
-
-        with open(report_path, "w", encoding="utf-8") as f:
-            json.dump(report, f, indent=2, default=str, ensure_ascii=False)
-
-        self.console.print(f"Report saved to {report_path}")
-        return report_path
+        return save_report(self.output_dir, report, self.console)
 
     def display_analysis_results(self) -> None:
         """Display advanced analysis results summary."""
-        results_dict: dict[str, Any] = {}
-
-        if self.results.cfo_reduction > 0:
-            results_dict["cfo_reduction"] = self.results.cfo_reduction
-
-        if self.results.iterative_result:
-            results_dict["iterative_result"] = self.results.iterative_result
-
-        if self.results.vm_handlers > 0:
-            results_dict["vm_handlers"] = self.results.vm_handlers
-
-        if self.results.rewrite_output:
-            results_dict["rewrite_output"] = self.results.rewrite_output
-
-        if results_dict:
-            self.console.print("\n[bold cyan]Advanced Analysis Results:[/bold cyan]")
-            for key, value in results_dict.items():
-                self.console.print(f"  {key}: {value}")
+        display_analysis_results(self.console, self.results)
 
     def display_recommendations(self) -> None:
         """Display mutation and analysis recommendations based on detection results."""
-        result = self.results.detection_result
-        if result is None:
-            return
-
-        self.console.print("\n[bold cyan]Recommendations:[/bold cyan]")
-
-        if result.vm_detected:
-            self.console.print("  - VM protection detected - use --devirt --iterative for comprehensive analysis")
-
-        if result.anti_analysis_detected:
-            self.console.print("  - Anti-analysis techniques detected - use --bypass --dynamic")
-
-        if result.mba_detected:
-            self.console.print("  - MBA expressions detected - use --iterative for expression simplification")
-
-        if result.control_flow_flattened:
-            self.console.print("  - Control flow flattening detected - use --symbolic --devirt")
-
-        layers_detected = self.results.layers.get("layers_detected", 0)
-        if layers_detected > 1:
-            self.console.print("  - Multiple packing layers detected - iterative unpacking recommended")
-
-        if not any(
-            [
-                result.vm_detected,
-                result.anti_analysis_detected,
-                result.mba_detected,
-                result.control_flow_flattened,
-            ]
-        ):
-            self.console.print("  - Binary appears lightly obfuscated - standard analysis may suffice")
+        display_recommendations(self.console, self.results.detection_result, self.results.layers)
 
     def analyze(self, options: AnalysisOptions | None = None) -> AnalysisResults:
         """
