@@ -12,6 +12,7 @@ import logging
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.validation.semantic_invariant_helpers import compute_stack_delta_for_bytes, normalize_architecture
 from r2morph.validation.semantic_invariant_models import (
     InvariantCategory,
     InvariantSeverity,
@@ -37,13 +38,6 @@ __all__ = [
 
 class StackBalanceChecker:
     """Checks stack balance invariants for mutated code."""
-
-    ARCH_STACK_REG = {
-        "x86": ("esp", 32),
-        "x86_64": ("rsp", 64),
-        "arm": ("sp", 32),
-        "arm64": ("sp", 64),
-    }
 
     def __init__(self, binary: Binary) -> None:
         """Initialize stack balance checker."""
@@ -71,18 +65,13 @@ class StackBalanceChecker:
         violations: list[InvariantViolation] = []
 
         arch_info = self.binary.get_arch_info()
-        arch = arch_info.get("arch", "")
+        arch = normalize_architecture(arch_info.get("arch", ""), arch_info.get("bits", 64))
         bits = arch_info.get("bits", 64)
-
-        if "x86" in arch or arch == "x86_64":
-            arch = "x86_64" if bits == 64 else "x86"
-        elif "arm" in arch:
-            arch = "arm64" if bits == 64 else "arm"
 
         stack_word_size = bits // 8
 
-        original_stack_delta = self._compute_stack_delta_for_bytes(original_bytes, arch, stack_word_size)
-        mutated_stack_delta = self._compute_stack_delta_for_bytes(mutated_bytes, arch, stack_word_size)
+        original_stack_delta = compute_stack_delta_for_bytes(original_bytes, arch, stack_word_size)
+        mutated_stack_delta = compute_stack_delta_for_bytes(mutated_bytes, arch, stack_word_size)
 
         if original_stack_delta != mutated_stack_delta:
             violations.append(
@@ -99,45 +88,6 @@ class StackBalanceChecker:
             )
 
         return violations
-
-    def _compute_stack_delta_for_bytes(
-        self,
-        code_bytes: bytes,
-        arch: str,
-        word_size: int,
-    ) -> int:
-        """Compute net stack delta from instruction bytes."""
-        delta = 0
-
-        push_opcodes = {
-            "x86": [b"\x50", b"\x51", b"\x52", b"\x53", b"\x54", b"\x55", b"\x56", b"\x57"],
-            "x86_64": [b"\x50", b"\x51", b"\x52", b"\x53", b"\x54", b"\x55", b"\x56", b"\x57"],
-        }
-        pop_opcodes = {
-            "x86": [b"\x58", b"\x59", b"\x5a", b"\x5b", b"\x5c", b"\x5d", b"\x5e", b"\x5f"],
-            "x86_64": [b"\x58", b"\x59", b"\x5a", b"\x5b", b"\x5c", b"\x5d", b"\x5e", b"\x5f"],
-        }
-
-        if arch not in push_opcodes:
-            return delta
-
-        for i in range(len(code_bytes)):
-            for push_op in push_opcodes.get(arch, []):
-                if code_bytes[i : i + len(push_op)] == push_op:
-                    delta -= word_size
-                    break
-
-            for pop_op in pop_opcodes.get(arch, []):
-                if code_bytes[i : i + len(pop_op)] == pop_op:
-                    delta += word_size
-                    break
-
-            if code_bytes[i : i + 2] == b"\x68":
-                delta -= word_size
-            elif code_bytes[i : i + 2] == b"\x8f":
-                delta += word_size
-
-        return delta
 
 
 class RegisterPreservationChecker:

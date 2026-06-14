@@ -200,6 +200,7 @@ REPORTING_MODULES = [
     "r2morph.validation.validator_results",
     "r2morph.validation.manager_models",
     "r2morph.validation.semantic_report_models",
+    "r2morph.validation.semantic_invariant_helpers",
     "r2morph.validation.cfg_integrity_helpers",
     "r2morph.validation.leak_detection_models",
     "r2morph.validation.object_tracker",
