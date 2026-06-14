@@ -44,7 +44,7 @@ _LAZY_EXPORTS = {
     "MemorySnapshot": "r2morph.validation.leak_detection_models",
     "MemoryLeak": "r2morph.validation.leak_detection_models",
     "LeakDetectionResult": "r2morph.validation.leak_detection_models",
-    "ObjectTracker": "r2morph.validation.leak_detection",
+    "ObjectTracker": "r2morph.validation.object_tracker",
     "MemoryLeakDetector": "r2morph.validation.leak_detection",
     "ResourceLeak": "r2morph.validation.leak_detection_models",
     "ResourceLeakTestResult": "r2morph.validation.leak_detection_models",
