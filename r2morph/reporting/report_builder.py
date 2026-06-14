@@ -13,7 +13,7 @@ from r2morph.reporting.filtered_summary_builder import (
 from r2morph.reporting.filtered_summary_builder import (
     _build_report_filters as _build_report_filters_impl,
 )
-from r2morph.reporting.report_context_resolver import (
+from r2morph.reporting.report_context_gate_state import (
     _resolve_failed_gates_view as _resolve_failed_gates_view_impl,
 )
 from r2morph.reporting.report_context_resolver import (

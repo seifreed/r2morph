@@ -84,7 +84,10 @@ def _has_symbolic_risk(
     return int(symbolic_summary.get("issue_count", 0)) > 0
 
 
-def _has_structural_risk(evidence_summary: dict[str, Any] | None) -> bool:
+def _has_structural_risk(
+    evidence_summary: dict[str, Any] | None,
+    symbolic_summary: dict[str, Any] | None = None,
+) -> bool:
     """Return True when a pass has structural evidence worth triaging."""
     evidence_summary = evidence_summary or {}
     return int(evidence_summary.get("structural_issue_count", 0)) > 0
