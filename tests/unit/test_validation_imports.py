@@ -13,6 +13,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.benchmark",
     "r2morph.validation.benchmark_reporting_exports",
     "r2morph.validation.benchmark_reporting_overview",
+    "r2morph.validation.benchmark_reporting_breakdown_sections",
     "r2morph.validation.benchmark_reporting_summary",
     "r2morph.validation.benchmark_reporting_text",
     "r2morph.validation.benchmark_suite",
