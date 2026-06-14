@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from r2morph.platform.pe_handler_parsing import calculate_pe_checksum, get_checksum_offset
+from r2morph.platform.repair_aggregation import aggregate_repair_results
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +82,7 @@ def validate_integrity(handler: Any) -> tuple[bool, list[str]]:
     current_checksum = get_stored_checksum(handler)
     calculated_checksum = calculate_pe_checksum(handler.binary_path)
     if current_checksum != calculated_checksum:
-        issues.append(
-            f"Checksum mismatch: stored 0x{current_checksum:08x}, calculated 0x{calculated_checksum:08x}"
-        )
+        issues.append(f"Checksum mismatch: stored 0x{current_checksum:08x}, calculated 0x{calculated_checksum:08x}")
 
     return len(issues) == 0, issues
 
@@ -218,9 +217,6 @@ def fix_resources(handler: Any) -> tuple[bool, list[str]]:
 
 def full_repair(handler: Any) -> tuple[bool, list[str]]:
     """Full PE repair after mutation."""
-    all_repairs: list[str] = []
-    all_success = True
-
     checksum_result = fix_checksum(handler)
     checks = [
         ("checksum", (checksum_result if isinstance(checksum_result, tuple) else (checksum_result, []))),
@@ -229,16 +225,4 @@ def full_repair(handler: Any) -> tuple[bool, list[str]]:
         ("resources", fix_resources(handler)),
         ("headers", (refresh_headers(handler), ["Headers refreshed"])),
     ]
-
-    for name, result in checks:
-        if isinstance(result, tuple):
-            success, repairs = result
-        else:
-            success, repairs = result, []
-        if repairs:
-            all_repairs.extend(repairs)
-        if not success:
-            all_success = False
-            all_repairs.append(f"Warning: {name} repair may have issues")
-
-    return all_success, all_repairs
+    return aggregate_repair_results(checks)

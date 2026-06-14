@@ -7,6 +7,8 @@ import platform
 from pathlib import Path
 from typing import Any
 
+from r2morph.platform.repair_aggregation import aggregate_repair_results
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -178,21 +180,12 @@ def fix_segment_permissions(handler: Any) -> tuple[bool, list[str]]:
 
 def full_repair(handler: Any, entitlements: Path | None = None) -> tuple[bool, list[str]]:
     """Full Mach-O repair after mutation."""
-    all_repairs: list[str] = []
-    all_success = True
-
     checks = [
         ("load_commands", fix_load_commands(handler)),
         ("bind_symbols", fix_bind_symbols(handler)),
         ("segment_permissions", fix_segment_permissions(handler)),
     ]
-
-    for name, (success, repairs) in checks:
-        if repairs:
-            all_repairs.extend(repairs)
-        if not success:
-            all_success = False
-            all_repairs.append(f"Warning: {name} repair may have issues")
+    all_success, all_repairs = aggregate_repair_results(checks)
 
     if platform.system() == "Darwin":
         repair_success = repair_integrity(handler, entitlements=entitlements)
