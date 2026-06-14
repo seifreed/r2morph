@@ -21,6 +21,10 @@ from r2morph.core.analysis_cache_cleanup import (
 )
 from r2morph.core.analysis_cache_entries import load_cache_entry
 from r2morph.core.analysis_cache_keys import build_cache_key, get_entry_path, hash_binary, hash_options
+from r2morph.core.analysis_cache_lifecycle import (
+    start_cleanup_thread,
+    stop_cleanup_thread,
+)
 from r2morph.core.analysis_cache_models import CacheEntry, CacheKey, CacheStats
 from r2morph.core.analysis_cache_models import compute_binary_hash as _compute_binary_hash
 from r2morph.core.analysis_cache_models import compute_partial_hash as _compute_partial_hash
@@ -266,37 +270,16 @@ class AnalysisCache:
 
     def _start_cleanup_thread(self) -> None:
         """Start the background cleanup thread."""
-
-        def _cleanup_loop() -> None:
-            while not self._cleanup_stop_event.is_set():
-                try:
-                    self.cleanup_expired()
-                    self.cleanup_low_access()
-                    self._enforce_size_limit()
-                except Exception as e:
-                    logger.error(f"Error in cache cleanup: {e}")
-
-                self._cleanup_stop_event.wait(self.cleanup_interval_seconds)
-
-        self._cleanup_thread = threading.Thread(
-            target=_cleanup_loop,
-            name="r2morph-cache-cleanup",
-            daemon=True,
-        )
-        self._cleanup_thread.start()
-        logger.debug("Started background cache cleanup thread")
+        start_cleanup_thread(self, logger)
 
     def stop_cleanup_thread(self) -> None:
         """Stop the background cleanup thread."""
-        if self._cleanup_thread and self._cleanup_thread.is_alive():
-            self._cleanup_stop_event.set()
-            self._cleanup_thread.join(timeout=5.0)
-            logger.debug("Stopped background cache cleanup thread")
+        stop_cleanup_thread(self, logger)
 
     def __del__(self) -> None:
         """Clean up resources on deletion."""
         try:
-            self.stop_cleanup_thread()
+            stop_cleanup_thread(self, logger)
         except (RuntimeError, AttributeError):
             # Interpreter shutdown / partial init — nothing actionable to log.
             return
