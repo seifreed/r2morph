@@ -84,13 +84,13 @@ from r2morph.analysis.type_inference_core import (
     propagate_types as _propagate_types_impl,
 )
 from r2morph.analysis.type_inference_interprocedural import (
-    _infer_all_function_param_types as _infer_all_function_param_types_impl,
+    infer_all_function_param_types as _infer_all_function_param_types_impl,
 )
 from r2morph.analysis.type_inference_interprocedural import (
-    _infer_function_params as _infer_function_params_impl,
+    infer_function_params as _infer_function_params_impl,
 )
 from r2morph.analysis.type_inference_interprocedural import (
-    _propagate_through_calls as _propagate_through_calls_impl,
+    propagate_interprocedural_params as _propagate_through_calls_impl,
 )
 from r2morph.analysis.type_inference_interprocedural import (
     propagate_interprocedural_types as _propagate_interprocedural_types_impl,
