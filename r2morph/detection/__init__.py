@@ -4,6 +4,8 @@ Detection analysis module for evaluating mutation effectiveness.
 
 from r2morph.detection.anti_analysis_bypass import (
     AntiAnalysisBypass,
+)
+from r2morph.detection.anti_analysis_bypass_models import (
     AntiAnalysisType,
     BypassResult,
     BypassTechnique,
