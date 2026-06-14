@@ -8,10 +8,8 @@ from r2morph.detection.anti_analysis_bypass import (
     BypassResult,
     BypassTechnique,
 )
-from r2morph.detection.control_flow_detector import (
-    ControlFlowAnalysisResult,
-    ControlFlowAnalyzer,
-)
+from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
+from r2morph.detection.control_flow_detector_models import ControlFlowAnalysisResult
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
 from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
 from r2morph.detection.obfuscation_detector import (
