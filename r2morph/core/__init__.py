@@ -61,10 +61,10 @@ from r2morph.core.parallel_executor import (
     MutationResult,
     MutationTask,
     ParallelMutator,
-    ResolutionStrategy,
-    ResultMerger,
     TaskStatus,
 )
+from r2morph.core.parallel_executor_models import ResolutionStrategy
+from r2morph.core.parallel_result_merger import ResultMerger
 from r2morph.core.parallel_work_queue import WorkQueue
 from r2morph.core.reader import BinaryReader
 from r2morph.core.writer import BinaryWriter
