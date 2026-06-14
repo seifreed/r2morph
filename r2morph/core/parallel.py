@@ -24,6 +24,7 @@ from typing import Any
 from r2morph.core.binary import Binary
 from r2morph.core.binary_file_lock import BinaryFileLock
 from r2morph.core.parallel_checkpointing import has_failures, rollback_checkpoint, save_checkpoint
+from r2morph.core.parallel_execution_summary import build_parallel_results_summary
 from r2morph.core.parallel_planner import (
     DependencyResolver,
     PassResult,
@@ -312,24 +313,7 @@ class ParallelMutationEngine:
 
     def get_results_summary(self) -> dict[str, Any]:
         """Get summary of all execution results."""
-        completed = sum(1 for r in self._results.values() if r.status == PassStatus.COMPLETED)
-        failed = sum(1 for r in self._results.values() if r.status == PassStatus.FAILED)
-        skipped = sum(1 for r in self._results.values() if r.status == PassStatus.SKIPPED)
-        rolled_back = sum(1 for r in self._results.values() if r.status == PassStatus.ROLLED_BACK)
-
-        total_mutations = sum(r.mutations_applied for r in self._results.values())
-        total_duration = sum(r.duration_seconds for r in self._results.values())
-
-        return {
-            "total_passes": len(self._results),
-            "completed": completed,
-            "failed": failed,
-            "skipped": skipped,
-            "rolled_back": rolled_back,
-            "total_mutations": total_mutations,
-            "total_duration_seconds": total_duration,
-            "passes": {name: result.to_dict() for name, result in self._results.items()},
-        }
+        return build_parallel_results_summary(self._results)
 
 
 def execute_parallel(
