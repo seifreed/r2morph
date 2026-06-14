@@ -20,6 +20,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_rendering_symbolic_tables",
     "r2morph.reporting.report_rendering_text_sections",
     "r2morph.reporting.report_rendering_summary_tables",
+    "r2morph.reporting.report_pass_list_resolution",
     "r2morph.reporting.report_flow_executor",
     "r2morph.reporting.report_flow_rendering",
     "r2morph.reporting.report_renderer",
