@@ -11,7 +11,7 @@ from r2morph.reporting.gate_evaluator import (
 from r2morph.reporting.gate_evaluator import (
     summarize_gate_failures as _summarize_gate_failures,
 )
-from r2morph.reporting.report_gate_helpers import (
+from r2morph.reporting.report_gate_filters import (
     _expected_severity_rank_from_failure,
     _filter_failed_gates_view,
 )

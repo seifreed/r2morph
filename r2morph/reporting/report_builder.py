@@ -19,10 +19,10 @@ from r2morph.reporting.report_context_gate_state import (
 from r2morph.reporting.report_context_resolver import (
     _resolve_report_gate_state as _resolve_report_gate_state_impl,
 )
-from r2morph.reporting.report_gate_helpers import (
+from r2morph.reporting.report_gate_filters import (
     _expected_severity_rank_from_failure as _expected_severity_rank_from_failure_impl,
 )
-from r2morph.reporting.report_gate_helpers import (
+from r2morph.reporting.report_gate_filters import (
     _filter_failed_gates_view as _filter_failed_gates_view_impl,
 )
 

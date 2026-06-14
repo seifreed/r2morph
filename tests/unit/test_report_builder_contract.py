@@ -5,12 +5,14 @@ from __future__ import annotations
 from r2morph.reporting.filtered_summary_builder import _build_only_mismatches_payload as filtered_payload_impl
 from r2morph.reporting.filtered_summary_builder import _build_report_filters as report_filters_impl
 from r2morph.reporting.report_builder import ReportBuilder
-from r2morph.reporting.report_context_resolver import _resolve_failed_gates_view as resolve_failed_gates_view_impl
+from r2morph.reporting.report_context_gate_state import _resolve_failed_gates_view as resolve_failed_gates_view_impl
 from r2morph.reporting.report_context_resolver import _resolve_report_gate_state as resolve_gate_state_impl
-from r2morph.reporting.report_gate_helpers import (
+from r2morph.reporting.report_gate_filters import (
     _expected_severity_rank_from_failure as expected_severity_rank_impl,
 )
-from r2morph.reporting.report_gate_helpers import _filter_failed_gates_view as filter_failed_gates_view_impl
+from r2morph.reporting.report_gate_filters import (
+    _filter_failed_gates_view as filter_failed_gates_view_impl,
+)
 
 
 def test_report_builder_gate_state_delegates_to_shared_helpers() -> None:
