@@ -128,6 +128,7 @@ REPORTING_MODULES = [
     "r2morph.validation.benchmark_reporting_text",
     "r2morph.validation.benchmark_suite",
     "r2morph.validation.validator_execution",
+    "r2morph.validation.cfg_integrity_helpers",
     "r2morph.validation.leak_detection_models",
     "r2morph.validation.object_tracker",
     "r2morph.validation.resource_leak_detection",

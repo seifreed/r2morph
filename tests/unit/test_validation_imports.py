@@ -47,6 +47,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.symbolic_scope_policy",
     "r2morph.validation.validator_runtime",
     "r2morph.validation.validator_execution",
+    "r2morph.validation.cfg_integrity_helpers",
     "r2morph.validation.state_merging",
     "r2morph.validation.benchmark_reporting",
 ]
