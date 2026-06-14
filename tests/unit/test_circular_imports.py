@@ -106,6 +106,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.critical_nodes_models",
     "r2morph.analysis.switch_table_patterns",
     "r2morph.analysis.memory_flow_helpers",
+    "r2morph.analysis.memory_flow_models",
     "r2morph.analysis.symbolic.syntia_models",
     "r2morph.analysis.symbolic.syntia_equivalence_helpers",
     "r2morph.analysis.symbolic.syntia_analysis_helpers",
