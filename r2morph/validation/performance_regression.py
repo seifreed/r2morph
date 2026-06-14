@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from r2morph.validation import performance_regression_metadata
 from r2morph.validation.performance_regression_models import (
     BenchmarkConfig,
     PerformanceMetric,
@@ -43,40 +44,15 @@ class PerformanceBenchmark:
 
     def _get_git_hash(self) -> str:
         """Get current git commit hash."""
-        import subprocess
-
-        try:
-            result = subprocess.run(
-                ["git", "rev-parse", "HEAD"],
-                capture_output=True,
-                text=True,
-                check=True,
-            )
-            return result.stdout.strip()[:12]
-        except Exception:
-            return "unknown"
+        return performance_regression_metadata.get_git_hash()
 
     def _get_environment_info(self) -> dict[str, str]:
         """Get environment information."""
-        import platform
-        import sys
-
-        return {
-            "python_version": sys.version.split()[0],
-            "platform": platform.system(),
-            "platform_version": platform.version(),
-            "cpu_count": str(self._get_cpu_count()),
-            "machine": platform.machine(),
-        }
+        return performance_regression_metadata.get_environment_info()
 
     def _get_cpu_count(self) -> int:
         """Get CPU count."""
-        try:
-            import os
-
-            return os.cpu_count() or 1
-        except Exception:
-            return 1
+        return performance_regression_metadata.get_cpu_count()
 
     def measure_execution_time(
         self,
