@@ -4,7 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.reporting.report_helpers import _pass_evidence_from_row, _sort_pass_evidence
+from r2morph.reporting.report_helpers import (
+    _pass_evidence_from_row,
+    _sort_pass_evidence,
+    _validation_context_from_role,
+)
 
 
 def _populate_pass_capabilities_and_context(
@@ -45,13 +49,11 @@ def _populate_pass_capabilities_and_context(
         if not context:
             normalized_row = normalized_pass_map.get(pass_name, {})
             if normalized_row:
-                context = {
-                    "role": normalized_row.get("role", "requested-mode"),
-                    "requested_validation_mode": requested_validation_mode,
-                    "effective_validation_mode": effective_validation_mode,
-                    "degraded_execution": normalized_row.get("role") == "executed-under-degraded-mode",
-                    "degradation_triggered_by_pass": normalized_row.get("role") == "degradation-trigger",
-                }
+                context = _validation_context_from_role(
+                    normalized_row.get("role", "requested-mode"),
+                    requested_validation_mode,
+                    effective_validation_mode,
+                )
         if context:
             context_payload = dict(context)
             context_payload["role"] = (

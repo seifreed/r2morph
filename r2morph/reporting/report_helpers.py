@@ -67,6 +67,17 @@ def _normalized_pass_map(
     return {str(row.get("pass_name")): dict(row) for row in normalized_pass_results if row.get("pass_name")}
 
 
+def _validation_context_from_role(role: str, requested_mode: Any, effective_mode: Any) -> dict[str, Any]:
+    """Build a pass validation-context dict from a role and the requested/effective modes."""
+    return {
+        "role": role,
+        "requested_validation_mode": requested_mode,
+        "effective_validation_mode": effective_mode,
+        "degraded_execution": role == "executed-under-degraded-mode",
+        "degradation_triggered_by_pass": role == "degradation-trigger",
+    }
+
+
 def _pass_evidence_from_row(pass_name: Any, row: dict[str, Any]) -> dict[str, Any]:
     """Project a normalized/general pass row into a pass-evidence dict."""
     return {
