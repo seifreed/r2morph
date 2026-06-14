@@ -1,44 +1,33 @@
-"""Contract tests for the report views compatibility adapter."""
-
 from __future__ import annotations
 
-from r2morph.reporting.report_context import ReportViews
+from dataclasses import dataclass
+
+from r2morph.reporting.report_context_mapping import (
+    report_context_contains,
+    report_context_get,
+    report_context_getitem,
+    report_context_items,
+    report_context_iter,
+    report_context_keys,
+    report_context_to_dict,
+    report_context_values,
+)
 
 
-def test_report_views_mapping_contract() -> None:
-    views = ReportViews(
-        general_summary={"total_tests": 2},
-        passes={"p1": ["clean"]},
-        only_failed_gates={"summary": {"failed": False}},
-    )
+@dataclass
+class DummyContext:
+    alpha: int = 1
+    beta: str = "two"
 
-    assert views["general_summary"] == {"total_tests": 2}
-    assert "passes" in views
-    assert views.get("missing", {"default": True}) == {"default": True}
-    assert views.keys() == [
-        "general_passes",
-        "general_pass_rows",
-        "general_summary",
-        "general_summary_rows",
-        "general_renderer_state",
-        "general_triage_rows",
-        "general_filter_views",
-        "general_symbolic",
-        "general_gates",
-        "general_degradation",
-        "general_discards",
-        "passes",
-        "triage_priority",
-        "only_pass",
-        "pass_filter_views",
-        "mismatch_priority",
-        "mismatch_map",
-        "mismatch_view",
-        "only_mismatches",
-        "failed_gates",
-        "only_failed_gates",
-        "validation_adjustments",
-        "discarded_view",
-    ]
-    assert dict(views)["passes"] == {"p1": ["clean"]}
-    assert views.to_dict()["only_failed_gates"] == {"summary": {"failed": False}}
+
+def test_report_context_mapping_helpers_expose_dict_like_behavior() -> None:
+    ctx = DummyContext()
+
+    assert report_context_getitem(ctx, "alpha") == 1
+    assert report_context_contains(ctx, "beta") is True
+    assert report_context_get(ctx, "missing", "fallback") == "fallback"
+    assert report_context_keys(ctx) == ["alpha", "beta"]
+    assert report_context_values(ctx) == [1, "two"]
+    assert report_context_items(ctx) == [("alpha", 1), ("beta", "two")]
+    assert list(report_context_iter(ctx)) == ["alpha", "beta"]
+    assert report_context_to_dict(ctx) == {"alpha": 1, "beta": "two"}
