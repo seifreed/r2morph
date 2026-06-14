@@ -16,6 +16,9 @@ from r2morph.reporting.filtered_summary_symbolic import (
     _populate_symbolic_coverage_and_severity,
     _populate_symbolic_issue_passes,
 )
+from r2morph.reporting.filtered_summary_symbolic_fallbacks import (
+    _build_filtered_summary_symbolic_fallback_sections,
+)
 from r2morph.reporting.filtered_summary_triage import _populate_triage_and_results
 from r2morph.reporting.report_view_resolution import _resolve_summary_pass_sources
 
@@ -181,53 +184,19 @@ def _populate_filtered_summary_pass_sections(
     )
 
     if not filtered_summary["symbolic_issue_passes"] and by_pass:
-        filtered_summary["symbolic_issue_passes"] = [
-            {
-                "pass_name": pass_name,
-                "severity": (
-                    "mismatch"
-                    if pass_stats["observable_mismatch"] > 0
-                    else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-                ),
-                "observable_mismatch": pass_stats["observable_mismatch"],
-                "without_coverage": pass_stats["without_coverage"],
-                "bounded_only": pass_stats["bounded_only"],
-            }
-            for pass_name, pass_stats in sorted(by_pass.items())
-            if pass_stats["observable_mismatch"] > 0 or pass_stats["without_coverage"] > 0 or pass_stats["bounded_only"] > 0
-        ]
+        filtered_summary["symbolic_issue_passes"] = _build_filtered_summary_symbolic_fallback_sections(
+            by_pass=by_pass,
+        )["symbolic_issue_passes"]
     if not filtered_summary["symbolic_coverage_by_pass"] and by_pass:
-        filtered_summary["symbolic_coverage_by_pass"] = [
-            {
-                "pass_name": pass_name,
-                "symbolic_requested": pass_stats["symbolic_requested"],
-                "observable_match": pass_stats["observable_match"],
-                "observable_mismatch": pass_stats["observable_mismatch"],
-                "bounded_only": pass_stats["bounded_only"],
-                "without_coverage": pass_stats["without_coverage"],
-            }
-            for pass_name, pass_stats in sorted(by_pass.items())
-            if pass_stats["symbolic_requested"] > 0
-        ]
+        filtered_summary["symbolic_coverage_by_pass"] = _build_filtered_summary_symbolic_fallback_sections(
+            by_pass=by_pass,
+        )["symbolic_coverage_by_pass"]
     if by_pass and (
         not filtered_summary["symbolic_severity_by_pass"]
         or all(row.get("severity") == "not-requested" for row in filtered_summary["symbolic_severity_by_pass"])
     ):
-        filtered_summary["symbolic_severity_by_pass"] = [
-            {
-                "pass_name": pass_name,
-                "severity": (
-                    "mismatch"
-                    if pass_stats["observable_mismatch"] > 0
-                    else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-                ),
-                "issue_count": pass_stats["observable_mismatch"]
-                + pass_stats["without_coverage"]
-                + pass_stats["bounded_only"],
-                "symbolic_requested": pass_stats["symbolic_requested"],
-            }
-            for pass_name, pass_stats in sorted(by_pass.items())
-            if pass_stats["symbolic_requested"] > 0
-        ]
+        filtered_summary["symbolic_severity_by_pass"] = _build_filtered_summary_symbolic_fallback_sections(
+            by_pass=by_pass,
+        )["symbolic_severity_by_pass"]
 
     return degradation_roles
