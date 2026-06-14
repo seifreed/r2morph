@@ -5,16 +5,13 @@ Tracks performance metrics across code changes to detect regressions
 and ensure mutation passes remain efficient.
 """
 
-import gc
 import logging
 import statistics
-import time
-import tracemalloc
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation import performance_regression_metadata
+from r2morph.validation import performance_regression_measurement, performance_regression_metadata
 from r2morph.validation.performance_regression_models import (
     BenchmarkConfig,
     PerformanceMetric,
@@ -71,25 +68,12 @@ class PerformanceBenchmark:
         Returns:
             List of execution times in milliseconds
         """
-        times = []
-
-        for i in range(self.config.warmup_runs):
-            try:
-                func(*args, **kwargs)
-            except Exception as e:
-                logger.warning(f"Warmup run {i} failed: {e}")
-
-        for i in range(self.config.measured_runs):
-            start = time.perf_counter()
-            try:
-                func(*args, **kwargs)
-            except Exception as e:
-                logger.error(f"Measured run {i} failed: {e}")
-                continue
-            end = time.perf_counter()
-            times.append((end - start) * 1000)
-
-        return times
+        return performance_regression_measurement.measure_execution_time(
+            self.config,
+            func,
+            *args,
+            **kwargs,
+        )
 
     def measure_memory_usage(
         self,
@@ -108,27 +92,11 @@ class PerformanceBenchmark:
         Returns:
             Dictionary with memory metrics in MB
         """
-        gc.collect()
-
-        tracemalloc.start()
-
-        try:
-            func(*args, **kwargs)
-
-            current, peak = tracemalloc.get_traced_memory()
-            tracemalloc.stop()
-
-            return {
-                "current_memory_mb": current / (1024 * 1024),
-                "peak_memory_mb": peak / (1024 * 1024),
-            }
-        except Exception as e:
-            tracemalloc.stop()
-            logger.error(f"Memory measurement failed: {e}")
-            return {
-                "current_memory_mb": 0,
-                "peak_memory_mb": 0,
-            }
+        return performance_regression_measurement.measure_memory_usage(
+            func,
+            *args,
+            **kwargs,
+        )
 
     def benchmark_binary(
         self,
