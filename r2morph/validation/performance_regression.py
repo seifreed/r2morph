@@ -11,7 +11,11 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation import performance_regression_measurement, performance_regression_metadata
+from r2morph.validation import (
+    performance_regression_comparison,
+    performance_regression_measurement,
+    performance_regression_metadata,
+)
 from r2morph.validation.performance_regression_models import (
     BenchmarkConfig,
     PerformanceMetric,
@@ -211,38 +215,12 @@ class PerformanceBenchmark:
         Returns:
             List of detected regressions
         """
-        regressions = []
-
-        for metric_name, baseline_value in baseline.metrics.items():
-            if metric_name not in current.metrics:
-                continue
-
-            current_value = current.metrics[metric_name]
-
-            if baseline_value == 0:
-                continue
-
-            percentage_change = ((current_value - baseline_value) / baseline_value) * 100
-
-            if percentage_change > self.config.regression_threshold_percent:
-                severity = "minor"
-                if percentage_change > self.config.critical_threshold_percent:
-                    severity = "critical"
-                elif percentage_change > self.config.regression_threshold_percent * 2:
-                    severity = "major"
-
-                regressions.append(
-                    PerformanceRegression(
-                        metric_name=metric_name,
-                        baseline_value=baseline_value,
-                        current_value=current_value,
-                        threshold=self.config.regression_threshold_percent,
-                        percentage_change=percentage_change,
-                        severity=severity,
-                    )
-                )
-
-        return regressions
+        return performance_regression_comparison.compare_against_baseline(
+            current,
+            baseline,
+            self.config.regression_threshold_percent,
+            self.config.critical_threshold_percent,
+        )
 
     def run_performance_test(
         self,
