@@ -97,6 +97,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.summary_aggregator_symbolic",
     "r2morph.reporting.summary_aggregator_symbolic_metrics",
     "r2morph.reporting.summary_aggregator_evidence",
+    "r2morph.reporting.summary_aggregator_evidence_rows",
     "r2morph.reporting.summary_aggregator_summary",
     "r2morph.reporting.summary_aggregator_details",
     "r2morph.reporting.summary_aggregator_overview",
