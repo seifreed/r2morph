@@ -10,9 +10,19 @@ Handles:
 """
 
 import logging
-import struct
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+from r2morph.platform.pe_handler_parsing import (
+    calculate_pe_checksum,
+    calculate_simple_checksum,
+    get_checksum_offset,
+    get_sections_fallback,
+    parse_coff_header,
+    parse_optional_header,
+    parse_pe_section_entry,
+    read_pe_header,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -65,77 +75,15 @@ class PEHandler:
 
     def _read_pe_header(self) -> dict[str, Any] | None:
         """Read PE header information."""
-        try:
-            with open(self.binary_path, "rb") as f:
-                if f.read(2) != b"MZ":
-                    return None
-
-                f.seek(0x3C)
-                pe_offset = struct.unpack("<I", f.read(4))[0]
-                self._pe_offset = pe_offset
-
-                f.seek(pe_offset)
-                if f.read(4) != b"PE\x00\x00":
-                    return None
-
-                coff_header = f.read(20)
-                if len(coff_header) != 20:
-                    return None
-                coff = self._parse_coff_header(coff_header)
-
-                optional_header_offset = pe_offset + 24
-                f.seek(optional_header_offset)
-                magic = struct.unpack("<H", f.read(2))[0]
-                is_pe32_plus = magic == 0x20B
-                header_size = 240 if is_pe32_plus else 96
-
-                f.seek(optional_header_offset)
-                optional_header = f.read(header_size)
-                optional = self._parse_optional_header(optional_header, is_pe32_plus)
-
-                # Checksum is always at offset 64 from the start of the optional
-                # header, regardless of PE32 vs PE32+.
-                checksum_offset = optional_header_offset + 64
-
-                return {
-                    "pe_offset": pe_offset,
-                    "machine": coff["machine"],
-                    "num_sections": coff["num_sections"],
-                    "timestamp": coff["timestamp"],
-                    "size_optional": coff["size_optional"],
-                    "characteristics": coff["characteristics"],
-                    "is_pe32_plus": is_pe32_plus,
-                    "image_base": optional["image_base"],
-                    "entry_point": optional["entry_point"],
-                    "section_alignment": optional["section_alignment"],
-                    "file_alignment": optional["file_alignment"],
-                    "checksum_offset": checksum_offset,
-                    "num_data_directories": optional["num_data_directories"],
-                    "optional_header_offset": optional_header_offset,
-                }
-        except Exception as e:
-            logger.error(f"Failed to read PE header: {e}")
-            return None
+        header = read_pe_header(self.binary_path)
+        if header is not None:
+            self._pe_offset = header["pe_offset"]
+        return header
 
     @staticmethod
     def _parse_coff_header(coff_header: bytes) -> dict[str, int]:
         """Extract the COFF file-header fields the loader needs."""
-        (
-            machine,
-            num_sections,
-            timestamp,
-            _ptr_symbols,
-            _num_symbols,
-            size_optional,
-            characteristics,
-        ) = struct.unpack("<HHIIIHH", coff_header)
-        return {
-            "machine": machine,
-            "num_sections": num_sections,
-            "timestamp": timestamp,
-            "size_optional": size_optional,
-            "characteristics": characteristics,
-        }
+        return parse_coff_header(coff_header)
 
     @staticmethod
     def _parse_optional_header(optional_header: bytes, is_pe32_plus: bool) -> dict[str, int]:
@@ -149,52 +97,7 @@ class PEHandler:
         Both match lief/pefile field-for-field (verified on
         dataset/pe_x86_64.exe, a PE32+ x86_64 file).
         """
-        if is_pe32_plus:
-            optional_format = "<HBBIIIIIQIIHHHHHHIIIIHHQQQQII"
-            optional_size = 112
-        else:
-            optional_format = "<HBBIIIII4xIIIHHHHHHIIIIHHIIIIII"
-            optional_size = 96
-
-        (
-            _magic,
-            _major_linker,
-            _minor_linker,
-            _size_code,
-            _size_init_data,
-            _size_uninit_data,
-            entry_point,
-            _base_code,
-            image_base,
-            section_alignment,
-            file_alignment,
-            _major_os,
-            _minor_os,
-            _major_image,
-            _minor_image,
-            _major_subsys,
-            _minor_subsys,
-            _win32_version,
-            _size_image,
-            _size_headers,
-            _checksum_offset_raw,
-            _subsystem,
-            _dll_characteristics,
-            _size_stack_reserve,
-            _size_stack_commit,
-            _size_heap_reserve,
-            _size_heap_commit,
-            _loader_flags,
-            num_rva_sizes,
-        ) = struct.unpack(optional_format, optional_header[:optional_size])
-
-        return {
-            "entry_point": entry_point,
-            "image_base": image_base,
-            "section_alignment": section_alignment,
-            "file_alignment": file_alignment,
-            "num_data_directories": num_rva_sizes,
-        }
+        return parse_optional_header(optional_header, is_pe32_plus)
 
     def is_pe(self) -> bool:
         """Check if the file is a PE binary."""
@@ -219,34 +122,7 @@ class PEHandler:
         Returns:
             Offset of checksum field or None
         """
-        try:
-            with open(self.binary_path, "rb") as f:
-                if f.read(2) != b"MZ":
-                    return None
-                f.seek(0x3C)
-                pe_offset_bytes = f.read(4)
-                if len(pe_offset_bytes) != 4:
-                    return None
-                pe_offset = struct.unpack("<I", pe_offset_bytes)[0]
-
-                # Validate PE signature
-                f.seek(pe_offset)
-                if f.read(4) != b"PE\x00\x00":
-                    return None
-
-                # Checksum is always at offset 64 from start of optional header
-                # Optional header starts at pe_offset + 24
-                checksum_offset = pe_offset + 24 + 64
-
-                # Verify the file is large enough
-                f.seek(0, 2)  # Seek to end
-                file_size = f.tell()
-                if checksum_offset + 4 > file_size:
-                    return None
-
-                return int(checksum_offset)
-        except Exception:
-            return None
+        return get_checksum_offset(self.binary_path)
 
     def fix_checksum(self) -> bool:
         """
@@ -282,35 +158,11 @@ class PEHandler:
         Returns:
             Checksum value
         """
-        with open(self.binary_path, "rb") as f:
-            data = f.read()
-
-        checksum_offset = self.get_checksum_offset()
-        if checksum_offset is None:
-            return sum(data) % (2**32)
-
-        checksum = 0
-        for i in range(0, len(data), 4):
-            if i == checksum_offset:
-                continue
-
-            chunk = data[i : i + 4]
-            if len(chunk) < 4:
-                chunk = chunk + b"\x00" * (4 - len(chunk))
-
-            word = struct.unpack("<I", chunk)[0]
-            checksum = (checksum + word) & 0xFFFFFFFF
-            if checksum >= 0x80000000:
-                checksum = (checksum & 0x7FFFFFFF) << 1 | 1
-
-        checksum = (checksum + len(data)) & 0xFFFFFFFF
-        return checksum
+        return calculate_pe_checksum(self.binary_path)
 
     def _calculate_checksum(self) -> int:
         """Simple checksum (legacy)."""
-        with open(self.binary_path, "rb") as f:
-            data = f.read()
-        return sum(data) % (2**32)
+        return calculate_simple_checksum(self.binary_path)
 
     def get_sections(self) -> list[dict]:
         """
@@ -344,38 +196,7 @@ class PEHandler:
 
     def _get_sections_fallback(self) -> list[dict]:
         """Parse PE sections without lief by walking the section header table."""
-        try:
-            sections: list[dict] = []
-            with open(self.binary_path, "rb") as f:
-                if f.read(2) != b"MZ":
-                    return []
-                f.seek(0x3C)
-                pe_offset = struct.unpack("<I", f.read(4))[0]
-                f.seek(pe_offset)
-                if f.read(4) != b"PE\x00\x00":
-                    return []
-                coff_header = f.read(20)
-                if len(coff_header) != 20:
-                    return []
-                _machine, num_sections, _ts, _ptr_sym, _num_sym, size_optional, _chars = struct.unpack(
-                    "<HHIIIHH", coff_header
-                )
-                f.seek(size_optional, 1)
-
-                max_sections = 10000
-                if num_sections > max_sections:
-                    logger.warning(f"Excessive section count {num_sections}, limiting to {max_sections}")
-                    num_sections = max_sections
-
-                for _ in range(num_sections):
-                    section = f.read(40)
-                    if len(section) != 40:
-                        break
-                    sections.append(self._parse_pe_section_entry(section))
-            return sections
-        except Exception as e:
-            logger.error(f"Failed to parse PE sections fallback: {e}")
-            return []
+        return get_sections_fallback(self.binary_path)
 
     @staticmethod
     def _parse_pe_section_entry(section: bytes) -> dict:
@@ -387,30 +208,7 @@ class PEHandler:
         Characteristics. VirtualSize and SizeOfRawData are clamped to 256 MB to
         reject corrupt headers.
         """
-        name = section[0:8].split(b"\x00", 1)[0].decode("ascii", errors="ignore")
-        (
-            virtual_size,
-            virtual_address,
-            raw_size,
-            raw_ptr,
-            _ptr_relocs,
-            _ptr_linenos,
-            _num_relocs,
-            _num_linenos,
-            characteristics,
-        ) = struct.unpack("<IIIIIIHHI", section[8:40])
-
-        max_section_size = 0x10000000  # 256 MB
-        virtual_size = min(virtual_size, max_section_size)
-        raw_size = min(raw_size, max_section_size)
-
-        return {
-            "name": name,
-            "virtual_address": virtual_address,
-            "size": max(virtual_size, raw_size),
-            "offset": raw_ptr,
-            "characteristics": characteristics,
-        }
+        return parse_pe_section_entry(section)
 
     def get_imports(self) -> list[dict]:
         """Get PE imports."""
@@ -527,7 +325,7 @@ class PEHandler:
                 return 0
             with open(self.binary_path, "rb") as f:
                 f.seek(checksum_offset)
-                return int(struct.unpack("<I", f.read(4))[0])
+                return int.from_bytes(f.read(4), "little")
         except Exception:
             return 0
 

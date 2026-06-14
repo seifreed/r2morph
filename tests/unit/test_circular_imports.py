@@ -104,6 +104,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.pattern_preservation_models",
     "r2morph.analysis.switch_table_models",
     "r2morph.validation.cfg_integrity_models",
+    "r2morph.platform.pe_handler_parsing",
     "r2morph.detection.anti_analysis_bypass_models",
     "r2morph.detection.anti_analysis_bypass_methods",
     "r2morph.detection.anti_analysis_detection",
