@@ -6,6 +6,9 @@ from typing import Any
 
 from rich.console import Console
 
+from r2morph.reporting.report_rendering_symbolic_table_fallbacks import (
+    build_symbolic_severity_fallback_rows,
+)
 from r2morph.reporting.report_rendering_symbolic_table_helpers import (
     build_pass_evidence_rows,
     build_symbolic_coverage_rows,
@@ -61,34 +64,7 @@ def _render_mismatch_table(
         issue_rows=issue_rows,
     )
     if not severity_rows:
-        pass_evidence_rows = list(summary.get("pass_evidence", []))
-        severity_rows = [
-            {
-                "pass_name": row.get("pass_name", "unknown"),
-                "severity": (
-                    "mismatch"
-                    if int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                    else "without-coverage"
-                    if int(row.get("without_coverage", 0)) > 0
-                    else "bounded-only"
-                ),
-                "issue_count": (
-                    int(row.get("issue_count", 0))
-                    or int(row.get("symbolic_binary_mismatched_regions", 0))
-                    + int(row.get("without_coverage", 0))
-                    + int(row.get("bounded_only", 0))
-                ),
-                "symbolic_requested": int(row.get("symbolic_requested", 0)),
-            }
-            for row in pass_evidence_rows
-            if row.get("pass_name")
-            and (
-                int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                or int(row.get("without_coverage", 0)) > 0
-                or int(row.get("bounded_only", 0)) > 0
-            )
-        ]
-        severity_rows.sort(key=lambda item: item["pass_name"])
+        severity_rows = build_symbolic_severity_fallback_rows(summary)
     if severity_rows:
         console.print("[bold]Severity Priority[/bold]:")
         for row in severity_rows:
