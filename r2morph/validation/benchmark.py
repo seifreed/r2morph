@@ -38,6 +38,7 @@ from r2morph.validation.benchmark_samples import (
     DEFAULT_TEST_SAMPLES,
     build_test_samples,
 )
+from r2morph.validation.benchmark_suite import run_validation_suite as run_validation_suite_impl
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
@@ -91,7 +92,7 @@ class ValidationFramework:
 
     def _calculate_percentile(self, values: list[float], percentile: int) -> float:
         """Compatibility delegator for benchmark percentile calculations."""
-        from r2morph.validation.benchmark_reporting import calculate_percentile
+        from r2morph.validation.benchmark_reporting_summary import calculate_percentile
 
         return calculate_percentile(values, percentile)
 
@@ -144,52 +145,16 @@ class ValidationFramework:
                 BenchmarkCategory.DEVIRTUALIZATION,
                 BenchmarkCategory.FULL_PIPELINE,
             ]
-
-        logger.info(f"Starting validation suite with {len(self.test_samples)} samples")
-        logger.info(f"Categories: {[cat.value for cat in categories]}")
-
-        results = []
-
-        for sample in self.test_samples:
-            if not sample.file_exists:
-                logger.warning(f"Sample file not found: {sample.file_path}")
-                continue
-
-            if not sample.verify_hash():
-                logger.warning(f"Sample hash verification failed: {sample.file_path}")
-                continue
-
-            logger.info(f"Testing sample: {sample.description}")
-
-            for category in categories:
-                try:
-                    if category == BenchmarkCategory.DETECTION:
-                        result = self.benchmark_detection(sample)
-                    elif category == BenchmarkCategory.DEVIRTUALIZATION:
-                        result = self.benchmark_devirtualization(sample)
-                    elif category == BenchmarkCategory.FULL_PIPELINE:
-                        result = self.benchmark_full_pipeline(sample)
-                    else:
-                        continue
-
-                    results.append(result)
-                    self.benchmark_results.append(result)
-
-                    logger.info(
-                        f"  {category.value}: {'PASS' if result.performance.success else 'FAIL'} "
-                        f"({result.performance.execution_time:.2f}s)"
-                    )
-
-                except Exception as e:
-                    logger.error(f"Benchmark failed for {sample.file_path} ({category.value}): {e}")
-
-        summary = self._generate_validation_summary(results)
-
-        logger.info("Validation suite completed")
-        logger.info(f"Total tests: {summary['total_tests']}")
-        logger.info(f"Success rate: {summary['success_rate']:.1%}")
-        logger.info(f"Average execution time: {summary['avg_execution_time']:.2f}s")
-
+        results, summary = run_validation_suite_impl(
+            self.test_samples,
+            categories,
+            self.benchmark_detection,
+            self.benchmark_devirtualization,
+            self.benchmark_full_pipeline,
+            self._generate_validation_summary,
+            logger,
+        )
+        self.benchmark_results.extend(results)
         return summary
 
     def _generate_validation_summary(self, results: list[BenchmarkResult]) -> dict[str, Any]:
