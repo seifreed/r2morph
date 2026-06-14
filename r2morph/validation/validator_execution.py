@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import os
 import shutil
 import subprocess
@@ -11,19 +10,8 @@ from pathlib import Path
 from typing import Any
 
 from r2morph.validation.validator_execution_files import collect_monitored_files
+from r2morph.validation.validator_execution_text import hash_text, normalize_output  # noqa: F401
 from r2morph.validation.validator_runtime import ValidationTestCase
-
-
-def normalize_output(text: str, normalize_whitespace: bool) -> str:
-    """Normalize output text for optional whitespace-insensitive comparison."""
-    if not normalize_whitespace:
-        return text
-    return "\n".join(line.rstrip() for line in text.splitlines()).strip()
-
-
-def hash_text(text: str) -> str:
-    """Return a stable hash for machine-readable runtime reporting."""
-    return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
 def run_binary(binary_path: Path, test_case: ValidationTestCase, timeout: int) -> dict[str, Any]:

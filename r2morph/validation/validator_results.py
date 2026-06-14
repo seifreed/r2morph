@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.validation.validator_execution import hash_text, normalize_output
+from r2morph.validation.validator_execution_text import hash_text, normalize_output
 from r2morph.validation.validator_runtime import RuntimeComparisonConfig, ValidationResult, ValidationTestCase
 
 
