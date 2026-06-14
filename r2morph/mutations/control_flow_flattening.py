@@ -74,11 +74,18 @@ import logging
 import random
 from typing import Any
 
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
+from r2morph.mutations.control_flow_flattening_helpers import (
+    assemble_bounded,
+    candidate_block_count,
+    consume_nop_run,
+    find_nop_sequences,
+    is_conditional_jump,
+    select_candidates,
+)
 from r2morph.utils.dead_code import (
     generate_arm_dead_code_for_size,
     generate_nop_sequence,
@@ -86,68 +93,6 @@ from r2morph.utils.dead_code import (
 )
 
 logger = logging.getLogger(__name__)
-
-# Conditional jump / branch mnemonics, indexed by architecture family.
-_X86_CONDITIONAL_JUMPS = frozenset(
-    {
-        "je",
-        "jne",
-        "jz",
-        "jnz",
-        "ja",
-        "jae",
-        "jb",
-        "jbe",
-        "jg",
-        "jge",
-        "jl",
-        "jle",
-        "jo",
-        "jno",
-        "js",
-        "jns",
-        "jp",
-        "jnp",
-        "jcxz",
-        "jecxz",
-        "jrcxz",
-    }
-)
-
-_ARM_CONDITIONAL_BRANCHES = frozenset(
-    {
-        "beq",
-        "bne",
-        "bcs",
-        "bcc",
-        "bmi",
-        "bpl",
-        "bvs",
-        "bvc",
-        "bhi",
-        "bls",
-        "bge",
-        "blt",
-        "bgt",
-        "ble",
-        "b.eq",
-        "b.ne",
-        "b.cs",
-        "b.cc",
-        "b.mi",
-        "b.pl",
-        "b.vs",
-        "b.vc",
-        "b.hi",
-        "b.ls",
-        "b.ge",
-        "b.lt",
-        "b.gt",
-        "b.le",
-        "cbz",
-        "cbnz",
-    }
-)
 
 
 class ControlFlowFlatteningPass(MutationPass):
@@ -283,57 +228,10 @@ class ControlFlowFlatteningPass(MutationPass):
         }
 
     def _select_candidates(self, binary: Any, functions: list[dict]) -> list[dict]:
-        """
-        Select functions suitable for flattening.
-
-        Filters functions based on:
-        - Minimum basic block count (need enough blocks to obscure)
-        - Function size (too small functions have no room for transformations)
-        - Not being an import/thunk (library functions shouldn't be modified)
-
-        Args:
-            binary: Any instance
-            functions: List of functions
-
-        Returns:
-            List of candidate functions sorted by block count (descending)
-        """
-        candidates = []
-
-        for func in functions:
-            block_count = self._candidate_block_count(binary, func)
-            if block_count is not None:
-                func["_block_count"] = block_count
-                candidates.append(func)
-
-        # Sort by block count (more blocks = better candidate for obfuscation)
-        candidates.sort(key=lambda f: f.get("_block_count", 0), reverse=True)
-
-        return candidates
+        return select_candidates(binary, functions, self.min_blocks)
 
     def _candidate_block_count(self, binary: Any, func: dict) -> int | None:
-        """Return the basic-block count if ``func`` is a flattening candidate.
-
-        Returns None when the function is too small, an import/thunk, has
-        too few blocks, or its blocks cannot be analyzed.
-        """
-        if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-            return None
-
-        func_name = func.get("name", "")
-        if func_name.startswith("sym.imp.") or func_name.startswith("sub."):
-            return None
-
-        func_addr = func.get("offset", func.get("addr", 0))
-        try:
-            blocks = binary.get_basic_blocks(func_addr)
-        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-            logger.debug(f"Failed to analyze function 0x{func_addr:x}: {e}")
-            return None
-
-        if len(blocks) >= self.min_blocks:
-            return len(blocks)
-        return None
+        return candidate_block_count(binary, func, self.min_blocks)
 
     def _flatten_function(self, binary: Any, func: dict) -> dict[str, int] | None:
         """
@@ -569,72 +467,13 @@ class ControlFlowFlatteningPass(MutationPass):
         return True
 
     def _is_conditional_jump(self, mnemonic: str, arch: str) -> bool:
-        """
-        Check if an instruction is a conditional jump/branch.
-
-        Args:
-            mnemonic: Instruction mnemonic
-            arch: Architecture family
-
-        Returns:
-            True if conditional jump
-        """
-        mnemonic = mnemonic.lower()
-
-        if arch in ("x86", "x86_64"):
-            return mnemonic in _X86_CONDITIONAL_JUMPS
-        elif arch in ("arm", "arm64", "aarch64"):
-            return mnemonic in _ARM_CONDITIONAL_BRANCHES
-
-        # Generic check for jump-like mnemonics that aren't unconditional
-        if mnemonic.startswith("j") and mnemonic not in ("jmp", "j"):
-            return True
-        if mnemonic.startswith("b") and mnemonic not in ("b", "br", "bx", "blr", "bl"):
-            return True
-
-        return False
+        return is_conditional_jump(mnemonic, arch)
 
     def _find_nop_sequences(self, instructions: list[dict]) -> list[tuple[int, int]]:
-        """
-        Find sequences of NOP instructions that can be replaced.
-
-        Args:
-            instructions: List of instruction dictionaries
-
-        Returns:
-            List of (start_address, size) tuples for NOP sequences
-        """
-        sequences = []
-        i = 0
-
-        while i < len(instructions):
-            if instructions[i].get("mnemonic", "").lower() != "nop":
-                i += 1
-                continue
-
-            start_addr, total_size, i = self._consume_nop_run(instructions, i)
-            if total_size >= 3:  # Only track sequences of 3+ bytes
-                sequences.append((start_addr, total_size))
-
-        return sequences
+        return find_nop_sequences(instructions)
 
     def _consume_nop_run(self, instructions: list[dict], i: int) -> tuple[int, int, int]:
-        """Accumulate the consecutive NOP run starting at index ``i``.
-
-        ``instructions[i]`` must be a NOP. Returns
-        ``(start_address, total_size, index_after_run)``.
-        """
-        insn = instructions[i]
-        start_addr = insn.get("offset", insn.get("addr", 0))
-        total_size = insn.get("size", 1)
-        j = i + 1
-        while j < len(instructions):
-            next_insn = instructions[j]
-            if next_insn.get("mnemonic", "").lower() != "nop":
-                break
-            total_size += next_insn.get("size", 1)
-            j += 1
-        return start_addr, total_size, j
+        return consume_nop_run(instructions, i)
 
     def _add_opaque_predicate(self, binary: Any, addr: int, available_size: int, arch: str, bits: int) -> bool:
         """
@@ -717,13 +556,4 @@ class ControlFlowFlatteningPass(MutationPass):
         return bool(binary.write_bytes(addr, assembled))
 
     def _assemble_bounded(self, binary: Any, instructions: list[str], max_size: int) -> bytes | None:
-        """Assemble ``instructions``; None if any fails or the total exceeds ``max_size``."""
-        assembled = b""
-        for insn in instructions:
-            insn_bytes = binary.assemble(insn)
-            if insn_bytes is None:
-                return None
-            assembled += insn_bytes
-            if len(assembled) > max_size:
-                return None
-        return assembled
+        return assemble_bounded(binary, instructions, max_size)
