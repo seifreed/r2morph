@@ -34,6 +34,9 @@ from typing import Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.dead_code_injection_helpers import (
+    PADDING_INSTRUCTIONS as _PADDING_INSTRUCTIONS,
+)
+from r2morph.mutations.dead_code_injection_helpers import (
     find_injection_points,
     generate_dead_code,
     generate_dead_code_for_size,
@@ -82,7 +85,7 @@ class DeadCodeInjectionPass(MutationPass):
     """
 
     # Instructions that are safe to overwrite (padding/dead code indicators)
-    PADDING_INSTRUCTIONS = {"nop", "int3", "ud2"}
+    PADDING_INSTRUCTIONS = _PADDING_INSTRUCTIONS
 
     def __init__(self, config: dict[str, Any] | None = None):
         """
