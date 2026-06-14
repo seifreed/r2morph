@@ -6,6 +6,7 @@ from typing import Any
 
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
+from r2morph.mutations.control_flow_flattening_helpers import assemble_bounded
 from r2morph.utils.dead_code import (
     generate_arm_dead_code_for_size,
     generate_nop_sequence,
@@ -135,19 +136,6 @@ def insert_dead_code_with_predicate(binary: Any, addr: int, size: int, arch: str
     return bool(binary.write_bytes(addr, assembled))
 
 
-def assemble_bounded(binary: Any, instructions: list[str], max_size: int) -> bytes | None:
-    """Assemble ``instructions``; return None if any fails or exceeds size."""
-    assembled = b""
-    for insn in instructions:
-        insn_bytes = binary.assemble(insn)
-        if insn_bytes is None:
-            return None
-        assembled += insn_bytes
-        if len(assembled) > max_size:
-            return None
-    return assembled
-
-
 def is_conditional_jump(mnemonic: str, arch: str) -> bool:
     """Check if an instruction is a conditional jump/branch."""
     from r2morph.mutations.control_flow_flattening_helpers import is_conditional_jump as _is_conditional_jump
@@ -158,7 +146,6 @@ def is_conditional_jump(mnemonic: str, arch: str) -> bool:
 __all__ = [
     "add_opaque_predicate",
     "apply_block_strategies",
-    "assemble_bounded",
     "insert_dead_code_with_predicate",
     "is_conditional_jump",
     "try_add_opaque_predicate",

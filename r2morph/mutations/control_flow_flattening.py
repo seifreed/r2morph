@@ -79,6 +79,7 @@ from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_helpers import (
+    assemble_bounded,
     candidate_block_count,
     consume_nop_run,
     find_nop_sequences,
@@ -87,7 +88,6 @@ from r2morph.mutations.control_flow_flattening_helpers import (
 )
 from r2morph.mutations.control_flow_flattening_strategies import (
     apply_block_strategies,
-    assemble_bounded,
     insert_dead_code_with_predicate,
 )
 
