@@ -14,6 +14,13 @@ from rich.console import Console
 
 from r2morph.analysis.enhanced_analyzer_lifecycle import cleanup_binary, ensure_dependencies, load_binary
 from r2morph.analysis.enhanced_analyzer_models import AnalysisOptions, AnalysisResults
+from r2morph.analysis.enhanced_analyzer_phases import (
+    run_binary_rewriting,
+    run_cfo_simplification,
+    run_dynamic_analysis,
+    run_iterative_simplification,
+    run_symbolic_analysis,
+)
 from r2morph.analysis.enhanced_analyzer_reporting import (
     display_analysis_results,
     display_detection_results,
@@ -118,168 +125,31 @@ class EnhancedAnalysisOrchestrator:
             return None
 
     def run_cfo_simplification(self) -> int:
-        """
-        Run Control Flow Obfuscation simplification.
-
-        Returns:
-            Total complexity reduction achieved
-        """
-        from r2morph.devirtualization import CFOSimplifier
-
-        self.console.print("\n[bold yellow]Running CFO simplification...[/bold yellow]")
-        try:
-            cfo_simplifier = CFOSimplifier(self._binary)
-            functions = self._binary.get_functions()[:5]  # Limit for performance
-
-            total_reduction = 0
-            for func in functions:
-                func_addr = func.get("offset", 0)
-                result = cfo_simplifier.simplify_control_flow(func_addr)
-                if result.success:
-                    reduction = result.original_complexity - result.simplified_complexity
-                    total_reduction += reduction
-
-            if total_reduction > 0:
-                self.console.print(f"CFO simplification: {total_reduction} complexity reduced")
-
-            self.results.cfo_reduction = total_reduction
-            return total_reduction
-
-        except Exception as e:
-            self.console.print(f"[yellow]CFO simplification error: {e}[/yellow]")
-            return 0
+        return run_cfo_simplification(self._binary, self.console, self.results)
 
     def run_iterative_simplification(self, max_iterations: int = 5, timeout: int = 60) -> dict[str, Any] | None:
-        """
-        Run iterative simplification passes.
-
-        Args:
-            max_iterations: Maximum number of simplification iterations
-            timeout: Timeout in seconds for the simplification
-
-        Returns:
-            Simplification metrics if successful, None otherwise
-        """
-        from r2morph.devirtualization import IterativeSimplifier
-        from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
-
-        self.console.print("\n[bold yellow]Running iterative simplification...[/bold yellow]")
-        try:
-            simplifier = IterativeSimplifier(self._binary)
-            result = simplifier.simplify(
-                strategy=SimplificationStrategy.ADAPTIVE,
-                max_iterations=max_iterations,
-                timeout=timeout,
-            )
-
-            if result.success:
-                self.console.print("Iterative simplification completed:")
-                self.console.print(f"   Iterations: {result.metrics.iteration}")
-                self.console.print(f"   Complexity reduction: {result.metrics.complexity_reduction:.1%}")
-                self.results.iterative_result = result.metrics.__dict__
-                return result.metrics.__dict__
-            else:
-                self.console.print("Iterative simplification failed")
-                return None
-
-        except Exception as e:
-            self.console.print(f"[yellow]Iterative simplification error: {e}[/yellow]")
-            return None
+        return run_iterative_simplification(
+            self._binary,
+            self.console,
+            self.results,
+            max_iterations=max_iterations,
+            timeout=timeout,
+        )
 
     def run_symbolic_analysis(self) -> int | None:
-        """
-        Run symbolic execution analysis.
-
-        Returns:
-            Number of VM handlers found, or None if unavailable
-        """
-        try:
-            from r2morph.analysis.symbolic import AngrBridge, PathExplorer
-
-            self.console.print("\n[bold yellow]Running symbolic execution...[/bold yellow]")
-
-            if self._binary is None:
-                return None
-            angr_bridge = AngrBridge(self._binary)
-            if angr_bridge.angr_project:
-                path_explorer = PathExplorer(angr_bridge)
-                functions = self._binary.get_functions()
-                if functions:
-                    dispatcher_addr = functions[0].get("offset", 0)
-                else:
-                    dispatcher_addr = self._binary.get_entrypoint()
-
-                handlers = path_explorer.find_vm_handlers(dispatcher_addr, max_handlers=5)
-                handlers_count = len(handlers)
-                if handlers_count:
-                    self.results.vm_handlers = handlers_count
-                    self.console.print(f"Found {handlers_count} VM handlers")
-                    return handlers_count
-            return None
-
-        except ImportError:
-            self.console.print("[yellow]Symbolic execution not available (missing angr)[/yellow]")
-            return None
+        return run_symbolic_analysis(self._binary, self.console, self.results)
 
     def run_dynamic_analysis(self) -> bool:
-        """
-        Set up and run dynamic instrumentation.
-
-        Returns:
-            True if Frida engine was initialized, False otherwise
-        """
-        try:
-            from r2morph.instrumentation import FridaEngine
-
-            self.console.print("\n[bold yellow]Setting up dynamic instrumentation...[/bold yellow]")
-
-            FridaEngine()
-            self.console.print("Frida engine initialized")
-            return True
-
-        except ImportError:
-            self.console.print("[yellow]Dynamic instrumentation not available (missing frida)[/yellow]")
-            return False
+        return run_dynamic_analysis(self.console)
 
     def run_binary_rewriting(self) -> str | None:
-        """
-        Perform binary rewriting and reconstruction.
-
-        Returns:
-            Path to rewritten binary if successful, None otherwise
-        """
-        from r2morph.devirtualization import BinaryRewriter
-
-        self.console.print("\n[bold yellow]Performing binary rewriting...[/bold yellow]")
-        try:
-            rewriter = BinaryRewriter(self._binary)
-
-            if self.output_dir:
-                output_path = self.output_dir / f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
-            else:
-                output_path = self.binary_path.parent / f"{self.binary_path.stem}_rewritten{self.binary_path.suffix}"
-
-            functions = self._binary.get_functions()[:3]
-            patches_added = 0
-            for func in functions:
-                func_addr = func.get("offset", 0)
-                if rewriter.add_patch(func_addr, ["nop"]):
-                    patches_added += 1
-
-            rewrite_result = rewriter.rewrite_binary(str(output_path))
-
-            if rewrite_result.success:
-                self.console.print(f"Binary rewritten to {output_path}")
-                self.console.print(f"   Patches applied: {rewrite_result.patches_applied}")
-                self.results.rewrite_output = str(output_path)
-                return str(output_path)
-            else:
-                self.console.print("Binary rewriting failed")
-                return None
-
-        except Exception as e:
-            self.console.print(f"[yellow]Binary rewriting error: {e}[/yellow]")
-            return None
+        return run_binary_rewriting(
+            self._binary,
+            self.binary_path,
+            self.console,
+            self.results,
+            output_dir=self.output_dir,
+        )
 
     def generate_report(self) -> dict[str, Any]:
         """
