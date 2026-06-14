@@ -9,6 +9,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.binary_region_memory",
     "r2morph.validation.binary_region_bridges",
     "r2morph.validation.binary_region_comparator",
+    "r2morph.validation.binary_region_comparator_observables",
     "r2morph.validation.binary_region_comparator_results",
     "r2morph.validation.differ_models",
     "r2morph.analysis.invariant_models",
