@@ -14,7 +14,6 @@ Uses the rich library for terminal rendering with fallback to basic text mode.
 from __future__ import annotations
 
 import logging
-import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -26,6 +25,7 @@ from r2morph.tui_diff_helpers import (
     count_byte_differences,
     count_disasm_changed_lines,
 )
+from r2morph.tui_filters import FunctionFilter
 
 Console = _tui_rendering.Console
 Confirm = _tui_rendering.Confirm
@@ -347,66 +347,6 @@ def run_interactive_mode(
         "passes": [{"name": p.name, "selected": p.selected} for p in result.passes if p.selected],
         "confirmed": result.confirmed,
     }
-
-
-class FunctionFilter:
-    """
-    Filter and search functions in the TUI.
-
-    Provides search by name pattern and filtering by size/address.
-    """
-
-    def __init__(self) -> None:
-        self._pattern: str = ""
-        self._min_size: int = 0
-        self._max_size: int = 0
-        self._address_range: tuple[int, int] | None = None
-
-    def set_pattern(self, pattern: str) -> None:
-        """Set filter pattern for function names."""
-        self._pattern = pattern.lower()
-
-    def set_size_range(self, min_size: int = 0, max_size: int = 0) -> None:
-        """Set size range filter. 0 means no limit."""
-        self._min_size = min_size
-        self._max_size = max_size
-
-    def set_address_range(self, start: int, end: int) -> None:
-        """Set address range filter."""
-        self._address_range = (start, end)
-
-    def matches(self, func: TUIFunction) -> bool:
-        """Check if function matches current filters."""
-        if self._pattern:
-            if self._pattern not in func.name.lower():
-                if not re.search(self._pattern, func.name, re.IGNORECASE):
-                    return False
-
-        if self._min_size > 0 and func.size < self._min_size:
-            return False
-
-        if self._max_size > 0 and func.size > self._max_size:
-            return False
-
-        if self._address_range:
-            start, end = self._address_range
-            if not (start <= func.address <= end):
-                return False
-
-        return True
-
-    def filter_functions(self, functions: list[TUIFunction]) -> list[TUIFunction]:
-        """Filter list of functions."""
-        return [f for f in functions if self.matches(f)]
-
-    def clear(self) -> None:
-        """Clear all filters."""
-        self._pattern = ""
-        self._min_size = 0
-        self._max_size = 0
-        self._address_range = None
-
-
 class DiffView:
     """
     Display before/after diff view for mutations.
