@@ -199,6 +199,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.abi_detection",
     "r2morph.analysis.ssa_models",
     "r2morph.validation.benchmark_models",
+    "r2morph.validation.address_parsing",
     "r2morph.validation.benchmark_runners_detection",
     "r2morph.validation.benchmark_runners_devirtualization",
     "r2morph.validation.benchmark_runners_full_pipeline",

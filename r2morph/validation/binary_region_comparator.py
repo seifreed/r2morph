@@ -26,6 +26,7 @@ from r2morph.validation.binary_region_comparator_results import (
     build_binary_comparison_result,
     build_region_report,
 )
+from r2morph.validation.binary_region_memory import collect_memory_write_signatures
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +59,10 @@ class BinaryRegionComparator:
             compared_registers,
             stack_reg,
         )
+
+    def _collect_memory_write_signatures(self, state: Any) -> list[str]:
+        """Preserve the historical private comparator API."""
+        return collect_memory_write_signatures(state)
 
     def _compare_single_region(
         self,

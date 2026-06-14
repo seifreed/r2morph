@@ -14,17 +14,6 @@ if TYPE_CHECKING:
     from r2morph.core.binary import Binary
 
 
-def _parse_address(value: int | str | None) -> int:
-    """Parse an address that may be an int or hex string like '0x401010'."""
-    if value is None:
-        return 0
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str) and value.startswith("0x"):
-        return int(value, 16)
-    return int(value)
-
-
 class ValidationManager:
     """
     Coordinates structural validation for mutations and passes.

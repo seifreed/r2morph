@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.validation.manager import _parse_address
+from r2morph.validation.address_parsing import parse_address
 
 
 def build_scope_metadata(mutations: list[dict[str, Any]], pass_name: str) -> dict[str, Any]:
@@ -14,13 +14,13 @@ def build_scope_metadata(mutations: list[dict[str, Any]], pass_name: str) -> dic
         "symbolic_pass_name": pass_name,
         "covered_functions": sorted(
             {
-                _parse_address(mutation["function_address"])
+                parse_address(mutation["function_address"])
                 for mutation in mutations
                 if mutation.get("function_address") not in (None, 0)
             }
         ),
         "covered_address_ranges": [
-            [_parse_address(mutation["start_address"]), _parse_address(mutation["end_address"])]
+            [parse_address(mutation["start_address"]), parse_address(mutation["end_address"])]
             for mutation in mutations
         ],
     }
@@ -43,7 +43,7 @@ def check_scope_constraints(
         return False, "no-mutations"
     if len(mutations) > 8:
         return False, "unsupported-scope"
-    if any((_parse_address(mutation["end_address"]) - _parse_address(mutation["start_address"]) + 1) > 16 for mutation in mutations):
+    if any((parse_address(mutation["end_address"]) - parse_address(mutation["start_address"]) + 1) > 16 for mutation in mutations):
         return False, "unsupported-scope"
     if any(mutation.get("function_address") in (None, 0, "0x0") for mutation in mutations):
         return False, "unsupported-scope"
@@ -62,7 +62,7 @@ def estimate_symbolic_region_steps(pass_name: str, mutation: dict[str, Any]) -> 
             if instructions:
                 candidates.append(len(instructions))
 
-    region_size = _parse_address(mutation.get("end_address", 0)) - _parse_address(mutation.get("start_address", 0)) + 1
+    region_size = parse_address(mutation.get("end_address", 0)) - parse_address(mutation.get("start_address", 0)) + 1
     if region_size > 0:
         candidates.append(1 if region_size <= 4 else 2 if region_size <= 8 else 3)
 

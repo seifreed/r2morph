@@ -7,7 +7,7 @@ from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
-from r2morph.validation.manager import _parse_address
+from r2morph.validation.address_parsing import parse_address
 
 
 def run_symbolic_precheck(
@@ -81,8 +81,8 @@ def _step_one_mutation(
     estimate_steps: Callable[[str, dict[str, Any]], int],
 ) -> tuple[list[int] | None, dict[str, Any] | None, str | None]:
     """Symbolically step a single mutation region."""
-    start = _parse_address(mutation["start_address"])
-    end = _parse_address(mutation["end_address"])
+    start = parse_address(mutation["start_address"])
+    end = parse_address(mutation["end_address"])
     state = bridge.create_symbolic_state(start)
     if state is None:
         return None, None, f"failed to initialize symbolic state at 0x{start:x}"
