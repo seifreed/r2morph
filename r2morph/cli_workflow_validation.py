@@ -7,7 +7,8 @@ from typing import Any
 import typer
 from rich import print as rprint
 
-from r2morph.cli_workflow_selection import limited_symbolic_passes, selected_mutation_passes
+from r2morph.cli_workflow_selection import selected_mutation_passes
+from r2morph.cli_workflow_validation_policy import build_validation_mode_policy
 from r2morph.core.config import EngineConfig
 from r2morph.reporting import SEVERITY_ORDER
 
@@ -76,11 +77,19 @@ def resolve_validation_mode(
     if requested_mode != "symbolic":
         return requested_mode, None
 
-    limited = limited_symbolic_passes(mutations, config, seed=seed)
+    policy = build_validation_mode_policy(
+        requested_mode=requested_mode,
+        mutations=mutations,
+        config=config,
+        seed=seed,
+        allow_limited_symbolic=allow_limited_symbolic,
+        limited_symbolic_policy=limited_symbolic_policy,
+    )
+    limited = policy["limited_passes"]
     if not limited:
         return requested_mode, None
 
-    if allow_limited_symbolic:
+    if policy["policy"] == "allow":
         names = ", ".join(item["pass_name"] for item in limited)
         rprint(f"[yellow]Limited symbolic coverage explicitly allowed for:[/yellow] {names}")
         for item in limited:
@@ -93,27 +102,27 @@ def resolve_validation_mode(
             "limited_passes": limited,
         }
 
-    if limited_symbolic_policy == "degrade-runtime":
+    if policy["effective_mode"] == "runtime":
         names = ", ".join(item["pass_name"] for item in limited)
         rprint(f"[yellow]Limited symbolic support detected for:[/yellow] {names}")
         rprint("[yellow]Degrading validation mode from symbolic to runtime.[/yellow]")
         return "runtime", {
             "requested_mode": requested_mode,
             "effective_mode": "runtime",
-            "policy": limited_symbolic_policy,
-            "reason": "limited-symbolic-support",
+            "policy": policy["policy"],
+            "reason": policy["reason"],
             "limited_passes": limited,
         }
 
-    if limited_symbolic_policy == "degrade-structural":
+    if policy["effective_mode"] == "structural":
         names = ", ".join(item["pass_name"] for item in limited)
         rprint(f"[yellow]Limited symbolic support detected for:[/yellow] {names}")
         rprint("[yellow]Degrading validation mode from symbolic to structural.[/yellow]")
         return "structural", {
             "requested_mode": requested_mode,
             "effective_mode": "structural",
-            "policy": limited_symbolic_policy,
-            "reason": "limited-symbolic-support",
+            "policy": policy["policy"],
+            "reason": policy["reason"],
             "limited_passes": limited,
         }
 
