@@ -48,7 +48,7 @@ _LAZY_EXPORTS = {
     "MemoryLeakDetector": "r2morph.validation.leak_detection",
     "ResourceLeak": "r2morph.validation.leak_detection_models",
     "ResourceLeakTestResult": "r2morph.validation.leak_detection_models",
-    "ResourceLeakDetector": "r2morph.validation.leak_detection",
+    "ResourceLeakDetector": "r2morph.validation.resource_leak_detection",
     "create_memory_detector": "r2morph.validation.leak_detection",
     "BinaryIntegrityValidator": "r2morph.validation.integrity",
     "validate_binary_integrity": "r2morph.validation.integrity",
