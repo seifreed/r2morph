@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from r2morph.validation.benchmark_types import TestSeverity
+from pathlib import Path
+
+from r2morph.validation.benchmark_types import TestSample, TestSeverity
 
 DEFAULT_TEST_SAMPLES: list[dict[str, object]] = [
     {
@@ -68,4 +70,29 @@ DEFAULT_TEST_SAMPLES: list[dict[str, object]] = [
 ]
 
 
-__all__ = ["DEFAULT_TEST_SAMPLES"]
+def build_test_sample(test_data_dir: str | Path, data: dict[str, object]) -> TestSample:
+    """Materialize a benchmark sample from a catalog record."""
+    base_dir = Path(test_data_dir)
+    return TestSample(
+        file_path=str(base_dir / Path(str(data["file_path"]))),
+        sample_hash=str(data["sample_hash"]),
+        expected_packer=data["expected_packer"],
+        expected_vm_protection=bool(data["expected_vm_protection"]),
+        expected_anti_analysis=bool(data["expected_anti_analysis"]),
+        expected_cfo=bool(data["expected_cfo"]),
+        expected_mba=bool(data["expected_mba"]),
+        severity=data["severity"],
+        description=str(data["description"]),
+        source=str(data["source"]),
+    )
+
+
+def build_test_samples(
+    test_data_dir: str | Path,
+    samples: list[dict[str, object]] = DEFAULT_TEST_SAMPLES,
+) -> list[TestSample]:
+    """Materialize the default benchmark sample catalog under a base directory."""
+    return [build_test_sample(test_data_dir, data) for data in samples]
+
+
+__all__ = ["DEFAULT_TEST_SAMPLES", "build_test_sample", "build_test_samples"]

@@ -34,7 +34,10 @@ from r2morph.validation.benchmark_runners import (
 from r2morph.validation.benchmark_runners import (
     benchmark_full_pipeline as run_full_pipeline_benchmark,
 )
-from r2morph.validation.benchmark_samples import DEFAULT_TEST_SAMPLES
+from r2morph.validation.benchmark_samples import (
+    DEFAULT_TEST_SAMPLES,
+    build_test_samples,
+)
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
@@ -66,21 +69,7 @@ class ValidationFramework:
 
     def _load_test_samples(self) -> None:
         """Load predefined test samples."""
-        self.test_samples = [
-            TestSample(
-                file_path=str(self.test_data_dir / Path(data["file_path"])),
-                sample_hash=str(data["sample_hash"]),
-                expected_packer=data["expected_packer"],
-                expected_vm_protection=bool(data["expected_vm_protection"]),
-                expected_anti_analysis=bool(data["expected_anti_analysis"]),
-                expected_cfo=bool(data["expected_cfo"]),
-                expected_mba=bool(data["expected_mba"]),
-                severity=data["severity"],
-                description=str(data["description"]),
-                source=str(data["source"]),
-            )
-            for data in DEFAULT_TEST_SAMPLES
-        ]
+        self.test_samples = build_test_samples(self.test_data_dir, DEFAULT_TEST_SAMPLES)
 
     def add_test_sample(self, sample: TestSample) -> None:
         """Add a new test sample."""

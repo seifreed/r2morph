@@ -109,6 +109,7 @@ REPORTING_MODULES = [
     "r2morph.detection.obfuscation_detector_models",
     "r2morph.detection.pattern_matcher_models",
     "r2morph.validation.differ_helpers",
+    "r2morph.validation.benchmark_samples",
     "r2morph.analysis.type_inference_types",
     "r2morph.analysis.type_inference_interprocedural",
     "r2morph.analysis.type_inference_core",
