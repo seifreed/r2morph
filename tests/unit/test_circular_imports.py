@@ -13,6 +13,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_helpers_symbolic_view",
     "r2morph.reporting.report_evidence_sorting",
     "r2morph.reporting.report_summary_lookup",
+    "r2morph.reporting.report_pass_filter_views",
     "r2morph.reporting.report_rendering",
     "r2morph.reporting.report_rendering_sections",
     "r2morph.reporting.report_rendering_flow_sections",

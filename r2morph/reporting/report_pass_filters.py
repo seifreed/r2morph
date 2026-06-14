@@ -14,6 +14,7 @@ from r2morph.reporting.report_helpers_classification import (
     _is_uncovered_pass,
     _pass_names_from_triage_rows,
 )
+from r2morph.reporting.report_pass_filter_views import _normalize_pass_filter_views
 from r2morph.reporting.report_summary_lookup import _summary_first
 
 
@@ -28,33 +29,8 @@ def resolve_pass_filter_sets(
     general_renderer_state = dict(report_views.get("general_renderer_state", {}) or {})
     pass_filter_views = dict(report_views.get("general_filter_views", report_views.get("pass_filter_views", {})) or {})
 
-    if not pass_filter_views and general_renderer_state.get("general_filter_views"):
-        pass_filter_views = {
-            (
-                f"only_{key}_passes"
-                if key in {"risky", "clean", "covered", "uncovered"}
-                else (
-                    "only_structural_risk"
-                    if key == "structural_risk"
-                    else "only_symbolic_risk" if key == "symbolic_risk" else key
-                )
-            ): value
-            for key, value in dict(general_renderer_state.get("general_filter_views", {}) or {}).items()
-        }
-
-    if not pass_filter_views and general_renderer_state.get("filter_views"):
-        pass_filter_views = {
-            (
-                f"only_{key}_passes"
-                if key in {"risky", "clean", "covered", "uncovered"}
-                else (
-                    "only_structural_risk"
-                    if key == "structural_risk"
-                    else "only_symbolic_risk" if key == "symbolic_risk" else key
-                )
-            ): value
-            for key, value in dict(general_renderer_state.get("filter_views", {}) or {}).items()
-        }
+    if not pass_filter_views:
+        pass_filter_views = _normalize_pass_filter_views(general_renderer_state)
 
     summary_first = summary_first_func or _summary_first
     risk_buckets = dict(summary_first(summary, "pass_risk_buckets", {}) or {})
