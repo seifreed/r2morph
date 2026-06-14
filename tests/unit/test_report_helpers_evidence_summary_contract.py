@@ -1,6 +1,6 @@
-from r2morph.core.report_helpers_evidence_summary import (
+from r2morph.core.report_helpers_evidence_summary import _summarize_pass_evidence
+from r2morph.core.report_helpers_region_evidence import (
     _build_pass_region_evidence_map,
-    _summarize_pass_evidence,
 )
 
 
@@ -116,4 +116,3 @@ def test_build_pass_region_evidence_map_compacts_symbolic_rows() -> None:
             }
         ]
     }
-

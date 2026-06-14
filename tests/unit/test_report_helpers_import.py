@@ -16,6 +16,7 @@ from r2morph.core import report_helpers_discarded as discarded_mod
 from r2morph.core import report_helpers_evidence_summary as evidence_summary_mod
 from r2morph.core import report_helpers_observables as observables_mod
 from r2morph.core import report_helpers_projection as projection_mod
+from r2morph.core import report_helpers_region_evidence as region_evidence_mod
 from r2morph.core import report_helpers_risk as risk_mod
 from r2morph.core import report_helpers_structural_evidence as structural_evidence_mod
 from r2morph.core import report_helpers_summary_metrics as summary_metrics_mod
@@ -102,6 +103,13 @@ def test_canonical_triage_module_defines_triage_helpers() -> None:
 def test_canonical_projection_module_defines_projection_helpers() -> None:
     for name in PROJECTION_NAMES:
         assert hasattr(projection_mod, name), f"core.report_helpers_projection missing {name}"
+
+
+def test_canonical_region_evidence_module_defines_region_helper() -> None:
+    assert hasattr(
+        region_evidence_mod,
+        "_build_pass_region_evidence_map",
+    ), "core.report_helpers_region_evidence missing _build_pass_region_evidence_map"
 
 
 def test_canonical_observable_module_defines_observable_helpers() -> None:
@@ -224,7 +232,11 @@ def test_triage_helpers_are_reexported_from_facade() -> None:
 
 
 def test_projection_helpers_are_reexported_from_facade() -> None:
-    for name in PROJECTION_NAMES:
+    for name in (
+        "_build_pass_capability_summary_map",
+        "_summarize_normalized_pass_results",
+        "_summarize_pass_capability_rows",
+    ):
         assert getattr(helpers_mod, name) is getattr(
             projection_mod, name
         ), f"core.report_helpers.{name} diverged from core.report_helpers_projection.{name}"
@@ -232,6 +244,18 @@ def test_projection_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             projection_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_projection.{name}"
+
+
+def test_region_evidence_helper_is_reexported_from_canonical_module() -> None:
+    assert getattr(helpers_mod, "_build_pass_region_evidence_map") is getattr(
+        region_evidence_mod,
+        "_build_pass_region_evidence_map",
+    ), "core.report_helpers._build_pass_region_evidence_map diverged from core.report_helpers_region_evidence"
+    assert hasattr(engine_mod, "_build_pass_region_evidence_map"), "core.engine no longer re-exports _build_pass_region_evidence_map"
+    assert getattr(engine_mod, "_build_pass_region_evidence_map") is getattr(
+        region_evidence_mod,
+        "_build_pass_region_evidence_map",
+    ), "core.engine._build_pass_region_evidence_map diverged from core.report_helpers_region_evidence"
 
 
 def test_observable_helpers_are_reexported_from_facade() -> None:

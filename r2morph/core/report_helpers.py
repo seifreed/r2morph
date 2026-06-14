@@ -38,13 +38,13 @@ from r2morph.core.report_helpers_projection import (
     _build_pass_capability_summary_map as _build_pass_capability_summary_map,
 )
 from r2morph.core.report_helpers_projection import (
-    _build_pass_region_evidence_map as _build_pass_region_evidence_map,
-)
-from r2morph.core.report_helpers_projection import (
     _summarize_normalized_pass_results as _summarize_normalized_pass_results,
 )
 from r2morph.core.report_helpers_projection import (
     _summarize_pass_capability_rows as _summarize_pass_capability_rows,
+)
+from r2morph.core.report_helpers_region_evidence import (
+    _build_pass_region_evidence_map as _build_pass_region_evidence_map,
 )
 from r2morph.core.report_helpers_risk import (
     _summarize_pass_risk_buckets as _summarize_pass_risk_buckets,
