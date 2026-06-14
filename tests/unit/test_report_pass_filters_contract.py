@@ -29,4 +29,4 @@ def test_resolve_pass_filter_sets_uses_persisted_views_and_fallbacks() -> None:
 
     assert result["risky"] == {"risky-pass"}
     assert result["clean"] == {"clean-pass"}
-    assert result["structural"] == {"triage-pass", "fallback-pass"}
+    assert result["structural"] == {"fallback-pass"}
