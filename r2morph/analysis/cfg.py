@@ -12,6 +12,7 @@ Includes support for:
 
 import logging
 
+from r2morph.analysis.cfg_builder_helpers import populate_cfg_blocks, populate_cfg_edges
 from r2morph.analysis.cfg_models import (
     BasicBlock,
     BlockType,
@@ -23,6 +24,16 @@ from r2morph.analysis.cfg_models import (
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "BasicBlock",
+    "BlockType",
+    "CFGBuilder",
+    "ControlFlowGraph",
+    "EdgeType",
+    "ExceptionEdge",
+    "TailCall",
+]
 
 
 class CFGBuilder:
@@ -61,66 +72,8 @@ class CFGBuilder:
             logger.error(f"Failed to get basic blocks for function @ 0x{function_address:x}: {e}")
             return cfg
 
-        for r2_block in r2_blocks:
-            addr = r2_block.get("addr", 0)
-            size = r2_block.get("size", 0)
-
-            block_type = BlockType.NORMAL
-            if r2_block.get("fail"):
-                block_type = BlockType.CONDITIONAL
-            elif r2_block.get("type") == "call":
-                block_type = BlockType.CALL
-
-            instructions = []
-            try:
-                all_instrs = self.binary.get_function_disasm(function_address)
-                instructions = [insn for insn in all_instrs if addr <= insn.get("offset", 0) < addr + size]
-            except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                logger.debug(f"Could not get instructions for block at 0x{addr:x}: {e}")
-
-            block = BasicBlock(
-                address=addr,
-                size=size,
-                instructions=instructions,
-                successors=[],
-                predecessors=[],
-                block_type=block_type,
-            )
-
-            cfg.add_block(block)
-
-        for r2_block in r2_blocks:
-            from_addr = r2_block.get("addr", 0)
-
-            if r2_block.get("jump"):
-                to_addr = r2_block["jump"]
-                edge_type = EdgeType.NORMAL
-                src_block = cfg.get_block(from_addr)
-                if src_block:
-                    terminal = src_block.get_terminal_instruction()
-                    if terminal:
-                        mnemonic = terminal.get("type", "").lower()
-                        if mnemonic == "ujmp":
-                            edge_type = EdgeType.INDIRECT
-                        elif mnemonic == "cjmp":
-                            edge_type = EdgeType.CONDITIONAL_TRUE
-                        elif mnemonic in ("jmp", "call"):
-                            edge_type = EdgeType.NORMAL
-                        else:
-                            edge_type = EdgeType.NORMAL
-                cfg.add_edge(from_addr, to_addr, edge_type)
-
-            if r2_block.get("fail"):
-                to_addr = r2_block["fail"]
-                fail_block = cfg.get_block(from_addr)
-                edge_type = EdgeType.CONDITIONAL_FALSE
-                if fail_block:
-                    terminal = fail_block.get_terminal_instruction()
-                    if terminal:
-                        mnemonic = terminal.get("type", "").lower()
-                        if mnemonic == "cjmp":
-                            edge_type = EdgeType.CONDITIONAL_FALSE
-                cfg.add_edge(from_addr, to_addr, edge_type)
+        populate_cfg_blocks(cfg, self.binary, function_address, r2_blocks)
+        populate_cfg_edges(cfg, r2_blocks)
 
         self._detect_tail_calls(cfg, function_address)
 
