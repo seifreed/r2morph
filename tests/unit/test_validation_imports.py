@@ -21,6 +21,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.semantic_invariant_catalogs",
     "r2morph.validation.benchmark",
     "r2morph.validation.benchmark_reporting_exports",
+    "r2morph.validation.benchmark_reporting_io",
     "r2morph.validation.benchmark_reporting_overview",
     "r2morph.validation.benchmark_reporting_breakdown_sections",
     "r2morph.validation.benchmark_reporting_summary",
