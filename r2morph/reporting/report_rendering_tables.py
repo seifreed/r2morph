@@ -7,6 +7,12 @@ from typing import Any
 from rich.console import Console
 
 from r2morph.reporting.report_rendering_primitives import _get_console, create_table
+from r2morph.reporting.report_rendering_table_helpers import (
+    build_degradation_role_rows,
+    build_gate_failure_rows,
+    build_mismatch_rows,
+    build_symbolic_summary_rows,
+)
 
 
 def render_symbolic_sections(
@@ -19,7 +25,14 @@ def render_symbolic_sections(
     console: Console | None = None,
 ) -> None:
     """Render symbolic validation summary."""
-    if symbolic_requested == 0:
+    rows = build_symbolic_summary_rows(
+        symbolic_requested=symbolic_requested,
+        observable_match=observable_match,
+        observable_mismatch=observable_mismatch,
+        bounded_only=bounded_only,
+        without_coverage=without_coverage,
+    )
+    if not rows:
         return
 
     c = console or _get_console()
@@ -31,11 +44,8 @@ def render_symbolic_sections(
         ],
     )
 
-    table.add_row("Symbolic Regions Checked", str(symbolic_requested))
-    table.add_row("Observable Match", str(observable_match))
-    table.add_row("Observable Mismatch", str(observable_mismatch))
-    table.add_row("Bounded Only", str(bounded_only))
-    table.add_row("Without Coverage", str(without_coverage))
+    for label, value in rows:
+        table.add_row(label, value)
 
     c.print(table)
 
@@ -62,12 +72,8 @@ def render_gate_sections(
         ],
     )
 
-    for row in gate_failure_priority:
-        table.add_row(
-            row.get("pass_name", "unknown"),
-            str(row.get("failure_count", 0)),
-            row.get("strictest_expected_severity", "unknown"),
-        )
+    for pass_name, failure_count, strictest in build_gate_failure_rows(gate_failure_priority):
+        table.add_row(pass_name, failure_count, strictest)
 
     c.print(table)
 
@@ -80,7 +86,8 @@ def render_degradation_sections(
     """Render validation mode degradation summary."""
     c = console or _get_console()
 
-    if not degradation_summary.get("degraded_validation"):
+    rows = build_degradation_role_rows(degradation_summary)
+    if not rows:
         return
 
     table = create_table(
@@ -91,7 +98,7 @@ def render_degradation_sections(
         ],
     )
 
-    for role, count in degradation_summary.get("roles", {}).items():
+    for role, count in rows:
         table.add_row(role, str(count))
 
     c.print(table)
@@ -116,12 +123,7 @@ def render_only_mismatches_sections(
         ],
     )
 
-    for row in mismatch_rows:
-        table.add_row(
-            row.get("pass_name", "unknown"),
-            str(row.get("mismatch_count", 0)),
-            str(row.get("region_count", 0)),
-        )
+    for pass_name, mismatch_count, region_count in build_mismatch_rows(mismatch_rows):
+        table.add_row(pass_name, mismatch_count, region_count)
 
     c.print(table)
-

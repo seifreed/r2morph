@@ -23,6 +23,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_rendering_flow_section_helpers",
     "r2morph.reporting.report_rendering_symbolic_table_helpers",
     "r2morph.reporting.report_rendering_text_section_helpers",
+    "r2morph.reporting.report_rendering_table_helpers",
     "r2morph.reporting.report_rendering_tables",
     "r2morph.reporting.report_rendering_pass_tables",
     "r2morph.reporting.report_rendering_flow_text_sections",
