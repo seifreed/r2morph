@@ -11,6 +11,11 @@ import logging
 from typing import Any
 
 from r2morph.analysis.call_graph import CallEdge, CallGraph, CallNode, CallType
+from r2morph.analysis.call_graph_parsing import (
+    determine_call_type,
+    extract_call_target,
+    is_tail_call,
+)
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
@@ -63,7 +68,7 @@ class CallGraphBuilder:
             func_name = func.get("name", f"sub_{func_addr:x}")
             func_size = func.get("size", 0)
 
-            call_type = self._determine_call_type(func_name, func)
+            call_type = determine_call_type(func_name)
 
             node = CallNode(
                 address=func_addr,
@@ -87,16 +92,6 @@ class CallGraphBuilder:
 
         return cg
 
-    def _determine_call_type(self, name: str, func: dict) -> CallType:
-        """Determine the type of a function."""
-        if name.startswith("sym.imp."):
-            return CallType.PLT
-        if name.startswith("sub."):
-            return CallType.DIRECT
-        if "." in name and not name.startswith("sub."):
-            return CallType.LIBRARY
-        return CallType.DIRECT
-
     def _extract_calls(self, binary: Binary, func_addr: int, cg: CallGraph) -> None:
         """Extract call instructions from a function."""
         try:
@@ -110,20 +105,24 @@ class CallGraphBuilder:
         except Exception as e:
             logger.debug(f"Error extracting calls from 0x{func_addr:x}: {e}")
 
+    def _determine_call_type(self, name: str, func: dict) -> CallType:
+        """Compatibility wrapper for call type classification."""
+        return determine_call_type(name)
+
     def _process_instruction(self, binary: Binary, func_addr: int, insn: dict, cg: CallGraph) -> None:
         """Process a single instruction for call extraction."""
         disasm = insn.get("disasm", "").lower()
         offset = insn.get("offset", 0)
 
-        if not disasm.startswith("call") and not self._is_tail_call(disasm):
+        if not disasm.startswith("call") and not is_tail_call(disasm):
             return
 
-        call_target = self._extract_call_target(disasm)
+        call_target = extract_call_target(disasm)
         if call_target is None:
             return
 
         call_type = CallType.DIRECT
-        is_tail = self._is_tail_call(disasm)
+        is_tail = is_tail_call(disasm)
 
         if isinstance(call_target, int) and call_target in cg.nodes:
             target_node = cg.nodes[call_target]
@@ -158,40 +157,12 @@ class CallGraphBuilder:
             cg.add_edge(edge)
 
     def _extract_call_target(self, disasm: str) -> int | str | None:
-        """Extract call target from disassembly."""
-        parts = disasm.split(None, 1)
-        if len(parts) < 2:
-            return None
-
-        operand = parts[1].strip()
-
-        if operand.startswith("0x"):
-            try:
-                return int(operand, 16)
-            except ValueError:
-                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                pass
-
-        if operand.startswith("[") and operand.endswith("]"):
-            return f"indirect:{operand}"
-
-        if operand.startswith("dword [") or operand.startswith("qword ["):
-            return f"indirect:{operand}"
-
-        if operand in ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"):
-            return f"indirect:{operand}"
-
-        return operand
+        """Compatibility wrapper for parsing call targets."""
+        return extract_call_target(disasm)
 
     def _is_tail_call(self, disasm: str) -> bool:
-        """Check if instruction is a tail call (jmp to function)."""
-        if not disasm.startswith("jmp"):
-            return False
-        parts = disasm.split(None, 1)
-        if len(parts) < 2:
-            return False
-        operand = parts[1].strip()
-        return operand.startswith("0x") or operand in ("rax", "rbx", "rcx", "rdx")
+        """Compatibility wrapper for tail-call detection."""
+        return is_tail_call(disasm)
 
     def _find_entry_points(self, binary: Binary, cg: CallGraph) -> list[int]:
         """Find entry point functions."""
