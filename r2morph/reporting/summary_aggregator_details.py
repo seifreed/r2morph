@@ -4,46 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers import _summarize_diff_digest
 from r2morph.reporting.gate_evaluator import ROLLBACK_SEVERITY_ORDER
 
 
 def summarize_diff_digest(pass_results: dict[str, Any]) -> dict[str, Any]:
     """Build a compact diff digest across passes."""
-    digest: dict[str, Any] = {
-        "changed_region_count": 0,
-        "changed_bytes": 0,
-        "mutation_kinds": [],
-        "passes_with_changes": [],
-    }
-    mutation_kinds: set[str] = set()
-    passes_with_changes: list[dict[str, Any]] = []
-
-    for pass_name, pass_result in pass_results.items():
-        diff_summary = pass_result.get("diff_summary", {})
-        changed_regions = list(diff_summary.get("changed_regions", []))
-        changed_bytes = int(diff_summary.get("changed_bytes", 0))
-        digest["changed_region_count"] = int(digest["changed_region_count"]) + len(changed_regions)
-        digest["changed_bytes"] = int(digest["changed_bytes"]) + changed_bytes
-        mutation_kinds.update(diff_summary.get("mutation_kinds", []))
-        if changed_regions or changed_bytes:
-            passes_with_changes.append(
-                {
-                    "pass_name": pass_name,
-                    "changed_region_count": len(changed_regions),
-                    "changed_bytes": changed_bytes,
-                }
-            )
-
-    passes_with_changes.sort(
-        key=lambda item: (
-            -item["changed_bytes"],
-            -item["changed_region_count"],
-            item["pass_name"],
-        )
-    )
-    digest["mutation_kinds"] = sorted(mutation_kinds)
-    digest["passes_with_changes"] = passes_with_changes
-    return digest
+    return _summarize_diff_digest(pass_results)
 
 
 def summarize_discarded_mutations(discarded_mutations: list[dict[str, Any]]) -> dict[str, Any]:
@@ -112,4 +79,3 @@ def summarize_discarded_mutations(discarded_mutations: list[dict[str, Any]]) -> 
             for row in rows
         },
     }
-
