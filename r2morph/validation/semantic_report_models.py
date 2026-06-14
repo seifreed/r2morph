@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation.semantic_invariant_models import InvariantCategory, InvariantSeverity, InvariantViolation
+from r2morph.validation.semantic_invariant_models import InvariantViolation
 from r2morph.validation.semantic_models import (
     MutationRegion,
     ObservableComparison,
@@ -16,6 +16,7 @@ from r2morph.validation.semantic_models import (
     ValidationMode,
     ValidationResultStatus,
 )
+from r2morph.validation.semantic_report_parsing import build_semantic_validation_report
 from r2morph.validation.semantic_report_summary import build_semantic_report_summary
 
 
@@ -96,66 +97,8 @@ class SemanticValidationReport:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SemanticValidationReport:
         """Create report from dictionary."""
-        results = []
-        for r in data.get("results", []):
-            region = MutationRegion(
-                start_address=r["region"]["start_address"],
-                end_address=r["region"]["end_address"],
-                original_bytes=bytes.fromhex(r["region"]["original_bytes"]),
-                mutated_bytes=bytes.fromhex(r["region"]["mutated_bytes"]),
-                pass_name=r["region"]["pass_name"],
-                function_address=r["region"].get("function_address"),
-                original_disasm=r["region"].get("original_disasm"),
-                mutated_disasm=r["region"].get("mutated_disasm"),
-                metadata=r["region"].get("metadata", {}),
-            )
-            checks = [
-                SemanticCheck(
-                    check_name=c["check_name"],
-                    category=InvariantCategory(c["category"]),
-                    passed=c["passed"],
-                    message=c["message"],
-                    details=c.get("details", {}),
-                )
-                for c in r.get("checks", [])
-            ]
-            violations = [
-                InvariantViolation(
-                    invariant_name=v["invariant_name"],
-                    category=InvariantCategory(v["category"]),
-                    severity=InvariantSeverity(v["severity"]),
-                    address_range=tuple(v["address_range"]),
-                    message=v["message"],
-                    expected=v.get("expected"),
-                    actual=v.get("actual"),
-                    repair_hint=v.get("repair_hint"),
-                    metadata=v.get("metadata", {}),
-                )
-                for v in r.get("violations", [])
-            ]
-
-            results.append(
-                SemanticValidationResult(
-                    region=region,
-                    status=ValidationResultStatus(r["status"]),
-                    checks=checks,
-                    violations=violations,
-                    observables=None,
-                    symbolic_status=r.get("symbolic_status", "not_requested"),
-                    symbolic_details=r.get("symbolic_details", {}),
-                    execution_time_seconds=r.get("execution_time_seconds", 0.0),
-                    error_message=r.get("error_message"),
-                )
-            )
-
-        return cls(
-            binary_path=data["binary_path"],
-            timestamp=data["timestamp"],
-            mode=ValidationMode(data["mode"]),
-            results=results,
-            summary=data.get("summary", {}),
-            metadata=data.get("metadata", {}),
-        )
+        parsed = build_semantic_validation_report(data)
+        return cls(**parsed)
 
     @classmethod
     def from_now(

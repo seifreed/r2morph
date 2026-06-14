@@ -203,6 +203,7 @@ REPORTING_MODULES = [
     "r2morph.validation.manager_models",
     "r2morph.validation.semantic_report_models",
     "r2morph.validation.semantic_report_summary",
+    "r2morph.validation.semantic_report_parsing",
     "r2morph.validation.semantic_invariant_helpers",
     "r2morph.validation.semantic_invariant_catalogs",
     "r2morph.validation.cfg_integrity_helpers",
