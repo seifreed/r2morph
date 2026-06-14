@@ -158,6 +158,7 @@ REPORTING_MODULES = [
     "r2morph.session_helpers",
     "r2morph.session_mutation_flow",
     "r2morph.core.parallel_checkpointing",
+    "r2morph.core.parallel_stage_execution",
     "r2morph.core.binary_file_lock",
     "r2morph.core.analysis_cache_models",
     "r2morph.core.analysis_cache_storage",

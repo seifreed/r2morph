@@ -16,7 +16,6 @@ import logging
 import tempfile
 import threading
 from collections.abc import Callable
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -37,6 +36,7 @@ from r2morph.core.parallel_planner import (
     PassDependency as _PassDependency,
 )
 from r2morph.core.parallel_rollback import rollback_pass_checkpoint
+from r2morph.core.parallel_stage_execution import execute_stage
 from r2morph.protocols import MutationPassProtocol
 
 ExecutionPlan = _ExecutionPlan
@@ -177,7 +177,7 @@ class ParallelMutationEngine:
                     result = self._execute_pass(pass_obj, progress_callback)
                     self._add_result(pass_name, result)
                 else:
-                    stage_results = self._execute_stage(stage, passes, stage_num, len(plan.stages), progress_callback)
+                    stage_results = self._execute_stage(stage, passes, progress_callback)
                     for name, res in stage_results.items():
                         self._add_result(name, res)
 
@@ -191,42 +191,16 @@ class ParallelMutationEngine:
         self,
         stage: list[str],
         passes: list[MutationPassProtocol],
-        stage_num: int,
-        total_stages: int,
         progress_callback: Callable[[str, float], None] | None,
     ) -> dict[str, PassResult]:
         """Execute all passes in a stage in parallel."""
-        results: dict[str, PassResult] = {}
-        pass_map = {p.name: p for p in passes}
-
-        with ThreadPoolExecutor(max_workers=min(self.max_workers, len(stage))) as executor:
-            futures: dict[Future, str] = {}
-
-            for pass_name in stage:
-                if pass_name not in pass_map:
-                    continue
-                pass_obj = pass_map[pass_name]
-                future = executor.submit(
-                    self._execute_pass,
-                    pass_obj,
-                    progress_callback,
-                )
-                futures[future] = pass_name
-
-            for future in as_completed(futures):
-                pass_name = futures[future]
-                try:
-                    result = future.result()
-                    results[pass_name] = result
-                except Exception as e:
-                    logger.error(f"Pass {pass_name} raised exception: {e}")
-                    results[pass_name] = PassResult(
-                        pass_name=pass_name,
-                        status=PassStatus.FAILED,
-                        error=str(e),
-                    )
-
-        return results
+        return execute_stage(
+            stage,
+            passes,
+            max_workers=self.max_workers,
+            execute_pass=self._execute_pass,
+            progress_callback=progress_callback,
+        )
 
     def _execute_pass(
         self,
