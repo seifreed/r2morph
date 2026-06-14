@@ -4,26 +4,13 @@ import json
 from pathlib import Path
 from typing import Any
 
-import typer
-from rich import print as rprint
-
+from r2morph.cli_workflow_validation import resolve_min_severity
 from r2morph.cli_workflows import _resolve_report_pass_filter
-from r2morph.reporting import SEVERITY_ORDER
 from r2morph.reporting.filtered_summary_builder import _build_report_dispatch_state
 from r2morph.reporting.report_command_io import emit_report_output, load_report_payload
 from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
 from r2morph.reporting.report_orchestrator import _dispatch_report_flow
 from r2morph.reporting.report_resolver import _resolve_general_report_flow_state
-
-
-def _resolve_min_severity(min_severity: str | None) -> tuple[str | None, int | None]:
-    """Validate and normalize a minimum severity option."""
-    if min_severity is None:
-        return None, None
-    if min_severity not in SEVERITY_ORDER:
-        rprint(f"[bold red]Error:[/bold red] Invalid --min-severity: {min_severity}")
-        raise typer.Exit(2)
-    return min_severity, SEVERITY_ORDER[min_severity]
 
 
 def handle_mutate_command(
@@ -92,7 +79,7 @@ def handle_report_command(
 
     resolved_only_pass = _resolve_report_pass_filter(only_pass)
     resolved_only_pass_failure = _resolve_report_pass_filter(only_pass_failure)
-    _, min_severity_rank = _resolve_min_severity(min_severity)
+    _, min_severity_rank = resolve_min_severity(min_severity)
 
     return_payload: dict[str, Any] = dict(payload)
     if resolved_only_pass:
