@@ -12,6 +12,7 @@ from typing import Any
 
 from rich.console import Console
 
+from r2morph.analysis.enhanced_analyzer_lifecycle import cleanup_binary, ensure_dependencies, load_binary
 from r2morph.analysis.enhanced_analyzer_models import AnalysisOptions, AnalysisResults
 from r2morph.analysis.enhanced_analyzer_reporting import (
     display_analysis_results,
@@ -50,36 +51,15 @@ class EnhancedAnalysisOrchestrator:
         self._detector: Any = None
 
     def _ensure_dependencies(self) -> bool:
-        """
-        Check and import enhanced analysis dependencies.
-
-        Returns:
-            True if dependencies are available, False otherwise
-        """
-        import importlib.util
-
-        return (
-            importlib.util.find_spec("r2morph.detection") is not None
-            and importlib.util.find_spec("r2morph.devirtualization") is not None
-        )
+        return ensure_dependencies()
 
     def _load_binary(self) -> Any:
-        """Load and analyze the binary."""
-        from r2morph import Binary
-
-        self._binary = Binary(str(self.binary_path))
-        self._binary.__enter__()
-        self._binary.analyze()
+        self._binary = load_binary(self.binary_path)
         return self._binary
 
     def _cleanup(self) -> None:
-        """Clean up resources."""
-        if self._binary is not None:
-            try:
-                self._binary.__exit__(None, None, None)
-            except Exception as e:
-                logger.debug(f"Error cleaning up binary: {e}")
-            self._binary = None
+        cleanup_binary(self._binary)
+        self._binary = None
 
     def run_detection(self) -> Any:
         """

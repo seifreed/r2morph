@@ -164,6 +164,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.call_graph_entry_points",
     "r2morph.analysis.enhanced_analyzer_reporting",
     "r2morph.analysis.enhanced_analyzer_models",
+    "r2morph.analysis.enhanced_analyzer_lifecycle",
     "r2morph.analysis.dataflow_parsing",
     "r2morph.analysis.dataflow_block_sets",
     "r2morph.analysis.dataflow_models",
