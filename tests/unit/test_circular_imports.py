@@ -79,6 +79,7 @@ REPORTING_MODULES = [
     "r2morph.core.parallel_executor_task_helpers",
     "r2morph.core.parallel_execution_summary",
     "r2morph.core.parallel_pass_execution",
+    "r2morph.core.parallel_rollback",
     "r2morph.core.parallel_work_queue",
     "r2morph.core.parallel_result_merger",
     "r2morph.core.parallel_checkpointing",

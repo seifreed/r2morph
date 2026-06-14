@@ -22,7 +22,7 @@ from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.core.binary_file_lock import BinaryFileLock
-from r2morph.core.parallel_checkpointing import has_failures, rollback_checkpoint
+from r2morph.core.parallel_checkpointing import has_failures
 from r2morph.core.parallel_execution_summary import build_parallel_results_summary
 from r2morph.core.parallel_pass_execution import execute_checkpointed_pass
 from r2morph.core.parallel_planner import (
@@ -36,6 +36,7 @@ from r2morph.core.parallel_planner import (
 from r2morph.core.parallel_planner import (
     PassDependency as _PassDependency,
 )
+from r2morph.core.parallel_rollback import rollback_pass_checkpoint
 from r2morph.protocols import MutationPassProtocol
 
 ExecutionPlan = _ExecutionPlan
@@ -247,15 +248,11 @@ class ParallelMutationEngine:
         Returns:
             True if rollback successful
         """
-        result = self._results.get(pass_name)
-        if not result or not result.checkpoint_path:
-            logger.warning(f"No checkpoint for pass: {pass_name}")
-            return False
-
-        if rollback_checkpoint(self.binary.path, result.checkpoint_path, logger):
-            result.status = PassStatus.ROLLED_BACK
-            return True
-        return False
+        return rollback_pass_checkpoint(
+            binary_path=self.binary.path,
+            result=self._results.get(pass_name),
+            logger=logger,
+        )
 
     def get_results_summary(self) -> dict[str, Any]:
         """Get summary of all execution results."""
