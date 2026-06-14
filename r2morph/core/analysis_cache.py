@@ -13,10 +13,14 @@ import json
 import logging
 import pickle
 import threading
-from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from r2morph.core.analysis_cache_cleanup import (
+    cleanup_expired_entries,
+    cleanup_low_access_entries,
+    enforce_size_limit,
+)
 from r2morph.core.analysis_cache_models import CacheEntry, CacheKey, CacheStats
 from r2morph.core.analysis_cache_models import compute_binary_hash as _compute_binary_hash
 from r2morph.core.analysis_cache_models import compute_partial_hash as _compute_partial_hash
@@ -232,34 +236,12 @@ class AnalysisCache:
         return removed
 
     def _enforce_size_limit(self) -> None:
-        with self._stats_lock:
-            if self._stats.total_size_bytes <= self.max_size_bytes:
-                return
-
-        entries: list[tuple[Path, CacheEntry]] = []
-        for entry_path in self.cache_dir.rglob("*.cache"):
-            try:
-                with open(entry_path, "rb") as f:
-                    entry: CacheEntry = _safe_pickle_load(f)
-                entries.append((entry_path, entry))
-            except (pickle.PickleError, OSError):
-                entry_path.unlink(missing_ok=True)
-
-        entries.sort(key=lambda x: x[1].accessed_at)
-
-        for entry_path, entry in entries:
-            with self._stats_lock:
-                if self._stats.total_size_bytes <= self.max_size_bytes:
-                    break
-            try:
-                entry_path.unlink(missing_ok=True)
-            except OSError as exc:
-                logger.warning("Cannot evict cache entry %s: %s — stats not updated", entry_path, exc)
-                continue
-            with self._stats_lock:
-                self._stats.total_size_bytes -= entry.size_bytes
-                self._stats.entry_count -= 1
-                self._stats.evictions += 1
+        enforce_size_limit(
+            self.cache_dir,
+            self._stats,
+            self._stats_lock,
+            max_size_bytes=self.max_size_bytes,
+        )
 
     def get_stats(self) -> CacheStats:
         with self._stats_lock:
@@ -350,29 +332,12 @@ class AnalysisCache:
             Number of entries removed.
         """
         max_age = max_age_days or self.max_age_days
-        cutoff = datetime.now() - timedelta(days=max_age)
-        removed = 0
-
-        for entry_path in self.cache_dir.rglob("*.cache"):
-            try:
-                with open(entry_path, "rb") as f:
-                    entry: CacheEntry = _safe_pickle_load(f)
-
-                if entry.created_at < cutoff:
-                    entry_path.unlink(missing_ok=True)
-                    with self._stats_lock:
-                        self._stats.total_size_bytes -= entry.size_bytes
-                        self._stats.entry_count -= 1
-                        self._stats.evictions += 1
-                    removed += 1
-                    logger.debug(f"Removed expired cache entry: {entry_path}")
-            except (pickle.PickleError, OSError):
-                entry_path.unlink(missing_ok=True)
-
-        if removed > 0:
-            logger.info(f"Cleaned up {removed} expired cache entries (max_age={max_age} days)")
-
-        return removed
+        return cleanup_expired_entries(
+            self.cache_dir,
+            self._stats,
+            self._stats_lock,
+            max_age_days=max_age,
+        )
 
     def cleanup_low_access(self, min_access_count: int = 2, max_age_days: int = 7) -> int:
         """
@@ -385,29 +350,13 @@ class AnalysisCache:
         Returns:
             Number of entries removed.
         """
-        cutoff = datetime.now() - timedelta(days=max_age_days)
-        removed = 0
-
-        for entry_path in self.cache_dir.rglob("*.cache"):
-            try:
-                with open(entry_path, "rb") as f:
-                    entry: CacheEntry = _safe_pickle_load(f)
-
-                if entry.created_at < cutoff and entry.access_count < min_access_count:
-                    entry_path.unlink(missing_ok=True)
-                    with self._stats_lock:
-                        self._stats.total_size_bytes -= entry.size_bytes
-                        self._stats.entry_count -= 1
-                        self._stats.evictions += 1
-                    removed += 1
-                    logger.debug(f"Removed low-access cache entry: {entry_path}")
-            except (pickle.PickleError, OSError):
-                entry_path.unlink(missing_ok=True)
-
-        if removed > 0:
-            logger.info(f"Cleaned up {removed} low-access cache entries")
-
-        return removed
+        return cleanup_low_access_entries(
+            self.cache_dir,
+            self._stats,
+            self._stats_lock,
+            min_access_count=min_access_count,
+            max_age_days=max_age_days,
+        )
 
     def _start_cleanup_thread(self) -> None:
         """Start the background cleanup thread."""
