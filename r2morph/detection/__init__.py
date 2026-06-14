@@ -23,11 +23,8 @@ from r2morph.detection.obfuscation_detector_models import (
     ObfuscationAnalysisResult,
     ObfuscationType,
 )
-from r2morph.detection.packer_signatures import (
-    PackerSignature,
-    PackerSignatureDatabase,
-    PackerType,
-)
+from r2morph.detection.packer_signature_models import PackerSignature, PackerType
+from r2morph.detection.packer_signatures import PackerSignatureDatabase
 from r2morph.detection.pattern_matcher import (
     PatternMatcher,
 )

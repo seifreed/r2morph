@@ -9,8 +9,6 @@ section names, strings, and entropy analysis.
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -20,6 +18,7 @@ from r2morph.detection.packer_signature_catalogs import (
     protector_signatures,
     vm_protector_signatures,
 )
+from r2morph.detection.packer_signature_models import PackerSignature, PackerType
 from r2morph.utils.entropy import calculate_entropy
 
 if TYPE_CHECKING:
@@ -27,57 +26,6 @@ if TYPE_CHECKING:
     from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 
 logger = logging.getLogger(__name__)
-
-
-class PackerType(Enum):
-    """Known packer and obfuscator types."""
-
-    # Commercial VM-based packers
-    VMPROTECT = "vmprotect"
-    THEMIDA = "themida"
-    WINLICENSE = "winlicense"
-    ENIGMA = "enigma"
-    OBSIDIUM = "obsidium"
-    SAFENGINE = "safengine"
-    VPROTECT = "vprotect"
-
-    # Traditional packers
-    UPX = "upx"
-    ASPACK = "aspack"
-    PECOMPACT = "pecompact"
-    MPRESS = "mpress"
-    PACKMAN = "packman"
-    NSPACK = "nspack"
-    RLPACK = "rlpack"
-    PESPIN = "pespin"
-
-    # Protection systems
-    ASPROTECT = "asprotect"
-    ARMADILLO = "armadillo"
-    EXECRYPTOR = "execryptor"
-    PKLITE = "pklite"
-    WWPACK = "wwpack"
-
-    # Custom/Unknown
-    CUSTOM_VM = "custom_vm"
-    CUSTOM_PACKER = "custom_packer"
-    METAMORPHIC = "metamorphic"
-    UNKNOWN = "unknown"
-    NONE = "none"
-
-
-@dataclass
-class PackerSignature:
-    """Signature for identifying specific packers."""
-
-    name: str
-    packer_type: PackerType
-    entry_patterns: list[bytes] = field(default_factory=list)
-    section_names: list[str] = field(default_factory=list)
-    import_patterns: list[str] = field(default_factory=list)
-    string_patterns: list[str] = field(default_factory=list)
-    entropy_threshold: float = 7.0
-    confidence_threshold: float = 0.7
 
 
 class PackerSignatureDatabase:
