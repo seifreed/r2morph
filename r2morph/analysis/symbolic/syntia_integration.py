@@ -17,6 +17,13 @@ import time
 from pathlib import Path
 from typing import Any
 
+from r2morph.analysis.symbolic.syntia_analysis_helpers import (
+    assess_semantic_complexity,
+    classify_handler_type,
+    fallback_semantic_analysis,
+    generate_equivalent_native_code,
+    synthesize_handler_semantics,
+)
 from r2morph.analysis.symbolic.syntia_equivalence_helpers import (
     check_mba_equivalence,
     normalize_expression,
@@ -197,29 +204,7 @@ class SyntiaFramework:
         Returns:
             Basic semantic analysis result
         """
-        # Simple pattern-based semantic analysis
-        disasm_lower = disassembly.lower()
-
-        if any(op in disasm_lower for op in ["mov", "lea"]):
-            semantics = f"Data movement: {disassembly}"
-            confidence = 0.8
-        elif any(op in disasm_lower for op in ["add", "sub", "mul", "div"]):
-            semantics = f"Arithmetic operation: {disassembly}"
-            confidence = 0.7
-        elif any(op in disasm_lower for op in ["and", "or", "xor", "not"]):
-            semantics = f"Logical operation: {disassembly}"
-            confidence = 0.7
-        elif any(op in disasm_lower for op in ["jmp", "je", "jne", "jz", "jnz"]):
-            semantics = f"Control flow: {disassembly}"
-            confidence = 0.6
-        elif any(op in disasm_lower for op in ["push", "pop"]):
-            semantics = f"Stack operation: {disassembly}"
-            confidence = 0.8
-        else:
-            semantics = f"Unknown operation: {disassembly}"
-            confidence = 0.1
-
-        return {"semantics": semantics, "confidence": confidence}
+        return fallback_semantic_analysis(disassembly)
 
     def _assess_semantic_complexity(self, semantics: InstructionSemantics) -> SemanticComplexity:
         """
@@ -231,18 +216,7 @@ class SyntiaFramework:
         Returns:
             Complexity assessment
         """
-        if not semantics.learned_semantics:
-            return SemanticComplexity.UNKNOWN
-
-        # Simple heuristics for complexity assessment
-        semantic_str = semantics.learned_semantics.lower()
-
-        if len(semantic_str) < 50 and semantics.confidence > 0.8:
-            return SemanticComplexity.SIMPLE
-        elif len(semantic_str) < 200 and semantics.confidence > 0.5:
-            return SemanticComplexity.MEDIUM
-        else:
-            return SemanticComplexity.COMPLEX
+        return assess_semantic_complexity(semantics)
 
     def analyze_vm_handler(
         self, handler_instructions: list[tuple[int, bytes, str]], handler_id: int
@@ -301,16 +275,7 @@ class SyntiaFramework:
         if not instruction_semantics:
             return None
 
-        # Simple composition of individual semantics
-        semantic_parts = []
-        for sem in instruction_semantics:
-            if sem.learned_semantics and sem.confidence > 0.5:
-                semantic_parts.append(sem.learned_semantics)
-
-        if semantic_parts:
-            return " -> ".join(semantic_parts)
-
-        return None
+        return synthesize_handler_semantics(instruction_semantics)
 
     def _classify_handler_type(self, instruction_semantics: list[InstructionSemantics]) -> str:
         """
@@ -325,21 +290,7 @@ class SyntiaFramework:
         if not instruction_semantics:
             return "unknown"
 
-        # Analyze semantic patterns to classify handler type
-        semantic_text = " ".join(
-            sem.learned_semantics or "" for sem in instruction_semantics if sem.learned_semantics
-        ).lower()
-
-        if any(keyword in semantic_text for keyword in ["add", "sub", "mul", "div", "arithmetic"]):
-            return "arithmetic"
-        elif any(keyword in semantic_text for keyword in ["jmp", "branch", "control", "conditional"]):
-            return "branch"
-        elif any(keyword in semantic_text for keyword in ["mov", "load", "store", "memory"]):
-            return "memory"
-        elif any(keyword in semantic_text for keyword in ["push", "pop", "stack"]):
-            return "stack"
-        else:
-            return "unknown"
+        return classify_handler_type(instruction_semantics)
 
     def _generate_equivalent_native_code(self, handler_semantics: VMHandlerSemantics) -> str | None:
         """
@@ -351,24 +302,7 @@ class SyntiaFramework:
         Returns:
             Equivalent native assembly code or None
         """
-        # Use learned semantics to generate equivalent code
-        # Comprehensive semantic-to-assembly translation
-
-        if not handler_semantics.overall_semantic_formula:
-            return None
-
-        # Simple translation based on handler type
-        if handler_semantics.handler_type == "arithmetic":
-            if "add" in handler_semantics.overall_semantic_formula.lower():
-                return "add eax, ebx"
-            elif "sub" in handler_semantics.overall_semantic_formula.lower():
-                return "sub eax, ebx"
-        elif handler_semantics.handler_type == "memory":
-            return "mov eax, [ebx]"
-        elif handler_semantics.handler_type == "branch":
-            return "cmp eax, ebx\nje target"
-
-        return f"; Equivalent code for {handler_semantics.handler_type} handler"
+        return generate_equivalent_native_code(handler_semantics)
 
     def simplify_mba_with_syntia(self, mba_expression: str, variables: set[str]) -> str | None:
         """
