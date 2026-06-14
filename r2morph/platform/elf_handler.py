@@ -14,6 +14,7 @@ from r2morph.platform.elf_handler_code_caves import find_code_cave as project_fi
 from r2morph.platform.elf_handler_metadata import get_architecture as project_architecture
 from r2morph.platform.elf_handler_metadata import get_entry_point as project_entry_point
 from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
+from r2morph.platform.elf_handler_section_mutation import add_section as mutate_add_section
 from r2morph.platform.elf_handler_symbol_preservation import preserve_symbols as check_symbol_preservation
 from r2morph.platform.elf_handler_symbols import collect_symbol_tables
 from r2morph.platform.elf_handler_tables import collect_sections, collect_segments
@@ -231,50 +232,10 @@ class ELFHandler:
             >>> if vaddr:
             ...     print(f"New section at: 0x{vaddr:x}")
         """
-        try:
-            import lief
-        except ImportError:
-            logger.error("lief library required for section manipulation. Install with: pip install lief")
-            return None
-
-        try:
-            elf = lief.parse(str(self.binary_path))
-            if elf is None:
-                logger.error(f"Failed to parse ELF with lief: {self.binary_path}")
-                return None
-
-            if not isinstance(elf, lief.ELF.Binary):
-                logger.error("Parsed binary is not ELF format")
-                return None
-
-            existing = elf.get_section(name)
-            if existing is not None:
-                logger.warning(f"Section '{name}' already exists at 0x{existing.virtual_address:x}")
-                return existing.virtual_address
-
-            section = lief.ELF.Section(name)
-            section.type = lief.ELF.Section.TYPE.PROGBITS
-            section.flags = lief.ELF.Section.FLAGS(flags)
-            section.content = list(bytes(size))  # Zero-filled content
-            section.alignment = 0x10  # 16-byte alignment
-
-            added_section = elf.add(section, loaded=True)
-
-            if added_section is None:
-                logger.error(f"Failed to add section '{name}' to ELF")
-                return None
-
-            elf.write(str(self.binary_path))
-
+        vaddr = mutate_add_section(self.binary_path, name, size, flags)
+        if vaddr is not None:
             self._elf_header = None
-
-            vaddr = added_section.virtual_address
-            logger.info(f"Added ELF section '{name}' ({size} bytes, flags=0x{flags:x}) at vaddr 0x{vaddr:x}")
-            return vaddr
-
-        except Exception as e:
-            logger.error(f"Failed to add section '{name}': {e}")
-            return None
+        return vaddr
 
     def get_symbol_tables(self) -> dict[str, list[dict[str, Any]]]:
         """Get symbol table information from the ELF binary.
