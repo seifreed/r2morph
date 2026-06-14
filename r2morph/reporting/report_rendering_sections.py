@@ -7,6 +7,7 @@ nothing in those modules.
 
 from typing import Any
 
+from r2morph.reporting.report_filter_messages import build_report_filter_messages
 from r2morph.reporting.report_rendering_flow_sections import (
     _render_degradation_sections as _render_degradation_sections,
 )
@@ -48,32 +49,20 @@ def _render_report_filter_messages(
     selected_risk_pass_names: set[str],
 ) -> None:
     """Render compact filter-resolution/status messages."""
-    if only_pass is not None and resolved_only_pass != only_pass:
-        _get_console().print(f"[bold]Pass Filter Resolution[/bold]: {only_pass} -> {resolved_only_pass}")
-    if only_pass_failure is not None and resolved_only_pass_failure != only_pass_failure:
-        _get_console().print(
-            f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}"
-        )
-    if only_risky_passes:
-        _get_console().print(f"[bold]Risky Pass Filter[/bold]: {len(selected_risk_pass_names)} risky pass(es) detected")
-    if only_uncovered_passes:
-        _get_console().print(
-            f"[bold]Uncovered Pass Filter[/bold]: {len(selected_risk_pass_names)} uncovered pass(es) detected"
-        )
-    if only_covered_passes:
-        _get_console().print(
-            f"[bold]Covered Pass Filter[/bold]: {len(selected_risk_pass_names)} covered pass(es) detected"
-        )
-    if only_clean_passes:
-        _get_console().print(f"[bold]Clean Pass Filter[/bold]: {len(selected_risk_pass_names)} clean pass(es) detected")
-    if only_structural_risk:
-        _get_console().print(
-            f"[bold]Structural Risk Filter[/bold]: {len(selected_risk_pass_names)} structural-risk pass(es) detected"
-        )
-    if only_symbolic_risk:
-        _get_console().print(
-            f"[bold]Symbolic Risk Filter[/bold]: {len(selected_risk_pass_names)} symbolic-risk pass(es) detected"
-        )
+    for message in build_report_filter_messages(
+        only_pass=only_pass,
+        resolved_only_pass=resolved_only_pass,
+        only_pass_failure=only_pass_failure,
+        resolved_only_pass_failure=resolved_only_pass_failure,
+        only_risky_passes=only_risky_passes,
+        only_uncovered_passes=only_uncovered_passes,
+        only_covered_passes=only_covered_passes,
+        only_clean_passes=only_clean_passes,
+        only_structural_risk=only_structural_risk,
+        only_symbolic_risk=only_symbolic_risk,
+        selected_risk_pass_names=selected_risk_pass_names,
+    ):
+        _get_console().print(message)
 
 
 def _render_only_mismatches_sections(
