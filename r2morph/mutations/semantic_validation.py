@@ -9,6 +9,39 @@ Validates that mutations preserve program semantics:
 
 from typing import Any
 
+from r2morph.mutations.semantic_validation_helpers import (
+    ALL_REGISTERS_64 as _ALL_REGISTERS_64,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    CONTROL_FLOW_OPCODES as _CONTROL_FLOW_OPCODES,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    POP_OPCODES as _POP_OPCODES,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    PRESERVED_REGISTERS_64 as _PRESERVED_REGISTERS_64,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    PUSH_OPCODES as _PUSH_OPCODES,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    SCRATCH_REGISTERS_64 as _SCRATCH_REGISTERS_64,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    UNSAFE_OPCODES as _UNSAFE_OPCODES,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    get_address as _get_address,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    get_jump_target as _get_jump_target,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    get_mnemonic as _get_mnemonic,
+)
+from r2morph.mutations.semantic_validation_helpers import (
+    get_operand as _get_operand,
+)
 from r2morph.mutations.semantic_validation_models import ValidationIssue, ValidationResult, ValidationSeverity
 
 
@@ -23,31 +56,14 @@ class SemanticValidator:
     - Side effect analysis
     """
 
-    PRESERVED_REGISTERS_64 = ["rbx", "rbp", "r12", "r13", "r14", "r15"]
-    SCRATCH_REGISTERS_64 = ["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"]
-    ALL_REGISTERS_64 = PRESERVED_REGISTERS_64 + SCRATCH_REGISTERS_64
+    PRESERVED_REGISTERS_64 = _PRESERVED_REGISTERS_64
+    SCRATCH_REGISTERS_64 = _SCRATCH_REGISTERS_64
+    ALL_REGISTERS_64 = _ALL_REGISTERS_64
 
-    PUSH_OPCODES = {"push", "pushq", "pushl", "pushw"}
-    POP_OPCODES = {"pop", "popq", "popl", "popw"}
-    CONTROL_FLOW_OPCODES = {
-        "jmp",
-        "je",
-        "jne",
-        "jz",
-        "jnz",
-        "jg",
-        "jl",
-        "jge",
-        "jle",
-        "ja",
-        "jb",
-        "jae",
-        "jbe",
-        "call",
-        "ret",
-        "retn",
-    }
-    UNSAFE_OPCODES = {"syscall", "int", "int3", "ud2", "hlt", "cli", "sti"}
+    PUSH_OPCODES = _PUSH_OPCODES
+    POP_OPCODES = _POP_OPCODES
+    CONTROL_FLOW_OPCODES = _CONTROL_FLOW_OPCODES
+    UNSAFE_OPCODES = _UNSAFE_OPCODES
 
     def __init__(self, arch: str = "x86_64"):
         self.arch = arch
@@ -387,32 +403,16 @@ class SemanticValidator:
         return result
 
     def _get_mnemonic(self, ins: dict[str, Any]) -> str:
-        return (ins.get("mnemonic") or ins.get("type") or "").lower()
+        return _get_mnemonic(ins)
 
     def _get_address(self, ins: dict[str, Any]) -> int:
-        addr = ins.get("addr", ins.get("address", 0))
-        return int(addr, 0) if isinstance(addr, str) else addr
+        return _get_address(ins)
 
     def _get_operand(self, ins: dict[str, Any], idx: int) -> str | None:
-        ops = ins.get("operands", [])
-        if isinstance(ops, dict):
-            return ops.get(str(idx)) or ops.get(idx)
-        elif isinstance(ops, list) and idx < len(ops):
-            result = ops[idx]
-            return str(result) if result is not None else None
-        op_key = f"operand_{idx + 1}"
-        result = ins.get(op_key)
-        return str(result) if result is not None else None
+        return _get_operand(ins, idx)
 
     def _get_jump_target(self, ins: dict[str, Any]) -> int | None:
-        jump = ins.get("jump") or ins.get("target")
-        if jump:
-            try:
-                return int(jump, 0) if isinstance(jump, str) else jump
-            except (ValueError, TypeError):
-                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                pass
-        return None
+        return _get_jump_target(ins)
 
 
 def create_validator(arch: str = "x86_64") -> SemanticValidator:
