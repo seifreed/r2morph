@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
 from rich.console import Console
 
+from r2morph.reporting.report_output_io import emit_report_payload as _emit_report_payload_impl
 from r2morph.reporting.report_output_policy import (
     _enforce_report_requirements as _enforce_report_requirements_impl,
 )
@@ -29,12 +29,12 @@ def emit_report_payload(
     console_instance: Console | None = None,
 ) -> None:
     """Write and/or print a filtered report payload."""
-    c = console_instance or console
-    if output is not None:
-        output.write_text(json.dumps(filtered_payload, indent=2), encoding="utf-8")
-        c.print(f"[cyan]Filtered report written:[/cyan] {output}")
-    if not summary_only:
-        c.print_json(json.dumps(filtered_payload))
+    _emit_report_payload_impl(
+        filtered_payload=filtered_payload,
+        output=output,
+        summary_only=summary_only,
+        console_instance=console_instance,
+    )
 
 
 def enforce_report_requirements(

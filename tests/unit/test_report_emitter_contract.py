@@ -3,6 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+import typer
 
 from r2morph.reporting import report_emitter
 
@@ -34,7 +35,7 @@ def test_emit_report_payload_writes_output(tmp_path: Path) -> None:
 
 
 def test_enforce_report_requirements_raises_when_empty() -> None:
-    with pytest.raises(SystemExit):
+    with pytest.raises(typer.Exit):
         report_emitter.enforce_report_requirements(
             require_results=True,
             severity_rows=[],

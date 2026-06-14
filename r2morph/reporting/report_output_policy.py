@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +9,7 @@ import typer
 from rich.console import Console
 
 from r2morph.reporting.report_gate_helpers import _gate_failure_result_count, _severity_threshold_met
+from r2morph.reporting.report_output_io import emit_report_payload
 
 console = Console()
 
@@ -43,11 +43,7 @@ def _emit_report_payload(
     summary_only: bool,
 ) -> None:
     """Write and/or print a filtered report payload."""
-    if output is not None:
-        output.write_text(json.dumps(filtered_payload, indent=2), encoding="utf-8")
-        console.print(f"[cyan]Filtered report written:[/cyan] {output}")
-    if not summary_only:
-        console.print_json(json.dumps(filtered_payload))
+    emit_report_payload(filtered_payload=filtered_payload, output=output, summary_only=summary_only, console_instance=console)
 
 
 def _enforce_report_requirements(
