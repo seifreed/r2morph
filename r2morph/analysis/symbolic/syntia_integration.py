@@ -15,11 +15,14 @@ import logging
 import random
 import re
 import time
-from dataclasses import dataclass, field
-from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from r2morph.analysis.symbolic.syntia_models import (
+    InstructionSemantics,
+    SemanticComplexity,
+    VMHandlerSemantics,
+)
 from r2morph.core.safe_eval import safe_eval_arithmetic_node
 
 try:
@@ -31,44 +34,6 @@ except ImportError:
     SYNTIA_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
-
-
-class SemanticComplexity(Enum):
-    """Complexity levels for semantic learning."""
-
-    SIMPLE = "simple"  # Basic arithmetic/logic operations
-    MEDIUM = "medium"  # Mixed operations with some obfuscation
-    COMPLEX = "complex"  # Heavy obfuscation, VM handlers
-    UNKNOWN = "unknown"  # Cannot determine complexity
-
-
-@dataclass
-class InstructionSemantics:
-    """Learned semantics for an instruction or instruction sequence."""
-
-    address: int
-    instruction_bytes: bytes
-    disassembly: str
-    learned_semantics: str | None = None
-    semantic_formula: str | None = None
-    input_variables: set[str] = field(default_factory=set)
-    output_variables: set[str] = field(default_factory=set)
-    complexity: SemanticComplexity = SemanticComplexity.UNKNOWN
-    confidence: float = 0.0
-    learning_time: float = 0.0
-
-
-@dataclass
-class VMHandlerSemantics:
-    """Semantics for a virtual machine handler."""
-
-    handler_id: int
-    entry_address: int
-    handler_type: str  # e.g., "arithmetic", "branch", "memory"
-    instruction_semantics: list[InstructionSemantics] = field(default_factory=list)
-    overall_semantic_formula: str | None = None
-    equivalent_native_code: str | None = None
-    confidence: float = 0.0
 
 
 class SyntiaFramework:
