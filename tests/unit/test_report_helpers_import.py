@@ -11,6 +11,7 @@ from __future__ import annotations
 from r2morph.core import engine as engine_mod
 from r2morph.core import report_helpers as helpers_mod
 from r2morph.core import report_helpers_adjustment as adjustment_mod
+from r2morph.core import report_helpers_discarded as discarded_mod
 from r2morph.core import report_helpers_evidence_summary as evidence_summary_mod
 from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
@@ -102,6 +103,14 @@ def test_canonical_evidence_summary_module_defines_evidence_helpers() -> None:
         ), f"core.report_helpers_evidence_summary missing {name}"
 
 
+def test_canonical_discarded_module_defines_discarded_helpers() -> None:
+    for name in ("_summarize_discarded_mutations", "_build_discarded_mutation_priority"):
+        assert hasattr(
+            discarded_mod,
+            name,
+        ), f"core.report_helpers_discarded missing {name}"
+
+
 def test_canonical_symbolic_summary_module_defines_symbolic_helpers() -> None:
     for name in (
         "_build_symbolic_summary_for_pass",
@@ -167,6 +176,17 @@ def test_risk_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             risk_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_risk.{name}"
+
+
+def test_discarded_helpers_are_reexported_from_facade() -> None:
+    for name in ("_summarize_discarded_mutations", "_build_discarded_mutation_priority"):
+        assert getattr(helpers_mod, name) is getattr(
+            discarded_mod, name
+        ), f"core.report_helpers.{name} diverged from core.report_helpers_discarded.{name}"
+        assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
+        assert getattr(engine_mod, name) is getattr(
+            discarded_mod, name
+        ), f"core.engine.{name} diverged from core.report_helpers_discarded.{name}"
 
 
 def test_symbolic_helpers_are_reexported_from_facade() -> None:
