@@ -5,7 +5,6 @@ Executes mutation passes in parallel on independent regions
 to speed up mutation processing on multi-core systems.
 """
 
-import concurrent.futures
 import logging
 import multiprocessing
 import threading
@@ -15,6 +14,7 @@ from typing import Any
 from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass, MutationRecord
 from r2morph.mutations.parallel_executor_planning import build_task_plans
+from r2morph.mutations.parallel_executor_runtime import execute_parallel_runs
 
 # File-level write lock to prevent concurrent binary corruption
 _binary_write_lock = threading.Lock()
@@ -163,83 +163,17 @@ class ParallelMutator:
         passes: list[MutationPass],
         binary: Any,
     ) -> tuple[list[MutationRecord], ParallelStats]:
-        """
-        Execute mutation passes in parallel.
-
-        Args:
-            passes: List of mutation passes to execute
-            binary: Any instance
-
-        Returns:
-            Tuple of (mutation_records, parallel_stats)
-        """
-        import time
-
-        start_time = time.perf_counter()
-
-        functions = binary.get_functions()
-        binary_path = str(binary.path)
-
-        tasks = self._create_tasks(passes, functions)
-
-        if not tasks:
-            return [], ParallelStats()
-
-        all_records: list[MutationRecord] = []
-        stats = ParallelStats(worker_count=min(self.max_workers, len(tasks)))
-
-        with concurrent.futures.ThreadPoolExecutor(max_workers=self.max_workers) as executor:
-            future_to_task = {executor.submit(self._execute_task, task, binary_path): task for task in tasks}
-
-            try:
-                for future in concurrent.futures.as_completed(future_to_task, timeout=self.timeout):
-                    task = future_to_task[future]
-
-                    try:
-                        result = future.result()
-
-                        if result.success:
-                            stats.tasks_completed += 1
-                            stats.total_mutations += result.mutations_applied
-                            all_records.extend(result.records)
-                        else:
-                            stats.tasks_failed += 1
-                            for error in result.errors:
-                                logger.warning(f"Task {task.pass_name} error: {error}")
-
-                    except Exception as e:
-                        stats.tasks_failed += 1
-                        logger.error(f"Task {task.pass_name} failed: {e}")
-
-            except concurrent.futures.TimeoutError:
-                # The whole batch exceeded self.timeout. as_completed raises
-                # from the loop itself (not future.result()), so handle it
-                # here: count every task that has not finished as failed,
-                # cancel the ones not yet started, and return the partial
-                # results rather than letting the timeout escape this method.
-                unfinished = [f for f in future_to_task if not f.done()]
-                for pending in unfinished:
-                    pending.cancel()
-                stats.tasks_failed += len(unfinished)
-                logger.error(
-                    f"Parallel execution timed out after {self.timeout}s; "
-                    f"{len(unfinished)} task(s) did not complete"
-                )
-
-        elapsed = time.perf_counter() - start_time
-        stats.total_time = elapsed
-
-        if stats.tasks_completed > 0:
-            sequential_estimate = stats.total_time * self.max_workers
-            stats.speedup_factor = sequential_estimate / (elapsed + 0.001)
-
-        logger.info(
-            f"Parallel execution complete: {stats.tasks_completed} tasks, "
-            f"{stats.total_mutations} mutations in {elapsed:.2f}s "
-            f"(speedup: {stats.speedup_factor:.2f}x)"
+        """Execute mutation passes in parallel."""
+        return execute_parallel_runs(
+            passes,
+            binary,
+            max_workers=self.max_workers,
+            timeout=self.timeout,
+            create_tasks=self._create_tasks,
+            execute_task=self._execute_task,
+            stats_factory=ParallelStats,
+            logger=logger,
         )
-
-        return all_records, stats
 
     def estimate_speedup(
         self,
