@@ -7,21 +7,17 @@ symbol table management, and dynamic linking information.
 """
 
 import logging
-import struct
 from pathlib import Path
 from typing import Any, BinaryIO
 
+from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
 from r2morph.platform.elf_handler_validation import validate_elf_file_structure
 from r2morph.platform.elf_structs import (
     ELF_MAGIC,
-    ELFCLASS64,
-    ELFDATA2LSB,
     MAX_SECTION_ENTRY_SIZE,
-    MAX_SECTION_NAME,
     MAX_SECTIONS,
     MAX_SYMBOLS,
     SHF_EXECINSTR,
-    _build_elf_header_dict,
     _build_section_dict,
     _build_segment_dict,
     _find_null_run,
@@ -114,40 +110,8 @@ class ELFHandler:
         if self._elf_header is not None:
             return self._elf_header
 
-        try:
-            with open(self.binary_path, "rb") as f:
-                # Read e_ident (16 bytes)
-                e_ident = f.read(16)
-                if len(e_ident) < 16 or e_ident[:4] != ELF_MAGIC:
-                    logger.error("Invalid ELF magic number")
-                    return None
-
-                # Determine class (32/64-bit) and endianness
-                self._is_64bit = e_ident[4] == ELFCLASS64
-                self._is_little_endian = e_ident[5] == ELFDATA2LSB
-
-                endian = "<" if self._is_little_endian else ">"
-                # The header after e_ident shares one field order across classes;
-                # only e_entry/e_phoff/e_shoff change width (8 bytes vs 4 bytes).
-                offset_fields = "QQQ" if self._is_64bit else "III"
-                fmt = f"{endian}HHI {offset_fields} IHHHHHH"
-
-                data = f.read(struct.calcsize(fmt))
-                if len(data) < struct.calcsize(fmt):
-                    logger.error("Truncated ELF header")
-                    return None
-
-                self._elf_header = _build_elf_header_dict(
-                    e_ident,
-                    struct.unpack(fmt, data),
-                    is_64bit=self._is_64bit,
-                    is_little_endian=self._is_little_endian,
-                )
-                return self._elf_header
-
-        except Exception as e:
-            logger.error(f"Failed to parse ELF header: {e}")
-            return None
+        self._elf_header, self._is_64bit, self._is_little_endian = parse_elf_header(self.binary_path)
+        return self._elf_header
 
     def _get_section_name(self, name_offset: int, shstrtab_data: bytes) -> str:
         """Extract section name from the section header string table.
@@ -159,17 +123,7 @@ class ELFHandler:
         Returns:
             The section name as a string.
         """
-        if name_offset >= len(shstrtab_data):
-            return ""
-
-        end = shstrtab_data.find(b"\x00", name_offset)
-        if end == -1:
-            end = len(shstrtab_data)
-
-        if end - name_offset > MAX_SECTION_NAME:
-            end = name_offset + MAX_SECTION_NAME
-
-        return shstrtab_data[name_offset:end].decode("utf-8", errors="replace")
+        return get_section_name(name_offset, shstrtab_data)
 
     @staticmethod
     def _read_shstrtab(f: BinaryIO, header: dict[str, Any], file_size: int) -> bytes:
@@ -178,34 +132,7 @@ class ELFHandler:
         Each failed bounds check logs a warning and yields an empty table, so
         section names simply fall back to offsets downstream.
         """
-        if header["e_shstrndx"] >= header["e_shnum"]:
-            return b""
-
-        endian = "<" if header["is_little_endian"] else ">"
-        shstrtab_offset = header["e_shoff"] + header["e_shstrndx"] * header["e_shentsize"]
-        if shstrtab_offset > file_size or shstrtab_offset < header["e_shoff"]:
-            logger.warning(f"Invalid shstrtab offset: {shstrtab_offset}")
-            return b""
-
-        f.seek(shstrtab_offset)
-        shstrtab_header = f.read(header["e_shentsize"])
-        if len(shstrtab_header) < header["e_shentsize"]:
-            logger.warning("Truncated shstrtab header")
-            return b""
-
-        if header["is_64bit"]:
-            sh_offset = struct.unpack(f"{endian}Q", shstrtab_header[24:32])[0]
-            sh_size = struct.unpack(f"{endian}Q", shstrtab_header[32:40])[0]
-        else:
-            sh_offset = struct.unpack(f"{endian}I", shstrtab_header[16:20])[0]
-            sh_size = struct.unpack(f"{endian}I", shstrtab_header[20:24])[0]
-
-        if sh_offset + sh_size > file_size:
-            logger.warning(f"shstrtab extends beyond file: offset={sh_offset}, size={sh_size}")
-            return b""
-
-        f.seek(sh_offset)
-        return f.read(sh_size)
+        return read_shstrtab(f, header, file_size)
 
     def get_sections(self) -> list[dict[str, Any]]:
         """Retrieve all sections from the ELF binary.
