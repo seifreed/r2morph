@@ -1,16 +1,10 @@
-"""
-Binary validation to ensure mutations preserve semantics.
-"""
+"""Binary validation to ensure mutations preserve semantics."""
 
-import hashlib
 import logging
-import os
-import shutil
-import subprocess
-import tempfile
 from pathlib import Path
 from typing import Any
 
+from r2morph.validation.validator_execution import hash_text, normalize_output, run_binary
 from r2morph.validation.validator_runtime import (
     RuntimeComparisonConfig,
     ValidationResult,
@@ -113,14 +107,14 @@ class BinaryValidator:
         for i, test_case in enumerate(self.test_cases):
             logger.debug(f"Running test case {i + 1}: {test_case.description}")
 
-            orig_result = self._run_binary(original_path, test_case)
+            orig_result = run_binary(original_path, test_case, self.timeout)
 
-            mut_result = self._run_binary(mutated_path, test_case)
+            mut_result = run_binary(mutated_path, test_case, self.timeout)
 
-            orig_stdout = self._normalize_output(orig_result["stdout"])
-            mut_stdout = self._normalize_output(mut_result["stdout"])
-            orig_stderr = self._normalize_output(orig_result["stderr"])
-            mut_stderr = self._normalize_output(mut_result["stderr"])
+            orig_stdout = normalize_output(orig_result["stdout"], self.comparison.normalize_whitespace)
+            mut_stdout = normalize_output(mut_result["stdout"], self.comparison.normalize_whitespace)
+            orig_stderr = normalize_output(orig_result["stderr"], self.comparison.normalize_whitespace)
+            mut_stderr = normalize_output(mut_result["stderr"], self.comparison.normalize_whitespace)
 
             original_outputs.append(orig_result)
             mutated_outputs.append(mut_result)
@@ -188,15 +182,19 @@ class BinaryValidator:
             },
             file_differences=file_differences,
             output_hashes={
-                "original_stdout_sha256": self._hash_text(orig_combined),
-                "mutated_stdout_sha256": self._hash_text(mut_combined),
-                "original_stderr_sha256": self._hash_text("\n".join(o["stderr"] for o in original_outputs)),
-                "mutated_stderr_sha256": self._hash_text("\n".join(o["stderr"] for o in mutated_outputs)),
-                "normalized_original_stdout_sha256": self._hash_text(
-                    "\n".join(self._normalize_output(o["stdout"]) for o in original_outputs)
+                "original_stdout_sha256": hash_text(orig_combined),
+                "mutated_stdout_sha256": hash_text(mut_combined),
+                "original_stderr_sha256": hash_text("\n".join(o["stderr"] for o in original_outputs)),
+                "mutated_stderr_sha256": hash_text("\n".join(o["stderr"] for o in mutated_outputs)),
+                "normalized_original_stdout_sha256": hash_text(
+                    "\n".join(
+                        normalize_output(o["stdout"], self.comparison.normalize_whitespace) for o in original_outputs
+                    )
                 ),
-                "normalized_mutated_stdout_sha256": self._hash_text(
-                    "\n".join(self._normalize_output(o["stdout"]) for o in mutated_outputs)
+                "normalized_mutated_stdout_sha256": hash_text(
+                    "\n".join(
+                        normalize_output(o["stdout"], self.comparison.normalize_whitespace) for o in mutated_outputs
+                    )
                 ),
             },
             runtime_details=runtime_details,
@@ -205,83 +203,6 @@ class BinaryValidator:
 
         logger.info(f"Validation result: {result}")
         return result
-
-    def _normalize_output(self, text: str) -> str:
-        """Normalize output text for optional whitespace-insensitive comparison."""
-        if not self.comparison.normalize_whitespace:
-            return text
-        return "\n".join(line.rstrip() for line in text.splitlines()).strip()
-
-    def _hash_text(self, text: str) -> str:
-        """Return a stable hash for machine-readable runtime reporting."""
-        return hashlib.sha256(text.encode("utf-8")).hexdigest()
-
-    def _run_binary(self, binary_path: Path, test_case: ValidationTestCase) -> dict[str, Any]:
-        """
-        Run a binary and capture output.
-
-        Args:
-            binary_path: Path to binary
-            test_case: Test case configuration
-
-        Returns:
-            Dict with stdout, stderr, exitcode
-        """
-        run_dir = None
-        cleanup_dir = False
-
-        try:
-            try:
-                binary_path.chmod(0o755)
-            except (OSError, PermissionError):
-                # Best-effort chmod; some filesystems/permissions disallow it and execution still proceeds without it.
-                pass
-
-            if test_case.working_dir:
-                run_dir = Path(test_case.working_dir)
-            else:
-                run_dir = Path(tempfile.mkdtemp(prefix="r2morph_runtime_"))
-                cleanup_dir = True
-
-            run_dir.mkdir(parents=True, exist_ok=True)
-
-            local_binary = run_dir / binary_path.name
-            shutil.copy2(binary_path, local_binary)
-            cmd = [str(local_binary)] + test_case.args
-
-            result = subprocess.run(
-                cmd,
-                input=test_case.stdin.encode() if test_case.stdin else None,
-                capture_output=True,
-                timeout=self.timeout,
-                env={**os.environ, **test_case.env},
-                cwd=run_dir,
-            )
-
-            files = {}
-            for rel_path in set(self.comparison.monitored_files) | set(test_case.monitored_files):
-                candidate = run_dir / rel_path
-                files[rel_path] = candidate.read_bytes().hex() if candidate.exists() else ""
-
-            return {
-                "stdout": result.stdout.decode(errors="replace"),
-                "stderr": result.stderr.decode(errors="replace"),
-                "exitcode": result.returncode,
-                "files": files,
-            }
-
-        except subprocess.TimeoutExpired:
-            logger.warning(f"Binary {binary_path.name} timed out")
-            return {"stdout": "", "stderr": "TIMEOUT", "exitcode": -1, "files": {}}
-        except Exception as e:
-            logger.error(f"Error running binary: {e}")
-            return {"stdout": "", "stderr": str(e), "exitcode": -2, "files": {}}
-        finally:
-            if cleanup_dir and run_dir is not None:
-                try:
-                    shutil.rmtree(run_dir, ignore_errors=True)
-                except Exception as e:
-                    logger.debug(f"Error cleaning up temp directory {run_dir}: {e}")
 
     def _calculate_similarity(self, original_outputs: list[dict], mutated_outputs: list[dict]) -> float:
         """
