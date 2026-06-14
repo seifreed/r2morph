@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from r2morph.reporting.gate_failure_summary import build_gate_failure_priority, summarize_gate_failures
 from r2morph.reporting.report_context_gate_state import _resolve_failed_gates_view, _resolve_report_gate_state
 
 
@@ -54,3 +55,24 @@ def test_report_context_gate_state_contract() -> None:
         [{"severity": "medium", "failure_count": 1}],
         True,
     )
+
+
+def test_report_gate_state_builds_priority_from_summary_when_unpersisted() -> None:
+    gate_evaluation = {
+        "results": {
+            "require_pass_severity_failures": [
+                "mutate=mismatch(expected <= clean)",
+                "fuzz=without-coverage(expected <= bounded-only)",
+            ],
+        },
+    }
+    _, gate_failure_priority, _, _ = _resolve_report_gate_state(
+        summary={},
+        payload={},
+        gate_evaluation=gate_evaluation,
+        only_expected_severity=None,
+        resolved_only_pass_failure=None,
+    )
+
+    expected = build_gate_failure_priority(summarize_gate_failures(gate_evaluation))
+    assert gate_failure_priority == expected

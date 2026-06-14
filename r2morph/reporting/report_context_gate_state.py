@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-import re
 from typing import Any
 
+from r2morph.reporting.gate_evaluator import (
+    build_gate_failure_priority as _build_gate_failure_priority,
+)
 from r2morph.reporting.gate_evaluator import (
     build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
 )
@@ -77,26 +79,7 @@ def _resolve_report_gate_state(
             pass_name: failures for pass_name, failures in ordered_failures
         }
     if not gate_failure_priority:
-        gate_failure_priority = [
-            {
-                "pass_name": pass_name,
-                "failure_count": len(failures),
-                "strictest_expected_severity": (
-                    min(
-                        (
-                            severity
-                            for severity in (re.search(r"expected <= ([^)]+)", failure) for failure in failures)
-                            if severity
-                        ),
-                        key=lambda match: _expected_severity_rank_from_failure(f"expected <= {match.group(1)}"),
-                    ).group(1)
-                    if failures
-                    else "unknown"
-                ),
-                "failures": list(failures),
-            }
-            for pass_name, failures in gate_failure_summary.get("require_pass_severity_failures_by_pass", {}).items()
-        ]
+        gate_failure_priority = _build_gate_failure_priority(gate_failure_summary)
     gate_failure_summary, gate_failure_priority, gate_failure_severity_priority, filtered_gate_failed = (
         _filter_failed_gates_view(
             gate_failure_summary=gate_failure_summary,
