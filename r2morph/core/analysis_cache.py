@@ -19,11 +19,18 @@ from r2morph.core.analysis_cache_cleanup import (
     cleanup_low_access_entries,
     enforce_size_limit,
 )
-from r2morph.core.analysis_cache_entries import iter_cache_entries, load_cache_entry
+from r2morph.core.analysis_cache_entries import load_cache_entry
 from r2morph.core.analysis_cache_keys import build_cache_key, get_entry_path, hash_binary, hash_options
 from r2morph.core.analysis_cache_models import CacheEntry, CacheKey, CacheStats
 from r2morph.core.analysis_cache_models import compute_binary_hash as _compute_binary_hash
 from r2morph.core.analysis_cache_models import compute_partial_hash as _compute_partial_hash
+from r2morph.core.analysis_cache_queries import (
+    get_entry_metadata,
+    invalidate_entries,
+    invalidate_region_entries,
+    list_entries,
+    refresh_cache_stats,
+)
 from r2morph.core.analysis_cache_storage import CacheStorage as _CacheStorage
 from r2morph.core.constants import (
     ANALYSIS_CACHE_CLEANUP_INTERVAL_SECONDS,
@@ -163,43 +170,24 @@ class AnalysisCache:
             logger.warning("Cache write failed for %s: %s", entry_path, exc)
 
     def invalidate(self, binary_data: bytes, analysis_type: str | None = None) -> int:
-        binary_hash = self._hash_binary(binary_data)
-        removed = 0
-
-        for entry_path, entry in iter_cache_entries(self.cache_dir):
-            if entry.key.binary_hash == binary_hash:
-                if analysis_type is None or entry.key.analysis_type == analysis_type:
-                    entry_path.unlink(missing_ok=True)
-                    with self._stats_lock:
-                        self._stats.total_size_bytes -= entry.size_bytes
-                        self._stats.entry_count -= 1
-                        self._stats.evictions += 1
-                    removed += 1
-
-        return removed
+        return invalidate_entries(
+            self.cache_dir,
+            binary_data,
+            analysis_type,
+            self._hash_binary,
+            self._stats,
+            self._stats_lock,
+        )
 
     def invalidate_region(self, binary_hash: str, offset: int, size: int) -> int:
-        removed = 0
-
-        for entry_path, entry in iter_cache_entries(self.cache_dir):
-            if entry.key.binary_hash == binary_hash:
-                cached_regions = entry.metadata.get("regions", [])
-                overlaps = False
-                for region in cached_regions:
-                    roffset = region.get("offset", 0)
-                    rsize = region.get("size", 0)
-                    if not (offset + size < roffset or offset > roffset + rsize):
-                        overlaps = True
-                        break
-                if overlaps:
-                    entry_path.unlink(missing_ok=True)
-                    with self._stats_lock:
-                        self._stats.total_size_bytes -= entry.size_bytes
-                        self._stats.entry_count -= 1
-                        self._stats.evictions += 1
-                    removed += 1
-
-        return removed
+        return invalidate_region_entries(
+            self.cache_dir,
+            binary_hash,
+            offset,
+            size,
+            self._stats,
+            self._stats_lock,
+        )
 
     def clear(self) -> int:
         removed = 0
@@ -226,17 +214,7 @@ class AnalysisCache:
             return self._stats
 
     def refresh_stats(self) -> CacheStats:
-        new_stats = CacheStats()
-
-        for entry_path, entry in iter_cache_entries(self.cache_dir):
-            new_stats.entry_count += 1
-            new_stats.total_size_bytes += entry.size_bytes
-
-            if new_stats.oldest_entry is None or entry.created_at < new_stats.oldest_entry:
-                new_stats.oldest_entry = entry.created_at
-            if new_stats.newest_entry is None or entry.created_at > new_stats.newest_entry:
-                new_stats.newest_entry = entry.created_at
-
+        new_stats = refresh_cache_stats(self.cache_dir)
         with self._stats_lock:
             self._stats = new_stats
             return self._stats
@@ -244,48 +222,10 @@ class AnalysisCache:
     def get_entry_metadata(
         self, binary_data: bytes, analysis_type: str, options: dict[str, Any] | None = None
     ) -> dict[str, Any] | None:
-        options = options or {}
-        key = CacheKey(
-            binary_hash=self._hash_binary(binary_data),
-            analysis_type=analysis_type,
-            options_hash=self._hash_options(options),
-        )
-
-        entry_path = self._get_entry_path(key)
-        if not entry_path.exists():
-            return None
-
-        entry = load_cache_entry(entry_path)
-        if entry is None:
-            return None
-
-        return {
-            "created_at": entry.created_at.isoformat(),
-            "accessed_at": entry.accessed_at.isoformat(),
-            "access_count": entry.access_count,
-            "size_bytes": entry.size_bytes,
-            "metadata": entry.metadata,
-        }
+        return get_entry_metadata(self.cache_dir, binary_data, analysis_type, self._hash_binary, self._hash_options, options)
 
     def list_entries(self, analysis_type: str | None = None) -> list[dict[str, Any]]:
-        entries = []
-
-        for entry_path, entry in iter_cache_entries(self.cache_dir):
-            if analysis_type and entry.key.analysis_type != analysis_type:
-                continue
-
-            entries.append(
-                {
-                    "analysis_type": entry.key.analysis_type,
-                    "created_at": entry.created_at.isoformat(),
-                    "accessed_at": entry.accessed_at.isoformat(),
-                    "access_count": entry.access_count,
-                    "size_bytes": entry.size_bytes,
-                    "binary_hash": entry.key.binary_hash[:16],
-                }
-            )
-
-        return entries
+        return list_entries(self.cache_dir, analysis_type)
 
     def cleanup_expired(self, max_age_days: int | None = None) -> int:
         """
