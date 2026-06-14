@@ -601,10 +601,7 @@ def aes_decrypt_block(block: bytes, key: bytes) -> bytes:
     The keyed-XOR keystream is involutive, so decryption is the same
     operation as encryption.
     """
-    if len(block) != 16:
-        block = block[:16].ljust(16, b"\x00")
-    keystream = _derive_block_keystream(key)
-    return bytes(block[i] ^ keystream[i] for i in range(16))
+    return aes_encrypt_block(block, key)
 
 
 def aes_encrypt_string(data: bytes, key: bytes) -> tuple[bytes, bytes]:
