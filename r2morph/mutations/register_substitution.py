@@ -255,11 +255,8 @@ class RegisterSubstitutionPass(MutationPass):
                                         "structural_baseline": baseline,
                                     },
                                 )
-                                if self._validation_manager is not None:
-                                    outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
-                                    if not outcome.passed and mutation_checkpoint is not None:
-                                        self._rollback_mutation(binary, mutation_checkpoint)
-                                        continue
+                                if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
+                                    continue
                                 substituted_count += 1
                                 func_mutations += 1
                             else:

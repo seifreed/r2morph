@@ -366,11 +366,8 @@ class StringObfuscationPass(MutationPass):
                         },
                     )
 
-                    if self._validation_manager is not None:
-                        outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
-                        if not outcome.passed and mutation_checkpoint is not None:
-                            self._rollback_mutation(binary, mutation_checkpoint)
-                            continue
+                    if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
+                        continue
 
                     logger.info(f"Obfuscated string at 0x{addr:x} ({encoding}, key={key}, len={size})")
                     strings_obfuscated += 1

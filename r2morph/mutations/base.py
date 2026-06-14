@@ -224,6 +224,20 @@ class MutationPass(ABC):
         if self._rollback_policy == "fail-fast":
             raise RuntimeError("Mutation-level validation failed")
 
+    def _validate_mutation_or_rollback(self, binary: Any, record: MutationRecord, mutation_checkpoint: Any) -> bool:
+        """Validate a recorded mutation, rolling back to the checkpoint on failure.
+
+        Returns True when the caller should skip the current mutation (continue),
+        and False when the mutation is accepted or no validation manager is bound.
+        """
+        if self._validation_manager is None:
+            return False
+        outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
+        if not outcome.passed and mutation_checkpoint is not None:
+            self._rollback_mutation(binary, mutation_checkpoint)
+            return True
+        return False
+
     def enable(self) -> None:
         """Enable this mutation pass."""
         self.enabled = True

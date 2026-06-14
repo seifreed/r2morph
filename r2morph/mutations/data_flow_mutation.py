@@ -207,11 +207,8 @@ class DataFlowMutationPass(MutationPass):
                                 "structural_baseline": baseline,
                             },
                         )
-                        if self._validation_manager is not None:
-                            outcome = self._validation_manager.validate_mutation(binary, record.to_dict())
-                            if not outcome.passed and mutation_checkpoint is not None:
-                                self._rollback_mutation(binary, mutation_checkpoint)
-                                continue
+                        if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
+                            continue
 
                         logger.info(f"Data flow: substituted {orig_reg} -> {subst_reg} at 0x{addr:x}")
                         func_mutations += 1
