@@ -13,6 +13,16 @@ from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.data_flow_mutation_helpers import (
+    SAFE_INSTRUCTIONS as DATA_FLOW_SAFE_INSTRUCTIONS,
+)
+from r2morph.mutations.data_flow_mutation_helpers import (
+    analyze_function_liveness,
+    find_safe_substitution_candidates,
+    generate_dead_code_with_liveness,
+    get_dead_registers,
+    is_register_safe_to_use,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,26 +43,7 @@ class DataFlowMutationPass(MutationPass):
         - use_reaching_defs: Enable reaching definition analysis (default: True)
     """
 
-    SAFE_INSTRUCTIONS = {
-        "nop",
-        "mov",
-        "xor",
-        "and",
-        "or",
-        "add",
-        "sub",
-        "shl",
-        "shr",
-        "not",
-        "neg",
-        "inc",
-        "dec",
-        "push",
-        "pop",
-        "lea",
-        "test",
-        "cmp",
-    }
+    SAFE_INSTRUCTIONS = DATA_FLOW_SAFE_INSTRUCTIONS
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(name="DataFlowMutation", config=config)
@@ -73,105 +64,10 @@ class DataFlowMutationPass(MutationPass):
         )
 
     def _analyze_function_liveness(self, instructions: list[dict[str, Any]]) -> dict[int, set[str]]:
-        """
-        Perform simple backward liveness analysis.
-
-        Args:
-            instructions: List of instructions with disasm
-
-        Returns:
-            Dict mapping instruction addresses to live register sets
-        """
-        live_in: dict[int, set[str]] = {}
-        live_out: dict[int, set[str]] = {}
-
-        x86_regs = {
-            "rax",
-            "rbx",
-            "rcx",
-            "rdx",
-            "rsi",
-            "rdi",
-            "r8",
-            "r9",
-            "r10",
-            "r11",
-            "r12",
-            "r13",
-            "r14",
-            "r15",
-            "eax",
-            "ebx",
-            "ecx",
-            "edx",
-            "esi",
-            "edi",
-        }
-
-        for insn in reversed(instructions):
-            addr = insn.get("addr", 0)
-            disasm = insn.get("disasm", "").lower()
-
-            used = set()
-            defined = set()
-
-            if "call" in disasm:
-                # SysV AMD64 calling convention: integer arguments are passed
-                # in rdi, rsi, rdx, rcx, r8, r9 (read by the callee) and
-                # every caller-saved register is clobbered (defined by the
-                # call from the caller's perspective). The previous list
-                # confused the two roles -- it used the caller-saved set as
-                # ``used`` and dropped rdi/rsi entirely. Between an arg-load
-                # and the call, rdi/rsi were therefore treated as dead and
-                # ``_find_safe_substitution_candidates`` picked them as
-                # substitute targets, rewriting neighbouring instructions to
-                # write into the very register holding the call argument.
-                used.update(["rdi", "rsi", "rdx", "rcx", "r8", "r9"])
-                defined.update(["rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"])
-
-            parts = disasm.replace(",", " ").replace("[", " [ ").replace("]", " ] ").split()
-
-            for i, part in enumerate(parts):
-                if part in x86_regs:
-                    if i > 0 and parts[i - 1] in (
-                        "mov",
-                        "lea",
-                        "xor",
-                        "and",
-                        "or",
-                        "add",
-                        "sub",
-                        "shl",
-                        "shr",
-                        "not",
-                        "neg",
-                    ):
-                        defined.add(part)
-                    else:
-                        used.add(part)
-
-            next_addr = insn.get("next_addr", 0)
-            succ_live = live_in.get(next_addr, set()) if next_addr else set()
-
-            live_out[addr] = succ_live.copy()
-            live_in[addr] = (used | (succ_live - defined)) & x86_regs
-
-        return live_in
+        return analyze_function_liveness(instructions)
 
     def _get_dead_registers(self, addr: int, live_in: dict[int, set[str]], all_regs: set[str]) -> set[str]:
-        """
-        Get registers that are dead at a given address.
-
-        Args:
-            addr: Instruction address
-            live_in: Liveness information
-            all_regs: All registers under consideration
-
-        Returns:
-            Set of dead registers
-        """
-        live = live_in.get(addr, set())
-        return all_regs - live
+        return get_dead_registers(addr, live_in, all_regs)
 
     def _is_register_safe_to_use(
         self,
@@ -180,27 +76,7 @@ class DataFlowMutationPass(MutationPass):
         live_in: dict[int, set[str]],
         caller_saved: set[str],
     ) -> bool:
-        """
-        Check if a register is safe to use at a given address.
-
-        A register is safe to use if:
-        1. It's caller-saved (scratch)
-        2. It's not live at this point
-
-        Args:
-            reg: Register name
-            addr: Instruction address
-            live_in: Liveness information
-            caller_saved: Set of caller-saved registers
-
-        Returns:
-            True if register is safe to use
-        """
-        if reg not in caller_saved:
-            return False
-
-        live = live_in.get(addr, set())
-        return reg not in live
+        return is_register_safe_to_use(reg, addr, live_in, caller_saved)
 
     def _find_safe_substitution_candidates(
         self,
@@ -208,93 +84,10 @@ class DataFlowMutationPass(MutationPass):
         live_in: dict[int, set[str]],
         arch: str,
     ) -> list[tuple[dict[str, Any], str, str]]:
-        """
-        Find instructions where register substitution is safe.
-
-        Args:
-            instructions: List of instructions
-            live_in: Liveness analysis results
-            arch: Architecture
-
-        Returns:
-            List of (instruction, original_reg, substitute_reg) tuples
-        """
-        candidates = []
-
-        caller_saved_64 = {
-            "rax",
-            "rcx",
-            "rdx",
-            "rsi",
-            "rdi",
-            "r8",
-            "r9",
-            "r10",
-            "r11",
-        }
-        caller_saved_32 = {"eax", "ecx", "edx"}
-
-        caller_saved = caller_saved_64 if arch == "x86_64" else caller_saved_32
-        all_regs = caller_saved.copy()
-
-        for insn in instructions:
-            addr = insn.get("addr", 0)
-            disasm = insn.get("disasm", "").lower()
-
-            mnemonic = disasm.split()[0] if disasm else ""
-            if mnemonic not in self.SAFE_INSTRUCTIONS:
-                continue
-
-            dead_regs = self._get_dead_registers(addr, live_in, all_regs)
-            if not dead_regs:
-                continue
-
-            # sorted() before iterating: caller_saved and dead_regs are
-            # sets (dead_regs = all_regs - live), so their iteration
-            # order is PYTHONHASHSEED-randomized per process. Without a
-            # stable order the `break` picked a non-deterministic
-            # dead_reg and the candidate list order varied, so the
-            # downstream seeded random.sample produced different
-            # mutations across processes with the same seed= -- the same
-            # reproducibility bug fixed in register_substitution.
-            for reg in sorted(caller_saved):
-                if reg in disasm and reg in live_in.get(addr, set()):
-                    for dead_reg in sorted(dead_regs):
-                        candidates.append((insn, reg, dead_reg))
-                        break
-
-        return candidates
+        return find_safe_substitution_candidates(instructions, live_in, arch)
 
     def _generate_dead_code_with_liveness(self, dead_regs: set[str], bits: int, size: int) -> list[str] | None:
-        """
-        Generate dead code that uses dead registers.
-
-        Args:
-            dead_regs: Set of dead registers
-            bits: Architecture bits (32 or 64)
-            size: Target size in bytes
-
-        Returns:
-            List of instructions or None
-        """
-        if not dead_regs:
-            return None
-
-        reg = random.choice(list(dead_regs))
-
-        if bits == 64:
-            patterns = [
-                [f"push {reg}", f"mov {reg}, 0", f"xor {reg}, {reg}", f"pop {reg}"],
-                [f"push {reg}", f"add {reg}, 1", f"sub {reg}, 1", f"pop {reg}"],
-                [f"xor {reg}, {reg}", f"not {reg}", f"not {reg}"],
-            ]
-        else:
-            patterns = [
-                [f"push {reg}", f"mov {reg}, 0", f"pop {reg}"],
-                [f"xor {reg}, {reg}"],
-            ]
-
-        return random.choice(patterns)
+        return generate_dead_code_with_liveness(dead_regs, bits, size)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
