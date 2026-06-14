@@ -10,6 +10,7 @@ from __future__ import annotations
 import logging
 
 from r2morph.core.binary import Binary
+from r2morph.validation.differ_comparison import build_diff_report
 from r2morph.validation.differ_helpers import compare_section_bytes, compute_byte_diffs
 from r2morph.validation.differ_models import (
     BinaryDiff,
@@ -55,97 +56,13 @@ class BinaryDiffer:
         Returns:
             DiffReport with all differences
         """
-        diffs: list[BinaryDiff] = []
-
-        diffs.extend(self._compare_sections())
-        diffs.extend(self._compare_functions())
-        diffs.extend(self._compare_symbols())
-        diffs.extend(self._compare_header())
-
-        report = DiffReport(
-            original_binary=str(self.original.path) if self.original.path else "memory",
-            mutated_binary=str(self.mutated.path) if self.mutated.path else "memory",
-            diffs=diffs,
-        )
-        report._compute_summary()
-
-        return report
+        return build_diff_report(self.original, self.mutated, self.context_bytes)
 
     def _compare_sections(self) -> list[BinaryDiff]:
         """Compare sections between binaries."""
-        diffs: list[BinaryDiff] = []
+        from r2morph.validation.differ_comparison import compare_sections
 
-        try:
-            orig_sections = self.original.get_sections()
-            mut_sections = self.mutated.get_sections()
-        except Exception:
-            return diffs
-
-        orig_names = {s.get("name", ""): s for s in orig_sections}
-        mut_names = {s.get("name", ""): s for s in mut_sections}
-
-        for name in orig_names:
-            if name not in mut_names:
-                diffs.append(
-                    BinaryDiff(
-                        original_path=str(self.original.path) if self.original.path else "",
-                        mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                        diff_type=DiffType.SECTION_REMOVED,
-                        severity=ChangeSeverity.HIGH,
-                        description=f"Section '{name}' removed",
-                    )
-                )
-
-        for name in mut_names:
-            if name not in orig_names:
-                diffs.append(
-                    BinaryDiff(
-                        original_path=str(self.original.path) if self.original.path else "",
-                        mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                        diff_type=DiffType.SECTION_ADDED,
-                        severity=ChangeSeverity.MEDIUM,
-                        description=f"Section '{name}' added",
-                    )
-                )
-
-        for name in set(orig_names.keys()) & set(mut_names.keys()):
-            orig = orig_names[name]
-            mut = mut_names[name]
-
-            orig_addr = orig.get("addr", orig.get("virtual_address", 0))
-            mut_addr = mut.get("addr", mut.get("virtual_address", 0))
-            orig_size = orig.get("size", orig.get("virtual_size", 0))
-            mut_size = mut.get("size", mut.get("virtual_size", 0))
-
-            if orig_addr != mut_addr or orig_size != mut_size:
-                section_diff = SectionDiff(
-                    name=name,
-                    original_address=orig_addr,
-                    mutated_address=mut_addr,
-                    original_size=orig_size,
-                    mutated_size=mut_size,
-                    original_permissions=orig.get("perm", ""),
-                    mutated_permissions=mut.get("perm", ""),
-                )
-
-                byte_diffs = self._compare_section_bytes(orig, mut)
-                section_diff.byte_diffs = byte_diffs
-
-                severity = ChangeSeverity.HIGH if len(byte_diffs) > 10 else ChangeSeverity.MEDIUM
-
-                diffs.append(
-                    BinaryDiff(
-                        original_path=str(self.original.path) if self.original.path else "",
-                        mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                        diff_type=DiffType.SECTION_MODIFIED,
-                        severity=severity,
-                        description=f"Section '{name}' modified",
-                        section_diffs=[section_diff],
-                        byte_diff_count=len(byte_diffs),
-                    )
-                )
-
-        return diffs
+        return compare_sections(self.original, self.mutated, self.context_bytes)
 
     def _compare_section_bytes(self, orig_section: dict, mut_section: dict) -> list[ByteDiff]:
         """Compare bytes within a section."""
@@ -153,107 +70,21 @@ class BinaryDiffer:
 
     def _compare_functions(self) -> list[BinaryDiff]:
         """Compare functions between binaries."""
-        diffs: list[BinaryDiff] = []
+        from r2morph.validation.differ_comparison import compare_functions
 
-        try:
-            orig_funcs = self.original.get_functions()
-            mut_funcs = self.mutated.get_functions()
-        except Exception:
-            return diffs
-
-        orig_addrs = {f.get("offset", f.get("addr", 0)): f for f in orig_funcs}
-        mut_addrs = {f.get("offset", f.get("addr", 0)): f for f in mut_funcs}
-
-        for addr in orig_addrs:
-            if addr not in mut_addrs:
-                diffs.append(
-                    BinaryDiff(
-                        original_path=str(self.original.path) if self.original.path else "",
-                        mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                        diff_type=DiffType.FUNCTION_REMOVED,
-                        severity=ChangeSeverity.HIGH,
-                        description=f"Function at 0x{addr:x} removed",
-                    )
-                )
-
-        for addr in mut_addrs:
-            if addr not in orig_addrs:
-                diffs.append(
-                    BinaryDiff(
-                        original_path=str(self.original.path) if self.original.path else "",
-                        mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                        diff_type=DiffType.FUNCTION_ADDED,
-                        severity=ChangeSeverity.MEDIUM,
-                        description=f"Function at 0x{addr:x} added",
-                    )
-                )
-
-        for addr in set(orig_addrs.keys()) & set(mut_addrs.keys()):
-            orig_func = orig_addrs[addr]
-            mut_func = mut_addrs[addr]
-
-            orig_size = orig_func.get("size", 0)
-            mut_size = mut_func.get("size", 0)
-
-            if orig_size != mut_size:
-                func_diff = FunctionDiff(
-                    name=orig_func.get("name", f"func_{addr:x}"),
-                    address=addr,
-                    original_size=orig_size,
-                    mutated_size=mut_size,
-                )
-                diffs.append(
-                    BinaryDiff(
-                        original_path=str(self.original.path) if self.original.path else "",
-                        mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                        diff_type=DiffType.FUNCTION_MODIFIED,
-                        severity=ChangeSeverity.LOW,
-                        description=f"Function {func_diff.name} size changed",
-                        function_diffs=[func_diff],
-                    )
-                )
-
-        return diffs
+        return compare_functions(self.original, self.mutated)
 
     def _compare_symbols(self) -> list[BinaryDiff]:
         """Compare symbols between binaries."""
-        diffs: list[BinaryDiff] = []
+        from r2morph.validation.differ_comparison import compare_symbols
 
-        return diffs
+        return compare_symbols(self.original, self.mutated)
 
     def _compare_header(self) -> list[BinaryDiff]:
         """Compare binary headers."""
-        diffs: list[BinaryDiff] = []
+        from r2morph.validation.differ_comparison import compare_header
 
-        try:
-            orig_arch = self.original.get_arch_info()
-            mut_arch = self.mutated.get_arch_info()
-        except Exception:
-            return diffs
-
-        if orig_arch.get("arch") != mut_arch.get("arch"):
-            diffs.append(
-                BinaryDiff(
-                    original_path=str(self.original.path) if self.original.path else "",
-                    mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                    diff_type=DiffType.HEADER_MODIFIED,
-                    severity=ChangeSeverity.CRITICAL,
-                    description=f"Architecture changed from {orig_arch.get('arch')} to {mut_arch.get('arch')}",
-                )
-            )
-
-        if orig_arch.get("bits") != mut_arch.get("bits"):
-            diffs.append(
-                BinaryDiff(
-                    original_path=str(self.original.path) if self.original.path else "",
-                    mutated_path=str(self.mutated.path) if self.mutated.path else "",
-                    diff_type=DiffType.HEADER_MODIFIED,
-                    severity=ChangeSeverity.CRITICAL,
-                    description=f"Bits changed from {orig_arch.get('bits')} to {mut_arch.get('bits')}",
-                )
-            )
-
-        return diffs
+        return compare_header(self.original, self.mutated)
 
     def get_function_diff(self, address: int) -> FunctionDiff | None:
         """
