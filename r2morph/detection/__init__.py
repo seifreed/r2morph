@@ -15,8 +15,10 @@ from r2morph.detection.control_flow_detector import (
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
 from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
 from r2morph.detection.obfuscation_detector import (
-    ObfuscationAnalysisResult,
     ObfuscationDetector,
+)
+from r2morph.detection.obfuscation_detector_models import (
+    ObfuscationAnalysisResult,
     ObfuscationType,
 )
 from r2morph.detection.packer_signatures import (
