@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.reporting.report_context import ReportViews
+from r2morph.reporting.report_view_gate_detail import build_gate_detail
 from r2morph.reporting.report_view_projections import _build_category_views, _summarize_rows
 from r2morph.reporting.report_view_validation_detail import build_validation_adjustments_detail
 
@@ -61,32 +62,14 @@ def _build_gate_detail(
     failed_gates_expected_severity: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the only_failed_gates detail section."""
-    gfs = gate_failure_summary or {}
-    return {
-        "priority": failed_gates_rows,
-        "by_pass": failed_gates_by_pass,
-        **_build_category_views(
-            failed_gates_rows,
-            compact_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed"],
-            final_fields=["pass_name", "failure_count", "strictest_expected_severity", "role", "failed", "failures"],
-        ),
-        "grouped_by_pass": failed_gates_rows,
-        "summary": dict(gfs),
-        "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-        "expected_severity_counts": failed_gates_expected_severity,
-        "failed": bool(gfs.get("require_pass_severity_failed")),
-        "failure_count": int(gfs.get("require_pass_severity_failure_count", 0)),
-        "pass_count": len(failed_gates_rows),
-        "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
-        "compact_summary": {
-            "failed": bool(gfs.get("require_pass_severity_failed")),
-            "failure_count": int(gfs.get("require_pass_severity_failure_count", 0)),
-            "pass_count": len(failed_gates_rows),
-            "expected_severity_counts": failed_gates_expected_severity,
-            "severity_priority": [dict(row) for row in gate_failure_severity_priority],
-            "passes": [str(row.get("pass_name")) for row in failed_gates_rows if row.get("pass_name")],
-        },
-    }
+    return build_gate_detail(
+        gate_failure_priority,
+        gate_failure_summary,
+        gate_failure_severity_priority,
+        failed_gates_rows,
+        failed_gates_by_pass,
+        failed_gates_expected_severity,
+    )
 
 
 def _build_validation_adjustments_detail(degraded_rows: list[dict[str, Any]]) -> dict[str, Any]:
