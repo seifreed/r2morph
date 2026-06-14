@@ -36,6 +36,14 @@ SEVERITY_ORDER: dict[str, int] = {
     "clean": 3,
     "not-requested": 4,
 }
+# IMPACT_SEVERITY_ORDER ranks discarded-mutation impact severities (lower =
+# higher impact). These keys are disjoint from SEVERITY_ORDER, which ranks
+# symbolic/validation outcomes; do not conflate the two.
+IMPACT_SEVERITY_ORDER: dict[str, int] = {
+    "high": 0,
+    "medium": 1,
+    "low": 2,
+}
 UNKNOWN_SEVERITY_RANK = 99
 
 # Analysis cache defaults

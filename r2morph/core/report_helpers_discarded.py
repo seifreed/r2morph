@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.core.constants import SEVERITY_ORDER, UNKNOWN_SEVERITY_RANK
+from r2morph.core.constants import IMPACT_SEVERITY_ORDER, UNKNOWN_SEVERITY_RANK
 
 
 def _summarize_discarded_mutations(
@@ -21,7 +21,7 @@ def _summarize_discarded_mutations(
         "skip_invalid_mutation": "low",
         "unknown": "low",
     }
-    severity_order = SEVERITY_ORDER
+    severity_order = IMPACT_SEVERITY_ORDER
     by_pass: dict[str, int] = {}
     by_reason: dict[str, int] = {}
     by_pass_reason: dict[str, dict[str, int]] = {}
@@ -79,7 +79,7 @@ def _build_discarded_mutation_priority(
     discarded_summary: dict[str, Any],
 ) -> list[dict[str, Any]]:
     """Build a stable priority view for discarded mutations."""
-    severity_order = SEVERITY_ORDER
+    severity_order = IMPACT_SEVERITY_ORDER
     rows = [dict(row) for row in discarded_summary.get("by_pass", [])]
     rows.sort(
         key=lambda item: (
@@ -90,4 +90,3 @@ def _build_discarded_mutation_priority(
         )
     )
     return rows
-

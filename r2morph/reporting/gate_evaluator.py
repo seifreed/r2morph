@@ -20,12 +20,6 @@ from r2morph.reporting.gate_failure_summary import (
 )
 from r2morph.reporting.report_gate_severity_policy import _pass_severity_requirements_met
 
-ROLLBACK_SEVERITY_ORDER: dict[str, int] = {
-    "high": 0,
-    "medium": 1,
-    "low": 2,
-}
-
 
 @dataclass
 class GateFailure:
