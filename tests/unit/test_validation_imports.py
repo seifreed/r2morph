@@ -64,6 +64,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.extended_semantic_models",
     "r2morph.validation.validator_runtime",
     "r2morph.validation.validator_execution",
+    "r2morph.validation.validator_execution_files",
     "r2morph.validation.validator_results",
     "r2morph.validation.cfg_integrity_helpers",
     "r2morph.validation.state_merging",

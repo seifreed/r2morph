@@ -10,6 +10,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+from r2morph.validation.validator_execution_files import collect_monitored_files
 from r2morph.validation.validator_runtime import ValidationTestCase
 
 
@@ -72,7 +73,7 @@ def run_binary(binary_path: Path, test_case: ValidationTestCase, timeout: int) -
             "stdout": result.stdout.decode(errors="replace"),
             "stderr": result.stderr.decode(errors="replace"),
             "exitcode": result.returncode,
-            "files": _collect_monitored_files(run_dir, test_case.monitored_files),
+            "files": collect_monitored_files(run_dir, test_case.monitored_files),
         }
 
     except subprocess.TimeoutExpired:
@@ -85,16 +86,3 @@ def run_binary(binary_path: Path, test_case: ValidationTestCase, timeout: int) -
                 shutil.rmtree(run_dir)
             except Exception:
                 pass
-
-
-def _collect_monitored_files(run_dir: Path, monitored_files: list[str]) -> dict[str, str]:
-    """Collect monitored file contents from the run directory."""
-    files: dict[str, str] = {}
-    for rel_path in monitored_files:
-        file_path = run_dir / rel_path
-        if file_path.exists() and file_path.is_file():
-            try:
-                files[rel_path] = file_path.read_bytes().hex()
-            except Exception:
-                files[rel_path] = ""
-    return files
