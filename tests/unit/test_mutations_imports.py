@@ -15,6 +15,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.conflict_semantic",
     "r2morph.mutations.api_hashing_hashes",
     "r2morph.mutations.control_flow_flattening_helpers",
+    "r2morph.mutations.full_cff_helpers",
     "r2morph.mutations.stack_strings_helpers",
     "r2morph.mutations.register_substitution_helpers",
     "r2morph.mutations.instruction_substitution_helpers",
