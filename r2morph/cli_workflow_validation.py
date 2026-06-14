@@ -7,7 +7,7 @@ from typing import Any
 import typer
 from rich import print as rprint
 
-from r2morph.cli_workflow_selection import selected_mutation_passes
+from r2morph.cli_workflow_selection import limited_symbolic_passes
 from r2morph.cli_workflow_validation_policy import build_validation_mode_policy
 from r2morph.core.config import EngineConfig
 from r2morph.reporting import SEVERITY_ORDER
@@ -44,9 +44,7 @@ def resolve_pass_severity_requirements(
     valid_pass_names = set(aliases.values())
     for item in requirements or []:
         if "=" not in item:
-            rprint(
-                f"[bold red]Error:[/bold red] Invalid --require-pass-severity: {item}. Expected PassName=severity"
-            )
+            rprint(f"[bold red]Error:[/bold red] Invalid --require-pass-severity: {item}. Expected PassName=severity")
             raise typer.Exit(2)
         pass_name, severity = item.split("=", 1)
         pass_name = pass_name.strip()
@@ -143,17 +141,7 @@ def _warn_or_block_limited_symbolic(
     allow_limited_symbolic: bool,
 ) -> None:
     """Block symbolic mode for passes that declare limited symbolic support unless explicitly allowed."""
-    limited = []
-    for mutation_name, mutation_pass in selected_mutation_passes(mutations, config, seed=seed):
-        symbolic_support = mutation_pass.get_support().validator_capabilities.get("symbolic", {})
-        if symbolic_support.get("recommended") is False:
-            limited.append(
-                {
-                    "mutation": mutation_name,
-                    "pass_name": mutation_pass.name,
-                    "confidence": symbolic_support.get("confidence", "unknown"),
-                }
-            )
+    limited = limited_symbolic_passes(mutations, config, seed=seed)
     if not limited:
         return
 
