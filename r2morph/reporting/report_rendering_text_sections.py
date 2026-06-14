@@ -5,6 +5,9 @@ from __future__ import annotations
 from rich.console import Console
 
 from r2morph.reporting.report_rendering_primitives import _get_console, create_table
+from r2morph.reporting.report_rendering_text_section_helpers import (
+    build_mismatch_summary_rows,
+)
 
 
 def render_report_filter_messages(
@@ -62,11 +65,7 @@ def render_mismatch_summary_sections(
         ],
     )
 
-    for pass_name, count in sorted(mismatch_counts_by_pass.items(), key=lambda x: -x[1]):
-        observables = mismatch_observables_by_pass.get(pass_name, [])[:3]
-        obs_str = ", ".join(observables)
-        if len(mismatch_observables_by_pass.get(pass_name, [])) > 3:
-            obs_str += "..."
-        table.add_row(pass_name, str(count), obs_str)
+    for row in build_mismatch_summary_rows(mismatch_counts_by_pass, mismatch_observables_by_pass):
+        table.add_row(row["pass_name"], row["count"], row["observables"])
 
     c.print(table)
