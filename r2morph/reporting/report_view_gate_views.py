@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
+
 
 def build_gate_views(
     *,
@@ -47,7 +49,7 @@ def build_gate_views(
         for row in failed_gates_rows
         if row.get("pass_name")
     ]
-    failed_gates_by_pass = {str(row.get("pass_name")): dict(row) for row in failed_gates_rows if row.get("pass_name")}
+    failed_gates_by_pass = _index_rows_by_pass_name(failed_gates_rows)
     failed_gates_expected_severity = dict(
         (gate_failure_summary or {}).get("require_pass_severity_failures_by_expected_severity", {})
     )

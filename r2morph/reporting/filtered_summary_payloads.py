@@ -355,4 +355,3 @@ def _build_general_report_payload(
     if resolved_only_pass_failure is not None:
         filtered_payload["filtered_summary"]["only_pass_failure"] = resolved_only_pass_failure
     return filtered_payload
-

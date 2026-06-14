@@ -47,9 +47,7 @@ def _resolve_filtered_summary_risk_coverage_sources(
     covered = sorted(pass_coverage_buckets.get("covered", list(covered_pass_names)) or list(covered_pass_names))
     if not covered and general_filter_views.get("covered"):
         covered = sorted(str(name) for name in general_filter_views.get("covered", []) if name)
-    uncovered = sorted(
-        pass_coverage_buckets.get("uncovered", list(uncovered_pass_names)) or list(uncovered_pass_names)
-    )
+    uncovered = sorted(pass_coverage_buckets.get("uncovered", list(uncovered_pass_names)) or list(uncovered_pass_names))
     if not uncovered and general_filter_views.get("uncovered"):
         uncovered = sorted(str(name) for name in general_filter_views.get("uncovered", []) if name)
     clean_only = sorted(pass_coverage_buckets.get("clean_only", list(clean_pass_names)) or list(clean_pass_names))

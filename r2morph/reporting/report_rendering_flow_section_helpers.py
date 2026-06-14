@@ -67,9 +67,7 @@ def build_gate_summary_lines(
     if not gate_evaluation:
         return []
 
-    lines = [
-        f"[bold]Gate Evaluation[/bold]: all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}"
-    ]
+    lines = [f"[bold]Gate Evaluation[/bold]: all_passed={'yes' if gate_results.get('all_passed', True) else 'no'}"]
     if gate_requested.get("min_severity") is not None:
         lines.append(
             "  "

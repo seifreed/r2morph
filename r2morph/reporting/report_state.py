@@ -93,6 +93,7 @@ def resolve_mismatch_view(
     )
     return counts_by_pass, observables_by_pass, mismatch_priority or mismatch_view
 
+
 def resolve_pass_filter_sets(
     *,
     summary: dict[str, Any],

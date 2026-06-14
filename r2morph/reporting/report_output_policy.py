@@ -43,7 +43,9 @@ def _emit_report_payload(
     summary_only: bool,
 ) -> None:
     """Write and/or print a filtered report payload."""
-    emit_report_payload(filtered_payload=filtered_payload, output=output, summary_only=summary_only, console_instance=console)
+    emit_report_payload(
+        filtered_payload=filtered_payload, output=output, summary_only=summary_only, console_instance=console
+    )
 
 
 def _enforce_report_requirements(

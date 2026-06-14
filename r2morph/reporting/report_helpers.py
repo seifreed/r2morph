@@ -10,6 +10,7 @@ from typing import Any
 
 from rich.console import Console
 
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
 from r2morph.reporting.report_evidence_sorting import (
     _sort_pass_evidence as _sort_pass_evidence,
 )
@@ -64,7 +65,7 @@ def _normalized_pass_map(
     normalized_pass_results: list[dict[str, Any]],
 ) -> dict[str, dict[str, Any]]:
     """Index normalized per-pass rows by pass name."""
-    return {str(row.get("pass_name")): dict(row) for row in normalized_pass_results if row.get("pass_name")}
+    return _index_rows_by_pass_name(normalized_pass_results)
 
 
 def _validation_context_from_role(role: str, requested_mode: Any, effective_mode: Any) -> dict[str, Any]:

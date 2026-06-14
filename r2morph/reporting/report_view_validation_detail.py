@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
 from r2morph.reporting.report_view_projections import _build_category_views
 
 
@@ -19,7 +20,7 @@ def build_validation_adjustments_detail(degraded_rows: list[dict[str, Any]]) -> 
     }
     return {
         "rows": degraded_rows,
-        "by_pass": {str(row.get("pass_name")): dict(row) for row in degraded_rows if row.get("pass_name")},
+        "by_pass": _index_rows_by_pass_name(degraded_rows),
         **_build_category_views(
             degraded_rows,
             compact_fields=[

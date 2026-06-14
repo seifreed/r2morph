@@ -29,4 +29,3 @@ def build_validation_context_rows(
         )
         for ctx in validation_contexts
     ]
-

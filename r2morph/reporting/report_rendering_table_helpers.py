@@ -45,10 +45,7 @@ def build_degradation_role_rows(
     """Build the degradation role rows in display order."""
     if not degradation_summary.get("degraded_validation"):
         return []
-    return [
-        (role, str(count))
-        for role, count in degradation_summary.get("roles", {}).items()
-    ]
+    return [(role, str(count)) for role, count in degradation_summary.get("roles", {}).items()]
 
 
 def build_mismatch_rows(

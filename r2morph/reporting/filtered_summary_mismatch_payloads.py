@@ -2,6 +2,8 @@
 
 from typing import Any
 
+from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
+
 
 def _build_only_mismatches_filtered_summary(
     *,
@@ -41,7 +43,7 @@ def _build_only_mismatches_filtered_summary(
     compact_by_pass = dict(mismatch_compact_by_pass or {})
     compact_summary = dict(mismatch_compact_summary or {})
     final_by_pass = dict(mismatch_final_by_pass or {})
-    compact_row_by_pass = {str(row.get("pass_name")): dict(row) for row in compact_rows if row.get("pass_name")}
+    compact_row_by_pass = _index_rows_by_pass_name(compact_rows)
     if not final_rows and compact_rows:
         if final_by_pass:
             final_rows = [dict(final_by_pass[pass_name]) for pass_name in sorted(final_by_pass)]
@@ -72,7 +74,7 @@ def _build_only_mismatches_filtered_summary(
             enriched_final_rows.append(enriched)
         final_rows = enriched_final_rows
     if not compact_by_pass and compact_rows:
-        compact_by_pass = {str(row.get("pass_name")): dict(row) for row in compact_rows if row.get("pass_name")}
+        compact_by_pass = _index_rows_by_pass_name(compact_rows)
     if not compact_summary:
         compact_summary = {
             "pass_count": len(compact_rows) or len(filtered_passes),

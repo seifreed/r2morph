@@ -56,9 +56,7 @@ def _resolve_mismatch_view_from_summary(
         }
     if not observables_by_pass and mismatch_view:
         observables_by_pass = {
-            str(row.get("pass_name")): list(row.get("observables", []))
-            for row in mismatch_view
-            if row.get("pass_name")
+            str(row.get("pass_name")): list(row.get("observables", [])) for row in mismatch_view if row.get("pass_name")
         }
     return counts_by_pass, observables_by_pass, mismatch_priority, mismatch_view
 

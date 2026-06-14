@@ -23,11 +23,15 @@ def build_report_filter_messages(
     if only_pass is not None and resolved_only_pass != only_pass:
         messages.append(f"[bold]Pass Filter Resolution[/bold]: {only_pass} -> {resolved_only_pass}")
     if only_pass_failure is not None and resolved_only_pass_failure != only_pass_failure:
-        messages.append(f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}")
+        messages.append(
+            f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}"
+        )
     if only_risky_passes:
         messages.append(f"[bold]Risky Pass Filter[/bold]: {len(selected_risk_pass_names)} risky pass(es) detected")
     if only_uncovered_passes:
-        messages.append(f"[bold]Uncovered Pass Filter[/bold]: {len(selected_risk_pass_names)} uncovered pass(es) detected")
+        messages.append(
+            f"[bold]Uncovered Pass Filter[/bold]: {len(selected_risk_pass_names)} uncovered pass(es) detected"
+        )
     if only_covered_passes:
         messages.append(f"[bold]Covered Pass Filter[/bold]: {len(selected_risk_pass_names)} covered pass(es) detected")
     if only_clean_passes:
@@ -37,6 +41,8 @@ def build_report_filter_messages(
             f"[bold]Structural Risk Filter[/bold]: {len(selected_risk_pass_names)} structural-risk pass(es) detected"
         )
     if only_symbolic_risk:
-        messages.append(f"[bold]Symbolic Risk Filter[/bold]: {len(selected_risk_pass_names)} symbolic-risk pass(es) detected")
+        messages.append(
+            f"[bold]Symbolic Risk Filter[/bold]: {len(selected_risk_pass_names)} symbolic-risk pass(es) detected"
+        )
 
     return messages

@@ -16,9 +16,7 @@ def build_symbolic_severity_fallback_rows(summary: dict[str, Any]) -> list[dict[
             "severity": (
                 "mismatch"
                 if int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                else "without-coverage"
-                if int(row.get("without_coverage", 0)) > 0
-                else "bounded-only"
+                else "without-coverage" if int(row.get("without_coverage", 0)) > 0 else "bounded-only"
             ),
             "issue_count": (
                 int(row.get("issue_count", 0))
