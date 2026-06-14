@@ -18,6 +18,7 @@ from r2morph.core import report_helpers_projection as projection_mod
 from r2morph.core import report_helpers_risk as risk_mod
 from r2morph.core import report_helpers_symbolic_summary as symbolic_summary_mod
 from r2morph.core import report_helpers_triage as triage_mod
+from r2morph.reporting import report_evidence_sorting as evidence_sorting_mod
 from r2morph.reporting import report_helpers_symbolic_view as symbolic_view_mod
 
 REEXPORTED_NAMES = [
@@ -40,6 +41,7 @@ REEXPORTED_NAMES = [
     "_summarize_pass_risk_buckets",
     "_summarize_pass_timings",
     "_summarize_structural_evidence",
+    "_sort_pass_evidence",
     "_summarize_symbolic_coverage_by_pass",
     "_summarize_symbolic_issue_passes",
     "_summarize_symbolic_overview",
@@ -147,6 +149,13 @@ def test_canonical_symbolic_view_module_defines_symbolic_view_helpers() -> None:
     ), "report_helpers_symbolic_view missing _summarize_symbolic_view_from_mutations"
 
 
+def test_canonical_evidence_sorting_module_defines_evidence_sorting_helper() -> None:
+    assert hasattr(
+        evidence_sorting_mod,
+        "_sort_pass_evidence",
+    ), "report_evidence_sorting missing _sort_pass_evidence"
+
+
 def test_engine_reexports_are_the_same_objects() -> None:
     for name in REEXPORTED_NAMES:
         assert hasattr(engine_mod, name), f"core.engine no longer re-exports {name}"
@@ -219,6 +228,18 @@ def test_discarded_helpers_are_reexported_from_facade() -> None:
         assert getattr(engine_mod, name) is getattr(
             discarded_mod, name
         ), f"core.engine.{name} diverged from core.report_helpers_discarded.{name}"
+
+
+def test_evidence_sorting_helper_is_reexported_from_facade() -> None:
+    assert getattr(helpers_mod, "_sort_pass_evidence") is getattr(
+        evidence_sorting_mod,
+        "_sort_pass_evidence",
+    ), "core.report_helpers._sort_pass_evidence diverged from report_evidence_sorting._sort_pass_evidence"
+    assert hasattr(engine_mod, "_sort_pass_evidence"), "core.engine no longer re-exports _sort_pass_evidence"
+    assert getattr(engine_mod, "_sort_pass_evidence") is getattr(
+        evidence_sorting_mod,
+        "_sort_pass_evidence",
+    ), "core.engine._sort_pass_evidence diverged from report_evidence_sorting._sort_pass_evidence"
 
 
 def test_symbolic_helpers_are_reexported_from_facade() -> None:

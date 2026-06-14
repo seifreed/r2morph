@@ -32,6 +32,7 @@ from r2morph.core.report_helpers import (  # noqa: F401
     _build_symbolic_summary_for_pass,
     _build_validation_role_map,
     _enrich_validation_policy,
+    _sort_pass_evidence,
     _summarize_degradation_roles,
     _summarize_diff_digest,
     _summarize_discarded_mutations,

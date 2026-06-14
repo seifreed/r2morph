@@ -10,6 +10,9 @@ from typing import Any
 
 from rich.console import Console
 
+from r2morph.reporting.report_evidence_sorting import (
+    _sort_pass_evidence as _sort_pass_evidence,
+)
 from r2morph.reporting.report_helpers_classification import (  # noqa: F401
     _has_structural_risk,
     _has_symbolic_risk,
@@ -58,17 +61,3 @@ def _normalized_pass_map(
 ) -> dict[str, dict[str, Any]]:
     """Index normalized per-pass rows by pass name."""
     return {str(row.get("pass_name")): dict(row) for row in normalized_pass_results if row.get("pass_name")}
-
-
-def _sort_pass_evidence(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Order pass evidence by risk priority for triage."""
-    return sorted(
-        (row for row in rows if row.get("pass_name")),
-        key=lambda row: (
-            -int(row.get("symbolic_binary_mismatched_regions", 0)),
-            -int(row.get("structural_issue_count", 0)),
-            -int(row.get("changed_region_count", 0)),
-            -int(row.get("changed_bytes", 0)),
-            str(row.get("pass_name", "")),
-        ),
-    )
