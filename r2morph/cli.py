@@ -22,6 +22,11 @@ from r2morph.cli_cache_output import (
     build_cache_statistics_lines,
     build_cache_usage_hint,
 )
+from r2morph.cli_output_helpers import (
+    build_binary_analysis_rows,
+    build_function_limit_notice,
+    build_function_rows,
+)
 from r2morph.cli_path_resolution import (
     build_missing_input_help_lines,
     resolve_main_cli_paths,
@@ -161,19 +166,8 @@ def analyze(
             table.add_column("Metric", style="cyan")
             table.add_column("Value", style="green")
 
-            arch = stats["architecture"]
-            table.add_row("Architecture", f"{arch['arch']} ({arch['bits']}-bit)")
-            table.add_row("Format", arch["format"])
-            table.add_row("Endian", arch["endian"])
-            table.add_row("Total Functions", str(stats["total_functions"]))
-            table.add_row("Total Instructions", str(stats["total_instructions"]))
-            table.add_row("Total Basic Blocks", str(stats["total_basic_blocks"]))
-            table.add_row("Total Code Size", f"{stats['total_code_size']} bytes")
-            table.add_row("Avg Function Size", f"{stats['avg_function_size']:.2f} bytes")
-            table.add_row(
-                "Avg Instructions/Function",
-                f"{stats['avg_instructions_per_function']:.2f}",
-            )
+            for label, value in build_binary_analysis_rows(stats):
+                table.add_row(label, value)
 
             console.print(table)
 
@@ -276,20 +270,14 @@ def functions(
             table.add_column("Size", style="yellow")
             table.add_column("Instructions", style="magenta")
 
-            for func in funcs[:limit]:
-                table.add_row(
-                    f"0x{func.address:x}",
-                    func.name,
-                    str(func.size),
-                    str(func.get_instructions_count()),
-                )
+            for address, name, size, instruction_count in build_function_rows(funcs, limit=limit):
+                table.add_row(address, name, size, instruction_count)
 
             console.print(table)
 
-            if len(funcs) > limit:
-                console.print(
-                    f"\n[yellow]Showing {limit} of {len(funcs)} functions. Use --limit to show more.[/yellow]"
-                )
+            notice = build_function_limit_notice(limit, len(funcs))
+            if notice is not None:
+                console.print(f"\n[yellow]{notice}[/yellow]")
 
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")

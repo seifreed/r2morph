@@ -31,6 +31,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_rendering_text_sections",
     "r2morph.reporting.report_rendering_summary_tables",
     "r2morph.reporting.report_rendering_summary_table_helpers",
+    "r2morph.cli_output_helpers",
     "r2morph.reporting.report_pass_list_resolution",
     "r2morph.reporting.report_mutation_selection",
     "r2morph.reporting.report_flow_executor",
