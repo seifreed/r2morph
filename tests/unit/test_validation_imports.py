@@ -24,6 +24,7 @@ VALIDATION_MODULES = [
     "r2morph.validation.leak_detection_models",
     "r2morph.validation.object_tracker",
     "r2morph.validation.fuzzer_inputs",
+    "r2morph.validation.fuzzer_models",
     "r2morph.validation.resource_leak_detection",
     "r2morph.validation.performance_regression_models",
     "r2morph.validation.mutation_fuzzer_types",

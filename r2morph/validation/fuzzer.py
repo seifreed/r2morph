@@ -5,40 +5,13 @@ Fuzzer for testing mutated binaries with random inputs.
 import logging
 import random
 import string
-from dataclasses import dataclass
 from pathlib import Path
 
 from r2morph.validation import fuzzer_inputs
-from r2morph.validation.validator import BinaryValidator, ValidationResult
+from r2morph.validation.fuzzer_models import FuzzResult
+from r2morph.validation.validator import BinaryValidator
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class FuzzResult:
-    """Result of fuzzing campaign."""
-
-    total_tests: int
-    passed: int
-    failed: int
-    crashes: int
-    timeouts: int
-    validation_results: list[ValidationResult]
-
-    @property
-    def success_rate(self) -> float:
-        """Calculate success rate percentage."""
-        return (self.passed / self.total_tests * 100) if self.total_tests > 0 else 0.0
-
-    def __str__(self) -> str:
-        return (
-            f"Fuzz Results:\n"
-            f"  Total: {self.total_tests}\n"
-            f"  Passed: {self.passed} ({self.success_rate:.1f}%)\n"
-            f"  Failed: {self.failed}\n"
-            f"  Crashes: {self.crashes}\n"
-            f"  Timeouts: {self.timeouts}"
-        )
 
 
 class MutationFuzzer:

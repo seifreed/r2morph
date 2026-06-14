@@ -14,7 +14,7 @@ _LAZY_EXPORTS = {
     "ValidationOutcome": "r2morph.validation.manager",
     "ValidationIssue": "r2morph.validation.manager",
     "MutationFuzzer": "r2morph.validation.fuzzer",
-    "FuzzResult": "r2morph.validation.fuzzer",
+    "FuzzResult": "r2morph.validation.fuzzer_models",
     "FuzzConfig": "r2morph.validation.mutation_fuzzer",
     "FuzzTestCase": "r2morph.validation.mutation_fuzzer",
     "MutationFuzzResult": "r2morph.validation.mutation_fuzzer",
