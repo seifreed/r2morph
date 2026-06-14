@@ -4,7 +4,8 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation.validator_execution import hash_text, normalize_output, run_binary
+from r2morph.validation.validator_execution import normalize_output, run_binary
+from r2morph.validation.validator_results import build_validation_result, calculate_similarity
 from r2morph.validation.validator_runtime import (
     RuntimeComparisonConfig,
     ValidationResult,
@@ -158,47 +159,15 @@ class BinaryValidator:
                         errors.append(f"Test {i + 1}: file mismatch for {rel_path}")
                         all_outputs_match = False
 
-        similarity = self._calculate_similarity(original_outputs, mutated_outputs)
-
-        orig_combined = "\n".join(o["stdout"] for o in original_outputs)
-        mut_combined = "\n".join(o["stdout"] for o in mutated_outputs)
-        orig_exitcode = original_outputs[0]["exitcode"] if original_outputs else 0
-        mut_exitcode = mutated_outputs[0]["exitcode"] if mutated_outputs else 0
-
-        result = ValidationResult(
-            passed=all_outputs_match and len(errors) == 0,
-            original_output=orig_combined,
-            mutated_output=mut_combined,
-            original_exitcode=orig_exitcode,
-            mutated_exitcode=mut_exitcode,
+        result = build_validation_result(
+            all_outputs_match=all_outputs_match,
             errors=errors,
-            similarity_score=similarity,
-            compared_signals={
-                "exitcode": self.comparison.compare_exitcode,
-                "stdout": self.comparison.compare_stdout,
-                "stderr": self.comparison.compare_stderr,
-                "files": self.comparison.compare_files,
-                "normalize_whitespace": self.comparison.normalize_whitespace,
-            },
+            original_outputs=original_outputs,
+            mutated_outputs=mutated_outputs,
+            comparison=self.comparison,
             file_differences=file_differences,
-            output_hashes={
-                "original_stdout_sha256": hash_text(orig_combined),
-                "mutated_stdout_sha256": hash_text(mut_combined),
-                "original_stderr_sha256": hash_text("\n".join(o["stderr"] for o in original_outputs)),
-                "mutated_stderr_sha256": hash_text("\n".join(o["stderr"] for o in mutated_outputs)),
-                "normalized_original_stdout_sha256": hash_text(
-                    "\n".join(
-                        normalize_output(o["stdout"], self.comparison.normalize_whitespace) for o in original_outputs
-                    )
-                ),
-                "normalized_mutated_stdout_sha256": hash_text(
-                    "\n".join(
-                        normalize_output(o["stdout"], self.comparison.normalize_whitespace) for o in mutated_outputs
-                    )
-                ),
-            },
             runtime_details=runtime_details,
-            test_cases=[case.to_dict() for case in self.test_cases],
+            test_cases=self.test_cases,
         )
 
         logger.info(f"Validation result: {result}")
@@ -215,38 +184,7 @@ class BinaryValidator:
         Returns:
             Similarity percentage (0-100)
         """
-        if len(original_outputs) != len(mutated_outputs):
-            return 0.0
-
-        total_enabled_checks = 0
-        total_matches = 0
-
-        enabled_dimensions = []
-        if self.comparison.compare_exitcode:
-            enabled_dimensions.append("exitcode")
-        if self.comparison.compare_stdout:
-            enabled_dimensions.append("stdout")
-        if self.comparison.compare_stderr:
-            enabled_dimensions.append("stderr")
-        if self.comparison.compare_files:
-            enabled_dimensions.append("files")
-
-        if not enabled_dimensions:
-            return 100.0
-
-        for orig, mut in zip(original_outputs, mutated_outputs, strict=False):
-            total_enabled_checks += len(enabled_dimensions)
-
-            if self.comparison.compare_exitcode and orig["exitcode"] == mut["exitcode"]:
-                total_matches += 1
-            if self.comparison.compare_stdout and orig["stdout"] == mut["stdout"]:
-                total_matches += 1
-            if self.comparison.compare_stderr and orig["stderr"] == mut["stderr"]:
-                total_matches += 1
-            if self.comparison.compare_files and orig.get("files", {}) == mut.get("files", {}):
-                total_matches += 1
-
-        return (total_matches / total_enabled_checks * 100) if total_enabled_checks > 0 else 0.0
+        return calculate_similarity(original_outputs, mutated_outputs, self.comparison)
 
     def validate_with_inputs(self, original_path: Path, mutated_path: Path, test_inputs: list[str]) -> ValidationResult:
         """
