@@ -15,6 +15,7 @@ from .binary_rewriter_models import BinaryFormat, CodePatch, RelocationEntry, Re
 from .cfo_simplifier import CFOSimplifier
 from .cfo_simplifier_models import CFOPattern, CFOSimplificationResult, ControlFlowBlock, DispatcherInfo
 from .iterative_simplifier import IterativeSimplifier
+from .iterative_simplifier_passes import CFOSimplificationPass, MBASimplificationPass, VMDevirtualizationPass
 from .mba_solver import MBASolver
 from .vm_handler_analyzer import VMHandlerAnalyzer
 from .vm_handler_models import VMArchitecture, VMHandler, VMHandlerType
@@ -24,6 +25,9 @@ try:
     from .iterative_simplifier import (
         SimplificationStrategy as SimplificationStrategy,
     )
+    from .iterative_simplifier_passes import CFOSimplificationPass as CFOSimplificationPass
+    from .iterative_simplifier_passes import MBASimplificationPass as MBASimplificationPass
+    from .iterative_simplifier_passes import VMDevirtualizationPass as VMDevirtualizationPass
     from .mba_solver import MBAExpression as MBAExpression
     from .mba_solver import SimplificationResult as SimplificationResult
     from .vm_handler_models import VMArchitecture as VMArchitecture
@@ -55,4 +59,7 @@ __all__ = [
     "RewriteResult",
     "CodePatch",
     "RelocationEntry",
+    "CFOSimplificationPass",
+    "MBASimplificationPass",
+    "VMDevirtualizationPass",
 ]
