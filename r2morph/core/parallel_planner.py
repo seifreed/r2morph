@@ -7,6 +7,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Any
 
+from r2morph.core.parallel_planner_helpers import build_conflict_pairs, build_execution_stages
 from r2morph.protocols import MutationPassProtocol
 
 
@@ -90,52 +91,14 @@ class DependencyResolver:
             self.dependencies.update(custom_dependencies)
 
     def resolve(self, passes: list[MutationPassProtocol]) -> ExecutionPlan:
-        pass_names = {p.name for p in passes}
-
         for p in passes:
             if p.name not in self.dependencies:
                 self.dependencies[p.name] = PassDependency(p.name, requires=[], conflicts=[])
-
-        stages: list[list[str]] = []
-        scheduled: set[str] = set()
-
-        while len(scheduled) < len(pass_names):
-            stage: list[str] = []
-
-            for pass_name in pass_names:
-                if pass_name in scheduled:
-                    continue
-
-                dep = self.dependencies.get(pass_name, PassDependency(pass_name))
-                if any(req not in scheduled for req in dep.requires):
-                    continue
-                if any(conflict in scheduled for conflict in dep.conflicts):
-                    continue
-
-                stage.append(pass_name)
-
-            if not stage:
-                remaining = pass_names - scheduled
-                stage = list(remaining)
-
-            scheduled.update(stage)
-            stages.append(stage)
-
+        stages = build_execution_stages(passes, self.dependencies)
         return ExecutionPlan(passes=passes, dependencies=self.dependencies, stages=stages)
 
     def check_conflicts(self, passes: list[MutationPassProtocol]) -> list[tuple[str, str]]:
-        conflicts: list[tuple[str, str]] = []
-        pass_names = [p.name for p in passes]
-
-        for i, name1 in enumerate(pass_names):
-            for name2 in pass_names[i + 1 :]:
-                dep1 = self.dependencies.get(name1, PassDependency(name1))
-                dep2 = self.dependencies.get(name2, PassDependency(name2))
-
-                if name2 in dep1.conflicts or name1 in dep2.conflicts:
-                    conflicts.append((name1, name2))
-
-        return conflicts
+        return build_conflict_pairs(passes, self.dependencies)
 
 
 __all__ = [

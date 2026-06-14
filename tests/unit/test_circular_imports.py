@@ -146,6 +146,7 @@ REPORTING_MODULES = [
     "r2morph.core.binary_lifecycle",
     "r2morph.core.report_helpers_evidence",
     "r2morph.core.report_helpers_projection",
+    "r2morph.core.parallel_planner_helpers",
     "r2morph.core.report_helpers_validation",
     "r2morph.core.report_helpers_adjustment",
     "r2morph.core.report_helpers_risk",

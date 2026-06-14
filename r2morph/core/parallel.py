@@ -22,7 +22,7 @@ from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.core.binary_file_lock import BinaryFileLock
-from r2morph.core.parallel_checkpointing import has_failures
+from r2morph.core.parallel_checkpointing import has_failures, save_checkpoint
 from r2morph.core.parallel_execution_summary import build_parallel_results_summary
 from r2morph.core.parallel_pass_execution import execute_checkpointed_pass
 from r2morph.core.parallel_planner import (
@@ -106,6 +106,14 @@ class ParallelMutationEngine:
         """Thread-safe results copy."""
         with self._lock:
             return self._results.copy()
+
+    def _save_checkpoint(self, pass_name: str) -> Path:
+        """Save a checkpoint under the binary mutation lock."""
+        if not self.use_checkpoints:
+            return Path("")
+
+        with self._binary_mutation_lock:
+            return save_checkpoint(self.binary.path, self.checkpoint_dir, pass_name, logger)
 
     def execute(
         self,
