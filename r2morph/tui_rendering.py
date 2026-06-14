@@ -5,6 +5,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from r2morph.tui_presets import CONFIG_OPTIONS, CONFIG_TYPES, DEFAULT_PASS_CONFIGS, PASS_DESCRIPTIONS
+
 logger = logging.getLogger(__name__)
 
 
@@ -35,47 +37,9 @@ except ImportError:
 class TUIPassConfig:
     """Configuration options for mutation passes."""
 
-    DEFAULT_CONFIGS: dict[str, dict[str, Any]] = {
-        "nop": {
-            "max_nops": 3,
-            "use_equiv": True,
-            "avoid_critical": True,
-        },
-        "substitute": {
-            "x86_equiv": True,
-            "arm_equiv": True,
-            "preserve_semantics": True,
-        },
-        "register": {
-            "preserve_calling_conv": True,
-            "preserve_callee_saved": True,
-            "max_substitutions": 2,
-        },
-        "block": {
-            "max_blocks": 10,
-            "preserve_entry": True,
-        },
-        "dead-code": {
-            "max_instructions": 5,
-            "use_opaque": True,
-        },
-        "opaque": {
-            "predicate_type": "true",
-            "complexity": "medium",
-        },
-        "expand": {
-            "max_expansion": 3,
-            "preserve_flags": True,
-        },
-        "cff": {
-            "dispatcher_style": "switch",
-            "max_depth": 3,
-        },
-    }
-
     def __init__(self, pass_name: str, config: dict[str, Any] | None = None) -> None:
         self.pass_name = pass_name
-        self.config = config or self.DEFAULT_CONFIGS.get(pass_name, {}).copy()
+        self.config = config or DEFAULT_PASS_CONFIGS.get(pass_name, {}).copy()
 
     def get_option(self, key: str, default: Any = None) -> Any:
         return self.config.get(key, default)
@@ -169,16 +133,7 @@ class TUIFunctionScreen:
 
 
 class TUIPassScreen:
-    PASS_DESCRIPTIONS: dict[str, tuple[str, bool]] = {
-        "nop": ("Insert benign NOP instructions", True),
-        "substitute": ("Replace instructions with equivalents", True),
-        "register": ("Substitute registers safely", True),
-        "block": ("Reorder basic blocks", False),
-        "dead-code": ("Inject dead code sequences", False),
-        "opaque": ("Insert opaque predicates", False),
-        "expand": ("Expand instructions to longer forms", False),
-        "cff": ("Flatten control flow", False),
-    }
+    PASS_DESCRIPTIONS = PASS_DESCRIPTIONS
 
     def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
@@ -200,7 +155,7 @@ class TUIPassScreen:
             marker = "X" if mp.selected else " "
             status = "stable" if mp.is_stable else "experimental"
             status_style = "green" if mp.is_stable else "yellow"
-            desc, _ = self.PASS_DESCRIPTIONS.get(mp.name, (mp.description, mp.is_stable))
+            desc, _ = PASS_DESCRIPTIONS.get(mp.name, (mp.description, mp.is_stable))
             table.add_row(marker, mp.name, f"[{status_style}]{status}[/{status_style}]", desc)
 
         self.console.print(table)
@@ -211,7 +166,7 @@ class TUIPassScreen:
         for i, mp in enumerate(passes):
             marker = "[X]" if mp.selected else "[ ]"
             status = "stable" if mp.is_stable else "experimental"
-            desc, _ = self.PASS_DESCRIPTIONS.get(mp.name, (mp.description, mp.is_stable))
+            desc, _ = PASS_DESCRIPTIONS.get(mp.name, (mp.description, mp.is_stable))
             print(f"{marker} {i}: {mp.name} ({status}) - {desc}")
         print("\n[Enter number to toggle, A for all, N for none, C to continue]")
 
@@ -219,21 +174,8 @@ class TUIPassScreen:
 class TUIConfigScreen:
     """Interactive configuration screen for pass options."""
 
-    CONFIG_TYPES: dict[str, dict[str, type]] = {
-        "nop": {"max_nops": int, "use_equiv": bool, "avoid_critical": bool},
-        "substitute": {"x86_equiv": bool, "arm_equiv": bool, "preserve_semantics": bool},
-        "register": {"preserve_calling_conv": bool, "preserve_callee_saved": bool, "max_substitutions": int},
-        "block": {"max_blocks": int, "preserve_entry": bool},
-        "dead-code": {"max_instructions": int, "use_opaque": bool},
-        "opaque": {"predicate_type": str, "complexity": str},
-        "expand": {"max_expansion": int, "preserve_flags": bool},
-        "cff": {"dispatcher_style": str, "max_depth": int},
-    }
-
-    CONFIG_OPTIONS: dict[str, dict[str, list[str]]] = {
-        "opaque": {"predicate_type": ["true", "false", "mixed"], "complexity": ["low", "medium", "high"]},
-        "cff": {"dispatcher_style": ["switch", "jump_table", "nested"]},
-    }
+    CONFIG_TYPES = CONFIG_TYPES
+    CONFIG_OPTIONS = CONFIG_OPTIONS
 
     def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
@@ -255,9 +197,9 @@ class TUIConfigScreen:
             self._render_basic(pass_name, config)
 
     def _render_rich(self, pass_name: str, config: dict[str, Any] | None = None) -> None:
-        current_config = config or TUIPassConfig.DEFAULT_CONFIGS.get(pass_name, {})
-        config_types = self.CONFIG_TYPES.get(pass_name, {})
-        config_options = self.CONFIG_OPTIONS.get(pass_name, {})
+        current_config = config or DEFAULT_PASS_CONFIGS.get(pass_name, {})
+        config_types = CONFIG_TYPES.get(pass_name, {})
+        config_options = CONFIG_OPTIONS.get(pass_name, {})
 
         table = Table(title=f"Configure {pass_name}")
         table.add_column("Option", style="cyan")
@@ -285,7 +227,7 @@ class TUIConfigScreen:
         self.console.print("\n[Enter option=value to change, D for defaults, C to continue]")
 
     def _render_basic(self, pass_name: str, config: dict[str, Any] | None = None) -> None:
-        current_config = config or TUIPassConfig.DEFAULT_CONFIGS.get(pass_name, {})
+        current_config = config or DEFAULT_PASS_CONFIGS.get(pass_name, {})
         print(f"\n=== Configure {pass_name} ===\n")
 
         for key, val in current_config.items():
@@ -297,7 +239,7 @@ class TUIConfigScreen:
         config = current_config.copy()
 
         if key_input.lower() == "d":
-            return TUIPassConfig.DEFAULT_CONFIGS.get(pass_name, {}).copy()
+            return DEFAULT_PASS_CONFIGS.get(pass_name, {}).copy()
 
         if "=" in key_input:
             parts = key_input.split("=", 1)
@@ -305,7 +247,7 @@ class TUIConfigScreen:
                 option = parts[0].strip()
                 value = parts[1].strip()
 
-                config_types = self.CONFIG_TYPES.get(pass_name, {})
+                config_types = CONFIG_TYPES.get(pass_name, {})
                 expected_type = config_types.get(option, str)
 
                 if expected_type is bool:

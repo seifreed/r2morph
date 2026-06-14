@@ -190,6 +190,7 @@ REPORTING_MODULES = [
     "r2morph.validation.benchmark_reporting_exports",
     "r2morph.cli_workflow_validation",
     "r2morph.tui_filters",
+    "r2morph.tui_presets",
     "r2morph.validation.benchmark_reporting_overview",
     "r2morph.validation.benchmark_reporting_summary",
     "r2morph.validation.benchmark_reporting_text",
