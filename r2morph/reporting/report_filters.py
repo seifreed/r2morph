@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from r2morph.reporting.report_helpers import _select_report_mutations
+from r2morph.reporting.report_pass_filters import resolve_pass_filter_sets as _resolve_pass_filter_sets
 from r2morph.reporting.report_state import resolve_mismatch_view as _resolve_mismatch_view
-from r2morph.reporting.report_state import resolve_pass_filter_sets as _resolve_pass_filter_sets
 
 
 @dataclass
@@ -80,4 +80,3 @@ class ReportFilters:
         mutations: list[dict[str, Any]],
     ) -> tuple[dict[str, int], dict[str, list[str]], list[dict[str, Any]]]:
         return _resolve_mismatch_view(summary=summary, mutations=mutations)
-
