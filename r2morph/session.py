@@ -12,6 +12,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from r2morph.session_helpers import build_checkpoint_path, build_session_metadata
+
 logger = logging.getLogger(__name__)
 
 
@@ -110,7 +112,7 @@ class MorphSession:
         logger.info(f"Creating checkpoint: {name}")
 
         self._checkpoint_seq += 1
-        checkpoint_path = self.session_dir / f"checkpoint_{self._checkpoint_seq:04d}_{name}.bin"
+        checkpoint_path = build_checkpoint_path(self.session_dir, self._checkpoint_seq, name)
         shutil.copy2(self.current_binary, checkpoint_path)
 
         checkpoint = Checkpoint(
@@ -321,19 +323,7 @@ class MorphSession:
 
     def _save_metadata(self) -> None:
         """Save session metadata to JSON."""
-        metadata = {
-            "session_id": self.session_id,
-            "mutations_count": self.mutations_count,
-            "checkpoints": [
-                {
-                    "name": cp.name,
-                    "timestamp": cp.timestamp,
-                    "mutations_applied": cp.mutations_applied,
-                    "description": cp.description,
-                }
-                for cp in self.checkpoints
-            ],
-        }
+        metadata = build_session_metadata(self.session_id, self.mutations_count, self.checkpoints)
 
         metadata_file = self.session_dir / "session.json"
         temp_file = metadata_file.with_suffix(".tmp")
