@@ -9,8 +9,12 @@ from typing import Any
 from r2morph.validation.regression_models import BaselineResult, RegressionTestType
 
 
-def build_detection_baseline(test_id: str, binary_path: str, input_hash: str) -> BaselineResult:
-    """Build a detection-accuracy baseline for a concrete binary."""
+def compute_detection_output(binary_path: str) -> tuple[dict[str, Any], float]:
+    """Run obfuscation detection on a binary and project it to a baseline-comparable dict.
+
+    Returns the projected output dict and the wall-clock execution time. Shared by
+    baseline construction and the live detection test so the two projections cannot drift.
+    """
     from r2morph import Binary
     from r2morph.detection import ObfuscationDetector
 
@@ -22,7 +26,7 @@ def build_detection_baseline(test_id: str, binary_path: str, input_hash: str) ->
         detector = ObfuscationDetector()
         result = detector.analyze_binary(bin_obj)
 
-        expected_output = {
+        output = {
             "packer_detected": result.packer_detected.value if result.packer_detected else None,
             "vm_detected": result.vm_detected,
             "anti_analysis_detected": result.anti_analysis_detected,
@@ -37,7 +41,7 @@ def build_detection_baseline(test_id: str, binary_path: str, input_hash: str) ->
         layers = detector.detect_code_packing_layers(bin_obj)
         metamorphic = detector.detect_metamorphic_engine(bin_obj)
 
-        expected_output.update(
+        output.update(
             {
                 "custom_vm_detected": custom_vm["detected"],
                 "custom_vm_type": custom_vm.get("vm_type", ""),
@@ -48,6 +52,12 @@ def build_detection_baseline(test_id: str, binary_path: str, input_hash: str) ->
         )
 
     execution_time = time.time() - start_time
+    return output, execution_time
+
+
+def build_detection_baseline(test_id: str, binary_path: str, input_hash: str) -> BaselineResult:
+    """Build a detection-accuracy baseline for a concrete binary."""
+    expected_output, execution_time = compute_detection_output(binary_path)
     performance_baseline = {
         "execution_time": round(execution_time, 3),
         "max_allowed_time": round(execution_time * 2.0, 3),

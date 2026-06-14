@@ -155,45 +155,8 @@ class RegressionTestFramework:
 
     def _run_detection_test(self, binary_path: str) -> tuple[dict[str, Any], dict[str, float]]:
         """Run detection accuracy test."""
-        from r2morph import Binary
-        from r2morph.detection import ObfuscationDetector
-
-        start_time = time.time()
-
-        with Binary(binary_path) as bin_obj:
-            bin_obj.analyze()
-
-            detector = ObfuscationDetector()
-            result = detector.analyze_binary(bin_obj)
-
-            actual_output = {
-                "packer_detected": result.packer_detected.value if result.packer_detected else None,
-                "vm_detected": result.vm_detected,
-                "anti_analysis_detected": result.anti_analysis_detected,
-                "control_flow_flattened": result.control_flow_flattened,
-                "mba_detected": result.mba_detected,
-                "confidence_score": round(result.confidence_score, 3),
-                "techniques_count": len(result.obfuscation_techniques),
-                "obfuscation_techniques": sorted(result.obfuscation_techniques[:20], key=lambda t: t.value),
-            }
-
-            custom_vm = detector.detect_custom_virtualizer(bin_obj)
-            layers = detector.detect_code_packing_layers(bin_obj)
-            metamorphic = detector.detect_metamorphic_engine(bin_obj)
-
-            actual_output.update(
-                {
-                    "custom_vm_detected": custom_vm["detected"],
-                    "custom_vm_type": custom_vm.get("vm_type", ""),
-                    "packing_layers": layers["layers_detected"],
-                    "metamorphic_detected": metamorphic["detected"],
-                    "polymorphic_ratio": round(metamorphic.get("polymorphic_ratio", 0.0), 3),
-                }
-            )
-
-        execution_time = time.time() - start_time
+        actual_output, execution_time = regression_baselines.compute_detection_output(binary_path)
         performance_actual = {"execution_time": round(execution_time, 3)}
-
         return actual_output, performance_actual
 
     def _run_api_test(self) -> tuple[dict[str, Any], dict[str, float]]:
@@ -284,6 +247,7 @@ class RegressionTestFramework:
             report.append("")
 
         return "\n".join(report)
+
 
 class RegressionTester:
     """Compatibility wrapper that instantiates the legacy tester on demand."""
