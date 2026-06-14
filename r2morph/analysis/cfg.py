@@ -12,18 +12,19 @@ Includes support for:
 
 import logging
 
+import r2morph.analysis.cfg_models as _cfg_models
 from r2morph.analysis.cfg_builder_helpers import populate_cfg_blocks, populate_cfg_edges
-from r2morph.analysis.cfg_models import (
-    BasicBlock,
-    BlockType,
-    ControlFlowGraph,
-    EdgeType,
-    ExceptionEdge,
-    TailCall,
-)
+from r2morph.analysis.cfg_exception_helpers import detect_exception_edges
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+BasicBlock = _cfg_models.BasicBlock
+BlockType = _cfg_models.BlockType
+ControlFlowGraph = _cfg_models.ControlFlowGraph
+EdgeType = _cfg_models.EdgeType
+ExceptionEdge = _cfg_models.ExceptionEdge
+TailCall = _cfg_models.TailCall
 
 __all__ = [
     "BasicBlock",
@@ -145,88 +146,7 @@ class CFGBuilder:
         Returns:
             List of detected ExceptionEdge instances
         """
-        exception_edges: list[ExceptionEdge] = []
-
-        arch_info = self.binary.get_arch_info()
-        binary_format = arch_info.get("format", "")
-
-        if binary_format.startswith("ELF"):
-            exception_edges = self._detect_elf_exception_edges(cfg, function_address)
-        elif binary_format in ("PE", "PE+"):
-            exception_edges = self._detect_pe_exception_edges(cfg, function_address)
-        elif binary_format in ("Mach-O", "Mach-O-64"):
-            exception_edges = self._detect_macho_exception_edges(cfg, function_address)
-
-        for edge in exception_edges:
-            cfg.add_exception_edge(edge)
-
-        return exception_edges
-
-    def _detect_elf_exception_edges(self, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
-        """
-        Detect exception edges from ELF .eh_frame.
-
-        Args:
-            cfg: ControlFlowGraph
-            function_address: Function address
-
-        Returns:
-            List of ExceptionEdge instances
-        """
-        exception_edges: list[ExceptionEdge] = []
-
-        try:
-            if self.binary.r2 is None:
-                return exception_edges
-            functions = self.binary.r2.cmdj("aflj")
-            if not functions:
-                return exception_edges
-
-            landing_pads = set()
-            for func in functions if isinstance(functions, list) else []:
-                func_addr = func.get("addr", func.get("offset", 0))
-                if func_addr == function_address:
-                    landing_pads.update(func.get("landing_pads", []))
-
-            blocks = list(cfg.blocks.values())
-            for block in blocks:
-                if block.address in landing_pads:
-                    block.block_type = BlockType.LANDING_PAD
-                    block.metadata["is_landing_pad"] = True
-        except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-            logger.debug(f"Failed to detect ELF exception edges: {e}")
-
-        return exception_edges
-
-    def _detect_pe_exception_edges(self, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
-        """
-        Detect exception edges from PE .pdata.
-
-        Args:
-            cfg: ControlFlowGraph
-            function_address: Function address
-
-        Returns:
-            List of ExceptionEdge instances
-        """
-        exception_edges: list[ExceptionEdge] = []
-
-        return exception_edges
-
-    def _detect_macho_exception_edges(self, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:
-        """
-        Detect exception edges from Mach-O __unwind_info.
-
-        Args:
-            cfg: ControlFlowGraph
-            function_address: Function address
-
-        Returns:
-            List of ExceptionEdge instances
-        """
-        exception_edges: list[ExceptionEdge] = []
-
-        return exception_edges
+        return detect_exception_edges(self.binary, cfg, function_address)
 
     def build_all_cfgs(self) -> dict[int, ControlFlowGraph]:
         """
