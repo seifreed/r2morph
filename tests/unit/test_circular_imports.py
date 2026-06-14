@@ -203,6 +203,7 @@ REPORTING_MODULES = [
     "r2morph.analysis.type_inference_convention_resolver",
     "r2morph.analysis.type_inference_interprocedural_params",
     "r2morph.analysis.type_inference_factory",
+    "r2morph.analysis.pointer_analysis_helpers",
     "r2morph.analysis.type_inference_value_analysis",
     "r2morph.analysis.type_inference_arm_aliases",
     "r2morph.analysis.type_inference_interprocedural",

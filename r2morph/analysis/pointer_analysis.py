@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from r2morph.analysis.pointer_analysis_helpers import compute_transitive_aliases, extract_lea_target
 from r2morph.core.binary import Binary
 
 
@@ -46,44 +47,15 @@ class PointerAnalysis:
         addr = insn.get("offset", 0)
 
         if "lea" in disasm:
-            target = self._extract_lea_target(disasm)
+            target = extract_lea_target(disasm)
             if target:
                 if addr not in self._points_to:
                     self._points_to[addr] = set()
                 self._points_to[addr].add(target)
 
-    def _extract_lea_target(self, disasm: str) -> int | None:
-        """Extract LEA target from disassembly."""
-        parts = disasm.split("[")
-        if len(parts) < 2:
-            return None
-
-        bracket_content = parts[1].split("]")[0]
-        if bracket_content.startswith("0x"):
-            try:
-                return int(bracket_content, 16)
-            except ValueError:
-                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                pass
-
-        return None
-
     def _compute_transitive_aliases(self) -> None:
         """Compute transitive alias closure."""
-        for addr in self._points_to:
-            self._aliases[addr] = set(self._points_to[addr])
-
-        changed = True
-        while changed:
-            changed = False
-            for addr, aliases in list(self._aliases.items()):
-                new_aliases = set(aliases)
-                for alias in aliases:
-                    if alias in self._aliases:
-                        new_aliases.update(self._aliases[alias])
-                if new_aliases != aliases:
-                    self._aliases[addr] = new_aliases
-                    changed = True
+        self._aliases = compute_transitive_aliases(self._points_to)
 
     def get_points_to(self, address: int) -> set[int]:
         """
