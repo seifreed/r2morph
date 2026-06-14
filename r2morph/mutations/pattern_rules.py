@@ -64,7 +64,7 @@ def match_push_pop_reg64_reg16(instructions: list[Instruction]) -> list[MatchRes
     return matches
 
 
-def match_mov_reg_0_all(instructions: list[Instruction]) -> list[MatchResult]:
+def _match_reg_zero_imm(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
     from r2morph.analysis.register_tracker import REG_SIZES_MAP
 
     matches = []
@@ -73,7 +73,7 @@ def match_mov_reg_0_all(instructions: list[Instruction]) -> list[MatchResult]:
         ins = instructions[idx]
         next_ins = instructions[idx + 1]
 
-        if not hasattr(ins, "mnemonic") or ins.mnemonic != "mov":
+        if not hasattr(ins, "mnemonic") or ins.mnemonic != mnemonic:
             continue
 
         op1 = getattr(ins, "operand_1", "")
@@ -94,102 +94,54 @@ def match_mov_reg_0_all(instructions: list[Instruction]) -> list[MatchResult]:
         matches.append(MatchResult(index=idx, length=1, operands=[op1]))
 
     return matches
+
+
+def _match_reg_self_op(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
+    from r2morph.analysis.register_tracker import REG_SIZES_MAP
+
+    matches = []
+
+    for idx in range(len(instructions) - 1):
+        ins = instructions[idx]
+        next_ins = instructions[idx + 1]
+
+        if not hasattr(ins, "mnemonic") or ins.mnemonic != mnemonic:
+            continue
+
+        op1 = getattr(ins, "operand_1", "")
+        op2 = getattr(ins, "operand_2", "")
+
+        if not isinstance(op1, str) or not isinstance(op2, str):
+            continue
+
+        if not REG_SIZES_MAP.get(op1.lower() if op1 else "", 0):
+            continue
+
+        if op1.lower() != op2.lower():
+            continue
+
+        if hasattr(next_ins, "type") and next_ins.type == "cjmp":
+            continue
+
+        matches.append(MatchResult(index=idx, length=1, operands=[op1]))
+
+    return matches
+
+
+def match_mov_reg_0_all(instructions: list[Instruction]) -> list[MatchResult]:
+    return _match_reg_zero_imm(instructions, "mov")
 
 
 def match_xor_reg_reg_all(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
-    matches = []
-
-    for idx in range(len(instructions) - 1):
-        ins = instructions[idx]
-        next_ins = instructions[idx + 1]
-
-        if not hasattr(ins, "mnemonic") or ins.mnemonic != "xor":
-            continue
-
-        op1 = getattr(ins, "operand_1", "")
-        op2 = getattr(ins, "operand_2", "")
-
-        if not isinstance(op1, str) or not isinstance(op2, str):
-            continue
-
-        if not REG_SIZES_MAP.get(op1.lower() if op1 else "", 0):
-            continue
-
-        if op1.lower() != op2.lower():
-            continue
-
-        if hasattr(next_ins, "type") and next_ins.type == "cjmp":
-            continue
-
-        matches.append(MatchResult(index=idx, length=1, operands=[op1]))
-
-    return matches
+    return _match_reg_self_op(instructions, "xor")
 
 
 def match_and_reg_0_all(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
-    matches = []
-
-    for idx in range(len(instructions) - 1):
-        ins = instructions[idx]
-        next_ins = instructions[idx + 1]
-
-        if not hasattr(ins, "mnemonic") or ins.mnemonic != "and":
-            continue
-
-        op1 = getattr(ins, "operand_1", "")
-        op2 = getattr(ins, "operand_2", "")
-
-        if not isinstance(op1, str) or not isinstance(op2, str):
-            continue
-
-        if not REG_SIZES_MAP.get(op1.lower() if op1 else "", 0):
-            continue
-
-        if op2 != "0":
-            continue
-
-        if hasattr(next_ins, "type") and next_ins.type == "cjmp":
-            continue
-
-        matches.append(MatchResult(index=idx, length=1, operands=[op1]))
-
-    return matches
+    return _match_reg_zero_imm(instructions, "and")
 
 
 def match_sub_reg_same(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
-    matches = []
-
-    for idx in range(len(instructions) - 1):
-        ins = instructions[idx]
-        next_ins = instructions[idx + 1]
-
-        if not hasattr(ins, "mnemonic") or ins.mnemonic != "sub":
-            continue
-
-        op1 = getattr(ins, "operand_1", "")
-        op2 = getattr(ins, "operand_2", "")
-
-        if not isinstance(op1, str) or not isinstance(op2, str):
-            continue
-
-        if not REG_SIZES_MAP.get(op1.lower() if op1 else "", 0):
-            continue
-
-        if op1.lower() != op2.lower():
-            continue
-
-        if hasattr(next_ins, "type") and next_ins.type == "cjmp":
-            continue
-
-        matches.append(MatchResult(index=idx, length=1, operands=[op1]))
-
-    return matches
+    return _match_reg_self_op(instructions, "sub")
 
 
 def _match_unary_reg(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
