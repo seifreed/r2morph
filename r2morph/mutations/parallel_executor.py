@@ -14,6 +14,7 @@ from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass, MutationRecord
+from r2morph.mutations.parallel_executor_planning import build_task_plans
 
 # File-level write lock to prevent concurrent binary corruption
 _binary_write_lock = threading.Lock()
@@ -83,47 +84,6 @@ class ParallelMutator:
         self.chunk_size = self.config.get("chunk_size", 10)
         self.timeout = self.config.get("timeout", 300)
 
-    def _is_mutation_independent(self, mutation1: MutationRecord, mutation2: MutationRecord) -> bool:
-        """
-        Check if two mutations are independent (can run in parallel).
-
-        Mutations are independent if they:
-        1. Modify different memory regions
-        2. Don't affect shared state (registers, control flow)
-
-        Args:
-            mutation1: First mutation record
-            mutation2: Second mutation record
-
-        Returns:
-            True if mutations are independent
-        """
-        region1_start = mutation1.start_address
-        region1_end = mutation1.end_address
-        region2_start = mutation2.start_address
-        region2_end = mutation2.end_address
-
-        if region1_end < region2_start or region2_end < region1_start:
-            return True
-
-        return False
-
-    def _get_function_chunk(
-        self, functions: list[dict[str, Any]], start_idx: int, end_idx: int
-    ) -> list[dict[str, Any]]:
-        """
-        Get a chunk of functions for processing.
-
-        Args:
-            functions: List of all functions
-            start_idx: Start index
-            end_idx: End index
-
-        Returns:
-            Slice of functions
-        """
-        return functions[start_idx:end_idx]
-
     def _create_tasks(
         self,
         passes: list[MutationPass],
@@ -141,27 +101,15 @@ class ParallelMutator:
         Returns:
             List of MutationTask objects
         """
-        tasks = []
-
-        for pass_instance in passes:
-            if not pass_instance.enabled:
-                continue
-
-            chunk_start = 0
-            while chunk_start < len(functions):
-                chunk_end = min(chunk_start + self.chunk_size, len(functions))
-                func_chunk = functions[chunk_start:chunk_end]
-
-                task = MutationTask(
-                    pass_name=pass_instance.name,
-                    pass_instance=pass_instance,
-                    function_addresses=[f.get("addr", 0) for f in func_chunk],
-                    config=pass_instance.config.copy(),
-                )
-                tasks.append(task)
-                chunk_start = chunk_end
-
-        return tasks
+        return [
+            MutationTask(
+                pass_name=plan.pass_name,
+                pass_instance=plan.pass_instance,
+                function_addresses=plan.function_addresses,
+                config=plan.config,
+            )
+            for plan in build_task_plans(passes, functions, self.chunk_size)
+        ]
 
     def _execute_task(
         self,

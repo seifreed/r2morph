@@ -130,6 +130,7 @@ REPORTING_MODULES = [
     "r2morph.core.engine_output",
     "r2morph.core.engine_wiring",
     "r2morph.core.engine_mutations",
+    "r2morph.mutations.parallel_executor_planning",
     "r2morph.core.parallel_planner",
     "r2morph.core.parallel_executor_models",
     "r2morph.core.parallel_executor_task_helpers",
