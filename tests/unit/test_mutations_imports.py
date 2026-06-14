@@ -26,6 +26,7 @@ MUTATION_MODULES = [
     "r2morph.mutations.anti_disassembly_snippets",
     "r2morph.mutations.self_modifying_code_helpers",
     "r2morph.mutations.constant_unfolding_helpers",
+    "r2morph.mutations.control_flow_flattening_strategies",
     "r2morph.mutations.nop_insertion_helpers",
     "r2morph.mutations.dead_code_injection_helpers",
     "r2morph.mutations.instruction_expansion_helpers",

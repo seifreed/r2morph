@@ -79,17 +79,16 @@ from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_helpers import (
-    assemble_bounded,
     candidate_block_count,
     consume_nop_run,
     find_nop_sequences,
     is_conditional_jump,
     select_candidates,
 )
-from r2morph.utils.dead_code import (
-    generate_arm_dead_code_for_size,
-    generate_nop_sequence,
-    generate_x86_dead_code_for_size,
+from r2morph.mutations.control_flow_flattening_strategies import (
+    apply_block_strategies,
+    assemble_bounded,
+    insert_dead_code_with_predicate,
 )
 
 logger = logging.getLogger(__name__)
@@ -290,8 +289,16 @@ class ControlFlowFlatteningPass(MutationPass):
 
         # Track how many predicates we've added
         predicates_to_add = min(self.opaque_density, len(blocks) - 1)
-        predicates_added = self._apply_block_strategies(
-            binary, blocks, all_instrs, arch_family, bits, predicates_to_add, mutations
+        predicates_added = apply_block_strategies(
+            binary,
+            blocks,
+            all_instrs,
+            arch_family,
+            bits,
+            predicates_to_add,
+            mutations,
+            self._predicate_generator,
+            self._jump_obfuscator,
         )
 
         # Strategy 3: Look for NOP sleds we can replace with dead code + opaque predicates
@@ -301,7 +308,7 @@ class ControlFlowFlatteningPass(MutationPass):
                 break
 
             if nop_size >= 5:  # Need at least 5 bytes for meaningful dead code
-                if self._insert_dead_code_with_predicate(binary, nop_start, nop_size, arch_family, bits):
+                if insert_dead_code_with_predicate(binary, nop_start, nop_size, arch_family, bits):
                     predicates_added += 1
                     mutations["opaque_predicates"] += 1
                     mutations["total"] += 1
@@ -383,89 +390,6 @@ class ControlFlowFlatteningPass(MutationPass):
 
         return sorted(blocks, key=lambda b: b.get("addr", 0))
 
-    def _apply_block_strategies(
-        self,
-        binary: Any,
-        blocks: list[Any],
-        all_instrs: list[Any],
-        arch_family: str,
-        bits: int,
-        predicates_to_add: int,
-        mutations: dict[str, int],
-    ) -> int:
-        """Apply per-block opaque-predicate and jump-obfuscation strategies.
-
-        Mutates ``mutations`` in place; returns the number of predicates added.
-        """
-        predicates_added = 0
-        # Process each block looking for opportunities
-        for i, block in enumerate(blocks):
-            if predicates_added >= predicates_to_add:
-                break
-
-            block_addr = block.get("addr", 0)
-            block_size = block.get("size", 0)
-            block_end = block_addr + block_size
-
-            # Find instructions in this block
-            block_instrs = [ins for ins in all_instrs if block_addr <= ins.get("offset", 0) < block_end]
-
-            if not block_instrs:
-                continue
-
-            # Get last instruction of block
-            last_insn = block_instrs[-1]
-            last_addr = last_insn.get("offset", 0)
-            mnemonic = last_insn.get("mnemonic", "").lower()
-
-            # Strategy 1: Add opaque predicate before conditional jumps
-            if self._is_conditional_jump(mnemonic, arch_family) and self._try_add_opaque_predicate(
-                binary, block_instrs, last_addr, arch_family, bits
-            ):
-                predicates_added += 1
-                mutations["opaque_predicates"] += 1
-                mutations["total"] += 1
-
-            # Strategy 2: Insert jump obfuscation for unconditional jumps
-            if mnemonic == "jmp" and i < len(blocks) - 1:
-                # Try to obfuscate the jump target
-                if self._jump_obfuscator.obfuscate_jump(binary, last_insn, block, arch_family, bits):
-                    mutations["jump_obfuscations"] += 1
-                    mutations["total"] += 1
-
-        return predicates_added
-
-    def _try_add_opaque_predicate(
-        self,
-        binary: Any,
-        block_instrs: list[Any],
-        last_addr: int,
-        arch_family: str,
-        bits: int,
-    ) -> bool:
-        """Insert an opaque predicate into the slack space before a conditional jump.
-
-        Returns True when a predicate was added.
-        """
-        if len(block_instrs) < 2:
-            return False
-
-        prev_insn = block_instrs[-2]
-        prev_addr = prev_insn.get("offset", 0)
-        prev_size = prev_insn.get("size", 0)
-        available_space = last_addr - (prev_addr + prev_size)
-
-        if available_space < 2:
-            return False
-
-        if not self._add_opaque_predicate(binary, prev_addr + prev_size, available_space, arch_family, bits):
-            return False
-
-        logger.debug(
-            f"Added opaque predicate at 0x{prev_addr + prev_size:x} " f"(slack space: {available_space} bytes)"
-        )
-        return True
-
     def _is_conditional_jump(self, mnemonic: str, arch: str) -> bool:
         return is_conditional_jump(mnemonic, arch)
 
@@ -474,86 +398,6 @@ class ControlFlowFlatteningPass(MutationPass):
 
     def _consume_nop_run(self, instructions: list[dict], i: int) -> tuple[int, int, int]:
         return consume_nop_run(instructions, i)
-
-    def _add_opaque_predicate(self, binary: Any, addr: int, available_size: int, arch: str, bits: int) -> bool:
-        """
-        Add an opaque predicate at the specified address.
-
-        Opaque predicates are conditions that always evaluate the same way
-        but are difficult to determine through static analysis. Examples:
-        - (x * x) >= 0 is always true for integers
-        - (x | 1) != 0 is always true
-        - (x & 0) == 0 is always true
-
-        Args:
-            binary: Any instance
-            addr: Address to write the predicate
-            available_size: Maximum bytes available
-            arch: Architecture family
-            bits: Bit width
-
-        Returns:
-            True if successfully written
-        """
-        if arch == "x86":
-            # Generate x86 opaque predicate sequences
-            predicates = self._predicate_generator.get_x86(bits)
-        elif arch == "arm":
-            predicates = self._predicate_generator.get_arm(bits)
-        else:
-            return False
-
-        # Try each predicate until one fits
-        for predicate_insns in predicates:
-            assembled = self._assemble_bounded(binary, predicate_insns, available_size)
-            if assembled is None:
-                continue
-
-            # Pad with NOPs if needed using shared utility
-            if len(assembled) < available_size:
-                assembled += generate_nop_sequence(arch, bits, available_size - len(assembled))
-
-            return bool(binary.write_bytes(addr, assembled))
-
-        return False
-
-    def _insert_dead_code_with_predicate(self, binary: Any, addr: int, size: int, arch: str, bits: int) -> bool:
-        """
-        Insert dead code containing an opaque predicate into a NOP sled.
-
-        This replaces NOPs with more complex code that:
-        1. Never affects program behavior
-        2. Contains opaque predicates to confuse analysis
-        3. Looks like real code to disassemblers
-
-        Uses the shared dead code generation utilities.
-
-        Args:
-            binary: Any instance
-            addr: Start address of NOP sequence
-            size: Size of NOP sequence
-            arch: Architecture family
-            bits: Bit width
-
-        Returns:
-            True if successfully inserted
-        """
-        if arch == "x86":
-            dead_code = generate_x86_dead_code_for_size(size, bits)
-        elif arch == "arm":
-            dead_code = generate_arm_dead_code_for_size(size, bits)
-        else:
-            return False
-
-        assembled = self._assemble_bounded(binary, dead_code, size)
-        if not assembled:
-            return False
-
-        # Pad with NOPs using the shared utility
-        if len(assembled) < size:
-            assembled += generate_nop_sequence(arch, bits, size - len(assembled))
-
-        return bool(binary.write_bytes(addr, assembled))
 
     def _assemble_bounded(self, binary: Any, instructions: list[str], max_size: int) -> bytes | None:
         return assemble_bounded(binary, instructions, max_size)
