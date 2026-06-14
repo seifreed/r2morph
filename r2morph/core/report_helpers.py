@@ -103,6 +103,12 @@ from r2morph.core.report_helpers_validation import (
 from r2morph.reporting.report_evidence_sorting import (
     _sort_pass_evidence as _sort_pass_evidence,
 )
+from r2morph.reporting.report_gate_severity_policy import (
+    _pass_severity_requirements_met as _pass_severity_requirements_met,
+)
+from r2morph.reporting.report_gate_severity_policy import (
+    _severity_threshold_met as _severity_threshold_met,
+)
 from r2morph.reporting.report_helpers_symbolic_view import (
     _summarize_symbolic_view_from_mutations as _summarize_symbolic_view_from_mutations,
 )

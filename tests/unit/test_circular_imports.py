@@ -48,6 +48,7 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_pass_filters",
     "r2morph.reporting.report_gate_filters",
     "r2morph.reporting.report_severity_parsing",
+    "r2morph.reporting.report_gate_severity_policy",
     "r2morph.reporting.report_gate_helpers",
     "r2morph.reporting.report_emitter",
     "r2morph.reporting.report_assembler",
