@@ -11,6 +11,15 @@ import random
 from typing import Any
 
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.instruction_expansion_helpers import (
+    EXPANSION_RULES as INSTRUCTION_EXPANSION_RULES,
+)
+from r2morph.mutations.instruction_expansion_helpers import (
+    build_instruction_from_pattern,
+    get_expansion_size_increase,
+    is_safe_to_expand,
+    match_expansion_pattern,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,53 +63,7 @@ class InstructionExpansionPass(MutationPass):
     # - mov reg, 0 → xor/sub: UNSAFE if ANY flags are live (mov doesn't touch flags)
     # These rules are EXCLUDED to avoid semantic corruption. Only flag-safe
     # expansions are included.
-    EXPANSION_RULES: dict[str, dict[tuple[str, ...], list[list[tuple[str, ...]]]]] = {
-        "x86": {
-            ("imul", "reg", "2"): [
-                [("shl", "reg", "1")],
-                [("add", "reg", "reg")],
-            ],
-            ("imul", "reg", "4"): [
-                [("shl", "reg", "2")],
-            ],
-            ("shl", "reg", "1"): [
-                [("add", "reg", "reg")],
-            ],
-        },
-        "arm": {
-            ("lsl", "reg", "reg", "#1"): [
-                [("add", "reg", "reg", "reg")],
-            ],
-            ("add", "reg", "reg", "#1"): [
-                [("adds", "reg", "reg", "#1")],
-            ],
-            ("mov", "reg", "#0"): [
-                [("eor", "reg", "reg", "reg")],
-                [("sub", "reg", "reg", "reg")],
-            ],
-            ("sub", "reg", "reg", "#1"): [
-                [("subs", "reg", "reg", "#1")],
-            ],
-        },
-        "arm64": {
-            ("lsl", "reg", "reg", "#1"): [
-                [("add", "reg", "reg", "reg")],
-            ],
-            ("mov", "reg", "#0"): [
-                [("eor", "reg", "reg", "reg")],
-                [("sub", "reg", "reg", "reg")],
-            ],
-            ("mov", "reg", "xzr"): [
-                [("eor", "reg", "reg", "reg")],
-            ],
-            ("add", "reg", "reg", "#1"): [
-                [("sub", "reg", "reg", "#-1")],
-            ],
-            ("sub", "reg", "reg", "#1"): [
-                [("add", "reg", "reg", "#-1")],
-            ],
-        },
-    }
+    EXPANSION_RULES = INSTRUCTION_EXPANSION_RULES
 
     def __init__(self, config: dict[str, Any] | None = None):
         """
@@ -127,216 +90,16 @@ class InstructionExpansionPass(MutationPass):
             )
 
     def _match_expansion_pattern(self, instruction: dict[str, Any], arch: str) -> list[list[tuple[str, ...]]]:
-        """
-        Check if instruction matches any expansion pattern.
-
-        Args:
-            instruction: Instruction dictionary from r2
-            arch: Architecture (x86, x64, arm, etc.)
-
-        Returns:
-            List of possible expansion sequences
-        """
-        arch_family = "x86" if arch in ["x86", "x64"] else arch
-
-        if arch_family not in self.EXPANSION_RULES:
-            return []
-
-        disasm = instruction.get("disasm", "").lower()
-        parts = disasm.split()
-
-        if not parts:
-            return []
-
-        mnemonic = parts[0]
-        operands = [p.strip(",") for p in parts[1:]] if len(parts) > 1 else []
-
-        expansions: list[list[tuple[str, ...]]] = []
-
-        size_specifiers = {"dword", "qword", "byte", "word", "ptr"}
-
-        import re
-
-        def is_register_operand(op: str) -> bool:
-            if not op:
-                return False
-            if op in size_specifiers:
-                return False
-            if op.startswith("[") or op.startswith("-["):
-                return False
-            if op.startswith("0x") or op.startswith("-0x"):
-                return False
-            if op.isdigit() or (op.startswith("-") and op[1:].isdigit()):
-                return False
-            if op.endswith("h") or op.endswith("H"):
-                hex_part = op[:-1]
-                if all(c in "0123456789abcdefABCDEF" for c in hex_part):
-                    return False
-            if re.match(r"^\[.+\]$", op):
-                return False
-            if "," in op:
-                return False
-            return True
-
-        def is_immediate_operand(op: str) -> bool:
-            if not op:
-                return False
-            if op.isdigit():
-                return True
-            if op.startswith("-") and len(op) > 1:
-                rest = op[1:]
-                if rest.isdigit():
-                    return True
-                if rest.startswith("0x") and len(rest) > 2:
-                    return all(c in "0123456789abcdefABCDEF" for c in rest[2:])
-            if op.startswith("0x") and len(op) > 2:
-                return all(c in "0123456789abcdefABCDEF" for c in op[2:])
-            if op.endswith("h") or op.endswith("H"):
-                hex_part = op[:-1]
-                return all(c in "0123456789abcdefABCDEF" for c in hex_part)
-            return False
-
-        for pattern, expansion_list in self.EXPANSION_RULES[arch_family].items():
-            pattern_mnemonic = pattern[0]
-            pattern_ops = list(pattern[1:]) if len(pattern) > 1 else []
-
-            if mnemonic != pattern_mnemonic:
-                continue
-
-            if not pattern_ops:
-                expansions.extend(expansion_list)
-                continue
-
-            if len(pattern_ops) == 1 and pattern_ops[0] == "reg":
-                if operands and is_register_operand(operands[0]):
-                    expansions.extend(expansion_list)
-                continue
-
-            if len(pattern_ops) >= 1 and pattern_ops[0] == "reg":
-                if not operands or not is_register_operand(operands[0]):
-                    continue
-
-                if len(pattern_ops) == 2:
-                    second_pattern = pattern_ops[1]
-                    if len(operands) >= 2:
-                        second_op = operands[1]
-                        if second_pattern == "reg":
-                            if is_register_operand(second_op):
-                                expansions.extend(expansion_list)
-                        elif second_pattern == "0":
-                            if second_op == "0" or second_op == "0x0":
-                                expansions.extend(expansion_list)
-                        elif second_pattern == "small_imm":
-                            if is_immediate_operand(second_op):
-                                try:
-                                    val = int(second_op, 16) if second_op.startswith("0x") else int(second_op)
-                                    if 0 <= val <= 255:
-                                        expansions.extend(expansion_list)
-                                except ValueError:
-                                    # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                                    pass
-                        elif second_pattern.isdigit() or second_pattern.startswith("-"):
-                            if is_immediate_operand(second_op):
-                                try:
-                                    expected = int(second_pattern)
-                                    actual = int(second_op, 16) if second_op.startswith("0x") else int(second_op)
-                                    if expected == actual:
-                                        expansions.extend(expansion_list)
-                                except ValueError:
-                                    # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                                    pass
-                        else:
-                            expansions.extend(expansion_list)
-                else:
-                    expansions.extend(expansion_list)
-
-        return expansions
+        return match_expansion_pattern(instruction, arch, self.EXPANSION_RULES)
 
     def _build_instruction_from_pattern(self, pattern: tuple[str, ...], orig_parts: list[str]) -> str | None:
-        """
-        Build a concrete instruction from a pattern and original instruction parts.
-
-        Args:
-            pattern: Expansion pattern tuple (mnemonic, arg1, arg2, ...)
-            orig_parts: Parts of original instruction [mnemonic, operands...]
-
-        Returns:
-            Assembly string or None if cannot build
-        """
-        try:
-            new_mnemonic = pattern[0]
-            new_operands = []
-
-            target_register = None
-            if len(orig_parts) > 1:
-                candidate = orig_parts[1].strip(",").strip()
-
-                # Validation: reject size specifiers and memory operands
-                # Size specifiers like "dword", "qword" appear in instructions like:
-                #   "mov dword [rsp], eax" → parts[1] = "dword"
-                size_specifiers = {"dword", "qword", "byte", "word", "ptr"}
-
-                if candidate and candidate not in size_specifiers and not candidate.startswith("["):
-                    target_register = candidate
-                else:
-                    # Not a valid register operand, skip this expansion
-                    return None
-
-            for _i, param in enumerate(pattern[1:], start=1):
-                if param == "reg":
-                    if target_register:
-                        new_operands.append(target_register)
-                    else:
-                        return None
-                elif param in ["1", "2", "3", "4", "5", "-1"]:
-                    new_operands.append(param)
-                elif param == "0":
-                    new_operands.append("0")
-                else:
-                    new_operands.append(param)
-
-            if new_operands:
-                return f"{new_mnemonic} {', '.join(new_operands)}"
-            else:
-                return new_mnemonic
-
-        except (ValueError, IndexError, KeyError) as e:
-            logger.debug(f"Failed to build instruction from pattern {pattern}: {e}")
-            return None
+        return build_instruction_from_pattern(pattern, orig_parts)
 
     def _get_expansion_size_increase(self, expansion: list[tuple[str, ...]]) -> int:
-        """
-        Calculate how many bytes the expansion adds.
-
-        Args:
-            expansion: Expansion sequence
-
-        Returns:
-            Estimated size increase in bytes
-        """
-        original_size = 3
-        expanded_size = len(expansion) * 3
-        return expanded_size - original_size
+        return get_expansion_size_increase(expansion)
 
     def _is_safe_to_expand(self, instruction: dict[str, Any], function_size: int) -> bool:
-        """
-        Check if it's safe to expand this instruction.
-
-        Args:
-            instruction: Instruction to potentially expand
-            function_size: Current function size
-
-        Returns:
-            True if safe to expand
-        """
-        insn_type = instruction.get("type", "")
-        if insn_type in ["jmp", "cjmp", "call", "ret", "ujmp"]:
-            return False
-
-        if function_size > 1000:
-            return False
-
-        return True
+        return is_safe_to_expand(instruction, function_size)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
