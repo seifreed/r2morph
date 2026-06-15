@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_symbolic_summary import empty_symbolic_counts
+
 
 def _summarize_symbolic_view_from_mutations(
     *,
@@ -22,16 +24,7 @@ def _summarize_symbolic_view_from_mutations(
 
     for mutation in mutations:
         pass_name = mutation.get("pass_name", "unknown")
-        pass_stats = by_pass.setdefault(
-            pass_name,
-            {
-                "symbolic_requested": 0,
-                "observable_match": 0,
-                "observable_mismatch": 0,
-                "bounded_only": 0,
-                "without_coverage": 0,
-            },
-        )
+        pass_stats = by_pass.setdefault(pass_name, empty_symbolic_counts())
         metadata = mutation.get("metadata", {})
         if not metadata.get("symbolic_requested"):
             continue

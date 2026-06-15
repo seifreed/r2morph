@@ -16,6 +16,17 @@ def classify_symbolic_severity(mismatch_count: int, without_coverage: int) -> st
     return "bounded-only"
 
 
+def empty_symbolic_counts() -> dict[str, int]:
+    """Return a fresh zeroed symbolic-counts dict for per-pass aggregation."""
+    return {
+        "symbolic_requested": 0,
+        "observable_match": 0,
+        "observable_mismatch": 0,
+        "bounded_only": 0,
+        "without_coverage": 0,
+    }
+
+
 def _summarize_symbolic_issue_passes(
     mutations: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -83,16 +94,7 @@ def _summarize_symbolic_coverage_by_pass(
         if not metadata.get("symbolic_requested"):
             continue
         pass_name = mutation.get("pass_name", "unknown")
-        stats = by_pass.setdefault(
-            pass_name,
-            {
-                "symbolic_requested": 0,
-                "observable_match": 0,
-                "observable_mismatch": 0,
-                "bounded_only": 0,
-                "without_coverage": 0,
-            },
-        )
+        stats = by_pass.setdefault(pass_name, empty_symbolic_counts())
         stats["symbolic_requested"] += 1
         if metadata.get("symbolic_observable_check_performed"):
             if metadata.get("symbolic_observable_equivalent", False):
@@ -166,18 +168,7 @@ def _build_symbolic_summary_for_pass(
     pass_mutations = [mutation for mutation in mutations if mutation.get("pass_name", "unknown") == pass_name]
     coverage_rows = _summarize_symbolic_coverage_by_pass(pass_mutations)
     issue_rows = _summarize_symbolic_issue_passes(pass_mutations)
-    coverage = (
-        coverage_rows[0]
-        if coverage_rows
-        else {
-            "pass_name": pass_name,
-            "symbolic_requested": 0,
-            "observable_match": 0,
-            "observable_mismatch": 0,
-            "bounded_only": 0,
-            "without_coverage": 0,
-        }
-    )
+    coverage = coverage_rows[0] if coverage_rows else {"pass_name": pass_name, **empty_symbolic_counts()}
     severity = (
         issue_rows[0]["severity"] if issue_rows else "clean" if coverage["symbolic_requested"] > 0 else "not-requested"
     )
@@ -221,11 +212,7 @@ def _summarize_symbolic_overview(
 ) -> dict[str, Any]:
     """Build a compact global symbolic overview."""
     overview: dict[str, Any] = {
-        "symbolic_requested": 0,
-        "observable_match": 0,
-        "observable_mismatch": 0,
-        "bounded_only": 0,
-        "without_coverage": 0,
+        **empty_symbolic_counts(),
         "statuses": dict(symbolic_status_counts),
     }
     for row in symbolic_coverage_by_pass:
