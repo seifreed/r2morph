@@ -88,26 +88,46 @@ class SSAConverter:
         ssa_blocks: dict[int, SSABlock],
         entry_addr: int,
     ) -> None:
-        """Place phi functions at dominance frontiers."""
+        """Place phi functions at the iterated dominance frontier of each
+        variable's definition sites (Cytron et al. SSA construction).
+
+        Runs before renaming, so definition sites are recovered by scanning
+        each block's instructions rather than from the post-rename
+        ``definitions`` map (which is still empty at this point). A block
+        that receives a phi becomes a new definition site, so the frontier
+        is iterated via a worklist until it stabilises.
+        """
         dominance_frontier = self._compute_dominance_frontier(ssa_blocks)
 
+        defsites: dict[str, set[int]] = {}
         for block_addr, ssa_block in ssa_blocks.items():
-            if block_addr not in dominance_frontier:
-                continue
+            for reg in self._block_defined_registers(ssa_block):
+                defsites.setdefault(reg, set()).add(block_addr)
 
-            frontier = dominance_frontier[block_addr]
+        for reg, sites in defsites.items():
+            blocks_with_phi: set[int] = set()
+            worklist = list(sites)
+            while worklist:
+                block_addr = worklist.pop()
+                for frontier_addr in dominance_frontier.get(block_addr, set()):
+                    if frontier_addr in blocks_with_phi:
+                        continue
+                    frontier_block = ssa_blocks.get(frontier_addr)
+                    if frontier_block is None:
+                        continue
+                    frontier_block.phi_functions.append(
+                        self._create_phi_function(reg, frontier_addr, frontier_block.predecessors)
+                    )
+                    blocks_with_phi.add(frontier_addr)
+                    if frontier_addr not in sites:
+                        worklist.append(frontier_addr)
 
-            for pred_addr in ssa_block.predecessors:
-                if pred_addr in frontier:
-                    pred_block = ssa_blocks.get(pred_addr)
-                    if pred_block:
-                        for reg_name, ssa_var in pred_block.definitions.items():
-                            phi = self._create_phi_function(
-                                reg_name,
-                                block_addr,
-                                [pred_addr],
-                            )
-                            ssa_block.phi_functions.append(phi)
+    def _block_defined_registers(self, ssa_block: SSABlock) -> set[str]:
+        """Registers written by any instruction in the block."""
+        defined: set[str] = set()
+        for instruction in ssa_block.instructions:
+            defined |= self._extract_defined_registers(instruction.get("disasm", "").lower())
+        return defined
 
     def _compute_dominance_frontier(
         self,

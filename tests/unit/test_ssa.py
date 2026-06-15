@@ -353,3 +353,69 @@ class TestSSAIntegration:
         result = converter.convert_to_ssa(blocks, cfg_edges)
 
         assert result == {}
+
+
+class TestPhiPlacement:
+    @pytest.fixture
+    def converter(self):
+        return SSAConverter()
+
+    def test_convert_places_phi_at_merge_for_register_defined_on_both_branches(self, converter):
+        blocks = {
+            0x1000: {
+                "instructions": [{"offset": 0x1000, "disasm": "cmp edi, 0"}],
+                "predecessors": [],
+                "successors": [0x1010, 0x1020],
+            },
+            0x1010: {
+                "instructions": [{"offset": 0x1010, "disasm": "mov eax, 1"}],
+                "predecessors": [0x1000],
+                "successors": [0x1030],
+            },
+            0x1020: {
+                "instructions": [{"offset": 0x1020, "disasm": "mov eax, 2"}],
+                "predecessors": [0x1000],
+                "successors": [0x1030],
+            },
+            0x1030: {
+                "instructions": [{"offset": 0x1030, "disasm": "mov ebx, eax"}],
+                "predecessors": [0x1010, 0x1020],
+                "successors": [],
+            },
+        }
+        cfg_edges = [(0x1000, 0x1010), (0x1000, 0x1020), (0x1010, 0x1030), (0x1020, 0x1030)]
+
+        result = converter.convert_to_ssa(blocks, cfg_edges)
+
+        phi_targets = {phi.result.base_name for phi in result[0x1030].phi_functions}
+        assert "eax" in phi_targets
+
+    def test_convert_phi_has_one_operand_per_predecessor(self, converter):
+        blocks = {
+            0x1000: {
+                "instructions": [{"offset": 0x1000, "disasm": "cmp edi, 0"}],
+                "predecessors": [],
+                "successors": [0x1010, 0x1020],
+            },
+            0x1010: {
+                "instructions": [{"offset": 0x1010, "disasm": "mov eax, 1"}],
+                "predecessors": [0x1000],
+                "successors": [0x1030],
+            },
+            0x1020: {
+                "instructions": [{"offset": 0x1020, "disasm": "mov eax, 2"}],
+                "predecessors": [0x1000],
+                "successors": [0x1030],
+            },
+            0x1030: {
+                "instructions": [{"offset": 0x1030, "disasm": "mov ebx, eax"}],
+                "predecessors": [0x1010, 0x1020],
+                "successors": [],
+            },
+        }
+        cfg_edges = [(0x1000, 0x1010), (0x1000, 0x1020), (0x1010, 0x1030), (0x1020, 0x1030)]
+
+        result = converter.convert_to_ssa(blocks, cfg_edges)
+
+        eax_phi = next(phi for phi in result[0x1030].phi_functions if phi.result.base_name == "eax")
+        assert len(eax_phi.operands) == 2
