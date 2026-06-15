@@ -6,10 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-def create_binary_reader(
-    r2: Any,
-    lazy_load: bool = True,
-) -> Any:
+def create_binary_reader(r2: Any) -> Any:
     """Create a BinaryReader."""
     from r2morph.core.reader import BinaryReader
 
