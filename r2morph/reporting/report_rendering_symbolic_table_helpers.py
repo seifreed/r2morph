@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_symbolic_summary import classify_symbolic_severity
 from r2morph.reporting.report_helpers import _sort_pass_evidence
 
 
@@ -44,10 +45,9 @@ def build_symbolic_issue_rows(
     issue_rows = [
         {
             "pass_name": row.get("pass_name", "unknown"),
-            "severity": (
-                "mismatch"
-                if int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                else "without-coverage" if int(row.get("without_coverage", 0)) > 0 else "bounded-only"
+            "severity": classify_symbolic_severity(
+                int(row.get("symbolic_binary_mismatched_regions", 0)),
+                int(row.get("without_coverage", 0)),
             ),
             "observable_mismatch": int(row.get("symbolic_binary_mismatched_regions", 0)),
             "without_coverage": int(row.get("without_coverage", 0)),
@@ -75,11 +75,7 @@ def build_symbolic_issue_rows(
     issue_rows = [
         {
             "pass_name": pass_name,
-            "severity": (
-                "mismatch"
-                if pass_stats["observable_mismatch"] > 0
-                else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-            ),
+            "severity": classify_symbolic_severity(pass_stats["observable_mismatch"], pass_stats["without_coverage"]),
             "observable_mismatch": pass_stats["observable_mismatch"],
             "without_coverage": pass_stats["without_coverage"],
             "bounded_only": pass_stats["bounded_only"],
@@ -139,11 +135,7 @@ def build_symbolic_severity_rows(
     severity_rows = [
         {
             "pass_name": pass_name,
-            "severity": (
-                "mismatch"
-                if pass_stats["observable_mismatch"] > 0
-                else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-            ),
+            "severity": classify_symbolic_severity(pass_stats["observable_mismatch"], pass_stats["without_coverage"]),
             "issue_count": (
                 pass_stats["observable_mismatch"] + pass_stats["without_coverage"] + pass_stats["bounded_only"]
             ),
@@ -160,10 +152,9 @@ def build_symbolic_severity_rows(
     severity_rows = [
         {
             "pass_name": row.get("pass_name", "unknown"),
-            "severity": (
-                "mismatch"
-                if int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                else "without-coverage" if int(row.get("without_coverage", 0)) > 0 else "bounded-only"
+            "severity": classify_symbolic_severity(
+                int(row.get("symbolic_binary_mismatched_regions", 0)),
+                int(row.get("without_coverage", 0)),
             ),
             "issue_count": (
                 int(row.get("issue_count", 0))

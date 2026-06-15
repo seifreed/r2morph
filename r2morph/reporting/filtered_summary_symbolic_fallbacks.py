@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_symbolic_summary import classify_symbolic_severity
+
 
 def _build_filtered_summary_symbolic_fallback_sections(
     *,
@@ -20,11 +22,7 @@ def _build_filtered_summary_symbolic_fallback_sections(
     symbolic_issue_passes = [
         {
             "pass_name": pass_name,
-            "severity": (
-                "mismatch"
-                if pass_stats["observable_mismatch"] > 0
-                else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-            ),
+            "severity": classify_symbolic_severity(pass_stats["observable_mismatch"], pass_stats["without_coverage"]),
             "observable_mismatch": pass_stats["observable_mismatch"],
             "without_coverage": pass_stats["without_coverage"],
             "bounded_only": pass_stats["bounded_only"],
@@ -47,11 +45,7 @@ def _build_filtered_summary_symbolic_fallback_sections(
     symbolic_severity_by_pass = [
         {
             "pass_name": pass_name,
-            "severity": (
-                "mismatch"
-                if pass_stats["observable_mismatch"] > 0
-                else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-            ),
+            "severity": classify_symbolic_severity(pass_stats["observable_mismatch"], pass_stats["without_coverage"]),
             "issue_count": pass_stats["observable_mismatch"]
             + pass_stats["without_coverage"]
             + pass_stats["bounded_only"],

@@ -7,6 +7,15 @@ from typing import Any
 from r2morph.core.constants import SEVERITY_ORDER, UNKNOWN_SEVERITY_RANK
 
 
+def classify_symbolic_severity(mismatch_count: int, without_coverage: int) -> str:
+    """Classify a pass's symbolic severity from its mismatch and coverage counts."""
+    if mismatch_count > 0:
+        return "mismatch"
+    if without_coverage > 0:
+        return "without-coverage"
+    return "bounded-only"
+
+
 def _summarize_symbolic_issue_passes(
     mutations: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -42,11 +51,7 @@ def _summarize_symbolic_issue_passes(
     for pass_name, stats in by_pass.items():
         if stats["observable_mismatch"] == 0 and stats["without_coverage"] == 0 and stats["bounded_only"] == 0:
             continue
-        severity = (
-            "mismatch"
-            if stats["observable_mismatch"] > 0
-            else "without-coverage" if stats["without_coverage"] > 0 else "bounded-only"
-        )
+        severity = classify_symbolic_severity(stats["observable_mismatch"], stats["without_coverage"])
         issue_rows.append(
             {
                 "pass_name": pass_name,
@@ -230,4 +235,3 @@ def _summarize_symbolic_overview(
         overview["bounded_only"] += int(row.get("bounded_only", 0))
         overview["without_coverage"] += int(row.get("without_coverage", 0))
     return overview
-

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.report_helpers_symbolic_summary import classify_symbolic_severity
+
 
 def build_symbolic_severity_fallback_rows(summary: dict[str, Any]) -> list[dict[str, Any]]:
     """
@@ -13,10 +15,9 @@ def build_symbolic_severity_fallback_rows(summary: dict[str, Any]) -> list[dict[
     severity_rows = [
         {
             "pass_name": row.get("pass_name", "unknown"),
-            "severity": (
-                "mismatch"
-                if int(row.get("symbolic_binary_mismatched_regions", 0)) > 0
-                else "without-coverage" if int(row.get("without_coverage", 0)) > 0 else "bounded-only"
+            "severity": classify_symbolic_severity(
+                int(row.get("symbolic_binary_mismatched_regions", 0)),
+                int(row.get("without_coverage", 0)),
             ),
             "issue_count": (
                 int(row.get("issue_count", 0))

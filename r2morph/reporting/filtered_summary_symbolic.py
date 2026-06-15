@@ -7,6 +7,7 @@ changes. Called only by the pass-section orchestrator; never call back into it.
 
 from typing import Any
 
+from r2morph.core.report_helpers_symbolic_summary import classify_symbolic_severity
 from r2morph.reporting.report_helpers import _sort_pass_evidence, _visible_rows_from_map
 
 
@@ -15,11 +16,7 @@ def _symbolic_issue_passes_from_by_pass(by_pass: dict[str, dict[str, int]]) -> l
     return [
         {
             "pass_name": pass_name,
-            "severity": (
-                "mismatch"
-                if pass_stats["observable_mismatch"] > 0
-                else "without-coverage" if pass_stats["without_coverage"] > 0 else "bounded-only"
-            ),
+            "severity": classify_symbolic_severity(pass_stats["observable_mismatch"], pass_stats["without_coverage"]),
             "observable_mismatch": pass_stats["observable_mismatch"],
             "without_coverage": pass_stats["without_coverage"],
             "bounded_only": pass_stats["bounded_only"],
