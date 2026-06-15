@@ -14,14 +14,14 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     import angr
-    from angr import Project, SimState
+    from angr import Project
     from angr.analyses import CFGFast
 
     ANGR_AVAILABLE = True
 else:
     try:
         import angr
-        from angr import Project, SimState
+        from angr import Project
         from angr.analyses import CFGFast
 
         ANGR_AVAILABLE = True
@@ -29,7 +29,6 @@ else:
         ANGR_AVAILABLE = False
         angr = None
         Project = None
-        SimState = None
         CFGFast = None
 
 from r2morph.analysis.cfg import ControlFlowGraph
