@@ -13,6 +13,7 @@ from r2morph.reporting.filtered_summary_builder import (
 from r2morph.reporting.filtered_summary_builder import (
     _build_report_filters as _build_report_filters_impl,
 )
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_context_gate_state import (
     _resolve_failed_gates_view as _resolve_failed_gates_view_impl,
 )
@@ -148,12 +149,7 @@ class ReportBuilder:
         only_status: str | None,
         only_degraded: bool,
         only_failed_gates: bool,
-        only_risky_passes: bool,
-        only_uncovered_passes: bool,
-        only_covered_passes: bool,
-        only_clean_passes: bool,
-        only_structural_risk: bool,
-        only_symbolic_risk: bool,
+        pass_classes: PassClassFilters,
         only_mismatches: bool,
         min_severity: str | None,
         only_expected_severity: str | None,
@@ -165,12 +161,7 @@ class ReportBuilder:
             only_status=only_status,
             only_degraded=only_degraded,
             only_failed_gates=only_failed_gates,
-            only_risky_passes=only_risky_passes,
-            only_uncovered_passes=only_uncovered_passes,
-            only_covered_passes=only_covered_passes,
-            only_clean_passes=only_clean_passes,
-            only_structural_risk=only_structural_risk,
-            only_symbolic_risk=only_symbolic_risk,
+            pass_classes=pass_classes,
             only_mismatches=only_mismatches,
             min_severity=min_severity,
             only_expected_severity=only_expected_severity,

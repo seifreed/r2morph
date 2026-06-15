@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_filter_messages import build_report_filter_messages
 
 
@@ -9,12 +10,14 @@ def test_report_filter_messages_cover_pass_and_risk_filters() -> None:
         resolved_only_pass="pass-b",
         only_pass_failure="fail-a",
         resolved_only_pass_failure="fail-b",
-        only_risky_passes=True,
-        only_uncovered_passes=False,
-        only_covered_passes=True,
-        only_clean_passes=False,
-        only_structural_risk=True,
-        only_symbolic_risk=False,
+        pass_classes=PassClassFilters(
+            only_risky_passes=True,
+            only_uncovered_passes=False,
+            only_covered_passes=True,
+            only_clean_passes=False,
+            only_structural_risk=True,
+            only_symbolic_risk=False,
+        ),
         selected_risk_pass_names={"pass-a", "pass-b"},
     )
 
@@ -34,12 +37,7 @@ def test_report_filter_messages_can_be_empty() -> None:
             resolved_only_pass=None,
             only_pass_failure=None,
             resolved_only_pass_failure=None,
-            only_risky_passes=False,
-            only_uncovered_passes=False,
-            only_covered_passes=False,
-            only_clean_passes=False,
-            only_structural_risk=False,
-            only_symbolic_risk=False,
+            pass_classes=PassClassFilters(),
             selected_risk_pass_names=set(),
         )
         == []

@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.reporting.report_context import PassClassFilters
+
 
 def resolve_general_filtered_passes(
     *,
@@ -14,12 +16,7 @@ def resolve_general_filtered_passes(
     summary_general_summary: dict[str, Any],
     resolved_only_pass: str | None,
     selected_risk_pass_names: set[str],
-    only_risky_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
+    pass_classes: PassClassFilters,
     only_failed_gates: bool,
     gate_failure_priority: list[dict[str, Any]],
 ) -> list[str]:
@@ -35,14 +32,7 @@ def resolve_general_filtered_passes(
         )
     if resolved_only_pass and not resolved_passes and resolved_only_pass in summary_only_pass_view:
         resolved_passes = [resolved_only_pass]
-    if (
-        only_risky_passes
-        or only_structural_risk
-        or only_symbolic_risk
-        or only_uncovered_passes
-        or only_covered_passes
-        or only_clean_passes
-    ):
+    if pass_classes.any_active:
         return sorted(
             pass_name
             for pass_name in selected_risk_pass_names

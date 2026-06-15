@@ -5,6 +5,7 @@ from __future__ import annotations
 from r2morph.reporting.filtered_summary_builder import _build_only_mismatches_payload as filtered_payload_impl
 from r2morph.reporting.filtered_summary_builder import _build_report_filters as report_filters_impl
 from r2morph.reporting.report_builder import ReportBuilder
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_context_gate_state import _resolve_failed_gates_view as resolve_failed_gates_view_impl
 from r2morph.reporting.report_context_resolver import _resolve_report_gate_state as resolve_gate_state_impl
 from r2morph.reporting.report_gate_filters import (
@@ -178,17 +179,20 @@ def test_report_builder_filtered_payload_helpers_delegate_to_shared_helpers() ->
 
 
 def test_report_builder_report_filters_delegate_to_shared_helpers() -> None:
+    pass_classes = PassClassFilters(
+        only_risky_passes=True,
+        only_uncovered_passes=False,
+        only_covered_passes=True,
+        only_clean_passes=False,
+        only_structural_risk=True,
+        only_symbolic_risk=False,
+    )
     assert ReportBuilder.build_report_filters(
         "pass-a",
         "failed",
         True,
         False,
-        True,
-        False,
-        True,
-        False,
-        True,
-        False,
+        pass_classes,
         True,
         "high",
         "medium",
@@ -198,12 +202,7 @@ def test_report_builder_report_filters_delegate_to_shared_helpers() -> None:
         only_status="failed",
         only_degraded=True,
         only_failed_gates=False,
-        only_risky_passes=True,
-        only_uncovered_passes=False,
-        only_covered_passes=True,
-        only_clean_passes=False,
-        only_structural_risk=True,
-        only_symbolic_risk=False,
+        pass_classes=pass_classes,
         only_mismatches=True,
         min_severity="high",
         only_expected_severity="medium",

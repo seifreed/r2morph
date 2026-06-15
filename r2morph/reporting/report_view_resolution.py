@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_pass_list_resolution import (
     resolve_general_filtered_passes as _resolve_general_filtered_passes_impl,
 )
@@ -116,12 +117,7 @@ def _resolve_general_filtered_passes(
     summary_general_summary: dict[str, Any],
     resolved_only_pass: str | None,
     selected_risk_pass_names: set[str],
-    only_risky_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
+    pass_classes: PassClassFilters,
     only_failed_gates: bool,
     gate_failure_priority: list[dict[str, Any]],
 ) -> list[str]:
@@ -133,12 +129,7 @@ def _resolve_general_filtered_passes(
         summary_general_summary=summary_general_summary,
         resolved_only_pass=resolved_only_pass,
         selected_risk_pass_names=selected_risk_pass_names,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
+        pass_classes=pass_classes,
         only_failed_gates=only_failed_gates,
         gate_failure_priority=gate_failure_priority,
     )

@@ -8,6 +8,7 @@ from r2morph.cli_workflow_validation import resolve_min_severity
 from r2morph.cli_workflows import _resolve_report_pass_filter
 from r2morph.reporting.filtered_summary_builder import _build_report_dispatch_state
 from r2morph.reporting.report_command_io import emit_report_output, load_report_payload
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_context_resolver import _resolve_report_context as _resolve_report_context_impl
 from r2morph.reporting.report_orchestrator import _dispatch_report_flow
 from r2morph.reporting.report_resolver import _resolve_general_report_flow_state
@@ -65,16 +66,13 @@ def handle_report_command(
     only_pass_failure: str | None = None,
     only_degraded: bool = False,
     only_failed_gates: bool = False,
-    only_risky_passes: bool = False,
-    only_structural_risk: bool = False,
-    only_symbolic_risk: bool = False,
-    only_clean_passes: bool = False,
-    only_covered_passes: bool = False,
-    only_uncovered_passes: bool = False,
+    pass_classes: PassClassFilters | None = None,
     output_format: str = "json",
     **kwargs: Any,
 ) -> dict[str, Any]:
     """Handle the report command."""
+    if pass_classes is None:
+        pass_classes = PassClassFilters()
     payload = load_report_payload(report_file)
 
     resolved_only_pass = _resolve_report_pass_filter(only_pass)
@@ -127,12 +125,7 @@ def handle_report_command(
         only_status=only_status,
         only_degraded=only_degraded,
         only_failed_gates=only_failed_gates,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
+        pass_classes=pass_classes,
     )
 
     dispatch_state = _build_report_dispatch_state(
@@ -145,12 +138,7 @@ def handle_report_command(
         only_status=only_status,
         only_degraded=only_degraded,
         only_failed_gates=only_failed_gates,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
+        pass_classes=pass_classes,
         output=output,
         summary_only=summary_only,
         require_results=require_results,

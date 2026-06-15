@@ -17,6 +17,7 @@ from r2morph.reporting.filtered_summary_sections import (
     _build_filtered_summary_risk_coverage_sections,
     _populate_filtered_summary_pass_sections,
 )
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_view_resolution import _resolve_general_filtered_passes, _resolve_general_report_views
 
 
@@ -225,12 +226,7 @@ def _build_general_filtered_summary(
     resolved_only_pass: str | None,
     only_risky_filters: bool,
     only_degraded: bool,
-    only_risky_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
+    pass_classes: PassClassFilters,
     only_failed_gates: bool,
 ) -> tuple[dict[str, Any], dict[str, int]]:
     """Build the general filtered_summary payload for report()."""
@@ -280,12 +276,7 @@ def _build_general_filtered_summary(
         summary_general_summary=summary_general_summary,
         resolved_only_pass=resolved_only_pass,
         selected_risk_pass_names=selected_risk_pass_names,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
+        pass_classes=pass_classes,
         only_failed_gates=only_failed_gates,
         gate_failure_priority=gate_failure_priority,
     )
@@ -317,12 +308,7 @@ def _build_general_report_payload(
     only_status: str | None,
     only_degraded: bool,
     only_failed_gates: bool,
-    only_risky_passes: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
+    pass_classes: PassClassFilters,
     min_severity: str | None,
     only_expected_severity: str | None,
     resolved_only_pass_failure: str | None,
@@ -336,12 +322,7 @@ def _build_general_report_payload(
         only_status=only_status,
         only_degraded=only_degraded,
         only_failed_gates=only_failed_gates,
-        only_risky_passes=only_risky_passes,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
+        pass_classes=pass_classes,
         min_severity=min_severity,
         only_expected_severity=only_expected_severity,
         resolved_only_pass_failure=resolved_only_pass_failure,

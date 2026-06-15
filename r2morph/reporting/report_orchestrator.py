@@ -22,12 +22,7 @@ def _dispatch_report_flow_ctx(ctx: ReportFlowContext) -> None:
         resolved_only_pass=ctx.severity.resolved_only_pass,
         only_pass_failure=ctx.filters.only_pass_failure,
         resolved_only_pass_failure=ctx.severity.resolved_only_pass_failure,
-        only_risky_passes=ctx.filters.only_risky_passes,
-        only_uncovered_passes=ctx.filters.only_uncovered_passes,
-        only_covered_passes=ctx.filters.only_covered_passes,
-        only_clean_passes=ctx.filters.only_clean_passes,
-        only_structural_risk=ctx.filters.only_structural_risk,
-        only_symbolic_risk=ctx.filters.only_symbolic_risk,
+        pass_classes=ctx.filters.pass_classes,
         selected_risk_pass_names=ctx.severity.selected_risk_pass_names,
     )
     if ctx.filters.only_mismatches:

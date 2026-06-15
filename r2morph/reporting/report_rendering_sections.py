@@ -7,6 +7,7 @@ nothing in those modules.
 
 from typing import Any
 
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_filter_messages import build_report_filter_messages
 from r2morph.reporting.report_rendering_flow_sections import (
     _render_degradation_sections as _render_degradation_sections,
@@ -32,12 +33,7 @@ def _render_report_filter_messages(
     resolved_only_pass: str | None,
     only_pass_failure: str | None,
     resolved_only_pass_failure: str | None,
-    only_risky_passes: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
+    pass_classes: PassClassFilters,
     selected_risk_pass_names: set[str],
 ) -> None:
     """Render compact filter-resolution/status messages."""
@@ -46,12 +42,7 @@ def _render_report_filter_messages(
         resolved_only_pass=resolved_only_pass,
         only_pass_failure=only_pass_failure,
         resolved_only_pass_failure=resolved_only_pass_failure,
-        only_risky_passes=only_risky_passes,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
+        pass_classes=pass_classes,
         selected_risk_pass_names=selected_risk_pass_names,
     ):
         _get_console().print(message)

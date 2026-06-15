@@ -26,6 +26,7 @@ from r2morph.reporting.filtered_summary_payloads import (
 from r2morph.reporting.filtered_summary_payloads import (
     _build_report_filters as _build_report_filters_impl,
 )
+from r2morph.reporting.report_context import PassClassFilters
 
 
 def _build_base_filtered_summary(*args: Any, **kwargs: Any) -> dict[str, Any]:
@@ -63,12 +64,7 @@ def _build_report_dispatch_state(
     only_status: str | None,
     only_degraded: bool,
     only_failed_gates: bool,
-    only_risky_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
+    pass_classes: PassClassFilters,
     output: Path | None,
     summary_only: bool,
     require_results: bool,
@@ -104,12 +100,12 @@ def _build_report_dispatch_state(
         "only_status": only_status,
         "only_degraded": only_degraded,
         "only_failed_gates": only_failed_gates,
-        "only_risky_passes": only_risky_passes,
-        "only_structural_risk": only_structural_risk,
-        "only_symbolic_risk": only_symbolic_risk,
-        "only_uncovered_passes": only_uncovered_passes,
-        "only_covered_passes": only_covered_passes,
-        "only_clean_passes": only_clean_passes,
+        "only_risky_passes": pass_classes.only_risky_passes,
+        "only_structural_risk": pass_classes.only_structural_risk,
+        "only_symbolic_risk": pass_classes.only_symbolic_risk,
+        "only_uncovered_passes": pass_classes.only_uncovered_passes,
+        "only_covered_passes": pass_classes.only_covered_passes,
+        "only_clean_passes": pass_classes.only_clean_passes,
         "output": output,
         "summary_only": summary_only,
         "require_results": require_results,

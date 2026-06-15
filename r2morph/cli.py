@@ -31,6 +31,7 @@ from r2morph.cli_workflows import _build_runtime_validator, _run_morph_workflow,
 from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT
 from r2morph.reporting.cli_commands import handle_report_command
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.utils.logging import setup_logging
 
 app = typer.Typer(
@@ -681,12 +682,14 @@ def report(
         only_pass_failure=only_pass_failure,
         only_degraded=only_degraded,
         only_failed_gates=only_failed_gates,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_clean_passes=only_clean_passes,
-        only_covered_passes=only_covered_passes,
-        only_uncovered_passes=only_uncovered_passes,
+        pass_classes=PassClassFilters(
+            only_risky_passes=only_risky_passes,
+            only_structural_risk=only_structural_risk,
+            only_symbolic_risk=only_symbolic_risk,
+            only_uncovered_passes=only_uncovered_passes,
+            only_covered_passes=only_covered_passes,
+            only_clean_passes=only_clean_passes,
+        ),
         output_format=output_format,
     )
 

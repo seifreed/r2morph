@@ -37,6 +37,30 @@ class GateState:
     gate_failure_severity_priority: list[dict[str, Any]] = field(default_factory=list)
 
 
+@dataclass(frozen=True)
+class PassClassFilters:
+    """The six pass-class filter flags that travel together through reporting."""
+
+    only_risky_passes: bool = False
+    only_structural_risk: bool = False
+    only_symbolic_risk: bool = False
+    only_uncovered_passes: bool = False
+    only_covered_passes: bool = False
+    only_clean_passes: bool = False
+
+    @property
+    def any_active(self) -> bool:
+        """True if any pass-class filter is set."""
+        return (
+            self.only_risky_passes
+            or self.only_structural_risk
+            or self.only_symbolic_risk
+            or self.only_uncovered_passes
+            or self.only_covered_passes
+            or self.only_clean_passes
+        )
+
+
 @dataclass
 class FilterFlags:
     """Boolean flags controlling which report views to show."""
@@ -54,6 +78,17 @@ class FilterFlags:
     only_pass: str | None = None
     only_pass_failure: str | None = None
     only_expected_severity: str | None = None
+
+    @property
+    def pass_classes(self) -> PassClassFilters:
+        return PassClassFilters(
+            only_risky_passes=self.only_risky_passes,
+            only_structural_risk=self.only_structural_risk,
+            only_symbolic_risk=self.only_symbolic_risk,
+            only_uncovered_passes=self.only_uncovered_passes,
+            only_covered_passes=self.only_covered_passes,
+            only_clean_passes=self.only_clean_passes,
+        )
 
 
 @dataclass

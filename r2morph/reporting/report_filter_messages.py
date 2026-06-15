@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from r2morph.reporting.report_context import PassClassFilters
+
 
 def build_report_filter_messages(
     *,
@@ -9,12 +11,7 @@ def build_report_filter_messages(
     resolved_only_pass: str | None,
     only_pass_failure: str | None,
     resolved_only_pass_failure: str | None,
-    only_risky_passes: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
+    pass_classes: PassClassFilters,
     selected_risk_pass_names: set[str],
 ) -> list[str]:
     """Return compact filter-resolution/status messages."""
@@ -26,21 +23,21 @@ def build_report_filter_messages(
         messages.append(
             f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}"
         )
-    if only_risky_passes:
+    if pass_classes.only_risky_passes:
         messages.append(f"[bold]Risky Pass Filter[/bold]: {len(selected_risk_pass_names)} risky pass(es) detected")
-    if only_uncovered_passes:
+    if pass_classes.only_uncovered_passes:
         messages.append(
             f"[bold]Uncovered Pass Filter[/bold]: {len(selected_risk_pass_names)} uncovered pass(es) detected"
         )
-    if only_covered_passes:
+    if pass_classes.only_covered_passes:
         messages.append(f"[bold]Covered Pass Filter[/bold]: {len(selected_risk_pass_names)} covered pass(es) detected")
-    if only_clean_passes:
+    if pass_classes.only_clean_passes:
         messages.append(f"[bold]Clean Pass Filter[/bold]: {len(selected_risk_pass_names)} clean pass(es) detected")
-    if only_structural_risk:
+    if pass_classes.only_structural_risk:
         messages.append(
             f"[bold]Structural Risk Filter[/bold]: {len(selected_risk_pass_names)} structural-risk pass(es) detected"
         )
-    if only_symbolic_risk:
+    if pass_classes.only_symbolic_risk:
         messages.append(
             f"[bold]Symbolic Risk Filter[/bold]: {len(selected_risk_pass_names)} symbolic-risk pass(es) detected"
         )

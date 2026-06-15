@@ -8,6 +8,7 @@ from typing import Any
 import typer
 from rich.console import Console
 
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_gate_helpers import _gate_failure_result_count, _severity_threshold_met
 from r2morph.reporting.report_output_io import emit_report_payload
 
@@ -87,12 +88,7 @@ def _finalize_report_output(
     failed_gates: bool,
     only_expected_severity: str | None,
     resolved_only_pass_failure: str | None,
-    only_risky_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
+    pass_classes: PassClassFilters,
 ) -> None:
     """Emit a filtered report and enforce CLI exit policies."""
     filtered_summary = filtered_payload.get("filtered_summary", {})
@@ -113,24 +109,10 @@ def _finalize_report_output(
             if (only_expected_severity is not None or resolved_only_pass_failure is not None)
             else _gate_failure_result_count(filtered_summary.get("gate_failures", {})) if only_failed_gates else None
         ),
-        only_risky_passes=(
-            only_risky_passes
-            or only_structural_risk
-            or only_symbolic_risk
-            or only_uncovered_passes
-            or only_covered_passes
-            or only_clean_passes
-        ),
+        only_risky_passes=pass_classes.any_active,
         risky_pass_count=(
             len(filtered_summary.get("passes", []))
-            if (
-                only_risky_passes
-                or only_structural_risk
-                or only_symbolic_risk
-                or only_uncovered_passes
-                or only_covered_passes
-                or only_clean_passes
-            )
+            if pass_classes.any_active
             else len(filtered_summary.get("pass_evidence", []))
         ),
         pass_count=len(filtered_summary.get("passes", [])),

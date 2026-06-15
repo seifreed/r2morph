@@ -3,6 +3,7 @@
 from typing import Any
 
 from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
+from r2morph.reporting.report_context import PassClassFilters
 
 
 def _build_only_mismatches_filtered_summary(
@@ -224,12 +225,7 @@ def _build_report_filters(
     only_status: str | None,
     only_degraded: bool,
     only_failed_gates: bool,
-    only_risky_passes: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
+    pass_classes: PassClassFilters,
     only_mismatches: bool = False,
     min_severity: str | None = None,
     only_expected_severity: str | None = None,
@@ -247,17 +243,17 @@ def _build_report_filters(
         report_filters["only_degraded"] = True
     if only_failed_gates:
         report_filters["only_failed_gates"] = True
-    if only_risky_passes:
+    if pass_classes.only_risky_passes:
         report_filters["only_risky_passes"] = True
-    if only_uncovered_passes:
+    if pass_classes.only_uncovered_passes:
         report_filters["only_uncovered_passes"] = True
-    if only_covered_passes:
+    if pass_classes.only_covered_passes:
         report_filters["only_covered_passes"] = True
-    if only_clean_passes:
+    if pass_classes.only_clean_passes:
         report_filters["only_clean_passes"] = True
-    if only_structural_risk:
+    if pass_classes.only_structural_risk:
         report_filters["only_structural_risk"] = True
-    if only_symbolic_risk:
+    if pass_classes.only_symbolic_risk:
         report_filters["only_symbolic_risk"] = True
     if min_severity is not None:
         report_filters["min_severity"] = min_severity

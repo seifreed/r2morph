@@ -5,6 +5,7 @@ Extracted from cli.py -- no logic changes.
 
 from typing import Any
 
+from r2morph.reporting.report_context import PassClassFilters
 from r2morph.reporting.report_helpers import _summarize_symbolic_view_from_mutations
 from r2morph.reporting.report_mismatch_state import (
     resolve_only_mismatches_state as _resolve_only_mismatches_state_impl,
@@ -41,12 +42,7 @@ def _resolve_general_report_flow_state(
     only_status: str | None,
     only_degraded: bool,
     only_failed_gates: bool,
-    only_risky_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
+    pass_classes: PassClassFilters,
     summary_builder: Any = None,
 ) -> dict[str, Any]:
     """Resolve summary-first state for the general report path.
@@ -59,21 +55,9 @@ def _resolve_general_report_flow_state(
         summary=summary,
         payload=payload,
         pass_results=pass_results,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_risky_passes=only_risky_passes,
+        pass_classes=pass_classes,
     )
-    only_risky_filters = (
-        only_risky_passes
-        or only_structural_risk
-        or only_symbolic_risk
-        or only_uncovered_passes
-        or only_covered_passes
-        or only_clean_passes
-    )
+    only_risky_filters = pass_classes.any_active
     mutations, adjusted_degraded_passes = _select_report_mutations(
         all_mutations=payload.get("mutations", []),
         degraded_validation=degraded_validation,
@@ -130,12 +114,7 @@ def _resolve_general_report_flow_state(
         resolved_only_pass=resolved_only_pass,
         only_risky_filters=only_risky_filters,
         only_degraded=only_degraded,
-        only_risky_passes=only_risky_passes,
-        only_structural_risk=only_structural_risk,
-        only_symbolic_risk=only_symbolic_risk,
-        only_uncovered_passes=only_uncovered_passes,
-        only_covered_passes=only_covered_passes,
-        only_clean_passes=only_clean_passes,
+        pass_classes=pass_classes,
         only_failed_gates=only_failed_gates,
     )
     return {
@@ -171,12 +150,7 @@ def _resolve_general_report_state(
     summary: dict[str, Any],
     payload: dict[str, Any],
     pass_results: dict[str, Any],
-    only_uncovered_passes: bool,
-    only_covered_passes: bool,
-    only_clean_passes: bool,
-    only_structural_risk: bool,
-    only_symbolic_risk: bool,
-    only_risky_passes: bool,
+    pass_classes: PassClassFilters,
 ) -> dict[str, Any]:
     """Resolve summary-first pass filter state for the general report path."""
     pass_support = payload.get("pass_support", {})
@@ -188,19 +162,19 @@ def _resolve_general_report_state(
     covered_pass_names = set(pass_filter_sets["covered"])
     uncovered_pass_names = set(pass_filter_sets["uncovered"])
     selected_risk_pass_names = set(risky_pass_names)
-    if only_uncovered_passes:
+    if pass_classes.only_uncovered_passes:
         selected_risk_pass_names = uncovered_pass_names
-    elif only_covered_passes:
+    elif pass_classes.only_covered_passes:
         selected_risk_pass_names = covered_pass_names
-    elif only_clean_passes:
+    elif pass_classes.only_clean_passes:
         selected_risk_pass_names = clean_pass_names
-    elif only_structural_risk and only_symbolic_risk:
+    elif pass_classes.only_structural_risk and pass_classes.only_symbolic_risk:
         selected_risk_pass_names = structural_risk_pass_names & symbolic_risk_pass_names
-    elif only_structural_risk:
+    elif pass_classes.only_structural_risk:
         selected_risk_pass_names = structural_risk_pass_names
-    elif only_symbolic_risk:
+    elif pass_classes.only_symbolic_risk:
         selected_risk_pass_names = symbolic_risk_pass_names
-    elif only_risky_passes:
+    elif pass_classes.only_risky_passes:
         selected_risk_pass_names = risky_pass_names
     return {
         "pass_support": pass_support,
