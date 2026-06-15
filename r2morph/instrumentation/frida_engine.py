@@ -291,81 +291,45 @@ class FridaEngine:
         return """
         // Anti-Analysis Detection Script
 
+        function hookApis(apis, eventType) {
+            apis.forEach(function(api) {
+                try {
+                    const parts = api.split("!");
+                    const addr = Module.findExportByName(parts[0], parts[1]);
+                    if (addr) {
+                        Interceptor.attach(addr, {
+                            onEnter: function(args) {
+                                send({
+                                    type: eventType,
+                                    api: parts[1],
+                                    address: this.context.pc.toString(),
+                                    timestamp: Date.now()
+                                });
+                            }
+                        });
+                    }
+                } catch (e) {}
+            });
+        }
+
         // Detect debugger checks
-        const debugger_apis = [
+        hookApis([
             "kernel32.dll!IsDebuggerPresent",
             "kernel32.dll!CheckRemoteDebuggerPresent",
             "ntdll.dll!NtQueryInformationProcess"
-        ];
-
-        debugger_apis.forEach(function(api) {
-            try {
-                const parts = api.split("!");
-                const addr = Module.findExportByName(parts[0], parts[1]);
-                if (addr) {
-                    Interceptor.attach(addr, {
-                        onEnter: function(args) {
-                            send({
-                                type: "anti_debug",
-                                api: parts[1],
-                                address: this.context.pc.toString(),
-                                timestamp: Date.now()
-                            });
-                        }
-                    });
-                }
-            } catch (e) {}
-        });
+        ], "anti_debug");
 
         // Detect VM detection attempts
-        const vm_apis = [
+        hookApis([
             "kernel32.dll!GetSystemFirmwareTable",
             "advapi32.dll!RegOpenKeyExW"
-        ];
-
-        vm_apis.forEach(function(api) {
-            try {
-                const parts = api.split("!");
-                const addr = Module.findExportByName(parts[0], parts[1]);
-                if (addr) {
-                    Interceptor.attach(addr, {
-                        onEnter: function(args) {
-                            send({
-                                type: "vm_detection",
-                                api: parts[1],
-                                address: this.context.pc.toString(),
-                                timestamp: Date.now()
-                            });
-                        }
-                    });
-                }
-            } catch (e) {}
-        });
+        ], "vm_detection");
 
         // Detect timing attacks
-        const timing_apis = [
+        hookApis([
             "kernel32.dll!GetTickCount",
             "kernel32.dll!QueryPerformanceCounter"
-        ];
-
-        timing_apis.forEach(function(api) {
-            try {
-                const parts = api.split("!");
-                const addr = Module.findExportByName(parts[0], parts[1]);
-                if (addr) {
-                    Interceptor.attach(addr, {
-                        onEnter: function(args) {
-                            send({
-                                type: "timing_check",
-                                api: parts[1],
-                                address: this.context.pc.toString(),
-                                timestamp: Date.now()
-                            });
-                        }
-                    });
-                }
-            } catch (e) {}
-        });
+        ], "timing_check");
         """
 
     def _create_memory_monitor_script(self) -> str:
