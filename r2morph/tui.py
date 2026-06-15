@@ -142,8 +142,6 @@ class MutationTUI:
             except KeyboardInterrupt:
                 return None
 
-        return None
-
     def _get_input(self) -> str:
         if RICH_AVAILABLE:
             return Prompt.ask(">", console=self.console)
