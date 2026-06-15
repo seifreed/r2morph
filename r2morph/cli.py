@@ -380,7 +380,11 @@ def morph(
         cleared = AnalysisCache().clear()
         console.print(f"[cyan]Cleared {cleared} cache entries[/cyan]")
 
-    unknown = [m for m in mutations if m not in set(PRODUCT_SUPPORT.stable_mutations) | set(PRODUCT_SUPPORT.experimental_mutations)]
+    unknown = [
+        m
+        for m in mutations
+        if m not in set(PRODUCT_SUPPORT.stable_mutations) | set(PRODUCT_SUPPORT.experimental_mutations)
+    ]
     if unknown:
         console.print(f"[bold red]Error:[/bold red] Unknown mutations: {', '.join(unknown)}")
         raise typer.Exit(2)

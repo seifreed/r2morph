@@ -33,25 +33,20 @@ def test_report_builder_gate_state_delegates_to_shared_helpers() -> None:
         "gate_failure_priority": [{"pass_name": "p1", "failures": ["expected <= medium"]}],
         "gate_failure_severity_priority": [{"severity": "medium", "failure_count": 1}],
     }
-    gate_evaluation = {
-        "require_pass_severity_failures": [{"pass_name": "p1", "failures": ["expected <= medium"]}]
-    }
+    gate_evaluation = {"require_pass_severity_failures": [{"pass_name": "p1", "failures": ["expected <= medium"]}]}
 
-    assert (
-        ReportBuilder._resolve_report_gate_state(
-            summary=summary,
-            payload=payload,
-            gate_evaluation=gate_evaluation,
-            only_expected_severity="medium",
-            resolved_only_pass_failure="p1",
-        )
-        == resolve_gate_state_impl(
-            summary=summary,
-            payload=payload,
-            gate_evaluation=gate_evaluation,
-            only_expected_severity="medium",
-            resolved_only_pass_failure="p1",
-        )
+    assert ReportBuilder._resolve_report_gate_state(
+        summary=summary,
+        payload=payload,
+        gate_evaluation=gate_evaluation,
+        only_expected_severity="medium",
+        resolved_only_pass_failure="p1",
+    ) == resolve_gate_state_impl(
+        summary=summary,
+        payload=payload,
+        gate_evaluation=gate_evaluation,
+        only_expected_severity="medium",
+        resolved_only_pass_failure="p1",
     )
 
 
@@ -71,35 +66,29 @@ def test_report_builder_gate_helpers_delegate_to_shared_helpers() -> None:
     assert ReportBuilder._expected_severity_rank_from_failure("expected <= medium") == expected_severity_rank_impl(
         "expected <= medium"
     )
-    assert (
-        ReportBuilder._resolve_failed_gates_view(
-            summary={},
-            gate_failure_summary=gate_failure_summary,
-            gate_failure_priority=gate_failure_priority,
-            gate_failure_severity_priority=gate_failure_severity_priority,
-        )
-        == resolve_failed_gates_view_impl(
-            summary={},
-            gate_failure_summary=gate_failure_summary,
-            gate_failure_priority=gate_failure_priority,
-            gate_failure_severity_priority=gate_failure_severity_priority,
-        )
+    assert ReportBuilder._resolve_failed_gates_view(
+        summary={},
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+    ) == resolve_failed_gates_view_impl(
+        summary={},
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
     )
-    assert (
-        ReportBuilder._filter_failed_gates_view(
-            gate_failure_summary=gate_failure_summary,
-            gate_failure_priority=gate_failure_priority,
-            gate_failure_severity_priority=gate_failure_severity_priority,
-            only_expected_severity="medium",
-            resolved_only_pass_failure="p1",
-        )
-        == filter_failed_gates_view_impl(
-            gate_failure_summary=gate_failure_summary,
-            gate_failure_priority=gate_failure_priority,
-            gate_failure_severity_priority=gate_failure_severity_priority,
-            only_expected_severity="medium",
-            resolved_only_pass_failure="p1",
-        )
+    assert ReportBuilder._filter_failed_gates_view(
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+        only_expected_severity="medium",
+        resolved_only_pass_failure="p1",
+    ) == filter_failed_gates_view_impl(
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+        only_expected_severity="medium",
+        resolved_only_pass_failure="p1",
     )
 
 
@@ -131,63 +120,60 @@ def test_report_builder_filtered_payload_helpers_delegate_to_shared_helpers() ->
     resolved_only_pass_failure = None
     validation_policy = None
 
-    assert (
-        ReportBuilder.build_only_mismatches_payload(
-            payload=payload,
-            summary=summary,
-            filtered_summary=filtered_summary,
-            filtered_mutations=filtered_mutations,
-            filtered_passes=filtered_passes,
-            mismatch_counts_by_pass=mismatch_counts_by_pass,
-            mismatch_observables_by_pass=mismatch_observables_by_pass,
-            persisted_mismatch_priority=persisted_mismatch_priority,
-            mismatch_severity_rows=mismatch_severity_rows,
-            mismatch_pass_context=mismatch_pass_context,
-            requested_validation_mode=requested_validation_mode,
-            effective_validation_mode=effective_validation_mode,
-            degraded_validation=degraded_validation,
-            mismatch_degraded_passes=mismatch_degraded_passes,
-            degraded_passes=degraded_passes,
-            degradation_roles=degradation_roles,
-            failed_gates=failed_gates,
-            pass_support=pass_support,
-            gate_evaluation=gate_evaluation,
-            gate_failure_summary=gate_failure_summary,
-            gate_failure_priority=gate_failure_priority,
-            gate_failure_severity_priority=gate_failure_severity_priority,
-            min_severity=min_severity,
-            only_expected_severity=only_expected_severity,
-            resolved_only_pass_failure=resolved_only_pass_failure,
-            validation_policy=validation_policy,
-        )
-        == filtered_payload_impl(
-            payload=payload,
-            summary=summary,
-            filtered_summary=filtered_summary,
-            filtered_mutations=filtered_mutations,
-            filtered_passes=filtered_passes,
-            mismatch_counts_by_pass=mismatch_counts_by_pass,
-            mismatch_observables_by_pass=mismatch_observables_by_pass,
-            persisted_mismatch_priority=persisted_mismatch_priority,
-            mismatch_severity_rows=mismatch_severity_rows,
-            mismatch_pass_context=mismatch_pass_context,
-            requested_validation_mode=requested_validation_mode,
-            effective_validation_mode=effective_validation_mode,
-            degraded_validation=degraded_validation,
-            mismatch_degraded_passes=mismatch_degraded_passes,
-            degraded_passes=degraded_passes,
-            degradation_roles=degradation_roles,
-            failed_gates=failed_gates,
-            pass_support=pass_support,
-            gate_evaluation=gate_evaluation,
-            gate_failure_summary=gate_failure_summary,
-            gate_failure_priority=gate_failure_priority,
-            gate_failure_severity_priority=gate_failure_severity_priority,
-            min_severity=min_severity,
-            only_expected_severity=only_expected_severity,
-            resolved_only_pass_failure=resolved_only_pass_failure,
-            validation_policy=validation_policy,
-        )
+    assert ReportBuilder.build_only_mismatches_payload(
+        payload=payload,
+        summary=summary,
+        filtered_summary=filtered_summary,
+        filtered_mutations=filtered_mutations,
+        filtered_passes=filtered_passes,
+        mismatch_counts_by_pass=mismatch_counts_by_pass,
+        mismatch_observables_by_pass=mismatch_observables_by_pass,
+        persisted_mismatch_priority=persisted_mismatch_priority,
+        mismatch_severity_rows=mismatch_severity_rows,
+        mismatch_pass_context=mismatch_pass_context,
+        requested_validation_mode=requested_validation_mode,
+        effective_validation_mode=effective_validation_mode,
+        degraded_validation=degraded_validation,
+        mismatch_degraded_passes=mismatch_degraded_passes,
+        degraded_passes=degraded_passes,
+        degradation_roles=degradation_roles,
+        failed_gates=failed_gates,
+        pass_support=pass_support,
+        gate_evaluation=gate_evaluation,
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+        min_severity=min_severity,
+        only_expected_severity=only_expected_severity,
+        resolved_only_pass_failure=resolved_only_pass_failure,
+        validation_policy=validation_policy,
+    ) == filtered_payload_impl(
+        payload=payload,
+        summary=summary,
+        filtered_summary=filtered_summary,
+        filtered_mutations=filtered_mutations,
+        filtered_passes=filtered_passes,
+        mismatch_counts_by_pass=mismatch_counts_by_pass,
+        mismatch_observables_by_pass=mismatch_observables_by_pass,
+        persisted_mismatch_priority=persisted_mismatch_priority,
+        mismatch_severity_rows=mismatch_severity_rows,
+        mismatch_pass_context=mismatch_pass_context,
+        requested_validation_mode=requested_validation_mode,
+        effective_validation_mode=effective_validation_mode,
+        degraded_validation=degraded_validation,
+        mismatch_degraded_passes=mismatch_degraded_passes,
+        degraded_passes=degraded_passes,
+        degradation_roles=degradation_roles,
+        failed_gates=failed_gates,
+        pass_support=pass_support,
+        gate_evaluation=gate_evaluation,
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+        min_severity=min_severity,
+        only_expected_severity=only_expected_severity,
+        resolved_only_pass_failure=resolved_only_pass_failure,
+        validation_policy=validation_policy,
     )
 
 
