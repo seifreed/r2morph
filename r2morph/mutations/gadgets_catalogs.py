@@ -4,17 +4,9 @@ from __future__ import annotations
 
 import random
 from collections.abc import Callable
-from dataclasses import dataclass
 
 from r2morph.analysis.os_flags import OSFlags
 from r2morph.analysis.register_tracker import REG_16, REG_32, REG_64, REG_ALL
-
-
-@dataclass
-class GadgetCategory:
-    name: str
-    gadgets: dict[str, tuple[Callable, int, int]]
-    description: str
 
 
 def build_stack_gadgets() -> dict[str, tuple[Callable, Callable, int]]:
