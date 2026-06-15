@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from r2morph.analysis.call_graph_models import CallEdge, CallNode, CallType
+
+if TYPE_CHECKING:
+    from r2morph.analysis.call_graph import CallGraph
 
 
 def call_graph_to_dict(call_graph: Any) -> dict[str, Any]:
@@ -61,7 +64,7 @@ def call_graph_to_json(call_graph: Any) -> str:
     return json.dumps(call_graph_to_dict(call_graph), indent=2)
 
 
-def call_graph_from_dict(data: dict[str, Any]) -> Any:
+def call_graph_from_dict(data: dict[str, Any]) -> CallGraph:
     from r2morph.analysis.call_graph import CallGraph
 
     cg = CallGraph()
@@ -101,7 +104,7 @@ def call_graph_from_dict(data: dict[str, Any]) -> Any:
     return cg
 
 
-def call_graph_from_json(json_str: str) -> Any:
+def call_graph_from_json(json_str: str) -> CallGraph:
     import json
 
     return call_graph_from_dict(json.loads(json_str))
