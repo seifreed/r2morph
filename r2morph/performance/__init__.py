@@ -96,18 +96,19 @@ class MemoryManager:
             gc.collect()
 
     def get_optimal_chunk_size(self, total_items: int) -> int:
-        """Calculate optimal chunk size based on available memory."""
+        """Calculate optimal chunk size based on available memory and item count."""
         if not HAS_PSUTIL:
-            return self.config.chunk_size
+            chunk_size = self.config.chunk_size
+        else:
+            available_memory_mb = psutil.virtual_memory().available / 1024 / 1024
+            estimated_memory_per_item = 10  # MB per binary analysis
+            max_items_in_memory = int(available_memory_mb * 0.5 / estimated_memory_per_item)
+            chunk_size = min(max_items_in_memory, self.config.chunk_size)
 
-        available_memory_mb = psutil.virtual_memory().available / 1024 / 1024
+        if total_items > 0:
+            chunk_size = min(chunk_size, total_items)
 
-        estimated_memory_per_item = 10  # MB per binary analysis
-
-        max_items_in_memory = int(available_memory_mb * 0.5 / estimated_memory_per_item)
-        optimal_chunk_size = min(max_items_in_memory, self.config.chunk_size)
-
-        return max(1, optimal_chunk_size)
+        return max(1, chunk_size)
 
 
 class ResultCache:

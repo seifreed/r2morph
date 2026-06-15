@@ -35,6 +35,12 @@ def test_memory_manager_chunk_size_bounds():
         assert chunk_size == config.chunk_size
 
 
+def test_memory_manager_chunk_size_never_exceeds_total_items():
+    config = PerformanceConfig(chunk_size=100)
+    manager = MemoryManager(config)
+    assert manager.get_optimal_chunk_size(total_items=3) <= 3
+
+
 def test_parallel_engine_cache_hits(tmp_path: Path):
     config = PerformanceConfig(enable_caching=True, enable_parallel=False)
     engine = ParallelAnalysisEngine(config)
