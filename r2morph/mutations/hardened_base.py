@@ -1,7 +1,5 @@
 """Hardened mutation pass base class."""
 
-# ruff: noqa: I001
-
 from __future__ import annotations
 
 import logging
@@ -229,21 +227,7 @@ class HardenedMutationPass(CFGAwareMutationPass):
         return []
 
 
-from r2morph.mutations.hardened_cff import (  # noqa: E402,F401
-    create_hardened_cff_pass,
-    HardenedControlFlowFlattening,
-)
-from r2morph.mutations.hardened_opaque import (  # noqa: E402,F401
-    create_hardened_opaque_pass,
-    HardenedOpaquePredicates,
-)
-
-
 __all__ = [
     "HardenedMutationPass",
     "HardenedMutationResult",
-    "HardenedControlFlowFlattening",
-    "HardenedOpaquePredicates",
-    "create_hardened_cff_pass",
-    "create_hardened_opaque_pass",
 ]

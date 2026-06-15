@@ -20,10 +20,8 @@ from r2morph.analysis.pattern_preservation import (
     PatternType,
 )
 from r2morph.core.binary import Binary
-from r2morph.mutations.hardened_base import (
-    HardenedControlFlowFlattening,
-    HardenedOpaquePredicates,
-)
+from r2morph.mutations.hardened_cff import HardenedControlFlowFlattening
+from r2morph.mutations.hardened_opaque import HardenedOpaquePredicates
 from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
     HardenedMutationValidator,
