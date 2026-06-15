@@ -5,6 +5,7 @@ Binary analyzer for extracting information and finding mutation candidates.
 import logging
 from typing import Any
 
+from r2morph.analysis.memory_flow import MemoryFlowAnalyzer
 from r2morph.core.binary import Binary
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE, SMALL_FUNCTION_THRESHOLD
 from r2morph.core.function import Function
@@ -68,6 +69,25 @@ class BinaryAnalyzer:
         """
         instructions_data = self.binary.get_function_disasm(address)
         return [Instruction.from_r2_dict(insn) for insn in instructions_data]
+
+    def analyze_memory_flow(self, function_address: int) -> dict[str, Any]:
+        """
+        Analyze memory flow for a single function.
+
+        Tracks memory accesses (reads/writes), inferred stack-frame layout,
+        read-after-write / write-after-write dependencies between accesses,
+        and potential aliases. Operates on the function's disassembly, so it
+        adds no extra binary access beyond the usual per-function decode.
+
+        Args:
+            function_address: Address of the function to analyze
+
+        Returns:
+            Memory-flow result dict (accesses, locations, dependencies,
+            aliases, stack_frame)
+        """
+        instructions = self.binary.get_function_disasm(function_address)
+        return MemoryFlowAnalyzer().analyze_function(instructions, function_address)
 
     def find_nop_insertion_candidates(self) -> list[dict[str, Any]]:
         """

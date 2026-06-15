@@ -499,3 +499,31 @@ class TestMemoryAccessType:
         assert MemoryAccessType.READ_WRITE.value == "read_write"
         assert MemoryAccessType.ALLOC.value == "alloc"
         assert MemoryAccessType.FREE.value == "free"
+
+
+class TestMemoryFlowWiring:
+    """MemoryFlowAnalyzer wired onto BinaryAnalyzer and the public API."""
+
+    def test_binary_analyzer_analyze_memory_flow_records_stack_access(self):
+        from r2morph.analysis.analyzer import BinaryAnalyzer
+        from tests._doubles.in_memory_typed_binary import InMemoryTypedBinary
+
+        binary = InMemoryTypedBinary(
+            disasm_by_addr={
+                0x1000: [
+                    {"offset": 0x1000, "disasm": "push rbp"},
+                    {"offset": 0x1001, "disasm": "mov rbp, rsp"},
+                    {"offset": 0x1004, "disasm": "mov [rbp-0x8], rax"},
+                ]
+            }
+        )
+
+        result = BinaryAnalyzer(binary).analyze_memory_flow(0x1000)
+
+        assert "0x1004" in result["memory_accesses"]
+
+    def test_memory_flow_analyzer_is_public_analysis_export(self):
+        from r2morph.analysis import MemoryFlowAnalyzer as exported
+        from r2morph.analysis.memory_flow import MemoryFlowAnalyzer
+
+        assert exported is MemoryFlowAnalyzer
