@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from r2morph.analysis.cfg import ControlFlowGraph
 from r2morph.validation.extended_semantic_models import ValidationResult
@@ -12,11 +12,38 @@ from r2morph.validation.semantic import SemanticCheck, ValidationResultStatus
 from r2morph.validation.semantic_invariant_models import InvariantCategory
 from r2morph.validation.semantic_report_models import SemanticValidationResult
 
+if TYPE_CHECKING:
+    from r2morph.core.binary import Binary
+    from r2morph.validation.constraint_cache import ConstraintCache
+    from r2morph.validation.state_merging import ImprovedStateMerging
+
 logger = logging.getLogger(__name__)
 
 
 class ExtendedSemanticValidationMixin:
-    """Loop, call-chain, and symbolic validation helpers for the extended validator."""
+    """Loop, call-chain, and symbolic validation helpers for the extended validator.
+
+    The concrete validator this is combined with (``ExtendedSemanticValidator``
+    over ``SemanticValidator``) supplies the attributes and methods declared
+    below; they are annotated here so the mixin body type-checks in isolation.
+    """
+
+    binary: Binary
+    max_steps: int
+    max_states: int
+    merge_interval: int
+    _angr_available: bool
+    _constraint_cache: ConstraintCache | None
+    _state_merger: ImprovedStateMerging
+
+    def _merge_active_states(self, simgr: Any) -> None: ...
+
+    def validate_function_semantics(
+        self,
+        function_address: int,
+        cfg: ControlFlowGraph | None = None,
+    ) -> SemanticValidationResult:
+        raise NotImplementedError
 
     def _validate_function_with_symbolic(
         self,
