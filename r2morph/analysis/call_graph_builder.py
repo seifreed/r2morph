@@ -106,10 +106,6 @@ class CallGraphBuilder:
         except Exception as e:
             logger.debug(f"Error extracting calls from 0x{func_addr:x}: {e}")
 
-    def _determine_call_type(self, name: str, func: dict) -> CallType:
-        """Compatibility wrapper for call type classification."""
-        return determine_call_type(name)
-
     def _process_instruction(self, binary: Binary, func_addr: int, insn: dict, cg: CallGraph) -> None:
         """Process a single instruction for call extraction."""
         disasm = insn.get("disasm", "").lower()
@@ -164,10 +160,6 @@ class CallGraphBuilder:
     def _is_tail_call(self, disasm: str) -> bool:
         """Compatibility wrapper for tail-call detection."""
         return is_tail_call(disasm)
-
-    def _find_entry_points(self, binary: Binary, cg: CallGraph) -> list[int]:
-        """Find entry point functions."""
-        return find_entry_points(binary, cg)
 
     def resolve_indirect_call(self, binary: Binary, call_site: int, context: dict[str, Any] | None = None) -> list[int]:
         """

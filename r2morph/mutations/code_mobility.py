@@ -56,9 +56,6 @@ from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_mobility_helpers import (
     can_move_block,
-    generate_block_code,
-    generate_section_header,
-    generate_trampoline,
     interleave_blocks,
     select_target_section,
 )
@@ -167,15 +164,6 @@ class CodeMobilityPass(MutationPass):
                 block_id += 1
 
         return plan
-
-    def _generate_trampoline(self, target_addr: int, section_name: str) -> str:
-        return generate_trampoline(target_addr, section_name)
-
-    def _generate_section_header(self, section_name: str, section_idx: int) -> str:
-        return generate_section_header(section_name, section_idx)
-
-    def _generate_block_code(self, block: MobileBlock, original_section: str) -> str:
-        return generate_block_code(block, original_section)
 
     def _interleave_blocks(self, blocks: list[MobileBlock], seed: int | None = None) -> list[MobileBlock]:
         return interleave_blocks(blocks, preserve_order=self.preserve_order, seed=seed)
