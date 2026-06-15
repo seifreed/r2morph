@@ -19,8 +19,6 @@ from r2morph.mutations.data_flow_mutation_helpers import (
 from r2morph.mutations.data_flow_mutation_helpers import (
     analyze_function_liveness,
     find_safe_substitution_candidates,
-    generate_dead_code_with_liveness,
-    get_dead_registers,
     is_register_safe_to_use,
 )
 
@@ -66,9 +64,6 @@ class DataFlowMutationPass(MutationPass):
     def _analyze_function_liveness(self, instructions: list[dict[str, Any]]) -> dict[int, set[str]]:
         return analyze_function_liveness(instructions)
 
-    def _get_dead_registers(self, addr: int, live_in: dict[int, set[str]], all_regs: set[str]) -> set[str]:
-        return get_dead_registers(addr, live_in, all_regs)
-
     def _is_register_safe_to_use(
         self,
         reg: str,
@@ -85,9 +80,6 @@ class DataFlowMutationPass(MutationPass):
         arch: str,
     ) -> list[tuple[dict[str, Any], str, str]]:
         return find_safe_substitution_candidates(instructions, live_in, arch)
-
-    def _generate_dead_code_with_liveness(self, dead_regs: set[str], bits: int, size: int) -> list[str] | None:
-        return generate_dead_code_with_liveness(dead_regs, bits, size)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """

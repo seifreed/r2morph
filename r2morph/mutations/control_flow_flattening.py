@@ -79,9 +79,6 @@ from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_helpers import (
-    assemble_bounded,
-    candidate_block_count,
-    consume_nop_run,
     find_nop_sequences,
     is_conditional_jump,
     select_candidates,
@@ -226,9 +223,6 @@ class ControlFlowFlatteningPass(MutationPass):
 
     def _select_candidates(self, binary: Any, functions: list[dict]) -> list[dict]:
         return select_candidates(binary, functions, self.min_blocks)
-
-    def _candidate_block_count(self, binary: Any, func: dict) -> int | None:
-        return candidate_block_count(binary, func, self.min_blocks)
 
     def _flatten_function(self, binary: Any, func: dict) -> dict[str, int] | None:
         """
@@ -387,9 +381,3 @@ class ControlFlowFlatteningPass(MutationPass):
 
     def _find_nop_sequences(self, instructions: list[dict]) -> list[tuple[int, int]]:
         return find_nop_sequences(instructions)
-
-    def _consume_nop_run(self, instructions: list[dict], i: int) -> tuple[int, int, int]:
-        return consume_nop_run(instructions, i)
-
-    def _assemble_bounded(self, binary: Any, instructions: list[str], max_size: int) -> bytes | None:
-        return assemble_bounded(binary, instructions, max_size)
