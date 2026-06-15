@@ -12,16 +12,8 @@ from typing import Any
 
 from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
 from r2morph.analysis.symbolic.state_manager_policies import (
-    calculate_pruning_score,
-    get_best_coverage_state,
-    get_deepest_state,
-    get_highest_priority_state,
-    get_random_state,
-    get_shallowest_state,
     merge_equivalent_states,
-    merge_state_group,
     prune_states,
-    remove_state,
     select_next_state,
     update_state_depth,
 )
@@ -125,21 +117,6 @@ class StateManager:
         """Return a list of currently active states."""
         return list(self.active_states.values())
 
-    def _get_highest_priority_state(self) -> tuple[int, Any] | None:
-        return get_highest_priority_state(self)
-
-    def _get_best_coverage_state(self) -> tuple[int, Any] | None:
-        return get_best_coverage_state(self)
-
-    def _get_deepest_state(self) -> tuple[int, Any] | None:
-        return get_deepest_state(self)
-
-    def _get_shallowest_state(self) -> tuple[int, Any] | None:
-        return get_shallowest_state(self)
-
-    def _get_random_state(self) -> tuple[int, Any] | None:
-        return get_random_state(self)
-
     def update_state_coverage(self, state_id: int, new_blocks: set[int]) -> None:
         """
         Update coverage information for a state.
@@ -181,12 +158,6 @@ class StateManager:
     def _prune_states(self) -> None:
         prune_states(self)
 
-    def _calculate_pruning_score(self, metrics: StateMetrics) -> float:
-        return calculate_pruning_score(self, metrics)
-
-    def _remove_state(self, state_id: int) -> None:
-        remove_state(self, state_id)
-
     def _get_state_depth(self, state: Any) -> int:
         return update_state_depth(state)
 
@@ -195,9 +166,6 @@ class StateManager:
             return 0
 
         return merge_equivalent_states(self)
-
-    def _try_merge_states_at_pc(self, state_ids: list[int]) -> int:
-        return merge_state_group(self, state_ids)
 
     def get_statistics(self) -> dict[str, Any]:
         """Get state management statistics."""
