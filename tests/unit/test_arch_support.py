@@ -18,6 +18,7 @@ from r2morph.core.support import (
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from r2morph.mutations.register_substitution_helpers import REGISTER_CLASSES
 
 
 class TestArchitectureSupport:
@@ -308,19 +309,15 @@ class TestArm64RegisterSubstitution:
 
     def test_arm64_register_classes_exist(self):
         """Test ARM64 register classes are defined."""
-        p = RegisterSubstitutionPass()
-
-        assert "arm64" in p.REGISTER_CLASSES
-        assert "gp64" in p.REGISTER_CLASSES["arm64"]
-        assert "gp32" in p.REGISTER_CLASSES["arm64"]
-        assert "caller_saved" in p.REGISTER_CLASSES["arm64"]
-        assert "callee_saved" in p.REGISTER_CLASSES["arm64"]
+        assert "arm64" in REGISTER_CLASSES
+        assert "gp64" in REGISTER_CLASSES["arm64"]
+        assert "gp32" in REGISTER_CLASSES["arm64"]
+        assert "caller_saved" in REGISTER_CLASSES["arm64"]
+        assert "callee_saved" in REGISTER_CLASSES["arm64"]
 
     def test_arm64_general_purpose_64bit_registers(self):
         """Test ARM64 64-bit general purpose registers."""
-        p = RegisterSubstitutionPass()
-
-        gp64 = p.REGISTER_CLASSES["arm64"]["gp64"]
+        gp64 = REGISTER_CLASSES["arm64"]["gp64"]
 
         assert "x0" in gp64
         assert "x1" in gp64
@@ -330,9 +327,7 @@ class TestArm64RegisterSubstitution:
 
     def test_arm64_general_purpose_32bit_registers(self):
         """Test ARM64 32-bit general purpose registers."""
-        p = RegisterSubstitutionPass()
-
-        gp32 = p.REGISTER_CLASSES["arm64"]["gp32"]
+        gp32 = REGISTER_CLASSES["arm64"]["gp32"]
 
         assert "w0" in gp32
         assert "w1" in gp32
@@ -341,9 +336,7 @@ class TestArm64RegisterSubstitution:
 
     def test_arm64_caller_saved_registers(self):
         """Test ARM64 caller-saved registers."""
-        p = RegisterSubstitutionPass()
-
-        caller_saved = p.REGISTER_CLASSES["arm64"]["caller_saved"]
+        caller_saved = REGISTER_CLASSES["arm64"]["caller_saved"]
 
         assert "x0" in caller_saved
         assert "x1" in caller_saved
@@ -357,9 +350,7 @@ class TestArm64RegisterSubstitution:
 
     def test_arm64_callee_saved_registers(self):
         """Test ARM64 callee-saved registers."""
-        p = RegisterSubstitutionPass()
-
-        callee_saved = p.REGISTER_CLASSES["arm64"]["callee_saved"]
+        callee_saved = REGISTER_CLASSES["arm64"]["callee_saved"]
 
         assert "x19" in callee_saved
         assert "x20" in callee_saved
