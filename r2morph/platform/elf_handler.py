@@ -8,12 +8,12 @@ symbol table management, and dynamic linking information.
 
 import logging
 from pathlib import Path
-from typing import Any, BinaryIO
+from typing import Any
 
 from r2morph.platform.elf_handler_code_caves import find_code_cave as project_find_code_cave
 from r2morph.platform.elf_handler_metadata import get_architecture as project_architecture
 from r2morph.platform.elf_handler_metadata import get_entry_point as project_entry_point
-from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
+from r2morph.platform.elf_handler_parsing import parse_elf_header
 from r2morph.platform.elf_handler_section_mutation import add_section as mutate_add_section
 from r2morph.platform.elf_handler_symbol_preservation import preserve_symbols as check_symbol_preservation
 from r2morph.platform.elf_handler_symbols import collect_symbol_tables
@@ -108,27 +108,6 @@ class ELFHandler:
 
         self._elf_header, self._is_64bit, self._is_little_endian = parse_elf_header(self.binary_path)
         return self._elf_header
-
-    def _get_section_name(self, name_offset: int, shstrtab_data: bytes) -> str:
-        """Extract section name from the section header string table.
-
-        Args:
-            name_offset: Offset into the string table.
-            shstrtab_data: The section header string table data.
-
-        Returns:
-            The section name as a string.
-        """
-        return get_section_name(name_offset, shstrtab_data)
-
-    @staticmethod
-    def _read_shstrtab(f: BinaryIO, header: dict[str, Any], file_size: int) -> bytes:
-        """Read the section header string table bytes, or b'' if unavailable.
-
-        Each failed bounds check logs a warning and yields an empty table, so
-        section names simply fall back to offsets downstream.
-        """
-        return read_shstrtab(f, header, file_size)
 
     def get_sections(self) -> list[dict[str, Any]]:
         """Retrieve all sections from the ELF binary.
