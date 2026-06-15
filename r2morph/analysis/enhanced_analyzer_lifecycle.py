@@ -37,4 +37,3 @@ def cleanup_binary(binary: Any) -> None:
         binary.__exit__(None, None, None)
     except Exception as exc:  # pragma: no cover - defensive cleanup path
         logger.debug(f"Error cleaning up binary: {exc}")
-
