@@ -13,7 +13,7 @@ from typing import Any
 from rich.console import Console
 
 from r2morph.analysis.enhanced_analyzer_detection import run_detection as run_detection_impl
-from r2morph.analysis.enhanced_analyzer_lifecycle import cleanup_binary, ensure_dependencies, load_binary
+from r2morph.analysis.enhanced_analyzer_lifecycle import cleanup_binary, load_binary
 from r2morph.analysis.enhanced_analyzer_models import AnalysisOptions, AnalysisResults
 from r2morph.analysis.enhanced_analyzer_phases import (
     run_binary_rewriting,
@@ -57,9 +57,6 @@ class EnhancedAnalysisOrchestrator:
         self.results = AnalysisResults()
         self._binary: Any = None
         self._detector: Any = None
-
-    def _ensure_dependencies(self) -> bool:
-        return ensure_dependencies()
 
     def _load_binary(self) -> Any:
         self._binary = load_binary(self.binary_path)
