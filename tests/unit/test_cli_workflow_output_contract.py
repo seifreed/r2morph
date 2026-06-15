@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+import typer
 
 from r2morph.cli_workflow_output import evaluate_and_write_gates, print_mutation_summary
 
@@ -41,7 +42,7 @@ def test_evaluate_and_write_gates_writes_json(tmp_path) -> None:
 
 
 def test_evaluate_and_write_gates_rejects_min_severity(tmp_path) -> None:
-    with pytest.raises(SystemExit):
+    with pytest.raises(typer.Exit):
         evaluate_and_write_gates(
             report_payload={
                 "summary": {"symbolic_severity_by_pass": []},
