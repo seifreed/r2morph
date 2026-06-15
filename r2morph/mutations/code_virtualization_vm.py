@@ -140,9 +140,7 @@ class VMContext:
 
     registers: dict[str, int] = field(default_factory=dict)
     stack: list[int] = field(default_factory=list)
-    flags: dict[str, bool] = field(
-        default_factory=lambda: {"ZF": False, "SF": False, "CF": False, "OF": False}
-    )
+    flags: dict[str, bool] = field(default_factory=lambda: {"ZF": False, "SF": False, "CF": False, "OF": False})
     pc: int = 0
     running: bool = True
 
@@ -319,9 +317,7 @@ vm_handler_f1:                 ; VM_EXIT
     return handlers.get(opcode, f"vm_handler_{opcode:02x}: jmp vm_execute\n")
 
 
-def virtualize_block_to_vm_instructions(
-    instructions: list[dict[str, Any]], arch: str
-) -> list[VMInstruction]:
+def virtualize_block_to_vm_instructions(instructions: list[dict[str, Any]], arch: str) -> list[VMInstruction]:
     vm_insns: list[VMInstruction] = [VMInstruction(VMOpcode.VM_ENTER, [], "vm_enter")]
 
     for insn in instructions:
@@ -450,9 +446,25 @@ class VMProfile:
 
 MULTI_VM_PROFILES = [
     VMProfile("simple", 0x00, "standard", {"rax": 0, "rcx": 1, "rdx": 2, "rbx": 3}),
-    VMProfile("obfuscated", 0x80, "indirect", {"r8": 0, "r9": 1, "r10": 2, "r11": 3}, junk_handlers=5, obfuscate_handlers=True),
-    VMProfile("stack_based", 0xC0, "stack", {"rsp": 0, "rbp": 1, "rsi": 2, "rdi": 3}, junk_handlers=10, obfuscate_handlers=True),
-    VMProfile("register_based", 0x40, "register", {"r12": 0, "r13": 1, "r14": 2, "r15": 3}, junk_handlers=15, obfuscate_handlers=True),
+    VMProfile(
+        "obfuscated", 0x80, "indirect", {"r8": 0, "r9": 1, "r10": 2, "r11": 3}, junk_handlers=5, obfuscate_handlers=True
+    ),
+    VMProfile(
+        "stack_based",
+        0xC0,
+        "stack",
+        {"rsp": 0, "rbp": 1, "rsi": 2, "rdi": 3},
+        junk_handlers=10,
+        obfuscate_handlers=True,
+    ),
+    VMProfile(
+        "register_based",
+        0x40,
+        "register",
+        {"r12": 0, "r13": 1, "r14": 2, "r15": 3},
+        junk_handlers=15,
+        obfuscate_handlers=True,
+    ),
 ]
 
 
@@ -536,14 +548,12 @@ def generate_multi_vm_dispatcher_x64(profile: VMProfile) -> str:
     if profile.junk_handlers > 0:
         junk_handlers_code = f"\n; Junk handlers ({profile.junk_handlers})\n"
         for i in range(profile.junk_handlers):
-            junk_handlers_code += (
-                f"""vm_{profile.name}_junk_{i}:
+            junk_handlers_code += f"""vm_{profile.name}_junk_{i}:
     nop
     nop
     jmp .vm_loop_{profile.name}
 
 """
-            )
 
     return prelude + dispatch_loop + handlers_section + junk_handlers_code
 

@@ -36,4 +36,3 @@ class AnalysisResults:
     vm_handlers: int = 0
     rewrite_output: str | None = None
     report: dict[str, Any] | None = None
-

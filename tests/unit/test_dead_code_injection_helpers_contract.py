@@ -20,7 +20,9 @@ class _Binary:
 
 
 def test_dead_code_injection_helpers_cover_the_core_paths(monkeypatch) -> None:
-    monkeypatch.setattr(dead_code_helpers, "generate_dead_code_for_arch", lambda arch, bits, complexity: ["mov eax, eax"])
+    monkeypatch.setattr(
+        dead_code_helpers, "generate_dead_code_for_arch", lambda arch, bits, complexity: ["mov eax, eax"]
+    )
     monkeypatch.setattr(dead_code_helpers, "generate_nop_sequence", lambda arch, bits, size: b"N" * size)
 
     instructions = [

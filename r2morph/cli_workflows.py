@@ -66,8 +66,6 @@ def _resolve_report_pass_filter(pass_name: str | None) -> str | None:
     return alias_map.get(pass_name.strip(), pass_name.strip())
 
 
-
-
 def _add_mutations(
     engine: MorphEngine,
     mutations: list[str],

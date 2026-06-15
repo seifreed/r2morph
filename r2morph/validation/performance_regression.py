@@ -245,6 +245,8 @@ def create_benchmark(
         regression_threshold_percent=regression_threshold,
     )
     return PerformanceBenchmark(config)
+
+
 PerformanceRegressionSuite = import_module(
     "r2morph.validation.performance_regression_suite",
 ).PerformanceRegressionSuite

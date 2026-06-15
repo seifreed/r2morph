@@ -66,8 +66,7 @@ def execute_parallel_runs(
                 pending.cancel()
             stats.tasks_failed += len(unfinished)
             logger.error(
-                f"Parallel execution timed out after {timeout}s; "
-                f"{len(unfinished)} task(s) did not complete"
+                f"Parallel execution timed out after {timeout}s; " f"{len(unfinished)} task(s) did not complete"
             )
 
     elapsed = time.perf_counter() - start_time

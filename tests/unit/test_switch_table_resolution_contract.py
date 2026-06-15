@@ -54,6 +54,8 @@ def test_switch_table_resolution_contract() -> None:
     targets = get_jump_table_targets(table)
     assert targets == {0: [0x5000], 1: [0x5010]}
 
-    cases = reconstruct_switch_cases(_BasicBlockBinary(bits=64, table_address=0x9000, blob=_blob([0x5000, 0x5010])), table, 0x400000)
+    cases = reconstruct_switch_cases(
+        _BasicBlockBinary(bits=64, table_address=0x9000, blob=_blob([0x5000, 0x5010])), table, 0x400000
+    )
     assert cases[0]["is_block_start"] is True
     assert cases[1]["is_block_start"] is True

@@ -15,7 +15,13 @@ from r2morph.devirtualization.cfo_simplifier_transforms import (
 )
 
 
-def _block(*, address: int, instructions: list[dict[str, object]] | None = None, predecessors: set[int] | None = None, successors: set[int] | None = None) -> ControlFlowBlock:
+def _block(
+    *,
+    address: int,
+    instructions: list[dict[str, object]] | None = None,
+    predecessors: set[int] | None = None,
+    successors: set[int] | None = None,
+) -> ControlFlowBlock:
     return ControlFlowBlock(
         address=address,
         instructions=instructions or [],

@@ -24,7 +24,9 @@ def compare_register_states(
             record(reg_name)
 
     if hasattr(original_final.regs, "eflags") and hasattr(mutated_final.regs, "eflags"):
-        if original_final.solver.satisfiable(extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]):
+        if original_final.solver.satisfiable(
+            extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
+        ):
             record("eflags")
 
 
@@ -72,4 +74,3 @@ def check_observables(
 
     compare_register_states(original_final, mutated_final, compared_registers, _record)
     compare_stack_and_memory(original_final, mutated_final, stack_reg, region_report, _record)
-

@@ -73,10 +73,7 @@ class TestPackerSignatureDatabase:
     def test_database_signature_count_matches_catalogs(self):
         db = PackerSignatureDatabase()
         assert len(db.signatures) == len(
-            vm_protector_signatures()
-            + compressor_signatures()
-            + protector_signatures()
-            + other_signatures()
+            vm_protector_signatures() + compressor_signatures() + protector_signatures() + other_signatures()
         )
 
 

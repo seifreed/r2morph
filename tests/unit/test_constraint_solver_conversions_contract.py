@@ -16,4 +16,3 @@ def test_constraint_solver_conversions_contract() -> None:
 
     model = extract_model(None, None)
     assert model == {}
-

@@ -34,10 +34,12 @@ def test_control_flow_flattening_leaf_helpers_cover_the_core_paths() -> None:
     assert candidate_block_count(binary, functions[0], 2) == 3
     assert candidate_block_count(binary, functions[1], 2) is None
     assert select_candidates(binary, functions, 2)[0]["_block_count"] == 3
-    assert find_nop_sequences([
-        {"mnemonic": "nop", "offset": 0x10, "size": 1},
-        {"mnemonic": "nop", "offset": 0x11, "size": 2},
-        {"mnemonic": "ret", "offset": 0x13, "size": 1},
-    ]) == [(0x10, 3)]
+    assert find_nop_sequences(
+        [
+            {"mnemonic": "nop", "offset": 0x10, "size": 1},
+            {"mnemonic": "nop", "offset": 0x11, "size": 2},
+            {"mnemonic": "ret", "offset": 0x13, "size": 1},
+        ]
+    ) == [(0x10, 3)]
     assert assemble_bounded(binary, ["nop", "ret"], 2) == b"\x90\xc3"
     assert assemble_bounded(binary, ["nop", "ret"], 1) is None

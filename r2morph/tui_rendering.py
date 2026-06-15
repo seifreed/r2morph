@@ -46,7 +46,9 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
     Console = _FallbackConsole
-    Confirm = Prompt = Layout = Panel = Table = Text = Progress = SpinnerColumn = BarColumn = TextColumn = TimeElapsedColumn = None
+    Confirm = Prompt = Layout = Panel = Table = Text = Progress = SpinnerColumn = BarColumn = TextColumn = (
+        TimeElapsedColumn
+    ) = None
 
 
 class TUIMainScreen:

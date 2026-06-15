@@ -33,7 +33,7 @@ def test_pass_result_to_dict_serializes_checkpoint_path() -> None:
 
 
 def test_dependency_resolver_orders_required_passes_before_dependents() -> None:
-    resolver = DependencyResolver({"b": PassDependency("b", requires=["a"] )})
+    resolver = DependencyResolver({"b": PassDependency("b", requires=["a"])})
     plan = resolver.resolve([FakePass("a"), FakePass("b")])
 
     assert plan.get_stage("a") < plan.get_stage("b")

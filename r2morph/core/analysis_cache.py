@@ -53,6 +53,7 @@ def compute_binary_hash(binary_path: Path | str) -> str:
 def compute_partial_hash(binary_path: Path | str, offset: int, size: int) -> str:
     return _compute_partial_hash(binary_path, offset, size)
 
+
 class AnalysisCache:
     def __init__(
         self,
@@ -226,7 +227,9 @@ class AnalysisCache:
     def get_entry_metadata(
         self, binary_data: bytes, analysis_type: str, options: dict[str, Any] | None = None
     ) -> dict[str, Any] | None:
-        return get_entry_metadata(self.cache_dir, binary_data, analysis_type, self._hash_binary, self._hash_options, options)
+        return get_entry_metadata(
+            self.cache_dir, binary_data, analysis_type, self._hash_binary, self._hash_options, options
+        )
 
     def list_entries(self, analysis_type: str | None = None) -> list[dict[str, Any]]:
         return list_entries(self.cache_dir, analysis_type)

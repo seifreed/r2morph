@@ -23,6 +23,7 @@ from r2morph.analysis.liveness_models import (
 
 logger = logging.getLogger(__name__)
 
+
 class LivenessAnalysis:
     """
     Per-instruction liveness analysis.

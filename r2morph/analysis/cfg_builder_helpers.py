@@ -45,7 +45,9 @@ def classify_edge_type(block: BasicBlock | None, terminal_mnemonic: str, *, is_f
     return EdgeType.NORMAL
 
 
-def populate_cfg_blocks(cfg: ControlFlowGraph, binary: Binary, function_address: int, r2_blocks: list[dict[str, Any]]) -> None:
+def populate_cfg_blocks(
+    cfg: ControlFlowGraph, binary: Binary, function_address: int, r2_blocks: list[dict[str, Any]]
+) -> None:
     """Build CFG blocks from radare2 block metadata."""
     for r2_block in r2_blocks:
         addr = r2_block.get("addr", 0)

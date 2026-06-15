@@ -251,7 +251,9 @@ def test_region_evidence_helper_is_reexported_from_canonical_module() -> None:
         region_evidence_mod,
         "_build_pass_region_evidence_map",
     ), "core.report_helpers._build_pass_region_evidence_map diverged from core.report_helpers_region_evidence"
-    assert hasattr(engine_mod, "_build_pass_region_evidence_map"), "core.engine no longer re-exports _build_pass_region_evidence_map"
+    assert hasattr(
+        engine_mod, "_build_pass_region_evidence_map"
+    ), "core.engine no longer re-exports _build_pass_region_evidence_map"
     assert getattr(engine_mod, "_build_pass_region_evidence_map") is getattr(
         region_evidence_mod,
         "_build_pass_region_evidence_map",
@@ -274,7 +276,9 @@ def test_structural_evidence_helper_is_reexported_from_canonical_module() -> Non
         structural_evidence_mod,
         "_summarize_structural_evidence",
     ), "core.report_helpers._summarize_structural_evidence diverged from core.report_helpers_structural_evidence"
-    assert hasattr(engine_mod, "_summarize_structural_evidence"), "core.engine no longer re-exports _summarize_structural_evidence"
+    assert hasattr(
+        engine_mod, "_summarize_structural_evidence"
+    ), "core.engine no longer re-exports _summarize_structural_evidence"
     assert getattr(engine_mod, "_summarize_structural_evidence") is getattr(
         structural_evidence_mod,
         "_summarize_structural_evidence",
@@ -299,7 +303,9 @@ def test_coverage_helper_is_reexported_from_canonical_module() -> None:
         coverage_mod,
         "_summarize_pass_coverage_buckets",
     ), "core.report_helpers._summarize_pass_coverage_buckets diverged from core.report_helpers_coverage"
-    assert hasattr(engine_mod, "_summarize_pass_coverage_buckets"), "core.engine no longer re-exports _summarize_pass_coverage_buckets"
+    assert hasattr(
+        engine_mod, "_summarize_pass_coverage_buckets"
+    ), "core.engine no longer re-exports _summarize_pass_coverage_buckets"
     assert getattr(engine_mod, "_summarize_pass_coverage_buckets") is getattr(
         coverage_mod,
         "_summarize_pass_coverage_buckets",

@@ -17,11 +17,5 @@ def test_evidence_facade_reexports_observable_helpers() -> None:
         evidence_mod._summarize_observable_mismatches_by_pass
         is observables_mod._summarize_observable_mismatches_by_pass
     )
-    assert (
-        evidence_mod._build_observable_mismatch_map
-        is observables_mod._build_observable_mismatch_map
-    )
-    assert (
-        evidence_mod._build_observable_mismatch_priority
-        is observables_mod._build_observable_mismatch_priority
-    )
+    assert evidence_mod._build_observable_mismatch_map is observables_mod._build_observable_mismatch_map
+    assert evidence_mod._build_observable_mismatch_priority is observables_mod._build_observable_mismatch_priority

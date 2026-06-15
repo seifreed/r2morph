@@ -36,10 +36,7 @@ def _make_state(
         sp=_ComparableValue(sp),
     )
     history = SimpleNamespace(
-        actions=[
-            SimpleNamespace(type="mem", action="write", addr=addr, size=size)
-            for addr, size in (writes or [])
-        ]
+        actions=[SimpleNamespace(type="mem", action="write", addr=addr, size=size) for addr, size in (writes or [])]
     )
     return SimpleNamespace(regs=regs, solver=_FakeSolver(), history=history, addr=addr)
 

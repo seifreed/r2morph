@@ -54,4 +54,3 @@ def test_build_validation_mode_policy_allows_explicit_override() -> None:
         "reason": "explicit-override",
         "limited_passes": [{"mutation": "register", "pass_name": "RegisterSubstitution", "confidence": "limited"}],
     }
-

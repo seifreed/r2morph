@@ -115,9 +115,7 @@ def generate_path_like_input(config: FuzzConfig, size_hint: int) -> bytes:
         ),
         "C:\\" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 50))),
         tempfile.gettempdir() + "/" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 30))),
-        "." * random.randint(1, 10)
-        + "/"
-        + "".join(random.choice(path_chars) for _ in range(random.randint(5, 20))),
+        "." * random.randint(1, 10) + "/" + "".join(random.choice(path_chars) for _ in range(random.randint(5, 20))),
         ".." * random.randint(1, 20),
     ]
 

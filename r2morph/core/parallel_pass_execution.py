@@ -36,7 +36,9 @@ def execute_checkpointed_pass(
         logger.debug(f"Executing pass: {pass_name}")
 
         with binary_mutation_lock:
-            checkpoint_path = save_checkpoint(binary.path, checkpoint_dir, pass_name, logger) if use_checkpoints else None
+            checkpoint_path = (
+                save_checkpoint(binary.path, checkpoint_dir, pass_name, logger) if use_checkpoints else None
+            )
 
             if file_lock and use_file_lock:
                 acquired = file_lock.acquire()

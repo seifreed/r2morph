@@ -120,9 +120,7 @@ def detect_packing_layers(
         entry_bytes = get_entry_bytes(binary, binary.info.get("bin", {}).get("baddr", 0))
 
         for signature in signatures:
-            confidence = calculate_signature_confidence(
-                signature, sections_list, entry_bytes, binary, entropy_analyzer
-            )
+            confidence = calculate_signature_confidence(signature, sections_list, entry_bytes, binary, entropy_analyzer)
 
             if confidence > 0.5:
                 result["packers"].append(

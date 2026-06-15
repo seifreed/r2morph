@@ -22,4 +22,3 @@ def test_syntia_handler_analysis_contract() -> None:
     assert handler.handler_id == 7
     assert handler.handler_type in {"arithmetic", "memory", "unknown"}
     assert handler.equivalent_native_code is not None
-

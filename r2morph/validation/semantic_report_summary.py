@@ -41,4 +41,3 @@ def build_semantic_report_summary(results: list[Any]) -> dict[str, Any]:
         "by_pass_type": by_pass,
         "overall_status": "pass" if failed == 0 and errors == 0 else "fail",
     }
-

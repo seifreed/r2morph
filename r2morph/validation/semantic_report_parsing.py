@@ -23,8 +23,7 @@ def build_observable_comparison(data: dict[str, Any]) -> ObservableComparison:
     return ObservableComparison(
         register_matches=dict(data.get("register_matches", {})),
         register_values={
-            name: (value["original"], value["mutated"])
-            for name, value in data.get("register_values", {}).items()
+            name: (value["original"], value["mutated"]) for name, value in data.get("register_values", {}).items()
         },
         flag_matches=dict(data.get("flag_matches", {})),
         memory_matches={int(addr, 16): bool(match) for addr, match in data.get("memory_matches", {}).items()},

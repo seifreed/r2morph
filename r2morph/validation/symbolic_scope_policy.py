@@ -20,8 +20,7 @@ def build_scope_metadata(mutations: list[dict[str, Any]], pass_name: str) -> dic
             }
         ),
         "covered_address_ranges": [
-            [parse_address(mutation["start_address"]), parse_address(mutation["end_address"])]
-            for mutation in mutations
+            [parse_address(mutation["start_address"]), parse_address(mutation["end_address"])] for mutation in mutations
         ],
     }
 
@@ -43,7 +42,10 @@ def check_scope_constraints(
         return False, "no-mutations"
     if len(mutations) > 8:
         return False, "unsupported-scope"
-    if any((parse_address(mutation["end_address"]) - parse_address(mutation["start_address"]) + 1) > 16 for mutation in mutations):
+    if any(
+        (parse_address(mutation["end_address"]) - parse_address(mutation["start_address"]) + 1) > 16
+        for mutation in mutations
+    ):
         return False, "unsupported-scope"
     if any(mutation.get("function_address") in (None, 0, "0x0") for mutation in mutations):
         return False, "unsupported-scope"

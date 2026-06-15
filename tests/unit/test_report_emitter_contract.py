@@ -10,12 +10,15 @@ from r2morph.reporting import report_emitter
 
 def test_report_emitter_severity_and_result_checks_delegate() -> None:
     assert report_emitter.severity_threshold_met([{"severity": "mismatch"}], 0) is True
-    assert report_emitter.report_view_has_results(
-        mutation_count=0,
-        only_failed_gates=False,
-        failed_gates=False,
-        pass_count=1,
-    ) is True
+    assert (
+        report_emitter.report_view_has_results(
+            mutation_count=0,
+            only_failed_gates=False,
+            failed_gates=False,
+            pass_count=1,
+        )
+        is True
+    )
 
 
 def test_report_emitter_gate_failure_count_delegates() -> None:

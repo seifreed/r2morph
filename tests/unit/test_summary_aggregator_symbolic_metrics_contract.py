@@ -84,9 +84,7 @@ def test_symbolic_stats_and_aggregator_contract() -> None:
                 },
             }
         ]
-    ) == [
-        {"pass_name": "nop", "mismatch_count": 1, "observables": ["cf"]}
-    ]
+    ) == [{"pass_name": "nop", "mismatch_count": 1, "observables": ["cf"]}]
 
     assert getattr(aggregator_mod, "SymbolicAggregator") is metrics_mod.SymbolicAggregator
     assert getattr(aggregator_mod, "SymbolicStats") is metrics_mod.SymbolicStats

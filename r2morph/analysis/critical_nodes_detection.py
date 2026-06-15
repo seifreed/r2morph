@@ -191,4 +191,3 @@ def compute_safe_regions(
         safe.append(AddressRange(start=block_start, end=block_end))
 
     return safe
-

@@ -21,6 +21,9 @@ def test_scope_policy_metadata_and_constraints_round_trip() -> None:
         check_scope_constraints({"format": "ELF64", "bits": 64, "arch": "x86_64"}, mutations, "InstructionSubstitution")
         is None
     )
-    assert estimate_symbolic_region_steps(
-        "RegisterSubstitution", {"start_address": 0x401000, "end_address": 0x401001, "original_disasm": "nop"}
-    ) >= 2
+    assert (
+        estimate_symbolic_region_steps(
+            "RegisterSubstitution", {"start_address": 0x401000, "end_address": 0x401001, "original_disasm": "nop"}
+        )
+        >= 2
+    )

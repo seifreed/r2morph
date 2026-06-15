@@ -7,11 +7,7 @@ from r2morph.core.parallel_executor_models import MutationTask, TaskStatus
 
 def select_ready_tasks(tasks: dict[int, MutationTask], completed: set[int], max_tasks: int = 0) -> list[MutationTask]:
     """Return ready tasks ordered by priority."""
-    ready = [
-        task
-        for task in tasks.values()
-        if task.status == TaskStatus.PENDING and task.is_ready(completed)
-    ]
+    ready = [task for task in tasks.values() if task.status == TaskStatus.PENDING and task.is_ready(completed)]
     ready.sort(key=lambda t: t.priority, reverse=True)
 
     if max_tasks > 0:

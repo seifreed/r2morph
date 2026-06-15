@@ -26,13 +26,16 @@ def test_apply_bypass_updates_tracking_state() -> None:
     environment_backup: dict[str, str] = {}
     timing_baseline: dict[str, float] = {}
 
-    assert apply_bypass(
-        BypassTechnique.API_REDIRECTION,
-        0.5,
-        active_bypasses,
-        environment_backup,
-        timing_baseline,
-    ) is True
+    assert (
+        apply_bypass(
+            BypassTechnique.API_REDIRECTION,
+            0.5,
+            active_bypasses,
+            environment_backup,
+            timing_baseline,
+        )
+        is True
+    )
     assert active_bypasses["api_redirection"] is True
 
 

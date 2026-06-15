@@ -57,12 +57,16 @@ def detect_elf_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_a
     return exception_edges
 
 
-def detect_pe_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:  # noqa: ARG001
+def detect_pe_exception_edges(
+    binary: Binary, cfg: ControlFlowGraph, function_address: int
+) -> list[ExceptionEdge]:  # noqa: ARG001
     """Detect exception edges from PE .pdata metadata."""
     return []
 
 
-def detect_macho_exception_edges(binary: Binary, cfg: ControlFlowGraph, function_address: int) -> list[ExceptionEdge]:  # noqa: ARG001
+def detect_macho_exception_edges(
+    binary: Binary, cfg: ControlFlowGraph, function_address: int
+) -> list[ExceptionEdge]:  # noqa: ARG001
     """Detect exception edges from Mach-O __unwind_info metadata."""
     return []
 

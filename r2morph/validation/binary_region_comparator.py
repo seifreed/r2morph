@@ -225,9 +225,7 @@ class BinaryRegionComparator:
         finally:
             release_bridges(original_bridge, mutated_bridge)
 
-        return build_binary_comparison_result(
-            compared_regions, mismatches, previous_binary_path, current_binary_path
-        )
+        return build_binary_comparison_result(compared_regions, mismatches, previous_binary_path, current_binary_path)
 
     def _run_region_comparison_loop(
         self,

@@ -21,8 +21,7 @@ def build_main_menu_actions() -> list[tuple[str, str, str]]:
 def build_function_rich_rows(functions: list[Any], *, limit: int = 50) -> list[tuple[str, str, str, str]]:
     """Build the rich function rows in display order."""
     return [
-        ("X" if func.selected else " ", f"0x{func.address:x}", func.name, str(func.size))
-        for func in functions[:limit]
+        ("X" if func.selected else " ", f"0x{func.address:x}", func.name, str(func.size)) for func in functions[:limit]
     ]
 
 
@@ -130,4 +129,3 @@ def build_preview_basic_lines(
             lines.append(f"  Note:     {m.description}")
         lines.append("")
     return lines
-

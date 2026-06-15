@@ -182,7 +182,10 @@ def _promote_pointer_neighbors(self: Any, types: dict[int, Any]) -> None:
         for other_addr, other_type in types.items():
             if other_addr == addr:
                 continue
-            if other_type.primitive in (self.PrimitiveType.UINT64, self.PrimitiveType.INT64) and abs(other_addr - addr) < 32:
+            if (
+                other_type.primitive in (self.PrimitiveType.UINT64, self.PrimitiveType.INT64)
+                and abs(other_addr - addr) < 32
+            ):
                 types[other_addr] = self.TypeInfo(
                     type_id=other_type.type_id,
                     category=self.TypeCategory.POINTER,

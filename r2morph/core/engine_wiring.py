@@ -42,9 +42,7 @@ def build_engine_wiring(
     resolved_report_view_builder: ReportViewBuilderProtocol = (
         report_view_builder if report_view_builder is not None else ReportViewBuilder()
     )
-    resolved_binary_signer: BinarySignerProtocol = (
-        binary_signer if binary_signer is not None else DarwinBinarySigner()
-    )
+    resolved_binary_signer: BinarySignerProtocol = binary_signer if binary_signer is not None else DarwinBinarySigner()
     resolved_report_builder: ReportBuilderProtocol = (
         report_builder
         if report_builder is not None

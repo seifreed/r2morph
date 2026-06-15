@@ -68,7 +68,9 @@ def classify_handler_type(instruction_semantics: list[InstructionSemantics]) -> 
     if not instruction_semantics:
         return "unknown"
 
-    semantic_text = " ".join(sem.learned_semantics or "" for sem in instruction_semantics if sem.learned_semantics).lower()
+    semantic_text = " ".join(
+        sem.learned_semantics or "" for sem in instruction_semantics if sem.learned_semantics
+    ).lower()
 
     if any(keyword in semantic_text for keyword in ["add", "sub", "mul", "div", "arithmetic"]):
         return "arithmetic"

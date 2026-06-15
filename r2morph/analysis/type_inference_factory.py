@@ -183,4 +183,3 @@ def _extract_operand_size(disasm: str) -> int:
     if "byte" in disasm:
         return 1
     return 4
-

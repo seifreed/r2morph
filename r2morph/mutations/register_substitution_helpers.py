@@ -311,9 +311,7 @@ def is_safe_size_extension_substitution(disasm: str, orig_reg: str, subst_reg: s
             )
             return False
         if dest_mem_size == source_mem_size:
-            logger.debug(
-                f"Skipping size extension: dest size ({dest_mem_size}) equals source size ({source_mem_size})"
-            )
+            logger.debug(f"Skipping size extension: dest size ({dest_mem_size}) equals source size ({source_mem_size})")
             return False
 
     return True

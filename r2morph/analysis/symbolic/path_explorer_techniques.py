@@ -21,6 +21,7 @@ else:
             def __init__(self) -> None:
                 pass
 
+
 logger = logging.getLogger(__name__)
 
 ANGR_AVAILABLE = angr is not None

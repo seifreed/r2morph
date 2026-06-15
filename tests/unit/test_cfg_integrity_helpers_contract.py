@@ -15,7 +15,9 @@ class _FakeBlock:
 def test_create_cfg_snapshot_collects_edges_and_patterns() -> None:
     cfg = SimpleNamespace(
         blocks={
-            0x1000: _FakeBlock(4, is_entry=True, instructions=[{"offset": 0x1000, "type": "jmp", "disasm": "jmp 0x2000"}]),
+            0x1000: _FakeBlock(
+                4, is_entry=True, instructions=[{"offset": 0x1000, "type": "jmp", "disasm": "jmp 0x2000"}]
+            ),
             0x2000: _FakeBlock(4, is_exit=True),
         },
         edges=[(0x1000, 0x2000)],
@@ -30,7 +32,11 @@ def test_create_cfg_snapshot_collects_edges_and_patterns() -> None:
         _analyzed = True
 
         def get_patterns_in_range(self, start: int, end: int):  # noqa: ARG002
-            return [SimpleNamespace(start_address=0x1000, end_address=0x1100, type=SimpleNamespace(value="jump_table"), source="test")]
+            return [
+                SimpleNamespace(
+                    start_address=0x1000, end_address=0x1100, type=SimpleNamespace(value="jump_table"), source="test"
+                )
+            ]
 
     snapshot = create_cfg_snapshot(_Builder(), _Manager(), 0x1000)
 

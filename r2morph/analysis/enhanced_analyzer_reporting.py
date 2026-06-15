@@ -27,7 +27,9 @@ def display_detection_results(
     table.add_column("Detection", style="cyan")
     table.add_column("Result", style="green")
 
-    table.add_row("Packer Detected", detection_result.packer_detected.value if detection_result.packer_detected else "None")
+    table.add_row(
+        "Packer Detected", detection_result.packer_detected.value if detection_result.packer_detected else "None"
+    )
     table.add_row("VM Protection", "Yes" if detection_result.vm_detected else "No")
     table.add_row("Anti-Analysis", "Yes" if detection_result.anti_analysis_detected else "No")
     table.add_row("Control Flow Flattening", "Yes" if detection_result.control_flow_flattened else "No")

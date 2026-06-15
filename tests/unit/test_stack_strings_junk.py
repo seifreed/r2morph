@@ -12,9 +12,7 @@ from r2morph.mutations.stack_strings import EncodingScheme, generate_stack_strin
 
 def test_x64_junk_interleaving_exact_under_seed():
     random.seed(0)
-    asm, junk = generate_stack_string_x64(
-        b"Hi", EncodingScheme.PLAIN, interleave_junk=True, junk_probability=1.0
-    )
+    asm, junk = generate_stack_string_x64(b"Hi", EncodingScheme.PLAIN, interleave_junk=True, junk_probability=1.0)
 
     assert junk == ["xor r15, r15", "push rax"]
     assert asm == (

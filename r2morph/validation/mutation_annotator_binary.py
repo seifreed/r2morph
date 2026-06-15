@@ -24,9 +24,7 @@ def annotate_binary_region_evidence(mutation_metadata: dict[str, Any], binary_re
     mutation_metadata["symbolic_binary_original_region_exit_address"] = binary_region.get(
         "original_region_exit_address"
     )
-    mutation_metadata["symbolic_binary_mutated_region_exit_address"] = binary_region.get(
-        "mutated_region_exit_address"
-    )
+    mutation_metadata["symbolic_binary_mutated_region_exit_address"] = binary_region.get("mutated_region_exit_address")
     mutation_metadata["symbolic_binary_original_trace_addresses"] = list(
         binary_region.get("original_trace_addresses", [])
     )
@@ -38,12 +36,8 @@ def annotate_binary_region_evidence(mutation_metadata: dict[str, Any], binary_re
     mutation_metadata["symbolic_binary_control_flow_observables"] = list(
         binary_region.get("control_flow_observables", [])
     )
-    mutation_metadata["symbolic_binary_original_memory_writes"] = list(
-        binary_region.get("original_memory_writes", [])
-    )
-    mutation_metadata["symbolic_binary_mutated_memory_writes"] = list(
-        binary_region.get("mutated_memory_writes", [])
-    )
+    mutation_metadata["symbolic_binary_original_memory_writes"] = list(binary_region.get("original_memory_writes", []))
+    mutation_metadata["symbolic_binary_mutated_memory_writes"] = list(binary_region.get("mutated_memory_writes", []))
     mutation_metadata["symbolic_binary_original_memory_write_count"] = int(
         binary_region.get("original_memory_write_count", 0)
     )

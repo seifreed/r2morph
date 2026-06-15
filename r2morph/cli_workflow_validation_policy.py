@@ -65,4 +65,3 @@ def build_validation_mode_policy(
         "reason": None,
         "limited_passes": limited,
     }
-

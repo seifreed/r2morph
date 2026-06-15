@@ -104,4 +104,3 @@ class ObservableComparison:
                 "mutated": [hex(a) for a in self.successor_addresses[1]],
             },
         }
-

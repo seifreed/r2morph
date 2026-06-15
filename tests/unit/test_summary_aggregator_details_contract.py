@@ -82,4 +82,3 @@ def test_summarize_discarded_mutations_groups_by_pass_and_reason() -> None:
             },
         },
     }
-

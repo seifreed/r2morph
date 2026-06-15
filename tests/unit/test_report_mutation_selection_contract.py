@@ -33,30 +33,36 @@ def test_select_report_mutations_filters_and_trims_degraded_rows() -> None:
         [{"pass_name": "risky-pass", "mutation": "risky-pass"}],
     )
 
-    assert _select_report_mutations(
-        all_mutations=mutations,
-        degraded_validation=True,
-        failed_gates=True,
-        only_degraded=False,
-        only_failed_gates=False,
-        only_risky_filters=True,
-        selected_risk_pass_names={"risky-pass"},
-        resolved_only_pass="risky-pass",
-        only_status="mismatch",
-        degraded_passes=degraded_passes,
-    ) == expected
+    assert (
+        _select_report_mutations(
+            all_mutations=mutations,
+            degraded_validation=True,
+            failed_gates=True,
+            only_degraded=False,
+            only_failed_gates=False,
+            only_risky_filters=True,
+            selected_risk_pass_names={"risky-pass"},
+            resolved_only_pass="risky-pass",
+            only_status="mismatch",
+            degraded_passes=degraded_passes,
+        )
+        == expected
+    )
 
     assert helpers_mod._select_report_mutations is _select_report_mutations
 
-    assert ReportFilters.select_report_mutations(
-        all_mutations=mutations,
-        degraded_validation=True,
-        failed_gates=True,
-        only_degraded=False,
-        only_failed_gates=False,
-        only_risky_filters=True,
-        selected_risk_pass_names={"risky-pass"},
-        resolved_only_pass="risky-pass",
-        only_status="mismatch",
-        degraded_passes=degraded_passes,
-    ) == expected
+    assert (
+        ReportFilters.select_report_mutations(
+            all_mutations=mutations,
+            degraded_validation=True,
+            failed_gates=True,
+            only_degraded=False,
+            only_failed_gates=False,
+            only_risky_filters=True,
+            selected_risk_pass_names={"risky-pass"},
+            resolved_only_pass="risky-pass",
+            only_status="mismatch",
+            degraded_passes=degraded_passes,
+        )
+        == expected
+    )

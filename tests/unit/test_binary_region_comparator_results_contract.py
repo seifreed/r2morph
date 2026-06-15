@@ -68,4 +68,3 @@ def test_build_binary_comparison_result_handles_matching_regions() -> None:
             "mutated": "/curr.bin",
         },
     }
-

@@ -211,9 +211,7 @@ def _finalize_precheck_status(
         return
     if payload.get("symbolic_semantic_hint_supported"):
         payload["symbolic_status"] = "bounded-step-known-equivalence"
-        payload["symbolic_reason"] = (
-            "symbolic bounded step passed and substitutions map to a known equivalence group"
-        )
+        payload["symbolic_reason"] = "symbolic bounded step passed and substitutions map to a known equivalence group"
         _resolve_shellcode_equivalence(
             payload,
             binary,

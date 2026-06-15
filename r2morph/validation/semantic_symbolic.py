@@ -76,9 +76,7 @@ def run_symbolic_validation(binary: Any, result: Any, observables: list[str] | N
         bridge = AngrBridge(binary)
 
         original_project = bridge.angr_project
-        original_state = create_symbolic_state(
-            original_project, result.region.start_address, bits, observables
-        )
+        original_state = create_symbolic_state(original_project, result.region.start_address, bits, observables)
 
         if original_state is None:
             result.symbolic_status = "state_creation_failed"

@@ -10,7 +10,9 @@ class _StubCache:
     def __init__(self) -> None:
         self.store: dict[tuple[bytes, str, tuple[tuple[str, bool], ...]], str] = {}
 
-    def _key(self, data: bytes, analysis_type: str, options: dict[str, bool]) -> tuple[bytes, str, tuple[tuple[str, bool], ...]]:
+    def _key(
+        self, data: bytes, analysis_type: str, options: dict[str, bool]
+    ) -> tuple[bytes, str, tuple[tuple[str, bool], ...]]:
         return (data, analysis_type, tuple(sorted(options.items())))
 
     def get(self, data: bytes, analysis_type: str, options: dict[str, bool]) -> str | None:

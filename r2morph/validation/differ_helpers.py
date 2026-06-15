@@ -26,7 +26,9 @@ def compare_section_bytes(
 
     try:
         orig_data = original.read_bytes(orig_addr, min(orig_size, mut_size, 4096))
-        mut_data = mutated.read_bytes(mut_section.get("addr", mut_section.get("virtual_address", 0)), min(orig_size, mut_size, 4096))
+        mut_data = mutated.read_bytes(
+            mut_section.get("addr", mut_section.get("virtual_address", 0)), min(orig_size, mut_size, 4096)
+        )
     except Exception:
         return diffs
 

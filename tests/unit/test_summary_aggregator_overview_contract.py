@@ -65,4 +65,3 @@ def test_summarize_pass_timings_orders_by_duration_then_name() -> None:
             "validation_issue_count": 0,
         },
     ]
-

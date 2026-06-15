@@ -41,4 +41,3 @@ def build_function_limit_notice(limit: int, total: int) -> str | None:
     if total <= limit:
         return None
     return f"Showing {limit} of {total} functions. Use --limit to show more."
-

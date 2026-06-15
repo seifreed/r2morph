@@ -15,4 +15,3 @@ def run_detection(binary: Any, results: Any) -> Any:
     results.layers = detector.detect_code_packing_layers(binary)
     results.metamorphic = detector.detect_metamorphic_engine(binary)
     return detector, results.detection_result
-
