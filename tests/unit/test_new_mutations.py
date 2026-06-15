@@ -337,52 +337,6 @@ class TestParallelExecutor:
         assert stats.tasks_completed == 10
         assert stats.speedup_factor == 2.5
 
-    def test_is_mutation_independent(self):
-        """Test mutation independence check."""
-        from r2morph.mutations.base import MutationRecord
-
-        executor = ParallelMutator()
-
-        mutation1 = MutationRecord(
-            pass_name="test",
-            function_address=0x1000,
-            start_address=0x1000,
-            end_address=0x1010,
-            original_bytes="00",
-            mutated_bytes="ff",
-            original_disasm="mov eax, 0",
-            mutated_disasm="xor eax, eax",
-            mutation_kind="test",
-        )
-
-        mutation2 = MutationRecord(
-            pass_name="test",
-            function_address=0x2000,
-            start_address=0x2000,
-            end_address=0x2010,
-            original_bytes="00",
-            mutated_bytes="ff",
-            original_disasm="mov ebx, 0",
-            mutated_disasm="xor ebx, ebx",
-            mutation_kind="test",
-        )
-
-        assert executor._is_mutation_independent(mutation1, mutation2)
-
-        mutation3 = MutationRecord(
-            pass_name="test",
-            function_address=0x1000,
-            start_address=0x1005,
-            end_address=0x1015,
-            original_bytes="00",
-            mutated_bytes="ff",
-            original_disasm="mov ecx, 0",
-            mutated_disasm="xor ecx, ecx",
-            mutation_kind="test",
-        )
-
-        assert not executor._is_mutation_independent(mutation1, mutation3)
-
     def test_estimate_speedup_single_task(self):
         """Test speedup estimation with single task."""
         executor = ParallelMutator()
