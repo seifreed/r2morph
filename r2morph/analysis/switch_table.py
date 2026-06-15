@@ -18,30 +18,32 @@ from r2morph.analysis.switch_table_detection import (
 from r2morph.analysis.switch_table_detection import (
     detect_tail_calls as detect_tail_calls_impl,
 )
-from r2morph.analysis.switch_table_detection import (
-    is_plt_stub_pattern,
-)
 from r2morph.analysis.switch_table_models import (
     IndirectJump,
     JumpTable,
     JumpTableEntry,
-    JumpTableType,  # noqa: F401
+    JumpTableType,
 )
 from r2morph.analysis.switch_table_parsing import (
     classify_indirect_jump,
-    match_jumptable_operands,
 )
 from r2morph.analysis.switch_table_patterns import JUMP_TABLE_PATTERNS, PLT_PATTERNS, TAIL_CALL_PATTERNS
 from r2morph.analysis.switch_table_resolution import (
     get_jump_table_targets,
-    normalize_address,
-    read_jump_table_entries,
     reconstruct_switch_cases,
     resolve_jump_table,
 )
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "IndirectJump",
+    "JumpTable",
+    "JumpTableEntry",
+    "JumpTableType",
+    "SwitchTableAnalyzer",
+]
 
 
 class SwitchTableAnalyzer:
@@ -104,16 +106,6 @@ class SwitchTableAnalyzer:
         logger.debug(f"Found {len(indirect_jumps)} indirect jumps in 0x{function_address:x}")
         return indirect_jumps
 
-    def _match_jumptable_operands(self, disasm: str) -> dict[str, Any] | None:
-        """Match a jump-table addressing pattern and extract its operands.
-
-        Returns the operand fields (base/index registers, scale, displacement
-        and resolved table address) when any jump-table pattern matches -- the
-        bare register/absolute forms match with empty operands -- or None when
-        none does.
-        """
-        return match_jumptable_operands(disasm)
-
     def _classify_indirect_jump(self, address: int, disasm: str, function_address: int) -> IndirectJump | None:
         """
         Classify an indirect jump instruction.
@@ -146,18 +138,6 @@ class SwitchTableAnalyzer:
             JumpTable instance or None if resolution fails
         """
         return resolve_jump_table(self.binary, jump, table_address=table_address, max_entries=max_entries)
-
-    def _read_jump_table_entries(
-        self,
-        effective_address: int,
-        ptr_size: int,
-        bits: int,
-        max_entries: int,
-    ) -> list[JumpTableEntry]:
-        return read_jump_table_entries(self.binary, effective_address, ptr_size, bits, max_entries)
-
-    def _normalize_address(self, addr: int, bits: int) -> int:
-        return normalize_address(addr, bits)
 
     def detect_switch_pattern(self, function_address: int) -> tuple[list[JumpTable], list[IndirectJump]]:
         """
@@ -240,10 +220,6 @@ class SwitchTableAnalyzer:
 
         self._plt_entries = detect_plt_got_thunks_impl(self.binary)
         return self._plt_entries
-
-    def _is_plt_stub_pattern(self, data: bytes) -> bool:
-        """Check if bytes match common PLT stub patterns."""
-        return is_plt_stub_pattern(data)
 
     def _cache_functions(self) -> None:
         """Cache function addresses for quick lookup."""
