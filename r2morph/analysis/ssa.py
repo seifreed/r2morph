@@ -48,14 +48,15 @@ class SSAConverter:
     def convert_to_ssa(
         self,
         blocks: dict[int, dict[str, Any]],
-        cfg_edges: list[tuple[int, int]],
     ) -> dict[int, SSABlock]:
         """
         Convert a CFG to SSA form.
 
+        Each block carries its own ``predecessors``/``successors``, which is
+        the only control-flow topology the construction reads.
+
         Args:
             blocks: Dictionary mapping addresses to block info
-            cfg_edges: List of (from_addr, to_addr) edges
 
         Returns:
             Dictionary mapping addresses to SSABlock instances

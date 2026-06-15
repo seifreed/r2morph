@@ -275,7 +275,7 @@ class DefUseAnalyzer:
             }
             for addr, block in self.cfg.blocks.items()
         }
-        return SSAConverter().convert_to_ssa(blocks, self.cfg.edges)
+        return SSAConverter().convert_to_ssa(blocks)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert analysis results to dictionary."""

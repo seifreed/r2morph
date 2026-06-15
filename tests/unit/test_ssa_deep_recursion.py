@@ -23,10 +23,9 @@ BASE = 0x1000
 STRIDE = 0x10
 
 
-def _linear_blocks(n: int) -> tuple[dict[int, dict[str, object]], list[tuple[int, int]]]:
+def _linear_blocks(n: int) -> dict[int, dict[str, object]]:
     addrs = [BASE + i * STRIDE for i in range(n)]
     blocks: dict[int, dict[str, object]] = {}
-    edges: list[tuple[int, int]] = []
     for i, addr in enumerate(addrs):
         succ = [addrs[i + 1]] if i + 1 < n else []
         pred = [addrs[i - 1]] if i > 0 else []
@@ -35,15 +34,13 @@ def _linear_blocks(n: int) -> tuple[dict[int, dict[str, object]], list[tuple[int
             "predecessors": pred,
             "successors": succ,
         }
-        if succ:
-            edges.append((addr, succ[0]))
-    return blocks, edges
+    return blocks
 
 
 def test_ssa_deep_linear_cfg_no_recursion_error() -> None:
-    blocks, edges = _linear_blocks(DEEP)
+    blocks = _linear_blocks(DEEP)
 
-    result = SSAConverter().convert_to_ssa(blocks, edges)
+    result = SSAConverter().convert_to_ssa(blocks)
 
     assert len(result) == DEEP
     assert set(result) == set(blocks)
@@ -53,16 +50,15 @@ def test_ssa_deep_cyclic_cfg_no_recursion_error() -> None:
     """Deep chain that loops back to the entry. The per-path `visited`
     set breaks the cycle; the traversal must terminate without
     RecursionError and still produce every SSA block."""
-    blocks, edges = _linear_blocks(DEEP)
+    blocks = _linear_blocks(DEEP)
     addrs = sorted(blocks)
     last, first = addrs[-1], addrs[0]
     # `first` is the chain entry, so it had no predecessors; assigning
     # fresh lists avoids reading the object-typed mapping values.
     blocks[last]["successors"] = [first]
     blocks[first]["predecessors"] = [last]
-    edges.append((last, first))
 
-    result = SSAConverter().convert_to_ssa(blocks, edges)
+    result = SSAConverter().convert_to_ssa(blocks)
 
     assert len(result) == DEEP
 
@@ -70,9 +66,9 @@ def test_ssa_deep_cyclic_cfg_no_recursion_error() -> None:
 def test_ssa_linear_small_preserved() -> None:
     """Behavior-preservation: small linear CFG returns every block
     (independent, mock-free echo of the existing test_ssa contract)."""
-    blocks, edges = _linear_blocks(3)
+    blocks = _linear_blocks(3)
 
-    result = SSAConverter().convert_to_ssa(blocks, edges)
+    result = SSAConverter().convert_to_ssa(blocks)
 
     assert set(result) == set(blocks)
     assert len(result) == 3
@@ -90,8 +86,6 @@ def test_ssa_diamond_shared_block_reachable() -> None:
         c: {"instructions": [{"offset": c, "disasm": "mov ebx, 3"}], "predecessors": [entry], "successors": [d]},
         d: {"instructions": [{"offset": d, "disasm": "add ecx, ebx"}], "predecessors": [b, c], "successors": []},
     }
-    edges = [(entry, b), (entry, c), (b, d), (c, d)]
-
-    result = SSAConverter().convert_to_ssa(blocks, edges)
+    result = SSAConverter().convert_to_ssa(blocks)
 
     assert set(result) == {entry, b, c, d}

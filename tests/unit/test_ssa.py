@@ -139,9 +139,8 @@ class TestSSAConverter:
                 "successors": [],
             }
         }
-        cfg_edges = []
 
-        result = converter.convert_to_ssa(blocks, cfg_edges)
+        result = converter.convert_to_ssa(blocks)
 
         assert 0x1000 in result
 
@@ -158,9 +157,8 @@ class TestSSAConverter:
                 "successors": [],
             },
         }
-        cfg_edges = [(0x1000, 0x1005)]
 
-        result = converter.convert_to_ssa(blocks, cfg_edges)
+        result = converter.convert_to_ssa(blocks)
 
         assert len(result) == 2
         assert 0x1000 in result
@@ -189,14 +187,8 @@ class TestSSAConverter:
                 "successors": [],
             },
         }
-        cfg_edges = [
-            (0x1000, 0x1005),
-            (0x1000, 0x1010),
-            (0x1005, 0x1020),
-            (0x1010, 0x1020),
-        ]
 
-        result = converter.convert_to_ssa(blocks, cfg_edges)
+        result = converter.convert_to_ssa(blocks)
 
         assert len(result) == 4
 
@@ -340,7 +332,7 @@ class TestSSAIntegration:
             },
         }
 
-        result = converter.convert_to_ssa(blocks, [(0x1000, 0x1008)])
+        result = converter.convert_to_ssa(blocks)
 
         assert len(result) == 2
         assert 0x1000 in result
@@ -348,9 +340,8 @@ class TestSSAIntegration:
 
     def test_convert_empty_cfg(self, converter):
         blocks = {}
-        cfg_edges = []
 
-        result = converter.convert_to_ssa(blocks, cfg_edges)
+        result = converter.convert_to_ssa(blocks)
 
         assert result == {}
 
@@ -383,9 +374,8 @@ class TestPhiPlacement:
                 "successors": [],
             },
         }
-        cfg_edges = [(0x1000, 0x1010), (0x1000, 0x1020), (0x1010, 0x1030), (0x1020, 0x1030)]
 
-        result = converter.convert_to_ssa(blocks, cfg_edges)
+        result = converter.convert_to_ssa(blocks)
 
         phi_targets = {phi.result.base_name for phi in result[0x1030].phi_functions}
         assert "eax" in phi_targets
@@ -413,9 +403,8 @@ class TestPhiPlacement:
                 "successors": [],
             },
         }
-        cfg_edges = [(0x1000, 0x1010), (0x1000, 0x1020), (0x1010, 0x1030), (0x1020, 0x1030)]
 
-        result = converter.convert_to_ssa(blocks, cfg_edges)
+        result = converter.convert_to_ssa(blocks)
 
         eax_phi = next(phi for phi in result[0x1030].phi_functions if phi.result.base_name == "eax")
         assert len(eax_phi.operands) == 2
