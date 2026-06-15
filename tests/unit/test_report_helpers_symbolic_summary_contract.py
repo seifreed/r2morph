@@ -122,7 +122,15 @@ def test_symbolic_summary_and_overview_reducers() -> None:
     ]
 
     assert _summarize_symbolic_overview(
-        [{"symbolic_requested": 1, "observable_match": 1, "observable_mismatch": 0, "bounded_only": 0, "without_coverage": 0}],
+        [
+            {
+                "symbolic_requested": 1,
+                "observable_match": 1,
+                "observable_mismatch": 0,
+                "bounded_only": 0,
+                "without_coverage": 0,
+            }
+        ],
         {"runtime": 2},
     ) == {
         "symbolic_requested": 1,
@@ -132,4 +140,3 @@ def test_symbolic_summary_and_overview_reducers() -> None:
         "without_coverage": 0,
         "statuses": {"runtime": 2},
     }
-
