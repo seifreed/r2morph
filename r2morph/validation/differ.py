@@ -11,7 +11,7 @@ import logging
 
 from r2morph.core.binary import Binary
 from r2morph.validation.differ_comparison import build_diff_report
-from r2morph.validation.differ_helpers import compare_section_bytes, compute_byte_diffs
+from r2morph.validation.differ_helpers import compute_byte_diffs
 from r2morph.validation.differ_models import (
     BinaryDiff,
     ByteDiff,
@@ -57,34 +57,6 @@ class BinaryDiffer:
             DiffReport with all differences
         """
         return build_diff_report(self.original, self.mutated, self.context_bytes)
-
-    def _compare_sections(self) -> list[BinaryDiff]:
-        """Compare sections between binaries."""
-        from r2morph.validation.differ_comparison import compare_sections
-
-        return compare_sections(self.original, self.mutated, self.context_bytes)
-
-    def _compare_section_bytes(self, orig_section: dict, mut_section: dict) -> list[ByteDiff]:
-        """Compare bytes within a section."""
-        return compare_section_bytes(self.original, self.mutated, orig_section, mut_section, self.context_bytes)
-
-    def _compare_functions(self) -> list[BinaryDiff]:
-        """Compare functions between binaries."""
-        from r2morph.validation.differ_comparison import compare_functions
-
-        return compare_functions(self.original, self.mutated)
-
-    def _compare_symbols(self) -> list[BinaryDiff]:
-        """Compare symbols between binaries."""
-        from r2morph.validation.differ_comparison import compare_symbols
-
-        return compare_symbols(self.original, self.mutated)
-
-    def _compare_header(self) -> list[BinaryDiff]:
-        """Compare binary headers."""
-        from r2morph.validation.differ_comparison import compare_header
-
-        return compare_header(self.original, self.mutated)
 
     def get_function_diff(self, address: int) -> FunctionDiff | None:
         """
