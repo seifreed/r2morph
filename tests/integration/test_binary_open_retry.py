@@ -21,7 +21,8 @@ from typing import Any
 
 import pytest
 
-from r2morph.core.binary import _R2PIPE_OPEN_ATTEMPTS, Binary
+from r2morph.core.binary import Binary
+from r2morph.core.binary_lifecycle import _R2PIPE_OPEN_ATTEMPTS
 
 
 class _TransientlyFailingBinary(Binary):
