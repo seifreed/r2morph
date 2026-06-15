@@ -18,9 +18,6 @@ from r2morph.platform.pe_handler_parsing import (
     calculate_simple_checksum,
     get_checksum_offset,
     get_sections_fallback,
-    parse_coff_header,
-    parse_optional_header,
-    parse_pe_section_entry,
     read_pe_header,
     seek_to_pe_header,
 )
@@ -113,25 +110,6 @@ class PEHandler:
             self._pe_offset = header["pe_offset"]
         return header
 
-    @staticmethod
-    def _parse_coff_header(coff_header: bytes) -> dict[str, int]:
-        """Extract the COFF file-header fields the loader needs."""
-        return parse_coff_header(coff_header)
-
-    @staticmethod
-    def _parse_optional_header(optional_header: bytes, is_pe32_plus: bool) -> dict[str, int]:
-        """Extract the optional-header fields the loader needs.
-
-        PE32 and PE32+ optional headers destructure to the same 29 fields
-        (sans data directories); only the struct format and length differ.
-        PE32+ widens ImageBase and the four stack/heap sizes to 8 bytes
-        (``Q``); PE32 instead carries a 4-byte BaseOfData between BaseOfCode
-        and ImageBase, skipped with ``4x`` so both layouts stay field-aligned.
-        Both match lief/pefile field-for-field (verified on
-        dataset/pe_x86_64.exe, a PE32+ x86_64 file).
-        """
-        return parse_optional_header(optional_header, is_pe32_plus)
-
     def is_pe(self) -> bool:
         """Check if the file is a PE binary."""
         try:
@@ -202,18 +180,6 @@ class PEHandler:
     def _get_sections_fallback(self) -> list[dict]:
         """Parse PE sections without lief by walking the section header table."""
         return get_sections_fallback(self.binary_path)
-
-    @staticmethod
-    def _parse_pe_section_entry(section: bytes) -> dict:
-        """Parse one 40-byte PE section header into a section dict.
-
-        Layout: 8-byte name + 6xI (VirtualSize, VirtualAddress, SizeOfRawData,
-        PointerToRawData, PointerToRelocations, PointerToLineNumbers) + 2xH
-        (NumberOfRelocations, NumberOfLineNumbers -- u16, not u32) + 1xI
-        Characteristics. VirtualSize and SizeOfRawData are clamped to 256 MB to
-        reject corrupt headers.
-        """
-        return parse_pe_section_entry(section)
 
     def get_imports(self) -> list[dict]:
         """Get PE imports."""
