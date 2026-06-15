@@ -17,7 +17,14 @@ def _resolve_filtered_summary_risk_coverage_sources(
     uncovered_pass_names: set[str],
     clean_pass_names: set[str],
 ) -> dict[str, list[str]]:
-    """Resolve risk/coverage buckets from persisted summary first, then fall back."""
+    """Resolve risk/coverage buckets, preferring the persisted summary buckets,
+    then the renderer-state filter views, then the live fallback pass-name sets.
+
+    The renderer-state tier must sit between the persisted buckets and the
+    fallback sets: collapsing "persisted-or-fallback" into one lookup would
+    leave the fallback sets always populated, so the renderer-state values
+    could never win.
+    """
     report_views = dict(summary.get("report_views", {}) or {})
     general_renderer_state = dict(report_views.get("general_renderer_state", {}) or {})
     pass_risk_buckets = dict(_summary_first(summary, "pass_risk_buckets", {}) or {})
@@ -28,35 +35,27 @@ def _resolve_filtered_summary_risk_coverage_sources(
     if not general_filter_views and general_renderer_state.get("filter_views"):
         general_filter_views = dict(general_renderer_state.get("filter_views", {}) or {})
 
-    risky = sorted(pass_risk_buckets.get("risky", list(risky_pass_names)) or list(risky_pass_names))
-    if not risky and general_filter_views.get("risky"):
-        risky = sorted(str(name) for name in general_filter_views.get("risky", []) if name)
-    structural = sorted(
-        pass_risk_buckets.get("structural", list(structural_risk_pass_names)) or list(structural_risk_pass_names)
-    )
-    if not structural and general_filter_views.get("structural_risk"):
-        structural = sorted(str(name) for name in general_filter_views.get("structural_risk", []) if name)
-    symbolic = sorted(
-        pass_risk_buckets.get("symbolic", list(symbolic_risk_pass_names)) or list(symbolic_risk_pass_names)
-    )
-    if not symbolic and general_filter_views.get("symbolic_risk"):
-        symbolic = sorted(str(name) for name in general_filter_views.get("symbolic_risk", []) if name)
-    clean = sorted(pass_risk_buckets.get("clean", list(clean_pass_names)) or list(clean_pass_names))
-    if not clean and general_filter_views.get("clean"):
-        clean = sorted(str(name) for name in general_filter_views.get("clean", []) if name)
-    covered = sorted(pass_coverage_buckets.get("covered", list(covered_pass_names)) or list(covered_pass_names))
-    if not covered and general_filter_views.get("covered"):
-        covered = sorted(str(name) for name in general_filter_views.get("covered", []) if name)
-    uncovered = sorted(pass_coverage_buckets.get("uncovered", list(uncovered_pass_names)) or list(uncovered_pass_names))
-    if not uncovered and general_filter_views.get("uncovered"):
-        uncovered = sorted(str(name) for name in general_filter_views.get("uncovered", []) if name)
-    clean_only = sorted(pass_coverage_buckets.get("clean_only", list(clean_pass_names)) or list(clean_pass_names))
+    def _bucket(
+        persisted: dict[str, Any],
+        persisted_key: str,
+        renderer_key: str | None,
+        fallback: set[str],
+    ) -> list[str]:
+        persisted_values = persisted.get(persisted_key)
+        if persisted_values:
+            return sorted(str(name) for name in persisted_values if name)
+        if renderer_key is not None:
+            renderer_values = general_filter_views.get(renderer_key)
+            if renderer_values:
+                return sorted(str(name) for name in renderer_values if name)
+        return sorted(fallback)
+
     return {
-        "risky": risky,
-        "structural": structural,
-        "symbolic": symbolic,
-        "clean": clean,
-        "covered": covered,
-        "uncovered": uncovered,
-        "clean_only": clean_only,
+        "risky": _bucket(pass_risk_buckets, "risky", "risky", risky_pass_names),
+        "structural": _bucket(pass_risk_buckets, "structural", "structural_risk", structural_risk_pass_names),
+        "symbolic": _bucket(pass_risk_buckets, "symbolic", "symbolic_risk", symbolic_risk_pass_names),
+        "clean": _bucket(pass_risk_buckets, "clean", "clean", clean_pass_names),
+        "covered": _bucket(pass_coverage_buckets, "covered", "covered", covered_pass_names),
+        "uncovered": _bucket(pass_coverage_buckets, "uncovered", "uncovered", uncovered_pass_names),
+        "clean_only": _bucket(pass_coverage_buckets, "clean_only", None, clean_pass_names),
     }
