@@ -66,9 +66,18 @@ def _merge_mismatch_observables_from_mutations(
     observables_by_pass: dict[str, list[str]],
     mutations: list[dict[str, Any]],
 ) -> tuple[dict[str, int], dict[str, list[str]]]:
-    """Merge live mutation rows into the persisted mismatch view."""
+    """Merge live mutation rows into the persisted mismatch view.
+
+    Mutations without a pass name carry no attribution, so they are skipped
+    rather than collapsed into a synthetic ``unknown`` pass: doing the latter
+    would shadow the persisted, named passes that the summary supplies as the
+    fallback for the ``--only-mismatches`` view.
+    """
     for mutation in mutations:
-        pass_name = str(mutation.get("pass_name", "unknown"))
+        raw_pass_name = mutation.get("pass_name")
+        if not raw_pass_name:
+            continue
+        pass_name = str(raw_pass_name)
         counts_by_pass[pass_name] = counts_by_pass.get(pass_name, 0) + 1
         mismatch_observables = mutation.get("metadata", {}).get("symbolic_observable_mismatches", [])
         if mismatch_observables:
