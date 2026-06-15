@@ -7,12 +7,12 @@ from typing import Any
 
 def resolve_function_address(func: dict[str, Any]) -> int:
     """Resolve a function address from task input."""
-    return func.get("offset", func.get("addr", 0))
+    return int(func.get("offset", func.get("addr", 0)))
 
 
 def resolve_function_name(func: dict[str, Any], addr: int) -> str:
     """Resolve a function name from task input."""
-    return func.get("name", f"func_{addr:x}")
+    return str(func.get("name", f"func_{addr:x}"))
 
 
 def infer_task_dependencies(
