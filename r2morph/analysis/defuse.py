@@ -17,6 +17,8 @@ from r2morph.analysis.dataflow import DataFlowAnalyzer
 from r2morph.analysis.dataflow_models import Definition, Register, Use
 from r2morph.analysis.defuse_models import DefWeb, UseWeb
 from r2morph.analysis.liveness import LivenessAnalysis
+from r2morph.analysis.ssa import SSAConverter
+from r2morph.analysis.ssa_models import SSABlock
 
 logger = logging.getLogger(__name__)
 
@@ -255,6 +257,25 @@ class DefUseAnalyzer:
             path.append((use.address, "use"))
 
         return path
+
+    def build_ssa_form(self) -> dict[int, SSABlock]:
+        """Convert this function's CFG into SSA form.
+
+        Places phi functions at control-flow merge points and versions each
+        register definition, yielding the single-definition view that makes
+        the def-use relationships exposed by the webs above unambiguous: in
+        SSA every use refers to exactly one definition. Derived from the same
+        CFG this analyzer already holds, so it adds no extra disassembly.
+        """
+        blocks = {
+            addr: {
+                "instructions": block.instructions,
+                "predecessors": block.predecessors,
+                "successors": block.successors,
+            }
+            for addr, block in self.cfg.blocks.items()
+        }
+        return SSAConverter().convert_to_ssa(blocks, self.cfg.edges)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert analysis results to dictionary."""

@@ -378,3 +378,29 @@ class TestDefinitionAndUse:
         assert hash(use1) == hash(use2)
         assert use1 == use2
         assert use1 != use3
+
+
+class TestBuildSSAForm:
+    """Tests for SSA-form construction wired onto the def-use analyzer."""
+
+    def test_build_ssa_form_returns_one_ssa_block_per_cfg_block(self):
+        cfg = create_branching_cfg()
+        analyzer = DefUseAnalyzer(cfg)
+
+        ssa = analyzer.build_ssa_form()
+
+        assert set(ssa) == set(cfg.blocks)
+
+    def test_build_ssa_form_places_phi_at_merge_block(self):
+        cfg = create_branching_cfg()
+        analyzer = DefUseAnalyzer(cfg)
+
+        ssa = analyzer.build_ssa_form()
+
+        assert ssa[0x2030].phi_functions
+
+    def test_ssa_converter_is_public_analysis_export(self):
+        from r2morph.analysis import SSAConverter as exported
+        from r2morph.analysis.ssa import SSAConverter
+
+        assert exported is SSAConverter
