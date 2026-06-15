@@ -5,7 +5,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
-from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+from r2morph.mutations.control_flow_flattening_strategies import insert_dead_code_with_predicate
 
 
 def _find_jump_instruction(binary: Binary) -> dict | None:
@@ -32,7 +32,6 @@ def test_control_flow_flattening_obfuscate_jump_and_dead_code(tmp_path: Path):
 
     with Binary(temp_binary, writable=True) as bin_obj:
         bin_obj.analyze()
-        pass_obj = ControlFlowFlatteningPass()
         arch, bits = bin_obj.get_arch_family()
 
         jump_insn = _find_jump_instruction(bin_obj)
@@ -49,5 +48,5 @@ def test_control_flow_flattening_obfuscate_jump_and_dead_code(tmp_path: Path):
             pytest.skip("No valid function address")
 
         bin_obj.nop_fill(addr, 8)
-        inserted = pass_obj._insert_dead_code_with_predicate(bin_obj, addr, 8, arch, bits)
+        inserted = insert_dead_code_with_predicate(bin_obj, addr, 8, arch, bits)
         assert isinstance(inserted, bool)

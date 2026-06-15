@@ -6,7 +6,11 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_dispatcher import DispatcherGenerator
-from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
+from r2morph.mutations.control_flow_flattening_strategies import (
+    add_opaque_predicate,
+    insert_dead_code_with_predicate,
+)
 
 
 def _section_vaddr_and_paddr(binary: Binary) -> tuple[int, int]:
@@ -32,11 +36,10 @@ def test_control_flow_flattening_add_opaque_predicate_x86(tmp_path: Path) -> Non
         size = 12
         binary.write_bytes(vaddr, b"\x90" * size)
 
-        pass_obj = ControlFlowFlatteningPass()
         arch, bits = binary.get_arch_family()
         assert arch == "x86"
 
-        ok = pass_obj._add_opaque_predicate(binary, vaddr, size, arch, bits)
+        ok = add_opaque_predicate(binary, vaddr, size, arch, bits, OpaquePredicateGenerator())
         assert ok is True
 
     data = work_path.read_bytes()
@@ -57,9 +60,8 @@ def test_control_flow_flattening_insert_dead_code_x86(tmp_path: Path) -> None:
         size = 32
         binary.write_bytes(vaddr, b"\x90" * size)
 
-        pass_obj = ControlFlowFlatteningPass()
         arch, bits = binary.get_arch_family()
-        ok = pass_obj._insert_dead_code_with_predicate(binary, vaddr, size, arch, bits)
+        ok = insert_dead_code_with_predicate(binary, vaddr, size, arch, bits)
         if not ok:
             pytest.skip("Dead code insertion not supported by assembler on this binary")
 

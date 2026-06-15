@@ -6,6 +6,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+from r2morph.mutations.control_flow_flattening_strategies import insert_dead_code_with_predicate
 
 
 def test_control_flow_flattening_select_candidates():
@@ -54,6 +55,5 @@ def test_control_flow_flattening_dead_code_insert_guard(tmp_path: Path):
 
     with Binary(temp_binary, writable=True) as bin_obj:
         bin_obj.analyze()
-        pass_obj = ControlFlowFlatteningPass()
         # Unsupported arch should fail fast
-        assert pass_obj._insert_dead_code_with_predicate(bin_obj, 0x1000, 4, "mips", 32) is False
+        assert insert_dead_code_with_predicate(bin_obj, 0x1000, 4, "mips", 32) is False

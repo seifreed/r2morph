@@ -1,9 +1,8 @@
 """x86/ARM opaque-predicate instruction-sequence generator.
 
-Extracted verbatim from ControlFlowFlatteningPass (clean-arch CFF slice
-3): pure sequence builders with no pass state, consumed only by
-ControlFlowFlatteningPass._add_opaque_predicate within the mutations/
-layer. Plain collaborator (no protocol) per the ValidationManager
+Pure sequence builders with no pass state, consumed only by
+add_opaque_predicate in control_flow_flattening_strategies within the
+mutations/ layer. Plain collaborator (no protocol) per the ValidationManager
 decomposition precedent — a protocol would be premature abstraction for
 an internal-only seam.
 """
