@@ -18,10 +18,10 @@ def test_opaque_predicates_generate_x86_and_arm() -> None:
 
     with Binary(x86_path) as bin_x86:
         bin_x86.analyze()
-        preds = pass_obj._generate_predicate(bin_x86, "always_true", 0x1000)
+        preds = pass_obj._generate_predicate(bin_x86, "always_true")
         assert preds
 
     with Binary(arm_path) as bin_arm:
         bin_arm.analyze()
-        preds = pass_obj._generate_predicate(bin_arm, "always_false", 0x1000)
+        preds = pass_obj._generate_predicate(bin_arm, "always_false")
         assert preds

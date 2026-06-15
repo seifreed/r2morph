@@ -123,7 +123,7 @@ class OpaquePredicatePass(MutationPass):
                 ]
             )
 
-            predicate_code = self._generate_predicate(binary, predicate_type, bb_addr)
+            predicate_code = self._generate_predicate(binary, predicate_type)
 
             if predicate_code:
                 assembled = self._assemble_predicate(binary, predicate_code, bb_addr)
@@ -191,14 +191,13 @@ class OpaquePredicatePass(MutationPass):
 
         return assembled if assembled else None
 
-    def _generate_predicate(self, binary: Any, predicate_type: str, insert_addr: int) -> list[str]:
+    def _generate_predicate(self, binary: Any, predicate_type: str) -> list[str]:
         """
         Generate opaque predicate assembly code.
 
         Args:
             binary: Any instance
             predicate_type: "always_true" or "always_false"
-            insert_addr: Address to insert at
 
         Returns:
             List of assembly instructions
