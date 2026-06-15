@@ -23,7 +23,6 @@ from r2morph.mutations.instruction_substitution_arm64 import apply_arm64_mov_sub
 from r2morph.mutations.instruction_substitution_helpers import (
     get_equivalents,
     init_substitution_rules,
-    normalize_instruction,
     select_candidates,
 )
 
@@ -96,9 +95,6 @@ class InstructionSubstitutionPass(MutationPass):
 
     def _init_substitution_rules(self) -> None:
         self.equivalence_groups, self.pattern_to_group = init_substitution_rules()
-
-    def _normalize_instruction(self, disasm: str) -> str:
-        return normalize_instruction(disasm)
 
     def _get_equivalents(self, instruction: dict[str, Any], arch: str) -> tuple[str, list[str], int | None]:
         """
