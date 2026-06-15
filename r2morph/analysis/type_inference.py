@@ -12,9 +12,6 @@ from typing import Any
 
 from r2morph.analysis.pointer_analysis import PointerAnalysis as _PointerAnalysis
 from r2morph.analysis.type_inference_arm import (
-    get_arm_register_aliases,
-)
-from r2morph.analysis.type_inference_arm import (
     infer_arm32_register_types as _infer_arm32_register_types_impl,
 )
 from r2morph.analysis.type_inference_arm import (
@@ -22,9 +19,6 @@ from r2morph.analysis.type_inference_arm import (
 )
 from r2morph.analysis.type_inference_arm import (
     infer_arm_register_types as _infer_arm_register_types_impl,
-)
-from r2morph.analysis.type_inference_arm import (
-    propagate_arm_aliases as _propagate_arm_aliases_impl,
 )
 from r2morph.analysis.type_inference_convention_resolver import (
     get_calling_convention as _get_calling_convention_impl,
@@ -84,22 +78,10 @@ from r2morph.analysis.type_inference_core import (
     propagate_types as _propagate_types_impl,
 )
 from r2morph.analysis.type_inference_interprocedural import (
-    infer_all_function_param_types as _infer_all_function_param_types_impl,
-)
-from r2morph.analysis.type_inference_interprocedural import (
-    infer_function_params as _infer_function_params_impl,
-)
-from r2morph.analysis.type_inference_interprocedural import (
-    propagate_interprocedural_params as _propagate_through_calls_impl,
-)
-from r2morph.analysis.type_inference_interprocedural import (
     propagate_interprocedural_types as _propagate_interprocedural_types_impl,
 )
 from r2morph.analysis.type_inference_queries import (
     get_struct_layout as _get_struct_layout_impl,
-)
-from r2morph.analysis.type_inference_queries import (
-    infer_access_type as _infer_access_type_impl,
 )
 from r2morph.analysis.type_inference_types import PrimitiveType, StructField, TypeCategory, TypeInfo
 from r2morph.analysis.type_inference_types import (
@@ -296,15 +278,6 @@ class TypeInference:
         """
         return _propagate_interprocedural_types_impl(self, binary, call_graph)
 
-    def _infer_all_function_param_types(
-        self,
-        binary: Binary,
-        calling_convention: dict[str, Any],
-    ) -> dict[int, dict[str, TypeInfo]]:
-        """Infer parameter types for every function, isolating per-function
-        disassembly failures so one bad function never aborts the others."""
-        return _infer_all_function_param_types_impl(self, binary, calling_convention)
-
     def _get_calling_convention(self, arch: str, bits: int) -> dict[str, Any]:
         """Get calling convention registers for architecture.
 
@@ -312,26 +285,6 @@ class TypeInference:
         without affecting the shared convention tables or each other.
         """
         return _get_calling_convention_impl(arch, bits)
-
-    def _infer_function_params(
-        self,
-        binary: Binary,
-        func_addr: int,
-        disasm: list[dict],
-        calling_conv: dict[str, Any],
-    ) -> dict[str, TypeInfo]:
-        """Infer function parameter types from disassembly."""
-        return _infer_function_params_impl(self, binary, func_addr, disasm, calling_conv)
-
-    def _propagate_through_calls(
-        self,
-        binary: Binary,
-        call_graph: dict[int, list[int]],
-        function_types: dict[int, dict[str, TypeInfo]],
-        calling_conv: dict[str, Any],
-    ) -> None:
-        """Propagate type information through call graph edges."""
-        _propagate_through_calls_impl(self, binary, call_graph, function_types, calling_conv)
 
     def infer_arm_register_types(
         self,
@@ -357,10 +310,6 @@ class TypeInference:
         """
         return _infer_arm_register_types_impl(self, binary, func_addr, disasm, PrimitiveType)
 
-    def _get_arm_register_aliases(self, arch: str, bits: int) -> dict[str, list[str]]:
-        """Get ARM register alias mappings."""
-        return get_arm_register_aliases(arch, bits)
-
     def _infer_arm64_register_types(
         self,
         disasm_str: str,
@@ -377,14 +326,6 @@ class TypeInference:
         """Infer types for ARM32 registers from instruction."""
         _infer_arm32_register_types_impl(self, disasm_str, register_types, PrimitiveType)
 
-    def _propagate_arm_aliases(
-        self,
-        register_types: dict[str, TypeInfo],
-        aliases: dict[str, list[str]],
-    ) -> None:
-        """Propagate type information through register aliases."""
-        _propagate_arm_aliases_impl(register_types, aliases)
-
     def get_struct_layout(self, binary: Binary, address: int) -> list[StructField] | None:
         """
         Infer struct layout from access patterns.
@@ -397,10 +338,6 @@ class TypeInference:
             List of StructField if struct is detected, None otherwise
         """
         return _get_struct_layout_impl(self, binary, address)
-
-    def _infer_access_type(self, binary: Binary, xref: dict) -> TypeInfo | None:
-        """Infer the type of a memory access."""
-        return _infer_access_type_impl(self, binary, xref)
 
     def get_value_range(self, binary: Binary, address: int) -> tuple[int, int] | None:
         """
