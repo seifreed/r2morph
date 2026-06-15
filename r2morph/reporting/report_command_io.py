@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from rich import print as rprint
 
@@ -12,7 +12,7 @@ from rich import print as rprint
 def load_report_payload(report_file: Path) -> dict[str, Any]:
     """Load a persisted report payload from disk."""
     with open(report_file, encoding="utf-8") as handle:
-        return json.load(handle)
+        return cast(dict[str, Any], json.load(handle))
 
 
 def emit_report_output(
