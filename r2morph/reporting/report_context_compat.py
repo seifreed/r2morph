@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from typing import Any
 
 from r2morph.reporting.report_context_mapping import (
@@ -41,7 +42,7 @@ class ReportViewsMappingMixin:
         """Return (name, value) pairs."""
         return report_context_items(self)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """Iterate over field names so dict(obj) works."""
         return report_context_iter(self)
 

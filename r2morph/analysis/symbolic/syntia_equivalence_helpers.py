@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import random
 import re
+from collections.abc import Callable
 
 
 def normalize_expression(expression: str) -> str:
@@ -31,7 +32,12 @@ def check_mba_equivalence(expr1: str, expr2: str) -> float:
     return 0.0
 
 
-def synthesis_equivalence_check(expr1: str, expr2: str, variables: set[str], evaluator) -> float:
+def synthesis_equivalence_check(
+    expr1: str,
+    expr2: str,
+    variables: set[str],
+    evaluator: Callable[[str, dict[str, int]], int | None],
+) -> float:
     """Use synthesis-style random sampling to check expression equivalence."""
     test_count = 10
     matches = 0

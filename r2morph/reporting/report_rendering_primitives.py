@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from rich.console import Console
 from rich.table import Table
 
@@ -18,7 +20,7 @@ def _get_console() -> Console:
 class _LazyConsole:
     """Thin proxy so ``CONSOLE.print(...)`` keeps working."""
 
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         return getattr(_get_console(), name)
 
 
