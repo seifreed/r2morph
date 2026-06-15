@@ -296,6 +296,8 @@ def run_interactive_mode(
         "passes": [{"name": p.name, "selected": p.selected} for p in result.passes if p.selected],
         "confirmed": result.confirmed,
     }
+
+
 class FunctionSearchScreen:
     """
     Interactive function search and filter screen.
