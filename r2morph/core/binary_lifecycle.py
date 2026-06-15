@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from r2morph.core.constants import BATCH_MUTATION_CHECKPOINT
+
+if TYPE_CHECKING:
+    from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 
@@ -103,7 +106,7 @@ def reload_binary(binary: Any) -> None:
         binary._functions_cache = None
 
 
-def analyze_binary(binary: Any, level: str = "aaa") -> Any:
+def analyze_binary(binary: Any, level: str = "aaa") -> Binary:
     if not binary.r2:
         raise RuntimeError("Binary not opened. Call open() first.")
 
@@ -122,7 +125,7 @@ def analyze_binary(binary: Any, level: str = "aaa") -> Any:
         logger.warning(f"Failed to cache functions: {exc}")
         binary._functions_cache = None
 
-    return binary
+    return cast("Binary", binary)
 
 
 def track_mutation_count(binary: Any, batch_size: int = BATCH_MUTATION_CHECKPOINT) -> None:
