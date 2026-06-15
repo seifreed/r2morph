@@ -21,17 +21,6 @@ class ExceptionInfoReader:
     - Mach-O: __unwind_info and __eh_frame sections
     """
 
-    DW_CFA_advance_loc = 0x40
-    DW_CFA_offset = 0x80
-    DW_CFA_restore = 0xC0
-    DW_CFA_nop = 0x00
-    DW_CFA_set_loc = 0x01
-    DW_CFA_advance_loc1 = 0x02
-    DW_CFA_advance_loc2 = 0x03
-    DW_CFA_advance_loc4 = 0x04
-    DW_CFA_defineundefined_address_space = 0x19
-    DW_CFA_restore_extended = 0x16
-
     def __init__(self, binary: Binary):
         self.binary = binary
         self._frames: dict[int, ExceptionFrame] | None = None
