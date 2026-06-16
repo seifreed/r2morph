@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def mutations(engine: Any) -> Sequence[MutationPassProtocol]:
     """Return the registered mutation passes."""
-    return engine.pipeline.passes
+    return cast("Sequence[MutationPassProtocol]", engine.pipeline.passes)
 
 
 def add_mutation(engine: Any, mutation: MutationPassProtocol | str) -> MorphEngine:
