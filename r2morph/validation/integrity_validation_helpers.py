@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 def detect_binary_format(binary_path: Path) -> str:
@@ -139,4 +139,4 @@ def validate_macho_integrity(handler: Any) -> tuple[bool, list[str]]:
 
 def validate_pe_integrity(handler: Any) -> tuple[bool, list[str]]:
     """Validate PE binary integrity."""
-    return handler.validate_integrity()
+    return cast("tuple[bool, list[str]]", handler.validate_integrity())

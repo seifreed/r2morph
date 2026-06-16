@@ -6,7 +6,7 @@ import logging
 import random
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from r2morph.core.report_helpers import _build_pass_validation_context, _enrich_validation_policy
 from r2morph.validation import BinaryValidator, ValidationManager
@@ -122,4 +122,4 @@ def run(
         engine.save_report(report_path, engine._last_result)
 
     logger.info("Transformation complete")
-    return engine._last_result
+    return cast("dict[str, Any]", engine._last_result)
