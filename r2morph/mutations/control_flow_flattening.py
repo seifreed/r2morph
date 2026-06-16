@@ -75,7 +75,6 @@ import random
 from typing import Any
 
 from r2morph.mutations.base import MutationPass
-from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_helpers import (
@@ -150,7 +149,6 @@ class ControlFlowFlatteningPass(MutationPass):
         super().__init__(name="ControlFlowFlattening", config=config)
         self._predicate_generator = OpaquePredicateGenerator()
         self._jump_obfuscator = JumpObfuscator()
-        self._dispatcher_gen = DispatcherGenerator()
         self.max_functions = self.config.get("max_functions_to_flatten", 5)
         self.min_blocks = self.config.get("min_blocks_required", 3)
         self.probability = self.config.get("probability", 0.5)
