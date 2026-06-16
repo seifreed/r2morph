@@ -20,7 +20,6 @@ from r2morph.mutations.base import MutationPass
 from r2morph.mutations.constant_unfolding_helpers import (
     apply_single_unfold,
     calculate_sequence_size,
-    get_reg_mapping,
     match_unfold_pattern,
     select_candidates,
     unfold_constant_add,
@@ -92,9 +91,6 @@ class ConstantUnfoldingPass(MutationPass):
                 "preserves register semantics",
             ),
         )
-
-    def _get_reg_mapping(self, bits: int) -> dict[str, list[str]]:
-        return get_reg_mapping(bits)
 
     def _unfold_zero(self, reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | None:
         return unfold_zero(reg, bits, binary, base_addr)
