@@ -1,5 +1,3 @@
-import os
-
 from r2morph.detection.anti_analysis_bypass import (
     AntiAnalysisBypass,
     AntiAnalysisPattern,
@@ -19,32 +17,6 @@ def test_bypass_methods_and_status():
 
     status = bypass.get_bypass_status()
     assert status["bypass_count"] == 0
-
-
-def test_environment_masking_and_restore():
-    bypass = AntiAnalysisBypass()
-    original = dict(os.environ)
-
-    try:
-        assert bypass._apply_environment_masking() is True
-        status = bypass.get_bypass_status()
-        assert "environment_masking" in status["active_bypasses"]
-
-        restored = bypass.restore_environment()
-        assert restored is True
-    finally:
-        # Ensure environment is restored even if test fails
-        os.environ.clear()
-        os.environ.update(original)
-
-
-def test_timing_manipulation_and_environment_state():
-    bypass = AntiAnalysisBypass()
-    assert bypass._apply_timing_manipulation() is True
-
-    state = bypass._get_environment_state()
-    assert "timing_baseline" in state
-    assert state["timing_baseline"]
 
 
 def test_check_pattern_match_empty_pattern():

@@ -155,26 +155,6 @@ class AntiAnalysisBypass:
             self.timing_baseline,
         )
 
-    def _apply_environment_masking(self) -> bool:
-        """Apply environment masking bypass."""
-        return apply_bypass(
-            BypassTechnique.ENVIRONMENT_MASKING,
-            0.0,
-            self.active_bypasses,
-            self.environment_backup,
-            self.timing_baseline,
-        )
-
-    def _apply_timing_manipulation(self) -> bool:
-        """Apply timing manipulation bypass."""
-        return apply_bypass(
-            BypassTechnique.TIMING_MANIPULATION,
-            0.0,
-            self.active_bypasses,
-            self.environment_backup,
-            self.timing_baseline,
-        )
-
     def _backup_environment(self) -> None:
         """Backup current environment state."""
         backup_environment(self.environment_backup)
