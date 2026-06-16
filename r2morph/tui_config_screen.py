@@ -36,7 +36,6 @@ class TUIConfigScreen:
 
     def __init__(self, console: Console | None = None) -> None:
         self.console = console or Console()
-        self._current_pass: str | None = None
         self._configs: dict[str, TUIPassConfig] = {}
 
     def get_config(self, pass_name: str) -> TUIPassConfig:
