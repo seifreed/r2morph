@@ -8,7 +8,10 @@ import shutil
 import tempfile
 import time
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from r2morph.core.engine import MorphEngine
 
 from r2morph.core.binary import Binary
 from r2morph.core.constants import (
@@ -119,7 +122,7 @@ def auto_detect_analysis_level(engine: Any) -> str:
     return level
 
 
-def analyze(engine: Any, level: str = "auto") -> Any:
+def analyze(engine: Any, level: str = "auto") -> MorphEngine:
     """Analyze the loaded binary using the engine state."""
     if not engine.binary:
         raise RuntimeError("No binary loaded. Call load_binary() first.")
@@ -157,4 +160,4 @@ def analyze(engine: Any, level: str = "auto") -> Any:
             f"batch processing with r2 restarts every {BATCH_MUTATION_CHECKPOINT} mutations."
         )
 
-    return engine
+    return cast("MorphEngine", engine)

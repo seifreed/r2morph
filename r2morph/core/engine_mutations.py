@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from r2morph.protocols import MutationPassProtocol
+
+if TYPE_CHECKING:
+    from r2morph.core.engine import MorphEngine
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +19,7 @@ def mutations(engine: Any) -> Sequence[MutationPassProtocol]:
     return engine.pipeline.passes
 
 
-def add_mutation(engine: Any, mutation: MutationPassProtocol | str) -> Any:
+def add_mutation(engine: Any, mutation: MutationPassProtocol | str) -> MorphEngine:
     """Add a mutation pass to the pipeline."""
     if isinstance(mutation, str):
         mutation = resolve_mutation_pass(mutation)
@@ -25,7 +28,7 @@ def add_mutation(engine: Any, mutation: MutationPassProtocol | str) -> Any:
 
     engine.pipeline.add_pass(mutation)
     logger.debug(f"Added mutation: {mutation.__class__.__name__}")
-    return engine
+    return cast("MorphEngine", engine)
 
 
 def resolve_mutation_pass(name: str) -> MutationPassProtocol:
@@ -51,8 +54,8 @@ def resolve_mutation_pass(name: str) -> MutationPassProtocol:
     return cls()
 
 
-def remove_mutation(engine: Any, mutation_name: str) -> Any:
+def remove_mutation(engine: Any, mutation_name: str) -> MorphEngine:
     """Remove a mutation pass from the pipeline by name."""
     engine.pipeline.remove_pass_by_name(mutation_name)
     logger.debug(f"Removed mutation: {mutation_name}")
-    return engine
+    return cast("MorphEngine", engine)
