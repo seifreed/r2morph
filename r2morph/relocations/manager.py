@@ -43,7 +43,6 @@ class RelocationManager:
         self.binary = binary
         self.relocations: list[Relocation] = []
         self.address_map: dict[int, int] = {}
-        self._analyzed_refs: set[int] = set()
 
     def _get_endianness(self) -> "ByteOrder":
         """Detect binary endianness from architecture info."""
