@@ -23,8 +23,6 @@ from r2morph.validation.mutation_fuzzer_inputs import (
     generate_ascii_input,
     generate_binary_input,
     generate_edge_case_input,
-    generate_format_string_input,
-    generate_path_like_input,
     generate_random_input,
     generate_structured_input,
     generate_test_case,
@@ -59,16 +57,6 @@ class MutationPassFuzzer:
         if self.config.seed is not None:
             random.seed(self.config.seed)
 
-        self.test_case_generators = {
-            "random": lambda size_hint, _self=self: _self._generate_random_input(size_hint),
-            "ascii": lambda size_hint, _self=self: _self._generate_ascii_input(size_hint),
-            "binary": lambda size_hint, _self=self: _self._generate_binary_input(size_hint),
-            "structured": lambda size_hint, _self=self: _self._generate_structured_input(size_hint),
-            "edge_case": lambda size_hint, _self=self: _self._generate_edge_case_input(size_hint),
-            "format_string": lambda size_hint, _self=self: _self._generate_format_string_input(size_hint),
-            "path_like": lambda size_hint, _self=self: _self._generate_path_like_input(size_hint),
-        }
-
     def _generate_random_input(self, size_hint: int) -> bytes:
         """Generate random binary input."""
         return generate_random_input(self.config, size_hint)
@@ -88,14 +76,6 @@ class MutationPassFuzzer:
     def _generate_edge_case_input(self, size_hint: int) -> bytes:
         """Generate edge case inputs."""
         return generate_edge_case_input(self.config, size_hint)
-
-    def _generate_format_string_input(self, size_hint: int) -> bytes:
-        """Generate format string inputs."""
-        return generate_format_string_input(self.config, size_hint)
-
-    def _generate_path_like_input(self, size_hint: int) -> bytes:
-        """Generate path-like inputs."""
-        return generate_path_like_input(self.config, size_hint)
 
     def generate_test_case(self, index: int) -> FuzzTestCase:
         """
