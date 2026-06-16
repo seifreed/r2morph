@@ -67,12 +67,6 @@ class SemanticValidator:
 
     def __init__(self, arch: str = "x86_64"):
         self.arch = arch
-        self._register_sizes = {
-            "x86_64": 64,
-            "x86": 32,
-            "arm64": 64,
-            "arm": 32,
-        }
 
     def validate_basic_block(
         self,
