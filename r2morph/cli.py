@@ -720,7 +720,8 @@ def cache(
     try:
         handle_cache_command(clear=clear, stats=stats, path=path, console=console)
     except SystemExit as exc:
-        raise typer.Exit(exc.code)
+        code = exc.code
+        raise typer.Exit(code if isinstance(code, int) else (0 if code is None else 1))
 
 
 def main() -> None:
