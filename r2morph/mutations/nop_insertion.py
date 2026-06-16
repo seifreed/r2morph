@@ -235,6 +235,10 @@ class NopInsertionPass(MutationPass):
                             mutated_disasm = f"nop x{size}"
 
                         mutated_bytes = binary.read_bytes(addr, size)
+                        # A rewrite that leaves the bytes unchanged is not a
+                        # mutation; do not record or count it.
+                        if mutated_bytes == original_bytes:
+                            continue
                         record = self._record_mutation(
                             function_address=func["addr"],
                             start_address=addr,
@@ -329,10 +333,16 @@ class NopInsertionPass(MutationPass):
                 if not new_bytes or len(new_bytes) != size:
                     continue
 
+                original_bytes = binary.read_bytes(addr, size)
+                # Some "equivalents" are encoding-identical aliases (e.g. ARM64
+                # `mov w0, #0` is `movz w0, #0`); writing them changes nothing, so
+                # they are not mutations and must not be recorded or counted.
+                if new_bytes == original_bytes:
+                    continue
+
                 baseline = {}
                 if self._validation_manager is not None:
                     baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
-                original_bytes = binary.read_bytes(addr, size)
                 if binary.write_bytes(addr, new_bytes):
                     self._record_mutation(
                         function_address=func["addr"],
