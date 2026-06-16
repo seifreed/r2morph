@@ -226,6 +226,72 @@ def get_register_class(arch: str) -> dict[str, list[str]]:
     return REGISTER_CLASSES.get(arch_family, {})
 
 
+# Registers the kernel reads or clobbers at a system call, by ABI. A system-call
+# instruction has no explicit operands, so a register holding a syscall number or
+# argument is live into the call with no textual use; renaming one silently breaks
+# the call. x86-64 `syscall`: rax=number, rdi/rsi/rdx/r10/r8/r9=args, rcx/r11
+# clobbered. 32-bit `int 0x80`/`sysenter`: eax=number, ebx/ecx/edx/esi/edi/ebp=args.
+_SYSCALL_ABI_BASE_REGISTERS = frozenset(
+    {
+        "rax",
+        "rdi",
+        "rsi",
+        "rdx",
+        "r10",
+        "r8",
+        "r9",
+        "rcx",
+        "r11",
+        "eax",
+        "ebx",
+        "ecx",
+        "edx",
+        "esi",
+        "edi",
+        "ebp",
+    }
+)
+_SYSCALL_MNEMONICS = frozenset({"syscall", "sysenter"})
+_SYSCALL_INT_VECTORS = frozenset({"0x80", "80h", "0x2e", "2eh"})
+
+
+def _register_variants(reg: str) -> set[str]:
+    """All size-spellings of a register (al/ax/eax/rax; r8/r8d/r8w/r8b)."""
+    for family in _X86_REGISTER_FAMILIES.values():
+        if reg in family:
+            return set(family)
+    match = re.fullmatch(r"(r\d+)[dwb]?", reg)
+    if match:
+        base = match.group(1)
+        return {base, f"{base}d", f"{base}w", f"{base}b"}
+    return {reg}
+
+
+def _instruction_is_syscall(disasm: str) -> bool:
+    """True for `syscall`/`sysenter` and `int` with a Linux/Windows syscall vector."""
+    tokens = disasm.split()
+    if not tokens:
+        return False
+    mnemonic = tokens[0]
+    if mnemonic in _SYSCALL_MNEMONICS:
+        return True
+    if mnemonic == "int" and len(tokens) > 1:
+        return tokens[1].rstrip(",") in _SYSCALL_INT_VECTORS
+    return False
+
+
+def syscall_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
+    """Register variants the kernel ABI reads/clobbers at any system call in the
+    window, or an empty set when none is present. Excluding these from register
+    substitution preserves the call's meaning (CLAUDE.md sec.8)."""
+    if not any(_instruction_is_syscall(insn.get("disasm", "").lower()) for insn in instructions):
+        return set()
+    unsafe: set[str] = set()
+    for base in _SYSCALL_ABI_BASE_REGISTERS:
+        unsafe |= _register_variants(base)
+    return unsafe
+
+
 def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) -> list[tuple[str, str]]:
     """Find valid register substitution opportunities."""
     register_classes = get_register_class(arch)
@@ -240,12 +306,15 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
                 if reg in disasm:
                     used_registers.add(reg)
 
+    # Registers feeding a system call are live with no textual use; never rename
+    # them (source) and never overwrite them with a substitution (target).
+    syscall_regs = syscall_live_registers(instructions)
     caller_saved = set(register_classes.get("caller_saved", []))
-    unused = sorted(caller_saved - used_registers)
+    unused = sorted(caller_saved - used_registers - syscall_regs)
     random.shuffle(unused)
 
     candidates = []
-    for i, used_reg in enumerate(sorted(used_registers & caller_saved)):
+    for i, used_reg in enumerate(sorted((used_registers & caller_saved) - syscall_regs)):
         if i < len(unused):
             candidates.append((used_reg, unused[i]))
     return candidates
@@ -372,6 +441,7 @@ __all__ = [
     "REGISTER_SIZES",
     "count_register_uses",
     "find_substitution_candidates",
+    "syscall_live_registers",
     "get_register_class",
     "is_safe_lea_substitution",
     "is_safe_size_extension_substitution",
