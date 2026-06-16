@@ -19,7 +19,7 @@ def patch_function_blocks(
     dispatcher_addr: int,
     validation_manager: Any | None,
     create_mutation_checkpoint: Callable[[str], Any | None],
-    record_mutation: Callable[..., None],
+    record_mutation: Callable[..., Any],
     session: Any | None,
     records: list[Any],
     rollback_policy: str,
