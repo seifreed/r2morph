@@ -122,9 +122,7 @@ class TypeInference:
 
     def __init__(self) -> None:
         self._type_counter: int = 0
-        self._type_cache: dict[int, TypeInfo] = {}
         self._address_types: dict[int, TypeInfo] = {}
-        self._register_types: dict[str, TypeInfo] = {}
 
     def _new_type_id(self) -> int:
         """Generate a new type ID."""
