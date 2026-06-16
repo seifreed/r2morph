@@ -48,8 +48,6 @@ class MemoryFlowAnalyzer:
         self._accesses: dict[int, list[MemoryAccess]] = {}
         self._locations: dict[int, MemoryLocation] = {}
         self._aliases: dict[int, set[int]] = {}
-        self._stack_frames: dict[int, dict[str, Any]] = {}
-        self._heap_objects: dict[int, dict[str, Any]] = {}
 
     def analyze_function(
         self,
