@@ -2,6 +2,7 @@ from r2morph.mutations.register_substitution_helpers import (
     abi_live_registers,
     find_substitution_candidates,
     get_register_class,
+    implicit_operand_pins,
     is_safe_lea_substitution,
     is_safe_size_extension_substitution,
     select_candidates,
@@ -117,3 +118,33 @@ def test_abi_live_registers_excludes_token_reading_call_return() -> None:
         {"disasm": "ret"},
     ]
     assert "rax" in abi_live_registers(window)
+
+
+def test_find_substitution_candidates_excludes_mul_implicit_registers() -> None:
+    """`mul` reads rax and writes rdx:rax implicitly; renaming either corrupts it."""
+    window = [
+        {"disasm": "mov rax, 5"},
+        {"disasm": "mul rbx"},
+        {"disasm": "mov rcx, rax"},
+        {"disasm": "ret"},
+    ]
+    sources = {orig for orig, _ in find_substitution_candidates(window, "x64")}
+    assert "rax" not in sources
+    assert "rdx" not in sources
+
+
+def test_find_substitution_candidates_excludes_rep_string_registers() -> None:
+    """`rep movsb` uses rsi/rdi/rcx implicitly as pointers and counter."""
+    window = [{"disasm": "mov rcx, 16"}, {"disasm": "rep movsb"}, {"disasm": "ret"}]
+    sources = {orig for orig, _ in find_substitution_candidates(window, "x64")}
+    assert "rcx" not in sources
+
+
+def test_implicit_operand_pins_skips_two_operand_imul() -> None:
+    """Two-operand `imul rax, rbx` is explicit, so it pins nothing (rax stays free)."""
+    assert implicit_operand_pins([{"disasm": "imul rax, rbx"}]) == set()
+    assert "rax" in implicit_operand_pins([{"disasm": "imul rbx"}])
+
+
+def test_implicit_operand_pins_empty_without_implicit_instructions() -> None:
+    assert implicit_operand_pins([{"disasm": "mov rax, rbx"}, {"disasm": "add rcx, 1"}]) == set()

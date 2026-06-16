@@ -324,6 +324,17 @@ _CANONICAL_REGISTER = _build_canonical_registers()
 _REGISTER_TOKEN_RE = re.compile(r"\b(" + "|".join(sorted(_CANONICAL_REGISTER, key=len, reverse=True)) + r")\b")
 
 
+def _build_register_families() -> dict[str, set[str]]:
+    """Group every register spelling by its canonical 64-bit identity."""
+    families: dict[str, set[str]] = {}
+    for spelling, base in _CANONICAL_REGISTER.items():
+        families.setdefault(base, set()).add(spelling)
+    return families
+
+
+_REGISTER_FAMILY = _build_register_families()
+
+
 def _register_tokens(text: str) -> list[str]:
     """Register spellings appearing in an operand string, in order."""
     return list(_REGISTER_TOKEN_RE.findall(text))
@@ -425,6 +436,59 @@ def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
     return unsafe
 
 
+# Instructions whose register operands are implicit (not written in the disassembly),
+# so a whole-token rename cannot follow them. Renaming any spelling of these fixed
+# registers corrupts the instruction. These mnemonics are uncommon, so the whole
+# register family is pinned on presence (sound, with negligible loss of opportunity)
+# rather than tracked with the per-transfer liveness used for ubiquitous calls.
+_IMPLICIT_RDX_RAX_MNEMONICS = frozenset({"mul", "div", "idiv"})
+_IMPLICIT_FIXED_REGISTERS = {
+    "cdq": ("rax", "rdx"),
+    "cqo": ("rax", "rdx"),
+    "cwd": ("rax", "rdx"),
+    "cdqe": ("rax",),
+    "cbw": ("rax",),
+    "rdtsc": ("rax", "rdx"),
+    "rdtscp": ("rax", "rdx", "rcx"),
+    "cpuid": ("rax", "rbx", "rcx", "rdx"),
+}
+_STRING_OP_FRAGMENTS = ("movs", "stos", "scas", "cmps", "lods")
+_STRING_OP_REGISTERS = frozenset({"rsi", "rdi", "rcx", "rax"})
+_REP_PREFIXES = frozenset({"rep", "repe", "repz", "repne", "repnz"})
+
+
+def _implicit_register_bases(disasm: str) -> frozenset[str]:
+    """Canonical registers an instruction reads/writes implicitly (no operand)."""
+    tokens = disasm.split()
+    if not tokens:
+        return frozenset()
+    mnemonic = tokens[0]
+    if mnemonic in _REP_PREFIXES:
+        following = tokens[1] if len(tokens) > 1 else ""
+        return _STRING_OP_REGISTERS if any(f in following for f in _STRING_OP_FRAGMENTS) else frozenset()
+    if mnemonic in _IMPLICIT_RDX_RAX_MNEMONICS:
+        return frozenset({"rax", "rdx"})
+    if mnemonic == "imul":  # implicit rdx:rax only in the single-operand form
+        operands = disasm[len(mnemonic) :].strip()
+        return frozenset({"rax", "rdx"}) if operands and "," not in operands else frozenset()
+    if mnemonic in _IMPLICIT_FIXED_REGISTERS:
+        return frozenset(_IMPLICIT_FIXED_REGISTERS[mnemonic])
+    if any(mnemonic.startswith(f) for f in _STRING_OP_FRAGMENTS):
+        return _STRING_OP_REGISTERS
+    return frozenset()
+
+
+def implicit_operand_pins(instructions: list[dict[str, Any]]) -> set[str]:
+    """Register spellings pinned by any implicit-operand instruction in the window."""
+    bases: set[str] = set()
+    for insn in instructions:
+        bases |= _implicit_register_bases(insn.get("disasm", "").lower())
+    pinned: set[str] = set()
+    for base in bases:
+        pinned |= _REGISTER_FAMILY.get(base, {base})
+    return pinned
+
+
 def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) -> list[tuple[str, str]]:
     """Find valid register substitution opportunities."""
     register_classes = get_register_class(arch)
@@ -439,10 +503,10 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
                 if reg in disasm:
                     used_registers.add(reg)
 
-    # Tokens whose value a call/syscall consumes or produces are live across the
-    # transfer with no renameable operand; never rename them (source) and never
-    # overwrite them with a substitution (target).
-    abi_regs = abi_live_registers(instructions)
+    # Tokens whose value a call/syscall consumes or produces, plus registers used
+    # implicitly by operandless instructions (mul/div/cpuid/rep ...), are live with
+    # no renameable operand; never rename them and never overwrite them.
+    abi_regs = abi_live_registers(instructions) | implicit_operand_pins(instructions)
     caller_saved = set(register_classes.get("caller_saved", []))
     unused = sorted(caller_saved - used_registers - abi_regs)
     random.shuffle(unused)
@@ -576,6 +640,7 @@ __all__ = [
     "abi_live_registers",
     "count_register_uses",
     "find_substitution_candidates",
+    "implicit_operand_pins",
     "get_register_class",
     "is_safe_lea_substitution",
     "is_safe_size_extension_substitution",
