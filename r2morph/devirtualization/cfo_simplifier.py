@@ -65,9 +65,6 @@ class CFOSimplifier:
         self.dispatcher_threshold = 0.7
         self.opaque_predicate_threshold = 0.8
 
-        # Analysis cache
-        self._analysis_cache: dict[int, Any] = {}
-
         if not NETWORKX_AVAILABLE:
             logger.warning("NetworkX not available - CFG analysis will be limited")
 
