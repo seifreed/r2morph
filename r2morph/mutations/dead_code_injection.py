@@ -38,9 +38,7 @@ from r2morph.mutations.dead_code_injection_helpers import (
 )
 from r2morph.mutations.dead_code_injection_helpers import (
     find_injection_points,
-    generate_dead_code,
     generate_dead_code_for_size,
-    generate_nop_sequence,
     is_safe_injection_point,
 )
 
@@ -257,9 +255,3 @@ class DeadCodeInjectionPass(MutationPass):
 
     def _generate_dead_code_for_size(self, binary: Any, max_size: int, func_addr: int) -> bytes | None:
         return generate_dead_code_for_size(binary, max_size, func_addr, self.code_complexity)
-
-    def _generate_nop_sequence(self, size: int, arch: str, bits: int) -> bytes:
-        return generate_nop_sequence(arch, bits, size)
-
-    def _generate_dead_code(self, binary: Any) -> list[str]:
-        return generate_dead_code(binary, self.code_complexity)
