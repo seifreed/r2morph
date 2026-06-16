@@ -187,16 +187,6 @@ class MorphSession:
         except Exception as e:
             logger.debug(f"Failed to remove checkpoint {checkpoint.name}: {e}")
 
-    def _restore_from_last_checkpoint(self) -> None:
-        """Attempt to restore binary from the most recent checkpoint."""
-        for checkpoint in reversed(self.checkpoints):
-            if checkpoint.binary_path.exists():
-                logger.warning(f"Restoring from checkpoint: {checkpoint.name}")
-                if self.current_binary is not None:
-                    shutil.copy2(checkpoint.binary_path, self.current_binary)
-                self.mutations_count = checkpoint.mutations_applied
-                break
-
     def list_checkpoints(self) -> list[Checkpoint]:
         """
         List all checkpoints in this session.
