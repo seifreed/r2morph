@@ -5,17 +5,20 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
 
 def build_report(engine: Any, result: dict[str, Any] | None = None) -> dict[str, Any]:
     """Build a stable machine-readable engine report."""
-    return engine._report_builder.assemble_report(
-        result,
-        pipeline_passes=engine.pipeline.passes,
-        last_result=engine._last_result,
+    return cast(
+        "dict[str, Any]",
+        engine._report_builder.assemble_report(
+            result,
+            pipeline_passes=engine.pipeline.passes,
+            last_result=engine._last_result,
+        ),
     )
 
 
