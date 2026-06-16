@@ -11,6 +11,7 @@ from r2morph.validation.benchmark_types import PerformanceMetrics
 
 def measure_performance(func: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[PerformanceMetrics, Any]:
     """Measure execution time, memory and CPU usage for a callable."""
+    psutil: Any
     try:
         import psutil
 
