@@ -12,7 +12,6 @@ import logging
 import random
 from typing import Any
 
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.block_reordering_helpers import (
     calculate_jump_cost,
@@ -20,6 +19,7 @@ from r2morph.mutations.block_reordering_helpers import (
     generate_reordering,
     should_consider_function,
 )
+from r2morph.mutations.block_reordering_relocation import reorder_function_blocks
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,12 @@ class BlockReorderingPass(MutationPass):
         """
         Apply block reordering mutations to the binary.
 
+        Blocks are relocated as whole units with every control transfer
+        re-encoded for the new layout (see ``block_reordering_relocation``).
+        Fall-through edges are always preserved with an explicit jump when the
+        successor is no longer physically adjacent; a function that cannot be
+        relocated byte-correctly is left untouched.
+
         Args:
             binary: Any instance to mutate
 
@@ -77,9 +83,9 @@ class BlockReorderingPass(MutationPass):
             Dictionary with mutation statistics
         """
         self._ensure_analyzed(binary)
+        self._reset_random()
 
         functions = binary.get_functions()
-        mutations_applied = 0
         functions_mutated = 0
         total_blocks_reordered = 0
         functions_processed = 0
@@ -104,112 +110,18 @@ class BlockReorderingPass(MutationPass):
             if random.random() > self.probability:
                 continue
 
-            original_order = list(range(len(blocks)))
-            new_order = self._generate_reordering(blocks)
-
-            if new_order == original_order:
-                continue
-
-            logger.debug(f"Attempting to reorder function {func.get('name')}: {len(blocks)} blocks")
-
-            # Reordering is done by inserting jumps, never by swapping block bytes.
-            # Swapping the raw bytes of two blocks relocates the instructions inside
-            # them without re-encoding their RIP-relative jumps/calls and without
-            # updating any branch that targets them, so any block containing or
-            # targeted by relative control flow is silently corrupted. The jump
-            # insertion below preserves every original transfer.
-            jumps_inserted = 0
-
-            for i in range(len(blocks) - 1):
-                if jumps_inserted >= 2:
-                    break
-
-                block = blocks[i]
-
-                addr = block.get("addr", 0)
-                size = block.get("size", 0)
-
-                if size < MINIMUM_FUNCTION_SIZE:
-                    continue
-
-                try:
-                    last_insn = binary.r2.cmdj(f"pdj 1 @ 0x{addr + size - 5:x}")
-                    if last_insn and len(last_insn) > 0:
-                        insn_type = last_insn[0].get("type", "")
-                        if insn_type in ["jmp", "cjmp", "ret", "call"]:
-                            continue
-                except (ValueError, OSError, BrokenPipeError) as e:
-                    logger.debug(f"Failed to disassemble instruction: {e}")
-                    continue
-
-                if random.random() > 0.3:
-                    continue
-
-                if i + 2 < len(blocks):
-                    target_block = blocks[i + 2]
-                    target_addr = target_block.get("addr", 0)
-
-                    arch_family, _ = binary.get_arch_family()
-                    if arch_family == "arm":
-                        jmp_insn = f"b 0x{target_addr:x}"
-                        max_jmp_size = 4
-                    else:
-                        jmp_insn = f"jmp 0x{target_addr:x}"
-                        max_jmp_size = 5
-                    jmp_bytes = binary.assemble(jmp_insn, func["addr"])
-
-                    if jmp_bytes and len(jmp_bytes) <= max_jmp_size:
-                        # Verify the last instruction(s) at the write point won't
-                        # be partially overwritten — only write into trailing NOPs
-                        # or after the last complete instruction boundary.
-                        write_addr = addr + size - len(jmp_bytes)
-
-                        # Find the last instruction that starts at or before write_addr
-                        try:
-                            block_instrs = binary.r2.cmdj(f"pdj -10 @ 0x{addr + size:x}")
-                            if block_instrs:
-                                # Check that write_addr falls on an instruction boundary
-                                insn_boundaries = {
-                                    insn.get("offset", 0) for insn in block_instrs if insn.get("offset", 0) >= addr
-                                }
-                                if write_addr not in insn_boundaries and write_addr != addr + size:
-                                    logger.debug(
-                                        f"Skipping jump insert at 0x{write_addr:x}: " f"not on instruction boundary"
-                                    )
-                                    continue
-                        except (ValueError, OSError, BrokenPipeError) as exc:
-                            # The boundary check could not run. Writing the
-                            # jump without it risks bisecting an instruction
-                            # and corrupting the code. Fail safe: skip this
-                            # insertion rather than write unverified.
-                            logger.debug(
-                                "Skipping jump insert at 0x%x: boundary check unavailable (%s)",
-                                write_addr,
-                                exc,
-                            )
-                            continue
-
-                        try:
-                            if binary.write_bytes(write_addr, jmp_bytes):
-                                logger.info(f"Inserted jump at 0x{write_addr:x}: {jmp_insn}")
-                                jumps_inserted += 1
-                                mutations_applied += 1
-                        except (ValueError, OSError, BrokenPipeError) as e:
-                            logger.debug(f"Failed to insert jump: {e}")
-
-            if jumps_inserted > 0:
+            blocks_reordered = reorder_function_blocks(binary, func, blocks, random)
+            if blocks_reordered:
                 functions_mutated += 1
-                logger.info(f"Inserted {jumps_inserted} reordering jumps in {func.get('name')}")
-            else:
-                logger.debug(f"Could not reorder {func.get('name')}: no suitable blocks found")
+                total_blocks_reordered += blocks_reordered
 
         logger.info(
-            f"Block reordering complete: {functions_mutated} functions mutated, "
-            f"{total_blocks_reordered} blocks reordered"
+            f"Block reordering complete: {functions_mutated} functions reordered, "
+            f"{total_blocks_reordered} blocks relocated"
         )
 
         return {
-            "mutations_applied": mutations_applied,
+            "mutations_applied": functions_mutated,
             "functions_mutated": functions_mutated,
             "total_blocks_reordered": total_blocks_reordered,
             "total_functions": len(functions),
