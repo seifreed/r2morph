@@ -18,15 +18,9 @@ from r2morph.analysis.symbolic.syntia_analysis_helpers import (
     classify_handler_type,
     fallback_semantic_analysis,
     generate_equivalent_native_code,
-    synthesize_handler_semantics,
 )
 from r2morph.analysis.symbolic.syntia_equivalence import (
     check_semantic_equivalence as check_semantic_equivalence_impl,
-)
-from r2morph.analysis.symbolic.syntia_equivalence_helpers import (
-    check_mba_equivalence,
-    normalize_expression,
-    synthesis_equivalence_check,
 )
 from r2morph.analysis.symbolic.syntia_handler_analysis import (
     analyze_vm_handler as analyze_vm_handler_impl,
@@ -189,21 +183,6 @@ class SyntiaFramework:
     ) -> VMHandlerSemantics:
         return analyze_vm_handler_impl(handler_instructions, handler_id, self.learn_instruction_semantics)
 
-    def _synthesize_handler_semantics(self, instruction_semantics: list[InstructionSemantics]) -> str | None:
-        """
-        Synthesize overall semantics for a VM handler from individual instructions.
-
-        Args:
-            instruction_semantics: List of instruction semantics
-
-        Returns:
-            Overall semantic formula or None
-        """
-        if not instruction_semantics:
-            return None
-
-        return synthesize_handler_semantics(instruction_semantics)
-
     def _classify_handler_type(self, instruction_semantics: list[InstructionSemantics]) -> str:
         """
         Classify VM handler type based on instruction semantics.
@@ -260,31 +239,6 @@ class SyntiaFramework:
 
     def check_semantic_equivalence(self, expr1: str, expr2: str, variables: set[str]) -> float:
         return check_semantic_equivalence_impl(expr1, expr2, variables, self._evaluate_expression)
-
-    def _normalize_expression(self, expression: str) -> str:
-        """Normalize an expression for comparison."""
-        return normalize_expression(expression)
-
-    def _check_mba_equivalence(self, expr1: str, expr2: str) -> float:
-        """Check if expressions are known MBA equivalents."""
-        return check_mba_equivalence(expr1, expr2)
-
-    def _synthesis_equivalence_check(self, expr1: str, expr2: str, variables: set[str]) -> float:
-        """
-        Use synthesis to check expression equivalence.
-
-        Generates test values and evaluates both expressions to check equivalence.
-
-        Args:
-            expr1: First expression
-            expr2: Second expression
-            variables: Variables in expressions
-
-        Returns:
-            Confidence score (0-1)
-        """
-
-        return synthesis_equivalence_check(expr1, expr2, variables, self._evaluate_expression)
 
     def _evaluate_expression(self, expression: str, values: dict[str, int]) -> int | None:
         return evaluate_expression(expression, values)
