@@ -102,11 +102,6 @@ class ParallelMutationEngine:
         with self._lock:
             self._results[pass_name] = result
 
-    def _get_results_copy(self) -> dict[str, PassResult]:
-        """Thread-safe results copy."""
-        with self._lock:
-            return self._results.copy()
-
     def _save_checkpoint(self, pass_name: str) -> Path:
         """Save a checkpoint under the binary mutation lock."""
         if not self.use_checkpoints:
