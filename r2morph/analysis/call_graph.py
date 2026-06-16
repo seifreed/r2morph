@@ -60,8 +60,6 @@ class CallGraph:
         self.nodes: dict[int, CallNode] = {}
         self.edges: list[CallEdge] = []
         self.entry_points: list[int] = []
-        self._call_sites: dict[int, list[int]] = {}
-        self._indirect_targets: dict[int, list[int]] = {}
         self._recursive_chains: list[list[int]] = []
         self._strongly_connected: list[set[int]] = []
 
