@@ -136,20 +136,6 @@ class ConstraintSolver:
             self._convert_single_constraint,
         )
 
-    def _is_constraint_always_true(self, constraint: Any) -> bool:
-        return _constraint_solver_analysis.is_constraint_always_true(
-            constraint,
-            z3,
-            self._convert_single_constraint,
-        )
-
-    def _is_constraint_always_false(self, constraint: Any) -> bool:
-        return _constraint_solver_analysis.is_constraint_always_false(
-            constraint,
-            z3,
-            self._convert_single_constraint,
-        )
-
     def _convert_single_constraint(self, constraint: Any) -> Any | None:
         return _constraint_solver_parsing.convert_single_constraint(constraint, z3)
 
