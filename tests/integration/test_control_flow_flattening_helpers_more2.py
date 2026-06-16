@@ -27,10 +27,10 @@ def test_control_flow_flattening_jump_and_nop_helpers():
     assert mutator._is_conditional_jump("jne", "unknown") is True
 
     instructions = [
-        {"mnemonic": "nop", "offset": 0x1000, "size": 1},
-        {"mnemonic": "nop", "offset": 0x1001, "size": 1},
-        {"mnemonic": "nop", "offset": 0x1002, "size": 1},
-        {"mnemonic": "mov", "offset": 0x1003, "size": 2},
+        {"opcode": "nop", "offset": 0x1000, "size": 1},
+        {"opcode": "nop", "offset": 0x1001, "size": 1},
+        {"opcode": "nop", "offset": 0x1002, "size": 1},
+        {"opcode": "mov", "offset": 0x1003, "size": 2},
     ]
     sequences = mutator._find_nop_sequences(instructions)
     assert sequences == [(0x1000, 3)]

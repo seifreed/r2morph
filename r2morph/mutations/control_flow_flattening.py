@@ -79,6 +79,7 @@ from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_helpers import (
     find_nop_sequences,
+    flags_live_at,
     is_conditional_jump,
     select_candidates,
 )
@@ -298,6 +299,12 @@ class ControlFlowFlatteningPass(MutationPass):
                 break
 
             if nop_size >= 5:  # Need at least 5 bytes for meaningful dead code
+                # The dead-code sequences clobber status flags (e.g. xor reg,reg
+                # sets ZF). Inserting them where flags are live before a
+                # downstream conditional would flip the branch, so only insert
+                # where flags are provably dead.
+                if flags_live_at(all_instrs, nop_start, arch_family):
+                    continue
                 if insert_dead_code_with_predicate(binary, nop_start, nop_size, arch_family, bits):
                     predicates_added += 1
                     mutations["opaque_predicates"] += 1

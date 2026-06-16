@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
 logger = logging.getLogger(__name__)
 
@@ -122,13 +123,24 @@ def is_conditional_jump(mnemonic: str, arch: str) -> bool:
     return False
 
 
+def _instruction_is_nop(insn: dict) -> bool:
+    """True if a radare2 instruction record is a NOP.
+
+    ``get_function_disasm`` records expose the mnemonic under ``type``/``opcode``
+    (not ``mnemonic``), so detection keys off those fields.
+    """
+    if insn.get("type", "").lower() == "nop":
+        return True
+    return bool(insn.get("opcode", insn.get("disasm", "")).strip().lower().startswith("nop"))
+
+
 def find_nop_sequences(instructions: list[dict]) -> list[tuple[int, int]]:
     """Find sequences of NOP instructions that can be replaced."""
     sequences = []
     i = 0
 
     while i < len(instructions):
-        if instructions[i].get("mnemonic", "").lower() != "nop":
+        if not _instruction_is_nop(instructions[i]):
             i += 1
             continue
 
@@ -142,16 +154,36 @@ def find_nop_sequences(instructions: list[dict]) -> list[tuple[int, int]]:
 def consume_nop_run(instructions: list[dict], i: int) -> tuple[int, int, int]:
     """Accumulate the consecutive NOP run starting at index ``i``."""
     insn = instructions[i]
-    start_addr = insn.get("offset", insn.get("addr", 0))
+    start_addr = insn.get("addr", insn.get("offset", 0))
     total_size = insn.get("size", 1)
     j = i + 1
     while j < len(instructions):
         next_insn = instructions[j]
-        if next_insn.get("mnemonic", "").lower() != "nop":
+        if not _instruction_is_nop(next_insn):
             break
         total_size += next_insn.get("size", 1)
         j += 1
     return start_addr, total_size, j
+
+
+def flags_live_at(instructions: list[dict], insert_addr: int, arch: str) -> bool:
+    """True if inserting flag-clobbering code at ``insert_addr`` could corrupt flow.
+
+    Returns True when an x86 status flag may be read after ``insert_addr`` before
+    being overwritten (so a flag-clobbering insertion would break a downstream
+    conditional). Conservatively True for non-x86 architectures, where there is
+    no flag model yet, so flag-clobbering code is never inserted there.
+    """
+    if arch != "x86":
+        return True
+    disasms = [ins.get("disasm", ins.get("opcode", "")) for ins in instructions]
+    idx = -1
+    for j, ins in enumerate(instructions):
+        if ins.get("addr", ins.get("offset", 0)) < insert_addr:
+            idx = j
+        else:
+            break
+    return flags_live_after(disasms, idx)
 
 
 def assemble_bounded(binary: Any, instructions: list[str], max_size: int) -> bytes | None:
@@ -172,6 +204,7 @@ __all__ = [
     "candidate_block_count",
     "consume_nop_run",
     "find_nop_sequences",
+    "flags_live_at",
     "is_conditional_jump",
     "select_candidates",
 ]

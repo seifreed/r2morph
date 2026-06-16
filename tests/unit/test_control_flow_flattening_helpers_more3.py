@@ -17,13 +17,13 @@ def test_is_conditional_jump_variants():
 def test_find_nop_sequences():
     pass_obj = ControlFlowFlatteningPass(config={"probability": 1.0})
     instructions = [
-        {"mnemonic": "nop", "offset": 0x1000, "size": 1},
-        {"mnemonic": "nop", "offset": 0x1001, "size": 1},
-        {"mnemonic": "nop", "offset": 0x1002, "size": 1},
-        {"mnemonic": "mov", "offset": 0x1003, "size": 2},
-        {"mnemonic": "nop", "offset": 0x1005, "size": 1},
-        {"mnemonic": "nop", "offset": 0x1006, "size": 2},
-        {"mnemonic": "nop", "offset": 0x1008, "size": 1},
+        {"opcode": "nop", "offset": 0x1000, "size": 1},
+        {"opcode": "nop", "offset": 0x1001, "size": 1},
+        {"opcode": "nop", "offset": 0x1002, "size": 1},
+        {"opcode": "mov", "offset": 0x1003, "size": 2},
+        {"opcode": "nop", "offset": 0x1005, "size": 1},
+        {"opcode": "nop", "offset": 0x1006, "size": 2},
+        {"opcode": "nop", "offset": 0x1008, "size": 1},
     ]
     sequences = pass_obj._find_nop_sequences(instructions)
     assert sequences[0] == (0x1000, 3)

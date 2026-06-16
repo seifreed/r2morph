@@ -33,10 +33,10 @@ def test_control_flow_flattening_helpers():
     assert not cff._is_conditional_jump("jmp", "x86")
 
     instructions = [
-        {"mnemonic": "nop", "offset": 0x1000, "size": 1},
-        {"mnemonic": "nop", "offset": 0x1001, "size": 1},
-        {"mnemonic": "nop", "offset": 0x1002, "size": 1},
-        {"mnemonic": "mov", "offset": 0x1003, "size": 2},
+        {"opcode": "nop", "offset": 0x1000, "size": 1},
+        {"opcode": "nop", "offset": 0x1001, "size": 1},
+        {"opcode": "nop", "offset": 0x1002, "size": 1},
+        {"opcode": "mov", "offset": 0x1003, "size": 2},
     ]
     sequences = cff._find_nop_sequences(instructions)
     assert sequences

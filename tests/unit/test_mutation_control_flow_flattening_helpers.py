@@ -11,10 +11,10 @@ def test_control_flow_flattening_helpers():
     assert pass_obj._is_conditional_jump("b", "arm") is False
 
     instructions = [
-        {"offset": 0x1000, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1001, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1002, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1003, "size": 1, "mnemonic": "mov"},
+        {"offset": 0x1000, "size": 1, "opcode": "nop"},
+        {"offset": 0x1001, "size": 1, "opcode": "nop"},
+        {"offset": 0x1002, "size": 1, "opcode": "nop"},
+        {"offset": 0x1003, "size": 1, "opcode": "mov"},
     ]
     sequences = pass_obj._find_nop_sequences(instructions)
     assert sequences

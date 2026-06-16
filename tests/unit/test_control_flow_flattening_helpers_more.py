@@ -17,17 +17,17 @@ def test_control_flow_flattening_nop_sequence_detection() -> None:
     pass_obj = ControlFlowFlatteningPass()
 
     instructions = [
-        {"offset": 0x1000, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1001, "size": 2, "mnemonic": "nop"},
-        {"offset": 0x1003, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1004, "size": 1, "mnemonic": "mov"},
+        {"offset": 0x1000, "size": 1, "opcode": "nop"},
+        {"offset": 0x1001, "size": 2, "opcode": "nop"},
+        {"offset": 0x1003, "size": 1, "opcode": "nop"},
+        {"offset": 0x1004, "size": 1, "opcode": "mov"},
     ]
     assert pass_obj._find_nop_sequences(instructions) == [(0x1000, 4)]
 
     short_sequence = [
-        {"offset": 0x2000, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x2001, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x2002, "size": 1, "mnemonic": "mov"},
+        {"offset": 0x2000, "size": 1, "opcode": "nop"},
+        {"offset": 0x2001, "size": 1, "opcode": "nop"},
+        {"offset": 0x2002, "size": 1, "opcode": "mov"},
     ]
     assert pass_obj._find_nop_sequences(short_sequence) == []
 
