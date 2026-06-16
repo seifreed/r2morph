@@ -120,7 +120,7 @@ class ReportAssembler:
             gate_failure_severity_priority=self._gate_failure_reporter.build_gate_failure_severity_priority(
                 gate_failures
             ),
-            pipeline_passes=pipeline_passes,
+            pipeline_passes=list(pipeline_passes),
             report_view_builder=self._report_view_builder,
         )
 
