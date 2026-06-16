@@ -247,36 +247,6 @@ class FunctionOutliningPass(MutationPass):
 
         return chunks
 
-    def _generate_outline_asm(self, chunks: list[OutlinedChunk], interleave: bool = True) -> tuple[str, dict[int, int]]:
-        """
-        Generate assembly for outlined chunks.
-
-        Returns:
-            Tuple of (assembly code, chunk_id to offset mapping)
-        """
-        asm_lines = [f"; Outlined function chunks ({len(chunks)} total)", ""]
-
-        if interleave:
-            chunk_order = list(enumerate(chunks))
-            random.shuffle(chunk_order)
-        else:
-            chunk_order = list(enumerate(chunks))
-
-        chunk_offsets: dict[int, int] = {}
-
-        for idx, (original_idx, chunk) in enumerate(chunk_order):
-            for insn in chunk.instructions:
-                disasm = insn.get("disasm", insn.get("opcode", ""))
-                if insn.get("type") == "jmp" and insn.get("jump"):
-                    target = insn.get("jump")
-                    asm_lines.append(f"    jmp target_{target:04x}  ; redirected")
-                elif insn.get("type") in ("cjmp", "call"):
-                    asm_lines.append(f"    {disasm}  ; control flow")
-                else:
-                    asm_lines.append(f"    {disasm}")
-
-        return "\n".join(asm_lines), chunk_offsets
-
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply function outlining.
