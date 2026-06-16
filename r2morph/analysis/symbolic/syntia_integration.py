@@ -139,18 +139,6 @@ class SyntiaFramework:
 
         return results
 
-    def _synthesize_with_syntia(
-        self, instruction_bytes: bytes, disassembly: str, context: dict[str, Any] | None
-    ) -> dict[str, Any] | None:
-        """Placeholder for Syntia-based program synthesis.
-
-        Not yet implemented: always returns None. Kept as a named entry
-        point so a future Syntia backend can be wired up without changing
-        callers. The previous version's docstring claimed to "perform
-        actual synthesis" — corrected to admit it is a stub.
-        """
-        return None
-
     def _fallback_semantic_analysis(self, instruction_bytes: bytes, disassembly: str) -> dict[str, Any]:
         """
         Fallback semantic analysis when Syntia is not available.
