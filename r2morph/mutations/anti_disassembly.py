@@ -96,36 +96,6 @@ class AntiDisassemblyPass(MutationPass):
             logger.debug(f"Failed to inject snippet: {e}")
             return False
 
-    def _inject_overlapping(self, binary: Any, addr: int) -> bool:
-        """Inject overlapping instruction pattern."""
-        snippet = random.choice(OVERLAPPING_X64)
-        try:
-            snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return bool(binary.write_bytes(addr, snippet_bytes))
-        except Exception as e:
-            logger.debug(f"Failed to inject overlapping pattern: {e}")
-            return False
-
-    def _inject_false_branch(self, binary: Any, addr: int) -> bool:
-        """Inject false branch pattern."""
-        snippet = random.choice(FALSE_BRANCH_X64)
-        try:
-            snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return bool(binary.write_bytes(addr, snippet_bytes))
-        except Exception as e:
-            logger.debug(f"Failed to inject false branch pattern: {e}")
-            return False
-
-    def _inject_jump_middle(self, binary: Any, addr: int) -> bool:
-        """Inject jump into middle of instruction."""
-        snippet = random.choice(JUMP_MIDDLE_X64)
-        try:
-            snippet_bytes = bytes.fromhex(snippet.bytes_hex)
-            return bool(binary.write_bytes(addr, snippet_bytes))
-        except Exception as e:
-            logger.debug(f"Failed to inject jump-middle pattern: {e}")
-            return False
-
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply anti-disassembly techniques.
