@@ -29,7 +29,6 @@ from .cfo_simplifier_transforms import (
     analyze_dispatch_targets,
     calculate_complexity,
     eliminate_opaque_predicates,
-    reconstruct_control_flow,
     remove_fake_control_flow,
     resolve_indirect_jumps,
     simplify_dispatcher_flattening,
@@ -245,9 +244,6 @@ class CFOSimplifier:
 
     def _analyze_dispatch_targets(self, dispatcher_info: DispatcherInfo) -> None:
         analyze_dispatch_targets(self, dispatcher_info)
-
-    def _reconstruct_control_flow(self, dispatcher: DispatcherInfo) -> list[tuple[int, int]]:
-        return reconstruct_control_flow(self, dispatcher)
 
     def _calculate_complexity(self) -> int:
         return calculate_complexity(self)
