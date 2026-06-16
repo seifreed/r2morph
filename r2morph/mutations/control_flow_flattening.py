@@ -79,10 +79,10 @@ from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_helpers import (
     find_nop_sequences,
-    flags_live_at,
     is_conditional_jump,
     select_candidates,
 )
+from r2morph.mutations.instruction_substitution_helpers import flags_live_at
 from r2morph.mutations.control_flow_flattening_strategies import (
     apply_block_strategies,
     insert_dead_code_with_predicate,

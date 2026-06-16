@@ -41,6 +41,7 @@ from r2morph.mutations.dead_code_injection_helpers import (
     generate_dead_code_for_size,
     is_safe_injection_point,
 )
+from r2morph.mutations.instruction_substitution_helpers import flags_live_at
 
 logger = logging.getLogger(__name__)
 
@@ -183,12 +184,21 @@ class DeadCodeInjectionPass(MutationPass):
         num_to_inject = min(self.max_injections, len(injection_points))
         selected_points = random.sample(injection_points, num_to_inject)
 
+        arch_family, _ = binary.get_arch_family()
+
         for point in selected_points:
             if random.random() > self.probability:
                 continue
 
             inject_addr = point["addr"]
             available_size = point["size"]
+
+            # The dead-code sequences clobber status flags (e.g. xor reg,reg
+            # sets ZF). Overwriting padding that sits in a live-flag window
+            # before a downstream conditional would flip the branch, so only
+            # inject where the clobbered flags are provably dead.
+            if flags_live_at(instructions, inject_addr, arch_family):
+                continue
 
             dead_code = self._generate_dead_code_for_size(binary, available_size, func_addr)
 

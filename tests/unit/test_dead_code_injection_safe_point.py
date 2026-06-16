@@ -6,8 +6,8 @@ def test_dead_code_injection_safe_point_unconditional():
     pass_obj = DeadCodeInjectionPass()
 
     instructions = [
-        {"mnemonic": "jmp"},
-        {"mnemonic": "nop"},
+        {"opcode": "jmp"},
+        {"opcode": "nop"},
     ]
 
     assert "jmp" in UNCONDITIONAL_TRANSFERS
@@ -15,7 +15,7 @@ def test_dead_code_injection_safe_point_unconditional():
 
     # Non-padding after unconditional should be unsafe
     instructions2 = [
-        {"mnemonic": "ret"},
-        {"mnemonic": "mov"},
+        {"opcode": "ret"},
+        {"opcode": "mov"},
     ]
     assert pass_obj._is_safe_injection_point(instructions2[1], instructions2, 1) is False

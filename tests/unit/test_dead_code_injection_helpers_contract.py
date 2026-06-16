@@ -26,11 +26,11 @@ def test_dead_code_injection_helpers_cover_the_core_paths(monkeypatch) -> None:
     monkeypatch.setattr(dead_code_helpers, "generate_nop_sequence", lambda arch, bits, size: b"N" * size)
 
     instructions = [
-        {"offset": 0x1000, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1001, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1002, "size": 1, "mnemonic": "mov"},
-        {"offset": 0x1003, "size": 1, "mnemonic": "ret"},
-        {"offset": 0x1004, "size": 1, "mnemonic": "nop"},
+        {"offset": 0x1000, "size": 1, "opcode": "nop"},
+        {"offset": 0x1001, "size": 1, "opcode": "nop"},
+        {"offset": 0x1002, "size": 1, "opcode": "mov"},
+        {"offset": 0x1003, "size": 1, "opcode": "ret"},
+        {"offset": 0x1004, "size": 1, "opcode": "nop"},
     ]
     binary = _Binary()
 

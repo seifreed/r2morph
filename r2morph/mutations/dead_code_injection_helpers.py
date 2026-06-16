@@ -10,6 +10,16 @@ from r2morph.utils.dead_code import generate_dead_code_for_arch, generate_nop_se
 PADDING_INSTRUCTIONS = {"nop", "int3", "ud2"}
 
 
+def instruction_mnemonic(insn: dict[str, Any]) -> str:
+    """Mnemonic of a radare2 disassembly record.
+
+    ``get_function_disasm`` records expose the mnemonic under ``opcode`` (with
+    ``disasm`` as a fallback), not ``mnemonic``.
+    """
+    text = insn.get("opcode") or insn.get("disasm") or ""
+    return text.split()[0].lower() if text else ""
+
+
 def find_injection_points(
     instructions: list[dict[str, Any]],
     min_padding_size: int,
@@ -21,21 +31,17 @@ def find_injection_points(
 
     while i < len(instructions):
         insn = instructions[i]
-        mnemonic = insn.get("mnemonic", "").lower()
 
-        if mnemonic in padding_instructions:
-            padding_start = insn.get("offset", insn.get("addr", 0))
+        if instruction_mnemonic(insn) in padding_instructions:
+            padding_start = insn.get("addr", insn.get("offset", 0))
             padding_size = insn.get("size", 1)
             j = i + 1
 
             while j < len(instructions):
-                next_insn = instructions[j]
-                next_mnemonic = next_insn.get("mnemonic", "").lower()
-
-                if next_mnemonic not in padding_instructions:
+                if instruction_mnemonic(instructions[j]) not in padding_instructions:
                     break
 
-                padding_size += next_insn.get("size", 1)
+                padding_size += instructions[j].get("size", 1)
                 j += 1
 
             if padding_size >= min_padding_size:
@@ -43,10 +49,6 @@ def find_injection_points(
 
             i = j
             continue
-
-        if mnemonic in UNCONDITIONAL_TRANSFERS and i + 1 < len(instructions):
-            next_insn = instructions[i + 1]
-            next_insn.get("offset", next_insn.get("addr", 0))
 
         i += 1
 
@@ -60,16 +62,13 @@ def is_safe_injection_point(
     padding_instructions: set[str] | frozenset[str] = PADDING_INSTRUCTIONS,
 ) -> bool:
     """Return whether an instruction is a safe dead-code injection point."""
-    mnemonic = insn.get("mnemonic", "").lower()
-
-    if mnemonic in padding_instructions:
+    if instruction_mnemonic(insn) in padding_instructions:
         return True
 
     if index > 0:
-        prev_insn = instructions[index - 1]
-        prev_mnemonic = prev_insn.get("mnemonic", "").lower()
+        prev_mnemonic = instruction_mnemonic(instructions[index - 1])
         if prev_mnemonic in UNCONDITIONAL_TRANSFERS:
-            return mnemonic in padding_instructions
+            return instruction_mnemonic(insn) in padding_instructions
 
     return False
 

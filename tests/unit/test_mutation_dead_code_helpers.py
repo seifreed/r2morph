@@ -9,11 +9,11 @@ from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 def test_dead_code_injection_point_detection():
     pass_obj = DeadCodeInjectionPass(config={"min_padding_size": 2})
     instructions = [
-        {"offset": 0x1000, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1001, "size": 1, "mnemonic": "nop"},
-        {"offset": 0x1002, "size": 1, "mnemonic": "mov"},
-        {"offset": 0x1003, "size": 1, "mnemonic": "int3"},
-        {"offset": 0x1004, "size": 1, "mnemonic": "int3"},
+        {"offset": 0x1000, "size": 1, "opcode": "nop"},
+        {"offset": 0x1001, "size": 1, "opcode": "nop"},
+        {"offset": 0x1002, "size": 1, "opcode": "mov"},
+        {"offset": 0x1003, "size": 1, "opcode": "int3"},
+        {"offset": 0x1004, "size": 1, "opcode": "int3"},
     ]
 
     points = pass_obj._find_injection_points(instructions)

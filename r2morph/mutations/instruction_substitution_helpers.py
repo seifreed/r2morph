@@ -137,6 +137,29 @@ def flags_live_after(disasms: list[str], index: int) -> bool:
     return False
 
 
+def flags_live_at(instructions: list[dict[str, Any]], insert_addr: int, arch: str) -> bool:
+    """True if inserting flag-clobbering code at ``insert_addr`` could corrupt flow.
+
+    Returns True when an x86 status flag may be read after ``insert_addr`` before
+    being overwritten, so a flag-clobbering insertion there would break a
+    downstream conditional. Conservatively True for non-x86 architectures, where
+    there is no flag model yet, so flag-clobbering code is never inserted there.
+
+    ``instructions`` are radare2 disassembly records (address under ``addr``,
+    text under ``disasm``/``opcode``) in ascending address order.
+    """
+    if arch != "x86":
+        return True
+    disasms = [ins.get("disasm", ins.get("opcode", "")) for ins in instructions]
+    idx = -1
+    for j, ins in enumerate(instructions):
+        if ins.get("addr", ins.get("offset", 0)) < insert_addr:
+            idx = j
+        else:
+            break
+    return flags_live_after(disasms, idx)
+
+
 def get_equivalents(
     instruction: dict[str, Any],
     arch: str,
@@ -195,6 +218,7 @@ def select_candidates(
 __all__ = [
     "equivalent_flags_written",
     "flags_live_after",
+    "flags_live_at",
     "get_equivalents",
     "init_substitution_rules",
     "instruction_flags_written",

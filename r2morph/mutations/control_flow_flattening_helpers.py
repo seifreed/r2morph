@@ -6,7 +6,6 @@ import logging
 from typing import Any
 
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
-from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
 logger = logging.getLogger(__name__)
 
@@ -166,26 +165,6 @@ def consume_nop_run(instructions: list[dict], i: int) -> tuple[int, int, int]:
     return start_addr, total_size, j
 
 
-def flags_live_at(instructions: list[dict], insert_addr: int, arch: str) -> bool:
-    """True if inserting flag-clobbering code at ``insert_addr`` could corrupt flow.
-
-    Returns True when an x86 status flag may be read after ``insert_addr`` before
-    being overwritten (so a flag-clobbering insertion would break a downstream
-    conditional). Conservatively True for non-x86 architectures, where there is
-    no flag model yet, so flag-clobbering code is never inserted there.
-    """
-    if arch != "x86":
-        return True
-    disasms = [ins.get("disasm", ins.get("opcode", "")) for ins in instructions]
-    idx = -1
-    for j, ins in enumerate(instructions):
-        if ins.get("addr", ins.get("offset", 0)) < insert_addr:
-            idx = j
-        else:
-            break
-    return flags_live_after(disasms, idx)
-
-
 def assemble_bounded(binary: Any, instructions: list[str], max_size: int) -> bytes | None:
     """Assemble ``instructions``; return None if any fails or exceeds size."""
     assembled = b""
@@ -204,7 +183,6 @@ __all__ = [
     "candidate_block_count",
     "consume_nop_run",
     "find_nop_sequences",
-    "flags_live_at",
     "is_conditional_jump",
     "select_candidates",
 ]
