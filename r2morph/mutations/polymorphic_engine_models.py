@@ -13,6 +13,7 @@ class EngineState(Enum):
 
     INIT = auto()
     SUBSTITUTED = auto()
+    PATTERN_SUBSTITUTED = auto()
     DEAD_CODE_INJECTED = auto()
     REORDERED = auto()
     FLATTENED = auto()

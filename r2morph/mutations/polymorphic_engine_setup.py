@@ -12,6 +12,7 @@ def setup_default_engine(
     engine: Any,
     *,
     enable_substitution: bool = True,
+    enable_pattern_substitution: bool = True,
     enable_dead_code: bool = True,
     enable_reordering: bool = True,
     enable_flattening: bool = True,
@@ -28,6 +29,7 @@ def setup_default_engine(
     from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
     from r2morph.mutations.function_outlining import FunctionOutliningPass
     from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+    from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
     from r2morph.mutations.string_obfuscation import StringObfuscationPass
 
     state = EngineState.INIT
@@ -41,6 +43,18 @@ def setup_default_engine(
             probability=0.8,
         )
         state = EngineState.SUBSTITUTED
+
+    if enable_pattern_substitution:
+        from_state = state
+        to_state = EngineState.PATTERN_SUBSTITUTED
+        engine.add_mutation("PatternSubstitution", PatternSubstitutionPass())
+        engine.add_transition(
+            from_state,
+            to_state,
+            "PatternSubstitution",
+            probability=0.7,
+        )
+        state = to_state
 
     if enable_dead_code:
         from_state = state

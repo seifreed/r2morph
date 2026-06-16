@@ -306,6 +306,7 @@ class PolymorphicEnginePass(MutationPass):
         - seed: Random seed (default: None)
         - max_iterations: Maximum iterations (default: 10)
         - enable_substitution: Enable instruction substitution (default: True)
+        - enable_pattern_substitution: Enable pattern-pool substitution (default: True)
         - enable_dead_code: Enable dead code injection (default: True)
         - enable_reordering: Enable block reordering (default: True)
         - enable_flattening: Enable control flow flattening (default: True)
@@ -322,6 +323,7 @@ class PolymorphicEnginePass(MutationPass):
         self.max_iterations = self.config.get("max_iterations", 10)
 
         self.enable_substitution = self.config.get("enable_substitution", True)
+        self.enable_pattern_substitution = self.config.get("enable_pattern_substitution", True)
         self.enable_dead_code = self.config.get("enable_dead_code", True)
         self.enable_reordering = self.config.get("enable_reordering", True)
         self.enable_flattening = self.config.get("enable_flattening", True)
@@ -364,6 +366,7 @@ class PolymorphicEnginePass(MutationPass):
         setup_default_engine(
             self.engine,
             enable_substitution=self.enable_substitution,
+            enable_pattern_substitution=self.enable_pattern_substitution,
             enable_dead_code=self.enable_dead_code,
             enable_reordering=self.enable_reordering,
             enable_flattening=self.enable_flattening,

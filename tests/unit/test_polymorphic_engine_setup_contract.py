@@ -8,6 +8,7 @@ def test_setup_default_engine_returns_final_state_and_registers_noop():
     final_state = setup_default_engine(
         engine,
         enable_substitution=False,
+        enable_pattern_substitution=False,
         enable_dead_code=False,
         enable_reordering=False,
         enable_flattening=False,

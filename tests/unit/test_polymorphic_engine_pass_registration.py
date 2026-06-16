@@ -51,6 +51,7 @@ def test_disabled_mutation_is_not_registered_either() -> None:
     pass_obj = PolymorphicEnginePass(
         {
             "enable_substitution": True,
+            "enable_pattern_substitution": False,
             "enable_dead_code": False,
             "enable_reordering": False,
             "enable_flattening": False,
