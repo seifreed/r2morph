@@ -135,11 +135,6 @@ class MorphEngine:
     def analyze(self, level: str = "auto") -> "MorphEngine":
         return analyze_lifecycle(self, level)
 
-    def _auto_detect_analysis_level(self) -> str:
-        from r2morph.core.engine_lifecycle import auto_detect_analysis_level
-
-        return auto_detect_analysis_level(self)
-
     def add_mutation(self, mutation: "MutationPassProtocol | str") -> "MorphEngine":
         return add_mutation_lifecycle(self, mutation)
 
