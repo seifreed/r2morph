@@ -21,8 +21,10 @@ from typing import Any
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.instruction_substitution_arm64 import apply_arm64_mov_substitution
 from r2morph.mutations.instruction_substitution_helpers import (
+    equivalent_flags_written,
     get_equivalents,
     init_substitution_rules,
+    instruction_flags_written,
     select_candidates,
 )
 
@@ -166,6 +168,16 @@ class InstructionSubstitutionPass(MutationPass):
 
                 if equivalents and len(equivalents) > 1:
                     candidates_found += 1
+
+                    # When status flags are read before being overwritten, only keep
+                    # equivalents that write the same flags as the original; otherwise
+                    # the substitution would silently change a downstream branch/carry.
+                    # Scoped to x86: the flag model (CF/ZF/SF/OF/PF) is x86-specific.
+                    if arch_family == "x86" and insn.get("flags_live_after", True):
+                        original_flags = instruction_flags_written(insn.get("disasm", ""))
+                        equivalents = [e for e in equivalents if equivalent_flags_written(e) == original_flags]
+                        if len(equivalents) <= 1:
+                            continue
 
                     if random.random() < self.probability and func_mutations < self.max_substitutions:
                         if self.force_different:

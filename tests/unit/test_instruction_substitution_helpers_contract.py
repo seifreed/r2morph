@@ -1,6 +1,9 @@
 from r2morph.mutations.instruction_substitution_helpers import (
+    equivalent_flags_written,
+    flags_live_after,
     get_equivalents,
     init_substitution_rules,
+    instruction_flags_written,
     normalize_instruction,
     select_candidates,
 )
@@ -13,6 +16,17 @@ class _Binary:
         if addr == 0x2000:
             return [{"disasm": "mov rax, rbx"}]
         raise ValueError(addr)
+
+
+class _FlagBinary:
+    """Function whose zeroing instruction is followed by a flag read (`je`)."""
+
+    def get_function_disasm(self, addr: int):
+        return [
+            {"disasm": "cmp ebx, ecx"},
+            {"disasm": "xor eax, eax"},
+            {"disasm": "je 0x1100"},
+        ]
 
 
 def test_instruction_substitution_helpers_cover_the_core_paths() -> None:
@@ -38,3 +52,32 @@ def test_instruction_substitution_helpers_cover_the_core_paths() -> None:
     loaded_groups, loaded_patterns = init_substitution_rules()
     assert "x86" in loaded_groups
     assert "x86" in loaded_patterns
+
+
+def test_flags_live_after_detects_conditional_jump() -> None:
+    """A status flag read by a later conditional jump (before any flag write) is live."""
+    assert flags_live_after(["xor eax, eax", "je 0x10", "mov ebx, 1"], 0) is True
+
+
+def test_flags_live_after_dead_before_syscall_and_after_overwrite() -> None:
+    assert flags_live_after(["mov rax, 0x3c", "xor edi, edi", "syscall"], 1) is False
+    assert flags_live_after(["xor eax, eax", "add ecx, edx", "je 0x10"], 0) is False
+
+
+def test_flag_writes_classify_setting_vs_neutral_equivalents() -> None:
+    assert instruction_flags_written("xor eax, eax") == instruction_flags_written("sub eax, eax")
+    assert equivalent_flags_written("mov eax, 0") == frozenset()
+    assert equivalent_flags_written("push 0; pop eax") == frozenset()
+    assert instruction_flags_written("xor eax, eax") != equivalent_flags_written("mov eax, 0")
+
+
+def test_select_candidates_marks_live_flags_for_zeroing_before_branch() -> None:
+    """`xor eax, eax` between a `cmp` and a `je` has its flags live, so the pass can
+    later reject flag-divergent equivalents (e.g. `mov eax, 0`)."""
+    equivalence_groups = {"x86": [["xor eax, eax", "mov eax, 0", "sub eax, eax"]]}
+    pattern_to_group = {"x86": {"xor eax, eax": 0}}
+    functions = [{"name": "main", "offset": 0x1000, "size": 64}]
+    selected = select_candidates(_FlagBinary(), functions, "x86", pattern_to_group, equivalence_groups)
+    candidate = selected[0][1][0]
+    assert candidate["disasm"] == "xor eax, eax"
+    assert candidate["flags_live_after"] is True

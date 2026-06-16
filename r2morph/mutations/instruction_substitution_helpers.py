@@ -43,6 +43,100 @@ def normalize_instruction(disasm: str) -> str:
     return normalized
 
 
+# x86 status flags an instruction writes (AF omitted: set only by BCD ops and
+# effectively never read). Two members of an equivalence group are flag-compatible
+# when they write the same set; e.g. `xor`/`sub` both write {CF,ZF,SF,OF,PF} with
+# the same values for a zeroed result, but `mov` writes nothing and `dec` leaves CF.
+_ARITH_FLAGS = frozenset({"CF", "ZF", "SF", "OF", "PF"})
+_NO_CARRY_FLAGS = frozenset({"ZF", "SF", "OF", "PF"})
+_MULDIV_FLAGS = frozenset({"CF", "OF"})
+
+
+def _build_flag_writes() -> dict[str, frozenset[str]]:
+    arith = (
+        "add",
+        "sub",
+        "cmp",
+        "neg",
+        "adc",
+        "sbb",
+        "and",
+        "or",
+        "xor",
+        "test",
+        "shl",
+        "shr",
+        "sal",
+        "sar",
+        "rol",
+        "ror",
+        "rcl",
+        "rcr",
+        "bt",
+        "bts",
+        "btr",
+        "btc",
+    )
+    writes = {mnemonic: _ARITH_FLAGS for mnemonic in arith}
+    writes.update({mnemonic: _NO_CARRY_FLAGS for mnemonic in ("inc", "dec")})
+    writes.update({mnemonic: _MULDIV_FLAGS for mnemonic in ("mul", "imul", "div", "idiv")})
+    return writes
+
+
+_FLAG_WRITES = _build_flag_writes()
+_FLAG_READING_MNEMONICS = frozenset({"adc", "sbb", "rcl", "rcr", "sahf", "lahf", "into", "pushf", "pushfd", "pushfq"})
+_FLAG_NEUTRAL_TERMINATORS = frozenset({"ret", "retn", "call", "syscall", "sysenter", "int", "hlt"})
+
+
+def instruction_flags_written(disasm: str) -> frozenset[str]:
+    """x86 status flags an instruction writes (empty for flag-neutral ops)."""
+    tokens = disasm.lower().split()
+    return _FLAG_WRITES.get(tokens[0], frozenset()) if tokens else frozenset()
+
+
+def equivalent_flags_written(equivalent: str) -> frozenset[str]:
+    """Net flags left by an equivalent (the last sub-instruction that writes any)."""
+    net: frozenset[str] = frozenset()
+    for part in equivalent.split(";"):
+        written = instruction_flags_written(part.strip())
+        if written:
+            net = written
+    return net
+
+
+def _reads_flags(disasm: str) -> bool:
+    tokens = disasm.lower().split()
+    if not tokens:
+        return False
+    mnemonic = tokens[0]
+    if mnemonic in _FLAG_READING_MNEMONICS:
+        return True
+    if mnemonic.startswith(("set", "cmov")):
+        return True
+    if mnemonic.startswith("j") and mnemonic != "jmp":  # conditional jumps
+        return True
+    return mnemonic in ("loope", "loopne", "loopz", "loopnz")
+
+
+def flags_live_after(disasms: list[str], index: int) -> bool:
+    """True if a status flag may be read before being overwritten after ``index``.
+
+    Conservative at control flow: an unconditional jump leaves the target unknown
+    (assumed live); a return or call ends/clobbers the flags (assumed dead)."""
+    for following in disasms[index + 1 :]:
+        if _reads_flags(following):
+            return True
+        if instruction_flags_written(following):
+            return False
+        tokens = following.split()
+        mnemonic = tokens[0] if tokens else ""
+        if mnemonic in _FLAG_NEUTRAL_TERMINATORS:
+            return False
+        if mnemonic == "jmp" or mnemonic.startswith(("j", "loop")):
+            return True
+    return False
+
+
 def get_equivalents(
     instruction: dict[str, Any],
     arch: str,
@@ -84,12 +178,14 @@ def select_candidates(
             logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
             continue
 
+        disasms = [insn.get("disasm", "").lower() for insn in instructions]
         candidates = []
-        for insn in instructions:
+        for index, insn in enumerate(instructions):
             original_pattern, equivalents, group_idx = get_equivalents(
                 insn, arch_family, pattern_to_group, equivalence_groups
             )
             if equivalents and len(equivalents) > 1:
+                insn["flags_live_after"] = flags_live_after(disasms, index)
                 candidates.append(insn)
         if candidates:
             result.append((func, candidates))
@@ -97,8 +193,11 @@ def select_candidates(
 
 
 __all__ = [
+    "equivalent_flags_written",
+    "flags_live_after",
     "get_equivalents",
     "init_substitution_rules",
+    "instruction_flags_written",
     "normalize_instruction",
     "select_candidates",
 ]
