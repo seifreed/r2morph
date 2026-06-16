@@ -112,61 +112,12 @@ class BlockReorderingPass(MutationPass):
 
             logger.debug(f"Attempting to reorder function {func.get('name')}: {len(blocks)} blocks")
 
-            blocks_swapped = 0
-
-            for i in range(len(blocks) - 1):
-                if blocks_swapped >= 3:
-                    break
-
-                block1 = blocks[i]
-                block2 = blocks[i + 1]
-
-                addr1 = block1.get("addr", 0)
-                addr2 = block2.get("addr", 0)
-                size1 = block1.get("size", 0)
-                size2 = block2.get("size", 0)
-
-                if size1 < 5 or size2 < 5 or size1 > 200 or size2 > 200:
-                    continue
-
-                if addr2 != addr1 + size1:
-                    continue
-
-                if size1 == size2 and random.random() < 0.5:
-                    try:
-                        bytes1_hex = binary.r2.cmd(f"p8 {size1} @ 0x{addr1:x}")
-                        bytes2_hex = binary.r2.cmd(f"p8 {size2} @ 0x{addr2:x}")
-
-                        if bytes1_hex and bytes2_hex:
-                            bytes1 = bytes.fromhex(bytes1_hex.strip())
-                            bytes2 = bytes.fromhex(bytes2_hex.strip())
-
-                            # The swap is two writes. With the old
-                            # `write(a) and write(b)` form, a failure of
-                            # the second write left the first applied:
-                            # block2's bytes ended up at BOTH addresses
-                            # and block1 was lost, with no rollback and
-                            # no error surfaced. Make it atomic: if the
-                            # second write fails, restore the first.
-                            if not binary.write_bytes(addr1, bytes2):
-                                logger.debug("Block swap aborted: first write to 0x%x failed", addr1)
-                            elif not binary.write_bytes(addr2, bytes1):
-                                logger.warning(
-                                    "Block swap half-applied at 0x%x; restoring original bytes to avoid corruption",
-                                    addr1,
-                                )
-                                if not binary.write_bytes(addr1, bytes1):
-                                    logger.error(
-                                        "Failed to restore 0x%x after partial block swap; binary may be inconsistent",
-                                        addr1,
-                                    )
-                            else:
-                                logger.info(f"Swapped blocks at 0x{addr1:x} <-> 0x{addr2:x} ({size1} bytes each)")
-                                blocks_swapped += 1
-                                mutations_applied += 1
-                    except (ValueError, OSError, BrokenPipeError) as e:
-                        logger.debug(f"Failed to swap blocks: {e}")
-
+            # Reordering is done by inserting jumps, never by swapping block bytes.
+            # Swapping the raw bytes of two blocks relocates the instructions inside
+            # them without re-encoding their RIP-relative jumps/calls and without
+            # updating any branch that targets them, so any block containing or
+            # targeted by relative control flow is silently corrupted. The jump
+            # insertion below preserves every original transfer.
             jumps_inserted = 0
 
             for i in range(len(blocks) - 1):
@@ -246,12 +197,9 @@ class BlockReorderingPass(MutationPass):
                         except (ValueError, OSError, BrokenPipeError) as e:
                             logger.debug(f"Failed to insert jump: {e}")
 
-            if blocks_swapped > 0 or jumps_inserted > 0:
-                total_blocks_reordered += blocks_swapped * 2
+            if jumps_inserted > 0:
                 functions_mutated += 1
-                logger.info(
-                    f"Reordered {blocks_swapped} block pairs and inserted {jumps_inserted} jumps in {func.get('name')}"
-                )
+                logger.info(f"Inserted {jumps_inserted} reordering jumps in {func.get('name')}")
             else:
                 logger.debug(f"Could not reorder {func.get('name')}: no suitable blocks found")
 
