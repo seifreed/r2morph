@@ -388,6 +388,31 @@ done:
 
 
 @pytest.fixture
+def deterministic_pattern_subst_elf(tmp_path: Path) -> Path:
+    """Small ELF with size-reducing pattern-substitution candidates.
+
+    ``mov $0, %reg`` (5 bytes) reduces to ``xor %reg, %reg`` (2 bytes) plus
+    NOP padding, exercising the size-reducing path of PatternSubstitutionPass.
+    """
+    return _compile_elf_x86_64_binary(
+        tmp_path,
+        "pattern_subst_fixture.elf",
+        """
+.global _start
+.text
+_start:
+    mov $0, %eax
+    mov $0, %ebx
+    mov $0, %ecx
+    mov $0, %edx
+    mov $60, %rax
+    xor %rdi, %rdi
+    syscall
+""".strip(),
+    )
+
+
+@pytest.fixture
 def deterministic_fail_elf(tmp_path: Path) -> Path:
     """Small ELF with no stable mutation candidates."""
     return _compile_elf_x86_64_binary(

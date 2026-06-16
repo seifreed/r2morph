@@ -70,26 +70,7 @@ class PatternMatchIntegration:
         Returns:
             Tuple of (mutated_instructions, mutation_log)
         """
-        from r2morph.mutations.pattern_types import Instruction
-
-        converted = []
-        for ins in block_instructions:
-            if isinstance(ins, dict):
-                converted_ins = Instruction(
-                    address=ins.get("addr", 0) if isinstance(ins.get("addr"), int) else 0,
-                    mnemonic=ins.get("mnemonic", ""),
-                    operand_1=self._extract_operand(ins, 0),
-                    operand_2=self._extract_operand(ins, 1),
-                    operand_3=self._extract_operand(ins, 2),
-                    operand_str=ins.get("disasm", "").split(maxsplit=1)[1] if " " in ins.get("disasm", "") else "",
-                    bytes=ins.get("bytes", ""),
-                    type=ins.get("type", ""),
-                    opcode=str(ins.get("opcode", ins.get("disasm", ""))),
-                    mutated=getattr(ins, "mutated", False),
-                )
-            else:
-                converted_ins = ins
-            converted.append(converted_ins)
+        converted = self._convert_instructions(block_instructions)
 
         pools = get_pattern_pools()
         mutation_log = []
@@ -129,6 +110,74 @@ class PatternMatchIntegration:
                         converted[match.index : match.index + match.length] = new_insns
 
         return converted, mutation_log
+
+    def _convert_instructions(self, block_instructions: list[Any]) -> list[Any]:
+        """Convert raw instruction dicts into pattern-matching Instruction objects.
+
+        Non-dict items (already Instruction objects) are passed through unchanged.
+        """
+        from r2morph.mutations.pattern_types import Instruction
+
+        converted = []
+        for ins in block_instructions:
+            if isinstance(ins, dict):
+                disasm_text = str(ins.get("disasm", ""))
+                # Disassemblers commonly omit a separate "mnemonic" field, so fall
+                # back to the first token of the disassembly text.
+                mnemonic = ins.get("mnemonic") or (disasm_text.split(maxsplit=1)[0] if disasm_text else "")
+                converted_ins = Instruction(
+                    address=ins.get("addr", 0) if isinstance(ins.get("addr"), int) else 0,
+                    mnemonic=mnemonic,
+                    operand_1=self._extract_operand(ins, 0),
+                    operand_2=self._extract_operand(ins, 1),
+                    operand_3=self._extract_operand(ins, 2),
+                    operand_str=ins.get("disasm", "").split(maxsplit=1)[1] if " " in ins.get("disasm", "") else "",
+                    bytes=ins.get("bytes", ""),
+                    type=ins.get("type", ""),
+                    opcode=str(ins.get("opcode", ins.get("disasm", ""))),
+                    mutated=getattr(ins, "mutated", False),
+                )
+            else:
+                converted_ins = ins
+            converted.append(converted_ins)
+        return converted
+
+    def enumerate_substitutions(
+        self,
+        block_instructions: list[Any],
+        os_type: str = "linux",
+    ) -> list[dict[str, Any]]:
+        """Enumerate candidate pattern substitutions without mutating the block.
+
+        Unlike :meth:`apply_patterns_to_block`, which rewrites the instruction
+        list in place, this returns one descriptor per match so a binary-mutating
+        pass can map each match back to instruction addresses and patch it
+        surgically. Each descriptor is::
+
+            {"pool": str, "index": int, "length": int, "replacement": list[Instruction]}
+
+        where ``index``/``length`` index into ``block_instructions`` and
+        ``replacement`` is the generated equivalent instruction sequence.
+        """
+        converted = self._convert_instructions(block_instructions)
+        edits: list[dict[str, Any]] = []
+
+        for pool in get_pattern_pools():
+            for rule in pool.match_rules:
+                for match in rule(converted):
+                    gen_list, weights = zip(*pool.generators)
+                    chosen_gen = random.choices(gen_list, weights=weights, k=1)[0]
+                    replacement = chosen_gen(match.operands, os_type)
+                    edits.append(
+                        {
+                            "pool": pool.name,
+                            "index": match.index,
+                            "length": match.length,
+                            "replacement": replacement,
+                        }
+                    )
+
+        return edits
 
     def _extract_operand(self, ins: dict[str, Any], idx: int) -> str:
         """Extract operand at index from instruction dict."""
