@@ -226,69 +226,202 @@ def get_register_class(arch: str) -> dict[str, list[str]]:
     return REGISTER_CLASSES.get(arch_family, {})
 
 
-# Registers the kernel reads or clobbers at a system call, by ABI. A system-call
-# instruction has no explicit operands, so a register holding a syscall number or
-# argument is live into the call with no textual use; renaming one silently breaks
-# the call. x86-64 `syscall`: rax=number, rdi/rsi/rdx/r10/r8/r9=args, rcx/r11
-# clobbered. 32-bit `int 0x80`/`sysenter`: eax=number, ebx/ecx/edx/esi/edi/ebp=args.
-_SYSCALL_ABI_BASE_REGISTERS = frozenset(
+# Calls and system calls pass arguments / leave return values in registers by ABI,
+# with no textual operand at the transfer. Renaming the exact register a transfer
+# reads (argument) or whose value is read afterwards (return) silently corrupts it.
+# The sets below are the canonical 64-bit registers each transfer reads (inputs) and
+# leaves (outputs). x86 unions System V AMD64 and Microsoft x64; the 32-bit `int
+# 0x80` extras (ebx/ecx/ebp) are folded in. ARM64 uses AAPCS / svc.
+_SYSCALL_INPUT_REGISTERS = frozenset({"rax", "rdi", "rsi", "rdx", "r10", "r8", "r9", "rbx", "rcx", "rbp"})
+_SYSCALL_OUTPUT_REGISTERS = frozenset({"rax"})
+_SVC_INPUT_REGISTERS = frozenset({f"x{n}" for n in range(9)})
+_SVC_OUTPUT_REGISTERS = frozenset({"x0"})
+_CALL_INPUT_REGISTERS_X86 = frozenset({"rdi", "rsi", "rdx", "rcx", "r8", "r9"})
+_CALL_INPUT_REGISTERS_ARM = frozenset({f"x{n}" for n in range(8)})
+_CALL_OUTPUT_REGISTERS = frozenset({"rax", "x0"})
+
+_SYSCALL_INT_VECTORS = frozenset({"0x80", "80h", "0x2e", "2eh"})
+_PURE_WRITE_MNEMONICS = frozenset(
+    {"mov", "movabs", "movzx", "movsx", "movq", "movd", "lea", "movz", "movk", "movn", "adr", "adrp", "ldr", "ldp"}
+)
+# Mnemonics that do not write a general-purpose register destination (compares,
+# branches, stores, pushes). `pop` is excluded on purpose: it writes its operand.
+_NO_DESTINATION_MNEMONICS = frozenset(
     {
-        "rax",
-        "rdi",
-        "rsi",
-        "rdx",
-        "r10",
-        "r8",
-        "r9",
-        "rcx",
-        "r11",
-        "eax",
-        "ebx",
-        "ecx",
-        "edx",
-        "esi",
-        "edi",
-        "ebp",
+        "cmp",
+        "test",
+        "push",
+        "jmp",
+        "je",
+        "jne",
+        "jz",
+        "jnz",
+        "jg",
+        "jge",
+        "jl",
+        "jle",
+        "ja",
+        "jae",
+        "jb",
+        "jbe",
+        "jo",
+        "jno",
+        "js",
+        "jns",
+        "jc",
+        "jnc",
+        "jp",
+        "jnp",
+        "call",
+        "ret",
+        "retn",
+        "nop",
+        "syscall",
+        "sysenter",
+        "int",
+        "leave",
+        "hlt",
+        "cmn",
+        "tst",
+        "b",
+        "bl",
+        "blr",
+        "br",
+        "blx",
+        "svc",
+        "cbz",
+        "cbnz",
+        "tbz",
+        "tbnz",
+        "str",
+        "stp",
+        "stur",
+        "strb",
+        "strh",
+        "sturb",
+        "sturh",
     }
 )
-_SYSCALL_MNEMONICS = frozenset({"syscall", "sysenter"})
-_SYSCALL_INT_VECTORS = frozenset({"0x80", "80h", "0x2e", "2eh"})
 
 
-def _register_variants(reg: str) -> set[str]:
-    """All size-spellings of a register (al/ax/eax/rax; r8/r8d/r8w/r8b)."""
-    for family in _X86_REGISTER_FAMILIES.values():
-        if reg in family:
-            return set(family)
-    match = re.fullmatch(r"(r\d+)[dwb]?", reg)
-    if match:
-        base = match.group(1)
-        return {base, f"{base}d", f"{base}w", f"{base}b"}
-    return {reg}
+def _build_canonical_registers() -> dict[str, str]:
+    """Map every register spelling to its canonical 64-bit identity."""
+    family_base = {"a": "rax", "b": "rbx", "c": "rcx", "d": "rdx", "si": "rsi", "di": "rdi", "sp": "rsp", "bp": "rbp"}
+    mapping: dict[str, str] = {}
+    for key, members in _X86_REGISTER_FAMILIES.items():
+        for member in members:
+            mapping[member] = family_base[key]
+    for num in range(8, 16):
+        for suffix in ("", "d", "w", "b"):
+            mapping[f"r{num}{suffix}"] = f"r{num}"
+    for num in range(31):
+        mapping[f"x{num}"] = f"x{num}"
+        mapping[f"w{num}"] = f"x{num}"
+    return mapping
 
 
-def _instruction_is_syscall(disasm: str) -> bool:
-    """True for `syscall`/`sysenter` and `int` with a Linux/Windows syscall vector."""
+_CANONICAL_REGISTER = _build_canonical_registers()
+_REGISTER_TOKEN_RE = re.compile(r"\b(" + "|".join(sorted(_CANONICAL_REGISTER, key=len, reverse=True)) + r")\b")
+
+
+def _register_tokens(text: str) -> list[str]:
+    """Register spellings appearing in an operand string, in order."""
+    return list(_REGISTER_TOKEN_RE.findall(text))
+
+
+def _transfer_abi(disasm: str) -> tuple[frozenset[str], frozenset[str]] | None:
+    """(inputs, outputs) canonical register sets for a call/syscall, else None."""
     tokens = disasm.split()
     if not tokens:
-        return False
+        return None
     mnemonic = tokens[0]
-    if mnemonic in _SYSCALL_MNEMONICS:
-        return True
-    if mnemonic == "int" and len(tokens) > 1:
-        return tokens[1].rstrip(",") in _SYSCALL_INT_VECTORS
-    return False
+    if mnemonic in ("syscall", "sysenter"):
+        return _SYSCALL_INPUT_REGISTERS, _SYSCALL_OUTPUT_REGISTERS
+    if mnemonic == "int" and len(tokens) > 1 and tokens[1].rstrip(",") in _SYSCALL_INT_VECTORS:
+        return _SYSCALL_INPUT_REGISTERS, _SYSCALL_OUTPUT_REGISTERS
+    if mnemonic == "svc":
+        return _SVC_INPUT_REGISTERS, _SVC_OUTPUT_REGISTERS
+    if mnemonic == "call":
+        return _CALL_INPUT_REGISTERS_X86, _CALL_OUTPUT_REGISTERS
+    if mnemonic in ("bl", "blr", "blx"):
+        return _CALL_INPUT_REGISTERS_ARM, _CALL_OUTPUT_REGISTERS
+    return None
 
 
-def syscall_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
-    """Register variants the kernel ABI reads/clobbers at any system call in the
-    window, or an empty set when none is present. Excluding these from register
-    substitution preserves the call's meaning (CLAUDE.md sec.8)."""
-    if not any(_instruction_is_syscall(insn.get("disasm", "").lower()) for insn in instructions):
+def _destination_register(disasm: str) -> str | None:
+    """The register written by an instruction (first operand), or None."""
+    parts = disasm.split(None, 1)
+    if not parts:
+        return None
+    mnemonic = parts[0]
+    if mnemonic in _NO_DESTINATION_MNEMONICS or mnemonic.startswith("b."):
+        return None
+    if len(parts) < 2:
+        return None
+    first_operand = parts[1].split(",", 1)[0].strip()
+    if "[" in first_operand:  # memory destination writes memory, not a register
+        return None
+    tokens = _register_tokens(first_operand)
+    return tokens[0] if tokens else None
+
+
+def _source_registers(disasm: str) -> set[str]:
+    """Registers read by an instruction (every operand register that is not a
+    write-only destination)."""
+    parts = disasm.split(None, 1)
+    if len(parts) < 2:
         return set()
+    tokens = set(_register_tokens(parts[1]))
+    if parts[0] in _PURE_WRITE_MNEMONICS:
+        destination = _destination_register(disasm)
+        if destination is not None:
+            tokens.discard(destination)
+    return tokens
+
+
+def abi_live_registers(instructions: list[dict[str, Any]]) -> set[str]:
+    """Register tokens whose value a call/syscall consumes (argument, by the last
+    write that reaches the transfer) or produces and is then read (return value).
+    Renaming these would corrupt the transfer; everything else stays substitutable.
+    A register written and overwritten before the transfer is dead and stays free
+    (e.g. an early ``eax`` computation before ``mov rax, <nr>; syscall``)."""
+    disasms = [insn.get("disasm", "").lower() for insn in instructions]
     unsafe: set[str] = set()
-    for base in _SYSCALL_ABI_BASE_REGISTERS:
-        unsafe |= _register_variants(base)
+    total = len(disasms)
+    for index, disasm in enumerate(disasms):
+        transfer = _transfer_abi(disasm)
+        if transfer is None:
+            continue
+        inputs, outputs = transfer
+
+        # Inputs: the token that last writes each argument register, scanning back to
+        # the previous transfer (which clobbers caller-saved registers).
+        pending_inputs = set(inputs)
+        for prior in range(index - 1, -1, -1):
+            if _transfer_abi(disasms[prior]) is not None:
+                break
+            destination = _destination_register(disasms[prior])
+            if destination is None:
+                continue
+            canonical = _CANONICAL_REGISTER.get(destination)
+            if canonical in pending_inputs:
+                unsafe.add(destination)
+                pending_inputs.discard(canonical)
+                if not pending_inputs:
+                    break
+
+        # Outputs: tokens that read the return register before it is redefined.
+        pending_outputs = set(outputs)
+        for later in range(index + 1, total):
+            if not pending_outputs or _transfer_abi(disasms[later]) is not None:
+                break
+            for token in _source_registers(disasms[later]):
+                if _CANONICAL_REGISTER.get(token) in pending_outputs:
+                    unsafe.add(token)
+            destination = _destination_register(disasms[later])
+            redefined = _CANONICAL_REGISTER.get(destination) if destination is not None else None
+            if redefined is not None and disasms[later].split(None, 1)[0] in _PURE_WRITE_MNEMONICS:
+                pending_outputs.discard(redefined)
     return unsafe
 
 
@@ -306,15 +439,16 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
                 if reg in disasm:
                     used_registers.add(reg)
 
-    # Registers feeding a system call are live with no textual use; never rename
-    # them (source) and never overwrite them with a substitution (target).
-    syscall_regs = syscall_live_registers(instructions)
+    # Tokens whose value a call/syscall consumes or produces are live across the
+    # transfer with no renameable operand; never rename them (source) and never
+    # overwrite them with a substitution (target).
+    abi_regs = abi_live_registers(instructions)
     caller_saved = set(register_classes.get("caller_saved", []))
-    unused = sorted(caller_saved - used_registers - syscall_regs)
+    unused = sorted(caller_saved - used_registers - abi_regs)
     random.shuffle(unused)
 
     candidates = []
-    for i, used_reg in enumerate(sorted((used_registers & caller_saved) - syscall_regs)):
+    for i, used_reg in enumerate(sorted((used_registers & caller_saved) - abi_regs)):
         if i < len(unused):
             candidates.append((used_reg, unused[i]))
     return candidates
@@ -439,9 +573,9 @@ def select_candidates(
 __all__ = [
     "REGISTER_CLASSES",
     "REGISTER_SIZES",
+    "abi_live_registers",
     "count_register_uses",
     "find_substitution_candidates",
-    "syscall_live_registers",
     "get_register_class",
     "is_safe_lea_substitution",
     "is_safe_size_extension_substitution",

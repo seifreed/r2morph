@@ -1,10 +1,10 @@
 from r2morph.mutations.register_substitution_helpers import (
+    abi_live_registers,
     find_substitution_candidates,
     get_register_class,
     is_safe_lea_substitution,
     is_safe_size_extension_substitution,
     select_candidates,
-    syscall_live_registers,
 )
 
 
@@ -53,5 +53,67 @@ def test_find_substitution_candidates_without_syscall_still_renames_eax() -> Non
     assert "eax" in sources
 
 
-def test_syscall_live_registers_empty_when_no_syscall_present() -> None:
-    assert syscall_live_registers([{"disasm": "mov eax, ebx"}, {"disasm": "int3"}]) == set()
+def test_abi_live_registers_empty_when_no_transfer_present() -> None:
+    assert abi_live_registers([{"disasm": "mov eax, ebx"}, {"disasm": "int3"}]) == set()
+
+
+def test_find_substitution_candidates_with_arm64_call_excludes_argument_register() -> None:
+    """x0 holds the first argument read implicitly by `bl`; renaming it (x0->x4)
+    corrupts the call. It must not be a candidate when a call is present."""
+    with_call = [
+        {"disasm": "add x0, x0, str.hello"},
+        {"disasm": "bl sym.imp.puts"},
+        {"disasm": "mov w0, 0"},
+        {"disasm": "ret"},
+    ]
+    sources = {orig for orig, _ in find_substitution_candidates(with_call, "arm64")}
+    assert "x0" not in sources
+
+
+def test_find_substitution_candidates_with_x64_call_excludes_argument_register() -> None:
+    """rdi carries the first integer argument into a `call`; it must not be renamed."""
+    with_call = [
+        {"disasm": "mov rdi, rbx"},
+        {"disasm": "call sym.imp.puts"},
+        {"disasm": "ret"},
+    ]
+    sources = {orig for orig, _ in find_substitution_candidates(with_call, "x64")}
+    assert "rdi" not in sources
+
+
+def test_find_substitution_candidates_without_call_still_renames_arg_register() -> None:
+    """The call guard must be targeted: with no call, x0 is a normal register."""
+    no_call = [{"disasm": "add x0, x0, x1"}, {"disasm": "mov x2, x0"}, {"disasm": "ret"}]
+    sources = {orig for orig, _ in find_substitution_candidates(no_call, "arm64")}
+    assert "x0" in sources
+
+
+def test_call_live_registers_empty_when_no_call_present() -> None:
+    assert abi_live_registers([{"disasm": "mov x0, x1"}, {"disasm": "ret"}]) == set()
+
+
+def test_abi_live_registers_allows_dead_register_before_syscall() -> None:
+    """The dataflow analysis must free a register whose value is overwritten before
+    the syscall: here the early `eax` computation is dead once `rax` is loaded with
+    the syscall number, so only `rax` (not `eax`) is unsafe."""
+    window = [
+        {"disasm": "mov eax, 5"},
+        {"disasm": "add eax, 2"},
+        {"disasm": "mov rax, 0x3c"},
+        {"disasm": "xor edi, edi"},
+        {"disasm": "syscall"},
+    ]
+    unsafe = abi_live_registers(window)
+    assert "rax" in unsafe
+    assert "eax" not in unsafe
+
+
+def test_abi_live_registers_excludes_token_reading_call_return() -> None:
+    """A token that reads a call's return value (rax) before redefining it is unsafe;
+    renaming it would read a different physical register than the call wrote."""
+    window = [
+        {"disasm": "call sym.imp.rand"},
+        {"disasm": "mov rbx, rax"},
+        {"disasm": "ret"},
+    ]
+    assert "rax" in abi_live_registers(window)
