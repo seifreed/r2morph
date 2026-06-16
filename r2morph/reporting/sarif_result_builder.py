@@ -9,7 +9,7 @@ from r2morph.reporting.sarif_result_builder_helpers import (
     build_mutation_result,
     build_validation_result,
 )
-from r2morph.reporting.sarif_schema import SARIFResult
+from r2morph.reporting.sarif_schema import SARIFResult, SARIFRule
 
 
 class SARIFResultBuilder:
@@ -17,8 +17,8 @@ class SARIFResultBuilder:
 
     def __init__(
         self,
-        mutation_rules: list[dict[str, Any]],
-        validation_rules: list[dict[str, Any]],
+        mutation_rules: list[SARIFRule],
+        validation_rules: list[SARIFRule],
     ) -> None:
         self._mutation_rules = mutation_rules
         self._validation_rules = validation_rules
