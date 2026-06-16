@@ -113,13 +113,15 @@ def rc4_crypt(data: bytes, key: bytes) -> bytes:
     return bytes(result)
 
 
-def generate_xor_decrypt_stub_x64(key: bytes, data_addr: int, data_size: int) -> bytes:
+def generate_xor_decrypt_stub_x64(key: bytes, data_size: int) -> bytes:
     """
     Generate x64 assembly for XOR decryption stub.
 
+    The stub is position-independent: it decrypts the data co-located at the
+    inline ``encrypted_data`` label, so no absolute data address is needed.
+
     Args:
         key: Encryption key
-        data_addr: Address of encrypted data
         data_size: Size of encrypted data
 
     Returns:
@@ -171,7 +173,7 @@ encrypted_data:
     return stub_asm.encode()
 
 
-def generate_xor_decrypt_stub_x86(key: bytes, data_addr: int, data_size: int) -> bytes:
+def generate_xor_decrypt_stub_x86(key: bytes, data_size: int) -> bytes:
     """Generate x86 (32-bit) assembly for XOR decryption stub."""
     stub_asm = f"""
     ; Polymorphic XOR decryption stub (x86)
@@ -294,14 +296,13 @@ encrypted_data:
 
 
 def create_packed_binary(
-    code: bytes, entry_point: int, arch: str = "x64", encryption: EncryptionScheme = EncryptionScheme.XOR_KEY
+    code: bytes, arch: str = "x64", encryption: EncryptionScheme = EncryptionScheme.XOR_KEY
 ) -> tuple[bytes, bytes, bytes]:
     """
     Create a self-unpacking binary.
 
     Args:
         code: Code to pack
-        entry_point: Entry point offset
         arch: Architecture
         encryption: Encryption scheme
 
@@ -318,9 +319,9 @@ def create_packed_binary(
         packed = xor_encrypt(code, key)
 
     if arch == "x64":
-        unpack_stub = generate_xor_decrypt_stub_x64(key, entry_point, len(packed))
+        unpack_stub = generate_xor_decrypt_stub_x64(key, len(packed))
     else:
-        unpack_stub = generate_xor_decrypt_stub_x86(key, entry_point, len(packed))
+        unpack_stub = generate_xor_decrypt_stub_x86(key, len(packed))
 
     return packed, key, unpack_stub
 

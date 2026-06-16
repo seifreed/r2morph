@@ -599,8 +599,7 @@ class TestSelfModifyingCode:
 
     def test_create_packed_binary(self):
         code = b"\x90" * 100
-        entry = 0x1000
-        packed, key, stub = create_packed_binary(code, entry, arch="x64")
+        packed, key, stub = create_packed_binary(code, arch="x64")
         assert len(packed) == len(code)
         assert len(key) == 8
         assert len(stub) > 0

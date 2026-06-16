@@ -46,10 +46,10 @@ def test_encryption_helpers_round_trip() -> None:
 
 def test_stub_and_pack_helpers_are_stable() -> None:
     key = b"\xaa\xbb\xcc\xdd"
-    x64_stub = generate_xor_decrypt_stub_x64(key, 0x1000, 16)
-    x86_stub = generate_xor_decrypt_stub_x86(key, 0x1000, 16)
+    x64_stub = generate_xor_decrypt_stub_x64(key, 16)
+    x86_stub = generate_xor_decrypt_stub_x86(key, 16)
     poly_stub = generate_polymorphic_stub_x64(key, 16, seed=123)
-    packed, packed_key, unpack_stub = create_packed_binary(b"\x90" * 16, 0x1000)
+    packed, packed_key, unpack_stub = create_packed_binary(b"\x90" * 16)
 
     assert b"encrypted_data" in x64_stub
     assert b"encrypted_data" in x86_stub
