@@ -45,7 +45,6 @@ class SemanticConflictDetector:
         """
         self.arch = arch
         self._invariant_patterns = self.INVARIANT_PATTERNS.get(arch, self.INVARIANT_PATTERNS["x86"])
-        self._tracked_invariants: dict[int, list[dict[str, Any]]] = {}
 
     def analyze_register_conflicts(
         self,
