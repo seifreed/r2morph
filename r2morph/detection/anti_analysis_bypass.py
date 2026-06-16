@@ -113,33 +113,11 @@ class AntiAnalysisBypass:
 
         return result
 
-    def _load_anti_analysis_patterns(self) -> list[AntiAnalysisPattern]:
-        """Load known anti-analysis patterns."""
-        return load_anti_analysis_patterns()
-
     def _check_pattern_match(self, pattern: AntiAnalysisPattern, binary: Any) -> float:
         """Check if a pattern matches the binary."""
         from r2morph.detection.anti_analysis_detection import check_pattern_match
 
         return check_pattern_match(pattern, binary)
-
-    def _detect_runtime_anti_analysis(self) -> dict[AntiAnalysisType, float]:
-        """Detect anti-analysis techniques at runtime."""
-        from r2morph.detection.anti_analysis_detection import detect_runtime_anti_analysis
-
-        return detect_runtime_anti_analysis()
-
-    def _check_vm_environment(self) -> float:
-        """Check for VM environment indicators."""
-        from r2morph.detection.anti_analysis_detection import check_vm_environment
-
-        return check_vm_environment()
-
-    def _check_timing_manipulation(self) -> float:
-        """Check for timing manipulation."""
-        from r2morph.detection.anti_analysis_detection import check_timing_manipulation
-
-        return check_timing_manipulation()
 
     def _get_bypass_methods(self, technique: AntiAnalysisType) -> list[BypassTechnique]:
         """Get appropriate bypass methods for a technique."""
