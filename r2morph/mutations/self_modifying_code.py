@@ -128,17 +128,6 @@ class SelfModifyingCodePass(MutationPass):
         else:
             return xor_encrypt(data, key)
 
-    def _generate_decrypt_stub(self, key: bytes, data_addr: int, data_size: int, arch: str = "x64") -> str:
-        """Generate decryption stub assembly."""
-        if self.polymorphic:
-            seed = random.randint(0, 0xFFFFFFFF)
-            if arch == "x64":
-                return generate_polymorphic_stub_x64(key, data_size, seed)
-            return generate_polymorphic_stub_x64(key, data_size, seed)
-        if arch == "x64":
-            return generate_xor_decrypt_stub_x64(key, data_addr, data_size).decode()
-        return generate_xor_decrypt_stub_x86(key, data_addr, data_size).decode()
-
     def _find_encryptable_functions(self, binary: Any) -> list[dict[str, Any]]:
         """Find functions suitable for encryption."""
         encryptable = []
