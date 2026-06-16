@@ -165,60 +165,10 @@ class AntiAnalysisBypass:
             self.timing_baseline,
         )
 
-    def _apply_api_redirection(self) -> bool:
-        """Apply API redirection bypass."""
-        return apply_bypass(
-            BypassTechnique.API_REDIRECTION,
-            0.0,
-            self.active_bypasses,
-            self.environment_backup,
-            self.timing_baseline,
-        )
-
     def _apply_timing_manipulation(self) -> bool:
         """Apply timing manipulation bypass."""
         return apply_bypass(
             BypassTechnique.TIMING_MANIPULATION,
-            0.0,
-            self.active_bypasses,
-            self.environment_backup,
-            self.timing_baseline,
-        )
-
-    def _apply_registry_spoofing(self) -> bool:
-        """Apply registry spoofing bypass."""
-        return apply_bypass(
-            BypassTechnique.REGISTRY_SPOOFING,
-            0.0,
-            self.active_bypasses,
-            self.environment_backup,
-            self.timing_baseline,
-        )
-
-    def _apply_filesystem_hooks(self) -> bool:
-        """Apply filesystem hooks bypass."""
-        return apply_bypass(
-            BypassTechnique.FILE_SYSTEM_HOOKS,
-            0.0,
-            self.active_bypasses,
-            self.environment_backup,
-            self.timing_baseline,
-        )
-
-    def _apply_process_hiding(self) -> bool:
-        """Apply process hiding bypass."""
-        return apply_bypass(
-            BypassTechnique.PROCESS_HIDING,
-            0.0,
-            self.active_bypasses,
-            self.environment_backup,
-            self.timing_baseline,
-        )
-
-    def _apply_hardware_emulation(self) -> bool:
-        """Apply hardware emulation bypass."""
-        return apply_bypass(
-            BypassTechnique.HARDWARE_EMULATION,
             0.0,
             self.active_bypasses,
             self.environment_backup,
