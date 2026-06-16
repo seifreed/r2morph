@@ -65,15 +65,6 @@ class RegTracker:
         8: ["al", "bl", "cl", "dl", "sil", "dil", "bpl", "r8b", "r9b", "r10b", "r11b", "r12b", "r13b", "r14b", "r15b"],
     }
 
-    REG_SIZE_FLAGS = {
-        "REG_64": 1,
-        "REG_32": 2,
-        "REG_16": 4,
-        "REG_8H": 8,
-        "REG_8L": 16,
-        "REG_ALL": 1 | 2 | 4 | 8 | 16,
-    }
-
     REG_WEIGHTS = {
         "rax": (30, (10, 5, 2, 1)),
         "rbx": (20, (8, 4, 2, 1)),
@@ -183,13 +174,6 @@ class RegTracker:
         weights: tuple[int, ...] = (self.REG_WEIGHTS[reg][0],) + self.REG_WEIGHTS[reg][1]
         return subregs, weights
 
-
-REGISTER_SIZE_FLAGS = {
-    64: 1,
-    32: 2,
-    16: 4,
-    8: 16,
-}
 
 REG_64 = 1
 REG_32 = 2
