@@ -125,6 +125,51 @@ def test_control_flow_virtualization_preserves_exit_code(fixture_name: str, tmp_
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated)
 
 
+def _text_range(path: Path) -> tuple[int, int, int]:
+    """Return (entry_file_offset, exit_syscall_offset, vaddr_base) for the .text run."""
+    raw = path.read_bytes()
+    entry = struct.unpack_from("<Q", raw, 0x18)[0]
+    e_phoff = struct.unpack_from("<Q", raw, 0x20)[0]
+    phentsize = struct.unpack_from("<H", raw, 0x36)[0]
+    phnum = struct.unpack_from("<H", raw, 0x38)[0]
+    for i in range(phnum):
+        off = e_phoff + i * phentsize
+        p_type, p_flags = struct.unpack_from("<II", raw, off)
+        p_offset, p_vaddr, _, _, _, _ = struct.unpack_from("<QQQQQQ", raw, off + 8)
+        if p_type == 1 and p_flags & 0x1:
+            entry_off = p_offset + (entry - p_vaddr)
+            syscall_off = raw.index(b"\x0f\x05", entry_off)
+            return entry_off, syscall_off, p_vaddr
+    raise AssertionError("no executable segment")
+
+
+def test_dead_body_is_overwritten_so_logic_is_unrecoverable(tmp_path: Path) -> None:
+    # After whole-function virtualization the original instructions between the
+    # trampoline and the terminator must no longer be present in the binary.
+    fixture = _DATASET / "elf_blockswap_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    entry_off, syscall_off, _ = _text_range(fixture)
+    original_body = fixture.read_bytes()[entry_off + 5 : syscall_off]
+    assert b"\xb8\x01\x00\x00\x00" in original_body  # 'mov eax, 1' is present originally
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_body = mutated.read_bytes()[entry_off + 5 : syscall_off]
+    assert mutated_body != original_body
+    assert b"\xb8\x01\x00\x00\x00" not in mutated_body  # original logic destroyed
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated)  # ...yet still correct
+
+
 def _virtualize(src: Path, dst: Path) -> bytes:
     """Virtualize ``src`` into ``dst`` and return the appended VM region bytes."""
     shutil.copy(src, dst)

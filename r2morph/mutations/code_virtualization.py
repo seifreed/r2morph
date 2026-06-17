@@ -207,6 +207,18 @@ class CodeVirtualizationPass(MutationPass):
             self._rollback_uncommitted(binary, checkpoint, reason="failed to write VM trampoline; aborting")
             return None
 
+        # The original instructions between the trampoline and the terminator
+        # are now unreachable (the VM does their work and exits to the
+        # terminator). Overwrite them with per-instance random bytes so the
+        # original logic cannot be recovered by reading the leftover body.
+        body_start = region.entry_vaddr + _TRAMPOLINE_SIZE
+        body_size = region.exit_vaddr - body_start
+        if body_size > 0:
+            junk = bytes(random.randrange(256) for _ in range(body_size))
+            if not binary.write_bytes(body_start, junk):
+                self._rollback_uncommitted(binary, checkpoint, reason="failed to overwrite dead body; aborting")
+                return None
+
         instruction_count = sum(1 for item in region.instructions if item[0] != "exit")
         record = self._record_mutation(
             function_address=func["addr"],
