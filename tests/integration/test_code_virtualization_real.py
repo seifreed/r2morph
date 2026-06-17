@@ -494,6 +494,25 @@ def test_flag_dead_add_is_mba_folded_and_preserves_value(tmp_path: Path) -> None
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_flag_dead_sub_is_mba_folded_and_preserves_value(tmp_path: Path) -> None:
+    # A flag-dead sub is folded as add a,-b via MBA; only its value must survive
+    # (50-8=42, a wrong difference would exit 99).
+    fixture = _DATASET / "elf_vm_subflagdead_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_subdead"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_flag_live_add_keeps_flags_for_the_branch(tmp_path: Path) -> None:
     # The add's sign flag is read by jns, so it must NOT be MBA-folded; the
     # branch depends on the real flags (exit 42, a stale-flag bug would exit 99).

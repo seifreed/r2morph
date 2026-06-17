@@ -469,8 +469,11 @@ def _flag_successors(items: list[list[Any]], i: int) -> list[int]:
     return [i + 1]
 
 
-def _flag_dead_add_indices(items: list[list[Any]]) -> set[int]:
-    """Indices of ``add`` op items whose flags are dead on every path.
+_MBA_OP_MNEMONICS = frozenset({"add", "sub"})
+
+
+def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
+    """Indices of ``add``/``sub`` op items whose flags are dead on every path.
 
     A conditional jump (``jcc``) is the only instruction in the virtualizable
     subset that reads flags, so an op's flags are dead iff no reachable ``jcc``
@@ -504,7 +507,7 @@ def _flag_dead_add_indices(items: list[list[Any]]) -> set[int]:
 
     dead = set()
     for i in range(n):
-        if items[i][0] == "op" and items[i][1].mnemonic == "add":
+        if items[i][0] == "op" and items[i][1].mnemonic in _MBA_OP_MNEMONICS:
             if not any(needed_in[s] for s in _flag_successors(items, i)):
                 dead.add(i)
     return dead
@@ -580,7 +583,7 @@ def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
 
     # Flag-liveness: an add whose flags are never read becomes an MBA handler
     # (no literal add, no flag capture). Rebuild op_keys for the rewritten items.
-    for index in _flag_dead_add_indices(items):
+    for index in _flag_dead_op_indices(items):
         items[index][0] = "opmba"
     op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
 
