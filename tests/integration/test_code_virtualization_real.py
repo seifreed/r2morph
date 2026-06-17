@@ -494,6 +494,25 @@ def test_flag_dead_add_is_mba_folded_and_preserves_value(tmp_path: Path) -> None
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_flag_dead_boolean_ops_are_mba_folded_and_preserve_value(tmp_path: Path) -> None:
+    # Flag-dead xor/and/or are folded with De Morgan / MBA rewrites (no literal
+    # boolean op); only their values must survive (exit 42, a wrong result -> 99).
+    fixture = _DATASET / "elf_vm_boolflagdead_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_booldead"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_flag_dead_sub_is_mba_folded_and_preserves_value(tmp_path: Path) -> None:
     # A flag-dead sub is folded as add a,-b via MBA; only its value must survive
     # (50-8=42, a wrong difference would exit 99).

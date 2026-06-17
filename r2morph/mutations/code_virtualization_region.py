@@ -469,7 +469,7 @@ def _flag_successors(items: list[list[Any]], i: int) -> list[int]:
     return [i + 1]
 
 
-_MBA_OP_MNEMONICS = frozenset({"add", "sub"})
+_MBA_OP_MNEMONICS = frozenset({"add", "sub", "xor", "and", "or"})
 
 
 def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:

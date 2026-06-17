@@ -105,15 +105,30 @@ def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: s
     # sub a, b == add a, (-b): negate the source, then the same MBA add fold.
     if mnemonic == "sub":
         body += "  neg rax\n"
+    body += "  mov r10, qword ptr [rsp+r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp+r8*8]\n"
+    body += _op_mba_compute(mnemonic, key)
     if width == 64:
-        body += "  mov r10, qword ptr [rsp+r8*8]\n" + _mba_add("rax", "rcx", key) + "  mov qword ptr [rsp+r8*8], r10\n"
+        body += "  mov qword ptr [rsp+r8*8], r10\n"
     else:
-        body += (
-            "  mov r10d, dword ptr [rsp+r8*8]\n"
-            + _mba_add("rax", "rcx", key)
-            + "  mov r10d, r10d\n  mov qword ptr [rsp+r8*8], r10\n"
-        )
+        body += "  mov r10d, r10d\n  mov qword ptr [rsp+r8*8], r10\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_mba_compute(mnemonic: str, key: int) -> str:
+    """Compute ``r10 = r10 <op> rax`` with no literal native op (r10 == a, rax == b).
+
+    add/sub use the polymorphic MBA add fold (sub already negated its source);
+    the boolean ops use De Morgan / MBA rewrites, so the handler never contains a
+    plain xor/and/or. ``not`` is flag-neutral and the and/or set only dead flags.
+    """
+    if mnemonic in ("add", "sub"):
+        return _mba_add("rax", "rcx", key)
+    if mnemonic == "xor":  # a ^ b == (a | b) & ~(a & b)
+        return "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  not rcx\n  and r10, rcx\n"
+    if mnemonic == "and":  # a & b == ~(~a | ~b)
+        return "  not r10\n  mov rcx, rax\n  not rcx\n  or r10, rcx\n  not r10\n"
+    # a | b == ~(~a & ~b)
+    return "  not r10\n  mov rcx, rax\n  not rcx\n  and r10, rcx\n  not r10\n"
 
 
 def _mem_address_asm(riprel: bool, key: int, key_dword: str) -> tuple[str, int]:
