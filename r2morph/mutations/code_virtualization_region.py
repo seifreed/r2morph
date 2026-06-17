@@ -394,11 +394,19 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
 
     slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
     plain = bytearray()
+
+    def emit_opcode(opcode: int) -> None:
+        # The opcode byte is masked with its own stream position, so the same
+        # operation does not encode to the same byte twice and a single-byte XOR
+        # of the whole blob no longer exposes the opcode stream. The dispatcher
+        # subtracts the position back out before decoding.
+        plain.append(opcode ^ (len(plain) & 0xFF))
+
     for item in region.instructions:
         kind = item[0]
         if kind == "op":
             op = item[1]
-            plain.append(scheme.opcodes[_required_key(item)])
+            emit_opcode(scheme.opcodes[_required_key(item)])
             plain.append(slot_of[op.dst_index])
             if op.is_immediate:
                 plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
@@ -406,7 +414,7 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
                 plain.append(slot_of[op.value])
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
-            plain.append(scheme.opcodes[_required_key(item)])
+            emit_opcode(scheme.opcodes[_required_key(item)])
             plain.append(slot_of[slot])
             if is_imm:
                 plain += struct.pack("<q" if width == 64 else "<i", value)
@@ -414,24 +422,24 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
                 plain.append(slot_of[value])
         elif kind == "shift":
             _, _mnemonic, slot, count, _width = item
-            plain.append(scheme.opcodes[_required_key(item)])
+            emit_opcode(scheme.opcodes[_required_key(item)])
             plain.append(slot_of[slot])
             plain.append(count)
         elif kind == "imul":
             _, dst, src, _width = item
-            plain.append(scheme.opcodes[_required_key(item)])
+            emit_opcode(scheme.opcodes[_required_key(item)])
             plain.append(slot_of[dst])
             plain.append(slot_of[src])
         elif kind == "jmp":
-            plain.append(scheme.opcodes["jmp"])
+            emit_opcode(scheme.opcodes["jmp"])
             plain += struct.pack("<i", offsets[item[1]])
         elif kind == "jcc":
-            plain.append(scheme.opcodes[_required_key(item)])
+            emit_opcode(scheme.opcodes[_required_key(item)])
             plain += struct.pack("<i", offsets[item[2]])
         elif kind == "nop":
-            plain.append(scheme.opcodes["nop"])
+            emit_opcode(scheme.opcodes["nop"])
         elif kind == "exit":
-            plain.append(scheme.opcodes[_required_key(item)])
+            emit_opcode(scheme.opcodes[_required_key(item)])
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
 
@@ -530,13 +538,17 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {name}\n")
     lines.append(
         f"  lea rax, [rsp+{_FRAME_SIZE}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
-        "  lea rsi, [rip+bytecode]\n"
+        "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
         # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
-        # 256-entry handler-address table, so there is no linear comparison ladder
-        # for a disassembler or automated devirtualizer to pattern-match. r14 is a
-        # spilled context slot, free to clobber between handlers.
-        "vm_dispatch:\n  movzx eax, byte ptr [rsi]\n"
-        f"  xor al, {key}\n"
+        # per-handler offset table, so there is no linear comparison ladder for a
+        # disassembler or automated devirtualizer to pattern-match. r13/r14/r15 are
+        # spilled context slots, free to clobber between handlers (r15 holds the
+        # bytecode base for the whole run).
+        "vm_dispatch:\n"
+        # Undo the opcode byte's position mask (encoder XORed it with rsi-base).
+        "  mov r13, rsi\n  sub r13, r15\n"
+        "  movzx eax, byte ptr [rsi]\n"
+        f"  xor al, {key}\n  xor al, r13b\n"
         f"  cmp al, {len(scheme.opcodes)}\n  jae vm_exit\n"
         # Base-independent indirect dispatch: each table entry is a 32-bit signed
         # offset from vm_table to its handler, so the jump survives rebasing/ASLR
