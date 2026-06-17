@@ -340,12 +340,48 @@ def _decode_riprel_mov(text: str, insn_addr: int, insn_size: int) -> tuple[str, 
     return (kind, reg_slot, target, reg_width)
 
 
+def _decode_cmp_mem(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode ``cmp reg, [base+disp]`` / ``cmp reg, [rip+disp]``.
+
+    Returns ``("cmpmem", reg_slot, base_slot, disp, width)`` or
+    ``("cmpriprel", reg_slot, target, width)``, or ``None``. Only a register
+    left operand against a memory right operand is accepted.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "cmp" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if "[" in left or "[" not in right:
+        return None
+    reg = _register_operand(left.lower())
+    if reg is None:
+        return None
+    reg_slot, reg_width = reg
+    mem = _parse_mem_operand(right)
+    if mem is not None:
+        base_slot, disp, mem_width = mem
+        if mem_width is not None and mem_width != reg_width:
+            return None
+        return ("cmpmem", reg_slot, base_slot, disp, reg_width)
+    riprel = _parse_riprel_operand(right, insn_addr, insn_size)
+    if riprel is not None:
+        target, mem_width = riprel
+        if mem_width is not None and mem_width != reg_width:
+            return None
+        return ("cmpriprel", reg_slot, target, reg_width)
+    return None
+
+
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind = item[0]
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
         return f"{kind}_{item[3]}"
+    if kind == "cmpmem":
+        return f"cmpmem_{item[4]}"
+    if kind == "cmpriprel":
+        return f"cmpriprel_{item[3]}"
     if kind == "op":
         op: VirtualizedOp = item[1]
         return f"op_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
@@ -395,7 +431,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         return None
     if kind == "cmp":
         compare = _decode_two_operand(text, "cmp")
-        return ["cmp", *compare] if compare is not None else None
+        if compare is not None:
+            return ["cmp", *compare]
+        memory_cmp = _decode_cmp_mem(text, insn.get("addr", 0), insn.get("size", 0))
+        return [*memory_cmp] if memory_cmp is not None else None
     if kind == "acmp":
         test = _decode_two_operand(text, "test")
         return ["test", *test] if test is not None else None
@@ -580,6 +619,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
+    if kind == "cmpmem":
+        return 7  # opcode + reg slot + base slot + 4-byte displacement
+    if kind == "cmpriprel":
+        return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
@@ -646,6 +689,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain.append(slot_of[base_slot])
             plain += struct.pack("<i", disp)
         elif kind in ("riprel_load", "riprel_store"):
+            _, reg_slot, target, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain += struct.pack("<i", target - bytecode_base)
+        elif kind == "cmpmem":
+            _, reg_slot, base_slot, disp, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain += struct.pack("<i", disp)
+        elif kind == "cmpriprel":
             _, reg_slot, target, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
@@ -741,6 +795,34 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     else:
         body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
     return body + "  add rsi, 6\n  jmp vm_dispatch\n"
+
+
+def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``cmp reg, [mem]`` (computes the address, then compares).
+
+    The memory address comes from a frame-slot base plus displacement
+    (``cmpmem``) or the bytecode base plus a stored offset (``cmpriprel``). The
+    real ``cmp`` sets the flags, which are captured into the flags slot exactly
+    like the register/immediate compare handlers.
+    """
+    parts = handler_key.split("_")
+    riprel = parts[0] == "cmpriprel"
+    width = int(parts[-1])
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    if riprel:
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        body += "  mov r10, r15\n  add r10, rax\n"
+        advance = 6
+    else:
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        body += "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
+        advance = 7
+    if width == 64:
+        body += "  mov r9, qword ptr [rsp+r8*8]\n  cmp r9, qword ptr [r10]\n"
+    else:
+        body += "  mov r9d, dword ptr [rsp+r8*8]\n  cmp r9d, dword ptr [r10]\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
@@ -854,6 +936,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_shift_handler_asm(handler_key, key))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
+        elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
+            lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):
