@@ -255,7 +255,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
 
     entry = (
         f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n{spill}"
-        + checksum_prologue_asm(end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
+        + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
         + _set_layer_slots(schemes[0], 0, counts[0])
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
@@ -340,7 +340,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # Checksum covers only the interpreter code (up to the first table), so the
     # table encryption and the appended bytecode do not perturb the expected
     # value; the encoder folds it into every layer's stream.
-    checksum = compute_build_checksum(bytes(data[:table0_start]))
+    checksum = compute_build_checksum(bytes(data[:table0_start]), schemes[0].xor_key)
     try:
         encoded = [
             encode_region(layers[layer], schemes[layer], cave_vaddr + bc_off[layer], checksum) for layer in range(count)

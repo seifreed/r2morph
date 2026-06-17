@@ -482,7 +482,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved.
-    lines.append(checksum_prologue_asm())
+    lines.append(checksum_prologue_asm(scheme.xor_key))
     lines.append(
         # Capture the program's entry rsp, then relocate its virtual stack a
         # guard distance below the VM frame so the function's own push/pop never
@@ -587,7 +587,7 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
     # the dispatch table); the encoder folds it into the opcodes so a patched
     # interpreter misdecodes. The table is excluded, so its in-place encryption
     # above does not affect the value.
-    checksum = compute_build_checksum(bytes(data[:table_start]))
+    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
     bytecode_base = cave_vaddr + len(data)
     try:
         bytecode = encode_region(region, scheme, bytecode_base, checksum)

@@ -338,7 +338,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
             lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {name}\n")
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt; runs after the register spill.
-    lines.append(checksum_prologue_asm(slot=_CHECKSUM_OFFSET))
+    lines.append(checksum_prologue_asm(key, slot=_CHECKSUM_OFFSET))
     lines.append(
         f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
         f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
@@ -410,5 +410,5 @@ def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr:
     # the dispatch table, which is the tail len(_OP_KEYS) 32-bit entries); the
     # encoder folds it into the opcodes so a patched interpreter misdecodes.
     table_start = len(encoding) - len(_OP_KEYS) * 4
-    checksum = compute_build_checksum(bytes(encoding[:table_start]))
+    checksum = compute_build_checksum(bytes(encoding[:table_start]), scheme.xor_key)
     return bytes(encoding) + encode_bytecode(ops, scheme, checksum)
