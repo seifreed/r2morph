@@ -32,6 +32,8 @@ from r2morph.mutations.code_virtualization_engine import (
     RSP_INDEX,
     VirtualizedOp,
     decode_instruction,
+    immediate_fits_width,
+    pack_immediate,
 )
 
 logger = logging.getLogger(__name__)
@@ -156,8 +158,7 @@ def _decode_two_operand(disasm: str, mnemonic: str) -> tuple[int, int, bool, int
         immediate = int(right, 0)
     except ValueError:
         return None
-    bound = 2 ** (width - 1)
-    if immediate < -bound or immediate > bound - 1:
+    if not immediate_fits_width(immediate, width):
         return None
     return (slot, immediate, True, width)
 
@@ -771,7 +772,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             emit_opcode(_required_key(item))
             plain.append(slot_of[op.dst_index])
             if op.is_immediate:
-                plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
+                plain += pack_immediate(op.value, op.width)
             else:
                 plain.append(slot_of[op.value])
         elif kind in ("cmp", "test"):
@@ -779,7 +780,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             emit_opcode(_required_key(item))
             plain.append(slot_of[slot])
             if is_imm:
-                plain += struct.pack("<q" if width == 64 else "<i", value)
+                plain += pack_immediate(value, width)
             else:
                 plain.append(slot_of[value])
         elif kind == "shift":

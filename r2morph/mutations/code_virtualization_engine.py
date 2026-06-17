@@ -222,12 +222,27 @@ def decode_instruction(disasm: str) -> VirtualizedOp | None:
         return None
 
     immediate = _parse_immediate(src_name)
-    if immediate is None:
-        return None
-    bound = 2 ** (width - 1)
-    if immediate < -bound or immediate > bound - 1:
+    if immediate is None or not immediate_fits_width(immediate, width):
         return None
     return VirtualizedOp(mnemonic, dst_slot, immediate, is_immediate=True, width=width)
+
+
+def immediate_fits_width(value: int, width: int) -> bool:
+    """Whether ``value`` is representable in ``width`` bits, signed or unsigned.
+
+    Assemblers spell a width-bit immediate either way (e.g. a magic constant
+    like ``0x811c9dc5`` is an unsigned 32-bit value that exceeds the signed
+    range); both are valid bit patterns the VM can carry, so accept the union.
+    """
+    return bool(-(2 ** (width - 1)) <= value <= 2**width - 1)
+
+
+def pack_immediate(value: int, width: int) -> bytes:
+    """Pack a width-bit immediate as little-endian, masking to its bit width so
+    signed and unsigned values both encode to the same bytes the CPU expects."""
+    if width == 64:
+        return struct.pack("<Q", value & 0xFFFFFFFFFFFFFFFF)
+    return struct.pack("<I", value & 0xFFFFFFFF)
 
 
 def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme) -> bytes:
@@ -250,7 +265,7 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme) -> bytes:
         emit_opcode(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
         plain.append(slot_of[op.dst_index])
         if op.is_immediate:
-            plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
+            plain += pack_immediate(op.value, op.width)
         else:
             plain.append(slot_of[op.value])
     emit_opcode(scheme.exit_opcode)
