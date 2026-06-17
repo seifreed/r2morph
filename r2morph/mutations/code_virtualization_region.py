@@ -81,11 +81,12 @@ _CONDITION: dict[str, str] = {
 class RegionScheme:
     """Per-instance opcode assignment and bytecode key for a region VM."""
 
-    __slots__ = ("opcodes", "xor_key")
+    __slots__ = ("opcodes", "xor_key", "junk_seed")
 
-    def __init__(self, opcodes: dict[str, int], xor_key: int) -> None:
+    def __init__(self, opcodes: dict[str, int], xor_key: int, junk_seed: int) -> None:
         self.opcodes = opcodes
         self.xor_key = xor_key
+        self.junk_seed = junk_seed
 
 
 class Region:
@@ -319,7 +320,38 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     """Assign each needed handler a distinct random opcode byte plus a key."""
     keys = sorted(region.op_keys)
     distinct = rng.sample(range(1, 256), len(keys))
-    return RegionScheme(dict(zip(keys, distinct, strict=True)), rng.randrange(1, 256))
+    return RegionScheme(dict(zip(keys, distinct, strict=True)), rng.randrange(1, 256), rng.randrange(1 << 31))
+
+
+# Semantically-neutral instructions used as per-instance junk. They are emitted
+# only after a handler's terminating jump (unreachable), so they never execute;
+# they make each VM instance structurally distinct to defeat handler signatures.
+_JUNK_TEMPLATES: tuple[str, ...] = (
+    "nop",
+    "mov r10, r11",
+    "xor r10, r11",
+    "and r10, r11",
+    "or r11, r10",
+    "xchg r8, r9",
+    "add r10, {small}",
+    "sub r11, {small}",
+    "lea rax, [rax + {small}]",
+    "ror r10, {shift}",
+)
+
+
+def _junk_asm(rng: random.Random) -> str:
+    """A short run of unreachable junk instructions for handler diversification.
+
+    Operands are register-to-register or small immediates only, so every
+    template always assembles - a junk instruction that failed to assemble
+    would abort the whole virtualization.
+    """
+    lines = []
+    for _ in range(rng.randint(0, 4)):
+        template = rng.choice(_JUNK_TEMPLATES)
+        lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
+    return "".join(lines)
 
 
 def _item_size(item: tuple[Any, ...]) -> int:
@@ -494,6 +526,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  mov {name}, qword ptr [rsp+{index * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
     )
 
+    junk_rng = random.Random(scheme.junk_seed)
     for handler_key in sorted(scheme.opcodes):
         lines.append(f"H_{handler_key}:\n")
         if handler_key.startswith("op_"):
@@ -518,6 +551,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         elif handler_key.startswith("exit_"):
             exit_addr = int(handler_key.split("_", 1)[1])
             lines.append(f"{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(exit_addr)}\n")
+        # Junk after the handler's terminating jump - unreachable, never runs.
+        lines.append(_junk_asm(junk_rng))
 
     # Unknown-opcode guard: restore state and leave through the default exit.
     lines.append(f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\nbytecode:\n")
