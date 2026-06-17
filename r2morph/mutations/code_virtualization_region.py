@@ -372,6 +372,38 @@ def _decode_cmp_mem(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...
     return None
 
 
+def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode ``<op> reg, [base+disp]`` / ``<op> reg, [rip+disp]`` for an
+    arithmetic mnemonic, where the register is both source and destination.
+
+    Returns ``("opmem", mnemonic, reg_slot, base_slot, disp, width)`` or
+    ``("opriprel", mnemonic, reg_slot, target, width)``, or ``None``.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != mnemonic or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if "[" in left or "[" not in right:
+        return None
+    reg = _register_operand(left.lower())
+    if reg is None:
+        return None
+    reg_slot, reg_width = reg
+    mem = _parse_mem_operand(right)
+    if mem is not None:
+        base_slot, disp, mem_width = mem
+        if mem_width is not None and mem_width != reg_width:
+            return None
+        return ("opmem", mnemonic, reg_slot, base_slot, disp, reg_width)
+    riprel = _parse_riprel_operand(right, insn_addr, insn_size)
+    if riprel is not None:
+        target, mem_width = riprel
+        if mem_width is not None and mem_width != reg_width:
+            return None
+        return ("opriprel", mnemonic, reg_slot, target, reg_width)
+    return None
+
+
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind = item[0]
     if kind in ("load", "store"):
@@ -382,6 +414,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"cmpmem_{item[4]}"
     if kind == "cmpriprel":
         return f"cmpriprel_{item[3]}"
+    if kind == "opmem":
+        return f"opmem_{item[1]}_{item[5]}"
+    if kind == "opriprel":
+        return f"opriprel_{item[1]}_{item[4]}"
     if kind == "op":
         op: VirtualizedOp = item[1]
         return f"op_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
@@ -428,7 +464,8 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
                 return [*memory]
             riprel = _decode_riprel_mov(text, insn.get("addr", 0), insn.get("size", 0))
             return [*riprel] if riprel is not None else None
-        return None
+        op_mem = _decode_op_mem(text, kind, insn.get("addr", 0), insn.get("size", 0))
+        return [*op_mem] if op_mem is not None else None
     if kind == "cmp":
         compare = _decode_two_operand(text, "cmp")
         if compare is not None:
@@ -619,9 +656,9 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
-    if kind == "cmpmem":
+    if kind in ("cmpmem", "opmem"):
         return 7  # opcode + reg slot + base slot + 4-byte displacement
-    if kind == "cmpriprel":
+    if kind in ("cmpriprel", "opriprel"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("jmp", "jcc"):
         return 5
@@ -701,6 +738,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain += struct.pack("<i", disp)
         elif kind == "cmpriprel":
             _, reg_slot, target, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain += struct.pack("<i", target - bytecode_base)
+        elif kind == "opmem":
+            _, _mnemonic, reg_slot, base_slot, disp, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain += struct.pack("<i", disp)
+        elif kind == "opriprel":
+            _, _mnemonic, reg_slot, target, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain += struct.pack("<i", target - bytecode_base)
@@ -825,6 +873,34 @@ def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``<op> reg, [mem]`` (reg is source and destination).
+
+    The address is computed like the compare-with-memory handler; the register
+    value is read from its slot, the real arithmetic is applied against memory,
+    the result is written back to the slot (a 32-bit op zero-extends), and the
+    flags are captured.
+    """
+    parts = handler_key.split("_")
+    riprel = parts[0] == "opriprel"
+    mnemonic, width = parts[1], int(parts[2])
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    if riprel:
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        body += "  mov r10, r15\n  add r10, rax\n"
+        advance = 6
+    else:
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        body += "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
+        advance = 7
+    if width == 64:
+        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    else:
+        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
     """Assembly body for a cmp/test handler (sets and captures flags only)."""
     mnemonic, mode, width_text = handler_key.split("_")
@@ -938,6 +1014,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
             lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword))
+        elif handler_key.startswith(("opmem_", "opriprel_")):
+            lines.append(_op_memory_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):
