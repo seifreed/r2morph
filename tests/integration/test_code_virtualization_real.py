@@ -212,6 +212,28 @@ def test_memory_operand_virtualization_preserves_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The function loads a global through a rip-relative operand; the VM cannot
+    # keep the absolute address after relocating the code, so it must reach the
+    # global via a bytecode-base-relative offset and still produce the result.
+    fixture = _DATASET / "elf_vm_global_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_glob"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def _text_range(path: Path) -> tuple[int, int, int]:
     """Return (entry_file_offset, exit_syscall_offset, vaddr_base) for the .text run."""
     raw = path.read_bytes()

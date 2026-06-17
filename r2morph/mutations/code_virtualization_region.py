@@ -273,10 +273,79 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     return (kind, reg_slot, base_slot, disp, reg_width)
 
 
+def _parse_riprel_operand(text: str, insn_addr: int, insn_size: int) -> tuple[int, int | None] | None:
+    """Parse ``[rip+disp]`` into (absolute target vaddr, width or None).
+
+    The target is resolved against the original instruction (``rip`` points at
+    the next instruction): ``addr + size + disp``. The VM relocates the code, so
+    the absolute target is later re-expressed relative to the bytecode base,
+    which stays base-independent because the global and the VM live in one image.
+    """
+    text = text.strip().lower()
+    width: int | None = None
+    head = text.split(None, 1)
+    if head and head[0] in ("qword", "dword", "word", "byte", "xmmword", "tbyte"):
+        if head[0] == "qword":
+            width = 64
+        elif head[0] == "dword":
+            width = 32
+        else:
+            return None
+        text = head[1].strip() if len(head) > 1 else ""
+    rest = text.split(None, 1)
+    if rest and rest[0] == "ptr":
+        text = rest[1].strip() if len(rest) > 1 else ""
+    if not (text.startswith("[") and text.endswith("]")):
+        return None
+    inner = text[1:-1].strip()
+    if not inner.startswith("rip") or "*" in inner or ":" in inner:
+        return None
+    tail = inner[len("rip") :].strip()
+    disp = 0
+    if tail:
+        if tail[0] not in "+-":
+            return None
+        try:
+            disp = (1 if tail[0] == "+" else -1) * int(tail[1:].strip(), 0)
+        except ValueError:
+            return None
+    return (insn_addr + insn_size + disp, width)
+
+
+def _decode_riprel_mov(text: str, insn_addr: int, insn_size: int) -> tuple[str, int, int, int] | None:
+    """Decode ``mov reg, [rip+disp]`` / ``mov [rip+disp], reg``.
+
+    Returns ``(kind, reg_slot, target_vaddr, width)`` with ``kind`` either
+    ``"riprel_load"`` or ``"riprel_store"``, or ``None``.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "mov" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        kind, mem_text, reg_text = "riprel_store", left, right
+    else:
+        kind, mem_text, reg_text = "riprel_load", right, left
+    parsed = _parse_riprel_operand(mem_text, insn_addr, insn_size)
+    reg = _register_operand(reg_text.lower())
+    if parsed is None or reg is None:
+        return None
+    target, mem_width = parsed
+    reg_slot, reg_width = reg
+    if mem_width is not None and mem_width != reg_width:
+        return None
+    return (kind, reg_slot, target, reg_width)
+
+
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind = item[0]
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
+    if kind in ("riprel_load", "riprel_store"):
+        return f"{kind}_{item[3]}"
     if kind == "op":
         op: VirtualizedOp = item[1]
         return f"op_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
@@ -319,7 +388,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
             return ["op", op]
         if kind == "mov":
             memory = _decode_memory_mov(text)
-            return [*memory] if memory is not None else None
+            if memory is not None:
+                return [*memory]
+            riprel = _decode_riprel_mov(text, insn.get("addr", 0), insn.get("size", 0))
+            return [*riprel] if riprel is not None else None
         return None
     if kind == "cmp":
         compare = _decode_two_operand(text, "cmp")
@@ -506,13 +578,20 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3
     if kind in ("load", "store"):
         return 7  # opcode + reg slot + base slot + 4-byte displacement
+    if kind in ("riprel_load", "riprel_store"):
+        return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
 
 
-def encode_region(region: Region, scheme: RegionScheme) -> bytes:
-    """Two-pass lowering: assign offsets, emit, then XOR-encrypt."""
+def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> bytes:
+    """Two-pass lowering: assign offsets, emit, then XOR-encrypt.
+
+    ``bytecode_base`` is the vaddr the bytecode is assembled at; rip-relative
+    targets are stored as a signed 32-bit offset from it so the interpreter can
+    recompute them from its own bytecode pointer, base-independently.
+    """
     offsets: list[int] = []
     cursor = 0
     for item in region.instructions:
@@ -566,6 +645,11 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
             plain.append(slot_of[reg_slot])
             plain.append(slot_of[base_slot])
             plain += struct.pack("<i", disp)
+        elif kind in ("riprel_load", "riprel_store"):
+            _, reg_slot, target, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain += struct.pack("<i", target - bytecode_base)
         elif kind == "jmp":
             emit_opcode("jmp")
             plain += struct.pack("<i", offsets[item[1]])
@@ -633,6 +717,30 @@ def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     else:
         body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
     return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+
+
+def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for a rip-relative load/store handler.
+
+    The target is recomputed as bytecode-base (r15) plus the stored signed
+    offset, so it reaches the same global the original ``[rip+disp]`` did and
+    stays correct under rebasing (the global and the VM share one image).
+    """
+    _, sub, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        "  mov r10, r15\n  add r10, rax\n"
+    )
+    if sub == "load":
+        load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
+    elif width == 64:
+        body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
+    else:
+        body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
+    return body + "  add rsi, 6\n  jmp vm_dispatch\n"
 
 
 def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
@@ -746,6 +854,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_shift_handler_asm(handler_key, key))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
+        elif handler_key.startswith(("riprel_load_", "riprel_store_")):
+            lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):
             lines.append(_memory_handler_asm(handler_key, key, key_dword))
         elif handler_key == "jmp":
@@ -790,4 +900,14 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         return None
     if not encoding:
         return None
-    return bytes(encoding) + encode_region(region, scheme)
+    # The bytecode is appended right after the interpreter, so its base is the
+    # cave plus the interpreter's assembled length; rip-relative targets are
+    # encoded relative to it. A target too far to express as a signed 32-bit
+    # offset leaves the function native.
+    bytecode_base = cave_vaddr + len(encoding)
+    try:
+        bytecode = encode_region(region, scheme, bytecode_base)
+    except struct.error:
+        logger.debug("rip-relative target out of 32-bit range; leaving function native")
+        return None
+    return bytes(encoding) + bytecode
