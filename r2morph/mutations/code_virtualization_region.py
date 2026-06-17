@@ -437,6 +437,83 @@ def _decode_op_memdst(text: str, mnemonic: str, insn_addr: int, insn_size: int) 
     return None
 
 
+_SCALE_TO_SHIFT = {1: 0, 2: 1, 4: 2, 8: 3}
+
+
+def _parse_indexed_operand(text: str) -> tuple[int, int, int, int] | None:
+    """Parse ``[base + index*scale + disp]`` into (base slot, index slot, scale
+    shift, displacement).
+
+    Both a base and a scaled index are required (the no-base and no-index forms
+    are handled elsewhere or left native). The scale is encoded as its log2 so
+    the interpreter can apply it with a shift. rip-relative and segment forms
+    yield ``None``.
+    """
+    text = text.strip().lower()
+    head = text.split(None, 1)
+    if head and head[0] in ("qword", "dword", "word", "byte", "xmmword", "tbyte"):
+        if head[0] not in ("qword", "dword"):
+            return None
+        text = head[1].strip() if len(head) > 1 else ""
+    rest = text.split(None, 1)
+    if rest and rest[0] == "ptr":
+        text = rest[1].strip() if len(rest) > 1 else ""
+    if not (text.startswith("[") and text.endswith("]")):
+        return None
+    inner = text[1:-1].strip()
+    if "*" not in inner or ":" in inner or "rip" in inner:
+        return None
+    base: int | None = None
+    index: int | None = None
+    shift: int | None = None
+    disp = 0
+    for token in (part.strip() for part in inner.replace("-", "+-").split("+")):
+        if not token:
+            continue
+        token = token.replace(" ", "")
+        if "*" in token:
+            index_name, scale_text = token.split("*", 1)
+            if index_name not in REGISTER_INDEX:
+                return None
+            try:
+                scale = int(scale_text, 0)
+            except ValueError:
+                return None
+            if scale not in _SCALE_TO_SHIFT:
+                return None
+            index, shift = REGISTER_INDEX[index_name], _SCALE_TO_SHIFT[scale]
+        elif token in REGISTER_INDEX:
+            if base is not None:
+                return None
+            base = REGISTER_INDEX[token]
+        else:
+            try:
+                disp += int(token, 0)
+            except ValueError:
+                return None
+    if base is None or index is None or shift is None:
+        return None
+    return (base, index, shift, disp)
+
+
+def _decode_lea_indexed(text: str) -> tuple[Any, ...] | None:
+    """Decode ``lea reg, [base + index*scale + disp]`` (64-bit destination)."""
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "lea" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if "[" in left or "[" not in right:
+        return None
+    reg = _register_operand(left.lower())
+    if reg is None or reg[1] != 64:
+        return None
+    parsed = _parse_indexed_operand(right)
+    if parsed is None:
+        return None
+    base_slot, index_slot, shift, disp = parsed
+    return ("leaidx", reg[0], base_slot, index_slot, shift, disp)
+
+
 def _decode_lea(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
     """Decode ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]`` (64-bit dst).
 
@@ -470,6 +547,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "lea"
     if kind == "learip":
         return "learip"
+    if kind == "leaidx":
+        return "leaidx"
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
@@ -554,7 +633,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         return ["imul", *imul] if imul is not None else None
     if kind == "lea":
         lea = _decode_lea(text, insn.get("addr", 0), insn.get("size", 0))
-        return [*lea] if lea is not None else None
+        if lea is not None:
+            return [*lea]
+        lea_indexed = _decode_lea_indexed(text)
+        return [*lea_indexed] if lea_indexed is not None else None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
     if kind == "cjmp":
@@ -734,6 +816,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("cmpriprel", "opriprel", "learip", "opmemdstrip"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
+    if kind == "leaidx":
+        return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
@@ -837,6 +921,14 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain += struct.pack("<i", target - bytecode_base)
+        elif kind == "leaidx":
+            _, reg_slot, base_slot, index_slot, shift, disp = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain.append(slot_of[index_slot])
+            plain.append(shift)
+            plain += struct.pack("<i", disp)
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
             emit_opcode(_required_key(item))
@@ -992,6 +1084,25 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _lea_indexed_handler_asm(key: int, key_dword: str) -> str:
+    """Assembly body for ``lea reg, [base + index*scale + disp]`` (64-bit dst).
+
+    The index is read from its slot and shifted by the encoded scale log2, then
+    the base and displacement are added; the resulting address is stored into
+    the destination slot without dereferencing. lea sets no flags.
+    """
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        f"  movzx r11d, byte ptr [rsi+3]\n  xor r11b, {key}\n"
+        f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n"
+        f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
+        "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
+        "  add r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
+        "  mov qword ptr [rsp+r8*8], r10\n  add rsi, 9\n  jmp vm_dispatch\n"
+    )
+
+
 def _lea_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     """Assembly body for ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]``.
 
@@ -1141,6 +1252,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_op_memory_handler_asm(handler_key, key, key_dword))
         elif handler_key in ("lea", "learip"):
             lines.append(_lea_handler_asm(handler_key, key, key_dword))
+        elif handler_key == "leaidx":
+            lines.append(_lea_indexed_handler_asm(key, key_dword))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):

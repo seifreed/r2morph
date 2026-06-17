@@ -344,6 +344,28 @@ def test_large_unsigned_immediate_virtualization_preserves_exit_code(tmp_path: P
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_indexed_lea_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The function computes a scaled-index address (base + index*scale) with lea;
+    # the VM must scale the index by a shift and add the base from frame slots
+    # (10 + 8*4 -> exit 42).
+    fixture = _DATASET / "elf_vm_leaidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_leaidx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def _text_range(path: Path) -> tuple[int, int, int]:
     """Return (entry_file_offset, exit_syscall_offset, vaddr_base) for the .text run."""
     raw = path.read_bytes()
