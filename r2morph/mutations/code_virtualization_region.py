@@ -119,10 +119,10 @@ def _register_operand(name: str) -> tuple[int, int] | None:
     return None
 
 
-def _decode_compare(disasm: str) -> tuple[int, int, bool, int] | None:
-    """Decode ``cmp reg, reg|imm`` into (slot, value, is_immediate, width)."""
+def _decode_two_operand(disasm: str, mnemonic: str) -> tuple[int, int, bool, int] | None:
+    """Decode ``<mnemonic> reg, reg|imm`` into (slot, value, is_immediate, width)."""
     parts = disasm.split(None, 1)
-    if len(parts) != 2 or parts[0].lower() != "cmp" or "," not in parts[1]:
+    if len(parts) != 2 or parts[0].lower() != mnemonic or "," not in parts[1]:
         return None
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     dst = _register_operand(left)
@@ -146,6 +146,43 @@ def _decode_compare(disasm: str) -> tuple[int, int, bool, int] | None:
     return (slot, immediate, True, width)
 
 
+def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
+    """Decode ``shl|shr|sar reg, imm8`` into (mnemonic, slot, count, width)."""
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in ("shl", "shr", "sar"):
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    dst = _register_operand(left)
+    if dst is None:
+        return None
+    slot, width = dst
+    try:
+        count = int(right, 0)
+    except ValueError:
+        return None  # register/cl counts are out of scope
+    if count < 0 or count > 63:
+        return None
+    return (mnemonic, slot, count, width)
+
+
+def _decode_imul(disasm: str) -> tuple[int, int, int] | None:
+    """Decode the two-operand register form ``imul reg, reg`` into (dst, src, width)."""
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "imul" or "," not in parts[1]:
+        return None
+    fields = parts[1].split(",")
+    if len(fields) != 2:
+        return None  # one- or three-operand forms are out of scope
+    dst = _register_operand(fields[0].strip().lower())
+    src = _register_operand(fields[1].strip().lower())
+    if dst is None or src is None or dst[1] != src[1]:
+        return None
+    return (dst[0], src[0], dst[1])
+
+
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind = item[0]
     if kind == "op":
@@ -153,6 +190,12 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"op_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
     if kind == "cmp":
         return f"cmp_{'i' if item[3] else 'r'}_{item[4]}"
+    if kind == "test":
+        return f"test_{'i' if item[3] else 'r'}_{item[4]}"
+    if kind == "shift":
+        return f"{item[1]}_{item[4]}"
+    if kind == "imul":
+        return f"imul_{item[3]}"
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":
@@ -160,6 +203,14 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
     if kind == "nop":
         return "nop"
     return None
+
+
+def _required_key(item: tuple[Any, ...]) -> str:
+    """The handler key for an item that must have one (all but exit)."""
+    key = _op_key(item)
+    if key is None:
+        raise ValueError(f"item has no handler key: {item[0]}")
+    return key
 
 
 def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
@@ -204,10 +255,31 @@ def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
             if next_addr == exit_vaddr:
                 items.append(["jmp", exit_vaddr])
         elif kind == "cmp":
-            compare = _decode_compare(text)
+            compare = _decode_two_operand(text, "cmp")
             if compare is None:
                 return None
             items.append(["cmp", *compare])
+            if next_addr == exit_vaddr:
+                items.append(["jmp", exit_vaddr])
+        elif kind == "acmp":
+            test = _decode_two_operand(text, "test")
+            if test is None:
+                return None
+            items.append(["test", *test])
+            if next_addr == exit_vaddr:
+                items.append(["jmp", exit_vaddr])
+        elif kind in ("shl", "shr", "sar"):
+            shift = _decode_shift(text)
+            if shift is None:
+                return None
+            items.append(["shift", *shift])
+            if next_addr == exit_vaddr:
+                items.append(["jmp", exit_vaddr])
+        elif kind == "mul":
+            imul = _decode_imul(text)
+            if imul is None:
+                return None
+            items.append(["imul", *imul])
             if next_addr == exit_vaddr:
                 items.append(["jmp", exit_vaddr])
         elif kind == "jmp":
@@ -261,8 +333,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         if op.is_immediate:
             return 2 + (8 if op.width == 64 else 4)
         return 3
-    if kind == "cmp":
+    if kind in ("cmp", "test"):
         return 2 + (8 if item[4] == 64 else 4) if item[3] else 3
+    if kind in ("shift", "imul"):
+        return 3
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
@@ -281,25 +355,35 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
         kind = item[0]
         if kind == "op":
             op = item[1]
-            plain.append(scheme.opcodes[_op_key(item)])
+            plain.append(scheme.opcodes[_required_key(item)])
             plain.append(op.dst_index)
             if op.is_immediate:
                 plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
             else:
                 plain.append(op.value)
-        elif kind == "cmp":
+        elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
-            plain.append(scheme.opcodes[_op_key(item)])
+            plain.append(scheme.opcodes[_required_key(item)])
             plain.append(slot)
             if is_imm:
                 plain += struct.pack("<q" if width == 64 else "<i", value)
             else:
                 plain.append(value)
+        elif kind == "shift":
+            _, _mnemonic, slot, count, _width = item
+            plain.append(scheme.opcodes[_required_key(item)])
+            plain.append(slot)
+            plain.append(count)
+        elif kind == "imul":
+            _, dst, src, _width = item
+            plain.append(scheme.opcodes[_required_key(item)])
+            plain.append(dst)
+            plain.append(src)
         elif kind == "jmp":
             plain.append(scheme.opcodes["jmp"])
             plain += struct.pack("<i", offsets[item[1]])
         elif kind == "jcc":
-            plain.append(scheme.opcodes[_op_key(item)])
+            plain.append(scheme.opcodes[_required_key(item)])
             plain += struct.pack("<i", offsets[item[2]])
         elif kind == "nop":
             plain.append(scheme.opcodes["nop"])
@@ -337,25 +421,54 @@ def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _cmp_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
-    """Assembly body for a comparison handler (sets and captures flags only)."""
-    _, mode, width_text = handler_key.split("_")
+def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
+    """Assembly body for a cmp/test handler (sets and captures flags only)."""
+    mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
     body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
     if mode == "i" and width == 64:
-        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n  mov r9, qword ptr [rsp+r8*8]\n  cmp r9, rax\n"
+        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, rax\n"
         advance = 10
     elif mode == "i":
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  mov r9d, dword ptr [rsp+r8*8]\n  cmp r9d, eax\n"
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, eax\n"
         advance = 6
     else:
         body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
         if width == 64:
-            body += "  mov rax, qword ptr [rsp+r9*8]\n  mov r10, qword ptr [rsp+r8*8]\n  cmp r10, rax\n"
+            body += f"  mov rax, qword ptr [rsp+r9*8]\n  mov r10, qword ptr [rsp+r8*8]\n  {mnemonic} r10, rax\n"
         else:
-            body += "  mov eax, dword ptr [rsp+r9*8]\n  mov r10d, dword ptr [rsp+r8*8]\n  cmp r10d, eax\n"
+            body += f"  mov eax, dword ptr [rsp+r9*8]\n  mov r10d, dword ptr [rsp+r8*8]\n  {mnemonic} r10d, eax\n"
         advance = 3
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _shift_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a shl/shr/sar handler (count is an immediate in cl)."""
+    mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx ecx, byte ptr [rsi+2]\n  xor cl, {key}\n"
+    if width == 64:
+        body += f"  mov rax, qword ptr [rsp+r8*8]\n  {mnemonic} rax, cl\n"
+    else:
+        body += f"  mov eax, dword ptr [rsp+r8*8]\n  {mnemonic} eax, cl\n"
+    return (
+        body
+        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
+def _imul_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a two-operand register imul handler."""
+    width = int(handler_key.split("_")[1])
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+    if width == 64:
+        body += "  mov rax, qword ptr [rsp+r8*8]\n  imul rax, qword ptr [rsp+r9*8]\n"
+    else:
+        body += "  mov eax, dword ptr [rsp+r8*8]\n  imul eax, dword ptr [rsp+r9*8]\n"
+    return (
+        body
+        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
+    )
 
 
 def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
@@ -385,8 +498,12 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         lines.append(f"H_{handler_key}:\n")
         if handler_key.startswith("op_"):
             lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword))
-        elif handler_key.startswith("cmp_"):
-            lines.append(_cmp_handler_asm(handler_key, key, key_qword, key_dword))
+        elif handler_key.startswith(("cmp_", "test_")):
+            lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword))
+        elif handler_key.startswith(("shl_", "shr_", "sar_")):
+            lines.append(_shift_handler_asm(handler_key, key))
+        elif handler_key.startswith("imul_"):
+            lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key == "jmp":
             lines.append(retarget)
         elif handler_key.startswith("jcc_"):
