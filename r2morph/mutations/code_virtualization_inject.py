@@ -56,21 +56,34 @@ class ExecSegment:
         self.other_ranges = other_ranges
 
 
+# r2 truncates a single command past its line buffer (~4 KiB), so each `wx`/`p8`
+# carries at most this many bytes (2x hex chars); larger blobs are chunked. A VM
+# blob with nesting easily exceeds one buffer, so an unchunked write silently
+# corrupted the tail and the injection's read-back rejected it.
+_IO_CHUNK = 1024
+
+
 def _read_physical(binary: Any, offset: int, size: int) -> bytes:
     """Read raw file bytes through r2 (physical addressing)."""
     binary.r2.cmd("e io.va=0")
     try:
-        hexout = binary.r2.cmd(f"p8 {size} @ {offset}").strip()
+        out = bytearray()
+        for pos in range(0, size, _IO_CHUNK):
+            hexout = binary.r2.cmd(f"p8 {min(_IO_CHUNK, size - pos)} @ {offset + pos}").strip()
+            if hexout:
+                out += bytes.fromhex(hexout)
     finally:
         binary.r2.cmd("e io.va=1")
-    return bytes.fromhex(hexout) if hexout else b""
+    return bytes(out)
 
 
 def _write_physical(binary: Any, offset: int, data: bytes) -> None:
     """Write raw file bytes through r2 (physical addressing, grows file)."""
     binary.r2.cmd("e io.va=0")
     try:
-        binary.r2.cmd(f"wx {data.hex()} @ {offset}")
+        for pos in range(0, len(data), _IO_CHUNK):
+            chunk = data[pos : pos + _IO_CHUNK]
+            binary.r2.cmd(f"wx {chunk.hex()} @ {offset + pos}")
     finally:
         binary.r2.cmd("e io.va=1")
 
