@@ -43,3 +43,12 @@ def test_dispatch_decrypts_the_table_with_the_scheme_key() -> None:
     # The dispatch must XOR each loaded table entry with the per-instance key
     # before sign-extending and jumping; without it the table would be plaintext.
     assert f"xor eax, {hex(scheme.table_key)}" in asm
+
+
+def test_dispatch_diffuses_the_table_key_with_the_self_checksum() -> None:
+    # The table-entry decrypt also folds in the runtime self-checksum (broadcast
+    # to 32 bits), so tampering corrupts handler resolution, not just opcodes.
+    region = _tiny_region()
+    scheme = build_region_scheme(region, random.Random(0))
+    asm = _interpreter_asm(region, scheme)
+    assert "imul ecx, ecx, 0x1010101" in asm

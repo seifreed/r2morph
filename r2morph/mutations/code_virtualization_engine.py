@@ -364,7 +364,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         f"  cmp al, {len(_OP_KEYS)}\n  jae vm_exit\n"
         # The stored offsets are XOR-encrypted, so the table is not a plaintext
         # handler map a disassembler can recover as a switch; decrypt each entry.
+        # The table key is also diffused with the runtime self-checksum (broadcast
+        # to 32 bits), so tampering corrupts handler resolution, not just opcodes.
         f"  lea r14, [rip + vm_table]\n  mov eax, dword ptr [r14 + rax*4]\n  xor eax, {hex(scheme.table_key)}\n"
+        f"  movzx ecx, byte ptr [rsp + {_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
         "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
     )
 
@@ -420,12 +423,13 @@ def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr:
     # XOR a label difference it computes itself).
     data = bytearray(encoding)
     table_start = len(data) - len(_OP_KEYS) * 4
+    # Expected runtime self-checksum over the interpreter code (everything up to
+    # the table, so the encryption below does not perturb it); the encoder folds it
+    # into the opcodes, and the table key is diffused with it too.
+    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
+    table_key = scheme.table_key ^ (checksum * 0x01010101)
     for entry_index in range(len(_OP_KEYS)):
         offset = table_start + entry_index * 4
-        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ scheme.table_key
+        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
-    # Expected runtime self-checksum over the interpreter code (everything up to
-    # the table, so its encryption above does not perturb the value); the encoder
-    # folds it into the opcodes so a patched interpreter misdecodes.
-    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
     return bytes(data) + encode_bytecode(ops, scheme, checksum)

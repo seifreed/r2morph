@@ -277,6 +277,13 @@ class TestCodeVirtualization:
         asm = _interpreter_asm(0x401000, scheme)
         assert f"xor eax, {hex(scheme.table_key)}" in asm
 
+    def test_dispatch_diffuses_the_table_key_with_the_self_checksum(self):
+        # The table-entry decrypt also folds the runtime self-checksum (broadcast
+        # to 32 bits), so tampering corrupts handler resolution, not just opcodes.
+        scheme = build_vm_scheme(random.Random(3))
+        asm = _interpreter_asm(0x401000, scheme)
+        assert "imul ecx, ecx, 0x1010101" in asm
+
     def test_code_virtualization_pass_init(self):
         p = CodeVirtualizationPass({"probability": 0.5})
         assert p.probability == 0.5

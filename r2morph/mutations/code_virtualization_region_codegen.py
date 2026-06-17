@@ -509,7 +509,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         # exactly like the rel32 jumps the rest of the blob relies on. The stored
         # offsets are XOR-encrypted, so the table is not a plaintext handler map a
         # disassembler can recover as a switch; the dispatch decrypts each entry.
+        # The table key is itself diffused with the runtime self-checksum
+        # (broadcast to 32 bits), so tampering corrupts handler-address resolution
+        # too, not just the opcode decode - the build pre-folds the same value.
         f"  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n  xor eax, {hex(scheme.table_key)}\n"
+        f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
         "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
     )
 
@@ -575,19 +579,19 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
     data = bytearray(encoding)
     total = sum(len(indices) for indices in scheme.dup.values())
     table_start = len(data) - total * 4
+    # Expected runtime self-checksum over the interpreter code (everything up to
+    # the dispatch table, so the table encryption below does not perturb it); the
+    # encoder folds it into the opcodes, and the table key is diffused with it too.
+    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
+    table_key = scheme.table_key ^ (checksum * 0x01010101)
     for entry_index in range(total):
         offset = table_start + entry_index * 4
-        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ scheme.table_key
+        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
     # The bytecode is appended right after the interpreter, so its base is the
     # cave plus the interpreter's assembled length; rip-relative targets are
     # encoded relative to it. A target too far to express as a signed 32-bit
     # offset leaves the function native.
-    # Expected runtime self-checksum over the interpreter code (everything up to
-    # the dispatch table); the encoder folds it into the opcodes so a patched
-    # interpreter misdecodes. The table is excluded, so its in-place encryption
-    # above does not affect the value.
-    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
     bytecode_base = cave_vaddr + len(data)
     try:
         bytecode = encode_region(region, scheme, bytecode_base, checksum)

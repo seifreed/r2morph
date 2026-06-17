@@ -192,7 +192,11 @@ def _dispatch_asm() -> str:
         f"  xor al, byte ptr [rsp+{_KEY_OFFSET}]\n  xor al, r13b\n  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n"
         f"  movzx ecx, byte ptr [rsp+{_COUNT_OFFSET}]\n  cmp al, cl\n  jae vm_exit\n"
         f"  mov r14, qword ptr [rsp+{_TABLE_OFFSET}]\n  mov eax, dword ptr [r14+rax*4]\n"
-        f"  xor eax, dword ptr [rsp+{_TKEY_OFFSET}]\n  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
+        # Diffuse the table key with the self-checksum (broadcast to 32 bits) so
+        # tampering corrupts handler resolution in every layer, not just opcodes.
+        f"  xor eax, dword ptr [rsp+{_TKEY_OFFSET}]\n"
+        f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
+        "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
     )
 
 
@@ -334,13 +338,15 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     for layer in range(count - 2, -1, -1):
         bc_off[layer] = bc_off[layer + 1] - lens[layer]
     table0_start = bc_off[0] - sum(counts) * 4
-    for layer in range(count):
-        _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], schemes[layer].table_key)
-
     # Checksum covers only the interpreter code (up to the first table), so the
-    # table encryption and the appended bytecode do not perturb the expected
-    # value; the encoder folds it into every layer's stream.
+    # table encryption below and the appended bytecode do not perturb the expected
+    # value; the encoder folds it into every layer's stream, and each layer's table
+    # key is diffused with it too (broadcast to 32 bits).
     checksum = compute_build_checksum(bytes(data[:table0_start]), schemes[0].xor_key)
+    chk_broadcast = checksum * 0x01010101
+    for layer in range(count):
+        table_key = schemes[layer].table_key ^ chk_broadcast
+        _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], table_key)
     try:
         encoded = [
             encode_region(layers[layer], schemes[layer], cave_vaddr + bc_off[layer], checksum) for layer in range(count)
