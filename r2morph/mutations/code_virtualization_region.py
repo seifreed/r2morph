@@ -79,14 +79,21 @@ _CONDITION: dict[str, str] = {
 
 
 class RegionScheme:
-    """Per-instance opcode assignment and bytecode key for a region VM."""
+    """Per-instance opcode assignment, bytecode key, and register-slot layout.
 
-    __slots__ = ("opcodes", "xor_key", "junk_seed")
+    ``slot_perm`` is a per-instance bijection ``logical register index -> frame
+    slot``: each architectural register spills to a shuffled slot rather than its
+    ModR/M-ordered one, so a disassembler cannot label the context frame by
+    reading it positionally and slot indices in the bytecode reveal no register.
+    """
 
-    def __init__(self, opcodes: dict[str, int], xor_key: int, junk_seed: int) -> None:
+    __slots__ = ("opcodes", "xor_key", "junk_seed", "slot_perm")
+
+    def __init__(self, opcodes: dict[str, int], xor_key: int, junk_seed: int, slot_perm: tuple[int, ...]) -> None:
         self.opcodes = opcodes
         self.xor_key = xor_key
         self.junk_seed = junk_seed
+        self.slot_perm = slot_perm
 
 
 class Region:
@@ -326,7 +333,8 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     """
     keys = sorted(region.op_keys)
     indices = rng.sample(range(len(keys)), len(keys))
-    return RegionScheme(dict(zip(keys, indices, strict=True)), rng.randrange(1, 256), rng.randrange(1 << 31))
+    slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
+    return RegionScheme(dict(zip(keys, indices, strict=True)), rng.randrange(1, 256), rng.randrange(1 << 31), slot_perm)
 
 
 # Semantically-neutral instructions used as per-instance junk. They are emitted
@@ -384,35 +392,36 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
         offsets.append(cursor)
         cursor += _item_size(item)
 
+    slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
     plain = bytearray()
     for item in region.instructions:
         kind = item[0]
         if kind == "op":
             op = item[1]
             plain.append(scheme.opcodes[_required_key(item)])
-            plain.append(op.dst_index)
+            plain.append(slot_of[op.dst_index])
             if op.is_immediate:
                 plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
             else:
-                plain.append(op.value)
+                plain.append(slot_of[op.value])
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
             plain.append(scheme.opcodes[_required_key(item)])
-            plain.append(slot)
+            plain.append(slot_of[slot])
             if is_imm:
                 plain += struct.pack("<q" if width == 64 else "<i", value)
             else:
-                plain.append(value)
+                plain.append(slot_of[value])
         elif kind == "shift":
             _, _mnemonic, slot, count, _width = item
             plain.append(scheme.opcodes[_required_key(item)])
-            plain.append(slot)
+            plain.append(slot_of[slot])
             plain.append(count)
         elif kind == "imul":
             _, dst, src, _width = item
             plain.append(scheme.opcodes[_required_key(item)])
-            plain.append(dst)
-            plain.append(src)
+            plain.append(slot_of[dst])
+            plain.append(slot_of[src])
         elif kind == "jmp":
             plain.append(scheme.opcodes["jmp"])
             plain += struct.pack("<i", offsets[item[1]])
@@ -514,12 +523,13 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         "  lea r9, [rip+bytecode]\n  add r9, rax\n  mov rsi, r9\n  jmp vm_dispatch\n"
     )
 
+    slot = scheme.slot_perm  # logical register index -> shuffled frame slot
     lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n"]
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
-            lines.append(f"  mov qword ptr [rsp+{index * 8}], {name}\n")
+            lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {name}\n")
     lines.append(
-        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  mov qword ptr [rsp+{RSP_INDEX * 8}], rax\n"
+        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n"
         # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
         # 256-entry handler-address table, so there is no linear comparison ladder
@@ -535,7 +545,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     )
 
     reload_seq = "".join(
-        f"  mov {name}, qword ptr [rsp+{index * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
+        f"  mov {name}, qword ptr [rsp+{slot[index] * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
     )
 
     junk_rng = random.Random(scheme.junk_seed)
