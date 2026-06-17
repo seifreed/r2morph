@@ -1,0 +1,327 @@
+"""
+Assembly bodies for the region VM's opcode handlers.
+
+Each function here renders the native assembly for one VM handler instance:
+it decrypts the operands embedded in the bytecode stream, applies the real
+operation, captures the resulting RFLAGS where the operation defines them,
+advances the bytecode pointer, and jumps back to the dispatch loop. The
+handlers are pure string builders keyed by a ``handler_key`` and the
+per-instance XOR key; :mod:`code_virtualization_region` owns the dispatch
+table and stitches these instances together.
+"""
+
+from __future__ import annotations
+
+# Stack frame: 16 context slots in [0x00, 0x80), the captured RFLAGS at 0x80,
+# and the System V red zone preserved in [0x100, 0x180).
+_FRAME_SIZE = 0x180
+_FLAGS_OFFSET = 0x80
+
+
+def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
+    """Assembly body for an arithmetic/mov handler (decrypts, applies, captures flags)."""
+    _, mnemonic, mode, width_text = handler_key.split("_")
+    width = int(width_text)
+    is_immediate = mode == "i"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    if is_immediate and width == 64:
+        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+        advance = 10
+    elif is_immediate:
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        advance = 6
+    else:
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
+        advance = 3
+    if mnemonic == "mov":
+        body += "  mov qword ptr [rsp+r8*8], rax\n"
+    elif width == 64:
+        body += f"  {mnemonic} qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    else:
+        body += (
+            f"  mov r11d, dword ptr [rsp+r8*8]\n  {mnemonic} r11d, eax\n"
+            f"  mov qword ptr [rsp+r8*8], r11\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        )
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _mem_address_asm(riprel: bool, key: int, key_dword: str) -> tuple[str, int]:
+    """Shared head of every memory handler: decrypt the register slot into r8
+    and compute the effective address into r10.
+
+    For the rip-relative form the address is the bytecode base (r15) plus the
+    stored signed offset; otherwise it is a frame-slot base value plus a signed
+    displacement. Returns the assembly and the number of bytes to advance rsi by
+    (the bytecode item width).
+    """
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    if riprel:
+        return (
+            body + f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+            "  mov r10, r15\n  add r10, rax\n"
+        ), 6
+    return (
+        body + f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
+    ), 7
+
+
+def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for a load/store handler (``mov`` reg <-> [base+disp]).
+
+    The base value is read from its frame slot (so rsp resolves to the captured
+    original rsp, and any base updated earlier in the run is seen at its current
+    value), the signed displacement is added, and the qword/dword is moved. A
+    32-bit load zero-extends, matching x86-64. ``mov`` sets no flags, so the
+    captured-flags slot is untouched.
+    """
+    kind, width_text = handler_key.split("_")
+    width = int(width_text)
+    body, advance = _mem_address_asm(False, key, key_dword)
+    if kind == "load":
+        load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
+    elif width == 64:
+        body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
+    else:
+        body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for a rip-relative load/store handler.
+
+    The target is recomputed as bytecode-base (r15) plus the stored signed
+    offset, so it reaches the same global the original ``[rip+disp]`` did and
+    stays correct under rebasing (the global and the VM share one image).
+    """
+    _, sub, width_text = handler_key.split("_")
+    width = int(width_text)
+    body, advance = _mem_address_asm(True, key, key_dword)
+    if sub == "load":
+        load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
+    elif width == 64:
+        body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
+    else:
+        body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``cmp reg, [mem]`` (computes the address, then compares).
+
+    The memory address comes from a frame-slot base plus displacement
+    (``cmpmem``) or the bytecode base plus a stored offset (``cmpriprel``). The
+    real ``cmp`` sets the flags, which are captured into the flags slot exactly
+    like the register/immediate compare handlers.
+    """
+    parts = handler_key.split("_")
+    riprel = parts[0] == "cmpriprel"
+    width = int(parts[-1])
+    body, advance = _mem_address_asm(riprel, key, key_dword)
+    if width == 64:
+        body += "  mov r9, qword ptr [rsp+r8*8]\n  cmp r9, qword ptr [r10]\n"
+    else:
+        body += "  mov r9d, dword ptr [rsp+r8*8]\n  cmp r9d, dword ptr [r10]\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``<op> [mem], reg`` (memory is the read-modify-write
+    destination, the register is the source).
+
+    The address is computed with the shared prologue, the register value is read
+    from its slot, and the real arithmetic is applied directly against memory
+    (which both reads and writes it), capturing the flags.
+    """
+    parts = handler_key.split("_")
+    riprel = parts[0] == "opmemdstrip"
+    mnemonic, width = parts[1], int(parts[2])
+    body, advance = _mem_address_asm(riprel, key, key_dword)
+    if width == 64:
+        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} qword ptr [r10], r9\n"
+    else:
+        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} dword ptr [r10], r9d\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _movx_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``movzx/movsx reg, byte|word [base+disp]``.
+
+    The address is computed with the shared prologue, then the byte or word is
+    zero- or sign-extended into the destination slot. movzx always zero-extends
+    the same regardless of destination width; movsx's extension target depends
+    on whether the destination is 32- or 64-bit. movzx/movsx set no flags.
+    """
+    _, ext, src_size_text, dst_width_text = handler_key.split("_")
+    body, advance = _mem_address_asm(False, key, key_dword)
+    return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
+
+
+def _movx_extend_asm(ext: str, src_size: int, dst_width: int, advance: int) -> str:
+    """The extend-from-[r10]-into-the-slot tail shared by the movzx/movsx handlers."""
+    size_word = "byte" if src_size == 8 else "word"
+    if ext == "z":
+        load = f"  movzx eax, {size_word} ptr [r10]\n"
+    elif dst_width == 64:
+        load = f"  movsx rax, {size_word} ptr [r10]\n"
+    else:
+        load = f"  movsx eax, {size_word} ptr [r10]\n"
+    return load + f"  mov qword ptr [rsp+r8*8], rax\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _movx_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``movzx/movsx reg, byte|word [base+index*scale+disp]``."""
+    _, ext, src_size_text, dst_width_text = handler_key.split("_")
+    body, advance = _indexed_address_asm(key, key_dword)
+    return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
+
+
+def _incdec_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for ``inc reg`` / ``dec reg``.
+
+    The real inc/dec is applied to the register slot so the carry flag is
+    preserved (inc/dec leave CF untouched, unlike add/sub by one), and the
+    remaining flags are captured. A 32-bit form zero-extends.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    # Reload the program's captured flags so inc/dec preserves the program's CF
+    # (the interpreter's own carry flag is unrelated), then run the real op.
+    body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
+    if width == 64:
+        body += f"  {mnemonic} qword ptr [rsp+r8*8]\n"
+    else:
+        body += f"  mov eax, dword ptr [rsp+r8*8]\n  {mnemonic} eax\n  mov qword ptr [rsp+r8*8], rax\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 2\n  jmp vm_dispatch\n"
+
+
+def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
+    """Shared head of every indexed memory handler: decrypt the register slot
+    into r8 and compute ``base + index*scale + disp`` into r10.
+
+    The index is read from its slot and shifted by the encoded scale log2, then
+    the base and displacement are added. Returns the assembly and the rsi
+    advance (the bytecode item width).
+    """
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        f"  movzx r11d, byte ptr [rsi+3]\n  xor r11b, {key}\n"
+        f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n"
+        f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
+        "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
+        "  add r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
+    ), 9
+
+
+def _lea_indexed_handler_asm(key: int, key_dword: str) -> str:
+    """Assembly body for ``lea reg, [base + index*scale + disp]`` (64-bit dst).
+
+    The effective address is computed with the shared indexed prologue and
+    stored into the destination slot without dereferencing; lea sets no flags.
+    """
+    body, advance = _indexed_address_asm(key, key_dword)
+    return body + f"  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``<op> reg, [base + index*scale + disp]`` (reg is source
+    and destination; memory is the scaled-index source).
+
+    The address is computed with the shared indexed prologue, the register value
+    is read from its slot, the real arithmetic is applied against memory, the
+    result is written back, and the flags are captured.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body, advance = _indexed_address_asm(key, key_dword)
+    if width == 64:
+        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    else:
+        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _lea_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]``.
+
+    The effective address is computed exactly like a memory handler, but it is
+    stored into the destination slot instead of being dereferenced; lea sets no
+    flags.
+    """
+    body, advance = _mem_address_asm(handler_key == "learip", key, key_dword)
+    return body + f"  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``<op> reg, [mem]`` (reg is source and destination).
+
+    The address is computed like the compare-with-memory handler; the register
+    value is read from its slot, the real arithmetic is applied against memory,
+    the result is written back to the slot (a 32-bit op zero-extends), and the
+    flags are captured.
+    """
+    parts = handler_key.split("_")
+    riprel = parts[0] == "opriprel"
+    mnemonic, width = parts[1], int(parts[2])
+    body, advance = _mem_address_asm(riprel, key, key_dword)
+    if width == 64:
+        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    else:
+        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
+    """Assembly body for a cmp/test handler (sets and captures flags only)."""
+    mnemonic, mode, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    if mode == "i" and width == 64:
+        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, rax\n"
+        advance = 10
+    elif mode == "i":
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, eax\n"
+        advance = 6
+    else:
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        if width == 64:
+            body += f"  mov rax, qword ptr [rsp+r9*8]\n  mov r10, qword ptr [rsp+r8*8]\n  {mnemonic} r10, rax\n"
+        else:
+            body += f"  mov eax, dword ptr [rsp+r9*8]\n  mov r10d, dword ptr [rsp+r8*8]\n  {mnemonic} r10d, eax\n"
+        advance = 3
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _shift_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a shl/shr/sar handler (count is an immediate in cl)."""
+    mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx ecx, byte ptr [rsi+2]\n  xor cl, {key}\n"
+    if width == 64:
+        body += f"  mov rax, qword ptr [rsp+r8*8]\n  {mnemonic} rax, cl\n"
+    else:
+        body += f"  mov eax, dword ptr [rsp+r8*8]\n  {mnemonic} eax, cl\n"
+    return (
+        body
+        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
+def _imul_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a two-operand register imul handler."""
+    width = int(handler_key.split("_")[1])
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+    if width == 64:
+        body += "  mov rax, qword ptr [rsp+r8*8]\n  imul rax, qword ptr [rsp+r9*8]\n"
+    else:
+        body += "  mov eax, dword ptr [rsp+r8*8]\n  imul eax, dword ptr [rsp+r9*8]\n"
+    return (
+        body
+        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
+    )
