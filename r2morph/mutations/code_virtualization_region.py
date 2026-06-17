@@ -430,12 +430,16 @@ def _decode_movx(text: str) -> tuple[Any, ...] | None:
         src_size = 16
     else:
         return None
-    mem = _parse_mem_operand(remainder.strip())
-    if mem is None:
-        return None
-    base_slot, disp, _mem_width = mem
     ext = "z" if mnemonic == "movzx" else "s"
-    return ("movx", ext, src_size, dst[1], dst[0], base_slot, disp)
+    mem = _parse_mem_operand(remainder.strip())
+    if mem is not None:
+        base_slot, disp, _mem_width = mem
+        return ("movx", ext, src_size, dst[1], dst[0], base_slot, disp)
+    indexed = _parse_indexed_operand(remainder.strip())
+    if indexed is not None:
+        base_slot, index_slot, shift, disp = indexed
+        return ("movxidx", ext, src_size, dst[1], dst[0], base_slot, index_slot, shift, disp)
+    return None
 
 
 def _decode_incdec(text: str) -> tuple[Any, ...] | None:
@@ -513,7 +517,7 @@ def _parse_indexed_operand(text: str) -> tuple[int, int, int, int] | None:
     if not (text.startswith("[") and text.endswith("]")):
         return None
     inner = text[1:-1].strip()
-    if "*" not in inner or ":" in inner or "rip" in inner:
+    if ":" in inner or "rip" in inner:
         return None
     base: int | None = None
     index: int | None = None
@@ -535,9 +539,13 @@ def _parse_indexed_operand(text: str) -> tuple[int, int, int, int] | None:
                 return None
             index, shift = REGISTER_INDEX[index_name], _SCALE_TO_SHIFT[scale]
         elif token in REGISTER_INDEX:
-            if base is not None:
+            # First bare register is the base; a second is an unscaled index.
+            if base is None:
+                base = REGISTER_INDEX[token]
+            elif index is None:
+                index, shift = REGISTER_INDEX[token], 0
+            else:
                 return None
-            base = REGISTER_INDEX[token]
         else:
             try:
                 disp += int(token, 0)
@@ -630,6 +638,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"incdec_{item[1]}_{item[3]}"
     if kind == "movx":
         return f"movx_{item[1]}_{item[2]}_{item[3]}"
+    if kind == "movxidx":
+        return f"movxidx_{item[1]}_{item[2]}_{item[3]}"
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
@@ -912,6 +922,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 2  # opcode + reg slot
     if kind == "movx":
         return 7  # opcode + reg slot + base slot + 4-byte displacement
+    if kind == "movxidx":
+        return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
@@ -1040,6 +1052,14 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain.append(slot_of[base_slot])
+            plain += struct.pack("<i", disp)
+        elif kind == "movxidx":
+            _, _ext, _src_size, _dst_width, reg_slot, base_slot, index_slot, shift, disp = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain.append(slot_of[index_slot])
+            plain.append(shift)
             plain += struct.pack("<i", disp)
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
@@ -1205,15 +1225,27 @@ def _movx_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     on whether the destination is 32- or 64-bit. movzx/movsx set no flags.
     """
     _, ext, src_size_text, dst_width_text = handler_key.split("_")
-    size_word = "byte" if int(src_size_text) == 8 else "word"
     body, advance = _mem_address_asm(False, key, key_dword)
+    return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
+
+
+def _movx_extend_asm(ext: str, src_size: int, dst_width: int, advance: int) -> str:
+    """The extend-from-[r10]-into-the-slot tail shared by the movzx/movsx handlers."""
+    size_word = "byte" if src_size == 8 else "word"
     if ext == "z":
-        body += f"  movzx eax, {size_word} ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
-    elif int(dst_width_text) == 64:
-        body += f"  movsx rax, {size_word} ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+        load = f"  movzx eax, {size_word} ptr [r10]\n"
+    elif dst_width == 64:
+        load = f"  movsx rax, {size_word} ptr [r10]\n"
     else:
-        body += f"  movsx eax, {size_word} ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
-    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+        load = f"  movsx eax, {size_word} ptr [r10]\n"
+    return load + f"  mov qword ptr [rsp+r8*8], rax\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _movx_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``movzx/movsx reg, byte|word [base+index*scale+disp]``."""
+    _, ext, src_size_text, dst_width_text = handler_key.split("_")
+    body, advance = _indexed_address_asm(key, key_dword)
+    return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
 
 
 def _incdec_handler_asm(handler_key: str, key: int) -> str:
@@ -1438,6 +1470,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("incdec_"):
             lines.append(_incdec_handler_asm(handler_key, key))
+        elif handler_key.startswith("movxidx_"):
+            lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("movx_"):
             lines.append(_movx_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
