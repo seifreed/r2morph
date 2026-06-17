@@ -2,20 +2,20 @@
 Whole-function control-flow virtualization.
 
 Where :mod:`code_virtualization_engine` virtualizes a single straight-line
-register run, this module virtualizes an entire single-exit function whose
-every instruction is a register op, a comparison, or a branch. The control
-flow is lowered into the VM's own bytecode: comparisons capture the real
-RFLAGS into a private slot, conditional/unconditional branches retarget the
-bytecode pointer, and the one terminator (``ret``/``syscall``) becomes a VM
-exit back to native code.
+register run, this module virtualizes an entire function whose every
+instruction is a register op, a comparison, or a branch. The control flow is
+lowered into the VM's own bytecode: comparisons capture the real RFLAGS into
+a private slot, conditional/unconditional branches retarget the bytecode
+pointer, and each terminator (``ret``/``syscall``) becomes a distinct VM exit
+back to native code (any number of terminators is supported).
 
 The VM never emulates flags by hand - a comparison runs the real ``cmp`` and
 the interpreter stamps ``pushfq``/``popfq`` around the dispatch loop, so the
 architectural condition codes are exactly reproduced for the branch.
 
 A function that is not fully reducible to this model (a call, a memory
-operand, an indirect or out-of-function branch, more than one terminator)
-yields ``None`` and is left untouched.
+operand, an indirect or out-of-function branch, no terminator) yields
+``None`` and is left untouched.
 """
 
 from __future__ import annotations
@@ -96,7 +96,7 @@ class Region:
     back to. ``op_keys`` is the set of interpreter handlers the region needs.
     """
 
-    __slots__ = ("instructions", "exit_vaddr", "entry_vaddr", "op_keys")
+    __slots__ = ("instructions", "exit_vaddr", "entry_vaddr", "op_keys", "body_ranges")
 
     def __init__(
         self,
@@ -104,11 +104,13 @@ class Region:
         exit_vaddr: int,
         entry_vaddr: int,
         op_keys: set[str],
+        body_ranges: list[tuple[int, int]],
     ) -> None:
         self.instructions = instructions
-        self.exit_vaddr = exit_vaddr
+        self.exit_vaddr = exit_vaddr  # default exit, used by the unknown-opcode guard
         self.entry_vaddr = entry_vaddr
         self.op_keys = op_keys
+        self.body_ranges = body_ranges  # (addr, size) of each virtualized body instruction
 
 
 def _register_operand(name: str) -> tuple[int, int] | None:
@@ -202,6 +204,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"jcc_{item[1]}"
     if kind == "nop":
         return "nop"
+    if kind == "exit":
+        return f"exit_{item[1]}"
     return None
 
 
@@ -213,110 +217,102 @@ def _required_key(item: tuple[Any, ...]) -> str:
     return key
 
 
+def _classify(insn: dict[str, Any]) -> list[Any] | None:
+    """Build the VM item for one body instruction, or ``None`` if unsupported."""
+    kind = insn.get("type", "")
+    text = insn.get("opcode", "")
+    if kind == "nop":
+        return ["nop"]
+    if kind in ("mov", "add", "sub", "xor", "and", "or"):
+        op = decode_instruction(text)
+        return ["op", op] if op is not None else None
+    if kind == "cmp":
+        compare = _decode_two_operand(text, "cmp")
+        return ["cmp", *compare] if compare is not None else None
+    if kind == "acmp":
+        test = _decode_two_operand(text, "test")
+        return ["test", *test] if test is not None else None
+    if kind in ("shl", "shr", "sar"):
+        shift = _decode_shift(text)
+        return ["shift", *shift] if shift is not None else None
+    if kind == "mul":
+        imul = _decode_imul(text)
+        return ["imul", *imul] if imul is not None else None
+    if kind == "jmp":
+        return ["jmp", insn.get("jump", -1)]
+    if kind == "cjmp":
+        condition = _CONDITION.get(text.split(None, 1)[0].lower())
+        return ["jcc", condition, insn.get("jump", -1)] if condition is not None else None
+    return None
+
+
 def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
     """Lower a function's linear instruction list into a :class:`Region`.
 
-    Returns ``None`` unless the function has exactly one terminator and every
-    other instruction is a register op, comparison, ``nop``, or in-function
-    branch.
+    Returns ``None`` unless every instruction is a register op, comparison,
+    ``nop``, in-function branch, or a terminator (``ret``/``syscall``). Any
+    number of terminators is allowed; each becomes a distinct VM exit.
     """
     if not instructions:
         return None
 
-    terminators = [insn for insn in instructions if insn.get("type") in ("ret", "swi", "syscall")]
-    if len(terminators) != 1:
+    exit_addrs = sorted({insn["addr"] for insn in instructions if insn.get("type") in ("ret", "swi", "syscall")})
+    if not exit_addrs:
         return None
-    exit_vaddr = terminators[0]["addr"]
-    body = [insn for insn in instructions if insn["addr"] != exit_vaddr]
+    exit_set = set(exit_addrs)
+    body = [insn for insn in instructions if insn["addr"] not in exit_set]
     if not body:
         return None
 
-    # Phase 1: build items, remembering each instruction's item index and the
-    # native target address of every branch (resolved against item indices in
-    # phase 2). Branch targets are stored as addresses; ``exit_vaddr`` denotes
-    # the synthetic trailing exit item.
+    # Phase 1: build items, recording each instruction's item index and storing
+    # branch/fall-through targets as native addresses (resolved in phase 2). A
+    # target that is a terminator address denotes that terminator's exit item.
     items: list[list[Any]] = []
     item_index_of: dict[int, int] = {}
     op_keys: set[str] = set()
     for insn in body:
-        kind = insn.get("type", "")
-        text = insn.get("opcode", "")
-        next_addr = insn["addr"] + insn.get("size", 0)
-        item_index_of[insn["addr"]] = len(items)
-        if kind == "nop":
-            items.append(["nop"])
-            if next_addr == exit_vaddr:
-                items.append(["jmp", exit_vaddr])
-        elif kind in ("mov", "add", "sub", "xor", "and", "or"):
-            op = decode_instruction(text)
-            if op is None:
-                return None
-            items.append(["op", op])
-            if next_addr == exit_vaddr:
-                items.append(["jmp", exit_vaddr])
-        elif kind == "cmp":
-            compare = _decode_two_operand(text, "cmp")
-            if compare is None:
-                return None
-            items.append(["cmp", *compare])
-            if next_addr == exit_vaddr:
-                items.append(["jmp", exit_vaddr])
-        elif kind == "acmp":
-            test = _decode_two_operand(text, "test")
-            if test is None:
-                return None
-            items.append(["test", *test])
-            if next_addr == exit_vaddr:
-                items.append(["jmp", exit_vaddr])
-        elif kind in ("shl", "shr", "sar"):
-            shift = _decode_shift(text)
-            if shift is None:
-                return None
-            items.append(["shift", *shift])
-            if next_addr == exit_vaddr:
-                items.append(["jmp", exit_vaddr])
-        elif kind == "mul":
-            imul = _decode_imul(text)
-            if imul is None:
-                return None
-            items.append(["imul", *imul])
-            if next_addr == exit_vaddr:
-                items.append(["jmp", exit_vaddr])
-        elif kind == "jmp":
-            items.append(["jmp", insn.get("jump", -1)])
-        elif kind == "cjmp":
-            condition = _CONDITION.get(text.split(None, 1)[0].lower())
-            if condition is None:
-                return None
-            items.append(["jcc", condition, insn.get("jump", -1)])
-            if next_addr == exit_vaddr:
-                items.append(["jmp", exit_vaddr])
-        else:
+        item = _classify(insn)
+        if item is None:
             return None
-        key = _op_key(tuple(items[-1]))
+        item_index_of[insn["addr"]] = len(items)
+        items.append(item)
+        key = _op_key(tuple(item))
         if key is not None:
             op_keys.add(key)
+        # Fall-through into a terminator (everything except an unconditional jmp).
+        next_addr = insn["addr"] + insn.get("size", 0)
+        if item[0] != "jmp" and next_addr in exit_set:
+            items.append(["jmp", next_addr])
+            op_keys.add("jmp")
 
-    exit_index = len(items)
-    items.append(["exit"])
-    op_keys.add("exit")
+    exit_index_of: dict[int, int] = {}
+    for addr in exit_addrs:
+        exit_index_of[addr] = len(items)
+        items.append(["exit", addr])
+        op_keys.add(f"exit_{addr}")
     if any(item[0] == "jmp" for item in items):
         op_keys.add("jmp")
+
+    def resolve(target: int) -> int | None:
+        if target in exit_index_of:
+            return exit_index_of[target]
+        return item_index_of.get(target)
 
     # Phase 2: resolve branch target addresses to item indices.
     for item in items:
         if item[0] == "jmp":
-            target = exit_index if item[1] == exit_vaddr else item_index_of.get(item[1])
-            if target is None:
+            resolved = resolve(item[1])
+            if resolved is None:
                 return None
-            item[1] = target
+            item[1] = resolved
         elif item[0] == "jcc":
-            target = exit_index if item[2] == exit_vaddr else item_index_of.get(item[2])
-            if target is None:
+            resolved = resolve(item[2])
+            if resolved is None:
                 return None
-            item[2] = target
+            item[2] = resolved
 
-    return Region([tuple(item) for item in items], exit_vaddr, body[0]["addr"], op_keys)
+    body_ranges = [(insn["addr"], insn.get("size", 0)) for insn in body]
+    return Region([tuple(item) for item in items], exit_addrs[0], body[0]["addr"], op_keys, body_ranges)
 
 
 def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
@@ -388,7 +384,7 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
         elif kind == "nop":
             plain.append(scheme.opcodes["nop"])
         elif kind == "exit":
-            plain.append(scheme.opcodes["exit"])
+            plain.append(scheme.opcodes[_required_key(item)])
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
 
@@ -494,6 +490,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         lines.append(f"  cmp al, {scheme.opcodes[handler_key]}\n  je H_{handler_key}\n")
     lines.append("  jmp vm_exit\n")
 
+    reload_seq = "".join(
+        f"  mov {name}, qword ptr [rsp+{index * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
+    )
+
     for handler_key in sorted(scheme.opcodes):
         lines.append(f"H_{handler_key}:\n")
         if handler_key.startswith("op_"):
@@ -515,14 +515,12 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             )
         elif handler_key == "nop":
             lines.append("  add rsi, 1\n  jmp vm_dispatch\n")
-        elif handler_key == "exit":
-            lines.append("  jmp vm_exit\n")
+        elif handler_key.startswith("exit_"):
+            exit_addr = int(handler_key.split("_", 1)[1])
+            lines.append(f"{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(exit_addr)}\n")
 
-    lines.append("vm_exit:\n")
-    for index, name in enumerate(GP_REGISTERS):
-        if name != "rsp":
-            lines.append(f"  mov {name}, qword ptr [rsp+{index * 8}]\n")
-    lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\nbytecode:\n")
+    # Unknown-opcode guard: restore state and leave through the default exit.
+    lines.append(f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\nbytecode:\n")
     return "".join(lines)
 
 
