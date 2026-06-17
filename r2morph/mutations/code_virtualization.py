@@ -34,6 +34,11 @@ from r2morph.mutations.code_virtualization_engine import (
     decode_instruction,
 )
 from r2morph.mutations.code_virtualization_inject import inject_blob, predict_blob_vaddr
+from r2morph.mutations.code_virtualization_region import (
+    build_region_blob,
+    build_region_scheme,
+    extract_region,
+)
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
 logger = logging.getLogger(__name__)
@@ -164,6 +169,60 @@ class CodeVirtualizationPass(MutationPass):
             return None
         return {"instructions": len(run.ops), "bytecode": len(blob)}
 
+    def _virtualize_function(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
+        """Virtualize a whole single-exit function via the control-flow VM."""
+        try:
+            disasm = binary.r2.cmdj(f"pdfj @ {func['addr']}")
+        except Exception:
+            return None
+        if not disasm or "ops" not in disasm:
+            return None
+        region = extract_region(disasm["ops"])
+        if region is None:
+            return None
+
+        blob_vaddr = predict_blob_vaddr(binary)
+        if blob_vaddr is None:
+            return None
+        scheme = build_region_scheme(region, random.Random(random.getrandbits(64)))
+        blob = build_region_blob(region, blob_vaddr, scheme)
+        if blob is None:
+            return None
+
+        original_bytes = binary.read_bytes(region.entry_vaddr, _TRAMPOLINE_SIZE)
+        if not original_bytes or len(original_bytes) != _TRAMPOLINE_SIZE:
+            return None
+
+        checkpoint = self._create_mutation_checkpoint("virtualize_function")
+        injected_vaddr = inject_blob(binary, blob)
+        if injected_vaddr is None:
+            return None
+        if injected_vaddr != blob_vaddr:
+            self._rollback_uncommitted(binary, checkpoint, reason="VM blob landed at an unexpected vaddr; aborting")
+            return None
+
+        relative = injected_vaddr - (region.entry_vaddr + _TRAMPOLINE_SIZE)
+        trampoline = b"\xe9" + struct.pack("<i", relative)
+        if not binary.write_bytes(region.entry_vaddr, trampoline):
+            self._rollback_uncommitted(binary, checkpoint, reason="failed to write VM trampoline; aborting")
+            return None
+
+        instruction_count = sum(1 for item in region.instructions if item[0] != "exit")
+        record = self._record_mutation(
+            function_address=func["addr"],
+            start_address=region.entry_vaddr,
+            end_address=region.entry_vaddr + _TRAMPOLINE_SIZE - 1,
+            original_bytes=original_bytes,
+            mutated_bytes=binary.read_bytes(region.entry_vaddr, _TRAMPOLINE_SIZE),
+            original_disasm=f"; {instruction_count} instructions (control-flow region)",
+            mutated_disasm=f"; trampoline -> VM ({len(blob)} bytes)",
+            mutation_kind="code_virtualization",
+            metadata={"instructions_count": instruction_count, "bytecode_size": len(blob)},
+        )
+        if self._validate_mutation_or_rollback(binary, record, checkpoint):
+            return None
+        return {"instructions": instruction_count, "bytecode": len(blob)}
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """Apply code virtualization to provable register runs."""
         self._reset_random()
@@ -182,6 +241,15 @@ class CodeVirtualizationPass(MutationPass):
                 continue
             if random.random() > self.probability:
                 skipped += 1
+                continue
+
+            # Prefer whole-function control-flow virtualization; fall back to
+            # straight-line runs when the function is not fully reducible.
+            region_result = self._virtualize_function(binary, func)
+            if region_result is not None:
+                total_insns += region_result["instructions"]
+                total_bytecode += region_result["bytecode"]
+                virtualized += 1
                 continue
 
             try:

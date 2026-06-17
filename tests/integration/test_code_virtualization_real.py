@@ -93,6 +93,38 @@ def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
     assert _emulate_exit_code(FIXTURE) == _emulate_exit_code(mutated) == 45
 
 
+# Branch-heavy fixtures (comparisons, conditional/unconditional jumps, loops):
+# the whole function is lowered into VM bytecode, so its exit code must survive.
+_CONTROL_FLOW_FIXTURES = [
+    "elf_jumpchain_x86_64",
+    "elf_blockswap_x86_64",
+    "elf_cff_flagdead_x86_64",
+    "elf_cff_flaglive_x86_64",
+    "elf_flag_live_x86_64",
+]
+
+
+@pytest.mark.parametrize("fixture_name", _CONTROL_FLOW_FIXTURES)
+def test_control_flow_virtualization_preserves_exit_code(fixture_name: str, tmp_path: Path) -> None:
+    fixture = _DATASET / fixture_name
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(fixture, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated)
+
+
 def _virtualize(src: Path, dst: Path) -> bytes:
     """Virtualize ``src`` into ``dst`` and return the appended VM region bytes."""
     shutil.copy(src, dst)
