@@ -19,7 +19,12 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_engine import decode_instruction
 
-FIXTURE = Path(__file__).resolve().parents[1].parent / "dataset" / "elf_vm_arith_x86_64"
+_DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
+FIXTURE = _DATASET / "elf_vm_arith_x86_64"
+FIXTURE32 = _DATASET / "elf_vm_arith32_x86_64"
+# Multi-block fixture: exercises the basic-block-bounded run extraction so a
+# trampoline can never orphan an instruction reached by another edge.
+FIXTURE_MULTIBLOCK = _DATASET / "elf_blockswap_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
 from unicorn import UC_ARCH_X86, UC_HOOK_INSN, UC_MODE_64, Uc  # noqa: E402
@@ -37,18 +42,24 @@ def _emulate_exit_code(path: Path) -> int | None:
     phnum = struct.unpack_from("<H", raw, 0x38)[0]
 
     mu = Uc(UC_ARCH_X86, UC_MODE_64)
+    mapped: set[int] = set()
+
+    def map_pages(start: int, length: int) -> None:
+        for page in range(start & ~0xFFF, (start + length + 0xFFF) & ~0xFFF, 0x1000):
+            if page not in mapped:
+                mu.mem_map(page, 0x1000)
+                mapped.add(page)
+
     for i in range(phnum):
         off = e_phoff + i * phentsize
         p_type = struct.unpack_from("<I", raw, off)[0]
         if p_type != 1:
             continue
         p_offset, p_vaddr, _, p_filesz, p_memsz, _ = struct.unpack_from("<QQQQQQ", raw, off + 8)
-        base = p_vaddr & ~0xFFF
-        size = ((p_vaddr + max(p_memsz, p_filesz) + 0xFFF) & ~0xFFF) - base
-        mu.mem_map(base, max(size, 0x1000))
+        map_pages(p_vaddr, max(p_memsz, p_filesz))
         mu.mem_write(p_vaddr, raw[p_offset : p_offset + p_filesz])
 
-    mu.mem_map(0x200000, 0x10000)
+    map_pages(0x200000, 0x10000)
     mu.reg_write(UC_X86_REG_RSP, 0x208000)
 
     captured: dict[str, int] = {}
@@ -111,9 +122,52 @@ def test_virtualization_is_polymorphic_yet_semantically_stable(tmp_path: Path) -
     assert _emulate_exit_code(tmp_path / "first") == _emulate_exit_code(tmp_path / "second") == 45
 
 
-def test_decode_instruction_rejects_uneproducible_operands() -> None:
-    assert decode_instruction("mov eax, 1") is None  # 32-bit width not modeled
+def test_virtualized_32bit_fixture_preserves_exit_code(tmp_path: Path) -> None:
+    if not FIXTURE32.exists():
+        pytest.skip(f"fixture missing: {FIXTURE32}")
+
+    mutated = tmp_path / "mutated32"
+    shutil.copy(FIXTURE32, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(FIXTURE32) == _emulate_exit_code(mutated) == 45
+
+
+def test_virtualizing_multiblock_binary_preserves_exit_code(tmp_path: Path) -> None:
+    # A run must stay inside one basic block; otherwise the trampoline would
+    # orphan an instruction reached by another edge. This fixture branches, so
+    # extracting per-instruction-count rather than per-basic-block would crash.
+    if not FIXTURE_MULTIBLOCK.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_MULTIBLOCK}")
+
+    mutated = tmp_path / "mutated_mb"
+    shutil.copy(FIXTURE_MULTIBLOCK, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert _emulate_exit_code(FIXTURE_MULTIBLOCK) == _emulate_exit_code(mutated)
+
+
+def test_decode_instruction_widths_and_rejections() -> None:
+    assert decode_instruction("mov eax, 1").width == 32  # 32-bit now supported
+    assert decode_instruction("mov rax, 1").width == 64
+    assert decode_instruction("add eax, rbx") is None  # mismatched operand widths
     assert decode_instruction("mov rsp, rax") is None  # interpreter owns rsp
+    assert decode_instruction("mov esp, eax") is None  # ...in either width
     assert decode_instruction("mov rax, qword ptr [rbx]") is None  # memory operand
     assert decode_instruction("jmp 0x400000") is None  # control flow
     assert decode_instruction("add rbx, rcx") is not None  # plain 64-bit GP op

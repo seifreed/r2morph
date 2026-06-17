@@ -81,9 +81,14 @@ class CodeVirtualizationPass(MutationPass):
         )
 
     def _find_run(self, binary: Any, block: dict[str, Any]) -> _Run | None:
-        """Find the first virtualizable run inside a basic block."""
+        """Find the first virtualizable run inside a basic block.
+
+        ``pdbj`` disassembles exactly the basic block, so a run never spans a
+        block boundary - its interior can hold no jump target, and the
+        trampoline cannot orphan an instruction reached by another edge.
+        """
         try:
-            insns = binary.r2.cmdj(f"pdj {block['size']} @ {block['addr']}")
+            insns = binary.r2.cmdj(f"pdbj @ {block['addr']}")
         except Exception:
             return None
         if not insns:

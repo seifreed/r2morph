@@ -239,8 +239,12 @@ class TestCodeVirtualization:
         op = decode_instruction("add rbx, rcx")
         assert op is not None and op.mnemonic == "add" and not op.is_immediate
 
-    def test_decode_instruction_rejects_32bit_register(self):
-        assert decode_instruction("mov eax, 1") is None
+    def test_decode_instruction_accepts_32bit_register_with_width(self):
+        op = decode_instruction("mov eax, 1")
+        assert op is not None and op.width == 32
+
+    def test_decode_instruction_rejects_mismatched_operand_widths(self):
+        assert decode_instruction("add eax, rbx") is None
 
     def test_decode_instruction_rejects_memory_operand(self):
         assert decode_instruction("mov rax, qword ptr [rbx]") is None
