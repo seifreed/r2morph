@@ -13,10 +13,10 @@ import random
 from typing import Any
 
 from r2morph.mutations.code_virtualization_region import (
-    _interpreter_asm,
     build_region_scheme,
     extract_region,
 )
+from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm
 
 
 def _tiny_region() -> Any:

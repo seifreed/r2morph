@@ -35,10 +35,11 @@ from r2morph.mutations.code_virtualization_engine import (
 )
 from r2morph.mutations.code_virtualization_inject import inject_blob, predict_blob_vaddr
 from r2morph.mutations.code_virtualization_region import (
-    build_region_blob,
     build_region_scheme,
     extract_region,
 )
+from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
+from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
 logger = logging.getLogger(__name__)
@@ -67,12 +68,15 @@ class CodeVirtualizationPass(MutationPass):
     Config options:
         - probability: Probability of virtualizing each function (default: 0.3)
         - max_functions: Maximum functions to virtualize (default: 5)
+        - vm_nesting_depth: VM layers per function; 2 wraps the region in a
+          second, independently-keyed inner VM (default: 1, no nesting)
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(name="CodeVirtualization", config=config)
         self.probability = self.config.get("probability", 0.3)
         self.max_functions = self.config.get("max_functions", 5)
+        self.vm_nesting_depth = self.config.get("vm_nesting_depth", 1)
         self.set_support(
             formats=("ELF",),
             architectures=("x86_64",),
@@ -184,8 +188,15 @@ class CodeVirtualizationPass(MutationPass):
         blob_vaddr = predict_blob_vaddr(binary)
         if blob_vaddr is None:
             return None
-        scheme = build_region_scheme(region, random.Random(random.getrandbits(64)))
-        blob = build_region_blob(region, blob_vaddr, scheme)
+        rng = random.Random(random.getrandbits(64))
+        # Nest when asked, falling back to a single layer if the region has no
+        # peelable register-op run.
+        blob = None
+        if self.vm_nesting_depth >= 2:
+            blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
+        if blob is None:
+            scheme = build_region_scheme(region, rng)
+            blob = build_region_blob(region, blob_vaddr, scheme)
         if blob is None:
             return None
 

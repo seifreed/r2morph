@@ -34,6 +34,11 @@ import logging
 import random
 import struct
 
+from r2morph.mutations.code_virtualization_region_integrity import (
+    checksum_prologue_asm,
+    compute_build_checksum,
+)
+
 logger = logging.getLogger(__name__)
 
 # ModR/M register order; index is the VM register-context slot.
@@ -97,10 +102,12 @@ _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
 
 # Private stack frame the interpreter carves below the caller's rsp. The
-# 16 context slots occupy [0x00, 0x80); the System V red zone
-# [original_rsp-128, original_rsp) maps to [0x80, 0x100) and is left
-# untouched, so leaf-function red-zone data survives the detour.
-_FRAME_SIZE = 0x100
+# 16 context slots occupy [0x00, 0x80); the runtime self-checksum byte sits at
+# 0x80; the System V red zone [original_rsp-128, original_rsp) maps to the top
+# [0x90, 0x110) and is left untouched, so leaf-function red-zone data survives.
+_FRAME_SIZE = 0x110
+# Frame byte holding the interpreter's runtime self-checksum (below the red zone).
+_CHECKSUM_OFFSET = 0x80
 
 
 class VMScheme:
@@ -250,10 +257,14 @@ def pack_immediate(value: int, width: int) -> bytes:
     return struct.pack("<I", value & 0xFFFFFFFF)
 
 
-def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme) -> bytes:
+def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme, checksum: int = 0) -> bytes:
     """Serialize ops to bytecode (per-scheme opcodes), XOR-encrypted by key.
 
     Immediates are width-sized: 8 bytes for 64-bit ops, 4 for 32-bit.
+
+    ``checksum`` is the expected runtime self-checksum of the interpreter, XORed
+    into every opcode so the dispatch (which re-derives it) cancels it on a
+    faithful build and misdecodes if the interpreter is patched.
     """
     slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
     plain = bytearray()
@@ -264,7 +275,7 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme) -> bytes:
         # same byte twice and a single-byte XOR of the blob cannot expose the
         # opcode stream. The exit marker is masked the same way and still decodes
         # to a value >= N, so it leaves through the dispatcher's bounds guard.
-        plain.append(opcode ^ (len(plain) & 0xFF))
+        plain.append(opcode ^ (len(plain) & 0xFF) ^ checksum)
 
     for op in ops:
         emit_opcode(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
@@ -325,6 +336,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {name}\n")
+    # Anti-tamper: checksum the interpreter's own code into a frame slot the
+    # dispatch folds into every opcode decrypt; runs after the register spill.
+    lines.append(checksum_prologue_asm(slot=_CHECKSUM_OFFSET))
     lines.append(
         f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
         f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
@@ -339,7 +353,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         # Undo the opcode byte's position mask (encoder XORed it with rsi-base).
         "  mov r13, rsi\n  sub r13, r15\n"
         "  movzx eax, byte ptr [rsi]\n"
-        f"  xor al, {key}\n  xor al, r13b\n"
+        # Fold in the position mask (r13b) and the runtime self-checksum the
+        # encoder pre-biased the opcode with, so a patched interpreter misdecodes.
+        f"  xor al, {key}\n  xor al, r13b\n  xor al, byte ptr [rsp + {_CHECKSUM_OFFSET}]\n"
         f"  cmp al, {len(_OP_KEYS)}\n  jae vm_exit\n"
         "  lea r14, [rip + vm_table]\n  movsxd rax, dword ptr [r14 + rax*4]\n  add rax, r14\n  jmp rax\n"
     )
@@ -390,4 +406,9 @@ def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr:
         logger.debug("VM interpreter assembly produced no bytes")
         return None
 
-    return bytes(encoding) + encode_bytecode(ops, scheme)
+    # Expected runtime self-checksum over the interpreter code (everything up to
+    # the dispatch table, which is the tail len(_OP_KEYS) 32-bit entries); the
+    # encoder folds it into the opcodes so a patched interpreter misdecodes.
+    table_start = len(encoding) - len(_OP_KEYS) * 4
+    checksum = compute_build_checksum(bytes(encoding[:table_start]))
+    return bytes(encoding) + encode_bytecode(ops, scheme, checksum)

@@ -27,7 +27,7 @@ FIXTURE32 = _DATASET / "elf_vm_arith32_x86_64"
 FIXTURE_MULTIBLOCK = _DATASET / "elf_blockswap_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
-from unicorn import UC_ARCH_X86, UC_HOOK_INSN, UC_MODE_64, Uc  # noqa: E402
+from unicorn import UC_ARCH_X86, UC_HOOK_INSN, UC_MODE_64, Uc, UcError  # noqa: E402
 from unicorn.x86_const import UC_X86_INS_SYSCALL, UC_X86_REG_RAX, UC_X86_REG_RDI, UC_X86_REG_RSP  # noqa: E402
 
 _EXIT_SYSCALL = 0x3C
@@ -91,6 +91,135 @@ def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
 
     assert stats["functions_virtualized"] >= 1
     assert _emulate_exit_code(FIXTURE) == _emulate_exit_code(mutated) == 45
+
+
+# The interpreter's first instruction is a constant-size frame allocation
+# (``sub rsp, 0x180``); the injected blob is appended at end-of-file, so this
+# byte sequence marks vm_entry, the start of the checksummed region.
+_VM_ENTRY_SIGNATURE = bytes.fromhex("4881EC80010000")
+
+
+def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> None:
+    # Anti-tamper: the interpreter checksums its own code into every opcode
+    # decrypt, so flipping a single byte of the interpreter body must change the
+    # observable result - there is no comparison to patch out, the corrupted
+    # checksum simply misdecodes the bytecode.
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(FIXTURE, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    data = bytearray(mutated.read_bytes())
+    vm_entry = data.find(_VM_ENTRY_SIGNATURE)
+    assert vm_entry != -1, "interpreter not found in mutated binary"
+    assert _emulate_exit_code(mutated) == 45  # faithful build still runs
+
+    # Flip one byte inside the interpreter body (past the frame allocation, in
+    # the spill/dispatch region the checksum covers) and re-emulate.
+    data[vm_entry + 0x10] ^= 0xFF
+    tampered = tmp_path / "tampered"
+    tampered.write_bytes(bytes(data))
+    try:
+        tampered_code = _emulate_exit_code(tampered)
+    except UcError:
+        tampered_code = None  # a trap is also a divergence from exit 45
+    assert tampered_code != 45
+
+
+# Fixtures with at least one register-op run to peel into a nested inner VM.
+_NESTING_FIXTURES = [
+    ("elf_vm_arith_x86_64", 45),
+    ("elf_vm_isa_x86_64", None),
+    ("elf_jumpchain_x86_64", None),
+    ("elf_blockswap_x86_64", None),
+]
+
+
+@pytest.mark.parametrize("depth", [2, 3])
+@pytest.mark.parametrize("fixture_name,expected", _NESTING_FIXTURES)
+def test_nested_virtualization_preserves_exit_code(
+    fixture_name: str, expected: int | None, depth: int, tmp_path: Path
+) -> None:
+    # N-layer nesting: each layer transfers a peeled register-op run into the
+    # next, independently-keyed VM and back. The exit code must survive.
+    fixture = _DATASET / fixture_name
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "vm_nesting_depth": depth}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    baseline = _emulate_exit_code(fixture)
+    assert _emulate_exit_code(mutated) == baseline
+    if expected is not None:
+        assert baseline == expected
+
+
+def test_nested_virtualization_grows_with_depth(tmp_path: Path) -> None:
+    # Structural proof of recursion: each extra layer adds its own dispatch table
+    # and interpreter, so the blob grows monotonically with nesting depth.
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    def _blob_size(depth: int) -> int:
+        mutated = tmp_path / f"depth{depth}"
+        shutil.copy(FIXTURE, mutated)
+        binary = Binary(str(mutated), writable=True)
+        binary.open()
+        try:
+            CodeVirtualizationPass(config={"probability": 1.0, "vm_nesting_depth": depth}).apply(binary)
+            binary.save()
+        finally:
+            binary.close()
+        return len(mutated.read_bytes())
+
+    assert _blob_size(1) < _blob_size(2) < _blob_size(3)
+
+
+def test_tampering_nested_interpreter_byte_diverges(tmp_path: Path) -> None:
+    # The self-checksum spans both layers, so flipping one interpreter byte of a
+    # nested build must still diverge from the original exit code.
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(FIXTURE, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0, "vm_nesting_depth": 2}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    data = bytearray(mutated.read_bytes())
+    vm_entry = data.find(_VM_ENTRY_SIGNATURE)
+    assert vm_entry != -1
+    assert _emulate_exit_code(mutated) == 45
+    data[vm_entry + 0x10] ^= 0xFF
+    tampered = tmp_path / "tampered"
+    tampered.write_bytes(bytes(data))
+    try:
+        tampered_code = _emulate_exit_code(tampered)
+    except UcError:
+        tampered_code = None
+    assert tampered_code != 45
 
 
 # Branch-heavy fixtures (comparisons, conditional/unconditional jumps, loops):
