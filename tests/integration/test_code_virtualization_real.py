@@ -475,6 +475,44 @@ def test_mov_rsp_epilogue_virtualization_preserves_frame(tmp_path: Path) -> None
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_flag_dead_add_is_mba_folded_and_preserves_value(tmp_path: Path) -> None:
+    # The add's flags are overwritten by a later cmp, so it is MBA-folded; only
+    # its value must survive (exit 42, a wrong sum would exit 99).
+    fixture = _DATASET / "elf_vm_addflagdead_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_adddead"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+def test_flag_live_add_keeps_flags_for_the_branch(tmp_path: Path) -> None:
+    # The add's sign flag is read by jns, so it must NOT be MBA-folded; the
+    # branch depends on the real flags (exit 42, a stale-flag bug would exit 99).
+    fixture = _DATASET / "elf_vm_addflaglive_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_addlive"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_frame_prologue_virtualization_preserves_local(tmp_path: Path) -> None:
     # A real prologue/epilogue (push rbp; mov rbp,rsp; sub rsp,N; [rbp-8] local;
     # add rsp,N; pop rbp; ret) must virtualize and return its frame-pointer local

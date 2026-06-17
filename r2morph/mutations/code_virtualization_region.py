@@ -73,6 +73,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _movx_handler_asm,
     _movx_indexed_handler_asm,
     _op_handler_asm,
+    _op_mba_handler_asm,
     _op_mem_indexed_handler_asm,
     _op_memdst_handler_asm,
     _op_memory_handler_asm,
@@ -215,9 +216,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"opmemdst_{item[1]}_{item[5]}"
     if kind == "opmemdstrip":
         return f"opmemdstrip_{item[1]}_{item[4]}"
-    if kind == "op":
+    if kind in ("op", "opmba"):
         op: VirtualizedOp = item[1]
-        return f"op_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
+        prefix = "opmba" if kind == "opmba" else "op"
+        return f"{prefix}_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
     if kind == "cmp":
         return f"cmp_{'i' if item[3] else 'r'}_{item[4]}"
     if kind == "test":
@@ -449,6 +451,65 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
     return True
 
 
+# Items that fully overwrite every readable arithmetic flag (CF, OF, SF, ZF, PF;
+# AF is never read by any conditional jump). They kill an upstream flag value.
+_FLAG_KILLER_KINDS = frozenset(
+    {"cmp", "test", "cmpmem", "cmpriprel", "opmem", "opriprel", "opmemdst", "opmemdstrip", "opmemidx"}
+)
+
+
+def _flag_successors(items: list[list[Any]], i: int) -> list[int]:
+    kind = items[i][0]
+    if kind == "exit":
+        return []
+    if kind == "jmp":
+        return [items[i][1]]
+    if kind == "jcc":
+        return [i + 1, items[i][2]]
+    return [i + 1]
+
+
+def _flag_dead_add_indices(items: list[list[Any]]) -> set[int]:
+    """Indices of ``add`` op items whose flags are dead on every path.
+
+    A conditional jump (``jcc``) is the only instruction in the virtualizable
+    subset that reads flags, so an op's flags are dead iff no reachable ``jcc``
+    reads them before a full flag-killer (``cmp``/``sub``/...) overwrites them.
+    The analysis is conservative — every ``jcc`` is treated as reading all flags
+    and every terminator as keeping them live — so an add is only marked when its
+    flags are provably unread, never the reverse.
+    """
+    n = len(items)
+
+    def fixed_needed_in(i: int) -> bool | None:
+        kind = items[i][0]
+        if kind in ("jcc", "exit"):
+            return True  # jcc reads flags; exit conservatively keeps them live
+        if kind in _FLAG_KILLER_KINDS:
+            return False
+        if kind == "op" and items[i][1].mnemonic != "mov":
+            return False  # add/sub/xor/and/or overwrite every readable flag
+        return None  # everything else neither reads nor fully kills flags
+
+    needed_in = [False] * n
+    changed = True
+    while changed:
+        changed = False
+        for i in range(n):
+            fixed = fixed_needed_in(i)
+            value = fixed if fixed is not None else any(needed_in[s] for s in _flag_successors(items, i))
+            if value != needed_in[i]:
+                needed_in[i] = value
+                changed = True
+
+    dead = set()
+    for i in range(n):
+        if items[i][0] == "op" and items[i][1].mnemonic == "add":
+            if not any(needed_in[s] for s in _flag_successors(items, i)):
+                dead.add(i)
+    return dead
+
+
 def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
     """Lower a function's linear instruction list into a :class:`Region`.
 
@@ -516,6 +577,12 @@ def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
 
     if not _stack_balanced(items):
         return None
+
+    # Flag-liveness: an add whose flags are never read becomes an MBA handler
+    # (no literal add, no flag capture). Rebuild op_keys for the rewritten items.
+    for index in _flag_dead_add_indices(items):
+        items[index][0] = "opmba"
+    op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
 
     body_ranges = [(insn["addr"], insn.get("size", 0)) for insn in body]
     return Region([tuple(item) for item in items], exit_addrs[0], body[0]["addr"], op_keys, body_ranges)
@@ -606,7 +673,7 @@ def _live_junk_asm(rng: random.Random) -> str:
 
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
-    if kind == "op":
+    if kind in ("op", "opmba"):
         op: VirtualizedOp = item[1]
         if op.is_immediate:
             return 2 + (8 if op.width == 64 else 4)
@@ -678,7 +745,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
 
     for item in region.instructions:
         kind = item[0]
-        if kind == "op":
+        if kind in ("op", "opmba"):
             op = item[1]
             emit_opcode(_required_key(item))
             plain.append(slot_of[op.dst_index])
@@ -897,7 +964,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         handler_key = index_to_key[index]
         # Reachable head junk makes duplicate handlers diverge in executed code.
         lines.append(f"H_{index}:\n{_live_junk_asm(junk_rng)}")
-        if handler_key.startswith("op_"):
+        if handler_key.startswith("opmba_"):
+            lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword))
+        elif handler_key.startswith("op_"):
             lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword))
         elif handler_key.startswith(("cmp_", "test_")):
             lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword))

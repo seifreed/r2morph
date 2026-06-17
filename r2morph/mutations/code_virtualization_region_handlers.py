@@ -79,6 +79,40 @@ def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
+    """Assembly body for a flag-dead ``add`` handler.
+
+    The region's flag-liveness analysis proved this add's flags are never read,
+    so the sum is computed with a mixed boolean-arithmetic rewrite (no literal
+    add) and no flags are captured. The destination is loaded into r10, the
+    source/immediate into rax, and the MBA fold leaves the result in r10. A
+    32-bit destination zero-extends.
+    """
+    _, _mnemonic, mode, width_text = handler_key.split("_")
+    width = int(width_text)
+    is_immediate = mode == "i"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    if is_immediate and width == 64:
+        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+        advance = 10
+    elif is_immediate:
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        advance = 6
+    else:
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
+        advance = 3
+    if width == 64:
+        body += "  mov r10, qword ptr [rsp+r8*8]\n" + _mba_add("rax", "rcx", key) + "  mov qword ptr [rsp+r8*8], r10\n"
+    else:
+        body += (
+            "  mov r10d, dword ptr [rsp+r8*8]\n"
+            + _mba_add("rax", "rcx", key)
+            + "  mov r10d, r10d\n  mov qword ptr [rsp+r8*8], r10\n"
+        )
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _mem_address_asm(riprel: bool, key: int, key_dword: str) -> tuple[str, int]:
     """Shared head of every memory handler: decrypt the register slot into r8
     and compute the effective address into r10.
