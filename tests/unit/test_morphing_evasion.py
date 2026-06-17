@@ -43,16 +43,10 @@ from r2morph.mutations.code_mobility import (
     calculate_section_offsets,
     estimate_size_with_jumps,
 )
-from r2morph.mutations.code_virtualization import (
-    REG_MAP_X64,
-    REG_MAP_X86,
-    CodeVirtualizationPass,
-    VMContext,
-    VMInstruction,
-    VMOpcode,
-    generate_vm_dispatcher_x64,
-    generate_vm_handler_x64,
-    translate_instruction_to_vm,
+from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from r2morph.mutations.code_virtualization_engine import (
+    decode_instruction,
+    encode_bytecode,
 )
 from r2morph.mutations.function_outlining import (
     FunctionOutliningPass,
@@ -236,84 +230,25 @@ class TestStackStrings:
 
 
 class TestCodeVirtualization:
-    """Tests for code virtualization functions."""
+    """Tests for the code-virtualization engine and pass surface."""
 
-    def test_vm_opcode_values(self):
-        assert VMOpcode.NOP == 0x00
-        assert VMOpcode.MOV_REG_REG == 0x01
-        assert VMOpcode.PUSH_REG == 0x10
-        assert VMOpcode.ADD_REG_IMM == 0x21
+    def test_decode_instruction_accepts_64bit_register_op(self):
+        op = decode_instruction("add rbx, rcx")
+        assert op is not None and op.mnemonic == "add" and not op.is_immediate
 
-    def test_vm_instruction_to_bytecode(self):
-        insn = VMInstruction(VMOpcode.NOP, [], "nop")
-        bytecode = insn.to_bytecode()
-        assert bytecode == bytes([VMOpcode.NOP])
+    def test_decode_instruction_rejects_32bit_register(self):
+        assert decode_instruction("mov eax, 1") is None
 
-    def test_vm_instruction_with_operand(self):
-        insn = VMInstruction(VMOpcode.MOV_REG_IMM, [0, 42], "mov vreg0, 42")
-        bytecode = insn.to_bytecode()
-        assert len(bytecode) > 1
-        assert bytecode[0] == VMOpcode.MOV_REG_IMM
+    def test_decode_instruction_rejects_memory_operand(self):
+        assert decode_instruction("mov rax, qword ptr [rbx]") is None
 
-    def test_vm_instruction_with_string_operand(self):
-        insn = VMInstruction(VMOpcode.JMP, ["label_1"], "jmp label_1")
-        bytecode = insn.to_bytecode()
-        assert bytecode[0] == VMOpcode.JMP
-
-    def test_vm_context_initialization(self):
-        ctx = VMContext()
-        assert ctx.pc == 0
-        assert ctx.running is True
-        assert len(ctx.stack) == 0
-
-    def test_reg_map_x64(self):
-        assert REG_MAP_X64["rax"] == 0
-        assert REG_MAP_X64["rcx"] == 1
-        assert REG_MAP_X64["r15"] == 15
-
-    def test_reg_map_x86(self):
-        assert REG_MAP_X86["eax"] == 0
-        assert REG_MAP_X86["ebx"] == 3
-
-    def test_translate_instruction_to_vm_mov(self):
-        insn = {"mnemonic": "mov", "op1": "eax", "op2": "42"}
-        vm_insn = translate_instruction_to_vm(insn, "x64")
-        assert vm_insn is not None
-        assert vm_insn.opcode == VMOpcode.MOV_REG_IMM
-
-    def test_translate_instruction_to_vm_add(self):
-        insn = {"mnemonic": "add", "op1": "eax", "op2": "5"}
-        vm_insn = translate_instruction_to_vm(insn, "x64")
-        assert vm_insn is not None
-        assert vm_insn.opcode == VMOpcode.ADD_REG_IMM
-
-    def test_translate_instruction_to_vm_push(self):
-        insn = {"mnemonic": "push", "op1": "42"}
-        vm_insn = translate_instruction_to_vm(insn, "x64")
-        assert vm_insn is not None
-        assert vm_insn.opcode == VMOpcode.PUSH_IMM
-
-    def test_translate_instruction_to_vm_unsupported(self):
-        insn = {"mnemonic": "syscall"}
-        vm_insn = translate_instruction_to_vm(insn, "x64")
-        assert vm_insn is None
-
-    def test_generate_vm_dispatcher_x64(self):
-        asm = generate_vm_dispatcher_x64()
-        assert "vm_execute" in asm
-        assert "vm_handlers" in asm
-
-    def test_generate_vm_handler_x64_nop(self):
-        asm = generate_vm_handler_x64(VMOpcode.NOP)
-        assert "vm_handler_00" in asm
-
-    def test_generate_vm_handler_x64_mov(self):
-        asm = generate_vm_handler_x64(VMOpcode.MOV_REG_IMM)
-        assert "vm_handler_02" in asm
+    def test_encode_bytecode_terminates_with_exit(self):
+        ops = [decode_instruction("mov rax, 0x3c"), decode_instruction("xor rdi, rdi")]
+        assert all(ops)
+        assert encode_bytecode(ops)[-1] == 0xFF
 
     def test_code_virtualization_pass_init(self):
-        config = {"probability": 0.5}
-        p = CodeVirtualizationPass(config)
+        p = CodeVirtualizationPass({"probability": 0.5})
         assert p.probability == 0.5
 
 

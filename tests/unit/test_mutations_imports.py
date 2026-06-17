@@ -5,9 +5,9 @@ import importlib
 import pytest
 
 MUTATION_MODULES = [
-    "r2morph.mutations.code_virtualization_vm",
-    "r2morph.mutations.code_virtualization_multi_vm",
     "r2morph.mutations.code_virtualization",
+    "r2morph.mutations.code_virtualization_engine",
+    "r2morph.mutations.code_virtualization_inject",
     "r2morph.mutations.gadgets_catalogs",
     "r2morph.mutations.hardened_cff",
     "r2morph.mutations.hardened_opaque",
