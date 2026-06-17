@@ -384,6 +384,34 @@ def _junk_asm(rng: random.Random) -> str:
     return "".join(lines)
 
 
+# Live junk emitted at a handler's entry, so it actually executes and makes
+# duplicate handlers differ in reachable code, not only in the unreachable tail.
+# It touches only rbx/rbp/r12, which hold no live interpreter state (every GP
+# register is spilled to the frame, and the dispatch loop only keeps rsi/rsp/r15
+# live); flag effects are irrelevant at entry, where the captured flags are not
+# yet set and a branch handler reloads them from the frame slot.
+_LIVE_JUNK_TEMPLATES: tuple[str, ...] = (
+    "mov rbx, rbp",
+    "xor rbx, r12",
+    "and rbp, r12",
+    "or r12, rbx",
+    "xchg rbx, rbp",
+    "add r12, {small}",
+    "sub rbx, {small}",
+    "lea rbp, [rbp + {small}]",
+    "ror r12, {shift}",
+)
+
+
+def _live_junk_asm(rng: random.Random) -> str:
+    """A short run of reachable, state-neutral junk for the head of a handler."""
+    lines = []
+    for _ in range(rng.randint(0, 3)):
+        template = rng.choice(_LIVE_JUNK_TEMPLATES)
+        lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
+    return "".join(lines)
+
+
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
     if kind == "op":
@@ -592,7 +620,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     junk_rng = random.Random(scheme.junk_seed)
     for index in range(total):
         handler_key = index_to_key[index]
-        lines.append(f"H_{index}:\n")
+        # Reachable head junk makes duplicate handlers diverge in executed code.
+        lines.append(f"H_{index}:\n{_live_junk_asm(junk_rng)}")
         if handler_key.startswith("op_"):
             lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword))
         elif handler_key.startswith(("cmp_", "test_")):
