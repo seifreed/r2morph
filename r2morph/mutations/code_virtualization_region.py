@@ -404,8 +404,39 @@ def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> 
     return None
 
 
+def _decode_lea(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]`` (64-bit dst).
+
+    ``lea`` computes an address without dereferencing memory and sets no flags.
+    Returns ``("lea", reg_slot, base_slot, disp)`` or ``("learip", reg_slot,
+    target)``, or ``None`` (index/scale forms, a 32-bit destination, etc.).
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "lea" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if "[" in left or "[" not in right:
+        return None
+    reg = _register_operand(left.lower())
+    if reg is None or reg[1] != 64:
+        return None  # a 32-bit lea truncates the address; out of scope
+    reg_slot = reg[0]
+    mem = _parse_mem_operand(right)
+    if mem is not None:
+        base_slot, disp, _mem_width = mem
+        return ("lea", reg_slot, base_slot, disp)
+    riprel = _parse_riprel_operand(right, insn_addr, insn_size)
+    if riprel is not None:
+        return ("learip", reg_slot, riprel[0])
+    return None
+
+
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind = item[0]
+    if kind == "lea":
+        return "lea"
+    if kind == "learip":
+        return "learip"
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
@@ -481,6 +512,9 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
     if kind == "mul":
         imul = _decode_imul(text)
         return ["imul", *imul] if imul is not None else None
+    if kind == "lea":
+        lea = _decode_lea(text, insn.get("addr", 0), insn.get("size", 0))
+        return [*lea] if lea is not None else None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
     if kind == "cjmp":
@@ -656,9 +690,9 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
-    if kind in ("cmpmem", "opmem"):
+    if kind in ("cmpmem", "opmem", "lea"):
         return 7  # opcode + reg slot + base slot + 4-byte displacement
-    if kind in ("cmpriprel", "opriprel"):
+    if kind in ("cmpriprel", "opriprel", "learip"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("jmp", "jcc"):
         return 5
@@ -749,6 +783,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain += struct.pack("<i", disp)
         elif kind == "opriprel":
             _, _mnemonic, reg_slot, target, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain += struct.pack("<i", target - bytecode_base)
+        elif kind == "lea":
+            _, reg_slot, base_slot, disp = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain += struct.pack("<i", disp)
+        elif kind == "learip":
+            _, reg_slot, target = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain += struct.pack("<i", target - bytecode_base)
@@ -875,6 +920,17 @@ def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     else:
         body += "  mov r9d, dword ptr [rsp+r8*8]\n  cmp r9d, dword ptr [r10]\n"
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _lea_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]``.
+
+    The effective address is computed exactly like a memory handler, but it is
+    stored into the destination slot instead of being dereferenced; lea sets no
+    flags.
+    """
+    body, advance = _mem_address_asm(handler_key == "learip", key, key_dword)
+    return body + f"  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
@@ -1011,6 +1067,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("opmem_", "opriprel_")):
             lines.append(_op_memory_handler_asm(handler_key, key, key_dword))
+        elif handler_key in ("lea", "learip"):
+            lines.append(_lea_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):
