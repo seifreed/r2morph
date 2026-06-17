@@ -79,18 +79,24 @@ _CONDITION: dict[str, str] = {
 
 
 class RegionScheme:
-    """Per-instance opcode assignment, bytecode key, and register-slot layout.
+    """Per-instance handler layout, bytecode key, and register-slot layout.
 
-    ``slot_perm`` is a per-instance bijection ``logical register index -> frame
-    slot``: each architectural register spills to a shuffled slot rather than its
-    ModR/M-ordered one, so a disassembler cannot label the context frame by
-    reading it positionally and slot indices in the bytecode reveal no register.
+    ``dup`` maps each handler key to the tuple of dense opcode indices that
+    decode to it: an operation gets one or more interchangeable handler
+    instances (each emitted with its own junk), so the opcode->operation map is
+    not one-to-one and the same operation can appear as different opcodes in the
+    stream. ``slot_perm`` is a per-instance bijection ``logical register index
+    -> frame slot``: each register spills to a shuffled slot rather than its
+    ModR/M-ordered one, so the context frame cannot be labelled positionally and
+    slot indices in the bytecode reveal no register.
     """
 
-    __slots__ = ("opcodes", "xor_key", "junk_seed", "slot_perm")
+    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm")
 
-    def __init__(self, opcodes: dict[str, int], xor_key: int, junk_seed: int, slot_perm: tuple[int, ...]) -> None:
-        self.opcodes = opcodes
+    def __init__(
+        self, dup: dict[str, tuple[int, ...]], xor_key: int, junk_seed: int, slot_perm: tuple[int, ...]
+    ) -> None:
+        self.dup = dup
         self.xor_key = xor_key
         self.junk_seed = junk_seed
         self.slot_perm = slot_perm
@@ -332,9 +338,19 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     N entries wide instead of a full 256.
     """
     keys = sorted(region.op_keys)
-    indices = rng.sample(range(len(keys)), len(keys))
+    # Give each handler one or two interchangeable instances; the total stays
+    # within a byte so opcodes still index the table directly.
+    multiplicity = {key: rng.randint(1, 2) for key in keys}
+    total = sum(multiplicity.values())
+    indices = rng.sample(range(total), total)
+    dup: dict[str, tuple[int, ...]] = {}
+    cursor = 0
+    for key in keys:
+        count = multiplicity[key]
+        dup[key] = tuple(indices[cursor : cursor + count])
+        cursor += count
     slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
-    return RegionScheme(dict(zip(keys, indices, strict=True)), rng.randrange(1, 256), rng.randrange(1 << 31), slot_perm)
+    return RegionScheme(dup, rng.randrange(1, 256), rng.randrange(1 << 31), slot_perm)
 
 
 # Semantically-neutral instructions used as per-instance junk. They are emitted
@@ -393,20 +409,23 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
         cursor += _item_size(item)
 
     slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
+    pick = random.Random(scheme.junk_seed).choice  # deterministic per build
     plain = bytearray()
 
-    def emit_opcode(opcode: int) -> None:
-        # The opcode byte is masked with its own stream position, so the same
-        # operation does not encode to the same byte twice and a single-byte XOR
-        # of the whole blob no longer exposes the opcode stream. The dispatcher
-        # subtracts the position back out before decoding.
+    def emit_opcode(handler_key: str) -> None:
+        # Choose one of the handler's interchangeable opcodes, then mask it with
+        # its own stream position so the same operation does not encode to the
+        # same byte twice and a single-byte XOR of the whole blob no longer
+        # exposes the opcode stream. The dispatcher subtracts the position back
+        # out before decoding.
+        opcode = pick(scheme.dup[handler_key])
         plain.append(opcode ^ (len(plain) & 0xFF))
 
     for item in region.instructions:
         kind = item[0]
         if kind == "op":
             op = item[1]
-            emit_opcode(scheme.opcodes[_required_key(item)])
+            emit_opcode(_required_key(item))
             plain.append(slot_of[op.dst_index])
             if op.is_immediate:
                 plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
@@ -414,7 +433,7 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
                 plain.append(slot_of[op.value])
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
-            emit_opcode(scheme.opcodes[_required_key(item)])
+            emit_opcode(_required_key(item))
             plain.append(slot_of[slot])
             if is_imm:
                 plain += struct.pack("<q" if width == 64 else "<i", value)
@@ -422,24 +441,24 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
                 plain.append(slot_of[value])
         elif kind == "shift":
             _, _mnemonic, slot, count, _width = item
-            emit_opcode(scheme.opcodes[_required_key(item)])
+            emit_opcode(_required_key(item))
             plain.append(slot_of[slot])
             plain.append(count)
         elif kind == "imul":
             _, dst, src, _width = item
-            emit_opcode(scheme.opcodes[_required_key(item)])
+            emit_opcode(_required_key(item))
             plain.append(slot_of[dst])
             plain.append(slot_of[src])
         elif kind == "jmp":
-            emit_opcode(scheme.opcodes["jmp"])
+            emit_opcode("jmp")
             plain += struct.pack("<i", offsets[item[1]])
         elif kind == "jcc":
-            emit_opcode(scheme.opcodes[_required_key(item)])
+            emit_opcode(_required_key(item))
             plain += struct.pack("<i", offsets[item[2]])
         elif kind == "nop":
-            emit_opcode(scheme.opcodes["nop"])
+            emit_opcode("nop")
         elif kind == "exit":
-            emit_opcode(scheme.opcodes[_required_key(item)])
+            emit_opcode(_required_key(item))
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
 
@@ -549,7 +568,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         "  mov r13, rsi\n  sub r13, r15\n"
         "  movzx eax, byte ptr [rsi]\n"
         f"  xor al, {key}\n  xor al, r13b\n"
-        f"  cmp al, {len(scheme.opcodes)}\n  jae vm_exit\n"
+        f"  cmp al, {sum(len(indices) for indices in scheme.dup.values())}\n  jae vm_exit\n"
         # Base-independent indirect dispatch: each table entry is a 32-bit signed
         # offset from vm_table to its handler, so the jump survives rebasing/ASLR
         # exactly like the rel32 jumps the rest of the blob relies on.
@@ -560,9 +579,20 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  mov {name}, qword ptr [rsp+{slot[index] * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
     )
 
+    # Each opcode index gets its own handler instance (an operation with two
+    # indices is emitted twice, each copy carrying different junk), so the
+    # opcode->operation map is not one-to-one and the duplicate handlers carry
+    # no shared byte signature.
+    index_to_key: dict[int, str] = {}
+    for handler_key, indices in scheme.dup.items():
+        for index in indices:
+            index_to_key[index] = handler_key
+    total = len(index_to_key)
+
     junk_rng = random.Random(scheme.junk_seed)
-    for handler_key in sorted(scheme.opcodes):
-        lines.append(f"H_{handler_key}:\n")
+    for index in range(total):
+        handler_key = index_to_key[index]
+        lines.append(f"H_{index}:\n")
         if handler_key.startswith("op_"):
             lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword))
         elif handler_key.startswith(("cmp_", "test_")):
@@ -576,9 +606,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         elif handler_key.startswith("jcc_"):
             native = handler_key.split("_", 1)[1]
             lines.append(
-                f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n  {native} T_{handler_key}\n"
+                f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n  {native} T_{index}\n"
                 "  add rsi, 5\n  jmp vm_dispatch\n"
-                f"T_{handler_key}:\n{retarget}"
+                f"T_{index}:\n{retarget}"
             )
         elif handler_key == "nop":
             lines.append("  add rsi, 1\n  jmp vm_dispatch\n")
@@ -588,13 +618,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         # Junk after the handler's terminating jump - unreachable, never runs.
         lines.append(_junk_asm(junk_rng))
 
-    # Unknown-opcode guard: an out-of-range index (bounds-checked above) restores
-    # state and leaves through the default exit, so a corrupt stream cannot
-    # transfer control out of the VM. The table holds one entry per handler.
-    index_to_label = {index: f"H_{handler_key}" for handler_key, index in scheme.opcodes.items()}
-    table = "".join(
-        f"  .long {index_to_label.get(index, 'vm_exit')} - vm_table\n" for index in range(len(scheme.opcodes))
-    )
+    # Every index in 0..total-1 maps to a handler; the bounds guard above sends an
+    # out-of-range (corrupt) opcode to the default exit so it cannot leave the VM.
+    table = "".join(f"  .long H_{index} - vm_table\n" for index in range(total))
     lines.append(
         f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
         f"vm_table:\n{table}bytecode:\n"
