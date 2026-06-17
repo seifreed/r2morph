@@ -21,13 +21,26 @@ _FLAGS_OFFSET = 0x80
 # be 16-aligned to preserve the program's stack alignment.
 _GUARD = 0x200
 
-# Mixed boolean-arithmetic rewrite of ``r10 += rax`` used to fold the signed
-# displacement into an effective address: ``a + b == (a ^ b) + 2*(a & b)``. No
-# literal ``add`` of the displacement appears in the handler, so the address
-# arithmetic is not a plain pattern for a devirtualizer. rcx is free scratch in
-# the address prologues, and the flags this sets are dead (a handler that needs
-# flags runs and captures its real operation's flags afterward).
-_MBA_ADD_R10_RAX = "  mov rcx, r10\n  xor rcx, rax\n  and r10, rax\n  lea r10, [rcx + r10*2]\n"
+# Mixed boolean-arithmetic rewrites of ``r10 += rax`` used to fold the signed
+# displacement into an effective address, so no literal ``add`` of the
+# displacement appears in the handler. Several equivalent identities are kept and
+# one is chosen per instance, so the fold is not a single fixed pattern a
+# devirtualizer can match across samples. rcx is free scratch in the address
+# prologues, and the flags these set are dead (a handler that needs flags runs
+# and captures its real operation's flags afterward).
+_MBA_ADD_VARIANTS: tuple[str, ...] = (
+    # a + b == (a ^ b) + 2*(a & b)
+    "  mov rcx, r10\n  xor rcx, rax\n  and r10, rax\n  lea r10, [rcx + r10*2]\n",
+    # a + b == (a | b) + (a & b)
+    "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  lea r10, [r10 + rcx]\n",
+    # a + b == 2*(a | b) - (a ^ b)
+    "  mov rcx, r10\n  xor rcx, rax\n  or r10, rax\n  lea r10, [r10*2]\n  sub r10, rcx\n",
+)
+
+
+def _mba_add_r10_rax(key: int) -> str:
+    """A per-instance MBA rewrite of ``r10 += rax`` (chosen by the bytecode key)."""
+    return _MBA_ADD_VARIANTS[key % len(_MBA_ADD_VARIANTS)]
 
 
 def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
@@ -71,12 +84,12 @@ def _mem_address_asm(riprel: bool, key: int, key_dword: str) -> tuple[str, int]:
     if riprel:
         return (
             body + f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-            "  mov r10, r15\n" + _MBA_ADD_R10_RAX
+            "  mov r10, r15\n" + _mba_add_r10_rax(key)
         ), 6
     return (
         body + f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
         f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        "  mov r10, qword ptr [rsp+r9*8]\n" + _MBA_ADD_R10_RAX
+        "  mov r10, qword ptr [rsp+r9*8]\n" + _mba_add_r10_rax(key)
     ), 7
 
 
@@ -227,7 +240,7 @@ def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
         f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n"
         f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
         "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
-        "  add r10, qword ptr [rsp+r9*8]\n" + _MBA_ADD_R10_RAX
+        "  add r10, qword ptr [rsp+r9*8]\n" + _mba_add_r10_rax(key)
     ), 9
 
 
@@ -266,7 +279,7 @@ def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str) 
         f"  movzx r11d, byte ptr [rsi+2]\n  xor r11b, {key}\n"
         f"  movzx ecx, byte ptr [rsi+3]\n  xor cl, {key}\n"
         f"  mov eax, dword ptr [rsi+4]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
-        "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n" + _MBA_ADD_R10_RAX
+        "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n" + _mba_add_r10_rax(key)
     )
     return body + _lea_store_asm(width, 8)
 
