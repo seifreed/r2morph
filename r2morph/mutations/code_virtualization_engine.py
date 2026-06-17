@@ -114,12 +114,20 @@ class VMScheme:
     match another.
     """
 
-    __slots__ = ("opcode_values", "exit_opcode", "xor_key")
+    __slots__ = ("opcode_values", "exit_opcode", "xor_key", "slot_perm")
 
-    def __init__(self, opcode_values: dict[tuple[str, bool, int], int], exit_opcode: int, xor_key: int) -> None:
+    def __init__(
+        self,
+        opcode_values: dict[tuple[str, bool, int], int],
+        exit_opcode: int,
+        xor_key: int,
+        slot_perm: tuple[int, ...],
+    ) -> None:
         self.opcode_values = opcode_values
         self.exit_opcode = exit_opcode
         self.xor_key = xor_key
+        # Per-instance bijection: logical register index -> shuffled frame slot.
+        self.slot_perm = slot_perm
 
 
 def build_vm_scheme(rng: random.Random) -> VMScheme:
@@ -133,7 +141,8 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     indices = rng.sample(range(len(_OP_KEYS)), len(_OP_KEYS))
     opcode_values = dict(zip(_OP_KEYS, indices, strict=True))
     exit_opcode = rng.randrange(len(_OP_KEYS), 256)
-    return VMScheme(opcode_values, exit_opcode, rng.randrange(1, 256))
+    slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
+    return VMScheme(opcode_values, exit_opcode, rng.randrange(1, 256), slot_perm)
 
 
 class VirtualizedOp:
@@ -226,14 +235,15 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme) -> bytes:
 
     Immediates are width-sized: 8 bytes for 64-bit ops, 4 for 32-bit.
     """
+    slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
     plain = bytearray()
     for op in ops:
         plain.append(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
-        plain.append(op.dst_index)
+        plain.append(slot_of[op.dst_index])
         if op.is_immediate:
             plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
         else:
-            plain.append(op.value)
+            plain.append(slot_of[op.value])
     plain.append(scheme.exit_opcode)
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
@@ -281,13 +291,14 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
                 )
         return decrypt_dst + load + apply + advance + "  jmp vm_dispatch\n"
 
+    slot = scheme.slot_perm  # logical register index -> shuffled frame slot
     lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n"]
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
-            lines.append(f"  mov qword ptr [rsp + {index * 8}], {name}\n")
+            lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {name}\n")
     lines.append(
         f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
-        f"  mov qword ptr [rsp + {RSP_INDEX * 8}], rax\n"
+        f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip + bytecode]\n"
         # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
         # base-independent offset table (each entry a 32-bit signed offset from
@@ -312,7 +323,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     lines.append("vm_exit:\n")
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
-            lines.append(f"  mov {name}, qword ptr [rsp + {index * 8}]\n")
+            lines.append(f"  mov {name}, qword ptr [rsp + {slot[index] * 8}]\n")
     lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
 
     index_to_label = {scheme.opcode_values[op_key]: label_for(op_key) for op_key in _OP_KEYS}
