@@ -117,16 +117,27 @@ def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: s
 def _op_mba_compute(mnemonic: str, key: int) -> str:
     """Compute ``r10 = r10 <op> rax`` with no literal native op (r10 == a, rax == b).
 
-    add/sub use the polymorphic MBA add fold (sub already negated its source);
-    the boolean ops use De Morgan / MBA rewrites, so the handler never contains a
-    plain xor/and/or. ``not`` is flag-neutral and the and/or set only dead flags.
+    add/sub use the polymorphic MBA add fold (sub already negated its source); the
+    boolean ops use one of two per-instance MBA identities (selected by a key bit),
+    so the handler never contains the plain xor/and/or it stands for and the rewrite
+    is not a single fixed signature. ``not`` is flag-neutral and the boolean ops set
+    only dead flags. rcx is the free scratch register.
     """
     if mnemonic in ("add", "sub"):
         return _mba_add("rax", "rcx", key)
-    if mnemonic == "xor":  # a ^ b == (a | b) & ~(a & b)
+    variant = (key >> 4) & 1
+    if mnemonic == "xor":
+        if variant:  # a ^ b == (a & ~b) | (~a & b)
+            return "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  not r10\n  and r10, rax\n  or r10, rcx\n"
+        # a ^ b == (a | b) & ~(a & b)
         return "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  not rcx\n  and r10, rcx\n"
-    if mnemonic == "and":  # a & b == ~(~a | ~b)
+    if mnemonic == "and":
+        if variant:  # a & b == (a ^ b) ^ (a | b)
+            return "  mov rcx, r10\n  or rcx, rax\n  xor r10, rax\n  xor r10, rcx\n"
+        # a & b == ~(~a | ~b)
         return "  not r10\n  mov rcx, rax\n  not rcx\n  or r10, rcx\n  not r10\n"
+    if variant:  # a | b == (a ^ b) | (a & b)
+        return "  mov rcx, r10\n  and rcx, rax\n  xor r10, rax\n  or r10, rcx\n"
     # a | b == ~(~a & ~b)
     return "  not r10\n  mov rcx, rax\n  not rcx\n  and r10, rcx\n  not r10\n"
 

@@ -172,8 +172,11 @@ def test_nested_virtualization_preserves_exit_code(
 
 
 def test_nested_virtualization_grows_with_depth(tmp_path: Path) -> None:
-    # Structural proof of recursion: each extra layer adds its own dispatch table
-    # and interpreter, so the blob grows monotonically with nesting depth.
+    # Structural proof of recursion: adding an inner layer adds its own dispatch
+    # table and interpreter, so the blob grows. A fixed seed holds the random
+    # handler duplication and MBA-variant sizes constant across depths, so the
+    # nesting depth is the only variable. Depth 3 only exceeds depth 2 when the
+    # function has a second peelable register-op run, so that bound is non-strict.
     if not FIXTURE.exists():
         pytest.skip(f"fixture missing: {FIXTURE}")
 
@@ -183,13 +186,13 @@ def test_nested_virtualization_grows_with_depth(tmp_path: Path) -> None:
         binary = Binary(str(mutated), writable=True)
         binary.open()
         try:
-            CodeVirtualizationPass(config={"probability": 1.0, "vm_nesting_depth": depth}).apply(binary)
+            CodeVirtualizationPass(config={"probability": 1.0, "vm_nesting_depth": depth, "seed": 1234}).apply(binary)
             binary.save()
         finally:
             binary.close()
         return len(mutated.read_bytes())
 
-    assert _blob_size(1) < _blob_size(2) < _blob_size(3)
+    assert _blob_size(1) < _blob_size(2) <= _blob_size(3)
 
 
 def test_tampering_nested_interpreter_byte_diverges(tmp_path: Path) -> None:
