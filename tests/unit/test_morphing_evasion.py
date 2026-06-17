@@ -284,6 +284,13 @@ class TestCodeVirtualization:
         asm = _interpreter_asm(0x401000, scheme)
         assert "imul ecx, ecx, 0x1010101" in asm
 
+    def test_handlers_position_unmask_their_operands(self):
+        # Operands carry the opcode's stream position, so the handler un-masks the
+        # destination slot with r13b (the position) - not a lone constant key.
+        scheme = build_vm_scheme(random.Random(3))
+        asm = _interpreter_asm(0x401000, scheme)
+        assert "xor r8b, r13b" in asm
+
     def test_code_virtualization_pass_init(self):
         p = CodeVirtualizationPass({"probability": 0.5})
         assert p.probability == 0.5

@@ -274,22 +274,26 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme, checksum: int = 
     slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
     plain = bytearray()
 
-    def emit_opcode(opcode: int) -> None:
+    def emit_opcode(opcode: int) -> int:
         # Mask the opcode byte with its own stream position (the dispatcher
         # subtracts it back out) so the same operation does not encode to the
         # same byte twice and a single-byte XOR of the blob cannot expose the
         # opcode stream. The exit marker is masked the same way and still decodes
         # to a value >= N, so it leaves through the dispatcher's bounds guard.
-        plain.append(opcode ^ (len(plain) & 0xFF) ^ checksum)
+        # The position is reused to mask this item's operands so they are not all
+        # decrypted by one constant key byte a handler trivially reveals.
+        position = len(plain) & 0xFF
+        plain.append(opcode ^ position ^ checksum)
+        return position
 
     for op in ops:
-        emit_opcode(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
-        plain.append(slot_of[op.dst_index])
+        position = emit_opcode(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
+        plain.append(slot_of[op.dst_index] ^ position)
         if op.is_immediate:
-            plain += pack_immediate(op.value, op.width)
+            plain += bytes(byte ^ position for byte in pack_immediate(op.value, op.width))
         else:
-            plain.append(slot_of[op.value])
-    emit_opcode(scheme.exit_opcode)
+            plain.append(slot_of[op.value] ^ position)
+    emit_opcode(scheme.exit_opcode)  # no operands
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
 
@@ -305,15 +309,24 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
-        decrypt_dst = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        # Operands carry the opcode's stream position too (r13 still holds it from
+        # the dispatch), so each is un-masked by both the key and r13b - there is
+        # no lone constant-key decrypt repeated across every handler.
+        decrypt_dst = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         if is_immediate and width == 64:
-            load = f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+            load = (
+                f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+                f"  movzx r10, r13b\n  mov r11, {hex(_QWORD_BROADCAST)}\n  imul r10, r11\n  xor rax, r10\n"
+            )
             advance = "  add rsi, 10\n"
         elif is_immediate:
-            load = f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            load = (
+                f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+                f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
+            )
             advance = "  add rsi, 6\n"
         else:
-            load = f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+            load = f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
             load += "  mov rax, qword ptr [rsp + r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp + r9*8]\n"
             advance = "  add rsi, 3\n"
 
