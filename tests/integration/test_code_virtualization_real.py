@@ -432,6 +432,49 @@ def test_three_operand_imul_virtualization_preserves_product(tmp_path: Path) -> 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_balanced_push_pop_virtualization_preserves_saved_registers(tmp_path: Path) -> None:
+    # A 3-deep register-save bracket (clobber then restore via pop) plus a 64-bit
+    # push/pop round-trip. A naive in-frame stack would corrupt the spilled
+    # context; a width bug would drop the high half (42 correct, 99 wrong).
+    fixture = _DATASET / "elf_vm_pushpop_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_pushpop"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+def test_push_immediate_virtualization_preserves_sign_extension(tmp_path: Path) -> None:
+    # push imm round-trips a positive and a sign-extended negative immediate; a
+    # handler that zero-extended the negative imm would fail the -1 check (42 vs 99).
+    fixture = _DATASET / "elf_vm_pushimm_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_pushimm"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_no_base_indexed_lea_virtualization_preserves_address(tmp_path: Path) -> None:
     # No-base scaled-index lea (lea reg, [index*scale + disp]) must compute the
     # scaled address without a base register; both [idx*8] and [idx*4+disp] drive

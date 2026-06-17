@@ -90,6 +90,45 @@ def _decode_imul(disasm: str) -> tuple[int, int, int] | None:
     return (dst[0], src[0], dst[1])
 
 
+def _decode_push(disasm: str) -> tuple[Any, ...] | None:
+    """Decode ``push reg`` (64-bit GP) or ``push imm`` into a VM item.
+
+    rsp is rejected as an operand (``_register_operand`` returns ``None`` for
+    it), so the pushed register is never the stack pointer. A memory-operand
+    push is left native. The immediate form sign-extends an imm32.
+    """
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "push":
+        return None
+    operand = parts[1].strip().lower()
+    reg = _register_operand(operand)
+    if reg is not None:
+        return ("push", reg[0], 64) if reg[1] == 64 else None
+    if any(marker in operand for marker in ("[", "]", "rip", ":", "ptr")):
+        return None
+    try:
+        value = int(operand, 0)
+    except ValueError:
+        return None
+    # ``push imm`` is an imm32 sign-extended to 64 bits; the disassembler prints
+    # a negative immediate as its unsigned 64-bit form, so fold it back to signed
+    # before checking it fits the imm32 the instruction actually encodes.
+    if value >= 1 << 63:
+        value -= 1 << 64
+    return ("pushi", value, 64) if immediate_fits_width(value, 32) else None
+
+
+def _decode_pop(disasm: str) -> tuple[Any, ...] | None:
+    """Decode ``pop reg`` (64-bit GP, never rsp) into a VM item."""
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "pop":
+        return None
+    reg = _register_operand(parts[1].strip().lower())
+    if reg is None or reg[1] != 64:
+        return None
+    return ("pop", reg[0], 64)
+
+
 def _decode_imul3(disasm: str) -> tuple[int, int, int, int] | None:
     """Decode the three-operand form ``imul reg, reg, imm`` into (dst, src, imm, width).
 

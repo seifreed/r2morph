@@ -44,6 +44,8 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_op_mem,
     _decode_op_mem_indexed,
     _decode_op_memdst,
+    _decode_pop,
+    _decode_push,
     _decode_riprel_mov,
     _decode_shift,
     _decode_two_operand,
@@ -51,6 +53,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _FRAME_SIZE,
+    _GUARD,
     _cmp_memory_handler_asm,
     _compare_handler_asm,
     _imul3_handler_asm,
@@ -66,6 +69,9 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _op_mem_indexed_handler_asm,
     _op_memdst_handler_asm,
     _op_memory_handler_asm,
+    _pop_handler_asm,
+    _push_handler_asm,
+    _pushi_handler_asm,
     _riprel_handler_asm,
     _shift_handler_asm,
 )
@@ -206,6 +212,12 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"imul_{item[3]}"
     if kind == "imul3":
         return f"imul3_{item[4]}"
+    if kind == "push":
+        return f"push_{item[2]}"
+    if kind == "pop":
+        return f"pop_{item[2]}"
+    if kind == "pushi":
+        return "pushi"
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":
@@ -279,12 +291,61 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
             return [*lea]
         lea_indexed = _decode_lea_indexed(text)
         return [*lea_indexed] if lea_indexed is not None else None
+    if kind in ("push", "upush", "rpush"):
+        push = _decode_push(text)
+        return [*push] if push is not None else None
+    if kind in ("pop", "rpop"):
+        pop = _decode_pop(text)
+        return [*pop] if pop is not None else None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
     if kind == "cjmp":
         condition = _CONDITION.get(text.split(None, 1)[0].lower())
         return ["jcc", condition, insn.get("jump", -1)] if condition is not None else None
     return None
+
+
+def _stack_balanced(items: list[list[Any]]) -> bool:
+    """Verify the region's virtual stack is balanced on every path.
+
+    The VM force-restores the hardware rsp on exit, and the function's virtual
+    pushes/pops happen in a relocated scratch region, so a region is only safe if
+    every path reaches each terminator with the stack at its entry depth and no
+    ``pop`` ever underflows (which would read caller stack the VM never modelled).
+    A forward dataflow assigns a depth to each item; conflicting depths or a
+    non-zero depth at a terminator rejects the region (left native).
+    """
+    depth: list[int | None] = [None] * len(items)
+    depth[0] = 0
+    work = [0]
+    while work:
+        i = work.pop()
+        current = depth[i]
+        assert current is not None  # only assigned indices enter the worklist
+        kind = items[i][0]
+        delta = 1 if kind in ("push", "pushi") else (-1 if kind == "pop" else 0)
+        if current + delta < 0:
+            return False  # pop underflow
+        out = current + delta
+        if kind == "exit":
+            if current != 0:
+                return False  # unbalanced stack at a terminator
+            continue
+        if kind == "jmp":
+            successors = [items[i][1]]
+        elif kind == "jcc":
+            successors = [i + 1, items[i][2]]
+        else:
+            successors = [i + 1]
+        for nxt in successors:
+            if not 0 <= nxt < len(items):
+                return False
+            if depth[nxt] is None:
+                depth[nxt] = out
+                work.append(nxt)
+            elif depth[nxt] != out:
+                return False  # paths disagree on stack depth
+    return True
 
 
 def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
@@ -351,6 +412,9 @@ def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
             if resolved is None:
                 return None
             item[2] = resolved
+
+    if not _stack_balanced(items):
+        return None
 
     body_ranges = [(insn["addr"], insn.get("size", 0)) for insn in body]
     return Region([tuple(item) for item in items], exit_addrs[0], body[0]["addr"], op_keys, body_ranges)
@@ -464,6 +528,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
     if kind == "leaidxnb":
         return 8  # opcode + reg + index slot + scale shift + 4-byte disp (no base)
+    if kind in ("push", "pop"):
+        return 2  # opcode + reg slot
+    if kind == "pushi":
+        return 9  # opcode + 8-byte immediate
     if kind == "incdec":
         return 2  # opcode + reg slot
     if kind == "movx":
@@ -535,6 +603,14 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain.append(slot_of[dst])
             plain.append(slot_of[src])
             plain += pack_immediate(imm, 32)
+        elif kind in ("push", "pop"):
+            _, reg_slot, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+        elif kind == "pushi":
+            _, value, _width = item
+            emit_opcode(_required_key(item))
+            plain += pack_immediate(value, 64)
         elif kind in ("load", "store"):
             _, reg_slot, base_slot, disp, _width = item
             emit_opcode(_required_key(item))
@@ -655,12 +731,17 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     )
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
+    rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
     lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n"]
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {name}\n")
     lines.append(
-        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
+        # Capture the program's entry rsp, then relocate its virtual stack a
+        # guard distance below the VM frame so the function's own push/pop never
+        # collides with the spilled context. rsp is only ever a memory base or a
+        # push/pop target, so this constant shift stays self-consistent.
+        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
         # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
         # per-handler offset table, so there is no linear comparison ladder for a
@@ -706,6 +787,12 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_shift_handler_asm(handler_key, key))
         elif handler_key.startswith("imul3_"):
             lines.append(_imul3_handler_asm(handler_key, key, key_dword))
+        elif handler_key.startswith("push_"):
+            lines.append(_push_handler_asm(key, rsp_off))
+        elif handler_key.startswith("pop_"):
+            lines.append(_pop_handler_asm(key, rsp_off))
+        elif handler_key == "pushi":
+            lines.append(_pushi_handler_asm(key_qword, rsp_off))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):

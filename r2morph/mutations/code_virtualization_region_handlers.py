@@ -16,6 +16,10 @@ from __future__ import annotations
 # and the System V red zone preserved in [0x100, 0x180).
 _FRAME_SIZE = 0x180
 _FLAGS_OFFSET = 0x80
+# The program's virtual stack is relocated this far below the VM frame so the
+# function's own push/pop traffic never collides with the spilled context. Must
+# be 16-aligned to preserve the program's stack alignment.
+_GUARD = 0x200
 
 
 def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
@@ -355,6 +359,49 @@ def _imul_handler_asm(handler_key: str, key: int) -> str:
     return (
         body
         + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
+def _push_handler_asm(key: int, rsp_off: int) -> str:
+    """Assembly body for ``push reg`` against the relocated virtual stack.
+
+    The program's rsp lives in a frame slot (relocated below the VM frame at
+    entry); decrement it by 8 and write the register value there. push sets no
+    flags.
+    """
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        "  mov rax, qword ptr [rsp+r8*8]\n"
+        f"  mov r9, qword ptr [rsp+{rsp_off}]\n  sub r9, 8\n  mov qword ptr [rsp+{rsp_off}], r9\n"
+        "  mov qword ptr [r9], rax\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
+def _pop_handler_asm(key: int, rsp_off: int) -> str:
+    """Assembly body for ``pop reg`` against the relocated virtual stack.
+
+    Read the value at the program's rsp BEFORE incrementing it (matching the
+    architectural order), then store it into the destination slot. pop sets no
+    flags. The destination is never rsp (rejected at decode), so there is no
+    aliasing between the slot write and the rsp-slot update.
+    """
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  mov r9, qword ptr [rsp+{rsp_off}]\n  mov rax, qword ptr [r9]\n"
+        f"  add r9, 8\n  mov qword ptr [rsp+{rsp_off}], r9\n"
+        "  mov qword ptr [rsp+r8*8], rax\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
+def _pushi_handler_asm(key_qword: str, rsp_off: int) -> str:
+    """Assembly body for ``push imm`` (sign-extended 64-bit immediate)."""
+    return (
+        f"  mov rax, qword ptr [rsi+1]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+        f"  mov r9, qword ptr [rsp+{rsp_off}]\n  sub r9, 8\n  mov qword ptr [rsp+{rsp_off}], r9\n"
+        "  mov qword ptr [r9], rax\n"
+        "  add rsi, 9\n  jmp vm_dispatch\n"
     )
 
 
