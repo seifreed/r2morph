@@ -123,10 +123,17 @@ class VMScheme:
 
 
 def build_vm_scheme(rng: random.Random) -> VMScheme:
-    """Draw a fresh randomized VM scheme from ``rng`` (seedable, replayable)."""
-    distinct = rng.sample(range(1, 256), len(_OP_KEYS) + 1)
-    opcode_values = {key: distinct[index] for index, key in enumerate(_OP_KEYS)}
-    return VMScheme(opcode_values, distinct[-1], rng.randrange(1, 256))
+    """Draw a fresh randomized VM scheme from ``rng`` (seedable, replayable).
+
+    Opcodes are a per-instance permutation of dense indices ``0..N-1`` that
+    index the dispatch table directly (so there is no comparison ladder), while
+    the exit marker is any byte ``>= N`` and routes through the table's bounds
+    guard. Two builds still share no opcode-to-operation mapping.
+    """
+    indices = rng.sample(range(len(_OP_KEYS)), len(_OP_KEYS))
+    opcode_values = dict(zip(_OP_KEYS, indices, strict=True))
+    exit_opcode = rng.randrange(len(_OP_KEYS), 256)
+    return VMScheme(opcode_values, exit_opcode, rng.randrange(1, 256))
 
 
 class VirtualizedOp:
@@ -282,18 +289,21 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
         f"  mov qword ptr [rsp + {RSP_INDEX * 8}], rax\n"
         "  lea rsi, [rip + bytecode]\n"
+        # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
+        # base-independent offset table (each entry a 32-bit signed offset from
+        # vm_table to its handler), so there is no comparison ladder to match and
+        # the jump survives rebasing/ASLR like the rest of the blob's rel32 jumps.
+        # An opcode >= N (the exit marker) leaves through the bounds guard.
         "vm_dispatch:\n"
         "  movzx eax, byte ptr [rsi]\n"
         f"  xor al, {key}\n"
+        f"  cmp al, {len(_OP_KEYS)}\n  jae vm_exit\n"
+        "  lea r14, [rip + vm_table]\n  movsxd rax, dword ptr [r14 + rax*4]\n  add rax, r14\n  jmp rax\n"
     )
 
     def label_for(op_key: tuple[str, bool, int]) -> str:
         mnemonic, is_immediate, width = op_key
         return f"h_{mnemonic}_{'ri' if is_immediate else 'rr'}_{width}"
-
-    for op_key in _OP_KEYS:
-        lines.append(f"  cmp al, {scheme.opcode_values[op_key]}\n  je {label_for(op_key)}\n")
-    lines.append("  jmp vm_exit\n")
 
     for op_key in _OP_KEYS:
         mnemonic, is_immediate, width = op_key
@@ -303,7 +313,11 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov {name}, qword ptr [rsp + {index * 8}]\n")
-    lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\nbytecode:\n")
+    lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
+
+    index_to_label = {scheme.opcode_values[op_key]: label_for(op_key) for op_key in _OP_KEYS}
+    table = "".join(f"  .long {index_to_label[index]} - vm_table\n" for index in range(len(_OP_KEYS)))
+    lines.append(f"vm_table:\n{table}bytecode:\n")
     return "".join(lines)
 
 
