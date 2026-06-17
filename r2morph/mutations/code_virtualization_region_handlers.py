@@ -28,19 +28,27 @@ _GUARD = 0x200
 # devirtualizer can match across samples. rcx is free scratch in the address
 # prologues, and the flags these set are dead (a handler that needs flags runs
 # and captures its real operation's flags afterward).
-_MBA_ADD_VARIANTS: tuple[str, ...] = (
+# ``{t}`` is a free temp register, ``{a}`` the addend; each template computes
+# ``r10 += {a}`` (a == r10, b == {a}). The closing lea is flag-neutral, but the
+# xor/and/or/sub set flags — harmless because these run in a flag-dead prologue.
+_MBA_ADD_TEMPLATES: tuple[str, ...] = (
     # a + b == (a ^ b) + 2*(a & b)
-    "  mov rcx, r10\n  xor rcx, rax\n  and r10, rax\n  lea r10, [rcx + r10*2]\n",
+    "  mov {t}, r10\n  xor {t}, {a}\n  and r10, {a}\n  lea r10, [{t} + r10*2]\n",
     # a + b == (a | b) + (a & b)
-    "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  lea r10, [r10 + rcx]\n",
+    "  mov {t}, r10\n  and {t}, {a}\n  or r10, {a}\n  lea r10, [r10 + {t}]\n",
     # a + b == 2*(a | b) - (a ^ b)
-    "  mov rcx, r10\n  xor rcx, rax\n  or r10, rax\n  lea r10, [r10*2]\n  sub r10, rcx\n",
+    "  mov {t}, r10\n  xor {t}, {a}\n  or r10, {a}\n  lea r10, [r10*2]\n  sub r10, {t}\n",
 )
 
 
+def _mba_add(addend: str, temp: str, key: int) -> str:
+    """A per-instance MBA rewrite of ``r10 += addend`` (chosen by the bytecode key)."""
+    return _MBA_ADD_TEMPLATES[key % len(_MBA_ADD_TEMPLATES)].format(a=addend, t=temp)
+
+
 def _mba_add_r10_rax(key: int) -> str:
-    """A per-instance MBA rewrite of ``r10 += rax`` (chosen by the bytecode key)."""
-    return _MBA_ADD_VARIANTS[key % len(_MBA_ADD_VARIANTS)]
+    """The MBA rewrite of ``r10 += rax`` used to fold a displacement."""
+    return _mba_add("rax", "rcx", key)
 
 
 def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
@@ -240,7 +248,10 @@ def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
         f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n"
         f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
         "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
-        "  add r10, qword ptr [rsp+r9*8]\n" + _mba_add_r10_rax(key)
+        # Fold the base with MBA too (r11 holds the base value), so neither the
+        # base nor the displacement add is a literal add. rcx and r11 are free
+        # here (the index slot and scale were already consumed).
+        "  mov r11, qword ptr [rsp+r9*8]\n" + _mba_add("r11", "rcx", key) + _mba_add("rax", "rcx", key)
     ), 9
 
 
