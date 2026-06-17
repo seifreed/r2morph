@@ -254,7 +254,10 @@ class TestCodeVirtualization:
         assert all(ops)
         scheme = build_vm_scheme(random.Random(1))
         bytecode = encode_bytecode(ops, scheme)
-        assert bytecode[-1] ^ scheme.xor_key == scheme.exit_opcode
+        # The exit opcode is the last byte: position-masked with its own stream
+        # offset, then XOR-encrypted. Undo both to recover the exit marker.
+        position = (len(bytecode) - 1) & 0xFF
+        assert bytecode[-1] ^ scheme.xor_key ^ position == scheme.exit_opcode
 
     def test_build_vm_scheme_is_polymorphic(self):
         first = build_vm_scheme(random.Random(1))
