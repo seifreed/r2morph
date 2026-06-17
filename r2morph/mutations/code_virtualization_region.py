@@ -317,10 +317,16 @@ def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
 
 
 def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
-    """Assign each needed handler a distinct random opcode byte plus a key."""
+    """Assign each handler a dense opcode index plus a bytecode key.
+
+    Opcodes are a per-instance permutation of ``0..N-1`` (N = handler count):
+    they index the dispatch table directly, so two builds still share no
+    opcode->operation mapping (the permutation differs), but the table stays
+    N entries wide instead of a full 256.
+    """
     keys = sorted(region.op_keys)
-    distinct = rng.sample(range(1, 256), len(keys))
-    return RegionScheme(dict(zip(keys, distinct, strict=True)), rng.randrange(1, 256), rng.randrange(1 << 31))
+    indices = rng.sample(range(len(keys)), len(keys))
+    return RegionScheme(dict(zip(keys, indices, strict=True)), rng.randrange(1, 256), rng.randrange(1 << 31))
 
 
 # Semantically-neutral instructions used as per-instance junk. They are emitted
@@ -515,12 +521,18 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     lines.append(
         f"  lea rax, [rsp+{_FRAME_SIZE}]\n  mov qword ptr [rsp+{RSP_INDEX * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n"
+        # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
+        # 256-entry handler-address table, so there is no linear comparison ladder
+        # for a disassembler or automated devirtualizer to pattern-match. r14 is a
+        # spilled context slot, free to clobber between handlers.
         "vm_dispatch:\n  movzx eax, byte ptr [rsi]\n"
         f"  xor al, {key}\n"
+        f"  cmp al, {len(scheme.opcodes)}\n  jae vm_exit\n"
+        # Base-independent indirect dispatch: each table entry is a 32-bit signed
+        # offset from vm_table to its handler, so the jump survives rebasing/ASLR
+        # exactly like the rel32 jumps the rest of the blob relies on.
+        "  lea r14, [rip+vm_table]\n  movsxd rax, dword ptr [r14+rax*4]\n  add rax, r14\n  jmp rax\n"
     )
-    for handler_key in sorted(scheme.opcodes):
-        lines.append(f"  cmp al, {scheme.opcodes[handler_key]}\n  je H_{handler_key}\n")
-    lines.append("  jmp vm_exit\n")
 
     reload_seq = "".join(
         f"  mov {name}, qword ptr [rsp+{index * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
@@ -554,8 +566,17 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         # Junk after the handler's terminating jump - unreachable, never runs.
         lines.append(_junk_asm(junk_rng))
 
-    # Unknown-opcode guard: restore state and leave through the default exit.
-    lines.append(f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\nbytecode:\n")
+    # Unknown-opcode guard: an out-of-range index (bounds-checked above) restores
+    # state and leaves through the default exit, so a corrupt stream cannot
+    # transfer control out of the VM. The table holds one entry per handler.
+    index_to_label = {index: f"H_{handler_key}" for handler_key, index in scheme.opcodes.items()}
+    table = "".join(
+        f"  .long {index_to_label.get(index, 'vm_exit')} - vm_table\n" for index in range(len(scheme.opcodes))
+    )
+    lines.append(
+        f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
+        f"vm_table:\n{table}bytecode:\n"
+    )
     return "".join(lines)
 
 
