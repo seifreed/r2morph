@@ -366,6 +366,28 @@ def test_indexed_lea_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_indexed_memory_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The function adds an array element addressed by a scaled index into a
+    # register; the VM must compute base + index*scale, read memory there, and
+    # apply the real op (10 + arr[1]=32 -> exit 42).
+    fixture = _DATASET / "elf_vm_opmemidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_opmemidx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def _text_range(path: Path) -> tuple[int, int, int]:
     """Return (entry_file_offset, exit_syscall_offset, vaddr_base) for the .text run."""
     raw = path.read_bytes()

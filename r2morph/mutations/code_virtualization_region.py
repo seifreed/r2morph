@@ -496,6 +496,29 @@ def _parse_indexed_operand(text: str) -> tuple[int, int, int, int] | None:
     return (base, index, shift, disp)
 
 
+def _decode_op_mem_indexed(text: str, mnemonic: str) -> tuple[Any, ...] | None:
+    """Decode ``<op> reg, [base + index*scale + disp]`` (scaled-index memory
+    source, register source/destination).
+
+    Returns ``("opmemidx", mnemonic, reg_slot, base_slot, index_slot, shift,
+    disp, width)`` or ``None``.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != mnemonic or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if "[" in left or "[" not in right:
+        return None
+    reg = _register_operand(left.lower())
+    if reg is None:
+        return None
+    parsed = _parse_indexed_operand(right)
+    if parsed is None:
+        return None
+    base_slot, index_slot, shift, disp = parsed
+    return ("opmemidx", mnemonic, reg[0], base_slot, index_slot, shift, disp, reg[1])
+
+
 def _decode_lea_indexed(text: str) -> tuple[Any, ...] | None:
     """Decode ``lea reg, [base + index*scale + disp]`` (64-bit destination)."""
     parts = text.split(None, 1)
@@ -549,6 +572,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "learip"
     if kind == "leaidx":
         return "leaidx"
+    if kind == "opmemidx":
+        return f"opmemidx_{item[1]}_{item[7]}"
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
@@ -615,7 +640,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         if op_mem is not None:
             return [*op_mem]
         op_memdst = _decode_op_memdst(text, kind, insn.get("addr", 0), insn.get("size", 0))
-        return [*op_memdst] if op_memdst is not None else None
+        if op_memdst is not None:
+            return [*op_memdst]
+        op_mem_idx = _decode_op_mem_indexed(text, kind)
+        return [*op_mem_idx] if op_mem_idx is not None else None
     if kind == "cmp":
         compare = _decode_two_operand(text, "cmp")
         if compare is not None:
@@ -816,7 +844,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("cmpriprel", "opriprel", "learip", "opmemdstrip"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
-    if kind == "leaidx":
+    if kind in ("leaidx", "opmemidx"):
         return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
     if kind in ("jmp", "jcc"):
         return 5
@@ -923,6 +951,14 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain += struct.pack("<i", target - bytecode_base)
         elif kind == "leaidx":
             _, reg_slot, base_slot, index_slot, shift, disp = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain.append(slot_of[index_slot])
+            plain.append(shift)
+            plain += struct.pack("<i", disp)
+        elif kind == "opmemidx":
+            _, _mnemonic, reg_slot, base_slot, index_slot, shift, disp, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain.append(slot_of[base_slot])
@@ -1084,12 +1120,13 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _lea_indexed_handler_asm(key: int, key_dword: str) -> str:
-    """Assembly body for ``lea reg, [base + index*scale + disp]`` (64-bit dst).
+def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
+    """Shared head of every indexed memory handler: decrypt the register slot
+    into r8 and compute ``base + index*scale + disp`` into r10.
 
     The index is read from its slot and shifted by the encoded scale log2, then
-    the base and displacement are added; the resulting address is stored into
-    the destination slot without dereferencing. lea sets no flags.
+    the base and displacement are added. Returns the assembly and the rsi
+    advance (the bytecode item width).
     """
     return (
         f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
@@ -1099,8 +1136,35 @@ def _lea_indexed_handler_asm(key: int, key_dword: str) -> str:
         f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
         "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
         "  add r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
-        "  mov qword ptr [rsp+r8*8], r10\n  add rsi, 9\n  jmp vm_dispatch\n"
-    )
+    ), 9
+
+
+def _lea_indexed_handler_asm(key: int, key_dword: str) -> str:
+    """Assembly body for ``lea reg, [base + index*scale + disp]`` (64-bit dst).
+
+    The effective address is computed with the shared indexed prologue and
+    stored into the destination slot without dereferencing; lea sets no flags.
+    """
+    body, advance = _indexed_address_asm(key, key_dword)
+    return body + f"  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``<op> reg, [base + index*scale + disp]`` (reg is source
+    and destination; memory is the scaled-index source).
+
+    The address is computed with the shared indexed prologue, the register value
+    is read from its slot, the real arithmetic is applied against memory, the
+    result is written back, and the flags are captured.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body, advance = _indexed_address_asm(key, key_dword)
+    if width == 64:
+        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    else:
+        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _lea_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
@@ -1254,6 +1318,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_lea_handler_asm(handler_key, key, key_dword))
         elif handler_key == "leaidx":
             lines.append(_lea_indexed_handler_asm(key, key_dword))
+        elif handler_key.startswith("opmemidx_"):
+            lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):
