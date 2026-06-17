@@ -197,6 +197,11 @@ def decode_instruction(disasm: str) -> VirtualizedOp | None:
 
     mnemonic, operand_text = text.split(None, 1)
     mnemonic = mnemonic.lower()
+    # ``movabs`` is the disassembler's spelling of a ``mov`` with a 64-bit
+    # immediate (or an absolute moffs, which the memory-operand guard below
+    # rejects); treat it as a plain ``mov`` so 64-bit constants virtualize.
+    if mnemonic == "movabs":
+        mnemonic = "mov"
     if mnemonic not in SUPPORTED_MNEMONICS:
         return None
 

@@ -432,6 +432,28 @@ def test_three_operand_imul_virtualization_preserves_product(tmp_path: Path) -> 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_movabs_immediate_virtualization_preserves_high_word(tmp_path: Path) -> None:
+    # Two movabs (mov reg, imm64) constants are shifted down to expose their high
+    # word and branched on; a handler that truncated the 64-bit immediate would
+    # change the exit code (42 correct, 99 wrong).
+    fixture = _DATASET / "elf_vm_movabs_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_movabs"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_movzx_movsx_virtualization_preserves_extension(tmp_path: Path) -> None:
     # A high-bit byte is zero-extended (movzx -> 216) and sign-extended (movsx
     # -> -40), and the function branches on the full extended values; the VM must
