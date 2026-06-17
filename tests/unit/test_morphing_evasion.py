@@ -47,6 +47,7 @@ from r2morph.mutations.code_mobility import (
 )
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_engine import (
+    _interpreter_asm,
     build_vm_scheme,
     decode_instruction,
     encode_bytecode,
@@ -263,6 +264,18 @@ class TestCodeVirtualization:
         first = build_vm_scheme(random.Random(1))
         second = build_vm_scheme(random.Random(2))
         assert (first.opcode_values, first.xor_key) != (second.opcode_values, second.xor_key)
+
+    def test_scheme_generates_nonzero_table_key(self):
+        scheme = build_vm_scheme(random.Random(3))
+        assert 1 <= scheme.table_key < (1 << 32)
+
+    def test_dispatch_decrypts_the_table_with_the_scheme_key(self):
+        # The engine dispatch must XOR each loaded table offset with the
+        # per-instance key before jumping, so the handler table is not a plaintext
+        # switch a disassembler can recover (parity with the region VM).
+        scheme = build_vm_scheme(random.Random(3))
+        asm = _interpreter_asm(0x401000, scheme)
+        assert f"xor eax, {hex(scheme.table_key)}" in asm
 
     def test_code_virtualization_pass_init(self):
         p = CodeVirtualizationPass({"probability": 0.5})

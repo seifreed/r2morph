@@ -121,7 +121,7 @@ class VMScheme:
     match another.
     """
 
-    __slots__ = ("opcode_values", "exit_opcode", "xor_key", "slot_perm")
+    __slots__ = ("opcode_values", "exit_opcode", "xor_key", "slot_perm", "table_key")
 
     def __init__(
         self,
@@ -129,12 +129,17 @@ class VMScheme:
         exit_opcode: int,
         xor_key: int,
         slot_perm: tuple[int, ...],
+        table_key: int,
     ) -> None:
         self.opcode_values = opcode_values
         self.exit_opcode = exit_opcode
         self.xor_key = xor_key
         # Per-instance bijection: logical register index -> shuffled frame slot.
         self.slot_perm = slot_perm
+        # 32-bit key the dispatch-table offsets are XOR-encrypted with, so the
+        # handler addresses are not a plaintext jump table a disassembler recovers
+        # as a switch (the dispatch decrypts each entry before jumping).
+        self.table_key = table_key
 
 
 def build_vm_scheme(rng: random.Random) -> VMScheme:
@@ -149,7 +154,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     opcode_values = dict(zip(_OP_KEYS, indices, strict=True))
     exit_opcode = rng.randrange(len(_OP_KEYS), 256)
     slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
-    return VMScheme(opcode_values, exit_opcode, rng.randrange(1, 256), slot_perm)
+    return VMScheme(opcode_values, exit_opcode, rng.randrange(1, 256), slot_perm, rng.randrange(1, 1 << 32))
 
 
 class VirtualizedOp:
@@ -357,7 +362,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         # encoder pre-biased the opcode with, so a patched interpreter misdecodes.
         f"  xor al, {key}\n  xor al, r13b\n  xor al, byte ptr [rsp + {_CHECKSUM_OFFSET}]\n"
         f"  cmp al, {len(_OP_KEYS)}\n  jae vm_exit\n"
-        "  lea r14, [rip + vm_table]\n  movsxd rax, dword ptr [r14 + rax*4]\n  add rax, r14\n  jmp rax\n"
+        # The stored offsets are XOR-encrypted, so the table is not a plaintext
+        # handler map a disassembler can recover as a switch; decrypt each entry.
+        f"  lea r14, [rip + vm_table]\n  mov eax, dword ptr [r14 + rax*4]\n  xor eax, {hex(scheme.table_key)}\n"
+        "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
     )
 
     def label_for(op_key: tuple[str, bool, int]) -> str:
@@ -406,9 +414,18 @@ def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr:
         logger.debug("VM interpreter assembly produced no bytes")
         return None
 
+    # The dispatch table is the tail len(_OP_KEYS) 32-bit entries of the assembled
+    # interpreter; XOR-encrypt each in place so the handler addresses are not a
+    # plaintext jump table (the dispatch decrypts them at runtime; keystone cannot
+    # XOR a label difference it computes itself).
+    data = bytearray(encoding)
+    table_start = len(data) - len(_OP_KEYS) * 4
+    for entry_index in range(len(_OP_KEYS)):
+        offset = table_start + entry_index * 4
+        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ scheme.table_key
+        data[offset : offset + 4] = encrypted.to_bytes(4, "little")
     # Expected runtime self-checksum over the interpreter code (everything up to
-    # the dispatch table, which is the tail len(_OP_KEYS) 32-bit entries); the
-    # encoder folds it into the opcodes so a patched interpreter misdecodes.
-    table_start = len(encoding) - len(_OP_KEYS) * 4
-    checksum = compute_build_checksum(bytes(encoding[:table_start]), scheme.xor_key)
-    return bytes(encoding) + encode_bytecode(ops, scheme, checksum)
+    # the table, so its encryption above does not perturb the value); the encoder
+    # folds it into the opcodes so a patched interpreter misdecodes.
+    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
+    return bytes(data) + encode_bytecode(ops, scheme, checksum)
