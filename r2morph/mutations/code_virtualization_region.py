@@ -405,6 +405,39 @@ def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> 
     return None
 
 
+def _decode_movx(text: str) -> tuple[Any, ...] | None:
+    """Decode ``movzx/movsx reg, byte|word [base+disp]`` (memory source).
+
+    r2 reports movzx/movsx under the mov type. The destination is a 32- or
+    64-bit register; the source is a byte or word in memory. Returns
+    ``("movx", ext, src_size, dst_width, reg_slot, base_slot, disp)`` where
+    ``ext`` is ``"z"`` or ``"s"``, or ``None``.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in ("movzx", "movsx"):
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    dst = _register_operand(left.lower())
+    if dst is None:
+        return None
+    size_word, _, remainder = right.lower().partition(" ")
+    if size_word == "byte":
+        src_size = 8
+    elif size_word == "word":
+        src_size = 16
+    else:
+        return None
+    mem = _parse_mem_operand(remainder.strip())
+    if mem is None:
+        return None
+    base_slot, disp, _mem_width = mem
+    ext = "z" if mnemonic == "movzx" else "s"
+    return ("movx", ext, src_size, dst[1], dst[0], base_slot, disp)
+
+
 def _decode_incdec(text: str) -> tuple[Any, ...] | None:
     """Decode ``inc reg`` / ``dec reg`` (register operand).
 
@@ -595,6 +628,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"opmemidx_{item[1]}_{item[7]}"
     if kind == "incdec":
         return f"incdec_{item[1]}_{item[3]}"
+    if kind == "movx":
+        return f"movx_{item[1]}_{item[2]}_{item[3]}"
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
@@ -656,7 +691,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
             if memory is not None:
                 return [*memory]
             riprel = _decode_riprel_mov(text, insn.get("addr", 0), insn.get("size", 0))
-            return [*riprel] if riprel is not None else None
+            if riprel is not None:
+                return [*riprel]
+            movx = _decode_movx(text)
+            return [*movx] if movx is not None else None
         incdec = _decode_incdec(text)
         if incdec is not None:
             return [*incdec]
@@ -872,6 +910,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
     if kind == "incdec":
         return 2  # opcode + reg slot
+    if kind == "movx":
+        return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
@@ -995,6 +1035,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             _, _mnemonic, reg_slot, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
+        elif kind == "movx":
+            _, _ext, _src_size, _dst_width, reg_slot, base_slot, disp = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain += struct.pack("<i", disp)
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
             emit_opcode(_required_key(item))
@@ -1148,6 +1194,26 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     else:
         body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} dword ptr [r10], r9d\n"
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _movx_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``movzx/movsx reg, byte|word [base+disp]``.
+
+    The address is computed with the shared prologue, then the byte or word is
+    zero- or sign-extended into the destination slot. movzx always zero-extends
+    the same regardless of destination width; movsx's extension target depends
+    on whether the destination is 32- or 64-bit. movzx/movsx set no flags.
+    """
+    _, ext, src_size_text, dst_width_text = handler_key.split("_")
+    size_word = "byte" if int(src_size_text) == 8 else "word"
+    body, advance = _mem_address_asm(False, key, key_dword)
+    if ext == "z":
+        body += f"  movzx eax, {size_word} ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+    elif int(dst_width_text) == 64:
+        body += f"  movsx rax, {size_word} ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+    else:
+        body += f"  movsx eax, {size_word} ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _incdec_handler_asm(handler_key: str, key: int) -> str:
@@ -1372,6 +1438,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("incdec_"):
             lines.append(_incdec_handler_asm(handler_key, key))
+        elif handler_key.startswith("movx_"):
+            lines.append(_movx_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):

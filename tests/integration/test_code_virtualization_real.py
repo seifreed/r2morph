@@ -410,6 +410,28 @@ def test_incdec_virtualization_preserves_carry_flag(tmp_path: Path) -> None:
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_movzx_movsx_virtualization_preserves_extension(tmp_path: Path) -> None:
+    # A high-bit byte is zero-extended (movzx -> 216) and sign-extended (movsx
+    # -> -40), and the function branches on the full extended values; the VM must
+    # reproduce each extension exactly (exit 42, a wrong extension would exit 99).
+    fixture = _DATASET / "elf_vm_movx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_movx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def _text_range(path: Path) -> tuple[int, int, int]:
     """Return (entry_file_offset, exit_syscall_offset, vaddr_base) for the .text run."""
     raw = path.read_bytes()
