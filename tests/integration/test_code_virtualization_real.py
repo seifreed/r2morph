@@ -167,6 +167,29 @@ def test_virtualized_multiexit_fixture_preserves_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_straight_line_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # This function contains a call, so the whole-function control-flow VM
+    # rejects it; the pass must fall back to virtualizing the straight-line
+    # register run before the call. Exercises the fallback path that every
+    # fully-reducible fixture above bypasses.
+    fixture = _DATASET / "elf_vm_run_callfallback_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_run"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 45
+
+
 def _text_range(path: Path) -> tuple[int, int, int]:
     """Return (entry_file_offset, exit_syscall_offset, vaddr_base) for the .text run."""
     raw = path.read_bytes()
