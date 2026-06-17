@@ -794,6 +794,28 @@ def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _mem_address_asm(riprel: bool, key: int, key_dword: str) -> tuple[str, int]:
+    """Shared head of every memory handler: decrypt the register slot into r8
+    and compute the effective address into r10.
+
+    For the rip-relative form the address is the bytecode base (r15) plus the
+    stored signed offset; otherwise it is a frame-slot base value plus a signed
+    displacement. Returns the assembly and the number of bytes to advance rsi by
+    (the bytecode item width).
+    """
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    if riprel:
+        return (
+            body + f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+            "  mov r10, r15\n  add r10, rax\n"
+        ), 6
+    return (
+        body + f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
+    ), 7
+
+
 def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     """Assembly body for a load/store handler (``mov`` reg <-> [base+disp]).
 
@@ -805,12 +827,7 @@ def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     """
     kind, width_text = handler_key.split("_")
     width = int(width_text)
-    body = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
-        f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
-    )
+    body, advance = _mem_address_asm(False, key, key_dword)
     if kind == "load":
         load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
         body += load + "  mov qword ptr [rsp+r8*8], rax\n"
@@ -818,7 +835,7 @@ def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
         body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
     else:
         body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
-    return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
@@ -830,11 +847,7 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     """
     _, sub, width_text = handler_key.split("_")
     width = int(width_text)
-    body = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
-        f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        "  mov r10, r15\n  add r10, rax\n"
-    )
+    body, advance = _mem_address_asm(True, key, key_dword)
     if sub == "load":
         load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
         body += load + "  mov qword ptr [rsp+r8*8], rax\n"
@@ -842,7 +855,7 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
         body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
     else:
         body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
-    return body + "  add rsi, 6\n  jmp vm_dispatch\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
@@ -856,16 +869,7 @@ def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     parts = handler_key.split("_")
     riprel = parts[0] == "cmpriprel"
     width = int(parts[-1])
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
-    if riprel:
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        body += "  mov r10, r15\n  add r10, rax\n"
-        advance = 6
-    else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
-        body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        body += "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
-        advance = 7
+    body, advance = _mem_address_asm(riprel, key, key_dword)
     if width == 64:
         body += "  mov r9, qword ptr [rsp+r8*8]\n  cmp r9, qword ptr [r10]\n"
     else:
@@ -884,16 +888,7 @@ def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     parts = handler_key.split("_")
     riprel = parts[0] == "opriprel"
     mnemonic, width = parts[1], int(parts[2])
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
-    if riprel:
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        body += "  mov r10, r15\n  add r10, rax\n"
-        advance = 6
-    else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
-        body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        body += "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
-        advance = 7
+    body, advance = _mem_address_asm(riprel, key, key_dword)
     if width == 64:
         body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
     else:
