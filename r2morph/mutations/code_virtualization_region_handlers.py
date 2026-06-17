@@ -325,3 +325,24 @@ def _imul_handler_asm(handler_key: str, key: int) -> str:
         body
         + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
     )
+
+
+def _imul3_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for a three-operand ``imul reg, reg, imm`` handler.
+
+    The immediate lives encrypted in the bytecode stream, so the multiply is
+    done by a register-form ``imul`` against the decrypted, sign-extended
+    immediate rather than a literal imm operand. The result and CF/OF match the
+    native three-operand imul (same low-half product, same overflow).
+    """
+    width = int(handler_key.split("_")[1])
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+    body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+    if width == 64:
+        body += "  movsxd r10, eax\n  mov rax, qword ptr [rsp+r9*8]\n  imul rax, r10\n"
+    else:
+        body += "  mov r10d, dword ptr [rsp+r9*8]\n  imul r10d, eax\n  mov rax, r10\n"
+    return (
+        body
+        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 7\n  jmp vm_dispatch\n"
+    )

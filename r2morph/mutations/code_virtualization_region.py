@@ -35,6 +35,7 @@ from r2morph.mutations.code_virtualization_engine import (
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmp_mem,
     _decode_imul,
+    _decode_imul3,
     _decode_incdec,
     _decode_lea,
     _decode_lea_indexed,
@@ -52,6 +53,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _FRAME_SIZE,
     _cmp_memory_handler_asm,
     _compare_handler_asm,
+    _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
     _lea_handler_asm,
@@ -199,6 +201,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"{item[1]}_{item[4]}"
     if kind == "imul":
         return f"imul_{item[3]}"
+    if kind == "imul3":
+        return f"imul3_{item[4]}"
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":
@@ -262,7 +266,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         return ["shift", *shift] if shift is not None else None
     if kind == "mul":
         imul = _decode_imul(text)
-        return ["imul", *imul] if imul is not None else None
+        if imul is not None:
+            return ["imul", *imul]
+        imul3 = _decode_imul3(text)
+        return ["imul3", *imul3] if imul3 is not None else None
     if kind == "lea":
         lea = _decode_lea(text, insn.get("addr", 0), insn.get("size", 0))
         if lea is not None:
@@ -440,6 +447,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 2 + (8 if item[4] == 64 else 4) if item[3] else 3
     if kind in ("shift", "imul"):
         return 3
+    if kind == "imul3":
+        return 7  # opcode + dst slot + src slot + 4-byte immediate
     if kind in ("load", "store"):
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("riprel_load", "riprel_store"):
@@ -515,6 +524,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             emit_opcode(_required_key(item))
             plain.append(slot_of[dst])
             plain.append(slot_of[src])
+        elif kind == "imul3":
+            _, dst, src, imm, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[dst])
+            plain.append(slot_of[src])
+            plain += pack_immediate(imm, 32)
         elif kind in ("load", "store"):
             _, reg_slot, base_slot, disp, _width = item
             emit_opcode(_required_key(item))
@@ -677,6 +692,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword))
         elif handler_key.startswith(("shl_", "shr_", "sar_")):
             lines.append(_shift_handler_asm(handler_key, key))
+        elif handler_key.startswith("imul3_"):
+            lines.append(_imul3_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):

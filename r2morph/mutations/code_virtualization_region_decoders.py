@@ -90,6 +90,34 @@ def _decode_imul(disasm: str) -> tuple[int, int, int] | None:
     return (dst[0], src[0], dst[1])
 
 
+def _decode_imul3(disasm: str) -> tuple[int, int, int, int] | None:
+    """Decode the three-operand form ``imul reg, reg, imm`` into (dst, src, imm, width).
+
+    The immediate of a three-operand imul is an ``imm32`` sign-extended to the
+    operand width, so it must fit a signed 32-bit value regardless of the
+    destination width.
+    """
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "imul":
+        return None
+    fields = parts[1].split(",")
+    if len(fields) != 3:
+        return None
+    dst = _register_operand(fields[0].strip().lower())
+    src = _register_operand(fields[1].strip().lower())
+    if dst is None or src is None or dst[1] != src[1]:
+        return None
+    if any(marker in fields[2] for marker in ("[", "]", "rip", ":", "ptr")):
+        return None
+    try:
+        immediate = int(fields[2].strip().lower(), 0)
+    except ValueError:
+        return None
+    if not immediate_fits_width(immediate, 32):
+        return None
+    return (dst[0], src[0], immediate, dst[1])
+
+
 _MEM_DISP_BOUND = 1 << 31  # displacement is encoded as a signed 32-bit value
 
 
