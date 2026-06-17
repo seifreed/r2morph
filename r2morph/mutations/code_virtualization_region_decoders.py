@@ -498,7 +498,7 @@ def _decode_op_mem_indexed(text: str, mnemonic: str) -> tuple[Any, ...] | None:
 
 
 def _decode_lea_indexed(text: str) -> tuple[Any, ...] | None:
-    """Decode ``lea reg, [base + index*scale + disp]`` (64-bit destination)."""
+    """Decode ``lea reg, [base + index*scale + disp]`` (32- or 64-bit dst)."""
     parts = text.split(None, 1)
     if len(parts) != 2 or parts[0].lower() != "lea" or "," not in parts[1]:
         return None
@@ -506,21 +506,23 @@ def _decode_lea_indexed(text: str) -> tuple[Any, ...] | None:
     if "[" in left or "[" not in right:
         return None
     reg = _register_operand(left.lower())
-    if reg is None or reg[1] != 64:
+    if reg is None:
         return None
     parsed = _parse_indexed_operand(right)
     if parsed is None:
         return None
     base_slot, index_slot, shift, disp = parsed
-    return ("leaidx", reg[0], base_slot, index_slot, shift, disp)
+    return ("leaidx", reg[0], base_slot, index_slot, shift, disp, reg[1])
 
 
 def _decode_lea(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
-    """Decode ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]`` (64-bit dst).
+    """Decode ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]`` (32- or 64-bit dst).
 
     ``lea`` computes an address without dereferencing memory and sets no flags.
-    Returns ``("lea", reg_slot, base_slot, disp)`` or ``("learip", reg_slot,
-    target)``, or ``None`` (index/scale forms, a 32-bit destination, etc.).
+    A 32-bit destination truncates the computed address to its low 32 bits
+    (zero-extended), so the destination width is carried in the item. Returns
+    ``("lea", reg_slot, base_slot, disp, width)`` or ``("learip", reg_slot,
+    target, width)``, or ``None`` (index/scale forms are handled elsewhere).
     """
     parts = text.split(None, 1)
     if len(parts) != 2 or parts[0].lower() != "lea" or "," not in parts[1]:
@@ -529,14 +531,14 @@ def _decode_lea(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | 
     if "[" in left or "[" not in right:
         return None
     reg = _register_operand(left.lower())
-    if reg is None or reg[1] != 64:
-        return None  # a 32-bit lea truncates the address; out of scope
-    reg_slot = reg[0]
+    if reg is None:
+        return None
+    reg_slot, width = reg
     mem = _parse_mem_operand(right)
     if mem is not None:
         base_slot, disp, _mem_width = mem
-        return ("lea", reg_slot, base_slot, disp)
+        return ("lea", reg_slot, base_slot, disp, width)
     riprel = _parse_riprel_operand(right, insn_addr, insn_size)
     if riprel is not None:
-        return ("learip", reg_slot, riprel[0])
+        return ("learip", reg_slot, riprel[0], width)
     return None

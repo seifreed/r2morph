@@ -219,14 +219,26 @@ def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
     ), 9
 
 
-def _lea_indexed_handler_asm(key: int, key_dword: str) -> str:
-    """Assembly body for ``lea reg, [base + index*scale + disp]`` (64-bit dst).
+def _lea_store_asm(width: int, advance: int) -> str:
+    """The store-address-into-slot tail shared by the lea handlers.
+
+    A 32-bit destination truncates the address to its low 32 bits, zero-extended
+    into the 64-bit slot (``mov r10d, r10d`` clears the upper half); a 64-bit
+    destination stores the full address.
+    """
+    truncate = "  mov r10d, r10d\n" if width == 32 else ""
+    return f"{truncate}  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _lea_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``lea reg, [base + index*scale + disp]`` (32- or 64-bit dst).
 
     The effective address is computed with the shared indexed prologue and
     stored into the destination slot without dereferencing; lea sets no flags.
     """
+    width = int(handler_key.split("_")[1])
     body, advance = _indexed_address_asm(key, key_dword)
-    return body + f"  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+    return body + _lea_store_asm(width, advance)
 
 
 def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
@@ -252,10 +264,11 @@ def _lea_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
 
     The effective address is computed exactly like a memory handler, but it is
     stored into the destination slot instead of being dereferenced; lea sets no
-    flags.
+    flags. A 32-bit destination truncates the address to its low 32 bits.
     """
-    body, advance = _mem_address_asm(handler_key == "learip", key, key_dword)
-    return body + f"  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+    sub, width_text = handler_key.split("_")
+    body, advance = _mem_address_asm(sub == "learip", key, key_dword)
+    return body + _lea_store_asm(int(width_text), advance)
 
 
 def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:

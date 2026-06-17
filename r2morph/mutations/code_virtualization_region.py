@@ -161,11 +161,11 @@ class Region:
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind = item[0]
     if kind == "lea":
-        return "lea"
+        return f"lea_{item[4]}"
     if kind == "learip":
-        return "learip"
+        return f"learip_{item[3]}"
     if kind == "leaidx":
-        return "leaidx"
+        return f"leaidx_{item[6]}"
     if kind == "opmemidx":
         return f"opmemidx_{item[1]}_{item[7]}"
     if kind == "incdec":
@@ -564,18 +564,18 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain.append(slot_of[reg_slot])
             plain += struct.pack("<i", target - bytecode_base)
         elif kind == "lea":
-            _, reg_slot, base_slot, disp = item
+            _, reg_slot, base_slot, disp, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain.append(slot_of[base_slot])
             plain += struct.pack("<i", disp)
         elif kind == "learip":
-            _, reg_slot, target = item
+            _, reg_slot, target, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain += struct.pack("<i", target - bytecode_base)
         elif kind == "leaidx":
-            _, reg_slot, base_slot, index_slot, shift, disp = item
+            _, reg_slot, base_slot, index_slot, shift, disp, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain.append(slot_of[base_slot])
@@ -702,10 +702,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_op_memdst_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("opmem_", "opriprel_")):
             lines.append(_op_memory_handler_asm(handler_key, key, key_dword))
-        elif handler_key in ("lea", "learip"):
+        elif handler_key.startswith("leaidx_"):
+            lines.append(_lea_indexed_handler_asm(handler_key, key, key_dword))
+        elif handler_key.startswith(("lea_", "learip_")):
             lines.append(_lea_handler_asm(handler_key, key, key_dword))
-        elif handler_key == "leaidx":
-            lines.append(_lea_indexed_handler_asm(key, key_dword))
         elif handler_key.startswith("opmemidx_"):
             lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("incdec_"):
