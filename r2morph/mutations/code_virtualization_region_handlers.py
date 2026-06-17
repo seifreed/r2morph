@@ -395,6 +395,34 @@ def _pop_handler_asm(key: int, rsp_off: int) -> str:
     )
 
 
+def _rspadj_handler_asm(handler_key: str, key_dword: str, rsp_off: int) -> str:
+    """Assembly body for ``add rsp, imm`` / ``sub rsp, imm`` (frame allocation).
+
+    Adjusts the program's relocated rsp slot by a sign-extended imm32. The flags
+    are captured for consistency with the other arithmetic handlers; they reflect
+    the relocated stack pointer rather than the native one, which is harmless
+    because stack-adjustment flags are architecturally dead in compiled code (no
+    branch ever consumes them).
+    """
+    mnemonic = handler_key.split("_")[1]
+    return (
+        f"  mov eax, dword ptr [rsi+1]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        f"  {mnemonic} qword ptr [rsp+{rsp_off}], rax\n"
+        f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        "  add rsi, 5\n  jmp vm_dispatch\n"
+    )
+
+
+def _mov_from_rsp_handler_asm(key: int, rsp_off: int) -> str:
+    """Assembly body for ``mov reg, rsp`` (copy the relocated rsp into a slot)."""
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  mov rax, qword ptr [rsp+{rsp_off}]\n"
+        "  mov qword ptr [rsp+r8*8], rax\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
 def _pushi_handler_asm(key_qword: str, rsp_off: int) -> str:
     """Assembly body for ``push imm`` (sign-extended 64-bit immediate)."""
     return (

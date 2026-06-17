@@ -432,6 +432,28 @@ def test_three_operand_imul_virtualization_preserves_product(tmp_path: Path) -> 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_frame_prologue_virtualization_preserves_local(tmp_path: Path) -> None:
+    # A real prologue/epilogue (push rbp; mov rbp,rsp; sub rsp,N; [rbp-8] local;
+    # add rsp,N; pop rbp; ret) must virtualize and return its frame-pointer local
+    # through the relocated stack; a frame bug changes the returned exit code.
+    fixture = _DATASET / "elf_vm_prologue_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_prologue"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_balanced_push_pop_virtualization_preserves_saved_registers(tmp_path: Path) -> None:
     # A 3-deep register-save bracket (clobber then restore via pop) plus a 64-bit
     # push/pop round-trip. A naive in-frame stack would corrupt the spilled

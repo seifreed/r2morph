@@ -118,6 +118,47 @@ def _decode_push(disasm: str) -> tuple[Any, ...] | None:
     return ("pushi", value, 64) if immediate_fits_width(value, 32) else None
 
 
+def _decode_rsp_arith(disasm: str) -> tuple[Any, ...] | None:
+    """Decode ``add rsp, imm`` / ``sub rsp, imm`` (stack frame allocation)."""
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in ("add", "sub"):
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    if left != "rsp" or any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
+        return None
+    try:
+        value = int(right, 0)
+    except ValueError:
+        return None
+    if value >= 1 << 63:
+        value -= 1 << 64
+    if value < 0 or not immediate_fits_width(value, 32):
+        return None
+    return ("rspadj", mnemonic, value)
+
+
+def _decode_mov_from_rsp(disasm: str) -> tuple[Any, ...] | None:
+    """Decode ``mov reg, rsp`` (frame-pointer setup) into a VM item.
+
+    The destination is a 64-bit GP register (never rsp); it receives the
+    program's current relocated stack pointer so later ``[reg+disp]`` accesses
+    resolve through the same relocated base.
+    """
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "mov" or "," not in parts[1]:
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    if right != "rsp":
+        return None
+    reg = _register_operand(left)
+    if reg is None or reg[1] != 64:
+        return None
+    return ("movfromrsp", reg[0])
+
+
 def _decode_pop(disasm: str) -> tuple[Any, ...] | None:
     """Decode ``pop reg`` (64-bit GP, never rsp) into a VM item."""
     parts = disasm.split(None, 1)

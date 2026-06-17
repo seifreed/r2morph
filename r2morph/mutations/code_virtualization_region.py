@@ -40,6 +40,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_lea,
     _decode_lea_indexed,
     _decode_memory_mov,
+    _decode_mov_from_rsp,
     _decode_movx,
     _decode_op_mem,
     _decode_op_mem_indexed,
@@ -47,6 +48,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_pop,
     _decode_push,
     _decode_riprel_mov,
+    _decode_rsp_arith,
     _decode_shift,
     _decode_two_operand,
 )
@@ -63,6 +65,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
     _memory_handler_asm,
+    _mov_from_rsp_handler_asm,
     _movx_handler_asm,
     _movx_indexed_handler_asm,
     _op_handler_asm,
@@ -73,6 +76,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _push_handler_asm,
     _pushi_handler_asm,
     _riprel_handler_asm,
+    _rspadj_handler_asm,
     _shift_handler_asm,
 )
 
@@ -218,6 +222,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"pop_{item[2]}"
     if kind == "pushi":
         return "pushi"
+    if kind == "rspadj":
+        return f"rspadj_{item[1]}"
+    if kind == "movfromrsp":
+        return "movfromrsp"
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":
@@ -247,7 +255,14 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         op = decode_instruction(text)
         if op is not None:
             return ["op", op]
+        if kind in ("add", "sub"):
+            rsp_arith = _decode_rsp_arith(text)
+            if rsp_arith is not None:
+                return [*rsp_arith]
         if kind == "mov":
+            from_rsp = _decode_mov_from_rsp(text)
+            if from_rsp is not None:
+                return [*from_rsp]
             memory = _decode_memory_mov(text)
             if memory is not None:
                 return [*memory]
@@ -309,11 +324,12 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
     """Verify the region's virtual stack is balanced on every path.
 
     The VM force-restores the hardware rsp on exit, and the function's virtual
-    pushes/pops happen in a relocated scratch region, so a region is only safe if
-    every path reaches each terminator with the stack at its entry depth and no
-    ``pop`` ever underflows (which would read caller stack the VM never modelled).
-    A forward dataflow assigns a depth to each item; conflicting depths or a
-    non-zero depth at a terminator rejects the region (left native).
+    stack traffic happens in a relocated scratch region, so a region is only safe
+    if every path reaches each terminator with the stack at its entry depth and
+    never underflows (which would read caller stack the VM never modelled). A
+    forward dataflow assigns a byte depth to each item (push/pop move 8 bytes,
+    ``sub``/``add rsp,imm`` move imm); conflicting depths or a non-zero depth at a
+    terminator rejects the region (left native).
     """
     depth: list[int | None] = [None] * len(items)
     depth[0] = 0
@@ -322,19 +338,27 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
         i = work.pop()
         current = depth[i]
         assert current is not None  # only assigned indices enter the worklist
-        kind = items[i][0]
-        delta = 1 if kind in ("push", "pushi") else (-1 if kind == "pop" else 0)
+        item = items[i]
+        kind = item[0]
+        if kind in ("push", "pushi"):
+            delta = 8
+        elif kind == "pop":
+            delta = -8
+        elif kind == "rspadj":
+            delta = item[2] if item[1] == "sub" else -item[2]
+        else:
+            delta = 0
         if current + delta < 0:
-            return False  # pop underflow
+            return False  # stack underflow
         out = current + delta
         if kind == "exit":
             if current != 0:
                 return False  # unbalanced stack at a terminator
             continue
         if kind == "jmp":
-            successors = [items[i][1]]
+            successors = [item[1]]
         elif kind == "jcc":
-            successors = [i + 1, items[i][2]]
+            successors = [i + 1, item[2]]
         else:
             successors = [i + 1]
         for nxt in successors:
@@ -532,6 +556,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 2  # opcode + reg slot
     if kind == "pushi":
         return 9  # opcode + 8-byte immediate
+    if kind == "rspadj":
+        return 5  # opcode + 4-byte immediate
+    if kind == "movfromrsp":
+        return 2  # opcode + dst slot
     if kind == "incdec":
         return 2  # opcode + reg slot
     if kind == "movx":
@@ -611,6 +639,14 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             _, value, _width = item
             emit_opcode(_required_key(item))
             plain += pack_immediate(value, 64)
+        elif kind == "rspadj":
+            _, _mnemonic, value = item
+            emit_opcode(_required_key(item))
+            plain += pack_immediate(value, 32)
+        elif kind == "movfromrsp":
+            _, reg_slot = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
         elif kind in ("load", "store"):
             _, reg_slot, base_slot, disp, _width = item
             emit_opcode(_required_key(item))
@@ -793,6 +829,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_pop_handler_asm(key, rsp_off))
         elif handler_key == "pushi":
             lines.append(_pushi_handler_asm(key_qword, rsp_off))
+        elif handler_key.startswith("rspadj_"):
+            lines.append(_rspadj_handler_asm(handler_key, key_dword, rsp_off))
+        elif handler_key == "movfromrsp":
+            lines.append(_mov_from_rsp_handler_asm(key, rsp_off))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
