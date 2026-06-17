@@ -39,8 +39,10 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_incdec,
     _decode_lea,
     _decode_lea_indexed,
+    _decode_leave,
     _decode_memory_mov,
     _decode_mov_from_rsp,
+    _decode_mov_to_rsp,
     _decode_movx,
     _decode_op_mem,
     _decode_op_mem_indexed,
@@ -64,8 +66,10 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _lea_handler_asm,
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
+    _leave_handler_asm,
     _memory_handler_asm,
     _mov_from_rsp_handler_asm,
+    _mov_to_rsp_handler_asm,
     _movx_handler_asm,
     _movx_indexed_handler_asm,
     _op_handler_asm,
@@ -234,6 +238,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"rspadj_{item[1]}"
     if kind == "movfromrsp":
         return "movfromrsp"
+    if kind == "movtorsp":
+        return "movtorsp"
+    if kind == "leave":
+        return "leave"
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":
@@ -271,6 +279,9 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
             from_rsp = _decode_mov_from_rsp(text)
             if from_rsp is not None:
                 return [*from_rsp]
+            to_rsp = _decode_mov_to_rsp(text)
+            if to_rsp is not None:
+                return [*to_rsp]
             memory = _decode_memory_mov(text)
             if memory is not None:
                 return [*memory]
@@ -318,6 +329,9 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         push = _decode_push(text)
         return [*push] if push is not None else None
     if kind in ("pop", "rpop"):
+        leave = _decode_leave(text)
+        if leave is not None:
+            return [*leave]
         pop = _decode_pop(text)
         return [*pop] if pop is not None else None
     if kind == "jmp":
@@ -328,6 +342,38 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
     return None
 
 
+def _writes_register(item: tuple[Any, ...]) -> int | None:
+    """The logical register slot an item writes, or ``None`` if it writes no GP
+    register (a comparison, a memory store, a stack adjustment, or a branch).
+
+    Used by the stack-balance guard to invalidate a frame-pointer snapshot when
+    the snapshot register is overwritten before a ``mov rsp, reg`` consumes it.
+    """
+    kind = item[0]
+    if kind == "op":
+        op: VirtualizedOp = item[1]
+        return op.dst_index
+    if kind in (
+        "imul",
+        "imul3",
+        "pop",
+        "movfromrsp",
+        "leave",
+        "load",
+        "riprel_load",
+        "lea",
+        "learip",
+        "leaidx",
+        "leaidxnb",
+    ):
+        return int(item[1])
+    if kind in ("shift", "opmem", "opriprel", "opmemidx", "incdec"):
+        return int(item[2])
+    if kind in ("movx", "movxidx"):
+        return int(item[4])
+    return None
+
+
 def _stack_balanced(items: list[list[Any]]) -> bool:
     """Verify the region's virtual stack is balanced on every path.
 
@@ -335,32 +381,49 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
     stack traffic happens in a relocated scratch region, so a region is only safe
     if every path reaches each terminator with the stack at its entry depth and
     never underflows (which would read caller stack the VM never modelled). A
-    forward dataflow assigns a byte depth to each item (push/pop move 8 bytes,
-    ``sub``/``add rsp,imm`` move imm); conflicting depths or a non-zero depth at a
-    terminator rejects the region (left native).
+    forward dataflow tracks, per item, a byte depth and the frame-pointer
+    snapshot ``(register, depth)`` taken by ``mov reg, rsp``: push/pop move 8
+    bytes, ``add``/``sub rsp,imm`` move imm, and ``mov rsp,reg``/``leave`` restore
+    the depth captured when ``reg`` last copied rsp (rejecting if that register
+    was overwritten meanwhile). Conflicting depths, an underflow, or a non-zero
+    depth at a terminator rejects the region (left native).
     """
-    depth: list[int | None] = [None] * len(items)
-    depth[0] = 0
+    # Per item: (byte depth, frame-pointer snapshot (register, depth) or None).
+    state: list[tuple[int, tuple[int, int] | None] | None] = [None] * len(items)
+    state[0] = (0, None)
     work = [0]
     while work:
         i = work.pop()
-        current = depth[i]
+        current = state[i]
         assert current is not None  # only assigned indices enter the worklist
+        depth, snapshot = current
         item = items[i]
         kind = item[0]
         if kind in ("push", "pushi"):
-            delta = 8
+            out_depth = depth + 8
         elif kind == "pop":
-            delta = -8
+            out_depth = depth - 8
         elif kind == "rspadj":
-            delta = item[2] if item[1] == "sub" else -item[2]
+            out_depth = depth + (item[2] if item[1] == "sub" else -item[2])
+        elif kind == "movtorsp":
+            if snapshot is None or item[1] != snapshot[0]:
+                return False  # restoring rsp from a register with no live snapshot
+            out_depth = snapshot[1]
+        elif kind == "leave":
+            if snapshot is None or item[1] != snapshot[0]:
+                return False
+            out_depth = snapshot[1] - 8  # mov rsp,rbp then pop rbp
         else:
-            delta = 0
-        if current + delta < 0:
+            out_depth = depth
+        if out_depth < 0:
             return False  # stack underflow
-        out = current + delta
+        if kind == "movfromrsp":
+            out_snapshot = (int(item[1]), depth)
+        else:
+            written = _writes_register(tuple(item))
+            out_snapshot = None if (snapshot is not None and written == snapshot[0]) else snapshot
         if kind == "exit":
-            if current != 0:
+            if depth != 0:
                 return False  # unbalanced stack at a terminator
             continue
         if kind == "jmp":
@@ -372,11 +435,17 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
         for nxt in successors:
             if not 0 <= nxt < len(items):
                 return False
-            if depth[nxt] is None:
-                depth[nxt] = out
+            existing = state[nxt]
+            if existing is None:
+                state[nxt] = (out_depth, out_snapshot)
                 work.append(nxt)
-            elif depth[nxt] != out:
-                return False  # paths disagree on stack depth
+            else:
+                if existing[0] != out_depth:
+                    return False  # paths disagree on stack depth
+                merged_snapshot = existing[1] if existing[1] == out_snapshot else None
+                if merged_snapshot != existing[1]:
+                    state[nxt] = (existing[0], merged_snapshot)
+                    work.append(nxt)  # snapshot weakened; re-propagate
     return True
 
 
@@ -568,6 +637,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 5  # opcode + 4-byte immediate
     if kind == "movfromrsp":
         return 2  # opcode + dst slot
+    if kind in ("movtorsp", "leave"):
+        return 2  # opcode + reg slot
     if kind == "incdec":
         return 2  # opcode + reg slot
     if kind == "movx":
@@ -651,7 +722,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             _, _mnemonic, value = item
             emit_opcode(_required_key(item))
             plain += pack_immediate(value, 32)
-        elif kind == "movfromrsp":
+        elif kind in ("movfromrsp", "movtorsp", "leave"):
             _, reg_slot = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
@@ -844,6 +915,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_rspadj_handler_asm(handler_key, key_dword, rsp_off))
         elif handler_key == "movfromrsp":
             lines.append(_mov_from_rsp_handler_asm(key, rsp_off))
+        elif handler_key == "movtorsp":
+            lines.append(_mov_to_rsp_handler_asm(key, rsp_off))
+        elif handler_key == "leave":
+            lines.append(_leave_handler_asm(key, rsp_off))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):

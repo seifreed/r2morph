@@ -159,6 +159,31 @@ def _decode_mov_from_rsp(disasm: str) -> tuple[Any, ...] | None:
     return ("movfromrsp", reg[0])
 
 
+def _decode_mov_to_rsp(disasm: str) -> tuple[Any, ...] | None:
+    """Decode ``mov rsp, reg`` (frame teardown) into a VM item.
+
+    The source is a 64-bit GP register (typically the frame pointer rbp); the rsp
+    slot is set to its value, restoring the stack pointer to the saved frame.
+    """
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "mov" or "," not in parts[1]:
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    if left != "rsp":
+        return None
+    reg = _register_operand(right)
+    if reg is None or reg[1] != 64:
+        return None
+    return ("movtorsp", reg[0])
+
+
+def _decode_leave(disasm: str) -> tuple[Any, ...] | None:
+    """Decode ``leave`` (``mov rsp, rbp`` followed by ``pop rbp``) into a VM item."""
+    if disasm.strip().lower() != "leave":
+        return None
+    return ("leave", REGISTER_INDEX["rbp"])
+
+
 def _decode_pop(disasm: str) -> tuple[Any, ...] | None:
     """Decode ``pop reg`` (64-bit GP, never rsp) into a VM item."""
     parts = disasm.split(None, 1)

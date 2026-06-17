@@ -432,6 +432,49 @@ def test_three_operand_imul_virtualization_preserves_product(tmp_path: Path) -> 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_leave_epilogue_virtualization_preserves_frame(tmp_path: Path) -> None:
+    # The gcc-style `leave` epilogue (mov rsp,rbp; pop rbp) must restore rsp from
+    # the frame pointer and pop the saved rbp off the relocated stack; a snapshot
+    # or pop bug changes the returned exit code.
+    fixture = _DATASET / "elf_vm_leave_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_leave"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+def test_mov_rsp_epilogue_virtualization_preserves_frame(tmp_path: Path) -> None:
+    # The clang-style explicit `mov rsp, rbp; pop rbp` epilogue must restore the
+    # stack pointer from the frame-pointer snapshot tracked by the balance guard.
+    fixture = _DATASET / "elf_vm_movtorsp_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_movtorsp"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_frame_prologue_virtualization_preserves_local(tmp_path: Path) -> None:
     # A real prologue/epilogue (push rbp; mov rbp,rsp; sub rsp,N; [rbp-8] local;
     # add rsp,N; pop rbp; ret) must virtualize and return its frame-pointer local

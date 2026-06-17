@@ -423,6 +423,33 @@ def _mov_from_rsp_handler_asm(key: int, rsp_off: int) -> str:
     )
 
 
+def _mov_to_rsp_handler_asm(key: int, rsp_off: int) -> str:
+    """Assembly body for ``mov rsp, reg`` (restore the relocated rsp from a slot)."""
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        "  mov rax, qword ptr [rsp+r8*8]\n"
+        f"  mov qword ptr [rsp+{rsp_off}], rax\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
+def _leave_handler_asm(key: int, rsp_off: int) -> str:
+    """Assembly body for ``leave`` (``mov rsp, rbp`` then ``pop rbp``).
+
+    The rbp slot holds the saved frame pointer; rsp is set to it, then the saved
+    rbp is popped off the relocated stack and rsp incremented. No flags.
+    """
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        "  mov rax, qword ptr [rsp+r8*8]\n"
+        f"  mov qword ptr [rsp+{rsp_off}], rax\n"
+        "  mov r9, rax\n  mov rax, qword ptr [r9]\n  add r9, 8\n"
+        f"  mov qword ptr [rsp+{rsp_off}], r9\n"
+        "  mov qword ptr [rsp+r8*8], rax\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
 def _pushi_handler_asm(key_qword: str, rsp_off: int) -> str:
     """Assembly body for ``push imm`` (sign-extended 64-bit immediate)."""
     return (
