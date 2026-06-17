@@ -432,6 +432,28 @@ def test_three_operand_imul_virtualization_preserves_product(tmp_path: Path) -> 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_no_base_indexed_lea_virtualization_preserves_address(tmp_path: Path) -> None:
+    # No-base scaled-index lea (lea reg, [index*scale + disp]) must compute the
+    # scaled address without a base register; both [idx*8] and [idx*4+disp] drive
+    # branches, so a wrong scale or displacement changes the exit code (42 vs 99).
+    fixture = _DATASET / "elf_vm_leaidxnb_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_leaidxnb"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_thirty_two_bit_lea_virtualization_truncates_address(tmp_path: Path) -> None:
     # A plain and a scaled-index lea with a 32-bit destination must truncate the
     # (>32-bit) base address to its low 32 bits and zero-extend; shifting the

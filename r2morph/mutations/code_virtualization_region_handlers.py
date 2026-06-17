@@ -241,6 +241,24 @@ def _lea_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + _lea_store_asm(width, advance)
 
 
+def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``lea reg, [index*scale + disp]`` (no base, 32- or 64-bit dst).
+
+    Like the indexed prologue but without the base add: the address is
+    ``index*scale + disp``. The item has no base-slot byte, so it is one byte
+    shorter (size 8). lea sets no flags; a 32-bit destination truncates.
+    """
+    width = int(handler_key.split("_")[1])
+    body = (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r11d, byte ptr [rsi+2]\n  xor r11b, {key}\n"
+        f"  movzx ecx, byte ptr [rsi+3]\n  xor cl, {key}\n"
+        f"  mov eax, dword ptr [rsi+4]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
+        "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n  add r10, rax\n"
+    )
+    return body + _lea_store_asm(width, 8)
+
+
 def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     """Assembly body for ``<op> reg, [base + index*scale + disp]`` (reg is source
     and destination; memory is the scaled-index source).

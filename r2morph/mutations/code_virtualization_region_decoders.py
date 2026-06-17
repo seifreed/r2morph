@@ -414,14 +414,16 @@ def _decode_op_memdst(text: str, mnemonic: str, insn_addr: int, insn_size: int) 
 _SCALE_TO_SHIFT = {1: 0, 2: 1, 4: 2, 8: 3}
 
 
-def _parse_indexed_operand(text: str) -> tuple[int, int, int, int] | None:
+def _parse_indexed_operand(text: str, base_optional: bool = False) -> tuple[int, int, int, int] | None:
     """Parse ``[base + index*scale + disp]`` into (base slot, index slot, scale
     shift, displacement).
 
-    Both a base and a scaled index are required (the no-base and no-index forms
-    are handled elsewhere or left native). The scale is encoded as its log2 so
-    the interpreter can apply it with a shift. rip-relative and segment forms
-    yield ``None``.
+    A scaled index is always required. A base is required unless
+    ``base_optional`` is set, in which case the no-base form ``[index*scale +
+    disp]`` is accepted and the base slot is returned as ``-1`` (the caller
+    routes that to a no-base handler). The scale is encoded as its log2 so the
+    interpreter can apply it with a shift. rip-relative and segment forms yield
+    ``None``.
     """
     text = text.strip().lower()
     head = text.split(None, 1)
@@ -469,8 +471,10 @@ def _parse_indexed_operand(text: str) -> tuple[int, int, int, int] | None:
                 disp += int(token, 0)
             except ValueError:
                 return None
-    if base is None or index is None or shift is None:
+    if index is None or shift is None:
         return None
+    if base is None:
+        return (-1, index, shift, disp) if base_optional else None
     return (base, index, shift, disp)
 
 
@@ -508,10 +512,12 @@ def _decode_lea_indexed(text: str) -> tuple[Any, ...] | None:
     reg = _register_operand(left.lower())
     if reg is None:
         return None
-    parsed = _parse_indexed_operand(right)
+    parsed = _parse_indexed_operand(right, base_optional=True)
     if parsed is None:
         return None
     base_slot, index_slot, shift, disp = parsed
+    if base_slot == -1:
+        return ("leaidxnb", reg[0], index_slot, shift, disp, reg[1])
     return ("leaidx", reg[0], base_slot, index_slot, shift, disp, reg[1])
 
 

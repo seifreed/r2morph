@@ -58,6 +58,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _incdec_handler_asm,
     _lea_handler_asm,
     _lea_indexed_handler_asm,
+    _lea_indexed_nobase_handler_asm,
     _memory_handler_asm,
     _movx_handler_asm,
     _movx_indexed_handler_asm,
@@ -166,6 +167,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"learip_{item[3]}"
     if kind == "leaidx":
         return f"leaidx_{item[6]}"
+    if kind == "leaidxnb":
+        return f"leaidxnb_{item[5]}"
     if kind == "opmemidx":
         return f"opmemidx_{item[1]}_{item[7]}"
     if kind == "incdec":
@@ -459,6 +462,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("leaidx", "opmemidx"):
         return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
+    if kind == "leaidxnb":
+        return 8  # opcode + reg + index slot + scale shift + 4-byte disp (no base)
     if kind == "incdec":
         return 2  # opcode + reg slot
     if kind == "movx":
@@ -582,6 +587,13 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain.append(slot_of[index_slot])
             plain.append(shift)
             plain += struct.pack("<i", disp)
+        elif kind == "leaidxnb":
+            _, reg_slot, index_slot, shift, disp, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[index_slot])
+            plain.append(shift)
+            plain += struct.pack("<i", disp)
         elif kind == "opmemidx":
             _, _mnemonic, reg_slot, base_slot, index_slot, shift, disp, _width = item
             emit_opcode(_required_key(item))
@@ -702,6 +714,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_op_memdst_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("opmem_", "opriprel_")):
             lines.append(_op_memory_handler_asm(handler_key, key, key_dword))
+        elif handler_key.startswith("leaidxnb_"):
+            lines.append(_lea_indexed_nobase_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("leaidx_"):
             lines.append(_lea_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("lea_", "learip_")):
