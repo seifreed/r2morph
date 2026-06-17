@@ -82,6 +82,35 @@ def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
     assert _emulate_exit_code(FIXTURE) == _emulate_exit_code(mutated) == 45
 
 
+def _virtualize(src: Path, dst: Path) -> bytes:
+    """Virtualize ``src`` into ``dst`` and return the appended VM region bytes."""
+    shutil.copy(src, dst)
+    original_size = src.stat().st_size
+    binary = Binary(str(dst), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    return dst.read_bytes()[original_size:]
+
+
+def test_virtualization_is_polymorphic_yet_semantically_stable(tmp_path: Path) -> None:
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    first_region = _virtualize(FIXTURE, tmp_path / "first")
+    second_region = _virtualize(FIXTURE, tmp_path / "second")
+
+    # Two builds of the same input share no static VM signature (randomized
+    # opcodes + encrypted bytecode) yet both preserve the exit code.
+    assert first_region and second_region
+    assert first_region != second_region
+    assert _emulate_exit_code(tmp_path / "first") == _emulate_exit_code(tmp_path / "second") == 45
+
+
 def test_decode_instruction_rejects_uneproducible_operands() -> None:
     assert decode_instruction("mov eax, 1") is None  # 32-bit width not modeled
     assert decode_instruction("mov rsp, rax") is None  # interpreter owns rsp

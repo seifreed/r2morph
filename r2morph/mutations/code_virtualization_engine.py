@@ -30,6 +30,7 @@ the function untouched. Zero virtualizations always beats a corrupt one.
 from __future__ import annotations
 
 import logging
+import random
 import struct
 
 logger = logging.getLogger(__name__)
@@ -58,29 +59,57 @@ RSP_INDEX = REGISTER_INDEX["rsp"]
 
 SUPPORTED_MNEMONICS: frozenset[str] = frozenset({"mov", "add", "sub", "xor", "and", "or"})
 
-# VM opcodes. Register/immediate variants are distinct so the dispatcher
-# never has to inspect operand encoding at runtime.
-_OPCODES: dict[tuple[str, bool], int] = {
-    ("mov", True): 0x01,
-    ("mov", False): 0x02,
-    ("add", True): 0x03,
-    ("add", False): 0x04,
-    ("sub", True): 0x05,
-    ("sub", False): 0x06,
-    ("xor", True): 0x07,
-    ("xor", False): 0x08,
-    ("and", True): 0x09,
-    ("and", False): 0x0A,
-    ("or", True): 0x0B,
-    ("or", False): 0x0C,
-}
-_VM_EXIT = 0xFF
+# Canonical operation keys. Register/immediate variants are distinct so the
+# dispatcher never has to inspect operand encoding at runtime. The concrete
+# opcode byte for each key is assigned per instance (see VMScheme), so two
+# virtualized builds share no fixed opcode table to fingerprint.
+_OP_KEYS: tuple[tuple[str, bool], ...] = (
+    ("mov", True),
+    ("mov", False),
+    ("add", True),
+    ("add", False),
+    ("sub", True),
+    ("sub", False),
+    ("xor", True),
+    ("xor", False),
+    ("and", True),
+    ("and", False),
+    ("or", True),
+    ("or", False),
+)
+_QWORD_BROADCAST = 0x0101010101010101
 
 # Private stack frame the interpreter carves below the caller's rsp. The
 # 16 context slots occupy [0x00, 0x80); the System V red zone
 # [original_rsp-128, original_rsp) maps to [0x80, 0x100) and is left
 # untouched, so leaf-function red-zone data survives the detour.
 _FRAME_SIZE = 0x100
+
+
+class VMScheme:
+    """Per-instance randomization of the VM, for polymorphism and opacity.
+
+    Each virtualized run is generated with a fresh scheme: the opcode byte
+    assigned to every operation is randomized, and the bytecode stream is
+    XOR-encrypted with a per-instance key the interpreter decrypts on the
+    fly. Two builds of the same code therefore share neither a fixed opcode
+    table nor a readable bytecode blob, so a static signature of one does not
+    match another.
+    """
+
+    __slots__ = ("opcode_values", "exit_opcode", "xor_key")
+
+    def __init__(self, opcode_values: dict[tuple[str, bool], int], exit_opcode: int, xor_key: int) -> None:
+        self.opcode_values = opcode_values
+        self.exit_opcode = exit_opcode
+        self.xor_key = xor_key
+
+
+def build_vm_scheme(rng: random.Random) -> VMScheme:
+    """Draw a fresh randomized VM scheme from ``rng`` (seedable, replayable)."""
+    distinct = rng.sample(range(1, 256), len(_OP_KEYS) + 1)
+    opcode_values = {key: distinct[index] for index, key in enumerate(_OP_KEYS)}
+    return VMScheme(opcode_values, distinct[-1], rng.randrange(1, 256))
 
 
 class VirtualizedOp:
@@ -151,27 +180,37 @@ def decode_instruction(disasm: str) -> VirtualizedOp | None:
     return VirtualizedOp(mnemonic, REGISTER_INDEX[dst], immediate, is_immediate=True)
 
 
-def encode_bytecode(ops: list[VirtualizedOp]) -> bytes:
-    """Serialize decoded ops to VM bytecode terminated by VM_EXIT."""
-    stream = bytearray()
+def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme) -> bytes:
+    """Serialize ops to bytecode (per-scheme opcodes), XOR-encrypted by key."""
+    plain = bytearray()
     for op in ops:
-        stream.append(_OPCODES[(op.mnemonic, op.is_immediate)])
-        stream.append(op.dst_index)
+        plain.append(scheme.opcode_values[(op.mnemonic, op.is_immediate)])
+        plain.append(op.dst_index)
         if op.is_immediate:
-            stream += struct.pack("<q", op.value)
+            plain += struct.pack("<q", op.value)
         else:
-            stream.append(op.value)
-    stream.append(_VM_EXIT)
-    return bytes(stream)
+            plain.append(op.value)
+    plain.append(scheme.exit_opcode)
+    key = scheme.xor_key
+    return bytes(byte ^ key for byte in plain)
 
 
-def _interpreter_asm(continuation_vaddr: int) -> str:
-    """Generate the interpreter assembly for one virtualized run."""
+def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
+    """Generate the interpreter assembly for one virtualized run.
+
+    Every byte fetched from the bytecode is XOR-decrypted with the scheme key
+    before use; opcodes are compared against the scheme's randomized values.
+    """
+    key = scheme.xor_key
+    key_qword = (key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF
 
     def handler_ri(operation: str) -> str:
         return (
             "  movzx r8d, byte ptr [rsi+1]\n"
+            f"  xor r8b, {key}\n"
             "  mov rax, qword ptr [rsi+2]\n"
+            f"  mov r10, {hex(key_qword)}\n"
+            "  xor rax, r10\n"
             f"  {operation} qword ptr [rsp + r8*8], rax\n"
             "  add rsi, 10\n"
             "  jmp vm_dispatch\n"
@@ -180,7 +219,9 @@ def _interpreter_asm(continuation_vaddr: int) -> str:
     def handler_rr(operation: str) -> str:
         return (
             "  movzx r8d, byte ptr [rsi+1]\n"
+            f"  xor r8b, {key}\n"
             "  movzx r9d, byte ptr [rsi+2]\n"
+            f"  xor r9b, {key}\n"
             "  mov rax, qword ptr [rsp + r9*8]\n"
             f"  {operation} qword ptr [rsp + r8*8], rax\n"
             "  add rsi, 3\n"
@@ -197,6 +238,7 @@ def _interpreter_asm(continuation_vaddr: int) -> str:
         "  lea rsi, [rip + bytecode]\n"
         "vm_dispatch:\n"
         "  movzx eax, byte ptr [rsi]\n"
+        f"  xor al, {key}\n"
     )
 
     handler_label = {
@@ -213,8 +255,8 @@ def _interpreter_asm(continuation_vaddr: int) -> str:
         ("or", True): "h_or_ri",
         ("or", False): "h_or_rr",
     }
-    for key, label in handler_label.items():
-        lines.append(f"  cmp al, {_OPCODES[key]}\n  je {label}\n")
+    for key_pair, label in handler_label.items():
+        lines.append(f"  cmp al, {scheme.opcode_values[key_pair]}\n  je {label}\n")
     lines.append("  jmp vm_exit\n")
 
     for (mnemonic, is_imm), label in handler_label.items():
@@ -229,9 +271,9 @@ def _interpreter_asm(continuation_vaddr: int) -> str:
     return "".join(lines)
 
 
-def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr: int) -> bytes | None:
+def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr: int, scheme: VMScheme) -> bytes | None:
     """
-    Assemble the interpreter at ``cave_vaddr`` and append the bytecode.
+    Assemble the interpreter at ``cave_vaddr`` and append the encrypted bytecode.
 
     The interpreter's ``lea rsi, [rip + bytecode]`` resolves to the byte
     immediately after the assembled code, where the bytecode is appended.
@@ -244,7 +286,7 @@ def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr:
         logger.warning("keystone unavailable; cannot virtualize")
         return None
 
-    asm = _interpreter_asm(continuation_vaddr)
+    asm = _interpreter_asm(continuation_vaddr, scheme)
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
         encoding, _ = engine.asm(asm, cave_vaddr)
@@ -255,4 +297,4 @@ def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr:
         logger.debug("VM interpreter assembly produced no bytes")
         return None
 
-    return bytes(encoding) + encode_bytecode(ops)
+    return bytes(encoding) + encode_bytecode(ops, scheme)

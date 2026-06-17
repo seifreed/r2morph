@@ -12,6 +12,8 @@ Tests for:
 - Anti-Disassembly (anti_disassembly.py)
 """
 
+import random
+
 from r2morph.mutations.anti_disassembly import (
     FALSE_BRANCH_X64,
     JUMP_MIDDLE_X64,
@@ -45,6 +47,7 @@ from r2morph.mutations.code_mobility import (
 )
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_engine import (
+    build_vm_scheme,
     decode_instruction,
     encode_bytecode,
 )
@@ -242,10 +245,17 @@ class TestCodeVirtualization:
     def test_decode_instruction_rejects_memory_operand(self):
         assert decode_instruction("mov rax, qword ptr [rbx]") is None
 
-    def test_encode_bytecode_terminates_with_exit(self):
+    def test_encode_bytecode_is_encrypted_and_decrypts_to_exit(self):
         ops = [decode_instruction("mov rax, 0x3c"), decode_instruction("xor rdi, rdi")]
         assert all(ops)
-        assert encode_bytecode(ops)[-1] == 0xFF
+        scheme = build_vm_scheme(random.Random(1))
+        bytecode = encode_bytecode(ops, scheme)
+        assert bytecode[-1] ^ scheme.xor_key == scheme.exit_opcode
+
+    def test_build_vm_scheme_is_polymorphic(self):
+        first = build_vm_scheme(random.Random(1))
+        second = build_vm_scheme(random.Random(2))
+        assert (first.opcode_values, first.xor_key) != (second.opcode_values, second.xor_key)
 
     def test_code_virtualization_pass_init(self):
         p = CodeVirtualizationPass({"probability": 0.5})

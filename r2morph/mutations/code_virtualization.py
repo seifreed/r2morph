@@ -30,6 +30,7 @@ from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
     build_vm_blob,
+    build_vm_scheme,
     decode_instruction,
 )
 from r2morph.mutations.code_virtualization_inject import inject_blob, predict_blob_vaddr
@@ -117,7 +118,8 @@ class CodeVirtualizationPass(MutationPass):
         if blob_vaddr is None:
             return None
 
-        blob = build_vm_blob(run.ops, blob_vaddr, run.continuation)
+        scheme = build_vm_scheme(random.Random(random.getrandbits(64)))
+        blob = build_vm_blob(run.ops, blob_vaddr, run.continuation, scheme)
         if blob is None:
             return None
 
