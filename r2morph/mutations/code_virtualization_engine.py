@@ -237,14 +237,23 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme) -> bytes:
     """
     slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
     plain = bytearray()
+
+    def emit_opcode(opcode: int) -> None:
+        # Mask the opcode byte with its own stream position (the dispatcher
+        # subtracts it back out) so the same operation does not encode to the
+        # same byte twice and a single-byte XOR of the blob cannot expose the
+        # opcode stream. The exit marker is masked the same way and still decodes
+        # to a value >= N, so it leaves through the dispatcher's bounds guard.
+        plain.append(opcode ^ (len(plain) & 0xFF))
+
     for op in ops:
-        plain.append(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
+        emit_opcode(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
         plain.append(slot_of[op.dst_index])
         if op.is_immediate:
             plain += struct.pack("<q" if op.width == 64 else "<i", op.value)
         else:
             plain.append(slot_of[op.value])
-    plain.append(scheme.exit_opcode)
+    emit_opcode(scheme.exit_opcode)
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
 
@@ -299,15 +308,18 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     lines.append(
         f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
         f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
-        "  lea rsi, [rip + bytecode]\n"
+        "  lea rsi, [rip + bytecode]\n  mov r15, rsi\n"
         # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
         # base-independent offset table (each entry a 32-bit signed offset from
         # vm_table to its handler), so there is no comparison ladder to match and
         # the jump survives rebasing/ASLR like the rest of the blob's rel32 jumps.
-        # An opcode >= N (the exit marker) leaves through the bounds guard.
+        # An opcode >= N (the exit marker) leaves through the bounds guard. r15
+        # holds the bytecode base; r13/r14 are free scratch between handlers.
         "vm_dispatch:\n"
+        # Undo the opcode byte's position mask (encoder XORed it with rsi-base).
+        "  mov r13, rsi\n  sub r13, r15\n"
         "  movzx eax, byte ptr [rsi]\n"
-        f"  xor al, {key}\n"
+        f"  xor al, {key}\n  xor al, r13b\n"
         f"  cmp al, {len(_OP_KEYS)}\n  jae vm_exit\n"
         "  lea r14, [rip + vm_table]\n  movsxd rax, dword ptr [r14 + rax*4]\n  add rax, r14\n  jmp rax\n"
     )
