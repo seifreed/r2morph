@@ -404,6 +404,38 @@ def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> 
     return None
 
 
+def _decode_op_memdst(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
+    """Decode ``<op> [base+disp], reg`` / ``<op> [rip+disp], reg`` (memory is the
+    read-modify-write destination, the register is the source).
+
+    Returns ``("opmemdst", mnemonic, reg_slot, base_slot, disp, width)`` or
+    ``("opmemdstrip", mnemonic, reg_slot, target, width)``, or ``None``.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != mnemonic or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if "[" not in left or "[" in right:
+        return None
+    reg = _register_operand(right.lower())
+    if reg is None:
+        return None
+    reg_slot, reg_width = reg
+    mem = _parse_mem_operand(left)
+    if mem is not None:
+        base_slot, disp, mem_width = mem
+        if mem_width is not None and mem_width != reg_width:
+            return None
+        return ("opmemdst", mnemonic, reg_slot, base_slot, disp, reg_width)
+    riprel = _parse_riprel_operand(left, insn_addr, insn_size)
+    if riprel is not None:
+        target, mem_width = riprel
+        if mem_width is not None and mem_width != reg_width:
+            return None
+        return ("opmemdstrip", mnemonic, reg_slot, target, reg_width)
+    return None
+
+
 def _decode_lea(text: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
     """Decode ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]`` (64-bit dst).
 
@@ -449,6 +481,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"opmem_{item[1]}_{item[5]}"
     if kind == "opriprel":
         return f"opriprel_{item[1]}_{item[4]}"
+    if kind == "opmemdst":
+        return f"opmemdst_{item[1]}_{item[5]}"
+    if kind == "opmemdstrip":
+        return f"opmemdstrip_{item[1]}_{item[4]}"
     if kind == "op":
         op: VirtualizedOp = item[1]
         return f"op_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
@@ -496,7 +532,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
             riprel = _decode_riprel_mov(text, insn.get("addr", 0), insn.get("size", 0))
             return [*riprel] if riprel is not None else None
         op_mem = _decode_op_mem(text, kind, insn.get("addr", 0), insn.get("size", 0))
-        return [*op_mem] if op_mem is not None else None
+        if op_mem is not None:
+            return [*op_mem]
+        op_memdst = _decode_op_memdst(text, kind, insn.get("addr", 0), insn.get("size", 0))
+        return [*op_memdst] if op_memdst is not None else None
     if kind == "cmp":
         compare = _decode_two_operand(text, "cmp")
         if compare is not None:
@@ -690,9 +729,9 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
-    if kind in ("cmpmem", "opmem", "lea"):
+    if kind in ("cmpmem", "opmem", "lea", "opmemdst"):
         return 7  # opcode + reg slot + base slot + 4-byte displacement
-    if kind in ("cmpriprel", "opriprel", "learip"):
+    if kind in ("cmpriprel", "opriprel", "learip", "opmemdstrip"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("jmp", "jcc"):
         return 5
@@ -794,6 +833,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain += struct.pack("<i", disp)
         elif kind == "learip":
             _, reg_slot, target = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain += struct.pack("<i", target - bytecode_base)
+        elif kind == "opmemdst":
+            _, _mnemonic, reg_slot, base_slot, disp, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain += struct.pack("<i", disp)
+        elif kind == "opmemdstrip":
+            _, _mnemonic, reg_slot, target, _width = item
             emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot])
             plain += struct.pack("<i", target - bytecode_base)
@@ -919,6 +969,25 @@ def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
         body += "  mov r9, qword ptr [rsp+r8*8]\n  cmp r9, qword ptr [r10]\n"
     else:
         body += "  mov r9d, dword ptr [rsp+r8*8]\n  cmp r9d, dword ptr [r10]\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for ``<op> [mem], reg`` (memory is the read-modify-write
+    destination, the register is the source).
+
+    The address is computed with the shared prologue, the register value is read
+    from its slot, and the real arithmetic is applied directly against memory
+    (which both reads and writes it), capturing the flags.
+    """
+    parts = handler_key.split("_")
+    riprel = parts[0] == "opmemdstrip"
+    mnemonic, width = parts[1], int(parts[2])
+    body, advance = _mem_address_asm(riprel, key, key_dword)
+    if width == 64:
+        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} qword ptr [r10], r9\n"
+    else:
+        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} dword ptr [r10], r9d\n"
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -1065,6 +1134,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
             lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword))
+        elif handler_key.startswith(("opmemdst_", "opmemdstrip_")):
+            lines.append(_op_memdst_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("opmem_", "opriprel_")):
             lines.append(_op_memory_handler_asm(handler_key, key, key_dword))
         elif handler_key in ("lea", "learip"):
