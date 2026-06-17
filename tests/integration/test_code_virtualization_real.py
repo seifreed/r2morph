@@ -388,6 +388,28 @@ def test_indexed_memory_arithmetic_virtualization_preserves_exit_code(tmp_path: 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_incdec_virtualization_preserves_carry_flag(tmp_path: Path) -> None:
+    # A compare sets the carry flag, then inc must preserve it (unlike add by
+    # one) so the following branch on carry is taken; the VM must reload the
+    # program's flags before the real inc (exit 42, a clobbered CF would exit 99).
+    fixture = _DATASET / "elf_vm_incdec_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_incdec"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def _text_range(path: Path) -> tuple[int, int, int]:
     """Return (entry_file_offset, exit_syscall_offset, vaddr_base) for the .text run."""
     raw = path.read_bytes()

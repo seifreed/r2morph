@@ -405,6 +405,25 @@ def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> 
     return None
 
 
+def _decode_incdec(text: str) -> tuple[Any, ...] | None:
+    """Decode ``inc reg`` / ``dec reg`` (register operand).
+
+    r2 reports inc/dec under the add/sub types, so this is tried in the
+    arithmetic path. inc/dec preserve CF (unlike add/sub by one), so the handler
+    runs the real instruction. Returns ``("incdec", mnemonic, reg_slot, width)``.
+    """
+    parts = text.split()
+    if len(parts) != 2:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in ("inc", "dec") or "[" in parts[1]:
+        return None
+    reg = _register_operand(parts[1].lower())
+    if reg is None:
+        return None
+    return ("incdec", mnemonic, reg[0], reg[1])
+
+
 def _decode_op_memdst(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:
     """Decode ``<op> [base+disp], reg`` / ``<op> [rip+disp], reg`` (memory is the
     read-modify-write destination, the register is the source).
@@ -574,6 +593,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "leaidx"
     if kind == "opmemidx":
         return f"opmemidx_{item[1]}_{item[7]}"
+    if kind == "incdec":
+        return f"incdec_{item[1]}_{item[3]}"
     if kind in ("load", "store"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
@@ -636,6 +657,9 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
                 return [*memory]
             riprel = _decode_riprel_mov(text, insn.get("addr", 0), insn.get("size", 0))
             return [*riprel] if riprel is not None else None
+        incdec = _decode_incdec(text)
+        if incdec is not None:
+            return [*incdec]
         op_mem = _decode_op_mem(text, kind, insn.get("addr", 0), insn.get("size", 0))
         if op_mem is not None:
             return [*op_mem]
@@ -846,6 +870,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("leaidx", "opmemidx"):
         return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
+    if kind == "incdec":
+        return 2  # opcode + reg slot
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
@@ -965,6 +991,10 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int) -> b
             plain.append(slot_of[index_slot])
             plain.append(shift)
             plain += struct.pack("<i", disp)
+        elif kind == "incdec":
+            _, _mnemonic, reg_slot, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
             emit_opcode(_required_key(item))
@@ -1118,6 +1148,26 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     else:
         body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} dword ptr [r10], r9d\n"
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _incdec_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for ``inc reg`` / ``dec reg``.
+
+    The real inc/dec is applied to the register slot so the carry flag is
+    preserved (inc/dec leave CF untouched, unlike add/sub by one), and the
+    remaining flags are captured. A 32-bit form zero-extends.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    # Reload the program's captured flags so inc/dec preserves the program's CF
+    # (the interpreter's own carry flag is unrelated), then run the real op.
+    body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
+    if width == 64:
+        body += f"  {mnemonic} qword ptr [rsp+r8*8]\n"
+    else:
+        body += f"  mov eax, dword ptr [rsp+r8*8]\n  {mnemonic} eax\n  mov qword ptr [rsp+r8*8], rax\n"
+    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 2\n  jmp vm_dispatch\n"
 
 
 def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
@@ -1320,6 +1370,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_lea_indexed_handler_asm(key, key_dword))
         elif handler_key.startswith("opmemidx_"):
             lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword))
+        elif handler_key.startswith("incdec_"):
+            lines.append(_incdec_handler_asm(handler_key, key))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("load_", "store_")):
