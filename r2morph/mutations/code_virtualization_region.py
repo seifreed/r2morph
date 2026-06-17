@@ -133,15 +133,23 @@ class RegionScheme:
     slot indices in the bytecode reveal no register.
     """
 
-    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm")
+    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key")
 
     def __init__(
-        self, dup: dict[str, tuple[int, ...]], xor_key: int, junk_seed: int, slot_perm: tuple[int, ...]
+        self,
+        dup: dict[str, tuple[int, ...]],
+        xor_key: int,
+        junk_seed: int,
+        slot_perm: tuple[int, ...],
+        table_key: int,
     ) -> None:
         self.dup = dup
         self.xor_key = xor_key
         self.junk_seed = junk_seed
         self.slot_perm = slot_perm
+        # 32-bit key the dispatch table offsets are XOR-encrypted with, so the
+        # handler addresses are not a plaintext jump table for a devirtualizer.
+        self.table_key = table_key
 
 
 class Region:
@@ -465,7 +473,7 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
         dup[key] = tuple(indices[cursor : cursor + count])
         cursor += count
     slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
-    return RegionScheme(dup, rng.randrange(1, 256), rng.randrange(1 << 31), slot_perm)
+    return RegionScheme(dup, rng.randrange(1, 256), rng.randrange(1 << 31), slot_perm, rng.randrange(1, 1 << 32))
 
 
 # Semantically-neutral instructions used as per-instance junk. They are emitted
@@ -792,8 +800,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  cmp al, {sum(len(indices) for indices in scheme.dup.values())}\n  jae vm_exit\n"
         # Base-independent indirect dispatch: each table entry is a 32-bit signed
         # offset from vm_table to its handler, so the jump survives rebasing/ASLR
-        # exactly like the rel32 jumps the rest of the blob relies on.
-        "  lea r14, [rip+vm_table]\n  movsxd rax, dword ptr [r14+rax*4]\n  add rax, r14\n  jmp rax\n"
+        # exactly like the rel32 jumps the rest of the blob relies on. The stored
+        # offsets are XOR-encrypted, so the table is not a plaintext handler map a
+        # disassembler can recover as a switch; the dispatch decrypts each entry.
+        f"  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n  xor eax, {hex(scheme.table_key)}\n"
+        "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
     )
 
     reload_seq = "".join(
@@ -901,14 +912,26 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         return None
     if not encoding:
         return None
+    # The dispatch table (``total`` 32-bit offsets) is the tail of the assembled
+    # interpreter; XOR-encrypt each entry in place so the handler addresses are
+    # not a plaintext jump table. The dispatch decrypts them at runtime with the
+    # same key, and keystone cannot XOR a label difference it computes itself, so
+    # the encryption happens here on the assembled bytes.
+    data = bytearray(encoding)
+    total = sum(len(indices) for indices in scheme.dup.values())
+    table_start = len(data) - total * 4
+    for entry_index in range(total):
+        offset = table_start + entry_index * 4
+        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ scheme.table_key
+        data[offset : offset + 4] = encrypted.to_bytes(4, "little")
     # The bytecode is appended right after the interpreter, so its base is the
     # cave plus the interpreter's assembled length; rip-relative targets are
     # encoded relative to it. A target too far to express as a signed 32-bit
     # offset leaves the function native.
-    bytecode_base = cave_vaddr + len(encoding)
+    bytecode_base = cave_vaddr + len(data)
     try:
         bytecode = encode_region(region, scheme, bytecode_base)
     except struct.error:
         logger.debug("rip-relative target out of 32-bit range; leaving function native")
         return None
-    return bytes(encoding) + bytecode
+    return bytes(data) + bytecode
