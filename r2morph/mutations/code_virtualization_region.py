@@ -199,8 +199,84 @@ def _decode_imul(disasm: str) -> tuple[int, int, int] | None:
     return (dst[0], src[0], dst[1])
 
 
+_MEM_DISP_BOUND = 1 << 31  # displacement is encoded as a signed 32-bit value
+
+
+def _parse_mem_operand(text: str) -> tuple[int, int, int | None] | None:
+    """Parse ``[base+disp]`` into (base slot, displacement, width or None).
+
+    Only a single 64-bit base register (any GP register, including rsp) plus an
+    optional displacement is accepted. An index, scale, rip-relative form or
+    segment override yields ``None`` - the run is then left native.
+    """
+    text = text.strip().lower()
+    width: int | None = None
+    head = text.split(None, 1)
+    if head and head[0] in ("qword", "dword", "word", "byte", "xmmword", "tbyte"):
+        if head[0] == "qword":
+            width = 64
+        elif head[0] == "dword":
+            width = 32
+        else:
+            return None  # byte/word/xmmword widths are out of scope
+        text = head[1].strip() if len(head) > 1 else ""
+    rest = text.split(None, 1)
+    if rest and rest[0] == "ptr":
+        text = rest[1].strip() if len(rest) > 1 else ""
+    if not (text.startswith("[") and text.endswith("]")):
+        return None
+    inner = text[1:-1].strip()
+    if any(marker in inner for marker in ("*", "rip", ":")):
+        return None  # index/scale, rip-relative, or segment override
+    base, disp = inner, 0
+    for sign, scale in (("+", 1), ("-", -1)):
+        if sign in inner:
+            left, right = inner.split(sign, 1)
+            base = left.strip()
+            try:
+                disp = scale * int(right.strip(), 0)
+            except ValueError:
+                return None
+            break
+    base_slot = REGISTER_INDEX.get(base)
+    if base_slot is None or not -_MEM_DISP_BOUND <= disp < _MEM_DISP_BOUND:
+        return None
+    return (base_slot, disp, width)
+
+
+def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
+    """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
+
+    Returns ``(kind, reg_slot, base_slot, disp, width)`` where ``kind`` is
+    ``"load"`` or ``"store"``, or ``None`` for anything else (two memory
+    operands, a partial-width access, a non-GP register, etc.).
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "mov" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None  # register-to-register or memory-to-memory are not loads/stores
+    if left_mem:
+        kind, mem_text, reg_text = "store", left, right
+    else:
+        kind, mem_text, reg_text = "load", right, left
+    mem = _parse_mem_operand(mem_text)
+    reg = _register_operand(reg_text.lower())
+    if mem is None or reg is None:
+        return None
+    base_slot, disp, mem_width = mem
+    reg_slot, reg_width = reg
+    if mem_width is not None and mem_width != reg_width:
+        return None
+    return (kind, reg_slot, base_slot, disp, reg_width)
+
+
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind = item[0]
+    if kind in ("load", "store"):
+        return f"{kind}_{item[4]}"
     if kind == "op":
         op: VirtualizedOp = item[1]
         return f"op_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
@@ -239,7 +315,12 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         return ["nop"]
     if kind in ("mov", "add", "sub", "xor", "and", "or"):
         op = decode_instruction(text)
-        return ["op", op] if op is not None else None
+        if op is not None:
+            return ["op", op]
+        if kind == "mov":
+            memory = _decode_memory_mov(text)
+            return [*memory] if memory is not None else None
+        return None
     if kind == "cmp":
         compare = _decode_two_operand(text, "cmp")
         return ["cmp", *compare] if compare is not None else None
@@ -423,6 +504,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 2 + (8 if item[4] == 64 else 4) if item[3] else 3
     if kind in ("shift", "imul"):
         return 3
+    if kind in ("load", "store"):
+        return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind in ("jmp", "jcc"):
         return 5
     return 1  # nop, exit
@@ -477,6 +560,12 @@ def encode_region(region: Region, scheme: RegionScheme) -> bytes:
             emit_opcode(_required_key(item))
             plain.append(slot_of[dst])
             plain.append(slot_of[src])
+        elif kind in ("load", "store"):
+            _, reg_slot, base_slot, disp, _width = item
+            emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot])
+            plain.append(slot_of[base_slot])
+            plain += struct.pack("<i", disp)
         elif kind == "jmp":
             emit_opcode("jmp")
             plain += struct.pack("<i", offsets[item[1]])
@@ -517,6 +606,33 @@ def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) 
             f"  mov qword ptr [rsp+r8*8], r11\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
         )
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+    """Assembly body for a load/store handler (``mov`` reg <-> [base+disp]).
+
+    The base value is read from its frame slot (so rsp resolves to the captured
+    original rsp, and any base updated earlier in the run is seen at its current
+    value), the signed displacement is added, and the qword/dword is moved. A
+    32-bit load zero-extends, matching x86-64. ``mov`` sets no flags, so the
+    captured-flags slot is untouched.
+    """
+    kind, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        "  mov r10, qword ptr [rsp+r9*8]\n  add r10, rax\n"
+    )
+    if kind == "load":
+        load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
+    elif width == 64:
+        body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
+    else:
+        body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
+    return body + "  add rsi, 7\n  jmp vm_dispatch\n"
 
 
 def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
@@ -630,6 +746,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             lines.append(_shift_handler_asm(handler_key, key))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
+        elif handler_key.startswith(("load_", "store_")):
+            lines.append(_memory_handler_asm(handler_key, key, key_dword))
         elif handler_key == "jmp":
             lines.append(retarget)
         elif handler_key.startswith("jcc_"):
