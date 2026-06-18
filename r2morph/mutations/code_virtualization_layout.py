@@ -60,6 +60,7 @@ def op_offsets(is_immediate: bool, width: int, field_perm: int) -> dict[str, int
 _OPERAND_FIELDS = {
     "op": _op_operand_fields,
     "opmba": _op_operand_fields,
+    "opsynth": _op_operand_fields,
 }
 
 

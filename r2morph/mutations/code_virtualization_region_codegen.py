@@ -59,6 +59,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _op_mem_indexed_handler_asm,
     _op_memdst_handler_asm,
     _op_memory_handler_asm,
+    _op_synth_handler_asm,
     _pop_handler_asm,
     _push_handler_asm,
     _pushi_handler_asm,
@@ -222,7 +223,7 @@ def _call_mem_idx_handler_asm(index: int, key: int, key_dword: str, slot: tuple[
 
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
-    if kind in ("op", "opmba"):
+    if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         if op.is_immediate:
             return 2 + (8 if op.width == 64 else 4)
@@ -351,7 +352,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         # emit_opcode); the handler un-masks each with r13b, so no operand is
         # decrypted by a lone constant key. emit_imm/emit_disp fold the position
         # into each byte of a multi-byte immediate or displacement.
-        if kind in ("op", "opmba"):
+        if kind in ("op", "opmba", "opsynth"):
             op = item[1]
             handler_key = _required_key(item)
             p = emit_opcode(handler_key)
@@ -550,6 +551,8 @@ def handler_instances_asm(
             lines.append(_call_mem_handler_asm(index, key, key_dword, slot, True, field_perm))
         elif handler_key == "callmemidx":
             lines.append(_call_mem_idx_handler_asm(index, key, key_dword, slot, field_perm))
+        elif handler_key.startswith("opsynth_"):
+            lines.append(_op_synth_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("opmba_"):
             lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("op_"):

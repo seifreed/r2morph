@@ -34,7 +34,7 @@ def test_peel_op_run_finds_the_register_op_block() -> None:
     run = _peel_op_run(region.instructions)
     assert run is not None
     start, end = run
-    assert all(region.instructions[i][0] in ("op", "opmba") for i in range(start, end))
+    assert all(region.instructions[i][0] in ("op", "opmba", "opsynth") for i in range(start, end))
     assert end - start >= 2
 
 

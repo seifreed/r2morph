@@ -75,11 +75,15 @@ def _key_parts(key: int) -> tuple[str, str]:
 def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
     """Find the longest contiguous register-op run safe to move to an inner layer.
 
-    Only ``op``/``opmba`` items are eligible (pure register/immediate arithmetic,
-    no memory, stack or control flow). The run's first item may be a branch
-    target (a jump to it becomes a jump to the ``enter_inner`` that runs the
-    whole run), but no interior item may be, so no branch ever lands mid-run.
+    Only ``op``/``opmba``/``opsynth`` items are eligible (pure register/immediate
+    arithmetic, no memory, stack or control flow). ``opsynth`` writes the shared
+    flags slot, which the layer-transfer handlers leave untouched, so the outer
+    layer's later branch still reads the flags the peeled op produced. The run's
+    first item may be a branch target (a jump to it becomes a jump to the
+    ``enter_inner`` that runs the whole run), but no interior item may be, so no
+    branch ever lands mid-run.
     """
+    eligible = ("op", "opmba", "opsynth")
     targets: set[int] = set()
     for item in instructions:
         if item[0] == "jmp":
@@ -91,9 +95,9 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
     i = 0
     n = len(instructions)
     while i < n:
-        if instructions[i][0] in ("op", "opmba"):
+        if instructions[i][0] in eligible:
             j = i + 1
-            while j < n and instructions[j][0] in ("op", "opmba") and j not in targets:
+            while j < n and instructions[j][0] in eligible and j not in targets:
                 j += 1
             if j - i >= _MIN_PEEL and (best is None or (j - i) > (best[1] - best[0])):
                 best = (i, j)

@@ -225,7 +225,7 @@ def _writes_register(item: tuple[Any, ...]) -> int | None:
     the snapshot register is overwritten before a ``mov rsp, reg`` consumes it.
     """
     kind = item[0]
-    if kind == "op":
+    if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         return op.dst_index
     if kind in (
@@ -516,6 +516,12 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
     # sees only the program's real items.
     for index in _flag_dead_op_indices(items):
         items[index][0] = "opmba"
+    # A flag-LIVE add/sub (not marked opmba above) becomes opsynth: the result is
+    # computed by MBA and the flags are synthesized by hand, so the handler contains
+    # no flag-setting native arithmetic even when a later branch reads its flags.
+    for index, item in enumerate(items):
+        if item[0] == "op" and item[1].mnemonic in ("add", "sub"):
+            items[index][0] = "opsynth"
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
     # rewritten + augmented items.

@@ -118,10 +118,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"opmemdst_{item[1]}_{item[5]}"
     if kind == "opmemdstrip":
         return f"opmemdstrip_{item[1]}_{item[4]}"
-    if kind in ("op", "opmba"):
+    if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
-        prefix = "opmba" if kind == "opmba" else "op"
-        return f"{prefix}_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
+        # opsynth: a flag-live add/sub computed by MBA with hand-synthesized flags.
+        return f"{kind}_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
     if kind == "cmp":
         return f"cmp_{'i' if item[3] else 'r'}_{item[4]}"
     if kind == "test":
