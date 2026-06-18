@@ -283,22 +283,30 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
 
 
 def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
-    """Assembly body for ``cmp reg, [mem]`` (computes the address, then compares).
+    """Assembly body for ``cmp reg, [mem]`` (computes the address, synthesizes flags).
 
-    The memory address comes from a frame-slot base plus displacement
-    (``cmpmem``) or the bytecode base plus a stored offset (``cmpriprel``). The
-    real ``cmp`` sets the flags, which are captured into the flags slot exactly
-    like the register/immediate compare handlers.
+    The memory address comes from a frame-slot base plus displacement (``cmpmem``)
+    or the bytecode base plus a stored offset (``cmpriprel``). The comparison is the
+    register minus the loaded memory value, computed with the MBA fold and its flags
+    synthesized by hand (no literal cmp, no pushfq), exactly like the register/
+    immediate compare handler; nothing is written back.
     """
     parts = handler_key.split("_")
     riprel = parts[0] == "cmpriprel"
     width = int(parts[-1])
     body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
+    # a = the register operand, b = the memory operand; compute a - b via MBA.
     if width == 64:
-        body += "  mov r9, qword ptr [rsp+r8*8]\n  cmp r9, qword ptr [r10]\n"
+        body += "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
     else:
-        body += "  mov r9d, dword ptr [rsp+r8*8]\n  cmp r9d, dword ptr [r10]\n"
-    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+        body += "  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+    body += "  mov rbp, rax\n  neg rax\n  mov r10, rbx\n"
+    body += _op_mba_compute("add", key)
+    if width == 32:
+        body += "  mov r10d, r10d\n"
+    body += _synth_flags_asm(width, "sub")
+    body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
