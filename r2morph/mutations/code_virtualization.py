@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_codegen import build_region_bl
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_lea,
     _decode_memory_mov,
+    _decode_movx,
     _decode_op_mem,
     _decode_riprel_mov,
 )
@@ -72,6 +73,11 @@ def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> Virtu
     if mem is not None:
         kind, reg_slot, base_slot, disp, width = mem
         return VirtualizedMemOp(kind, reg_slot, base_slot, disp, width)
+    movx = _decode_movx(text)
+    if movx is not None and movx[0] == "movx":
+        _, ext, src_size, dst_width, reg_slot, base_slot, disp = movx
+        kind = f"mov{ext}x{'b' if src_size == 8 else 'w'}"
+        return VirtualizedMemOp(kind, reg_slot, base_slot, disp, dst_width)
     riprel = _decode_riprel_mov(text, insn_addr, insn_size)
     if riprel is not None:
         kind, reg_slot, target, width = riprel

@@ -70,7 +70,12 @@ def _emulate_exit_code(path: Path) -> int | None:
             uc.emu_stop()
 
     mu.hook_add(UC_HOOK_INSN, on_syscall, None, 1, 0, UC_X86_INS_SYSCALL)
-    mu.emu_start(entry, 0, count=50000)
+    # Instruction cap to bound a runaway emulation; sized well above a faithful
+    # run. The interpreter's one-time entry self-checksum scans its whole body, so
+    # the count scales with the (now broad) handler set - a real virtualized run
+    # executes on the order of 10^4-10^5 instructions, so 2_000_000 leaves ample
+    # headroom while still terminating a true infinite loop near-instantly.
+    mu.emu_start(entry, 0, count=2_000_000)
     return captured.get("code")
 
 
@@ -420,6 +425,28 @@ def test_straight_line_riprel_arith_run_fallback_preserves_exit_code(tmp_path: P
         pytest.skip(f"fixture missing: {fixture}")
 
     mutated = tmp_path / "mutated_riprelarith"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+def test_straight_line_movx_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback whose run uses movzx/movsx of a byte from [rsp+disp]; the
+    # byte/word extend handlers must zero-/sign-extend into the destination slot
+    # and preserve the result.
+    fixture = _DATASET / "elf_vm_run_movxfallback_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_movx"
     shutil.copy(fixture, mutated)
     binary = Binary(str(mutated), writable=True)
     binary.open()

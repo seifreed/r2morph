@@ -105,7 +105,10 @@ _MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
 # handler strips the ``rip`` suffix and reuses the base kind's body with the
 # rip-relative address prologue, so every base+disp form has a global counterpart.
 _MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
-_MEM_OP_KINDS: tuple[str, ...] = _MEM_BASE_KINDS + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)
+# movzx/movsx of a byte/word from [base+disp], zero-/sign-extended into the dst.
+# (No rip-relative counterpart: the decoder only produces the base+disp form.)
+_MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
+_MEM_OP_KINDS: tuple[str, ...] = _MEM_BASE_KINDS + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS) + _MEM_MOVX_KINDS
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
     (mnemonic, is_immediate, width)
     for width in (64, 32)
@@ -482,6 +485,18 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
             if width == 32:
                 body += "  mov r10d, r10d\n"
             body += "  mov qword ptr [rsp + r8*8], r10\n"
+        elif kind.startswith(("movzx", "movsx")):
+            # Zero/sign-extend a byte or word from [addr] into the destination slot.
+            # movzx always zero-extends the same regardless of dst width; movsx's
+            # target register depends on whether the destination is 32- or 64-bit.
+            size_word = "byte" if kind.endswith("b") else "word"
+            if kind.startswith("movzx"):
+                body += f"  movzx eax, {size_word} ptr [r10]\n"
+            elif width == 64:
+                body += f"  movsx rax, {size_word} ptr [r10]\n"
+            else:
+                body += f"  movsx eax, {size_word} ptr [r10]\n"
+            body += "  mov qword ptr [rsp + r8*8], rax\n"
         else:
             # mem<op>: reg = reg <op> [addr], computed with no literal native op via
             # the shared MBA builder (flags dead by the engine's precondition). Load
