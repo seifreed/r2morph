@@ -162,7 +162,12 @@ def _opaque_predicate_asm(rng: random.Random, index: int) -> str:
     direction it cannot resolve without proving the identity. ``index`` (unique per
     handler instance, across nested layers) keeps the skip label unique.
     """
-    seed = rng.choice(("rbx", "r12"))  # rbp holds the predicate accumulator
+    # Every identity only reads the seed (it writes rbp), so the seed can be a
+    # live register the dispatch keeps - the bytecode stream pointer rsi or the
+    # position r13 - without clobbering it. Branching on genuine runtime VM state,
+    # not dead scratch, defeats the "branch on an unconstrained value -> prune as
+    # opaque" heuristic; rbx/r12 (dead scratch here) keep cheaper variants in play.
+    seed = rng.choice(("rbx", "r12", "rsi", "r13"))  # rbp holds the predicate accumulator
     compute, branch = rng.choice(_OPAQUE_VARIANTS)
     dead = "".join(
         "  " + rng.choice(_LIVE_JUNK_TEMPLATES).format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n"

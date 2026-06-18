@@ -52,9 +52,9 @@ def test_opaque_predicate_label_tracks_the_index(builder) -> None:
 def test_opaque_predicate_form_is_polymorphic_across_instances(builder) -> None:
     # A fixed predicate is itself a signature; over many instances every variant
     # form must be reachable so the predicate is not one recognizable pattern.
-    forms = {builder(random.Random(seed), 0).split(" opaque_0\n", 1)[0] for seed in range(200)}
-    # Two seed registers x five identities = ten distinct head forms.
-    assert len(forms) == 2 * len(_REGION_VARIANTS)
+    forms = {builder(random.Random(seed), 0).split(" opaque_0\n", 1)[0] for seed in range(400)}
+    # Four seed registers x five identities = twenty distinct head forms.
+    assert len(forms) == 4 * len(_REGION_VARIANTS)
 
 
 def test_both_vms_share_the_same_variant_set() -> None:
@@ -63,26 +63,28 @@ def test_both_vms_share_the_same_variant_set() -> None:
 
 @pytest.mark.parametrize("variant", range(len(_REGION_VARIANTS)))
 @pytest.mark.parametrize("seed_value", _SEEDS)
-@pytest.mark.parametrize("seed_reg", ("rbx", "r12"))
+@pytest.mark.parametrize("seed_reg", ("rbx", "r12", "rsi", "r13"))
 def test_opaque_predicate_branch_is_always_taken(variant: int, seed_value: int, seed_reg: str) -> None:
     # Assemble each variant followed by a sentinel store in the (supposedly
-    # unreachable) dead body, and emulate it. The sentinel must never be written,
-    # proving the branch is always taken for every variant and every input.
+    # unreachable) dead body, and emulate it. The sentinel (r14, untouched by the
+    # predicate) must never be written, proving the branch is always taken for
+    # every variant, every input, and every seed register - including the live
+    # rsi/r13 the real VM keeps.
     keystone = pytest.importorskip("keystone")
     unicorn = pytest.importorskip("unicorn")
-    from unicorn.x86_const import UC_X86_REG_R12, UC_X86_REG_R13, UC_X86_REG_RBX
+    from unicorn.x86_const import UC_X86_REG_R12, UC_X86_REG_R13, UC_X86_REG_R14, UC_X86_REG_RBX, UC_X86_REG_RSI
 
     compute, branch = _REGION_VARIANTS[variant]
-    asm = f"{compute.format(s=seed_reg)}  {branch} opaque_0\n  mov r13, 1\nopaque_0:\n"
+    asm = f"{compute.format(s=seed_reg)}  {branch} opaque_0\n  mov r14, 1\nopaque_0:\n"
 
     ks = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
     code, _ = ks.asm(asm, 0x1000)
     mu = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_64)
     mu.mem_map(0x1000, 0x1000)
     mu.mem_write(0x1000, bytes(code))
-    mu.reg_write(UC_X86_REG_RBX, seed_value)
-    mu.reg_write(UC_X86_REG_R12, seed_value)
-    mu.reg_write(UC_X86_REG_R13, 0)
+    for reg in (UC_X86_REG_RBX, UC_X86_REG_R12, UC_X86_REG_RSI, UC_X86_REG_R13):
+        mu.reg_write(reg, seed_value)
+    mu.reg_write(UC_X86_REG_R14, 0)
     mu.emu_start(0x1000, 0x1000 + len(code))
-    # r13 stays 0 only if the dead `mov r13, 1` was skipped.
-    assert mu.reg_read(UC_X86_REG_R13) == 0
+    # r14 stays 0 only if the dead `mov r14, 1` was skipped.
+    assert mu.reg_read(UC_X86_REG_R14) == 0
