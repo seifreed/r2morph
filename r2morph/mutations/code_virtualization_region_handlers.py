@@ -377,21 +377,31 @@ def _movx_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_
 def _incdec_handler_asm(handler_key: str, key: int) -> str:
     """Assembly body for ``inc reg`` / ``dec reg``.
 
-    The real inc/dec is applied to the register slot so the carry flag is
-    preserved (inc/dec leave CF untouched, unlike add/sub by one), and the
-    remaining flags are captured. A 32-bit form zero-extends.
+    inc/dec leave CF untouched (unlike add/sub by one), so the result is computed
+    with the MBA fold (a +/- 1) and OF/SF/ZF/PF are synthesized exactly like add/sub
+    with the second operand 1, while CF is carried over unchanged from the captured
+    flags slot - no literal inc/dec and no pushfq. A 32-bit form zero-extends.
     """
     _, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
     body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-    # Reload the program's captured flags so inc/dec preserves the program's CF
-    # (the interpreter's own carry flag is unrelated), then run the real op.
-    body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
-    if width == 64:
-        body += f"  {mnemonic} qword ptr [rsp+r8*8]\n"
+    body += "  mov r10, qword ptr [rsp+r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp+r8*8]\n"
+    body += "  mov rbx, r10\n  mov ebp, 1\n"
+    if mnemonic == "inc":
+        body += "  mov eax, 1\n"
+        synth_mode = "add"
     else:
-        body += f"  mov eax, dword ptr [rsp+r8*8]\n  {mnemonic} eax\n  mov qword ptr [rsp+r8*8], rax\n"
-    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 2\n  jmp vm_dispatch\n"
+        body += "  mov rax, -1\n"
+        synth_mode = "sub"
+    body += _op_mba_compute("add", key)  # r10 = a +/- 1
+    if width == 32:
+        body += "  mov r10d, r10d\n"
+    body += _synth_flags_asm(width, synth_mode)
+    # inc/dec preserve CF: drop the synthesized carry (bit 0) and OR in the program's.
+    body += f"  and r11, -2\n  mov rcx, qword ptr [rsp+{_FLAGS_OFFSET}]\n  and ecx, 1\n  or r11, rcx\n"
+    body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    body += "  mov qword ptr [rsp+r8*8], r10\n"
+    return body + "  add rsi, 2\n  jmp vm_dispatch\n"
 
 
 def _indexed_address_asm(key: int, key_dword: str, field_perm: int = 0) -> tuple[str, int]:
