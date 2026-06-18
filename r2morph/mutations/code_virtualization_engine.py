@@ -34,6 +34,7 @@ import logging
 import random
 import struct
 
+from r2morph.mutations.code_virtualization_mba import _op_mba_compute
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
@@ -385,23 +386,24 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
             load += "  mov rax, qword ptr [rsp + r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp + r9*8]\n"
             advance = "  add rsi, 3\n"
 
-        # rax/eax now holds the source value (immediate or register). Apply the
-        # operation against the destination slot. A 32-bit op writes the low
-        # half and zero-extends, matching x86-64 register semantics.
-        if width == 64:
-            if mnemonic == "mov":
-                apply = "  mov qword ptr [rsp + r8*8], rax\n"
-            else:
-                apply = f"  {mnemonic} qword ptr [rsp + r8*8], rax\n"
+        # rax/eax now holds the source value (immediate or register). mov stores it
+        # verbatim; the arithmetic/boolean ops compute the result with no literal
+        # native op via the shared MBA builder, so the handler never spells out the
+        # operation it performs. The MBA is unconditional here because a run is only
+        # virtualized when its flags are dead afterward (the engine's precondition),
+        # so clobbering flags is always safe - no flag-liveness analysis needed. A
+        # 32-bit op writes the low half and zero-extends, matching x86-64.
+        if mnemonic == "mov":
+            apply = "  mov qword ptr [rsp + r8*8], rax\n"
         else:
-            if mnemonic == "mov":
-                apply = "  mov qword ptr [rsp + r8*8], rax\n"
+            # sub a, b == add a, (-b): negate the source, then the same MBA add fold.
+            apply = "  neg rax\n" if mnemonic == "sub" else ""
+            apply += "  mov r10, qword ptr [rsp + r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp + r8*8]\n"
+            apply += _op_mba_compute(mnemonic, key)
+            if width == 64:
+                apply += "  mov qword ptr [rsp + r8*8], r10\n"
             else:
-                apply = (
-                    "  mov r11d, dword ptr [rsp + r8*8]\n"
-                    f"  {mnemonic} r11d, eax\n"
-                    "  mov qword ptr [rsp + r8*8], r11\n"
-                )
+                apply += "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
         return decrypt_dst + load + apply + advance + "  jmp vm_dispatch\n"
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot

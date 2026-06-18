@@ -12,13 +12,15 @@ from __future__ import annotations
 
 import pytest
 
-from r2morph.mutations.code_virtualization_region_handlers import (
+from r2morph.mutations.code_virtualization_mba import (
     _MBA_ADD_TEMPLATES,
-    _indexed_address_asm,
     _mba_add,
     _mba_add_r10_rax,
-    _mem_address_asm,
     _op_mba_compute,
+)
+from r2morph.mutations.code_virtualization_region_handlers import (
+    _indexed_address_asm,
+    _mem_address_asm,
 )
 
 _MASK64 = (1 << 64) - 1

@@ -283,6 +283,17 @@ class TestCodeVirtualization:
         asm = _interpreter_asm(0x401000, scheme)
         assert f"h_{total - 1}:" in asm
 
+    def test_arithmetic_handlers_contain_no_literal_native_op(self):
+        # The arithmetic/boolean handlers must compute via MBA, not a literal
+        # add/sub/xor/and/or against the slot, so the handler never names the
+        # operation it performs (the engine's flags-dead precondition makes this
+        # unconditionally safe). mov stays a verbatim store.
+        scheme = build_vm_scheme(random.Random(3))
+        asm = _interpreter_asm(0x401000, scheme)
+        for op in ("add", "sub", "xor", "and", "or"):
+            assert f"{op} qword ptr [rsp" not in asm
+            assert f"{op} r11d, eax" not in asm
+
     def test_scheme_generates_nonzero_table_key(self):
         scheme = build_vm_scheme(random.Random(3))
         assert 1 <= scheme.table_key < (1 << 32)
