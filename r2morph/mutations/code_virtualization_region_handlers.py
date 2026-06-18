@@ -12,6 +12,7 @@ table and stitches these instances together.
 
 from __future__ import annotations
 
+from r2morph.mutations.code_virtualization_layout import field_offsets
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
@@ -38,20 +39,25 @@ def _unmask_qword(scratch: str, scratch2: str) -> str:
     return f"  movzx {scratch}, r13b\n  mov {scratch2}, {hex(_QWORD_BROADCAST)}\n  imul {scratch}, {scratch2}\n  xor rax, {scratch}\n"
 
 
-def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
+def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for an arithmetic/mov handler (decrypts, applies, captures flags)."""
     _, mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
     is_immediate = mode == "i"
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+    off = field_offsets(handler_key, field_perm)
+    body = f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if is_immediate and width == 64:
-        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword("r10", "r11")
+        body += f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword(
+            "r10", "r11"
+        )
         advance = 10
     elif is_immediate:
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword("r11")
+        body += f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword(
+            "r11"
+        )
         advance = 6
     else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        body += f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
         advance = 3
     if mnemonic == "mov":
@@ -66,7 +72,7 @@ def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
+def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a flag-dead ``add``/``sub`` handler.
 
     The region's flag-liveness analysis proved this op's flags are never read, so
@@ -78,15 +84,20 @@ def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: s
     _, mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
     is_immediate = mode == "i"
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+    off = field_offsets(handler_key, field_perm)
+    body = f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if is_immediate and width == 64:
-        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword("r10", "r11")
+        body += f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword(
+            "r10", "r11"
+        )
         advance = 10
     elif is_immediate:
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword("r11")
+        body += f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword(
+            "r11"
+        )
         advance = 6
     else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        body += f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
         advance = 3
     # sub a, b == add a, (-b): negate the source, then the same MBA add fold.

@@ -26,6 +26,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
     pack_immediate,
 )
+from r2morph.mutations.code_virtualization_layout import permuted_fields
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _FRAME_SIZE,
@@ -226,12 +227,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         # into each byte of a multi-byte immediate or displacement.
         if kind in ("op", "opmba"):
             op = item[1]
-            p = emit_opcode(_required_key(item))
-            plain.append(slot_of[op.dst_index] ^ p)
+            handler_key = _required_key(item)
+            p = emit_opcode(handler_key)
+            # Emit the operand fields in this build's permuted order; the handler
+            # derives the same offsets from scheme.field_perm, so they agree.
+            field_bytes = {"dst": bytes([slot_of[op.dst_index]])}
             if op.is_immediate:
-                emit_imm(op.value, op.width, p)
+                field_bytes["imm"] = pack_immediate(op.value, op.width)
             else:
-                plain.append(slot_of[op.value] ^ p)
+                field_bytes["src"] = bytes([slot_of[op.value]])
+            for name, _size in permuted_fields(handler_key, scheme.field_perm):
+                plain.extend(byte ^ p for byte in field_bytes[name])
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
             p = emit_opcode(_required_key(item))
@@ -394,6 +400,7 @@ def handler_instances_asm(
     retarget: str,
     frame_size: int,
     extra: dict[str, str] | None = None,
+    field_perm: int = 0,
 ) -> str:
     """Emit the ``H_{index}`` handler instances for one interpreter (or layer).
 
@@ -411,9 +418,9 @@ def handler_instances_asm(
         if handler_key in extra:
             lines.append(extra[handler_key])
         elif handler_key.startswith("opmba_"):
-            lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword))
+            lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("op_"):
-            lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword))
+            lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith(("cmp_", "test_")):
             lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword))
         elif handler_key.startswith(("shl_", "shr_", "sar_")):
@@ -575,6 +582,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             reload_seq=reload_seq,
             retarget=retarget,
             frame_size=_FRAME_SIZE,
+            field_perm=scheme.field_perm,
         )
     )
 

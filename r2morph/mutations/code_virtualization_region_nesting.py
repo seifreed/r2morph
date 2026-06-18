@@ -259,7 +259,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # layer reads and writes the same frame slots for a given logical register.
     schemes = [build_region_scheme(layer, rng) for layer in layers]
     slot = schemes[0].slot_perm
-    schemes = [RegionScheme(s.dup, s.xor_key, s.junk_seed, slot, s.table_key) for s in schemes]
+    schemes = [RegionScheme(s.dup, s.xor_key, s.junk_seed, slot, s.table_key, s.field_perm) for s in schemes]
     counts = [_scheme_count(s) for s in schemes]
     offsets = [sum(counts[:i]) for i in range(count)]  # global handler-index base per layer
     rsp_off = slot[RSP_INDEX] * 8
@@ -318,6 +318,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                 retarget=retarget,
                 frame_size=_FRAME_SIZE,
                 extra=extra,
+                field_perm=scheme.field_perm,
             )
         )
 

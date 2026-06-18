@@ -34,7 +34,7 @@ class RegionScheme:
     slot indices in the bytecode reveal no register.
     """
 
-    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key")
+    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key", "field_perm")
 
     def __init__(
         self,
@@ -43,6 +43,7 @@ class RegionScheme:
         junk_seed: int,
         slot_perm: tuple[int, ...],
         table_key: int,
+        field_perm: int = 0,
     ) -> None:
         self.dup = dup
         self.xor_key = xor_key
@@ -51,6 +52,11 @@ class RegionScheme:
         # 32-bit key the dispatch table offsets are XOR-encrypted with, so the
         # handler addresses are not a plaintext jump table for a devirtualizer.
         self.table_key = table_key
+        # Seed for the per-build operand field-order permutation: the encoder and
+        # the handlers both derive each item's field offsets from it, so a build
+        # lays operands out in its own order and a devirtualizer's field-offset
+        # model does not transfer across samples. 0 is the identity layout.
+        self.field_perm = field_perm
 
 
 class Region:
