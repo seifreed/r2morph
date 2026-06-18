@@ -108,10 +108,11 @@ _MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" fo
 # movzx/movsx of a byte/word from [base+disp], zero-/sign-extended into the dst.
 # (No rip-relative counterpart: the decoder only produces the base+disp form.)
 _MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
-# Indexed [base+index*scale+disp] forms (arrays). lea and arithmetic only; the
-# handler strips the ``idx`` suffix and reuses the base kind's body with the
-# indexed address prologue (a 9-byte item: opcode+reg+base+index+scale+disp).
-_MEM_IDX_KINDS: tuple[str, ...] = ("lea",) + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
+# Indexed [base+index*scale+disp] forms (arrays). lea, arithmetic, and the
+# byte/word extends; the handler strips the ``idx`` suffix and reuses the base
+# kind's body with the indexed address prologue (a 9-byte item:
+# opcode+reg+base+index+scale+disp).
+_MEM_IDX_KINDS: tuple[str, ...] = ("lea",) + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS) + _MEM_MOVX_KINDS
 _MEM_OP_KINDS: tuple[str, ...] = (
     _MEM_BASE_KINDS
     + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)

@@ -80,6 +80,10 @@ def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> Virtu
         _, ext, src_size, dst_width, reg_slot, base_slot, disp = movx
         kind = f"mov{ext}x{'b' if src_size == 8 else 'w'}"
         return VirtualizedMemOp(kind, reg_slot, base_slot, disp, dst_width)
+    if movx is not None and movx[0] == "movxidx":
+        _, ext, src_size, dst_width, reg_slot, base_slot, index_slot, shift, disp = movx
+        kind = f"mov{ext}x{'b' if src_size == 8 else 'w'}idx"
+        return VirtualizedMemOp(kind, reg_slot, base_slot, disp, dst_width, index_slot, shift)
     riprel = _decode_riprel_mov(text, insn_addr, insn_size)
     if riprel is not None:
         kind, reg_slot, target, width = riprel
