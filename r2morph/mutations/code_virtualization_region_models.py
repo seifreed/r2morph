@@ -106,6 +106,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"{kind}_{item[4]}"
     if kind == "fparith":
         return f"fparith_{item[1]}_{item[4]}"
+    if kind in ("cvti2f", "cvtf2i"):
+        return f"{kind}_{item[1]}"
     if kind in ("riprel_load", "riprel_store"):
         return f"{kind}_{item[3]}"
     if kind == "cmpmem":

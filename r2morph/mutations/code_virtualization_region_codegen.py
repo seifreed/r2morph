@@ -41,6 +41,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _cmp_memory_handler_asm,
     _compare_handler_asm,
     _fp_arith_handler_asm,
+    _fp_convert_handler_asm,
     _fp_memory_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
@@ -288,6 +289,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg/xmm slot + base slot + 4-byte displacement
     if kind == "fparith":
         return 3  # opcode + dst xmm index + src xmm index
+    if kind in ("cvti2f", "cvtf2i"):
+        return 3  # opcode + xmm index + GP slot (order depends on direction)
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("cmpmem", "opmem", "lea", "opmemdst"):
@@ -476,6 +479,18 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             p = emit_opcode(_required_key(item))
             plain.append(dst_index ^ p)
             plain.append(src_index ^ p)
+        elif kind == "cvti2f":
+            # int->float: XMM index (raw), then GP source slot (slot_perm).
+            _, _fpw, xmm_index, gp_slot = item
+            p = emit_opcode(_required_key(item))
+            plain.append(xmm_index ^ p)
+            plain.append(slot_of[gp_slot] ^ p)
+        elif kind == "cvtf2i":
+            # float->int: GP destination slot (slot_perm), then XMM index (raw).
+            _, _fpw, gp_slot, xmm_index = item
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[gp_slot] ^ p)
+            plain.append(xmm_index ^ p)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
@@ -669,6 +684,8 @@ def handler_instances_asm(
             lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fparith_"):
             lines.append(_fp_arith_handler_asm(handler_key, key))
+        elif handler_key.startswith(("cvti2f_", "cvtf2i_")):
+            lines.append(_fp_convert_handler_asm(handler_key, key))
         elif handler_key.startswith(("load_", "store_")):
             lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key == "jmp":

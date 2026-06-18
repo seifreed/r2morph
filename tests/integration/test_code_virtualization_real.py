@@ -782,6 +782,29 @@ def test_fp_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> Non
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
+def test_fp_conversion_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The function converts two ints to doubles, adds them, and truncates back to
+    # an int (20, 22 -> 20.0, 22.0 -> 42.0 -> 42). The VM must virtualize cvtsi2sd
+    # (int->float) and cvttsd2si (float->int), bridging GP and xmm save slots, and
+    # preserve the result (exit 42).
+    fixture = _DATASET / "elf_vm_fpconvert_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fpconvert"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # The function loads a global through a rip-relative operand; the VM cannot
     # keep the absolute address after relocating the code, so it must reach the

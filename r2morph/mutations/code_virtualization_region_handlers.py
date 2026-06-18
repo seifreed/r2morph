@@ -105,6 +105,40 @@ def _fp_arith_handler_asm(handler_key: str, key: int) -> str:
     )
 
 
+def _fp_convert_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for an int<->float conversion handler with a 64-bit GP
+    operand (``cvtsi2sd/ss`` int->float, ``cvttsd2si/ss`` float->int, truncating).
+
+    Both operands are un-masked with the key and stream position. ``cvti2f`` reads
+    the GP source from its (slot_perm) frame slot and converts into the scalar low
+    lane of the destination XMM, preserving its upper lane (loaded from the slot,
+    since cvtsi2sd is a scalar op). ``cvtf2i`` truncates the source XMM's low lane
+    into the GP destination's frame slot. Conversions set no flags.
+    """
+    kind, width_text = handler_key.split("_")
+    width = int(width_text)
+    if kind == "cvti2f":
+        instr = "cvtsi2sd" if width == 64 else "cvtsi2ss"
+        # byte1 = XMM index (r8, scaled to the 16-byte slot), byte2 = GP slot (r9).
+        return (
+            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            "  shl r8, 4\n  mov rax, qword ptr [rsp + r9*8]\n"
+            f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} xmm0, rax\n"
+            f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+            "  add rsi, 3\n  jmp vm_dispatch\n"
+        )
+    instr = "cvttsd2si" if width == 64 else "cvttss2si"
+    # byte1 = GP slot (r9), byte2 = XMM index (r8, scaled to the 16-byte slot).
+    return (
+        f"  movzx r9d, byte ptr [rsi+1]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+2]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} rax, xmm0\n"
+        "  mov qword ptr [rsp + r9*8], rax\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def _unmask_dword(scratch: str) -> str:
     """Un-mask a dword immediate/displacement (in eax) with the item's stream
     position: r13b holds it from the dispatch, broadcast to 32 bits. ``scratch``

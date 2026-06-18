@@ -349,6 +349,41 @@ def _decode_fp_arith(text: str) -> tuple[str, str, int, int, int] | None:
     return ("fparith", op, dst_index, src_index, width)
 
 
+# FP precision (sd=64, ss=32) of each conversion mnemonic.
+_CVT_INT_TO_FP: dict[str, int] = {"cvtsi2sd": 64, "cvtsi2ss": 32}
+_CVT_FP_TO_INT: dict[str, int] = {"cvttsd2si": 64, "cvttss2si": 32}
+
+
+def _decode_fp_convert(text: str) -> tuple[str, int, int, int] | None:
+    """Decode int<->float conversions with a 64-bit GP register operand.
+
+    ``cvtsi2sd/ss xmm, r64`` -> ``("cvti2f", fp_width, xmm_index, gp_slot)`` and
+    ``cvttsd2si/ss r64, xmm`` -> ``("cvtf2i", fp_width, gp_slot, xmm_index)``.
+    Returns ``None`` for a memory operand, a 32-bit GP register, rsp, or any other
+    form (left native). These mnemonics are type ``null`` and inconsistently typed
+    family (cpu for the r64 cvtsi2sd), so the mnemonic is the only reliable gate -
+    hence this is tried ahead of the family check, not behind it.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    if mnemonic in _CVT_INT_TO_FP:
+        xmm_index = _parse_xmm_operand(left)
+        gp = _register_operand(right.lower())  # 64-bit GP only (not rsp); 32-bit -> native
+        if xmm_index is None or gp is None:
+            return None
+        return ("cvti2f", _CVT_INT_TO_FP[mnemonic], xmm_index, gp[0])
+    if mnemonic in _CVT_FP_TO_INT:
+        gp = _register_operand(left.lower())
+        xmm_index = _parse_xmm_operand(right)
+        if gp is None or xmm_index is None:
+            return None
+        return ("cvtf2i", _CVT_FP_TO_INT[mnemonic], gp[0], xmm_index)
+    return None
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 

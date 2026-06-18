@@ -33,6 +33,7 @@ from r2morph.mutations.code_virtualization_engine import (
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmp_mem,
     _decode_fp_arith,
+    _decode_fp_convert,
     _decode_fp_mem,
     _decode_imul,
     _decode_imul3,
@@ -104,6 +105,12 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
     """Build the VM item for one body instruction, or ``None`` if unsupported."""
     kind = insn.get("type", "")
     text = insn.get("opcode", "")
+    # int<->float conversions are type "null" and inconsistently typed family
+    # (the r64 cvtsi2sd is even family "cpu"), so they are matched by mnemonic
+    # ahead of the family gate; the decoder returns None for non-conversions.
+    convert = _decode_fp_convert(text)
+    if convert is not None:
+        return [*convert]
     if insn.get("family") == "vec":
         # SSE/FP ops share their GP twin's ``type`` (movsd->mov, addsd->add) but
         # carry family "vec". Route them here first: scalar FP load/store is
