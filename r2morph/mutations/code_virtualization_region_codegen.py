@@ -26,7 +26,14 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
     pack_immediate,
 )
-from r2morph.mutations.code_virtualization_layout import idx_permuted_fields, mem_permuted_fields, permuted_fields
+from r2morph.mutations.code_virtualization_layout import (
+    idx_permuted_fields,
+    imul3_permuted_fields,
+    mem_permuted_fields,
+    op_permuted_fields,
+    permuted_fields,
+    shift_permuted_fields,
+)
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _FRAME_SIZE,
@@ -269,27 +276,30 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[slot] ^ p)
             if is_imm:
-                emit_imm(value, width, p)
+                field_bytes = {"dst": bytes([slot_of[slot]]), "imm": pack_immediate(value, width)}
             else:
-                plain.append(slot_of[value] ^ p)
+                field_bytes = {"dst": bytes([slot_of[slot]]), "src": bytes([slot_of[value]])}
+            for name, _size in op_permuted_fields(is_imm, width, scheme.field_perm):
+                plain.extend(byte ^ p for byte in field_bytes[name])
         elif kind == "shift":
             _, _mnemonic, slot, count, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[slot] ^ p)
-            plain.append(count ^ p)
+            field_bytes = {"slot": bytes([slot_of[slot]]), "count": bytes([count])}
+            for name, _size in shift_permuted_fields(scheme.field_perm):
+                plain.extend(byte ^ p for byte in field_bytes[name])
         elif kind == "imul":
-            _, dst, src, _width = item
+            _, dst, src, width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[dst] ^ p)
-            plain.append(slot_of[src] ^ p)
+            field_bytes = {"dst": bytes([slot_of[dst]]), "src": bytes([slot_of[src]])}
+            for name, _size in op_permuted_fields(False, width, scheme.field_perm):
+                plain.extend(byte ^ p for byte in field_bytes[name])
         elif kind == "imul3":
             _, dst, src, imm, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[dst] ^ p)
-            plain.append(slot_of[src] ^ p)
-            emit_imm(imm, 32, p)
+            field_bytes = {"dst": bytes([slot_of[dst]]), "src": bytes([slot_of[src]]), "imm": pack_immediate(imm, 32)}
+            for name, _size in imul3_permuted_fields(scheme.field_perm):
+                plain.extend(byte ^ p for byte in field_bytes[name])
         elif kind in ("push", "pop"):
             _, reg_slot, _width = item
             p = emit_opcode(_required_key(item))
@@ -418,11 +428,11 @@ def handler_instances_asm(
         elif handler_key.startswith("op_"):
             lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith(("cmp_", "test_")):
-            lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword))
+            lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith(("shl_", "shr_", "sar_")):
-            lines.append(_shift_handler_asm(handler_key, key))
+            lines.append(_shift_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith("imul3_"):
-            lines.append(_imul3_handler_asm(handler_key, key, key_dword))
+            lines.append(_imul3_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("push_"):
             lines.append(_push_handler_asm(key, rsp_off))
         elif handler_key.startswith("pop_"):
@@ -438,7 +448,7 @@ def handler_instances_asm(
         elif handler_key == "leave":
             lines.append(_leave_handler_asm(key, rsp_off))
         elif handler_key.startswith("imul_"):
-            lines.append(_imul_handler_asm(handler_key, key))
+            lines.append(_imul_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
             lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("opmemdst_", "opmemdstrip_")):

@@ -112,6 +112,26 @@ def mem_offsets(riprel: bool, field_perm: int) -> dict[str, int]:
     return _offsets(mem_permuted_fields(riprel, field_perm))
 
 
+def shift_permuted_fields(field_perm: int) -> list[Field]:
+    """Shift operand fields (slot, count) in this build's order."""
+    return _permute([("slot", 1), ("count", 1)], field_perm)
+
+
+def shift_offsets(field_perm: int) -> dict[str, int]:
+    """Byte offset of each shift operand field for this build."""
+    return _offsets(shift_permuted_fields(field_perm))
+
+
+def imul3_permuted_fields(field_perm: int) -> list[Field]:
+    """Three-operand imul fields (dst, src, 4-byte immediate) in this build's order."""
+    return _permute([("dst", 1), ("src", 1), ("imm", 4)], field_perm)
+
+
+def imul3_offsets(field_perm: int) -> dict[str, int]:
+    """Byte offset of each three-operand imul field for this build."""
+    return _offsets(imul3_permuted_fields(field_perm))
+
+
 def _idx_fields(nobase: bool) -> list[Field]:
     # Scaled-index items: register slot, (optional) base slot, index slot, scale
     # shift, displacement. The no-base form (lea [index*scale+disp]) omits base.

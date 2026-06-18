@@ -16,9 +16,11 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_layout import (
     field_offsets,
     idx_offsets,
+    imul3_offsets,
     mem_offsets,
     op_offsets,
     permuted_fields,
+    shift_offsets,
 )
 
 
@@ -50,6 +52,15 @@ def test_op_offsets_by_immediate_width_matches_the_string_key_path() -> None:
     assert op_offsets(False, 64, 0) == {"dst": 1, "src": 2}
     assert op_offsets(True, 32, 7) == field_offsets("op_add_i_32", 7)
     assert op_offsets(False, 64, 7) == field_offsets("op_add_r_64", 7)
+
+
+def test_shift_and_imul3_layouts_identity_and_polymorphism() -> None:
+    # The remaining low-arity region kinds: shift (slot, count) and three-operand
+    # imul (dst, src, immediate). perm 0 is the legacy packing; both permute.
+    assert shift_offsets(0) == {"slot": 1, "count": 2}
+    assert imul3_offsets(0) == {"dst": 1, "src": 2, "imm": 3}
+    assert len({tuple(sorted(shift_offsets(s).items())) for s in range(1, 20)}) > 1
+    assert len({tuple(sorted(imul3_offsets(s).items())) for s in range(1, 40)}) > 2
 
 
 def test_indexed_layout_identity_and_polymorphism() -> None:

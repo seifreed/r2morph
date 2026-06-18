@@ -12,7 +12,14 @@ table and stitches these instances together.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_layout import field_offsets, idx_offsets, mem_offsets
+from r2morph.mutations.code_virtualization_layout import (
+    field_offsets,
+    idx_offsets,
+    imul3_offsets,
+    mem_offsets,
+    op_offsets,
+    shift_offsets,
+)
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
@@ -391,27 +398,30 @@ def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
+def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a cmp/test handler (sets and captures flags only)."""
     mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+    # cmp/test carry the same operand fields as an arithmetic op (a slot plus an
+    # immediate or a second slot), so they share the arith layout.
+    off = op_offsets(mode == "i", width, field_perm)
+    body = f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if mode == "i" and width == 64:
         body += (
-            f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+            f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {key_qword}\n  xor rax, r10\n"
             + _unmask_qword("r10", "r11")
             + f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, rax\n"
         )
         advance = 10
     elif mode == "i":
         body += (
-            f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             + _unmask_dword("r11")
             + f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, eax\n"
         )
         advance = 6
     else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        body += f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         if width == 64:
             body += f"  mov rax, qword ptr [rsp+r9*8]\n  mov r10, qword ptr [rsp+r8*8]\n  {mnemonic} r10, rax\n"
         else:
@@ -420,13 +430,14 @@ def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: 
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _shift_handler_asm(handler_key: str, key: int) -> str:
+def _shift_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
     """Assembly body for a shl/shr/sar handler (count is an immediate in cl)."""
     mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
+    off = shift_offsets(field_perm)
     body = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx ecx, byte ptr [rsi+2]\n  xor cl, {key}\n  xor cl, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+{off['slot']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+{off['count']}]\n  xor cl, {key}\n  xor cl, r13b\n"
     )
     if width == 64:
         body += f"  mov rax, qword ptr [rsp+r8*8]\n  {mnemonic} rax, cl\n"
@@ -438,12 +449,14 @@ def _shift_handler_asm(handler_key: str, key: int) -> str:
     )
 
 
-def _imul_handler_asm(handler_key: str, key: int) -> str:
+def _imul_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
     """Assembly body for a two-operand register imul handler."""
     width = int(handler_key.split("_")[1])
+    # Two register slots - the same field shape as a register-form arithmetic op.
+    off = op_offsets(False, width, field_perm)
     body = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
     )
     if width == 64:
         body += "  mov rax, qword ptr [rsp+r8*8]\n  imul rax, qword ptr [rsp+r9*8]\n"
@@ -556,7 +569,7 @@ def _pushi_handler_asm(key_qword: str, rsp_off: int) -> str:
     )
 
 
-def _imul3_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _imul3_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a three-operand ``imul reg, reg, imm`` handler.
 
     The immediate lives encrypted in the bytecode stream, so the multiply is
@@ -565,11 +578,14 @@ def _imul3_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     native three-operand imul (same low-half product, same overflow).
     """
     width = int(handler_key.split("_")[1])
+    off = imul3_offsets(field_perm)
     body = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
     )
-    body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword("r11")
+    body += f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword(
+        "r11"
+    )
     if width == 64:
         body += "  movsxd r10, eax\n  mov rax, qword ptr [rsp+r9*8]\n  imul rax, r10\n"
     else:
