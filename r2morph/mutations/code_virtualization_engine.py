@@ -101,6 +101,34 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
 _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
 
+# Reachable, state-neutral junk emitted at each handler instance's entry, so
+# duplicate handlers for the same operation diverge in executed code, not just in
+# an unreachable tail. It touches only rbx/rbp/r12: every GP register is spilled
+# to the frame, the dispatch keeps only rsi/rsp/r15/r13 live, and the straight-
+# line VM captures no flags, so these scratch registers and their flag effects are
+# dead at a handler's entry.
+_LIVE_JUNK_TEMPLATES: tuple[str, ...] = (
+    "mov rbx, rbp",
+    "xor rbx, r12",
+    "and rbp, r12",
+    "or r12, rbx",
+    "xchg rbx, rbp",
+    "add r12, {small}",
+    "sub rbx, {small}",
+    "lea rbp, [rbp + {small}]",
+    "ror r12, {shift}",
+)
+
+
+def _live_junk_asm(rng: random.Random) -> str:
+    """A short run of reachable, state-neutral junk for the head of a handler."""
+    lines = []
+    for _ in range(rng.randint(0, 3)):
+        template = rng.choice(_LIVE_JUNK_TEMPLATES)
+        lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
+    return "".join(lines)
+
+
 # Private stack frame the interpreter carves below the caller's rsp. The
 # 16 context slots occupy [0x00, 0x80); the runtime self-checksum byte sits at
 # 0x80; the System V red zone [original_rsp-128, original_rsp) maps to the top
@@ -121,21 +149,29 @@ class VMScheme:
     match another.
     """
 
-    __slots__ = ("opcode_values", "exit_opcode", "xor_key", "slot_perm", "table_key")
+    __slots__ = ("dup", "exit_opcode", "xor_key", "slot_perm", "table_key", "junk_seed")
 
     def __init__(
         self,
-        opcode_values: dict[tuple[str, bool, int], int],
+        dup: dict[tuple[str, bool, int], tuple[int, ...]],
         exit_opcode: int,
         xor_key: int,
         slot_perm: tuple[int, ...],
         table_key: int,
+        junk_seed: int,
     ) -> None:
-        self.opcode_values = opcode_values
+        # Each operation gets one or more interchangeable opcode indices; the same
+        # operation can appear under different opcodes in the stream and each index
+        # emits its own handler instance (with its own junk), so the opcode->
+        # operation map is not one-to-one and opcode frequency reveals nothing.
+        self.dup = dup
         self.exit_opcode = exit_opcode
         self.xor_key = xor_key
         # Per-instance bijection: logical register index -> shuffled frame slot.
         self.slot_perm = slot_perm
+        # Seeds the deterministic per-build choice of opcode-among-duplicates and
+        # the per-handler-instance junk that diverges otherwise-identical copies.
+        self.junk_seed = junk_seed
         # 32-bit key the dispatch-table offsets are XOR-encrypted with, so the
         # handler addresses are not a plaintext jump table a disassembler recovers
         # as a switch (the dispatch decrypts each entry before jumping).
@@ -145,16 +181,27 @@ class VMScheme:
 def build_vm_scheme(rng: random.Random) -> VMScheme:
     """Draw a fresh randomized VM scheme from ``rng`` (seedable, replayable).
 
-    Opcodes are a per-instance permutation of dense indices ``0..N-1`` that
-    index the dispatch table directly (so there is no comparison ladder), while
-    the exit marker is any byte ``>= N`` and routes through the table's bounds
-    guard. Two builds still share no opcode-to-operation mapping.
+    Each operation gets one or two interchangeable opcode indices; the indices
+    are a per-instance permutation of the dense range ``0..total-1`` that index
+    the dispatch table directly (so there is no comparison ladder), while the
+    exit marker is any byte ``>= total`` and routes through the table's bounds
+    guard. Two builds share neither the opcode->operation mapping nor the
+    duplication, and the same operation appears under several opcodes.
     """
-    indices = rng.sample(range(len(_OP_KEYS)), len(_OP_KEYS))
-    opcode_values = dict(zip(_OP_KEYS, indices, strict=True))
-    exit_opcode = rng.randrange(len(_OP_KEYS), 256)
+    multiplicity = {op_key: rng.randint(1, 2) for op_key in _OP_KEYS}
+    total = sum(multiplicity.values())
+    indices = rng.sample(range(total), total)
+    dup: dict[tuple[str, bool, int], tuple[int, ...]] = {}
+    cursor = 0
+    for op_key in _OP_KEYS:
+        count = multiplicity[op_key]
+        dup[op_key] = tuple(indices[cursor : cursor + count])
+        cursor += count
+    exit_opcode = rng.randrange(total, 256)
     slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
-    return VMScheme(opcode_values, exit_opcode, rng.randrange(1, 256), slot_perm, rng.randrange(1, 1 << 32))
+    return VMScheme(
+        dup, exit_opcode, rng.randrange(1, 256), slot_perm, rng.randrange(1, 1 << 32), rng.randrange(1 << 31)
+    )
 
 
 class VirtualizedOp:
@@ -272,6 +319,7 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme, checksum: int = 
     faithful build and misdecodes if the interpreter is patched.
     """
     slot_of = scheme.slot_perm  # logical register index -> shuffled frame slot
+    pick = random.Random(scheme.junk_seed).choice  # deterministic per build
     plain = bytearray()
 
     def emit_opcode(opcode: int) -> int:
@@ -287,7 +335,7 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme, checksum: int = 
         return position
 
     for op in ops:
-        position = emit_opcode(scheme.opcode_values[(op.mnemonic, op.is_immediate, op.width)])
+        position = emit_opcode(pick(scheme.dup[(op.mnemonic, op.is_immediate, op.width)]))
         plain.append(slot_of[op.dst_index] ^ position)
         if op.is_immediate:
             plain += bytes(byte ^ position for byte in pack_immediate(op.value, op.width))
@@ -307,6 +355,13 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     key = scheme.xor_key
     key_qword = hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF)
     key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
+    # Each opcode index gets its own handler instance; an operation with two
+    # indices is emitted twice, each copy carrying different junk, so the
+    # opcode->operation map is not one-to-one and the duplicates share no byte
+    # signature. ``total`` is the dispatch-table width and the bounds-guard limit.
+    index_to_key = {index: op_key for op_key, indices in scheme.dup.items() for index in indices}
+    total = len(index_to_key)
+    junk_rng = random.Random(scheme.junk_seed)
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
         # Operands carry the opcode's stream position too (r13 still holds it from
@@ -374,7 +429,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         # Fold in the position mask (r13b) and the runtime self-checksum the
         # encoder pre-biased the opcode with, so a patched interpreter misdecodes.
         f"  xor al, {key}\n  xor al, r13b\n  xor al, byte ptr [rsp + {_CHECKSUM_OFFSET}]\n"
-        f"  cmp al, {len(_OP_KEYS)}\n  jae vm_exit\n"
+        f"  cmp al, {total}\n  jae vm_exit\n"
         # The stored offsets are XOR-encrypted, so the table is not a plaintext
         # handler map a disassembler can recover as a switch; decrypt each entry.
         # The table key is also diffused with the runtime self-checksum (broadcast
@@ -384,13 +439,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
     )
 
-    def label_for(op_key: tuple[str, bool, int]) -> str:
-        mnemonic, is_immediate, width = op_key
-        return f"h_{mnemonic}_{'ri' if is_immediate else 'rr'}_{width}"
-
-    for op_key in _OP_KEYS:
-        mnemonic, is_immediate, width = op_key
-        lines.append(f"{label_for(op_key)}:\n{handler_body(mnemonic, is_immediate, width)}")
+    for index in range(total):
+        mnemonic, is_immediate, width = index_to_key[index]
+        # Reachable head junk makes duplicate handlers diverge in executed code.
+        lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng)}{handler_body(mnemonic, is_immediate, width)}")
 
     lines.append("vm_exit:\n")
     for index, name in enumerate(GP_REGISTERS):
@@ -398,8 +450,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
             lines.append(f"  mov {name}, qword ptr [rsp + {slot[index] * 8}]\n")
     lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
 
-    index_to_label = {scheme.opcode_values[op_key]: label_for(op_key) for op_key in _OP_KEYS}
-    table = "".join(f"  .long {index_to_label[index]} - vm_table\n" for index in range(len(_OP_KEYS)))
+    table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
     lines.append(f"vm_table:\n{table}bytecode:\n")
     return "".join(lines)
 
@@ -435,13 +486,14 @@ def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr:
     # plaintext jump table (the dispatch decrypts them at runtime; keystone cannot
     # XOR a label difference it computes itself).
     data = bytearray(encoding)
-    table_start = len(data) - len(_OP_KEYS) * 4
+    total = sum(len(indices) for indices in scheme.dup.values())
+    table_start = len(data) - total * 4
     # Expected runtime self-checksum over the interpreter code (everything up to
     # the table, so the encryption below does not perturb it); the encoder folds it
     # into the opcodes, and the table key is diffused with it too.
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
     table_key = scheme.table_key ^ (checksum * 0x01010101)
-    for entry_index in range(len(_OP_KEYS)):
+    for entry_index in range(total):
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")

@@ -263,7 +263,25 @@ class TestCodeVirtualization:
     def test_build_vm_scheme_is_polymorphic(self):
         first = build_vm_scheme(random.Random(1))
         second = build_vm_scheme(random.Random(2))
-        assert (first.opcode_values, first.xor_key) != (second.opcode_values, second.xor_key)
+        assert (first.dup, first.xor_key) != (second.dup, second.xor_key)
+
+    def test_build_vm_scheme_duplicates_some_operations(self):
+        # Opcode polymorphism: at least one operation must map to more than one
+        # opcode so the opcode->operation map is many-to-one (not a 1:1 table an
+        # analyst can read off by opcode frequency). Parity with the region VM.
+        scheme = build_vm_scheme(random.Random(3))
+        assert any(len(indices) > 1 for indices in scheme.dup.values())
+
+    def test_duplicate_handlers_diverge_with_head_junk(self):
+        # Duplicate handler instances must not be byte-identical, or an analyst
+        # collapses them and recovers the operation set; reachable head junk
+        # (rbx/rbp/r12) diverges them. With duplication present, the interpreter
+        # carries more handler instances than distinct operations.
+        scheme = build_vm_scheme(random.Random(3))
+        total = sum(len(indices) for indices in scheme.dup.values())
+        assert total > len(scheme.dup)
+        asm = _interpreter_asm(0x401000, scheme)
+        assert f"h_{total - 1}:" in asm
 
     def test_scheme_generates_nonzero_table_key(self):
         scheme = build_vm_scheme(random.Random(3))
