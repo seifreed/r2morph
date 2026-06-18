@@ -12,7 +12,7 @@ table and stitches these instances together.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_layout import field_offsets
+from r2morph.mutations.code_virtualization_layout import field_offsets, mem_offsets
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
@@ -112,34 +112,36 @@ def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: s
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _mem_address_asm(riprel: bool, key: int, key_dword: str) -> tuple[str, int]:
+def _mem_address_asm(riprel: bool, key: int, key_dword: str, field_perm: int = 0) -> tuple[str, int]:
     """Shared head of every memory handler: decrypt the register slot into r8
     and compute the effective address into r10.
 
     For the rip-relative form the address is the bytecode base (r15) plus the
     stored signed offset; otherwise it is a frame-slot base value plus a signed
-    displacement. Returns the assembly and the number of bytes to advance rsi by
-    (the bytecode item width).
+    displacement. The operand fields are read at this build's permuted offsets
+    (the encoder emits them in the same order), so the layout differs per build.
+    Returns the assembly and the number of bytes to advance rsi by.
     """
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+    off = mem_offsets(riprel, field_perm)
+    body = f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if riprel:
         return (
             body
-            + f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            + f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             + _unmask_dword("r11")
             + "  movsxd rax, eax\n  mov r10, r15\n"
             + _mba_add_r10_rax(key)
         ), 6
     return (
-        body + f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-        f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        body + f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
         + _unmask_dword("r11")
         + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r9*8]\n"
         + _mba_add_r10_rax(key)
     ), 7
 
 
-def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a load/store handler (``mov`` reg <-> [base+disp]).
 
     The base value is read from its frame slot (so rsp resolves to the captured
@@ -150,7 +152,7 @@ def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     """
     kind, width_text = handler_key.split("_")
     width = int(width_text)
-    body, advance = _mem_address_asm(False, key, key_dword)
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
     if kind == "load":
         load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
         body += load + "  mov qword ptr [rsp+r8*8], rax\n"
@@ -161,7 +163,7 @@ def _memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _riprel_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a rip-relative load/store handler.
 
     The target is recomputed as bytecode-base (r15) plus the stored signed
@@ -170,7 +172,7 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     """
     _, sub, width_text = handler_key.split("_")
     width = int(width_text)
-    body, advance = _mem_address_asm(True, key, key_dword)
+    body, advance = _mem_address_asm(True, key, key_dword, field_perm)
     if sub == "load":
         load = "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
         body += load + "  mov qword ptr [rsp+r8*8], rax\n"
@@ -181,7 +183,7 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``cmp reg, [mem]`` (computes the address, then compares).
 
     The memory address comes from a frame-slot base plus displacement
@@ -192,7 +194,7 @@ def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     parts = handler_key.split("_")
     riprel = parts[0] == "cmpriprel"
     width = int(parts[-1])
-    body, advance = _mem_address_asm(riprel, key, key_dword)
+    body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
     if width == 64:
         body += "  mov r9, qword ptr [rsp+r8*8]\n  cmp r9, qword ptr [r10]\n"
     else:
@@ -200,7 +202,7 @@ def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``<op> [mem], reg`` (memory is the read-modify-write
     destination, the register is the source).
 
@@ -211,7 +213,7 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     parts = handler_key.split("_")
     riprel = parts[0] == "opmemdstrip"
     mnemonic, width = parts[1], int(parts[2])
-    body, advance = _mem_address_asm(riprel, key, key_dword)
+    body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
     if width == 64:
         body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} qword ptr [r10], r9\n"
     else:
@@ -219,7 +221,7 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _movx_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _movx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``movzx/movsx reg, byte|word [base+disp]``.
 
     The address is computed with the shared prologue, then the byte or word is
@@ -228,7 +230,7 @@ def _movx_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     on whether the destination is 32- or 64-bit. movzx/movsx set no flags.
     """
     _, ext, src_size_text, dst_width_text = handler_key.split("_")
-    body, advance = _mem_address_asm(False, key, key_dword)
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
     return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
 
 
@@ -354,7 +356,7 @@ def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> s
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _lea_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _lea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``lea reg, [base+disp]`` / ``lea reg, [rip+disp]``.
 
     The effective address is computed exactly like a memory handler, but it is
@@ -362,11 +364,11 @@ def _lea_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     flags. A 32-bit destination truncates the address to its low 32 bits.
     """
     sub, width_text = handler_key.split("_")
-    body, advance = _mem_address_asm(sub == "learip", key, key_dword)
+    body, advance = _mem_address_asm(sub == "learip", key, key_dword, field_perm)
     return body + _lea_store_asm(int(width_text), advance)
 
 
-def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``<op> reg, [mem]`` (reg is source and destination).
 
     The address is computed like the compare-with-memory handler; the register
@@ -377,7 +379,7 @@ def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     parts = handler_key.split("_")
     riprel = parts[0] == "opriprel"
     mnemonic, width = parts[1], int(parts[2])
-    body, advance = _mem_address_asm(riprel, key, key_dword)
+    body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
     if width == 64:
         body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
     else:

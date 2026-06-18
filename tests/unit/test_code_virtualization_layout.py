@@ -13,7 +13,7 @@ assertion.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_layout import field_offsets, permuted_fields
+from r2morph.mutations.code_virtualization_layout import field_offsets, mem_offsets, permuted_fields
 
 
 def test_identity_layout_matches_legacy_fixed_offsets() -> None:
@@ -23,6 +23,17 @@ def test_identity_layout_matches_legacy_fixed_offsets() -> None:
     assert field_offsets("op_add_i_64", 0) == {"dst": 1, "imm": 2}
     assert field_offsets("op_add_r_64", 0) == {"dst": 1, "src": 2}
     assert field_offsets("opmba_add_i_32", 0) == {"dst": 1, "imm": 2}
+
+
+def test_memory_layout_identity_and_polymorphism() -> None:
+    # The base+disp memory family (load/store/lea/cmp/op/movx) shares one layout:
+    # perm 0 is the legacy reg@1, base@2, disp@3; rip-relative drops the base.
+    assert mem_offsets(False, 0) == {"reg": 1, "base": 2, "disp": 3}
+    assert mem_offsets(True, 0) == {"reg": 1, "disp": 2}
+    # Three operand fields give up to six orders, so memory is the kind where the
+    # per-build distinctness actually scales.
+    layouts = {tuple(sorted(mem_offsets(False, seed).items())) for seed in range(1, 60)}
+    assert len(layouts) > 2
 
 
 def test_some_seed_reorders_the_operand_fields() -> None:

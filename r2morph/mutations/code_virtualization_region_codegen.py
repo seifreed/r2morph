@@ -26,7 +26,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
     pack_immediate,
 )
-from r2morph.mutations.code_virtualization_layout import permuted_fields
+from r2morph.mutations.code_virtualization_layout import mem_permuted_fields, permuted_fields
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _FRAME_SIZE,
@@ -219,6 +219,18 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
     def emit_disp(value: int, position: int) -> None:
         plain.extend(byte ^ position for byte in struct.pack("<i", value))
 
+    def emit_mem(position: int, reg_slot: int, base_slot: int | None, disp: int) -> None:
+        # Emit a memory item's operand fields (register slot, optional base slot,
+        # 4-byte displacement) in this build's permuted order; the handler reads
+        # them at the matching offsets via mem_offsets, so the two always agree.
+        # base_slot is None for the rip-relative form (no base byte).
+        riprel = base_slot is None
+        field_bytes = {"reg": bytes([reg_slot]), "disp": struct.pack("<i", disp)}
+        if base_slot is not None:
+            field_bytes["base"] = bytes([base_slot])
+        for name, _size in mem_permuted_fields(riprel, scheme.field_perm):
+            plain.extend(byte ^ position for byte in field_bytes[name])
+
     for item in region.instructions:
         kind = item[0]
         # Every operand is masked with the opcode's stream position (returned by
@@ -281,47 +293,35 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind in ("load", "store"):
             _, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            emit_disp(disp, p)
+            emit_mem(p, slot_of[reg_slot], slot_of[base_slot], disp)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            emit_disp(target - bytecode_base, p)
+            emit_mem(p, slot_of[reg_slot], None, target - bytecode_base)
         elif kind == "cmpmem":
             _, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            emit_disp(disp, p)
+            emit_mem(p, slot_of[reg_slot], slot_of[base_slot], disp)
         elif kind == "cmpriprel":
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            emit_disp(target - bytecode_base, p)
+            emit_mem(p, slot_of[reg_slot], None, target - bytecode_base)
         elif kind == "opmem":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            emit_disp(disp, p)
+            emit_mem(p, slot_of[reg_slot], slot_of[base_slot], disp)
         elif kind == "opriprel":
             _, _mnemonic, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            emit_disp(target - bytecode_base, p)
+            emit_mem(p, slot_of[reg_slot], None, target - bytecode_base)
         elif kind == "lea":
             _, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            emit_disp(disp, p)
+            emit_mem(p, slot_of[reg_slot], slot_of[base_slot], disp)
         elif kind == "learip":
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            emit_disp(target - bytecode_base, p)
+            emit_mem(p, slot_of[reg_slot], None, target - bytecode_base)
         elif kind == "leaidx":
             _, reg_slot, base_slot, index_slot, shift, disp, _width = item
             p = emit_opcode(_required_key(item))
@@ -352,9 +352,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind == "movx":
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, disp = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            emit_disp(disp, p)
+            emit_mem(p, slot_of[reg_slot], slot_of[base_slot], disp)
         elif kind == "movxidx":
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, index_slot, shift, disp = item
             p = emit_opcode(_required_key(item))
@@ -366,14 +364,11 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            emit_disp(disp, p)
+            emit_mem(p, slot_of[reg_slot], slot_of[base_slot], disp)
         elif kind == "opmemdstrip":
             _, _mnemonic, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            emit_disp(target - bytecode_base, p)
+            emit_mem(p, slot_of[reg_slot], None, target - bytecode_base)
         elif kind == "jmp":
             p = emit_opcode("jmp")
             emit_disp(offsets[item[1]], p)
@@ -444,17 +439,17 @@ def handler_instances_asm(
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
-            lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword))
+            lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("opmemdst_", "opmemdstrip_")):
-            lines.append(_op_memdst_handler_asm(handler_key, key, key_dword))
+            lines.append(_op_memdst_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("opmem_", "opriprel_")):
-            lines.append(_op_memory_handler_asm(handler_key, key, key_dword))
+            lines.append(_op_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("leaidxnb_"):
             lines.append(_lea_indexed_nobase_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("leaidx_"):
             lines.append(_lea_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith(("lea_", "learip_")):
-            lines.append(_lea_handler_asm(handler_key, key, key_dword))
+            lines.append(_lea_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("opmemidx_"):
             lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("incdec_"):
@@ -462,11 +457,11 @@ def handler_instances_asm(
         elif handler_key.startswith("movxidx_"):
             lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword))
         elif handler_key.startswith("movx_"):
-            lines.append(_movx_handler_asm(handler_key, key, key_dword))
+            lines.append(_movx_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
-            lines.append(_riprel_handler_asm(handler_key, key, key_dword))
+            lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("load_", "store_")):
-            lines.append(_memory_handler_asm(handler_key, key, key_dword))
+            lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key == "jmp":
             lines.append(retarget)
         elif handler_key.startswith("jcc_"):

@@ -49,19 +49,45 @@ def has_layout(handler_key: str) -> bool:
     return handler_key.split("_", 1)[0] in _OPERAND_FIELDS
 
 
-def permuted_fields(handler_key: str, field_perm: int) -> list[Field]:
-    """The item's operand fields in this build's order (identity when 0)."""
-    fields = _OPERAND_FIELDS[handler_key.split("_", 1)[0]](handler_key)
+def _permute(fields: list[Field], field_perm: int) -> list[Field]:
     if field_perm:
         random.Random(field_perm).shuffle(fields)
     return fields
 
 
-def field_offsets(handler_key: str, field_perm: int) -> dict[str, int]:
-    """Byte offset of each operand field for this build (opcode occupies 0)."""
+def _offsets(fields: list[Field]) -> dict[str, int]:
     offsets: dict[str, int] = {}
-    cursor = 1
-    for name, size in permuted_fields(handler_key, field_perm):
+    cursor = 1  # operand bytes follow the 1-byte opcode at offset 0
+    for name, size in fields:
         offsets[name] = cursor
         cursor += size
     return offsets
+
+
+def permuted_fields(handler_key: str, field_perm: int) -> list[Field]:
+    """The item's operand fields in this build's order (identity when 0)."""
+    return _permute(_OPERAND_FIELDS[handler_key.split("_", 1)[0]](handler_key), field_perm)
+
+
+def field_offsets(handler_key: str, field_perm: int) -> dict[str, int]:
+    """Byte offset of each operand field for this build (opcode occupies 0)."""
+    return _offsets(permuted_fields(handler_key, field_perm))
+
+
+def _mem_fields(riprel: bool) -> list[Field]:
+    # Memory items shared by every handler that routes through the address
+    # prologue: a register slot, the displacement, and (non-rip-relative) a base
+    # slot. The rip-relative form stores its target as a 4-byte displacement only.
+    if riprel:
+        return [("reg", 1), ("disp", 4)]
+    return [("reg", 1), ("base", 1), ("disp", 4)]
+
+
+def mem_permuted_fields(riprel: bool, field_perm: int) -> list[Field]:
+    """Memory item operand fields in this build's order (identity when 0)."""
+    return _permute(_mem_fields(riprel), field_perm)
+
+
+def mem_offsets(riprel: bool, field_perm: int) -> dict[str, int]:
+    """Byte offset of each memory operand field for this build."""
+    return _offsets(mem_permuted_fields(riprel, field_perm))
