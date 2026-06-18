@@ -40,29 +40,50 @@ def _mba_add_r10_rax(key: int) -> str:
     return _mba_add("rax", "rcx", key)
 
 
+# Each boolean op carries several equivalent per-instance rewrites so a handler is
+# neither the plain op nor a single fixed MBA signature across samples. The first
+# two of each are pure-boolean De Morgan identities; the third mixes in arithmetic
+# (add/sub/lea), a genuinely different micro-op sequence that an MBA simplifier
+# keyed on boolean shape does not match. All operate on r10 (a) and rax (b) with
+# rcx as the only scratch, and run only where flags are dead. Compute r10 = r10 <op> rax.
+_BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
+    "xor": (
+        # (a | b) & ~(a & b)
+        "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  not rcx\n  and r10, rcx\n",
+        # (a & ~b) | (~a & b)
+        "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  not r10\n  and r10, rax\n  or r10, rcx\n",
+        # (a | b) - (a & b)
+        "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  sub r10, rcx\n",
+    ),
+    "and": (
+        # ~(~a | ~b)
+        "  not r10\n  mov rcx, rax\n  not rcx\n  or r10, rcx\n  not r10\n",
+        # (a ^ b) ^ (a | b)
+        "  mov rcx, r10\n  or rcx, rax\n  xor r10, rax\n  xor r10, rcx\n",
+        # (a | b) - (a ^ b)
+        "  mov rcx, r10\n  xor rcx, rax\n  or r10, rax\n  sub r10, rcx\n",
+    ),
+    "or": (
+        # ~(~a & ~b)
+        "  not r10\n  mov rcx, rax\n  not rcx\n  and r10, rcx\n  not r10\n",
+        # (a ^ b) | (a & b)
+        "  mov rcx, r10\n  and rcx, rax\n  xor r10, rax\n  or r10, rcx\n",
+        # (a ^ b) + (a & b)
+        "  mov rcx, r10\n  and rcx, rax\n  xor r10, rax\n  add r10, rcx\n",
+    ),
+}
+
+
 def _op_mba_compute(mnemonic: str, key: int) -> str:
     """Compute ``r10 = r10 <op> rax`` with no literal native op (r10 == a, rax == b).
 
     add/sub use the polymorphic MBA add fold (sub must already have negated its
-    source); the boolean ops use one of two per-instance MBA identities (selected
-    by a key bit), so the handler never contains the plain xor/and/or it stands for
-    and the rewrite is not a single fixed signature. ``not`` is flag-neutral and the
-    boolean ops set only dead flags. rcx is the free scratch register.
+    source); the boolean ops select one of several per-instance MBA rewrites (a key
+    field picks the variant), so the handler never contains the plain xor/and/or it
+    stands for and the rewrite is not a single fixed signature. ``not``/``lea`` are
+    flag-neutral and the boolean ops set only dead flags. rcx is the free scratch.
     """
     if mnemonic in ("add", "sub"):
         return _mba_add("rax", "rcx", key)
-    variant = (key >> 4) & 1
-    if mnemonic == "xor":
-        if variant:  # a ^ b == (a & ~b) | (~a & b)
-            return "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  not r10\n  and r10, rax\n  or r10, rcx\n"
-        # a ^ b == (a | b) & ~(a & b)
-        return "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  not rcx\n  and r10, rcx\n"
-    if mnemonic == "and":
-        if variant:  # a & b == (a ^ b) ^ (a | b)
-            return "  mov rcx, r10\n  or rcx, rax\n  xor r10, rax\n  xor r10, rcx\n"
-        # a & b == ~(~a | ~b)
-        return "  not r10\n  mov rcx, rax\n  not rcx\n  or r10, rcx\n  not r10\n"
-    if variant:  # a | b == (a ^ b) | (a & b)
-        return "  mov rcx, r10\n  and rcx, rax\n  xor r10, rax\n  or r10, rcx\n"
-    # a | b == ~(~a & ~b)
-    return "  not r10\n  mov rcx, rax\n  not rcx\n  and r10, rcx\n  not r10\n"
+    variants = _BOOL_VARIANTS[mnemonic]
+    return variants[(key >> 4) % len(variants)]

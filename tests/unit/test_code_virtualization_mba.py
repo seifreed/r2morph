@@ -29,8 +29,8 @@ _BOOLEAN_OPS = (
     ("and", lambda a, b: a & b),
     ("or", lambda a, b: a | b),
 )
-# Bytecode keys whose bit 4 is 0 and 1 — selecting each boolean MBA variant.
-_VARIANT_KEYS = (0x01, 0x10)
+# Bytecode keys whose (key >> 4) % 3 is 0, 1, 2 — selecting each boolean MBA variant.
+_VARIANT_KEYS = (0x01, 0x10, 0x20)
 _SAMPLES = (
     (0xCAFEB0BA12345678, 0x0F0F0F0FF0F0F0F0),
     (0xFFFFFFFFFFFFFFFF, 0x0000000000000000),
@@ -72,8 +72,9 @@ def test_boolean_mba_never_contains_the_literal_native_op() -> None:
 
 
 def test_boolean_mba_is_polymorphic_across_instances() -> None:
+    # Three equivalent rewrites per op (two pure-boolean, one arithmetic-mixed).
     for mnemonic, _ in _BOOLEAN_OPS:
-        assert len({_op_mba_compute(mnemonic, key) for key in range(1, 256)}) == 2
+        assert len({_op_mba_compute(mnemonic, key) for key in range(1, 256)}) == 3
 
 
 @pytest.mark.parametrize("mnemonic,native", _BOOLEAN_OPS)
