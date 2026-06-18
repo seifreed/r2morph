@@ -470,6 +470,28 @@ def test_compare_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_boolean_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> None:
+    # Flag-live and/xor/or are synthesized too (result via boolean MBA, flags in
+    # logic mode with CF=OF=0). The branches check the zero flag of and/xor and the
+    # sign flag of or, so a wrong synthesis diverts to a non-42 exit.
+    fixture = _DATASET / "elf_vm_boolflaglive_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_boolflaglive"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_straight_line_memory_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # This function contains a call (so the control-flow VM rejects it) AND its
     # straight-line run mixes register ops with [rsp+disp] store/load. Exercises

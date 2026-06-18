@@ -204,7 +204,8 @@ def _op_synth_handler_asm(handler_key: str, key: int, key_qword: str, key_dword:
     body += _op_mba_compute(mnemonic, key)
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, mnemonic)
+    # add/sub keep their arithmetic flags; xor/and/or clear CF and OF (logic mode).
+    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic")
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += "  mov qword ptr [rsp+r8*8], r10\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"

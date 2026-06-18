@@ -516,11 +516,12 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
     # sees only the program's real items.
     for index in _flag_dead_op_indices(items):
         items[index][0] = "opmba"
-    # A flag-LIVE add/sub (not marked opmba above) becomes opsynth: the result is
-    # computed by MBA and the flags are synthesized by hand, so the handler contains
-    # no flag-setting native arithmetic even when a later branch reads its flags.
+    # A flag-LIVE arithmetic/boolean op (not marked opmba above) becomes opsynth:
+    # the result is computed by MBA and the flags are synthesized by hand, so the
+    # handler contains no flag-setting native arithmetic even when a later branch
+    # reads its flags.
     for index, item in enumerate(items):
-        if item[0] == "op" and item[1].mnemonic in ("add", "sub"):
+        if item[0] == "op" and item[1].mnemonic in _MBA_OP_MNEMONICS:
             items[index][0] = "opsynth"
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
