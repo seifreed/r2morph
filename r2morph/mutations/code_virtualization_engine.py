@@ -156,12 +156,44 @@ _LIVE_JUNK_TEMPLATES: tuple[str, ...] = (
 )
 
 
-def _live_junk_asm(rng: random.Random) -> str:
-    """A short run of reachable, state-neutral junk for the head of a handler."""
+def _opaque_predicate_asm(rng: random.Random, index: int) -> str:
+    """A reachable, always-taken branch guarding an unreachable junk body.
+
+    ``x*(x+1)`` is even for every integer x (one of two consecutive integers is
+    even), so ``test rbp, 1`` always clears bit 0 and the ``jz`` is always taken;
+    the junk body between the branch and the label never executes. The predicate
+    reads and writes only rbx/rbp/r12 - state-neutral at a handler head, exactly
+    like the live junk above - and clobbers only flags, which the straight-line VM
+    never captures, so it adds opaque control flow without touching program state.
+    A linear sweep, or a handler signature that assumes straight-line handler
+    heads, must now account for a branch whose direction it cannot resolve without
+    proving the identity. ``index`` (unique per handler) keeps the skip label
+    unique.
+    """
+    seed = rng.choice(("rbx", "r12"))  # rbp holds the x*(x+1) accumulator
+    dead = "".join(
+        "  " + rng.choice(_LIVE_JUNK_TEMPLATES).format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n"
+        for _ in range(rng.randint(1, 3))
+    )
+    return (
+        f"  lea rbp, [{seed} + 1]\n"
+        f"  imul rbp, {seed}\n"
+        "  test rbp, 1\n"
+        f"  jz opaque_{index}\n"
+        f"{dead}"
+        f"opaque_{index}:\n"
+    )
+
+
+def _live_junk_asm(rng: random.Random, index: int) -> str:
+    """A short run of reachable, state-neutral junk for the head of a handler,
+    sometimes capped with an opaque-predicate branch over an unreachable body."""
     lines = []
     for _ in range(rng.randint(0, 3)):
         template = rng.choice(_LIVE_JUNK_TEMPLATES)
         lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
+    if rng.random() < 0.5:
+        lines.append(_opaque_predicate_asm(rng, index))
     return "".join(lines)
 
 
@@ -688,7 +720,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     for index in range(total):
         mnemonic, is_immediate, width = index_to_key[index]
         # Reachable head junk makes duplicate handlers diverge in executed code.
-        lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng)}{handler_body(mnemonic, is_immediate, width)}")
+        lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng, index)}{handler_body(mnemonic, is_immediate, width)}")
 
     lines.append("vm_exit:\n")
     for index, name in enumerate(GP_REGISTERS):
