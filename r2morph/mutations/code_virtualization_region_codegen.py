@@ -501,19 +501,15 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved.
     lines.append(checksum_prologue_asm(scheme.xor_key))
-    lines.append(
-        # Capture the program's entry rsp, then relocate its virtual stack a
-        # guard distance below the VM frame so the function's own push/pop never
-        # collides with the spilled context. rsp is only ever a memory base or a
-        # push/pop target, so this constant shift stays self-consistent.
-        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
-        "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
-        # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
-        # per-handler offset table, so there is no linear comparison ladder for a
-        # disassembler or automated devirtualizer to pattern-match. r13/r14/r15 are
-        # spilled context slots, free to clobber between handlers (r15 holds the
-        # bytecode base for the whole run).
-        "vm_dispatch:\n"
+    # Direct-threaded dispatch: rather than a single shared dispatch block every
+    # handler jumps back to (a fan-in hub a devirtualizer flags as the dispatcher
+    # by in-degree, and pattern-matches as one fixed sequence), the opcode decode
+    # is inlined at the entry and at the tail of every handler. Each handler thus
+    # decodes the next opcode itself and jumps straight to the next handler, so no
+    # central dispatcher node exists. The decode runs once per opcode either way,
+    # so the executed instruction count is unchanged; only the interpreter's code
+    # size grows (one decode copy per handler), scanned once by the entry checksum.
+    decode = (
         # Undo the opcode byte's position mask (encoder XORed it with rsi-base).
         "  mov r13, rsi\n  sub r13, r15\n"
         "  movzx eax, byte ptr [rsi]\n"
@@ -533,6 +529,15 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n  xor eax, {hex(scheme.table_key)}\n"
         f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
         "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
+    )
+    lines.append(
+        # Capture the program's entry rsp, then relocate its virtual stack a
+        # guard distance below the VM frame so the function's own push/pop never
+        # collides with the spilled context. rsp is only ever a memory base or a
+        # push/pop target, so this constant shift stays self-consistent. r13/r14
+        # are free scratch between handlers; r15 holds the bytecode base.
+        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
+        "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n" + decode
     )
 
     reload_seq = "".join(
@@ -571,7 +576,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
         f"vm_table:\n{table}bytecode:\n"
     )
-    return "".join(lines)
+    # Thread the dispatch: every handler tail (and the retarget) ends with a back
+    # jump to the (now removed) central dispatcher; splice the decode in its place
+    # so control flows handler -> decode -> next handler with no shared hub block.
+    return "".join(lines).replace("  jmp vm_dispatch\n", decode)
 
 
 def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> bytes | None:

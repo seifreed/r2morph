@@ -185,11 +185,15 @@ def _inner_exit_asm(parent_scheme: RegionScheme, parent: int, parent_count: int,
 
 
 def _dispatch_asm() -> str:
-    # Shared dispatcher: decode the opcode with the active layer's key (frame
-    # slot) plus the position mask and the self-checksum, bounds-check against
-    # the active handler count, then jump through the active dispatch table.
+    # Direct-threaded decode block (no label): the opcode is decoded with the
+    # active layer's key (frame slot) plus the position mask and self-checksum,
+    # bounds-checked against the active handler count, then dispatched through the
+    # active table. This body is inlined at the entry and at the tail of every
+    # handler and transfer stub, so there is no single shared dispatcher node for
+    # a devirtualizer to find by in-degree; control threads handler -> decode ->
+    # next handler. It runs once per opcode either way, so executed instruction
+    # count is unchanged; only interpreter code size grows (scanned once).
     return (
-        "vm_dispatch:\n"
         "  mov r13, rsi\n  sub r13, r15\n"
         "  movzx eax, byte ptr [rsi]\n"
         f"  xor al, byte ptr [rsp+{_KEY_OFFSET}]\n  xor al, r13b\n  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n"
@@ -321,14 +325,18 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         "".join(f"bc_{layer}:\n  .space {lens[layer]}\n" for layer in range(count - 1)) + f"bc_{count - 1}:\n"
     )
 
+    # Thread the dispatch: splice the decode block in for every back jump to the
+    # (now removed) shared dispatcher - handler tails, the entry, the retarget and
+    # the enter_inner/inner_exit transfer stubs all end with `jmp vm_dispatch`, so
+    # control flows directly handler -> decode -> next handler with no hub block.
+    decode = _dispatch_asm()
     asm = (
         entry
-        + _dispatch_asm()
         + "".join(layer_bodies)
         + f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(layers[0].exit_vaddr)}\n"
         + tables
         + reservations
-    )
+    ).replace("  jmp vm_dispatch\n", decode)
 
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)

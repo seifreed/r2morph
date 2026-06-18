@@ -602,17 +602,15 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt; runs after the register spill.
     lines.append(checksum_prologue_asm(key, slot=_CHECKSUM_OFFSET))
-    lines.append(
-        f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
-        f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
-        "  lea rsi, [rip + bytecode]\n  mov r15, rsi\n"
-        # Indirect, opcode-indexed dispatch: the decrypted opcode byte indexes a
-        # base-independent offset table (each entry a 32-bit signed offset from
-        # vm_table to its handler), so there is no comparison ladder to match and
-        # the jump survives rebasing/ASLR like the rest of the blob's rel32 jumps.
-        # An opcode >= N (the exit marker) leaves through the bounds guard. r15
-        # holds the bytecode base; r13/r14 are free scratch between handlers.
-        "vm_dispatch:\n"
+    # Direct-threaded dispatch: instead of a single shared dispatch block every
+    # handler jumps back to (a fan-in hub a devirtualizer flags as the dispatcher
+    # by in-degree, and pattern-matches as one fixed sequence), the opcode decode
+    # is inlined at the entry and at the tail of every handler, so each handler
+    # decodes the next opcode itself and jumps straight to the next handler - no
+    # central dispatcher node. The decode runs once per opcode either way, so the
+    # executed instruction count is unchanged; only the interpreter code size grows
+    # (one decode copy per handler), scanned once by the entry checksum.
+    decode = (
         # Undo the opcode byte's position mask (encoder XORed it with rsi-base).
         "  mov r13, rsi\n  sub r13, r15\n"
         "  movzx eax, byte ptr [rsi]\n"
@@ -628,6 +626,12 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         f"  movzx ecx, byte ptr [rsp + {_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
         "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
     )
+    lines.append(
+        f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
+        f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
+        # r15 holds the bytecode base; r13/r14 are free scratch between handlers.
+        "  lea rsi, [rip + bytecode]\n  mov r15, rsi\n" + decode
+    )
 
     for index in range(total):
         mnemonic, is_immediate, width = index_to_key[index]
@@ -642,7 +646,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
 
     table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
     lines.append(f"vm_table:\n{table}bytecode:\n")
-    return "".join(lines)
+    # Thread the dispatch: every handler tail ends with a back jump to the (now
+    # removed) central dispatcher; splice the decode in its place so control flows
+    # handler -> decode -> next handler with no shared hub block.
+    return "".join(lines).replace("  jmp vm_dispatch\n", decode)
 
 
 def build_vm_blob(
