@@ -19,6 +19,7 @@ import random
 import struct
 from typing import Any
 
+from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
     RSP_INDEX,
@@ -501,35 +502,43 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved.
     lines.append(checksum_prologue_asm(scheme.xor_key))
-    # Direct-threaded dispatch: rather than a single shared dispatch block every
-    # handler jumps back to (a fan-in hub a devirtualizer flags as the dispatcher
-    # by in-degree, and pattern-matches as one fixed sequence), the opcode decode
-    # is inlined at the entry and at the tail of every handler. Each handler thus
-    # decodes the next opcode itself and jumps straight to the next handler, so no
-    # central dispatcher node exists. The decode runs once per opcode either way,
-    # so the executed instruction count is unchanged; only the interpreter's code
-    # size grows (one decode copy per handler), scanned once by the entry checksum.
-    decode = (
-        # Undo the opcode byte's position mask (encoder XORed it with rsi-base).
-        "  mov r13, rsi\n  sub r13, r15\n"
-        "  movzx eax, byte ptr [rsi]\n"
-        # Fold in the position mask (r13b) and the runtime self-checksum: the
-        # encoder pre-biased the opcode with the expected checksum, so a faithful
-        # interpreter cancels it and a tampered one misdecodes every opcode.
-        f"  xor al, {key}\n  xor al, r13b\n  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n"
-        f"  cmp al, {sum(len(indices) for indices in scheme.dup.values())}\n  jae vm_exit\n"
-        # Base-independent indirect dispatch: each table entry is a 32-bit signed
-        # offset from vm_table to its handler, so the jump survives rebasing/ASLR
-        # exactly like the rel32 jumps the rest of the blob relies on. The stored
-        # offsets are XOR-encrypted, so the table is not a plaintext handler map a
-        # disassembler can recover as a switch; the dispatch decrypts each entry.
-        # The table key is itself diffused with the runtime self-checksum
-        # (broadcast to 32 bits), so tampering corrupts handler-address resolution
-        # too, not just the opcode decode - the build pre-folds the same value.
-        f"  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n  xor eax, {hex(scheme.table_key)}\n"
-        f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
-        "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
-    )
+    # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
+    # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
+    # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
+    # opcode decode is inlined at the entry and at the tail of every handler, and
+    # each copy shuffles its order-independent XOR groups so no two copies share a
+    # byte layout. Each handler thus decodes the next opcode itself and jumps
+    # straight to the next handler. The decode runs once per opcode either way and
+    # shuffling only reorders instructions, so executed count and size are
+    # unchanged; only the interpreter's code grows (one copy per handler).
+    poly_rng = random.Random(scheme.table_key)
+    handler_count = sum(len(indices) for indices in scheme.dup.values())
+
+    def make_decode() -> str:
+        return decode_block(
+            # Undo the opcode byte's position mask and fold in the key and the
+            # runtime self-checksum: the encoder pre-biased the opcode with the
+            # expected checksum, so a faithful interpreter cancels it and a tampered
+            # one misdecodes every opcode.
+            opcode_xors=[
+                f"  xor al, {key}\n",
+                "  xor al, r13b\n",
+                f"  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n",
+            ],
+            bounds=f"  cmp al, {handler_count}\n  jae vm_exit\n",
+            # Base-independent indirect dispatch: each table entry is a 32-bit signed
+            # offset from vm_table to its handler. The offsets are XOR-encrypted (not
+            # a plaintext switch a disassembler recovers) and the table key is
+            # diffused with the self-checksum (broadcast to 32 bits), so tampering
+            # corrupts handler-address resolution too.
+            table_load="  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n",
+            table_xors=[
+                f"  xor eax, {hex(scheme.table_key)}\n",
+                f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
+            ],
+            rng=poly_rng,
+        )
+
     lines.append(
         # Capture the program's entry rsp, then relocate its virtual stack a
         # guard distance below the VM frame so the function's own push/pop never
@@ -537,7 +546,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         # push/pop target, so this constant shift stays self-consistent. r13/r14
         # are free scratch between handlers; r15 holds the bytecode base.
         f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
-        "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n" + decode
+        "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n" + make_decode()
     )
 
     reload_seq = "".join(
@@ -577,9 +586,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"vm_table:\n{table}bytecode:\n"
     )
     # Thread the dispatch: every handler tail (and the retarget) ends with a back
-    # jump to the (now removed) central dispatcher; splice the decode in its place
-    # so control flows handler -> decode -> next handler with no shared hub block.
-    return "".join(lines).replace("  jmp vm_dispatch\n", decode)
+    # jump to the (now removed) central dispatcher; splice a freshly shuffled decode
+    # copy in for each so control flows handler -> decode -> next handler with no
+    # shared hub block and no two copies sharing a byte layout.
+    return thread_back_jumps("".join(lines), make_decode)
 
 
 def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> bytes | None:

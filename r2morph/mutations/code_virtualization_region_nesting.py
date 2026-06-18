@@ -28,6 +28,7 @@ import random
 import struct
 from typing import Any
 
+from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import (
@@ -184,26 +185,32 @@ def _inner_exit_asm(parent_scheme: RegionScheme, parent: int, parent_count: int,
     )
 
 
-def _dispatch_asm() -> str:
-    # Direct-threaded decode block (no label): the opcode is decoded with the
-    # active layer's key (frame slot) plus the position mask and self-checksum,
-    # bounds-checked against the active handler count, then dispatched through the
-    # active table. This body is inlined at the entry and at the tail of every
-    # handler and transfer stub, so there is no single shared dispatcher node for
-    # a devirtualizer to find by in-degree; control threads handler -> decode ->
-    # next handler. It runs once per opcode either way, so executed instruction
-    # count is unchanged; only interpreter code size grows (scanned once).
-    return (
-        "  mov r13, rsi\n  sub r13, r15\n"
-        "  movzx eax, byte ptr [rsi]\n"
-        f"  xor al, byte ptr [rsp+{_KEY_OFFSET}]\n  xor al, r13b\n  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n"
-        f"  movzx ecx, byte ptr [rsp+{_COUNT_OFFSET}]\n  cmp al, cl\n  jae vm_exit\n"
-        f"  mov r14, qword ptr [rsp+{_TABLE_OFFSET}]\n  mov eax, dword ptr [r14+rax*4]\n"
+def _decode_block(rng: random.Random) -> str:
+    # Direct-threaded, polymorphic decode block (no label): the opcode is decoded
+    # with the active layer's key (frame slot) plus the position mask and self-
+    # checksum, bounds-checked against the active handler count, then dispatched
+    # through the active table. This body is inlined at the entry and at the tail
+    # of every handler and transfer stub, so there is no single shared dispatcher
+    # node for a devirtualizer to find by in-degree; control threads handler ->
+    # decode -> next handler. Each copy shuffles its order-independent XOR groups,
+    # so no two share a byte layout. It runs once per opcode either way and
+    # shuffling only reorders instructions, so executed count and size are
+    # unchanged; only interpreter code size grows (scanned once).
+    return decode_block(
+        opcode_xors=[
+            f"  xor al, byte ptr [rsp+{_KEY_OFFSET}]\n",
+            "  xor al, r13b\n",
+            f"  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n",
+        ],
+        bounds=f"  movzx ecx, byte ptr [rsp+{_COUNT_OFFSET}]\n  cmp al, cl\n  jae vm_exit\n",
+        table_load=f"  mov r14, qword ptr [rsp+{_TABLE_OFFSET}]\n  mov eax, dword ptr [r14+rax*4]\n",
         # Diffuse the table key with the self-checksum (broadcast to 32 bits) so
         # tampering corrupts handler resolution in every layer, not just opcodes.
-        f"  xor eax, dword ptr [rsp+{_TKEY_OFFSET}]\n"
-        f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
-        "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
+        table_xors=[
+            f"  xor eax, dword ptr [rsp+{_TKEY_OFFSET}]\n",
+            f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
+        ],
+        rng=rng,
     )
 
 
@@ -325,18 +332,21 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         "".join(f"bc_{layer}:\n  .space {lens[layer]}\n" for layer in range(count - 1)) + f"bc_{count - 1}:\n"
     )
 
-    # Thread the dispatch: splice the decode block in for every back jump to the
-    # (now removed) shared dispatcher - handler tails, the entry, the retarget and
-    # the enter_inner/inner_exit transfer stubs all end with `jmp vm_dispatch`, so
-    # control flows directly handler -> decode -> next handler with no hub block.
-    decode = _dispatch_asm()
-    asm = (
+    # Thread the dispatch: splice a freshly shuffled decode copy in for every back
+    # jump to the (now removed) shared dispatcher - handler tails, the entry, the
+    # retarget and the enter_inner/inner_exit transfer stubs all end with
+    # `jmp vm_dispatch`, so control flows directly handler -> decode -> next handler
+    # with no hub block and no two copies sharing a byte layout. One rng seeded from
+    # the outer layer's table key keeps the variant sequence deterministic per build.
+    poly_rng = random.Random(schemes[0].table_key)
+    asm = thread_back_jumps(
         entry
         + "".join(layer_bodies)
         + f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(layers[0].exit_vaddr)}\n"
         + tables
-        + reservations
-    ).replace("  jmp vm_dispatch\n", decode)
+        + reservations,
+        lambda: _decode_block(poly_rng),
+    )
 
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
