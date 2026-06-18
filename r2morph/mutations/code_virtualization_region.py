@@ -51,6 +51,8 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_rsp_arith,
     _decode_shift,
     _decode_two_operand,
+    _parse_mem_operand,
+    _parse_riprel_operand,
 )
 from r2morph.mutations.code_virtualization_region_models import (
     Region,
@@ -182,6 +184,20 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         if len(parts) == 2 and parts[1] in GP_REGISTERS and parts[1] != "rsp":
             return ["icall", GP_REGISTERS.index(parts[1])]
         return None
+    if kind == "ircall":
+        # Memory-indirect call (call qword [base+disp] / [rip+disp]): the target
+        # pointer is loaded from memory at runtime - vtable and IAT/GOT dispatch.
+        # The addressing reuses the load handlers' machinery; indexed forms stay
+        # native for now.
+        operand = text.split(None, 1)[1] if " " in text else ""
+        mem = _parse_mem_operand(operand)
+        if mem is not None:
+            base_slot, disp, _width = mem
+            return ["callmem", base_slot, disp]
+        riprel_ptr = _parse_riprel_operand(operand, insn.get("addr", 0), insn.get("size", 0))
+        if riprel_ptr is not None:
+            return ["callmemrip", riprel_ptr[0]]
+        return None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
     if kind == "cjmp":
@@ -300,7 +316,21 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
 # Items that fully overwrite every readable arithmetic flag (CF, OF, SF, ZF, PF;
 # AF is never read by any conditional jump). They kill an upstream flag value.
 _FLAG_KILLER_KINDS = frozenset(
-    {"cmp", "test", "cmpmem", "cmpriprel", "opmem", "opriprel", "opmemdst", "opmemdstrip", "opmemidx", "call", "icall"}
+    {
+        "cmp",
+        "test",
+        "cmpmem",
+        "cmpriprel",
+        "opmem",
+        "opriprel",
+        "opmemdst",
+        "opmemdstrip",
+        "opmemidx",
+        "call",
+        "icall",
+        "callmem",
+        "callmemrip",
+    }
 )
 
 

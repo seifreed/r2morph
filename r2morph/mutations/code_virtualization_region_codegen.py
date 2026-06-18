@@ -47,6 +47,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
     _leave_handler_asm,
+    _mem_address_asm,
     _memory_handler_asm,
     _mov_from_rsp_handler_asm,
     _mov_to_rsp_handler_asm,
@@ -194,6 +195,20 @@ def _icall_handler_asm(index: int, key: int, slot: tuple[int, ...]) -> str:
     return _call_bridge_asm(index, slot, target, 2)
 
 
+def _call_mem_handler_asm(
+    index: int, key: int, key_dword: str, slot: tuple[int, ...], riprel: bool, field_perm: int
+) -> str:
+    """Memory-indirect ``call qword [mem]``: the callee address is a pointer loaded
+    from memory (vtable / IAT-GOT dispatch). The shared memory-address prologue
+    computes the pointer's address into r10 (base+disp from a frame slot, or
+    bytecode base plus a stored offset for the rip-relative form); dereferencing it
+    yields the target. The item carries an unused register field so it reuses the
+    load handlers' address machinery and operand layout verbatim."""
+    address, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
+    target = address + "  mov r10, qword ptr [r10]\n"
+    return _call_bridge_asm(index, slot, target, advance)
+
+
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
     if kind in ("op", "opmba"):
@@ -241,6 +256,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 5  # opcode + 4-byte bytecode-relative target offset
     if kind == "icall":
         return 2  # opcode + register slot holding the runtime target
+    if kind == "callmem":
+        return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
+    if kind == "callmemrip":
+        return 6  # opcode + (unused) reg slot + 4-byte bytecode-relative offset
     return 1  # nop, exit, enter_inner, inner_exit (opcode byte only)
 
 
@@ -449,6 +468,16 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, reg_slot = item
             p = emit_opcode("icall")
             plain.append(slot_of[reg_slot] ^ p)
+        elif kind == "callmem":
+            _, base_slot, disp = item
+            p = emit_opcode("callmem")
+            # Reuse the load operand layout; the register field is a placeholder
+            # the handler decodes but never uses.
+            emit_mem(p, slot_of[0], slot_of[base_slot], disp)
+        elif kind == "callmemrip":
+            _, target = item
+            p = emit_opcode("callmemrip")
+            emit_mem(p, slot_of[0], None, target - bytecode_base)
         elif kind == "jmp":
             p = emit_opcode("jmp")
             emit_disp(offsets[item[1]], p)
@@ -497,6 +526,10 @@ def handler_instances_asm(
             lines.append(_call_handler_asm(index, key_dword, slot))
         elif handler_key == "icall":
             lines.append(_icall_handler_asm(index, key, slot))
+        elif handler_key == "callmem":
+            lines.append(_call_mem_handler_asm(index, key, key_dword, slot, False, field_perm))
+        elif handler_key == "callmemrip":
+            lines.append(_call_mem_handler_asm(index, key, key_dword, slot, True, field_perm))
         elif handler_key.startswith("opmba_"):
             lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("op_"):

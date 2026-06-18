@@ -150,6 +150,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "call"  # bridge out to a native callee and back
     if kind == "icall":
         return "icall"  # register-indirect call (target from a frame slot)
+    if kind == "callmem":
+        return "callmem"  # memory-indirect call (target pointer at base+disp)
+    if kind == "callmemrip":
+        return "callmemrip"  # memory-indirect call (target pointer at rip+disp)
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":
