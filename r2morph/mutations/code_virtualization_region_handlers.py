@@ -313,19 +313,33 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     """Assembly body for ``<op> [mem], reg`` (memory is the read-modify-write
     destination, the register is the source).
 
-    The address is computed with the shared prologue, the register value is read
-    from its slot, and the real arithmetic is applied directly against memory
-    (which both reads and writes it), capturing the flags.
+    The address is computed with the shared prologue and kept in r12 (free scratch)
+    so the result can be written back to memory after the MBA fold; the memory value
+    is a, the register is b, and the flags are synthesized (no literal op, no pushfq).
     """
     parts = handler_key.split("_")
     riprel = parts[0] == "opmemdstrip"
     mnemonic, width = parts[1], int(parts[2])
     body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
+    body += "  mov r12, r10\n"
     if width == 64:
-        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} qword ptr [r10], r9\n"
+        body += "  mov rbx, qword ptr [r12]\n  mov rax, qword ptr [rsp+r8*8]\n"
     else:
-        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} dword ptr [r10], r9d\n"
-    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+        body += "  mov ebx, dword ptr [r12]\n  mov eax, dword ptr [rsp+r8*8]\n"
+    body += "  mov rbp, rax\n"
+    if mnemonic == "sub":
+        body += "  neg rax\n"
+    body += "  mov r10, rbx\n"
+    body += _op_mba_compute(mnemonic, key)
+    if width == 32:
+        body += "  mov r10d, r10d\n"
+    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic")
+    body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    if width == 64:
+        body += "  mov qword ptr [r12], r10\n"
+    else:
+        body += "  mov dword ptr [r12], r10d\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _movx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
@@ -449,22 +463,41 @@ def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str, 
     return body + _lea_store_asm(width, 8)
 
 
+def _op_mem_synth_tail(mnemonic: str, width: int, key: int, advance: int) -> str:
+    """Tail shared by ``<op> reg, [mem]`` handlers: with the effective address in
+    r10 and the register slot index in r8, compute ``reg <op> [mem]`` with the MBA
+    fold, synthesize the flags, store the result to the register slot.
+
+    The register operand is a, the loaded memory operand is b; nothing here spells
+    out a literal native op or a pushfq.
+    """
+    if width == 64:
+        body = "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
+    else:
+        body = "  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+    body += "  mov rbp, rax\n"
+    if mnemonic == "sub":
+        body += "  neg rax\n"
+    body += "  mov r10, rbx\n"
+    body += _op_mba_compute(mnemonic, key)
+    if width == 32:
+        body += "  mov r10d, r10d\n"
+    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic")
+    body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    body += "  mov qword ptr [rsp+r8*8], r10\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``<op> reg, [base + index*scale + disp]`` (reg is source
     and destination; memory is the scaled-index source).
 
-    The address is computed with the shared indexed prologue, the register value
-    is read from its slot, the real arithmetic is applied against memory, the
-    result is written back, and the flags are captured.
+    The address is computed with the shared indexed prologue; the result is the
+    register combined with memory via the MBA fold and the flags are synthesized.
     """
     _, mnemonic, width_text = handler_key.split("_")
-    width = int(width_text)
     body, advance = _indexed_address_asm(key, key_dword, field_perm)
-    if width == 64:
-        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
-    else:
-        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
-    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+    return body + _op_mem_synth_tail(mnemonic, int(width_text), key, advance)
 
 
 def _lea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
@@ -482,20 +515,15 @@ def _lea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int
 def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``<op> reg, [mem]`` (reg is source and destination).
 
-    The address is computed like the compare-with-memory handler; the register
-    value is read from its slot, the real arithmetic is applied against memory,
-    the result is written back to the slot (a 32-bit op zero-extends), and the
-    flags are captured.
+    The address is computed like the compare-with-memory handler; the result is the
+    register combined with memory via the MBA fold (a 32-bit op zero-extends) and the
+    flags are synthesized.
     """
     parts = handler_key.split("_")
     riprel = parts[0] == "opriprel"
     mnemonic, width = parts[1], int(parts[2])
     body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
-    if width == 64:
-        body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
-    else:
-        body += f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
-    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+    return body + _op_mem_synth_tail(mnemonic, width, key, advance)
 
 
 def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
