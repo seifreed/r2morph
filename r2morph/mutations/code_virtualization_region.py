@@ -51,6 +51,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_rsp_arith,
     _decode_shift,
     _decode_two_operand,
+    _parse_indexed_operand,
     _parse_mem_operand,
     _parse_riprel_operand,
 )
@@ -198,6 +199,16 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         if riprel_ptr is not None:
             return ["callmemrip", riprel_ptr[0]]
         return None
+    if kind == "ucall":
+        # Indexed memory-indirect call (call qword [base+index*scale+disp]):
+        # function-pointer table / array-of-vtables dispatch. A base is required;
+        # other unresolved indirect forms stay native.
+        operand = text.split(None, 1)[1] if " " in text else ""
+        indexed = _parse_indexed_operand(operand)
+        if indexed is not None:
+            base_slot, index_slot, scale_shift, idx_disp = indexed
+            return ["callmemidx", base_slot, index_slot, scale_shift, idx_disp]
+        return None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
     if kind == "cjmp":
@@ -330,6 +341,7 @@ _FLAG_KILLER_KINDS = frozenset(
         "icall",
         "callmem",
         "callmemrip",
+        "callmemidx",
     }
 )
 

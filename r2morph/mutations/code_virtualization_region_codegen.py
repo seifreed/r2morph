@@ -43,6 +43,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
+    _indexed_address_asm,
     _lea_handler_asm,
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
@@ -209,6 +210,16 @@ def _call_mem_handler_asm(
     return _call_bridge_asm(index, slot, target, advance)
 
 
+def _call_mem_idx_handler_asm(index: int, key: int, key_dword: str, slot: tuple[int, ...], field_perm: int) -> str:
+    """Indexed memory-indirect ``call qword [base+index*scale+disp]`` (function-
+    pointer table dispatch). The shared indexed-address prologue computes the
+    pointer's address into r10; dereferencing it yields the target. The item
+    carries an unused register field so the scaled-index operand layout applies."""
+    address, advance = _indexed_address_asm(key, key_dword, field_perm)
+    target = address + "  mov r10, qword ptr [r10]\n"
+    return _call_bridge_asm(index, slot, target, advance)
+
+
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
     if kind in ("op", "opmba"):
@@ -260,6 +271,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
     if kind == "callmemrip":
         return 6  # opcode + (unused) reg slot + 4-byte bytecode-relative offset
+    if kind == "callmemidx":
+        return 9  # opcode + (unused) reg + base + index slots + scale shift + disp
     return 1  # nop, exit, enter_inner, inner_exit (opcode byte only)
 
 
@@ -478,6 +491,11 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, target = item
             p = emit_opcode("callmemrip")
             emit_mem(p, slot_of[0], None, target - bytecode_base)
+        elif kind == "callmemidx":
+            _, base_slot, index_slot, shift, disp = item
+            p = emit_opcode("callmemidx")
+            # Reuse the scaled-index operand layout; the register field is unused.
+            emit_idx(p, slot_of[0], slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind == "jmp":
             p = emit_opcode("jmp")
             emit_disp(offsets[item[1]], p)
@@ -530,6 +548,8 @@ def handler_instances_asm(
             lines.append(_call_mem_handler_asm(index, key, key_dword, slot, False, field_perm))
         elif handler_key == "callmemrip":
             lines.append(_call_mem_handler_asm(index, key, key_dword, slot, True, field_perm))
+        elif handler_key == "callmemidx":
+            lines.append(_call_mem_idx_handler_asm(index, key, key_dword, slot, field_perm))
         elif handler_key.startswith("opmba_"):
             lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("op_"):

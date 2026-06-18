@@ -154,6 +154,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "callmem"  # memory-indirect call (target pointer at base+disp)
     if kind == "callmemrip":
         return "callmemrip"  # memory-indirect call (target pointer at rip+disp)
+    if kind == "callmemidx":
+        return "callmemidx"  # memory-indirect call (pointer at base+index*scale+disp)
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":

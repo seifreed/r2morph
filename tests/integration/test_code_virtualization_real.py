@@ -400,6 +400,29 @@ def test_memory_indirect_call_virtualization_preserves_exit_code(tmp_path: Path)
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_indexed_memory_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # An indexed memory-indirect call (call [tbl + rcx*8]) - function-pointer
+    # table dispatch. The VM must compute base+index*scale, load the callee from
+    # the table, bridge out and capture the return value, reusing the scaled-index
+    # address machinery.
+    fixture = _DATASET / "elf_vm_idxcall_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_idxcall"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_straight_line_memory_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # This function contains a call (so the control-flow VM rejects it) AND its
     # straight-line run mixes register ops with [rsp+disp] store/load. Exercises
