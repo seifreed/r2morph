@@ -23,14 +23,61 @@ from r2morph.mutations.code_virtualization_layout import (
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
-# Stack frame: 16 context slots in [0x00, 0x80), the captured RFLAGS at 0x80,
-# and the System V red zone preserved in [0x100, 0x180).
-_FRAME_SIZE = 0x180
+# Stack frame: 16 GP context slots in [0x00, 0x80), the captured RFLAGS at 0x80,
+# the self-checksum byte at 0x88, the 16 XMM save slots (16 bytes each) in
+# [0x100, 0x200), and the System V red zone preserved in the top [0x200, 0x280).
+# The XMM slots sit where the red zone used to be; growing the frame rode the red
+# zone up to the new top, and since nothing reads it by offset the only effect is
+# the larger reservation. Every GP-slot offset (rsp + slot*8) is unchanged, so the
+# handler addressing is untouched.
+_FRAME_SIZE = 0x280
 _FLAGS_OFFSET = 0x80
+# Base of the 16 XMM save slots (16 bytes each); slot i lives at
+# [rsp + _XMM_SAVE_OFFSET + i*16). Spilled/reloaded only when a region carries FP.
+_XMM_SAVE_OFFSET = 0x100
 # The program's virtual stack is relocated this far below the VM frame so the
 # function's own push/pop traffic never collides with the spilled context. Must
-# be 16-aligned to preserve the program's stack alignment.
-_GUARD = 0x200
+# be 16-aligned and strictly greater than _FRAME_SIZE so the relocated stack
+# stays below the frame.
+_GUARD = 0x300
+
+
+def xmm_spill_asm() -> str:
+    """Spill all 16 XMM registers into their frame slots (movups: no alignment
+    requirement, so it is correct whatever rsp's 16-alignment happens to be)."""
+    return "".join(f"  movups [rsp + {_XMM_SAVE_OFFSET + i * 16}], xmm{i}\n" for i in range(16))
+
+
+def xmm_reload_asm() -> str:
+    """Reload all 16 XMM registers from their frame slots before leaving the VM."""
+    return "".join(f"  movups xmm{i}, [rsp + {_XMM_SAVE_OFFSET + i * 16}]\n" for i in range(16))
+
+
+def _fp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Assembly body for a scalar-FP load/store handler (``movsd``/``movss`` xmm
+    <-> [base+disp]).
+
+    The shared address prologue decrypts the operand fields - here the "register"
+    field is the XMM index (0-15), not a GP slot - and computes the effective
+    address into r10. The handler moves between program memory and the XMM save
+    slot via the real xmm0 (free scratch during VM execution, since every program
+    XMM lives in a slot). ``movsd``/``movss`` loads zero the high lanes of the
+    destination, matching x86-64, so the full 16-byte slot is rewritten. FP moves
+    set no flags, so the captured-flags slot is untouched.
+    """
+    kind, width_text = handler_key.split("_")
+    width = int(width_text)
+    move = "movsd" if width == 64 else "movss"
+    mem = "qword" if width == 64 else "dword"
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    # r8 holds the XMM index; scale to the 16-byte slot stride (no *16 index scale
+    # exists, so shift into r11 and address base+index+disp at scale 1).
+    body += "  mov r11, r8\n  shl r11, 4\n"
+    if kind == "fpload":
+        body += f"  {move} xmm0, {mem} ptr [r10]\n  movups [rsp + r11 + {_XMM_SAVE_OFFSET}], xmm0\n"
+    else:
+        body += f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n  {move} {mem} ptr [r10], xmm0\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _unmask_dword(scratch: str) -> str:

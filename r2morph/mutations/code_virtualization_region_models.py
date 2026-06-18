@@ -102,7 +102,7 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"movx_{item[1]}_{item[2]}_{item[3]}"
     if kind == "movxidx":
         return f"movxidx_{item[1]}_{item[2]}_{item[3]}"
-    if kind in ("load", "store"):
+    if kind in ("load", "store", "fpload", "fpstore"):
         return f"{kind}_{item[4]}"
     if kind in ("riprel_load", "riprel_store"):
         return f"{kind}_{item[3]}"

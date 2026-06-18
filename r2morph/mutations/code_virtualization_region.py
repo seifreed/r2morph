@@ -32,6 +32,7 @@ from r2morph.mutations.code_virtualization_engine import (
 )
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmp_mem,
+    _decode_fp_mem,
     _decode_imul,
     _decode_imul3,
     _decode_incdec,
@@ -102,6 +103,12 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
     """Build the VM item for one body instruction, or ``None`` if unsupported."""
     kind = insn.get("type", "")
     text = insn.get("opcode", "")
+    if insn.get("family") == "vec":
+        # SSE/FP ops share their GP twin's ``type`` (movsd->mov, addsd->add) but
+        # carry family "vec". Route them here first: scalar FP load/store is
+        # virtualized, everything else vec is left native (conservative).
+        fp_mem = _decode_fp_mem(text)
+        return [*fp_mem] if fp_mem is not None else None
     if kind == "nop":
         return ["nop"]
     if kind in ("mov", "add", "sub", "xor", "and", "or"):

@@ -40,6 +40,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _cmp_memory_handler_asm,
     _compare_handler_asm,
+    _fp_memory_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
@@ -66,6 +67,8 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _riprel_handler_asm,
     _rspadj_handler_asm,
     _shift_handler_asm,
+    xmm_reload_asm,
+    xmm_spill_asm,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
@@ -280,8 +283,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3
     if kind == "imul3":
         return 7  # opcode + dst slot + src slot + 4-byte immediate
-    if kind in ("load", "store"):
-        return 7  # opcode + reg slot + base slot + 4-byte displacement
+    if kind in ("load", "store", "fpload", "fpstore"):
+        return 7  # opcode + reg/xmm slot + base slot + 4-byte displacement
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("cmpmem", "opmem", "lea", "opmemdst"):
@@ -458,6 +461,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, slot_of[reg_slot], slot_of[base_slot], disp)
+        elif kind in ("fpload", "fpstore"):
+            # The reg field carries the XMM index verbatim (XMM slots are direct
+            # index*16, not part of the GP slot_perm); the base is a GP slot.
+            _, xmm_index, base_slot, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, xmm_index, slot_of[base_slot], disp)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
@@ -647,6 +656,8 @@ def handler_instances_asm(
             lines.append(_movx_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
+        elif handler_key.startswith(("fpload_", "fpstore_")):
+            lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("load_", "store_")):
             lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key == "jmp":
@@ -683,10 +694,15 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
+    # Only regions that move scalar FP need the 16 XMM registers preserved in the
+    # frame; for everything else the spill/reload is pure overhead and is omitted.
+    has_fp = any(item[0] in ("fpload", "fpstore") for item in region.instructions)
     lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n"]
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {name}\n")
+    if has_fp:
+        lines.append(xmm_spill_asm())
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved.
@@ -741,6 +757,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     reload_seq = "".join(
         f"  mov {name}, qword ptr [rsp+{slot[index] * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
     )
+    if has_fp:
+        reload_seq += xmm_reload_asm()
 
     # Each opcode index gets its own handler instance (an operation with two
     # indices is emitted twice, each copy carrying different junk), so the

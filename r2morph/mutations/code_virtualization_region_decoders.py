@@ -268,6 +268,51 @@ def _parse_mem_operand(text: str) -> tuple[int, int, int | None] | None:
     return (base_slot, disp, width)
 
 
+def _parse_xmm_operand(text: str) -> int | None:
+    """Parse ``xmmN`` (0-15) into its register index, or ``None``."""
+    text = text.strip().lower()
+    if not text.startswith("xmm"):
+        return None
+    try:
+        index = int(text[3:])
+    except ValueError:
+        return None
+    return index if 0 <= index < 16 else None
+
+
+def _decode_fp_mem(text: str) -> tuple[str, int, int, int, int] | None:
+    """Decode ``movsd/movss xmm, [base+disp]`` / ``movsd/movss [base+disp], xmm``.
+
+    Returns ``(kind, xmm_index, base_slot, disp, width)`` where ``kind`` is
+    ``"fpload"`` or ``"fpstore"`` and ``width`` is 64 (movsd) or 32 (movss), or
+    ``None`` for xmm-to-xmm moves, indexed/rip-relative addressing, or any other
+    form. Only reached for ``family == "vec"`` instructions, so the no-operand
+    string ``movsd`` never lands here.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    width = {"movsd": 64, "movss": 32}.get(parts[0].lower())
+    if width is None:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None  # xmm-to-xmm or memory-to-memory are not loads/stores
+    if left_mem:
+        kind, mem_text, xmm_text = "fpstore", left, right
+    else:
+        kind, mem_text, xmm_text = "fpload", right, left
+    xmm_index = _parse_xmm_operand(xmm_text)
+    mem = _parse_mem_operand(mem_text)
+    if xmm_index is None or mem is None:
+        return None
+    base_slot, disp, mem_width = mem
+    if mem_width is not None and mem_width != width:
+        return None
+    return (kind, xmm_index, base_slot, disp, width)
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 
