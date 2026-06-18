@@ -146,6 +146,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "movtorsp"
     if kind == "leave":
         return "leave"
+    if kind == "call":
+        return "call"  # bridge out to a native callee and back
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":

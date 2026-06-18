@@ -168,6 +168,12 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
             return [*leave]
         pop = _decode_pop(text)
         return [*pop] if pop is not None else None
+    if kind == "call":
+        # Only a direct call with a resolvable target is virtualizable; an
+        # indirect call (call rax / call [mem]) has type "ucall"/"rcall" and never
+        # reaches here, and a direct call with no resolved target is left native.
+        target = insn.get("jump", -1)
+        return ["call", target] if isinstance(target, int) and target > 0 else None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
     if kind == "cjmp":
@@ -286,7 +292,7 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
 # Items that fully overwrite every readable arithmetic flag (CF, OF, SF, ZF, PF;
 # AF is never read by any conditional jump). They kill an upstream flag value.
 _FLAG_KILLER_KINDS = frozenset(
-    {"cmp", "test", "cmpmem", "cmpriprel", "opmem", "opriprel", "opmemdst", "opmemdstrip", "opmemidx"}
+    {"cmp", "test", "cmpmem", "cmpriprel", "opmem", "opriprel", "opmemdst", "opmemdstrip", "opmemidx", "call"}
 )
 
 
@@ -443,6 +449,14 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
             if resolved is None:
                 return None
             item[2] = resolved
+
+    # A call whose target lands inside this function's own span would either
+    # recurse into the trampoline or hit a body byte that the dead-body fill
+    # overwrites; only out-of-function direct calls are virtualizable here.
+    func_lo = min(insn["addr"] for insn in instructions)
+    func_hi = max(insn["addr"] + insn.get("size", 0) for insn in instructions)
+    if any(item[0] == "call" and func_lo <= item[1] < func_hi for item in items):
+        return None
 
     if not _stack_balanced(items):
         return None

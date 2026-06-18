@@ -327,6 +327,32 @@ def test_straight_line_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 45
 
 
+def test_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The whole function is region-reducible except for one direct call, so the
+    # control-flow VM must virtualize it end to end: the new call handler bridges
+    # out to the native callee (with the argument loaded from its frame slot),
+    # captures the return value, keeps the relocated stack balanced, and resumes.
+    # No straight-line run of >=2 engine-supported ops exists outside the region
+    # (the surrounding movs are isolated and push/pop/call are region-only), so a
+    # virtualized function here can only be the whole-function call path.
+    fixture = _DATASET / "elf_vm_call_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_call"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_straight_line_memory_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # This function contains a call (so the control-flow VM rejects it) AND its
     # straight-line run mixes register ops with [rsp+disp] store/load. Exercises
