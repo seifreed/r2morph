@@ -12,6 +12,8 @@ table and stitches these instances together.
 
 from __future__ import annotations
 
+from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
+
 # Stack frame: 16 context slots in [0x00, 0x80), the captured RFLAGS at 0x80,
 # and the System V red zone preserved in [0x100, 0x180).
 _FRAME_SIZE = 0x180
@@ -51,20 +53,33 @@ def _mba_add_r10_rax(key: int) -> str:
     return _mba_add("rax", "rcx", key)
 
 
+def _unmask_dword(scratch: str) -> str:
+    """Un-mask a dword immediate/displacement (in eax) with the item's stream
+    position: r13b holds it from the dispatch, broadcast to 32 bits. ``scratch``
+    is a register free at the call site (typically the just-used key temp)."""
+    return f"  movzx {scratch}d, r13b\n  imul {scratch}d, {scratch}d, {hex(_DWORD_BROADCAST)}\n  xor eax, {scratch}d\n"
+
+
+def _unmask_qword(scratch: str, scratch2: str) -> str:
+    """Un-mask a qword immediate (in rax) with the item's stream position (r13b),
+    broadcast to 64 bits. Both scratch registers must be free at the call site."""
+    return f"  movzx {scratch}, r13b\n  mov {scratch2}, {hex(_QWORD_BROADCAST)}\n  imul {scratch}, {scratch2}\n  xor rax, {scratch}\n"
+
+
 def _op_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str) -> str:
     """Assembly body for an arithmetic/mov handler (decrypts, applies, captures flags)."""
     _, mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
     is_immediate = mode == "i"
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if is_immediate and width == 64:
-        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword("r10", "r11")
         advance = 10
     elif is_immediate:
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword("r11")
         advance = 6
     else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
         advance = 3
     if mnemonic == "mov":
@@ -91,15 +106,15 @@ def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: s
     _, mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
     is_immediate = mode == "i"
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if is_immediate and width == 64:
-        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword("r10", "r11")
         advance = 10
     elif is_immediate:
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword("r11")
         advance = 6
     else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
         advance = 3
     # sub a, b == add a, (-b): negate the source, then the same MBA add fold.
@@ -151,16 +166,21 @@ def _mem_address_asm(riprel: bool, key: int, key_dword: str) -> tuple[str, int]:
     displacement. Returns the assembly and the number of bytes to advance rsi by
     (the bytecode item width).
     """
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if riprel:
         return (
-            body + f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-            "  mov r10, r15\n" + _mba_add_r10_rax(key)
+            body
+            + f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            + _unmask_dword("r11")
+            + "  movsxd rax, eax\n  mov r10, r15\n"
+            + _mba_add_r10_rax(key)
         ), 6
     return (
-        body + f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
-        f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
-        "  mov r10, qword ptr [rsp+r9*8]\n" + _mba_add_r10_rax(key)
+        body + f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        + _unmask_dword("r11")
+        + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r9*8]\n"
+        + _mba_add_r10_rax(key)
     ), 7
 
 
@@ -285,7 +305,7 @@ def _incdec_handler_asm(handler_key: str, key: int) -> str:
     """
     _, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     # Reload the program's captured flags so inc/dec preserves the program's CF
     # (the interpreter's own carry flag is unrelated), then run the real op.
     body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
@@ -305,12 +325,13 @@ def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
     advance (the bytecode item width).
     """
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
-        f"  movzx r11d, byte ptr [rsi+3]\n  xor r11b, {key}\n"
-        f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n"
-        f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
-        "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r11d, byte ptr [rsi+3]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n  xor cl, r13b\n"
+        f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+        + _unmask_dword("r10")
+        + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
         # Fold the base with MBA too (r11 holds the base value), so neither the
         # base nor the displacement add is a literal add. rcx and r11 are free
         # here (the index slot and scale were already consumed).
@@ -349,11 +370,13 @@ def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str) 
     """
     width = int(handler_key.split("_")[1])
     body = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
-        f"  movzx r11d, byte ptr [rsi+2]\n  xor r11b, {key}\n"
-        f"  movzx ecx, byte ptr [rsi+3]\n  xor cl, {key}\n"
-        f"  mov eax, dword ptr [rsi+4]\n  mov r10d, {key_dword}\n  xor eax, r10d\n  movsxd rax, eax\n"
-        "  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n" + _mba_add_r10_rax(key)
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r11d, byte ptr [rsi+2]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+3]\n  xor cl, {key}\n  xor cl, r13b\n"
+        f"  mov eax, dword ptr [rsi+4]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+        + _unmask_dword("r10")
+        + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
+        + _mba_add_r10_rax(key)
     )
     return body + _lea_store_asm(width, 8)
 
@@ -411,15 +434,23 @@ def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: 
     """Assembly body for a cmp/test handler (sets and captures flags only)."""
     mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
     if mode == "i" and width == 64:
-        body += f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, rax\n"
+        body += (
+            f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+            + _unmask_qword("r10", "r11")
+            + f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, rax\n"
+        )
         advance = 10
     elif mode == "i":
-        body += f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, eax\n"
+        body += (
+            f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            + _unmask_dword("r11")
+            + f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, eax\n"
+        )
         advance = 6
     else:
-        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         if width == 64:
             body += f"  mov rax, qword ptr [rsp+r9*8]\n  mov r10, qword ptr [rsp+r8*8]\n  {mnemonic} r10, rax\n"
         else:
@@ -432,7 +463,10 @@ def _shift_handler_asm(handler_key: str, key: int) -> str:
     """Assembly body for a shl/shr/sar handler (count is an immediate in cl)."""
     mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx ecx, byte ptr [rsi+2]\n  xor cl, {key}\n"
+    body = (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+2]\n  xor cl, {key}\n  xor cl, r13b\n"
+    )
     if width == 64:
         body += f"  mov rax, qword ptr [rsp+r8*8]\n  {mnemonic} rax, cl\n"
     else:
@@ -446,7 +480,10 @@ def _shift_handler_asm(handler_key: str, key: int) -> str:
 def _imul_handler_asm(handler_key: str, key: int) -> str:
     """Assembly body for a two-operand register imul handler."""
     width = int(handler_key.split("_")[1])
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
+    body = (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+    )
     if width == 64:
         body += "  mov rax, qword ptr [rsp+r8*8]\n  imul rax, qword ptr [rsp+r9*8]\n"
     else:
@@ -465,7 +502,7 @@ def _push_handler_asm(key: int, rsp_off: int) -> str:
     flags.
     """
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         "  mov rax, qword ptr [rsp+r8*8]\n"
         f"  mov r9, qword ptr [rsp+{rsp_off}]\n  sub r9, 8\n  mov qword ptr [rsp+{rsp_off}], r9\n"
         "  mov qword ptr [r9], rax\n"
@@ -482,7 +519,7 @@ def _pop_handler_asm(key: int, rsp_off: int) -> str:
     aliasing between the slot write and the rsp-slot update.
     """
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  mov r9, qword ptr [rsp+{rsp_off}]\n  mov rax, qword ptr [r9]\n"
         f"  add r9, 8\n  mov qword ptr [rsp+{rsp_off}], r9\n"
         "  mov qword ptr [rsp+r8*8], rax\n"
@@ -501,7 +538,9 @@ def _rspadj_handler_asm(handler_key: str, key_dword: str, rsp_off: int) -> str:
     """
     mnemonic = handler_key.split("_")[1]
     return (
-        f"  mov eax, dword ptr [rsi+1]\n  mov r11d, {key_dword}\n  xor eax, r11d\n  movsxd rax, eax\n"
+        f"  mov eax, dword ptr [rsi+1]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        + _unmask_dword("r11")
+        + "  movsxd rax, eax\n"
         f"  {mnemonic} qword ptr [rsp+{rsp_off}], rax\n"
         f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
         "  add rsi, 5\n  jmp vm_dispatch\n"
@@ -511,7 +550,7 @@ def _rspadj_handler_asm(handler_key: str, key_dword: str, rsp_off: int) -> str:
 def _mov_from_rsp_handler_asm(key: int, rsp_off: int) -> str:
     """Assembly body for ``mov reg, rsp`` (copy the relocated rsp into a slot)."""
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  mov rax, qword ptr [rsp+{rsp_off}]\n"
         "  mov qword ptr [rsp+r8*8], rax\n"
         "  add rsi, 2\n  jmp vm_dispatch\n"
@@ -521,7 +560,7 @@ def _mov_from_rsp_handler_asm(key: int, rsp_off: int) -> str:
 def _mov_to_rsp_handler_asm(key: int, rsp_off: int) -> str:
     """Assembly body for ``mov rsp, reg`` (restore the relocated rsp from a slot)."""
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         "  mov rax, qword ptr [rsp+r8*8]\n"
         f"  mov qword ptr [rsp+{rsp_off}], rax\n"
         "  add rsi, 2\n  jmp vm_dispatch\n"
@@ -535,7 +574,7 @@ def _leave_handler_asm(key: int, rsp_off: int) -> str:
     rbp is popped off the relocated stack and rsp incremented. No flags.
     """
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n"
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         "  mov rax, qword ptr [rsp+r8*8]\n"
         f"  mov qword ptr [rsp+{rsp_off}], rax\n"
         "  mov r9, rax\n  mov rax, qword ptr [r9]\n  add r9, 8\n"
@@ -549,7 +588,8 @@ def _pushi_handler_asm(key_qword: str, rsp_off: int) -> str:
     """Assembly body for ``push imm`` (sign-extended 64-bit immediate)."""
     return (
         f"  mov rax, qword ptr [rsi+1]\n  mov r10, {key_qword}\n  xor rax, r10\n"
-        f"  mov r9, qword ptr [rsp+{rsp_off}]\n  sub r9, 8\n  mov qword ptr [rsp+{rsp_off}], r9\n"
+        + _unmask_qword("r10", "r11")
+        + f"  mov r9, qword ptr [rsp+{rsp_off}]\n  sub r9, 8\n  mov qword ptr [rsp+{rsp_off}], r9\n"
         "  mov qword ptr [r9], rax\n"
         "  add rsi, 9\n  jmp vm_dispatch\n"
     )
@@ -564,8 +604,11 @@ def _imul3_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
     native three-operand imul (same low-half product, same overflow).
     """
     width = int(handler_key.split("_")[1])
-    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n" f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n"
-    body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+    body = (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+    )
+    body += f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword("r11")
     if width == 64:
         body += "  movsxd r10, eax\n  mov rax, qword ptr [rsp+r9*8]\n  imul rax, r10\n"
     else:

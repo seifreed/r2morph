@@ -41,12 +41,15 @@ from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
 )
-from r2morph.mutations.code_virtualization_region_models import Region, RegionScheme, _op_key
+from r2morph.mutations.code_virtualization_region_models import (
+    _DWORD_BROADCAST,
+    _QWORD_BROADCAST,
+    Region,
+    RegionScheme,
+    _op_key,
+)
 
 logger = logging.getLogger(__name__)
-
-_QWORD_BROADCAST = 0x0101010101010101
-_DWORD_BROADCAST = 0x01010101
 
 # Frame slots above the checksum byte (0x88) and below the preserved red zone
 # (0x100): the dispatcher reads the active layer's parameters from these, the
@@ -286,6 +289,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             )
         retarget = (
             f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
+            # Un-mask the position the encoder folded into the branch target (r13b
+            # holds it from the dispatch), broadcast to 32 bits - keyed by
+            # key XOR position like every other operand in this layer's stream.
+            f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
             f"  lea r9, [rip+bc_{layer}]\n  add r9, rax\n  mov rsi, r9\n  jmp vm_dispatch\n"
         )
         layer_bodies.append(

@@ -61,15 +61,14 @@ from r2morph.mutations.code_virtualization_region_integrity import (
     compute_build_checksum,
 )
 from r2morph.mutations.code_virtualization_region_models import (
+    _DWORD_BROADCAST,
+    _QWORD_BROADCAST,
     Region,
     RegionScheme,
     _required_key,
 )
 
 logger = logging.getLogger(__name__)
-
-_QWORD_BROADCAST = 0x0101010101010101
-_DWORD_BROADCAST = 0x01010101
 
 
 # Semantically-neutral instructions used as per-instance junk. They are emitted
@@ -198,167 +197,182 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
     pick = random.Random(scheme.junk_seed).choice  # deterministic per build
     plain = bytearray()
 
-    def emit_opcode(handler_key: str) -> None:
+    def emit_opcode(handler_key: str) -> int:
         # Choose one of the handler's interchangeable opcodes, then mask it with
         # its own stream position so the same operation does not encode to the
         # same byte twice and a single-byte XOR of the whole blob no longer
         # exposes the opcode stream. The dispatcher subtracts the position back
-        # out before decoding.
+        # out before decoding. The position is returned so this item's operands
+        # are masked with it too (the handler un-masks them with r13b, which the
+        # dispatch left holding the position), keying the operand decrypt by
+        # ``key XOR position`` so no single handler reveals a reusable key.
+        position = len(plain) & 0xFF
         opcode = pick(scheme.dup[handler_key])
-        plain.append(opcode ^ (len(plain) & 0xFF) ^ checksum)
+        plain.append(opcode ^ position ^ checksum)
+        return position
+
+    def emit_imm(value: int, width: int, position: int) -> None:
+        plain.extend(byte ^ position for byte in pack_immediate(value, width))
+
+    def emit_disp(value: int, position: int) -> None:
+        plain.extend(byte ^ position for byte in struct.pack("<i", value))
 
     for item in region.instructions:
         kind = item[0]
+        # Every operand is masked with the opcode's stream position (returned by
+        # emit_opcode); the handler un-masks each with r13b, so no operand is
+        # decrypted by a lone constant key. emit_imm/emit_disp fold the position
+        # into each byte of a multi-byte immediate or displacement.
         if kind in ("op", "opmba"):
             op = item[1]
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[op.dst_index])
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[op.dst_index] ^ p)
             if op.is_immediate:
-                plain += pack_immediate(op.value, op.width)
+                emit_imm(op.value, op.width, p)
             else:
-                plain.append(slot_of[op.value])
+                plain.append(slot_of[op.value] ^ p)
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[slot])
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[slot] ^ p)
             if is_imm:
-                plain += pack_immediate(value, width)
+                emit_imm(value, width, p)
             else:
-                plain.append(slot_of[value])
+                plain.append(slot_of[value] ^ p)
         elif kind == "shift":
             _, _mnemonic, slot, count, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[slot])
-            plain.append(count)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[slot] ^ p)
+            plain.append(count ^ p)
         elif kind == "imul":
             _, dst, src, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[dst])
-            plain.append(slot_of[src])
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[dst] ^ p)
+            plain.append(slot_of[src] ^ p)
         elif kind == "imul3":
             _, dst, src, imm, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[dst])
-            plain.append(slot_of[src])
-            plain += pack_immediate(imm, 32)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[dst] ^ p)
+            plain.append(slot_of[src] ^ p)
+            emit_imm(imm, 32, p)
         elif kind in ("push", "pop"):
             _, reg_slot, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
         elif kind == "pushi":
             _, value, _width = item
-            emit_opcode(_required_key(item))
-            plain += pack_immediate(value, 64)
+            p = emit_opcode(_required_key(item))
+            emit_imm(value, 64, p)
         elif kind == "rspadj":
             _, _mnemonic, value = item
-            emit_opcode(_required_key(item))
-            plain += pack_immediate(value, 32)
+            p = emit_opcode(_required_key(item))
+            emit_imm(value, 32, p)
         elif kind in ("movfromrsp", "movtorsp", "leave"):
             _, reg_slot = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
         elif kind in ("load", "store"):
             _, reg_slot, base_slot, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            emit_disp(disp, p)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg_slot, target, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain += struct.pack("<i", target - bytecode_base)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            emit_disp(target - bytecode_base, p)
         elif kind == "cmpmem":
             _, reg_slot, base_slot, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            emit_disp(disp, p)
         elif kind == "cmpriprel":
             _, reg_slot, target, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain += struct.pack("<i", target - bytecode_base)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            emit_disp(target - bytecode_base, p)
         elif kind == "opmem":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            emit_disp(disp, p)
         elif kind == "opriprel":
             _, _mnemonic, reg_slot, target, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain += struct.pack("<i", target - bytecode_base)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            emit_disp(target - bytecode_base, p)
         elif kind == "lea":
             _, reg_slot, base_slot, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            emit_disp(disp, p)
         elif kind == "learip":
             _, reg_slot, target, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain += struct.pack("<i", target - bytecode_base)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            emit_disp(target - bytecode_base, p)
         elif kind == "leaidx":
             _, reg_slot, base_slot, index_slot, shift, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain.append(slot_of[index_slot])
-            plain.append(shift)
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            plain.append(slot_of[index_slot] ^ p)
+            plain.append(shift ^ p)
+            emit_disp(disp, p)
         elif kind == "leaidxnb":
             _, reg_slot, index_slot, shift, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[index_slot])
-            plain.append(shift)
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[index_slot] ^ p)
+            plain.append(shift ^ p)
+            emit_disp(disp, p)
         elif kind == "opmemidx":
             _, _mnemonic, reg_slot, base_slot, index_slot, shift, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain.append(slot_of[index_slot])
-            plain.append(shift)
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            plain.append(slot_of[index_slot] ^ p)
+            plain.append(shift ^ p)
+            emit_disp(disp, p)
         elif kind == "incdec":
             _, _mnemonic, reg_slot, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
         elif kind == "movx":
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, disp = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            emit_disp(disp, p)
         elif kind == "movxidx":
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, index_slot, shift, disp = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain.append(slot_of[index_slot])
-            plain.append(shift)
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            plain.append(slot_of[index_slot] ^ p)
+            plain.append(shift ^ p)
+            emit_disp(disp, p)
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain.append(slot_of[base_slot])
-            plain += struct.pack("<i", disp)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            plain.append(slot_of[base_slot] ^ p)
+            emit_disp(disp, p)
         elif kind == "opmemdstrip":
             _, _mnemonic, reg_slot, target, _width = item
-            emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot])
-            plain += struct.pack("<i", target - bytecode_base)
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[reg_slot] ^ p)
+            emit_disp(target - bytecode_base, p)
         elif kind == "jmp":
-            emit_opcode("jmp")
-            plain += struct.pack("<i", offsets[item[1]])
+            p = emit_opcode("jmp")
+            emit_disp(offsets[item[1]], p)
         elif kind == "jcc":
-            emit_opcode(_required_key(item))
-            plain += struct.pack("<i", offsets[item[2]])
+            p = emit_opcode(_required_key(item))
+            emit_disp(offsets[item[2]], p)
         elif kind == "nop":
             emit_opcode("nop")
         elif kind in ("exit", "enter_inner", "inner_exit"):
@@ -470,6 +484,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
     retarget = (
         f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
+        # Un-mask the position the encoder folded into the target (r13b holds it
+        # from the dispatch), broadcast to 32 bits - the branch offset is keyed by
+        # key XOR position like every other operand.
+        f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
         "  lea r9, [rip+bytecode]\n  add r9, rax\n  mov rsi, r9\n  jmp vm_dispatch\n"
     )
 

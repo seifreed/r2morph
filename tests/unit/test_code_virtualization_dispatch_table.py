@@ -17,6 +17,7 @@ from r2morph.mutations.code_virtualization_region import (
     extract_region,
 )
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm
+from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST
 
 
 def _tiny_region() -> Any:
@@ -52,3 +53,23 @@ def test_dispatch_diffuses_the_table_key_with_the_self_checksum() -> None:
     scheme = build_region_scheme(region, random.Random(0))
     asm = _interpreter_asm(region, scheme)
     assert "imul ecx, ecx, 0x1010101" in asm
+
+
+def test_handlers_position_unmask_their_slot_operands() -> None:
+    # Operands carry the opcode's stream position, so a handler un-masks the slot
+    # byte with r13b (the position the dispatch left there) - not a lone constant
+    # key any single handler would reveal.
+    region = _tiny_region()
+    scheme = build_region_scheme(region, random.Random(0))
+    asm = _interpreter_asm(region, scheme)
+    assert "xor r8b, r13b" in asm
+
+
+def test_handlers_position_unmask_their_immediates() -> None:
+    # The tiny region's mov-immediate handlers un-mask the immediate with the
+    # position broadcast to 32 bits, so the immediate decrypt is keyed by
+    # key XOR position, varying per item.
+    region = _tiny_region()
+    scheme = build_region_scheme(region, random.Random(0))
+    asm = _interpreter_asm(region, scheme)
+    assert f"imul r11d, r11d, {hex(_DWORD_BROADCAST)}" in asm
