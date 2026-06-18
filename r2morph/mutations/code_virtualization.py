@@ -181,14 +181,14 @@ class CodeVirtualizationPass(MutationPass):
             return None
         if not disasm or "ops" not in disasm:
             return None
-        region = extract_region(disasm["ops"])
+        rng = random.Random(random.getrandbits(64))
+        region = extract_region(disasm["ops"], rng)
         if region is None:
             return None
 
         blob_vaddr = predict_blob_vaddr(binary)
         if blob_vaddr is None:
             return None
-        rng = random.Random(random.getrandbits(64))
         # Nest when asked, falling back to a single layer if the region has no
         # peelable register-op run.
         blob = None

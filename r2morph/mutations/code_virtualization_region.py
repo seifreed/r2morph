@@ -26,6 +26,7 @@ from typing import Any
 
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
+    RSP_INDEX,
     VirtualizedOp,
     decode_instruction,
 )
@@ -344,7 +345,41 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
     return dead
 
 
-def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
+# Mean junk VM instructions inserted per real item. ``mov reg, reg`` is a perfect
+# identity (writes a slot with its own value, sets no flags), so it is
+# semantics-preserving for any register at any position - no liveness analysis
+# needed - yet it executes a real handler and pads the bytecode with operations a
+# devirtualizer cannot distinguish from the program's own. Kept modest so the
+# per-run execution cost (and a looping run's total) stays bounded.
+_JUNK_OP_PROBABILITY = 0.35
+
+
+def _inject_junk_movs(items: list[list[Any]], rng: random.Random) -> list[list[Any]]:
+    """Sprinkle identity ``mov reg, reg`` items through the resolved item list and
+    remap every branch target index to its new position.
+
+    Branches store their target as an item index; inserting items shifts those
+    indices, so a position map is built as the new list is assembled and applied to
+    every ``jmp``/``jcc`` afterward. Junk is never itself a branch target.
+    """
+    junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
+    new_items: list[list[Any]] = []
+    old_to_new: dict[int, int] = {}
+    for old_index, item in enumerate(items):
+        while rng.random() < _JUNK_OP_PROBABILITY:
+            reg = rng.choice(junk_regs)
+            new_items.append(["op", VirtualizedOp("mov", reg, reg, False, 64)])
+        old_to_new[old_index] = len(new_items)
+        new_items.append(item)
+    for item in new_items:
+        if item[0] == "jmp":
+            item[1] = old_to_new[item[1]]
+        elif item[0] == "jcc":
+            item[2] = old_to_new[item[2]]
+    return new_items
+
+
+def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None = None) -> Region | None:
     """Lower a function's linear instruction list into a :class:`Region`.
 
     Returns ``None`` unless every instruction is a register op, comparison,
@@ -413,9 +448,15 @@ def extract_region(instructions: list[dict[str, Any]]) -> Region | None:
         return None
 
     # Flag-liveness: an add whose flags are never read becomes an MBA handler
-    # (no literal add, no flag capture). Rebuild op_keys for the rewritten items.
+    # (no literal add, no flag capture). Runs before junk injection so the analysis
+    # sees only the program's real items.
     for index in _flag_dead_op_indices(items):
         items[index][0] = "opmba"
+    # Junk identity movs (semantics-preserving) padding the bytecode; done after the
+    # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
+    # rewritten + augmented items.
+    if rng is not None:
+        items = _inject_junk_movs(items, rng)
     op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
 
     body_ranges = [(insn["addr"], insn.get("size", 0)) for insn in body]
