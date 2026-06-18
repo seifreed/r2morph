@@ -35,6 +35,14 @@ import random
 import struct
 
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
+from r2morph.mutations.code_virtualization_layout import (
+    idx_offsets,
+    idx_permuted_fields,
+    mem_offsets,
+    mem_permuted_fields,
+    op_offsets,
+    op_permuted_fields,
+)
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
@@ -177,7 +185,7 @@ class VMScheme:
     match another.
     """
 
-    __slots__ = ("dup", "exit_opcode", "xor_key", "slot_perm", "table_key", "junk_seed")
+    __slots__ = ("dup", "exit_opcode", "xor_key", "slot_perm", "table_key", "junk_seed", "field_perm")
 
     def __init__(
         self,
@@ -187,6 +195,7 @@ class VMScheme:
         slot_perm: tuple[int, ...],
         table_key: int,
         junk_seed: int,
+        field_perm: int = 0,
     ) -> None:
         # Each operation gets one or more interchangeable opcode indices; the same
         # operation can appear under different opcodes in the stream and each index
@@ -204,6 +213,10 @@ class VMScheme:
         # handler addresses are not a plaintext jump table a disassembler recovers
         # as a switch (the dispatch decrypts each entry before jumping).
         self.table_key = table_key
+        # Seed for this build's operand field-order permutation: the encoder and
+        # the handlers derive each item's field offsets from it (via the shared
+        # layout module), so the operand layout differs per build. 0 is identity.
+        self.field_perm = field_perm
 
 
 def build_vm_scheme(rng: random.Random) -> VMScheme:
@@ -228,7 +241,13 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     exit_opcode = rng.randrange(total, 256)
     slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
     return VMScheme(
-        dup, exit_opcode, rng.randrange(1, 256), slot_perm, rng.randrange(1, 1 << 32), rng.randrange(1 << 31)
+        dup,
+        exit_opcode,
+        rng.randrange(1, 256),
+        slot_perm,
+        rng.randrange(1, 1 << 32),
+        rng.randrange(1 << 31),
+        rng.randrange(1, 1 << 31),
     )
 
 
@@ -411,30 +430,49 @@ def encode_bytecode(
         plain.append(opcode ^ position ^ checksum)
         return position
 
+    fp = scheme.field_perm
+
+    def emit_fields(position: int, order: list[tuple[str, int]], field_bytes: dict[str, bytes]) -> None:
+        # Emit the item's operand fields in this build's permuted order; the
+        # handler reads them at the matching offsets via the same layout helper.
+        for name, _size in order:
+            plain.extend(byte ^ position for byte in field_bytes[name])
+
     for op in ops:
         if isinstance(op, VirtualizedMemOp):
             position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
-            plain.append(slot_of[op.reg_index] ^ position)
             if op.kind.endswith("rip"):
                 # No base slot; the disp field carries the absolute global target,
                 # stored as a signed offset from the bytecode base (out-of-range
                 # raises struct.error, which the caller turns into "leave native").
-                plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp - bytecode_base))
+                field_bytes = {
+                    "reg": bytes([slot_of[op.reg_index]]),
+                    "disp": struct.pack("<i", op.disp - bytecode_base),
+                }
+                emit_fields(position, mem_permuted_fields(True, fp), field_bytes)
             elif op.kind.endswith("idx"):
-                plain.append(slot_of[op.base_index] ^ position)
-                plain.append(slot_of[op.index_index] ^ position)
-                plain.append(op.scale ^ position)
-                plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp))
+                field_bytes = {
+                    "reg": bytes([slot_of[op.reg_index]]),
+                    "base": bytes([slot_of[op.base_index]]),
+                    "index": bytes([slot_of[op.index_index]]),
+                    "shift": bytes([op.scale]),
+                    "disp": struct.pack("<i", op.disp),
+                }
+                emit_fields(position, idx_permuted_fields(False, fp), field_bytes)
             else:
-                plain.append(slot_of[op.base_index] ^ position)
-                plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp))
+                field_bytes = {
+                    "reg": bytes([slot_of[op.reg_index]]),
+                    "base": bytes([slot_of[op.base_index]]),
+                    "disp": struct.pack("<i", op.disp),
+                }
+                emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
             continue
         position = emit_opcode(pick(scheme.dup[(op.mnemonic, op.is_immediate, op.width)]))
-        plain.append(slot_of[op.dst_index] ^ position)
         if op.is_immediate:
-            plain += bytes(byte ^ position for byte in pack_immediate(op.value, op.width))
+            field_bytes = {"dst": bytes([slot_of[op.dst_index]]), "imm": pack_immediate(op.value, op.width)}
         else:
-            plain.append(slot_of[op.value] ^ position)
+            field_bytes = {"dst": bytes([slot_of[op.dst_index]]), "src": bytes([slot_of[op.value]])}
+        emit_fields(position, op_permuted_fields(op.is_immediate, op.width, fp), field_bytes)
     emit_opcode(scheme.exit_opcode)  # no operands
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
@@ -464,10 +502,11 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         # before sign-extending. The effective address is the base slot's current
         # value plus the displacement, folded with the shared MBA add (no literal
         # address add), left in r10.
+        off = mem_offsets(False, scheme.field_perm)
         return (
-            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-            f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-            f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + _mba_add_r10_rax(key)
         )
@@ -477,9 +516,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         # global's distance from the bytecode base). The address is r15 (the bytecode
         # base, held for the whole run) plus that offset, folded with MBA; so the
         # global is reached base-independently exactly like the original [rip+disp].
+        off = mem_offsets(True, scheme.field_perm)
         return (
-            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-            f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, r15\n" + _mba_add_r10_rax(key)
         )
@@ -488,12 +528,13 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         # Indexed head: reg [rsi+1]->r8, base [rsi+2]->r9, index [rsi+3]->r11,
         # scale-shift [rsi+4]->cl, signed disp32 [rsi+5..8]. Computes
         # base + index*(2**scale) + disp into r10, both adds folded with MBA.
+        off = idx_offsets(False, scheme.field_perm)
         return (
-            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-            f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-            f"  movzx r11d, byte ptr [rsi+3]\n  xor r11b, {key}\n  xor r11b, r13b\n"
-            f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n  xor cl, r13b\n"
-            f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+            f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
+            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
             f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r11*8]\n  shl r10, cl\n"
             "  mov r11, qword ptr [rsp + r9*8]\n" + _mba_add("r11", "rcx", key) + _mba_add("rax", "rcx", key)
@@ -557,21 +598,22 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
         # Operands carry the opcode's stream position too (r13 still holds it from
         # the dispatch), so each is un-masked by both the key and r13b - there is
         # no lone constant-key decrypt repeated across every handler.
-        decrypt_dst = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        off = op_offsets(is_immediate, width, scheme.field_perm)
+        decrypt_dst = f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         if is_immediate and width == 64:
             load = (
-                f"  mov rax, qword ptr [rsi+2]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+                f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {key_qword}\n  xor rax, r10\n"
                 f"  movzx r10, r13b\n  mov r11, {hex(_QWORD_BROADCAST)}\n  imul r10, r11\n  xor rax, r10\n"
             )
             advance = "  add rsi, 10\n"
         elif is_immediate:
             load = (
-                f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+                f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
                 f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             )
             advance = "  add rsi, 6\n"
         else:
-            load = f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            load = f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
             load += "  mov rax, qword ptr [rsp + r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp + r9*8]\n"
             advance = "  add rsi, 3\n"
 

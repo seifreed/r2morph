@@ -27,13 +27,32 @@ import random
 Field = tuple[str, int]
 
 
-def _op_operand_fields(handler_key: str) -> list[Field]:
-    # "op_<mnemonic>_<mode>_<width>" / "opmba_..." - immediate form carries the
-    # destination slot plus a width/8-byte immediate; register form two slots.
-    _kind, _mnemonic, mode, width_text = handler_key.split("_")
-    if mode == "i":
-        return [("dst", 1), ("imm", int(width_text) // 8)]
+def _op_fields(is_immediate: bool, width: int) -> list[Field]:
+    # Immediate form carries the destination slot plus a width/8-byte immediate;
+    # register form carries two slots.
+    if is_immediate:
+        return [("dst", 1), ("imm", width // 8)]
     return [("dst", 1), ("src", 1)]
+
+
+def _op_operand_fields(handler_key: str) -> list[Field]:
+    # "op_<mnemonic>_<mode>_<width>" / "opmba_..." (region's string handler key).
+    _kind, _mnemonic, mode, width_text = handler_key.split("_")
+    return _op_fields(mode == "i", int(width_text))
+
+
+def op_permuted_fields(is_immediate: bool, width: int, field_perm: int) -> list[Field]:
+    """Arith/mov operand fields in this build's order, keyed by (immediate, width).
+
+    The engine keys handlers by ``(is_immediate, width)`` rather than a string, so
+    it uses this directly; the region's string-key wrappers share the same core.
+    """
+    return _permute(_op_fields(is_immediate, width), field_perm)
+
+
+def op_offsets(is_immediate: bool, width: int, field_perm: int) -> dict[str, int]:
+    """Byte offset of each arith/mov operand field for this build."""
+    return _offsets(op_permuted_fields(is_immediate, width, field_perm))
 
 
 # Item-kind prefix -> builder for its canonical operand field list. Kinds absent

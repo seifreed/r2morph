@@ -17,6 +17,7 @@ from r2morph.mutations.code_virtualization_layout import (
     field_offsets,
     idx_offsets,
     mem_offsets,
+    op_offsets,
     permuted_fields,
 )
 
@@ -39,6 +40,16 @@ def test_memory_layout_identity_and_polymorphism() -> None:
     # per-build distinctness actually scales.
     layouts = {tuple(sorted(mem_offsets(False, seed).items())) for seed in range(1, 60)}
     assert len(layouts) > 2
+
+
+def test_op_offsets_by_immediate_width_matches_the_string_key_path() -> None:
+    # The engine keys arith handlers by (is_immediate, width); op_offsets must
+    # agree with the region's string-key field_offsets so both VMs share one
+    # layout core, and identity (perm 0) must be the legacy packing.
+    assert op_offsets(True, 32, 0) == {"dst": 1, "imm": 2}
+    assert op_offsets(False, 64, 0) == {"dst": 1, "src": 2}
+    assert op_offsets(True, 32, 7) == field_offsets("op_add_i_32", 7)
+    assert op_offsets(False, 64, 7) == field_offsets("op_add_r_64", 7)
 
 
 def test_indexed_layout_identity_and_polymorphism() -> None:
