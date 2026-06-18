@@ -79,18 +79,22 @@ def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> Virtu
         # the encoder stores it as an offset from the bytecode base. No base slot.
         return VirtualizedMemOp("loadrip" if kind == "riprel_load" else "storerip", reg_slot, -1, target, width)
     mnemonic = text.split(None, 1)[0].lower() if text.strip() else ""
-    # The rip-relative arith/lea forms are not yet supported, so pass 0 for
-    # insn_addr/insn_size (only those forms use them) and accept only base+disp.
     if mnemonic in _MEM_ARITH_MNEMONICS:
-        decoded = _decode_op_mem(text, mnemonic, 0, 0)
+        decoded = _decode_op_mem(text, mnemonic, insn_addr, insn_size)
         if decoded is not None and decoded[0] == "opmem":
             _, _mnemonic, reg_slot, base_slot, disp, width = decoded
             return VirtualizedMemOp(f"mem{mnemonic}", reg_slot, base_slot, disp, width)
+        if decoded is not None and decoded[0] == "opriprel":
+            _, _mnemonic, reg_slot, target, width = decoded
+            return VirtualizedMemOp(f"mem{mnemonic}rip", reg_slot, -1, target, width)
     elif mnemonic == "lea":
-        decoded = _decode_lea(text, 0, 0)
+        decoded = _decode_lea(text, insn_addr, insn_size)
         if decoded is not None and decoded[0] == "lea":
             _, reg_slot, base_slot, disp, width = decoded
             return VirtualizedMemOp("lea", reg_slot, base_slot, disp, width)
+        if decoded is not None and decoded[0] == "learip":
+            _, reg_slot, target, width = decoded
+            return VirtualizedMemOp("learip", reg_slot, -1, target, width)
     return None
 
 

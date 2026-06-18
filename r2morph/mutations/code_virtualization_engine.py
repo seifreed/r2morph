@@ -101,10 +101,11 @@ _MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
 # arithmetic/boolean op with [base+disp] as the source (reg is source and dest).
 _MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
 # ``lea`` computes [base+disp] into the destination without dereferencing. The
-# ``*rip`` kinds reach a global via the bytecode base plus a stored offset.
-_MEM_OP_KINDS: tuple[str, ...] = ("load", "store", "lea", "loadrip", "storerip") + tuple(
-    f"mem{m}" for m in _MEM_ARITH_MNEMONICS
-)
+# ``*rip`` kinds reach a global via the bytecode base plus a stored offset; the
+# handler strips the ``rip`` suffix and reuses the base kind's body with the
+# rip-relative address prologue, so every base+disp form has a global counterpart.
+_MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
+_MEM_OP_KINDS: tuple[str, ...] = _MEM_BASE_KINDS + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
     (mnemonic, is_immediate, width)
     for width in (64, 32)
