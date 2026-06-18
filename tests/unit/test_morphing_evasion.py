@@ -51,6 +51,7 @@ from r2morph.mutations.code_virtualization_engine import (
     build_vm_scheme,
     decode_instruction,
     encode_bytecode,
+    inject_junk_ops,
 )
 from r2morph.mutations.function_outlining import (
     FunctionOutliningPass,
@@ -282,6 +283,17 @@ class TestCodeVirtualization:
         assert total > len(scheme.dup)
         asm = _interpreter_asm(0x401000, scheme)
         assert f"h_{total - 1}:" in asm
+
+    def test_inject_junk_ops_adds_identity_movs_preserving_real_ops(self):
+        # Junk padding must be identity mov reg,reg (semantics-preserving) and must
+        # keep the run's real ops in their original order between the junk.
+        real = [decode_instruction("mov rax, rbx"), decode_instruction("add rax, 1")]
+        assert all(real)
+        padded = inject_junk_ops(real, random.Random(1))
+        assert len(padded) > len(real)
+        assert [op for op in padded if not (op.mnemonic == "mov" and op.dst_index == op.value)] == real
+        added = [op for op in padded if op.mnemonic == "mov" and op.dst_index == op.value]
+        assert added
 
     def test_arithmetic_handlers_contain_no_literal_native_op(self):
         # The arithmetic/boolean handlers must compute via MBA, not a literal

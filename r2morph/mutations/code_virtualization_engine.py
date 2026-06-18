@@ -218,6 +218,27 @@ class VirtualizedOp:
         self.width = width
 
 
+# Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
+# slot written with its own value, no flags), so it is semantics-preserving for
+# any register, yet it executes a real handler and pads the bytecode with
+# operations a devirtualizer cannot distinguish from the program's. The run is
+# straight-line (no branches), so insertion needs no target remap. Kept modest so
+# the per-run execution cost stays bounded. Mirrors the region lifter's tuning.
+_JUNK_OP_PROBABILITY = 0.35
+
+
+def inject_junk_ops(ops: list[VirtualizedOp], rng: random.Random) -> list[VirtualizedOp]:
+    """Sprinkle identity ``mov reg, reg`` ops through a straight-line run."""
+    junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
+    out: list[VirtualizedOp] = []
+    for op in ops:
+        while rng.random() < _JUNK_OP_PROBABILITY:
+            reg = rng.choice(junk_regs)
+            out.append(VirtualizedOp("mov", reg, reg, False, 64))
+        out.append(op)
+    return out
+
+
 def _normalize_operand(token: str) -> str:
     return token.strip().lower()
 
