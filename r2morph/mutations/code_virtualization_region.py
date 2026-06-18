@@ -174,6 +174,14 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         # reaches here, and a direct call with no resolved target is left native.
         target = insn.get("jump", -1)
         return ["call", target] if isinstance(target, int) and target > 0 else None
+    if kind == "rcall":
+        # Register-indirect call (call reg): the target is the program value of a
+        # GP register, read from its frame slot at runtime. Memory-indirect calls
+        # (type ucall/mcall) are not handled and stay native.
+        parts = text.split()
+        if len(parts) == 2 and parts[1] in GP_REGISTERS and parts[1] != "rsp":
+            return ["icall", GP_REGISTERS.index(parts[1])]
+        return None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
     if kind == "cjmp":
@@ -292,7 +300,7 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
 # Items that fully overwrite every readable arithmetic flag (CF, OF, SF, ZF, PF;
 # AF is never read by any conditional jump). They kill an upstream flag value.
 _FLAG_KILLER_KINDS = frozenset(
-    {"cmp", "test", "cmpmem", "cmpriprel", "opmem", "opriprel", "opmemdst", "opmemdstrip", "opmemidx", "call"}
+    {"cmp", "test", "cmpmem", "cmpriprel", "opmem", "opriprel", "opmemdst", "opmemdstrip", "opmemidx", "call", "icall"}
 )
 
 

@@ -250,10 +250,12 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         logger.warning("keystone unavailable; cannot nest region virtualization")
         return None
 
-    # A virtualized call reconstructs its target from the active layer's bytecode
-    # base (r15); nesting would need a per-layer target offset, so a region with a
-    # call falls back to the single-layer blob (which handles calls directly).
-    if any(item[0] == "call" for item in region.instructions):
+    # A virtualized direct call reconstructs its target from the active layer's
+    # bytecode base (r15); nesting would need a per-layer target offset. The
+    # register-indirect form is base-independent, but its nested path is unverified,
+    # so a region with any call falls back to the single-layer blob (which handles
+    # both directly).
+    if any(item[0] in ("call", "icall") for item in region.instructions):
         return None
 
     layers = _build_layers(region, max(2, min(depth, _MAX_LAYERS)), rng)

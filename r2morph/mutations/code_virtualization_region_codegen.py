@@ -145,19 +145,19 @@ def _live_junk_asm(rng: random.Random) -> str:
 _CALL_ARG_REGISTERS: tuple[str, ...] = ("rdi", "rsi", "rdx", "rcx", "r8", "r9", "rax")
 
 
-def _call_handler_asm(index: int, key_dword: str, slot: tuple[int, ...]) -> str:
-    """Bridge a virtualized direct ``call`` out to the native callee and back.
+def _call_bridge_asm(index: int, slot: tuple[int, ...], target_asm: str, advance: int) -> str:
+    """Bridge a virtualized call out to a native callee and back.
 
-    The target is stored as a signed 32-bit offset from the bytecode base (r15),
-    which the callee preserves (System V callee-saved), so it is recomputed
-    base-independently. Every program register lives in a frame slot, so the real
-    registers are free to set up the argument registers; r12/rbx (callee-saved)
-    carry the VM frame base and stream pointer across the call. The program's
-    stack is relocated below the VM frame, so the manual return-address push and
-    the callee's own frame never collide with the spilled context. Only rax (the
-    return value) and the loaded argument registers are spilled back: the rest of
-    the caller-saved set is undefined across a call by the ABI, and the callee
-    preserves the callee-saved program values still held in their slots.
+    ``target_asm`` is the prologue that leaves the absolute callee address in r10
+    (the direct and register-indirect forms differ only there); ``advance`` is the
+    call item's size. Every program register lives in a frame slot, so the real
+    registers are free to set up the System V argument registers; r12/rbx
+    (callee-saved) carry the VM frame base and stream pointer across the call. The
+    program's stack is relocated below the VM frame, so the manual return-address
+    push and the callee's own frame never collide with the spilled context. Only
+    rax (the return value) and the loaded argument registers are spilled back: the
+    rest of the caller-saved set is undefined across a call by the ABI, and the
+    callee preserves the callee-saved program values still held in their slots.
 
     ``index`` makes the resume label unique across duplicated handler instances.
     """
@@ -165,17 +165,33 @@ def _call_handler_asm(index: int, key_dword: str, slot: tuple[int, ...]) -> str:
     loads = "".join(f"  mov {name}, qword ptr [rsp+{off[name]}]\n" for name in _CALL_ARG_REGISTERS)
     spills = "".join(f"  mov qword ptr [rsp+{off[name]}], {name}\n" for name in _CALL_ARG_REGISTERS)
     return (
+        target_asm
+        + "  mov r12, rsp\n  mov rbx, rsi\n"
+        + loads
+        + f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n"
+        + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
+        + f"call_resume_{index}:\n  mov rsp, r12\n"
+        + spills
+        + f"  mov rsi, rbx\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+    )
+
+
+def _call_handler_asm(index: int, key_dword: str, slot: tuple[int, ...]) -> str:
+    """Direct ``call``: the target is a signed 32-bit offset from the bytecode
+    base (r15, callee-saved so it survives the call), recomputed base-independently."""
+    target = (
         f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
         f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
         "  movsxd r10, eax\n  add r10, r15\n"
-        "  mov r12, rsp\n  mov rbx, rsi\n"
-        f"{loads}"
-        f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n"
-        f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
-        f"call_resume_{index}:\n  mov rsp, r12\n"
-        f"{spills}"
-        "  mov rsi, rbx\n  add rsi, 5\n  jmp vm_dispatch\n"
     )
+    return _call_bridge_asm(index, slot, target, 5)
+
+
+def _icall_handler_asm(index: int, key: int, slot: tuple[int, ...]) -> str:
+    """Register-indirect ``call reg``: the target is the program value of a GP
+    register, read from its frame slot. Base-independent (no r15), so it nests."""
+    target = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n" "  mov r10, qword ptr [rsp+r8*8]\n"
+    return _call_bridge_asm(index, slot, target, 2)
 
 
 def _item_size(item: tuple[Any, ...]) -> int:
@@ -223,6 +239,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 5
     if kind == "call":
         return 5  # opcode + 4-byte bytecode-relative target offset
+    if kind == "icall":
+        return 2  # opcode + register slot holding the runtime target
     return 1  # nop, exit, enter_inner, inner_exit (opcode byte only)
 
 
@@ -427,6 +445,10 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             # an out-of-range target raises struct.error -> the function stays native.
             p = emit_opcode("call")
             emit_disp(item[1] - bytecode_base, p)
+        elif kind == "icall":
+            _, reg_slot = item
+            p = emit_opcode("icall")
+            plain.append(slot_of[reg_slot] ^ p)
         elif kind == "jmp":
             p = emit_opcode("jmp")
             emit_disp(offsets[item[1]], p)
@@ -473,6 +495,8 @@ def handler_instances_asm(
             lines.append(extra[handler_key])
         elif handler_key == "call":
             lines.append(_call_handler_asm(index, key_dword, slot))
+        elif handler_key == "icall":
+            lines.append(_icall_handler_asm(index, key, slot))
         elif handler_key.startswith("opmba_"):
             lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("op_"):

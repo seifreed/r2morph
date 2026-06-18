@@ -148,6 +148,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "leave"
     if kind == "call":
         return "call"  # bridge out to a native callee and back
+    if kind == "icall":
+        return "icall"  # register-indirect call (target from a frame slot)
     if kind == "jmp":
         return "jmp"
     if kind == "jcc":
