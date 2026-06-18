@@ -93,12 +93,14 @@ _MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
 # operand encoding at runtime. The concrete opcode byte for each key is
 # assigned per instance (see VMScheme), so two virtualized builds share no
 # fixed opcode table to fingerprint.
-# Memory load/store operations. They reuse the (mnemonic, is_immediate, width)
-# key shape with the kind as the "mnemonic" and is_immediate fixed False, so the
-# dispatch-table, duplication and self-checksum machinery treat them uniformly;
-# only the operand layout (reg slot + base slot + disp) and the handler body
-# differ, both keyed off the kind.
-_MEM_OP_KINDS: tuple[str, ...] = ("load", "store")
+# Memory operations. They reuse the (mnemonic, is_immediate, width) key shape with
+# the kind as the "mnemonic" and is_immediate fixed False, so the dispatch-table,
+# duplication and self-checksum machinery treat them uniformly; only the operand
+# layout (reg slot + base slot + disp32) and the handler body differ, both keyed
+# off the kind. ``load``/``store`` move reg <-> [base+disp]; ``mem<op>`` applies an
+# arithmetic/boolean op with [base+disp] as the source (reg is source and dest).
+_MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
+_MEM_OP_KINDS: tuple[str, ...] = ("load", "store") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
     (mnemonic, is_immediate, width)
     for width in (64, 32)
@@ -418,26 +420,46 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     total = len(index_to_key)
     junk_rng = random.Random(scheme.junk_seed)
 
-    def mem_handler_body(kind: str, width: int) -> str:
-        # Memory mov: reg slot [rsi+1], base slot [rsi+2], signed disp32 [rsi+3..6]
-        # (7 bytes). Each operand is un-masked by key XOR r13b (the stream position);
-        # the disp broadcasts r13b to 32 bits before sign-extending. The effective
-        # address is the base slot's current value plus the displacement, folded with
-        # the shared MBA add so no literal address add appears. mov sets no flags.
-        body = (
+    def mem_addr_prologue() -> str:
+        # Shared head of every memory handler: reg slot [rsi+1] -> r8, base slot
+        # [rsi+2] -> r9, signed disp32 [rsi+3..6] -> rax. Each operand is un-masked
+        # by key XOR r13b (the stream position); the disp broadcasts r13b to 32 bits
+        # before sign-extending. The effective address is the base slot's current
+        # value plus the displacement, folded with the shared MBA add (no literal
+        # address add), left in r10.
+        return (
             f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
             f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + _mba_add_r10_rax(key)
         )
+
+    def mem_handler_body(kind: str, width: int) -> str:
+        # 7-byte item: opcode + reg slot + base slot + disp32. r10 holds the address.
+        body = mem_addr_prologue()
         if kind == "load":
             body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
             body += "  mov qword ptr [rsp + r8*8], rax\n"
-        elif width == 64:
-            body += "  mov rax, qword ptr [rsp + r8*8]\n  mov qword ptr [r10], rax\n"
+        elif kind == "store":
+            if width == 64:
+                body += "  mov rax, qword ptr [rsp + r8*8]\n  mov qword ptr [r10], rax\n"
+            else:
+                body += "  mov eax, dword ptr [rsp + r8*8]\n  mov dword ptr [r10], eax\n"
         else:
-            body += "  mov eax, dword ptr [rsp + r8*8]\n  mov dword ptr [r10], eax\n"
+            # mem<op>: reg = reg <op> [addr], computed with no literal native op via
+            # the shared MBA builder (flags dead by the engine's precondition). Load
+            # the memory source into rax, the register into r10, then fold.
+            mnemonic = kind[len("mem") :]
+            body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+            if mnemonic == "sub":
+                body += "  neg rax\n"
+            body += "  mov r10, qword ptr [rsp + r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp + r8*8]\n"
+            body += _op_mba_compute(mnemonic, key)
+            if width == 64:
+                body += "  mov qword ptr [rsp + r8*8], r10\n"
+            else:
+                body += "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
         return body + "  add rsi, 7\n  jmp vm_dispatch\n"
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:

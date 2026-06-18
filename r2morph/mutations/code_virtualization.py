@@ -41,7 +41,7 @@ from r2morph.mutations.code_virtualization_region import (
     extract_region,
 )
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
-from r2morph.mutations.code_virtualization_region_decoders import _decode_memory_mov
+from r2morph.mutations.code_virtualization_region_decoders import _decode_memory_mov, _decode_op_mem
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
@@ -53,17 +53,29 @@ _MIN_RUN_LENGTH = 2
 _TRAMPOLINE_SIZE = 5
 
 
+_MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
+
+
 def _decode_run_item(text: str) -> VirtualizedOp | VirtualizedMemOp | None:
     """Decode one instruction into a VM item: a register/immediate op, a memory
-    load/store ``mov``, or ``None`` if the VM cannot reproduce it (ends the run)."""
+    load/store ``mov``, an ``<op> reg, [base+disp]``, or ``None`` if the VM cannot
+    reproduce it (ends the run)."""
     op = decode_instruction(text)
     if op is not None:
         return op
     mem = _decode_memory_mov(text)
-    if mem is None:
-        return None
-    kind, reg_slot, base_slot, disp, width = mem
-    return VirtualizedMemOp(kind, reg_slot, base_slot, disp, width)
+    if mem is not None:
+        kind, reg_slot, base_slot, disp, width = mem
+        return VirtualizedMemOp(kind, reg_slot, base_slot, disp, width)
+    mnemonic = text.split(None, 1)[0].lower() if text.strip() else ""
+    if mnemonic in _MEM_ARITH_MNEMONICS:
+        # insn_addr/insn_size are only used for the rip-relative form, which we do
+        # not yet support in the engine; pass 0 and accept only the base+disp form.
+        decoded = _decode_op_mem(text, mnemonic, 0, 0)
+        if decoded is not None and decoded[0] == "opmem":
+            _, _mnemonic, reg_slot, base_slot, disp, width = decoded
+            return VirtualizedMemOp(f"mem{mnemonic}", reg_slot, base_slot, disp, width)
+    return None
 
 
 class _Run:
