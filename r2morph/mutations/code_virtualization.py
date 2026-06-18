@@ -41,7 +41,12 @@ from r2morph.mutations.code_virtualization_region import (
     extract_region,
 )
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
-from r2morph.mutations.code_virtualization_region_decoders import _decode_lea, _decode_memory_mov, _decode_op_mem
+from r2morph.mutations.code_virtualization_region_decoders import (
+    _decode_lea,
+    _decode_memory_mov,
+    _decode_op_mem,
+    _decode_riprel_mov,
+)
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
@@ -56,10 +61,10 @@ _TRAMPOLINE_SIZE = 5
 _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
 
 
-def _decode_run_item(text: str) -> VirtualizedOp | VirtualizedMemOp | None:
+def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> VirtualizedOp | VirtualizedMemOp | None:
     """Decode one instruction into a VM item: a register/immediate op, a memory
-    load/store ``mov``, an ``<op> reg, [base+disp]``, or ``None`` if the VM cannot
-    reproduce it (ends the run)."""
+    load/store ``mov``, an ``<op> reg, [base+disp]``, a ``mov reg, [rip+disp]``, or
+    ``None`` if the VM cannot reproduce it (ends the run)."""
     op = decode_instruction(text)
     if op is not None:
         return op
@@ -67,9 +72,15 @@ def _decode_run_item(text: str) -> VirtualizedOp | VirtualizedMemOp | None:
     if mem is not None:
         kind, reg_slot, base_slot, disp, width = mem
         return VirtualizedMemOp(kind, reg_slot, base_slot, disp, width)
+    riprel = _decode_riprel_mov(text, insn_addr, insn_size)
+    if riprel is not None:
+        kind, reg_slot, target, width = riprel
+        # The rip-relative target is an absolute address (carried in the disp field);
+        # the encoder stores it as an offset from the bytecode base. No base slot.
+        return VirtualizedMemOp("loadrip" if kind == "riprel_load" else "storerip", reg_slot, -1, target, width)
     mnemonic = text.split(None, 1)[0].lower() if text.strip() else ""
-    # insn_addr/insn_size below are only used by the rip-relative forms, which the
-    # engine does not yet support; pass 0 and accept only the base+disp forms.
+    # The rip-relative arith/lea forms are not yet supported, so pass 0 for
+    # insn_addr/insn_size (only those forms use them) and accept only base+disp.
     if mnemonic in _MEM_ARITH_MNEMONICS:
         decoded = _decode_op_mem(text, mnemonic, 0, 0)
         if decoded is not None and decoded[0] == "opmem":
@@ -137,7 +148,7 @@ class CodeVirtualizationPass(MutationPass):
             return None
 
         disasms = [insn.get("opcode", "") for insn in insns]
-        decoded = [_decode_run_item(text) for text in disasms]
+        decoded = [_decode_run_item(insn.get("opcode", ""), insn.get("addr", 0), insn.get("size", 0)) for insn in insns]
 
         index = 0
         count = len(insns)

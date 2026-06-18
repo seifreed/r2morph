@@ -389,6 +389,28 @@ def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> N
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_straight_line_riprel_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call) whose run reads a global via
+    # mov reg, [rip+disp]; the rip-relative handler must reach the global from the
+    # bytecode base plus the stored offset and preserve the result.
+    fixture = _DATASET / "elf_vm_run_riprelfallback_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_riprel"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_memory_operand_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # The function stores to and loads from [rsp-8]; the control-flow VM must
     # virtualize the memory operands, computing the address from the captured

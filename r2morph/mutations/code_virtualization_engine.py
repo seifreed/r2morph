@@ -100,8 +100,11 @@ _MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
 # off the kind. ``load``/``store`` move reg <-> [base+disp]; ``mem<op>`` applies an
 # arithmetic/boolean op with [base+disp] as the source (reg is source and dest).
 _MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
-# ``lea`` computes [base+disp] into the destination without dereferencing.
-_MEM_OP_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
+# ``lea`` computes [base+disp] into the destination without dereferencing. The
+# ``*rip`` kinds reach a global via the bytecode base plus a stored offset.
+_MEM_OP_KINDS: tuple[str, ...] = ("load", "store", "lea", "loadrip", "storerip") + tuple(
+    f"mem{m}" for m in _MEM_ARITH_MNEMONICS
+)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
     (mnemonic, is_immediate, width)
     for width in (64, 32)
@@ -361,7 +364,9 @@ def pack_immediate(value: int, width: int) -> bytes:
     return struct.pack("<I", value & 0xFFFFFFFF)
 
 
-def encode_bytecode(ops: list[VirtualizedOp | VirtualizedMemOp], scheme: VMScheme, checksum: int = 0) -> bytes:
+def encode_bytecode(
+    ops: list[VirtualizedOp | VirtualizedMemOp], scheme: VMScheme, checksum: int = 0, bytecode_base: int = 0
+) -> bytes:
     """Serialize ops to bytecode (per-scheme opcodes), XOR-encrypted by key.
 
     Immediates are width-sized: 8 bytes for 64-bit ops, 4 for 32-bit.
@@ -390,8 +395,14 @@ def encode_bytecode(ops: list[VirtualizedOp | VirtualizedMemOp], scheme: VMSchem
         if isinstance(op, VirtualizedMemOp):
             position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
             plain.append(slot_of[op.reg_index] ^ position)
-            plain.append(slot_of[op.base_index] ^ position)
-            plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp))
+            if op.kind.endswith("rip"):
+                # No base slot; the disp field carries the absolute global target,
+                # stored as a signed offset from the bytecode base (out-of-range
+                # raises struct.error, which the caller turns into "leave native").
+                plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp - bytecode_base))
+            else:
+                plain.append(slot_of[op.base_index] ^ position)
+                plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp))
             continue
         position = emit_opcode(pick(scheme.dup[(op.mnemonic, op.is_immediate, op.width)]))
         plain.append(slot_of[op.dst_index] ^ position)
@@ -436,9 +447,26 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + _mba_add_r10_rax(key)
         )
 
+    def mem_riprel_prologue() -> str:
+        # rip-relative head: reg slot [rsi+1] -> r8, signed offset32 [rsi+2..5] (the
+        # global's distance from the bytecode base). The address is r15 (the bytecode
+        # base, held for the whole run) plus that offset, folded with MBA; so the
+        # global is reached base-independently exactly like the original [rip+disp].
+        return (
+            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  mov eax, dword ptr [rsi+2]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
+            "  movsxd rax, eax\n  mov r10, r15\n" + _mba_add_r10_rax(key)
+        )
+
     def mem_handler_body(kind: str, width: int) -> str:
-        # 7-byte item: opcode + reg slot + base slot + disp32. r10 holds the address.
-        body = mem_addr_prologue()
+        # base+disp items are 7 bytes (opcode+reg+base+disp32); rip-relative items
+        # are 6 (opcode+reg+offset32). r10 holds the address either way.
+        riprel = kind.endswith("rip")
+        if riprel:
+            kind, body, advance = kind[: -len("rip")], mem_riprel_prologue(), 6
+        else:
+            body, advance = mem_addr_prologue(), 7
         if kind == "load":
             body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
             body += "  mov qword ptr [rsp + r8*8], rax\n"
@@ -467,7 +495,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
                 body += "  mov qword ptr [rsp + r8*8], r10\n"
             else:
                 body += "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
-        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+        return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
         if mnemonic in _MEM_OP_KINDS:
@@ -608,4 +636,13 @@ def build_vm_blob(
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
-    return bytes(data) + encode_bytecode(ops, scheme, checksum)
+    # The bytecode is appended right after the interpreter, so its base is the cave
+    # plus the assembled interpreter length; rip-relative globals are stored as a
+    # signed 32-bit offset from it. A target too far to express leaves the run native.
+    bytecode_base = cave_vaddr + len(data)
+    try:
+        bytecode = encode_bytecode(ops, scheme, checksum, bytecode_base)
+    except struct.error:
+        logger.debug("rip-relative target out of 32-bit range; leaving run native")
+        return None
+    return bytes(data) + bytecode
