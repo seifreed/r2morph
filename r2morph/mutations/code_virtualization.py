@@ -41,7 +41,7 @@ from r2morph.mutations.code_virtualization_region import (
     extract_region,
 )
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
-from r2morph.mutations.code_virtualization_region_decoders import _decode_memory_mov, _decode_op_mem
+from r2morph.mutations.code_virtualization_region_decoders import _decode_lea, _decode_memory_mov, _decode_op_mem
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
@@ -68,13 +68,18 @@ def _decode_run_item(text: str) -> VirtualizedOp | VirtualizedMemOp | None:
         kind, reg_slot, base_slot, disp, width = mem
         return VirtualizedMemOp(kind, reg_slot, base_slot, disp, width)
     mnemonic = text.split(None, 1)[0].lower() if text.strip() else ""
+    # insn_addr/insn_size below are only used by the rip-relative forms, which the
+    # engine does not yet support; pass 0 and accept only the base+disp forms.
     if mnemonic in _MEM_ARITH_MNEMONICS:
-        # insn_addr/insn_size are only used for the rip-relative form, which we do
-        # not yet support in the engine; pass 0 and accept only the base+disp form.
         decoded = _decode_op_mem(text, mnemonic, 0, 0)
         if decoded is not None and decoded[0] == "opmem":
             _, _mnemonic, reg_slot, base_slot, disp, width = decoded
             return VirtualizedMemOp(f"mem{mnemonic}", reg_slot, base_slot, disp, width)
+    elif mnemonic == "lea":
+        decoded = _decode_lea(text, 0, 0)
+        if decoded is not None and decoded[0] == "lea":
+            _, reg_slot, base_slot, disp, width = decoded
+            return VirtualizedMemOp("lea", reg_slot, base_slot, disp, width)
     return None
 
 

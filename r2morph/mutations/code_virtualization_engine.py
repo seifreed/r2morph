@@ -100,7 +100,8 @@ _MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
 # off the kind. ``load``/``store`` move reg <-> [base+disp]; ``mem<op>`` applies an
 # arithmetic/boolean op with [base+disp] as the source (reg is source and dest).
 _MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
-_MEM_OP_KINDS: tuple[str, ...] = ("load", "store") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
+# ``lea`` computes [base+disp] into the destination without dereferencing.
+_MEM_OP_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
     (mnemonic, is_immediate, width)
     for width in (64, 32)
@@ -446,6 +447,12 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
                 body += "  mov rax, qword ptr [rsp + r8*8]\n  mov qword ptr [r10], rax\n"
             else:
                 body += "  mov eax, dword ptr [rsp + r8*8]\n  mov dword ptr [r10], eax\n"
+        elif kind == "lea":
+            # Store the effective address itself (no dereference). A 32-bit dst
+            # truncates to the low 32 bits, zero-extended into the slot.
+            if width == 32:
+                body += "  mov r10d, r10d\n"
+            body += "  mov qword ptr [rsp + r8*8], r10\n"
         else:
             # mem<op>: reg = reg <op> [addr], computed with no literal native op via
             # the shared MBA builder (flags dead by the engine's precondition). Load
