@@ -12,7 +12,7 @@ table and stitches these instances together.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_layout import field_offsets, mem_offsets
+from r2morph.mutations.code_virtualization_layout import field_offsets, idx_offsets, mem_offsets
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
@@ -246,10 +246,10 @@ def _movx_extend_asm(ext: str, src_size: int, dst_width: int, advance: int) -> s
     return load + f"  mov qword ptr [rsp+r8*8], rax\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _movx_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _movx_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``movzx/movsx reg, byte|word [base+index*scale+disp]``."""
     _, ext, src_size_text, dst_width_text = handler_key.split("_")
-    body, advance = _indexed_address_asm(key, key_dword)
+    body, advance = _indexed_address_asm(key, key_dword, field_perm)
     return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
 
 
@@ -273,20 +273,22 @@ def _incdec_handler_asm(handler_key: str, key: int) -> str:
     return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 2\n  jmp vm_dispatch\n"
 
 
-def _indexed_address_asm(key: int, key_dword: str) -> tuple[str, int]:
+def _indexed_address_asm(key: int, key_dword: str, field_perm: int = 0) -> tuple[str, int]:
     """Shared head of every indexed memory handler: decrypt the register slot
     into r8 and compute ``base + index*scale + disp`` into r10.
 
     The index is read from its slot and shifted by the encoded scale log2, then
-    the base and displacement are added. Returns the assembly and the rsi
-    advance (the bytecode item width).
+    the base and displacement are added. The operand fields are read at this
+    build's permuted offsets (the encoder emits them in the same order). Returns
+    the assembly and the rsi advance (the bytecode item width).
     """
+    off = idx_offsets(False, field_perm)
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-        f"  movzx r11d, byte ptr [rsi+3]\n  xor r11b, {key}\n  xor r11b, r13b\n"
-        f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n  xor cl, r13b\n"
-        f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+        f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
+        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
         + _unmask_dword("r10")
         + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
         # Fold the base with MBA too (r11 holds the base value), so neither the
@@ -307,30 +309,32 @@ def _lea_store_asm(width: int, advance: int) -> str:
     return f"{truncate}  mov qword ptr [rsp+r8*8], r10\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _lea_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _lea_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``lea reg, [base + index*scale + disp]`` (32- or 64-bit dst).
 
     The effective address is computed with the shared indexed prologue and
     stored into the destination slot without dereferencing; lea sets no flags.
     """
     width = int(handler_key.split("_")[1])
-    body, advance = _indexed_address_asm(key, key_dword)
+    body, advance = _indexed_address_asm(key, key_dword, field_perm)
     return body + _lea_store_asm(width, advance)
 
 
-def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``lea reg, [index*scale + disp]`` (no base, 32- or 64-bit dst).
 
     Like the indexed prologue but without the base add: the address is
     ``index*scale + disp``. The item has no base-slot byte, so it is one byte
-    shorter (size 8). lea sets no flags; a 32-bit destination truncates.
+    shorter (size 8). Operand fields are read at this build's permuted offsets.
+    lea sets no flags; a 32-bit destination truncates.
     """
     width = int(handler_key.split("_")[1])
+    off = idx_offsets(True, field_perm)
     body = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r11d, byte ptr [rsi+2]\n  xor r11b, {key}\n  xor r11b, r13b\n"
-        f"  movzx ecx, byte ptr [rsi+3]\n  xor cl, {key}\n  xor cl, r13b\n"
-        f"  mov eax, dword ptr [rsi+4]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+        f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
+        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
         + _unmask_dword("r10")
         + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
         + _mba_add_r10_rax(key)
@@ -338,7 +342,7 @@ def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str) 
     return body + _lea_store_asm(width, 8)
 
 
-def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> str:
+def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for ``<op> reg, [base + index*scale + disp]`` (reg is source
     and destination; memory is the scaled-index source).
 
@@ -348,7 +352,7 @@ def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str) -> s
     """
     _, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
-    body, advance = _indexed_address_asm(key, key_dword)
+    body, advance = _indexed_address_asm(key, key_dword, field_perm)
     if width == 64:
         body += f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], r9\n"
     else:

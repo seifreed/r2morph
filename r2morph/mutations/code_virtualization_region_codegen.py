@@ -26,7 +26,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
     pack_immediate,
 )
-from r2morph.mutations.code_virtualization_layout import mem_permuted_fields, permuted_fields
+from r2morph.mutations.code_virtualization_layout import idx_permuted_fields, mem_permuted_fields, permuted_fields
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _FRAME_SIZE,
@@ -231,6 +231,22 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         for name, _size in mem_permuted_fields(riprel, scheme.field_perm):
             plain.extend(byte ^ position for byte in field_bytes[name])
 
+    def emit_idx(position: int, reg_slot: int, base_slot: int | None, index_slot: int, shift: int, disp: int) -> None:
+        # Emit a scaled-index item's operand fields (register, optional base,
+        # index, scale shift, 4-byte displacement) in this build's permuted order;
+        # the handler reads them at the matching offsets via idx_offsets.
+        nobase = base_slot is None
+        field_bytes = {
+            "reg": bytes([reg_slot]),
+            "index": bytes([index_slot]),
+            "shift": bytes([shift]),
+            "disp": struct.pack("<i", disp),
+        }
+        if base_slot is not None:
+            field_bytes["base"] = bytes([base_slot])
+        for name, _size in idx_permuted_fields(nobase, scheme.field_perm):
+            plain.extend(byte ^ position for byte in field_bytes[name])
+
     for item in region.instructions:
         kind = item[0]
         # Every operand is masked with the opcode's stream position (returned by
@@ -325,26 +341,15 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind == "leaidx":
             _, reg_slot, base_slot, index_slot, shift, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            plain.append(slot_of[index_slot] ^ p)
-            plain.append(shift ^ p)
-            emit_disp(disp, p)
+            emit_idx(p, slot_of[reg_slot], slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind == "leaidxnb":
             _, reg_slot, index_slot, shift, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[index_slot] ^ p)
-            plain.append(shift ^ p)
-            emit_disp(disp, p)
+            emit_idx(p, slot_of[reg_slot], None, slot_of[index_slot], shift, disp)
         elif kind == "opmemidx":
             _, _mnemonic, reg_slot, base_slot, index_slot, shift, disp, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            plain.append(slot_of[index_slot] ^ p)
-            plain.append(shift ^ p)
-            emit_disp(disp, p)
+            emit_idx(p, slot_of[reg_slot], slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind == "incdec":
             _, _mnemonic, reg_slot, _width = item
             p = emit_opcode(_required_key(item))
@@ -356,11 +361,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind == "movxidx":
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, index_slot, shift, disp = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[reg_slot] ^ p)
-            plain.append(slot_of[base_slot] ^ p)
-            plain.append(slot_of[index_slot] ^ p)
-            plain.append(shift ^ p)
-            emit_disp(disp, p)
+            emit_idx(p, slot_of[reg_slot], slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
@@ -445,17 +446,17 @@ def handler_instances_asm(
         elif handler_key.startswith(("opmem_", "opriprel_")):
             lines.append(_op_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("leaidxnb_"):
-            lines.append(_lea_indexed_nobase_handler_asm(handler_key, key, key_dword))
+            lines.append(_lea_indexed_nobase_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("leaidx_"):
-            lines.append(_lea_indexed_handler_asm(handler_key, key, key_dword))
+            lines.append(_lea_indexed_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("lea_", "learip_")):
             lines.append(_lea_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("opmemidx_"):
-            lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword))
+            lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("incdec_"):
             lines.append(_incdec_handler_asm(handler_key, key))
         elif handler_key.startswith("movxidx_"):
-            lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword))
+            lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("movx_"):
             lines.append(_movx_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):

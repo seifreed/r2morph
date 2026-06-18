@@ -91,3 +91,22 @@ def mem_permuted_fields(riprel: bool, field_perm: int) -> list[Field]:
 def mem_offsets(riprel: bool, field_perm: int) -> dict[str, int]:
     """Byte offset of each memory operand field for this build."""
     return _offsets(mem_permuted_fields(riprel, field_perm))
+
+
+def _idx_fields(nobase: bool) -> list[Field]:
+    # Scaled-index items: register slot, (optional) base slot, index slot, scale
+    # shift, displacement. The no-base form (lea [index*scale+disp]) omits base.
+    # Five fields give up to 120 orders - the richest per-build distinctness.
+    if nobase:
+        return [("reg", 1), ("index", 1), ("shift", 1), ("disp", 4)]
+    return [("reg", 1), ("base", 1), ("index", 1), ("shift", 1), ("disp", 4)]
+
+
+def idx_permuted_fields(nobase: bool, field_perm: int) -> list[Field]:
+    """Scaled-index item operand fields in this build's order (identity when 0)."""
+    return _permute(_idx_fields(nobase), field_perm)
+
+
+def idx_offsets(nobase: bool, field_perm: int) -> dict[str, int]:
+    """Byte offset of each scaled-index operand field for this build."""
+    return _offsets(idx_permuted_fields(nobase, field_perm))

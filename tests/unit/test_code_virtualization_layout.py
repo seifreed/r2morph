@@ -13,7 +13,12 @@ assertion.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_layout import field_offsets, mem_offsets, permuted_fields
+from r2morph.mutations.code_virtualization_layout import (
+    field_offsets,
+    idx_offsets,
+    mem_offsets,
+    permuted_fields,
+)
 
 
 def test_identity_layout_matches_legacy_fixed_offsets() -> None:
@@ -34,6 +39,16 @@ def test_memory_layout_identity_and_polymorphism() -> None:
     # per-build distinctness actually scales.
     layouts = {tuple(sorted(mem_offsets(False, seed).items())) for seed in range(1, 60)}
     assert len(layouts) > 2
+
+
+def test_indexed_layout_identity_and_polymorphism() -> None:
+    # Scaled-index items have five fields (reg/base/index/shift/disp), so the
+    # layout has up to 120 orders - the richest per-build distinctness. The
+    # no-base form drops the base field. perm 0 is the legacy packing.
+    assert idx_offsets(False, 0) == {"reg": 1, "base": 2, "index": 3, "shift": 4, "disp": 5}
+    assert idx_offsets(True, 0) == {"reg": 1, "index": 2, "shift": 3, "disp": 4}
+    layouts = {tuple(sorted(idx_offsets(False, seed).items())) for seed in range(1, 80)}
+    assert len(layouts) > 5
 
 
 def test_some_seed_reorders_the_operand_fields() -> None:
