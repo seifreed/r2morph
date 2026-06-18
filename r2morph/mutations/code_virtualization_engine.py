@@ -156,33 +156,41 @@ _LIVE_JUNK_TEMPLATES: tuple[str, ...] = (
 )
 
 
+# Per-instance opaque-predicate identities. Each computes a value into rbp from a
+# scratch seed register ({s}) whose parity is fixed for every input, paired with
+# the branch that is consequently always taken. ``x*(x+1)`` / ``x*(x-1)`` (adjacent
+# integers) and ``2x`` are always even (jz after test ,1); ``x|1`` and ``x|(x+1)``
+# (the latter spans adjacent integers, one of them odd) are always odd (jnz). A
+# fixed predicate is itself a signature, so the form is varied per instance.
+_OPAQUE_VARIANTS: tuple[tuple[str, str], ...] = (
+    ("  lea rbp, [{s} + 1]\n  imul rbp, {s}\n  test rbp, 1\n", "jz"),
+    ("  lea rbp, [{s} - 1]\n  imul rbp, {s}\n  test rbp, 1\n", "jz"),
+    ("  lea rbp, [{s} + {s}]\n  test rbp, 1\n", "jz"),
+    ("  mov rbp, {s}\n  or rbp, 1\n  test rbp, 1\n", "jnz"),
+    ("  lea rbp, [{s} + 1]\n  or rbp, {s}\n  test rbp, 1\n", "jnz"),
+)
+
+
 def _opaque_predicate_asm(rng: random.Random, index: int) -> str:
     """A reachable, always-taken branch guarding an unreachable junk body.
 
-    ``x*(x+1)`` is even for every integer x (one of two consecutive integers is
-    even), so ``test rbp, 1`` always clears bit 0 and the ``jz`` is always taken;
-    the junk body between the branch and the label never executes. The predicate
-    reads and writes only rbx/rbp/r12 - state-neutral at a handler head, exactly
-    like the live junk above - and clobbers only flags, which the straight-line VM
-    never captures, so it adds opaque control flow without touching program state.
-    A linear sweep, or a handler signature that assumes straight-line handler
-    heads, must now account for a branch whose direction it cannot resolve without
-    proving the identity. ``index`` (unique per handler) keeps the skip label
-    unique.
+    One of :data:`_OPAQUE_VARIANTS` (chosen per instance) computes a value whose
+    parity is fixed for every input, so its paired branch is always taken and the
+    junk body between the branch and the label never executes. The predicate reads
+    and writes only rbx/rbp/r12 - state-neutral at a handler head, exactly like the
+    live junk above - and clobbers only flags, which the straight-line VM never
+    captures, so it adds opaque control flow without touching program state. A
+    linear sweep, or a handler signature that assumes straight-line handler heads,
+    must now account for a branch whose direction it cannot resolve without proving
+    the identity. ``index`` (unique per handler) keeps the skip label unique.
     """
-    seed = rng.choice(("rbx", "r12"))  # rbp holds the x*(x+1) accumulator
+    seed = rng.choice(("rbx", "r12"))  # rbp holds the predicate accumulator
+    compute, branch = rng.choice(_OPAQUE_VARIANTS)
     dead = "".join(
         "  " + rng.choice(_LIVE_JUNK_TEMPLATES).format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n"
         for _ in range(rng.randint(1, 3))
     )
-    return (
-        f"  lea rbp, [{seed} + 1]\n"
-        f"  imul rbp, {seed}\n"
-        "  test rbp, 1\n"
-        f"  jz opaque_{index}\n"
-        f"{dead}"
-        f"opaque_{index}:\n"
-    )
+    return f"{compute.format(s=seed)}  {branch} opaque_{index}\n{dead}opaque_{index}:\n"
 
 
 def _live_junk_asm(rng: random.Random, index: int) -> str:
