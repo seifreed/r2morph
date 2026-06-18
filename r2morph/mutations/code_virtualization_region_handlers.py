@@ -119,16 +119,17 @@ def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: s
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _synth_flags_asm(width: int, sub: bool) -> str:
-    """Branchlessly synthesize the readable arithmetic flags of ``a <op> b`` into
-    r11 (a RFLAGS image), reading a in rbx, b in rbp and the result in r10.
+def _synth_flags_asm(width: int, mode: str) -> str:
+    """Branchlessly synthesize the readable flags of ``a <op> b`` into r11 (a RFLAGS
+    image), reading a in rbx, b in rbp and the result in r10.
 
-    No flag-setting native op spells out the comparison: each of CF, OF, SF, ZF
-    and PF (AF is read by no conditional jump) is computed from a, b and the result
-    with pure and/or/xor/shift/neg, whose own flags are discarded. The formulas are
-    verified bit-for-bit against the CPU over all operand edge cases for both add
-    and sub at 32- and 64-bit widths. rcx/rax/r9 are scratch; r8 (the destination
-    slot) is preserved for the caller's result store.
+    ``mode`` is ``"add"``, ``"sub"`` or ``"logic"`` (and/or/xor/test). No flag-setting
+    native op spells out the operation: each of SF, ZF and PF - plus CF and OF for
+    add/sub (a logic op clears both) - is computed from a, b and the result with pure
+    and/or/xor/shift/neg, whose own flags are discarded. AF is read by no conditional
+    jump, so it is omitted. The formulas are verified bit-for-bit against the CPU over
+    all operand edge cases for add, sub and and/test at 32- and 64-bit widths.
+    rcx/rax/r9 are scratch; r8 (the destination slot) is preserved for any result store.
     """
     sh = width - 1
     a, b, r = ("rbx", "rbp", "r10") if width == 64 else ("ebx", "ebp", "r10d")
@@ -140,24 +141,23 @@ def _synth_flags_asm(width: int, sub: bool) -> str:
     )
     # SF (bit 7): the result's sign bit.
     lines.append(f"  mov {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 7\n  or r11, rcx\n")
-    # CF (bit 0): carry-out for add, borrow for sub.
-    if not sub:
+    if mode == "add":
+        # CF (bit 0): carry-out. OF (bit 11): signed overflow.
         lines.append(
             f"  mov {c}, {a}\n  and {c}, {b}\n  mov {u}, {a}\n  or {u}, {b}\n  mov {t}, {r}\n  not {t}\n  and {u}, {t}\n  or {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
         )
-    else:
-        lines.append(
-            f"  mov {c}, {a}\n  not {c}\n  and {c}, {b}\n  mov {u}, {a}\n  not {u}\n  or {u}, {b}\n  and {u}, {r}\n  or {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
-        )
-    # OF (bit 11): signed overflow.
-    if not sub:
         lines.append(
             f"  mov {c}, {a}\n  xor {c}, {r}\n  mov {u}, {b}\n  xor {u}, {r}\n  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
         )
-    else:
+    elif mode == "sub":
+        # CF (bit 0): borrow. OF (bit 11): signed overflow.
+        lines.append(
+            f"  mov {c}, {a}\n  not {c}\n  and {c}, {b}\n  mov {u}, {a}\n  not {u}\n  or {u}, {b}\n  and {u}, {r}\n  or {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
+        )
         lines.append(
             f"  mov {c}, {a}\n  xor {c}, {b}\n  mov {u}, {a}\n  xor {u}, {r}\n  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
         )
+    # mode == "logic": CF and OF are cleared by the operation, so nothing to add.
     # PF (bit 2): even parity of the result's low byte.
     lines.append(
         f"  movzx ecx, r10b\n  mov {u}, {c}\n  shr {u}, 4\n  xor {c}, {u}\n  mov {u}, {c}\n  shr {u}, 2\n  xor {c}, {u}\n  mov {u}, {c}\n  shr {u}, 1\n  xor {c}, {u}\n  not {c}\n  and ecx, 1\n  shl ecx, 2\n  or r11, rcx\n"
@@ -204,7 +204,7 @@ def _op_synth_handler_asm(handler_key: str, key: int, key_qword: str, key_dword:
     body += _op_mba_compute(mnemonic, key)
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, mnemonic == "sub")
+    body += _synth_flags_asm(width, mnemonic)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += "  mov qword ptr [rsp+r8*8], r10\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
@@ -490,35 +490,50 @@ def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_per
 
 
 def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
-    """Assembly body for a cmp/test handler (sets and captures flags only)."""
+    """Assembly body for a cmp/test handler (synthesizes flags, stores no result).
+
+    cmp/test exist only to set flags a branch reads, so both compute the comparison
+    with the MBA fold (cmp == ``a - b``, test == ``a & b``; no literal cmp/test) and
+    synthesize the readable flags by hand (no pushfq of a literal op). The original
+    operands are saved in rbx/rbp before the MBA so the synthesis can read a, b and
+    the result; nothing is written back to a register slot.
+    """
     mnemonic, mode, width_text = handler_key.split("_")
     width = int(width_text)
+    is_immediate = mode == "i"
     # cmp/test carry the same operand fields as an arithmetic op (a slot plus an
     # immediate or a second slot), so they share the arith layout.
-    off = op_offsets(mode == "i", width, field_perm)
+    off = op_offsets(is_immediate, width, field_perm)
     body = f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-    if mode == "i" and width == 64:
-        body += (
-            f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {key_qword}\n  xor rax, r10\n"
-            + _unmask_qword("r10", "r11")
-            + f"  mov r9, qword ptr [rsp+r8*8]\n  {mnemonic} r9, rax\n"
+    if is_immediate and width == 64:
+        body += f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword(
+            "r10", "r11"
         )
         advance = 10
-    elif mode == "i":
-        body += (
-            f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
-            + _unmask_dword("r11")
-            + f"  mov r9d, dword ptr [rsp+r8*8]\n  {mnemonic} r9d, eax\n"
+    elif is_immediate:
+        body += f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword(
+            "r11"
         )
         advance = 6
     else:
         body += f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-        if width == 64:
-            body += f"  mov rax, qword ptr [rsp+r9*8]\n  mov r10, qword ptr [rsp+r8*8]\n  {mnemonic} r10, rax\n"
-        else:
-            body += f"  mov eax, dword ptr [rsp+r9*8]\n  mov r10d, dword ptr [rsp+r8*8]\n  {mnemonic} r10d, eax\n"
+        body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
         advance = 3
-    return body + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+    # Save the original operands (b before any negation, a before the MBA).
+    body += "  mov rbp, rax\n"
+    body += "  mov r10, qword ptr [rsp+r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp+r8*8]\n"
+    body += "  mov rbx, r10\n"
+    if mnemonic == "cmp":
+        body += "  neg rax\n" + _op_mba_compute("add", key)  # r10 = a - b
+        synth_mode = "sub"
+    else:
+        body += _op_mba_compute("and", key)  # r10 = a & b
+        synth_mode = "logic"
+    if width == 32:
+        body += "  mov r10d, r10d\n"
+    body += _synth_flags_asm(width, synth_mode)
+    body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _shift_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
