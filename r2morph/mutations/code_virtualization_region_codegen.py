@@ -40,6 +40,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _cmp_memory_handler_asm,
     _compare_handler_asm,
+    _fp_arith_handler_asm,
     _fp_memory_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
@@ -285,6 +286,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + dst slot + src slot + 4-byte immediate
     if kind in ("load", "store", "fpload", "fpstore"):
         return 7  # opcode + reg/xmm slot + base slot + 4-byte displacement
+    if kind == "fparith":
+        return 3  # opcode + dst xmm index + src xmm index
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("cmpmem", "opmem", "lea", "opmemdst"):
@@ -467,6 +470,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, xmm_index, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, xmm_index, slot_of[base_slot], disp)
+        elif kind == "fparith":
+            # Two raw XMM indices (no slot_perm), each masked by the stream position.
+            _, _op, dst_index, src_index, _width = item
+            p = emit_opcode(_required_key(item))
+            plain.append(dst_index ^ p)
+            plain.append(src_index ^ p)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
@@ -658,6 +667,8 @@ def handler_instances_asm(
             lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("fpload_", "fpstore_")):
             lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
+        elif handler_key.startswith("fparith_"):
+            lines.append(_fp_arith_handler_asm(handler_key, key))
         elif handler_key.startswith(("load_", "store_")):
             lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key == "jmp":

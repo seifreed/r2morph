@@ -759,6 +759,29 @@ def test_fp_move_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_fp_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The function adds two doubles (20.0 + 22.0 = 42.0) in xmm registers; the VM
+    # must virtualize the scalar addsd through the xmm save slots and preserve a
+    # distinctive byte of the result's IEEE-754 encoding (0x45 = 69). A wrong
+    # arithmetic handler would change that byte.
+    fixture = _DATASET / "elf_vm_fparith_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fparith"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+
+
 def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # The function loads a global through a rip-relative operand; the VM cannot
     # keep the absolute address after relocating the code, so it must reach the

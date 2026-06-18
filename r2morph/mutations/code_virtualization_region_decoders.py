@@ -313,6 +313,42 @@ def _decode_fp_mem(text: str) -> tuple[str, int, int, int, int] | None:
     return (kind, xmm_index, base_slot, disp, width)
 
 
+_FP_ARITH_MNEMONICS: dict[str, tuple[str, int]] = {
+    "addsd": ("add", 64),
+    "subsd": ("sub", 64),
+    "mulsd": ("mul", 64),
+    "divsd": ("div", 64),
+    "addss": ("add", 32),
+    "subss": ("sub", 32),
+    "mulss": ("mul", 32),
+    "divss": ("div", 32),
+}
+
+
+def _decode_fp_arith(text: str) -> tuple[str, str, int, int, int] | None:
+    """Decode scalar-FP register-register arithmetic
+    (``addsd/subsd/mulsd/divsd`` and ``ss`` forms).
+
+    Returns ``(kind, op, dst_index, src_index, width)`` with ``kind == "fparith"``,
+    ``op`` one of add/sub/mul/div, or ``None`` for a memory source (left native)
+    or any other form. r2 types subsd/divsd as ``null``, so the mnemonic - not the
+    instruction type - is the reliable discriminator; only reached for vec family.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    spec = _FP_ARITH_MNEMONICS.get(parts[0].lower())
+    if spec is None:
+        return None
+    op, width = spec
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    dst_index = _parse_xmm_operand(left)
+    src_index = _parse_xmm_operand(right)  # register source only; a memory source yields None
+    if dst_index is None or src_index is None:
+        return None
+    return ("fparith", op, dst_index, src_index, width)
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 

@@ -80,6 +80,31 @@ def _fp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _fp_arith_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a scalar-FP register-register arithmetic handler
+    (``addsd``/``subsd``/``mulsd``/``divsd`` and their ``ss`` forms).
+
+    The two operand bytes are XMM indices (un-masked with the key and the stream
+    position like every operand); both registers are loaded from their save slots
+    into the real xmm0/xmm1 (free scratch during VM execution), the scalar op runs
+    on the low lane leaving the high lanes of the destination untouched, and the
+    result is written back to the destination's slot. FP arithmetic sets no flags,
+    so the captured-flags slot is untouched.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    instr = mnemonic + ("sd" if width == 64 else "ss")
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  {instr} xmm0, xmm1\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def _unmask_dword(scratch: str) -> str:
     """Un-mask a dword immediate/displacement (in eax) with the item's stream
     position: r13b holds it from the dispatch, broadcast to 32 bits. ``scratch``

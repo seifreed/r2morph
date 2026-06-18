@@ -32,6 +32,7 @@ from r2morph.mutations.code_virtualization_engine import (
 )
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmp_mem,
+    _decode_fp_arith,
     _decode_fp_mem,
     _decode_imul,
     _decode_imul3,
@@ -108,7 +109,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         # carry family "vec". Route them here first: scalar FP load/store is
         # virtualized, everything else vec is left native (conservative).
         fp_mem = _decode_fp_mem(text)
-        return [*fp_mem] if fp_mem is not None else None
+        if fp_mem is not None:
+            return [*fp_mem]
+        fp_arith = _decode_fp_arith(text)
+        return [*fp_arith] if fp_arith is not None else None
     if kind == "nop":
         return ["nop"]
     if kind in ("mov", "add", "sub", "xor", "and", "or"):
