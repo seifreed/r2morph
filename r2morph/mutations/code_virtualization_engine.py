@@ -34,7 +34,7 @@ import logging
 import random
 import struct
 
-from r2morph.mutations.code_virtualization_mba import _mba_add_r10_rax, _op_mba_compute
+from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
@@ -108,7 +108,16 @@ _MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" fo
 # movzx/movsx of a byte/word from [base+disp], zero-/sign-extended into the dst.
 # (No rip-relative counterpart: the decoder only produces the base+disp form.)
 _MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
-_MEM_OP_KINDS: tuple[str, ...] = _MEM_BASE_KINDS + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS) + _MEM_MOVX_KINDS
+# Indexed [base+index*scale+disp] forms (arrays). lea and arithmetic only; the
+# handler strips the ``idx`` suffix and reuses the base kind's body with the
+# indexed address prologue (a 9-byte item: opcode+reg+base+index+scale+disp).
+_MEM_IDX_KINDS: tuple[str, ...] = ("lea",) + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
+_MEM_OP_KINDS: tuple[str, ...] = (
+    _MEM_BASE_KINDS
+    + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)
+    + _MEM_MOVX_KINDS
+    + tuple(f"{kind}idx" for kind in _MEM_IDX_KINDS)
+)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
     (mnemonic, is_immediate, width)
     for width in (64, 32)
@@ -243,14 +252,19 @@ class VirtualizedMemOp:
     stack - it only spills registers), and a 32-bit load zero-extends.
     """
 
-    __slots__ = ("kind", "reg_index", "base_index", "disp", "width")
+    __slots__ = ("kind", "reg_index", "base_index", "disp", "width", "index_index", "scale")
 
-    def __init__(self, kind: str, reg_index: int, base_index: int, disp: int, width: int) -> None:
+    def __init__(
+        self, kind: str, reg_index: int, base_index: int, disp: int, width: int, index_index: int = 0, scale: int = 0
+    ) -> None:
         self.kind = kind
         self.reg_index = reg_index
         self.base_index = base_index
         self.disp = disp
         self.width = width
+        # Only used by the ``*idx`` kinds: address = base + index*(2**scale) + disp.
+        self.index_index = index_index
+        self.scale = scale
 
 
 # Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
@@ -404,6 +418,11 @@ def encode_bytecode(
                 # stored as a signed offset from the bytecode base (out-of-range
                 # raises struct.error, which the caller turns into "leave native").
                 plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp - bytecode_base))
+            elif op.kind.endswith("idx"):
+                plain.append(slot_of[op.base_index] ^ position)
+                plain.append(slot_of[op.index_index] ^ position)
+                plain.append(op.scale ^ position)
+                plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp))
             else:
                 plain.append(slot_of[op.base_index] ^ position)
                 plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp))
@@ -463,12 +482,29 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
             "  movsxd rax, eax\n  mov r10, r15\n" + _mba_add_r10_rax(key)
         )
 
+    def mem_idx_prologue() -> str:
+        # Indexed head: reg [rsi+1]->r8, base [rsi+2]->r9, index [rsi+3]->r11,
+        # scale-shift [rsi+4]->cl, signed disp32 [rsi+5..8]. Computes
+        # base + index*(2**scale) + disp into r10, both adds folded with MBA.
+        return (
+            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            f"  movzx r11d, byte ptr [rsi+3]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+            f"  movzx ecx, byte ptr [rsi+4]\n  xor cl, {key}\n  xor cl, r13b\n"
+            f"  mov eax, dword ptr [rsi+5]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+            f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r11*8]\n  shl r10, cl\n"
+            "  mov r11, qword ptr [rsp + r9*8]\n" + _mba_add("r11", "rcx", key) + _mba_add("rax", "rcx", key)
+        )
+
     def mem_handler_body(kind: str, width: int) -> str:
         # base+disp items are 7 bytes (opcode+reg+base+disp32); rip-relative items
-        # are 6 (opcode+reg+offset32). r10 holds the address either way.
-        riprel = kind.endswith("rip")
-        if riprel:
+        # are 6 (opcode+reg+offset32); indexed items are 9 (opcode+reg+base+index+
+        # scale+disp32). r10 holds the address in every case.
+        if kind.endswith("rip"):
             kind, body, advance = kind[: -len("rip")], mem_riprel_prologue(), 6
+        elif kind.endswith("idx"):
+            kind, body, advance = kind[: -len("idx")], mem_idx_prologue(), 9
         else:
             body, advance = mem_addr_prologue(), 7
         if kind == "load":

@@ -43,9 +43,11 @@ from r2morph.mutations.code_virtualization_region import (
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_lea,
+    _decode_lea_indexed,
     _decode_memory_mov,
     _decode_movx,
     _decode_op_mem,
+    _decode_op_mem_indexed,
     _decode_riprel_mov,
 )
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
@@ -93,6 +95,10 @@ def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> Virtu
         if decoded is not None and decoded[0] == "opriprel":
             _, _mnemonic, reg_slot, target, width = decoded
             return VirtualizedMemOp(f"mem{mnemonic}rip", reg_slot, -1, target, width)
+        indexed = _decode_op_mem_indexed(text, mnemonic)
+        if indexed is not None and indexed[0] == "opmemidx":
+            _, _mnemonic, reg_slot, base_slot, index_slot, shift, disp, width = indexed
+            return VirtualizedMemOp(f"mem{mnemonic}idx", reg_slot, base_slot, disp, width, index_slot, shift)
     elif mnemonic == "lea":
         decoded = _decode_lea(text, insn_addr, insn_size)
         if decoded is not None and decoded[0] == "lea":
@@ -101,6 +107,10 @@ def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> Virtu
         if decoded is not None and decoded[0] == "learip":
             _, reg_slot, target, width = decoded
             return VirtualizedMemOp("learip", reg_slot, -1, target, width)
+        indexed = _decode_lea_indexed(text)
+        if indexed is not None and indexed[0] == "leaidx":
+            _, reg_slot, base_slot, index_slot, shift, disp, width = indexed
+            return VirtualizedMemOp("leaidx", reg_slot, base_slot, disp, width, index_slot, shift)
     return None
 
 
