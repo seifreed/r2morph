@@ -34,7 +34,7 @@ import logging
 import random
 import struct
 
-from r2morph.mutations.code_virtualization_mba import _op_mba_compute
+from r2morph.mutations.code_virtualization_mba import _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
@@ -93,12 +93,18 @@ _MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
 # operand encoding at runtime. The concrete opcode byte for each key is
 # assigned per instance (see VMScheme), so two virtualized builds share no
 # fixed opcode table to fingerprint.
+# Memory load/store operations. They reuse the (mnemonic, is_immediate, width)
+# key shape with the kind as the "mnemonic" and is_immediate fixed False, so the
+# dispatch-table, duplication and self-checksum machinery treat them uniformly;
+# only the operand layout (reg slot + base slot + disp) and the handler body
+# differ, both keyed off the kind.
+_MEM_OP_KINDS: tuple[str, ...] = ("load", "store")
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
     (mnemonic, is_immediate, width)
     for width in (64, 32)
     for mnemonic in _MNEMONIC_ORDER
     for is_immediate in (True, False)
-)
+) + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
 _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
 
@@ -218,6 +224,25 @@ class VirtualizedOp:
         self.width = width
 
 
+class VirtualizedMemOp:
+    """A ``mov`` between a register slot and ``[base+disp]`` memory.
+
+    ``kind`` is ``"load"`` (reg <- [base+disp]) or ``"store"`` ([base+disp] <-
+    reg). The base value is read from its spilled frame slot at runtime, so the
+    address is the program's real address (the interpreter does not relocate the
+    stack - it only spills registers), and a 32-bit load zero-extends.
+    """
+
+    __slots__ = ("kind", "reg_index", "base_index", "disp", "width")
+
+    def __init__(self, kind: str, reg_index: int, base_index: int, disp: int, width: int) -> None:
+        self.kind = kind
+        self.reg_index = reg_index
+        self.base_index = base_index
+        self.disp = disp
+        self.width = width
+
+
 # Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
 # slot written with its own value, no flags), so it is semantics-preserving for
 # any register, yet it executes a real handler and pads the bytecode with
@@ -227,10 +252,12 @@ class VirtualizedOp:
 _JUNK_OP_PROBABILITY = 0.35
 
 
-def inject_junk_ops(ops: list[VirtualizedOp], rng: random.Random) -> list[VirtualizedOp]:
+def inject_junk_ops(
+    ops: list[VirtualizedOp | VirtualizedMemOp], rng: random.Random
+) -> list[VirtualizedOp | VirtualizedMemOp]:
     """Sprinkle identity ``mov reg, reg`` ops through a straight-line run."""
     junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
-    out: list[VirtualizedOp] = []
+    out: list[VirtualizedOp | VirtualizedMemOp] = []
     for op in ops:
         while rng.random() < _JUNK_OP_PROBABILITY:
             reg = rng.choice(junk_regs)
@@ -331,7 +358,7 @@ def pack_immediate(value: int, width: int) -> bytes:
     return struct.pack("<I", value & 0xFFFFFFFF)
 
 
-def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme, checksum: int = 0) -> bytes:
+def encode_bytecode(ops: list[VirtualizedOp | VirtualizedMemOp], scheme: VMScheme, checksum: int = 0) -> bytes:
     """Serialize ops to bytecode (per-scheme opcodes), XOR-encrypted by key.
 
     Immediates are width-sized: 8 bytes for 64-bit ops, 4 for 32-bit.
@@ -357,6 +384,12 @@ def encode_bytecode(ops: list[VirtualizedOp], scheme: VMScheme, checksum: int = 
         return position
 
     for op in ops:
+        if isinstance(op, VirtualizedMemOp):
+            position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
+            plain.append(slot_of[op.reg_index] ^ position)
+            plain.append(slot_of[op.base_index] ^ position)
+            plain += bytes(byte ^ position for byte in struct.pack("<i", op.disp))
+            continue
         position = emit_opcode(pick(scheme.dup[(op.mnemonic, op.is_immediate, op.width)]))
         plain.append(slot_of[op.dst_index] ^ position)
         if op.is_immediate:
@@ -385,7 +418,31 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     total = len(index_to_key)
     junk_rng = random.Random(scheme.junk_seed)
 
+    def mem_handler_body(kind: str, width: int) -> str:
+        # Memory mov: reg slot [rsi+1], base slot [rsi+2], signed disp32 [rsi+3..6]
+        # (7 bytes). Each operand is un-masked by key XOR r13b (the stream position);
+        # the disp broadcasts r13b to 32 bits before sign-extending. The effective
+        # address is the base slot's current value plus the displacement, folded with
+        # the shared MBA add so no literal address add appears. mov sets no flags.
+        body = (
+            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            f"  mov eax, dword ptr [rsi+3]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + _mba_add_r10_rax(key)
+        )
+        if kind == "load":
+            body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+            body += "  mov qword ptr [rsp + r8*8], rax\n"
+        elif width == 64:
+            body += "  mov rax, qword ptr [rsp + r8*8]\n  mov qword ptr [r10], rax\n"
+        else:
+            body += "  mov eax, dword ptr [rsp + r8*8]\n  mov dword ptr [r10], eax\n"
+        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
+        if mnemonic in _MEM_OP_KINDS:
+            return mem_handler_body(mnemonic, width)
         # Operands carry the opcode's stream position too (r13 still holds it from
         # the dispatch), so each is un-masked by both the key and r13b - there is
         # no lone constant-key decrypt repeated across every handler.
@@ -478,7 +535,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     return "".join(lines)
 
 
-def build_vm_blob(ops: list[VirtualizedOp], cave_vaddr: int, continuation_vaddr: int, scheme: VMScheme) -> bytes | None:
+def build_vm_blob(
+    ops: list[VirtualizedOp | VirtualizedMemOp], cave_vaddr: int, continuation_vaddr: int, scheme: VMScheme
+) -> bytes | None:
     """
     Assemble the interpreter at ``cave_vaddr`` and append the encrypted bytecode.
 

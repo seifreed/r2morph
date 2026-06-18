@@ -322,6 +322,29 @@ def test_straight_line_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 45
 
 
+def test_straight_line_memory_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # This function contains a call (so the control-flow VM rejects it) AND its
+    # straight-line run mixes register ops with [rsp+disp] store/load. Exercises
+    # the fallback engine's memory-operand coverage: the whole run, memory ops
+    # included, must virtualize and still produce the same result.
+    fixture = _DATASET / "elf_vm_run_memfallback_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_memrun"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_memory_operand_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # The function stores to and loads from [rsp-8]; the control-flow VM must
     # virtualize the memory operands, computing the address from the captured

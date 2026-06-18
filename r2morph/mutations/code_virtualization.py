@@ -28,6 +28,7 @@ from typing import Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_engine import (
+    VirtualizedMemOp,
     VirtualizedOp,
     build_vm_blob,
     build_vm_scheme,
@@ -40,6 +41,7 @@ from r2morph.mutations.code_virtualization_region import (
     extract_region,
 )
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
+from r2morph.mutations.code_virtualization_region_decoders import _decode_memory_mov
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
 from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
@@ -51,12 +53,25 @@ _MIN_RUN_LENGTH = 2
 _TRAMPOLINE_SIZE = 5
 
 
+def _decode_run_item(text: str) -> VirtualizedOp | VirtualizedMemOp | None:
+    """Decode one instruction into a VM item: a register/immediate op, a memory
+    load/store ``mov``, or ``None`` if the VM cannot reproduce it (ends the run)."""
+    op = decode_instruction(text)
+    if op is not None:
+        return op
+    mem = _decode_memory_mov(text)
+    if mem is None:
+        return None
+    kind, reg_slot, base_slot, disp, width = mem
+    return VirtualizedMemOp(kind, reg_slot, base_slot, disp, width)
+
+
 class _Run:
     """A virtualizable straight-line run inside one basic block."""
 
     __slots__ = ("start", "continuation", "ops")
 
-    def __init__(self, start: int, continuation: int, ops: list[VirtualizedOp]) -> None:
+    def __init__(self, start: int, continuation: int, ops: list[VirtualizedOp | VirtualizedMemOp]) -> None:
         self.start = start
         self.continuation = continuation
         self.ops = ops
@@ -105,7 +120,7 @@ class CodeVirtualizationPass(MutationPass):
             return None
 
         disasms = [insn.get("opcode", "") for insn in insns]
-        decoded = [decode_instruction(text) for text in disasms]
+        decoded = [_decode_run_item(text) for text in disasms]
 
         index = 0
         count = len(insns)
