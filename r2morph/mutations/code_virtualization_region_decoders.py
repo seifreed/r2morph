@@ -528,6 +528,37 @@ def _decode_fp_arith_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[
     return ("fparithmemrip", op, xmm_index, target, width)
 
 
+def _decode_fp_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | None:
+    """Decode ``movsd/movss xmm, [base+index*scale+disp]`` / store into
+    ``("fploadidx"|"fpstoreidx", xmm_index, base_slot, index_slot, shift, disp,
+    width)``.
+
+    Scaled-index addressing is how arrays of double/float are accessed
+    (``a[i]`` -> ``[base + i*8]``). A base is required; the no-base form stays
+    native. Returns ``None`` for a register or non-indexed operand.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    width = {"movsd": 64, "movss": 32}.get(parts[0].lower())
+    if width is None:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        kind, mem_text, xmm_text = "fpstoreidx", left, right
+    else:
+        kind, mem_text, xmm_text = "fploadidx", right, left
+    xmm_index = _parse_xmm_operand(xmm_text)
+    indexed = _parse_indexed_operand(mem_text)
+    if xmm_index is None or indexed is None:
+        return None
+    base_slot, index_slot, shift, disp = indexed
+    return (kind, xmm_index, base_slot, index_slot, shift, disp, width)
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 

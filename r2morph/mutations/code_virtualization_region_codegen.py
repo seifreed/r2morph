@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _fp_arith_mem_handler_asm,
     _fp_compare_handler_asm,
     _fp_convert_handler_asm,
+    _fp_indexed_handler_asm,
     _fp_memory_handler_asm,
     _fp_move_handler_asm,
     _imul3_handler_asm,
@@ -292,6 +293,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg/xmm slot + base slot + 4-byte displacement
     if kind in ("fploadrip", "fpstorerip"):
         return 6  # opcode + xmm index + 4-byte bytecode-relative displacement
+    if kind in ("fploadidx", "fpstoreidx"):
+        return 9  # opcode + xmm index + base + index slots + scale shift + 4-byte disp
     if kind == "fparith":
         return 3  # opcode + dst xmm index + src xmm index
     if kind in ("cvti2f", "cvtf2i"):
@@ -492,6 +495,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, xmm_index, target, _width = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, xmm_index, None, target - bytecode_base)
+        elif kind in ("fploadidx", "fpstoreidx"):
+            # Scaled-index FP memory: the reg field is the XMM index (raw); base and
+            # index are GP slots (slot_perm).
+            _, xmm_index, base_slot, index_slot, shift, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_idx(p, xmm_index, slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind == "fparith":
             # Two raw XMM indices (no slot_perm), each masked by the stream position.
             _, _op, dst_index, src_index, _width = item
@@ -719,6 +728,8 @@ def handler_instances_asm(
             lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("fpload_", "fpstore_", "fploadrip_", "fpstorerip_")):
             lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
+        elif handler_key.startswith(("fploadidx_", "fpstoreidx_")):
+            lines.append(_fp_indexed_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("fparithmem_", "fparithmemrip_")):
             lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fparith_"):

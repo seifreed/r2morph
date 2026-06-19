@@ -37,6 +37,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_arith_riprel,
     _decode_fp_compare,
     _decode_fp_convert,
+    _decode_fp_indexed,
     _decode_fp_mem,
     _decode_fp_move,
     _decode_fp_riprel,
@@ -123,6 +124,9 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         fp_mem = _decode_fp_mem(text)
         if fp_mem is not None:
             return [*fp_mem]
+        fp_indexed = _decode_fp_indexed(text)
+        if fp_indexed is not None:
+            return [*fp_indexed]
         fp_riprel = _decode_fp_riprel(text, insn.get("addr", 0), insn.get("size", 0))
         if fp_riprel is not None:
             return [*fp_riprel]

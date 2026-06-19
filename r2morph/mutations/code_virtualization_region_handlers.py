@@ -109,6 +109,30 @@ def _fp_arith_handler_asm(handler_key: str, key: int) -> str:
     )
 
 
+def _fp_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Assembly body for a scalar-FP load/store with scaled-index addressing
+    (``movsd/movss xmm, [base+index*scale+disp]`` - array-of-double access).
+
+    The shared scaled-index prologue decrypts the operand fields - here the
+    "register" field is the XMM index - and computes base+index*scale+disp into
+    r10. The move runs through the real xmm0 between program memory and the XMM
+    save slot; loads zero the destination's high lanes, matching x86-64. No flags.
+    """
+    kind, width_text = handler_key.split("_")
+    width = int(width_text)
+    move = "movsd" if width == 64 else "movss"
+    mem = "qword" if width == 64 else "dword"
+    body, advance = _indexed_address_asm(key, key_dword, field_perm)
+    # r8 holds the XMM index; scale to the 16-byte slot stride (it is not needed
+    # again, so shift it in place).
+    body += "  shl r8, 4\n"
+    if kind == "fploadidx":
+        body += f"  {move} xmm0, {mem} ptr [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+    else:
+        body += f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {move} {mem} ptr [r10], xmm0\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _fp_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for scalar-FP arithmetic with a memory source - either
     ``[base+disp]`` or rip-relative ``[rip+disp]`` (the constant-pool form).
