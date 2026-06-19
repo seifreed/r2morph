@@ -55,25 +55,29 @@ def xmm_reload_asm() -> str:
 
 def _fp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP load/store handler (``movsd``/``movss`` xmm
-    <-> [base+disp]).
+    <-> [base+disp] or [rip+disp]).
 
     The shared address prologue decrypts the operand fields - here the "register"
     field is the XMM index (0-15), not a GP slot - and computes the effective
-    address into r10. The handler moves between program memory and the XMM save
-    slot via the real xmm0 (free scratch during VM execution, since every program
-    XMM lives in a slot). ``movsd``/``movss`` loads zero the high lanes of the
-    destination, matching x86-64, so the full 16-byte slot is rewritten. FP moves
-    set no flags, so the captured-flags slot is untouched.
+    address into r10 (a frame-slot base plus displacement, or the bytecode base
+    plus a stored offset for the rip-relative form). The handler moves between
+    program memory and the XMM save slot via the real xmm0 (free scratch during VM
+    execution, since every program XMM lives in a slot). ``movsd``/``movss`` loads
+    zero the high lanes of the destination, matching x86-64, so the full 16-byte
+    slot is rewritten. FP moves set no flags, so the captured-flags slot is
+    untouched.
     """
     kind, width_text = handler_key.split("_")
     width = int(width_text)
+    riprel = kind.endswith("rip")
+    is_load = kind.startswith("fpload")
     move = "movsd" if width == 64 else "movss"
     mem = "qword" if width == 64 else "dword"
-    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
     # r8 holds the XMM index; scale to the 16-byte slot stride (no *16 index scale
     # exists, so shift into r11 and address base+index+disp at scale 1).
     body += "  mov r11, r8\n  shl r11, 4\n"
-    if kind == "fpload":
+    if is_load:
         body += f"  {move} xmm0, {mem} ptr [r10]\n  movups [rsp + r11 + {_XMM_SAVE_OFFSET}], xmm0\n"
     else:
         body += f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n  {move} {mem} ptr [r10], xmm0\n"

@@ -440,6 +440,39 @@ def _decode_fp_move(text: str) -> tuple[str, str, int, int] | None:
     return None
 
 
+def _decode_fp_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, int, int, int] | None:
+    """Decode ``movsd/movss xmm, [rip+disp]`` / ``[rip+disp], xmm`` into
+    ``("fploadrip"|"fpstorerip", xmm_index, target_vaddr, width)``.
+
+    FP constants and globals live in .rodata/.data and are reached rip-relative;
+    the absolute target is later re-expressed relative to the bytecode base.
+    Returns ``None`` for a register or base+disp operand (other paths) or any
+    non-movsd/movss mnemonic.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    width = {"movsd": 64, "movss": 32}.get(parts[0].lower())
+    if width is None:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        kind, mem_text, xmm_text = "fpstorerip", left, right
+    else:
+        kind, mem_text, xmm_text = "fploadrip", right, left
+    parsed = _parse_riprel_operand(mem_text, insn_addr, insn_size)
+    xmm_index = _parse_xmm_operand(xmm_text)
+    if parsed is None or xmm_index is None:
+        return None
+    target, mem_width = parsed
+    if mem_width is not None and mem_width != width:
+        return None
+    return (kind, xmm_index, target, width)
+
+
 def _decode_fp_arith_mem(text: str) -> tuple[str, str, int, int, int, int] | None:
     """Decode scalar-FP arithmetic with a ``[base+disp]`` memory source
     (``addsd xmm, [base+disp]`` etc.) into

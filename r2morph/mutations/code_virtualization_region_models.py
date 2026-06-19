@@ -104,6 +104,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"movxidx_{item[1]}_{item[2]}_{item[3]}"
     if kind in ("load", "store", "fpload", "fpstore"):
         return f"{kind}_{item[4]}"
+    if kind in ("fploadrip", "fpstorerip"):
+        return f"{kind}_{item[3]}"
     if kind == "fparith":
         return f"fparith_{item[1]}_{item[4]}"
     if kind == "fparithmem":

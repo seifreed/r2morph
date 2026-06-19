@@ -290,6 +290,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + dst slot + src slot + 4-byte immediate
     if kind in ("load", "store", "fpload", "fpstore"):
         return 7  # opcode + reg/xmm slot + base slot + 4-byte displacement
+    if kind in ("fploadrip", "fpstorerip"):
+        return 6  # opcode + xmm index + 4-byte bytecode-relative displacement
     if kind == "fparith":
         return 3  # opcode + dst xmm index + src xmm index
     if kind in ("cvti2f", "cvtf2i"):
@@ -482,6 +484,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, xmm_index, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, xmm_index, slot_of[base_slot], disp)
+        elif kind in ("fploadrip", "fpstorerip"):
+            # Rip-relative FP memory: the target is re-expressed as a signed offset
+            # from the bytecode base (no base slot byte), like GP riprel.
+            _, xmm_index, target, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, xmm_index, None, target - bytecode_base)
         elif kind == "fparith":
             # Two raw XMM indices (no slot_perm), each masked by the stream position.
             _, _op, dst_index, src_index, _width = item
@@ -701,7 +709,7 @@ def handler_instances_asm(
             lines.append(_movx_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
             lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
-        elif handler_key.startswith(("fpload_", "fpstore_")):
+        elif handler_key.startswith(("fpload_", "fpstore_", "fploadrip_", "fpstorerip_")):
             lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fparithmem_"):
             lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
