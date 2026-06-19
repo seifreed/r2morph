@@ -17,7 +17,11 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _decode_run_item
-from r2morph.mutations.code_virtualization_engine import VirtualizedFpMemOp, decode_instruction
+from r2morph.mutations.code_virtualization_engine import (
+    VirtualizedFpArithOp,
+    VirtualizedFpMemOp,
+    decode_instruction,
+)
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
 FIXTURE = _DATASET / "elf_vm_arith_x86_64"
@@ -614,6 +618,32 @@ def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> No
     assert stats["functions_virtualized"] >= 1
     assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run materializes 20.0 and 22.0,
+    # loads them into xmm and adds them with a reg-reg addsd, exercising the engine's
+    # scalar FP arithmetic handler. The decode check proves addsd lowers to an FP
+    # arith item (else, left native, it would still exit 69 - a false green). The
+    # exit code is the IEEE high byte of 42.0 (0x45 == 69); sub/mul/div would differ.
+    assert isinstance(_decode_run_item("addsd xmm0, xmm1"), VirtualizedFpArithOp)
+    fixture = _DATASET / "elf_vm_fpenginearith_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fparith"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
