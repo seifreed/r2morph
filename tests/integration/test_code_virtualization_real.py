@@ -964,6 +964,28 @@ def test_fp_indexed_memory_virtualization_preserves_exit_code(tmp_path: Path) ->
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_fp_indexed_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The accumulation form: load a[0] then add a[1] straight from the array
+    # (addsd xmm0, [base+index*8]: 20.0 + 22.0 = 42.0), truncate to an int. The VM
+    # must compute base+index*scale+disp for the scalar FP add (exit 42).
+    fixture = _DATASET / "elf_vm_fparithidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fparithidx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # The function loads a global through a rip-relative operand; the VM cannot
     # keep the absolute address after relocating the code, so it must reach the

@@ -307,6 +307,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + dst xmm index + base slot + 4-byte displacement
     if kind == "fparithmemrip":
         return 6  # opcode + dst xmm index + 4-byte bytecode-relative displacement
+    if kind == "fparithmemidx":
+        return 9  # opcode + dst xmm index + base + index slots + scale shift + 4-byte disp
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("cmpmem", "opmem", "lea", "opmemdst"):
@@ -537,6 +539,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, _op, xmm_index, target, _width = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, xmm_index, None, target - bytecode_base)
+        elif kind == "fparithmemidx":
+            # Scaled-index FP arith: destination XMM index (raw); base and index are
+            # GP slots (slot_perm).
+            _, _op, xmm_index, base_slot, index_slot, shift, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_idx(p, xmm_index, slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
@@ -730,7 +738,7 @@ def handler_instances_asm(
             lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("fploadidx_", "fpstoreidx_")):
             lines.append(_fp_indexed_handler_asm(handler_key, key, key_dword, field_perm))
-        elif handler_key.startswith(("fparithmem_", "fparithmemrip_")):
+        elif handler_key.startswith(("fparithmem_", "fparithmemrip_", "fparithmemidx_")):
             lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fparith_"):
             lines.append(_fp_arith_handler_asm(handler_key, key))
