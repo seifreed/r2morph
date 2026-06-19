@@ -633,6 +633,29 @@ def _decode_fp_packed_arith_mem(text: str) -> tuple[str, str, int, int, int] | N
     return ("fppackedmem", mnemonic, xmm_index, base_slot, disp)
 
 
+def _decode_fp_packed_arith_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, str, int, int] | None:
+    """Decode packed-FP arithmetic with a rip-relative source
+    (``addpd xmm, [rip+disp]`` etc.) into
+    ``("fppackedmemrip", mnemonic, xmm_index, target_vaddr)`` - a packed constant
+    vector from .rodata added to a register. Returns ``None`` otherwise.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in _FP_PACKED_ARITH:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    xmm_index = _parse_xmm_operand(left)
+    if xmm_index is None or "[" not in right:
+        return None
+    parsed = _parse_riprel_operand(right.lower().replace("xmmword", ""), insn_addr, insn_size)
+    if parsed is None:
+        return None
+    target, _width = parsed
+    return ("fppackedmemrip", mnemonic, xmm_index, target)
+
+
 def _decode_fp_packed_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, int, int] | None:
     """Decode a rip-relative packed 128-bit move (``movaps``/``movups`` etc.
     xmm <-> [rip+disp]) into ``("fpploadrip"|"fppstorerip", xmm_index,
