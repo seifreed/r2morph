@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _fp_compare_handler_asm,
     _fp_convert_handler_asm,
     _fp_memory_handler_asm,
+    _fp_move_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
@@ -294,6 +295,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3  # opcode + xmm index + GP slot (order depends on direction)
     if kind == "fpcmp":
         return 3  # opcode + left xmm index + right xmm index
+    if kind == "fpmov":
+        return 3  # opcode + dst xmm index + src xmm index
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("cmpmem", "opmem", "lea", "opmemdst"):
@@ -494,9 +497,9 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             p = emit_opcode(_required_key(item))
             plain.append(slot_of[gp_slot] ^ p)
             plain.append(xmm_index ^ p)
-        elif kind == "fpcmp":
+        elif kind in ("fpcmp", "fpmov"):
             # Two raw XMM indices (no slot_perm), each masked by the stream position.
-            _, _mnemonic, left_index, right_index = item
+            _, _mode, left_index, right_index = item
             p = emit_opcode(_required_key(item))
             plain.append(left_index ^ p)
             plain.append(right_index ^ p)
@@ -697,6 +700,8 @@ def handler_instances_asm(
             lines.append(_fp_convert_handler_asm(handler_key, key))
         elif handler_key.startswith("fpcmp_"):
             lines.append(_fp_compare_handler_asm(handler_key, key))
+        elif handler_key.startswith("fpmov_"):
+            lines.append(_fp_move_handler_asm(handler_key, key))
         elif handler_key.startswith(("load_", "store_")):
             lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key == "jmp":

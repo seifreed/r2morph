@@ -161,6 +161,32 @@ def _fp_compare_handler_asm(handler_key: str, key: int) -> str:
     )
 
 
+def _fp_move_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a register-register xmm move (full 128-bit copy, or a
+    scalar movsd/movss that preserves the destination's upper lane(s)).
+
+    Both operand bytes are XMM indices. The full copy reads the source slot and
+    writes it whole to the destination slot; the scalar copy loads the destination
+    slot first so the real movsd/movss preserves its high lanes (unlike the memory
+    load forms, which zero them), then writes the merged value back. No flags.
+    """
+    mode = handler_key.split("_", 1)[1]
+    decode = (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+    )
+    if mode == "full":
+        body = f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+    else:
+        instr = "movsd" if mode == "sd" else "movss"
+        body = (
+            f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+            f"  {instr} xmm0, xmm1\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        )
+    return decode + body + "  add rsi, 3\n  jmp vm_dispatch\n"
+
+
 def _unmask_dword(scratch: str) -> str:
     """Un-mask a dword immediate/displacement (in eax) with the item's stream
     position: r13b holds it from the dispatch, broadcast to 32 bits. ``scratch``

@@ -110,6 +110,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"{kind}_{item[1]}"
     if kind == "fpcmp":
         return f"fpcmp_{item[1]}"
+    if kind == "fpmov":
+        return f"fpmov_{item[1]}"
     if kind in ("riprel_load", "riprel_store"):
         return f"{kind}_{item[3]}"
     if kind == "cmpmem":

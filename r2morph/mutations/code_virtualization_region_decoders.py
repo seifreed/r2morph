@@ -409,6 +409,37 @@ def _decode_fp_compare(text: str) -> tuple[str, str, int, int] | None:
     return ("fpcmp", mnemonic, left_index, right_index)
 
 
+# Full 128-bit xmm-xmm copies vs scalar copies that preserve the destination's
+# upper lane(s). (movsd/movss xmm,xmm preserve the high lanes, unlike the memory
+# load forms which zero them - so they get the "sd"/"ss" preserving handler.)
+_FP_MOVE_FULL: frozenset[str] = frozenset({"movaps", "movapd", "movups", "movupd"})
+_FP_MOVE_SCALAR: dict[str, str] = {"movsd": "sd", "movss": "ss"}
+
+
+def _decode_fp_move(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a register-register xmm move into ``("fpmov", mode, dst, src)``.
+
+    ``mode`` is ``"full"`` (movaps/movapd/movups/movupd, full 128-bit copy) or
+    ``"sd"``/``"ss"`` (movsd/movss, low element copied, destination upper lanes
+    preserved). Returns ``None`` for a memory operand (handled as load/store) or
+    any non-move mnemonic.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    dst_index = _parse_xmm_operand(left)
+    src_index = _parse_xmm_operand(right)  # register-register only
+    if dst_index is None or src_index is None:
+        return None
+    if mnemonic in _FP_MOVE_FULL:
+        return ("fpmov", "full", dst_index, src_index)
+    if mnemonic in _FP_MOVE_SCALAR:
+        return ("fpmov", _FP_MOVE_SCALAR[mnemonic], dst_index, src_index)
+    return None
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 

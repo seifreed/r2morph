@@ -828,6 +828,29 @@ def test_fp_compare_branch_virtualization_preserves_decision(tmp_path: Path) -> 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_fp_register_move_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # The function copies a double between xmm registers with movaps (full copy)
+    # and movsd (scalar reg-reg copy), then adds the copies (21.0 + 21.0 = 42.0)
+    # and truncates to an int. The VM must virtualize the xmm-xmm moves through the
+    # save slots and preserve the result (exit 42).
+    fixture = _DATASET / "elf_vm_fpmov_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fpmov"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # The function loads a global through a rip-relative operand; the VM cannot
     # keep the absolute address after relocating the code, so it must reach the
