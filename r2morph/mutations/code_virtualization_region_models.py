@@ -108,6 +108,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"{kind}_{item[3]}"
     if kind in ("fploadidx", "fpstoreidx"):
         return f"{kind}_{item[6]}"
+    if kind in ("fploadidxnb", "fpstoreidxnb"):
+        return f"{kind}_{item[5]}"
     if kind == "fparith":
         return f"fparith_{item[1]}_{item[4]}"
     if kind == "fparithmem":

@@ -111,22 +111,27 @@ def _fp_arith_handler_asm(handler_key: str, key: int) -> str:
 
 def _fp_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP load/store with scaled-index addressing
-    (``movsd/movss xmm, [base+index*scale+disp]`` - array-of-double access).
+    (``movsd/movss xmm, [base+index*scale+disp]`` - array-of-double access), with or
+    without a base register.
 
     The shared scaled-index prologue decrypts the operand fields - here the
-    "register" field is the XMM index - and computes base+index*scale+disp into
-    r10. The move runs through the real xmm0 between program memory and the XMM
-    save slot; loads zero the destination's high lanes, matching x86-64. No flags.
+    "register" field is the XMM index - and computes the address into r10 (with the
+    base for the ``idx`` form, or index*scale+disp for the no-base ``idxnb`` form).
+    The move runs through the real xmm0 between program memory and the XMM save
+    slot; loads zero the destination's high lanes, matching x86-64. No flags.
     """
     kind, width_text = handler_key.split("_")
     width = int(width_text)
     move = "movsd" if width == 64 else "movss"
     mem = "qword" if width == 64 else "dword"
-    body, advance = _indexed_address_asm(key, key_dword, field_perm)
+    if kind.endswith("nb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm)
+    else:
+        body, advance = _indexed_address_asm(key, key_dword, field_perm)
     # r8 holds the XMM index; scale to the 16-byte slot stride (it is not needed
     # again, so shift it in place).
     body += "  shl r8, 4\n"
-    if kind == "fploadidx":
+    if kind.startswith("fpload"):
         body += f"  {move} xmm0, {mem} ptr [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
     else:
         body += f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {move} {mem} ptr [r10], xmm0\n"
@@ -712,6 +717,22 @@ def _indexed_address_asm(key: int, key_dword: str, field_perm: int = 0) -> tuple
     ), 9
 
 
+def _indexed_address_nobase_asm(key: int, key_dword: str, field_perm: int = 0) -> tuple[str, int]:
+    """Like :func:`_indexed_address_asm` but with no base register: the address is
+    ``index*scale + disp``, computed into r10 (r8 holds the decrypted register
+    field). The item has no base-slot byte, so the rsi advance is 8."""
+    off = idx_offsets(True, field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
+        f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
+        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
+        + _unmask_dword("r10")
+        + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
+        + _mba_add_r10_rax(key)
+    ), 8
+
+
 def _lea_store_asm(width: int, advance: int) -> str:
     """The store-address-into-slot tail shared by the lea handlers.
 
@@ -743,17 +764,8 @@ def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str, 
     lea sets no flags; a 32-bit destination truncates.
     """
     width = int(handler_key.split("_")[1])
-    off = idx_offsets(True, field_perm)
-    body = (
-        f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r11d, byte ptr [rsi+{off['index']}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
-        f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {key}\n  xor cl, r13b\n"
-        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
-        + _unmask_dword("r10")
-        + "  movsxd rax, eax\n  mov r10, qword ptr [rsp+r11*8]\n  shl r10, cl\n"
-        + _mba_add_r10_rax(key)
-    )
-    return body + _lea_store_asm(width, 8)
+    body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm)
+    return body + _lea_store_asm(width, advance)
 
 
 def _op_mem_synth_tail(mnemonic: str, width: int, key: int, advance: int) -> str:

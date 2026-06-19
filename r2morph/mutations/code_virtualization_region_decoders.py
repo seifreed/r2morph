@@ -534,8 +534,9 @@ def _decode_fp_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | 
     width)``.
 
     Scaled-index addressing is how arrays of double/float are accessed
-    (``a[i]`` -> ``[base + i*8]``). A base is required; the no-base form stays
-    native. Returns ``None`` for a register or non-indexed operand.
+    (``a[i]`` -> ``[base + i*8]``). The no-base form ``[index*scale+disp]`` lowers
+    to the ``idxnb`` kinds (one byte shorter, no base slot). Returns ``None`` for a
+    register or non-indexed operand.
     """
     parts = text.split(None, 1)
     if len(parts) != 2 or "," not in parts[1]:
@@ -552,10 +553,13 @@ def _decode_fp_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | 
     else:
         kind, mem_text, xmm_text = "fploadidx", right, left
     xmm_index = _parse_xmm_operand(xmm_text)
-    indexed = _parse_indexed_operand(mem_text)
+    indexed = _parse_indexed_operand(mem_text, base_optional=True)
     if xmm_index is None or indexed is None:
         return None
     base_slot, index_slot, shift, disp = indexed
+    if base_slot < 0:
+        # No base register: index*scale + disp. The item carries no base slot.
+        return (kind + "nb", xmm_index, index_slot, shift, disp, width)
     return (kind, xmm_index, base_slot, index_slot, shift, disp, width)
 
 

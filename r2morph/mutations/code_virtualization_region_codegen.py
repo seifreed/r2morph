@@ -298,6 +298,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 6  # opcode + xmm index + 4-byte bytecode-relative displacement
     if kind in ("fploadidx", "fpstoreidx"):
         return 9  # opcode + xmm index + base + index slots + scale shift + 4-byte disp
+    if kind in ("fploadidxnb", "fpstoreidxnb"):
+        return 8  # opcode + xmm index + index slot + scale shift + 4-byte disp (no base)
     if kind == "fparith":
         return 3  # opcode + dst xmm index + src xmm index
     if kind in ("cvti2f", "cvtf2i"):
@@ -514,6 +516,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, xmm_index, base_slot, index_slot, shift, disp, _width = item
             p = emit_opcode(_required_key(item))
             emit_idx(p, xmm_index, slot_of[base_slot], slot_of[index_slot], shift, disp)
+        elif kind in ("fploadidxnb", "fpstoreidxnb"):
+            # No-base scaled-index FP memory: XMM index (raw) + index GP slot, no
+            # base byte (base_slot None selects the no-base operand layout).
+            _, xmm_index, index_slot, shift, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_idx(p, xmm_index, None, slot_of[index_slot], shift, disp)
         elif kind == "fparith":
             # Two raw XMM indices (no slot_perm), each masked by the stream position.
             _, _op, dst_index, src_index, _width = item
@@ -780,7 +788,7 @@ def handler_instances_asm(
             lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("fpload_", "fpstore_", "fploadrip_", "fpstorerip_")):
             lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
-        elif handler_key.startswith(("fploadidx_", "fpstoreidx_")):
+        elif handler_key.startswith(("fploadidx_", "fpstoreidx_", "fploadidxnb_", "fpstoreidxnb_")):
             lines.append(_fp_indexed_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("fparithmem_", "fparithmemrip_", "fparithmemidx_")):
             lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
