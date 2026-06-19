@@ -132,34 +132,41 @@ def _fp_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_
 
 
 def _fp_convert_handler_asm(handler_key: str, key: int) -> str:
-    """Assembly body for an int<->float conversion handler with a 64-bit GP
-    operand (``cvtsi2sd/ss`` int->float, ``cvttsd2si/ss`` float->int, truncating).
+    """Assembly body for an int<->float conversion handler (``cvtsi2sd/ss``
+    int->float, ``cvttsd2si/ss`` float->int, truncating).
 
-    Both operands are un-masked with the key and stream position. ``cvti2f`` reads
-    the GP source from its (slot_perm) frame slot and converts into the scalar low
-    lane of the destination XMM, preserving its upper lane (loaded from the slot,
-    since cvtsi2sd is a scalar op). ``cvtf2i`` truncates the source XMM's low lane
-    into the GP destination's frame slot. Conversions set no flags.
+    Both operands are un-masked with the key and stream position. The GP width is
+    part of the key: a 32-bit operand uses eax/dword, a 64-bit one rax/qword - so
+    a 32-bit ``cvtsi2sd`` converts the int32 (not the full slot), and a 32-bit
+    ``cvttsd2si`` truncates with the int32 saturation semantics (an out-of-range
+    double yields 0x80000000), both matching x86-64. ``cvti2f`` converts into the
+    destination XMM's low lane, preserving its upper lane (loaded from the slot,
+    since the conversion is scalar); ``cvtf2i`` writes the GP destination slot,
+    where the eax form zero-extends into the full 64-bit slot. No flags.
     """
-    kind, width_text = handler_key.split("_")
-    width = int(width_text)
+    kind, fp_width_text, gp_width_text = handler_key.split("_")
+    fp_width = int(fp_width_text)
+    gp_reg = "rax" if gp_width_text == "64" else "eax"
+    gp_mem = "qword" if gp_width_text == "64" else "dword"
     if kind == "cvti2f":
-        instr = "cvtsi2sd" if width == 64 else "cvtsi2ss"
+        instr = "cvtsi2sd" if fp_width == 64 else "cvtsi2ss"
         # byte1 = XMM index (r8, scaled to the 16-byte slot), byte2 = GP slot (r9).
         return (
             f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-            "  shl r8, 4\n  mov rax, qword ptr [rsp + r9*8]\n"
-            f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} xmm0, rax\n"
+            f"  shl r8, 4\n  mov {gp_reg}, {gp_mem} ptr [rsp + r9*8]\n"
+            f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} xmm0, {gp_reg}\n"
             f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
             "  add rsi, 3\n  jmp vm_dispatch\n"
         )
-    instr = "cvttsd2si" if width == 64 else "cvttss2si"
-    # byte1 = GP slot (r9), byte2 = XMM index (r8, scaled to the 16-byte slot).
+    instr = "cvttsd2si" if fp_width == 64 else "cvttss2si"
+    # byte1 = GP slot (r9), byte2 = XMM index (r8, scaled to the 16-byte slot). The
+    # eax form zeroes the upper 32 bits of rax, so the full qword slot write is
+    # the zero-extended result.
     return (
         f"  movzx r9d, byte ptr [rsi+1]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         f"  movzx r8d, byte ptr [rsi+2]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} rax, xmm0\n"
+        f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} {gp_reg}, xmm0\n"
         "  mov qword ptr [rsp + r9*8], rax\n"
         "  add rsi, 3\n  jmp vm_dispatch\n"
     )

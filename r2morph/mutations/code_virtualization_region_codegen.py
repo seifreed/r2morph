@@ -500,13 +500,13 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             plain.append(src_index ^ p)
         elif kind == "cvti2f":
             # int->float: XMM index (raw), then GP source slot (slot_perm).
-            _, _fpw, xmm_index, gp_slot = item
+            _, _fpw, _gpw, xmm_index, gp_slot = item
             p = emit_opcode(_required_key(item))
             plain.append(xmm_index ^ p)
             plain.append(slot_of[gp_slot] ^ p)
         elif kind == "cvtf2i":
             # float->int: GP destination slot (slot_perm), then XMM index (raw).
-            _, _fpw, gp_slot, xmm_index = item
+            _, _fpw, _gpw, gp_slot, xmm_index = item
             p = emit_opcode(_required_key(item))
             plain.append(slot_of[gp_slot] ^ p)
             plain.append(xmm_index ^ p)

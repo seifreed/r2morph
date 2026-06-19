@@ -919,6 +919,29 @@ def test_fp_riprel_arithmetic_virtualization_preserves_exit_code(tmp_path: Path)
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_fp_conversion_32bit_gp_width_saturation_preserved(tmp_path: Path) -> None:
+    # Truncating 2147483690.0 (> INT32_MAX) with a 32-bit cvttsd2si saturates to
+    # 0x80000000 (exit 0). The VM must honor the 32-bit GP width of the conversion;
+    # a 64-bit truncation would give 2147483690 (exit 42). Regression for the
+    # convert handler ignoring the GP operand width.
+    fixture = _DATASET / "elf_vm_fpconvert32_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fpconvert32"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0
+
+
 def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # The function loads a global through a rip-relative operand; the VM cannot
     # keep the absolute address after relocating the code, so it must reach the
