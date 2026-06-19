@@ -48,6 +48,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _fp_memory_handler_asm,
     _fp_move_handler_asm,
     _fp_packed_arith_handler_asm,
+    _fp_packed_arith_mem_handler_asm,
     _fp_packed_mem_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
@@ -307,7 +308,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3  # opcode + dst xmm index + src xmm index
     if kind == "fppacked":
         return 3  # opcode + dst xmm index + src xmm index
-    if kind in ("fppload", "fppstore"):
+    if kind in ("fppload", "fppstore", "fppackedmem"):
         return 7  # opcode + xmm index + base slot + 4-byte displacement
     if kind == "fparithmem":
         return 7  # opcode + dst xmm index + base slot + 4-byte displacement
@@ -538,6 +539,11 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, xmm_index, base_slot, disp = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, xmm_index, slot_of[base_slot], disp)
+        elif kind == "fppackedmem":
+            # Packed memory-source arith: destination XMM index (raw) + GP base slot.
+            _, _mnemonic, xmm_index, base_slot, disp = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, xmm_index, slot_of[base_slot], disp)
         elif kind == "fparithmem":
             # Memory-source FP arith reuses the mem operand layout: the "reg" field
             # is the destination XMM index (raw), the base is a GP slot.
@@ -759,6 +765,8 @@ def handler_instances_asm(
             lines.append(_fp_compare_handler_asm(handler_key, key))
         elif handler_key.startswith("fpmov_"):
             lines.append(_fp_move_handler_asm(handler_key, key))
+        elif handler_key.startswith("fppackedmem_"):
+            lines.append(_fp_packed_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fppacked_"):
             lines.append(_fp_packed_arith_handler_asm(handler_key, key))
         elif handler_key in ("fppload", "fppstore"):

@@ -608,6 +608,31 @@ def _decode_fp_packed_arith(text: str) -> tuple[str, str, int, int] | None:
     return ("fppacked", mnemonic, dst_index, src_index)
 
 
+def _decode_fp_packed_arith_mem(text: str) -> tuple[str, str, int, int, int] | None:
+    """Decode packed-FP arithmetic with a ``[base+disp]`` memory source
+    (``addpd xmm, [base+disp]`` etc.) into
+    ``("fppackedmem", mnemonic, xmm_index, base_slot, disp)``.
+
+    The vectorized accumulation form. Returns ``None`` for a register, rip-relative
+    or indexed source, or any non-packed-arith mnemonic.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in _FP_PACKED_ARITH:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    xmm_index = _parse_xmm_operand(left)
+    if xmm_index is None or "[" not in right:
+        return None
+    mem = _parse_mem_operand(right.lower().replace("xmmword", ""))
+    if mem is None:
+        return None
+    base_slot, disp, _width = mem
+    return ("fppackedmem", mnemonic, xmm_index, base_slot, disp)
+
+
 def _decode_fp_packed_mem(text: str) -> tuple[str, int, int, int] | None:
     """Decode a packed 128-bit move with a ``[base+disp]`` memory operand
     (``movaps``/``movups``/``movapd``/``movupd`` xmm <-> [mem]) into

@@ -124,6 +124,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"fpmov_{item[1]}"
     if kind == "fppacked":
         return f"fppacked_{item[1]}"
+    if kind == "fppackedmem":
+        return f"fppackedmem_{item[1]}"
     if kind in ("fppload", "fppstore"):
         return kind
     if kind in ("riprel_load", "riprel_store"):
