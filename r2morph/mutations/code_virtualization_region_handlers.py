@@ -18,6 +18,7 @@ from r2morph.mutations.code_virtualization_layout import (
     imul3_offsets,
     mem_offsets,
     op_offsets,
+    pair_offsets,
     shift_offsets,
 )
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
@@ -84,23 +85,25 @@ def _fp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_arith_handler_asm(handler_key: str, key: int) -> str:
+def _fp_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP register-register arithmetic handler
     (``addsd``/``subsd``/``mulsd``/``divsd`` and their ``ss`` forms).
 
     The two operand bytes are XMM indices (un-masked with the key and the stream
-    position like every operand); both registers are loaded from their save slots
-    into the real xmm0/xmm1 (free scratch during VM execution), the scalar op runs
-    on the low lane leaving the high lanes of the destination untouched, and the
-    result is written back to the destination's slot. FP arithmetic sets no flags,
-    so the captured-flags slot is untouched.
+    position like every operand) read at this build's permuted offsets; both
+    registers are loaded from their save slots into the real xmm0/xmm1 (free scratch
+    during VM execution), the scalar op runs on the low lane leaving the high lanes
+    of the destination untouched, and the result is written back to the
+    destination's slot. FP arithmetic sets no flags, so the captured-flags slot is
+    untouched.
     """
     _, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
     instr = mnemonic + ("sd" if width == 64 else "ss")
+    off = pair_offsets("dst", "src", field_perm)
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  {instr} xmm0, xmm1\n"
@@ -138,19 +141,21 @@ def _fp_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_pe
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_packed_arith_handler_asm(handler_key: str, key: int) -> str:
+def _fp_packed_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
     """Assembly body for a packed-FP register-register op (``addpd``/``addps`` and
     the sub/mul/div forms), operating on all lanes of the 128-bit register.
 
-    Both operand bytes are XMM indices. The operands are loaded whole from their
-    save slots into xmm0/xmm1, the packed op runs across all lanes, and the full
-    128-bit result is written back. No flags, and (unlike the scalar forms) no
-    upper-lane preservation - the op defines every lane.
+    Both operand bytes are XMM indices, read at this build's permuted offsets. The
+    operands are loaded whole from their save slots into xmm0/xmm1, the packed op
+    runs across all lanes, and the full 128-bit result is written back. No flags,
+    and (unlike the scalar forms) no upper-lane preservation - the op defines every
+    lane.
     """
     instr = handler_key.split("_", 1)[1]
+    off = pair_offsets("dst", "src", field_perm)
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  {instr} xmm0, xmm1\n"
@@ -232,12 +237,13 @@ def _fp_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_convert_handler_asm(handler_key: str, key: int) -> str:
+def _fp_convert_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
     """Assembly body for an int<->float conversion handler (``cvtsi2sd/ss``
     int->float, ``cvttsd2si/ss`` float->int, truncating).
 
-    Both operands are un-masked with the key and stream position. The GP width is
-    part of the key: a 32-bit operand uses eax/dword, a 64-bit one rax/qword - so
+    Both operands - an XMM index (r8) and a GP slot (r9) - are un-masked with the
+    key and stream position and read at this build's permuted offsets. The GP width
+    is part of the key: a 32-bit operand uses eax/dword, a 64-bit one rax/qword - so
     a 32-bit ``cvtsi2sd`` converts the int32 (not the full slot), and a 32-bit
     ``cvttsd2si`` truncates with the int32 saturation semantics (an out-of-range
     double yields 0x80000000), both matching x86-64. ``cvti2f`` converts into the
@@ -249,44 +255,46 @@ def _fp_convert_handler_asm(handler_key: str, key: int) -> str:
     fp_width = int(fp_width_text)
     gp_reg = "rax" if gp_width_text == "64" else "eax"
     gp_mem = "qword" if gp_width_text == "64" else "dword"
+    off = pair_offsets("xmm", "gp", field_perm)
+    decode = (
+        f"  movzx r8d, byte ptr [rsi+{off['xmm']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['gp']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n"
+    )
     if kind == "cvti2f":
         instr = "cvtsi2sd" if fp_width == 64 else "cvtsi2ss"
-        # byte1 = XMM index (r8, scaled to the 16-byte slot), byte2 = GP slot (r9).
-        return (
-            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-            f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-            f"  shl r8, 4\n  mov {gp_reg}, {gp_mem} ptr [rsp + r9*8]\n"
+        return decode + (
+            f"  mov {gp_reg}, {gp_mem} ptr [rsp + r9*8]\n"
             f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} xmm0, {gp_reg}\n"
             f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
             "  add rsi, 3\n  jmp vm_dispatch\n"
         )
     instr = "cvttsd2si" if fp_width == 64 else "cvttss2si"
-    # byte1 = GP slot (r9), byte2 = XMM index (r8, scaled to the 16-byte slot). The
-    # eax form zeroes the upper 32 bits of rax, so the full qword slot write is
+    # The eax form zeroes the upper 32 bits of rax, so the full qword slot write is
     # the zero-extended result.
-    return (
-        f"  movzx r9d, byte ptr [rsi+1]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-        f"  movzx r8d, byte ptr [rsi+2]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} {gp_reg}, xmm0\n"
+    return decode + (
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} {gp_reg}, xmm0\n"
         "  mov qword ptr [rsp + r9*8], rax\n"
         "  add rsi, 3\n  jmp vm_dispatch\n"
     )
 
 
-def _fp_compare_handler_asm(handler_key: str, key: int) -> str:
+def _fp_compare_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP register-register compare
     (``ucomisd``/``comisd`` and the ``ss`` forms).
 
-    Both operands are loaded from their XMM save slots into the real xmm0/xmm1; the
-    real compare runs (no MBA equivalent exists for an FP ordered compare) and its
-    flags - ZF/PF/CF, faithfully including the unordered/NaN case - are captured
-    into the frame's flags slot with the same pushfq/pop idiom the GP handlers use,
-    so the existing branch handler consumes them unchanged.
+    Both operands (read at this build's permuted offsets) are loaded from their XMM
+    save slots into the real xmm0/xmm1; the real compare runs (no MBA equivalent
+    exists for an FP ordered compare) and its flags - ZF/PF/CF, faithfully including
+    the unordered/NaN case - are captured into the frame's flags slot with the same
+    pushfq/pop idiom the GP handlers use, so the existing branch handler consumes
+    them unchanged.
     """
     instr = handler_key.split("_", 1)[1]
+    off = pair_offsets("left", "right", field_perm)
     return (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+{off['left']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['right']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  {instr} xmm0, xmm1\n"
@@ -295,19 +303,21 @@ def _fp_compare_handler_asm(handler_key: str, key: int) -> str:
     )
 
 
-def _fp_move_handler_asm(handler_key: str, key: int) -> str:
+def _fp_move_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
     """Assembly body for a register-register xmm move (full 128-bit copy, or a
     scalar movsd/movss that preserves the destination's upper lane(s)).
 
-    Both operand bytes are XMM indices. The full copy reads the source slot and
-    writes it whole to the destination slot; the scalar copy loads the destination
-    slot first so the real movsd/movss preserves its high lanes (unlike the memory
-    load forms, which zero them), then writes the merged value back. No flags.
+    Both operand bytes are XMM indices, read at this build's permuted offsets. The
+    full copy reads the source slot and writes it whole to the destination slot; the
+    scalar copy loads the destination slot first so the real movsd/movss preserves
+    its high lanes (unlike the memory load forms, which zero them), then writes the
+    merged value back. No flags.
     """
     mode = handler_key.split("_", 1)[1]
+    off = pair_offsets("dst", "src", field_perm)
     decode = (
-        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
     )
     if mode == "full":

@@ -19,9 +19,23 @@ from r2morph.mutations.code_virtualization_layout import (
     imul3_offsets,
     mem_offsets,
     op_offsets,
+    pair_offsets,
     permuted_fields,
     shift_offsets,
 )
+
+
+def test_pair_layout_identity_and_polymorphism() -> None:
+    # The two-field FP register handlers (arith/compare/move/packed, and the
+    # xmm<->GP conversions) share the two-byte pair layout: perm 0 is the legacy
+    # first@1, second@2; a non-zero seed may swap them, and at least one does.
+    assert pair_offsets("dst", "src", 0) == {"dst": 1, "src": 2}
+    assert pair_offsets("xmm", "gp", 0) == {"xmm": 1, "gp": 2}
+    orders = {tuple(sorted(pair_offsets("dst", "src", seed).items())) for seed in range(40)}
+    assert len(orders) == 2  # both orderings occur across builds
+    # The two fields always pack contiguously at offsets 1 and 2, whatever the order.
+    for seed in (0, 1, 5, 99):
+        assert sorted(pair_offsets("left", "right", seed).values()) == [1, 2]
 
 
 def test_identity_layout_matches_legacy_fixed_offsets() -> None:

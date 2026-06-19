@@ -94,6 +94,22 @@ def field_offsets(handler_key: str, field_perm: int) -> dict[str, int]:
     return _offsets(permuted_fields(handler_key, field_perm))
 
 
+def pair_permuted_fields(first: str, second: str, field_perm: int) -> list[Field]:
+    """Two single-byte operand fields in this build's order (identity when 0).
+
+    Used by the scalar/packed FP register handlers, whose items carry exactly two
+    one-byte operand fields (two xmm indices, or an xmm index and a GP slot); a
+    non-zero ``field_perm`` swaps their order so the layout is not a fixed
+    cross-sample signature.
+    """
+    return _permute([(first, 1), (second, 1)], field_perm)
+
+
+def pair_offsets(first: str, second: str, field_perm: int) -> dict[str, int]:
+    """Byte offset of each of two single-byte operand fields for this build."""
+    return _offsets(pair_permuted_fields(first, second, field_perm))
+
+
 def _mem_fields(riprel: bool) -> list[Field]:
     # Memory items shared by every handler that routes through the address
     # prologue: a register slot, the displacement, and (non-rip-relative) a base

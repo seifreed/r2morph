@@ -31,6 +31,7 @@ from r2morph.mutations.code_virtualization_layout import (
     imul3_permuted_fields,
     mem_permuted_fields,
     op_permuted_fields,
+    pair_permuted_fields,
     permuted_fields,
     shift_permuted_fields,
 )
@@ -404,6 +405,14 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
     def emit_disp(value: int, position: int) -> None:
         plain.extend(byte ^ position for byte in struct.pack("<i", value))
 
+    def emit_pair(position: int, first: int, second: int) -> None:
+        # Emit two single-byte operands (FP register handlers) in this build's
+        # order; the handler reads them at the matching offsets via pair_offsets.
+        # The permutation is name-independent, so generic field names suffice.
+        values = {"a": first, "b": second}
+        for name, _size in pair_permuted_fields("a", "b", scheme.field_perm):
+            plain.append(values[name] ^ position)
+
     def emit_mem(position: int, reg_slot: int, base_slot: int | None, disp: int) -> None:
         # Emit a memory item's operand fields (register slot, optional base slot,
         # 4-byte displacement) in this build's permuted order; the handler reads
@@ -523,29 +532,25 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             p = emit_opcode(_required_key(item))
             emit_idx(p, xmm_index, None, slot_of[index_slot], shift, disp)
         elif kind == "fparith":
-            # Two raw XMM indices (no slot_perm), each masked by the stream position.
+            # Two raw XMM indices (no slot_perm), in this build's order.
             _, _op, dst_index, src_index, _width = item
             p = emit_opcode(_required_key(item))
-            plain.append(dst_index ^ p)
-            plain.append(src_index ^ p)
+            emit_pair(p, dst_index, src_index)
         elif kind == "cvti2f":
-            # int->float: XMM index (raw), then GP source slot (slot_perm).
+            # int->float: XMM index (raw) + GP source slot (slot_perm), in order.
             _, _fpw, _gpw, xmm_index, gp_slot = item
             p = emit_opcode(_required_key(item))
-            plain.append(xmm_index ^ p)
-            plain.append(slot_of[gp_slot] ^ p)
+            emit_pair(p, xmm_index, slot_of[gp_slot])
         elif kind == "cvtf2i":
-            # float->int: GP destination slot (slot_perm), then XMM index (raw).
+            # float->int: XMM index (raw) + GP destination slot (slot_perm), in order.
             _, _fpw, _gpw, gp_slot, xmm_index = item
             p = emit_opcode(_required_key(item))
-            plain.append(slot_of[gp_slot] ^ p)
-            plain.append(xmm_index ^ p)
+            emit_pair(p, xmm_index, slot_of[gp_slot])
         elif kind in ("fpcmp", "fpmov", "fppacked"):
-            # Two raw XMM indices (no slot_perm), each masked by the stream position.
+            # Two raw XMM indices (no slot_perm), in this build's order.
             _, _mode, left_index, right_index = item
             p = emit_opcode(_required_key(item))
-            plain.append(left_index ^ p)
-            plain.append(right_index ^ p)
+            emit_pair(p, left_index, right_index)
         elif kind in ("fppload", "fppstore"):
             # Packed 128-bit load/store: XMM index (raw) + GP base slot (slot_perm).
             _, xmm_index, base_slot, disp = item
@@ -793,17 +798,17 @@ def handler_instances_asm(
         elif handler_key.startswith(("fparithmem_", "fparithmemrip_", "fparithmemidx_")):
             lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fparith_"):
-            lines.append(_fp_arith_handler_asm(handler_key, key))
+            lines.append(_fp_arith_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith(("cvti2f_", "cvtf2i_")):
-            lines.append(_fp_convert_handler_asm(handler_key, key))
+            lines.append(_fp_convert_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith("fpcmp_"):
-            lines.append(_fp_compare_handler_asm(handler_key, key))
+            lines.append(_fp_compare_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith("fpmov_"):
-            lines.append(_fp_move_handler_asm(handler_key, key))
+            lines.append(_fp_move_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith(("fppackedmem_", "fppackedmemrip_", "fppackedmemidx_")):
             lines.append(_fp_packed_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fppacked_"):
-            lines.append(_fp_packed_arith_handler_asm(handler_key, key))
+            lines.append(_fp_packed_arith_handler_asm(handler_key, key, field_perm))
         elif handler_key in ("fppload", "fppstore", "fpploadrip", "fppstorerip", "fpploadidx", "fppstoreidx"):
             lines.append(_fp_packed_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("load_", "store_")):
