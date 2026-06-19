@@ -177,16 +177,19 @@ def _fp_packed_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str,
 
 def _fp_packed_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for a packed 128-bit load/store (``movaps``/``movups`` etc.
-    xmm <-> [base+disp] or [rip+disp]).
+    xmm <-> [base+disp], [rip+disp] or [base+index*scale+disp]).
 
     The shared address prologue computes the address into r10 (a frame-slot base
-    plus displacement, or the bytecode base plus a stored offset for the
-    rip-relative form); the full 128-bit value moves between program memory and the
-    XMM save slot via xmm0. An unaligned move (movups) is used throughout: it is
-    correct for aligned data too, and avoids any alignment fault from the relocated
-    frame. No flags.
+    plus displacement, the bytecode base plus a stored offset for the rip-relative
+    form, or base+index*scale+disp for the scaled-index form); the full 128-bit
+    value moves between program memory and the XMM save slot via xmm0. An unaligned
+    move (movups) is used throughout: it is correct for aligned data too, and avoids
+    any alignment fault from the relocated frame. No flags.
     """
-    body, advance = _mem_address_asm(handler_key.endswith("rip"), key, key_dword, field_perm)
+    if handler_key.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm)
+    else:
+        body, advance = _mem_address_asm(handler_key.endswith("rip"), key, key_dword, field_perm)
     body += "  shl r8, 4\n"
     if handler_key.startswith("fppload"):
         body += f"  movups xmm0, [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"

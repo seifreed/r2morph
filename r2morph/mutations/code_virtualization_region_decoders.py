@@ -656,6 +656,33 @@ def _decode_fp_packed_arith_riprel(text: str, insn_addr: int, insn_size: int) ->
     return ("fppackedmemrip", mnemonic, xmm_index, target)
 
 
+def _decode_fp_packed_indexed(text: str) -> tuple[str, int, int, int, int, int] | None:
+    """Decode a scaled-index packed 128-bit move (``movaps``/``movups`` etc.
+    xmm <-> [base+index*scale+disp]) into ``("fpploadidx"|"fppstoreidx",
+    xmm_index, base_slot, index_slot, shift, disp)`` - access into an array of
+    vectors. Returns ``None`` for a register, base+disp or rip-relative operand.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    if parts[0].lower() not in _FP_PACKED_MOVE:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        kind, mem_text, xmm_text = "fppstoreidx", left, right
+    else:
+        kind, mem_text, xmm_text = "fpploadidx", right, left
+    xmm_index = _parse_xmm_operand(xmm_text)
+    indexed = _parse_indexed_operand(mem_text.lower().replace("xmmword", ""))
+    if xmm_index is None or indexed is None:
+        return None
+    base_slot, index_slot, shift, disp = indexed
+    return (kind, xmm_index, base_slot, index_slot, shift, disp)
+
+
 def _decode_fp_packed_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, int, int] | None:
     """Decode a rip-relative packed 128-bit move (``movaps``/``movups`` etc.
     xmm <-> [rip+disp]) into ``("fpploadrip"|"fppstorerip", xmm_index,
