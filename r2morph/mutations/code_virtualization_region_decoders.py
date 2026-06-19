@@ -499,6 +499,33 @@ def _decode_fp_arith_mem(text: str) -> tuple[str, str, int, int, int, int] | Non
     return ("fparithmem", op, xmm_index, base_slot, disp, width)
 
 
+def _decode_fp_arith_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, str, int, int, int] | None:
+    """Decode scalar-FP arithmetic with a rip-relative source
+    (``addsd xmm, [rip+disp]`` etc.) into
+    ``("fparithmemrip", op, xmm_index, target_vaddr, width)``.
+
+    The constant-pool form: an FP constant in .rodata added straight to a register.
+    Returns ``None`` for a register or base+disp source, or any non-FP-arith
+    mnemonic. The target is re-expressed relative to the bytecode base later.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    spec = _FP_ARITH_MNEMONICS.get(parts[0].lower())
+    if spec is None:
+        return None
+    op, width = spec
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    xmm_index = _parse_xmm_operand(left)
+    parsed = _parse_riprel_operand(right, insn_addr, insn_size)
+    if xmm_index is None or parsed is None:
+        return None
+    target, mem_width = parsed
+    if mem_width is not None and mem_width != width:
+        return None
+    return ("fparithmemrip", op, xmm_index, target, width)
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 

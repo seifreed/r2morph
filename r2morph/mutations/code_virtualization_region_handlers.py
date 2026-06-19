@@ -110,20 +110,22 @@ def _fp_arith_handler_asm(handler_key: str, key: int) -> str:
 
 
 def _fp_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
-    """Assembly body for scalar-FP arithmetic with a ``[base+disp]`` memory source
-    (``addsd xmm, [base+disp]`` and the sub/mul/div, ss forms).
+    """Assembly body for scalar-FP arithmetic with a memory source - either
+    ``[base+disp]`` or rip-relative ``[rip+disp]`` (the constant-pool form).
 
     The shared memory-address prologue decrypts the operand fields - here the
     "register" field is the destination XMM index - and computes the effective
-    address into r10. The destination is loaded from its save slot, the scalar op
-    runs against the memory operand on the low lane (upper lanes preserved), and the
-    result is written back. FP arithmetic sets no flags.
+    address into r10 (frame-slot base plus displacement, or bytecode base plus a
+    stored offset for the rip-relative form). The destination is loaded from its
+    save slot, the scalar op runs against the memory operand on the low lane (upper
+    lanes preserved), and the result is written back. FP arithmetic sets no flags.
     """
-    _, mnemonic, width_text = handler_key.split("_")
+    kind, mnemonic, width_text = handler_key.split("_")
+    riprel = kind.endswith("rip")
     width = int(width_text)
     instr = mnemonic + ("sd" if width == 64 else "ss")
     mem = "qword" if width == 64 else "dword"
-    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
     body += f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
     body += f"  {instr} xmm0, {mem} ptr [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"

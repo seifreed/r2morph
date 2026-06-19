@@ -110,6 +110,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"fparith_{item[1]}_{item[4]}"
     if kind == "fparithmem":
         return f"fparithmem_{item[1]}_{item[5]}"
+    if kind == "fparithmemrip":
+        return f"fparithmemrip_{item[1]}_{item[4]}"
     if kind in ("cvti2f", "cvtf2i"):
         return f"{kind}_{item[1]}"
     if kind == "fpcmp":
