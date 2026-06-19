@@ -159,14 +159,18 @@ def _fp_packed_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str,
     (``addpd xmm, [base+disp]`` and the sub/mul/div forms).
 
     The shared address prologue computes the operand address into r10 (a frame-slot
-    base plus displacement, or the bytecode base plus a stored offset for the
-    rip-relative constant-vector form); the destination and the 128-bit memory
-    operand are both loaded with movups (so an unaligned operand never faults - a
-    direct packed memory operand would require 16-byte alignment), the packed op
-    runs across all lanes, and the full result is written back. No flags.
+    base plus displacement, the bytecode base plus a stored offset for the
+    rip-relative constant-vector form, or base+index*scale+disp for the array form);
+    the destination and the 128-bit memory operand are both loaded with movups (so
+    an unaligned operand never faults - a direct packed memory operand would require
+    16-byte alignment), the packed op runs across all lanes, and the full result is
+    written back. No flags.
     """
     kind, instr = handler_key.split("_", 1)
-    body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm)
+    if kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm)
     body += (
         f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
         f"  movups xmm1, [r10]\n  {instr} xmm0, xmm1\n"

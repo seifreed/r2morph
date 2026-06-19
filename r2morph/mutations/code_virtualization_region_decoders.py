@@ -683,6 +683,29 @@ def _decode_fp_packed_indexed(text: str) -> tuple[str, int, int, int, int, int] 
     return (kind, xmm_index, base_slot, index_slot, shift, disp)
 
 
+def _decode_fp_packed_arith_idx(text: str) -> tuple[str, str, int, int, int, int, int] | None:
+    """Decode packed-FP arithmetic with a scaled-index source
+    (``addpd xmm, [base+index*scale+disp]`` etc.) into
+    ``("fppackedmemidx", mnemonic, xmm_index, base_slot, index_slot, shift, disp)``
+    - vectorized accumulation over an array of vectors. Returns ``None`` otherwise.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in _FP_PACKED_ARITH:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    xmm_index = _parse_xmm_operand(left)
+    if xmm_index is None:
+        return None
+    indexed = _parse_indexed_operand(right.lower().replace("xmmword", ""))
+    if indexed is None:
+        return None
+    base_slot, index_slot, shift, disp = indexed
+    return ("fppackedmemidx", mnemonic, xmm_index, base_slot, index_slot, shift, disp)
+
+
 def _decode_fp_packed_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, int, int] | None:
     """Decode a rip-relative packed 128-bit move (``movaps``/``movups`` etc.
     xmm <-> [rip+disp]) into ``("fpploadrip"|"fppstorerip", xmm_index,

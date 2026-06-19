@@ -42,6 +42,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_mem,
     _decode_fp_move,
     _decode_fp_packed_arith,
+    _decode_fp_packed_arith_idx,
     _decode_fp_packed_arith_mem,
     _decode_fp_packed_arith_riprel,
     _decode_fp_packed_indexed,
@@ -164,6 +165,9 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         fp_packed_arith_riprel = _decode_fp_packed_arith_riprel(text, insn.get("addr", 0), insn.get("size", 0))
         if fp_packed_arith_riprel is not None:
             return [*fp_packed_arith_riprel]
+        fp_packed_arith_idx = _decode_fp_packed_arith_idx(text)
+        if fp_packed_arith_idx is not None:
+            return [*fp_packed_arith_idx]
         fp_packed_mem = _decode_fp_packed_mem(text)
         if fp_packed_mem is not None:
             return [*fp_packed_mem]

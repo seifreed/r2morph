@@ -312,7 +312,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + xmm index + base slot + 4-byte displacement
     if kind in ("fpploadrip", "fppstorerip", "fppackedmemrip"):
         return 6  # opcode + xmm index + 4-byte bytecode-relative displacement
-    if kind in ("fpploadidx", "fppstoreidx"):
+    if kind in ("fpploadidx", "fppstoreidx", "fppackedmemidx"):
         return 9  # opcode + xmm index + base + index slots + scale shift + 4-byte disp
     if kind == "fparithmem":
         return 7  # opcode + dst xmm index + base slot + 4-byte displacement
@@ -565,6 +565,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, xmm_index, base_slot, index_slot, shift, disp = item
             p = emit_opcode(_required_key(item))
             emit_idx(p, xmm_index, slot_of[base_slot], slot_of[index_slot], shift, disp)
+        elif kind == "fppackedmemidx":
+            # Scaled-index packed arith: destination XMM index (raw); base and index
+            # are GP slots (slot_perm).
+            _, _mnemonic, xmm_index, base_slot, index_slot, shift, disp = item
+            p = emit_opcode(_required_key(item))
+            emit_idx(p, xmm_index, slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind == "fparithmem":
             # Memory-source FP arith reuses the mem operand layout: the "reg" field
             # is the destination XMM index (raw), the base is a GP slot.
@@ -786,7 +792,7 @@ def handler_instances_asm(
             lines.append(_fp_compare_handler_asm(handler_key, key))
         elif handler_key.startswith("fpmov_"):
             lines.append(_fp_move_handler_asm(handler_key, key))
-        elif handler_key.startswith(("fppackedmem_", "fppackedmemrip_")):
+        elif handler_key.startswith(("fppackedmem_", "fppackedmemrip_", "fppackedmemidx_")):
             lines.append(_fp_packed_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fppacked_"):
             lines.append(_fp_packed_arith_handler_asm(handler_key, key))
