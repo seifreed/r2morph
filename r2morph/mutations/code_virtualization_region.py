@@ -44,6 +44,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_packed_arith,
     _decode_fp_packed_arith_mem,
     _decode_fp_packed_mem,
+    _decode_fp_packed_riprel,
     _decode_fp_riprel,
     _decode_imul,
     _decode_imul3,
@@ -159,7 +160,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         if fp_packed_arith_mem is not None:
             return [*fp_packed_arith_mem]
         fp_packed_mem = _decode_fp_packed_mem(text)
-        return [*fp_packed_mem] if fp_packed_mem is not None else None
+        if fp_packed_mem is not None:
+            return [*fp_packed_mem]
+        fp_packed_riprel = _decode_fp_packed_riprel(text, insn.get("addr", 0), insn.get("size", 0))
+        return [*fp_packed_riprel] if fp_packed_riprel is not None else None
     if kind == "nop":
         return ["nop"]
     if kind in ("mov", "add", "sub", "xor", "and", "or"):

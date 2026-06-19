@@ -633,6 +633,37 @@ def _decode_fp_packed_arith_mem(text: str) -> tuple[str, str, int, int, int] | N
     return ("fppackedmem", mnemonic, xmm_index, base_slot, disp)
 
 
+def _decode_fp_packed_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, int, int] | None:
+    """Decode a rip-relative packed 128-bit move (``movaps``/``movups`` etc.
+    xmm <-> [rip+disp]) into ``("fpploadrip"|"fppstorerip", xmm_index,
+    target_vaddr)``.
+
+    SIMD constant vectors live in .rodata and are reached rip-relative. Returns
+    ``None`` for a register, base+disp or indexed operand, or a non-packed-move
+    mnemonic.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    if parts[0].lower() not in _FP_PACKED_MOVE:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        kind, mem_text, xmm_text = "fppstorerip", left, right
+    else:
+        kind, mem_text, xmm_text = "fpploadrip", right, left
+    xmm_index = _parse_xmm_operand(xmm_text)
+    # Drop the 128-bit size keyword so the shared rip-relative parser accepts it.
+    parsed = _parse_riprel_operand(mem_text.lower().replace("xmmword", ""), insn_addr, insn_size)
+    if xmm_index is None or parsed is None:
+        return None
+    target, _width = parsed
+    return (kind, xmm_index, target)
+
+
 def _decode_fp_packed_mem(text: str) -> tuple[str, int, int, int] | None:
     """Decode a packed 128-bit move with a ``[base+disp]`` memory operand
     (``movaps``/``movups``/``movapd``/``movupd`` xmm <-> [mem]) into

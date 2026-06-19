@@ -310,6 +310,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3  # opcode + dst xmm index + src xmm index
     if kind in ("fppload", "fppstore", "fppackedmem"):
         return 7  # opcode + xmm index + base slot + 4-byte displacement
+    if kind in ("fpploadrip", "fppstorerip"):
+        return 6  # opcode + xmm index + 4-byte bytecode-relative displacement
     if kind == "fparithmem":
         return 7  # opcode + dst xmm index + base slot + 4-byte displacement
     if kind == "fparithmemrip":
@@ -544,6 +546,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, _mnemonic, xmm_index, base_slot, disp = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, xmm_index, slot_of[base_slot], disp)
+        elif kind in ("fpploadrip", "fppstorerip"):
+            # Rip-relative packed 128-bit move: XMM index (raw), no base slot, the
+            # target as a signed offset from the bytecode base.
+            _, xmm_index, target = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, xmm_index, None, target - bytecode_base)
         elif kind == "fparithmem":
             # Memory-source FP arith reuses the mem operand layout: the "reg" field
             # is the destination XMM index (raw), the base is a GP slot.
@@ -769,7 +777,7 @@ def handler_instances_asm(
             lines.append(_fp_packed_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fppacked_"):
             lines.append(_fp_packed_arith_handler_asm(handler_key, key))
-        elif handler_key in ("fppload", "fppstore"):
+        elif handler_key in ("fppload", "fppstore", "fpploadrip", "fppstorerip"):
             lines.append(_fp_packed_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("load_", "store_")):
             lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
