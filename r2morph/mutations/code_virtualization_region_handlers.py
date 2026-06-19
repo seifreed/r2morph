@@ -133,6 +133,45 @@ def _fp_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_pe
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _fp_packed_arith_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a packed-FP register-register op (``addpd``/``addps`` and
+    the sub/mul/div forms), operating on all lanes of the 128-bit register.
+
+    Both operand bytes are XMM indices. The operands are loaded whole from their
+    save slots into xmm0/xmm1, the packed op runs across all lanes, and the full
+    128-bit result is written back. No flags, and (unlike the scalar forms) no
+    upper-lane preservation - the op defines every lane.
+    """
+    instr = handler_key.split("_", 1)[1]
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  {instr} xmm0, xmm1\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
+def _fp_packed_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Assembly body for a packed 128-bit load/store (``movaps``/``movups`` etc.
+    xmm <-> [base+disp]).
+
+    The shared memory-address prologue computes the address into r10; the full
+    128-bit value moves between program memory and the XMM save slot via xmm0. An
+    unaligned move (movups) is used throughout: it is correct for aligned data too,
+    and avoids any alignment fault from the relocated frame. No flags.
+    """
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    body += "  shl r8, 4\n"
+    if handler_key == "fppload":
+        body += f"  movups xmm0, [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+    else:
+        body += f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups [r10], xmm0\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _fp_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Assembly body for scalar-FP arithmetic with a memory source - either
     ``[base+disp]`` or rip-relative ``[rip+disp]`` (the constant-pool form).

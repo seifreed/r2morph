@@ -41,6 +41,8 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_indexed,
     _decode_fp_mem,
     _decode_fp_move,
+    _decode_fp_packed_arith,
+    _decode_fp_packed_mem,
     _decode_fp_riprel,
     _decode_imul,
     _decode_imul3,
@@ -147,7 +149,13 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         if fp_compare is not None:
             return [*fp_compare]
         fp_move = _decode_fp_move(text)
-        return [*fp_move] if fp_move is not None else None
+        if fp_move is not None:
+            return [*fp_move]
+        fp_packed = _decode_fp_packed_arith(text)
+        if fp_packed is not None:
+            return [*fp_packed]
+        fp_packed_mem = _decode_fp_packed_mem(text)
+        return [*fp_packed_mem] if fp_packed_mem is not None else None
     if kind == "nop":
         return ["nop"]
     if kind in ("mov", "add", "sub", "xor", "and", "or"):

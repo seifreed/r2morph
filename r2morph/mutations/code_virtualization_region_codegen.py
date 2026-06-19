@@ -47,6 +47,8 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _fp_indexed_handler_asm,
     _fp_memory_handler_asm,
     _fp_move_handler_asm,
+    _fp_packed_arith_handler_asm,
+    _fp_packed_mem_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
@@ -303,6 +305,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3  # opcode + left xmm index + right xmm index
     if kind == "fpmov":
         return 3  # opcode + dst xmm index + src xmm index
+    if kind == "fppacked":
+        return 3  # opcode + dst xmm index + src xmm index
+    if kind in ("fppload", "fppstore"):
+        return 7  # opcode + xmm index + base slot + 4-byte displacement
     if kind == "fparithmem":
         return 7  # opcode + dst xmm index + base slot + 4-byte displacement
     if kind == "fparithmemrip":
@@ -521,12 +527,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             p = emit_opcode(_required_key(item))
             plain.append(slot_of[gp_slot] ^ p)
             plain.append(xmm_index ^ p)
-        elif kind in ("fpcmp", "fpmov"):
+        elif kind in ("fpcmp", "fpmov", "fppacked"):
             # Two raw XMM indices (no slot_perm), each masked by the stream position.
             _, _mode, left_index, right_index = item
             p = emit_opcode(_required_key(item))
             plain.append(left_index ^ p)
             plain.append(right_index ^ p)
+        elif kind in ("fppload", "fppstore"):
+            # Packed 128-bit load/store: XMM index (raw) + GP base slot (slot_perm).
+            _, xmm_index, base_slot, disp = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, xmm_index, slot_of[base_slot], disp)
         elif kind == "fparithmem":
             # Memory-source FP arith reuses the mem operand layout: the "reg" field
             # is the destination XMM index (raw), the base is a GP slot.
@@ -748,6 +759,10 @@ def handler_instances_asm(
             lines.append(_fp_compare_handler_asm(handler_key, key))
         elif handler_key.startswith("fpmov_"):
             lines.append(_fp_move_handler_asm(handler_key, key))
+        elif handler_key.startswith("fppacked_"):
+            lines.append(_fp_packed_arith_handler_asm(handler_key, key))
+        elif handler_key in ("fppload", "fppstore"):
+            lines.append(_fp_packed_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("load_", "store_")):
             lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key == "jmp":

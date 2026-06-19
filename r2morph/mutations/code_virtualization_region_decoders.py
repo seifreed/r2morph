@@ -583,6 +583,61 @@ def _decode_fp_arith_idx(text: str) -> tuple[str, str, int, int, int, int, int, 
     return ("fparithmemidx", op, xmm_index, base_slot, index_slot, shift, disp, width)
 
 
+_FP_PACKED_ARITH: frozenset[str] = frozenset({"addpd", "addps", "subpd", "subps", "mulpd", "mulps", "divpd", "divps"})
+_FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd"})
+
+
+def _decode_fp_packed_arith(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a packed-FP register-register arithmetic op (``addpd``/``addps`` and
+    the sub/mul/div forms) into ``("fppacked", mnemonic, dst_index, src_index)``.
+
+    Operates on all lanes of the 128-bit register. Returns ``None`` for a memory
+    operand (deferred) or any non-packed-arith mnemonic.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in _FP_PACKED_ARITH:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    dst_index = _parse_xmm_operand(left)
+    src_index = _parse_xmm_operand(right)  # register-register only
+    if dst_index is None or src_index is None:
+        return None
+    return ("fppacked", mnemonic, dst_index, src_index)
+
+
+def _decode_fp_packed_mem(text: str) -> tuple[str, int, int, int] | None:
+    """Decode a packed 128-bit move with a ``[base+disp]`` memory operand
+    (``movaps``/``movups``/``movapd``/``movupd`` xmm <-> [mem]) into
+    ``("fppload"|"fppstore", xmm_index, base_slot, disp)``.
+
+    Register-register packed moves are handled as full xmm copies elsewhere; a
+    rip-relative or indexed packed operand stays native (deferred).
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    if parts[0].lower() not in _FP_PACKED_MOVE:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        kind, mem_text, xmm_text = "fppstore", left, right
+    else:
+        kind, mem_text, xmm_text = "fppload", right, left
+    xmm_index = _parse_xmm_operand(xmm_text)
+    # Drop the 128-bit size keyword so the shared base+disp parser accepts it.
+    mem = _parse_mem_operand(mem_text.lower().replace("xmmword", ""))
+    if xmm_index is None or mem is None:
+        return None
+    base_slot, disp, _width = mem
+    return (kind, xmm_index, base_slot, disp)
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 
