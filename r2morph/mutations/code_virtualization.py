@@ -28,6 +28,7 @@ from typing import Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_engine import (
+    VirtualizedFpMemOp,
     VirtualizedMemOp,
     VirtualizedOp,
     build_vm_blob,
@@ -42,6 +43,7 @@ from r2morph.mutations.code_virtualization_region import (
 )
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
 from r2morph.mutations.code_virtualization_region_decoders import (
+    _decode_fp_mem,
     _decode_lea,
     _decode_lea_indexed,
     _decode_memory_mov,
@@ -64,13 +66,22 @@ _TRAMPOLINE_SIZE = 5
 _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
 
 
-def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> VirtualizedOp | VirtualizedMemOp | None:
+def _decode_run_item(
+    text: str, insn_addr: int = 0, insn_size: int = 0
+) -> VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | None:
     """Decode one instruction into a VM item: a register/immediate op, a memory
-    load/store ``mov``, an ``<op> reg, [base+disp]``, a ``mov reg, [rip+disp]``, or
-    ``None`` if the VM cannot reproduce it (ends the run)."""
+    load/store ``mov``, a scalar ``movsd``/``movss`` xmm<->[base+disp], an ``<op>
+    reg, [base+disp]``, a ``mov reg, [rip+disp]``, or ``None`` if the VM cannot
+    reproduce it (ends the run)."""
     op = decode_instruction(text)
     if op is not None:
         return op
+    # Scalar FP load/store is tried before the GP mov decoders: movsd/movss share
+    # the "mov" prefix but route to the xmm save area, not a GP slot.
+    fp = _decode_fp_mem(text)
+    if fp is not None:
+        kind, xmm_index, base_slot, disp, width = fp
+        return VirtualizedFpMemOp(kind, xmm_index, base_slot, disp, width)
     mem = _decode_memory_mov(text)
     if mem is not None:
         kind, reg_slot, base_slot, disp, width = mem
@@ -123,7 +134,9 @@ class _Run:
 
     __slots__ = ("start", "continuation", "ops")
 
-    def __init__(self, start: int, continuation: int, ops: list[VirtualizedOp | VirtualizedMemOp]) -> None:
+    def __init__(
+        self, start: int, continuation: int, ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp]
+    ) -> None:
         self.start = start
         self.continuation = continuation
         self.ops = ops

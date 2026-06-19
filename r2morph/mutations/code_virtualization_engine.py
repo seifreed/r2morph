@@ -128,12 +128,22 @@ _MEM_OP_KINDS: tuple[str, ...] = (
     + _MEM_MOVX_KINDS
     + tuple(f"{kind}idx" for kind in _MEM_IDX_KINDS)
 )
-_OP_KEYS: tuple[tuple[str, bool, int], ...] = tuple(
-    (mnemonic, is_immediate, width)
-    for width in (64, 32)
-    for mnemonic in _MNEMONIC_ORDER
-    for is_immediate in (True, False)
-) + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
+# Scalar-FP memory moves: ``movsd``/``movss`` between an xmm register and
+# ``[base+disp]``. They reuse the (kind, is_immediate, width) key shape and the
+# reg/base/disp operand layout, but the ``reg`` field carries an xmm index (0-15,
+# emitted raw, not slot-permuted) and the handler moves through the frame's xmm
+# save area instead of a GP slot.
+_FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore")
+_OP_KEYS: tuple[tuple[str, bool, int], ...] = (
+    tuple(
+        (mnemonic, is_immediate, width)
+        for width in (64, 32)
+        for mnemonic in _MNEMONIC_ORDER
+        for is_immediate in (True, False)
+    )
+    + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_MEM_KINDS)
+)
 _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
 
@@ -211,12 +221,17 @@ def _live_junk_asm(rng: random.Random, index: int) -> str:
 
 
 # Private stack frame the interpreter carves below the caller's rsp. The
-# 16 context slots occupy [0x00, 0x80); the runtime self-checksum byte sits at
-# 0x80; the System V red zone [original_rsp-128, original_rsp) maps to the top
-# [0x90, 0x110) and is left untouched, so leaf-function red-zone data survives.
-_FRAME_SIZE = 0x110
-# Frame byte holding the interpreter's runtime self-checksum (below the red zone).
+# 16 GP context slots occupy [0x00, 0x80); the runtime self-checksum byte sits at
+# 0x80; the 16 xmm save slots (16 bytes each) occupy [0x90, 0x190); the System V
+# red zone [original_rsp-128, original_rsp) maps to the top [0x190, 0x210) and is
+# left untouched, so leaf-function red-zone data survives. The xmm slots are only
+# spilled/reloaded when the run contains an FP op (see ``has_fp``); a GP-only run
+# pays the larger frame but not the save/restore.
+_FRAME_SIZE = 0x210
+# Frame byte holding the interpreter's runtime self-checksum (below the xmm area).
 _CHECKSUM_OFFSET = 0x80
+# Base of the 16-entry, 16-byte-per-slot xmm save area: slot i at this + i*16.
+_XMM_SAVE_OFFSET = 0x90
 
 
 class VMScheme:
@@ -333,6 +348,28 @@ class VirtualizedMemOp:
         self.scale = scale
 
 
+class VirtualizedFpMemOp:
+    """A scalar ``movsd``/``movss`` between an xmm register and ``[base+disp]``.
+
+    ``kind`` is ``"fpload"`` (xmm <- [base+disp]) or ``"fpstore"`` ([base+disp] <-
+    xmm). ``xmm_index`` is the 0-15 register number; ``base_index`` is the GP base
+    register's context slot, read at runtime so the address is the program's real
+    address (the interpreter spills registers but does not relocate the stack).
+    ``width`` is 64 (movsd) or 32 (movss). The xmm value lives in the frame's xmm
+    save area for the duration of the run and is reloaded into the architectural
+    register on exit.
+    """
+
+    __slots__ = ("kind", "xmm_index", "base_index", "disp", "width")
+
+    def __init__(self, kind: str, xmm_index: int, base_index: int, disp: int, width: int) -> None:
+        self.kind = kind
+        self.xmm_index = xmm_index
+        self.base_index = base_index
+        self.disp = disp
+        self.width = width
+
+
 # Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
 # slot written with its own value, no flags), so it is semantics-preserving for
 # any register, yet it executes a real handler and pads the bytecode with
@@ -343,11 +380,11 @@ _JUNK_OP_PROBABILITY = 0.35
 
 
 def inject_junk_ops(
-    ops: list[VirtualizedOp | VirtualizedMemOp], rng: random.Random
-) -> list[VirtualizedOp | VirtualizedMemOp]:
+    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp], rng: random.Random
+) -> list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp]:
     """Sprinkle identity ``mov reg, reg`` ops through a straight-line run."""
     junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
-    out: list[VirtualizedOp | VirtualizedMemOp] = []
+    out: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp] = []
     for op in ops:
         while rng.random() < _JUNK_OP_PROBABILITY:
             reg = rng.choice(junk_regs)
@@ -449,7 +486,10 @@ def pack_immediate(value: int, width: int) -> bytes:
 
 
 def encode_bytecode(
-    ops: list[VirtualizedOp | VirtualizedMemOp], scheme: VMScheme, checksum: int = 0, bytecode_base: int = 0
+    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp],
+    scheme: VMScheme,
+    checksum: int = 0,
+    bytecode_base: int = 0,
 ) -> bytes:
     """Serialize ops to bytecode (per-scheme opcodes), XOR-encrypted by key.
 
@@ -484,6 +524,18 @@ def encode_bytecode(
             plain.extend(byte ^ position for byte in field_bytes[name])
 
     for op in ops:
+        if isinstance(op, VirtualizedFpMemOp):
+            # Same 7-byte reg/base/disp layout as a GP load/store, but ``reg`` holds
+            # the xmm index raw (0-15 is a direct save-slot index, not a permuted
+            # GP slot) while the base slot is permuted like any other register.
+            position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
+            field_bytes = {
+                "reg": bytes([op.xmm_index]),
+                "base": bytes([slot_of[op.base_index]]),
+                "disp": struct.pack("<i", op.disp),
+            }
+            emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
+            continue
         if isinstance(op, VirtualizedMemOp):
             position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
             if op.kind.endswith("rip"):
@@ -523,11 +575,15 @@ def encode_bytecode(
     return bytes(byte ^ key for byte in plain)
 
 
-def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
+def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = False) -> str:
     """Generate the interpreter assembly for one virtualized run.
 
     Every byte fetched from the bytecode is XOR-decrypted with the scheme key
     before use; opcodes are compared against the scheme's randomized values.
+
+    When ``has_fp`` is set, the prologue spills all 16 xmm registers into the
+    frame's xmm save area and the epilogue reloads them, so a run that moves FP
+    data through xmm preserves it; a GP-only run skips both.
     """
     key = scheme.xor_key
     key_qword = hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF)
@@ -637,7 +693,35 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
                 body += "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
         return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
+    def fp_mem_handler_body(kind: str, width: int) -> str:
+        # Scalar FP load/store. The address machinery mirrors mem_addr_prologue
+        # (base slot value + sign-extended disp32 -> r10, folded with MBA), and the
+        # xmm index (the "reg" field) selects a 16-byte slot in the frame's xmm save
+        # area at rsp + _XMM_SAVE_OFFSET + index*16, which the epilogue reloads into
+        # the architectural xmm registers. xmm0 is free scratch (its program value
+        # lives in save slot 0 and is reloaded on exit). A load goes through the
+        # scalar move then writes the whole slot via movups, so movsd/movss's
+        # upper-lane zeroing is reproduced in the reloaded register; a store reads
+        # the slot and writes only the scalar to memory.
+        off = mem_offsets(False, scheme.field_perm)
+        move = "movsd" if width == 64 else "movss"
+        body = (
+            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + _mba_add_r10_rax(key)
+        )
+        body += f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        if kind == "fpload":
+            body += f"  {move} xmm0, [r10]\n  movups xmmword ptr [r11], xmm0\n"
+        else:
+            body += f"  movups xmm0, xmmword ptr [r11]\n  {move} [r10], xmm0\n"
+        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
+        if mnemonic in _FP_MEM_KINDS:
+            return fp_mem_handler_body(mnemonic, width)
         if mnemonic in _MEM_OP_KINDS:
             return mem_handler_body(mnemonic, width)
         # Operands carry the opcode's stream position too (r13 still holds it from
@@ -687,6 +771,11 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {name}\n")
+    if has_fp:
+        # Spill all 16 xmm registers into the save area so FP handlers can route
+        # data through it; movups needs no alignment. Only emitted for FP runs.
+        for xmm in range(16):
+            lines.append(f"  movups xmmword ptr [rsp + {_XMM_SAVE_OFFSET + xmm * 16}], xmm{xmm}\n")
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt; runs after the register spill.
     lines.append(checksum_prologue_asm(key, slot=_CHECKSUM_OFFSET))
@@ -739,6 +828,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov {name}, qword ptr [rsp + {slot[index] * 8}]\n")
+    if has_fp:
+        for xmm in range(16):
+            lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {_XMM_SAVE_OFFSET + xmm * 16}]\n")
     lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
 
     table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
@@ -751,7 +843,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme) -> str:
 
 
 def build_vm_blob(
-    ops: list[VirtualizedOp | VirtualizedMemOp], cave_vaddr: int, continuation_vaddr: int, scheme: VMScheme
+    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp],
+    cave_vaddr: int,
+    continuation_vaddr: int,
+    scheme: VMScheme,
 ) -> bytes | None:
     """
     Assemble the interpreter at ``cave_vaddr`` and append the encrypted bytecode.
@@ -767,7 +862,8 @@ def build_vm_blob(
         logger.warning("keystone unavailable; cannot virtualize")
         return None
 
-    asm = _interpreter_asm(continuation_vaddr, scheme)
+    has_fp = any(isinstance(op, VirtualizedFpMemOp) for op in ops)
+    asm = _interpreter_asm(continuation_vaddr, scheme, has_fp)
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
         encoding, _ = engine.asm(asm, cave_vaddr)

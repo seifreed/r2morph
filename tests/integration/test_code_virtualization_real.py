@@ -16,8 +16,8 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from r2morph.mutations.code_virtualization_engine import decode_instruction
+from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _decode_run_item
+from r2morph.mutations.code_virtualization_engine import VirtualizedFpMemOp, decode_instruction
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
 FIXTURE = _DATASET / "elf_vm_arith_x86_64"
@@ -580,6 +580,39 @@ def test_straight_line_memarith_run_fallback_preserves_exit_code(tmp_path: Path)
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+# sub rsp, 0x210 - the engine VM's frame allocation (grown from 0x110 to hold the
+# 16-slot xmm save area). Its presence in the mutated binary proves the engine path
+# (not the region's 0x280 frame) virtualized the run.
+_ENGINE_FP_ENTRY_SIGNATURE = bytes.fromhex("4881EC10020000")
+
+
+def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # The function contains a call, so the region rejects it and the engine
+    # virtualizes the straight-line run before the call. That run carries a movsd
+    # load and store through an xmm register, exercising the engine's xmm save area
+    # and scalar-FP memory handlers. The decode check first proves the movsd ops
+    # lower to FP items - were they silently left native, the run would still exit
+    # 42 (a native movsd works), so the exit code alone would be a false green.
+    assert isinstance(_decode_run_item("movsd xmm3, qword ptr [rsp - 8]"), VirtualizedFpMemOp)
+    fixture = _DATASET / "elf_vm_fpenginemove_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fpengine"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
