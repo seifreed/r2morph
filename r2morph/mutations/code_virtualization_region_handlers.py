@@ -139,6 +139,28 @@ def _fp_convert_handler_asm(handler_key: str, key: int) -> str:
     )
 
 
+def _fp_compare_handler_asm(handler_key: str, key: int) -> str:
+    """Assembly body for a scalar-FP register-register compare
+    (``ucomisd``/``comisd`` and the ``ss`` forms).
+
+    Both operands are loaded from their XMM save slots into the real xmm0/xmm1; the
+    real compare runs (no MBA equivalent exists for an FP ordered compare) and its
+    flags - ZF/PF/CF, faithfully including the unordered/NaN case - are captured
+    into the frame's flags slot with the same pushfq/pop idiom the GP handlers use,
+    so the existing branch handler consumes them unchanged.
+    """
+    instr = handler_key.split("_", 1)[1]
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  {instr} xmm0, xmm1\n"
+        f"  pushfq\n  pop qword ptr [rsp + {_FLAGS_OFFSET}]\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def _unmask_dword(scratch: str) -> str:
     """Un-mask a dword immediate/displacement (in eax) with the item's stream
     position: r13b holds it from the dispatch, broadcast to 32 bits. ``scratch``

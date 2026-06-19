@@ -33,6 +33,7 @@ from r2morph.mutations.code_virtualization_engine import (
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmp_mem,
     _decode_fp_arith,
+    _decode_fp_compare,
     _decode_fp_convert,
     _decode_fp_mem,
     _decode_imul,
@@ -119,7 +120,10 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         if fp_mem is not None:
             return [*fp_mem]
         fp_arith = _decode_fp_arith(text)
-        return [*fp_arith] if fp_arith is not None else None
+        if fp_arith is not None:
+            return [*fp_arith]
+        fp_compare = _decode_fp_compare(text)
+        return [*fp_compare] if fp_compare is not None else None
     if kind == "nop":
         return ["nop"]
     if kind in ("mov", "add", "sub", "xor", "and", "or"):

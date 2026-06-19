@@ -384,6 +384,31 @@ def _decode_fp_convert(text: str) -> tuple[str, int, int, int] | None:
     return None
 
 
+_FP_COMPARE_MNEMONICS: frozenset[str] = frozenset({"ucomisd", "comisd", "ucomiss", "comiss"})
+
+
+def _decode_fp_compare(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a scalar-FP register-register compare (``ucomisd``/``comisd`` and
+    the ``ss`` forms) into ``("fpcmp", mnemonic, left_index, right_index)``.
+
+    Returns ``None`` for a memory operand or any other form (left native). The
+    mnemonic is preserved so the handler emits the exact compare, which sets the
+    real ZF/PF/CF (including the unordered/NaN case) for the existing branch path.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in _FP_COMPARE_MNEMONICS:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_index = _parse_xmm_operand(left)
+    right_index = _parse_xmm_operand(right)  # register-register only; a memory operand yields None
+    if left_index is None or right_index is None:
+        return None
+    return ("fpcmp", mnemonic, left_index, right_index)
+
+
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 
