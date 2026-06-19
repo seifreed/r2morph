@@ -41,6 +41,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _cmp_memory_handler_asm,
     _compare_handler_asm,
     _fp_arith_handler_asm,
+    _fp_arith_mem_handler_asm,
     _fp_compare_handler_asm,
     _fp_convert_handler_asm,
     _fp_memory_handler_asm,
@@ -297,6 +298,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3  # opcode + left xmm index + right xmm index
     if kind == "fpmov":
         return 3  # opcode + dst xmm index + src xmm index
+    if kind == "fparithmem":
+        return 7  # opcode + dst xmm index + base slot + 4-byte displacement
     if kind in ("riprel_load", "riprel_store"):
         return 6  # opcode + reg slot + 4-byte bytecode-relative displacement
     if kind in ("cmpmem", "opmem", "lea", "opmemdst"):
@@ -503,6 +506,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             p = emit_opcode(_required_key(item))
             plain.append(left_index ^ p)
             plain.append(right_index ^ p)
+        elif kind == "fparithmem":
+            # Memory-source FP arith reuses the mem operand layout: the "reg" field
+            # is the destination XMM index (raw), the base is a GP slot.
+            _, _op, xmm_index, base_slot, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, xmm_index, slot_of[base_slot], disp)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg_slot, target, _width = item
             p = emit_opcode(_required_key(item))
@@ -694,6 +703,8 @@ def handler_instances_asm(
             lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith(("fpload_", "fpstore_")):
             lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
+        elif handler_key.startswith("fparithmem_"):
+            lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("fparith_"):
             lines.append(_fp_arith_handler_asm(handler_key, key))
         elif handler_key.startswith(("cvti2f_", "cvtf2i_")):
