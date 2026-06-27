@@ -142,6 +142,14 @@ _FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore")
 # back to the real add/sub/mul/div instruction in the handler.
 _FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div")
 _FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
+# Int<->float conversions: cvtsi2sd/ss (int->float) and cvttsd2si/ss (float->int).
+# The GP width is part of the kind ("cvti2f"/"cvtf2i" + "32"/"64") so the handler
+# selects eax vs rax faithfully (a 32-bit cvtsi2sd converts only the int32; a
+# 32-bit cvttsd2si saturates out-of-range doubles to 0x80000000). The op-key width
+# carries the FP precision (sd=64, ss=32).
+_FP_CONVERT_KINDS: tuple[str, ...] = tuple(
+    f"{direction}{gp_width}" for direction in ("cvti2f", "cvtf2i") for gp_width in (64, 32)
+)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     tuple(
         (mnemonic, is_immediate, width)
@@ -152,6 +160,7 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_CONVERT_KINDS)
 )
 _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
@@ -398,6 +407,25 @@ class VirtualizedFpArithOp:
         self.width = width
 
 
+class VirtualizedFpConvertOp:
+    """An int<->float conversion: ``cvtsi2{sd,ss} xmm, r`` or ``cvtt{sd,ss}2si r, xmm``.
+
+    ``direction`` is ``"cvti2f"`` (int->float) or ``"cvtf2i"`` (float->int);
+    ``fp_width`` is 64 (sd) or 32 (ss); ``gp_width`` is 32 or 64 (it changes the
+    handler: a 32-bit conversion uses eax and saturates/truncates faithfully).
+    The xmm value lives in the frame's xmm save area, the GP value in its slot.
+    """
+
+    __slots__ = ("direction", "fp_width", "gp_width", "xmm_index", "gp_slot")
+
+    def __init__(self, direction: str, fp_width: int, gp_width: int, xmm_index: int, gp_slot: int) -> None:
+        self.direction = direction
+        self.fp_width = fp_width
+        self.gp_width = gp_width
+        self.xmm_index = xmm_index
+        self.gp_slot = gp_slot
+
+
 # Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
 # slot written with its own value, no flags), so it is semantics-preserving for
 # any register, yet it executes a real handler and pads the bytecode with
@@ -408,11 +436,14 @@ _JUNK_OP_PROBABILITY = 0.35
 
 
 def inject_junk_ops(
-    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp], rng: random.Random
-) -> list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp]:
+    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp],
+    rng: random.Random,
+) -> list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp]:
     """Sprinkle identity ``mov reg, reg`` ops through a straight-line run."""
     junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
-    out: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp] = []
+    out: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp] = (
+        []
+    )
     for op in ops:
         while rng.random() < _JUNK_OP_PROBABILITY:
             reg = rng.choice(junk_regs)
@@ -514,7 +545,7 @@ def pack_immediate(value: int, width: int) -> bytes:
 
 
 def encode_bytecode(
-    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp],
+    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp],
     scheme: VMScheme,
     checksum: int = 0,
     bytecode_base: int = 0,
@@ -552,6 +583,13 @@ def encode_bytecode(
             plain.extend(byte ^ position for byte in field_bytes[name])
 
     for op in ops:
+        if isinstance(op, VirtualizedFpConvertOp):
+            # xmm index (raw) + GP slot (permuted); the kind carries direction and
+            # GP width, the op-key width the FP precision. 3-byte item.
+            position = emit_opcode(pick(scheme.dup[(f"{op.direction}{op.gp_width}", False, op.fp_width)]))
+            field_bytes = {"xmm": bytes([op.xmm_index]), "gp": bytes([slot_of[op.gp_slot]])}
+            emit_fields(position, pair_permuted_fields("xmm", "gp", fp), field_bytes)
+            continue
         if isinstance(op, VirtualizedFpArithOp):
             # Two raw xmm indices (dst, src); 3-byte item. The op selects the kind
             # (and thus the handler), so the operands need no op field.
@@ -774,7 +812,41 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             "  add rsi, 3\n  jmp vm_dispatch\n"
         )
 
+    def fp_convert_handler_body(kind: str, fp_width: int) -> str:
+        # Int<->float conversion. The kind is direction (6 chars) + GP width; the
+        # item carries the xmm index (raw) and the GP slot. cvti2f reads the GP slot
+        # (eax for a 32-bit source, rax for 64-bit), loads the dst xmm slot first so
+        # cvtsi2{sd,ss} only rewrites the low lane (preserving the upper), and stores
+        # back. cvtf2i loads the source xmm and writes the GP slot via cvtt{sd,ss}2si
+        # (eax for 32-bit, which zero-extends and saturates out-of-int32 doubles to
+        # 0x80000000; rax for 64-bit).
+        direction, gp_width = kind[:6], int(kind[6:])
+        off = pair_offsets("xmm", "gp", scheme.field_perm)
+        suffix = "sd" if fp_width == 64 else "ss"
+        body = (
+            f"  movzx r8d, byte ptr [rsi+{off['xmm']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['gp']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            f"  shl r8, 4\n  lea r10, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        )
+        if direction == "cvti2f":
+            body += "  movups xmm0, xmmword ptr [r10]\n"
+            if gp_width == 64:
+                body += f"  mov rax, qword ptr [rsp + r9*8]\n  cvtsi2{suffix} xmm0, rax\n"
+            else:
+                body += f"  mov eax, dword ptr [rsp + r9*8]\n  cvtsi2{suffix} xmm0, eax\n"
+            body += "  movups xmmword ptr [r10], xmm0\n"
+        else:
+            body += "  movups xmm0, xmmword ptr [r10]\n"
+            if gp_width == 64:
+                body += f"  cvtt{suffix}2si rax, xmm0\n"
+            else:
+                body += f"  cvtt{suffix}2si eax, xmm0\n"
+            body += "  mov qword ptr [rsp + r9*8], rax\n"
+        return body + "  add rsi, 3\n  jmp vm_dispatch\n"
+
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
+        if mnemonic in _FP_CONVERT_KINDS:
+            return fp_convert_handler_body(mnemonic, width)
         if mnemonic in _FP_ARITH_KINDS:
             return fp_arith_handler_body(mnemonic, width)
         if mnemonic in _FP_MEM_KINDS:
@@ -900,7 +972,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
 
 def build_vm_blob(
-    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp],
+    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp],
     cave_vaddr: int,
     continuation_vaddr: int,
     scheme: VMScheme,
@@ -919,7 +991,7 @@ def build_vm_blob(
         logger.warning("keystone unavailable; cannot virtualize")
         return None
 
-    has_fp = any(isinstance(op, (VirtualizedFpMemOp, VirtualizedFpArithOp)) for op in ops)
+    has_fp = any(isinstance(op, (VirtualizedFpMemOp, VirtualizedFpArithOp, VirtualizedFpConvertOp)) for op in ops)
     asm = _interpreter_asm(continuation_vaddr, scheme, has_fp)
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)

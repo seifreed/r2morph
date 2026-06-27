@@ -19,6 +19,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _decode_run_item
 from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpArithOp,
+    VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
     decode_instruction,
 )
@@ -644,6 +645,58 @@ def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> No
     assert stats["functions_virtualized"] >= 1
     assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+
+
+def test_engine_fp_convert_roundtrip_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run converts int 42 to a double
+    # and back (cvtsi2sd / cvttsd2si), exercising the engine's 64-bit int<->float
+    # convert handlers. The decode check proves the conversions lower to FP convert
+    # items (else left native, the value would still round-trip to 42 - a false
+    # green). The 64-bit value round-trips to exit 42.
+    assert isinstance(_decode_run_item("cvtsi2sd xmm0, rax"), VirtualizedFpConvertOp)
+    assert isinstance(_decode_run_item("cvttsd2si rdi, xmm0"), VirtualizedFpConvertOp)
+    fixture = _DATASET / "elf_vm_fpengineconvert_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fpconvert"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Pins GP-width faithfulness: the run truncates 2147483690.0 (= 2^31 + 42, out
+    # of int32 range) into edi with a 32-bit cvttsd2si. x86 saturates to 0x80000000,
+    # so the exit code (low byte) is 0. A width-blind handler using rax would give
+    # 2147483690 (low byte 0x2A = 42), so this discriminates the 32-bit convert path.
+    assert isinstance(_decode_run_item("cvttsd2si edi, xmm0"), VirtualizedFpConvertOp)
+    fixture = _DATASET / "elf_vm_fpengineconvert32_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fpconvert32"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0
 
 
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
