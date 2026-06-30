@@ -135,7 +135,12 @@ _MEM_OP_KINDS: tuple[str, ...] = (
 # reg/base/disp operand layout, but the ``reg`` field carries an xmm index (0-15,
 # emitted raw, not slot-permuted) and the handler moves through the frame's xmm
 # save area instead of a GP slot.
-_FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore")
+# The ``*rip`` kinds reach an FP global (a .rodata/.data constant) via the bytecode
+# base plus a stored signed offset, exactly like the GP ``loadrip``/``storerip``;
+# the handler strips the ``rip`` suffix and reuses the load/store body with the
+# rip-relative address prologue. They reuse VirtualizedFpMemOp with base_index = -1
+# and the disp field carrying the absolute target.
+_FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore", "fploadrip", "fpstorerip")
 # Scalar-FP register-register arithmetic: addsd/subsd/mulsd/divsd (+ss). Each op
 # is its own kind so the dispatcher selects the handler without inspecting the
 # operands; the item carries two raw xmm indices (dst, src). ``fp{op}`` keys map
@@ -659,16 +664,25 @@ def encode_bytecode(
             emit_fields(position, pair_permuted_fields("dst", "src", fp), field_bytes)
             continue
         if isinstance(op, VirtualizedFpMemOp):
-            # Same 7-byte reg/base/disp layout as a GP load/store, but ``reg`` holds
-            # the xmm index raw (0-15 is a direct save-slot index, not a permuted
-            # GP slot) while the base slot is permuted like any other register.
+            # ``reg`` holds the xmm index raw (0-15 is a direct save-slot index, not
+            # a permuted GP slot). The base+disp form is a 7-byte reg/base/disp item;
+            # the rip form is a 6-byte reg/offset item whose offset is the global's
+            # signed distance from the bytecode base (out-of-range -> struct.error ->
+            # the caller leaves the run native), exactly like a GP load/storerip.
             position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
-            field_bytes = {
-                "reg": bytes([op.xmm_index]),
-                "base": bytes([slot_of[op.base_index]]),
-                "disp": struct.pack("<i", op.disp),
-            }
-            emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
+            if op.kind.endswith("rip"):
+                field_bytes = {
+                    "reg": bytes([op.xmm_index]),
+                    "disp": struct.pack("<i", op.disp - bytecode_base),
+                }
+                emit_fields(position, mem_permuted_fields(True, fp), field_bytes)
+            else:
+                field_bytes = {
+                    "reg": bytes([op.xmm_index]),
+                    "base": bytes([slot_of[op.base_index]]),
+                    "disp": struct.pack("<i", op.disp),
+                }
+                emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
             continue
         if isinstance(op, VirtualizedMemOp):
             position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
@@ -844,19 +858,37 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
         )
 
+    def fp_riprel_addr_prologue() -> str:
+        # rip-relative head: xmm index ("reg") -> r8, signed offset32 -> rax, the
+        # program address r15 (bytecode base) + offset folded with MBA -> r10, and
+        # the xmm save-slot address -> r11. Mirrors mem_riprel_prologue.
+        off = mem_offsets(True, scheme.field_perm)
+        return (
+            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+            f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
+            "  movsxd rax, eax\n  mov r10, r15\n"
+            + _mba_add_r10_rax(key)
+            + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        )
+
     def fp_mem_handler_body(kind: str, width: int) -> str:
-        # Scalar FP load/store. xmm0 is free scratch (its program value lives in save
-        # slot 0 and is reloaded on exit). A load goes through the scalar move then
-        # writes the whole slot via movups, so movsd/movss's upper-lane zeroing is
-        # reproduced in the reloaded register; a store reads the slot and writes only
-        # the scalar to memory. r10 = program address, r11 = xmm save-slot address.
+        # Scalar FP load/store, base+disp (7-byte item) or rip-relative (6-byte).
+        # xmm0 is free scratch (its program value lives in save slot 0 and is
+        # reloaded on exit). A load goes through the scalar move then writes the whole
+        # slot via movups, so movsd/movss's upper-lane zeroing is reproduced in the
+        # reloaded register; a store reads the slot and writes only the scalar to
+        # memory. r10 = program address, r11 = xmm save-slot address.
         move = "movsd" if width == 64 else "movss"
-        body = fp_base_addr_prologue()
+        if kind.endswith("rip"):
+            kind, body, advance = kind[: -len("rip")], fp_riprel_addr_prologue(), 6
+        else:
+            body, advance = fp_base_addr_prologue(), 7
         if kind == "fpload":
             body += f"  {move} xmm0, [r10]\n  movups xmmword ptr [r11], xmm0\n"
         else:
             body += f"  movups xmm0, xmmword ptr [r11]\n  {move} [r10], xmm0\n"
-        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+        return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
     def fp_arith_mem_handler_body(kind: str, width: int) -> str:
         # Scalar FP arithmetic with a base+disp memory source. The dst xmm slot loads

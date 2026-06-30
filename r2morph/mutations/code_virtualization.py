@@ -50,6 +50,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_arith_mem,
     _decode_fp_convert,
     _decode_fp_mem,
+    _decode_fp_riprel,
     _decode_lea,
     _decode_lea_indexed,
     _decode_memory_mov,
@@ -96,6 +97,12 @@ def _decode_run_item(
     if fp is not None:
         kind, xmm_index, base_slot, disp, width = fp
         return VirtualizedFpMemOp(kind, xmm_index, base_slot, disp, width)
+    fp_rip = _decode_fp_riprel(text, insn_addr, insn_size)
+    if fp_rip is not None:
+        # The rip target is an absolute address carried in the disp field; the
+        # encoder stores it as an offset from the bytecode base. No base slot.
+        rip_kind, rip_xmm, target, rip_width = fp_rip
+        return VirtualizedFpMemOp(rip_kind, rip_xmm, -1, target, rip_width)
     fp_arith = _decode_fp_arith(text)
     if fp_arith is not None:
         _kind, fp_op, dst_index, src_index, arith_width = fp_arith

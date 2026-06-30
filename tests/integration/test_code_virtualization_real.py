@@ -726,6 +726,35 @@ def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_pat
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
+def test_engine_fp_rip_relative_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run loads a .rodata double
+    # constant via movsd [rip+const], stores it to a .data global via movsd
+    # [rip+slot], reloads it, and truncates to an int - exercising the engine's
+    # rip-relative FP load/store handlers (the dominant FP memory form). The fixture
+    # places .text as the highest-vaddr segment so the large engine blob can be
+    # injected past it. The decode check proves the rip movsd lowers to a *rip FP
+    # item (else left native, still exit 42 - a false green). Round-trips to exit 42.
+    rip_item = _decode_run_item("movsd xmm0, qword ptr [rip + 0x100]", 0x1000, 8)
+    assert isinstance(rip_item, VirtualizedFpMemOp) and rip_item.kind.endswith("rip")
+    fixture = _DATASET / "elf_vm_fpenginerip_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fprip"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # Engine fallback (the function has a call) whose run uses lea reg, [base+disp];
     # the lea handler must compute the address into the destination (no dereference)
