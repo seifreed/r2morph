@@ -150,6 +150,11 @@ _FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
 _FP_CONVERT_KINDS: tuple[str, ...] = tuple(
     f"{direction}{gp_width}" for direction in ("cvti2f", "cvtf2i") for gp_width in (64, 32)
 )
+# Scalar-FP arithmetic with a ``[base+disp]`` memory source (``addsd xmm, [base+
+# disp]``). Per op (fparithmem{add,sub,mul,div}); the item is the same 7-byte
+# reg/base/disp layout as an FP load/store, and the handler reuses the base+disp
+# address prologue, then issues the scalar op with the memory source directly.
+_FP_ARITH_MEM_KINDS: tuple[str, ...] = tuple(f"fparithmem{op}" for op in _FP_ARITH_OPS)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     tuple(
         (mnemonic, is_immediate, width)
@@ -161,6 +166,7 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_CONVERT_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_MEM_KINDS)
 )
 _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
@@ -426,6 +432,24 @@ class VirtualizedFpConvertOp:
         self.gp_slot = gp_slot
 
 
+class VirtualizedFpArithMemOp:
+    """Scalar reg-memory FP arithmetic: ``{add,sub,mul,div}{sd,ss} xmm, [base+disp]``.
+
+    ``op`` is add/sub/mul/div; ``xmm_index`` is the destination (and first source)
+    xmm; ``base_index`` is the GP base slot read at runtime for the real address;
+    ``width`` is 64 (sd) or 32 (ss). The xmm operand lives in the frame's save area.
+    """
+
+    __slots__ = ("op", "xmm_index", "base_index", "disp", "width")
+
+    def __init__(self, op: str, xmm_index: int, base_index: int, disp: int, width: int) -> None:
+        self.op = op
+        self.xmm_index = xmm_index
+        self.base_index = base_index
+        self.disp = disp
+        self.width = width
+
+
 # Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
 # slot written with its own value, no flags), so it is semantics-preserving for
 # any register, yet it executes a real handler and pads the bytecode with
@@ -436,14 +460,33 @@ _JUNK_OP_PROBABILITY = 0.35
 
 
 def inject_junk_ops(
-    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp],
+    ops: list[
+        VirtualizedOp
+        | VirtualizedMemOp
+        | VirtualizedFpMemOp
+        | VirtualizedFpArithOp
+        | VirtualizedFpConvertOp
+        | VirtualizedFpArithMemOp
+    ],
     rng: random.Random,
-) -> list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp]:
+) -> list[
+    VirtualizedOp
+    | VirtualizedMemOp
+    | VirtualizedFpMemOp
+    | VirtualizedFpArithOp
+    | VirtualizedFpConvertOp
+    | VirtualizedFpArithMemOp
+]:
     """Sprinkle identity ``mov reg, reg`` ops through a straight-line run."""
     junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
-    out: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp] = (
-        []
-    )
+    out: list[
+        VirtualizedOp
+        | VirtualizedMemOp
+        | VirtualizedFpMemOp
+        | VirtualizedFpArithOp
+        | VirtualizedFpConvertOp
+        | VirtualizedFpArithMemOp
+    ] = []
     for op in ops:
         while rng.random() < _JUNK_OP_PROBABILITY:
             reg = rng.choice(junk_regs)
@@ -545,7 +588,14 @@ def pack_immediate(value: int, width: int) -> bytes:
 
 
 def encode_bytecode(
-    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp],
+    ops: list[
+        VirtualizedOp
+        | VirtualizedMemOp
+        | VirtualizedFpMemOp
+        | VirtualizedFpArithOp
+        | VirtualizedFpConvertOp
+        | VirtualizedFpArithMemOp
+    ],
     scheme: VMScheme,
     checksum: int = 0,
     bytecode_base: int = 0,
@@ -583,6 +633,17 @@ def encode_bytecode(
             plain.extend(byte ^ position for byte in field_bytes[name])
 
     for op in ops:
+        if isinstance(op, VirtualizedFpArithMemOp):
+            # Same 7-byte reg/base/disp layout as an FP load/store; ``reg`` is the
+            # xmm operand (raw), the op selects the kind/handler.
+            position = emit_opcode(pick(scheme.dup[(f"fparithmem{op.op}", False, op.width)]))
+            field_bytes = {
+                "reg": bytes([op.xmm_index]),
+                "base": bytes([slot_of[op.base_index]]),
+                "disp": struct.pack("<i", op.disp),
+            }
+            emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
+            continue
         if isinstance(op, VirtualizedFpConvertOp):
             # xmm index (raw) + GP slot (permuted); the kind carries direction and
             # GP width, the op-key width the FP precision. 3-byte item.
@@ -766,30 +827,46 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
                 body += "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
         return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
-    def fp_mem_handler_body(kind: str, width: int) -> str:
-        # Scalar FP load/store. The address machinery mirrors mem_addr_prologue
-        # (base slot value + sign-extended disp32 -> r10, folded with MBA), and the
-        # xmm index (the "reg" field) selects a 16-byte slot in the frame's xmm save
-        # area at rsp + _XMM_SAVE_OFFSET + index*16, which the epilogue reloads into
-        # the architectural xmm registers. xmm0 is free scratch (its program value
-        # lives in save slot 0 and is reloaded on exit). A load goes through the
-        # scalar move then writes the whole slot via movups, so movsd/movss's
-        # upper-lane zeroing is reproduced in the reloaded register; a store reads
-        # the slot and writes only the scalar to memory.
+    def fp_base_addr_prologue() -> str:
+        # Shared head of every base+disp FP memory handler. Mirrors mem_addr_prologue
+        # (base slot value + sign-extended disp32 folded with MBA -> r10, the
+        # program's real address) and additionally computes the xmm save-slot address
+        # from the "reg" field (xmm index): rsp + _XMM_SAVE_OFFSET + index*16 -> r11.
+        # The epilogue reloads the save slots into the architectural xmm registers.
         off = mem_offsets(False, scheme.field_perm)
-        move = "movsd" if width == 64 else "movss"
-        body = (
+        return (
             f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
-            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + _mba_add_r10_rax(key)
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n"
+            + _mba_add_r10_rax(key)
+            + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
         )
-        body += f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+
+    def fp_mem_handler_body(kind: str, width: int) -> str:
+        # Scalar FP load/store. xmm0 is free scratch (its program value lives in save
+        # slot 0 and is reloaded on exit). A load goes through the scalar move then
+        # writes the whole slot via movups, so movsd/movss's upper-lane zeroing is
+        # reproduced in the reloaded register; a store reads the slot and writes only
+        # the scalar to memory. r10 = program address, r11 = xmm save-slot address.
+        move = "movsd" if width == 64 else "movss"
+        body = fp_base_addr_prologue()
         if kind == "fpload":
             body += f"  {move} xmm0, [r10]\n  movups xmmword ptr [r11], xmm0\n"
         else:
             body += f"  movups xmm0, xmmword ptr [r11]\n  {move} [r10], xmm0\n"
+        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+
+    def fp_arith_mem_handler_body(kind: str, width: int) -> str:
+        # Scalar FP arithmetic with a base+disp memory source. The dst xmm slot loads
+        # via movups (preserving the upper lane), the real scalar {op}{sd,ss} folds
+        # the memory operand into the low lane (scalar mem operands need no
+        # alignment), and the result writes back to the slot.
+        op = kind[len("fparithmem") :]
+        suffix = "sd" if width == 64 else "ss"
+        body = fp_base_addr_prologue()
+        body += f"  movups xmm0, xmmword ptr [r11]\n  {op}{suffix} xmm0, [r10]\n  movups xmmword ptr [r11], xmm0\n"
         return body + "  add rsi, 7\n  jmp vm_dispatch\n"
 
     def fp_arith_handler_body(kind: str, width: int) -> str:
@@ -845,6 +922,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return body + "  add rsi, 3\n  jmp vm_dispatch\n"
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
+        if mnemonic in _FP_ARITH_MEM_KINDS:
+            return fp_arith_mem_handler_body(mnemonic, width)
         if mnemonic in _FP_CONVERT_KINDS:
             return fp_convert_handler_body(mnemonic, width)
         if mnemonic in _FP_ARITH_KINDS:
@@ -972,7 +1051,14 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
 
 def build_vm_blob(
-    ops: list[VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp],
+    ops: list[
+        VirtualizedOp
+        | VirtualizedMemOp
+        | VirtualizedFpMemOp
+        | VirtualizedFpArithOp
+        | VirtualizedFpConvertOp
+        | VirtualizedFpArithMemOp
+    ],
     cave_vaddr: int,
     continuation_vaddr: int,
     scheme: VMScheme,
@@ -991,7 +1077,10 @@ def build_vm_blob(
         logger.warning("keystone unavailable; cannot virtualize")
         return None
 
-    has_fp = any(isinstance(op, (VirtualizedFpMemOp, VirtualizedFpArithOp, VirtualizedFpConvertOp)) for op in ops)
+    has_fp = any(
+        isinstance(op, (VirtualizedFpMemOp, VirtualizedFpArithOp, VirtualizedFpConvertOp, VirtualizedFpArithMemOp))
+        for op in ops
+    )
     asm = _interpreter_asm(continuation_vaddr, scheme, has_fp)
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)

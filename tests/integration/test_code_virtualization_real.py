@@ -18,6 +18,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _decode_run_item
 from r2morph.mutations.code_virtualization_engine import (
+    VirtualizedFpArithMemOp,
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
@@ -697,6 +698,32 @@ def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_pat
     assert stats["functions_virtualized"] >= 1
     assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0
+
+
+def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run loads 20.0 into xmm0 and
+    # adds 22.0 straight from memory (addsd xmm0, [rsp-16]), exercising the engine's
+    # memory-source FP arithmetic handler. The decode check proves addsd-with-memory
+    # lowers to an FP arith-mem item (else left native, still exit 69 - a false
+    # green). The IEEE high byte of 42.0 is 0x45 == 69; sub/mul/div would differ.
+    assert isinstance(_decode_run_item("addsd xmm0, qword ptr [rsp - 16]"), VirtualizedFpArithMemOp)
+    fixture = _DATASET / "elf_vm_fpenginearithmem_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fparithmem"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:

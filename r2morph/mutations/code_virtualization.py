@@ -28,6 +28,7 @@ from typing import Any
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_engine import (
+    VirtualizedFpArithMemOp,
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
@@ -46,6 +47,7 @@ from r2morph.mutations.code_virtualization_region import (
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_arith,
+    _decode_fp_arith_mem,
     _decode_fp_convert,
     _decode_fp_mem,
     _decode_lea,
@@ -72,7 +74,15 @@ _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
 
 def _decode_run_item(
     text: str, insn_addr: int = 0, insn_size: int = 0
-) -> VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp | None:
+) -> (
+    VirtualizedOp
+    | VirtualizedMemOp
+    | VirtualizedFpMemOp
+    | VirtualizedFpArithOp
+    | VirtualizedFpConvertOp
+    | VirtualizedFpArithMemOp
+    | None
+):
     """Decode one instruction into a VM item: a register/immediate op, a memory
     load/store ``mov``, a scalar ``movsd``/``movss`` xmm<->[base+disp], an ``<op>
     reg, [base+disp]``, a ``mov reg, [rip+disp]``, or ``None`` if the VM cannot
@@ -97,6 +107,10 @@ def _decode_run_item(
         # (xmm_index, gp_slot) so the op carries them in a fixed order.
         xmm_index, gp_slot = (a, b) if direction == "cvti2f" else (b, a)
         return VirtualizedFpConvertOp(direction, fp_w, gp_w, xmm_index, gp_slot)
+    fp_arith_mem = _decode_fp_arith_mem(text)
+    if fp_arith_mem is not None:
+        _kind, am_op, am_xmm, am_base, am_disp, am_width = fp_arith_mem
+        return VirtualizedFpArithMemOp(am_op, am_xmm, am_base, am_disp, am_width)
     mem = _decode_memory_mov(text)
     if mem is not None:
         kind, reg_slot, base_slot, disp, width = mem
@@ -154,7 +168,12 @@ class _Run:
         start: int,
         continuation: int,
         ops: list[
-            VirtualizedOp | VirtualizedMemOp | VirtualizedFpMemOp | VirtualizedFpArithOp | VirtualizedFpConvertOp
+            VirtualizedOp
+            | VirtualizedMemOp
+            | VirtualizedFpMemOp
+            | VirtualizedFpArithOp
+            | VirtualizedFpConvertOp
+            | VirtualizedFpArithMemOp
         ],
     ) -> None:
         self.start = start
