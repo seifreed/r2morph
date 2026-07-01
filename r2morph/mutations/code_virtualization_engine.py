@@ -140,7 +140,10 @@ _MEM_OP_KINDS: tuple[str, ...] = (
 # the handler strips the ``rip`` suffix and reuses the load/store body with the
 # rip-relative address prologue. They reuse VirtualizedFpMemOp with base_index = -1
 # and the disp field carrying the absolute target.
-_FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore", "fploadrip", "fpstorerip")
+# The ``*idx`` kinds address an array element ``[base+index*scale+disp]`` (a[i]);
+# the item is a 9-byte opcode+reg+base+index+scale+disp32, and the handler reuses
+# the scaled-index address prologue.
+_FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore", "fploadrip", "fpstorerip", "fploadidx", "fpstoreidx")
 # Scalar-FP register-register arithmetic: addsd/subsd/mulsd/divsd (+ss). Each op
 # is its own kind so the dispatcher selects the handler without inspecting the
 # operands; the item carries two raw xmm indices (dst, src). ``fp{op}`` keys map
@@ -393,14 +396,19 @@ class VirtualizedFpMemOp:
     register on exit.
     """
 
-    __slots__ = ("kind", "xmm_index", "base_index", "disp", "width")
+    __slots__ = ("kind", "xmm_index", "base_index", "disp", "width", "index_index", "scale")
 
-    def __init__(self, kind: str, xmm_index: int, base_index: int, disp: int, width: int) -> None:
+    def __init__(
+        self, kind: str, xmm_index: int, base_index: int, disp: int, width: int, index_index: int = 0, scale: int = 0
+    ) -> None:
         self.kind = kind
         self.xmm_index = xmm_index
         self.base_index = base_index
         self.disp = disp
         self.width = width
+        # Only used by the ``*idx`` kinds: address = base + index*(2**scale) + disp.
+        self.index_index = index_index
+        self.scale = scale
 
 
 class VirtualizedFpArithOp:
@@ -684,7 +692,16 @@ def encode_bytecode(
             # signed distance from the bytecode base (out-of-range -> struct.error ->
             # the caller leaves the run native), exactly like a GP load/storerip.
             position = emit_opcode(pick(scheme.dup[(op.kind, False, op.width)]))
-            if op.kind.endswith("rip"):
+            if op.kind.endswith("idx"):
+                field_bytes = {
+                    "reg": bytes([op.xmm_index]),
+                    "base": bytes([slot_of[op.base_index]]),
+                    "index": bytes([slot_of[op.index_index]]),
+                    "shift": bytes([op.scale]),
+                    "disp": struct.pack("<i", op.disp),
+                }
+                emit_fields(position, idx_permuted_fields(False, fp), field_bytes)
+            elif op.kind.endswith("rip"):
                 field_bytes = {
                     "reg": bytes([op.xmm_index]),
                     "disp": struct.pack("<i", op.disp - bytecode_base),
@@ -886,15 +903,23 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
         )
 
+    def fp_idx_addr_prologue() -> str:
+        # Scaled-index head: reuses the GP indexed prologue (base + index*2**scale +
+        # disp -> r10, xmm index preserved in r8) and adds the xmm save-slot address
+        # -> r11, matching the base and rip prologues' register contract.
+        return mem_idx_prologue() + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+
     def fp_mem_handler_body(kind: str, width: int) -> str:
-        # Scalar FP load/store, base+disp (7-byte item) or rip-relative (6-byte).
-        # xmm0 is free scratch (its program value lives in save slot 0 and is
-        # reloaded on exit). A load goes through the scalar move then writes the whole
-        # slot via movups, so movsd/movss's upper-lane zeroing is reproduced in the
-        # reloaded register; a store reads the slot and writes only the scalar to
-        # memory. r10 = program address, r11 = xmm save-slot address.
+        # Scalar FP load/store: base+disp (7-byte item), rip-relative (6-byte), or
+        # scaled-index (9-byte). xmm0 is free scratch (its program value lives in
+        # save slot 0 and is reloaded on exit). A load goes through the scalar move
+        # then writes the whole slot via movups, so movsd/movss's upper-lane zeroing
+        # is reproduced in the reloaded register; a store reads the slot and writes
+        # only the scalar to memory. r10 = program address, r11 = xmm save-slot addr.
         move = "movsd" if width == 64 else "movss"
-        if kind.endswith("rip"):
+        if kind.endswith("idx"):
+            kind, body, advance = kind[: -len("idx")], fp_idx_addr_prologue(), 9
+        elif kind.endswith("rip"):
             kind, body, advance = kind[: -len("rip")], fp_riprel_addr_prologue(), 6
         else:
             body, advance = fp_base_addr_prologue(), 7

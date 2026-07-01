@@ -783,6 +783,33 @@ def test_engine_fp_arithmetic_rip_relative_fallback_preserves_exit_code(tmp_path
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
+def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run builds a two-element double
+    # array on the stack and accesses it with movsd [rsp+rcx*8-16] (the a[i] form),
+    # exercising the engine's scaled-index FP load/store handlers. The decode check
+    # proves the indexed movsd lowers to an *idx FP item (else left native, still
+    # exit 69 - a false green). The IEEE high byte of 42.0 is 0x45 == 69.
+    idx_item = _decode_run_item("movsd xmm0, qword ptr [rsp + rcx*8 - 16]")
+    assert isinstance(idx_item, VirtualizedFpMemOp) and idx_item.kind.endswith("idx")
+    fixture = _DATASET / "elf_vm_fpengineidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fpidx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+
+
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # Engine fallback (the function has a call) whose run uses lea reg, [base+disp];
     # the lea handler must compute the address into the destination (no dereference)
