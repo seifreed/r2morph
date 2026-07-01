@@ -155,11 +155,15 @@ _FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
 _FP_CONVERT_KINDS: tuple[str, ...] = tuple(
     f"{direction}{gp_width}" for direction in ("cvti2f", "cvtf2i") for gp_width in (64, 32)
 )
-# Scalar-FP arithmetic with a ``[base+disp]`` memory source (``addsd xmm, [base+
-# disp]``). Per op (fparithmem{add,sub,mul,div}); the item is the same 7-byte
-# reg/base/disp layout as an FP load/store, and the handler reuses the base+disp
-# address prologue, then issues the scalar op with the memory source directly.
-_FP_ARITH_MEM_KINDS: tuple[str, ...] = tuple(f"fparithmem{op}" for op in _FP_ARITH_OPS)
+# Scalar-FP arithmetic with a memory source (``addsd xmm, [base+disp]`` and the
+# rip-relative ``addsd xmm, [rip+const]`` constant-pool form). Per op
+# (fparithmem{add,sub,mul,div}), each with a ``*rip`` counterpart; the base+disp
+# form is a 7-byte reg/base/disp item, the rip form a 6-byte reg/offset item. The
+# handler reuses the load/store address prologues, then issues the scalar op with
+# the memory source directly.
+_FP_ARITH_MEM_KINDS: tuple[str, ...] = tuple(f"fparithmem{op}" for op in _FP_ARITH_OPS) + tuple(
+    f"fparithmem{op}rip" for op in _FP_ARITH_OPS
+)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     tuple(
         (mnemonic, is_immediate, width)
@@ -639,15 +643,25 @@ def encode_bytecode(
 
     for op in ops:
         if isinstance(op, VirtualizedFpArithMemOp):
-            # Same 7-byte reg/base/disp layout as an FP load/store; ``reg`` is the
-            # xmm operand (raw), the op selects the kind/handler.
-            position = emit_opcode(pick(scheme.dup[(f"fparithmem{op.op}", False, op.width)]))
-            field_bytes = {
-                "reg": bytes([op.xmm_index]),
-                "base": bytes([slot_of[op.base_index]]),
-                "disp": struct.pack("<i", op.disp),
-            }
-            emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
+            # ``reg`` is the xmm operand (raw), the op selects the kind/handler. The
+            # base+disp form is a 7-byte reg/base/disp item; the rip form
+            # (base_index < 0) is a 6-byte reg/offset item whose offset is the
+            # constant's signed distance from the bytecode base.
+            if op.base_index < 0:
+                position = emit_opcode(pick(scheme.dup[(f"fparithmem{op.op}rip", False, op.width)]))
+                field_bytes = {
+                    "reg": bytes([op.xmm_index]),
+                    "disp": struct.pack("<i", op.disp - bytecode_base),
+                }
+                emit_fields(position, mem_permuted_fields(True, fp), field_bytes)
+            else:
+                position = emit_opcode(pick(scheme.dup[(f"fparithmem{op.op}", False, op.width)]))
+                field_bytes = {
+                    "reg": bytes([op.xmm_index]),
+                    "base": bytes([slot_of[op.base_index]]),
+                    "disp": struct.pack("<i", op.disp),
+                }
+                emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
             continue
         if isinstance(op, VirtualizedFpConvertOp):
             # xmm index (raw) + GP slot (permuted); the kind carries direction and
@@ -891,15 +905,19 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
     def fp_arith_mem_handler_body(kind: str, width: int) -> str:
-        # Scalar FP arithmetic with a base+disp memory source. The dst xmm slot loads
-        # via movups (preserving the upper lane), the real scalar {op}{sd,ss} folds
-        # the memory operand into the low lane (scalar mem operands need no
-        # alignment), and the result writes back to the slot.
-        op = kind[len("fparithmem") :]
+        # Scalar FP arithmetic with a memory source, base+disp (7-byte item) or
+        # rip-relative (6-byte). The dst xmm slot loads via movups (preserving the
+        # upper lane), the real scalar {op}{sd,ss} folds the memory operand into the
+        # low lane (scalar mem operands need no alignment), and the result writes
+        # back to the slot.
         suffix = "sd" if width == 64 else "ss"
-        body = fp_base_addr_prologue()
+        if kind.endswith("rip"):
+            kind, body, advance = kind[: -len("rip")], fp_riprel_addr_prologue(), 6
+        else:
+            body, advance = fp_base_addr_prologue(), 7
+        op = kind[len("fparithmem") :]
         body += f"  movups xmm0, xmmword ptr [r11]\n  {op}{suffix} xmm0, [r10]\n  movups xmmword ptr [r11], xmm0\n"
-        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+        return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
     def fp_arith_handler_body(kind: str, width: int) -> str:
         # Scalar reg-reg FP arithmetic. The item carries two raw xmm indices (dst,

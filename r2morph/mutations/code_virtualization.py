@@ -48,6 +48,7 @@ from r2morph.mutations.code_virtualization_region_codegen import build_region_bl
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_arith,
     _decode_fp_arith_mem,
+    _decode_fp_arith_riprel,
     _decode_fp_convert,
     _decode_fp_mem,
     _decode_fp_riprel,
@@ -118,6 +119,11 @@ def _decode_run_item(
     if fp_arith_mem is not None:
         _kind, am_op, am_xmm, am_base, am_disp, am_width = fp_arith_mem
         return VirtualizedFpArithMemOp(am_op, am_xmm, am_base, am_disp, am_width)
+    fp_arith_rip = _decode_fp_arith_riprel(text, insn_addr, insn_size)
+    if fp_arith_rip is not None:
+        # rip-relative constant-pool source: base_index -1, disp carries the target.
+        _kind, ar_op, ar_xmm, ar_target, ar_width = fp_arith_rip
+        return VirtualizedFpArithMemOp(ar_op, ar_xmm, -1, ar_target, ar_width)
     mem = _decode_memory_mov(text)
     if mem is not None:
         kind, reg_slot, base_slot, disp, width = mem
