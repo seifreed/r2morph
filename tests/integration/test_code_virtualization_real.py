@@ -22,6 +22,8 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
+    VirtualizedFpPackedMemOp,
+    VirtualizedFpPackedOp,
     decode_instruction,
 )
 
@@ -824,6 +826,36 @@ def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path
         pytest.skip(f"fixture missing: {fixture}")
 
     mutated = tmp_path / "mutated_fparithidx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+
+
+def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run builds two __m128d vectors
+    # on the stack, loads them with movups (fppload), adds all lanes with addpd
+    # (fppacked), and stores with movups (fppstore), exercising the engine's packed
+    # 128-bit SIMD handlers. It reads out the HIGH lane (5.0 + 37.0 = 42.0): a
+    # correct packed add gives 42.0 -> exit 69, while a scalar low-lane-only add
+    # would leave 5.0 -> 20, so the exit code discriminates packed from scalar. The
+    # decode checks prove addpd/movups lower to packed FP items (not left native).
+    assert isinstance(_decode_run_item("addpd xmm0, xmm1"), VirtualizedFpPackedOp)
+    packed_mem = _decode_run_item("movups xmm0, xmmword ptr [rsp - 32]")
+    assert isinstance(packed_mem, VirtualizedFpPackedMemOp) and packed_mem.kind == "fppload"
+    fixture = _DATASET / "elf_vm_fpenginepacked_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fppacked"
     shutil.copy(fixture, mutated)
     binary = Binary(str(mutated), writable=True)
     binary.open()

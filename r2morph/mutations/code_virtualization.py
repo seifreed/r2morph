@@ -32,6 +32,8 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpArithOp,
     VirtualizedFpConvertOp,
     VirtualizedFpMemOp,
+    VirtualizedFpPackedMemOp,
+    VirtualizedFpPackedOp,
     VirtualizedMemOp,
     VirtualizedOp,
     build_vm_blob,
@@ -53,6 +55,8 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_convert,
     _decode_fp_indexed,
     _decode_fp_mem,
+    _decode_fp_packed_arith,
+    _decode_fp_packed_mem,
     _decode_fp_riprel,
     _decode_lea,
     _decode_lea_indexed,
@@ -85,6 +89,8 @@ def _decode_run_item(
     | VirtualizedFpArithOp
     | VirtualizedFpConvertOp
     | VirtualizedFpArithMemOp
+    | VirtualizedFpPackedOp
+    | VirtualizedFpPackedMemOp
     | None
 ):
     """Decode one instruction into a VM item: a register/immediate op, a memory
@@ -136,6 +142,16 @@ def _decode_run_item(
     if fp_arith_idx is not None:
         _kind, ai_op, ai_xmm, ai_base, ai_index, ai_shift, ai_disp, ai_width = fp_arith_idx
         return VirtualizedFpArithMemOp(ai_op, ai_xmm, ai_base, ai_disp, ai_width, ai_index, ai_shift)
+    fp_packed = _decode_fp_packed_arith(text)
+    if fp_packed is not None:
+        _kind, pk_mnemonic, pk_dst, pk_src = fp_packed
+        return VirtualizedFpPackedOp(pk_mnemonic, pk_dst, pk_src)
+    # Packed 128-bit load/store is tried before the GP mov decoders: movaps/movups
+    # share the "mov" prefix but move the full 128 bits through the xmm save area.
+    fp_packed_mem = _decode_fp_packed_mem(text)
+    if fp_packed_mem is not None:
+        pm_kind, pm_xmm, pm_base, pm_disp = fp_packed_mem
+        return VirtualizedFpPackedMemOp(pm_kind, pm_xmm, pm_base, pm_disp)
     mem = _decode_memory_mov(text)
     if mem is not None:
         kind, reg_slot, base_slot, disp, width = mem
@@ -199,6 +215,8 @@ class _Run:
             | VirtualizedFpArithOp
             | VirtualizedFpConvertOp
             | VirtualizedFpArithMemOp
+            | VirtualizedFpPackedOp
+            | VirtualizedFpPackedMemOp
         ],
     ) -> None:
         self.start = start

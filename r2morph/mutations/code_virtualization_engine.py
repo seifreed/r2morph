@@ -169,6 +169,23 @@ _FP_ARITH_MEM_KINDS: tuple[str, ...] = (
     + tuple(f"fparithmem{op}rip" for op in _FP_ARITH_OPS)
     + tuple(f"fparithmem{op}idx" for op in _FP_ARITH_OPS)
 )
+# Packed 128-bit SIMD: register-register arithmetic (addpd/addps + sub/mul/div, all
+# lanes) and 128-bit ``[base+disp]`` load/store (movaps/movups/movapd/movupd). The
+# op-key width is a nominal 128 (the ops are lane-agnostic 128-bit); the arith kind
+# is the mnemonic itself, so the handler emits it directly. xmm slots are already
+# 128-bit, so there is no frame change and the moves are always movups.
+_FP_PACKED_WIDTH = 128
+_FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
+    "addpd",
+    "addps",
+    "subpd",
+    "subps",
+    "mulpd",
+    "mulps",
+    "divpd",
+    "divps",
+)
+_FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     tuple(
         (mnemonic, is_immediate, width)
@@ -181,6 +198,7 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_CONVERT_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_MEM_KINDS)
+    + tuple((kind, False, _FP_PACKED_WIDTH) for kind in _FP_PACKED_ARITH_KINDS + _FP_PACKED_MEM_KINDS)
 )
 _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
@@ -476,6 +494,39 @@ class VirtualizedFpArithMemOp:
         self.scale = scale
 
 
+class VirtualizedFpPackedOp:
+    """A packed 128-bit reg-reg arithmetic op: ``{add,sub,mul,div}{pd,ps} xmm, xmm``.
+
+    ``mnemonic`` is the full packed instruction (e.g. ``addpd``); it operates on all
+    lanes of the 128-bit register, so unlike the scalar form no upper lane is
+    preserved. ``dst_index``/``src_index`` are 0-15 xmm register numbers.
+    """
+
+    __slots__ = ("mnemonic", "dst_index", "src_index")
+
+    def __init__(self, mnemonic: str, dst_index: int, src_index: int) -> None:
+        self.mnemonic = mnemonic
+        self.dst_index = dst_index
+        self.src_index = src_index
+
+
+class VirtualizedFpPackedMemOp:
+    """A packed 128-bit move between an xmm register and ``[base+disp]``.
+
+    ``kind`` is ``"fppload"`` (xmm <- [base+disp]) or ``"fppstore"``; the full 128
+    bits move via movups (no alignment assumption). ``base_index`` is the GP base
+    slot read at runtime for the program's real address.
+    """
+
+    __slots__ = ("kind", "xmm_index", "base_index", "disp")
+
+    def __init__(self, kind: str, xmm_index: int, base_index: int, disp: int) -> None:
+        self.kind = kind
+        self.xmm_index = xmm_index
+        self.base_index = base_index
+        self.disp = disp
+
+
 # Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
 # slot written with its own value, no flags), so it is semantics-preserving for
 # any register, yet it executes a real handler and pads the bytecode with
@@ -493,6 +544,8 @@ def inject_junk_ops(
         | VirtualizedFpArithOp
         | VirtualizedFpConvertOp
         | VirtualizedFpArithMemOp
+        | VirtualizedFpPackedOp
+        | VirtualizedFpPackedMemOp
     ],
     rng: random.Random,
 ) -> list[
@@ -502,6 +555,8 @@ def inject_junk_ops(
     | VirtualizedFpArithOp
     | VirtualizedFpConvertOp
     | VirtualizedFpArithMemOp
+    | VirtualizedFpPackedOp
+    | VirtualizedFpPackedMemOp
 ]:
     """Sprinkle identity ``mov reg, reg`` ops through a straight-line run."""
     junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
@@ -512,6 +567,8 @@ def inject_junk_ops(
         | VirtualizedFpArithOp
         | VirtualizedFpConvertOp
         | VirtualizedFpArithMemOp
+        | VirtualizedFpPackedOp
+        | VirtualizedFpPackedMemOp
     ] = []
     for op in ops:
         while rng.random() < _JUNK_OP_PROBABILITY:
@@ -621,6 +678,8 @@ def encode_bytecode(
         | VirtualizedFpArithOp
         | VirtualizedFpConvertOp
         | VirtualizedFpArithMemOp
+        | VirtualizedFpPackedOp
+        | VirtualizedFpPackedMemOp
     ],
     scheme: VMScheme,
     checksum: int = 0,
@@ -659,6 +718,23 @@ def encode_bytecode(
             plain.extend(byte ^ position for byte in field_bytes[name])
 
     for op in ops:
+        if isinstance(op, VirtualizedFpPackedOp):
+            # Two raw xmm indices (dst, src); 3-byte item. The mnemonic is the kind.
+            position = emit_opcode(pick(scheme.dup[(op.mnemonic, False, _FP_PACKED_WIDTH)]))
+            field_bytes = {"dst": bytes([op.dst_index]), "src": bytes([op.src_index])}
+            emit_fields(position, pair_permuted_fields("dst", "src", fp), field_bytes)
+            continue
+        if isinstance(op, VirtualizedFpPackedMemOp):
+            # 7-byte reg/base/disp item; ``reg`` is the xmm operand (raw). Always a
+            # full 128-bit move.
+            position = emit_opcode(pick(scheme.dup[(op.kind, False, _FP_PACKED_WIDTH)]))
+            field_bytes = {
+                "reg": bytes([op.xmm_index]),
+                "base": bytes([slot_of[op.base_index]]),
+                "disp": struct.pack("<i", op.disp),
+            }
+            emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
+            continue
         if isinstance(op, VirtualizedFpArithMemOp):
             # ``reg`` is the xmm operand (raw), the op selects the kind/handler. The
             # scaled-index form (index_index >= 0) is a 9-byte reg/base/index/scale/
@@ -1018,7 +1094,36 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             body += "  mov qword ptr [rsp + r9*8], rax\n"
         return body + "  add rsi, 3\n  jmp vm_dispatch\n"
 
+    def fp_packed_arith_handler_body(mnemonic: str) -> str:
+        # Packed reg-reg arithmetic. Both operand slots load via movups (full 128),
+        # the real packed op computes all lanes (no upper-lane preservation, unlike
+        # the scalar form), and the result stores back to the dst slot.
+        off = pair_offsets("dst", "src", scheme.field_perm)
+        return (
+            f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+            f"  shl r8, 4\n  lea r10, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+            f"  shl r9, 4\n  lea r11, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+            "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
+            f"  {mnemonic} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
+            "  add rsi, 3\n  jmp vm_dispatch\n"
+        )
+
+    def fp_packed_mem_handler_body(kind: str) -> str:
+        # Packed 128-bit load/store, base+disp. The whole 16-byte slot moves via
+        # movups (no alignment assumption). r10 = program address, r11 = xmm slot.
+        body = fp_base_addr_prologue()
+        if kind == "fppload":
+            body += "  movups xmm0, xmmword ptr [r10]\n  movups xmmword ptr [r11], xmm0\n"
+        else:
+            body += "  movups xmm0, xmmword ptr [r11]\n  movups xmmword ptr [r10], xmm0\n"
+        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
+        if mnemonic in _FP_PACKED_ARITH_KINDS:
+            return fp_packed_arith_handler_body(mnemonic)
+        if mnemonic in _FP_PACKED_MEM_KINDS:
+            return fp_packed_mem_handler_body(mnemonic)
         if mnemonic in _FP_ARITH_MEM_KINDS:
             return fp_arith_mem_handler_body(mnemonic, width)
         if mnemonic in _FP_CONVERT_KINDS:
@@ -1155,6 +1260,8 @@ def build_vm_blob(
         | VirtualizedFpArithOp
         | VirtualizedFpConvertOp
         | VirtualizedFpArithMemOp
+        | VirtualizedFpPackedOp
+        | VirtualizedFpPackedMemOp
     ],
     cave_vaddr: int,
     continuation_vaddr: int,
@@ -1175,7 +1282,17 @@ def build_vm_blob(
         return None
 
     has_fp = any(
-        isinstance(op, (VirtualizedFpMemOp, VirtualizedFpArithOp, VirtualizedFpConvertOp, VirtualizedFpArithMemOp))
+        isinstance(
+            op,
+            (
+                VirtualizedFpMemOp,
+                VirtualizedFpArithOp,
+                VirtualizedFpConvertOp,
+                VirtualizedFpArithMemOp,
+                VirtualizedFpPackedOp,
+                VirtualizedFpPackedMemOp,
+            ),
+        )
         for op in ops
     )
     asm = _interpreter_asm(continuation_vaddr, scheme, has_fp)
