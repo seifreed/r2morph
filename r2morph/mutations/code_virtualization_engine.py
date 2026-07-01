@@ -164,8 +164,10 @@ _FP_CONVERT_KINDS: tuple[str, ...] = tuple(
 # form is a 7-byte reg/base/disp item, the rip form a 6-byte reg/offset item. The
 # handler reuses the load/store address prologues, then issues the scalar op with
 # the memory source directly.
-_FP_ARITH_MEM_KINDS: tuple[str, ...] = tuple(f"fparithmem{op}" for op in _FP_ARITH_OPS) + tuple(
-    f"fparithmem{op}rip" for op in _FP_ARITH_OPS
+_FP_ARITH_MEM_KINDS: tuple[str, ...] = (
+    tuple(f"fparithmem{op}" for op in _FP_ARITH_OPS)
+    + tuple(f"fparithmem{op}rip" for op in _FP_ARITH_OPS)
+    + tuple(f"fparithmem{op}idx" for op in _FP_ARITH_OPS)
 )
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     tuple(
@@ -457,14 +459,21 @@ class VirtualizedFpArithMemOp:
     ``width`` is 64 (sd) or 32 (ss). The xmm operand lives in the frame's save area.
     """
 
-    __slots__ = ("op", "xmm_index", "base_index", "disp", "width")
+    __slots__ = ("op", "xmm_index", "base_index", "disp", "width", "index_index", "scale")
 
-    def __init__(self, op: str, xmm_index: int, base_index: int, disp: int, width: int) -> None:
+    def __init__(
+        self, op: str, xmm_index: int, base_index: int, disp: int, width: int, index_index: int = -1, scale: int = 0
+    ) -> None:
         self.op = op
         self.xmm_index = xmm_index
+        # base_index < 0 marks the rip-relative form (disp carries the absolute
+        # target); index_index >= 0 marks the scaled-index form (address =
+        # base + index*(2**scale) + disp).
         self.base_index = base_index
         self.disp = disp
         self.width = width
+        self.index_index = index_index
+        self.scale = scale
 
 
 # Mean junk ops inserted per real op. ``mov reg, reg`` is a perfect identity (a
@@ -652,10 +661,21 @@ def encode_bytecode(
     for op in ops:
         if isinstance(op, VirtualizedFpArithMemOp):
             # ``reg`` is the xmm operand (raw), the op selects the kind/handler. The
-            # base+disp form is a 7-byte reg/base/disp item; the rip form
-            # (base_index < 0) is a 6-byte reg/offset item whose offset is the
-            # constant's signed distance from the bytecode base.
-            if op.base_index < 0:
+            # scaled-index form (index_index >= 0) is a 9-byte reg/base/index/scale/
+            # disp item; the rip form (base_index < 0) is a 6-byte reg/offset item
+            # whose offset is the constant's signed distance from the bytecode base;
+            # the base+disp form is a 7-byte reg/base/disp item.
+            if op.index_index >= 0:
+                position = emit_opcode(pick(scheme.dup[(f"fparithmem{op.op}idx", False, op.width)]))
+                field_bytes = {
+                    "reg": bytes([op.xmm_index]),
+                    "base": bytes([slot_of[op.base_index]]),
+                    "index": bytes([slot_of[op.index_index]]),
+                    "shift": bytes([op.scale]),
+                    "disp": struct.pack("<i", op.disp),
+                }
+                emit_fields(position, idx_permuted_fields(False, fp), field_bytes)
+            elif op.base_index < 0:
                 position = emit_opcode(pick(scheme.dup[(f"fparithmem{op.op}rip", False, op.width)]))
                 field_bytes = {
                     "reg": bytes([op.xmm_index]),
@@ -936,7 +956,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         # low lane (scalar mem operands need no alignment), and the result writes
         # back to the slot.
         suffix = "sd" if width == 64 else "ss"
-        if kind.endswith("rip"):
+        if kind.endswith("idx"):
+            kind, body, advance = kind[: -len("idx")], fp_idx_addr_prologue(), 9
+        elif kind.endswith("rip"):
             kind, body, advance = kind[: -len("rip")], fp_riprel_addr_prologue(), 6
         else:
             body, advance = fp_base_addr_prologue(), 7

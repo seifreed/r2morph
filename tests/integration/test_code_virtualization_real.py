@@ -810,6 +810,34 @@ def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
+def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run builds a two-element double
+    # array on the stack, loads a[0] and adds a[1] straight from the array via
+    # addsd xmm0, [rsp+rcx*8-16] (the sum += a[i] form), exercising the engine's
+    # scaled-index FP arithmetic handler. The decode check proves the indexed addsd
+    # lowers to an indexed FP arith-mem item (index_index >= 0); else left native, it
+    # would still exit 69 (the IEEE high byte of 42.0). sub/mul/div would differ.
+    idx_arith = _decode_run_item("addsd xmm0, qword ptr [rsp + rcx*8 - 16]")
+    assert isinstance(idx_arith, VirtualizedFpArithMemOp) and idx_arith.index_index >= 0
+    fixture = _DATASET / "elf_vm_fpenginearithidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fparithidx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+
+
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # Engine fallback (the function has a call) whose run uses lea reg, [base+disp];
     # the lea handler must compute the address into the destination (no dereference)
