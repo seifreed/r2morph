@@ -10,6 +10,7 @@ scheme/interpreter builders (no mocks, no binary).
 from __future__ import annotations
 
 import random
+import re
 from typing import Any
 
 from r2morph.mutations.code_virtualization_region import (
@@ -62,7 +63,10 @@ def test_handlers_position_unmask_their_slot_operands() -> None:
     region = _tiny_region()
     scheme = build_region_scheme(region, random.Random(0))
     asm = _interpreter_asm(region, scheme)
-    assert "xor r8b, r13b" in asm
+    # The scratch register holding the slot byte is renamed per handler, so match
+    # any numbered scratch byte (the dispatch uses ``al`` for the opcode, so this
+    # only matches a handler's operand un-mask, not the dispatch decode).
+    assert re.search(r"xor r\d+b, r13b", asm)
 
 
 def test_handlers_position_unmask_their_immediates() -> None:
@@ -72,4 +76,7 @@ def test_handlers_position_unmask_their_immediates() -> None:
     region = _tiny_region()
     scheme = build_region_scheme(region, random.Random(0))
     asm = _interpreter_asm(region, scheme)
-    assert f"imul r11d, r11d, {hex(_DWORD_BROADCAST)}" in asm
+    # The immediate-decrypt register is renamed per handler; both operands are the
+    # same scratch register whatever it renames to, so match the broadcast multiply
+    # by an identical register pair.
+    assert re.search(rf"imul (\w+), \1, {re.escape(hex(_DWORD_BROADCAST))}", asm)

@@ -52,3 +52,29 @@ def rename_body(body: str, rng: random.Random) -> str:
         _POOL[source][width]: _POOL[target][width] for source, target in enumerate(permutation) for width in range(4)
     }
     return _TOKEN.sub(lambda match: mapping[match.group(0)], body)
+
+
+# A control transfer inside a handler body. The engine's bodies are all pure-VM-
+# internal, but the region VM has handlers that bridge to native code (a call's
+# ``jmp r10`` after loading ABI argument registers, an exit's ``jmp 0xNNNN`` after
+# restoring every GP register, a nested-layer transfer): there a pool register may
+# hold a live program value, not dead scratch, so renaming it would miscompile.
+_TRANSFER = re.compile(r"^\s*(jmp|call|syscall|ret)\b(.*)$", re.MULTILINE)
+
+
+def rename_local_body(body: str, rng: random.Random) -> str:
+    """Rename a handler body only if it never transfers control out of the VM.
+
+    A body is safe to rename exactly when its every control transfer is the shared
+    ``jmp vm_dispatch`` back-edge: then the scratch pool is pure per-handler dead
+    scratch (:func:`rename_body`'s precondition). If the body bridges to native code
+    or another layer - any ``jmp``/``call`` to a register, absolute address, or
+    foreign label, or a ``syscall``/``ret`` - a pool register may carry a live
+    program/ABI value there, so the body is returned unchanged. This fails safe: a
+    misjudged body loses obfuscation, it never miscompiles.
+    """
+    for match in _TRANSFER.finditer(body):
+        mnemonic, operand = match.group(1), match.group(2).strip()
+        if mnemonic in ("syscall", "ret") or operand != "vm_dispatch":
+            return body
+    return rename_body(body, rng)

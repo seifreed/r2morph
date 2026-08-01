@@ -24,6 +24,7 @@ from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
     RSP_INDEX,
 )
+from r2morph.mutations.code_virtualization_engine_rename import rename_local_body
 from r2morph.mutations.code_virtualization_region_codegen_encode import (
     _item_size as _item_size,
 )
@@ -372,6 +373,7 @@ def handler_instances_asm(
     slot: tuple[int, ...],
     extra: dict[str, str] | None = None,
     field_perm: int = 0,
+    body_seed: int = 0,
 ) -> str:
     """Emit the ``H_{index}`` handler instances for one interpreter (or layer).
 
@@ -386,6 +388,10 @@ def handler_instances_asm(
         handler_key = index_to_key[index]
         # Reachable head junk makes duplicate handlers diverge in executed code.
         lines.append(f"H_{index}:\n{_live_junk_asm(junk_rng, index)}")
+        # Everything the dispatch chain below appends for this handler is its body;
+        # capture that slice so a per-instance scratch-register rename can be applied
+        # to it (only when it is pure-VM-internal - see rename_local_body).
+        body_start = len(lines)
         if handler_key in extra:
             lines.append(extra[handler_key])
         elif handler_key == "call":
@@ -480,6 +486,9 @@ def handler_instances_asm(
         elif handler_key.startswith("exit_"):
             exit_addr = int(handler_key.split("_", 1)[1])
             lines.append(f"{reload_seq}  add rsp, {frame_size}\n  jmp {hex(exit_addr)}\n")
+        body = rename_local_body("".join(lines[body_start:]), random.Random(body_seed ^ index))
+        del lines[body_start:]
+        lines.append(body)
         # Junk after the handler's terminating jump - unreachable, never runs.
         lines.append(_junk_asm(junk_rng))
     return "".join(lines)
@@ -599,6 +608,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             frame_size=_FRAME_SIZE,
             slot=slot,
             field_perm=scheme.field_perm,
+            body_seed=scheme.body_seed,
         )
     )
 

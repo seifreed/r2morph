@@ -15,7 +15,7 @@ import re
 
 import pytest
 
-from r2morph.mutations.code_virtualization_engine_rename import _POOL, rename_body
+from r2morph.mutations.code_virtualization_engine_rename import _POOL, rename_body, rename_local_body
 
 _POOL_SPELLINGS = frozenset(spelling for register in _POOL for spelling in register)
 # Every pool spelling -> its logical register index (0..4), for bijection checks.
@@ -91,3 +91,35 @@ def test_renamed_body_computes_the_same_result() -> None:
         mu.emu_start(0x1000, 0x1000 + len(code))
         results.append(int.from_bytes(mu.mem_read(0x8800, 8), "little"))
     assert results[0] == results[1] == (0x1111 + 0x2222) ^ 0x2222
+
+
+def test_rename_local_body_renames_a_pure_vm_internal_body() -> None:
+    # A body whose only control transfer is the shared vm_dispatch back-edge is
+    # pure scratch and must be renamed.
+    body = "  mov rax, qword ptr [rsp + r8*8]\n  add r10, rax\n  add rsi, 3\n  jmp vm_dispatch\n"
+    assert rename_local_body(body, random.Random(5)) != body
+
+
+def test_rename_local_body_leaves_a_native_call_bridge_untouched() -> None:
+    # A call bridge loads SysV argument registers (rax/r8/r9 among them) into the
+    # real registers and jumps to native code, so those pool registers are live
+    # there - the body must be returned unchanged.
+    body = (
+        "  mov rdi, qword ptr [rsp+8]\n  mov r8, qword ptr [rsp+16]\n"
+        "  mov r9, qword ptr [rsp+24]\n  mov rax, qword ptr [rsp+32]\n"
+        "  lea r11, [rip+call_resume_3]\n  push r11\n  jmp r10\n"
+        "call_resume_3:\n  add rsi, 5\n  jmp vm_dispatch\n"
+    )
+    assert rename_local_body(body, random.Random(5)) == body
+
+
+def test_rename_local_body_leaves_an_exit_body_untouched() -> None:
+    # The exit body restores every GP register for the native continuation and
+    # jumps to an absolute address, so no pool register is dead scratch there.
+    body = "  mov rax, qword ptr [rsp+0]\n  mov r8, qword ptr [rsp+8]\n  add rsp, 0x290\n  jmp 0x401234\n"
+    assert rename_local_body(body, random.Random(5)) == body
+
+
+def test_rename_local_body_leaves_a_syscall_body_untouched() -> None:
+    body = "  mov rax, qword ptr [rsp+0]\n  mov r8, qword ptr [rsp+8]\n  syscall\n"
+    assert rename_local_body(body, random.Random(5)) == body

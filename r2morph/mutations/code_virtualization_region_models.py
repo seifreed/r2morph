@@ -34,7 +34,7 @@ class RegionScheme:
     slot indices in the bytecode reveal no register.
     """
 
-    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key", "field_perm")
+    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key", "field_perm", "body_seed")
 
     def __init__(
         self,
@@ -44,6 +44,7 @@ class RegionScheme:
         slot_perm: tuple[int, ...],
         table_key: int,
         field_perm: int = 0,
+        body_seed: int = 0,
     ) -> None:
         self.dup = dup
         self.xor_key = xor_key
@@ -57,6 +58,11 @@ class RegionScheme:
         # lays operands out in its own order and a devirtualizer's field-offset
         # model does not transfer across samples. 0 is the identity layout.
         self.field_perm = field_perm
+        # Seeds the per-handler scratch-register bijection: each pure-VM-internal
+        # handler instance derives its own permutation of the scratch pool from
+        # this, so duplicate handlers share no register-allocation fingerprint.
+        # 0 leaves the bodies in their canonical register spelling.
+        self.body_seed = body_seed
 
 
 class Region:

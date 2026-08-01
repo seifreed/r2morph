@@ -629,11 +629,11 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
         dup[key] = tuple(indices[cursor : cursor + count])
         cursor += count
     slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
-    return RegionScheme(
-        dup,
-        rng.randrange(1, 256),
-        rng.randrange(1 << 31),
-        slot_perm,
-        rng.randrange(1, 1 << 32),
-        rng.randrange(1, 1 << 31),
-    )
+    xor_key = rng.randrange(1, 256)
+    junk_seed = rng.randrange(1 << 31)
+    table_key = rng.randrange(1, 1 << 32)
+    field_perm = rng.randrange(1, 1 << 31)
+    # Drawn last so adding the per-handler rename does not shift any earlier field's
+    # value for a given seed; the other fields stay byte-for-byte stable.
+    body_seed = rng.randrange(1 << 31)
+    return RegionScheme(dup, xor_key, junk_seed, slot_perm, table_key, field_perm, body_seed)
