@@ -331,6 +331,39 @@ class VMScheme:
         self.field_perm = field_perm
 
 
+# The opcode is a single byte and the dispatch bounds guard compares ``al``
+# against ``total``, so the assigned opcode indices plus at least one exit-marker
+# byte (any value ``>= total``) must all fit in ``[0, 256)``. Reserve a small band
+# above ``total`` so the exit marker itself stays varied across builds.
+_EXIT_OPCODE_HEADROOM = 8
+_OPCODE_BUDGET = 256 - _EXIT_OPCODE_HEADROOM
+
+
+def _assign_opcode_multiplicity(
+    op_keys: tuple[tuple[str, bool, int], ...], rng: random.Random
+) -> dict[tuple[str, bool, int], int]:
+    """One or two interchangeable opcodes per op-key, clamped to the byte budget.
+
+    Each op-key draws multiplicity 1 or 2; if the total would exceed the opcode
+    budget, duplicated ops are downgraded (rng-ordered) until it fits, so the
+    scheme is always valid however many op-keys exist. The clamp only draws extra
+    randomness when it triggers, so schemes that already fit are unchanged.
+    """
+    if len(op_keys) > _OPCODE_BUDGET:
+        raise ValueError(f"{len(op_keys)} op-keys exceed the {_OPCODE_BUDGET}-value single-byte opcode budget")
+    multiplicity = {op_key: rng.randint(1, 2) for op_key in op_keys}
+    total = sum(multiplicity.values())
+    if total > _OPCODE_BUDGET:
+        downgradable = [op_key for op_key in op_keys if multiplicity[op_key] == 2]
+        rng.shuffle(downgradable)
+        for op_key in downgradable:
+            if total <= _OPCODE_BUDGET:
+                break
+            multiplicity[op_key] = 1
+            total -= 1
+    return multiplicity
+
+
 def build_vm_scheme(rng: random.Random) -> VMScheme:
     """Draw a fresh randomized VM scheme from ``rng`` (seedable, replayable).
 
@@ -341,7 +374,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     guard. Two builds share neither the opcode->operation mapping nor the
     duplication, and the same operation appears under several opcodes.
     """
-    multiplicity = {op_key: rng.randint(1, 2) for op_key in _OP_KEYS}
+    multiplicity = _assign_opcode_multiplicity(_OP_KEYS, rng)
     total = sum(multiplicity.values())
     indices = rng.sample(range(total), total)
     dup: dict[tuple[str, bool, int], tuple[int, ...]] = {}
