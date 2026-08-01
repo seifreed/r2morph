@@ -96,8 +96,14 @@ REGISTER32_INDEX: dict[str, int] = {
     "r15d": 15,
 }
 
-SUPPORTED_MNEMONICS: frozenset[str] = frozenset({"mov", "add", "sub", "xor", "and", "or"})
 _MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
+# Bit-shift-by-immediate GP ops. Only the immediate-count form virtualizes: the
+# ``shl reg, cl`` register-count form is rejected in decode by the operand width
+# mismatch (cl is 8-bit), so no register-form handler is ever needed - hence these
+# are keyed is_immediate=True only and kept out of _MNEMONIC_ORDER. Sound under the
+# engine's flags-dead precondition (a shift clobbers flags like add/sub/xor do).
+_SHIFT_KINDS: tuple[str, ...] = ("shl", "shr", "sar")
+SUPPORTED_MNEMONICS: frozenset[str] = frozenset(_MNEMONIC_ORDER) | frozenset(_SHIFT_KINDS)
 
 # Canonical operation keys (mnemonic, is_immediate, width). Register/immediate
 # and 32/64-bit variants are distinct so the dispatcher never has to inspect
@@ -193,6 +199,7 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
         for mnemonic in _MNEMONIC_ORDER
         for is_immediate in (True, False)
     )
+    + tuple((kind, True, width) for width in (64, 32) for kind in _SHIFT_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_KINDS)
@@ -1165,6 +1172,20 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         # 32-bit op writes the low half and zero-extends, matching x86-64.
         if mnemonic == "mov":
             apply = "  mov qword ptr [rsp + r8*8], rax\n"
+        elif mnemonic in _SHIFT_KINDS:
+            # rax/eax holds the imm8 shift count; drive the native shift by cl
+            # (the CPU masks cl to width-1 exactly as the original `shl reg, imm8`
+            # did). Flags dead by the engine precondition, so the literal shift is
+            # safe. ponytail: literal shift (no MBA) - the region VM's shift
+            # handlers are literal too; coverage is the goal, not another layer.
+            reg = "r10" if width == 64 else "r10d"
+            load_slot = "  mov r10, qword ptr [rsp + r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp + r8*8]\n"
+            store_slot = (
+                "  mov qword ptr [rsp + r8*8], r10\n"
+                if width == 64
+                else "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
+            )
+            apply = f"  mov ecx, eax\n{load_slot}  {mnemonic} {reg}, cl\n{store_slot}"
         else:
             # sub a, b == add a, (-b): negate the source, then the same MBA add fold.
             apply = "  neg rax\n" if mnemonic == "sub" else ""

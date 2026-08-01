@@ -24,6 +24,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpMemOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
+    VirtualizedOp,
     decode_instruction,
 )
 
@@ -2071,3 +2072,35 @@ def test_decode_instruction_widths_and_rejections() -> None:
     assert decode_instruction("mov rax, qword ptr [rbx]") is None  # memory operand
     assert decode_instruction("jmp 0x400000") is None  # control flow
     assert decode_instruction("add rbx, rcx") is not None  # plain 64-bit GP op
+    assert decode_instruction("shl rax, 4") is not None  # immediate-count shift
+    assert decode_instruction("shr edi, 3").width == 32  # 32-bit shift path
+    assert decode_instruction("shl rax, cl") is None  # register-count form rejected
+    assert decode_instruction("shl rax") is None  # implicit shift-by-1 has no imm
+
+
+def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
+    # Engine fallback (the function has a call): the run uses immediate-count
+    # shifts (shl/sar/shr, 64-bit, plus a 32-bit shl) netting exit 42 in rdi,
+    # exercising the engine's shift handlers. The decode checks prove the shifts
+    # lower to VM ops - were they left native, the run would still exit 42 (a false
+    # green), so the isinstance guards rule that out.
+    assert isinstance(decode_instruction("shl rdi, 3"), VirtualizedOp)
+    assert isinstance(decode_instruction("sar rdi, 1"), VirtualizedOp)
+    assert isinstance(decode_instruction("shr rsi, 2"), VirtualizedOp)
+    fixture = _DATASET / "elf_vm_shift_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_shift"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
