@@ -17,9 +17,12 @@ flags they set are dead.
 
 from __future__ import annotations
 
-# Each template computes ``r10 += {a}`` (a == r10, b == {a}). The closing lea is
-# flag-neutral, but the xor/and/or/sub set flags — harmless wherever these run in
-# a flag-dead context. ``{t}`` is a free temp register, ``{a}`` the addend.
+# Each template computes ``r10 += {a}`` (a == r10, b == {a}) and preserves the
+# addend ``{a}``, clobbering only r10 and the temp ``{t}``. lea is flag-neutral;
+# the xor/and/or/sub/add/neg/not/shl set flags — harmless wherever these run in a
+# flag-dead context. The identities deliberately span different shapes (half-adder
+# via lea, two's-complement folds via not/neg, an explicit shl carry) so the fold
+# is not one fixed signature across samples. ``{t}`` is a free temp, ``{a}`` the addend.
 _MBA_ADD_TEMPLATES: tuple[str, ...] = (
     # a + b == (a ^ b) + 2*(a & b)
     "  mov {t}, r10\n  xor {t}, {a}\n  and r10, {a}\n  lea r10, [{t} + r10*2]\n",
@@ -27,6 +30,12 @@ _MBA_ADD_TEMPLATES: tuple[str, ...] = (
     "  mov {t}, r10\n  and {t}, {a}\n  or r10, {a}\n  lea r10, [r10 + {t}]\n",
     # a + b == 2*(a | b) - (a ^ b)
     "  mov {t}, r10\n  xor {t}, {a}\n  or r10, {a}\n  lea r10, [r10*2]\n  sub r10, {t}\n",
+    # a + b == -(~a + ~b) - 2
+    "  mov {t}, {a}\n  not {t}\n  not r10\n  add r10, {t}\n  neg r10\n  sub r10, 2\n",
+    # a + b == a - ~b - 1
+    "  mov {t}, {a}\n  not {t}\n  sub r10, {t}\n  sub r10, 1\n",
+    # a + b == (a ^ b) + ((a & b) << 1)
+    "  mov {t}, r10\n  and {t}, {a}\n  shl {t}, 1\n  xor r10, {a}\n  add r10, {t}\n",
 )
 
 
@@ -41,11 +50,12 @@ def _mba_add_r10_rax(key: int) -> str:
 
 
 # Each boolean op carries several equivalent per-instance rewrites so a handler is
-# neither the plain op nor a single fixed MBA signature across samples. The first
-# two of each are pure-boolean De Morgan identities; the third mixes in arithmetic
-# (add/sub/lea), a genuinely different micro-op sequence that an MBA simplifier
-# keyed on boolean shape does not match. All operate on r10 (a) and rax (b) with
-# rcx as the only scratch, and run only where flags are dead. Compute r10 = r10 <op> rax.
+# neither the plain op nor a single fixed MBA signature across samples. Each pool
+# mixes pure-boolean De Morgan identities with arithmetic-blended ones (add/sub of
+# the AND/OR/XOR half-adder terms), genuinely different micro-op sequences that an
+# MBA simplifier keyed on a single boolean shape does not match. All operate on r10
+# (a) and rax (b), preserve rax, and clobber only rcx as scratch; they run only
+# where flags are dead. Compute r10 = r10 <op> rax.
 _BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
     "xor": (
         # (a | b) & ~(a & b)
@@ -54,6 +64,10 @@ _BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
         "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  not r10\n  and r10, rax\n  or r10, rcx\n",
         # (a | b) - (a & b)
         "  mov rcx, r10\n  and rcx, rax\n  or r10, rax\n  sub r10, rcx\n",
+        # (a + b) - 2*(a & b)
+        "  mov rcx, r10\n  and rcx, rax\n  add r10, rax\n  sub r10, rcx\n  sub r10, rcx\n",
+        # (a | b) + ~(a & b) + 1
+        "  mov rcx, r10\n  and rcx, rax\n  not rcx\n  or r10, rax\n  add r10, rcx\n  add r10, 1\n",
     ),
     "and": (
         # ~(~a | ~b)
@@ -62,6 +76,10 @@ _BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
         "  mov rcx, r10\n  or rcx, rax\n  xor r10, rax\n  xor r10, rcx\n",
         # (a | b) - (a ^ b)
         "  mov rcx, r10\n  xor rcx, rax\n  or r10, rax\n  sub r10, rcx\n",
+        # (a + b) - (a | b)
+        "  mov rcx, r10\n  or rcx, rax\n  add r10, rax\n  sub r10, rcx\n",
+        # b - (~a & b)
+        "  mov rcx, r10\n  not rcx\n  and rcx, rax\n  mov r10, rax\n  sub r10, rcx\n",
     ),
     "or": (
         # ~(~a & ~b)
@@ -70,6 +88,10 @@ _BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
         "  mov rcx, r10\n  and rcx, rax\n  xor r10, rax\n  or r10, rcx\n",
         # (a ^ b) + (a & b)
         "  mov rcx, r10\n  and rcx, rax\n  xor r10, rax\n  add r10, rcx\n",
+        # (a + b) - (a & b)
+        "  mov rcx, r10\n  and rcx, rax\n  add r10, rax\n  sub r10, rcx\n",
+        # (a & ~b) + b
+        "  mov rcx, rax\n  not rcx\n  and r10, rcx\n  add r10, rax\n",
     ),
 }
 

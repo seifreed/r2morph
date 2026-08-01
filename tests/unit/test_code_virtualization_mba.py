@@ -4,15 +4,21 @@ Unit tests for the mixed-boolean-arithmetic (MBA) address computation.
 The shared address prologues fold both the base and the displacement with one of
 several equivalent MBA identities (chosen per instance) instead of a literal
 ``add``, so the handler's address arithmetic is neither a plain pattern nor a
-single fixed MBA signature. Semantics are covered by the memory fixtures; these
-tests pin the obfuscation form and its polymorphism on the real builders.
+single fixed MBA signature. These tests pin the obfuscation form and its
+polymorphism, and prove — by assembling every template with keystone and
+emulating it under unicorn — that each identity computes exactly the native
+operation while honouring the register contract (add folds preserve the addend;
+boolean rewrites preserve ``rax`` and clobber only ``rcx``).
 """
 
 from __future__ import annotations
 
+import random
+
 import pytest
 
 from r2morph.mutations.code_virtualization_mba import (
+    _BOOL_VARIANTS,
     _MBA_ADD_TEMPLATES,
     _mba_add,
     _mba_add_r10_rax,
@@ -29,14 +35,22 @@ _BOOLEAN_OPS = (
     ("and", lambda a, b: a & b),
     ("or", lambda a, b: a | b),
 )
-# Bytecode keys whose (key >> 4) % 3 is 0, 1, 2 — selecting each boolean MBA variant.
-_VARIANT_KEYS = (0x01, 0x10, 0x20)
-_SAMPLES = (
-    (0xCAFEB0BA12345678, 0x0F0F0F0FF0F0F0F0),
-    (0xFFFFFFFFFFFFFFFF, 0x0000000000000000),
-    (0xDEADBEEF00000000, 0x00000000DEADBEEF),
-    (0x123456789ABCDEF0, 0xFEDCBA9876543210),
-)
+
+# Edge cases plus a deterministic spread of random 64-bit inputs, including the
+# a == b diagonal, so every template is exercised against carries, the high bit,
+# all-ones and all-zeros operands.
+_EDGE_VALUES = (0x0, _MASK64, 0x1, 1 << 63, (1 << 63) - 1, 0xDEADBEEFCAFEB0BA)
+
+
+def _sample_pairs() -> tuple[tuple[int, int], ...]:
+    pairs = [(a, b) for a in _EDGE_VALUES for b in _EDGE_VALUES]
+    pairs.extend((value, value) for value in _EDGE_VALUES)
+    rng = random.Random(0xC0FFEE)
+    pairs.extend((rng.getrandbits(64), rng.getrandbits(64)) for _ in range(128))
+    return tuple(pairs)
+
+
+_SAMPLE_PAIRS = _sample_pairs()
 
 
 def test_no_address_prologue_uses_a_literal_add() -> None:
@@ -72,28 +86,60 @@ def test_boolean_mba_never_contains_the_literal_native_op() -> None:
 
 
 def test_boolean_mba_is_polymorphic_across_instances() -> None:
-    # Three equivalent rewrites per op (two pure-boolean, one arithmetic-mixed).
+    # Every equivalent rewrite in a pool must be reachable across bytecode keys, so
+    # the boolean handler is not a single fixed MBA signature across samples.
     for mnemonic, _ in _BOOLEAN_OPS:
-        assert len({_op_mba_compute(mnemonic, key) for key in range(1, 256)}) == 3
+        produced = {_op_mba_compute(mnemonic, key) for key in range(1, 256)}
+        assert len(produced) == len(_BOOL_VARIANTS[mnemonic]) > 1
 
 
-@pytest.mark.parametrize("mnemonic,native", _BOOLEAN_OPS)
-@pytest.mark.parametrize("key", _VARIANT_KEYS)
-def test_boolean_mba_computes_the_native_operation(mnemonic: str, native, key: int) -> None:
-    # Emulate `r10 = r10 <op> rax` for both per-instance MBA variants and verify it
-    # equals the native boolean operation for every sample (a == r10, b == rax).
+def _emulate(asm: str, operand_reg: int, a: int, b: int) -> tuple[int, int]:
+    """Assemble ``asm`` and run it with r10 = a and ``operand_reg`` = b.
+
+    Returns the post-execution ``(r10, operand_reg)`` so a caller can assert both
+    the computed value and that the operand register was preserved.
+    """
     keystone = pytest.importorskip("keystone")
     unicorn = pytest.importorskip("unicorn")
-    from unicorn.x86_const import UC_X86_REG_R10, UC_X86_REG_RAX
+    from unicorn.x86_const import UC_X86_REG_R10
 
     ks = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
-    for a, b in _SAMPLES:
-        asm = f"mov r10, {hex(a)}\n  mov rax, {hex(b)}\n" + _op_mba_compute(mnemonic, key)
-        code, _ = ks.asm(asm, 0x1000)
-        mu = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_64)
-        mu.mem_map(0x1000, 0x1000)
-        mu.mem_write(0x1000, bytes(code))
-        mu.reg_write(UC_X86_REG_RAX, b)
-        mu.reg_write(UC_X86_REG_R10, a)
-        mu.emu_start(0x1000, 0x1000 + len(code))
-        assert mu.reg_read(UC_X86_REG_R10) == native(a, b) & _MASK64
+    code, _ = ks.asm(asm, 0x1000)
+    mu = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_64)
+    mu.mem_map(0x1000, 0x1000)
+    mu.mem_write(0x1000, bytes(code))
+    mu.reg_write(UC_X86_REG_R10, a)
+    mu.reg_write(operand_reg, b)
+    mu.emu_start(0x1000, 0x1000 + len(code))
+    return mu.reg_read(UC_X86_REG_R10), mu.reg_read(operand_reg)
+
+
+@pytest.mark.parametrize("template_index", range(len(_MBA_ADD_TEMPLATES)))
+def test_every_add_template_computes_r10_plus_addend_and_keeps_the_addend(
+    template_index: int,
+) -> None:
+    # a == r10, b == addend (rbx); the fold must leave r10 = a + b and rbx = b.
+    pytest.importorskip("unicorn")
+    from unicorn.x86_const import UC_X86_REG_RBX
+
+    asm = _MBA_ADD_TEMPLATES[template_index].format(a="rbx", t="rcx")
+    for value_a, value_b in _SAMPLE_PAIRS:
+        result = _emulate(asm, UC_X86_REG_RBX, value_a, value_b)
+        assert result == ((value_a + value_b) & _MASK64, value_b)
+
+
+_BOOL_CASES = tuple(
+    (mnemonic, native, index) for mnemonic, native in _BOOLEAN_OPS for index in range(len(_BOOL_VARIANTS[mnemonic]))
+)
+
+
+@pytest.mark.parametrize("mnemonic,native,variant_index", _BOOL_CASES)
+def test_every_boolean_variant_computes_the_native_op_and_keeps_rax(mnemonic: str, native, variant_index: int) -> None:
+    # a == r10, b == rax; each rewrite must leave r10 = a <op> b and rax = b.
+    pytest.importorskip("unicorn")
+    from unicorn.x86_const import UC_X86_REG_RAX
+
+    asm = _BOOL_VARIANTS[mnemonic][variant_index]
+    for value_a, value_b in _SAMPLE_PAIRS:
+        result = _emulate(asm, UC_X86_REG_RAX, value_a, value_b)
+        assert result == (native(value_a, value_b) & _MASK64, value_b)
