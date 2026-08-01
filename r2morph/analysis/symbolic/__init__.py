@@ -14,6 +14,7 @@ from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver
 from r2morph.analysis.symbolic.constraint_solver_models import ConstraintType, MBAExpression, SolverResult
 from r2morph.analysis.symbolic.constraint_solver_parsing import MAX_CONSTRAINT_AST_DEPTH
 from r2morph.analysis.symbolic.path_explorer import PathExplorer
+from r2morph.analysis.symbolic.resistance_probe import ResistanceMeasurement, SymbolicResistanceProbe
 from r2morph.analysis.symbolic.state_manager import StateManager
 from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
 
@@ -35,7 +36,9 @@ __all__ = [
     "MAX_CONSTRAINT_AST_DEPTH",
     "MBAExpression",
     "PathExplorer",
+    "ResistanceMeasurement",
     "StateMetrics",
+    "SymbolicResistanceProbe",
     "SolverResult",
     "StateManager",
     "StateSchedulingStrategy",
