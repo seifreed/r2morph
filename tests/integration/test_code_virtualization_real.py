@@ -151,6 +151,66 @@ def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> No
     assert tampered_code != 45
 
 
+# The timing anti-debug fold's final instruction: xor byte ptr [rsp+SLOT], al
+# (opcode 30 = XOR r/m8, r8), folding the timing byte into the checksum slot. The
+# engine interpreter's checksum slot is 0x80 and the region interpreter's is 0x88;
+# the pass may emit either codegen, so accept either fold tail. The dispatch's own
+# checksum fold *loads* the slot (xor al, [rsp+SLOT], opcode 32), so this store-form
+# byte sequence is unique to the timing probe.
+_TIMING_FOLD_TAILS = (bytes.fromhex("30842480000000"), bytes.fromhex("30842488000000"))
+_RDTSC_BYTES = bytes.fromhex("0f31")
+_RDTSCP_BYTES = bytes.fromhex("0f01f9")
+
+
+def test_timing_probe_keeps_emulated_exit_code_inert(tmp_path: Path) -> None:
+    # The timing fold is always emitted, so a benign (Unicorn) run must keep the
+    # exit code: the inter-read TSC delta stays below 2**N, the fold contributes
+    # xor 0 to the checksum slot, and the decode is bit-identical to a build
+    # without the probe. This is the one real risk the always-on probe carries.
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    reference = _emulate_exit_code(FIXTURE)
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(FIXTURE, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert _emulate_exit_code(mutated) == reference == 45
+
+
+def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
+    # Presence guard so the parity test cannot pass vacuously: the injected blob
+    # must actually carry the timing read (rdtsc or the rdtscp variant) and the
+    # checksum-slot fold tail. Without this, a skipped or dropped probe would still
+    # leave the exit-code parity green.
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(FIXTURE, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    data = mutated.read_bytes()
+    vm_entry = data.find(_VM_ENTRY_SIGNATURE)
+    assert vm_entry != -1, "interpreter not found in mutated binary"
+    blob = data[vm_entry:]
+    assert _RDTSC_BYTES in blob or _RDTSCP_BYTES in blob, "no timing read emitted"
+    assert any(tail in blob for tail in _TIMING_FOLD_TAILS), "checksum-slot fold tail not emitted"
+
+
 # Fixtures with at least one register-op run to peel into a nested inner VM.
 _NESTING_FIXTURES = [
     ("elf_vm_arith_x86_64", 45),

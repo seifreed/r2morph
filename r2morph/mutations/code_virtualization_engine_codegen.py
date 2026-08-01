@@ -12,6 +12,7 @@ import logging
 import random
 import struct
 
+from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, switch_dispatch, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine_common import (
     _CHECKSUM_OFFSET,
@@ -612,6 +613,11 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     is_switch = scheme.dispatch_shape == DISPATCH_SWITCH
     checksum_end = "vm_code_end" if is_switch else "vm_table"
     lines.append(checksum_prologue_asm(key, slot=_CHECKSUM_OFFSET, end_label=checksum_end))
+    # Timing anti-debug woven into the same checksum slot: a single-stepped run
+    # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
+    # 0x00 (the counter reads sit inside the checksummed range, so no encoder or
+    # checksum change is needed and the benign build is bit-identical).
+    lines.append(timing_fold_asm(key, slot=_CHECKSUM_OFFSET))
     poly_rng = random.Random(scheme.table_key)
     # Undo the opcode byte's position mask and fold in the key and the runtime
     # self-checksum the encoder pre-biased the opcode with, so a patched interpreter

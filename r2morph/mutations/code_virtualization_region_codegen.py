@@ -18,6 +18,7 @@ import logging
 import random
 import struct
 
+from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
@@ -515,6 +516,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved.
     lines.append(checksum_prologue_asm(scheme.xor_key))
+    # Timing anti-debug woven into the same checksum slot: a single-stepped run
+    # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
+    # 0x00 (the counter reads sit inside the checksummed range, so the benign build
+    # is bit-identical and neither the encoder nor the checksum computation change).
+    lines.append(timing_fold_asm(scheme.xor_key, slot=_CHECKSUM_OFFSET))
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
