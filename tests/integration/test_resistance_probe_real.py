@@ -68,3 +68,35 @@ def test_virtualization_raises_symbolic_resistance(tmp_path: Path) -> None:
     assert original.reached_terminal is True
     assert virtualized.reached_terminal is False
     assert virtualized.resistance_score > original.resistance_score
+
+
+def test_budget_limited_virtualized_run_is_flagged_as_lower_bound(tmp_path: Path) -> None:
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    mutated = tmp_path / "mutated"
+    _virtualize(FIXTURE, mutated)
+
+    virtualized = _measure(mutated)
+    if not virtualized.angr_available:
+        pytest.skip("angr backend unavailable")
+
+    # The 1.0 score came from the small budget, not from a proof of resistance:
+    # the run must announce that it stopped short of natural completion.
+    assert virtualized.reached_terminal is False
+    assert virtualized.resistance_score == 1.0
+    assert virtualized.budget_exhausted is True
+
+
+def test_cracked_original_run_reports_no_budget_exhaustion(tmp_path: Path) -> None:
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    original = _measure(FIXTURE)
+    if not original.angr_available:
+        pytest.skip("angr backend unavailable")
+
+    # A genuine crack terminates within budget without truncation, so the honesty
+    # flag stays False - the low score is proven, not a lower bound.
+    assert original.reached_terminal is True
+    assert original.budget_exhausted is False
