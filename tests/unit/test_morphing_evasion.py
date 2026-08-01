@@ -13,6 +13,7 @@ Tests for:
 """
 
 import random
+import re
 
 from r2morph.mutations.anti_disassembly import (
     FALSE_BRANCH_X64,
@@ -298,14 +299,19 @@ class TestCodeVirtualization:
 
     def test_arithmetic_handlers_contain_no_literal_native_op(self):
         # The arithmetic/boolean handlers must compute via MBA, not a literal
-        # add/sub/xor/and/or against the slot, so the handler never names the
+        # add/sub/xor/and/or against a guest cell, so the handler never names the
         # operation it performs (the engine's flags-dead precondition makes this
-        # unconditionally safe). mov stays a verbatim store.
+        # unconditionally safe). mov stays a verbatim store. A literal guest op
+        # would read its operand straight from a slot/vstack cell in memory, so the
+        # memory-operand form is the rename-stable signature to forbid; the exact
+        # MBA/micro-op lowering is pinned by the dedicated mba/microops tests. (A
+        # register-operand proxy would be unsound now that per-handler renaming can
+        # reorder the immediate-decrypt xor into an arbitrary reg,reg spelling.)
         scheme = build_vm_scheme(random.Random(3))
         asm = _interpreter_asm(0x401000, scheme)
         for op in ("add", "sub", "xor", "and", "or"):
             assert f"{op} qword ptr [rsp" not in asm
-            assert f"{op} r11d, eax" not in asm
+            assert f"{op} dword ptr [rsp" not in asm
 
     def test_scheme_generates_nonzero_table_key(self):
         scheme = build_vm_scheme(random.Random(3))
@@ -332,10 +338,13 @@ class TestCodeVirtualization:
 
     def test_handlers_position_unmask_their_operands(self):
         # Operands carry the opcode's stream position, so the handler un-masks the
-        # destination slot with r13b (the position) - not a lone constant key.
+        # destination slot with r13b (the position) - not a lone constant key. The
+        # scratch register holding the operand byte is renamed per handler, so match
+        # any numbered scratch byte (the decode uses ``al`` for the opcode, so this
+        # only matches a handler's operand un-mask, not the dispatch).
         scheme = build_vm_scheme(random.Random(3))
         asm = _interpreter_asm(0x401000, scheme)
-        assert "xor r8b, r13b" in asm
+        assert re.search(r"xor r\d+b, r13b", asm)
 
     def test_code_virtualization_pass_init(self):
         p = CodeVirtualizationPass({"probability": 0.5})

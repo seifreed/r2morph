@@ -56,6 +56,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedMemOp,
     VirtualizedOp,
 )
+from r2morph.mutations.code_virtualization_engine_rename import rename_body
 from r2morph.mutations.code_virtualization_layout import (
     idx_offsets,
     idx_permuted_fields,
@@ -668,8 +669,11 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
     for index in range(total):
         mnemonic, is_immediate, width = index_to_key[index]
-        # Reachable head junk makes duplicate handlers diverge in executed code.
-        lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng, index)}{handler_body(mnemonic, is_immediate, width)}")
+        # Reachable head junk makes duplicate handlers diverge in executed code, and
+        # a per-handler scratch-register bijection makes the body itself diverge, so
+        # duplicate handlers share neither junk nor register-allocation fingerprint.
+        body = rename_body(handler_body(mnemonic, is_immediate, width), random.Random(scheme.body_seed ^ index))
+        lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng, index)}{body}")
 
     lines.append("vm_exit:\n")
     for index, name in enumerate(GP_REGISTERS):

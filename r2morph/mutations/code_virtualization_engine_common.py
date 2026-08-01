@@ -307,7 +307,17 @@ class VMScheme:
     match another.
     """
 
-    __slots__ = ("dup", "exit_opcode", "xor_key", "slot_perm", "table_key", "junk_seed", "field_perm", "dispatch_shape")
+    __slots__ = (
+        "dup",
+        "exit_opcode",
+        "xor_key",
+        "slot_perm",
+        "table_key",
+        "junk_seed",
+        "field_perm",
+        "dispatch_shape",
+        "body_seed",
+    )
 
     def __init__(
         self,
@@ -319,6 +329,7 @@ class VMScheme:
         junk_seed: int,
         field_perm: int = 0,
         dispatch_shape: int = DISPATCH_THREADED,
+        body_seed: int = 0,
     ) -> None:
         # Each operation gets one or more interchangeable opcode indices; the same
         # operation can appear under different opcodes in the stream and each index
@@ -344,6 +355,11 @@ class VMScheme:
         # constants). Varying it per build denies a devirtualizer a single fixed
         # dispatcher shape to recognize.
         self.dispatch_shape = dispatch_shape
+        # Seeds the per-handler scratch-register bijection: each handler instance
+        # derives its own permutation of the scratch pool from this, so no two
+        # handler bodies share a fixed register-allocation fingerprint. 0 leaves
+        # the bodies in their canonical register spelling.
+        self.body_seed = body_seed
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -405,9 +421,10 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     table_key = rng.randrange(1, 1 << 32)
     junk_seed = rng.randrange(1 << 31)
     field_perm = rng.randrange(1, 1 << 31)
-    # Drawn last so adding the dispatch-shape choice does not shift any earlier
-    # field's value for a given seed; the other fields stay byte-for-byte stable.
     dispatch_shape = rng.randint(DISPATCH_THREADED, DISPATCH_SWITCH)
+    # Drawn last so adding the per-handler rename does not shift any earlier field's
+    # value for a given seed; the other fields stay byte-for-byte stable.
+    body_seed = rng.randrange(1 << 31)
     return VMScheme(
         dup,
         exit_opcode,
@@ -417,6 +434,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         junk_seed,
         field_perm,
         dispatch_shape,
+        body_seed,
     )
 
 
