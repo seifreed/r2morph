@@ -51,8 +51,15 @@ def test_virtualization_raises_structural_resistance(tmp_path: Path) -> None:
         pytest.skip("radare2 unavailable or produced no disassembly")
     virtualized = _measure(mutated, baseline=original.total_instructions)
 
-    # The interpreter dominates the virtualized build: strictly higher score,
-    # strictly more indirect dispatch, and a real expansion over the native run.
+    # The interpreter dominates the virtualized build: strictly higher score, a real
+    # expansion over the native run, and far more dispatch branching. The dispatch
+    # shape varies per build - the threaded shape adds indirect computed gotos, the
+    # switch shape adds a large direct compare/branch ladder - so the added branching
+    # is counted across both indirect jumps and distinct branch targets, which holds
+    # whichever shape this build drew.
     assert virtualized.structural_score > original.structural_score
-    assert virtualized.indirect_jumps > original.indirect_jumps
     assert virtualized.expansion_ratio > 1.0
+    assert (
+        virtualized.indirect_jumps + virtualized.distinct_branch_targets
+        > original.indirect_jumps + original.distinct_branch_targets
+    )

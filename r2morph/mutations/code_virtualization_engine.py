@@ -40,6 +40,8 @@ from r2morph.mutations.code_virtualization_engine_codegen import (
 from r2morph.mutations.code_virtualization_engine_common import (
     _OPAQUE_VARIANTS,
     _SHIFT_KINDS,
+    DISPATCH_SWITCH,
+    DISPATCH_THREADED,
     GP_REGISTERS,
     REGISTER32_INDEX,
     REGISTER_INDEX,
@@ -193,6 +195,8 @@ __all__ = [
     "REGISTER32_INDEX",
     "RSP_INDEX",
     "SUPPORTED_MNEMONICS",
+    "DISPATCH_THREADED",
+    "DISPATCH_SWITCH",
     "_SHIFT_KINDS",
     "_OPAQUE_VARIANTS",
     "_opaque_predicate_asm",

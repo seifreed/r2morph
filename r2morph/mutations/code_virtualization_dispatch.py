@@ -19,6 +19,13 @@ self-checksum (which scans the interpreter once) stays well within budget.
 The decode head (position-mask setup + opcode load) and tail (sign-extend +
 indirect jump) are identical across both VMs; the caller supplies the pieces that
 differ (immediate vs frame-slot key/count/table, spacing).
+
+The engine VM can also select an alternate ``switch`` shape per build
+(:func:`switch_dispatch`): one central dispatcher block that reuses the same
+decode head, opcode-decrypt XORs and bounds guard, then routes through a balanced
+compare/branch (binary-search) ladder over the dense opcode indices instead of the
+threaded offset-table computed goto. Varying the shape per build denies a
+devirtualizer a single fixed dispatcher structure to recognize.
 """
 
 from __future__ import annotations
@@ -65,3 +72,44 @@ def thread_back_jumps(interpreter: str, make_decode: Callable[[], str]) -> str:
         out.append(make_decode())
         out.append(part)
     return "".join(out)
+
+
+def _switch_ladder(lo: int, hi: int, path: str) -> str:
+    """Emit a balanced binary-search tree over the opcode indices ``[lo, hi)``.
+
+    ``al`` is assumed already bounds-checked into ``[lo, hi)``, so exactly one leaf
+    matches. Each node tests its midpoint with ``cmp al, mid`` + ``je h_mid`` and,
+    when both sub-ranges are non-empty, steers with a single ``jb`` to the left
+    subtree (the right subtree falls through). Node labels encode the tree path, so
+    they are unique without a running counter.
+    """
+    if lo >= hi:
+        return ""
+    mid = (lo + hi) // 2
+    left = _switch_ladder(lo, mid, path + "L")
+    right = _switch_ladder(mid + 1, hi, path + "R")
+    node = f"  cmp al, {mid}\n  je h_{mid}\n"
+    if left and right:
+        left_label = f"vsw_{path}L"
+        return node + f"  jb {left_label}\n" + right + f"{left_label}:\n" + left
+    # At most one side remains: al is already known to be below/above ``mid`` (the
+    # other range is empty), so fall straight into whichever subtree exists.
+    return node + left + right
+
+
+def switch_dispatch(*, opcode_xors: list[str], bounds: str, total: int, rng: random.Random) -> str:
+    """Assemble the single central ``vm_dispatch`` block for the switch shape.
+
+    Reuses the shared decode head and the same opcode-XOR decrypt group (so the
+    self-checksum still folds into the opcode) and the same bounds guard as the
+    threaded path, then routes through a compare/branch ladder instead of an
+    offset-table computed goto. The XOR group is order-independent, so shuffling it
+    keeps the decode faithful.
+    """
+    return (
+        "vm_dispatch:\n"
+        + _DECODE_HEAD
+        + "".join(rng.sample(opcode_xors, len(opcode_xors)))
+        + bounds
+        + _switch_ladder(0, total, "")
+    )
