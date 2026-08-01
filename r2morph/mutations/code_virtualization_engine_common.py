@@ -1,0 +1,351 @@
+"""Shared base layer for the code-virtualization engine.
+
+Constants, op-key enumeration, the per-instance :class:`VMScheme`, the
+junk/opaque-predicate emitters, and width helpers - everything both the
+bytecode encoder and the interpreter codegen depend on. Kept free of any
+dependency on its sibling engine modules so the split forms a cycle-free
+layering (common <- models <- codegen <- aggregator).
+"""
+
+from __future__ import annotations
+
+import random
+import struct
+
+# ModR/M register order; index is the VM register-context slot.
+GP_REGISTERS: tuple[str, ...] = (
+    "rax",
+    "rcx",
+    "rdx",
+    "rbx",
+    "rsp",
+    "rbp",
+    "rsi",
+    "rdi",
+    "r8",
+    "r9",
+    "r10",
+    "r11",
+    "r12",
+    "r13",
+    "r14",
+    "r15",
+)
+REGISTER_INDEX: dict[str, int] = {name: idx for idx, name in enumerate(GP_REGISTERS)}
+RSP_INDEX = REGISTER_INDEX["rsp"]
+
+# 32-bit register spellings share a context slot with their 64-bit base; a
+# 32-bit write zero-extends into the full slot, matching x86-64 semantics.
+REGISTER32_INDEX: dict[str, int] = {
+    "eax": 0,
+    "ecx": 1,
+    "edx": 2,
+    "ebx": 3,
+    "esp": 4,
+    "ebp": 5,
+    "esi": 6,
+    "edi": 7,
+    "r8d": 8,
+    "r9d": 9,
+    "r10d": 10,
+    "r11d": 11,
+    "r12d": 12,
+    "r13d": 13,
+    "r14d": 14,
+    "r15d": 15,
+}
+
+_MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
+# Bit-shift-by-immediate GP ops. Only the immediate-count form virtualizes: the
+# ``shl reg, cl`` register-count form is rejected in decode by the operand width
+# mismatch (cl is 8-bit), so no register-form handler is ever needed - hence these
+# are keyed is_immediate=True only and kept out of _MNEMONIC_ORDER. Sound under the
+# engine's flags-dead precondition (a shift clobbers flags like add/sub/xor do).
+_SHIFT_KINDS: tuple[str, ...] = ("shl", "shr", "sar")
+SUPPORTED_MNEMONICS: frozenset[str] = frozenset(_MNEMONIC_ORDER) | frozenset(_SHIFT_KINDS)
+
+# Canonical operation keys (mnemonic, is_immediate, width). Register/immediate
+# and 32/64-bit variants are distinct so the dispatcher never has to inspect
+# operand encoding at runtime. The concrete opcode byte for each key is
+# assigned per instance (see VMScheme), so two virtualized builds share no
+# fixed opcode table to fingerprint.
+# Memory operations. They reuse the (mnemonic, is_immediate, width) key shape with
+# the kind as the "mnemonic" and is_immediate fixed False, so the dispatch-table,
+# duplication and self-checksum machinery treat them uniformly; only the operand
+# layout (reg slot + base slot + disp32) and the handler body differ, both keyed
+# off the kind. ``load``/``store`` move reg <-> [base+disp]; ``mem<op>`` applies an
+# arithmetic/boolean op with [base+disp] as the source (reg is source and dest).
+_MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
+# ``lea`` computes [base+disp] into the destination without dereferencing. The
+# ``*rip`` kinds reach a global via the bytecode base plus a stored offset; the
+# handler strips the ``rip`` suffix and reuses the base kind's body with the
+# rip-relative address prologue, so every base+disp form has a global counterpart.
+_MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
+# movzx/movsx of a byte/word from [base+disp], zero-/sign-extended into the dst.
+# (No rip-relative counterpart: the decoder only produces the base+disp form.)
+_MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
+# Indexed [base+index*scale+disp] forms (arrays). lea, arithmetic, and the
+# byte/word extends; the handler strips the ``idx`` suffix and reuses the base
+# kind's body with the indexed address prologue (a 9-byte item:
+# opcode+reg+base+index+scale+disp).
+_MEM_IDX_KINDS: tuple[str, ...] = ("lea",) + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS) + _MEM_MOVX_KINDS
+_MEM_OP_KINDS: tuple[str, ...] = (
+    _MEM_BASE_KINDS
+    + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)
+    + _MEM_MOVX_KINDS
+    + tuple(f"{kind}idx" for kind in _MEM_IDX_KINDS)
+)
+# Scalar-FP memory moves: ``movsd``/``movss`` between an xmm register and
+# ``[base+disp]``. They reuse the (kind, is_immediate, width) key shape and the
+# reg/base/disp operand layout, but the ``reg`` field carries an xmm index (0-15,
+# emitted raw, not slot-permuted) and the handler moves through the frame's xmm
+# save area instead of a GP slot.
+# The ``*rip`` kinds reach an FP global (a .rodata/.data constant) via the bytecode
+# base plus a stored signed offset, exactly like the GP ``loadrip``/``storerip``;
+# the handler strips the ``rip`` suffix and reuses the load/store body with the
+# rip-relative address prologue. They reuse VirtualizedFpMemOp with base_index = -1
+# and the disp field carrying the absolute target.
+# The ``*idx`` kinds address an array element ``[base+index*scale+disp]`` (a[i]);
+# the item is a 9-byte opcode+reg+base+index+scale+disp32, and the handler reuses
+# the scaled-index address prologue.
+_FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore", "fploadrip", "fpstorerip", "fploadidx", "fpstoreidx")
+# Scalar-FP register-register arithmetic: addsd/subsd/mulsd/divsd (+ss). Each op
+# is its own kind so the dispatcher selects the handler without inspecting the
+# operands; the item carries two raw xmm indices (dst, src). ``fp{op}`` keys map
+# back to the real add/sub/mul/div instruction in the handler.
+_FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div")
+_FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
+# Int<->float conversions: cvtsi2sd/ss (int->float) and cvttsd2si/ss (float->int).
+# The GP width is part of the kind ("cvti2f"/"cvtf2i" + "32"/"64") so the handler
+# selects eax vs rax faithfully (a 32-bit cvtsi2sd converts only the int32; a
+# 32-bit cvttsd2si saturates out-of-range doubles to 0x80000000). The op-key width
+# carries the FP precision (sd=64, ss=32).
+_FP_CONVERT_KINDS: tuple[str, ...] = tuple(
+    f"{direction}{gp_width}" for direction in ("cvti2f", "cvtf2i") for gp_width in (64, 32)
+)
+# Scalar-FP arithmetic with a memory source (``addsd xmm, [base+disp]`` and the
+# rip-relative ``addsd xmm, [rip+const]`` constant-pool form). Per op
+# (fparithmem{add,sub,mul,div}), each with a ``*rip`` counterpart; the base+disp
+# form is a 7-byte reg/base/disp item, the rip form a 6-byte reg/offset item. The
+# handler reuses the load/store address prologues, then issues the scalar op with
+# the memory source directly.
+_FP_ARITH_MEM_KINDS: tuple[str, ...] = (
+    tuple(f"fparithmem{op}" for op in _FP_ARITH_OPS)
+    + tuple(f"fparithmem{op}rip" for op in _FP_ARITH_OPS)
+    + tuple(f"fparithmem{op}idx" for op in _FP_ARITH_OPS)
+)
+# Packed 128-bit SIMD: register-register arithmetic (addpd/addps + sub/mul/div, all
+# lanes) and 128-bit ``[base+disp]`` load/store (movaps/movups/movapd/movupd). The
+# op-key width is a nominal 128 (the ops are lane-agnostic 128-bit); the arith kind
+# is the mnemonic itself, so the handler emits it directly. xmm slots are already
+# 128-bit, so there is no frame change and the moves are always movups.
+_FP_PACKED_WIDTH = 128
+_FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
+    "addpd",
+    "addps",
+    "subpd",
+    "subps",
+    "mulpd",
+    "mulps",
+    "divpd",
+    "divps",
+)
+_FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
+_OP_KEYS: tuple[tuple[str, bool, int], ...] = (
+    tuple(
+        (mnemonic, is_immediate, width)
+        for width in (64, 32)
+        for mnemonic in _MNEMONIC_ORDER
+        for is_immediate in (True, False)
+    )
+    + tuple((kind, True, width) for width in (64, 32) for kind in _SHIFT_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_MEM_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_CONVERT_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_MEM_KINDS)
+    + tuple((kind, False, _FP_PACKED_WIDTH) for kind in _FP_PACKED_ARITH_KINDS + _FP_PACKED_MEM_KINDS)
+)
+_QWORD_BROADCAST = 0x0101010101010101
+_DWORD_BROADCAST = 0x01010101
+
+# Reachable, state-neutral junk emitted at each handler instance's entry, so
+# duplicate handlers for the same operation diverge in executed code, not just in
+# an unreachable tail. It touches only rbx/rbp/r12: every GP register is spilled
+# to the frame, the dispatch keeps only rsi/rsp/r15/r13 live, and the straight-
+# line VM captures no flags, so these scratch registers and their flag effects are
+# dead at a handler's entry.
+_LIVE_JUNK_TEMPLATES: tuple[str, ...] = (
+    "mov rbx, rbp",
+    "xor rbx, r12",
+    "and rbp, r12",
+    "or r12, rbx",
+    "xchg rbx, rbp",
+    "add r12, {small}",
+    "sub rbx, {small}",
+    "lea rbp, [rbp + {small}]",
+    "ror r12, {shift}",
+)
+
+
+# Per-instance opaque-predicate identities. Each computes a value into rbp from a
+# scratch seed register ({s}) whose parity is fixed for every input, paired with
+# the branch that is consequently always taken. ``x*(x+1)`` / ``x*(x-1)`` (adjacent
+# integers) and ``2x`` are always even (jz after test ,1); ``x|1`` and ``x|(x+1)``
+# (the latter spans adjacent integers, one of them odd) are always odd (jnz). A
+# fixed predicate is itself a signature, so the form is varied per instance.
+_OPAQUE_VARIANTS: tuple[tuple[str, str], ...] = (
+    ("  lea rbp, [{s} + 1]\n  imul rbp, {s}\n  test rbp, 1\n", "jz"),
+    ("  lea rbp, [{s} - 1]\n  imul rbp, {s}\n  test rbp, 1\n", "jz"),
+    ("  lea rbp, [{s} + {s}]\n  test rbp, 1\n", "jz"),
+    ("  mov rbp, {s}\n  or rbp, 1\n  test rbp, 1\n", "jnz"),
+    ("  lea rbp, [{s} + 1]\n  or rbp, {s}\n  test rbp, 1\n", "jnz"),
+)
+
+
+def _opaque_predicate_asm(rng: random.Random, index: int) -> str:
+    """A reachable, always-taken branch guarding an unreachable junk body.
+
+    One of :data:`_OPAQUE_VARIANTS` (chosen per instance) computes a value whose
+    parity is fixed for every input, so its paired branch is always taken and the
+    junk body between the branch and the label never executes. The predicate reads
+    and writes only rbx/rbp/r12 - state-neutral at a handler head, exactly like the
+    live junk above - and clobbers only flags, which the straight-line VM never
+    captures, so it adds opaque control flow without touching program state. A
+    linear sweep, or a handler signature that assumes straight-line handler heads,
+    must now account for a branch whose direction it cannot resolve without proving
+    the identity. ``index`` (unique per handler) keeps the skip label unique.
+    """
+    # Every identity only reads the seed (it writes rbp), so the seed can be a
+    # live register the dispatch keeps - the bytecode stream pointer rsi or the
+    # position r13 - without clobbering it. Branching on genuine runtime VM state,
+    # not dead scratch, defeats the "branch on an unconstrained value -> prune as
+    # opaque" heuristic; rbx/r12 (dead scratch here) keep cheaper variants in play.
+    seed = rng.choice(("rbx", "r12", "rsi", "r13"))  # rbp holds the predicate accumulator
+    compute, branch = rng.choice(_OPAQUE_VARIANTS)
+    dead = "".join(
+        "  " + rng.choice(_LIVE_JUNK_TEMPLATES).format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n"
+        for _ in range(rng.randint(1, 3))
+    )
+    return f"{compute.format(s=seed)}  {branch} opaque_{index}\n{dead}opaque_{index}:\n"
+
+
+def _live_junk_asm(rng: random.Random, index: int) -> str:
+    """A short run of reachable, state-neutral junk for the head of a handler,
+    sometimes capped with an opaque-predicate branch over an unreachable body."""
+    lines = []
+    for _ in range(rng.randint(0, 3)):
+        template = rng.choice(_LIVE_JUNK_TEMPLATES)
+        lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
+    if rng.random() < 0.5:
+        lines.append(_opaque_predicate_asm(rng, index))
+    return "".join(lines)
+
+
+# Private stack frame the interpreter carves below the caller's rsp. The
+# 16 GP context slots occupy [0x00, 0x80); the runtime self-checksum byte sits at
+# 0x80; the 16 xmm save slots (16 bytes each) occupy [0x90, 0x190); the System V
+# red zone [original_rsp-128, original_rsp) maps to the top [0x190, 0x210) and is
+# left untouched, so leaf-function red-zone data survives. The xmm slots are only
+# spilled/reloaded when the run contains an FP op (see ``has_fp``); a GP-only run
+# pays the larger frame but not the save/restore.
+_FRAME_SIZE = 0x210
+# Frame byte holding the interpreter's runtime self-checksum (below the xmm area).
+_CHECKSUM_OFFSET = 0x80
+# Base of the 16-entry, 16-byte-per-slot xmm save area: slot i at this + i*16.
+_XMM_SAVE_OFFSET = 0x90
+
+
+class VMScheme:
+    """Per-instance randomization of the VM, for polymorphism and opacity.
+
+    Each virtualized run is generated with a fresh scheme: the opcode byte
+    assigned to every operation is randomized, and the bytecode stream is
+    XOR-encrypted with a per-instance key the interpreter decrypts on the
+    fly. Two builds of the same code therefore share neither a fixed opcode
+    table nor a readable bytecode blob, so a static signature of one does not
+    match another.
+    """
+
+    __slots__ = ("dup", "exit_opcode", "xor_key", "slot_perm", "table_key", "junk_seed", "field_perm")
+
+    def __init__(
+        self,
+        dup: dict[tuple[str, bool, int], tuple[int, ...]],
+        exit_opcode: int,
+        xor_key: int,
+        slot_perm: tuple[int, ...],
+        table_key: int,
+        junk_seed: int,
+        field_perm: int = 0,
+    ) -> None:
+        # Each operation gets one or more interchangeable opcode indices; the same
+        # operation can appear under different opcodes in the stream and each index
+        # emits its own handler instance (with its own junk), so the opcode->
+        # operation map is not one-to-one and opcode frequency reveals nothing.
+        self.dup = dup
+        self.exit_opcode = exit_opcode
+        self.xor_key = xor_key
+        # Per-instance bijection: logical register index -> shuffled frame slot.
+        self.slot_perm = slot_perm
+        # Seeds the deterministic per-build choice of opcode-among-duplicates and
+        # the per-handler-instance junk that diverges otherwise-identical copies.
+        self.junk_seed = junk_seed
+        # 32-bit key the dispatch-table offsets are XOR-encrypted with, so the
+        # handler addresses are not a plaintext jump table a disassembler recovers
+        # as a switch (the dispatch decrypts each entry before jumping).
+        self.table_key = table_key
+        # Seed for this build's operand field-order permutation: the encoder and
+        # the handlers derive each item's field offsets from it (via the shared
+        # layout module), so the operand layout differs per build. 0 is identity.
+        self.field_perm = field_perm
+
+
+def build_vm_scheme(rng: random.Random) -> VMScheme:
+    """Draw a fresh randomized VM scheme from ``rng`` (seedable, replayable).
+
+    Each operation gets one or two interchangeable opcode indices; the indices
+    are a per-instance permutation of the dense range ``0..total-1`` that index
+    the dispatch table directly (so there is no comparison ladder), while the
+    exit marker is any byte ``>= total`` and routes through the table's bounds
+    guard. Two builds share neither the opcode->operation mapping nor the
+    duplication, and the same operation appears under several opcodes.
+    """
+    multiplicity = {op_key: rng.randint(1, 2) for op_key in _OP_KEYS}
+    total = sum(multiplicity.values())
+    indices = rng.sample(range(total), total)
+    dup: dict[tuple[str, bool, int], tuple[int, ...]] = {}
+    cursor = 0
+    for op_key in _OP_KEYS:
+        count = multiplicity[op_key]
+        dup[op_key] = tuple(indices[cursor : cursor + count])
+        cursor += count
+    exit_opcode = rng.randrange(total, 256)
+    slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
+    return VMScheme(
+        dup,
+        exit_opcode,
+        rng.randrange(1, 256),
+        slot_perm,
+        rng.randrange(1, 1 << 32),
+        rng.randrange(1 << 31),
+        rng.randrange(1, 1 << 31),
+    )
+
+
+def immediate_fits_width(value: int, width: int) -> bool:
+    """Whether ``value`` is representable in ``width`` bits, signed or unsigned.
+
+    Assemblers spell a width-bit immediate either way (e.g. a magic constant
+    like ``0x811c9dc5`` is an unsigned 32-bit value that exceeds the signed
+    range); both are valid bit patterns the VM can carry, so accept the union.
+    """
+    return bool(-(2 ** (width - 1)) <= value <= 2**width - 1)
+
+
+def pack_immediate(value: int, width: int) -> bytes:
+    """Pack a width-bit immediate as little-endian, masking to its bit width so
+    signed and unsigned values both encode to the same bytes the CPU expects."""
+    if width == 64:
+        return struct.pack("<Q", value & 0xFFFFFFFFFFFFFFFF)
+    return struct.pack("<I", value & 0xFFFFFFFF)

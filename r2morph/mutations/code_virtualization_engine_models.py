@@ -1,0 +1,167 @@
+"""Operand DTOs for the code-virtualization engine.
+
+Each class is one decoded instruction destined for the VM bytecode. Pure
+data (``__slots__`` + ``__init__``), no behaviour, no sibling dependency.
+"""
+
+from __future__ import annotations
+
+
+class VirtualizedOp:
+    """A single decoded instruction destined for the VM bytecode."""
+
+    __slots__ = ("mnemonic", "dst_index", "value", "is_immediate", "width")
+
+    def __init__(self, mnemonic: str, dst_index: int, value: int, is_immediate: bool, width: int) -> None:
+        self.mnemonic = mnemonic
+        self.dst_index = dst_index
+        self.value = value
+        self.is_immediate = is_immediate
+        self.width = width
+
+
+class VirtualizedMemOp:
+    """A ``mov`` between a register slot and ``[base+disp]`` memory.
+
+    ``kind`` is ``"load"`` (reg <- [base+disp]) or ``"store"`` ([base+disp] <-
+    reg). The base value is read from its spilled frame slot at runtime, so the
+    address is the program's real address (the interpreter does not relocate the
+    stack - it only spills registers), and a 32-bit load zero-extends.
+    """
+
+    __slots__ = ("kind", "reg_index", "base_index", "disp", "width", "index_index", "scale")
+
+    def __init__(
+        self, kind: str, reg_index: int, base_index: int, disp: int, width: int, index_index: int = 0, scale: int = 0
+    ) -> None:
+        self.kind = kind
+        self.reg_index = reg_index
+        self.base_index = base_index
+        self.disp = disp
+        self.width = width
+        # Only used by the ``*idx`` kinds: address = base + index*(2**scale) + disp.
+        self.index_index = index_index
+        self.scale = scale
+
+
+class VirtualizedFpMemOp:
+    """A scalar ``movsd``/``movss`` between an xmm register and ``[base+disp]``.
+
+    ``kind`` is ``"fpload"`` (xmm <- [base+disp]) or ``"fpstore"`` ([base+disp] <-
+    xmm). ``xmm_index`` is the 0-15 register number; ``base_index`` is the GP base
+    register's context slot, read at runtime so the address is the program's real
+    address (the interpreter spills registers but does not relocate the stack).
+    ``width`` is 64 (movsd) or 32 (movss). The xmm value lives in the frame's xmm
+    save area for the duration of the run and is reloaded into the architectural
+    register on exit.
+    """
+
+    __slots__ = ("kind", "xmm_index", "base_index", "disp", "width", "index_index", "scale")
+
+    def __init__(
+        self, kind: str, xmm_index: int, base_index: int, disp: int, width: int, index_index: int = 0, scale: int = 0
+    ) -> None:
+        self.kind = kind
+        self.xmm_index = xmm_index
+        self.base_index = base_index
+        self.disp = disp
+        self.width = width
+        # Only used by the ``*idx`` kinds: address = base + index*(2**scale) + disp.
+        self.index_index = index_index
+        self.scale = scale
+
+
+class VirtualizedFpArithOp:
+    """A scalar reg-reg FP arithmetic op: ``{add,sub,mul,div}{sd,ss} xmm, xmm``.
+
+    ``op`` is one of add/sub/mul/div; ``dst_index``/``src_index`` are 0-15 xmm
+    register numbers; ``width`` is 64 (sd) or 32 (ss). Both operands and the result
+    live in the frame's xmm save area for the run's duration. There is no MBA form
+    for FP arithmetic, so the handler issues the real instruction; this is the only
+    place FP is computed, never spelled out as the mnemonic in the bytecode.
+    """
+
+    __slots__ = ("op", "dst_index", "src_index", "width")
+
+    def __init__(self, op: str, dst_index: int, src_index: int, width: int) -> None:
+        self.op = op
+        self.dst_index = dst_index
+        self.src_index = src_index
+        self.width = width
+
+
+class VirtualizedFpConvertOp:
+    """An int<->float conversion: ``cvtsi2{sd,ss} xmm, r`` or ``cvtt{sd,ss}2si r, xmm``.
+
+    ``direction`` is ``"cvti2f"`` (int->float) or ``"cvtf2i"`` (float->int);
+    ``fp_width`` is 64 (sd) or 32 (ss); ``gp_width`` is 32 or 64 (it changes the
+    handler: a 32-bit conversion uses eax and saturates/truncates faithfully).
+    The xmm value lives in the frame's xmm save area, the GP value in its slot.
+    """
+
+    __slots__ = ("direction", "fp_width", "gp_width", "xmm_index", "gp_slot")
+
+    def __init__(self, direction: str, fp_width: int, gp_width: int, xmm_index: int, gp_slot: int) -> None:
+        self.direction = direction
+        self.fp_width = fp_width
+        self.gp_width = gp_width
+        self.xmm_index = xmm_index
+        self.gp_slot = gp_slot
+
+
+class VirtualizedFpArithMemOp:
+    """Scalar reg-memory FP arithmetic: ``{add,sub,mul,div}{sd,ss} xmm, [base+disp]``.
+
+    ``op`` is add/sub/mul/div; ``xmm_index`` is the destination (and first source)
+    xmm; ``base_index`` is the GP base slot read at runtime for the real address;
+    ``width`` is 64 (sd) or 32 (ss). The xmm operand lives in the frame's save area.
+    """
+
+    __slots__ = ("op", "xmm_index", "base_index", "disp", "width", "index_index", "scale")
+
+    def __init__(
+        self, op: str, xmm_index: int, base_index: int, disp: int, width: int, index_index: int = -1, scale: int = 0
+    ) -> None:
+        self.op = op
+        self.xmm_index = xmm_index
+        # base_index < 0 marks the rip-relative form (disp carries the absolute
+        # target); index_index >= 0 marks the scaled-index form (address =
+        # base + index*(2**scale) + disp).
+        self.base_index = base_index
+        self.disp = disp
+        self.width = width
+        self.index_index = index_index
+        self.scale = scale
+
+
+class VirtualizedFpPackedOp:
+    """A packed 128-bit reg-reg arithmetic op: ``{add,sub,mul,div}{pd,ps} xmm, xmm``.
+
+    ``mnemonic`` is the full packed instruction (e.g. ``addpd``); it operates on all
+    lanes of the 128-bit register, so unlike the scalar form no upper lane is
+    preserved. ``dst_index``/``src_index`` are 0-15 xmm register numbers.
+    """
+
+    __slots__ = ("mnemonic", "dst_index", "src_index")
+
+    def __init__(self, mnemonic: str, dst_index: int, src_index: int) -> None:
+        self.mnemonic = mnemonic
+        self.dst_index = dst_index
+        self.src_index = src_index
+
+
+class VirtualizedFpPackedMemOp:
+    """A packed 128-bit move between an xmm register and ``[base+disp]``.
+
+    ``kind`` is ``"fppload"`` (xmm <- [base+disp]) or ``"fppstore"``; the full 128
+    bits move via movups (no alignment assumption). ``base_index`` is the GP base
+    slot read at runtime for the program's real address.
+    """
+
+    __slots__ = ("kind", "xmm_index", "base_index", "disp")
+
+    def __init__(self, kind: str, xmm_index: int, base_index: int, disp: int) -> None:
+        self.kind = kind
+        self.xmm_index = xmm_index
+        self.base_index = base_index
+        self.disp = disp
