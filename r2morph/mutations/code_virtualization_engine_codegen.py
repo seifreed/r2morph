@@ -25,14 +25,22 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _FP_PACKED_WIDTH,
     _FRAME_SIZE,
     _MEM_OP_KINDS,
+    _MICROOP_BINOP_KINDS,
+    _MICROOP_STACK_KINDS,
     _QWORD_BROADCAST,
     _SHIFT_KINDS,
+    _VSP_OFFSET,
     _XMM_SAVE_OFFSET,
     GP_REGISTERS,
     RSP_INDEX,
     VMScheme,
     _live_junk_asm,
     pack_immediate,
+)
+from r2morph.mutations.code_virtualization_engine_microops import (
+    MICROOP_ARITH_MNEMONICS,
+    emit_arith_microops,
+    microop_handler_body,
 )
 from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpArithMemOp,
@@ -231,6 +239,11 @@ def encode_bytecode(
                     "disp": struct.pack("<i", op.disp),
                 }
                 emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
+            continue
+        if not op.is_immediate and op.mnemonic in MICROOP_ARITH_MNEMONICS:
+            # Reg-reg arithmetic lowers to a virtual-stack micro-op sequence instead
+            # of one handler, so the native op is data-flow through shared primitives.
+            emit_arith_microops(op, scheme, slot_of, emit_opcode, emit_fields, pick)
             continue
         position = emit_opcode(pick(scheme.dup[(op.mnemonic, op.is_immediate, op.width)]))
         if op.is_immediate:
@@ -513,6 +526,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return body + "  add rsi, 7\n  jmp vm_dispatch\n"
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
+        if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS:
+            return microop_handler_body(mnemonic, width, key)
         if mnemonic in _FP_PACKED_ARITH_KINDS:
             return fp_packed_arith_handler_body(mnemonic)
         if mnemonic in _FP_PACKED_MEM_KINDS:
@@ -588,6 +603,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {name}\n")
+    # Empty the virtual operand stack for the micro-op handlers (pointer word = 0).
+    lines.append(f"  mov qword ptr [rsp + {_VSP_OFFSET}], 0\n")
     if has_fp:
         # Spill all 16 xmm registers into the save area so FP handlers can route
         # data through it; movups needs no alignment. Only emitted for FP runs.

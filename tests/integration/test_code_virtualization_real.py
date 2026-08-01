@@ -9,6 +9,7 @@ Binary, the real radare2-native injection, and the real generated interpreter.
 
 from __future__ import annotations
 
+import random
 import shutil
 import struct
 from pathlib import Path
@@ -25,7 +26,9 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
     VirtualizedOp,
+    build_vm_scheme,
     decode_instruction,
+    encode_bytecode,
 )
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
@@ -592,10 +595,10 @@ def test_straight_line_memarith_run_fallback_preserves_exit_code(tmp_path: Path)
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
-# sub rsp, 0x210 - the engine VM's frame allocation (grown from 0x110 to hold the
-# 16-slot xmm save area). Its presence in the mutated binary proves the engine path
-# (not the region's 0x280 frame) virtualized the run.
-_ENGINE_FP_ENTRY_SIGNATURE = bytes.fromhex("4881EC10020000")
+# sub rsp, 0x290 - the engine VM's frame allocation (the xmm save area plus the
+# micro-op virtual operand stack below the red zone). Its presence in the mutated
+# binary proves the engine path (not the region's 0x280 frame) virtualized the run.
+_ENGINE_FP_ENTRY_SIGNATURE = bytes.fromhex("4881EC90020000")
 
 
 def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -2104,3 +2107,49 @@ def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     assert stats["functions_virtualized"] >= 1
     assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
+FIXTURE_ENGARITH = _DATASET / "elf_vm_engarith_x86_64"
+
+
+def test_reg_reg_arithmetic_lowers_to_shared_microop_primitives() -> None:
+    # Structural proof the 1:1 handler<->native map is broken: a reg-reg arithmetic
+    # op no longer encodes as one item but as a push/push/binop/pop micro-op
+    # sequence, and distinct native ops (add vs xor) expand identically through the
+    # SHARED vpush/vpop primitive opcodes - so identifying a handler no longer
+    # identifies a native instruction.
+    scheme = build_vm_scheme(random.Random(20260801))
+    # The shared stack primitives and the per-op folds are real handler keys.
+    assert ("vpush", False, 64) in scheme.dup
+    assert ("vpop", False, 64) in scheme.dup
+    assert ("vadd", False, 64) in scheme.dup and ("vxor", False, 64) in scheme.dup
+
+    add_len = len(encode_bytecode([VirtualizedOp("add", 7, 6, False, 64)], scheme))
+    xor_len = len(encode_bytecode([VirtualizedOp("xor", 7, 6, False, 64)], scheme))
+    mov_len = len(encode_bytecode([VirtualizedOp("mov", 7, 6, False, 64)], scheme))
+    # add and xor expand to the identical 4-item shape (vpush+vpush+vbinop+vpop),
+    # strictly longer than the single-item mov - one native op is now several items.
+    assert add_len == xor_len
+    assert add_len > mov_len
+
+
+def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
+    # Semantic parity: an engine-path run of reg-reg add/sub/xor/and/or (a call
+    # forces the engine over the region VM) nets exit 42 after micro-op lowering. A
+    # wrong lowering - especially the order-sensitive sub - would change the code.
+    if not FIXTURE_ENGARITH.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_ENGARITH}")
+
+    mutated = tmp_path / "mutated_engarith"
+    shutil.copy(FIXTURE_ENGARITH, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(FIXTURE_ENGARITH) == _emulate_exit_code(mutated) == 42
