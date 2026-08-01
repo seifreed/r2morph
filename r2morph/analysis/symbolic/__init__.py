@@ -17,6 +17,7 @@ from r2morph.analysis.symbolic.path_explorer import PathExplorer
 from r2morph.analysis.symbolic.resistance_probe import ResistanceMeasurement, SymbolicResistanceProbe
 from r2morph.analysis.symbolic.state_manager import StateManager
 from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
+from r2morph.analysis.symbolic.structural_resistance import StructuralResistance, StructuralResistanceProbe
 
 _SyntiaFramework: _Any = None
 try:
@@ -42,6 +43,8 @@ __all__ = [
     "SolverResult",
     "StateManager",
     "StateSchedulingStrategy",
+    "StructuralResistance",
+    "StructuralResistanceProbe",
     "SyntiaFramework",
     "SYNTIA_AVAILABLE",
 ]
