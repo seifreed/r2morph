@@ -56,6 +56,11 @@ REGISTER32_INDEX: dict[str, int] = {
 }
 
 _MNEMONIC_ORDER: tuple[str, ...] = ("mov", "add", "sub", "xor", "and", "or")
+# GP mnemonics that keep a single handler. The arithmetic ops (add/sub/xor/and/or)
+# lower to micro-op sequences (see the micro-op kinds below) rather than one handler,
+# so only ``mov`` needs a single-handler op-key; the arith mnemonics stay in
+# _MNEMONIC_ORDER (and thus SUPPORTED_MNEMONICS) so decode still virtualizes them.
+_GP_SINGLE_HANDLER_MNEMONICS: tuple[str, ...] = ("mov",)
 # Bit-shift-by-immediate GP ops. Only the immediate-count form virtualizes: the
 # ``shl reg, cl`` register-count form is rejected in decode by the operand width
 # mismatch (cl is 8-bit), so no register-form handler is ever needed - hence these
@@ -160,14 +165,19 @@ _FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
 # low-half zero-extension. Their keys reuse the (kind, is_immediate, width) shape.
 _MICROOP_STACK_KINDS: tuple[str, ...] = ("vpush", "vpop")
 _MICROOP_BINOP_KINDS: tuple[str, ...] = ("vadd", "vsub", "vxor", "vand", "vor")
+# ``vpushi`` pushes a width-sized immediate cell (8 bytes at 64, 4 at 32), so unlike
+# the width-agnostic ``vpush``/``vpop`` it needs both widths. It lets immediate-form
+# arithmetic reuse the same fold/pop primitives as the reg-reg form.
+_MICROOP_IMM_KINDS: tuple[str, ...] = ("vpushi",)
 _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     tuple(
         (mnemonic, is_immediate, width)
         for width in (64, 32)
-        for mnemonic in _MNEMONIC_ORDER
+        for mnemonic in _GP_SINGLE_HANDLER_MNEMONICS
         for is_immediate in (True, False)
     )
     + tuple((kind, False, 64) for kind in _MICROOP_STACK_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _MICROOP_IMM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _MICROOP_BINOP_KINDS)
     + tuple((kind, True, width) for width in (64, 32) for kind in _SHIFT_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)

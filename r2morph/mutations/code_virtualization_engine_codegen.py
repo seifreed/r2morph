@@ -26,6 +26,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _FRAME_SIZE,
     _MEM_OP_KINDS,
     _MICROOP_BINOP_KINDS,
+    _MICROOP_IMM_KINDS,
     _MICROOP_STACK_KINDS,
     _QWORD_BROADCAST,
     _SHIFT_KINDS,
@@ -39,6 +40,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
 )
 from r2morph.mutations.code_virtualization_engine_microops import (
     MICROOP_ARITH_MNEMONICS,
+    emit_arith_imm_microops,
     emit_arith_microops,
     microop_handler_body,
 )
@@ -240,10 +242,14 @@ def encode_bytecode(
                 }
                 emit_fields(position, mem_permuted_fields(False, fp), field_bytes)
             continue
-        if not op.is_immediate and op.mnemonic in MICROOP_ARITH_MNEMONICS:
-            # Reg-reg arithmetic lowers to a virtual-stack micro-op sequence instead
-            # of one handler, so the native op is data-flow through shared primitives.
-            emit_arith_microops(op, scheme, slot_of, emit_opcode, emit_fields, pick)
+        if op.mnemonic in MICROOP_ARITH_MNEMONICS:
+            # Arithmetic lowers to a virtual-stack micro-op sequence instead of one
+            # handler, so the native op is data-flow through shared primitives - the
+            # reg-reg and immediate forms share the same fold/pop handlers.
+            if op.is_immediate:
+                emit_arith_imm_microops(op, scheme, slot_of, emit_opcode, emit_fields, pick)
+            else:
+                emit_arith_microops(op, scheme, slot_of, emit_opcode, emit_fields, pick)
             continue
         position = emit_opcode(pick(scheme.dup[(op.mnemonic, op.is_immediate, op.width)]))
         if op.is_immediate:
@@ -526,7 +532,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return body + "  add rsi, 7\n  jmp vm_dispatch\n"
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
-        if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS:
+        if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
             return microop_handler_body(mnemonic, width, key)
         if mnemonic in _FP_PACKED_ARITH_KINDS:
             return fp_packed_arith_handler_body(mnemonic)
@@ -564,16 +570,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             load += "  mov rax, qword ptr [rsp + r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp + r9*8]\n"
             advance = "  add rsi, 3\n"
 
-        # rax/eax now holds the source value (immediate or register). mov stores it
-        # verbatim; the arithmetic/boolean ops compute the result with no literal
-        # native op via the shared MBA builder, so the handler never spells out the
-        # operation it performs. The MBA is unconditional here because a run is only
-        # virtualized when its flags are dead afterward (the engine's precondition),
-        # so clobbering flags is always safe - no flag-liveness analysis needed. A
-        # 32-bit op writes the low half and zero-extends, matching x86-64.
-        if mnemonic == "mov":
-            apply = "  mov qword ptr [rsp + r8*8], rax\n"
-        elif mnemonic in _SHIFT_KINDS:
+        # rax/eax now holds the source value (an immediate, or a register for mov).
+        # Reg-reg and immediate arithmetic no longer reach here - they lower to the
+        # micro-op stack primitives - so only mov and the immediate shifts remain.
+        if mnemonic in _SHIFT_KINDS:
             # rax/eax holds the imm8 shift count; drive the native shift by cl
             # (the CPU masks cl to width-1 exactly as the original `shl reg, imm8`
             # did). Flags dead by the engine precondition, so the literal shift is
@@ -588,14 +588,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             )
             apply = f"  mov ecx, eax\n{load_slot}  {mnemonic} {reg}, cl\n{store_slot}"
         else:
-            # sub a, b == add a, (-b): negate the source, then the same MBA add fold.
-            apply = "  neg rax\n" if mnemonic == "sub" else ""
-            apply += "  mov r10, qword ptr [rsp + r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp + r8*8]\n"
-            apply += _op_mba_compute(mnemonic, key)
-            if width == 64:
-                apply += "  mov qword ptr [rsp + r8*8], r10\n"
-            else:
-                apply += "  mov r10d, r10d\n  mov qword ptr [rsp + r8*8], r10\n"
+            # mov: store the source verbatim (the only remaining single-handler GP op).
+            apply = "  mov qword ptr [rsp + r8*8], rax\n"
         return decrypt_dst + load + apply + advance + "  jmp vm_dispatch\n"
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot

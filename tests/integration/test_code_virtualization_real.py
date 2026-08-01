@@ -2153,3 +2153,46 @@ def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -
     assert stats["functions_virtualized"] >= 1
     assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
     assert _emulate_exit_code(FIXTURE_ENGARITH) == _emulate_exit_code(mutated) == 42
+
+
+FIXTURE_ENGARITHIMM = _DATASET / "elf_vm_engarithimm_x86_64"
+
+
+def test_immediate_arithmetic_lowers_to_shared_microop_primitives() -> None:
+    # Structural proof the immediate form also breaks the 1:1 map: an immediate
+    # arithmetic op encodes as vpush_slot/vpush_imm/vbinop/vpop, sharing the
+    # vpush/vpop stack primitives with the reg-reg form, not a single handler.
+    scheme = build_vm_scheme(random.Random(20260802))
+    assert ("vpushi", False, 64) in scheme.dup
+    # Shared with the reg-reg lowering (same stack primitive opcodes).
+    assert ("vpush", False, 64) in scheme.dup and ("vpop", False, 64) in scheme.dup
+
+    add_len = len(encode_bytecode([VirtualizedOp("add", 7, 5, True, 64)], scheme))
+    xor_len = len(encode_bytecode([VirtualizedOp("xor", 7, 5, True, 64)], scheme))
+    mov_len = len(encode_bytecode([VirtualizedOp("mov", 7, 5, True, 64)], scheme))
+    # Immediate add and xor expand to the identical multi-item shape, strictly
+    # longer than the single-item immediate mov.
+    assert add_len == xor_len
+    assert add_len > mov_len
+
+
+def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
+    # Semantic parity: an engine-path run of immediate add/sub/xor/and/or (a call
+    # forces the engine over the region VM) nets exit 42 after micro-op lowering,
+    # including the order-sensitive immediate sub.
+    if not FIXTURE_ENGARITHIMM.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_ENGARITHIMM}")
+
+    mutated = tmp_path / "mutated_engarithimm"
+    shutil.copy(FIXTURE_ENGARITHIMM, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _emulate_exit_code(FIXTURE_ENGARITHIMM) == _emulate_exit_code(mutated) == 42
