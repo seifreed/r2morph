@@ -310,14 +310,15 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             extra["inner_exit"] = _inner_exit_asm(
                 schemes[layer - 1], layer - 1, counts[layer - 1], _RETURN_BASE + (layer - 1) * 8
             )
-        retarget = (
+        retarget_target = (
             f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
             # Un-mask the position the encoder folded into the branch target (r13b
             # holds it from the dispatch), broadcast to 32 bits - keyed by
             # key XOR position like every other operand in this layer's stream.
             f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
-            f"  lea r9, [rip+bc_{layer}]\n  add r9, rax\n  mov rsi, r9\n  jmp vm_dispatch\n"
+            f"  lea r9, [rip+bc_{layer}]\n  add r9, rax\n"
         )
+        retarget = retarget_target + "  mov rsi, r9\n  jmp vm_dispatch\n"
         layer_bodies.append(
             handler_instances_asm(
                 _index_to_key(scheme, offset=offsets[layer]),
@@ -328,6 +329,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                 junk_rng=junk_rng,
                 reload_seq=reload_seq,
                 retarget=retarget,
+                retarget_target=retarget_target,
                 frame_size=_FRAME_SIZE,
                 slot=slot,
                 extra=extra,

@@ -273,6 +273,89 @@ def _call_mem_idx_handler_asm(index: int, key: int, key_dword: str, slot: tuple[
     return _call_bridge_asm(index, slot, target, advance)
 
 
+# RFLAGS bit positions read by the conditional-branch conditions (Intel SDM Vol 1
+# 3.4.3): carry, parity, zero, sign, overflow.
+_FLAG_CF = 0
+_FLAG_PF = 2
+_FLAG_ZF = 6
+_FLAG_SF = 7
+_FLAG_OF = 11
+
+# Each canonical branch condition (the value set of region._CONDITION) as
+# (base, negate): ``base`` names the boolean quantity computed from the flags and
+# ``negate`` flips it for the inverted mnemonic (je vs jne share ZF). Bases:
+# z=ZF, s=SF, o=OF, p=PF, c=CF, be=CF|ZF, l=SF^OF, le=ZF|(SF^OF).
+_JCC_CONDITION_BASE: dict[str, tuple[str, bool]] = {
+    "je": ("z", False),
+    "jne": ("z", True),
+    "js": ("s", False),
+    "jns": ("s", True),
+    "jo": ("o", False),
+    "jno": ("o", True),
+    "jp": ("p", False),
+    "jnp": ("p", True),
+    "jb": ("c", False),
+    "jae": ("c", True),
+    "jbe": ("be", False),
+    "ja": ("be", True),
+    "jl": ("l", False),
+    "jge": ("l", True),
+    "jle": ("le", False),
+    "jg": ("le", True),
+}
+
+
+def _extract_flag_bit_asm(dst: str, bit: int) -> str:
+    """Isolate RFLAGS bit ``bit`` (from eax) as a 0/1 value in 32-bit reg ``dst``."""
+    return f"  mov {dst}, eax\n  shr {dst}, {bit}\n  and {dst}, 1\n"
+
+
+def _jcc_taken_asm(condition: str) -> str:
+    """Compute the branch-taken value (0/1) into ecx from RFLAGS held in eax.
+
+    The x86 conditions are evaluated arithmetically (bit extract + boolean fold)
+    so the branch carries no native conditional jump. r10d/r11d are scratch.
+    """
+    base, negate = _JCC_CONDITION_BASE[condition]
+    if base == "be":  # CF | ZF
+        body = _extract_flag_bit_asm("ecx", _FLAG_CF) + _extract_flag_bit_asm("r10d", _FLAG_ZF) + "  or ecx, r10d\n"
+    elif base == "l":  # SF ^ OF
+        body = _extract_flag_bit_asm("ecx", _FLAG_SF) + _extract_flag_bit_asm("r10d", _FLAG_OF) + "  xor ecx, r10d\n"
+    elif base == "le":  # ZF | (SF ^ OF)
+        body = (
+            _extract_flag_bit_asm("ecx", _FLAG_ZF)
+            + _extract_flag_bit_asm("r10d", _FLAG_SF)
+            + _extract_flag_bit_asm("r11d", _FLAG_OF)
+            + "  xor r10d, r11d\n  or ecx, r10d\n"
+        )
+    else:
+        bit = {"z": _FLAG_ZF, "s": _FLAG_SF, "o": _FLAG_OF, "p": _FLAG_PF, "c": _FLAG_CF}[base]
+        body = _extract_flag_bit_asm("ecx", bit)
+    if negate:
+        body += "  xor ecx, 1\n"
+    return body
+
+
+def _jcc_handler_asm(condition: str, retarget_target: str) -> str:
+    """Emit a conditional-branch handler that carries no native jcc.
+
+    Decodes the taken target into r9 (``retarget_target``) and the fall-through
+    (rsi+5) into r8, computes the taken bit from the captured RFLAGS, then selects
+    the next vIP branch-free with a 0/-1 mask - no native conditional jump or cmov,
+    so a devirtualizer cannot read the condition or the CFG edge off the handler.
+    """
+    return (
+        retarget_target  # r9 = taken target
+        + "  lea r8, [rsi+5]\n"  # r8 = fall-through vIP (past the 5-byte jcc item)
+        + f"  mov eax, dword ptr [rsp+{_FLAGS_OFFSET}]\n"  # captured RFLAGS (low 32 bits)
+        + _jcc_taken_asm(condition)  # ecx = taken (0/1)
+        + "  neg rcx\n"  # rcx = 0 or all-ones mask
+        + "  mov r10, r9\n  and r10, rcx\n"  # target & mask
+        + "  not rcx\n  and r8, rcx\n"  # fall-through & ~mask
+        + "  or r10, r8\n  mov rsi, r10\n  jmp vm_dispatch\n"
+    )
+
+
 def handler_instances_asm(
     index_to_key: dict[int, str],
     *,
@@ -283,6 +366,7 @@ def handler_instances_asm(
     junk_rng: random.Random,
     reload_seq: str,
     retarget: str,
+    retarget_target: str,
     frame_size: int,
     slot: tuple[int, ...],
     extra: dict[str, str] | None = None,
@@ -388,12 +472,8 @@ def handler_instances_asm(
         elif handler_key == "jmp":
             lines.append(retarget)
         elif handler_key.startswith("jcc_"):
-            native = handler_key.split("_", 1)[1]
-            lines.append(
-                f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n  {native} T_{index}\n"
-                "  add rsi, 5\n  jmp vm_dispatch\n"
-                f"T_{index}:\n{retarget}"
-            )
+            condition = handler_key.split("_", 1)[1]
+            lines.append(_jcc_handler_asm(condition, retarget_target))
         elif handler_key == "nop":
             lines.append("  add rsi, 1\n  jmp vm_dispatch\n")
         elif handler_key.startswith("exit_"):
@@ -408,14 +488,17 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     key = scheme.xor_key
     key_qword = hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF)
     key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
-    retarget = (
+    retarget_target = (
         f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
         # Un-mask the position the encoder folded into the target (r13b holds it
         # from the dispatch), broadcast to 32 bits - the branch offset is keyed by
         # key XOR position like every other operand.
         f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
-        "  lea r9, [rip+bytecode]\n  add r9, rax\n  mov rsi, r9\n  jmp vm_dispatch\n"
+        "  lea r9, [rip+bytecode]\n  add r9, rax\n"
     )
+    # The unconditional jmp handler commits the decoded target straight to the vIP;
+    # the conditional handler selects between it and the fall-through branch-free.
+    retarget = retarget_target + "  mov rsi, r9\n  jmp vm_dispatch\n"
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
@@ -506,6 +589,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             junk_rng=junk_rng,
             reload_seq=reload_seq,
             retarget=retarget,
+            retarget_target=retarget_target,
             frame_size=_FRAME_SIZE,
             slot=slot,
             field_perm=scheme.field_perm,

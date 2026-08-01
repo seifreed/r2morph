@@ -2196,3 +2196,28 @@ def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path)
     assert stats["functions_virtualized"] >= 1
     assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
     assert _emulate_exit_code(FIXTURE_ENGARITHIMM) == _emulate_exit_code(mutated) == 42
+
+
+def test_region_conditional_branch_preserves_exit_code(tmp_path: Path) -> None:
+    # A flag-live control-flow fixture: the region VM keeps the conditional branch
+    # inside the bytecode, deciding taken/not-taken arithmetically from the captured
+    # flags with no native jcc (see the unit test for the structural proof). Exercise
+    # both branch outcomes end to end - the exit code must be preserved.
+    fixture = _DATASET / "elf_cff_flaglive_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_cff"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    baseline = _emulate_exit_code(fixture)
+    assert baseline is not None
+    assert _emulate_exit_code(mutated) == baseline
