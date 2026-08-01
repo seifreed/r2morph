@@ -317,6 +317,7 @@ class VMScheme:
         "field_perm",
         "dispatch_shape",
         "body_seed",
+        "frame_seed",
     )
 
     def __init__(
@@ -330,6 +331,7 @@ class VMScheme:
         field_perm: int = 0,
         dispatch_shape: int = DISPATCH_THREADED,
         body_seed: int = 0,
+        frame_seed: int = 0,
     ) -> None:
         # Each operation gets one or more interchangeable opcode indices; the same
         # operation can appear under different opcodes in the stream and each index
@@ -360,6 +362,10 @@ class VMScheme:
         # handler bodies share a fixed register-allocation fingerprint. 0 leaves
         # the bodies in their canonical register spelling.
         self.body_seed = body_seed
+        # Seeds the per-build frame-region relocation (checksum/xmm/vsp/vstack
+        # offsets); 0 leaves the canonical fixed layout so a devirtualizer cannot
+        # rely on a fixed frame map of the VM's internal state.
+        self.frame_seed = frame_seed
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -422,9 +428,10 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     junk_seed = rng.randrange(1 << 31)
     field_perm = rng.randrange(1, 1 << 31)
     dispatch_shape = rng.randint(DISPATCH_THREADED, DISPATCH_SWITCH)
-    # Drawn last so adding the per-handler rename does not shift any earlier field's
-    # value for a given seed; the other fields stay byte-for-byte stable.
     body_seed = rng.randrange(1 << 31)
+    # Drawn last so adding the frame relocation does not shift any earlier field's
+    # value for a given seed; the other fields stay byte-for-byte stable.
+    frame_seed = rng.randrange(1 << 31)
     return VMScheme(
         dup,
         exit_opcode,
@@ -435,6 +442,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         field_perm,
         dispatch_shape,
         body_seed,
+        frame_seed,
     )
 
 

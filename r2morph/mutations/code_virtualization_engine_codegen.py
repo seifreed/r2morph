@@ -15,7 +15,6 @@ import struct
 from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, switch_dispatch, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine_common import (
-    _CHECKSUM_OFFSET,
     _DWORD_BROADCAST,
     _FP_ARITH_KINDS,
     _FP_ARITH_MEM_KINDS,
@@ -31,8 +30,6 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _MICROOP_STACK_KINDS,
     _QWORD_BROADCAST,
     _SHIFT_KINDS,
-    _VSP_OFFSET,
-    _XMM_SAVE_OFFSET,
     DISPATCH_SWITCH,
     GP_REGISTERS,
     RSP_INDEX,
@@ -40,6 +37,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _live_junk_asm,
     pack_immediate,
 )
+from r2morph.mutations.code_virtualization_engine_frame import DEFAULT_FRAME_LAYOUT, build_frame_layout
 from r2morph.mutations.code_virtualization_engine_microops import (
     MICROOP_ARITH_MNEMONICS,
     emit_arith_imm_microops,
@@ -285,6 +283,12 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     index_to_key = {index: op_key for op_key, indices in scheme.dup.items() for index in indices}
     total = len(index_to_key)
     junk_rng = random.Random(scheme.junk_seed)
+    # This build's frame-region offsets (checksum/xmm/vsp/vstack): relocated per
+    # build so no fixed frame map of the VM's state transfers across samples. The
+    # frame size stays _FRAME_SIZE, so the entry signature is unchanged.
+    layout = (
+        build_frame_layout(_FRAME_SIZE, random.Random(scheme.frame_seed)) if scheme.frame_seed else DEFAULT_FRAME_LAYOUT
+    )
 
     def mem_addr_prologue() -> str:
         # Shared head of every memory handler: reg slot [rsi+1] -> r8, base slot
@@ -387,7 +391,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         # Shared head of every base+disp FP memory handler. Mirrors mem_addr_prologue
         # (base slot value + sign-extended disp32 folded with MBA -> r10, the
         # program's real address) and additionally computes the xmm save-slot address
-        # from the "reg" field (xmm index): rsp + _XMM_SAVE_OFFSET + index*16 -> r11.
+        # from the "reg" field (xmm index): rsp + layout.xmm_offset + index*16 -> r11.
         # The epilogue reloads the save slots into the architectural xmm registers.
         off = mem_offsets(False, scheme.field_perm)
         return (
@@ -397,7 +401,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n"
             + _mba_add_r10_rax(key)
-            + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+            + f"  shl r8, 4\n  lea r11, [rsp + r8 + {layout.xmm_offset}]\n"
         )
 
     def fp_riprel_addr_prologue() -> str:
@@ -411,14 +415,14 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, r15\n"
             + _mba_add_r10_rax(key)
-            + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+            + f"  shl r8, 4\n  lea r11, [rsp + r8 + {layout.xmm_offset}]\n"
         )
 
     def fp_idx_addr_prologue() -> str:
         # Scaled-index head: reuses the GP indexed prologue (base + index*2**scale +
         # disp -> r10, xmm index preserved in r8) and adds the xmm save-slot address
         # -> r11, matching the base and rip prologues' register contract.
-        return mem_idx_prologue() + f"  shl r8, 4\n  lea r11, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        return mem_idx_prologue() + f"  shl r8, 4\n  lea r11, [rsp + r8 + {layout.xmm_offset}]\n"
 
     def fp_mem_handler_body(kind: str, width: int) -> str:
         # Scalar FP load/store: base+disp (7-byte item), rip-relative (6-byte), or
@@ -470,8 +474,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return (
             f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-            f"  shl r8, 4\n  lea r10, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
-            f"  shl r9, 4\n  lea r11, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+            f"  shl r8, 4\n  lea r10, [rsp + r8 + {layout.xmm_offset}]\n"
+            f"  shl r9, 4\n  lea r11, [rsp + r9 + {layout.xmm_offset}]\n"
             "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
             f"  {op}{suffix} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
             "  add rsi, 3\n  jmp vm_dispatch\n"
@@ -491,7 +495,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         body = (
             f"  movzx r8d, byte ptr [rsi+{off['xmm']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  movzx r9d, byte ptr [rsi+{off['gp']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-            f"  shl r8, 4\n  lea r10, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+            f"  shl r8, 4\n  lea r10, [rsp + r8 + {layout.xmm_offset}]\n"
         )
         if direction == "cvti2f":
             body += "  movups xmm0, xmmword ptr [r10]\n"
@@ -517,8 +521,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return (
             f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
-            f"  shl r8, 4\n  lea r10, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
-            f"  shl r9, 4\n  lea r11, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+            f"  shl r8, 4\n  lea r10, [rsp + r8 + {layout.xmm_offset}]\n"
+            f"  shl r9, 4\n  lea r11, [rsp + r9 + {layout.xmm_offset}]\n"
             "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
             f"  {mnemonic} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
             "  add rsi, 3\n  jmp vm_dispatch\n"
@@ -536,7 +540,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
         if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
-            return microop_handler_body(mnemonic, width, key)
+            return microop_handler_body(mnemonic, width, key, layout.vsp_offset, layout.vstack_base)
         if mnemonic in _FP_PACKED_ARITH_KINDS:
             return fp_packed_arith_handler_body(mnemonic)
         if mnemonic in _FP_PACKED_MEM_KINDS:
@@ -601,24 +605,24 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         if name != "rsp":
             lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {name}\n")
     # Empty the virtual operand stack for the micro-op handlers (pointer word = 0).
-    lines.append(f"  mov qword ptr [rsp + {_VSP_OFFSET}], 0\n")
+    lines.append(f"  mov qword ptr [rsp + {layout.vsp_offset}], 0\n")
     if has_fp:
         # Spill all 16 xmm registers into the save area so FP handlers can route
         # data through it; movups needs no alignment. Only emitted for FP runs.
         for xmm in range(16):
-            lines.append(f"  movups xmmword ptr [rsp + {_XMM_SAVE_OFFSET + xmm * 16}], xmm{xmm}\n")
+            lines.append(f"  movups xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}], xmm{xmm}\n")
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt; runs after the register spill. The
     # threaded shape excludes the trailing offset table (encrypted after assembly);
     # the switch shape has no table, so the checksum runs up to vm_code_end.
     is_switch = scheme.dispatch_shape == DISPATCH_SWITCH
     checksum_end = "vm_code_end" if is_switch else "vm_table"
-    lines.append(checksum_prologue_asm(key, slot=_CHECKSUM_OFFSET, end_label=checksum_end))
+    lines.append(checksum_prologue_asm(key, slot=layout.checksum_offset, end_label=checksum_end))
     # Timing anti-debug woven into the same checksum slot: a single-stepped run
     # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
     # 0x00 (the counter reads sit inside the checksummed range, so no encoder or
     # checksum change is needed and the benign build is bit-identical).
-    lines.append(timing_fold_asm(key, slot=_CHECKSUM_OFFSET))
+    lines.append(timing_fold_asm(key, slot=layout.checksum_offset))
     poly_rng = random.Random(scheme.table_key)
     # Undo the opcode byte's position mask and fold in the key and the runtime
     # self-checksum the encoder pre-biased the opcode with, so a patched interpreter
@@ -628,7 +632,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     opcode_xors = [
         f"  xor al, {key}\n",
         "  xor al, r13b\n",
-        f"  xor al, byte ptr [rsp + {_CHECKSUM_OFFSET}]\n",
+        f"  xor al, byte ptr [rsp + {layout.checksum_offset}]\n",
     ]
     bounds = f"  cmp al, {total}\n  jae vm_exit\n"
 
@@ -642,7 +646,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             table_load="  lea r14, [rip + vm_table]\n  mov eax, dword ptr [r14 + rax*4]\n",
             table_xors=[
                 f"  xor eax, {hex(scheme.table_key)}\n",
-                f"  movzx ecx, byte ptr [rsp + {_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
+                f"  movzx ecx, byte ptr [rsp + {layout.checksum_offset}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
             ],
             rng=poly_rng,
         )
@@ -681,7 +685,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             lines.append(f"  mov {name}, qword ptr [rsp + {slot[index] * 8}]\n")
     if has_fp:
         for xmm in range(16):
-            lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {_XMM_SAVE_OFFSET + xmm * 16}]\n")
+            lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}]\n")
     lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
 
     if is_switch:

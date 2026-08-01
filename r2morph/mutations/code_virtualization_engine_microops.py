@@ -25,8 +25,6 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _MICROOP_IMM_KINDS,
     _MICROOP_STACK_KINDS,
     _QWORD_BROADCAST,
-    _VSP_OFFSET,
-    _VSTACK_BASE,
     VMScheme,
     pack_immediate,
 )
@@ -42,18 +40,18 @@ MICROOP_STACK_KINDS: tuple[str, ...] = _MICROOP_STACK_KINDS
 MICROOP_BINOP_KINDS: tuple[str, ...] = _MICROOP_BINOP_KINDS
 MICROOP_IMM_KINDS: tuple[str, ...] = _MICROOP_IMM_KINDS
 
-_VSP = hex(_VSP_OFFSET)
-_VBASE = hex(_VSTACK_BASE)
 
-
-def microop_handler_body(kind: str, width: int, key: int) -> str:
+def microop_handler_body(kind: str, width: int, key: int, vsp_offset: int, vstack_base: int) -> str:
     """Assembly body for one micro-op primitive; ends with the shared dispatch jump.
 
     ``vpush s``/``vpop s`` carry one slot-index operand at ``[rsi+1]`` (the only
     field, so no permutation applies); ``v<op>`` carries no operand. The stack
-    pointer word and cells are addressed off ``rsp``; only scratch registers
-    (rax/r8/r9/r10/rcx) are touched, all dead across the threaded dispatch.
+    pointer word (``vsp_offset``) and cells (``vstack_base``) are addressed off
+    ``rsp`` at this build's frame offsets; only scratch registers (rax/r8/r9/r10/
+    rcx) are touched, all dead across the threaded dispatch.
     """
+    _VSP = hex(vsp_offset)
+    _VBASE = hex(vstack_base)
     if kind == "vpush":
         # Read src slot -> r8, push its value onto the vstack, bump the pointer.
         return (
