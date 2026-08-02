@@ -31,12 +31,7 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import (
 from r2morph.mutations.code_virtualization_region_codegen_encode import (
     encode_region as encode_region,
 )
-from r2morph.mutations.code_virtualization_region_handlers import (
-    _FLAGS_OFFSET,
-    _FRAME_SIZE,
-    _GUARD,
-    _cmp_memory_handler_asm,
-    _compare_handler_asm,
+from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_arith_handler_asm,
     _fp_arith_mem_handler_asm,
     _fp_compare_handler_asm,
@@ -47,6 +42,15 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _fp_packed_arith_handler_asm,
     _fp_packed_arith_mem_handler_asm,
     _fp_packed_mem_handler_asm,
+    xmm_reload_asm,
+    xmm_spill_asm,
+)
+from r2morph.mutations.code_virtualization_region_handlers import (
+    _FLAGS_OFFSET,
+    _FRAME_SIZE,
+    _GUARD,
+    _cmp_memory_handler_asm,
+    _compare_handler_asm,
     _imul3_handler_asm,
     _imul_handler_asm,
     _incdec_handler_asm,
@@ -73,8 +77,6 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _riprel_handler_asm,
     _rspadj_handler_asm,
     _shift_handler_asm,
-    xmm_reload_asm,
-    xmm_spill_asm,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
