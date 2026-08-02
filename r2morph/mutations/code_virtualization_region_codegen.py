@@ -90,11 +90,13 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vcmpsynth_handler_asm,
     _vload_handler_asm,
     _vloadidx_handler_asm,
+    _vloadrip_handler_asm,
     _vpop_handler_asm,
     _vpush_handler_asm,
     _vpushi_handler_asm,
     _vshift_handler_asm,
     _vstore_handler_asm,
+    _vstorerip_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_models import (
     _DWORD_BROADCAST,
@@ -437,6 +439,10 @@ def handler_instances_asm(
             lines.append(_vload_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("vstore_"):
             lines.append(_vstore_handler_asm(handler_key, key, key_dword, field_perm))
+        elif handler_key.startswith("vloadrip_"):
+            lines.append(_vloadrip_handler_asm(handler_key, key, key_dword, field_perm))
+        elif handler_key.startswith("vstorerip_"):
+            lines.append(_vstorerip_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("vshift_"):
             lines.append(_vshift_handler_asm(handler_key, key))
         elif handler_key.startswith("opsynth_"):

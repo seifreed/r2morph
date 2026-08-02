@@ -1863,6 +1863,28 @@ def test_shift_micro_op_captures_the_carry_flag_for_the_branch(tmp_path: Path) -
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_rip_relative_memory_micro_ops_preserve_exit_code(tmp_path: Path) -> None:
+    # A global load/store/subtract/RMW through rip-relative operands, all lowered to
+    # the vloadrip/vstorerip micro-ops (proven structurally in the unit suite). The
+    # opriprel subtract has no borrow (50 - 8), so a wrongly synthesized borrow flag
+    # would take `jc fail` to 99; the RMW and store are read back, so a lost write
+    # would also diverge. Correct execution nets 42.
+    fixture = _DATASET / "elf_vm_riprelmicroop_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_riprelmicroop"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_frame_prologue_virtualization_preserves_local(tmp_path: Path) -> None:
     # A real prologue/epilogue (push rbp; mov rbp,rsp; sub rsp,N; [rbp-8] local;
     # add rsp,N; pop rbp; ret) must virtualize and return its frame-pointer local

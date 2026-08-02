@@ -181,13 +181,6 @@ def test_read_modify_write_lowers_to_vload_vpush_vbinopsynth_vstore() -> None:
     assert kinds[:4] == ["vload", "vpush", "vbinopsynth", "vstore"]
 
 
-def test_rip_relative_memory_is_not_lowered() -> None:
-    # rip-relative memory keeps its single handler this slice (its address prologue
-    # differs); it is a separate follow-up.
-    riprel = [item[0] for item in _memory_region(_insn(0x1000, 7, "mov", "mov rax, qword [rip + 0x2000]"))]
-    assert "riprel_load" in riprel and "vload" not in riprel
-
-
 def _compare_region(compare: dict[str, object]) -> list[str]:
     """Region item kinds for a compare that drives a conditional branch."""
     insns = [
@@ -225,3 +218,37 @@ def test_cmp_with_memory_operand_lowers_to_vpush_vload_vcmpsynth() -> None:
     # cmp reg,[base+disp] reuses the base+disp vload primitive before the compare.
     assert "cmpmem" not in kinds
     assert kinds[:3] == ["vpush", "vload", "vcmpsynth"]
+
+
+def test_rip_relative_load_lowers_to_vloadrip() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 7, "mov", "mov rax, qword [rip + 0x2000]"))]
+    # mov reg,[rip+disp] pushes the global via vloadrip then pops it into the register.
+    assert "riprel_load" not in kinds
+    assert kinds[:2] == ["vloadrip", "vpop"]
+
+
+def test_rip_relative_store_lowers_to_vpush_vstorerip() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 7, "mov", "mov qword [rip + 0x2000], rax"))]
+    assert "riprel_store" not in kinds
+    assert kinds[:2] == ["vpush", "vstorerip"]
+
+
+def test_rip_relative_arith_lowers_with_vloadrip_and_vbinopsynth() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 7, "add", "add rax, qword [rip + 0x2000]"))]
+    # <op> reg,[rip+disp] pushes reg, loads the global, folds them with the
+    # flag-synthesizing stack fold, pops to reg.
+    assert "opriprel" not in kinds
+    assert kinds[:4] == ["vpush", "vloadrip", "vbinopsynth", "vpop"]
+
+
+def test_rip_relative_rmw_lowers_to_vloadrip_vbinopsynth_vstorerip() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 7, "add", "add qword [rip + 0x2000], rax"))]
+    # <op> [rip+disp],reg loads the global, pushes reg, folds, stores the result back.
+    assert "opmemdstrip" not in kinds
+    assert kinds[:4] == ["vloadrip", "vpush", "vbinopsynth", "vstorerip"]
+
+
+def test_rip_relative_micro_op_item_sizes() -> None:
+    # opcode + (unused) reg slot + 4-byte bytecode-relative offset.
+    assert _item_size(("vloadrip", 0, 64)) == 6
+    assert _item_size(("vstorerip", 0, 64)) == 6

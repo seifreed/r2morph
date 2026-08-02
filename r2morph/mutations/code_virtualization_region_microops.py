@@ -256,6 +256,40 @@ def _vloadidx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _vloadrip_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Load ``[rip+disp]`` (a global) and push the value onto the vstack.
+
+    Identical to :func:`_vload_handler_asm` but the address is bytecode-base-relative
+    (``_mem_address_asm(True, ...)`` folds the stored signed offset onto r15, the
+    bytecode base). That prologue does not clobber the vstack pointer r9, but
+    ``_PUSH_RAX`` reloads it from its frame slot either way. A 32-bit load
+    zero-extends. No flags.
+    """
+    width = int(handler_key.split("_")[1])
+    body, advance = _mem_address_asm(True, key, key_dword, field_perm)
+    body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vstorerip_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Pop the top vstack cell and store it to ``[rip+disp]`` (a global).
+
+    Like :func:`_vstore_handler_asm`, the pop happens first into rbx (preserved by
+    the address prologue), then ``_mem_address_asm(True, ...)`` computes the
+    bytecode-base-relative address into r10 and the value is stored. No flags.
+    """
+    width = int(handler_key.split("_")[1])
+    pop = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+    )
+    body, advance = _mem_address_asm(True, key, key_dword, field_perm)
+    store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
+    return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _vshift_handler_asm(handler_key: str, key: int) -> str:
     """Pop the top vstack cell, shift it by the carried count, capture flags, push.
 

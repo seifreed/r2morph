@@ -573,6 +573,27 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
             new_items.append(["vpush", reg])
             new_items.append(["vload", base, disp, width])
             new_items.append(["vcmpsynth", "cmp", width])
+        elif kind == "riprel_load":  # mov reg, [rip+disp]
+            _, reg, target, width = item
+            new_items.append(["vloadrip", target, width])
+            new_items.append(["vpop", reg])
+        elif kind == "riprel_store":  # mov [rip+disp], reg
+            _, reg, target, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vstorerip", target, width])
+        elif kind == "opriprel":  # <op> reg, [rip+disp] -- reg is src and dst
+            _, mnemonic, reg, target, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vloadrip", target, width])
+            # opriprel is always flag-synthesizing today, so fold with vbinopsynth.
+            new_items.append(["vbinopsynth", mnemonic, width])
+            new_items.append(["vpop", reg])
+        elif kind == "opmemdstrip":  # <op> [rip+disp], reg -- read-modify-write global
+            _, mnemonic, reg, target, width = item
+            new_items.append(["vloadrip", target, width])
+            new_items.append(["vpush", reg])
+            new_items.append(["vbinopsynth", mnemonic, width])
+            new_items.append(["vstorerip", target, width])
         else:
             new_items.append(item)
     for item in new_items:

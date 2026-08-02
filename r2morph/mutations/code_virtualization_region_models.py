@@ -190,6 +190,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"vstore_{item[3]}"  # pop the vstack top to [base+disp]: width
     if kind == "vloadidx":
         return f"vloadidx_{item[5]}"  # push [base+index*scale+disp] onto the vstack: width
+    if kind == "vloadrip":
+        return f"vloadrip_{item[2]}"  # push [rip+disp] onto the vstack: width
+    if kind == "vstorerip":
+        return f"vstorerip_{item[2]}"  # pop the vstack top to [rip+disp]: width
     if kind == "vshift":
         return f"vshift_{item[1]}_{item[3]}"  # stack shift: mnemonic + width
     if kind == "vcmpsynth":
