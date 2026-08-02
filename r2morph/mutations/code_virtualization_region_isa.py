@@ -24,6 +24,7 @@ import random
 from dataclasses import dataclass
 
 from r2morph.mutations.code_virtualization_fold import ARITH_VARIANT_BITS
+from r2morph.mutations.code_virtualization_region_compare import COMPARE_VARIANT_BITS
 from r2morph.mutations.code_virtualization_region_flags import FLAG_VARIANT_BITS
 
 
@@ -33,6 +34,7 @@ class RegionISASpec:
 
     flag_variant: int = 0
     arith_variant: int = 0
+    compare_variant: int = 0
 
 
 def build_isa_spec(isa_seed: int) -> RegionISASpec:
@@ -41,7 +43,8 @@ def build_isa_spec(isa_seed: int) -> RegionISASpec:
         return RegionISASpec()
     rng = random.Random(isa_seed)
     # Draw order is stable: appending a family keeps earlier fields byte-stable for
-    # a given seed. flag_variant was first; arith_variant follows it.
+    # a given seed. flag_variant was first, then arith_variant, then compare_variant.
     flag_variant = rng.randrange(1 << FLAG_VARIANT_BITS)
     arith_variant = rng.randrange(1 << ARITH_VARIANT_BITS)
-    return RegionISASpec(flag_variant=flag_variant, arith_variant=arith_variant)
+    compare_variant = rng.randrange(1 << COMPARE_VARIANT_BITS)
+    return RegionISASpec(flag_variant=flag_variant, arith_variant=arith_variant, compare_variant=compare_variant)

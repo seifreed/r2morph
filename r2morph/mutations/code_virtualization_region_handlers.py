@@ -22,6 +22,7 @@ from r2morph.mutations.code_virtualization_layout import (
     shift_offsets,
 )
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax
+from r2morph.mutations.code_virtualization_region_compare import compare_compute
 from r2morph.mutations.code_virtualization_region_flags import synth_flags_asm as _synth_flags_asm
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
@@ -265,7 +266,13 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
 
 
 def _cmp_memory_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, flag_variant: int = 0, arith_variant: int = 0
+    handler_key: str,
+    key: int,
+    key_dword: str,
+    field_perm: int = 0,
+    flag_variant: int = 0,
+    arith_variant: int = 0,
+    compare_variant: int = 0,
 ) -> str:
     """Assembly body for ``cmp reg, [mem]`` (computes the address, synthesizes flags).
 
@@ -284,8 +291,11 @@ def _cmp_memory_handler_asm(
         body += "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
     else:
         body += "  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
-    body += "  mov rbp, rax\n  neg rax\n  mov r10, rbx\n"
-    body += arith_fold("add", key, arith_variant)
+    body += "  mov rbp, rax\n"
+    if compare_variant == 0:
+        body += "  neg rax\n  mov r10, rbx\n" + arith_fold("add", key, arith_variant)
+    else:
+        body += compare_compute("cmp", key, arith_variant, compare_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, "sub", flag_variant)
@@ -543,6 +553,7 @@ def _compare_handler_asm(
     field_perm: int = 0,
     flag_variant: int = 0,
     arith_variant: int = 0,
+    compare_variant: int = 0,
 ) -> str:
     """Assembly body for a cmp/test handler (synthesizes flags, stores no result).
 
@@ -577,12 +588,14 @@ def _compare_handler_asm(
     body += "  mov rbp, rax\n"
     body += "  mov r10, qword ptr [rsp+r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp+r8*8]\n"
     body += "  mov rbx, r10\n"
-    if mnemonic == "cmp":
-        body += "  neg rax\n" + arith_fold("add", key, arith_variant)  # r10 = a - b
-        synth_mode = "sub"
+    synth_mode = "sub" if mnemonic == "cmp" else "logic"
+    if compare_variant == 0:
+        if mnemonic == "cmp":
+            body += "  neg rax\n" + arith_fold("add", key, arith_variant)  # r10 = a - b
+        else:
+            body += arith_fold("and", key, arith_variant)  # r10 = a & b
     else:
-        body += arith_fold("and", key, arith_variant)  # r10 = a & b
-        synth_mode = "logic"
+        body += compare_compute(mnemonic, key, arith_variant, compare_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, synth_mode, flag_variant)

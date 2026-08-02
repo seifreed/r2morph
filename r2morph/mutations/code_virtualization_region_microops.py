@@ -21,6 +21,7 @@ flags-dead precondition).
 from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_fold import arith_fold
+from r2morph.mutations.code_virtualization_region_compare import compare_compute
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _VSP_OFFSET,
@@ -164,7 +165,9 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, 
     return body
 
 
-def _vcmpsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, arith_variant: int = 0) -> str:
+def _vcmpsynth_handler_asm(
+    handler_key: str, key: int, flag_variant: int = 0, arith_variant: int = 0, compare_variant: int = 0
+) -> str:
     """Pop the top two vstack cells, synthesize the compare flags, push nothing.
 
     The flag-only counterpart of ``_vbinopsynth_handler_asm``: ``cmp``/``test`` exist
@@ -191,10 +194,13 @@ def _vcmpsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, ar
     # Save the originals for the synthesis (a and b before any negation).
     body += "  mov rbx, r10\n  mov rbp, rax\n"
     # cmp -> flags of a - b (== a + (-b)); test -> flags of a & b. Result is discarded.
-    if op == "cmp":
-        body += "  neg rax\n" + arith_fold("add", key, arith_variant)
+    if compare_variant == 0:
+        if op == "cmp":
+            body += "  neg rax\n" + arith_fold("add", key, arith_variant)
+        else:
+            body += arith_fold("and", key, arith_variant)
     else:
-        body += arith_fold("and", key, arith_variant)
+        body += compare_compute(op, key, arith_variant, compare_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)

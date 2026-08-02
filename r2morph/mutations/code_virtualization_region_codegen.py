@@ -407,6 +407,7 @@ def handler_instances_asm(
     spec = build_isa_spec(isa_seed)
     flag_variant = spec.flag_variant
     arith_variant = spec.arith_variant
+    compare_variant = spec.compare_variant
     lines: list[str] = []
     for index in sorted(index_to_key):
         handler_key = index_to_key[index]
@@ -435,7 +436,7 @@ def handler_instances_asm(
         elif handler_key.startswith("vpushi_"):
             lines.append(_vpushi_handler_asm(handler_key, key_qword, key_dword))
         elif handler_key.startswith("vcmpsynth_"):
-            lines.append(_vcmpsynth_handler_asm(handler_key, key, flag_variant, arith_variant))
+            lines.append(_vcmpsynth_handler_asm(handler_key, key, flag_variant, arith_variant, compare_variant))
         elif handler_key.startswith("vbinopsynth_"):
             lines.append(_vbinopsynth_handler_asm(handler_key, key, flag_variant, arith_variant))
         elif handler_key.startswith("vbinop_"):
@@ -462,7 +463,9 @@ def handler_instances_asm(
             lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith(("cmp_", "test_")):
             lines.append(
-                _compare_handler_asm(handler_key, key, key_qword, key_dword, field_perm, flag_variant, arith_variant)
+                _compare_handler_asm(
+                    handler_key, key, key_qword, key_dword, field_perm, flag_variant, arith_variant, compare_variant
+                )
             )
         elif handler_key.startswith(("shl_", "shr_", "sar_")):
             lines.append(_shift_handler_asm(handler_key, key, field_perm))
@@ -485,7 +488,11 @@ def handler_instances_asm(
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
-            lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword, field_perm, flag_variant, arith_variant))
+            lines.append(
+                _cmp_memory_handler_asm(
+                    handler_key, key, key_dword, field_perm, flag_variant, arith_variant, compare_variant
+                )
+            )
         elif handler_key.startswith(("opmemdst_", "opmemdstrip_")):
             lines.append(_op_memdst_handler_asm(handler_key, key, key_dword, field_perm, flag_variant, arith_variant))
         elif handler_key.startswith(("opmem_", "opriprel_")):
