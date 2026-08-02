@@ -34,7 +34,7 @@ class RegionScheme:
     slot indices in the bytecode reveal no register.
     """
 
-    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key", "field_perm", "body_seed")
+    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key", "field_perm", "body_seed", "checksum_offset")
 
     def __init__(
         self,
@@ -45,6 +45,7 @@ class RegionScheme:
         table_key: int,
         field_perm: int = 0,
         body_seed: int = 0,
+        checksum_offset: int = 0x88,
     ) -> None:
         self.dup = dup
         self.xor_key = xor_key
@@ -63,6 +64,10 @@ class RegionScheme:
         # this, so duplicate handlers share no register-allocation fingerprint.
         # 0 leaves the bodies in their canonical register spelling.
         self.body_seed = body_seed
+        # Frame byte offset of the runtime self-checksum, relocated per build so the
+        # checksum slot is not a fixed frame fingerprint. Lives in the free gap above
+        # the flags slot and below the xmm save area; 0x88 is the canonical default.
+        self.checksum_offset = checksum_offset
 
 
 class Region:

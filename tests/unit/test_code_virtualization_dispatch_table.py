@@ -80,3 +80,21 @@ def test_handlers_position_unmask_their_immediates() -> None:
     # same scratch register whatever it renames to, so match the broadcast multiply
     # by an identical register pair.
     assert re.search(rf"imul (\w+), \1, {re.escape(hex(_DWORD_BROADCAST))}", asm)
+
+
+def test_checksum_slot_is_relocated_per_build_within_the_free_frame_gap() -> None:
+    # The self-checksum byte must not sit at a fixed frame offset every build: it is
+    # drawn per build into the free gap above the flags slot (0x80) and below the xmm
+    # save area (0x100), qword-aligned, so it is not a stable frame fingerprint.
+    offsets = {build_region_scheme(_tiny_region(), random.Random(seed)).checksum_offset for seed in range(64)}
+    assert len(offsets) > 1
+    assert all(0x88 <= off < 0x100 and off % 8 == 0 for off in offsets)
+
+
+def test_interpreter_folds_the_relocated_checksum_slot() -> None:
+    # The dispatch's opcode decrypt reads the checksum from the build's relocated
+    # slot, not the historical 0x88, so the relocation actually reaches the asm.
+    region = _tiny_region()
+    scheme = build_region_scheme(region, random.Random(0))
+    asm = _interpreter_asm(region, scheme)
+    assert f"[rsp+{scheme.checksum_offset}]" in asm

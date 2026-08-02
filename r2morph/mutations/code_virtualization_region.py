@@ -633,7 +633,9 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     junk_seed = rng.randrange(1 << 31)
     table_key = rng.randrange(1, 1 << 32)
     field_perm = rng.randrange(1, 1 << 31)
-    # Drawn last so adding the per-handler rename does not shift any earlier field's
-    # value for a given seed; the other fields stay byte-for-byte stable.
     body_seed = rng.randrange(1 << 31)
-    return RegionScheme(dup, xor_key, junk_seed, slot_perm, table_key, field_perm, body_seed)
+    # Drawn last so adding the checksum relocation does not shift any earlier field's
+    # value for a given seed. The checksum byte sits in the free frame gap above the
+    # flags slot (0x80) and below the xmm save area (0x100), qword-aligned.
+    checksum_offset = rng.randrange(0x88, 0x100, 8)
+    return RegionScheme(dup, xor_key, junk_seed, slot_perm, table_key, field_perm, body_seed, checksum_offset)

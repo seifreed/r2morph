@@ -79,7 +79,6 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _shift_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
-    _CHECKSUM_OFFSET,
     checksum_prologue_asm,
     compute_build_checksum,
 )
@@ -526,12 +525,12 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved.
-    lines.append(checksum_prologue_asm(scheme.xor_key))
+    lines.append(checksum_prologue_asm(scheme.xor_key, slot=scheme.checksum_offset))
     # Timing anti-debug woven into the same checksum slot: a single-stepped run
     # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
     # 0x00 (the counter reads sit inside the checksummed range, so the benign build
     # is bit-identical and neither the encoder nor the checksum computation change).
-    lines.append(timing_fold_asm(scheme.xor_key, slot=_CHECKSUM_OFFSET))
+    lines.append(timing_fold_asm(scheme.xor_key, slot=scheme.checksum_offset))
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
@@ -553,7 +552,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             opcode_xors=[
                 f"  xor al, {key}\n",
                 "  xor al, r13b\n",
-                f"  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n",
+                f"  xor al, byte ptr [rsp+{scheme.checksum_offset}]\n",
             ],
             bounds=f"  cmp al, {handler_count}\n  jae vm_exit\n",
             # Base-independent indirect dispatch: each table entry is a 32-bit signed
@@ -564,7 +563,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             table_load="  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n",
             table_xors=[
                 f"  xor eax, {hex(scheme.table_key)}\n",
-                f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
+                f"  movzx ecx, byte ptr [rsp+{scheme.checksum_offset}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
             ],
             rng=poly_rng,
         )

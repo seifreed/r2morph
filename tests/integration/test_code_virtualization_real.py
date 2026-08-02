@@ -153,11 +153,13 @@ def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> No
 
 # The timing anti-debug fold's final instruction: xor byte ptr [rsp+SLOT], al
 # (opcode 30 = XOR r/m8, r8), folding the timing byte into the checksum slot. The
-# engine interpreter's checksum slot is 0x80 and the region interpreter's is 0x88;
-# the pass may emit either codegen, so accept either fold tail. The dispatch's own
-# checksum fold *loads* the slot (xor al, [rsp+SLOT], opcode 32), so this store-form
-# byte sequence is unique to the timing probe.
-_TIMING_FOLD_TAILS = (bytes.fromhex("30842480000000"), bytes.fromhex("30842488000000"))
+# The timing probe folds its result into the checksum slot with a store-form
+# `xor [rsp+disp32], al` (ModRM 84 = [rsp+disp32], opcode 30). The checksum slot is
+# now relocated per build, so the displacement varies; match the store opcode
+# prefix, which is unique to the probe: the dispatch's own checksum fold *loads* the
+# slot (`xor al, [rsp+SLOT]`, opcode 32) and the prologue *stores* it with mov
+# (opcode 88), so `30 84 24` is emitted only by the timing fold.
+_TIMING_FOLD_STORE = bytes.fromhex("308424")
 _RDTSC_BYTES = bytes.fromhex("0f31")
 _RDTSCP_BYTES = bytes.fromhex("0f01f9")
 
@@ -208,7 +210,7 @@ def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
     assert vm_entry != -1, "interpreter not found in mutated binary"
     blob = data[vm_entry:]
     assert _RDTSC_BYTES in blob or _RDTSCP_BYTES in blob, "no timing read emitted"
-    assert any(tail in blob for tail in _TIMING_FOLD_TAILS), "checksum-slot fold tail not emitted"
+    assert _TIMING_FOLD_STORE in blob, "checksum-slot fold tail not emitted"
 
 
 # Fixtures with at least one register-op run to peel into a nested inner VM.
