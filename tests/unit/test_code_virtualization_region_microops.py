@@ -220,6 +220,13 @@ def test_cmp_with_memory_operand_lowers_to_vpush_vload_vcmpsynth() -> None:
     assert kinds[:3] == ["vpush", "vload", "vcmpsynth"]
 
 
+def test_cmp_with_rip_relative_operand_lowers_to_vpush_vloadrip_vcmpsynth() -> None:
+    kinds = _compare_region(_insn(0x1000, 7, "cmp", "cmp rax, qword [rip + 0x2000]"))
+    # cmp reg,[rip+disp] reuses the rip-relative vloadrip primitive before the compare.
+    assert "cmpriprel" not in kinds
+    assert kinds[:3] == ["vpush", "vloadrip", "vcmpsynth"]
+
+
 def test_rip_relative_load_lowers_to_vloadrip() -> None:
     kinds = [item[0] for item in _memory_region(_insn(0x1000, 7, "mov", "mov rax, qword [rip + 0x2000]"))]
     # mov reg,[rip+disp] pushes the global via vloadrip then pops it into the register.

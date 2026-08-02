@@ -573,6 +573,11 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
             new_items.append(["vpush", reg])
             new_items.append(["vload", base, disp, width])
             new_items.append(["vcmpsynth", "cmp", width])
+        elif kind == "cmpriprel":  # cmp reg, [rip+disp] -- a global
+            _, reg, target, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vloadrip", target, width])
+            new_items.append(["vcmpsynth", "cmp", width])
         elif kind == "riprel_load":  # mov reg, [rip+disp]
             _, reg, target, width = item
             new_items.append(["vloadrip", target, width])
