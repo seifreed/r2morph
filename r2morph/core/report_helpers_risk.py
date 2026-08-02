@@ -31,9 +31,7 @@ def _summarize_pass_risk_buckets(
         issue_count = int(symbolic_summary.get("issue_count", 0))
         has_structural_risk = structural_issues > 0
         has_symbolic_risk = (
-            symbolic_mismatch > 0
-            or severity in {"mismatch", "without-coverage", "bounded-only"}
-            or issue_count > 0
+            symbolic_mismatch > 0 or severity in {"mismatch", "without-coverage", "bounded-only"} or issue_count > 0
         )
         if has_structural_risk or has_symbolic_risk:
             risky.append(pass_name)
