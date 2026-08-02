@@ -98,9 +98,14 @@ class Region:
     ``instructions`` is a flat list of VM items; branch items carry the index
     of their target item. ``exit_vaddr`` is the native terminator the VM jumps
     back to. ``op_keys`` is the set of interpreter handlers the region needs.
+
+    ``target_map`` maps a native instruction address to the index of its item, for
+    the addresses a computed jump (``ijmp``) may resolve to at runtime. It is empty
+    for the straight-line contract (no computed jumps) and populated only by the
+    dispatch-region contract, so an ordinary region encodes byte-identically.
     """
 
-    __slots__ = ("instructions", "exit_vaddr", "entry_vaddr", "op_keys", "body_ranges")
+    __slots__ = ("instructions", "exit_vaddr", "entry_vaddr", "op_keys", "body_ranges", "target_map")
 
     def __init__(
         self,
@@ -109,12 +114,14 @@ class Region:
         entry_vaddr: int,
         op_keys: set[str],
         body_ranges: list[tuple[int, int]],
+        target_map: dict[int, int] | None = None,
     ) -> None:
         self.instructions = instructions
         self.exit_vaddr = exit_vaddr  # default exit, used by the unknown-opcode guard
         self.entry_vaddr = entry_vaddr
         self.op_keys = op_keys
         self.body_ranges = body_ranges  # (addr, size) of each virtualized body instruction
+        self.target_map = target_map if target_map is not None else {}
 
 
 def _op_key(item: tuple[Any, ...]) -> str | None:

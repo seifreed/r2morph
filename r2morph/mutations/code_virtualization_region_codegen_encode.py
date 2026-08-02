@@ -127,6 +127,29 @@ def _item_size(item: tuple[Any, ...]) -> int:
     return 1  # nop, exit, enter_inner, inner_exit (opcode byte only)
 
 
+def build_ijmp_targets(region: Region) -> list[tuple[int, int]]:
+    """Native-address -> bytecode-offset pairs a computed jump may resolve to.
+
+    Mirrors :func:`encode_region`'s offset assignment so a runtime target address
+    can be translated to the bytecode offset of its virtualized item, letting an
+    ``ijmp`` re-enter the VM at the virtualized copy of its target rather than the
+    overwritten native code. Empty unless the dispatch-region contract populated
+    ``region.target_map``, so an ordinary region emits no map.
+    """
+    if not region.target_map:
+        return []
+    offsets: list[int] = []
+    cursor = 0
+    for item in region.instructions:
+        offsets.append(cursor)
+        cursor += _item_size(item)
+    pairs: list[tuple[int, int]] = []
+    for addr, item_index in sorted(region.target_map.items()):
+        if 0 <= item_index < len(offsets):
+            pairs.append((addr, offsets[item_index]))
+    return pairs
+
+
 def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, checksum: int = 0) -> bytes:
     """Two-pass lowering: assign offsets, emit, then XOR-encrypt.
 
@@ -469,6 +492,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind == "icall":
             _, reg_slot = item
             p = emit_opcode("icall")
+            plain.append(slot_of[reg_slot] ^ p)
+        elif kind == "ijmp":
+            # Same operand layout as a register-indirect call: one slot byte
+            # holding the register whose runtime value is the computed jump target.
+            _, reg_slot = item
+            p = emit_opcode("ijmp")
             plain.append(slot_of[reg_slot] ^ p)
         elif kind == "callmem":
             _, base_slot, disp = item

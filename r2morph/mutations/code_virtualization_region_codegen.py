@@ -30,6 +30,9 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import (
     _item_size as _item_size,
 )
 from r2morph.mutations.code_virtualization_region_codegen_encode import (
+    build_ijmp_targets,
+)
+from r2morph.mutations.code_virtualization_region_codegen_encode import (
     encode_region as encode_region,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import (
@@ -267,6 +270,26 @@ def _icall_handler_asm(index: int, key: int, slot: tuple[int, ...]) -> str:
     register, read from its frame slot. Base-independent (no r15), so it nests."""
     target = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n" "  mov r10, qword ptr [rsp+r8*8]\n"
     return _call_bridge_asm(index, slot, target, 2)
+
+
+def _ijmp_handler_asm(index: int, key: int) -> str:
+    """Register-indirect jump (``jmp reg``): re-enter the VM at the virtualized copy
+    of the computed target. The target is the program value of a GP register (read
+    from its frame slot, same operand layout as ``icall``); it is looked up in the
+    runtime target map (native address -> bytecode offset) and, on a hit, committed
+    to the vIP (rsi) so dispatch resumes at the virtualized target instead of the
+    overwritten native code. A miss - a target outside the region, which a
+    correctly-extracted dispatch region never produces - falls through to the
+    default VM exit. Unique scan/hit labels keep duplicated handler instances
+    distinct."""
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        "  mov r10, qword ptr [rsp+r8*8]\n"
+        "  lea r11, [rip+ijmp_map]\n  mov ecx, dword ptr [r11]\n  add r11, 4\n"
+        f"ijmp_scan_{index}:\n  test ecx, ecx\n  jz vm_exit\n"
+        f"  cmp qword ptr [r11], r10\n  je ijmp_hit_{index}\n  add r11, 12\n  dec ecx\n  jmp ijmp_scan_{index}\n"
+        f"ijmp_hit_{index}:\n  mov eax, dword ptr [r11+8]\n  lea rsi, [rip+bytecode]\n  add rsi, rax\n  jmp vm_dispatch\n"
+    )
 
 
 def _call_mem_handler_asm(
@@ -552,6 +575,8 @@ def handler_instances_asm(
             lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key == "jmp":
             lines.append(retarget)
+        elif handler_key == "ijmp":
+            lines.append(_ijmp_handler_asm(index, key))
         elif handler_key.startswith("jcc_"):
             condition = handler_key.split("_", 1)[1]
             lines.append(_jcc_handler_asm(condition, retarget_target))
@@ -696,9 +721,17 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Every index in 0..total-1 maps to a handler; the bounds guard above sends an
     # out-of-range (corrupt) opcode to the default exit so it cannot leave the VM.
     table = "".join(f"  .long H_{index} - vm_table\n" for index in range(total))
+    # Runtime target map for computed jumps (ijmp): a count followed by (native
+    # address, bytecode offset) pairs the ijmp handler scans to re-enter the VM at
+    # a virtualized target. Empty for an ordinary region, so its blob is unchanged.
+    ijmp_targets = build_ijmp_targets(region)
+    ijmp_map = ""
+    if ijmp_targets:
+        entries = "".join(f"  .quad {addr}\n  .long {offset}\n" for addr, offset in ijmp_targets)
+        ijmp_map = f"ijmp_map:\n  .long {len(ijmp_targets)}\n{entries}"
     lines.append(
         f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
-        f"vm_table:\n{table}bytecode:\n"
+        f"vm_table:\n{table}{ijmp_map}bytecode:\n"
     )
     # Thread the dispatch: every handler tail (and the retarget) ends with a back
     # jump to the (now removed) central dispatcher; splice a freshly shuffled decode
