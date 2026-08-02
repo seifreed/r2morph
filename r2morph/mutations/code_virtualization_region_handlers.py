@@ -360,15 +360,24 @@ def _movx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: in
     return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
 
 
-def _movx_extend_asm(ext: str, src_size: int, dst_width: int, advance: int) -> str:
-    """The extend-from-[r10]-into-the-slot tail shared by the movzx/movsx handlers."""
+def _movx_load_asm(ext: str, src_size: int, dst_width: int) -> str:
+    """Load a byte/word from ``[r10]`` into rax with zero- or sign-extension.
+
+    movzx always zero-extends the same regardless of destination width; movsx's
+    extension target depends on whether the destination is 32- or 64-bit. Shared by
+    the single-handler movx tail and the vmovx micro-op (which pushes rax instead of
+    storing it to a slot)."""
     size_word = "byte" if src_size == 8 else "word"
     if ext == "z":
-        load = f"  movzx eax, {size_word} ptr [r10]\n"
-    elif dst_width == 64:
-        load = f"  movsx rax, {size_word} ptr [r10]\n"
-    else:
-        load = f"  movsx eax, {size_word} ptr [r10]\n"
+        return f"  movzx eax, {size_word} ptr [r10]\n"
+    if dst_width == 64:
+        return f"  movsx rax, {size_word} ptr [r10]\n"
+    return f"  movsx eax, {size_word} ptr [r10]\n"
+
+
+def _movx_extend_asm(ext: str, src_size: int, dst_width: int, advance: int) -> str:
+    """The extend-from-[r10]-into-the-slot tail shared by the movzx/movsx handlers."""
+    load = _movx_load_asm(ext, src_size, dst_width)
     return load + f"  mov qword ptr [rsp+r8*8], rax\n  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 

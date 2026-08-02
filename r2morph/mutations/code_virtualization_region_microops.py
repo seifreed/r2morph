@@ -29,6 +29,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _indexed_address_asm,
     _indexed_address_nobase_asm,
     _mem_address_asm,
+    _movx_load_asm,
     _synth_flags_asm,
     _unmask_dword,
     _unmask_qword,
@@ -374,6 +375,37 @@ def _vleaidxnb_handler_asm(
     width = int(handler_key.split("_")[1])
     body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
     body += "  mov eax, r10d\n" if width == 32 else "  mov rax, r10\n"
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vmovx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+    """Load ``byte|word [base+disp]`` with zero/sign extension and push it.
+
+    The micro-op form of ``movzx/movsx reg, [base+disp]``: the shared address
+    prologue computes the effective address into r10, the byte or word is extended
+    into rax by the shared load helper, and it is pushed onto the vstack; a following
+    ``vpop`` writes it to the destination slot. No flags. The register field the
+    prologue decodes into r8 is an unused placeholder (the value goes on the vstack).
+    """
+    _, ext, src_size_text, dst_width_text = handler_key.split("_")
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
+    body += _movx_load_asm(ext, int(src_size_text), int(dst_width_text))
+    # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
+    # the vstack pointer from its frame slot before pushing.
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vmovxidx_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Load ``byte|word [base+index*scale+disp]`` with zero/sign extension and push it.
+
+    Like :func:`_vmovx_handler_asm` but with the shared scaled-index address
+    prologue; no flags. A following ``vpop`` writes the extended value to the slot.
+    """
+    _, ext, src_size_text, dst_width_text = handler_key.split("_")
+    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    body += _movx_load_asm(ext, int(src_size_text), int(dst_width_text))
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 

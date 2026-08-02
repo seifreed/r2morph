@@ -51,6 +51,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 9  # opcode + (unused) reg + base + index slots + scale shift + 4-byte disp
     if kind == "vleaidxnb":
         return 8  # opcode + (unused) reg + index slot + scale shift + 4-byte disp (no base)
+    if kind == "vmovx":
+        return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
+    if kind == "vmovxidx":
+        return 9  # opcode + (unused) reg + base + index slots + scale shift + 4-byte disp
     if kind == "vshift":
         return 2  # opcode + count byte
     if kind in ("op", "opmba", "opsynth"):
@@ -313,6 +317,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, index_slot, shift, disp, _width = item
             p = emit_opcode(_required_key(item))
             emit_idx(p, slot_of[0], None, slot_of[index_slot], shift, disp)
+        elif kind == "vmovx":
+            # Reuse the base+disp operand layout; the register field is an unused
+            # placeholder (the extended value goes on the vstack, not a register).
+            _, _ext, _src_size, _dst_width, base_slot, disp = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, slot_of[0], slot_of[base_slot], disp)
+        elif kind == "vmovxidx":
+            # Reuse the scaled-index operand layout; the register field is unused.
+            _, _ext, _src_size, _dst_width, base_slot, index_slot, shift, disp = item
+            p = emit_opcode(_required_key(item))
+            emit_idx(p, slot_of[0], slot_of[base_slot], slot_of[index_slot], shift, disp)
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
             p = emit_opcode(_required_key(item))

@@ -295,3 +295,24 @@ def test_lea_micro_op_item_sizes_match_the_handler_advances() -> None:
     assert _item_size(("vlearip", 0x401000, 64)) == 6  # opcode + reg + 4-byte offset
     assert _item_size(("vleaidx", 5, 6, 3, -8, 64)) == 9  # + index slot + scale shift
     assert _item_size(("vleaidxnb", 6, 3, -8, 64)) == 8  # no base slot byte
+
+
+def test_movzx_from_memory_lowers_to_vmovx_then_vpop() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 4, "mov", "movzx eax, byte [rdi + 8]"))]
+    # movzx/movsx reg,[base+disp] loads-and-extends onto the stack (no dedicated
+    # extend-and-store handler), then pops into the destination slot.
+    assert "movx" not in kinds
+    assert kinds[:2] == ["vmovx", "vpop"]
+
+
+def test_movsx_indexed_from_memory_lowers_to_vmovxidx_then_vpop() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 5, "mov", "movsx rax, word [rdi + rcx*2]"))]
+    assert "movxidx" not in kinds
+    assert kinds[:2] == ["vmovxidx", "vpop"]
+
+
+def test_movx_micro_op_item_sizes_match_the_handler_advances() -> None:
+    # ext, src_size, dst_width live in the key (not the stream); the address operands
+    # match the load/scaled-index layouts, with an unused placeholder register byte.
+    assert _item_size(("vmovx", "z", 8, 64, 5, -8)) == 7  # opcode + reg + base + 4-byte disp
+    assert _item_size(("vmovxidx", "s", 16, 64, 5, 6, 1, -8)) == 9  # + index slot + scale shift

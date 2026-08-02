@@ -100,6 +100,8 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vload_handler_asm,
     _vloadidx_handler_asm,
     _vloadrip_handler_asm,
+    _vmovx_handler_asm,
+    _vmovxidx_handler_asm,
     _vpop_handler_asm,
     _vpush_handler_asm,
     _vpushi_handler_asm,
@@ -494,6 +496,10 @@ def handler_instances_asm(
             lines.append(_vleaidx_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith(("vlea_", "vlearip_")):
             lines.append(_vlea_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
+        elif handler_key.startswith("vmovxidx_"):
+            lines.append(_vmovxidx_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
+        elif handler_key.startswith("vmovx_"):
+            lines.append(_vmovx_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vshift_"):
             lines.append(_vshift_handler_asm(handler_key, key, shift_variant))
         elif handler_key.startswith("opsynth_"):

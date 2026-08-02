@@ -635,6 +635,14 @@ def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] |
             new_items.append(["vpush", reg])
             new_items.append(["vbinopsynth", mnemonic, width])
             new_items.append(["vstorerip", target, width])
+        elif kind == "movx":  # movzx/movsx reg, byte|word [base+disp]
+            _, ext, src_size, dst_width, reg, base, disp = item
+            new_items.append(["vmovx", ext, src_size, dst_width, base, disp])
+            new_items.append(["vpop", reg])
+        elif kind == "movxidx":  # movzx/movsx reg, byte|word [base+index*scale+disp]
+            _, ext, src_size, dst_width, reg, base, index, shift, disp = item
+            new_items.append(["vmovxidx", ext, src_size, dst_width, base, index, shift, disp])
+            new_items.append(["vpop", reg])
         elif kind == "lea":  # lea reg, [base+disp] -- compute address, no deref/flags
             _, reg, base, disp, width = item
             new_items.append(["vlea", base, disp, width])

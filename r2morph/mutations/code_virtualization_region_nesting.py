@@ -102,6 +102,8 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
         "vlearip",
         "vleaidx",
         "vleaidxnb",
+        "vmovx",
+        "vmovxidx",
         "vshift",
         "vcmpsynth",
     )
