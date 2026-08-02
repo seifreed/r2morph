@@ -89,6 +89,8 @@ from r2morph.mutations.code_virtualization_region_integrity import (
 )
 from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
 from r2morph.mutations.code_virtualization_region_microops import (
+    _frestore_handler_asm,
+    _fsave_handler_asm,
     _vbinop_handler_asm,
     _vbinopsynth_handler_asm,
     _vcmpsynth_handler_asm,
@@ -461,6 +463,10 @@ def handler_instances_asm(
             lines.append(_vpush_handler_asm(key))
         elif handler_key == "vpop":
             lines.append(_vpop_handler_asm(key))
+        elif handler_key == "fsave":
+            lines.append(_fsave_handler_asm())
+        elif handler_key == "frestore":
+            lines.append(_frestore_handler_asm())
         elif handler_key.startswith("vpushi_"):
             lines.append(_vpushi_handler_asm(handler_key, key_qword, key_dword))
         elif handler_key.startswith("vcmpsynth_"):

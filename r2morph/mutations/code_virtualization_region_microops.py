@@ -71,6 +71,34 @@ def _vpop_handler_asm(key: int) -> str:
     )
 
 
+def _fsave_handler_asm() -> str:
+    """Native ``pushfq``: save the virtual RFLAGS onto the vstack.
+
+    The region synthesizes an operation's readable flags into the flags slot (never
+    native RFLAGS), so a native ``pushfq`` is modelled as a copy of that slot onto
+    the vstack; the matching ``popfq`` (frestore) pops it back. Opcode only - no
+    operand byte, so the vIP advances by one. Assumes matched save/restore leaving
+    the vstack balanced across the bracket (the flag-preservation idiom); an
+    escaping or unmatched use never reaches here because it fails classification.
+    """
+    return f"  mov rax, qword ptr [rsp+{_FLAGS_OFFSET}]\n" + _PUSH_RAX + "  add rsi, 1\n  jmp vm_dispatch\n"
+
+
+def _frestore_handler_asm() -> str:
+    """Native ``popfq``: restore the virtual RFLAGS from the vstack.
+
+    Pops the cell saved by the matching ``pushfq`` (fsave) back into the flags slot
+    and drops the depth pointer. Opcode only - the vIP advances by one."""
+    return (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], rax\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+        "  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+
+
 def _vpushi_handler_asm(handler_key: str, key_qword: str, key_dword: str) -> str:
     """Decode a width-sized immediate and push it onto the vstack.
 

@@ -254,6 +254,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "jmp"
     if kind == "ijmp":
         return "ijmp"  # register-indirect jump: computed VM exit to a runtime target
+    if kind == "fsave":
+        return "fsave"  # native pushfq: save the virtual RFLAGS onto the vstack
+    if kind == "frestore":
+        return "frestore"  # native popfq: restore the virtual RFLAGS from the vstack
     if kind == "jcc":
         return f"jcc_{item[1]}"
     if kind == "nop":

@@ -35,6 +35,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 1 + (8 if item[2] == 64 else 4)  # opcode + width-sized immediate
     if kind in ("vbinop", "vbinopsynth", "vcmpsynth"):
         return 1  # opcode only (operands come off the vstack)
+    if kind in ("fsave", "frestore"):
+        return 1  # opcode only (virtual RFLAGS save/restore through the vstack)
     if kind in ("vload", "vstore"):
         return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
     if kind == "vloadidx":
@@ -522,7 +524,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             emit_disp(offsets[item[2]], p)
         elif kind == "nop":
             emit_opcode("nop")
-        elif kind in ("exit", "enter_inner", "inner_exit"):
+        elif kind in ("exit", "enter_inner", "inner_exit", "fsave", "frestore"):
             emit_opcode(_required_key(item))
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
