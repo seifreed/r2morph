@@ -230,9 +230,18 @@ reducible path rejects is gathered linearly and virtualized through the contract
 With the flag off the pass never touches computed jumps, so the shipping behaviour
 and its suite are unchanged.
 
-(b) flag-transfer items proved unnecessary for the register-based fixture (no flag
-state crosses the computed jump) and are deferred until a stack-based interpreter
-needs them.
+- **(b) Flag-transfer items.** A native `pushfq`/`popfq` bracketing the dispatch lowers
+  to `fsave`/`frestore` items that save and restore the virtual RFLAGS through the
+  vstack — the flags slot and the vstack both persist across `vm_dispatch`, so the flag
+  state crosses the computed jump inside the VM's own frame. Gated to the dispatch-region
+  contract (the straight-line contract keeps leaving `pushfq`/`popfq` native), and the
+  dead-flag analysis counts `fsave` as a flags reader so an op whose flags a following
+  `pushfq` saves is not dead-eliminated. Covered by
+  `tests/unit/test_code_virtualization_fsave_classify.py`,
+  `..._fsave_handler.py`, `..._fsave_flag_liveness.py`, and the load-bearing round trip
+  `tests/integration/test_vm_interpreter_flagcross_real.py`
+  (`dataset/elf_vm_interp_stack_x86_64`, exit 45 — a broken save/restore changes the
+  exit code).
 
 Symbolic closure — deliberately not done. The (d) oracle does **not** recover the
 recursed layer, and that is the region VM working as designed, not a gap: the region
@@ -242,3 +251,8 @@ at every handler tail), whereas the oracle targets an absolute memory-indirect t
 (`jmp [table+idx*8]`). So literal recursion is proven **behaviourally** (round-trip
 exit-code parity); recovering the recursed layer symbolically would mean teaching the
 oracle the region VM's own anti-devirtualization shape — a separate, larger effort.
+That resistance is now pinned as an enforced property:
+`tests/integration/test_vm_interpreter_recursion_resistance_real.py` asserts the
+recursively-virtualized interpreter's structural devirtualization resistance rises
+sharply and the recovery oracle cannot reconstruct the region VM's handler set —
+without teaching the oracle that shape.
