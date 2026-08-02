@@ -64,6 +64,5 @@ def test_vm_interpreter_bytecode_region_located() -> None:
 
 
 def test_vm_interpreter_context_registers_inferred() -> None:
-    """The VM context (vpc / accumulator registers) is inferred from the handlers."""
-    # Characterization until D4: VM-context inference is not yet implemented.
-    assert _recover().vm_registers == []
+    """The dispatcher's vpc (rbx) and opcode (rax) registers are inferred as VM state."""
+    assert _recover().vm_registers == ["rax", "rbx"]

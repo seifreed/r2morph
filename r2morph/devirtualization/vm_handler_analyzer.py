@@ -414,15 +414,39 @@ class VMHandlerAnalyzer:
         return calculate_handler_confidence(handler)
 
     def _analyze_vm_context(self) -> None:
-        """Analyze VM context structure and registers.
+        """Infer the VM's context registers from the dispatcher.
 
-        Detailed VM context inference (register allocation, context-pointer
-        recovery, spill slot identification) is not yet implemented. Leave
-        the VMArchitecture fields at their declared defaults (empty register
-        list, zero context size) rather than fabricating values that would
-        propagate downstream as if they were observed.
+        The observable machinery of a computed-goto dispatcher is two registers:
+        the virtual program counter (the base of the opcode fetch) and the opcode
+        register (the index of the table dispatch jump). Both are recorded as VM
+        registers. Deeper context inference for stack-based VMs (context-pointer
+        recovery, spill-slot identification, register-file sizing) is not attempted
+        here - vm_stack_address and vm_context_size are left at their defaults
+        rather than fabricated for a register-based interpreter that has none.
         """
-        return
+        arch = self.vm_architecture
+        if arch is None:
+            return
+        registers: list[str] = []
+        vpc = self._find_fetch_register(arch.dispatcher_address)
+        if vpc is not None:
+            registers.append(vpc)
+        opcode_register = self._find_dispatch_index_register(arch.dispatcher_address)
+        if opcode_register is not None and opcode_register not in registers:
+            registers.append(opcode_register)
+        arch.vm_registers = sorted(registers)
+
+    def _find_dispatch_index_register(self, dispatcher_addr: int) -> str | None:
+        """Return the opcode register: the index of the table dispatch jump."""
+        for insn in self.binary.get_function_disasm(dispatcher_addr):
+            addr = insn.get("addr")
+            if not isinstance(addr, int) or insn.get("type") not in _INDIRECT_JUMP_TYPES:
+                continue
+            for operand in self._instruction_operands(addr):
+                index = operand.get("index")
+                if operand.get("type") == "mem" and isinstance(index, str):
+                    return index
+        return None
 
     def _locate_vm_bytecode(self) -> None:
         """Locate the VM bytecode region the dispatcher fetches from.
