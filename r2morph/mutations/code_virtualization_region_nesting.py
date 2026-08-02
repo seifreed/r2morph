@@ -28,7 +28,7 @@ import random
 import struct
 from typing import Any
 
-from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm
+from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
 from r2morph.mutations.code_virtualization_region import build_region_scheme
@@ -310,6 +310,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # 0x00 on an untraced run, so the benign build stays consistent while a
         # single-stepped run misdecodes every opcode across all layers.
         + timing_fold_asm(schemes[0].xor_key, slot=_CHECKSUM_OFFSET)
+        # Tracer anti-debug across all layers: an attached ptrace debugger folds
+        # 0xFF into the shared checksum slot and misdecodes every layer; an untraced
+        # or Unicorn-emulated run folds 0x00 so the benign build stays consistent.
+        + tracer_detect_asm(slot=_CHECKSUM_OFFSET)
         + _set_layer_slots(schemes[0], 0, counts[0])
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"

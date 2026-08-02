@@ -1,4 +1,4 @@
-"""Timing anti-debug folded into the VM's runtime self-checksum.
+"""Timing and tracer anti-debug folded into the VM's runtime self-checksum.
 
 The interpreter already rolls a one-byte checksum of its own body into a frame
 slot and folds that slot into every opcode and table-entry decrypt, so a tampered
@@ -76,6 +76,81 @@ def _work_window(work_reg: str, key: int) -> str:
     reg = _dword_name(work_reg)
     step = (key & _WINDOW_MASK) + 1
     return f"  xor {reg}, {reg}\n  add {reg}, {step}\n  imul {reg}, {reg}, 3\n  rol {reg}, 1\n"
+
+
+# The tracer probe reads /proc/self/status and folds a byte into the checksum slot
+# when a debugger is attached (TracerPid != 0). It is observational only - unlike
+# ptrace(PTRACE_TRACEME), reading procfs has no effect on the traced process, so it
+# never alters the semantics of an arbitrary virtualized program (a target that
+# later execve's or handles signals is untouched). The whole "/proc/self/status"
+# path is 17 bytes; these two little-endian qwords plus a trailing 's\0' spell it
+# on the stack without materializing a plaintext string in the interpreter's data.
+_STATUS_PATH_LO = 0x65732F636F72702F  # "/proc/se"
+_STATUS_PATH_HI = 0x75746174732F666C  # "lf/statu"
+
+# "TracerPi" (the first 8 bytes of the "TracerPid:" line) as a little-endian qword,
+# scanned for with an unaligned qword compare. The decimal digit that says whether a
+# tracer is attached sits 11 bytes past the match ("TracerPid:\t<digit>"): '0' when
+# untraced, the tracer's PID otherwise.
+_TRACERPID_TAG = 0x6950726563617254
+_TRACERPID_DIGIT_OFFSET = 11
+
+# procfs read buffer, carved transiently below the interpreter frame (never moving
+# rsp). TracerPid appears within the first ~150 bytes of status (Name, Umask, State,
+# Tgid, Ngid, Pid, PPid, TracerPid), well inside this window.
+_STATUS_BUF_OFFSET = 0x100
+_STATUS_PATH_OFFSET = 0x40
+_STATUS_READ_LEN = 192
+_STATUS_SCAN_LIMIT = 180
+
+
+def tracer_detect_asm(slot: int) -> str:
+    """Assembly that folds a *ptrace-tracer* signal into the checksum ``slot`` byte.
+
+    Emitted right after :func:`timing_fold_asm`, in the same window where every GP
+    register is spilled to the frame and the VM-internal ``rsi``/``r13``/``r14``/
+    ``r15`` are not yet loaded, so the whole block is free to use every register but
+    ``rsp``. It opens ``/proc/self/status``, reads the header into a transient
+    buffer below the frame, scans for the ``TracerPid:`` line, and folds a
+    *branch-free* 0-or-0xFF byte into ``slot``: ``0x00`` when the tracer PID is
+    ``'0'`` (no debugger) and ``0xFF`` otherwise.
+
+    Like the timing fold, the benign contribution is provably ``0`` for the common
+    cases, so there is no Python mirror and the stored checksum is unchanged: an
+    untraced native run reads ``TracerPid:\\t0`` and folds ``0``; a Unicorn emulation
+    - whose only emulated syscall is ``exit`` - leaves ``openat``/``read`` as no-ops
+    over a zero-filled buffer, the ``TracerPid`` tag is never found, and the fold is
+    ``0`` as well. A run under ptrace resolves a non-zero tracer PID, the byte
+    becomes ``0xFF``, and every subsequent opcode and table entry misdecodes into
+    the exit path. This catches an *attached* debugger even when it is not single
+    stepping (which the timing fold would miss).
+
+    ``slot`` is the frame offset of the checksum byte (the same one the timing fold
+    and every opcode decrypt use).
+    """
+    return (
+        # Spell "/proc/self/status\0" just below the frame (transient scratch).
+        f"  lea r11, [rsp - {hex(_STATUS_PATH_OFFSET)}]\n"
+        f"  mov rax, {hex(_STATUS_PATH_LO)}\n  mov qword ptr [r11], rax\n"
+        f"  mov rax, {hex(_STATUS_PATH_HI)}\n  mov qword ptr [r11+8], rax\n"
+        "  mov word ptr [r11+16], 0x73\n"
+        # openat(AT_FDCWD, path, O_RDONLY); rax = fd (or a no-op 257 under Unicorn).
+        "  mov rax, 257\n  mov rdi, -100\n  mov rsi, r11\n  xor edx, edx\n  xor r10d, r10d\n  syscall\n"
+        "  mov r8, rax\n"
+        # read(fd, buf, len) into the transient buffer, then close(fd).
+        f"  mov rdi, r8\n  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n  xor eax, eax\n  mov edx, {_STATUS_READ_LEN}\n  syscall\n"
+        "  mov rdi, r8\n  mov eax, 3\n  syscall\n"
+        # Scan the buffer for the "TracerPid:" line via an unaligned qword compare.
+        f"  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n  mov r9, {hex(_TRACERPID_TAG)}\n  xor ecx, ecx\n  xor r8d, r8d\n"
+        "tracer_scan:\n"
+        f"  cmp r8d, {_STATUS_SCAN_LIMIT}\n  jae tracer_done\n"
+        "  mov rax, qword ptr [rsi+r8]\n  cmp rax, r9\n  je tracer_found\n  inc r8\n  jmp tracer_scan\n"
+        "tracer_found:\n"
+        # The digit after "TracerPid:\t"; anything but '0' (0x30) means a tracer.
+        f"  movzx eax, byte ptr [rsi+r8+{_TRACERPID_DIGIT_OFFSET}]\n  cmp al, 0x30\n  setne cl\n"
+        "tracer_done:\n"
+        f"  neg cl\n  xor byte ptr [rsp+{slot}], cl\n"
+    )
 
 
 def timing_fold_asm(key: int, slot: int) -> str:

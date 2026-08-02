@@ -12,7 +12,7 @@ import logging
 import random
 import struct
 
-from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm
+from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, switch_dispatch, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine_common import (
     _DWORD_BROADCAST,
@@ -623,6 +623,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # 0x00 (the counter reads sit inside the checksummed range, so no encoder or
     # checksum change is needed and the benign build is bit-identical).
     lines.append(timing_fold_asm(key, slot=layout.checksum_offset))
+    # Tracer anti-debug into the same checksum slot: an attached ptrace debugger
+    # (TracerPid != 0) folds 0xFF and misdecodes every opcode; an untraced native
+    # run and a Unicorn emulation both fold 0x00, so the benign build is unchanged.
+    lines.append(tracer_detect_asm(slot=layout.checksum_offset))
     poly_rng = random.Random(scheme.table_key)
     # Undo the opcode byte's position mask and fold in the key and the runtime
     # self-checksum the encoder pre-biased the opcode with, so a patched interpreter
