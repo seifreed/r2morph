@@ -25,6 +25,7 @@ from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax
 from r2morph.mutations.code_virtualization_region_compare import compare_compute
 from r2morph.mutations.code_virtualization_region_flags import synth_flags_asm as _synth_flags_asm
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
+from r2morph.mutations.code_virtualization_region_shift import shift_flag_capture_asm
 
 # Stack frame: 16 GP context slots in [0x00, 0x80), the captured RFLAGS and the
 # self-checksum byte in [0x80, 0x100) (both slots relocated per build), the 16 XMM
@@ -603,7 +604,7 @@ def _compare_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _shift_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
+def _shift_handler_asm(handler_key: str, key: int, field_perm: int = 0, shift_variant: int = 0) -> str:
     """Assembly body for a shl/shr/sar handler (count is an immediate in cl)."""
     mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
@@ -618,7 +619,9 @@ def _shift_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
         body += f"  mov eax, dword ptr [rsp+r8*8]\n  {mnemonic} eax, cl\n"
     return (
         body
-        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
+        + "  mov qword ptr [rsp+r8*8], rax\n"
+        + shift_flag_capture_asm(shift_variant, _FLAGS_OFFSET)
+        + "  add rsi, 3\n  jmp vm_dispatch\n"
     )
 
 

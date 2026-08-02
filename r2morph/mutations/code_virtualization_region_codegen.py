@@ -403,11 +403,13 @@ def handler_instances_asm(
     """
     extra = extra or {}
     # This build's semantic ISA personality: flag_variant selects the flag-synthesis
-    # spelling and arith_variant the MBA fold, shared by every matching handler.
+    # spelling, arith_variant the MBA fold, and shift_variant the shift flag-capture
+    # idiom, shared by every matching handler.
     spec = build_isa_spec(isa_seed)
     flag_variant = spec.flag_variant
     arith_variant = spec.arith_variant
     compare_variant = spec.compare_variant
+    shift_variant = spec.shift_variant
     lines: list[str] = []
     for index in sorted(index_to_key):
         handler_key = index_to_key[index]
@@ -452,7 +454,7 @@ def handler_instances_asm(
         elif handler_key.startswith("vstorerip_"):
             lines.append(_vstorerip_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("vshift_"):
-            lines.append(_vshift_handler_asm(handler_key, key))
+            lines.append(_vshift_handler_asm(handler_key, key, shift_variant))
         elif handler_key.startswith("opsynth_"):
             lines.append(
                 _op_synth_handler_asm(handler_key, key, key_qword, key_dword, field_perm, flag_variant, arith_variant)
@@ -468,7 +470,7 @@ def handler_instances_asm(
                 )
             )
         elif handler_key.startswith(("shl_", "shr_", "sar_")):
-            lines.append(_shift_handler_asm(handler_key, key, field_perm))
+            lines.append(_shift_handler_asm(handler_key, key, field_perm, shift_variant))
         elif handler_key.startswith("imul3_"):
             lines.append(_imul3_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("push_"):

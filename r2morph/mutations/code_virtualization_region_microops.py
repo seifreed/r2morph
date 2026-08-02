@@ -32,6 +32,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _unmask_dword,
     _unmask_qword,
 )
+from r2morph.mutations.code_virtualization_region_shift import shift_flag_capture_asm
 
 _VSP = hex(_VSP_OFFSET)
 _VBASE = hex(_VSTACK_BASE)
@@ -296,7 +297,7 @@ def _vstorerip_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vshift_handler_asm(handler_key: str, key: int) -> str:
+def _vshift_handler_asm(handler_key: str, key: int, shift_variant: int = 0) -> str:
     """Pop the top vstack cell, shift it by the carried count, capture flags, push.
 
     Lowers a native ``shl``/``shr``/``sar reg, imm``: the shifted register value is
@@ -317,7 +318,7 @@ def _vshift_handler_asm(handler_key: str, key: int) -> str:
         f"  movzx ecx, byte ptr [rsi+1]\n  xor cl, {key}\n  xor cl, r13b\n"
     )
     body += f"  {mnemonic} rax, cl\n" if width == 64 else f"  {mnemonic} eax, cl\n"
-    body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    body += shift_flag_capture_asm(shift_variant, _FLAGS_OFFSET)
     body += (
         f"  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
         "  add r9, 8\n"
