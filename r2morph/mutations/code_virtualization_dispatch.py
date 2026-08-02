@@ -74,21 +74,22 @@ def thread_back_jumps(interpreter: str, make_decode: Callable[[], str]) -> str:
     return "".join(out)
 
 
-def _switch_ladder(lo: int, hi: int, path: str) -> str:
+def _switch_ladder(lo: int, hi: int, path: str, label_prefix: str = "h") -> str:
     """Emit a balanced binary-search tree over the opcode indices ``[lo, hi)``.
 
     ``al`` is assumed already bounds-checked into ``[lo, hi)``, so exactly one leaf
-    matches. Each node tests its midpoint with ``cmp al, mid`` + ``je h_mid`` and,
-    when both sub-ranges are non-empty, steers with a single ``jb`` to the left
+    matches. Each node tests its midpoint with ``cmp al, mid`` + ``je {prefix}mid``
+    and, when both sub-ranges are non-empty, steers with a single ``jb`` to the left
     subtree (the right subtree falls through). Node labels encode the tree path, so
-    they are unique without a running counter.
+    they are unique without a running counter. ``label_prefix`` names the handler
+    labels: the engine emits ``h_<index>`` handlers, the region ``H_<index>``.
     """
     if lo >= hi:
         return ""
     mid = (lo + hi) // 2
-    left = _switch_ladder(lo, mid, path + "L")
-    right = _switch_ladder(mid + 1, hi, path + "R")
-    node = f"  cmp al, {mid}\n  je h_{mid}\n"
+    left = _switch_ladder(lo, mid, path + "L", label_prefix)
+    right = _switch_ladder(mid + 1, hi, path + "R", label_prefix)
+    node = f"  cmp al, {mid}\n  je {label_prefix}_{mid}\n"
     if left and right:
         left_label = f"vsw_{path}L"
         return node + f"  jb {left_label}\n" + right + f"{left_label}:\n" + left
@@ -97,19 +98,22 @@ def _switch_ladder(lo: int, hi: int, path: str) -> str:
     return node + left + right
 
 
-def switch_dispatch(*, opcode_xors: list[str], bounds: str, total: int, rng: random.Random) -> str:
+def switch_dispatch(
+    *, opcode_xors: list[str], bounds: str, total: int, rng: random.Random, label_prefix: str = "h"
+) -> str:
     """Assemble the single central ``vm_dispatch`` block for the switch shape.
 
     Reuses the shared decode head and the same opcode-XOR decrypt group (so the
     self-checksum still folds into the opcode) and the same bounds guard as the
     threaded path, then routes through a compare/branch ladder instead of an
     offset-table computed goto. The XOR group is order-independent, so shuffling it
-    keeps the decode faithful.
+    keeps the decode faithful. ``label_prefix`` matches this VM's handler-label case
+    (``h`` for the engine, ``H`` for the region).
     """
     return (
         "vm_dispatch:\n"
         + _DECODE_HEAD
         + "".join(rng.sample(opcode_xors, len(opcode_xors)))
         + bounds
-        + _switch_ladder(0, total, "")
+        + _switch_ladder(0, total, "", label_prefix)
     )

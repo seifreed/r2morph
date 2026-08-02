@@ -30,7 +30,11 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
     decode_instruction,
 )
-from r2morph.mutations.code_virtualization_engine_common import _OPCODE_BUDGET
+from r2morph.mutations.code_virtualization_engine_common import (
+    _OPCODE_BUDGET,
+    DISPATCH_SWITCH,
+    DISPATCH_THREADED,
+)
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmp_mem,
     _decode_fp_arith,
@@ -882,6 +886,11 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     # value for a given seed. Selects this build's handler-implementation personality
     # (the flag-synthesis spelling; see code_virtualization_region_isa).
     isa_seed = rng.randrange(1 << 31)
+    # Drawn last so adding the dispatch-shape selector does not shift any earlier
+    # field's value for a given seed. Picks the encrypted offset-table computed goto
+    # (DISPATCH_THREADED) or the binary-search comparison tree (DISPATCH_SWITCH) per
+    # build, so no single dispatch signature covers every build.
+    dispatch_shape = rng.randint(DISPATCH_THREADED, DISPATCH_SWITCH)
     return RegionScheme(
         dup,
         xor_key,
@@ -893,4 +902,5 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
         checksum_offset,
         flags_offset,
         isa_seed,
+        dispatch_shape,
     )

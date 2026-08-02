@@ -45,6 +45,7 @@ class RegionScheme:
         "checksum_offset",
         "flags_offset",
         "isa_seed",
+        "dispatch_shape",
     )
 
     def __init__(
@@ -59,6 +60,7 @@ class RegionScheme:
         checksum_offset: int = 0x88,
         flags_offset: int = 0x80,
         isa_seed: int = 0,
+        dispatch_shape: int = 0,
     ) -> None:
         self.dup = dup
         self.xor_key = xor_key
@@ -90,6 +92,12 @@ class RegionScheme:
         # spelling; see code_virtualization_region_isa). 0 is the canonical
         # personality, byte-identical to the pre-feature handlers.
         self.isa_seed = isa_seed
+        # Selects this build's dispatch architecture: 0 (DISPATCH_THREADED) is the
+        # encrypted offset-table computed goto inlined at every handler tail; 1
+        # (DISPATCH_SWITCH) is a single central binary-search comparison tree. Chosen
+        # per build so no one dispatch signature covers every build. 0 is the
+        # canonical default, byte-identical to the pre-feature interpreter.
+        self.dispatch_shape = dispatch_shape
 
 
 class Region:
