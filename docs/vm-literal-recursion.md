@@ -224,9 +224,21 @@ opcode misdecoded and the first computed jump landed in junk. Emitting the map
 before the table fixed it. (The value chain — rip-relative table-base `lea`, shift,
 add, indexed load — was correct all along, confirmed by isolated round trips.)
 
+The dispatch path is wired into `CodeVirtualizationPass` behind an opt-in
+`virtualize_dispatch` config flag (default off): a dispatch-shaped function the
+reducible path rejects is gathered linearly and virtualized through the contract.
+With the flag off the pass never touches computed jumps, so the shipping behaviour
+and its suite are unchanged.
+
 (b) flag-transfer items proved unnecessary for the register-based fixture (no flag
 state crosses the computed jump) and are deferred until a stack-based interpreter
-needs them. Remaining follow-ups: wire the dispatch path into `CodeVirtualizationPass`
-behind an opt-in flag (the round trip is currently driven through the public
-building blocks), and devirtualize the mutated binary with the (d) oracle to close
-the loop symbolically as well as behaviourally.
+needs them.
+
+Symbolic closure — deliberately not done. The (d) oracle does **not** recover the
+recursed layer, and that is the region VM working as designed, not a gap: the region
+interpreter's dispatch is a threaded, no-hub, register-indexed computed goto with
+XOR-encrypted offsets (`movsxd rax, eax; add rax, r14; jmp rax`, the decode inlined
+at every handler tail), whereas the oracle targets an absolute memory-indirect table
+(`jmp [table+idx*8]`). So literal recursion is proven **behaviourally** (round-trip
+exit-code parity); recovering the recursed layer symbolically would mean teaching the
+oracle the region VM's own anti-devirtualization shape — a separate, larger effort.

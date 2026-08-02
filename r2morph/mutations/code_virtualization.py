@@ -75,6 +75,9 @@ logger = logging.getLogger(__name__)
 _MIN_RUN_LENGTH = 2
 # A relative trampoline jump needs 5 bytes in the run's byte span.
 _TRAMPOLINE_SIZE = 5
+# Upper bound on instructions read when gathering a dispatch-shaped function
+# linearly (its analysis stops at the computed jump, so there is no function size).
+_MAX_DISPATCH_INSNS = 256
 
 
 _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
@@ -241,6 +244,10 @@ class CodeVirtualizationPass(MutationPass):
         self.probability = self.config.get("probability", 0.3)
         self.max_functions = self.config.get("max_functions", 5)
         self.vm_nesting_depth = self.config.get("vm_nesting_depth", 2)
+        # Opt-in: also virtualize dispatch-shaped functions (a computed-goto loop
+        # whose register-indirect jump becomes an ijmp re-entering the VM). Off by
+        # default - the ordinary path never touches computed jumps.
+        self.virtualize_dispatch = self.config.get("virtualize_dispatch", False)
         self.set_support(
             formats=("ELF",),
             architectures=("x86_64",),
@@ -351,14 +358,58 @@ class CodeVirtualizationPass(MutationPass):
         region = extract_region(disasm["ops"], rng)
         if region is None:
             return None
+        return self._emit_region(binary, func, region, rng, use_nesting=True)
 
+    def _gather_dispatch_ops(self, binary: Any, func: dict[str, Any]) -> list[dict[str, Any]] | None:
+        """Linear instruction list of a dispatch-shaped function.
+
+        A computed-goto loop's function analysis stops at the register-indirect
+        jump (r2 cannot follow it), so ``pdfj`` returns a truncated body. Read the
+        function linearly from its entry to the first terminator instead.
+        """
+        try:
+            ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {func['addr']}")
+        except Exception:
+            return None
+        if not ops:
+            return None
+        gathered: list[dict[str, Any]] = []
+        for insn in ops:
+            if insn.get("type") == "invalid" or insn.get("opcode") == "invalid":
+                break
+            gathered.append(insn)
+            if insn.get("type") in ("ret", "swi", "syscall"):
+                return gathered
+        return None  # no terminator found within the window
+
+    def _virtualize_dispatch_function(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
+        """Virtualize a dispatch-shaped function (opt-in), lowering its computed
+        jump to an ijmp that re-enters the VM at the virtualized target."""
+        ops = self._gather_dispatch_ops(binary, func)
+        if ops is None:
+            return None
+        rng = random.Random(random.getrandbits(64))
+        region = extract_region(ops, rng, allow_computed_jump=True)
+        if region is None or not any(item[0] == "ijmp" for item in region.instructions):
+            return None
+        # The dispatch path never nests: nesting peels straight-line arithmetic runs
+        # and does not model the computed-jump re-entry, so the region VM is emitted
+        # as a single layer.
+        return self._emit_region(binary, func, region, rng, use_nesting=False)
+
+    def _emit_region(
+        self, binary: Any, func: dict[str, Any], region: Any, rng: random.Random, use_nesting: bool
+    ) -> dict[str, Any] | None:
+        """Build the interpreter for a lowered region, inject it, patch the
+        trampoline, and overwrite the dead body. Shared by the whole-function and
+        dispatch paths; ``use_nesting`` requests the nested-layer blob."""
         blob_vaddr = predict_blob_vaddr(binary)
         if blob_vaddr is None:
             return None
         # Nest by default, falling back to a single layer if the region has no
         # peelable register-op run.
         blob = None
-        if self.vm_nesting_depth >= 2:
+        if use_nesting and self.vm_nesting_depth >= 2:
             blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
         if blob is None:
             scheme = build_region_scheme(region, rng)
@@ -438,6 +489,11 @@ class CodeVirtualizationPass(MutationPass):
             # Prefer whole-function control-flow virtualization; fall back to
             # straight-line runs when the function is not fully reducible.
             region_result = self._virtualize_function(binary, func)
+            # Opt-in: a dispatch-shaped function (rejected by the reducible path
+            # above because of its computed jump) is virtualized through the
+            # dispatch contract instead.
+            if region_result is None and self.virtualize_dispatch:
+                region_result = self._virtualize_dispatch_function(binary, func)
             if region_result is not None:
                 total_insns += region_result["instructions"]
                 total_bytecode += region_result["bytecode"]
