@@ -22,6 +22,7 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_mba import (
     _BOOL_VARIANTS,
     _MBA_ADD_TEMPLATES,
+    _mba_add,
     _op_mba_compute,
 )
 
@@ -88,3 +89,25 @@ def arith_fold(mnemonic: str, key: int, variant: int) -> str:
     pool = _BOOL_POOL[mnemonic]
     index = ((variant >> _BOOL_SHIFT[mnemonic]) & _GROUP_MASK) % len(pool)
     return pool[index]
+
+
+# Bits of ``addr_variant`` that pick the address-fold template. 3 bits index the
+# whole add pool (shared + region-local extras).
+ADDR_VARIANT_BITS = 3
+
+
+def addr_fold(addend: str, temp: str, key: int, variant: int) -> str:
+    """Compute ``r10 += addend`` for this build's address-fold personality.
+
+    The memory-address prologues accumulate a base/index/displacement into r10 with
+    an MBA add (never a literal ``add``). ``variant`` 0 returns the canonical,
+    key-selected fold verbatim (byte-identical to :func:`_mba_add`); a non-zero
+    ``variant`` selects over the shared add pool independently of ``key``, so two
+    builds fold addresses with different algebra. Every pool template clobbers only
+    r10 and ``temp`` and preserves ``addend`` - the exact register footprint of
+    :func:`_mba_add` - so an address prologue's live-register contract is unchanged
+    whichever variant is chosen.
+    """
+    if not variant:
+        return _mba_add(addend, temp, key)
+    return _ADD_POOL[variant % len(_ADD_POOL)].format(a=addend, t=temp)
