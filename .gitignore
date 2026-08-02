@@ -29,3 +29,6 @@ htmlcov/
 # Editor/AI tooling
 .claude/
 .planning/
+
+# Private project instructions (kept local, not published)
+/CLAUDE.md
