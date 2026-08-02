@@ -473,9 +473,10 @@ _MBA_OP_MNEMONICS = frozenset({"add", "sub", "xor", "and", "or"})
 def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
     """Indices of ``add``/``sub`` op items whose flags are dead on every path.
 
-    A conditional jump (``jcc``) is the only instruction in the virtualizable
-    subset that reads flags, so an op's flags are dead iff no reachable ``jcc``
-    reads them before a full flag-killer (``cmp``/``sub``/...) overwrites them.
+    A conditional jump (``jcc``) and a flag save (``fsave``, the virtualized
+    ``pushfq``) are the flag readers in the virtualizable subset, so an op's flags
+    are dead iff no reachable reader consumes them before a full flag-killer
+    (``cmp``/``sub``/...) overwrites them.
     The analysis is conservative — every ``jcc`` is treated as reading all flags
     and every terminator as keeping them live — so an add is only marked when its
     flags are provably unread, never the reverse.
@@ -484,8 +485,8 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 
     def fixed_needed_in(i: int) -> bool | None:
         kind = items[i][0]
-        if kind in ("jcc", "exit"):
-            return True  # jcc reads flags; exit conservatively keeps them live
+        if kind in ("jcc", "exit", "fsave"):
+            return True  # jcc/fsave read flags; exit conservatively keeps them live
         if kind in _FLAG_KILLER_KINDS:
             return False
         if kind == "op" and items[i][1].mnemonic != "mov":
