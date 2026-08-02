@@ -210,7 +210,7 @@ def _vcmpsynth_handler_asm(
     return body
 
 
-def _vload_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _vload_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Load ``[base+disp]`` and push the value onto the vstack.
 
     Reuses the shared MBA-folded address prologue (``_mem_address_asm``), which
@@ -220,14 +220,14 @@ def _vload_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: i
     stack, not into a register). A 32-bit load zero-extends. No flags.
     """
     width = int(handler_key.split("_")[1])
-    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
     body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
     # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
     # the vstack pointer from its frame slot before pushing.
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Pop the top vstack cell and store it to ``[base+disp]``.
 
     The pop happens first, into rbx (which the address prologue preserves), because
@@ -241,12 +241,14 @@ def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
         f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
-    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
     store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vloadidx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _vloadidx_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Load ``[base+index*scale+disp]`` and push the value onto the vstack.
 
     Reuses the shared MBA-folded scaled-index address prologue
@@ -256,14 +258,16 @@ def _vloadidx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm
     value goes on the stack, not into a register). A 32-bit load zero-extends. No flags.
     """
     width = int(handler_key.split("_")[1])
-    body, advance = _indexed_address_asm(key, key_dword, field_perm)
+    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
     # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
     # the vstack pointer from its frame slot before pushing.
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vloadrip_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _vloadrip_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Load ``[rip+disp]`` (a global) and push the value onto the vstack.
 
     Identical to :func:`_vload_handler_asm` but the address is bytecode-base-relative
@@ -273,12 +277,14 @@ def _vloadrip_handler_asm(handler_key: str, key: int, key_dword: str, field_perm
     zero-extends. No flags.
     """
     width = int(handler_key.split("_")[1])
-    body, advance = _mem_address_asm(True, key, key_dword, field_perm)
+    body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
     body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vstorerip_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _vstorerip_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Pop the top vstack cell and store it to ``[rip+disp]`` (a global).
 
     Like :func:`_vstore_handler_asm`, the pop happens first into rbx (preserved by
@@ -292,7 +298,7 @@ def _vstorerip_handler_asm(handler_key: str, key: int, key_dword: str, field_per
         f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
-    body, advance = _mem_address_asm(True, key, key_dword, field_perm)
+    body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
     store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 

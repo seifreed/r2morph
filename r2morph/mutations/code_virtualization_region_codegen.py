@@ -270,7 +270,7 @@ def _icall_handler_asm(index: int, key: int, slot: tuple[int, ...]) -> str:
 
 
 def _call_mem_handler_asm(
-    index: int, key: int, key_dword: str, slot: tuple[int, ...], riprel: bool, field_perm: int
+    index: int, key: int, key_dword: str, slot: tuple[int, ...], riprel: bool, field_perm: int, addr_variant: int = 0
 ) -> str:
     """Memory-indirect ``call qword [mem]``: the callee address is a pointer loaded
     from memory (vtable / IAT-GOT dispatch). The shared memory-address prologue
@@ -278,17 +278,19 @@ def _call_mem_handler_asm(
     bytecode base plus a stored offset for the rip-relative form); dereferencing it
     yields the target. The item carries an unused register field so it reuses the
     load handlers' address machinery and operand layout verbatim."""
-    address, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
+    address, advance = _mem_address_asm(riprel, key, key_dword, field_perm, addr_variant)
     target = address + "  mov r10, qword ptr [r10]\n"
     return _call_bridge_asm(index, slot, target, advance)
 
 
-def _call_mem_idx_handler_asm(index: int, key: int, key_dword: str, slot: tuple[int, ...], field_perm: int) -> str:
+def _call_mem_idx_handler_asm(
+    index: int, key: int, key_dword: str, slot: tuple[int, ...], field_perm: int, addr_variant: int = 0
+) -> str:
     """Indexed memory-indirect ``call qword [base+index*scale+disp]`` (function-
     pointer table dispatch). The shared indexed-address prologue computes the
     pointer's address into r10; dereferencing it yields the target. The item
     carries an unused register field so the scaled-index operand layout applies."""
-    address, advance = _indexed_address_asm(key, key_dword, field_perm)
+    address, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     target = address + "  mov r10, qword ptr [r10]\n"
     return _call_bridge_asm(index, slot, target, advance)
 
@@ -410,6 +412,7 @@ def handler_instances_asm(
     arith_variant = spec.arith_variant
     compare_variant = spec.compare_variant
     shift_variant = spec.shift_variant
+    addr_variant = spec.addr_variant
     lines: list[str] = []
     for index in sorted(index_to_key):
         handler_key = index_to_key[index]
@@ -426,11 +429,11 @@ def handler_instances_asm(
         elif handler_key == "icall":
             lines.append(_icall_handler_asm(index, key, slot))
         elif handler_key == "callmem":
-            lines.append(_call_mem_handler_asm(index, key, key_dword, slot, False, field_perm))
+            lines.append(_call_mem_handler_asm(index, key, key_dword, slot, False, field_perm, addr_variant))
         elif handler_key == "callmemrip":
-            lines.append(_call_mem_handler_asm(index, key, key_dword, slot, True, field_perm))
+            lines.append(_call_mem_handler_asm(index, key, key_dword, slot, True, field_perm, addr_variant))
         elif handler_key == "callmemidx":
-            lines.append(_call_mem_idx_handler_asm(index, key, key_dword, slot, field_perm))
+            lines.append(_call_mem_idx_handler_asm(index, key, key_dword, slot, field_perm, addr_variant))
         elif handler_key == "vpush":
             lines.append(_vpush_handler_asm(key))
         elif handler_key == "vpop":
@@ -444,15 +447,15 @@ def handler_instances_asm(
         elif handler_key.startswith("vbinop_"):
             lines.append(_vbinop_handler_asm(handler_key, key, arith_variant))
         elif handler_key.startswith("vloadidx_"):
-            lines.append(_vloadidx_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_vloadidx_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vload_"):
-            lines.append(_vload_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_vload_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vstore_"):
-            lines.append(_vstore_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_vstore_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vloadrip_"):
-            lines.append(_vloadrip_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_vloadrip_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vstorerip_"):
-            lines.append(_vstorerip_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_vstorerip_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vshift_"):
             lines.append(_vshift_handler_asm(handler_key, key, shift_variant))
         elif handler_key.startswith("opsynth_"):
@@ -492,19 +495,27 @@ def handler_instances_asm(
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
             lines.append(
                 _cmp_memory_handler_asm(
-                    handler_key, key, key_dword, field_perm, flag_variant, arith_variant, compare_variant
+                    handler_key, key, key_dword, field_perm, flag_variant, arith_variant, compare_variant, addr_variant
                 )
             )
         elif handler_key.startswith(("opmemdst_", "opmemdstrip_")):
-            lines.append(_op_memdst_handler_asm(handler_key, key, key_dword, field_perm, flag_variant, arith_variant))
+            lines.append(
+                _op_memdst_handler_asm(
+                    handler_key, key, key_dword, field_perm, flag_variant, arith_variant, addr_variant
+                )
+            )
         elif handler_key.startswith(("opmem_", "opriprel_")):
-            lines.append(_op_memory_handler_asm(handler_key, key, key_dword, field_perm, flag_variant, arith_variant))
+            lines.append(
+                _op_memory_handler_asm(
+                    handler_key, key, key_dword, field_perm, flag_variant, arith_variant, addr_variant
+                )
+            )
         elif handler_key.startswith("leaidxnb_"):
-            lines.append(_lea_indexed_nobase_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_lea_indexed_nobase_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("leaidx_"):
-            lines.append(_lea_indexed_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_lea_indexed_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith(("lea_", "learip_")):
-            lines.append(_lea_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_lea_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("opmemidx_"):
             lines.append(
                 _op_mem_indexed_handler_asm(handler_key, key, key_dword, field_perm, flag_variant, arith_variant)
@@ -512,17 +523,17 @@ def handler_instances_asm(
         elif handler_key.startswith("incdec_"):
             lines.append(_incdec_handler_asm(handler_key, key, flag_variant, arith_variant))
         elif handler_key.startswith("movxidx_"):
-            lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("movx_"):
-            lines.append(_movx_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_movx_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith(("riprel_load_", "riprel_store_")):
-            lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_riprel_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith(("fpload_", "fpstore_", "fploadrip_", "fpstorerip_")):
-            lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_fp_memory_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith(("fploadidx_", "fpstoreidx_", "fploadidxnb_", "fpstoreidxnb_")):
-            lines.append(_fp_indexed_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_fp_indexed_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith(("fparithmem_", "fparithmemrip_", "fparithmemidx_")):
-            lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_fp_arith_mem_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("fparith_"):
             lines.append(_fp_arith_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith(("cvti2f_", "cvtf2i_")):
@@ -532,13 +543,13 @@ def handler_instances_asm(
         elif handler_key.startswith("fpmov_"):
             lines.append(_fp_move_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith(("fppackedmem_", "fppackedmemrip_", "fppackedmemidx_")):
-            lines.append(_fp_packed_arith_mem_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_fp_packed_arith_mem_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("fppacked_"):
             lines.append(_fp_packed_arith_handler_asm(handler_key, key, field_perm))
         elif handler_key in ("fppload", "fppstore", "fpploadrip", "fppstorerip", "fpploadidx", "fppstoreidx"):
-            lines.append(_fp_packed_mem_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_fp_packed_mem_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith(("load_", "store_")):
-            lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_memory_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key == "jmp":
             lines.append(retarget)
         elif handler_key.startswith("jcc_"):

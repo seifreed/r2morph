@@ -30,7 +30,9 @@ def xmm_reload_asm() -> str:
     return "".join(f"  movups xmm{i}, [rsp + {_XMM_SAVE_OFFSET + i * 16}]\n" for i in range(16))
 
 
-def _fp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _fp_memory_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Assembly body for a scalar-FP load/store handler (``movsd``/``movss`` xmm
     <-> [base+disp] or [rip+disp]).
 
@@ -50,7 +52,7 @@ def _fp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     is_load = kind.startswith("fpload")
     move = "movsd" if width == 64 else "movss"
     mem = "qword" if width == 64 else "dword"
-    body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
+    body, advance = _mem_address_asm(riprel, key, key_dword, field_perm, addr_variant)
     # r8 holds the XMM index; scale to the 16-byte slot stride (no *16 index scale
     # exists, so shift into r11 and address base+index+disp at scale 1).
     body += "  mov r11, r8\n  shl r11, 4\n"
@@ -88,7 +90,9 @@ def _fp_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> st
     )
 
 
-def _fp_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _fp_indexed_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Assembly body for a scalar-FP load/store with scaled-index addressing
     (``movsd/movss xmm, [base+index*scale+disp]`` - array-of-double access), with or
     without a base register.
@@ -104,9 +108,9 @@ def _fp_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_pe
     move = "movsd" if width == 64 else "movss"
     mem = "qword" if width == 64 else "dword"
     if kind.endswith("nb"):
-        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm)
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
     else:
-        body, advance = _indexed_address_asm(key, key_dword, field_perm)
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     # r8 holds the XMM index; scale to the 16-byte slot stride (it is not needed
     # again, so shift it in place).
     body += "  shl r8, 4\n"
@@ -140,7 +144,9 @@ def _fp_packed_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0
     )
 
 
-def _fp_packed_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _fp_packed_arith_mem_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Assembly body for packed-FP arithmetic with a ``[base+disp]`` memory source
     (``addpd xmm, [base+disp]`` and the sub/mul/div forms).
 
@@ -154,9 +160,9 @@ def _fp_packed_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str,
     """
     kind, instr = handler_key.split("_", 1)
     if kind.endswith("idx"):
-        body, advance = _indexed_address_asm(key, key_dword, field_perm)
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
-        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm)
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
     body += (
         f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
         f"  movups xmm1, [r10]\n  {instr} xmm0, xmm1\n"
@@ -165,7 +171,9 @@ def _fp_packed_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str,
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_packed_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _fp_packed_mem_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Assembly body for a packed 128-bit load/store (``movaps``/``movups`` etc.
     xmm <-> [base+disp], [rip+disp] or [base+index*scale+disp]).
 
@@ -177,9 +185,9 @@ def _fp_packed_mem_handler_asm(handler_key: str, key: int, key_dword: str, field
     any alignment fault from the relocated frame. No flags.
     """
     if handler_key.endswith("idx"):
-        body, advance = _indexed_address_asm(key, key_dword, field_perm)
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
-        body, advance = _mem_address_asm(handler_key.endswith("rip"), key, key_dword, field_perm)
+        body, advance = _mem_address_asm(handler_key.endswith("rip"), key, key_dword, field_perm, addr_variant)
     body += "  shl r8, 4\n"
     if handler_key.startswith("fppload"):
         body += f"  movups xmm0, [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
@@ -188,7 +196,9 @@ def _fp_packed_mem_handler_asm(handler_key: str, key: int, key_dword: str, field
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _fp_arith_mem_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
     """Assembly body for scalar-FP arithmetic with a memory source - either
     ``[base+disp]`` or rip-relative ``[rip+disp]`` (the constant-pool form).
 
@@ -205,9 +215,9 @@ def _fp_arith_mem_handler_asm(handler_key: str, key: int, key_dword: str, field_
     instr = mnemonic + ("sd" if width == 64 else "ss")
     mem = "qword" if width == 64 else "dword"
     if kind.endswith("idx"):
-        body, advance = _indexed_address_asm(key, key_dword, field_perm)
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
-        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm)
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
     body += f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
     body += f"  {instr} xmm0, {mem} ptr [r10]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
