@@ -20,4 +20,3 @@ from r2morph.core.report_helpers_symbolic_summary import (
 from r2morph.core.report_helpers_symbolic_summary import (
     _summarize_symbolic_statuses as _summarize_symbolic_statuses,
 )
-
