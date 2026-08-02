@@ -486,17 +486,19 @@ _JUNK_OP_PROBABILITY = 0.35
 
 
 def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
-    """Lower each arithmetic item into virtual-stack micro-ops and remap every branch
-    target index to its new position.
+    """Lower each arithmetic and base+disp memory item into virtual-stack micro-ops
+    and remap every branch target index to its new position.
 
-    A single arithmetic handler that computes a whole native op is a fingerprint;
-    lowering it to ``vpush``/``vpush``/``vbinop*``/``vpop`` reuses a handful of stack
-    primitives across every op instead. The sequence pushes dst then src, so the fold
+    A single handler that computes a whole native op is a fingerprint; lowering it to
+    ``vpush``/``vload``/``vbinop*``/``vpop``/``vstore`` reuses a handful of stack
+    primitives across every op instead. Arithmetic pushes dst then src, so the fold
     sees ``a == dst, b == src``; ``vpop`` writes the result back to dst. The fold kind
     depends on flag liveness: ``opmba`` (flags proven dead) folds with ``vbinop`` (no
     flag capture); ``opsynth`` (flags read by a later branch) folds with ``vbinopsynth``
-    (which also synthesizes the readable flags). Both keep the operand pushes and the
-    pop identical, so distinct native ops still share the stack primitives.
+    (which also synthesizes the readable flags). Base+disp memory lowers too: a load
+    is ``vload``/``vpop``, a store ``vpush``/``vstore``, and a mem-source arith op
+    ``vpush``/``vload``/``vbinopsynth``/``vpop`` (mem forms are always flag-synthesizing
+    today). Rip-relative and scaled-index memory keep their single handlers.
 
     Branches store their target as an item index; expanding an item shifts those
     indices, so a position map is built as the new list is assembled and applied to
@@ -508,7 +510,8 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
     old_to_new: dict[int, int] = {}
     for old_index, item in enumerate(items):
         old_to_new[old_index] = len(new_items)
-        fold = fold_of.get(item[0])
+        kind = item[0]
+        fold = fold_of.get(kind)
         if fold is not None:
             op = item[1]
             new_items.append(["vpush", op.dst_index])
@@ -518,6 +521,21 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
                 new_items.append(["vpush", op.value])
             new_items.append([fold, op.mnemonic, op.width])
             new_items.append(["vpop", op.dst_index])
+        elif kind == "load":  # mov reg, [base+disp]
+            _, reg, base, disp, width = item
+            new_items.append(["vload", base, disp, width])
+            new_items.append(["vpop", reg])
+        elif kind == "store":  # mov [base+disp], reg
+            _, reg, base, disp, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vstore", base, disp, width])
+        elif kind == "opmem":  # <op> reg, [base+disp] -- reg is src and dst
+            _, mnemonic, reg, base, disp, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vload", base, disp, width])
+            # opmem is always flag-synthesizing today, so fold with vbinopsynth.
+            new_items.append(["vbinopsynth", mnemonic, width])
+            new_items.append(["vpop", reg])
         else:
             new_items.append(item)
     for item in new_items:

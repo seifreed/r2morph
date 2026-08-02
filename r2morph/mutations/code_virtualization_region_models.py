@@ -184,6 +184,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"vbinop_{item[1]}_{item[2]}"  # flag-dead stack fold: mnemonic + width
     if kind == "vbinopsynth":
         return f"vbinopsynth_{item[1]}_{item[2]}"  # flag-live stack fold: mnemonic + width
+    if kind == "vload":
+        return f"vload_{item[3]}"  # push [base+disp] onto the vstack: width
+    if kind == "vstore":
+        return f"vstore_{item[3]}"  # pop the vstack top to [base+disp]: width
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         # opsynth: a flag-live add/sub computed by MBA with hand-synthesized flags.

@@ -25,6 +25,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _VSP_OFFSET,
     _VSTACK_BASE,
+    _mem_address_asm,
     _synth_flags_asm,
     _unmask_dword,
     _unmask_qword,
@@ -160,3 +161,39 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int) -> str:
         "  add rsi, 1\n  jmp vm_dispatch\n"
     )
     return body
+
+
+def _vload_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Load ``[base+disp]`` and push the value onto the vstack.
+
+    Reuses the shared MBA-folded address prologue (``_mem_address_asm``), which
+    decodes a base+disp operand into the effective address in r10 (and clobbers the
+    vstack pointer r9), then reads the qword/dword and pushes it. The register field
+    the prologue decodes into r8 is an unused placeholder (the value goes on the
+    stack, not into a register). A 32-bit load zero-extends. No flags.
+    """
+    width = int(handler_key.split("_")[1])
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+    # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
+    # the vstack pointer from its frame slot before pushing.
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Pop the top vstack cell and store it to ``[base+disp]``.
+
+    The pop happens first, into rbx (which the address prologue preserves), because
+    ``_mem_address_asm`` clobbers the vstack pointer r9. Then the shared prologue
+    computes the address into r10 and the value is stored. No flags.
+    """
+    width = int(handler_key.split("_")[1])
+    pop = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+    )
+    body, advance = _mem_address_asm(False, key, key_dword, field_perm)
+    store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
+    return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"

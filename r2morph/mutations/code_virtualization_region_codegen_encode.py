@@ -35,6 +35,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 1 + (8 if item[2] == 64 else 4)  # opcode + width-sized immediate
     if kind in ("vbinop", "vbinopsynth"):
         return 1  # opcode only (operands come off the vstack)
+    if kind in ("vload", "vstore"):
+        return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         if op.is_immediate:
@@ -225,6 +227,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind in ("vbinop", "vbinopsynth"):
             # The fold takes its operands off the vstack: opcode only.
             emit_opcode(_required_key(item))
+        elif kind in ("vload", "vstore"):
+            # Reuse the load operand layout (reg/base/disp); the value moves through
+            # the vstack, so the register field is an unused placeholder.
+            _, base_slot, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, slot_of[0], slot_of[base_slot], disp)
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
             p = emit_opcode(_required_key(item))
