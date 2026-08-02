@@ -28,6 +28,7 @@ import random
 import struct
 from typing import Any
 
+from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
 from r2morph.mutations.code_virtualization_region import build_region_scheme
@@ -304,6 +305,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # flag-dead arith folds through it in the nested layers too.
         f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
         + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
+        # Timing anti-debug folded into the same checksum slot as the single-layer
+        # entry: it sits inside the checksummed span (before vm_table_0) and folds
+        # 0x00 on an untraced run, so the benign build stays consistent while a
+        # single-stepped run misdecodes every opcode across all layers.
+        + timing_fold_asm(schemes[0].xor_key, slot=_CHECKSUM_OFFSET)
         + _set_layer_slots(schemes[0], 0, counts[0])
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"

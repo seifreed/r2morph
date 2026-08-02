@@ -232,14 +232,15 @@ class CodeVirtualizationPass(MutationPass):
         - probability: Probability of virtualizing each function (default: 0.3)
         - max_functions: Maximum functions to virtualize (default: 5)
         - vm_nesting_depth: VM layers per function; 2 wraps the region in a
-          second, independently-keyed inner VM (default: 1, no nesting)
+          second, independently-keyed inner VM (default: 2, nested when a
+          peelable register-op run exists, single-layer otherwise)
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(name="CodeVirtualization", config=config)
         self.probability = self.config.get("probability", 0.3)
         self.max_functions = self.config.get("max_functions", 5)
-        self.vm_nesting_depth = self.config.get("vm_nesting_depth", 1)
+        self.vm_nesting_depth = self.config.get("vm_nesting_depth", 2)
         self.set_support(
             formats=("ELF",),
             architectures=("x86_64",),
@@ -354,7 +355,7 @@ class CodeVirtualizationPass(MutationPass):
         blob_vaddr = predict_blob_vaddr(binary)
         if blob_vaddr is None:
             return None
-        # Nest when asked, falling back to a single layer if the region has no
+        # Nest by default, falling back to a single layer if the region has no
         # peelable register-op run.
         blob = None
         if self.vm_nesting_depth >= 2:

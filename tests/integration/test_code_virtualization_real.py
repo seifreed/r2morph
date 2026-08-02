@@ -277,6 +277,33 @@ def test_nested_virtualization_grows_with_depth(tmp_path: Path) -> None:
     assert _blob_size(1) < _blob_size(2) <= _blob_size(3)
 
 
+def test_default_config_nests_when_a_peelable_run_exists(tmp_path: Path) -> None:
+    # Nesting is the default path: with no vm_nesting_depth in the config, a
+    # fixture with a peelable register-op run must build the larger multi-layer
+    # interpreter (not the single-layer blob) and still preserve the exit code.
+    # A fixed seed holds handler duplication constant so the layer count is the
+    # only variable; the injected blob is appended, so file size tracks it.
+    if not FIXTURE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE}")
+
+    def _mutated_size(label: str, config: dict[str, object]) -> int:
+        mutated = tmp_path / label
+        shutil.copy(FIXTURE, mutated)
+        binary = Binary(str(mutated), writable=True)
+        binary.open()
+        try:
+            CodeVirtualizationPass(config=config).apply(binary)
+            binary.save()
+        finally:
+            binary.close()
+        return len(mutated.read_bytes())
+
+    single = _mutated_size("single_layer", {"probability": 1.0, "vm_nesting_depth": 1, "seed": 1234})
+    default = _mutated_size("default_layer", {"probability": 1.0, "seed": 1234})
+    assert default > single
+    assert _emulate_exit_code(tmp_path / "default_layer") == _emulate_exit_code(FIXTURE)
+
+
 def test_tampering_nested_interpreter_byte_diverges(tmp_path: Path) -> None:
     # The self-checksum spans both layers, so flipping one interpreter byte of a
     # nested build must still diverge from the original exit code.
