@@ -50,10 +50,12 @@ def test_vm_interpreter_fixture_emulates_to_expected_exit_code() -> None:
 
 def test_vm_interpreter_handler_table_recovered() -> None:
     """The dispatcher's handler table is recovered at its true address (0x2000)."""
-    # Characterization until D2: the dispatcher jumps through the table indirectly
-    # (no ``mov reg, [table+idx]`` for the regex path, <10 resolved successors for
-    # the CFG-block path), so table recovery currently yields nothing.
-    assert _recover().handler_table_address is None
+    assert _recover().handler_table_address == 0x2000
+
+
+def test_vm_interpreter_handlers_recovered() -> None:
+    """Recovering the table yields the four live handler entries."""
+    assert len(_recover().handlers) == 4
 
 
 def test_vm_interpreter_bytecode_region_located() -> None:

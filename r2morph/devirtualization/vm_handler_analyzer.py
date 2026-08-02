@@ -16,6 +16,10 @@ from .vm_handler_patterns import load_vm_handler_patterns
 
 logger = logging.getLogger(__name__)
 
+# r2 instruction types for a register/memory-indirect jump - the defining
+# dispatch instruction of a computed-goto VM (jmp reg / jmp [table + idx*scale]).
+_INDIRECT_JUMP_TYPES = frozenset({"ujmp", "rjmp", "mjmp", "ijmp"})
+
 
 class VMHandlerAnalyzer:
     """
@@ -111,15 +115,17 @@ class VMHandlerAnalyzer:
                         except ValueError:
                             continue
 
-            # Alternative: look for jump tables
+            # Alternative: a dispatch block reaches its handlers through a
+            # register-indirect jump indexing a table (jmp [table + idx*scale]).
+            # r2 does not resolve such a jump to a static successor set, so the
+            # table base must be recovered from the jump's own memory operand.
             cfg_builder = CFGBuilder(self.binary)
             cfg = cfg_builder.build_cfg(dispatcher_addr)
 
-            # Check for indirect jumps which might indicate handler dispatch
             for block_addr, block in cfg.blocks.items():
-                if len(block.successors) > 10:  # Many successors suggest dispatch
-                    # This block might contain the handler table
-                    return self._extract_table_from_block(block_addr)
+                table = self._extract_table_from_block(block_addr, block.size)
+                if table is not None:
+                    return table
 
         except Exception as e:
             logger.debug(f"Error finding handler table: {e}")
@@ -188,9 +194,28 @@ class VMHandlerAnalyzer:
             logger.debug(f"Failed to validate code address 0x{addr:x}: {e}")
             return False
 
-    def _extract_table_from_block(self, block_addr: int) -> int | None:
-        """Extract handler table address from a basic block."""
-        # Comprehensive implementation for VM handler emulation
+    def _extract_table_from_block(self, block_addr: int, block_size: int) -> int | None:
+        """Recover a handler-table address from a dispatch block.
+
+        A computed-goto dispatcher reaches its handlers through a register-
+        indirect jump that indexes a table (``jmp [table + idx*scale]``). The
+        table base is that jump's memory-operand pointer; validate it as a
+        handler table before trusting it.
+        """
+        assert self.binary.r2 is not None
+        try:
+            instructions = self.binary.r2.cmdj(f"pDj {block_size} @ {block_addr}") or []
+        except Exception as e:
+            logger.debug(f"Failed to disassemble block at 0x{block_addr:x}: {e}")
+            return None
+
+        for insn in instructions:
+            if insn.get("type") not in _INDIRECT_JUMP_TYPES:
+                continue
+            table_addr = insn.get("ptr")
+            if isinstance(table_addr, int) and table_addr > 0 and self._validate_handler_table(table_addr):
+                return table_addr
+
         return None
 
     def _extract_handler_addresses(self, table_addr: int | None) -> list[int]:
