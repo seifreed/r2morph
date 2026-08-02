@@ -359,6 +359,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                 extra=extra,
                 field_perm=scheme.field_perm,
                 body_seed=scheme.body_seed,
+                isa_seed=scheme.isa_seed,
             )
         )
 

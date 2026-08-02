@@ -44,6 +44,7 @@ class RegionScheme:
         "body_seed",
         "checksum_offset",
         "flags_offset",
+        "isa_seed",
     )
 
     def __init__(
@@ -57,6 +58,7 @@ class RegionScheme:
         body_seed: int = 0,
         checksum_offset: int = 0x88,
         flags_offset: int = 0x80,
+        isa_seed: int = 0,
     ) -> None:
         self.dup = dup
         self.xor_key = xor_key
@@ -83,6 +85,11 @@ class RegionScheme:
         # not a fixed frame fingerprint. Qword-aligned in [0x80, 0x100), distinct
         # from the checksum slot; 0x80 is the canonical default.
         self.flags_offset = flags_offset
+        # Seeds this build's semantic ISA personality: which of several equivalent
+        # implementations each handler family uses (currently the flag-synthesis
+        # spelling; see code_virtualization_region_isa). 0 is the canonical
+        # personality, byte-identical to the pre-feature handlers.
+        self.isa_seed = isa_seed
 
 
 class Region:

@@ -784,6 +784,19 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     # flags slot anywhere in [0x80, 0x100) except the checksum's slot.
     checksum_offset = rng.randrange(0x88, 0x100, 8)
     flags_offset = rng.choice([off for off in range(0x80, 0x100, 8) if off != checksum_offset])
+    # Drawn last so adding the ISA-personality seed does not shift any earlier field's
+    # value for a given seed. Selects this build's handler-implementation personality
+    # (the flag-synthesis spelling; see code_virtualization_region_isa).
+    isa_seed = rng.randrange(1 << 31)
     return RegionScheme(
-        dup, xor_key, junk_seed, slot_perm, table_key, field_perm, body_seed, checksum_offset, flags_offset
+        dup,
+        xor_key,
+        junk_seed,
+        slot_perm,
+        table_key,
+        field_perm,
+        body_seed,
+        checksum_offset,
+        flags_offset,
+        isa_seed,
     )

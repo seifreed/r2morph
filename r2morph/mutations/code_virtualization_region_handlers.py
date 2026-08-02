@@ -21,6 +21,7 @@ from r2morph.mutations.code_virtualization_layout import (
     shift_offsets,
 )
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
+from r2morph.mutations.code_virtualization_region_flags import synth_flags_asm as _synth_flags_asm
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
 # Stack frame: 16 GP context slots in [0x00, 0x80), the captured RFLAGS and the
@@ -135,53 +136,9 @@ def _op_mba_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: s
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _synth_flags_asm(width: int, mode: str) -> str:
-    """Branchlessly synthesize the readable flags of ``a <op> b`` into r11 (a RFLAGS
-    image), reading a in rbx, b in rbp and the result in r10.
-
-    ``mode`` is ``"add"``, ``"sub"`` or ``"logic"`` (and/or/xor/test). No flag-setting
-    native op spells out the operation: each of SF, ZF and PF - plus CF and OF for
-    add/sub (a logic op clears both) - is computed from a, b and the result with pure
-    and/or/xor/shift/neg, whose own flags are discarded. AF is read by no conditional
-    jump, so it is omitted. The formulas are verified bit-for-bit against the CPU over
-    all operand edge cases for add, sub and and/test at 32- and 64-bit widths.
-    rcx/rax/r9 are scratch; r8 (the destination slot) is preserved for any result store.
-    """
-    sh = width - 1
-    a, b, r = ("rbx", "rbp", "r10") if width == 64 else ("ebx", "ebp", "r10d")
-    c, t, u = ("rcx", "rax", "r9") if width == 64 else ("ecx", "eax", "r9d")
-    lines = ["  xor r11d, r11d\n"]
-    # ZF (bit 6): set when the result is zero.
-    lines.append(
-        f"  mov {c}, {r}\n  neg {c}\n  or {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  xor {c}, 1\n  shl {c}, 6\n  or r11, rcx\n"
-    )
-    # SF (bit 7): the result's sign bit.
-    lines.append(f"  mov {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 7\n  or r11, rcx\n")
-    if mode == "add":
-        # CF (bit 0): carry-out. OF (bit 11): signed overflow.
-        lines.append(
-            f"  mov {c}, {a}\n  and {c}, {b}\n  mov {u}, {a}\n  or {u}, {b}\n  mov {t}, {r}\n  not {t}\n  and {u}, {t}\n  or {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
-        )
-        lines.append(
-            f"  mov {c}, {a}\n  xor {c}, {r}\n  mov {u}, {b}\n  xor {u}, {r}\n  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
-        )
-    elif mode == "sub":
-        # CF (bit 0): borrow. OF (bit 11): signed overflow.
-        lines.append(
-            f"  mov {c}, {a}\n  not {c}\n  and {c}, {b}\n  mov {u}, {a}\n  not {u}\n  or {u}, {b}\n  and {u}, {r}\n  or {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
-        )
-        lines.append(
-            f"  mov {c}, {a}\n  xor {c}, {b}\n  mov {u}, {a}\n  xor {u}, {r}\n  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
-        )
-    # mode == "logic": CF and OF are cleared by the operation, so nothing to add.
-    # PF (bit 2): even parity of the result's low byte.
-    lines.append(
-        f"  movzx ecx, r10b\n  mov {u}, {c}\n  shr {u}, 4\n  xor {c}, {u}\n  mov {u}, {c}\n  shr {u}, 2\n  xor {c}, {u}\n  mov {u}, {c}\n  shr {u}, 1\n  xor {c}, {u}\n  not {c}\n  and ecx, 1\n  shl ecx, 2\n  or r11, rcx\n"
-    )
-    return "".join(lines)
-
-
-def _op_synth_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
+def _op_synth_handler_asm(
+    handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0, flag_variant: int = 0
+) -> str:
     """Assembly body for a flag-LIVE ``add``/``sub`` handler.
 
     Where ``_op_mba_handler_asm`` serves the flag-dead case (no flag capture), this
@@ -221,7 +178,7 @@ def _op_synth_handler_asm(handler_key: str, key: int, key_qword: str, key_dword:
     if width == 32:
         body += "  mov r10d, r10d\n"
     # add/sub keep their arithmetic flags; xor/and/or clear CF and OF (logic mode).
-    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic")
+    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic", flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += "  mov qword ptr [rsp+r8*8], r10\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
@@ -298,7 +255,9 @@ def _riprel_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _cmp_memory_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, flag_variant: int = 0
+) -> str:
     """Assembly body for ``cmp reg, [mem]`` (computes the address, synthesizes flags).
 
     The memory address comes from a frame-slot base plus displacement (``cmpmem``)
@@ -320,12 +279,14 @@ def _cmp_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_pe
     body += _op_mba_compute("add", key)
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, "sub")
+    body += _synth_flags_asm(width, "sub", flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _op_memdst_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, flag_variant: int = 0
+) -> str:
     """Assembly body for ``<op> [mem], reg`` (memory is the read-modify-write
     destination, the register is the source).
 
@@ -349,7 +310,7 @@ def _op_memdst_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     body += _op_mba_compute(mnemonic, key)
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic")
+    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic", flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     if width == 64:
         body += "  mov qword ptr [r12], r10\n"
@@ -390,7 +351,7 @@ def _movx_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_
     return body + _movx_extend_asm(ext, int(src_size_text), int(dst_width_text), advance)
 
 
-def _incdec_handler_asm(handler_key: str, key: int) -> str:
+def _incdec_handler_asm(handler_key: str, key: int, flag_variant: int = 0) -> str:
     """Assembly body for ``inc reg`` / ``dec reg``.
 
     inc/dec leave CF untouched (unlike add/sub by one), so the result is computed
@@ -412,7 +373,7 @@ def _incdec_handler_asm(handler_key: str, key: int) -> str:
     body += _op_mba_compute("add", key)  # r10 = a +/- 1
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, synth_mode)
+    body += _synth_flags_asm(width, synth_mode, flag_variant)
     # inc/dec preserve CF: drop the synthesized carry (bit 0) and OR in the program's.
     body += f"  and r11, -2\n  mov rcx, qword ptr [rsp+{_FLAGS_OFFSET}]\n  and ecx, 1\n  or r11, rcx\n"
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
@@ -496,7 +457,7 @@ def _lea_indexed_nobase_handler_asm(handler_key: str, key: int, key_dword: str, 
     return body + _lea_store_asm(width, advance)
 
 
-def _op_mem_synth_tail(mnemonic: str, width: int, key: int, advance: int) -> str:
+def _op_mem_synth_tail(mnemonic: str, width: int, key: int, advance: int, flag_variant: int = 0) -> str:
     """Tail shared by ``<op> reg, [mem]`` handlers: with the effective address in
     r10 and the register slot index in r8, compute ``reg <op> [mem]`` with the MBA
     fold, synthesize the flags, store the result to the register slot.
@@ -515,13 +476,15 @@ def _op_mem_synth_tail(mnemonic: str, width: int, key: int, advance: int) -> str
     body += _op_mba_compute(mnemonic, key)
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic")
+    body += _synth_flags_asm(width, mnemonic if mnemonic in ("add", "sub") else "logic", flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += "  mov qword ptr [rsp+r8*8], r10\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _op_mem_indexed_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, flag_variant: int = 0
+) -> str:
     """Assembly body for ``<op> reg, [base + index*scale + disp]`` (reg is source
     and destination; memory is the scaled-index source).
 
@@ -530,7 +493,7 @@ def _op_mem_indexed_handler_asm(handler_key: str, key: int, key_dword: str, fiel
     """
     _, mnemonic, width_text = handler_key.split("_")
     body, advance = _indexed_address_asm(key, key_dword, field_perm)
-    return body + _op_mem_synth_tail(mnemonic, int(width_text), key, advance)
+    return body + _op_mem_synth_tail(mnemonic, int(width_text), key, advance, flag_variant)
 
 
 def _lea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
@@ -545,7 +508,9 @@ def _lea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int
     return body + _lea_store_asm(int(width_text), advance)
 
 
-def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+def _op_memory_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, flag_variant: int = 0
+) -> str:
     """Assembly body for ``<op> reg, [mem]`` (reg is source and destination).
 
     The address is computed like the compare-with-memory handler; the result is the
@@ -556,10 +521,12 @@ def _op_memory_handler_asm(handler_key: str, key: int, key_dword: str, field_per
     riprel = parts[0] == "opriprel"
     mnemonic, width = parts[1], int(parts[2])
     body, advance = _mem_address_asm(riprel, key, key_dword, field_perm)
-    return body + _op_mem_synth_tail(mnemonic, width, key, advance)
+    return body + _op_mem_synth_tail(mnemonic, width, key, advance, flag_variant)
 
 
-def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0) -> str:
+def _compare_handler_asm(
+    handler_key: str, key: int, key_qword: str, key_dword: str, field_perm: int = 0, flag_variant: int = 0
+) -> str:
     """Assembly body for a cmp/test handler (synthesizes flags, stores no result).
 
     cmp/test exist only to set flags a branch reads, so both compute the comparison
@@ -601,7 +568,7 @@ def _compare_handler_asm(handler_key: str, key: int, key_qword: str, key_dword: 
         synth_mode = "logic"
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, synth_mode)
+    body += _synth_flags_asm(width, synth_mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 

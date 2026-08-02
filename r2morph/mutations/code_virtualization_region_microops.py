@@ -119,7 +119,7 @@ def _vbinop_handler_asm(handler_key: str, key: int) -> str:
     return body
 
 
-def _vbinopsynth_handler_asm(handler_key: str, key: int) -> str:
+def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0) -> str:
     """Fold the top two vstack cells AND synthesize the readable flags, then push.
 
     The flag-live counterpart of ``_vbinop_handler_asm``: where that serves ops whose
@@ -153,7 +153,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int) -> str:
     body += _op_mba_compute(mnemonic, key)
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, mode)
+    body += _synth_flags_asm(width, mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += (
         f"  mov qword ptr [rsp+r8+{_VBASE}], r10\n"
@@ -164,7 +164,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int) -> str:
     return body
 
 
-def _vcmpsynth_handler_asm(handler_key: str, key: int) -> str:
+def _vcmpsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0) -> str:
     """Pop the top two vstack cells, synthesize the compare flags, push nothing.
 
     The flag-only counterpart of ``_vbinopsynth_handler_asm``: ``cmp``/``test`` exist
@@ -197,7 +197,7 @@ def _vcmpsynth_handler_asm(handler_key: str, key: int) -> str:
         body += _op_mba_compute("and", key)
     if width == 32:
         body += "  mov r10d, r10d\n"
-    body += _synth_flags_asm(width, mode)
+    body += _synth_flags_asm(width, mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += "  add rsi, 1\n  jmp vm_dispatch\n"
     return body

@@ -84,6 +84,7 @@ from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
 )
+from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
 from r2morph.mutations.code_virtualization_region_microops import (
     _vbinop_handler_asm,
     _vbinopsynth_handler_asm,
@@ -391,6 +392,7 @@ def handler_instances_asm(
     extra: dict[str, str] | None = None,
     field_perm: int = 0,
     body_seed: int = 0,
+    isa_seed: int = 0,
 ) -> str:
     """Emit the ``H_{index}`` handler instances for one interpreter (or layer).
 
@@ -400,6 +402,9 @@ def handler_instances_asm(
     ``vm_dispatch`` and carry per-instance reachable/unreachable junk.
     """
     extra = extra or {}
+    # This build's semantic ISA personality; flag_variant selects the flag-synthesis
+    # spelling shared by every flag-setting handler in the interpreter.
+    flag_variant = build_isa_spec(isa_seed).flag_variant
     lines: list[str] = []
     for index in sorted(index_to_key):
         handler_key = index_to_key[index]
@@ -428,9 +433,9 @@ def handler_instances_asm(
         elif handler_key.startswith("vpushi_"):
             lines.append(_vpushi_handler_asm(handler_key, key_qword, key_dword))
         elif handler_key.startswith("vcmpsynth_"):
-            lines.append(_vcmpsynth_handler_asm(handler_key, key))
+            lines.append(_vcmpsynth_handler_asm(handler_key, key, flag_variant))
         elif handler_key.startswith("vbinopsynth_"):
-            lines.append(_vbinopsynth_handler_asm(handler_key, key))
+            lines.append(_vbinopsynth_handler_asm(handler_key, key, flag_variant))
         elif handler_key.startswith("vbinop_"):
             lines.append(_vbinop_handler_asm(handler_key, key))
         elif handler_key.startswith("vloadidx_"):
@@ -446,13 +451,13 @@ def handler_instances_asm(
         elif handler_key.startswith("vshift_"):
             lines.append(_vshift_handler_asm(handler_key, key))
         elif handler_key.startswith("opsynth_"):
-            lines.append(_op_synth_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
+            lines.append(_op_synth_handler_asm(handler_key, key, key_qword, key_dword, field_perm, flag_variant))
         elif handler_key.startswith("opmba_"):
             lines.append(_op_mba_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("op_"):
             lines.append(_op_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith(("cmp_", "test_")):
-            lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
+            lines.append(_compare_handler_asm(handler_key, key, key_qword, key_dword, field_perm, flag_variant))
         elif handler_key.startswith(("shl_", "shr_", "sar_")):
             lines.append(_shift_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith("imul3_"):
@@ -474,11 +479,11 @@ def handler_instances_asm(
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key, field_perm))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
-            lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_cmp_memory_handler_asm(handler_key, key, key_dword, field_perm, flag_variant))
         elif handler_key.startswith(("opmemdst_", "opmemdstrip_")):
-            lines.append(_op_memdst_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_op_memdst_handler_asm(handler_key, key, key_dword, field_perm, flag_variant))
         elif handler_key.startswith(("opmem_", "opriprel_")):
-            lines.append(_op_memory_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_op_memory_handler_asm(handler_key, key, key_dword, field_perm, flag_variant))
         elif handler_key.startswith("leaidxnb_"):
             lines.append(_lea_indexed_nobase_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("leaidx_"):
@@ -486,9 +491,9 @@ def handler_instances_asm(
         elif handler_key.startswith(("lea_", "learip_")):
             lines.append(_lea_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("opmemidx_"):
-            lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword, field_perm))
+            lines.append(_op_mem_indexed_handler_asm(handler_key, key, key_dword, field_perm, flag_variant))
         elif handler_key.startswith("incdec_"):
-            lines.append(_incdec_handler_asm(handler_key, key))
+            lines.append(_incdec_handler_asm(handler_key, key, flag_variant))
         elif handler_key.startswith("movxidx_"):
             lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword, field_perm))
         elif handler_key.startswith("movx_"):
@@ -651,6 +656,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             slot=slot,
             field_perm=scheme.field_perm,
             body_seed=scheme.body_seed,
+            isa_seed=scheme.isa_seed,
         )
     )
 
