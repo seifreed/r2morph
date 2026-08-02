@@ -44,9 +44,10 @@ def _flag_dead_arith_region(second: dict[str, object]) -> list[tuple[object, ...
 def test_flag_dead_reg_reg_arith_lowers_to_shared_microop_sequence() -> None:
     items = _flag_dead_arith_region(_insn(0x1003, 3, "xor", "xor eax, ecx"))
     kinds = [item[0] for item in items]
-    # The 1:1 arithmetic handler is gone; each op became push/push/binop/pop.
+    # The 1:1 arithmetic handler is gone; each op became push/push/binop/pop (the
+    # trailing cmp also lowers now, so only the per-op fold/pop counts are asserted).
     assert "opmba" not in kinds and "op_add" not in kinds
-    assert kinds.count("vbinop") == 2 and kinds.count("vpush") == 4 and kinds.count("vpop") == 2
+    assert kinds.count("vbinop") == 2 and kinds.count("vpop") == 2
     # add and xor share the SAME vpush/vpop primitives; only the fold differs.
     binops = {item[1] for item in items if item[0] == "vbinop"}
     assert binops == {"add", "xor"}
@@ -131,6 +132,8 @@ def test_micro_op_item_sizes_match_the_handler_advances() -> None:
     assert _item_size(("vload", 5, -8, 64)) == 7
     assert _item_size(("vstore", 5, -8, 64)) == 7
     assert _item_size(("vloadidx", 5, 6, 3, -8, 64)) == 9
+    assert _item_size(("vcmpsynth", "cmp", 64)) == 1
+    assert _item_size(("vcmpsynth", "test", 32)) == 1
 
 
 def _memory_region(access: dict[str, object]) -> list[tuple[object, ...]]:
@@ -183,3 +186,42 @@ def test_rip_relative_memory_is_not_lowered() -> None:
     # differs); it is a separate follow-up.
     riprel = [item[0] for item in _memory_region(_insn(0x1000, 7, "mov", "mov rax, qword [rip + 0x2000]"))]
     assert "riprel_load" in riprel and "vload" not in riprel
+
+
+def _compare_region(compare: dict[str, object]) -> list[str]:
+    """Region item kinds for a compare that drives a conditional branch."""
+    insns = [
+        compare,
+        _insn(0x1010, 2, "cjmp", "jne 0x1000", jump=0x1000, fail=0x1012),
+        _insn(0x1012, 1, "ret", "ret"),
+    ]
+    region = extract_region(insns)
+    assert region is not None
+    return [item[0] for item in region.instructions]
+
+
+def test_cmp_reg_reg_lowers_to_vpush_vpush_vcmpsynth() -> None:
+    kinds = _compare_region(_insn(0x1000, 3, "cmp", "cmp rax, rbx"))
+    # The single cmp handler is gone; both operands are pushed and the flags are
+    # synthesized off the stack with no stored result.
+    assert "cmp" not in kinds
+    assert kinds[:3] == ["vpush", "vpush", "vcmpsynth"]
+
+
+def test_cmp_reg_imm_lowers_with_vpushi() -> None:
+    kinds = _compare_region(_insn(0x1000, 4, "cmp", "cmp rax, 5"))
+    assert "cmp" not in kinds
+    assert kinds[:3] == ["vpush", "vpushi", "vcmpsynth"]
+
+
+def test_test_reg_reg_lowers_to_vcmpsynth() -> None:
+    kinds = _compare_region(_insn(0x1000, 3, "acmp", "test rax, rbx"))
+    assert "test" not in kinds
+    assert kinds[:3] == ["vpush", "vpush", "vcmpsynth"]
+
+
+def test_cmp_with_memory_operand_lowers_to_vpush_vload_vcmpsynth() -> None:
+    kinds = _compare_region(_insn(0x1000, 4, "cmp", "cmp rax, qword [rsp - 8]"))
+    # cmp reg,[base+disp] reuses the base+disp vload primitive before the compare.
+    assert "cmpmem" not in kinds
+    assert kinds[:3] == ["vpush", "vload", "vcmpsynth"]

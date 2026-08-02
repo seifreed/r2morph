@@ -561,6 +561,18 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
             new_items.append(["vpush", reg])
             new_items.append(["vbinopsynth", mnemonic, width])
             new_items.append(["vstore", base, disp, width])
+        elif kind in ("cmp", "test"):
+            # ("cmp"|"test", slot, value, is_immediate, width): push both operands,
+            # then synthesize the flags off the stack (no result stored).
+            _, slot, value, is_immediate, width = item
+            new_items.append(["vpush", slot])
+            new_items.append(["vpushi", value, width] if is_immediate else ["vpush", value])
+            new_items.append(["vcmpsynth", kind, width])
+        elif kind == "cmpmem":  # cmp reg, [base+disp]
+            _, reg, base, disp, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vload", base, disp, width])
+            new_items.append(["vcmpsynth", "cmp", width])
         else:
             new_items.append(item)
     for item in new_items:

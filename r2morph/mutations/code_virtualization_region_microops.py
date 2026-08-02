@@ -164,6 +164,45 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int) -> str:
     return body
 
 
+def _vcmpsynth_handler_asm(handler_key: str, key: int) -> str:
+    """Pop the top two vstack cells, synthesize the compare flags, push nothing.
+
+    The flag-only counterpart of ``_vbinopsynth_handler_asm``: ``cmp``/``test`` exist
+    only to set the flags a later branch reads, so this folds ``a`` and ``b`` the same
+    way but stores no result (net vstack depth -2). ``cmp`` synthesizes the flags of
+    ``a - b`` (MBA add after negating b), ``test`` the flags of ``a & b`` (logic mode,
+    CF and OF cleared). No literal cmp/test, no ``pushfq``.
+
+    Operands were pushed left-then-right, so a == left (below), b == right (top): pop b
+    into rax, a into r10. The post-double-pop stack pointer is written back to its slot
+    BEFORE the synthesis, because ``_synth_flags_asm`` clobbers r9.
+    """
+    _, op, width_text = handler_key.split("_")
+    width = int(width_text)
+    mode = "sub" if op == "cmp" else "logic"
+    body = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        "  sub r9, 8\n"
+        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+    )
+    # Save the originals for the synthesis (a and b before any negation).
+    body += "  mov rbx, r10\n  mov rbp, rax\n"
+    # cmp -> flags of a - b (== a + (-b)); test -> flags of a & b. Result is discarded.
+    if op == "cmp":
+        body += "  neg rax\n" + _op_mba_compute("add", key)
+    else:
+        body += _op_mba_compute("and", key)
+    if width == 32:
+        body += "  mov r10d, r10d\n"
+    body += _synth_flags_asm(width, mode)
+    body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    body += "  add rsi, 1\n  jmp vm_dispatch\n"
+    return body
+
+
 def _vload_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
     """Load ``[base+disp]`` and push the value onto the vstack.
 

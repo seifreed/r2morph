@@ -192,6 +192,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"vloadidx_{item[5]}"  # push [base+index*scale+disp] onto the vstack: width
     if kind == "vshift":
         return f"vshift_{item[1]}_{item[3]}"  # stack shift: mnemonic + width
+    if kind == "vcmpsynth":
+        return f"vcmpsynth_{item[1]}_{item[2]}"  # stack compare (flags only): op + width
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         # opsynth: a flag-live add/sub computed by MBA with hand-synthesized flags.

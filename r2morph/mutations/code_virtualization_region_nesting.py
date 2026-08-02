@@ -96,6 +96,7 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
         "vstore",
         "vloadidx",
         "vshift",
+        "vcmpsynth",
     )
     targets: set[int] = set()
     for item in instructions:

@@ -87,6 +87,7 @@ from r2morph.mutations.code_virtualization_region_integrity import (
 from r2morph.mutations.code_virtualization_region_microops import (
     _vbinop_handler_asm,
     _vbinopsynth_handler_asm,
+    _vcmpsynth_handler_asm,
     _vload_handler_asm,
     _vloadidx_handler_asm,
     _vpop_handler_asm,
@@ -424,6 +425,8 @@ def handler_instances_asm(
             lines.append(_vpop_handler_asm(key))
         elif handler_key.startswith("vpushi_"):
             lines.append(_vpushi_handler_asm(handler_key, key_qword, key_dword))
+        elif handler_key.startswith("vcmpsynth_"):
+            lines.append(_vcmpsynth_handler_asm(handler_key, key))
         elif handler_key.startswith("vbinopsynth_"):
             lines.append(_vbinopsynth_handler_asm(handler_key, key))
         elif handler_key.startswith("vbinop_"):

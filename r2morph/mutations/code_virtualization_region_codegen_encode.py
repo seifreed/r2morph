@@ -33,7 +33,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 2  # opcode + slot byte
     if kind == "vpushi":
         return 1 + (8 if item[2] == 64 else 4)  # opcode + width-sized immediate
-    if kind in ("vbinop", "vbinopsynth"):
+    if kind in ("vbinop", "vbinopsynth", "vcmpsynth"):
         return 1  # opcode only (operands come off the vstack)
     if kind in ("vload", "vstore"):
         return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
@@ -232,8 +232,8 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             # Shift the top vstack cell by a one-byte count (no permutation needed).
             p = emit_opcode(_required_key(item))
             plain.append(item[2] ^ p)
-        elif kind in ("vbinop", "vbinopsynth"):
-            # The fold takes its operands off the vstack: opcode only.
+        elif kind in ("vbinop", "vbinopsynth", "vcmpsynth"):
+            # The fold/compare takes its operands off the vstack: opcode only.
             emit_opcode(_required_key(item))
         elif kind in ("vload", "vstore"):
             # Reuse the load operand layout (reg/base/disp); the value moves through
