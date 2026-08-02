@@ -43,6 +43,14 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 9  # opcode + (unused) reg + base + index slots + scale shift + 4-byte disp
     if kind in ("vloadrip", "vstorerip"):
         return 6  # opcode + (unused) reg slot + 4-byte bytecode-relative displacement
+    if kind == "vlea":
+        return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
+    if kind == "vlearip":
+        return 6  # opcode + (unused) reg slot + 4-byte bytecode-relative displacement
+    if kind == "vleaidx":
+        return 9  # opcode + (unused) reg + base + index slots + scale shift + 4-byte disp
+    if kind == "vleaidxnb":
+        return 8  # opcode + (unused) reg + index slot + scale shift + 4-byte disp (no base)
     if kind == "vshift":
         return 2  # opcode + count byte
     if kind in ("op", "opmba", "opsynth"):
@@ -283,6 +291,28 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, target, _width = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, slot_of[0], None, target - bytecode_base)
+        elif kind == "vlea":
+            # Reuse the base+disp operand layout; the register field is an unused
+            # placeholder (the computed address goes on the vstack, not a register).
+            _, base_slot, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, slot_of[0], slot_of[base_slot], disp)
+        elif kind == "vlearip":
+            # Reuse the rip-relative operand layout; the register field is unused. The
+            # target is stored as a signed offset from the bytecode base (r15).
+            _, target, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_mem(p, slot_of[0], None, target - bytecode_base)
+        elif kind == "vleaidx":
+            # Reuse the scaled-index operand layout; the register field is unused.
+            _, base_slot, index_slot, shift, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_idx(p, slot_of[0], slot_of[base_slot], slot_of[index_slot], shift, disp)
+        elif kind == "vleaidxnb":
+            # Reuse the no-base scaled-index operand layout (base None); reg unused.
+            _, index_slot, shift, disp, _width = item
+            p = emit_opcode(_required_key(item))
+            emit_idx(p, slot_of[0], None, slot_of[index_slot], shift, disp)
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
             p = emit_opcode(_required_key(item))

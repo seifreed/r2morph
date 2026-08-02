@@ -206,6 +206,14 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"vloadidx_{item[5]}"  # push [base+index*scale+disp] onto the vstack: width
     if kind == "vloadrip":
         return f"vloadrip_{item[2]}"  # push [rip+disp] onto the vstack: width
+    if kind == "vlea":
+        return f"vlea_{item[3]}"  # push lea address of [base+disp] onto the vstack: width
+    if kind == "vlearip":
+        return f"vlearip_{item[2]}"  # push lea address of [rip+disp] onto the vstack: width
+    if kind == "vleaidx":
+        return f"vleaidx_{item[5]}"  # push lea address of [base+index*scale+disp]: width
+    if kind == "vleaidxnb":
+        return f"vleaidxnb_{item[4]}"  # push lea address of [index*scale+disp] (no base): width
     if kind == "vstorerip":
         return f"vstorerip_{item[2]}"  # pop the vstack top to [rip+disp]: width
     if kind == "vshift":

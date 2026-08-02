@@ -259,3 +259,39 @@ def test_rip_relative_micro_op_item_sizes() -> None:
     # opcode + (unused) reg slot + 4-byte bytecode-relative offset.
     assert _item_size(("vloadrip", 0, 64)) == 6
     assert _item_size(("vstorerip", 0, 64)) == 6
+
+
+def test_lea_base_disp_lowers_to_vlea_then_vpop() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 4, "lea", "lea rax, [rdi + 0x10]"))]
+    # lea reg,[base+disp] computes the effective address onto the stack (no deref),
+    # then pops it into the destination slot; no dedicated lea handler survives.
+    assert "lea" not in kinds
+    assert kinds[:2] == ["vlea", "vpop"]
+
+
+def test_lea_rip_relative_lowers_to_vlearip_then_vpop() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 7, "lea", "lea rax, [rip + 0x2000]"))]
+    assert "learip" not in kinds
+    assert kinds[:2] == ["vlearip", "vpop"]
+
+
+def test_lea_scaled_index_lowers_to_vleaidx_then_vpop() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 5, "lea", "lea rax, [rdi + rcx*4 + 8]"))]
+    assert "leaidx" not in kinds
+    assert kinds[:2] == ["vleaidx", "vpop"]
+
+
+def test_lea_no_base_scaled_index_lowers_to_vleaidxnb_then_vpop() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 8, "lea", "lea rax, [rcx*8 + 0x20]"))]
+    assert "leaidxnb" not in kinds
+    assert kinds[:2] == ["vleaidxnb", "vpop"]
+
+
+def test_lea_micro_op_item_sizes_match_the_handler_advances() -> None:
+    # A lea micro-op must encode exactly as many bytes as its handler's rsi advance,
+    # or the virtual instruction pointer desyncs. The address goes on the vstack, so
+    # the register field is an unused placeholder that still occupies its byte.
+    assert _item_size(("vlea", 5, -8, 64)) == 7  # opcode + reg + base slot + 4-byte disp
+    assert _item_size(("vlearip", 0x401000, 64)) == 6  # opcode + reg + 4-byte offset
+    assert _item_size(("vleaidx", 5, 6, 3, -8, 64)) == 9  # + index slot + scale shift
+    assert _item_size(("vleaidxnb", 6, 3, -8, 64)) == 8  # no base slot byte

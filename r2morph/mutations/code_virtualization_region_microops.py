@@ -27,6 +27,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _VSP_OFFSET,
     _VSTACK_BASE,
     _indexed_address_asm,
+    _indexed_address_nobase_asm,
     _mem_address_asm,
     _synth_flags_asm,
     _unmask_dword,
@@ -329,6 +330,51 @@ def _vstorerip_handler_asm(
     body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
     store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vlea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+    """Compute a ``lea`` effective address and push it onto the vstack (no deref).
+
+    Reuses the shared MBA-folded address prologue (base+disp, or bytecode-base
+    relative when the key is ``vlearip``), which decodes the operand into r10; a
+    following ``vpop`` writes that address to the destination slot. lea sets no
+    flags. A 32-bit destination truncates to the low 32 bits, zero-extended, before
+    the push. The register field the prologue decodes into r8 is an unused
+    placeholder (the address goes on the vstack, not into a register).
+    """
+    sub, width_text = handler_key.split("_")
+    body, advance = _mem_address_asm(sub == "vlearip", key, key_dword, field_perm, addr_variant)
+    body += "  mov eax, r10d\n" if int(width_text) == 32 else "  mov rax, r10\n"
+    # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
+    # the vstack pointer from its frame slot before pushing.
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vleaidx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+    """Compute a scaled-index ``lea`` address (base+index*scale+disp) and push it.
+
+    Like :func:`_vlea_handler_asm` but with the shared scaled-index prologue; no
+    deref, no flags. A 32-bit destination truncates before the push.
+    """
+    width = int(handler_key.split("_")[1])
+    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    body += "  mov eax, r10d\n" if width == 32 else "  mov rax, r10\n"
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vleaidxnb_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Compute a no-base scaled-index ``lea`` address (index*scale+disp) and push it.
+
+    Like :func:`_vleaidx_handler_asm` but the operand carries no base slot byte, so
+    the prologue is one byte shorter; no deref, no flags. A 32-bit destination
+    truncates before the push.
+    """
+    width = int(handler_key.split("_")[1])
+    body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    body += "  mov eax, r10d\n" if width == 32 else "  mov rax, r10\n"
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _vshift_handler_asm(handler_key: str, key: int, shift_variant: int = 0) -> str:

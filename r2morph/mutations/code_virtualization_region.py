@@ -635,6 +635,22 @@ def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] |
             new_items.append(["vpush", reg])
             new_items.append(["vbinopsynth", mnemonic, width])
             new_items.append(["vstorerip", target, width])
+        elif kind == "lea":  # lea reg, [base+disp] -- compute address, no deref/flags
+            _, reg, base, disp, width = item
+            new_items.append(["vlea", base, disp, width])
+            new_items.append(["vpop", reg])
+        elif kind == "learip":  # lea reg, [rip+disp] -- address of a global
+            _, reg, target, width = item
+            new_items.append(["vlearip", target, width])
+            new_items.append(["vpop", reg])
+        elif kind == "leaidx":  # lea reg, [base+index*scale+disp]
+            _, reg, base, index, shift, disp, width = item
+            new_items.append(["vleaidx", base, index, shift, disp, width])
+            new_items.append(["vpop", reg])
+        elif kind == "leaidxnb":  # lea reg, [index*scale+disp] -- no base
+            _, reg, index, shift, disp, width = item
+            new_items.append(["vleaidxnb", index, shift, disp, width])
+            new_items.append(["vpop", reg])
         else:
             new_items.append(item)
     for item in new_items:
