@@ -120,7 +120,6 @@ Homepage = "https://github.com/seifreed/r2morph"
 Documentation = "https://github.com/seifreed/r2morph#readme"
 Repository = "https://github.com/seifreed/r2morph"
 Issues = "https://github.com/seifreed/r2morph/issues"
-Changelog = "https://github.com/seifreed/r2morph/blob/main/CHANGELOG.md"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
