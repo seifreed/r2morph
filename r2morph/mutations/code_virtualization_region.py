@@ -246,6 +246,20 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
             return [*lea]
         lea_indexed = _decode_lea_indexed(text)
         return [*lea_indexed] if lea_indexed is not None else None
+    if allow_computed_jump:
+        # Native pushfq/popfq bracketing the dispatch: the region synthesizes an
+        # operation's flags into the flags slot (never native RFLAGS), so a native
+        # flag save/restore is modelled as a copy of that slot to/from the vstack
+        # (fsave/frestore), not a native push of RFLAGS. Gated to the dispatch-region
+        # contract; matched save/restore is assumed (the flag-preservation idiom that
+        # is the only shape where flag state crosses the computed jump), so it stays
+        # vstack-balanced across the bracket. Any other flag use fails the branches
+        # below and is left native.
+        mnemonic = text.split()[0].lower() if text else ""
+        if mnemonic in ("pushfq", "pushfd", "pushf"):
+            return ["fsave"]
+        if mnemonic in ("popfq", "popfd", "popf"):
+            return ["frestore"]
     if kind in ("push", "upush", "rpush"):
         push = _decode_push(text)
         return [*push] if push is not None else None
