@@ -23,23 +23,30 @@ from r2morph.mutations.code_virtualization_layout import (
 from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
 from r2morph.mutations.code_virtualization_region_models import _DWORD_BROADCAST, _QWORD_BROADCAST
 
-# Stack frame: 16 GP context slots in [0x00, 0x80), the captured RFLAGS at 0x80,
-# the self-checksum byte at 0x88, the 16 XMM save slots (16 bytes each) in
-# [0x100, 0x200), and the System V red zone preserved in the top [0x200, 0x280).
-# The XMM slots sit where the red zone used to be; growing the frame rode the red
-# zone up to the new top, and since nothing reads it by offset the only effect is
-# the larger reservation. Every GP-slot offset (rsp + slot*8) is unchanged, so the
-# handler addressing is untouched.
-_FRAME_SIZE = 0x280
+# Stack frame: 16 GP context slots in [0x00, 0x80), the captured RFLAGS and the
+# self-checksum byte in [0x80, 0x100) (both slots relocated per build), the 16 XMM
+# save slots (16 bytes each) in [0x100, 0x200), the System V red zone in [0x200,
+# 0x280), and the interpreter's virtual operand stack in [0x280, 0x300). Nothing
+# reads the red zone by offset, so riding it below the new vstack window only
+# enlarges the reservation; every GP-slot offset (rsp + slot*8) is unchanged, so
+# the handler addressing is untouched.
+_FRAME_SIZE = 0x300
 _FLAGS_OFFSET = 0x80
 # Base of the 16 XMM save slots (16 bytes each); slot i lives at
 # [rsp + _XMM_SAVE_OFFSET + i*16). Spilled/reloaded only when a region carries FP.
 _XMM_SAVE_OFFSET = 0x100
+# The interpreter's private virtual operand stack: a pointer word (current depth in
+# bytes, starts 0) at _VSP_OFFSET and 8 cells from _VSTACK_BASE. Micro-op lowering
+# folds arithmetic through this stack (vpush/vbinop/vpop); peak depth is two cells
+# per op, so 8 is 4x headroom. Sits above the red zone, disjoint from the GP slots,
+# the relocated flags/checksum slots, the XMM area, and the nested dispatcher slots.
+_VSP_OFFSET = 0x280
+_VSTACK_BASE = 0x288
 # The program's virtual stack is relocated this far below the VM frame so the
 # function's own push/pop traffic never collides with the spilled context. Must
 # be 16-aligned and strictly greater than _FRAME_SIZE so the relocated stack
 # stays below the frame.
-_GUARD = 0x300
+_GUARD = 0x380
 
 
 def _unmask_dword(scratch: str) -> str:

@@ -29,6 +29,12 @@ from r2morph.mutations.code_virtualization_region_models import Region, RegionSc
 
 def _item_size(item: tuple[Any, ...]) -> int:
     kind = item[0]
+    if kind in ("vpush", "vpop"):
+        return 2  # opcode + slot byte
+    if kind == "vpushi":
+        return 1 + (8 if item[2] == 64 else 4)  # opcode + width-sized immediate
+    if kind == "vbinop":
+        return 1  # opcode only (operands come off the vstack)
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         if op.is_immediate:
@@ -207,6 +213,18 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
                 field_bytes["src"] = bytes([slot_of[op.value]])
             for name, _size in permuted_fields(handler_key, scheme.field_perm):
                 plain.extend(byte ^ p for byte in field_bytes[name])
+        elif kind in ("vpush", "vpop"):
+            # A micro-op push/pop carries one slot operand (no permutation needed).
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[item[1]] ^ p)
+        elif kind == "vpushi":
+            # Push a width-sized immediate, masked byte-wise by the opcode position.
+            _, value, width = item
+            p = emit_opcode(_required_key(item))
+            plain.extend(byte ^ p for byte in pack_immediate(value, width))
+        elif kind == "vbinop":
+            # The fold takes its operands off the vstack: opcode only.
+            emit_opcode(_required_key(item))
         elif kind in ("cmp", "test"):
             _, slot, value, is_imm, width = item
             p = emit_opcode(_required_key(item))

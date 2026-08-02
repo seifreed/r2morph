@@ -111,9 +111,9 @@ def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
 
 
 # The interpreter's first instruction is a constant-size frame allocation
-# (``sub rsp, 0x180``); the injected blob is appended at end-of-file, so this
+# (``sub rsp, 0x300``); the injected blob is appended at end-of-file, so this
 # byte sequence marks vm_entry, the start of the checksummed region.
-_VM_ENTRY_SIGNATURE = bytes.fromhex("4881EC80020000")
+_VM_ENTRY_SIGNATURE = bytes.fromhex("4881EC00030000")
 
 
 def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> None:

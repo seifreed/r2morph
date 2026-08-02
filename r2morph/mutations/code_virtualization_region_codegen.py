@@ -50,6 +50,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _FRAME_SIZE,
     _GUARD,
+    _VSP_OFFSET,
     _cmp_memory_handler_asm,
     _compare_handler_asm,
     _imul3_handler_asm,
@@ -82,6 +83,12 @@ from r2morph.mutations.code_virtualization_region_handlers import (
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
+)
+from r2morph.mutations.code_virtualization_region_microops import (
+    _vbinop_handler_asm,
+    _vpop_handler_asm,
+    _vpush_handler_asm,
+    _vpushi_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_models import (
     _DWORD_BROADCAST,
@@ -406,6 +413,14 @@ def handler_instances_asm(
             lines.append(_call_mem_handler_asm(index, key, key_dword, slot, True, field_perm))
         elif handler_key == "callmemidx":
             lines.append(_call_mem_idx_handler_asm(index, key, key_dword, slot, field_perm))
+        elif handler_key == "vpush":
+            lines.append(_vpush_handler_asm(key))
+        elif handler_key == "vpop":
+            lines.append(_vpop_handler_asm(key))
+        elif handler_key.startswith("vpushi_"):
+            lines.append(_vpushi_handler_asm(handler_key, key_qword, key_dword))
+        elif handler_key.startswith("vbinop_"):
+            lines.append(_vbinop_handler_asm(handler_key, key))
         elif handler_key.startswith("opsynth_"):
             lines.append(_op_synth_handler_asm(handler_key, key, key_qword, key_dword, field_perm))
         elif handler_key.startswith("opmba_"):
@@ -517,7 +532,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Only regions that move scalar FP need the 16 XMM registers preserved in the
     # frame; for everything else the spill/reload is pure overhead and is omitted.
     has_fp = any(item[0] in ("fpload", "fpstore") for item in region.instructions)
-    lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n"]
+    # Zero the virtual operand stack pointer; micro-op arithmetic folds through it.
+    lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"]
     for index, name in enumerate(GP_REGISTERS):
         if name != "rsp":
             lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {name}\n")

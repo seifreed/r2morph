@@ -484,6 +484,44 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 _JUNK_OP_PROBABILITY = 0.35
 
 
+def _lower_flag_dead_arith(items: list[list[Any]]) -> list[list[Any]]:
+    """Lower each flag-dead ``opmba`` item into virtual-stack micro-ops and remap
+    every branch target index to its new position.
+
+    A single arithmetic handler that computes a whole native op is a fingerprint;
+    lowering it to ``vpush``/``vpush``/``vbinop``/``vpop`` reuses a handful of stack
+    primitives across every op instead. Only ``opmba`` (flags proven dead) is lowered:
+    the fold clobbers flags, which is free here. The sequence pushes dst then src, so
+    the fold sees ``a == dst, b == src``; ``vpop`` writes the result back to dst.
+
+    Branches store their target as an item index; expanding an item shifts those
+    indices, so a position map is built as the new list is assembled and applied to
+    every ``jmp``/``jcc`` afterward. A branch can only target the start of an item, so
+    it maps to the sequence's first micro-op (never an interior one).
+    """
+    new_items: list[list[Any]] = []
+    old_to_new: dict[int, int] = {}
+    for old_index, item in enumerate(items):
+        old_to_new[old_index] = len(new_items)
+        if item[0] == "opmba":
+            op = item[1]
+            new_items.append(["vpush", op.dst_index])
+            if op.is_immediate:
+                new_items.append(["vpushi", op.value, op.width])
+            else:
+                new_items.append(["vpush", op.value])
+            new_items.append(["vbinop", op.mnemonic, op.width])
+            new_items.append(["vpop", op.dst_index])
+        else:
+            new_items.append(item)
+    for item in new_items:
+        if item[0] == "jmp":
+            item[1] = old_to_new[item[1]]
+        elif item[0] == "jcc":
+            item[2] = old_to_new[item[2]]
+    return new_items
+
+
 def _inject_junk_movs(items: list[list[Any]], rng: random.Random) -> list[list[Any]]:
     """Sprinkle identity ``mov reg, reg`` items through the resolved item list and
     remap every branch target index to its new position.
@@ -597,6 +635,10 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
     for index, item in enumerate(items):
         if item[0] == "op" and item[1].mnemonic in _MBA_OP_MNEMONICS:
             items[index][0] = "opsynth"
+    # Lower each flag-dead arithmetic op to virtual-stack micro-ops so no handler maps
+    # 1:1 to a native mnemonic. Runs after the flag/stack analyses (which see only the
+    # program's real items) and before junk injection.
+    items = _lower_flag_dead_arith(items)
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
     # rewritten + augmented items.
