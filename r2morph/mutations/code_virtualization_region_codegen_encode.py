@@ -37,6 +37,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 1  # opcode only (operands come off the vstack)
     if kind in ("vload", "vstore"):
         return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
+    if kind == "vshift":
+        return 2  # opcode + count byte
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         if op.is_immediate:
@@ -224,6 +226,10 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, value, width = item
             p = emit_opcode(_required_key(item))
             plain.extend(byte ^ p for byte in pack_immediate(value, width))
+        elif kind == "vshift":
+            # Shift the top vstack cell by a one-byte count (no permutation needed).
+            p = emit_opcode(_required_key(item))
+            plain.append(item[2] ^ p)
         elif kind in ("vbinop", "vbinopsynth"):
             # The fold takes its operands off the vstack: opcode only.
             emit_opcode(_required_key(item))

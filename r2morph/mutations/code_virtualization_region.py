@@ -536,6 +536,13 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
             # opmem is always flag-synthesizing today, so fold with vbinopsynth.
             new_items.append(["vbinopsynth", mnemonic, width])
             new_items.append(["vpop", reg])
+        elif kind == "shift":
+            # ("shift", mnemonic, slot, count, width): push the register, shift the
+            # top cell by the immediate count (capturing flags), pop the result back.
+            _, mnemonic, slot, count, width = item
+            new_items.append(["vpush", slot])
+            new_items.append(["vshift", mnemonic, count, width])
+            new_items.append(["vpop", slot])
         else:
             new_items.append(item)
     for item in new_items:

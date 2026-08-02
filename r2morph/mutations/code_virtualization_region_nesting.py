@@ -83,7 +83,19 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
     ``enter_inner`` that runs the whole run), but no interior item may be, so no
     branch ever lands mid-run.
     """
-    eligible = ("op", "opmba", "opsynth", "vpush", "vpop", "vpushi", "vbinop", "vbinopsynth", "vload", "vstore")
+    eligible = (
+        "op",
+        "opmba",
+        "opsynth",
+        "vpush",
+        "vpop",
+        "vpushi",
+        "vbinop",
+        "vbinopsynth",
+        "vload",
+        "vstore",
+        "vshift",
+    )
     targets: set[int] = set()
     for item in instructions:
         if item[0] == "jmp":

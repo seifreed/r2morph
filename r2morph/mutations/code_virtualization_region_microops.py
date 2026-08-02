@@ -197,3 +197,34 @@ def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
     body, advance = _mem_address_asm(False, key, key_dword, field_perm)
     store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vshift_handler_asm(handler_key: str, key: int) -> str:
+    """Pop the top vstack cell, shift it by the carried count, capture flags, push.
+
+    Lowers a native ``shl``/``shr``/``sar reg, imm``: the shifted register value is
+    popped off the stack, the count byte (the only operand, at ``[rsi+1]``, un-masked
+    with the key and the stream position) goes into cl, the CPU runs the real shift
+    (which masks the count to the operand width, faithful to the native op), and the
+    flags it sets are captured into the flags slot exactly as the single-handler form
+    did. A 32-bit shift operates on eax, zero-extending the cell. The vstack pointer
+    (r9) is untouched by the shift and the flag capture, so the single-pop/single-push
+    bookkeeping mirrors the other primitives.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  movzx ecx, byte ptr [rsi+1]\n  xor cl, {key}\n  xor cl, r13b\n"
+    )
+    body += f"  {mnemonic} rax, cl\n" if width == 64 else f"  {mnemonic} eax, cl\n"
+    body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    body += (
+        f"  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
+        "  add r9, 8\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+    return body

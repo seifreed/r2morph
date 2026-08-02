@@ -78,6 +78,23 @@ def test_flag_live_arith_lowers_to_flag_synthesizing_microop() -> None:
     assert kinds.count("vpush") == 2 and kinds.count("vpop") == 1
 
 
+def test_shift_lowers_to_shared_push_shift_pop_sequence() -> None:
+    # A native shl/shr/sar reg,imm lowers to vpush(slot)/vshift/vpop(slot), reusing the
+    # same stack primitives as the arithmetic folds instead of a dedicated shift handler.
+    insns = [
+        _insn(0x1000, 3, "shl", "shl eax, 4"),
+        _insn(0x1003, 2, "cjmp", "jne 0x1000", jump=0x1000, fail=0x1005),
+        _insn(0x1005, 1, "ret", "ret"),
+    ]
+    region = extract_region(insns)
+    assert region is not None
+    kinds = [item[0] for item in region.instructions]
+    # No standalone shift handler survives; the shift is a shared push/shift/pop.
+    assert "shift" not in kinds and "shl" not in {k.split("_")[0] for k in region.op_keys}
+    assert kinds.count("vshift") == 1
+    assert kinds.count("vpush") == 1 and kinds.count("vpop") == 1
+
+
 def test_nested_prologue_zeroes_the_vstack_pointer() -> None:
     # The virtual stack pointer must be zeroed in the nested vm_entry too, not just
     # the single-layer one: peeled flag-dead arith folds through the vstack in the
@@ -104,6 +121,7 @@ def test_micro_op_item_sizes_match_the_handler_advances() -> None:
     # The encoded byte length of each micro-op item must equal its handler's rsi
     # advance, or the virtual instruction pointer desyncs. vpush/vpop carry one slot
     # byte; vpushi carries only its width-sized immediate; vbinop carries nothing.
+    assert _item_size(("vshift", "shl", 3, 64)) == 2
     assert _item_size(("vpush", 3)) == 2
     assert _item_size(("vpop", 3)) == 2
     assert _item_size(("vpushi", 5, 32)) == 5

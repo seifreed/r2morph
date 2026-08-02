@@ -1842,6 +1842,27 @@ def test_flag_live_add_keeps_flags_for_the_branch(tmp_path: Path) -> None:
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_shift_micro_op_captures_the_carry_flag_for_the_branch(tmp_path: Path) -> None:
+    # shl by 1 shifts bit 31 out -> CF=1 -> jc taken -> exit 42. The shift lowers to
+    # the vshift micro-op (proven structurally in the unit suite); here the exit code
+    # discriminates its flag capture: a vshift that dropped or mis-timed the pushfq
+    # would let jc fall through to 99.
+    fixture = _DATASET / "elf_vm_shiftmicroop_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_shiftmicroop"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_frame_prologue_virtualization_preserves_local(tmp_path: Path) -> None:
     # A real prologue/epilogue (push rbp; mov rbp,rsp; sub rsp,N; [rbp-8] local;
     # add rsp,N; pop rbp; ret) must virtualize and return its frame-pointer local
