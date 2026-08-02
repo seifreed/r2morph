@@ -425,12 +425,62 @@ class VMHandlerAnalyzer:
         return
 
     def _locate_vm_bytecode(self) -> None:
-        """Try to locate VM bytecode in the binary.
+        """Locate the VM bytecode region the dispatcher fetches from.
 
-        Bytecode-section discovery (read-only data adjacent to the dispatcher
-        with high entropy and aligned chunk size) is not yet implemented.
+        The virtual program counter (vpc) is the register the opcode fetch - a
+        one-byte memory read - dereferences; the bytecode base is the pointer the
+        dispatcher materializes into that register (``lea vpc, [bytecode]``). This
+        is best-effort: if the vpc or its initializing pointer cannot be observed,
+        the field is left at its default rather than guessed.
         """
-        return
+        arch = self.vm_architecture
+        if arch is None:
+            return
+        vpc = self._find_fetch_register(arch.dispatcher_address)
+        if vpc is None:
+            return
+        bytecode = self._find_pointer_into_register(arch.dispatcher_address, vpc)
+        if bytecode is not None and bytecode != arch.handler_table_address:
+            arch.bytecode_address = bytecode
+
+    def _instruction_operands(self, addr: int) -> list[dict[str, Any]]:
+        """Structured operands of the instruction at ``addr`` (empty on failure)."""
+        assert self.binary.r2 is not None
+        try:
+            analysis = self.binary.r2.cmdj(f"aoj 1 @ {addr}")
+        except Exception as e:
+            logger.debug(f"Failed to analyze instruction at 0x{addr:x}: {e}")
+            return []
+        if not analysis:
+            return []
+        operands = analysis[0].get("opex", {}).get("operands", [])
+        return operands if isinstance(operands, list) else []
+
+    def _find_fetch_register(self, dispatcher_addr: int) -> str | None:
+        """Return the vpc: the base register the opcode fetch (1-byte read) uses."""
+        for insn in self.binary.get_function_disasm(dispatcher_addr):
+            addr = insn.get("addr")
+            if not isinstance(addr, int):
+                continue
+            for operand in self._instruction_operands(addr):
+                base = operand.get("base")
+                if operand.get("type") == "mem" and operand.get("size") == 1 and isinstance(base, str):
+                    return base
+        return None
+
+    def _find_pointer_into_register(self, dispatcher_addr: int, register: str) -> int | None:
+        """Return the address materialized into ``register`` (the bytecode base)."""
+        for insn in self.binary.get_function_disasm(dispatcher_addr):
+            addr = insn.get("addr")
+            if not isinstance(addr, int):
+                continue
+            operands = self._instruction_operands(addr)
+            if not operands or operands[0].get("type") != "reg" or operands[0].get("value") != register:
+                continue
+            ptr = insn.get("ptr")
+            if isinstance(ptr, int) and ptr > 0:
+                return ptr
+        return None
 
     def get_handler_statistics(self) -> dict[str, Any]:
         """Get statistics about analyzed handlers."""

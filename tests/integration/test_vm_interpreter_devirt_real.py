@@ -59,9 +59,8 @@ def test_vm_interpreter_handlers_recovered() -> None:
 
 
 def test_vm_interpreter_bytecode_region_located() -> None:
-    """The bytecode region adjacent to the handler table is located (0x2028)."""
-    # Characterization until D3: bytecode-section discovery is not yet implemented.
-    assert _recover().bytecode_address is None
+    """The bytecode region the vpc fetches from is located at its true address."""
+    assert _recover().bytecode_address == 0x2028
 
 
 def test_vm_interpreter_context_registers_inferred() -> None:
