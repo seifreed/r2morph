@@ -34,7 +34,10 @@ def test_peel_op_run_finds_the_register_op_block() -> None:
     run = _peel_op_run(region.instructions)
     assert run is not None
     start, end = run
-    assert all(region.instructions[i][0] in ("op", "opmba", "opsynth") for i in range(start, end))
+    # The arithmetic op is lowered to virtual-stack micro-ops before peeling, so the
+    # register block is a contiguous run of ops and their micro-op primitives.
+    peelable = ("op", "opmba", "opsynth", "vpush", "vpop", "vpushi", "vbinop", "vbinopsynth")
+    assert all(region.instructions[i][0] in peelable for i in range(start, end))
     assert end - start >= 2
 
 

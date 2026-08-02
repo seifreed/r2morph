@@ -181,7 +181,9 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
     if kind == "vpushi":
         return f"vpushi_{item[2]}"  # immediate push, width-sized cell
     if kind == "vbinop":
-        return f"vbinop_{item[1]}_{item[2]}"  # stack fold: mnemonic + width
+        return f"vbinop_{item[1]}_{item[2]}"  # flag-dead stack fold: mnemonic + width
+    if kind == "vbinopsynth":
+        return f"vbinopsynth_{item[1]}_{item[2]}"  # flag-live stack fold: mnemonic + width
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         # opsynth: a flag-live add/sub computed by MBA with hand-synthesized flags.

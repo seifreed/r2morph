@@ -60,9 +60,11 @@ def test_flag_dead_immediate_arith_lowers_with_vpushi() -> None:
     assert kinds.count("vbinop") == 2 and kinds.count("vpop") == 2
 
 
-def test_flag_live_arith_is_not_lowered() -> None:
-    # `add` whose flags a following `jns` reads stays a single flag-synthesizing
-    # handler (opsynth) - only the flag-dead subset lowers to micro-ops this slice.
+def test_flag_live_arith_lowers_to_flag_synthesizing_microop() -> None:
+    # `add` whose flags a following `jns` reads lowers to the same push/push/fold/pop
+    # shape, but the fold is vbinopsynth (computes the result AND synthesizes the
+    # readable flags) rather than the flag-dead vbinop - the single opsynth handler is
+    # gone, and the stack primitives are shared with the flag-dead form.
     insns = [
         _insn(0x1000, 3, "add", "add eax, ebx"),
         _insn(0x1003, 2, "cjmp", "jns 0x1000", jump=0x1000, fail=0x1005),
@@ -71,8 +73,9 @@ def test_flag_live_arith_is_not_lowered() -> None:
     region = extract_region(insns)
     assert region is not None
     kinds = [item[0] for item in region.instructions]
-    assert "opsynth" in kinds
-    assert "vbinop" not in kinds
+    assert "opsynth" not in kinds
+    assert kinds.count("vbinopsynth") == 1
+    assert kinds.count("vpush") == 2 and kinds.count("vpop") == 1
 
 
 def test_nested_prologue_zeroes_the_vstack_pointer() -> None:
@@ -106,3 +109,4 @@ def test_micro_op_item_sizes_match_the_handler_advances() -> None:
     assert _item_size(("vpushi", 5, 32)) == 5
     assert _item_size(("vpushi", 5, 64)) == 9
     assert _item_size(("vbinop", "add", 64)) == 1
+    assert _item_size(("vbinopsynth", "add", 64)) == 1

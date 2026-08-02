@@ -484,33 +484,38 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 _JUNK_OP_PROBABILITY = 0.35
 
 
-def _lower_flag_dead_arith(items: list[list[Any]]) -> list[list[Any]]:
-    """Lower each flag-dead ``opmba`` item into virtual-stack micro-ops and remap
-    every branch target index to its new position.
+def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
+    """Lower each arithmetic item into virtual-stack micro-ops and remap every branch
+    target index to its new position.
 
     A single arithmetic handler that computes a whole native op is a fingerprint;
-    lowering it to ``vpush``/``vpush``/``vbinop``/``vpop`` reuses a handful of stack
-    primitives across every op instead. Only ``opmba`` (flags proven dead) is lowered:
-    the fold clobbers flags, which is free here. The sequence pushes dst then src, so
-    the fold sees ``a == dst, b == src``; ``vpop`` writes the result back to dst.
+    lowering it to ``vpush``/``vpush``/``vbinop*``/``vpop`` reuses a handful of stack
+    primitives across every op instead. The sequence pushes dst then src, so the fold
+    sees ``a == dst, b == src``; ``vpop`` writes the result back to dst. The fold kind
+    depends on flag liveness: ``opmba`` (flags proven dead) folds with ``vbinop`` (no
+    flag capture); ``opsynth`` (flags read by a later branch) folds with ``vbinopsynth``
+    (which also synthesizes the readable flags). Both keep the operand pushes and the
+    pop identical, so distinct native ops still share the stack primitives.
 
     Branches store their target as an item index; expanding an item shifts those
     indices, so a position map is built as the new list is assembled and applied to
     every ``jmp``/``jcc`` afterward. A branch can only target the start of an item, so
     it maps to the sequence's first micro-op (never an interior one).
     """
+    fold_of = {"opmba": "vbinop", "opsynth": "vbinopsynth"}
     new_items: list[list[Any]] = []
     old_to_new: dict[int, int] = {}
     for old_index, item in enumerate(items):
         old_to_new[old_index] = len(new_items)
-        if item[0] == "opmba":
+        fold = fold_of.get(item[0])
+        if fold is not None:
             op = item[1]
             new_items.append(["vpush", op.dst_index])
             if op.is_immediate:
                 new_items.append(["vpushi", op.value, op.width])
             else:
                 new_items.append(["vpush", op.value])
-            new_items.append(["vbinop", op.mnemonic, op.width])
+            new_items.append([fold, op.mnemonic, op.width])
             new_items.append(["vpop", op.dst_index])
         else:
             new_items.append(item)
@@ -635,10 +640,10 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
     for index, item in enumerate(items):
         if item[0] == "op" and item[1].mnemonic in _MBA_OP_MNEMONICS:
             items[index][0] = "opsynth"
-    # Lower each flag-dead arithmetic op to virtual-stack micro-ops so no handler maps
-    # 1:1 to a native mnemonic. Runs after the flag/stack analyses (which see only the
-    # program's real items) and before junk injection.
-    items = _lower_flag_dead_arith(items)
+    # Lower each arithmetic op (flag-dead opmba and flag-live opsynth) to virtual-stack
+    # micro-ops so no handler maps 1:1 to a native mnemonic. Runs after the flag/stack
+    # analyses (which see only the program's real items) and before junk injection.
+    items = _lower_arith_to_microops(items)
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
     # rewritten + augmented items.

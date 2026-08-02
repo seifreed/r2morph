@@ -22,8 +22,10 @@ from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_mba import _op_mba_compute
 from r2morph.mutations.code_virtualization_region_handlers import (
+    _FLAGS_OFFSET,
     _VSP_OFFSET,
     _VSTACK_BASE,
+    _synth_flags_asm,
     _unmask_dword,
     _unmask_qword,
 )
@@ -109,6 +111,51 @@ def _vbinop_handler_asm(handler_key: str, key: int) -> str:
     body += (
         f"  mov qword ptr [rsp+r9+{_VBASE}], r10\n"
         "  add r9, 8\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+        "  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+    return body
+
+
+def _vbinopsynth_handler_asm(handler_key: str, key: int) -> str:
+    """Fold the top two vstack cells AND synthesize the readable flags, then push.
+
+    The flag-live counterpart of ``_vbinop_handler_asm``: where that serves ops whose
+    flags are dead, this serves ops whose flags a later branch reads. It reuses the
+    same shared compute+synthesize core as the single-handler ``_op_synth_handler_asm``
+    (MBA fold, no literal op; branchless RFLAGS synthesis, no ``pushfq``), changing only
+    the operand source (popped off the vstack, not loaded from a slot) and the result
+    destination (pushed back, not stored to a slot).
+
+    Operands were pushed dst-then-src, so a == dst (below), b == src (top). The synth
+    reads a in rbx, b in rbp, the result in r10, and clobbers rax/rcx/r9 (the vstack
+    pointer), so the result cell's index is parked in r8 (which the synth preserves)
+    across the synthesis before the push writes there.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    # add/sub keep their arithmetic flags; xor/and/or clear CF and OF (logic mode).
+    mode = mnemonic if mnemonic in ("add", "sub") else "logic"
+    body = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        "  sub r9, 8\n"
+        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n"
+    )
+    # Save the originals for the synthesis (a and b before any negation) and park the
+    # result cell index in r8, which survives the flag synthesis.
+    body += "  mov rbx, r10\n  mov rbp, rax\n  mov r8, r9\n"
+    if mnemonic == "sub":
+        body += "  neg rax\n"
+    body += _op_mba_compute(mnemonic, key)
+    if width == 32:
+        body += "  mov r10d, r10d\n"
+    body += _synth_flags_asm(width, mode)
+    body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    body += (
+        f"  mov qword ptr [rsp+r8+{_VBASE}], r10\n"
+        "  lea r9, [r8+8]\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
         "  add rsi, 1\n  jmp vm_dispatch\n"
     )

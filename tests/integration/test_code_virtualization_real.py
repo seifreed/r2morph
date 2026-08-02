@@ -213,12 +213,15 @@ def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
     assert _TIMING_FOLD_STORE in blob, "checksum-slot fold tail not emitted"
 
 
-# Fixtures with at least one register-op run to peel into a nested inner VM.
+# Fixtures with at least one register-op run to peel into a nested inner VM. The
+# flag-synthesis fixture peels flag-live micro-ops (vbinopsynth) into an inner
+# layer, exercising that its flags-slot write survives the layer transfer.
 _NESTING_FIXTURES = [
     ("elf_vm_arith_x86_64", 45),
     ("elf_vm_isa_x86_64", None),
     ("elf_jumpchain_x86_64", None),
     ("elf_blockswap_x86_64", None),
+    ("elf_vm_flagsynth_x86_64", 42),
 ]
 
 
