@@ -115,9 +115,18 @@ _CONDITION: dict[str, str] = {
     "jpo": "jnp",
 }
 
+# r2 instruction types for a register/memory-indirect jump (jmp reg / jmp [mem]) -
+# the defining dispatch instruction of a computed-goto interpreter.
+_COMPUTED_JUMP_TYPES = ("ujmp", "rjmp", "ijmp", "mjmp")
 
-def _classify(insn: dict[str, Any]) -> list[Any] | None:
-    """Build the VM item for one body instruction, or ``None`` if unsupported."""
+
+def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[Any] | None:
+    """Build the VM item for one body instruction, or ``None`` if unsupported.
+
+    ``allow_computed_jump`` opts in to lowering a register-indirect jump to an
+    ``ijmp`` item. It is off by default so the straight-line region contract keeps
+    rejecting computed jumps; only the dispatch-region contract enables it.
+    """
     kind = insn.get("type", "")
     text = insn.get("opcode", "")
     # int<->float conversions are type "null" and inconsistently typed family
@@ -286,6 +295,18 @@ def _classify(insn: dict[str, Any]) -> list[Any] | None:
         return None
     if kind == "jmp":
         return ["jmp", insn.get("jump", -1)]
+    if allow_computed_jump and kind in _COMPUTED_JUMP_TYPES:
+        # Register-indirect jump (jmp reg): a computed control transfer whose
+        # target is the program value of a GP register, read from its frame slot
+        # at runtime - the defining dispatch instruction of a computed-goto
+        # interpreter. Modelled on the register-indirect call (icall) above.
+        # Memory-indirect computed jumps (jmp [table+idx*scale]) are decomposed by
+        # the dispatch-region contract into an indexed load plus this register
+        # form, so only the bare-register operand is taken here.
+        parts = text.split()
+        if len(parts) == 2 and parts[1] in GP_REGISTERS and parts[1] != "rsp":
+            return ["ijmp", GP_REGISTERS.index(parts[1])]
+        return None
     if kind == "cjmp":
         condition = _CONDITION.get(text.split(None, 1)[0].lower())
         return ["jcc", condition, insn.get("jump", -1)] if condition is not None else None

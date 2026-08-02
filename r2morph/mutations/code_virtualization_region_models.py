@@ -245,6 +245,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "callmemidx"  # memory-indirect call (pointer at base+index*scale+disp)
     if kind == "jmp":
         return "jmp"
+    if kind == "ijmp":
+        return "ijmp"  # register-indirect jump: computed VM exit to a runtime target
     if kind == "jcc":
         return f"jcc_{item[1]}"
     if kind == "nop":

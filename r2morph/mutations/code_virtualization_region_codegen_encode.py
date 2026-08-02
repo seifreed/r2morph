@@ -116,6 +116,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 5  # opcode + 4-byte bytecode-relative target offset
     if kind == "icall":
         return 2  # opcode + register slot holding the runtime target
+    if kind == "ijmp":
+        return 2  # opcode + register slot holding the runtime jump target
     if kind == "callmem":
         return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
     if kind == "callmemrip":
