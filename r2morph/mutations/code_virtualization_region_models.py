@@ -34,7 +34,17 @@ class RegionScheme:
     slot indices in the bytecode reveal no register.
     """
 
-    __slots__ = ("dup", "xor_key", "junk_seed", "slot_perm", "table_key", "field_perm", "body_seed", "checksum_offset")
+    __slots__ = (
+        "dup",
+        "xor_key",
+        "junk_seed",
+        "slot_perm",
+        "table_key",
+        "field_perm",
+        "body_seed",
+        "checksum_offset",
+        "flags_offset",
+    )
 
     def __init__(
         self,
@@ -46,6 +56,7 @@ class RegionScheme:
         field_perm: int = 0,
         body_seed: int = 0,
         checksum_offset: int = 0x88,
+        flags_offset: int = 0x80,
     ) -> None:
         self.dup = dup
         self.xor_key = xor_key
@@ -68,6 +79,10 @@ class RegionScheme:
         # checksum slot is not a fixed frame fingerprint. Lives in the free gap above
         # the flags slot and below the xmm save area; 0x88 is the canonical default.
         self.checksum_offset = checksum_offset
+        # Frame byte offset of the captured RFLAGS slot, relocated per build so it is
+        # not a fixed frame fingerprint. Qword-aligned in [0x80, 0x100), distinct
+        # from the checksum slot; 0x80 is the canonical default.
+        self.flags_offset = flags_offset
 
 
 class Region:

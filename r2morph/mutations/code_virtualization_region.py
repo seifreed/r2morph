@@ -634,8 +634,13 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     table_key = rng.randrange(1, 1 << 32)
     field_perm = rng.randrange(1, 1 << 31)
     body_seed = rng.randrange(1 << 31)
-    # Drawn last so adding the checksum relocation does not shift any earlier field's
-    # value for a given seed. The checksum byte sits in the free frame gap above the
-    # flags slot (0x80) and below the xmm save area (0x100), qword-aligned.
+    # Drawn last so adding the frame-slot relocation does not shift any earlier
+    # field's value for a given seed. The checksum and flags slots are placed in the
+    # frame's free middle, qword-aligned and distinct: the checksum in [0x88, 0x100)
+    # (never 0x80, which stays reserved as the flag handlers' rendered slot), and the
+    # flags slot anywhere in [0x80, 0x100) except the checksum's slot.
     checksum_offset = rng.randrange(0x88, 0x100, 8)
-    return RegionScheme(dup, xor_key, junk_seed, slot_perm, table_key, field_perm, body_seed, checksum_offset)
+    flags_offset = rng.choice([off for off in range(0x80, 0x100, 8) if off != checksum_offset])
+    return RegionScheme(
+        dup, xor_key, junk_seed, slot_perm, table_key, field_perm, body_seed, checksum_offset, flags_offset
+    )

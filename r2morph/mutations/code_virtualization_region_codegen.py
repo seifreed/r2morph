@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import logging
 import random
+import re
 import struct
 
 from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm
@@ -624,7 +625,14 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # jump to the (now removed) central dispatcher; splice a freshly shuffled decode
     # copy in for each so control flows handler -> decode -> next handler with no
     # shared hub block and no two copies sharing a byte layout.
-    return thread_back_jumps("".join(lines), make_decode)
+    interpreter = thread_back_jumps("".join(lines), make_decode)
+    # Relocate the flags slot: every flag capture/restore and the branch-free jcc's
+    # flags read renders as the memory operand `[rsp + 128]` (the canonical 0x80
+    # slot). 128 is unique to the flags slot in this interpreter - the GP slots are
+    # <= 120, the checksum sits at >= 0x88 (never 128), and the xmm area is indexed
+    # (`[rsp + r8 + ...]`) - so this rewrites exactly the flag references, moving the
+    # slot off its fixed frame offset without threading it through every handler.
+    return re.sub(r"\[rsp\s*\+\s*128\]", f"[rsp + {scheme.flags_offset}]", interpreter)
 
 
 def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> bytes | None:

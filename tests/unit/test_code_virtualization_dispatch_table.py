@@ -98,3 +98,42 @@ def test_interpreter_folds_the_relocated_checksum_slot() -> None:
     scheme = build_region_scheme(region, random.Random(0))
     asm = _interpreter_asm(region, scheme)
     assert f"[rsp+{scheme.checksum_offset}]" in asm
+
+
+def test_flags_slot_is_relocated_per_build_distinct_from_checksum() -> None:
+    # The captured-RFLAGS byte must not sit at a fixed frame offset every build: it
+    # is relocated per build into the free frame gap, qword-aligned, and never
+    # collides with the checksum slot.
+    schemes = [build_region_scheme(_tiny_region(), random.Random(seed)) for seed in range(64)]
+    assert len({s.flags_offset for s in schemes}) > 1
+    assert all(0x80 <= s.flags_offset < 0x100 and s.flags_offset % 8 == 0 for s in schemes)
+    assert all(s.flags_offset != s.checksum_offset for s in schemes)
+
+
+def _branching_region() -> Any:
+    # cmp/jle captures RFLAGS and the branch consumes it, so the interpreter emits
+    # flag references - unlike the tiny mov/mov/syscall region.
+    instructions = [
+        {"addr": 0x1000, "type": "mov", "opcode": "mov edi, 0x2a", "size": 5, "jump": -1},
+        {"addr": 0x1005, "type": "cmp", "opcode": "cmp edi, 0x10", "size": 3, "jump": -1},
+        {"addr": 0x1008, "type": "cjmp", "opcode": "jle 0x1011", "size": 2, "jump": 0x1011},
+        {"addr": 0x100A, "type": "mov", "opcode": "mov eax, 0x3c", "size": 5, "jump": -1},
+        {"addr": 0x100F, "type": "swi", "opcode": "syscall", "size": 2, "jump": -1},
+        {"addr": 0x1011, "type": "mov", "opcode": "mov eax, 0x3c", "size": 5, "jump": -1},
+        {"addr": 0x1016, "type": "swi", "opcode": "syscall", "size": 2, "jump": -1},
+    ]
+    region = extract_region(instructions)
+    assert region is not None
+    return region
+
+
+def test_interpreter_relocates_the_flags_slot_off_the_canonical_offset() -> None:
+    # The flag references are moved off the canonical [rsp+128] slot to the build's
+    # relocated offset, with no reference left at the fixed location.
+    region = _branching_region()
+    scheme = next(
+        s for s in (build_region_scheme(region, random.Random(seed)) for seed in range(64)) if s.flags_offset != 0x80
+    )
+    asm = _interpreter_asm(region, scheme)
+    assert not re.search(r"\[rsp\s*\+\s*128\]", asm)
+    assert f"[rsp + {scheme.flags_offset}]" in asm
