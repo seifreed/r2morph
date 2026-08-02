@@ -1,10 +1,11 @@
 # VM literal recursion — scoping
 
-Status: not started (blocked). This is a design/scoping note, not an
-implementation plan. It captures what "literal recursion" would mean for the
-code-virtualization VM, why the current codebase cannot express it, and what a
-real spike would have to build first. All file:line references are against the
-tree this note was written from; treat them as anchors, not guarantees.
+Status: in progress. The devirtualization oracle and the VM front-end pieces a
+recursion spike needs are now built and green; the end-to-end emulated round trip
+is not yet passing (see §5). This note captures what "literal recursion" would
+mean for the code-virtualization VM, why the current codebase could not express
+it, and what a real spike had to build first. All file:line references are against
+the tree this note was written from; treat them as anchors, not guarantees.
 
 ## 1. Goal — what "literal recursion" means
 
@@ -175,3 +176,47 @@ They are ordered roughly by dependency.
   on its own. Attempting them together would produce an unreviewable change with
   no intermediate green state. A spike should first stand up (d) against a
   hand-built virtualized-interpreter fixture to get an oracle, then attack (a).
+
+## 5. Progress
+
+Built and green (each its own commit, in the doc's recommended order):
+
+- **(d) Devirtualization oracle.** `dataset/elf_vm_interp_x86_64` is a hand-built
+  computed-goto interpreter fixture (exit 45). The three recovery stubs in
+  `vm_handler_analyzer.py` are implemented: `_extract_table_from_block` recovers
+  the handler table from the dispatch block's register-indirect jump operand;
+  `_locate_vm_bytecode` finds the bytecode region via the virtual program counter
+  (the register the one-byte opcode fetch dereferences); `_analyze_vm_context`
+  infers the vpc and opcode registers. Covered by
+  `tests/integration/test_vm_interpreter_devirt_real.py`.
+
+- **(a) Indirect-jump item.** A register-indirect jump lowers to an `ijmp` item
+  (`_classify`, gated behind `allow_computed_jump` so the straight-line contract
+  is unchanged) whose runtime target re-enters the VM at the virtualized target
+  via a target map (native address -> bytecode offset) baked into the blob. The
+  `ijmp` handler, the map, and the encoder emit are in place; a region with no
+  computed jump emits no map and is byte-identical.
+
+- **(c) Dispatch-region contract.** `extract_region(..., allow_computed_jump=True)`
+  classifies the computed jump and builds the target map, threaded through the
+  lowering and junk passes. Opt-in; the straight-line suite (600+ tests) is
+  unchanged.
+
+- **Latent bug fixed en route.** The per-handler scratch rename corrupted any
+  flag-capture body (it remapped `rax` to r8-r15 across a `lahf`/`ah`, emitting an
+  illegal `movzx r10d, ah`); such bodies are now left unrenamed.
+
+Not yet green — the end-to-end round trip. Against a register-indirect dispatch
+fixture (`dataset/elf_vm_interp_reg_x86_64`, exit 45), the whole function extracts
+into an `ijmp` region, the interpreter blob assembles, injects, and the trampoline
+is patched — but the emulated mutated binary faults: the first computed jump
+resolves its target register to `0` instead of the handler address, so every
+`ijmp` misses and the VM exits prematurely. The handler table and target map are
+both correct, so the fault is a **micro-op miscompile in the register-dispatch
+chain** (the rip-relative `lea` of the table base and/or the indexed load feeding
+the jump register), i.e. exactly the "miscompiled dispatch jump is hard to
+localize" risk of §4. Remaining work: trace those micro-ops to fix the target
+computation, then assert emulated exit-code parity and devirtualize the mutated
+binary with the (d) oracle. (b) flag-transfer items proved unnecessary for the
+register-based fixture and are deferred until a stack-based interpreter needs
+them.
