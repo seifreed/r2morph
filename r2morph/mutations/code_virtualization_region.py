@@ -543,6 +543,24 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
             new_items.append(["vpush", slot])
             new_items.append(["vshift", mnemonic, count, width])
             new_items.append(["vpop", slot])
+        elif kind == "opmemidx":  # <op> reg, [base+index*scale+disp] -- reg is src and dst
+            _, mnemonic, reg, base, index, shift, disp, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vloadidx", base, index, shift, disp, width])
+            # opmemidx is always flag-synthesizing today, so fold with vbinopsynth.
+            new_items.append(["vbinopsynth", mnemonic, width])
+            new_items.append(["vpop", reg])
+        elif kind == "opmemdst":  # <op> [base+disp], reg -- read-modify-write
+            # The result is stored back to memory, so vload the current value, fold it
+            # with the register, and vstore the result. The address is recomputed by
+            # both vload and vstore, which is sound: base+disp is deterministic and no
+            # intervening micro-op writes the base slot (the op writes memory, not the
+            # base register), so both computations read the same address.
+            _, mnemonic, reg, base, disp, width = item
+            new_items.append(["vload", base, disp, width])
+            new_items.append(["vpush", reg])
+            new_items.append(["vbinopsynth", mnemonic, width])
+            new_items.append(["vstore", base, disp, width])
         else:
             new_items.append(item)
     for item in new_items:

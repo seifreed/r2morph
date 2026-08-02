@@ -130,6 +130,7 @@ def test_micro_op_item_sizes_match_the_handler_advances() -> None:
     assert _item_size(("vbinopsynth", "add", 64)) == 1
     assert _item_size(("vload", 5, -8, 64)) == 7
     assert _item_size(("vstore", 5, -8, 64)) == 7
+    assert _item_size(("vloadidx", 5, 6, 3, -8, 64)) == 9
 
 
 def _memory_region(access: dict[str, object]) -> list[tuple[object, ...]]:
@@ -161,10 +162,24 @@ def test_mem_source_arith_lowers_to_vpush_vload_vbinopsynth_vpop() -> None:
     assert kinds[:4] == ["vpush", "vload", "vbinopsynth", "vpop"]
 
 
-def test_rip_relative_and_indexed_memory_are_not_lowered() -> None:
-    # Only base+disp memory lowers this slice; rip-relative and scaled-index keep
-    # their single handlers (their address prologues differ).
+def test_indexed_mem_source_arith_lowers_to_vpush_vloadidx_vbinopsynth_vpop() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 4, "add", "add rax, qword [rax + rcx*8]"))]
+    # <op> reg,[base+index*scale+disp] pushes reg, loads the indexed memory operand
+    # via the scaled-index prologue, folds with flag synthesis, pops back to reg.
+    assert "opmemidx" not in kinds
+    assert kinds[:4] == ["vpush", "vloadidx", "vbinopsynth", "vpop"]
+
+
+def test_read_modify_write_lowers_to_vload_vpush_vbinopsynth_vstore() -> None:
+    kinds = [item[0] for item in _memory_region(_insn(0x1000, 4, "add", "add qword [rax - 8], rcx"))]
+    # <op> [base+disp],reg loads the memory value, pushes the register, folds them,
+    # and stores the result back to the same address (recomputed, base+disp is fixed).
+    assert "opmemdst" not in kinds
+    assert kinds[:4] == ["vload", "vpush", "vbinopsynth", "vstore"]
+
+
+def test_rip_relative_memory_is_not_lowered() -> None:
+    # rip-relative memory keeps its single handler this slice (its address prologue
+    # differs); it is a separate follow-up.
     riprel = [item[0] for item in _memory_region(_insn(0x1000, 7, "mov", "mov rax, qword [rip + 0x2000]"))]
     assert "riprel_load" in riprel and "vload" not in riprel
-    indexed = [item[0] for item in _memory_region(_insn(0x1000, 4, "add", "add rax, qword [rax + rcx*8]"))]
-    assert "opmemidx" in indexed and "vload" not in indexed

@@ -94,6 +94,7 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
         "vbinopsynth",
         "vload",
         "vstore",
+        "vloadidx",
         "vshift",
     )
     targets: set[int] = set()

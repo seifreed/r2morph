@@ -25,6 +25,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _VSP_OFFSET,
     _VSTACK_BASE,
+    _indexed_address_asm,
     _mem_address_asm,
     _synth_flags_asm,
     _unmask_dword,
@@ -197,6 +198,23 @@ def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
     body, advance = _mem_address_asm(False, key, key_dword, field_perm)
     store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _vloadidx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0) -> str:
+    """Load ``[base+index*scale+disp]`` and push the value onto the vstack.
+
+    Reuses the shared MBA-folded scaled-index address prologue
+    (``_indexed_address_asm``), which decodes the operand into the effective address
+    in r10 (and clobbers the vstack pointer r9), then reads the qword/dword and pushes
+    it. The register field the prologue decodes into r8 is an unused placeholder (the
+    value goes on the stack, not into a register). A 32-bit load zero-extends. No flags.
+    """
+    width = int(handler_key.split("_")[1])
+    body, advance = _indexed_address_asm(key, key_dword, field_perm)
+    body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+    # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
+    # the vstack pointer from its frame slot before pushing.
+    return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _vshift_handler_asm(handler_key: str, key: int) -> str:
