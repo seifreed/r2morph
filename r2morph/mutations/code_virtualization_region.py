@@ -506,7 +506,7 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 _JUNK_OP_PROBABILITY = 0.35
 
 
-def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
+def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] | None = None) -> list[list[Any]]:
     """Lower each arithmetic and base+disp memory item into virtual-stack micro-ops
     and remap every branch target index to its new position.
 
@@ -627,10 +627,26 @@ def _lower_arith_to_microops(items: list[list[Any]]) -> list[list[Any]]:
             item[1] = old_to_new[item[1]]
         elif item[0] == "jcc":
             item[2] = old_to_new[item[2]]
+    _remap_index_map(index_map, old_to_new)
     return new_items
 
 
-def _inject_junk_movs(items: list[list[Any]], rng: random.Random) -> list[list[Any]]:
+def _remap_index_map(index_map: dict[int, int] | None, old_to_new: dict[int, int]) -> None:
+    """Remap a native-address -> item-index map through a lowering's position shift.
+
+    A computed jump's target map stores item indices that move when items are
+    lowered or junk is inserted, exactly like branch targets do; this reapplies the
+    same shift so the map keeps pointing at the right items.
+    """
+    if index_map is None:
+        return
+    for addr, old_index in list(index_map.items()):
+        index_map[addr] = old_to_new[old_index]
+
+
+def _inject_junk_movs(
+    items: list[list[Any]], rng: random.Random, index_map: dict[int, int] | None = None
+) -> list[list[Any]]:
     """Sprinkle identity ``mov reg, reg`` items through the resolved item list and
     remap every branch target index to its new position.
 
@@ -652,15 +668,23 @@ def _inject_junk_movs(items: list[list[Any]], rng: random.Random) -> list[list[A
             item[1] = old_to_new[item[1]]
         elif item[0] == "jcc":
             item[2] = old_to_new[item[2]]
+    _remap_index_map(index_map, old_to_new)
     return new_items
 
 
-def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None = None) -> Region | None:
+def extract_region(
+    instructions: list[dict[str, Any]], rng: random.Random | None = None, allow_computed_jump: bool = False
+) -> Region | None:
     """Lower a function's linear instruction list into a :class:`Region`.
 
     Returns ``None`` unless every instruction is a register op, comparison,
     ``nop``, in-function branch, or a terminator (``ret``/``syscall``). Any
     number of terminators is allowed; each becomes a distinct VM exit.
+
+    ``allow_computed_jump`` opts in to the dispatch-region contract: a register-
+    indirect jump is lowered to an ``ijmp`` whose runtime target re-enters the VM
+    via a target map (native address -> item index) built here. It is off by
+    default so the straight-line contract and its guards are unchanged.
     """
     if not instructions:
         return None
@@ -680,7 +704,7 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
     item_index_of: dict[int, int] = {}
     op_keys: set[str] = set()
     for insn in body:
-        item = _classify(insn)
+        item = _classify(insn, allow_computed_jump=allow_computed_jump)
         if item is None:
             return None
         item_index_of[insn["addr"]] = len(items)
@@ -688,9 +712,10 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
         key = _op_key(tuple(item))
         if key is not None:
             op_keys.add(key)
-        # Fall-through into a terminator (everything except an unconditional jmp).
+        # Fall-through into a terminator (everything except an unconditional jump -
+        # direct or computed - which never falls through).
         next_addr = insn["addr"] + insn.get("size", 0)
-        if item[0] != "jmp" and next_addr in exit_set:
+        if item[0] not in ("jmp", "ijmp") and next_addr in exit_set:
             items.append(["jmp", next_addr])
             op_keys.add("jmp")
 
@@ -746,16 +771,25 @@ def extract_region(instructions: list[dict[str, Any]], rng: random.Random | None
     # Lower each arithmetic op (flag-dead opmba and flag-live opsynth) to virtual-stack
     # micro-ops so no handler maps 1:1 to a native mnemonic. Runs after the flag/stack
     # analyses (which see only the program's real items) and before junk injection.
-    items = _lower_arith_to_microops(items)
+    # A computed jump (ijmp) resolves its target at runtime to a native address in
+    # this region; map every body instruction address to its item index so the ijmp
+    # handler can re-enter the VM at the virtualized target. Threaded through the
+    # lowering and junk passes so the indices stay correct as items shift. Only built
+    # when the region actually contains a computed jump; otherwise the map is empty
+    # and the region's blob is byte-identical to the straight-line contract's.
+    has_computed_jump = any(item[0] == "ijmp" for item in items)
+    target_map: dict[int, int] | None = dict(item_index_of) if has_computed_jump else None
+
+    items = _lower_arith_to_microops(items, target_map)
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
     # stack/flag analyses, which the junk does not affect. Rebuild op_keys for the
     # rewritten + augmented items.
     if rng is not None:
-        items = _inject_junk_movs(items, rng)
+        items = _inject_junk_movs(items, rng, target_map)
     op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
 
     body_ranges = [(insn["addr"], insn.get("size", 0)) for insn in body]
-    return Region([tuple(item) for item in items], exit_addrs[0], body[0]["addr"], op_keys, body_ranges)
+    return Region([tuple(item) for item in items], exit_addrs[0], body[0]["addr"], op_keys, body_ranges, target_map)
 
 
 def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
