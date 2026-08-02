@@ -123,3 +123,20 @@ def test_rename_local_body_leaves_an_exit_body_untouched() -> None:
 def test_rename_local_body_leaves_a_syscall_body_untouched() -> None:
     body = "  mov rax, qword ptr [rsp+0]\n  mov r8, qword ptr [rsp+8]\n  syscall\n"
     assert rename_local_body(body, random.Random(5)) == body
+
+
+def test_rename_body_leaves_a_lahf_flag_capture_untouched() -> None:
+    # lahf pins the real rax (its ah), and a high-byte spelling has no r8-r15
+    # encoding; remapping rax to r8-r15 would emit an illegal `movzx r10d, ah` and
+    # also read the flags from the wrong register, so the body must be left as-is.
+    body = (
+        "  mov r10, rax\n  lahf\n  seto r11b\n  movzx r11d, r11b\n  shl r11d, 11\n"
+        "  movzx eax, ah\n  or r11, rax\n  mov rax, r10\n  jmp vm_dispatch\n"
+    )
+    assert rename_body(body, random.Random(5)) == body
+
+
+def test_rename_body_still_renames_a_body_without_a_pinned_register() -> None:
+    # A pool body with no lahf/high-byte register is renamed as before.
+    body = "  mov rax, r8\n  add rax, r9\n  jmp vm_dispatch\n"
+    assert rename_body(body, random.Random(5)) != body

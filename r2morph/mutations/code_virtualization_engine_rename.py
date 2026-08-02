@@ -39,6 +39,14 @@ _SPELLINGS: tuple[str, ...] = tuple(spelling for register in _POOL for spelling 
 _TOKEN = re.compile(r"\b(" + "|".join(sorted(_SPELLINGS, key=len, reverse=True)) + r")\b")
 
 
+# A body that pins a specific legacy register: ``lahf``/``sahf`` implicitly read or
+# write ah, and a high-byte spelling (ah/bh/ch/dh) has no r8-r15 encoding at all.
+# Renaming a pool register (rax) to r8-r15 in such a body both mis-encodes (a high
+# byte cannot appear in a REX-prefixed instruction) and mis-targets the flags, so
+# these bodies must be left unchanged - fails safe, exactly like _TRANSFER below.
+_PINS_LEGACY_REGISTER = re.compile(r"\b(?:lahf|sahf|[abcd]h)\b")
+
+
 def rename_body(body: str, rng: random.Random) -> str:
     """Rewrite the scratch registers in one handler body under a random bijection.
 
@@ -46,7 +54,11 @@ def rename_body(body: str, rng: random.Random) -> str:
     with each scratch spelling mapped to its permuted register's spelling of the
     same width. ``rcx`` and every non-pool register are left untouched, so the
     body's meaning is preserved while its register fingerprint changes per handler.
+    A body that pins a legacy register (``lahf``/``sahf`` or a high-byte spelling)
+    is returned unchanged, since remapping rax to r8-r15 there would miscompile.
     """
+    if _PINS_LEGACY_REGISTER.search(body):
+        return body
     permutation = rng.sample(range(len(_POOL)), len(_POOL))
     mapping = {
         _POOL[source][width]: _POOL[target][width] for source, target in enumerate(permutation) for width in range(4)
