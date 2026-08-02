@@ -17,7 +17,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
-from r2morph.mutations.code_virtualization_fold import ARITH_VARIANT_BITS
+from r2morph.mutations.code_virtualization_fold import ADDR_VARIANT_BITS, ARITH_VARIANT_BITS
 
 
 @dataclass(frozen=True)
@@ -25,10 +25,17 @@ class EngineISASpec:
     """The handler-implementation choices for one engine build (0 == canonical)."""
 
     arith_variant: int = 0
+    addr_variant: int = 0
 
 
 def build_engine_isa_spec(engine_isa_seed: int) -> EngineISASpec:
     """Derive this build's engine ISA personality from ``engine_isa_seed`` (0 == canonical)."""
     if not engine_isa_seed:
         return EngineISASpec()
-    return EngineISASpec(arith_variant=random.Random(engine_isa_seed).randrange(1 << ARITH_VARIANT_BITS))
+    # Draw order is stable: arith_variant first (byte-stable for existing seeds),
+    # then addr_variant, so appending the address-fold axis leaves engine builds
+    # with engine_isa_seed set but only arith diverging unchanged.
+    rng = random.Random(engine_isa_seed)
+    arith_variant = rng.randrange(1 << ARITH_VARIANT_BITS)
+    addr_variant = rng.randrange(1 << ADDR_VARIANT_BITS)
+    return EngineISASpec(arith_variant=arith_variant, addr_variant=addr_variant)

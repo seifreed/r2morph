@@ -56,7 +56,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedOp,
 )
 from r2morph.mutations.code_virtualization_engine_rename import rename_body
-from r2morph.mutations.code_virtualization_fold import arith_fold
+from r2morph.mutations.code_virtualization_fold import addr_fold, arith_fold
 from r2morph.mutations.code_virtualization_layout import (
     idx_offsets,
     idx_permuted_fields,
@@ -67,7 +67,6 @@ from r2morph.mutations.code_virtualization_layout import (
     pair_offsets,
     pair_permuted_fields,
 )
-from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
@@ -308,7 +307,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
-            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + _mba_add_r10_rax(key)
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + addr_fold("rax", "rcx", key, isa.addr_variant)
         )
 
     def mem_riprel_prologue() -> str:
@@ -321,7 +320,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
-            "  movsxd rax, eax\n  mov r10, r15\n" + _mba_add_r10_rax(key)
+            "  movsxd rax, eax\n  mov r10, r15\n" + addr_fold("rax", "rcx", key, isa.addr_variant)
         )
 
     def mem_idx_prologue() -> str:
@@ -337,7 +336,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {key_dword}\n  xor eax, r10d\n"
             f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r11*8]\n  shl r10, cl\n"
-            "  mov r11, qword ptr [rsp + r9*8]\n" + _mba_add("r11", "rcx", key) + _mba_add("rax", "rcx", key)
+            "  mov r11, qword ptr [rsp + r9*8]\n"
+            + addr_fold("r11", "rcx", key, isa.addr_variant)
+            + addr_fold("rax", "rcx", key, isa.addr_variant)
         )
 
     def mem_handler_body(kind: str, width: int) -> str:
@@ -405,7 +406,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n"
-            + _mba_add_r10_rax(key)
+            + addr_fold("rax", "rcx", key, isa.addr_variant)
             + f"  shl r8, 4\n  lea r11, [rsp + r8 + {layout.xmm_offset}]\n"
         )
 
@@ -419,7 +420,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, r15\n"
-            + _mba_add_r10_rax(key)
+            + addr_fold("rax", "rcx", key, isa.addr_variant)
             + f"  shl r8, 4\n  lea r11, [rsp + r8 + {layout.xmm_offset}]\n"
         )
 
