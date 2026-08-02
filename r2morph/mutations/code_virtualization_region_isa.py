@@ -23,6 +23,7 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass
 
+from r2morph.mutations.code_virtualization_fold import ARITH_VARIANT_BITS
 from r2morph.mutations.code_virtualization_region_flags import FLAG_VARIANT_BITS
 
 
@@ -31,6 +32,7 @@ class RegionISASpec:
     """The handler-implementation choices for one build (all 0 == canonical)."""
 
     flag_variant: int = 0
+    arith_variant: int = 0
 
 
 def build_isa_spec(isa_seed: int) -> RegionISASpec:
@@ -38,4 +40,8 @@ def build_isa_spec(isa_seed: int) -> RegionISASpec:
     if not isa_seed:
         return RegionISASpec()
     rng = random.Random(isa_seed)
-    return RegionISASpec(flag_variant=rng.randrange(1 << FLAG_VARIANT_BITS))
+    # Draw order is stable: appending a family keeps earlier fields byte-stable for
+    # a given seed. flag_variant was first; arith_variant follows it.
+    flag_variant = rng.randrange(1 << FLAG_VARIANT_BITS)
+    arith_variant = rng.randrange(1 << ARITH_VARIANT_BITS)
+    return RegionISASpec(flag_variant=flag_variant, arith_variant=arith_variant)

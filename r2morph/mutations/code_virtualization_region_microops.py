@@ -20,7 +20,7 @@ flags-dead precondition).
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_mba import _op_mba_compute
+from r2morph.mutations.code_virtualization_fold import arith_fold
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _VSP_OFFSET,
@@ -88,12 +88,12 @@ def _vpushi_handler_asm(handler_key: str, key_qword: str, key_dword: str) -> str
     return decode + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vbinop_handler_asm(handler_key: str, key: int) -> str:
+def _vbinop_handler_asm(handler_key: str, key: int, arith_variant: int = 0) -> str:
     """Pop the top two cells, fold them with the shared MBA builder, push the result.
 
     The operands were pushed dst-then-src, so the cell below the top is ``a == dst``
     and the top is ``b == src``: pop b into rax, a into r10. ``sub`` negates b first,
-    so ``a + (-b) == dst - src``. ``_op_mba_compute`` leaves the result in r10 with no
+    so ``a + (-b) == dst - src``. ``arith_fold`` leaves the result in r10 with no
     literal native op and no flag capture; a 32-bit fold zero-extends the low half.
     """
     _, mnemonic, width_text = handler_key.split("_")
@@ -107,7 +107,7 @@ def _vbinop_handler_asm(handler_key: str, key: int) -> str:
     )
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += _op_mba_compute(mnemonic, key)
+    body += arith_fold(mnemonic, key, arith_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += (
@@ -119,7 +119,7 @@ def _vbinop_handler_asm(handler_key: str, key: int) -> str:
     return body
 
 
-def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0) -> str:
+def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, arith_variant: int = 0) -> str:
     """Fold the top two vstack cells AND synthesize the readable flags, then push.
 
     The flag-live counterpart of ``_vbinop_handler_asm``: where that serves ops whose
@@ -150,7 +150,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0) 
     body += "  mov rbx, r10\n  mov rbp, rax\n  mov r8, r9\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += _op_mba_compute(mnemonic, key)
+    body += arith_fold(mnemonic, key, arith_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)
@@ -164,7 +164,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0) 
     return body
 
 
-def _vcmpsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0) -> str:
+def _vcmpsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, arith_variant: int = 0) -> str:
     """Pop the top two vstack cells, synthesize the compare flags, push nothing.
 
     The flag-only counterpart of ``_vbinopsynth_handler_asm``: ``cmp``/``test`` exist
@@ -192,9 +192,9 @@ def _vcmpsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0) ->
     body += "  mov rbx, r10\n  mov rbp, rax\n"
     # cmp -> flags of a - b (== a + (-b)); test -> flags of a & b. Result is discarded.
     if op == "cmp":
-        body += "  neg rax\n" + _op_mba_compute("add", key)
+        body += "  neg rax\n" + arith_fold("add", key, arith_variant)
     else:
-        body += _op_mba_compute("and", key)
+        body += arith_fold("and", key, arith_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)
