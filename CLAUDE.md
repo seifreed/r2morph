@@ -181,7 +181,111 @@ Antes de añadir un módulo nuevo, responde: ¿en qué capa vive? ¿qué interfa
 
 ---
 
-## 8. Convenciones de commits
+## 8. Mutaciones agnósticas a la muestra — nada family-specific en producción
+
+r2morph es un motor de mutación de **propósito general**: cualquier `MutationPass`, analizador o adaptador debe aplicar a binarios arbitrarios, no a la muestra concreta que se esté investigando. Código que solo funciona para "este binario" o "esta familia" es un bug, viva en la capa que viva.
+
+- **Sin valores de familia/IOC en rutas de producción.** No hardcodear hosts, URLs, rutas, claves de registro, nombres de mutex/tarea, GUIDs, hashes de API, strings de payload, offsets fijos, duraciones de sleep ni marcadores de control-flow de una muestra concreta dentro de `mutations/`, `pipeline/`, `analysis/`, `adapters/` o `platform/`.
+- **Sin ramas sample-specific.** Nada de ramas "solo-para-X-packer" o "solo-para-Y-familia" en lógica de producción, aunque mejoren una regresión real concreta. No pattern-match sobre secuencias de opcodes de un packer concreto para tomar un atajo, ni devolver un valor solo porque una muestra lo espera.
+- **Sube el nivel de abstracción.** Si una muestra real expone un seam que falta, implementa el contrato **genérico** más estrecho que explique el comportamiento (semántica de ISA, invariantes de formato PE/ELF/Mach-O, semántica de la API). Si no puedes describir el código nuevo en términos de una spec pública o un contrato documentado, has escrito lógica sample-specific.
+- **Los valores de muestra viven en tests y fixtures, nunca en runtime.** Un test de regresión puede afirmar "esta muestra concreta tras el pass X mantiene el CFG equivalente"; el `MutationPass` no puede contener código que solo se dispare para esa familia. Los binarios concretos van en `fixtures/`, los asserts en `tests/`.
+- **Paridad de parsers.** No sortear en silencio una estructura PE/ELF/Mach-O malformada que solo produce un packer concreto. O se rechaza explícitamente con un error tipado y una razón anclada al formato, o se arregla el parser para el caso general (cualquier otro binario con la misma forma debe funcionar).
+- **Ante la duda, expón el seam.** Si parece un quirk de una muestra, escribe la aserción sample-specific en un test de regresión y abre un follow-up — no incrustes el quirk en el runtime.
+
+---
+
+## 9. Observabilidad y manejo de bytes de muestra
+
+r2morph procesa malware. Los bytes de la muestra son material **semi-sensible** y la salida del proceso debe ser reconstruible desde los logs.
+
+- **Logging estructurado, no `print`.** En rutas de producción se usa el `logging` del proyecto (logger por módulo), nunca `print`/`pprint`/`sys.stderr.write` ad-hoc. `cli.py` es el único que renderiza a terminal, y lo hace a través de `reporting/`.
+- **Niveles con semántica.** `error` para violaciones de contrato, `warning` para anomalías recuperables, `info` para eventos de ciclo de vida (apertura de binario, inicio/fin de pass), `debug` para detalle por-evento, nivel más fino para bucles calientes / por-instrucción.
+- **Nunca loguear payloads crudos por encima de `debug`.** Bytes de la muestra, buffers desensamblados, contenido de secciones: por encima de `debug` solo hashes, tamaños y previews cortos acotados. Los contratos de `reporting/` (JSON, SARIF) siguen la misma regla — no se vuelcan blobs completos del binario.
+- **Sin datos del host del analista en logs ni reports.** No filtrar rutas absolutas del analista, nombre de usuario ni variables de entorno locales a la salida.
+- **Contexto en los bordes.** Abrir contexto de log en los adaptadores (`adapters/`, parsers de `platform/`, ejecución de cada pass) para que el comportamiento del pipeline sea reconstruible solo con los logs.
+
+---
+
+## 10. Guardarraíles de retención y memoria
+
+El pipeline puede procesar binarios grandes y muchas muestras en serie. La RAM del host es una **superficie de contrato**, no un detalle de implementación.
+
+- **Sin retención ilimitada.** Cualquier `list`/`dict`/`set` que crezca con eventos de runtime (trackers, acumuladores de report, cachés del pipeline) necesita un cap explícito, política de evicción o presupuesto de bytes. Crecimiento sin cota es un bug.
+- **Sin payloads crudos en rutas de tracker/report** salvo que el contrato de salida lo exija de verdad. Preferir resúmenes, hashes, contadores, identificadores estables y previews cortos sobre blobs completos.
+- **Sin clonar colecciones completas en rutas calientes.** No copiar trackers/observaciones/reports enteros en el hot path si hay una alternativa que preserve la propiedad; mover los datos hacia delante etapa a etapa.
+- **Recursión acotada.** Cualquier interpretación/recorrido recursivo (CFG, estructuras anidadas) aplica un límite global de profundidad antes de la siguiente llamada recursiva.
+- **Regresión que prueba la cota.** Si un cambio toca retención de tracker, proyección de report o cachés del pipeline, añade un test que demuestre la nueva cota (cumpliendo §4 y §5).
+
+---
+
+## 11. Política de evolución
+
+- **Sin compatibilidad legacy para features propias.** Cuando una feature, API interna, flag de CLI, campo de report, perfil o adaptador reemplaza a otro más viejo, se elimina la implementación obsoleta, sus docs, tests, fixtures, alias y rutas de fallback en el mismo cambio. No se preserva comportamiento legacy solo porque una interfaz interna antigua existía. La compatibilidad **solo** es válida cuando modela contratos externos públicos que r2morph debe soportar: formatos PE/ELF/Mach-O, semántica de ISA, esquemas de report versionados públicamente (`report_schema.json`, SARIF).
+- **El código es propio.** Herramientas, papers y proyectos open-source externos pueden inspirar el diseño, pero el código que se commitea es original y alineado con la arquitectura de r2morph. No se porta, copia ni transliterar implementaciones de terceros.
+- **Sin nombres de herramientas externas en el código.** No nombrar otras herramientas o productos en identificadores de producción, comentarios, nombres de test/fixture, salida al usuario, reports generados ni labels de comportamiento. Se describe el comportamiento por el contrato genérico implementado, no por la herramienta que lo inspiró. Si el tooling del repo debe invocar un ejecutable externo concreto (`r2`, `objdump`), esa referencia vive en scripts/configuración o en el adaptador aislado de `adapters/`, no esparcida por la lógica de dominio.
+
+---
+
+## 12. Disciplina de comunicación
+
+- **No asumas. No escondas la confusión. Expón los tradeoffs.** Cuando una petición es ambigua o tomas una decisión no obvia, nombra el tradeoff y deja redirigir — no elijas un camino en silencio y lo presentes como decidido.
+- **Levanta el estado inesperado antes de trabajar alrededor.** Si aparecen ficheros, ramas o estado conflictivo no familiares a mitad de tarea, se reporta antes de seguir, no se parchea por encima.
+
+---
+
+## 13. Disciplina de testing (complementa §4 y §5)
+
+Además de "tests reales sin mocks" (§4) y "regresión obligatoria" (§5):
+
+- **Naming**: `test_<sujeto>_<escenario>_<resultado_esperado>`. Nada de `test_works`, `test_basic`, `test_1`.
+- **Una sola aserción lógica por test.** Un test debe fallar por una única razón. Si un escenario verifica varias invariantes no relacionadas, se parte en tests distintos en vez de encadenar asserts.
+- **Layering explícito**: unit junto al código (`tests/unit/`), integración en `tests/integration/`, regresión en `tests/regression/`, contratos de API/esquema en sus ficheros nombrados.
+- **Fixtures sobre corpus.** Las suites por defecto (unit/integration/regresión) dependen de fixtures sintéticos o generados localmente, no de un corpus de malware local. Si una regresión necesita una muestra externa real, es **opt-in** y queda fuera de la suite por defecto: solo falla en cerrado cuando el caller pasa la ruta de la muestra explícitamente; nunca hace que el árbol normal dependa del layout del corpus local.
+
+---
+
+## 14. Watchlist de descomposición
+
+El límite de §6 (~40 líneas/función) y §7 (~200 líneas/clase, sin god-objects) se complementa con un objetivo a nivel de **fichero**:
+
+- **Objetivo de fichero <500 líneas (responsabilidad única); límite duro 800.** Un fichero que cruza 500 líneas es un punto de extensión caliente: añade comportamiento nuevo en un sub-módulo hermano en vez de seguir apilando en el agregador. Un fichero >800 líneas debe descomponerse **antes** de cualquier otro cambio sobre él (no se permiten ediciones append-only sobre un fichero que viola el límite duro).
+- **Excepción**: tablas de dispatch exhaustivas (un único `match`/`dict` sobre un conjunto cerrado que delega a helpers por-variante, sin lógica de dominio en el cuerpo) pueden exceder el límite.
+- **Upkeep del mapa**: si un refactor renombra un módulo o parte un fichero en un directorio de sub-módulos, se actualiza el mapa de arquitectura (§7 y §17) en el mismo commit. El contrato solo sirve si rastrea la realidad.
+
+---
+
+## 15. Rendimiento — medir antes de refactorizar
+
+- **Profile antes de optimizar.** Eliminar `.copy()`, cambiar algoritmos de hash o reescribir "esto parece caro" sin un profile que lo respalde está prohibido.
+- **Umbral**: por debajo de ~2% de self-time acumulado no se procede con un refactor por rendimiento; se cierra la investigación en una nota datada y se sigue. Estima también el ahorro real esperado.
+- **Artefactos**: reports de profiling datados (`YYYY-MM-DD-<tema>.md`) junto a los fixtures usados para generarlos, en una carpeta dedicada (p. ej. `docs/profiling/`). Tras cada cambio se anexan los deltas antes/después al mismo report.
+- **Re-validación**: tras un cambio de rendimiento, re-ejecutar la suite y los checks de §3 antes de dar el trabajo por terminado.
+
+---
+
+## 16. UX de un solo binario — inferencia automática
+
+El camino normal de mutación/análisis debe requerir solo la **ruta del binario**. El usuario no tiene por qué conocer arquitectura, entrypoint, formato, perfil de mutación ni presupuesto para obtener el mejor resultado disponible.
+
+- **Inferir por defecto.** Preferir metadata del loader, headers PE/ELF/Mach-O, imports y heurísticas genéricas sobre exigir flags de CLI.
+- **Los argumentos extra son overrides, no prerequisitos.** Los switches de CLI existen para debug, reproducción de regresiones e investigación, pero la ejecución ordinaria no depende de pasar un montón de opciones.
+- **La automatización ausente es un gap de producto.** Si una muestra solo corre cuando un humano aporta knobs concretos, se captura el seam genérico que falta y se mueve ese conocimiento a la configuración automática o a un follow-up. No se normaliza "dile al usuario qué flags pasar" como fix final.
+- **Inferencia agnóstica a la muestra.** Los argumentos/perfiles auto-seleccionados salen de contratos públicos de formato/API o de heurísticas amplias, nunca de hechos de una familia concreta (§8).
+
+---
+
+## 17. Mapa de arquitectura y refactor guardrails
+
+El mapa de capas de §7 es el **contrato vivo**. Reglas para mantenerlo útil:
+
+- **Seams que no deben crecer.** `protocols/` es la SPI de infraestructura: mantenla enfocada en intención, sin filtrar mecanismos concretos de r2pipe/lief/frida. `cli.py` es composición + parseo; no mueve política de dominio hacia dentro. Los adaptadores de `adapters/` no filtran tipos de la herramienta externa hacia `core`/`pipeline`.
+- **Anti-corruption en los bordes.** La traducción de tipos de herramienta externa (r2pipe/lief/angr/z3) a DTOs de dominio vive en el adaptador, no esparcida por los consumidores.
+- **Sin ciclos** entre módulos (ya en §7); cualquier ciclo es un problema de capas que se arregla, no se rodea.
+- **Upkeep**: cualquier cambio que renombre una capa, mueva un fichero clave o cambie un contrato de `protocols/` actualiza este mapa y el de §7 en el mismo commit.
+
+---
+
+## 18. Convenciones de commits
 
 - **Mensaje claro, en imperativo, describiendo el *qué* y el *porqué***. Nada de "wip", "fix", "update", "changes". Si el cambio toca varias áreas, separar en commits distintos.
 - **Un commit, un cambio lógico**. No mezclar refactor + feature + bugfix en un solo commit.
@@ -198,7 +302,7 @@ Esta regla aplica también a PRs generados con asistencia IA: el cuerpo del comm
 
 ---
 
-## 9. Cumplimiento
+## 19. Cumplimiento
 
 - Estas reglas se verifican en CI. Un PR que rompa cualquiera de ellas **no se mergea**.
 - El que abre el PR es responsable de pasar todos los checks localmente antes de pedir review.
