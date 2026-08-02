@@ -38,6 +38,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
     pack_immediate,
 )
 from r2morph.mutations.code_virtualization_engine_frame import DEFAULT_FRAME_LAYOUT, build_frame_layout
+from r2morph.mutations.code_virtualization_engine_isa import build_engine_isa_spec
 from r2morph.mutations.code_virtualization_engine_microops import (
     MICROOP_ARITH_MNEMONICS,
     emit_arith_imm_microops,
@@ -55,6 +56,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedOp,
 )
 from r2morph.mutations.code_virtualization_engine_rename import rename_body
+from r2morph.mutations.code_virtualization_fold import arith_fold
 from r2morph.mutations.code_virtualization_layout import (
     idx_offsets,
     idx_permuted_fields,
@@ -65,7 +67,7 @@ from r2morph.mutations.code_virtualization_layout import (
     pair_offsets,
     pair_permuted_fields,
 )
-from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax, _op_mba_compute
+from r2morph.mutations.code_virtualization_mba import _mba_add, _mba_add_r10_rax
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
     compute_build_checksum,
@@ -276,6 +278,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     key = scheme.xor_key
     key_qword = hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF)
     key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
+    # This build's ISA personality: the arithmetic-fold variant every operation
+    # handler uses (variant 0 == the shared canonical fold, byte-identical).
+    isa = build_engine_isa_spec(scheme.engine_isa_seed)
     # Each opcode index gets its own handler instance; an operation with two
     # indices is emitted twice, each copy carrying different junk, so the
     # opcode->operation map is not one-to-one and the duplicates share no byte
@@ -380,7 +385,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             if mnemonic == "sub":
                 body += "  neg rax\n"
             body += "  mov r10, qword ptr [rsp + r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp + r8*8]\n"
-            body += _op_mba_compute(mnemonic, key)
+            body += arith_fold(mnemonic, key, isa.arith_variant)
             if width == 64:
                 body += "  mov qword ptr [rsp + r8*8], r10\n"
             else:
@@ -540,7 +545,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
         if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
-            return microop_handler_body(mnemonic, width, key, layout.vsp_offset, layout.vstack_base)
+            return microop_handler_body(mnemonic, width, key, layout.vsp_offset, layout.vstack_base, isa.arith_variant)
         if mnemonic in _FP_PACKED_ARITH_KINDS:
             return fp_packed_arith_handler_body(mnemonic)
         if mnemonic in _FP_PACKED_MEM_KINDS:

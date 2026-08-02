@@ -29,7 +29,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
     pack_immediate,
 )
 from r2morph.mutations.code_virtualization_engine_models import VirtualizedOp
-from r2morph.mutations.code_virtualization_mba import _op_mba_compute
+from r2morph.mutations.code_virtualization_fold import arith_fold
 
 # Native reg-reg mnemonic -> its vstack fold primitive, and the inverse.
 _BINOP_OF: dict[str, str] = {"add": "vadd", "sub": "vsub", "xor": "vxor", "and": "vand", "or": "vor"}
@@ -41,7 +41,9 @@ MICROOP_BINOP_KINDS: tuple[str, ...] = _MICROOP_BINOP_KINDS
 MICROOP_IMM_KINDS: tuple[str, ...] = _MICROOP_IMM_KINDS
 
 
-def microop_handler_body(kind: str, width: int, key: int, vsp_offset: int, vstack_base: int) -> str:
+def microop_handler_body(
+    kind: str, width: int, key: int, vsp_offset: int, vstack_base: int, arith_variant: int = 0
+) -> str:
     """Assembly body for one micro-op primitive; ends with the shared dispatch jump.
 
     ``vpush s``/``vpop s`` carry one slot-index operand at ``[rsi+1]`` (the only
@@ -115,7 +117,7 @@ def microop_handler_body(kind: str, width: int, key: int, vsp_offset: int, vstac
     )
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += _op_mba_compute(mnemonic, key)
+    body += arith_fold(mnemonic, key, arith_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += (

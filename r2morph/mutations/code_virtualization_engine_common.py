@@ -318,6 +318,7 @@ class VMScheme:
         "dispatch_shape",
         "body_seed",
         "frame_seed",
+        "engine_isa_seed",
     )
 
     def __init__(
@@ -332,6 +333,7 @@ class VMScheme:
         dispatch_shape: int = DISPATCH_THREADED,
         body_seed: int = 0,
         frame_seed: int = 0,
+        engine_isa_seed: int = 0,
     ) -> None:
         # Each operation gets one or more interchangeable opcode indices; the same
         # operation can appear under different opcodes in the stream and each index
@@ -366,6 +368,11 @@ class VMScheme:
         # offsets); 0 leaves the canonical fixed layout so a devirtualizer cannot
         # rely on a fixed frame map of the VM's internal state.
         self.frame_seed = frame_seed
+        # Seeds this build's semantic ISA personality: the arithmetic-fold variant
+        # (see code_virtualization_engine_isa / the shared code_virtualization_fold),
+        # so two builds realize each operation with a different equivalent fold. 0
+        # leaves the canonical shared fold, byte-identical to the pre-feature engine.
+        self.engine_isa_seed = engine_isa_seed
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -429,9 +436,10 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     field_perm = rng.randrange(1, 1 << 31)
     dispatch_shape = rng.randint(DISPATCH_THREADED, DISPATCH_SWITCH)
     body_seed = rng.randrange(1 << 31)
-    # Drawn last so adding the frame relocation does not shift any earlier field's
-    # value for a given seed; the other fields stay byte-for-byte stable.
     frame_seed = rng.randrange(1 << 31)
+    # Drawn last so adding the ISA personality does not shift any earlier field's
+    # value for a given seed; the other fields stay byte-for-byte stable.
+    engine_isa_seed = rng.randrange(1 << 31)
     return VMScheme(
         dup,
         exit_opcode,
@@ -443,6 +451,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         dispatch_shape,
         body_seed,
         frame_seed,
+        engine_isa_seed,
     )
 
 
