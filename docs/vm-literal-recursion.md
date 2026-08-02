@@ -1,11 +1,12 @@
 # VM literal recursion — scoping
 
-Status: in progress. The devirtualization oracle and the VM front-end pieces a
-recursion spike needs are now built and green; the end-to-end emulated round trip
-is not yet passing (see §5). This note captures what "literal recursion" would
-mean for the code-virtualization VM, why the current codebase could not express
-it, and what a real spike had to build first. All file:line references are against
-the tree this note was written from; treat them as anchors, not guarantees.
+Status: working. The devirtualization oracle, the VM front-end pieces, and the
+end-to-end emulated round trip a recursion spike needs are built and green (see §5);
+an interpreter whose own dispatch loop is virtualized still runs correctly. This
+note captures what "literal recursion" means for the code-virtualization VM, why
+the current codebase could not express it, and what the spike had to build. All
+file:line references are against the tree this note was written from; treat them as
+anchors, not guarantees.
 
 ## 1. Goal — what "literal recursion" means
 
@@ -206,17 +207,26 @@ Built and green (each its own commit, in the doc's recommended order):
   flag-capture body (it remapped `rax` to r8-r15 across a `lahf`/`ah`, emitting an
   illegal `movzx r10d, ah`); such bodies are now left unrenamed.
 
-Not yet green — the end-to-end round trip. Against a register-indirect dispatch
-fixture (`dataset/elf_vm_interp_reg_x86_64`, exit 45), the whole function extracts
-into an `ijmp` region, the interpreter blob assembles, injects, and the trampoline
-is patched — but the emulated mutated binary faults: the first computed jump
-resolves its target register to `0` instead of the handler address, so every
-`ijmp` misses and the VM exits prematurely. The handler table and target map are
-both correct, so the fault is a **micro-op miscompile in the register-dispatch
-chain** (the rip-relative `lea` of the table base and/or the indexed load feeding
-the jump register), i.e. exactly the "miscompiled dispatch jump is hard to
-localize" risk of §4. Remaining work: trace those micro-ops to fix the target
-computation, then assert emulated exit-code parity and devirtualize the mutated
-binary with the (d) oracle. (b) flag-transfer items proved unnecessary for the
-register-based fixture and are deferred until a stack-based interpreter needs
-them.
+**Green — the end-to-end round trip.** Against a register-indirect dispatch fixture
+(`dataset/elf_vm_interp_reg_x86_64`, exit 45), the whole function extracts into an
+`ijmp` region, the interpreter blob assembles, injects, the trampoline is patched,
+and the mutated binary — now running a virtualized copy of its own fetch/decode/
+dispatch cycle — still emulates to exit 45 across a seed sweep. Covered by
+`tests/integration/test_vm_interpreter_recursion_real.py`
+(`test_recursively_virtualized_interpreter_preserves_exit_code`).
+
+The bug that blocked it was the "hard to localize" dispatch miscompile §4 warned of,
+and it was in the new code, not the VM's value handlers: the `ijmp` target map was
+emitted **after** the dispatch table, but `build_region_blob` locates the table as
+the last `total*4` bytes of the assembled interpreter (to decrypt it at runtime and
+to bound the self-checksum). Data after the table shifted that window, so every
+opcode misdecoded and the first computed jump landed in junk. Emitting the map
+before the table fixed it. (The value chain — rip-relative table-base `lea`, shift,
+add, indexed load — was correct all along, confirmed by isolated round trips.)
+
+(b) flag-transfer items proved unnecessary for the register-based fixture (no flag
+state crosses the computed jump) and are deferred until a stack-based interpreter
+needs them. Remaining follow-ups: wire the dispatch path into `CodeVirtualizationPass`
+behind an opt-in flag (the round trip is currently driven through the public
+building blocks), and devirtualize the mutated binary with the (d) oracle to close
+the loop symbolically as well as behaviourally.

@@ -724,6 +724,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Runtime target map for computed jumps (ijmp): a count followed by (native
     # address, bytecode offset) pairs the ijmp handler scans to re-enter the VM at
     # a virtualized target. Empty for an ordinary region, so its blob is unchanged.
+    # It is emitted BEFORE vm_table so the dispatch table stays the tail of the
+    # assembled interpreter - build_region_blob locates the table (for its runtime
+    # decryption and the self-checksum) as the last ``total*4`` bytes, so any data
+    # after the table would corrupt both.
     ijmp_targets = build_ijmp_targets(region)
     ijmp_map = ""
     if ijmp_targets:
@@ -731,7 +735,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         ijmp_map = f"ijmp_map:\n  .long {len(ijmp_targets)}\n{entries}"
     lines.append(
         f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
-        f"vm_table:\n{table}{ijmp_map}bytecode:\n"
+        f"{ijmp_map}vm_table:\n{table}bytecode:\n"
     )
     # Thread the dispatch: every handler tail (and the retarget) ends with a back
     # jump to the (now removed) central dispatcher; splice a freshly shuffled decode
