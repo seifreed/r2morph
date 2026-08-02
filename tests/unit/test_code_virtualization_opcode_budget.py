@@ -19,6 +19,13 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _assign_opcode_multiplicity,
     build_vm_scheme,
 )
+from r2morph.mutations.code_virtualization_region import build_region_scheme
+from r2morph.mutations.code_virtualization_region_models import Region
+
+
+def _region_with_op_keys(op_keys: set[str]) -> Region:
+    """A minimal Region carrying only the op-key set the scheme reads."""
+    return Region([], 0x1000, 0x1000, op_keys, [])
 
 
 def test_build_vm_scheme_never_overflows_the_opcode_byte_budget() -> None:
@@ -47,3 +54,20 @@ def test_more_op_keys_than_the_budget_raises() -> None:
     synthetic = tuple((f"op{i}", False, 64) for i in range(_OPCODE_BUDGET + 1))
     with pytest.raises(ValueError, match="opcode budget"):
         _assign_opcode_multiplicity(synthetic, random.Random(0))
+
+
+def test_region_scheme_clamps_when_duplication_would_exceed_the_budget() -> None:
+    # The region VM indexes its dispatch table by a single opcode byte too and
+    # bounds-guards the exit with `cmp al, handler_count`; near-budget op-keys whose
+    # multiplicity would double past the budget must clamp, never overflow the byte.
+    region = _region_with_op_keys({f"op_m{i}_r_64" for i in range(_OPCODE_BUDGET - 10)})
+    scheme = build_region_scheme(region, random.Random(1))
+    handler_count = sum(len(indices) for indices in scheme.dup.values())
+    assert handler_count <= _OPCODE_BUDGET
+
+
+def test_region_more_op_keys_than_the_budget_raises() -> None:
+    # More distinct region handlers than a byte can index fails loud, not silently.
+    region = _region_with_op_keys({f"op_m{i}_r_64" for i in range(_OPCODE_BUDGET + 1)})
+    with pytest.raises(ValueError, match="opcode budget"):
+        build_region_scheme(region, random.Random(0))
