@@ -44,6 +44,9 @@ FIXTURE_INCALL = _DATASET / "elf_vm_incall_x86_64"
 # closure gathers every case block, and the memory-indirect dispatch lowers to an
 # ijmpmemnb that re-enters the VM at the virtualized case via the target map.
 FIXTURE_SWITCH_ABS = _DATASET / "elf_switch_abs_x86_64"
+# Multi-ret jcc diamond: two independent ret blocks, no shared epilogue - the
+# multi-terminator region shape the whole-function lifter already supports.
+FIXTURE_MULTIRET = _DATASET / "elf_multiret_jccdiamond_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
 from unicorn import UC_ARCH_X86, UC_HOOK_INSN, UC_MODE_64, Uc, UcError  # noqa: E402
@@ -167,6 +170,30 @@ def test_virtualized_absolute_switch_preserves_exit_code(tmp_path: Path) -> None
     # trivially satisfied by leaving the binary unchanged.
     assert result is not None
     assert _emulate_exit_code(FIXTURE_SWITCH_ABS) == _emulate_exit_code(mutated) == 30
+
+
+def test_virtualized_multiret_function_preserves_exit_code(tmp_path: Path) -> None:
+    # A function whose jcc diamond ends in two independent rets (no shared epilogue)
+    # is a genuine multi-terminator region. The whole-function lifter must virtualize
+    # it and preserve classify() = 17.
+    if not FIXTURE_MULTIRET.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_MULTIRET}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(FIXTURE_MULTIRET, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        binary.analyze()
+        classify = next(f for f in binary.get_functions() if "classify" in (f.get("name") or ""))
+        result = CodeVirtualizationPass(config={"probability": 1.0})._virtualize_function(binary, classify)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert result is not None
+    assert _emulate_exit_code(FIXTURE_MULTIRET) == _emulate_exit_code(mutated) == 17
 
 
 # The interpreter's first instruction is a constant-size frame allocation
