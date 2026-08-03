@@ -41,7 +41,6 @@ from r2morph.mutations.code_virtualization_engine import (
     decode_instruction,
     inject_junk_ops,
 )
-from r2morph.mutations.code_virtualization_engine_common import DISPATCH_THREADED
 from r2morph.mutations.code_virtualization_inject import inject_blob, predict_blob_vaddr
 from r2morph.mutations.code_virtualization_region import (
     build_region_scheme,
@@ -408,21 +407,14 @@ class CodeVirtualizationPass(MutationPass):
         if blob_vaddr is None:
             return None
         # Nest by default, falling back to a single layer if the region has no
-        # peelable register-op run.
-        nested = None
+        # peelable register-op run. Both builders pick the dispatch shape (threaded
+        # jump table or binary-search switch) per build from the region scheme, so
+        # the dispatch architecture varies whether the build nests or not.
+        blob = None
         if use_nesting and self.vm_nesting_depth >= 2:
-            nested = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
-        # Build the scheme after the nested attempt (preserving its rng draw order,
-        # so a threaded-nested build stays byte-identical) to learn this build's
-        # dispatch shape. A switch-shape build uses the single-layer comparison-tree
-        # interpreter instead of the nested jump-table layers, so the dispatch
-        # architecture varies per build even on the default nesting path. The rng is
-        # function-local and unused past this point, so the extra draw is harmless.
-        scheme = build_region_scheme(region, rng)
-        blob: bytes | None
-        if nested is not None and scheme.dispatch_shape == DISPATCH_THREADED:
-            blob = nested
-        else:
+            blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
+        if blob is None:
+            scheme = build_region_scheme(region, rng)
             blob = build_region_blob(region, blob_vaddr, scheme)
         if blob is None:
             return None
