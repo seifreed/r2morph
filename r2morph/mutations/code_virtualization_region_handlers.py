@@ -361,12 +361,15 @@ def _movx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: in
 
 
 def _movx_load_asm(ext: str, src_size: int, dst_width: int) -> str:
-    """Load a byte/word from ``[r10]`` into rax with zero- or sign-extension.
+    """Load a byte/word/dword from ``[r10]`` into rax with zero- or sign-extension.
 
     movzx always zero-extends the same regardless of destination width; movsx's
-    extension target depends on whether the destination is 32- or 64-bit. Shared by
-    the single-handler movx tail and the vmovx micro-op (which pushes rax instead of
-    storing it to a slot)."""
+    extension target depends on whether the destination is 32- or 64-bit. A dword
+    source is the movsxd form, which always sign-extends into a 64-bit register.
+    Shared by the single-handler movx tail and the vmovx micro-op (which pushes rax
+    instead of storing it to a slot)."""
+    if src_size == 32:
+        return "  movsxd rax, dword ptr [r10]\n"
     size_word = "byte" if src_size == 8 else "word"
     if ext == "z":
         return f"  movzx eax, {size_word} ptr [r10]\n"

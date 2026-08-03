@@ -500,14 +500,18 @@ def _cmov_handler_asm(condition: str, width: int, key: int) -> str:
 def _movx_reg_handler_asm(handler_key: str, key: int) -> str:
     """Emit a register-source movzx/movsx handler.
 
-    The source register's full value already lives in its slot, so its low byte or
-    word is the operand: read the source slot, zero- or sign-extend al/ax into r10,
-    and write the destination slot. A 32-bit destination is zero-extended into the
-    full slot because the 32-bit write into r10d clears r10's upper half. No flags.
+    The source register's full value already lives in its slot, so its low byte,
+    word, or dword is the operand: read the source slot, zero- or sign-extend the
+    low al/ax/eax into r10, and write the destination slot. A 32-bit destination is
+    zero-extended into the full slot because the 32-bit write into r10d clears r10's
+    upper half. A dword source is the movsxd form (always sign-extend into 64-bit).
+    No flags.
     """
     _, ext, src_size_text, dst_width_text = handler_key.split("_")
-    src_reg = "al" if src_size_text == "8" else "ax"
-    if ext == "z":
+    src_reg = {"8": "al", "16": "ax", "32": "eax"}[src_size_text]
+    if src_size_text == "32":
+        extend = f"  movsxd r10, {src_reg}\n"
+    elif ext == "z":
         extend = f"  movzx r10d, {src_reg}\n"
     elif dst_width_text == "64":
         extend = f"  movsx r10, {src_reg}\n"

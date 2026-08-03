@@ -70,6 +70,10 @@ REGISTER16_INDEX: dict[str, int] = {
     "r15w": 15,
 }
 
+# Memory-source size prefix -> source width in bits for movzx/movsx/movsxd. dword
+# only appears with movsxd (sign-extend dword->qword); movzx/movsx use byte/word.
+_MOVX_SRC_SIZES: dict[str, int] = {"byte": 8, "word": 16, "dword": 32}
+
 # setcc/cmov condition suffix -> the canonical branch condition the interpreter
 # evaluates arithmetically from the captured RFLAGS (a key of the codegen's
 # _JCC_CONDITION_BASE). Mirrors region._CONDITION with the leading ``j`` dropped;
@@ -1079,19 +1083,20 @@ def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> 
 
 
 def _decode_movx(text: str) -> tuple[Any, ...] | None:
-    """Decode ``movzx/movsx reg, <source>`` (zero-/sign-extending move).
+    """Decode ``movzx/movsx/movsxd reg, <source>`` (zero-/sign-extending move).
 
-    r2 reports movzx/movsx under the mov type. The destination is a 32- or 64-bit
-    register. A ``byte|word [mem]`` source returns ``("movx", ...)`` (base+disp) or
-    ``("movxidx", ...)`` (scaled index); an 8- or 16-bit *register* source returns
-    ``("movxreg", ext, src_size, dst_width, dst_slot, src_slot)``. ``ext`` is ``"z"``
-    or ``"s"``; None when unsupported.
+    r2 reports these under the mov type. The destination is a 32- or 64-bit
+    register. A ``byte|word|dword [mem]`` source returns ``("movx", ...)`` (base+disp)
+    or ``("movxidx", ...)`` (scaled index); an 8-, 16-, or 32-bit *register* source
+    returns ``("movxreg", ext, src_size, dst_width, dst_slot, src_slot)``. ``ext`` is
+    ``"z"`` or ``"s"``; ``movsxd`` is the sign-extending dword->qword form (``ext``
+    ``"s"``, src_size 32). None when unsupported.
     """
     parts = text.split(None, 1)
     if len(parts) != 2 or "," not in parts[1]:
         return None
     mnemonic = parts[0].lower()
-    if mnemonic not in ("movzx", "movsx"):
+    if mnemonic not in ("movzx", "movsx", "movsxd"):
         return None
     left, right = (token.strip() for token in parts[1].split(",", 1))
     dst = _register_operand(left.lower())
@@ -1099,8 +1104,8 @@ def _decode_movx(text: str) -> tuple[Any, ...] | None:
         return None
     ext = "z" if mnemonic == "movzx" else "s"
     size_word, _, remainder = right.lower().partition(" ")
-    if size_word in ("byte", "word"):
-        src_size = 8 if size_word == "byte" else 16
+    if size_word in _MOVX_SRC_SIZES:
+        src_size = _MOVX_SRC_SIZES[size_word]
         mem = _parse_mem_operand(remainder.strip())
         if mem is not None:
             base_slot, disp, _mem_width = mem
@@ -1117,6 +1122,8 @@ def _decode_movx(text: str) -> tuple[Any, ...] | None:
         return ("movxreg", ext, 8, dst[1], dst[0], REGISTER8_INDEX[src_name])
     if src_name in REGISTER16_INDEX:
         return ("movxreg", ext, 16, dst[1], dst[0], REGISTER16_INDEX[src_name])
+    if src_name in REGISTER32_INDEX:
+        return ("movxreg", ext, 32, dst[1], dst[0], REGISTER32_INDEX[src_name])
     return None
 
 
