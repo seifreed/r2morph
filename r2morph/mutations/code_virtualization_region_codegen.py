@@ -322,10 +322,12 @@ def _vret_handler_asm(
 ) -> str:
     """Return-aware ``ret`` terminator for a region with in-function calls: if the top
     of the program's relocated stack is a resume vIP a ``vcall`` pushed (an address in
-    the appended bytecode ``[r15, r15+bytecode_len)``), pop it and resume the VM there;
-    otherwise it is a genuine caller return address, so reload the context and return
-    natively to ``ret_addr``. The bytecode range is a build-known invariant: a real
-    return address points into loaded code, never into the injected blob."""
+    the appended bytecode ``[r15, r15+bytecode_len)``), pop it and resume the VM there.
+    Otherwise the frame has unwound to the outermost call, where the top is the zeroed
+    floor cell vm_entry reserved (a non-bytecode value): reload the context, restore
+    the real rsp, and return natively to ``ret_addr``. The bytecode range is a build-
+    known invariant: a resume vIP always lands in the injected blob, and the floor cell
+    and every genuine value below it never do."""
     return (
         f"  mov r10, qword ptr [rsp+{rsp_off}]\n  mov r9, qword ptr [r10]\n"
         f"  mov r11, r9\n  sub r11, r15\n  cmp r11, {bytecode_len}\n  jae vret_native_{index}\n"
@@ -844,8 +846,16 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # the spilled context. rsp is only ever a memory base or a push/pop target, so
     # this constant shift stays self-consistent. r13/r14 are free scratch between
     # handlers; r15 holds the bytecode base.
+    has_in_function_call = any(item[0] == "vcall" for item in region.instructions)
+    # A region with an in-function call reserves one floor cell below the relocated
+    # program stack and zeroes it: a vret that unwinds to the outermost frame finds
+    # this non-bytecode value on top (no vcall resume is pending there) and returns
+    # natively, instead of reading uninitialized memory that might alias the bytecode
+    # range. rax is free scratch here (every GP register was already spilled).
+    floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
     entry_setup = (
-        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
+        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
+        f"  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
     )
     if is_switch:

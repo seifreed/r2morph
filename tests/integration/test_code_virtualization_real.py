@@ -37,6 +37,9 @@ FIXTURE32 = _DATASET / "elf_vm_arith32_x86_64"
 # Multi-block fixture: exercises the basic-block-bounded run extraction so a
 # trampoline can never orphan an instruction reached by another edge.
 FIXTURE_MULTIBLOCK = _DATASET / "elf_blockswap_x86_64"
+# Self-recursive fixture: the recursive call targets the function's own entry (an
+# in-function call), exercising the vcall/vret in-VM call-and-return discipline.
+FIXTURE_INCALL = _DATASET / "elf_vm_incall_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
 from unicorn import UC_ARCH_X86, UC_HOOK_INSN, UC_MODE_64, Uc, UcError  # noqa: E402
@@ -108,6 +111,30 @@ def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
 
     assert stats["functions_virtualized"] >= 1
     assert _emulate_exit_code(FIXTURE) == _emulate_exit_code(mutated) == 45
+
+
+def test_virtualized_in_function_call_preserves_exit_code(tmp_path: Path) -> None:
+    # A self-recursive function whose recursive call targets its own entry is an
+    # in-function call: the pass lowers it to a vcall (push a resume vIP, re-enter
+    # the VM at the entry) and each ret to a return-aware vret, so the whole
+    # recursion runs inside the VM. recurse(9) = 9+8+...+0 = 45 must survive - a
+    # wrong return discipline would corrupt the accumulation or trap.
+    if not FIXTURE_INCALL.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_INCALL}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(FIXTURE_INCALL, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(FIXTURE_INCALL) == _emulate_exit_code(mutated) == 45
 
 
 # The interpreter's first instruction is a constant-size frame allocation

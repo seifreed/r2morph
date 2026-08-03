@@ -327,8 +327,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # bytecode base (r15); nesting would need a per-layer target offset. The
     # register-indirect form is base-independent, but its nested path is unverified,
     # so a region with any call falls back to the single-layer blob (which handles
-    # both directly).
-    if any(item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx") for item in region.instructions):
+    # both directly). An in-function call (vcall/vret) additionally needs the single-
+    # layer vret discriminator's bytecode_len, which the nested builder does not
+    # thread, so it falls back too.
+    call_kinds = ("call", "vcall", "vret", "icall", "callmem", "callmemrip", "callmemidx")
+    if any(item[0] in call_kinds for item in region.instructions):
         return None
 
     layers = _build_layers(region, max(2, min(depth, _MAX_LAYERS)), rng)
