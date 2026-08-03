@@ -14,8 +14,12 @@ from typing import Any
 
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_nesting import (
+    _MAX_LAYERS,
+    _RETURN_BASE,
+    _build_layers,
     _peel_op_run,
     _relayer_sharing_frame,
+    build_nested_region_blob,
     split_region,
 )
 
@@ -96,3 +100,49 @@ def test_split_region_returns_none_without_a_peelable_run() -> None:
     region = extract_region(instructions)
     assert region is not None
     assert split_region(region, random.Random(0)) is None
+
+
+def _region_with_long_op_run() -> Any:
+    # A run of flag-dead register arithmetic (each add's flags are overwritten by
+    # the trailing cmp before the branch reads them) lowers to many virtual-stack
+    # micro-ops, so the run is long enough to peel recursively into three or more
+    # independently-keyed layers rather than a single inner one.
+    instructions = [
+        {"addr": 0x1000, "type": "add", "opcode": "add eax, ebx", "size": 3, "jump": -1},
+        {"addr": 0x1003, "type": "add", "opcode": "add eax, ecx", "size": 3, "jump": -1},
+        {"addr": 0x1006, "type": "add", "opcode": "add eax, edx", "size": 3, "jump": -1},
+        {"addr": 0x1009, "type": "add", "opcode": "add eax, esi", "size": 3, "jump": -1},
+        {"addr": 0x100C, "type": "cmp", "opcode": "cmp eax, edi", "size": 3, "jump": -1},
+        {"addr": 0x100F, "type": "cjmp", "opcode": "jne 0x1000", "size": 2, "jump": 0x1000, "fail": 0x1011},
+        {"addr": 0x1011, "type": "ret", "opcode": "ret", "size": 1, "jump": -1},
+    ]
+    region = extract_region(instructions, random.Random(1))
+    assert region is not None
+    return region
+
+
+def test_build_layers_at_depth_three_yields_three_layers() -> None:
+    layers = _build_layers(_region_with_long_op_run(), 3, random.Random(7))
+    assert layers is not None and len(layers) == 3
+
+
+def test_build_layers_at_depth_four_yields_four_layers() -> None:
+    layers = _build_layers(_region_with_long_op_run(), 4, random.Random(7))
+    assert layers is not None and len(layers) == 4
+
+
+def test_build_nested_region_blob_at_depth_three_assembles() -> None:
+    blob = build_nested_region_blob(_region_with_long_op_run(), 0x401000, random.Random(7), depth=3)
+    assert blob is not None and len(blob) > 0
+
+
+def test_build_nested_region_blob_at_depth_four_assembles() -> None:
+    blob = build_nested_region_blob(_region_with_long_op_run(), 0x401000, random.Random(7), depth=4)
+    assert blob is not None and len(blob) > 0
+
+
+def test_return_slot_budget_at_max_layers_fits_below_red_zone() -> None:
+    # Each of the up-to-_MAX_LAYERS parent->child transitions reserves one qword
+    # return slot at _RETURN_BASE + index*8; the whole run must stay below the
+    # preserved red zone at 0x100 so a return pointer never clobbers it.
+    assert _RETURN_BASE + _MAX_LAYERS * 8 <= 0x100
