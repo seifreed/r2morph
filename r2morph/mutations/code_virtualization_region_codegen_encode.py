@@ -126,6 +126,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
     if kind in ("jmp", "jcc"):
         return 5
+    if kind == "setcc":
+        return 2  # opcode + destination slot byte
+    if kind == "cmov":
+        return 3  # opcode + destination slot + source slot
     if kind == "call":
         return 5  # opcode + 4-byte bytecode-relative target offset
     if kind == "icall":
@@ -567,6 +571,15 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         elif kind == "jcc":
             p = emit_opcode(_required_key(item))
             emit_disp(offsets[item[2]], p)
+        elif kind == "setcc":
+            # One destination slot operand (condition + width live in the key).
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[item[2]] ^ p)
+        elif kind == "cmov":
+            # Destination then source slot operands, position-masked and permuted.
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[item[2]] ^ p)
+            plain.append(slot_of[item[3]] ^ p)
         elif kind == "nop":
             emit_opcode("nop")
         elif kind in ("exit", "enter_inner", "inner_exit", "fsave", "frestore"):

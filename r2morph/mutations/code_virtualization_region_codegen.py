@@ -409,6 +409,60 @@ def _jcc_handler_asm(condition: str, retarget_target: str) -> str:
     )
 
 
+def _setcc_slot_read(offset: int, key: int, reg: str) -> str:
+    """Read the destination slot index at ``[rsi+offset]`` into 64-bit ``reg``.
+
+    Mirrors the micro-op slot read: the byte is un-masked with the build key and
+    the stream position (``r13b``, left holding it by the dispatch).
+    """
+    return f"  movzx {reg}d, byte ptr [rsi+{offset}]\n  xor {reg}b, {key}\n  xor {reg}b, r13b\n"
+
+
+def _setcc_handler_asm(condition: str, key: int) -> str:
+    """Emit a conditional-set handler that carries no native setcc.
+
+    Computes the condition (0/1) arithmetically from the captured RFLAGS - like
+    ``_jcc_handler_asm`` - and writes it to the destination slot's low byte only,
+    preserving the upper seven bytes exactly as a native ``setcc r/m8`` would.
+    """
+    return (
+        f"  mov eax, dword ptr [rsp+{_FLAGS_OFFSET}]\n"  # captured RFLAGS
+        + _jcc_taken_asm(condition)  # ecx = condition (0/1)
+        + _setcc_slot_read(1, key, "r8")  # r8 = destination slot
+        + "  mov byte ptr [rsp+r8*8], cl\n"  # write low byte only
+        + "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
+def _cmov_handler_asm(condition: str, width: int, key: int) -> str:
+    """Emit a conditional-move handler that carries no native cmov.
+
+    Computes a 0/-1 mask from the captured RFLAGS - like ``_jcc_handler_asm`` -
+    then selects ``src`` or the current ``dst`` branch-free. A 32-bit move loads
+    both operands 32-bit (zero-extending) so the qword write clears the upper half,
+    matching x86-64's zero-extension; a 64-bit move keeps the full registers.
+    """
+    reg_suffix = "d" if width == 32 else ""
+    size_kw = "dword" if width == 32 else "qword"
+    load_src = f"  mov r11{reg_suffix}, {size_kw} ptr [rsp+r10*8]\n"
+    load_dst = f"  mov r9{reg_suffix}, {size_kw} ptr [rsp+r8*8]\n"
+    return (
+        f"  mov eax, dword ptr [rsp+{_FLAGS_OFFSET}]\n"  # captured RFLAGS
+        + _jcc_taken_asm(condition)  # ecx = condition (0/1)
+        + "  neg rcx\n"  # rcx = 0 or all-ones mask
+        + _setcc_slot_read(1, key, "r8")  # r8 = destination slot
+        + _setcc_slot_read(2, key, "r10")  # r10 = source slot
+        + load_src
+        + "  and r11, rcx\n"  # src & mask
+        + "  not rcx\n"
+        + load_dst
+        + "  and r9, rcx\n"  # dst & ~mask
+        + "  or r11, r9\n"
+        + "  mov qword ptr [rsp+r8*8], r11\n"  # write (upper half cleared for a 32-bit move)
+        + "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def handler_instances_asm(
     index_to_key: dict[int, str],
     *,
@@ -602,6 +656,11 @@ def handler_instances_asm(
         elif handler_key.startswith("jcc_"):
             condition = handler_key.split("_", 1)[1]
             lines.append(_jcc_handler_asm(condition, retarget_target))
+        elif handler_key.startswith("setcc_"):
+            lines.append(_setcc_handler_asm(handler_key.split("_", 1)[1], key))
+        elif handler_key.startswith("cmov_"):
+            _, cmov_condition, cmov_width = handler_key.split("_")
+            lines.append(_cmov_handler_asm(cmov_condition, int(cmov_width), key))
         elif handler_key == "nop":
             lines.append("  add rsi, 1\n  jmp vm_dispatch\n")
         elif handler_key.startswith("exit_"):

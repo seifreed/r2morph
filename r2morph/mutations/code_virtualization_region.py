@@ -36,6 +36,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
     DISPATCH_THREADED,
 )
 from r2morph.mutations.code_virtualization_region_decoders import (
+    _decode_cmov,
     _decode_cmp_mem,
     _decode_fp_arith,
     _decode_fp_arith_idx,
@@ -71,6 +72,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_push,
     _decode_riprel_mov,
     _decode_rsp_arith,
+    _decode_setcc,
     _decode_shift,
     _decode_two_operand,
     _parse_indexed_operand,
@@ -250,6 +252,15 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
             return [*lea]
         lea_indexed = _decode_lea_indexed(text)
         return [*lea_indexed] if lea_indexed is not None else None
+    if kind == "cmov":
+        # r2 types both setcc and cmovcc as "cmov". Both consume the flags the
+        # region captures into its flags slot; the handlers evaluate the condition
+        # arithmetically (like jcc), so they carry no native setcc/cmov.
+        setcc = _decode_setcc(text)
+        if setcc is not None:
+            return [*setcc]
+        cmov = _decode_cmov(text)
+        return [*cmov] if cmov is not None else None
     if allow_computed_jump:
         # Native pushfq/popfq bracketing the dispatch: the region synthesizes an
         # operation's flags into the flags slot (never native RFLAGS), so a native
@@ -356,7 +367,7 @@ def _writes_register(item: tuple[Any, ...]) -> int | None:
         "leaidxnb",
     ):
         return int(item[1])
-    if kind in ("shift", "opmem", "opriprel", "opmemidx", "incdec"):
+    if kind in ("shift", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
         return int(item[2])
     if kind in ("movx", "movxidx"):
         return int(item[4])
@@ -477,10 +488,11 @@ _MBA_OP_MNEMONICS = frozenset({"add", "sub", "xor", "and", "or"})
 def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
     """Indices of ``add``/``sub`` op items whose flags are dead on every path.
 
-    A conditional jump (``jcc``) and a flag save (``fsave``, the virtualized
-    ``pushfq``) are the flag readers in the virtualizable subset, so an op's flags
-    are dead iff no reachable reader consumes them before a full flag-killer
-    (``cmp``/``sub``/...) overwrites them.
+    A conditional jump (``jcc``), a flag save (``fsave``, the virtualized
+    ``pushfq``), and a conditional set/move (``setcc``/``cmov``) are the flag
+    readers in the virtualizable subset, so an op's flags are dead iff no reachable
+    reader consumes them before a full flag-killer (``cmp``/``sub``/...) overwrites
+    them.
     The analysis is conservative — every ``jcc`` is treated as reading all flags
     and every terminator as keeping them live — so an add is only marked when its
     flags are provably unread, never the reverse.
@@ -489,8 +501,8 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 
     def fixed_needed_in(i: int) -> bool | None:
         kind = items[i][0]
-        if kind in ("jcc", "exit", "fsave"):
-            return True  # jcc/fsave read flags; exit conservatively keeps them live
+        if kind in ("jcc", "exit", "fsave", "setcc", "cmov"):
+            return True  # jcc/fsave/setcc/cmov read flags; exit conservatively keeps them live
         if kind in _FLAG_KILLER_KINDS:
             return False
         if kind == "op" and items[i][1].mnemonic != "mov":

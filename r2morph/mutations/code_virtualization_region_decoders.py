@@ -27,6 +27,104 @@ def _register_operand(name: str) -> tuple[int, int] | None:
     return None
 
 
+# Low-byte GP register spellings -> the 64-bit base register's context slot. A
+# setcc writes only this low byte, preserving the slot's upper seven bytes. The
+# legacy high-byte names (ah/bh/ch/dh, bits 8-15) and spl (rsp) are intentionally
+# absent, so a setcc targeting them is left native rather than misplaced.
+REGISTER8_INDEX: dict[str, int] = {
+    "al": 0,
+    "cl": 1,
+    "dl": 2,
+    "bl": 3,
+    "bpl": 5,
+    "sil": 6,
+    "dil": 7,
+    "r8b": 8,
+    "r9b": 9,
+    "r10b": 10,
+    "r11b": 11,
+    "r12b": 12,
+    "r13b": 13,
+    "r14b": 14,
+    "r15b": 15,
+}
+
+# setcc/cmov condition suffix -> the canonical branch condition the interpreter
+# evaluates arithmetically from the captured RFLAGS (a key of the codegen's
+# _JCC_CONDITION_BASE). Mirrors region._CONDITION with the leading ``j`` dropped;
+# the aliases (nae->b, ng->le, ...) collapse to the same canonical form.
+_CC_SUFFIX_TO_CONDITION: dict[str, str] = {
+    "e": "je",
+    "z": "je",
+    "ne": "jne",
+    "nz": "jne",
+    "l": "jl",
+    "nge": "jl",
+    "ge": "jge",
+    "nl": "jge",
+    "g": "jg",
+    "nle": "jg",
+    "le": "jle",
+    "ng": "jle",
+    "b": "jb",
+    "c": "jb",
+    "nae": "jb",
+    "ae": "jae",
+    "nc": "jae",
+    "nb": "jae",
+    "be": "jbe",
+    "na": "jbe",
+    "a": "ja",
+    "nbe": "ja",
+    "s": "js",
+    "ns": "jns",
+    "o": "jo",
+    "no": "jno",
+    "p": "jp",
+    "pe": "jp",
+    "np": "jnp",
+    "po": "jnp",
+}
+
+
+def _decode_setcc(disasm: str) -> tuple[str, str, int] | None:
+    """Decode ``setcc reg8`` into ``("setcc", condition, dst_slot)``.
+
+    Only a low-byte GP register destination is virtualized (the handler writes one
+    byte of the destination's context slot); a memory or high-byte destination, or
+    an unrecognized condition, returns None so the instruction stays native.
+    """
+    parts = disasm.split()
+    if len(parts) != 2 or not parts[0].lower().startswith("set"):
+        return None
+    condition = _CC_SUFFIX_TO_CONDITION.get(parts[0].lower()[3:])
+    if condition is None:
+        return None
+    slot = REGISTER8_INDEX.get(parts[1].strip().lower())
+    return ("setcc", condition, slot) if slot is not None else None
+
+
+def _decode_cmov(disasm: str) -> tuple[str, str, int, int, int] | None:
+    """Decode ``cmovcc reg, reg`` into ``("cmov", condition, dst_slot, src_slot, width)``.
+
+    Register-to-register only, both operands the same 32- or 64-bit width; a memory
+    source, mismatched width, non-GP register, or unrecognized condition returns
+    None so the instruction stays native.
+    """
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or not parts[0].lower().startswith("cmov"):
+        return None
+    condition = _CC_SUFFIX_TO_CONDITION.get(parts[0].lower()[4:])
+    if condition is None or "," not in parts[1]:
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    dst = _register_operand(left)
+    src = _register_operand(right)
+    if dst is None or src is None or dst[1] != src[1]:
+        return None
+    return ("cmov", condition, dst[0], src[0], dst[1])
+
+
 def _decode_two_operand(disasm: str, mnemonic: str) -> tuple[int, int, bool, int] | None:
     """Decode ``<mnemonic> reg, reg|imm`` into (slot, value, is_immediate, width)."""
     parts = disasm.split(None, 1)

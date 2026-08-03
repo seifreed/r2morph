@@ -408,6 +408,72 @@ def test_virtualized_multiexit_fixture_preserves_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def _region_lowers_kind(fixture: Path, kind: str) -> bool:
+    """True if the fixture's entry function region-lowers an item of ``kind``.
+
+    Guards against a false green: a fixture whose instruction is left native would
+    still emulate to the expected exit code, so the exit-code assertion alone does
+    not prove the new lowering ran.
+    """
+    from r2morph.mutations.code_virtualization_region import extract_region
+
+    binary = Binary(str(fixture), writable=False)
+    binary.open()
+    try:
+        binary.analyze("aa")
+        assert binary.r2 is not None
+        ops = (binary.r2.cmdj("pdfj @ entry0") or {}).get("ops", [])
+    finally:
+        binary.close()
+    region = extract_region(ops, random.Random(1))
+    return region is not None and any(item[0] == kind for item in region.instructions)
+
+
+def test_setcc_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # `sete al` must lower to a virtual setcc that writes only the low byte (the
+    # preserved byte1 0xAA contributes 170; the set result 1) -> exit 171.
+    fixture = _DATASET / "elf_vm_setcc_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    assert _region_lowers_kind(fixture, "setcc")
+
+    mutated = tmp_path / "mutated_setcc"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 171
+
+
+def test_cmov_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # A taken 64-bit cmove (22 over 20) and a taken 32-bit cmovne that must
+    # zero-extend the destination -> exit 22 (a not-taken bug 20, a lost
+    # zero-extend 99).
+    fixture = _DATASET / "elf_vm_cmov_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    assert _region_lowers_kind(fixture, "cmov")
+
+    mutated = tmp_path / "mutated_cmov"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 22
+
+
 def test_straight_line_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # This function contains a call, so the whole-function control-flow VM
     # rejects it; the pass must fall back to virtualizing the straight-line

@@ -280,6 +280,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "frestore"  # native popfq: restore the virtual RFLAGS from the vstack
     if kind == "jcc":
         return f"jcc_{item[1]}"
+    if kind == "setcc":
+        return f"setcc_{item[1]}"  # condition
+    if kind == "cmov":
+        return f"cmov_{item[1]}_{item[4]}"  # condition, width
     if kind == "nop":
         return "nop"
     if kind == "exit":
