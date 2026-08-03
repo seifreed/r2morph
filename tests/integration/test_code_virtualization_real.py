@@ -155,12 +155,17 @@ def test_virtualized_absolute_switch_preserves_exit_code(tmp_path: Path) -> None
     binary = Binary(str(mutated), writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "virtualize_dispatch": True}).apply(binary)
+        binary.analyze()
+        dispatch = next(f for f in binary.get_functions() if "dispatch" in (f.get("name") or ""))
+        pass_ = CodeVirtualizationPass(config={"probability": 1.0, "virtualize_dispatch": True})
+        result = pass_._virtualize_dispatch_function(binary, dispatch)
         binary.save()
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
+    # The switch function itself must virtualize - otherwise exit-code parity would be
+    # trivially satisfied by leaving the binary unchanged.
+    assert result is not None
     assert _emulate_exit_code(FIXTURE_SWITCH_ABS) == _emulate_exit_code(mutated) == 30
 
 

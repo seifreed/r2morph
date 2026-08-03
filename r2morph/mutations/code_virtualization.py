@@ -459,12 +459,24 @@ class CodeVirtualizationPass(MutationPass):
     def _virtualize_dispatch_function(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
         """Virtualize a dispatch-shaped function (opt-in), lowering its computed
         jump to an ijmp that re-enters the VM at the virtualized target."""
-        ops = self._gather_cfg_ops(binary, func) or self._gather_dispatch_ops(binary, func)
+        cfg_ops = self._gather_cfg_ops(binary, func)
+        ops = cfg_ops if cfg_ops is not None else self._gather_dispatch_ops(binary, func)
         if ops is None:
             return None
         rng = random.Random(random.getrandbits(64))
         region = extract_region(ops, rng, allow_computed_jump=True)
-        if region is None or not any(item[0] in ("ijmp", "ijmpmem") for item in region.instructions):
+        if region is None:
+            return None
+        computed = {item[0] for item in region.instructions} & {"ijmp", "ijmpmem", "ijmpmemnb"}
+        if not computed:
+            return None
+        # A memory-indirect switch (ijmpmem/ijmpmemnb) re-enters the VM at a case block
+        # via the target map, so every case must be gathered. That is only guaranteed
+        # by the CFG-closure gather over r2's resolved switch_op; the linear gather may
+        # miss a case, which would make a runtime target-map lookup fall through to the
+        # wrong default exit, so a memory-indirect switch outside the CFG path stays
+        # native.
+        if cfg_ops is None and (computed & {"ijmpmem", "ijmpmemnb"}):
             return None
         # The dispatch path never nests: nesting peels straight-line arithmetic runs
         # and does not model the computed-jump re-entry, so the region VM is emitted
