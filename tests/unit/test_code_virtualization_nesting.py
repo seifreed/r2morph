@@ -12,8 +12,12 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from r2morph.mutations.code_virtualization_region import extract_region
-from r2morph.mutations.code_virtualization_region_nesting import _peel_op_run, split_region
+from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
+from r2morph.mutations.code_virtualization_region_nesting import (
+    _peel_op_run,
+    _relayer_sharing_frame,
+    split_region,
+)
 
 
 def _region_with_op_run() -> Any:
@@ -51,6 +55,36 @@ def test_split_region_keeps_terminator_in_outer_layer() -> None:
     outer, inner = split_region(_region_with_op_run(), random.Random(0))
     assert any(item[0] == "exit" for item in outer.instructions)
     assert all(item[0] != "exit" for item in inner.instructions)
+
+
+def _two_distinct_layer_schemes() -> Any:
+    # Two schemes drawn from the same rng stream get their own personalities, the
+    # per-layer diversity the nested reconstruction must preserve.
+    region = _region_with_op_run()
+    rng = random.Random(1234)
+    schemes = [build_region_scheme(region, rng) for _ in range(2)]
+    assert schemes[0].isa_seed != schemes[1].isa_seed
+    assert schemes[0].body_seed != schemes[1].body_seed
+    return schemes
+
+
+def test_relayer_sharing_frame_preserves_per_layer_isa_seed() -> None:
+    schemes = _two_distinct_layer_schemes()
+    relayered = _relayer_sharing_frame(schemes, schemes[0].slot_perm)
+    assert [s.isa_seed for s in relayered] == [s.isa_seed for s in schemes]
+
+
+def test_relayer_sharing_frame_preserves_per_layer_body_seed() -> None:
+    schemes = _two_distinct_layer_schemes()
+    relayered = _relayer_sharing_frame(schemes, schemes[0].slot_perm)
+    assert [s.body_seed for s in relayered] == [s.body_seed for s in schemes]
+
+
+def test_relayer_sharing_frame_shares_one_slot_permutation() -> None:
+    schemes = _two_distinct_layer_schemes()
+    shared = schemes[0].slot_perm
+    relayered = _relayer_sharing_frame(schemes, shared)
+    assert all(s.slot_perm == shared for s in relayered)
 
 
 def test_split_region_returns_none_without_a_peelable_run() -> None:

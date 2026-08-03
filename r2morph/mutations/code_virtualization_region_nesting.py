@@ -177,6 +177,38 @@ def split_region(region: Region, rng: random.Random) -> tuple[Region, Region] | 
     return outer, inner
 
 
+def _relayer_sharing_frame(schemes: list[RegionScheme], slot: tuple[int, ...]) -> list[RegionScheme]:
+    """Rebuild each layer's scheme so all layers share the frame layout but each
+    keeps its own handler personality.
+
+    Only ``slot`` (the register->frame-slot permutation) is forced shared: every
+    layer must read and write the same physical frame slot for a given logical
+    register, and the nested path drives the checksum/flags slots from module
+    constants rather than per-scheme offsets, so the shared frame stays consistent
+    across the ``enter_inner``/``inner_exit`` transfers. Each layer keeps its own
+    ``body_seed`` (per-handler scratch rename) and ``isa_seed`` (flag/arith/compare/
+    shift/address fold spelling): these are layer-local semantic choices, and the
+    flag bits a handler stores are correct for any ``isa_seed`` (the ISA equivalence
+    tests pin this), so distinct per-layer personalities never corrupt the shared
+    flags slot the layers transfer through. Preserving them lets the default (nested)
+    build regain the ISA-personality and scratch-rename diversity a single-layer
+    build has, and gives inner layers algebra distinct from the outer layer's.
+    """
+    return [
+        RegionScheme(
+            s.dup,
+            s.xor_key,
+            s.junk_seed,
+            slot,
+            s.table_key,
+            s.field_perm,
+            body_seed=s.body_seed,
+            isa_seed=s.isa_seed,
+        )
+        for s in schemes
+    ]
+
+
 def _scheme_count(scheme: RegionScheme) -> int:
     return sum(len(indices) for indices in scheme.dup.values())
 
@@ -311,7 +343,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # dispatcher serves every layer); captured before the reconstruction below drops
     # it. A threaded build stays byte-identical, so this only changes switch builds.
     dispatch_shape = schemes[0].dispatch_shape
-    schemes = [RegionScheme(s.dup, s.xor_key, s.junk_seed, slot, s.table_key, s.field_perm) for s in schemes]
+    schemes = _relayer_sharing_frame(schemes, slot)
     counts = [_scheme_count(s) for s in schemes]
     offsets = [sum(counts[:i]) for i in range(count)]  # global handler-index base per layer
     rsp_off = slot[RSP_INDEX] * 8
