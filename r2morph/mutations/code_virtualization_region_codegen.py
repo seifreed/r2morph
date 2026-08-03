@@ -108,6 +108,7 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vpushi_handler_asm,
     _vshift_handler_asm,
     _vstore_handler_asm,
+    _vstoreidx_handler_asm,
     _vstorerip_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_models import (
@@ -537,6 +538,8 @@ def handler_instances_asm(
             lines.append(_vbinop_handler_asm(handler_key, key, arith_variant))
         elif handler_key.startswith("vloadidx_"):
             lines.append(_vloadidx_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
+        elif handler_key.startswith("vstoreidx_"):
+            lines.append(_vstoreidx_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vload_"):
             lines.append(_vload_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("vstore_"):

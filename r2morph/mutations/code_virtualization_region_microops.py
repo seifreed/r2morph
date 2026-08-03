@@ -276,6 +276,28 @@ def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _vstoreidx_handler_asm(
+    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Pop the top vstack cell and store it to ``[base+index*scale+disp]``.
+
+    Mirrors :func:`_vstore_handler_asm` but computes the effective address with the
+    shared scaled-index prologue (``_indexed_address_asm``). The pop happens first,
+    into rbx (which the prologue preserves), because the prologue clobbers the vstack
+    pointer r9. A 32-bit store writes the low dword. No flags.
+    """
+    width = int(handler_key.split("_")[1])
+    pop = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+    )
+    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
+    return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _vloadidx_handler_asm(
     handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

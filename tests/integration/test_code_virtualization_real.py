@@ -1772,6 +1772,45 @@ def test_indexed_memory_arithmetic_virtualization_preserves_exit_code(tmp_path: 
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_indexed_mov_load_lowers_to_a_microop() -> None:
+    # A scaled-index `mov reg, [base+idx*scale]` must lower to vloadidx, not stay
+    # native (a native load would still emulate to the same exit code).
+    fixture = _DATASET / "elf_vm_movidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    assert _region_lowers_kind(fixture, "vloadidx")
+
+
+def test_indexed_mov_store_lowers_to_a_microop() -> None:
+    # A scaled-index `mov [base+idx*scale], reg` must lower to vstoreidx.
+    fixture = _DATASET / "elf_vm_movidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    assert _region_lowers_kind(fixture, "vstoreidx")
+
+
+def test_indexed_mov_load_store_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # A stack int/qword array accessed via scaled-index mov: loadidx a[2]=30 stored
+    # back to a[0] (storeidx), plus loadidx b[1]=5 (64-bit) -> exit 35. A wrong
+    # index/scale/width or a mis-addressed store would change the exit code.
+    fixture = _DATASET / "elf_vm_movidx_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_movidx"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 35
+
+
 def test_incdec_virtualization_preserves_carry_flag(tmp_path: Path) -> None:
     # A compare sets the carry flag, then inc must preserve it (unlike add by
     # one) so the following branch on carry is taken; the VM must reload the

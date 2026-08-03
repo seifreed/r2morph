@@ -212,6 +212,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"vstore_{item[3]}"  # pop the vstack top to [base+disp]: width
     if kind == "vloadidx":
         return f"vloadidx_{item[5]}"  # push [base+index*scale+disp] onto the vstack: width
+    if kind == "vstoreidx":
+        return f"vstoreidx_{item[5]}"  # pop the vstack top to [base+index*scale+disp]: width
     if kind == "vloadrip":
         return f"vloadrip_{item[2]}"  # push [rip+disp] onto the vstack: width
     if kind == "vlea":

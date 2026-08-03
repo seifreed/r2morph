@@ -62,6 +62,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_lea_indexed,
     _decode_leave,
     _decode_memory_mov,
+    _decode_memory_mov_indexed,
     _decode_mov_from_rsp,
     _decode_mov_to_rsp,
     _decode_movx,
@@ -212,6 +213,9 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
             memory = _decode_memory_mov(text)
             if memory is not None:
                 return [*memory]
+            memory_idx = _decode_memory_mov_indexed(text)
+            if memory_idx is not None:
+                return [*memory_idx]
             riprel = _decode_riprel_mov(text, insn.get("addr", 0), insn.get("size", 0))
             if riprel is not None:
                 return [*riprel]
@@ -365,6 +369,7 @@ def _writes_register(item: tuple[Any, ...]) -> int | None:
         "learip",
         "leaidx",
         "leaidxnb",
+        "loadidx",
     ):
         return int(item[1])
     if kind in ("shift", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
@@ -602,6 +607,14 @@ def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] |
             # opmemidx is always flag-synthesizing today, so fold with vbinopsynth.
             new_items.append(["vbinopsynth", mnemonic, width])
             new_items.append(["vpop", reg])
+        elif kind == "loadidx":  # mov reg, [base+index*scale+disp]
+            _, reg, base, index, shift, disp, width = item
+            new_items.append(["vloadidx", base, index, shift, disp, width])
+            new_items.append(["vpop", reg])
+        elif kind == "storeidx":  # mov [base+index*scale+disp], reg
+            _, reg, base, index, shift, disp, width = item
+            new_items.append(["vpush", reg])
+            new_items.append(["vstoreidx", base, index, shift, disp, width])
         elif kind == "opmemdst":  # <op> [base+disp], reg -- read-modify-write
             # The result is stored back to memory, so vload the current value, fold it
             # with the register, and vstore the result. The address is recomputed by

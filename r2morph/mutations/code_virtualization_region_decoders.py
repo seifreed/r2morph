@@ -898,6 +898,34 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     return (kind, reg_slot, base_slot, disp, reg_width)
 
 
+def _decode_memory_mov_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | None:
+    """Decode ``mov reg, [base+index*scale+disp]`` / ``mov [base+index*scale+disp], reg``.
+
+    Returns ``("loadidx"|"storeidx", reg_slot, base_slot, index_slot, shift, disp,
+    width)`` for a scaled-index array-element access, or ``None`` for a non-indexed
+    form (handled by :func:`_decode_memory_mov`), a rip-relative/segment address, two
+    memory operands, or a non-GP / partial-width register. The width follows the
+    register (32 or 64); an 8/16-bit register yields ``None`` and stays native.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "mov" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None  # register-to-register or memory-to-memory are not loads/stores
+    if left_mem:
+        kind, mem_text, reg_text = "storeidx", left, right
+    else:
+        kind, mem_text, reg_text = "loadidx", right, left
+    parsed = _parse_indexed_operand(mem_text)  # base required; None for base+disp/rip/segment
+    reg = _register_operand(reg_text.lower())
+    if parsed is None or reg is None:
+        return None
+    base_slot, index_slot, shift, disp = parsed
+    return (kind, reg[0], base_slot, index_slot, shift, disp, reg[1])
+
+
 def _parse_riprel_operand(text: str, insn_addr: int, insn_size: int) -> tuple[int, int | None] | None:
     """Parse ``[rip+disp]`` into (absolute target vaddr, width or None).
 

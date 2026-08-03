@@ -39,7 +39,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 1  # opcode only (virtual RFLAGS save/restore through the vstack)
     if kind in ("vload", "vstore"):
         return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
-    if kind == "vloadidx":
+    if kind in ("vloadidx", "vstoreidx"):
         return 9  # opcode + (unused) reg + base + index slots + scale shift + 4-byte disp
     if kind in ("vloadrip", "vstorerip"):
         return 6  # opcode + (unused) reg slot + 4-byte bytecode-relative displacement
@@ -286,9 +286,9 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))
             emit_mem(p, slot_of[0], slot_of[base_slot], disp)
-        elif kind == "vloadidx":
+        elif kind in ("vloadidx", "vstoreidx"):
             # Reuse the scaled-index operand layout; the register field is unused
-            # (the loaded value goes on the vstack).
+            # (the value moves through the vstack).
             _, base_slot, index_slot, shift, disp, _width = item
             p = emit_opcode(_required_key(item))
             emit_idx(p, slot_of[0], slot_of[base_slot], slot_of[index_slot], shift, disp)
