@@ -379,6 +379,35 @@ def _writes_register(item: tuple[Any, ...]) -> int | None:
     return None
 
 
+def _merge_stack_state(
+    state: list[tuple[int, tuple[int, int] | None] | None],
+    work: list[int],
+    nxt: int,
+    depth: int,
+    snapshot: tuple[int, int] | None,
+) -> bool:
+    """Merge ``(depth, snapshot)`` into successor ``nxt``; return False on a conflict.
+
+    A first visit seeds the state and queues the item; a revisit rejects a depth
+    disagreement and weakens the frame-pointer snapshot to ``None`` when the paths
+    disagree, re-queuing so the weaker snapshot propagates.
+    """
+    if not 0 <= nxt < len(state):
+        return False
+    existing = state[nxt]
+    if existing is None:
+        state[nxt] = (depth, snapshot)
+        work.append(nxt)
+        return True
+    if existing[0] != depth:
+        return False  # paths disagree on stack depth
+    merged_snapshot = existing[1] if existing[1] == snapshot else None
+    if merged_snapshot != existing[1]:
+        state[nxt] = (existing[0], merged_snapshot)
+        work.append(nxt)  # snapshot weakened; re-propagate
+    return True
+
+
 def _stack_balanced(items: list[list[Any]]) -> bool:
     """Verify the region's virtual stack is balanced on every path.
 
@@ -427,30 +456,27 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
         else:
             written = _writes_register(tuple(item))
             out_snapshot = None if (snapshot is not None and written == snapshot[0]) else snapshot
-        if kind == "exit":
+        if kind in ("exit", "vret"):
             if depth != 0:
                 return False  # unbalanced stack at a terminator
             continue
-        if kind == "jmp":
+        if kind == "vcall":
+            # The call/return round-trips on the relocated stack (vcall pushes the
+            # resume vIP, the callee's vret pops it), so the call site is depth-neutral
+            # (out_depth == depth); the callee is validated as its own subroutine
+            # entered at depth 0.
+            if not _merge_stack_state(state, work, item[1], 0, None):
+                return False
+            successors = [i + 1]
+        elif kind == "jmp":
             successors = [item[1]]
         elif kind == "jcc":
             successors = [i + 1, item[2]]
         else:
             successors = [i + 1]
         for nxt in successors:
-            if not 0 <= nxt < len(items):
+            if not _merge_stack_state(state, work, nxt, out_depth, out_snapshot):
                 return False
-            existing = state[nxt]
-            if existing is None:
-                state[nxt] = (out_depth, out_snapshot)
-                work.append(nxt)
-            else:
-                if existing[0] != out_depth:
-                    return False  # paths disagree on stack depth
-                merged_snapshot = existing[1] if existing[1] == out_snapshot else None
-                if merged_snapshot != existing[1]:
-                    state[nxt] = (existing[0], merged_snapshot)
-                    work.append(nxt)  # snapshot weakened; re-propagate
     return True
 
 
@@ -468,6 +494,7 @@ _FLAG_KILLER_KINDS = frozenset(
         "opmemdstrip",
         "opmemidx",
         "call",
+        "vcall",
         "icall",
         "callmem",
         "callmemrip",
@@ -478,7 +505,7 @@ _FLAG_KILLER_KINDS = frozenset(
 
 def _flag_successors(items: list[list[Any]], i: int) -> list[int]:
     kind = items[i][0]
-    if kind == "exit":
+    if kind in ("exit", "vret"):
         return []
     if kind == "jmp":
         return [items[i][1]]
@@ -506,8 +533,8 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 
     def fixed_needed_in(i: int) -> bool | None:
         kind = items[i][0]
-        if kind in ("jcc", "exit", "fsave", "setcc", "cmov"):
-            return True  # jcc/fsave/setcc/cmov read flags; exit conservatively keeps them live
+        if kind in ("jcc", "exit", "vret", "fsave", "setcc", "cmov"):
+            return True  # jcc/fsave/setcc/cmov read flags; exit/vret conservatively keep them live
         if kind in _FLAG_KILLER_KINDS:
             return False
         if kind == "op" and items[i][1].mnemonic != "mov":
@@ -691,7 +718,7 @@ def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] |
         else:
             new_items.append(item)
     for item in new_items:
-        if item[0] == "jmp":
+        if item[0] in ("jmp", "vcall"):
             item[1] = old_to_new[item[1]]
         elif item[0] == "jcc":
             item[2] = old_to_new[item[2]]
@@ -720,7 +747,7 @@ def _inject_junk_movs(
 
     Branches store their target as an item index; inserting items shifts those
     indices, so a position map is built as the new list is assembled and applied to
-    every ``jmp``/``jcc`` afterward. Junk is never itself a branch target.
+    every ``jmp``/``vcall``/``jcc`` afterward. Junk is never itself a branch target.
     """
     junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
     new_items: list[list[Any]] = []
@@ -732,7 +759,7 @@ def _inject_junk_movs(
         old_to_new[old_index] = len(new_items)
         new_items.append(item)
     for item in new_items:
-        if item[0] == "jmp":
+        if item[0] in ("jmp", "vcall"):
             item[1] = old_to_new[item[1]]
         elif item[0] == "jcc":
             item[2] = old_to_new[item[2]]
@@ -761,6 +788,10 @@ def extract_region(
     if not exit_addrs:
         return None
     exit_set = set(exit_addrs)
+    # A ret can return either to the real caller or - once the region virtualizes an
+    # in-function call - to a resume vIP a vcall pushed. Its terminator becomes a
+    # return-aware vret only in the latter case, so track which exits are rets.
+    ret_addrs = {insn["addr"] for insn in instructions if insn.get("type") == "ret"}
     body = [insn for insn in instructions if insn["addr"] not in exit_set]
     if not body:
         return None
@@ -813,13 +844,28 @@ def extract_region(
                 return None
             item[2] = resolved
 
-    # A call whose target lands inside this function's own span would either
-    # recurse into the trampoline or hit a body byte that the dead-body fill
-    # overwrites; only out-of-function direct calls are virtualizable here.
+    # A call whose target lands inside this function's own span cannot bridge to
+    # native code (the dead-body fill overwrites that target), so it is virtualized
+    # as a VM-internal call instead: the target is resolved to its item index (like a
+    # jmp) and lowered to a vcall that pushes a resume vIP and re-enters the VM at the
+    # callee. Every ret then becomes a return-aware vret that resumes the VM at a
+    # pushed resume vIP or returns natively. A call target that is not a body
+    # instruction boundary (mid-instruction / gap) is unresolvable and stays native.
     func_lo = min(insn["addr"] for insn in instructions)
     func_hi = max(insn["addr"] + insn.get("size", 0) for insn in instructions)
-    if any(item[0] == "call" and func_lo <= item[1] < func_hi for item in items):
-        return None
+    has_in_function_call = False
+    for item in items:
+        if item[0] == "call" and func_lo <= item[1] < func_hi:
+            resolved = item_index_of.get(item[1])
+            if resolved is None:
+                return None
+            item[0] = "vcall"
+            item[1] = resolved
+            has_in_function_call = True
+    if has_in_function_call:
+        for item in items:
+            if item[0] == "exit" and item[1] in ret_addrs:
+                item[0] = "vret"
 
     if not _stack_balanced(items):
         return None
