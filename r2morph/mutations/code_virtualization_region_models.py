@@ -266,6 +266,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "leave"
     if kind == "call":
         return "call"  # bridge out to a native callee and back
+    if kind == "vcall":
+        return "vcall"  # in-function call: push a resume vIP and re-enter the VM at the callee
     if kind == "icall":
         return "icall"  # register-indirect call (target from a frame slot)
     if kind == "callmem":
@@ -292,6 +294,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "nop"
     if kind == "exit":
         return f"exit_{item[1]}"
+    if kind == "vret":
+        # Return-aware ret terminator: resume the VM at a pushed resume vIP, or fall
+        # back to the native return at this address. Keyed per address like exit.
+        return f"vret_{item[1]}"
     if kind == "enter_inner":
         return "enter_inner"  # transfer to the nested inner VM layer
     if kind == "inner_exit":

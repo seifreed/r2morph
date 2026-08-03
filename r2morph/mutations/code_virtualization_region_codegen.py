@@ -301,6 +301,39 @@ def _ijmp_handler_asm(index: int, key: int) -> str:
     )
 
 
+def _vcall_handler_asm(retarget_target: str, rsp_off: int) -> str:
+    """In-function direct ``call``: push a resume vIP onto the program's relocated
+    stack and re-enter the VM at the callee's virtualized entry, so the call and its
+    return run entirely inside the VM (the native body is junk-filled). The target is
+    decoded exactly like a jmp (``retarget_target`` leaves the callee's absolute vIP in
+    r9); the resume vIP is the byte after this 5-byte item - an address inside the
+    appended bytecode that the matching ``vret`` recognizes by range."""
+    return (
+        retarget_target
+        + "  lea r10, [rsi+5]\n"  # resume vIP = the item after this 5-byte vcall
+        + f"  mov r11, qword ptr [rsp+{rsp_off}]\n  sub r11, 8\n  mov qword ptr [r11], r10\n"
+        + f"  mov qword ptr [rsp+{rsp_off}], r11\n"
+        + "  mov rsi, r9\n  jmp vm_dispatch\n"
+    )
+
+
+def _vret_handler_asm(
+    index: int, ret_addr: int, rsp_off: int, bytecode_len: int, reload_seq: str, frame_size: int
+) -> str:
+    """Return-aware ``ret`` terminator for a region with in-function calls: if the top
+    of the program's relocated stack is a resume vIP a ``vcall`` pushed (an address in
+    the appended bytecode ``[r15, r15+bytecode_len)``), pop it and resume the VM there;
+    otherwise it is a genuine caller return address, so reload the context and return
+    natively to ``ret_addr``. The bytecode range is a build-known invariant: a real
+    return address points into loaded code, never into the injected blob."""
+    return (
+        f"  mov r10, qword ptr [rsp+{rsp_off}]\n  mov r9, qword ptr [r10]\n"
+        f"  mov r11, r9\n  sub r11, r15\n  cmp r11, {bytecode_len}\n  jae vret_native_{index}\n"
+        f"  add r10, 8\n  mov qword ptr [rsp+{rsp_off}], r10\n  mov rsi, r9\n  jmp vm_dispatch\n"
+        f"vret_native_{index}:\n{reload_seq}  add rsp, {frame_size}\n  jmp {hex(ret_addr)}\n"
+    )
+
+
 def _call_mem_handler_asm(
     index: int, key: int, key_dword: str, slot: tuple[int, ...], riprel: bool, field_perm: int, addr_variant: int = 0
 ) -> str:
@@ -503,6 +536,7 @@ def handler_instances_asm(
     retarget_target: str,
     frame_size: int,
     slot: tuple[int, ...],
+    bytecode_len: int = 0,
     extra: dict[str, str] | None = None,
     field_perm: int = 0,
     body_seed: int = 0,
@@ -546,6 +580,8 @@ def handler_instances_asm(
             lines.append(_call_mem_handler_asm(index, key, key_dword, slot, True, field_perm, addr_variant))
         elif handler_key == "callmemidx":
             lines.append(_call_mem_idx_handler_asm(index, key, key_dword, slot, field_perm, addr_variant))
+        elif handler_key == "vcall":
+            lines.append(_vcall_handler_asm(retarget_target, rsp_off))
         elif handler_key == "vpush":
             lines.append(_vpush_handler_asm(key))
         elif handler_key == "vpop":
@@ -694,6 +730,9 @@ def handler_instances_asm(
             lines.append(_cmov_handler_asm(cmov_condition, int(cmov_width), key))
         elif handler_key == "nop":
             lines.append("  add rsi, 1\n  jmp vm_dispatch\n")
+        elif handler_key.startswith("vret_"):
+            ret_addr = int(handler_key.split("_", 1)[1])
+            lines.append(_vret_handler_asm(index, ret_addr, rsp_off, bytecode_len, reload_seq, frame_size))
         elif handler_key.startswith("exit_"):
             exit_addr = int(handler_key.split("_", 1)[1])
             lines.append(f"{reload_seq}  add rsp, {frame_size}\n  jmp {hex(exit_addr)}\n")
@@ -847,6 +886,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             retarget_target=retarget_target,
             frame_size=_FRAME_SIZE,
             slot=slot,
+            bytecode_len=sum(_item_size(item) for item in region.instructions),
             field_perm=scheme.field_perm,
             body_seed=scheme.body_seed,
             isa_seed=scheme.isa_seed,

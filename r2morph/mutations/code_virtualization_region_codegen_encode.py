@@ -132,6 +132,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 2  # opcode + destination slot byte
     if kind == "cmov":
         return 3  # opcode + destination slot + source slot
+    if kind == "vcall":
+        return 5  # opcode + 4-byte bytecode-offset resume target (same layout as jmp)
     if kind == "call":
         return 5  # opcode + 4-byte bytecode-relative target offset
     if kind == "icall":
@@ -144,7 +146,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 6  # opcode + (unused) reg slot + 4-byte bytecode-relative offset
     if kind == "callmemidx":
         return 9  # opcode + (unused) reg + base + index slots + scale shift + disp
-    return 1  # nop, exit, enter_inner, inner_exit (opcode byte only)
+    return 1  # nop, exit, vret, enter_inner, inner_exit (opcode byte only)
 
 
 def build_ijmp_targets(region: Region) -> list[tuple[int, int]]:
@@ -572,6 +574,11 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             p = emit_opcode("callmemidx")
             # Reuse the scaled-index operand layout; the register field is unused.
             emit_idx(p, slot_of[0], slot_of[base_slot], slot_of[index_slot], shift, disp)
+        elif kind == "vcall":
+            # In-function call: the resume/target is a bytecode offset (item index),
+            # emitted exactly like a jmp target; the handler pushes the resume vIP.
+            p = emit_opcode("vcall")
+            emit_disp(offsets[item[1]], p)
         elif kind == "jmp":
             p = emit_opcode("jmp")
             emit_disp(offsets[item[1]], p)
@@ -589,7 +596,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             plain.append(slot_of[item[3]] ^ p)
         elif kind == "nop":
             emit_opcode("nop")
-        elif kind in ("exit", "enter_inner", "inner_exit", "fsave", "frestore"):
+        elif kind in ("exit", "vret", "enter_inner", "inner_exit", "fsave", "frestore"):
             emit_opcode(_required_key(item))
     key = scheme.xor_key
     return bytes(byte ^ key for byte in plain)
