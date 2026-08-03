@@ -155,6 +155,8 @@ def split_region(region: Region, rng: random.Random) -> tuple[Region, Region] | 
             continue
         if item[0] == "jmp":
             outer_items.append(("jmp", remap(item[1])))
+        elif item[0] == "vcall":
+            outer_items.append(("vcall", remap(item[1])))
         elif item[0] == "jcc":
             outer_items.append(("jcc", item[1], remap(item[2])))
         else:
@@ -323,17 +325,12 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         logger.warning("keystone unavailable; cannot nest region virtualization")
         return None
 
-    # A virtualized direct call reconstructs its target from the active layer's
-    # bytecode base (r15); nesting would need a per-layer target offset. The
-    # register-indirect form is base-independent, but its nested path is unverified,
-    # so a region with any call falls back to the single-layer blob (which handles
-    # both directly). An in-function call (vcall/vret) additionally needs the single-
-    # layer vret discriminator's bytecode_len, which the nested builder does not
-    # thread, so it falls back too.
-    call_kinds = ("call", "vcall", "vret", "icall", "callmem", "callmemrip", "callmemidx")
-    if any(item[0] in call_kinds for item in region.instructions):
-        return None
-
+    # Calls never enter the peeled inner run (they are not in _peel_op_run's eligible
+    # set), so every call kind stays in the outer layer where r15 is that layer's
+    # bytecode base bc_0 - exactly the base the direct-call target and the vcall/vret
+    # resume discriminator are keyed to. The threaded bytecode_len (per layer) and the
+    # floor cell below carry the in-function-call return discipline into the nested
+    # build, so a call-bearing region nests instead of falling back to single-layer.
     layers = _build_layers(region, max(2, min(depth, _MAX_LAYERS)), rng)
     if layers is None:
         return None
@@ -363,6 +360,12 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         f"  mov {name}, qword ptr [rsp+{slot[i] * 8}]\n" for i, name in enumerate(GP_REGISTERS) if name != "rsp"
     )
 
+    # An in-function call (vcall, always in the outer layer) reserves a zeroed floor
+    # cell below the relocated program stack so a ret unwinding to the outermost frame
+    # reads a non-bytecode value and returns natively - see the single-layer builder.
+    has_in_function_call = any(item[0] == "vcall" for item in region.instructions)
+    floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
+
     entry = (
         # Zero the virtual operand stack pointer before any micro-op runs; peeled
         # flag-dead arith folds through it in the nested layers too.
@@ -380,7 +383,8 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # or Unicorn-emulated run folds 0x00 so the benign build stays consistent.
         + tracer_detect_asm(slot=_CHECKSUM_OFFSET, key=schemes[0].table_key)
         + _set_layer_slots(schemes[0], 0, counts[0], offsets[0] if is_switch else None)
-        + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{rsp_off}], rax\n"
+        + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
+        + f"  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
     )
 
@@ -389,6 +393,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     for scheme in schemes:
         junk_seed ^= scheme.junk_seed
     junk_rng = random.Random(junk_seed)
+
+    # Each layer's bytecode byte length: the vret discriminator (only present in the
+    # call-bearing outer layer) needs its own layer's length to range-check a resume
+    # vIP against ``[r15, r15+len)``.
+    lens = [sum(_item_size(item) for item in layer.instructions) for layer in layers]
 
     layer_bodies: list[str] = []
     for layer in range(count):
@@ -433,6 +442,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                 retarget_target=retarget_target,
                 frame_size=_FRAME_SIZE,
                 slot=slot,
+                bytecode_len=lens[layer],
                 extra=extra,
                 field_perm=scheme.field_perm,
                 body_seed=scheme.body_seed,
@@ -440,7 +450,6 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             )
         )
 
-    lens = [sum(_item_size(item) for item in layer.instructions) for layer in layers]
     # Reserve every layer's bytecode but the innermost (which is appended).
     reservations = (
         "".join(f"bc_{layer}:\n  .space {lens[layer]}\n" for layer in range(count - 1)) + f"bc_{count - 1}:\n"
