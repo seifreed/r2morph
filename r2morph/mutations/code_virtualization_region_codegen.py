@@ -666,7 +666,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # debugger (TracerPid != 0 in /proc/self/status) folds 0xFF and misdecodes every
     # opcode; an untraced native run and a Unicorn emulation both fold 0x00, so the
     # benign build stays bit-identical and the checksum computation is unchanged.
-    lines.append(tracer_detect_asm(slot=scheme.checksum_offset))
+    lines.append(tracer_detect_asm(slot=scheme.checksum_offset, key=scheme.table_key))
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the

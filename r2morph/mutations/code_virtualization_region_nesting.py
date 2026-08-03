@@ -374,7 +374,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # Tracer anti-debug across all layers: an attached ptrace debugger folds
         # 0xFF into the shared checksum slot and misdecodes every layer; an untraced
         # or Unicorn-emulated run folds 0x00 so the benign build stays consistent.
-        + tracer_detect_asm(slot=_CHECKSUM_OFFSET)
+        + tracer_detect_asm(slot=_CHECKSUM_OFFSET, key=schemes[0].table_key)
         + _set_layer_slots(schemes[0], 0, counts[0], offsets[0] if is_switch else None)
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"

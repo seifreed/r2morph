@@ -104,7 +104,28 @@ _STATUS_READ_LEN = 192
 _STATUS_SCAN_LIMIT = 180
 
 
-def tracer_detect_asm(slot: int) -> str:
+def _build_mask(key: int) -> int:
+    """A 64-bit per-build mask from the build's 32-bit ``table_key``.
+
+    Repeating the key in both halves keeps the mask derivation trivial while giving
+    2**32 distinct values, enough that the masked constants below are not a fixed
+    byte pattern a corpus scan can grep for across samples.
+    """
+    low = key & 0xFFFFFFFF
+    return (low << 32) | low
+
+
+def _load_masked_qword(reg: str, const: int, mask: int) -> str:
+    """Materialize ``const`` in ``reg`` without emitting it as a plaintext immediate.
+
+    The build stores ``const ^ mask`` and reconstructs ``const`` at runtime with one
+    XOR, so ``.text`` carries only per-build-varying immediates (``const ^ mask`` and
+    ``mask``), never the fixed constant. ``rdx`` is a free scratch in this window.
+    """
+    return f"  mov {reg}, {hex(const ^ mask)}\n  mov rdx, {hex(mask)}\n  xor {reg}, rdx\n"
+
+
+def tracer_detect_asm(slot: int, key: int) -> str:
     """Assembly that folds a *ptrace-tracer* signal into the checksum ``slot`` byte.
 
     Emitted right after :func:`timing_fold_asm`, in the same window where every GP
@@ -125,31 +146,44 @@ def tracer_detect_asm(slot: int) -> str:
     the exit path. This catches an *attached* debugger even when it is not single
     stepping (which the timing fold would miss).
 
+    The ``/proc/self/status`` path words and the ``TracerPid`` scan tag would
+    otherwise be fixed plaintext immediates - an anti-debug tell a static scan greps
+    for across every build. ``key`` (the build's ``table_key``) masks each of them
+    so ``.text`` carries only per-build-varying immediates; the real bytes are
+    reconstructed at runtime, so the folded result is unchanged.
+
     ``slot`` is the frame offset of the checksum byte (the same one the timing fold
     and every opcode decrypt use).
     """
+    mask = _build_mask(key)
     return (
-        # Spell "/proc/self/status\0" just below the frame (transient scratch).
+        # Spell "/proc/self/status\0" just below the frame (transient scratch), each
+        # path word reconstructed from a masked immediate rather than a plaintext one.
         f"  lea r11, [rsp - {hex(_STATUS_PATH_OFFSET)}]\n"
-        f"  mov rax, {hex(_STATUS_PATH_LO)}\n  mov qword ptr [r11], rax\n"
-        f"  mov rax, {hex(_STATUS_PATH_HI)}\n  mov qword ptr [r11+8], rax\n"
-        "  mov word ptr [r11+16], 0x73\n"
+        + _load_masked_qword("rax", _STATUS_PATH_LO, mask)
+        + "  mov qword ptr [r11], rax\n"
+        + _load_masked_qword("rax", _STATUS_PATH_HI, mask)
+        + "  mov qword ptr [r11+8], rax\n"
+        + "  mov word ptr [r11+16], 0x73\n"
         # openat(AT_FDCWD, path, O_RDONLY); rax = fd (or a no-op 257 under Unicorn).
-        "  mov rax, 257\n  mov rdi, -100\n  mov rsi, r11\n  xor edx, edx\n  xor r10d, r10d\n  syscall\n"
-        "  mov r8, rax\n"
+        + "  mov rax, 257\n  mov rdi, -100\n  mov rsi, r11\n  xor edx, edx\n  xor r10d, r10d\n  syscall\n"
+        + "  mov r8, rax\n"
         # read(fd, buf, len) into the transient buffer, then close(fd).
-        f"  mov rdi, r8\n  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n  xor eax, eax\n  mov edx, {_STATUS_READ_LEN}\n  syscall\n"
-        "  mov rdi, r8\n  mov eax, 3\n  syscall\n"
-        # Scan the buffer for the "TracerPid:" line via an unaligned qword compare.
-        f"  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n  mov r9, {hex(_TRACERPID_TAG)}\n  xor ecx, ecx\n  xor r8d, r8d\n"
-        "tracer_scan:\n"
-        f"  cmp r8d, {_STATUS_SCAN_LIMIT}\n  jae tracer_done\n"
-        "  mov rax, qword ptr [rsi+r8]\n  cmp rax, r9\n  je tracer_found\n  inc r8\n  jmp tracer_scan\n"
-        "tracer_found:\n"
+        + f"  mov rdi, r8\n  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n  xor eax, eax\n  mov edx, {_STATUS_READ_LEN}\n  syscall\n"
+        + "  mov rdi, r8\n  mov eax, 3\n  syscall\n"
+        # Scan the buffer for the "TracerPid:" line via an unaligned qword compare;
+        # the scan tag is reconstructed from a masked immediate for the same reason.
+        + f"  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n"
+        + _load_masked_qword("r9", _TRACERPID_TAG, mask)
+        + "  xor ecx, ecx\n  xor r8d, r8d\n"
+        + "tracer_scan:\n"
+        + f"  cmp r8d, {_STATUS_SCAN_LIMIT}\n  jae tracer_done\n"
+        + "  mov rax, qword ptr [rsi+r8]\n  cmp rax, r9\n  je tracer_found\n  inc r8\n  jmp tracer_scan\n"
+        + "tracer_found:\n"
         # The digit after "TracerPid:\t"; anything but '0' (0x30) means a tracer.
-        f"  movzx eax, byte ptr [rsi+r8+{_TRACERPID_DIGIT_OFFSET}]\n  cmp al, 0x30\n  setne cl\n"
-        "tracer_done:\n"
-        f"  neg cl\n  xor byte ptr [rsp+{slot}], cl\n"
+        + f"  movzx eax, byte ptr [rsi+r8+{_TRACERPID_DIGIT_OFFSET}]\n  cmp al, 0x30\n  setne cl\n"
+        + "tracer_done:\n"
+        + f"  neg cl\n  xor byte ptr [rsp+{slot}], cl\n"
     )
 
 

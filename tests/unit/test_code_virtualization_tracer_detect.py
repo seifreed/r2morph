@@ -29,6 +29,9 @@ _SYS_READ = 0
 _SYS_CLOSE = 3
 _SYS_OPENAT = 257
 _FAKE_FD = 7
+# A representative nonzero build key: the probe runs with the path/tag constants
+# masked by it, so these behavioural tests also prove the runtime reconstruction.
+_KEY = 0x1234ABCD
 
 
 def _fold_delta(status_payload: bytes | None) -> int:
@@ -39,7 +42,7 @@ def _fold_delta(status_payload: bytes | None) -> int:
     makes ``openat`` fail (negative fd) so no bytes are ever delivered.
     """
     ks = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
-    code, _ = ks.asm(tracer_detect_asm(slot=_SLOT) + "  hlt\n", addr=_CODE_BASE, as_bytes=True)
+    code, _ = ks.asm(tracer_detect_asm(slot=_SLOT, key=_KEY) + "  hlt\n", addr=_CODE_BASE, as_bytes=True)
 
     uc = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_64)
     uc.mem_map(_CODE_BASE, 0x1000)
@@ -97,8 +100,28 @@ def test_tracer_detect_missing_status_folds_zero() -> None:
 def test_tracer_detect_emitted_into_the_region_interpreter() -> None:
     from r2morph.mutations.code_virtualization_antidebug import _STATUS_PATH_LO
 
-    asm = tracer_detect_asm(slot=_SLOT)
+    asm = tracer_detect_asm(slot=_SLOT, key=_KEY)
     # The observational read (syscalls) and the branch-free fold must be present.
     assert "syscall" in asm
     assert "/proc/se" == _STATUS_PATH_LO.to_bytes(8, "little").decode()
     assert f"neg cl\n  xor byte ptr [rsp+{_SLOT}], cl" in asm
+
+
+def test_tracer_detect_masks_the_plaintext_status_path_immediate() -> None:
+    from r2morph.mutations.code_virtualization_antidebug import _STATUS_PATH_LO
+
+    # The fixed "/proc/se" path word must not appear as a plaintext immediate.
+    assert hex(_STATUS_PATH_LO) not in tracer_detect_asm(slot=_SLOT, key=_KEY)
+
+
+def test_tracer_detect_masks_the_plaintext_tracerpid_tag_immediate() -> None:
+    from r2morph.mutations.code_virtualization_antidebug import _TRACERPID_TAG
+
+    # The fixed "TracerPi" scan tag must not appear as a plaintext immediate.
+    assert hex(_TRACERPID_TAG) not in tracer_detect_asm(slot=_SLOT, key=_KEY)
+
+
+def test_tracer_detect_immediates_vary_by_build_key() -> None:
+    # Two builds emit different masked immediates, so the block is not a fixed
+    # cross-sample byte pattern.
+    assert tracer_detect_asm(slot=_SLOT, key=0x11111111) != tracer_detect_asm(slot=_SLOT, key=0x22222222)

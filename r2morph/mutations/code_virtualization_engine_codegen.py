@@ -632,7 +632,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # Tracer anti-debug into the same checksum slot: an attached ptrace debugger
     # (TracerPid != 0) folds 0xFF and misdecodes every opcode; an untraced native
     # run and a Unicorn emulation both fold 0x00, so the benign build is unchanged.
-    lines.append(tracer_detect_asm(slot=layout.checksum_offset))
+    lines.append(tracer_detect_asm(slot=layout.checksum_offset, key=scheme.table_key))
     poly_rng = random.Random(scheme.table_key)
     # Undo the opcode byte's position mask and fold in the key and the runtime
     # self-checksum the encoder pre-biased the opcode with, so a patched interpreter
