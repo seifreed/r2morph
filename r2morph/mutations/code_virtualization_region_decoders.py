@@ -49,6 +49,27 @@ REGISTER8_INDEX: dict[str, int] = {
     "r15b": 15,
 }
 
+# Word GP register spellings -> the 64-bit base register's context slot, the same
+# indices as REGISTER8_INDEX. Used for register-source movzx/movsx (`movzx eax, cx`):
+# the source's low word is the operand. sp (rsp, index 4) is intentionally absent.
+REGISTER16_INDEX: dict[str, int] = {
+    "ax": 0,
+    "cx": 1,
+    "dx": 2,
+    "bx": 3,
+    "bp": 5,
+    "si": 6,
+    "di": 7,
+    "r8w": 8,
+    "r9w": 9,
+    "r10w": 10,
+    "r11w": 11,
+    "r12w": 12,
+    "r13w": 13,
+    "r14w": 14,
+    "r15w": 15,
+}
+
 # setcc/cmov condition suffix -> the canonical branch condition the interpreter
 # evaluates arithmetically from the captured RFLAGS (a key of the codegen's
 # _JCC_CONDITION_BASE). Mirrors region._CONDITION with the leading ``j`` dropped;
@@ -1058,12 +1079,13 @@ def _decode_op_mem(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> 
 
 
 def _decode_movx(text: str) -> tuple[Any, ...] | None:
-    """Decode ``movzx/movsx reg, byte|word [base+disp]`` (memory source).
+    """Decode ``movzx/movsx reg, <source>`` (zero-/sign-extending move).
 
-    r2 reports movzx/movsx under the mov type. The destination is a 32- or
-    64-bit register; the source is a byte or word in memory. Returns
-    ``("movx", ext, src_size, dst_width, reg_slot, base_slot, disp)`` where
-    ``ext`` is ``"z"`` or ``"s"``, or ``None``.
+    r2 reports movzx/movsx under the mov type. The destination is a 32- or 64-bit
+    register. A ``byte|word [mem]`` source returns ``("movx", ...)`` (base+disp) or
+    ``("movxidx", ...)`` (scaled index); an 8- or 16-bit *register* source returns
+    ``("movxreg", ext, src_size, dst_width, dst_slot, src_slot)``. ``ext`` is ``"z"``
+    or ``"s"``; None when unsupported.
     """
     parts = text.split(None, 1)
     if len(parts) != 2 or "," not in parts[1]:
@@ -1075,22 +1097,26 @@ def _decode_movx(text: str) -> tuple[Any, ...] | None:
     dst = _register_operand(left.lower())
     if dst is None:
         return None
-    size_word, _, remainder = right.lower().partition(" ")
-    if size_word == "byte":
-        src_size = 8
-    elif size_word == "word":
-        src_size = 16
-    else:
-        return None
     ext = "z" if mnemonic == "movzx" else "s"
-    mem = _parse_mem_operand(remainder.strip())
-    if mem is not None:
-        base_slot, disp, _mem_width = mem
-        return ("movx", ext, src_size, dst[1], dst[0], base_slot, disp)
-    indexed = _parse_indexed_operand(remainder.strip())
-    if indexed is not None:
-        base_slot, index_slot, shift, disp = indexed
-        return ("movxidx", ext, src_size, dst[1], dst[0], base_slot, index_slot, shift, disp)
+    size_word, _, remainder = right.lower().partition(" ")
+    if size_word in ("byte", "word"):
+        src_size = 8 if size_word == "byte" else 16
+        mem = _parse_mem_operand(remainder.strip())
+        if mem is not None:
+            base_slot, disp, _mem_width = mem
+            return ("movx", ext, src_size, dst[1], dst[0], base_slot, disp)
+        indexed = _parse_indexed_operand(remainder.strip())
+        if indexed is not None:
+            base_slot, index_slot, shift, disp = indexed
+            return ("movxidx", ext, src_size, dst[1], dst[0], base_slot, index_slot, shift, disp)
+        return None
+    # Register source: the source register's full value already lives in its slot,
+    # so its low byte/word is the operand - no memory access and no flags.
+    src_name = right.lower().strip()
+    if src_name in REGISTER8_INDEX:
+        return ("movxreg", ext, 8, dst[1], dst[0], REGISTER8_INDEX[src_name])
+    if src_name in REGISTER16_INDEX:
+        return ("movxreg", ext, 16, dst[1], dst[0], REGISTER16_INDEX[src_name])
     return None
 
 

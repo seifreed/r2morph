@@ -474,6 +474,29 @@ def test_cmov_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 22
 
 
+def test_movxreg_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    # Register-source movsx/movzx: a byte 0xd8 sign-extends negative and zero-extends
+    # to 216, and a word 0x8000 zero-extends to 32768; each branches on the full
+    # extended value, so a wrong extension exits 99 instead of 42.
+    fixture = _DATASET / "elf_vm_movxreg_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    assert _region_lowers_kind(fixture, "movxreg")
+
+    mutated = tmp_path / "mutated_movxreg"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_straight_line_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # This function contains a call, so the whole-function control-flow VM
     # rejects it; the pass must fall back to virtualizing the straight-line

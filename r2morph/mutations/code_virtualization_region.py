@@ -374,7 +374,7 @@ def _writes_register(item: tuple[Any, ...]) -> int | None:
         return int(item[1])
     if kind in ("shift", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
         return int(item[2])
-    if kind in ("movx", "movxidx"):
+    if kind in ("movx", "movxidx", "movxreg"):
         return int(item[4])
     return None
 

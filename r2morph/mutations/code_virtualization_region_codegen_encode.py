@@ -124,6 +124,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 7  # opcode + reg slot + base slot + 4-byte displacement
     if kind == "movxidx":
         return 9  # opcode + reg + base + index slots + scale shift + 4-byte disp
+    if kind == "movxreg":
+        return 3  # opcode + destination slot + source slot (ext/sizes live in the key)
     if kind in ("jmp", "jcc"):
         return 5
     if kind == "setcc":
@@ -526,6 +528,11 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, index_slot, shift, disp = item
             p = emit_opcode(_required_key(item))
             emit_idx(p, slot_of[reg_slot], slot_of[base_slot], slot_of[index_slot], shift, disp)
+        elif kind == "movxreg":
+            # Destination then source slot operands (ext + sizes live in the key).
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[item[4]] ^ p)
+            plain.append(slot_of[item[5]] ^ p)
         elif kind == "opmemdst":
             _, _mnemonic, reg_slot, base_slot, disp, _width = item
             p = emit_opcode(_required_key(item))

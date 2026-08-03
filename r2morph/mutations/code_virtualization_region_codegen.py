@@ -464,6 +464,32 @@ def _cmov_handler_asm(condition: str, width: int, key: int) -> str:
     )
 
 
+def _movx_reg_handler_asm(handler_key: str, key: int) -> str:
+    """Emit a register-source movzx/movsx handler.
+
+    The source register's full value already lives in its slot, so its low byte or
+    word is the operand: read the source slot, zero- or sign-extend al/ax into r10,
+    and write the destination slot. A 32-bit destination is zero-extended into the
+    full slot because the 32-bit write into r10d clears r10's upper half. No flags.
+    """
+    _, ext, src_size_text, dst_width_text = handler_key.split("_")
+    src_reg = "al" if src_size_text == "8" else "ax"
+    if ext == "z":
+        extend = f"  movzx r10d, {src_reg}\n"
+    elif dst_width_text == "64":
+        extend = f"  movsx r10, {src_reg}\n"
+    else:
+        extend = f"  movsx r10d, {src_reg}\n"
+    return (
+        _setcc_slot_read(1, key, "r8")  # r8 = destination slot
+        + _setcc_slot_read(2, key, "r9")  # r9 = source slot
+        + "  mov rax, qword ptr [rsp+r9*8]\n"  # source value (al/ax = its low byte/word)
+        + extend
+        + "  mov qword ptr [rsp+r8*8], r10\n"
+        + "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def handler_instances_asm(
     index_to_key: dict[int, str],
     *,
@@ -624,6 +650,8 @@ def handler_instances_asm(
             )
         elif handler_key.startswith("incdec_"):
             lines.append(_incdec_handler_asm(handler_key, key, flag_variant, arith_variant))
+        elif handler_key.startswith("movxreg_"):
+            lines.append(_movx_reg_handler_asm(handler_key, key))
         elif handler_key.startswith("movxidx_"):
             lines.append(_movx_indexed_handler_asm(handler_key, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("movx_"):

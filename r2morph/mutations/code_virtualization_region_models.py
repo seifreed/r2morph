@@ -150,6 +150,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"movx_{item[1]}_{item[2]}_{item[3]}"
     if kind == "movxidx":
         return f"movxidx_{item[1]}_{item[2]}_{item[3]}"
+    if kind == "movxreg":
+        return f"movxreg_{item[1]}_{item[2]}_{item[3]}"  # register source: ext, src_size, dst_width
     if kind in ("load", "store", "fpload", "fpstore"):
         return f"{kind}_{item[4]}"
     if kind in ("fploadrip", "fpstorerip"):
