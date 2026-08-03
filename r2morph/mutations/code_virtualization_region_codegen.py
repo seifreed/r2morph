@@ -61,6 +61,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _imul_handler_asm,
     _incdec_handler_asm,
     _indexed_address_asm,
+    _indexed_address_nobase_asm,
     _lea_handler_asm,
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
@@ -293,12 +294,40 @@ def _ijmp_handler_asm(index: int, key: int) -> str:
     distinct."""
     return (
         f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-        "  mov r10, qword ptr [rsp+r8*8]\n"
+        "  mov r10, qword ptr [rsp+r8*8]\n" + _ijmp_scan_asm(index)
+    )
+
+
+def _ijmp_scan_asm(index: int) -> str:
+    """Shared computed-jump re-entry: ``r10`` holds the runtime target address; scan
+    the target map (native address -> bytecode offset) and, on a hit, commit the
+    offset to the vIP so dispatch resumes at the virtualized target. A miss - a target
+    outside the region, which a correctly-extracted region never produces - falls
+    through to the default VM exit. Unique scan/hit labels keep duplicate handler
+    instances distinct."""
+    return (
         "  lea r11, [rip+ijmp_map]\n  mov ecx, dword ptr [r11]\n  add r11, 4\n"
         f"ijmp_scan_{index}:\n  test ecx, ecx\n  jz vm_exit\n"
         f"  cmp qword ptr [r11], r10\n  je ijmp_hit_{index}\n  add r11, 12\n  dec ecx\n  jmp ijmp_scan_{index}\n"
         f"ijmp_hit_{index}:\n  mov eax, dword ptr [r11+8]\n  lea rsi, [rip+bytecode]\n  add rsi, rax\n  jmp vm_dispatch\n"
     )
+
+
+def _ijmpmem_handler_asm(index: int, key: int, key_dword: str, field_perm: int, addr_variant: int = 0) -> str:
+    """Memory-indirect computed jump ``jmp qword [base+index*scale+disp]`` (non-PIE
+    jump-table switch). The shared indexed-address prologue computes the table-entry
+    address into r10; dereferencing it loads the case target from the preserved rodata
+    table, which is then re-entered through the target map."""
+    address, _advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    return address + "  mov r10, qword ptr [r10]\n" + _ijmp_scan_asm(index)
+
+
+def _ijmpmemnb_handler_asm(index: int, key: int, key_dword: str, field_perm: int, addr_variant: int = 0) -> str:
+    """No-base memory-indirect computed jump ``jmp qword [index*scale+disp]`` - the
+    common non-PIE switch where the table base is the displacement. Like
+    :func:`_ijmpmem_handler_asm` without the base add."""
+    address, _advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    return address + "  mov r10, qword ptr [r10]\n" + _ijmp_scan_asm(index)
 
 
 def _vcall_handler_asm(retarget_target: str, rsp_off: int) -> str:
@@ -726,6 +755,10 @@ def handler_instances_asm(
             lines.append(retarget)
         elif handler_key == "ijmp":
             lines.append(_ijmp_handler_asm(index, key))
+        elif handler_key == "ijmpmem":
+            lines.append(_ijmpmem_handler_asm(index, key, key_dword, field_perm, addr_variant))
+        elif handler_key == "ijmpmemnb":
+            lines.append(_ijmpmemnb_handler_asm(index, key, key_dword, field_perm, addr_variant))
         elif handler_key.startswith("jcc_"):
             condition = handler_key.split("_", 1)[1]
             lines.append(_jcc_handler_asm(condition, retarget_target))

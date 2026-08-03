@@ -140,6 +140,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 2  # opcode + register slot holding the runtime target
     if kind == "ijmp":
         return 2  # opcode + register slot holding the runtime jump target
+    if kind == "ijmpmem":
+        return 9  # opcode + (unused) reg + base + index slots + scale shift + disp
+    if kind == "ijmpmemnb":
+        return 8  # opcode + (unused) reg + index slot + scale shift + disp (no base)
     if kind == "callmem":
         return 7  # opcode + (unused) reg slot + base slot + 4-byte displacement
     if kind == "callmemrip":
@@ -559,6 +563,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, reg_slot = item
             p = emit_opcode("ijmp")
             plain.append(slot_of[reg_slot] ^ p)
+        elif kind == "ijmpmem":
+            # Reuse the scaled-index operand layout; the register field is unused
+            # (the target pointer is loaded from [base+index*scale+disp]).
+            _, base_slot, index_slot, shift, disp = item
+            p = emit_opcode("ijmpmem")
+            emit_idx(p, slot_of[0], slot_of[base_slot], slot_of[index_slot], shift, disp)
+        elif kind == "ijmpmemnb":
+            # No-base scaled-index layout (base None); the table base is the disp.
+            _, index_slot, shift, disp = item
+            p = emit_opcode("ijmpmemnb")
+            emit_idx(p, slot_of[0], None, slot_of[index_slot], shift, disp)
         elif kind == "callmem":
             _, base_slot, disp = item
             p = emit_opcode("callmem")

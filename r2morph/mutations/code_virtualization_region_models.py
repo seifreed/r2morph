@@ -280,6 +280,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return "jmp"
     if kind == "ijmp":
         return "ijmp"  # register-indirect jump: computed VM exit to a runtime target
+    if kind == "ijmpmem":
+        return "ijmpmem"  # memory-indirect jump (target pointer at base+index*scale+disp)
+    if kind == "ijmpmemnb":
+        return "ijmpmemnb"  # memory-indirect jump, no base (pointer at index*scale+disp)
     if kind == "fsave":
         return "fsave"  # native pushfq: save the virtual RFLAGS onto the vstack
     if kind == "frestore":

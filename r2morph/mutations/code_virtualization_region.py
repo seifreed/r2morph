@@ -124,7 +124,7 @@ _CONDITION: dict[str, str] = {
 
 # r2 instruction types for a register/memory-indirect jump (jmp reg / jmp [mem]) -
 # the defining dispatch instruction of a computed-goto interpreter.
-_COMPUTED_JUMP_TYPES = ("ujmp", "rjmp", "ijmp", "mjmp")
+_COMPUTED_JUMP_TYPES = ("ujmp", "rjmp", "ijmp", "mjmp", "irjmp")
 
 
 def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[Any] | None:
@@ -333,12 +333,21 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
         # target is the program value of a GP register, read from its frame slot
         # at runtime - the defining dispatch instruction of a computed-goto
         # interpreter. Modelled on the register-indirect call (icall) above.
-        # Memory-indirect computed jumps (jmp [table+idx*scale]) are decomposed by
-        # the dispatch-region contract into an indexed load plus this register
-        # form, so only the bare-register operand is taken here.
+        # A memory-indirect computed jump (jmp qword [base+index*scale+disp]) is the
+        # non-PIE jump-table switch dispatch: the target pointer is loaded from the
+        # (preserved rodata) table at runtime and looked up in the target map, just
+        # like the register form. The no-base form [index*scale+disp] carries the
+        # table base in the displacement.
         parts = text.split()
         if len(parts) == 2 and parts[1] in GP_REGISTERS and parts[1] != "rsp":
             return ["ijmp", GP_REGISTERS.index(parts[1])]
+        operand = text.split(None, 1)[1] if " " in text else ""
+        indexed = _parse_indexed_operand(operand, base_optional=True)
+        if indexed is not None:
+            base_slot, index_slot, scale_shift, disp = indexed
+            if base_slot < 0:
+                return ["ijmpmemnb", index_slot, scale_shift, disp]
+            return ["ijmpmem", base_slot, index_slot, scale_shift, disp]
         return None
     if kind == "cjmp":
         condition = _CONDITION.get(text.split(None, 1)[0].lower())
@@ -891,7 +900,7 @@ def extract_region(
     # lowering and junk passes so the indices stay correct as items shift. Only built
     # when the region actually contains a computed jump; otherwise the map is empty
     # and the region's blob is byte-identical to the straight-line contract's.
-    has_computed_jump = any(item[0] == "ijmp" for item in items)
+    has_computed_jump = any(item[0] in ("ijmp", "ijmpmem", "ijmpmemnb") for item in items)
     target_map: dict[int, int] | None = dict(item_index_of) if has_computed_jump else None
 
     items = _lower_arith_to_microops(items, target_map)

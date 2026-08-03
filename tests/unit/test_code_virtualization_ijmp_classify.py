@@ -31,10 +31,23 @@ def test_classify_register_indirect_jump_rejected_by_default() -> None:
     assert _classify({"type": "rjmp", "opcode": "jmp rax"}) is None
 
 
-def test_classify_memory_indirect_jump_not_lowered() -> None:
-    """A memory-indexed computed jump is not taken as a register ijmp."""
+def test_classify_no_base_memory_indirect_jump_lowered_to_ijmpmemnb() -> None:
+    """A no-base memory-indexed computed jump (non-PIE switch dispatch) lowers to an
+    ijmpmemnb carrying the index slot, scale shift, and table-base displacement."""
     insn = {"type": "ujmp", "opcode": "jmp qword [rax*8 + 0x2000]"}
-    assert _classify(insn, allow_computed_jump=True) is None
+    assert _classify(insn, allow_computed_jump=True) == ["ijmpmemnb", 0, 3, 0x2000]
+
+
+def test_classify_based_memory_indirect_jump_lowered_to_ijmpmem() -> None:
+    """A based memory-indexed computed jump lowers to an ijmpmem (base + index)."""
+    insn = {"type": "ujmp", "opcode": "jmp qword [rbx + rax*8]"}
+    assert _classify(insn, allow_computed_jump=True) == ["ijmpmem", 3, 0, 3, 0]
+
+
+def test_classify_memory_indirect_jump_requires_opt_in() -> None:
+    """Without the dispatch opt-in a memory-indirect computed jump stays native."""
+    insn = {"type": "ujmp", "opcode": "jmp qword [rax*8 + 0x2000]"}
+    assert _classify(insn, allow_computed_jump=False) is None
 
 
 def test_classify_indirect_jump_through_rsp_rejected() -> None:

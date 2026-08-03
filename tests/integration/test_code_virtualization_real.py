@@ -40,6 +40,10 @@ FIXTURE_MULTIBLOCK = _DATASET / "elf_blockswap_x86_64"
 # Self-recursive fixture: the recursive call targets the function's own entry (an
 # in-function call), exercising the vcall/vret in-VM call-and-return discipline.
 FIXTURE_INCALL = _DATASET / "elf_vm_incall_x86_64"
+# Non-PIE absolute jump-table switch: r2 resolves the table (switch_op), the CFG
+# closure gathers every case block, and the memory-indirect dispatch lowers to an
+# ijmpmemnb that re-enters the VM at the virtualized case via the target map.
+FIXTURE_SWITCH_ABS = _DATASET / "elf_switch_abs_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
 from unicorn import UC_ARCH_X86, UC_HOOK_INSN, UC_MODE_64, Uc, UcError  # noqa: E402
@@ -135,6 +139,29 @@ def test_virtualized_in_function_call_preserves_exit_code(tmp_path: Path) -> Non
 
     assert stats["functions_virtualized"] >= 1
     assert _emulate_exit_code(FIXTURE_INCALL) == _emulate_exit_code(mutated) == 45
+
+
+def test_virtualized_absolute_switch_preserves_exit_code(tmp_path: Path) -> None:
+    # A non-PIE jump-table switch: r2 resolves the table into a switch_op, so the
+    # CFG-closure gather pulls in every case block and the memory-indirect dispatch
+    # lowers to an ijmpmemnb whose runtime target (loaded from the preserved rodata
+    # table) re-enters the VM at the virtualized case. dispatch(2) = 30 must survive.
+    if not FIXTURE_SWITCH_ABS.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_SWITCH_ABS}")
+
+    mutated = tmp_path / "mutated"
+    shutil.copy(FIXTURE_SWITCH_ABS, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "virtualize_dispatch": True}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(FIXTURE_SWITCH_ABS) == _emulate_exit_code(mutated) == 30
 
 
 # The interpreter's first instruction is a constant-size frame allocation
