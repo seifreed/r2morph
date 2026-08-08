@@ -41,13 +41,10 @@ class TestBinaryFixture:
         return None
 
     @staticmethod
-    def compile_switch_binary() -> Path | None:
-        """Compile a binary with switch statement."""
-        fixture_dir = Path(__file__).parent.parent.parent / "fixtures" / "optimized_binaries"
-        fixture_dir.mkdir(parents=True, exist_ok=True)
-
-        source_path = fixture_dir / "switch_test.c"
-        binary_path = fixture_dir / "switch_test"
+    def compile_switch_binary(build_dir: Path) -> Path | None:
+        """Compile a binary with switch statement into a throwaway build dir."""
+        source_path = build_dir / "switch_test.c"
+        binary_path = build_dir / "switch_test"
 
         source_content = """
 #include <stdio.h>
@@ -90,13 +87,10 @@ int main(int argc, char **argv) {
         return None
 
     @staticmethod
-    def compile_exception_binary() -> Path | None:
-        """Compile a binary with exception handling."""
-        fixture_dir = Path(__file__).parent.parent.parent / "fixtures" / "optimized_binaries"
-        fixture_dir.mkdir(parents=True, exist_ok=True)
-
-        source_path = fixture_dir / "exception_test.cpp"
-        binary_path = fixture_dir / "exception_test"
+    def compile_exception_binary(build_dir: Path) -> Path | None:
+        """Compile a binary with exception handling into a throwaway build dir."""
+        source_path = build_dir / "exception_test.cpp"
+        binary_path = build_dir / "exception_test"
 
         source_content = """
 #include <iostream>
@@ -139,13 +133,10 @@ int main(int argc, char **argv) {
         return None
 
     @staticmethod
-    def compile_plt_binary() -> Path | None:
-        """Compile a binary with PLT calls."""
-        fixture_dir = Path(__file__).parent.parent.parent / "fixtures" / "optimized_binaries"
-        fixture_dir.mkdir(parents=True, exist_ok=True)
-
-        source_path = fixture_dir / "plt_test.c"
-        binary_path = fixture_dir / "plt_test"
+    def compile_plt_binary(build_dir: Path) -> Path | None:
+        """Compile a binary with PLT calls into a throwaway build dir."""
+        source_path = build_dir / "plt_test.c"
+        binary_path = build_dir / "plt_test"
 
         source_content = """
 #include <stdio.h>
@@ -180,13 +171,10 @@ int main(int argc, char **argv) {
         return None
 
     @staticmethod
-    def compile_tail_call_binary() -> Path | None:
-        """Compile a binary with tail calls."""
-        fixture_dir = Path(__file__).parent.parent.parent / "fixtures" / "optimized_binaries"
-        fixture_dir.mkdir(parents=True, exist_ok=True)
-
-        source_path = fixture_dir / "tailcall_test.c"
-        binary_path = fixture_dir / "tailcall_test"
+    def compile_tail_call_binary(build_dir: Path) -> Path | None:
+        """Compile a binary with tail calls into a throwaway build dir."""
+        source_path = build_dir / "tailcall_test.c"
+        binary_path = build_dir / "tailcall_test"
 
         source_content = """
 int helper(int x);
@@ -224,36 +212,36 @@ int main(int argc, char **argv) {
 
 
 @pytest.fixture
-def switch_binary():
+def switch_binary(tmp_path):
     """Fixture for switch statement binary."""
-    path = TestBinaryFixture.compile_switch_binary()
+    path = TestBinaryFixture.compile_switch_binary(tmp_path)
     if not path or not path.exists():
         pytest.skip("Could not compile switch test binary (gcc not available)")
     yield path
 
 
 @pytest.fixture
-def exception_binary():
+def exception_binary(tmp_path):
     """Fixture for exception handling binary."""
-    path = TestBinaryFixture.compile_exception_binary()
+    path = TestBinaryFixture.compile_exception_binary(tmp_path)
     if not path or not path.exists():
         pytest.skip("Could not compile exception test binary (g++ not available)")
     yield path
 
 
 @pytest.fixture
-def plt_binary():
+def plt_binary(tmp_path):
     """Fixture for PLT calls binary."""
-    path = TestBinaryFixture.compile_plt_binary()
+    path = TestBinaryFixture.compile_plt_binary(tmp_path)
     if not path or not path.exists():
         pytest.skip("Could not compile PLT test binary (gcc not available)")
     yield path
 
 
 @pytest.fixture
-def tail_call_binary():
+def tail_call_binary(tmp_path):
     """Fixture for tail call binary."""
-    path = TestBinaryFixture.compile_tail_call_binary()
+    path = TestBinaryFixture.compile_tail_call_binary(tmp_path)
     if not path or not path.exists():
         pytest.skip("Could not compile tail call test binary (gcc not available)")
     yield path

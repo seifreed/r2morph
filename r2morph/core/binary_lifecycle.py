@@ -32,6 +32,10 @@ def _spawn_r2(binary: Any) -> Any:
 
 
 def _open_r2pipe_with_retry(binary: Any) -> None:
+    # Re-opening an already-open Binary must not orphan the previous session:
+    # a bare r2pipe object has no finalizer of its own, so once the attribute is
+    # overwritten nothing can ever reap its process or its stdin/stdout pipes.
+    _discard_failed_r2(binary)
     last_error: Exception | None = None
     for attempt in range(1, _R2PIPE_OPEN_ATTEMPTS + 1):
         try:
