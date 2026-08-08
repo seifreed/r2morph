@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from types import ModuleType
 from typing import Any
 
 from r2morph.platform.pe_handler_parsing import calculate_pe_checksum, get_checksum_offset
@@ -10,6 +11,7 @@ from r2morph.platform.repair_aggregation import aggregate_repair_results
 
 logger = logging.getLogger(__name__)
 
+lief: ModuleType | None
 try:
     import lief
 except ImportError:  # pragma: no cover - optional dependency

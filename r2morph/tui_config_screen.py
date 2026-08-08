@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from r2morph.tui_pass_config import TUIPassConfig
 from r2morph.tui_presets import CONFIG_OPTIONS, CONFIG_TYPES, DEFAULT_PASS_CONFIGS
@@ -11,7 +11,6 @@ from r2morph.tui_rendering_helpers import build_config_basic_lines, build_config
 
 logger = logging.getLogger(__name__)
 
-Console: Any
 try:
     from rich.console import Console
     from rich.table import Table
@@ -20,12 +19,14 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
-    class _FallbackConsole:
-        def print(self, *args: Any, **kwargs: Any) -> None:
-            print(*args)
+    if not TYPE_CHECKING:
 
-    Console = _FallbackConsole
-    Table = None
+        class _FallbackConsole:
+            def print(self, *args: Any, **kwargs: Any) -> None:
+                print(*args)
+
+        Console = _FallbackConsole
+        Table = None
 
 
 class TUIConfigScreen:

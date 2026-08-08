@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-Console: Any
 try:
     from rich.console import Console
     from rich.progress import BarColumn, Progress, SpinnerColumn, TextColumn, TimeElapsedColumn
@@ -13,12 +12,14 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
-    class _FallbackConsole:
-        def print(self, *args: Any, **kwargs: Any) -> None:
-            print(*args)
+    if not TYPE_CHECKING:
 
-    Console = _FallbackConsole
-    Progress = SpinnerColumn = BarColumn = TextColumn = TimeElapsedColumn = None
+        class _FallbackConsole:
+            def print(self, *args: Any, **kwargs: Any) -> None:
+                print(*args)
+
+        Console = _FallbackConsole
+        Progress = SpinnerColumn = BarColumn = TextColumn = TimeElapsedColumn = None
 
 
 class TUIProgressIndicator:

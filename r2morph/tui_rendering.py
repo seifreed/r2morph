@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from r2morph.tui_config_screen import TUIConfigScreen as _TUIConfigScreen
 from r2morph.tui_pass_config import TUIPassConfig as _TUIPassConfig
@@ -32,7 +32,6 @@ class _FallbackConsole:
         print(*args)
 
 
-Console: Any
 try:
     from rich.console import Console
     from rich.layout import Layout
@@ -45,10 +44,11 @@ try:
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
-    Console = _FallbackConsole
-    Confirm = Prompt = Layout = Panel = Table = Text = Progress = SpinnerColumn = BarColumn = TextColumn = (
-        TimeElapsedColumn
-    ) = None
+    if not TYPE_CHECKING:
+        Console = _FallbackConsole
+        Confirm = Prompt = Layout = Panel = Table = Text = Progress = SpinnerColumn = BarColumn = TextColumn = (
+            TimeElapsedColumn
+        ) = None
 
 
 class TUIMainScreen:
