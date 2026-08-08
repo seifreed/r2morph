@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import logging
-import pickle
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from r2morph.core.analysis_cache_entries import evict_cache_entry
+from r2morph.core.analysis_cache_entries import evict_cache_entry, load_cache_entry
 from r2morph.core.analysis_cache_models import CacheEntry, CacheStats
-from r2morph.core.analysis_cache_storage import _safe_pickle_load
 
 logger = logging.getLogger(__name__)
 
@@ -28,14 +26,16 @@ def cleanup_expired_entries(
 
     for entry_path in cache_dir.rglob("*.cache"):
         try:
-            with open(entry_path, "rb") as f:
-                entry: CacheEntry = _safe_pickle_load(f)
+            entry = load_cache_entry(entry_path)
+            if entry is None:
+                entry_path.unlink(missing_ok=True)
+                continue
 
             if entry.created_at < cutoff:
                 evict_cache_entry(entry_path, entry, stats, stats_lock)
                 removed += 1
                 logger.debug("Removed expired cache entry: %s", entry_path)
-        except (pickle.PickleError, OSError):
+        except OSError:
             entry_path.unlink(missing_ok=True)
 
     if removed > 0:
@@ -58,14 +58,16 @@ def cleanup_low_access_entries(
 
     for entry_path in cache_dir.rglob("*.cache"):
         try:
-            with open(entry_path, "rb") as f:
-                entry: CacheEntry = _safe_pickle_load(f)
+            entry = load_cache_entry(entry_path)
+            if entry is None:
+                entry_path.unlink(missing_ok=True)
+                continue
 
             if entry.created_at < cutoff and entry.access_count < min_access_count:
                 evict_cache_entry(entry_path, entry, stats, stats_lock)
                 removed += 1
                 logger.debug("Removed low-access cache entry: %s", entry_path)
-        except (pickle.PickleError, OSError):
+        except OSError:
             entry_path.unlink(missing_ok=True)
 
     if removed > 0:
@@ -88,12 +90,11 @@ def enforce_size_limit(
 
     entries: list[tuple[Path, CacheEntry]] = []
     for entry_path in cache_dir.rglob("*.cache"):
-        try:
-            with open(entry_path, "rb") as f:
-                entry: CacheEntry = _safe_pickle_load(f)
-            entries.append((entry_path, entry))
-        except (pickle.PickleError, OSError):
+        entry = load_cache_entry(entry_path)
+        if entry is None:
             entry_path.unlink(missing_ok=True)
+            continue
+        entries.append((entry_path, entry))
 
     entries.sort(key=lambda x: x[1].accessed_at)
 

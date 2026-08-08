@@ -1,73 +1,52 @@
-"""Contract tests for analysis cache cleanup helpers."""
+"""Contract tests for the analysis cache cleanup policy.
+
+The cleanup helpers run on a background thread, so a file they cannot interpret
+must be discarded rather than raised through: an exception there is invisible to
+the caller and kills the sweep before it reaches the remaining entries.
+"""
 
 from __future__ import annotations
 
-import tempfile
-from datetime import datetime, timedelta
+import threading
 from pathlib import Path
 
-from r2morph.core.analysis_cache import AnalysisCache, CacheEntry, CacheKey, CacheStats
 from r2morph.core.analysis_cache_cleanup import (
     cleanup_expired_entries,
     cleanup_low_access_entries,
     enforce_size_limit,
 )
+from r2morph.core.analysis_cache_models import CacheStats
+from r2morph.core.analysis_cache_storage import CacheStorage
 
 
-def test_cleanup_helpers_remove_stale_entries() -> None:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cache_dir = Path(tmpdir)
-        stats = CacheStats()
-        cache = AnalysisCache(cache_dir=cache_dir, enable_background_cleanup=False)
-
-        binary = b"BINARY_DATA"
-        cache.set(binary, "cfg", {"data": 1})
-
-        key = CacheKey(
-            binary_hash=cache._hash_binary(binary),
-            analysis_type="cfg",
-            options_hash=cache._hash_options({}),
-        )
-        old_entry = CacheEntry(key=key, data={"data": 2})
-        old_entry.created_at = datetime.now() - timedelta(days=100)
-        old_entry.accessed_at = datetime.now() - timedelta(days=100)
-        cache._save_entry(old_entry)
-
-        removed_expired = cleanup_expired_entries(cache_dir, stats, cache._stats_lock, max_age_days=30)
-        assert removed_expired >= 1
+def _write_foreign_cache_file(cache_dir: Path, key: str) -> Path:
+    """A cache file holding an object the deserializer accepts but that is not a
+    CacheEntry - a stale entry from an older schema, or a foreign file dropped in."""
+    CacheStorage(cache_dir=cache_dir).save(key, CacheStats(hits=3))
+    return cache_dir / f"{key}.cache"
 
 
-def test_cleanup_helpers_enforce_size_limit() -> None:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cache_dir = Path(tmpdir)
-        cache = AnalysisCache(cache_dir=cache_dir, enable_background_cleanup=False)
+def test_cleanup_expired_entries_discards_a_decodable_non_entry_object(tmp_path: Path) -> None:
+    foreign = _write_foreign_cache_file(tmp_path, "zz/yy/foreign")
 
-        binary = b"BINARY_DATA"
-        cache.set(binary, "cfg", {"data": 1})
-        cache.set(binary, "call_graph", {"data": 2})
+    cleanup_expired_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1)
 
-        stats = cache.get_stats()
-        enforce_size_limit(cache_dir, stats, cache._stats_lock, max_size_bytes=1)
-
-        assert stats.total_size_bytes <= 1 or stats.entry_count == 0
+    assert not foreign.exists()
 
 
-def test_cleanup_helpers_low_access() -> None:
-    with tempfile.TemporaryDirectory() as tmpdir:
-        cache_dir = Path(tmpdir)
-        stats = CacheStats()
-        cache = AnalysisCache(cache_dir=cache_dir, enable_background_cleanup=False)
+def test_cleanup_low_access_entries_discards_a_decodable_non_entry_object(tmp_path: Path) -> None:
+    foreign = _write_foreign_cache_file(tmp_path, "zz/yy/foreign")
 
-        binary = b"BINARY_DATA"
-        key = CacheKey(
-            binary_hash=cache._hash_binary(binary),
-            analysis_type="cfg",
-            options_hash=cache._hash_options({}),
-        )
-        old_entry = CacheEntry(key=key, data={"data": 1})
-        old_entry.created_at = datetime.now() - timedelta(days=100)
-        old_entry.accessed_at = datetime.now() - timedelta(days=100)
-        cache._save_entry(old_entry)
+    cleanup_low_access_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1)
 
-        removed = cleanup_low_access_entries(cache_dir, stats, cache._stats_lock, min_access_count=2, max_age_days=7)
-        assert removed == 1
+    assert not foreign.exists()
+
+
+def test_enforce_size_limit_discards_a_decodable_non_entry_object(tmp_path: Path) -> None:
+    foreign = _write_foreign_cache_file(tmp_path, "zz/yy/foreign")
+    stats = CacheStats()
+    stats.total_size_bytes = 1024
+
+    enforce_size_limit(tmp_path, stats, threading.Lock(), max_size_bytes=0)
+
+    assert not foreign.exists()
