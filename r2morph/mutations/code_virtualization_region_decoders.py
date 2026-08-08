@@ -651,15 +651,26 @@ def _decode_fp_arith_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[
     return ("fparithmemrip", op, xmm_index, target, width)
 
 
-def _decode_fp_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | None:
+# The two shapes a scaled-index FP memory item can take. The no-base form has no
+# ``base_slot`` field, so every field after it sits one position earlier; consumers
+# select the layout from the ``nb`` suffix on the kind.
+FpIndexedItem = tuple[str, int, int, int, int, int, int]
+"""(kind, xmm_index, base_slot, index_slot, shift, disp, width)."""
+
+FpIndexedNoBaseItem = tuple[str, int, int, int, int, int]
+"""(kind + "nb", xmm_index, index_slot, shift, disp, width)."""
+
+
+def _decode_fp_indexed(text: str) -> FpIndexedItem | FpIndexedNoBaseItem | None:
     """Decode ``movsd/movss xmm, [base+index*scale+disp]`` / store into
     ``("fploadidx"|"fpstoreidx", xmm_index, base_slot, index_slot, shift, disp,
     width)``.
 
     Scaled-index addressing is how arrays of double/float are accessed
     (``a[i]`` -> ``[base + i*8]``). The no-base form ``[index*scale+disp]`` lowers
-    to the ``idxnb`` kinds (one byte shorter, no base slot). Returns ``None`` for a
-    register or non-indexed operand.
+    to the ``idxnb`` kinds (one byte shorter, no base slot), which drop the
+    ``base_slot`` field and so carry ``width`` one position earlier. Returns
+    ``None`` for a register or non-indexed operand.
     """
     parts = text.split(None, 1)
     if len(parts) != 2 or "," not in parts[1]:

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import pickle
 from collections.abc import Iterator
 from pathlib import Path
@@ -9,6 +10,8 @@ from typing import Any
 
 from r2morph.core.analysis_cache_models import CacheEntry, CacheStats
 from r2morph.core.analysis_cache_storage import _safe_pickle_load
+
+logger = logging.getLogger(__name__)
 
 
 def evict_cache_entry(entry_path: Path, entry: CacheEntry, stats: CacheStats, stats_lock: Any) -> None:
@@ -21,12 +24,21 @@ def evict_cache_entry(entry_path: Path, entry: CacheEntry, stats: CacheStats, st
 
 
 def load_cache_entry(entry_path: Path) -> CacheEntry | None:
-    """Load a single cache entry, returning None on corrupt or missing data."""
+    """Load a single cache entry, returning None on corrupt, foreign or missing data."""
     try:
         with open(entry_path, "rb") as f:
-            return _safe_pickle_load(f)
+            decoded = _safe_pickle_load(f)
     except (pickle.PickleError, EOFError, OSError):
         return None
+
+    if not isinstance(decoded, CacheEntry):
+        # A file that decodes cleanly to some other object (an entry written by an
+        # older schema, or a foreign file dropped in the cache tree) is junk for
+        # every caller: they all read CacheEntry attributes straight away.
+        logger.debug("Discarding cache file %s: decoded %s, not a cache entry", entry_path, type(decoded).__name__)
+        return None
+
+    return decoded
 
 
 def iter_cache_entries(cache_dir: Path) -> Iterator[tuple[Path, CacheEntry]]:

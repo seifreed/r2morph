@@ -117,8 +117,8 @@ def _decode_run_item(
         return VirtualizedFpMemOp(rip_kind, rip_xmm, -1, target, rip_width)
     fp_idx = _decode_fp_indexed(text)
     # Only the base form (7-tuple) is virtualized; the no-base "idxnb" form (an
-    # absolute [index*scale+disp]) stays native.
-    if fp_idx is not None and not fp_idx[0].endswith("nb"):
+    # absolute [index*scale+disp], a 6-tuple without the base slot) stays native.
+    if fp_idx is not None and len(fp_idx) == 7:
         idx_kind, idx_xmm, idx_base, idx_index, idx_shift, idx_disp, idx_width = fp_idx
         return VirtualizedFpMemOp(idx_kind, idx_xmm, idx_base, idx_disp, idx_width, idx_index, idx_shift)
     fp_arith = _decode_fp_arith(text)
