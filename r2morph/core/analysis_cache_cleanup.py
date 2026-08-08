@@ -28,7 +28,6 @@ def cleanup_expired_entries(
         try:
             entry = load_cache_entry(entry_path)
             if entry is None:
-                entry_path.unlink(missing_ok=True)
                 continue
 
             if entry.created_at < cutoff:
@@ -60,7 +59,6 @@ def cleanup_low_access_entries(
         try:
             entry = load_cache_entry(entry_path)
             if entry is None:
-                entry_path.unlink(missing_ok=True)
                 continue
 
             if entry.created_at < cutoff and entry.access_count < min_access_count:
@@ -92,7 +90,6 @@ def enforce_size_limit(
     for entry_path in cache_dir.rglob("*.cache"):
         entry = load_cache_entry(entry_path)
         if entry is None:
-            entry_path.unlink(missing_ok=True)
             continue
         entries.append((entry_path, entry))
 
