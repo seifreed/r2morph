@@ -274,6 +274,35 @@ def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) ->
     assert (pt_phdr.p_offset, pt_phdr.p_vaddr, pt_phdr.p_filesz) == expected
 
 
+@pytest.mark.parametrize("fixture", [_FIXTURE_EXEC, _FIXTURE_DYN])
+def test_inject_blob_keeps_the_header_segment_spanning_the_program_header_table(fixture: Path, tmp_path: Path) -> None:
+    # Appending an entry lengthens the ELF-header-plus-table prefix. A loader that
+    # locates the table from the image base instead of AT_PHDR refuses an image whose
+    # first loadable segment is shorter than that prefix - observed as a hard refusal
+    # ("first load segment does not span the elf header size") on an image whose
+    # header segment covered 457 of the 512 bytes the grown table needed.
+    target = _copy_fixture(fixture, tmp_path)
+
+    _inject_into(target, _BLOB)
+
+    headers = _program_headers(target)
+    header_segment = next(e for e in headers if e.p_type == _PT_LOAD and e.p_offset == 0)
+    assert header_segment.p_filesz >= _ELF64_HEADER_SIZE + len(headers) * _PHDR_ENTRY_SIZE
+
+
+@pytest.mark.parametrize("fixture", [_FIXTURE_EXEC, _FIXTURE_DYN])
+def test_inject_blob_keeps_the_header_segment_clear_of_the_next_segment(fixture: Path, tmp_path: Path) -> None:
+    # Growing that segment must never let it run into the one above it.
+    target = _copy_fixture(fixture, tmp_path)
+
+    _inject_into(target, _BLOB)
+
+    loads = [entry for entry in _program_headers(target) if entry.p_type == _PT_LOAD]
+    header_segment = next(entry for entry in loads if entry.p_offset == 0)
+    above = [entry.p_vaddr for entry in loads if entry.p_vaddr > header_segment.p_vaddr]
+    assert header_segment.p_vaddr + header_segment.p_memsz <= min(above)
+
+
 def test_inject_blob_refuses_unexpected_program_header_entry_size(tmp_path: Path) -> None:
     target = _write_synthetic_elf(tmp_path / "wide_entries", e_phentsize=_PHDR_ENTRY_SIZE + 8)
 

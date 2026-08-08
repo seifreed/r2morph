@@ -257,6 +257,47 @@ def _new_load_entry(placement: _Placement, blob_size: int) -> bytes:
     return bytes(entry)
 
 
+def _header_load_index(table: bytes, e_phnum: int) -> int | None:
+    """Index of the ``PT_LOAD`` that maps the ELF header, if any."""
+    for index in range(e_phnum):
+        base = index * _PHDR_ENTRY_SIZE
+        if struct.unpack_from("<I", table, base + _P_TYPE)[0] != _PT_LOAD:
+            continue
+        if struct.unpack_from("<Q", table, base + _P_OFFSET)[0] == 0:
+            return index
+    return None
+
+
+def _grow_header_segment(table: bytearray, placement: _Placement) -> None:
+    """Keep the ELF header's segment spanning the grown program-header table.
+
+    Adding an entry lengthens the header-plus-table prefix, and a loader that
+    locates the table from the image base rather than from ``AT_PHDR`` rejects
+    an image whose first loadable segment is shorter than that prefix. The
+    Linux kernel does not check it, so failing to grow is not fatal - but the
+    grown segment costs nothing and keeps the output acceptable to both. The
+    segment is only stretched into space the next one does not already claim.
+    """
+    index = _header_load_index(bytes(table), placement.e_phnum)
+    if index is None:
+        return
+    required = _ELF64_HEADER_SIZE + (placement.e_phnum + 1) * _PHDR_ENTRY_SIZE
+    base = index * _PHDR_ENTRY_SIZE
+    vaddr = struct.unpack_from("<Q", table, base + _P_VADDR)[0]
+    if struct.unpack_from("<Q", table, base + _P_FILESZ)[0] >= required or required > placement.file_size:
+        return
+
+    loads = _parse_loads(bytes(table), placement.e_phnum)
+    ceiling = min((load.vaddr for load in loads if load.vaddr > vaddr), default=None)
+    if ceiling is not None and vaddr + required > ceiling:
+        logger.debug("No room to span the program-header table in the header segment at 0x%x; leaving it", vaddr)
+        return
+
+    memsz = struct.unpack_from("<Q", table, base + _P_MEMSZ)[0]
+    struct.pack_into("<Q", table, base + _P_FILESZ, required)
+    struct.pack_into("<Q", table, base + _P_MEMSZ, max(memsz, required))
+
+
 def _relocated_phdr_table(placement: _Placement, blob_size: int) -> bytes:
     """The original entries, ``PT_PHDR`` retargeted, plus the new ``PT_LOAD``.
 
@@ -268,6 +309,7 @@ def _relocated_phdr_table(placement: _Placement, blob_size: int) -> bytes:
         base = index * _PHDR_ENTRY_SIZE
         if struct.unpack_from("<I", table, base + _P_TYPE)[0] == _PT_PHDR:
             _retarget_phdr_entry(table, base, placement)
+    _grow_header_segment(table, placement)
     return bytes(table) + _new_load_entry(placement, blob_size)
 
 
