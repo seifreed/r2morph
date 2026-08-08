@@ -1,18 +1,29 @@
 """
-Native execution proof that a virtualized PIE image is load-base independent.
+Native execution proof that a real, strict ELF loader accepts a virtualized image.
 
-The default suite proves PIE virtualization under emulation at one synthetic load
-bias. That is a weaker claim than it looks: a synthetic bias is a constant chosen by
-the test, so a blob that accidentally baked an absolute address in would still line
-up. This module makes the complementary, stronger claim - it executes the mutated
-file for real on Linux/x86-64, where the loader picks the ET_DYN load base itself and
-picks a different one on every exec. Any base-dependent artifact left in the injected
-VM blob (an absolute vIP, an unbiased target-map entry, a trampoline resolved against
-the on-disk vaddr) surfaces here as a wrong exit status or a crash, because the base
-the blob was built against is not the base it is running at.
+Everything else that runs the produced file runs it under something permissive. The
+emulator maps the segments the tests ask it to map; the Linux kernel's own loader is
+famously tolerant of program headers no toolchain would ever emit. Both will happily
+execute a structurally invalid image, so a green emulation is not evidence that the
+file is well formed - only that its instruction stream is right.
 
-For that reason the evidence lives in *repeated* runs: one green run says little, the
-same run repeated against a freshly randomized base each time is the actual proof.
+This module supplies the missing half: it hands the mutated file to a real userland
+loader on Linux/x86-64 and takes the process exit status as the verdict. That loader
+validates the image before it transfers control, and it refuses images the emulator
+accepted - an injection that lengthened the ELF-header-plus-table prefix without
+growing the segment that maps it was rejected here ("first load segment does not span
+the elf header size", exit 133) while emulating perfectly. Nothing short of running
+the file under a strict loader had caught it.
+
+What this module does NOT establish is load-base independence. Under a translation
+layer ``--platform linux/amd64`` maps the ET_DYN image at a constant address
+(0x555555554000, observed identical across execs) rather than a randomized one, so a
+green run here says nothing about a blob that baked an absolute address in - a green
+run against a pinned base is worse than no run, because it looks like evidence. That
+claim is made instead by the sibling module ``test_code_virtualization_pie_real``,
+which emulates the image at a nonzero bias: a link-time absolute cannot cancel out at
+a bias the image was not built for, so a wrong exit status there is exactly the
+base-dependence signal that is unavailable here.
 
 Both fixtures are static-PIE and ``-nostdlib``, so they need no dynamic loader and run
 in any minimal image. Each is executed twice per invocation - once unmutated as the
@@ -23,20 +34,13 @@ Opt in with ``R2MORPH_NATIVE_TESTS=1``::
 
     R2MORPH_NATIVE_TESTS=1 python -m pytest tests/integration/test_code_virtualization_pie_native.py
 
-The module skips unless all three of these hold: the variable is set, a container
-daemon is reachable, and that daemon is itself x86-64. The last condition is what
-keeps the claim honest. On a non-x86-64 daemon ``--platform linux/amd64`` is served by
-a translation layer rather than by the kernel's ELF loader, and such a layer maps the
-image at a constant address (0x555555554000, observed identical across execs) instead
-of a randomized one - so the binary would run, the assertions would pass, and none of
-it would say anything about base independence. A green run against a pinned base is
-worse than no run, because it looks like evidence.
-
-Those three conditions are an *infrastructure* gate, not an ``xfail`` covering a known
-defect: without a native Linux/x86-64 runtime there is no randomized base to observe,
-so there is no verdict to be had, and a failure would report the absence of the right
-machine rather than the presence of a bug. Once the gate is open the assertions are
-unconditional - nothing here tolerates a wrong exit status.
+The module skips unless the variable is set and a container daemon is reachable. That
+is an *infrastructure* gate, not an ``xfail`` covering a known defect: with no Linux
+runtime to hand the file to there is no loader verdict to be had, and a failure would
+report the absence of a runtime rather than the presence of a bug. The daemon's own
+architecture is not part of the gate - a translation layer still runs the image
+through a strict loader, which is the whole claim being made. Once the gate is open
+the assertions are unconditional - nothing here tolerates a wrong exit status.
 """
 
 from __future__ import annotations
@@ -56,7 +60,7 @@ if os.environ.get("R2MORPH_NATIVE_TESTS") != "1":
 else:
     try:
         _daemon = subprocess.run(
-            ["docker", "version", "--format", "{{.Server.Arch}}"],
+            ["docker", "version", "--format", "{{.Server.Version}}"],
             capture_output=True,
             text=True,
             timeout=60,
@@ -70,13 +74,6 @@ else:
     if _daemon.returncode != 0:
         pytest.skip(
             "no reachable container daemon to execute a Linux/x86-64 ELF in",
-            allow_module_level=True,
-        )
-    if _daemon.stdout.strip() != "amd64":
-        pytest.skip(
-            f"container daemon is {_daemon.stdout.strip() or 'of unknown architecture'}, not x86-64: "
-            "linux/amd64 would run under a translation layer that pins the ET_DYN load base, "
-            "leaving no randomized base to prove independence against",
             allow_module_level=True,
         )
 
@@ -102,8 +99,8 @@ _SWITCH_EXIT_CODE = 30
 def _native_exit_code(executable: Path) -> int:
     """Exit status of ``executable`` run in a Linux/x86-64 container.
 
-    The mount is read-only and the network is off. The container's kernel picks the
-    ET_DYN load base, which is what makes the resulting status meaningful.
+    The mount is read-only and the network is off. A structurally invalid image is
+    refused before its entry point runs, so the status also reports loadability.
     """
     executable.chmod(_EXECUTABLE_MODE)
     run = subprocess.run(
@@ -160,7 +157,7 @@ def test_pie_arith_fixture_native_reference_exit_status_is_the_documented_code(t
 
 
 def test_pie_arith_fixture_virtualized_native_exit_status_is_unchanged(tmp_path: Path) -> None:
-    """The virtualized PIE arithmetic image keeps its exit status at a kernel-chosen base."""
+    """A strict loader accepts the virtualized PIE arithmetic image and it exits as before."""
     assert _native_exit_code(_virtualized_copy(_ARITH_FIXTURE, tmp_path)) == _ARITH_EXIT_CODE
 
 
@@ -170,5 +167,5 @@ def test_pie_switch_fixture_native_reference_exit_status_is_the_documented_code(
 
 
 def test_pie_switch_fixture_virtualized_native_exit_status_is_unchanged(tmp_path: Path) -> None:
-    """The virtualized PIE switch keeps its exit status at a kernel-chosen base."""
+    """A strict loader accepts the virtualized PIE switch image and it exits as before."""
     assert _native_exit_code(_virtualized_copy(_SWITCH_FIXTURE, tmp_path)) == _SWITCH_EXIT_CODE
