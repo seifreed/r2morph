@@ -460,6 +460,7 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
             out_depth = depth
         if out_depth < 0:
             return False  # stack underflow
+        out_snapshot: tuple[int, int] | None
         if kind == "movfromrsp":
             out_snapshot = (int(item[1]), depth)
         else:

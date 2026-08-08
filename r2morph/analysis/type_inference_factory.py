@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
+
+from r2morph.analysis.type_inference_types import PrimitiveType, TypeCategory, TypeInfo
+
+if TYPE_CHECKING:
+    from r2morph.analysis.type_inference import TypeInference
 
 _DEFAULT_OPERAND_SIZE = 4
 
@@ -77,25 +82,25 @@ _X86_REGISTER_SIZES: dict[str, int] = {
 }
 
 
-def create_primitive_type(self: Any, primitive: Any) -> Any:
+def create_primitive_type(self: TypeInference, primitive: PrimitiveType) -> TypeInfo:
     """Create a primitive type."""
     size_map = {
-        self.PrimitiveType.INT8: 1,
-        self.PrimitiveType.INT16: 2,
-        self.PrimitiveType.INT32: 4,
-        self.PrimitiveType.INT64: 8,
-        self.PrimitiveType.UINT8: 1,
-        self.PrimitiveType.UINT16: 2,
-        self.PrimitiveType.UINT32: 4,
-        self.PrimitiveType.UINT64: 8,
-        self.PrimitiveType.FLOAT32: 4,
-        self.PrimitiveType.FLOAT64: 8,
-        self.PrimitiveType.BOOL: 1,
-        self.PrimitiveType.VOID: 0,
+        PrimitiveType.INT8: 1,
+        PrimitiveType.INT16: 2,
+        PrimitiveType.INT32: 4,
+        PrimitiveType.INT64: 8,
+        PrimitiveType.UINT8: 1,
+        PrimitiveType.UINT16: 2,
+        PrimitiveType.UINT32: 4,
+        PrimitiveType.UINT64: 8,
+        PrimitiveType.FLOAT32: 4,
+        PrimitiveType.FLOAT64: 8,
+        PrimitiveType.BOOL: 1,
+        PrimitiveType.VOID: 0,
     }
-    return self.TypeInfo(
+    return TypeInfo(
         type_id=self._new_type_id(),
-        category=self.TypeCategory.PRIMITIVE,
+        category=TypeCategory.PRIMITIVE,
         size=size_map.get(primitive, 0),
         alignment=size_map.get(primitive, 1),
         primitive=primitive,
@@ -103,12 +108,12 @@ def create_primitive_type(self: Any, primitive: Any) -> Any:
     )
 
 
-def create_pointer_type(self: Any, pointee: Any | None = None) -> Any:
+def create_pointer_type(self: TypeInference, pointee: TypeInfo | None = None) -> TypeInfo:
     """Create a pointer type."""
     ptr_size = 8
-    return self.TypeInfo(
+    return TypeInfo(
         type_id=self._new_type_id(),
-        category=self.TypeCategory.POINTER,
+        category=TypeCategory.POINTER,
         size=ptr_size,
         alignment=ptr_size,
         pointee=pointee,
@@ -116,11 +121,11 @@ def create_pointer_type(self: Any, pointee: Any | None = None) -> Any:
     )
 
 
-def create_array_type(self: Any, element_type: Any, count: int) -> Any:
+def create_array_type(self: TypeInference, element_type: TypeInfo, count: int) -> TypeInfo:
     """Create an array type."""
-    return self.TypeInfo(
+    return TypeInfo(
         type_id=self._new_type_id(),
-        category=self.TypeCategory.ARRAY,
+        category=TypeCategory.ARRAY,
         size=element_type.size * count,
         alignment=element_type.alignment,
         element_type=element_type,
@@ -129,7 +134,7 @@ def create_array_type(self: Any, element_type: Any, count: int) -> Any:
     )
 
 
-def create_struct_type(self: Any, fields: list[tuple[str, Any, int]]) -> Any:
+def create_struct_type(self: TypeInference, fields: list[tuple[str, TypeInfo, int]]) -> TypeInfo:
     """Create a struct type."""
     total_size = 0
     max_alignment = 1
@@ -139,9 +144,9 @@ def create_struct_type(self: Any, fields: list[tuple[str, Any, int]]) -> Any:
         if type_info.alignment > max_alignment:
             max_alignment = type_info.alignment
 
-    return self.TypeInfo(
+    return TypeInfo(
         type_id=self._new_type_id(),
-        category=self.TypeCategory.STRUCT,
+        category=TypeCategory.STRUCT,
         size=total_size,
         alignment=max_alignment,
         fields=fields,
@@ -149,19 +154,19 @@ def create_struct_type(self: Any, fields: list[tuple[str, Any, int]]) -> Any:
     )
 
 
-def _create_int_type(self: Any, size: int) -> Any:
+def _create_int_type(self: TypeInference, size: int) -> TypeInfo:
     """Create an integer type of given size."""
     size_to_type = {
-        1: self.PrimitiveType.INT8,
-        2: self.PrimitiveType.INT16,
-        4: self.PrimitiveType.INT32,
-        8: self.PrimitiveType.INT64,
+        1: PrimitiveType.INT8,
+        2: PrimitiveType.INT16,
+        4: PrimitiveType.INT32,
+        8: PrimitiveType.INT64,
     }
-    primitive = size_to_type.get(size, self.PrimitiveType.INT32)
+    primitive = size_to_type.get(size, PrimitiveType.INT32)
     return create_primitive_type(self, primitive)
 
 
-def _get_operand_size(self: Any, operand: str) -> int:
+def _get_operand_size(self: TypeInference, operand: str) -> int:
     """Get the size of an operand based on register name."""
     operand = operand.lower().strip()
 

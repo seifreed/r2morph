@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any
+from typing import TYPE_CHECKING
 
 from r2morph.analysis.symbolic.syntia_models import InstructionSemantics
+
+if TYPE_CHECKING:
+    from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework
 
 logger = logging.getLogger(__name__)
 
 
 def learn_instruction_semantics(
-    framework: Any,
+    framework: SyntiaFramework,
     instruction_bytes: bytes,
     address: int,
     disassembly: str,

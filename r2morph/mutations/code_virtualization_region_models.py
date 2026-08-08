@@ -133,7 +133,7 @@ class Region:
 
 
 def _op_key(item: tuple[Any, ...]) -> str | None:
-    kind = item[0]
+    kind: str = item[0]
     if kind == "lea":
         return f"lea_{item[4]}"
     if kind == "learip":

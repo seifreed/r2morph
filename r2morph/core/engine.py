@@ -86,6 +86,10 @@ class MorphEngine:
         config: Engine configuration
     """
 
+    # Set by the load_binary lifecycle helper: the caller-supplied path when the
+    # binary is loaded writable (the engine then works on a session copy).
+    _original_path: Path | None
+
     def __init__(
         self,
         config: dict[str, Any] | None = None,

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
 from r2morph.analysis.type_inference_factory import (
     _create_int_type,
@@ -13,19 +13,23 @@ from r2morph.analysis.type_inference_factory import (
     create_primitive_type,
     create_struct_type,
 )
+from r2morph.analysis.type_inference_types import PrimitiveType, TypeCategory, TypeInfo
 from r2morph.core.binary import Binary
 
+if TYPE_CHECKING:
+    from r2morph.analysis.type_inference import TypeInference
 
-def infer_type(self: Any, binary: Binary, address: int) -> Any:
+
+def infer_type(self: TypeInference, binary: Binary, address: int) -> TypeInfo:
     """Infer the type at a given address."""
     if address in self._address_types:
         return self._address_types[address]
 
     disasm = binary.get_function_disasm(address)
     if not disasm:
-        return self.TypeInfo(
+        return TypeInfo(
             type_id=self._new_type_id(),
-            category=self.TypeCategory.UNKNOWN,
+            category=TypeCategory.UNKNOWN,
             confidence=0.0,
         )
 
@@ -33,14 +37,14 @@ def infer_type(self: Any, binary: Binary, address: int) -> Any:
         if insn.get("offset", 0) == address:
             return _infer_from_instruction(self, binary, insn)
 
-    return self.TypeInfo(
+    return TypeInfo(
         type_id=self._new_type_id(),
-        category=self.TypeCategory.UNKNOWN,
+        category=TypeCategory.UNKNOWN,
         confidence=0.0,
     )
 
 
-def _infer_from_instruction(self: Any, binary: Binary, insn: dict) -> Any:
+def _infer_from_instruction(self: TypeInference, binary: Binary, insn: dict) -> TypeInfo:
     """Infer type from an instruction."""
     disasm = insn.get("disasm", "").lower()
 
@@ -49,33 +53,33 @@ def _infer_from_instruction(self: Any, binary: Binary, insn: dict) -> Any:
     elif "lea" in disasm:
         return create_pointer_type(self)
     elif "cmp" in disasm or "test" in disasm:
-        return create_primitive_type(self, self.PrimitiveType.BOOL)
+        return create_primitive_type(self, PrimitiveType.BOOL)
     elif any(x in disasm for x in ["add", "sub", "imul", "mul"]):
         return _infer_arithmetic_type(self, binary, insn, disasm)
     elif any(x in disasm for x in ["xmm", "ymm", "zmm"]):
-        return create_primitive_type(self, self.PrimitiveType.FLOAT64)
+        return create_primitive_type(self, PrimitiveType.FLOAT64)
 
-    return self.TypeInfo(
+    return TypeInfo(
         type_id=self._new_type_id(),
-        category=self.TypeCategory.UNKNOWN,
+        category=TypeCategory.UNKNOWN,
         confidence=0.0,
     )
 
 
-def _infer_from_mov(self: Any, binary: Binary, insn: dict, disasm: str) -> Any:
+def _infer_from_mov(self: TypeInference, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
     """Infer type from mov instruction."""
     parts = disasm.split(None, 1)
     if len(parts) < 2:
-        return self.TypeInfo(
+        return TypeInfo(
             type_id=self._new_type_id(),
-            category=self.TypeCategory.UNKNOWN,
+            category=TypeCategory.UNKNOWN,
         )
 
     operands = parts[1].split(",")
     if len(operands) < 2:
-        return self.TypeInfo(
+        return TypeInfo(
             type_id=self._new_type_id(),
-            category=self.TypeCategory.UNKNOWN,
+            category=TypeCategory.UNKNOWN,
         )
 
     dest = operands[0].strip()
@@ -91,21 +95,21 @@ def _infer_from_mov(self: Any, binary: Binary, insn: dict, disasm: str) -> Any:
     if "[" in dest:
         return create_pointer_type(self)
 
-    return self.TypeInfo(
+    return TypeInfo(
         type_id=self._new_type_id(),
-        category=self.TypeCategory.UNKNOWN,
+        category=TypeCategory.UNKNOWN,
     )
 
 
-def _infer_arithmetic_type(self: Any, binary: Binary, insn: dict, disasm: str) -> Any:
+def _infer_arithmetic_type(self: TypeInference, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
     """Infer type from arithmetic instruction."""
     operand_size = _extract_operand_size(disasm)
     return _create_int_type(self, operand_size)
 
 
-def propagate_types(self: Any, binary: Binary, func_addr: int) -> dict[int, Any]:
+def propagate_types(self: TypeInference, binary: Binary, func_addr: int) -> dict[int, TypeInfo]:
     """Propagate types through a function."""
-    types: dict[int, Any] = {}
+    types: dict[int, TypeInfo] = {}
 
     disasm = binary.get_function_disasm(func_addr)
     if not disasm:
@@ -114,7 +118,7 @@ def propagate_types(self: Any, binary: Binary, func_addr: int) -> dict[int, Any]
     for insn in disasm:
         addr = insn.get("offset", 0)
         type_info = _infer_from_instruction(self, binary, insn)
-        if type_info.category != self.TypeCategory.UNKNOWN:
+        if type_info.category != TypeCategory.UNKNOWN:
             types[addr] = type_info
 
     _propagate_through_phis(self, types)
@@ -123,7 +127,7 @@ def propagate_types(self: Any, binary: Binary, func_addr: int) -> dict[int, Any]
     return types
 
 
-def _propagate_through_phis(self: Any, types: dict[int, Any]) -> None:
+def _propagate_through_phis(self: TypeInference, types: dict[int, TypeInfo]) -> None:
     """Propagate types through phi-like constructs."""
     if not types:
         return
@@ -132,7 +136,7 @@ def _propagate_through_phis(self: Any, types: dict[int, Any]) -> None:
     _promote_pointer_neighbors(self, types)
 
 
-def _unify_adjacent_types(self: Any, types: dict[int, Any]) -> None:
+def _unify_adjacent_types(self: TypeInference, types: dict[int, TypeInfo]) -> None:
     """Unify the types of values at adjacent (sorted) addresses."""
     addr_list = sorted(types.keys())
 
@@ -143,7 +147,7 @@ def _unify_adjacent_types(self: Any, types: dict[int, Any]) -> None:
         prev_type = types[prev_addr]
         curr_type = types[curr_addr]
 
-        if prev_type.category == self.TypeCategory.UNKNOWN or curr_type.category == self.TypeCategory.UNKNOWN:
+        if prev_type.category == TypeCategory.UNKNOWN or curr_type.category == TypeCategory.UNKNOWN:
             continue
 
         if (
@@ -151,7 +155,7 @@ def _unify_adjacent_types(self: Any, types: dict[int, Any]) -> None:
             and prev_type.size == curr_type.size
             and prev_type.confidence > curr_type.confidence
         ):
-            types[curr_addr] = self.TypeInfo(
+            types[curr_addr] = TypeInfo(
                 type_id=curr_type.type_id,
                 category=curr_type.category,
                 size=curr_type.size,
@@ -161,34 +165,31 @@ def _unify_adjacent_types(self: Any, types: dict[int, Any]) -> None:
             )
 
         if (
-            curr_type.category == self.TypeCategory.POINTER
-            and prev_type.category == self.TypeCategory.PRIMITIVE
-            and prev_type.primitive in (self.PrimitiveType.UINT64, self.PrimitiveType.INT64)
+            curr_type.category == TypeCategory.POINTER
+            and prev_type.category == TypeCategory.PRIMITIVE
+            and prev_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64)
         ):
-            types[curr_addr] = self.TypeInfo(
+            types[curr_addr] = TypeInfo(
                 type_id=curr_type.type_id,
-                category=self.TypeCategory.POINTER,
+                category=TypeCategory.POINTER,
                 size=8,
                 alignment=8,
                 confidence=max(prev_type.confidence, curr_type.confidence) * 0.9,
             )
 
 
-def _promote_pointer_neighbors(self: Any, types: dict[int, Any]) -> None:
+def _promote_pointer_neighbors(self: TypeInference, types: dict[int, TypeInfo]) -> None:
     """Promote a 64-bit integer within 32 bytes of a pointer to a pointer."""
     for addr, type_info in types.items():
-        if type_info.category != self.TypeCategory.POINTER:
+        if type_info.category != TypeCategory.POINTER:
             continue
         for other_addr, other_type in types.items():
             if other_addr == addr:
                 continue
-            if (
-                other_type.primitive in (self.PrimitiveType.UINT64, self.PrimitiveType.INT64)
-                and abs(other_addr - addr) < 32
-            ):
-                types[other_addr] = self.TypeInfo(
+            if other_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64) and abs(other_addr - addr) < 32:
+                types[other_addr] = TypeInfo(
                     type_id=other_type.type_id,
-                    category=self.TypeCategory.POINTER,
+                    category=TypeCategory.POINTER,
                     size=8,
                     alignment=8,
                     confidence=0.7,
@@ -196,7 +197,7 @@ def _promote_pointer_neighbors(self: Any, types: dict[int, Any]) -> None:
                 break
 
 
-def _refine_types(self: Any, types: dict[int, Any]) -> None:
+def _refine_types(self: TypeInference, types: dict[int, TypeInfo]) -> None:
     """Refine types based on constraints."""
     if not types:
         return
@@ -208,29 +209,29 @@ def _refine_types(self: Any, types: dict[int, Any]) -> None:
         next_addr = addr_list[i + 1] if i + 1 < len(addr_list) else None
         curr_type = types[curr_addr]
 
-        if curr_type.category == self.TypeCategory.PRIMITIVE:
+        if curr_type.category == TypeCategory.PRIMITIVE:
             _refine_primitive_to_pointer(self, types, curr_addr, curr_type, next_addr)
-        elif curr_type.category == self.TypeCategory.UNKNOWN:
+        elif curr_type.category == TypeCategory.UNKNOWN:
             _refine_unknown_type(self, types, curr_addr, curr_type)
 
 
 def _refine_primitive_to_pointer(
-    self: Any,
-    types: dict[int, Any],
+    self: TypeInference,
+    types: dict[int, TypeInfo],
     curr_addr: int,
-    curr_type: Any,
+    curr_type: TypeInfo,
     next_addr: int | None,
 ) -> None:
     """Reinterpret a 64-bit integer as a pointer when the value 8 bytes later is a small primitive."""
-    if not (curr_type.size == 8 and curr_type.primitive in (self.PrimitiveType.INT64, self.PrimitiveType.UINT64)):
+    if not (curr_type.size == 8 and curr_type.primitive in (PrimitiveType.INT64, PrimitiveType.UINT64)):
         return
     if not (next_addr and (next_addr - curr_addr) == 8):
         return
     next_type = types[next_addr]
-    if next_type.category == self.TypeCategory.PRIMITIVE and next_type.size <= 4:
-        types[curr_addr] = self.TypeInfo(
+    if next_type.category == TypeCategory.PRIMITIVE and next_type.size <= 4:
+        types[curr_addr] = TypeInfo(
             type_id=curr_type.type_id,
-            category=self.TypeCategory.POINTER,
+            category=TypeCategory.POINTER,
             size=8,
             alignment=8,
             confidence=curr_type.confidence * 0.8,
@@ -238,27 +239,27 @@ def _refine_primitive_to_pointer(
 
 
 def _refine_unknown_type(
-    self: Any,
-    types: dict[int, Any],
+    self: TypeInference,
+    types: dict[int, TypeInfo],
     curr_addr: int,
-    curr_type: Any,
+    curr_type: TypeInfo,
 ) -> None:
     """Assume an unknown 8-byte value is a pointer and an unknown 4-byte value a 32-bit integer."""
     if curr_type.size == 8:
-        types[curr_addr] = self.TypeInfo(
+        types[curr_addr] = TypeInfo(
             type_id=curr_type.type_id,
-            category=self.TypeCategory.POINTER,
+            category=TypeCategory.POINTER,
             size=8,
             alignment=8,
             confidence=0.5,
         )
     elif curr_type.size == 4:
-        types[curr_addr] = self.TypeInfo(
+        types[curr_addr] = TypeInfo(
             type_id=curr_type.type_id,
-            category=self.TypeCategory.PRIMITIVE,
+            category=TypeCategory.PRIMITIVE,
             size=4,
             alignment=4,
-            primitive=self.PrimitiveType.INT32,
+            primitive=PrimitiveType.INT32,
             confidence=0.5,
         )
 

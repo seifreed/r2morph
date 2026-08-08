@@ -58,7 +58,7 @@ def _open_r2pipe_with_retry(binary: Any) -> None:
     raise last_error
 
 
-def open_binary(binary: Any) -> Any:
+def open_binary(binary: Binary) -> Binary:
     try:
         logger.info(f"Opening binary: {binary.path}")
         if binary._injected_disassembler is not None:

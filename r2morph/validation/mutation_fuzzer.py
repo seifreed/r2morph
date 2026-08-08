@@ -236,13 +236,13 @@ def create_fuzzer(
 
 def __getattr__(name: str) -> Any:
     if name == "ContinuousFuzzer":
-        from r2morph.validation.mutation_fuzzer_continuous import ContinuousFuzzer as exported
+        from r2morph.validation.mutation_fuzzer_continuous import ContinuousFuzzer
 
-        globals()[name] = exported
-        return exported
+        globals()[name] = ContinuousFuzzer
+        return ContinuousFuzzer
     if name == "create_continuous_fuzzer":
-        from r2morph.validation.mutation_fuzzer_continuous import create_continuous_fuzzer as exported
+        from r2morph.validation.mutation_fuzzer_continuous import create_continuous_fuzzer
 
-        globals()[name] = exported
-        return exported
+        globals()[name] = create_continuous_fuzzer
+        return create_continuous_fuzzer
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

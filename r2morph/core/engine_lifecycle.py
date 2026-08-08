@@ -53,10 +53,10 @@ def should_enable_memory_efficient_mode(binary_size_mb: float, function_count: i
 
 
 def load_binary(
-    engine: Any,
+    engine: MorphEngine,
     path: str | Path,
     writable: bool = True,
-) -> Any:
+) -> MorphEngine:
     """Load a binary for transformation using the engine state."""
     path = Path(path)
     logger.info(f"Loading binary: {path}")

@@ -83,7 +83,10 @@ from r2morph.analysis.type_inference_interprocedural import (
 from r2morph.analysis.type_inference_queries import (
     get_struct_layout as _get_struct_layout_impl,
 )
-from r2morph.analysis.type_inference_types import PrimitiveType, StructField, TypeCategory, TypeInfo
+from r2morph.analysis.type_inference_types import PrimitiveType, StructField, TypeInfo
+from r2morph.analysis.type_inference_types import (
+    TypeCategory as _TypeCategory,
+)
 from r2morph.analysis.type_inference_types import (
     TypeInferenceResult as _TypeInferenceResult,
 )
@@ -96,6 +99,7 @@ from r2morph.analysis.type_inference_value_analysis import (
 from r2morph.core.binary import Binary
 
 PointerAnalysis = _PointerAnalysis
+TypeCategory = _TypeCategory
 TypeInferenceResult = _TypeInferenceResult
 
 
@@ -115,10 +119,6 @@ class TypeInference:
         type_info = inferrer.infer_type(binary, address)
         types = inferrer.propagate_types(binary, function)
     """
-
-    TypeInfo = TypeInfo
-    TypeCategory = TypeCategory
-    PrimitiveType = PrimitiveType
 
     def __init__(self) -> None:
         self._type_counter: int = 0
