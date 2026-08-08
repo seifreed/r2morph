@@ -300,13 +300,24 @@ def _ijmp_handler_asm(index: int, key: int) -> str:
 
 def _ijmp_scan_asm(index: int) -> str:
     """Shared computed-jump re-entry: ``r10`` holds the runtime target address; scan
-    the target map (native address -> bytecode offset) and, on a hit, commit the
-    offset to the vIP so dispatch resumes at the virtualized target. A miss - a target
-    outside the region, which a correctly-extracted region never produces - falls
-    through to the default VM exit. Unique scan/hit labels keep duplicate handler
-    instances distinct."""
+    the target map and, on a hit, commit the stored bytecode offset to the vIP so
+    dispatch resumes at the virtualized target. A miss - a target outside the region,
+    which a correctly-extracted region never produces - falls through to the default
+    VM exit. Unique scan/hit labels keep duplicate handler instances distinct.
+
+    The map keys the deltas ``ijmp_map - target`` rather than the link-time target
+    addresses, so the scan is base-independent: ``lea`` already yields the runtime
+    address of the map, and subtracting the runtime target from it cancels the load
+    base (``(B+map) - (B+target) == map - target``). A non-relocated image sees the
+    identical delta, so the non-PIE contract is unchanged. ``r10`` is dead past the
+    scan (a hit reads only the map, a miss reloads every program register from its
+    frame slot at ``vm_exit``), so normalizing it in place clobbers nothing; the
+    native flags the normalization sets are already clobbered by the scan itself,
+    and the program's flags live in their frame slot.
+    """
     return (
-        "  lea r11, [rip+ijmp_map]\n  mov ecx, dword ptr [r11]\n  add r11, 4\n"
+        "  lea r11, [rip+ijmp_map]\n  neg r10\n  add r10, r11\n"
+        "  mov ecx, dword ptr [r11]\n  add r11, 4\n"
         f"ijmp_scan_{index}:\n  test ecx, ecx\n  jz vm_exit\n"
         f"  cmp qword ptr [r11], r10\n  je ijmp_hit_{index}\n  add r11, 12\n  dec ecx\n  jmp ijmp_scan_{index}\n"
         f"ijmp_hit_{index}:\n  mov eax, dword ptr [r11+8]\n  lea rsi, [rip+bytecode]\n  add rsi, rax\n  jmp vm_dispatch\n"
@@ -943,9 +954,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Every index in 0..total-1 maps to a handler; the bounds guard above sends an
     # out-of-range (corrupt) opcode to the default exit so it cannot leave the VM.
     table = "".join(f"  .long H_{index} - vm_table\n" for index in range(total))
-    # Runtime target map for computed jumps (ijmp): a count followed by (native
-    # address, bytecode offset) pairs the ijmp handler scans to re-enter the VM at
-    # a virtualized target. Empty for an ordinary region, so its blob is unchanged.
+    # Runtime target map for computed jumps (ijmp): a count followed by (map-relative
+    # target delta, bytecode offset) pairs the ijmp handler scans to re-enter the VM
+    # at a virtualized target. Empty for an ordinary region, so its blob is unchanged.
     # It is emitted BEFORE vm_table so the dispatch table stays the tail of the
     # assembled interpreter - build_region_blob locates the table (for its runtime
     # decryption and the self-checksum) as the last ``total*4`` bytes, so any data
@@ -960,17 +971,25 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         )
         interpreter = "".join(lines)
     else:
-        # Runtime target map for computed jumps (ijmp): a count followed by (native
-        # address, bytecode offset) pairs the ijmp handler scans to re-enter the VM
-        # at a virtualized target. Empty for an ordinary region, so its blob is
-        # unchanged. It is emitted BEFORE vm_table so the dispatch table stays the
-        # tail of the assembled interpreter - build_region_blob locates the table
-        # (for its runtime decryption and the self-checksum) as the last ``total*4``
-        # bytes, so any data after the table would corrupt both.
+        # Runtime target map for computed jumps (ijmp): a count followed by
+        # (map-relative target delta, bytecode offset) pairs the ijmp handler scans
+        # to re-enter the VM at a virtualized target. Empty for an ordinary region,
+        # so its blob is unchanged. It is emitted BEFORE vm_table so the dispatch
+        # table stays the tail of the assembled interpreter - build_region_blob
+        # locates the table (for its runtime decryption and the self-checksum) as the
+        # last ``total*4`` bytes, so any data after the table would corrupt both.
+        #
+        # Each key is the link-time delta ``ijmp_map - target`` instead of the target
+        # address itself, so the map holds no absolute address and the scan matches at
+        # any load base (the handler normalizes the runtime target the same way; see
+        # _ijmp_scan_asm). The subtrahend order matters: the assembler resolves
+        # ``label - constant`` but not ``constant - label``, and the handler cancels
+        # the sign by computing map minus target too. The bytecode offset stays a
+        # plain ``.long`` - it is already relative to the bytecode label.
         ijmp_targets = build_ijmp_targets(region)
         ijmp_map = ""
         if ijmp_targets:
-            entries = "".join(f"  .quad {addr}\n  .long {offset}\n" for addr, offset in ijmp_targets)
+            entries = "".join(f"  .quad ijmp_map - {addr}\n  .long {offset}\n" for addr, offset in ijmp_targets)
             ijmp_map = f"ijmp_map:\n  .long {len(ijmp_targets)}\n{entries}"
         lines.append(
             f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"

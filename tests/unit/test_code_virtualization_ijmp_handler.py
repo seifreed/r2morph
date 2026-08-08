@@ -59,11 +59,12 @@ def test_ijmp_interpreter_assembles_with_handler_and_map() -> None:
 
 
 def test_ijmp_interpreter_emits_target_map_section() -> None:
-    """The assembled interpreter carries the runtime map keyed by native address."""
+    """The assembled interpreter carries the runtime map keyed by the target's delta
+    from the map label (base-independent; see the dedicated regression module)."""
     region = _ijmp_region()
     scheme = build_region_scheme(region, random.Random(1234))
     asm = _interpreter_asm(region, scheme)
-    assert "ijmp_map:" in asm and f"  .quad {0x1017}\n" in asm
+    assert "ijmp_map:" in asm and f"  .quad ijmp_map - {0x1017}\n" in asm
 
 
 def test_ordinary_region_emits_no_target_map_section() -> None:
