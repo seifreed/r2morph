@@ -27,10 +27,9 @@ def _iter_macho_binaries(handler: Any, binary: Any) -> list[Any]:
     if isinstance(binary, lief.MachO.Binary):
         return [binary]
     if isinstance(binary, lief.MachO.FatBinary):
-        try:
-            return list(binary.it_binaries)
-        except Exception:
-            return []
+        # A FatBinary is itself the iterable over its slices; ``it_binaries`` is a
+        # nested type, not a property, so iterating that yielded nothing at all.
+        return list(binary)
     return []
 
 
