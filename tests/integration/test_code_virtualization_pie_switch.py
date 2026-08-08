@@ -10,12 +10,14 @@ a bare-register computed jump. These decompose into ``learip``/``vlearip``,
 CFG-closure gather plus the existing lifter already virtualize the whole switch: the
 case blocks are gathered from r2's ``switch_op`` and re-entered through the target map.
 
-This test drives the lowering + codegen end to end on the resolved PIE fixture. It
-does NOT run the mutated binary: injecting the VM blob into an ET_DYN (PIE) image is
-blocked by a pre-existing, switch-independent limitation in ``inject_blob`` - the
-appended blob would overlap a following load segment - so the full-pass injection is
-out of scope here. Runtime parity for the non-PIE absolute switch (which does inject)
-is covered in ``test_code_virtualization_real.py``.
+This module covers the lowering and codegen half of that claim on the resolved PIE
+fixture: that the CFG closure reaches every case block, that the idiom decomposes
+into the existing micro-ops, and that the lowered region assembles into a real
+interpreter blob. It deliberately stops at the blob and does not run anything.
+
+Runtime parity - injecting into the ET_DYN image and emulating the produced file at
+a realistic nonzero load base - is covered in
+``test_code_virtualization_pie_real.py``.
 """
 
 from __future__ import annotations
