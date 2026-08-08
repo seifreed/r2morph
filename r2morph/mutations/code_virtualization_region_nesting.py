@@ -74,6 +74,21 @@ def _key_parts(key: int) -> tuple[str, str]:
     return hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF), hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
 
 
+def _branch_targets(instructions: list[tuple[Any, ...]]) -> set[int]:
+    """Item indices some control-transfer item resolves to.
+
+    ``vcall`` carries its callee's item index in the same field a ``jmp`` does, so
+    it names a target exactly like a branch and belongs in this set.
+    """
+    targets: set[int] = set()
+    for item in instructions:
+        if item[0] in ("jmp", "vcall"):
+            targets.add(item[1])
+        elif item[0] == "jcc":
+            targets.add(item[2])
+    return targets
+
+
 def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
     """Find the longest contiguous register-op run safe to move to an inner layer.
 
@@ -81,9 +96,9 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
     arithmetic, no memory, stack or control flow). ``opsynth`` writes the shared
     flags slot, which the layer-transfer handlers leave untouched, so the outer
     layer's later branch still reads the flags the peeled op produced. The run's
-    first item may be a branch target (a jump to it becomes a jump to the
+    first item may be a target (a transfer to it becomes a transfer to the
     ``enter_inner`` that runs the whole run), but no interior item may be, so no
-    branch ever lands mid-run.
+    branch or in-function call ever lands mid-run.
     """
     eligible = (
         "op",
@@ -109,12 +124,7 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
         "vshift",
         "vcmpsynth",
     )
-    targets: set[int] = set()
-    for item in instructions:
-        if item[0] == "jmp":
-            targets.add(item[1])
-        elif item[0] == "jcc":
-            targets.add(item[2])
+    targets = _branch_targets(instructions)
 
     best: tuple[int, int] | None = None
     i = 0
@@ -134,11 +144,24 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
 
 def split_region(region: Region, rng: random.Random) -> tuple[Region, Region] | None:
     """Split ``region`` into an outer region (with an ``enter_inner`` marker) and
-    an inner region (the peeled run plus an ``inner_exit`` terminator)."""
+    an inner region (the peeled run plus an ``inner_exit`` terminator).
+
+    Returns ``None`` when the region cannot be split faithfully, so the caller
+    falls back to a single-layer build.
+    """
+    if region.target_map:
+        # A computed-jump target map indexes this region's item list, and the split
+        # renumbers those items; neither region built below carries a map, so a
+        # mapped region would silently lose its runtime re-entry points.
+        return None
     run = _peel_op_run(region.instructions)
     if run is None:
         return None
     start, end = run
+    if any(start < target < end for target in _branch_targets(region.instructions)):
+        # A target strictly inside the collapsed run has no outer item left to name;
+        # remapping it would produce an index outside the outer stream.
+        return None
     instrs = list(region.instructions)
     shift = (end - start) - 1  # items removed from the outer stream
 

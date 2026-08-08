@@ -217,6 +217,17 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
     def emit_disp(value: int, position: int) -> None:
         plain.extend(byte ^ position for byte in struct.pack("<i", value))
 
+    def target_offset(index: int) -> int:
+        # Bytecode offset of the item a branch or in-function call names. A lowering
+        # that produced an index outside the item list must not reach ``offsets``:
+        # Python would wrap a negative index to a plausible-looking offset and emit a
+        # transfer to the wrong item. Refuse the build the same way an inexpressible
+        # displacement does - the callers catch struct.error and leave the function
+        # native.
+        if not 0 <= index < len(offsets):
+            raise struct.error(f"branch target item index {index} outside the region's {len(offsets)} items")
+        return offsets[index]
+
     def emit_pair(position: int, first: int, second: int) -> None:
         # Emit two single-byte operands (FP register handlers) in this build's
         # order; the handler reads them at the matching offsets via pair_offsets.
@@ -593,13 +604,13 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             # In-function call: the resume/target is a bytecode offset (item index),
             # emitted exactly like a jmp target; the handler pushes the resume vIP.
             p = emit_opcode("vcall")
-            emit_disp(offsets[item[1]], p)
+            emit_disp(target_offset(item[1]), p)
         elif kind == "jmp":
             p = emit_opcode("jmp")
-            emit_disp(offsets[item[1]], p)
+            emit_disp(target_offset(item[1]), p)
         elif kind == "jcc":
             p = emit_opcode(_required_key(item))
-            emit_disp(offsets[item[2]], p)
+            emit_disp(target_offset(item[2]), p)
         elif kind == "setcc":
             # One destination slot operand (condition + width live in the key).
             p = emit_opcode(_required_key(item))
