@@ -31,6 +31,10 @@ from r2morph.mutations.code_virtualization_engine import (
     encode_bytecode,
 )
 
+# Kept under its established private name: sibling test modules import this module
+# and call ``vm_real._emulate_exit_code``.
+from tests.integration.elf_emulator import emulate_exit_code as _emulate_exit_code
+
 _DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
 FIXTURE = _DATASET / "elf_vm_arith_x86_64"
 FIXTURE32 = _DATASET / "elf_vm_arith32_x86_64"
@@ -49,56 +53,7 @@ FIXTURE_SWITCH_ABS = _DATASET / "elf_switch_abs_x86_64"
 FIXTURE_MULTIRET = _DATASET / "elf_multiret_jccdiamond_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
-from unicorn import UC_ARCH_X86, UC_HOOK_INSN, UC_MODE_64, Uc, UcError  # noqa: E402
-from unicorn.x86_const import UC_X86_INS_SYSCALL, UC_X86_REG_RAX, UC_X86_REG_RDI, UC_X86_REG_RSP  # noqa: E402
-
-_EXIT_SYSCALL = 0x3C
-
-
-def _emulate_exit_code(path: Path) -> int | None:
-    """Load an ELF64's PT_LOADs and run from the entrypoint to the exit syscall."""
-    raw = path.read_bytes()
-    entry = struct.unpack_from("<Q", raw, 0x18)[0]
-    e_phoff = struct.unpack_from("<Q", raw, 0x20)[0]
-    phentsize = struct.unpack_from("<H", raw, 0x36)[0]
-    phnum = struct.unpack_from("<H", raw, 0x38)[0]
-
-    mu = Uc(UC_ARCH_X86, UC_MODE_64)
-    mapped: set[int] = set()
-
-    def map_pages(start: int, length: int) -> None:
-        for page in range(start & ~0xFFF, (start + length + 0xFFF) & ~0xFFF, 0x1000):
-            if page not in mapped:
-                mu.mem_map(page, 0x1000)
-                mapped.add(page)
-
-    for i in range(phnum):
-        off = e_phoff + i * phentsize
-        p_type = struct.unpack_from("<I", raw, off)[0]
-        if p_type != 1:
-            continue
-        p_offset, p_vaddr, _, p_filesz, p_memsz, _ = struct.unpack_from("<QQQQQQ", raw, off + 8)
-        map_pages(p_vaddr, max(p_memsz, p_filesz))
-        mu.mem_write(p_vaddr, raw[p_offset : p_offset + p_filesz])
-
-    map_pages(0x200000, 0x10000)
-    mu.reg_write(UC_X86_REG_RSP, 0x208000)
-
-    captured: dict[str, int] = {}
-
-    def on_syscall(uc: Uc, _user_data: object) -> None:
-        if uc.reg_read(UC_X86_REG_RAX) == _EXIT_SYSCALL:
-            captured["code"] = uc.reg_read(UC_X86_REG_RDI) & 0xFF
-            uc.emu_stop()
-
-    mu.hook_add(UC_HOOK_INSN, on_syscall, None, 1, 0, UC_X86_INS_SYSCALL)
-    # Instruction cap to bound a runaway emulation; sized well above a faithful
-    # run. The interpreter's one-time entry self-checksum scans its whole body, so
-    # the count scales with the (now broad) handler set - a real virtualized run
-    # executes on the order of 10^4-10^5 instructions, so 2_000_000 leaves ample
-    # headroom while still terminating a true infinite loop near-instantly.
-    mu.emu_start(entry, 0, count=2_000_000)
-    return captured.get("code")
+from unicorn import UcError  # noqa: E402
 
 
 def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
