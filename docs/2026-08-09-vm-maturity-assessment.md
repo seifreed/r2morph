@@ -26,13 +26,16 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   keyed on the self-checksum the decompiler cannot fold. (gaps 3/5, done for the
   constants)
 
-- **Key schedule — hidden for the region and nested VMs.** Both the dispatch-table
-  key and the opcode/operand cipher key are now the runtime self-checksum, not build
-  constants: the table decrypt and every operand decrypt render as
-  `X ^ (0x…01 * v_checksum)`, so no key literal is exposed (IDA-verified — the
-  prologue shows `0x1010101 * v_checksum` and `0x0101010101010101 * v_checksum` in
-  place of the former `xor_key` constant). The straight-line engine VM still carries
-  its own `xor_key` too now — all three VMs key their operand cipher on the runtime checksum.
+- **Key schedule — hidden for all three VMs.** Both the dispatch-table key and the
+  opcode/operand cipher key are now the runtime self-checksum, not build constants:
+  the table decrypt and every operand decrypt render as `X ^ (0x…01 * v_checksum)`,
+  so no key literal is exposed (IDA-verified — the prologue shows `0x1010101 *
+  v_checksum` and `0x0101010101010101 * v_checksum` in place of the former `xor_key`
+  constant). This holds for the region and nested VMs and for the straight-line engine
+  VM as well: the engine's operand cipher key is the checksum slot read directly
+  (`code_virtualization_engine_codegen.py`, `key = byte ptr [rsp + checksum_offset]`)
+  and its bytecode is XORed with the checksum byte, so it carries no `xor_key` literal
+  either.
 
 - **Anti-debug probe — no foldable constants left.** The tracer probe's three
   syscall numbers (`openat`/`read`/`close`) and the `AT_FDCWD` dirfd were the last
@@ -46,10 +49,11 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   constants are gone. (gaps 3/5, done for the constants)
 
 **Still recovered by the decompiler, and still below the reference protectors:** the
-engine VM's operand key (region+nested done, engine pending); the register file is a
-computable stack index; the self-checksum loop and probe *structure* are visible; and
-the payload is structurally obvious (appended RX `PT_LOAD`, one interpreter function).
-These are the remaining milestones and each is a dedicated redesign — see the gap list.
+register file is a computable stack index; the self-checksum loop and the anti-debug
+probe *structure* (the checksum loop, the tag scan, the two timestamp reads) are still
+visible even though their constants are gone; and the payload is structurally obvious
+(appended RX `PT_LOAD`, one interpreter function). These are the remaining milestones
+and each is a dedicated redesign — see the gap list.
 
 ## Method
 
