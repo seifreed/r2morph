@@ -142,6 +142,18 @@ _JUNK_TEMPLATES: tuple[str, ...] = (
     "sub r11, {small}",
     "lea rax, [rax + {small}]",
     "ror r10, {shift}",
+    "rol r11, {shift}",
+    "shl r8, {shift}",
+    "shr r9, {shift}",
+    "imul r10, r11, {small}",
+    "not r8",
+    "neg r9",
+    "test r10, r11",
+    "cmp r8, r9",
+    "bswap r10",
+    "lea r11, [r8 + r9]",
+    "mov r8, r10",
+    "xor r9, r8",
 )
 
 
