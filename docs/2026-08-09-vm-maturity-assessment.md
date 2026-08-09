@@ -32,7 +32,7 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   `X ^ (0x…01 * v_checksum)`, so no key literal is exposed (IDA-verified — the
   prologue shows `0x1010101 * v_checksum` and `0x0101010101010101 * v_checksum` in
   place of the former `xor_key` constant). The straight-line engine VM still carries
-  its own `xor_key` (separate encoder/handlers) — a scoped follow-up.
+  its own `xor_key` too now — all three VMs key their operand cipher on the runtime checksum.
 
 **Still recovered by the decompiler, and still below the reference protectors:** the
 engine VM's operand key (region+nested done, engine pending); the register file is a
