@@ -210,6 +210,15 @@ _LIVE_JUNK_TEMPLATES: tuple[str, ...] = (
     "sub rbx, {small}",
     "lea rbp, [rbp + {small}]",
     "ror r12, {shift}",
+    "rol rbx, {shift}",
+    "shl rbp, {shift}",
+    "add rbx, rbp",
+    "sub r12, rbx",
+    "not rbp",
+    "neg r12",
+    "imul rbp, r12, {small}",
+    "lea r12, [rbx + rbp]",
+    "xchg r12, rbx",
 )
 
 
