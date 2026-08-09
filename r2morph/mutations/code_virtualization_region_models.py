@@ -246,6 +246,10 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"not_{item[2]}"  # bitwise complement: width
     if kind == "bswap":
         return f"bswap_{item[2]}"  # byte-order reversal: width
+    if kind == "div":
+        return f"div_{item[1]}_{item[3]}"  # signedness (s/u) + width
+    if kind == "cqo":
+        return f"cqo_{item[1]}"  # sign-extend rax->rdx: width
     if kind == "push":
         return f"push_{item[2]}"
     if kind == "pop":

@@ -2104,6 +2104,28 @@ def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_division_preserves_exit_code(tmp_path: Path) -> None:
+    # div/idiv/cqo virtualized (modulo hashing, index math). Unsigned 100/7 = 14 rem 2
+    # and signed -55/4 via cqo+idiv = -13 (truncating toward zero). The handlers run
+    # the real division on the implicit rdx:rax pair, which the per-instance register
+    # renamer must leave pinned (renaming rax would divide the wrong value). A wrong
+    # quotient, remainder or sign diverges from 42 to 99.
+    fixture = _DATASET / "elf_vm_div_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_div"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_byte_swap_preserves_exit_code(tmp_path: Path) -> None:
     # `bswap reg` (byte-order reversal, no flags): 32-bit swap of 0x12345678 is
     # 0x78563412 (zero-extends), 64-bit swap of 0x1122334455667788 is

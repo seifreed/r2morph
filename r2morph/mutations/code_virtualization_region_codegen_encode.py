@@ -69,6 +69,10 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3
     if kind in ("not", "bswap"):
         return 2  # opcode + reg slot
+    if kind == "div":
+        return 4  # opcode + divisor slot + implicit rax + rdx slots
+    if kind == "cqo":
+        return 3  # opcode + implicit rax + rdx slots
     if kind == "imul3":
         return 7  # opcode + dst slot + src slot + 4-byte immediate
     if kind in ("load", "store", "fpload", "fpstore"):
@@ -546,6 +550,20 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, reg_slot, _width = item
             p = emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot] ^ p)
+        elif kind == "div":
+            # The dividend/quotient rax (logical 0) and high/remainder rdx (logical 2)
+            # are implicit, emitted as permuted slot bytes so the handler reads them
+            # like explicit operands (divisor, then rax, then rdx).
+            _, _signed, divisor_slot, _width = item
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[divisor_slot] ^ p)
+            plain.append(slot_of[0] ^ p)
+            plain.append(slot_of[2] ^ p)
+        elif kind == "cqo":
+            _, _width = item
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[0] ^ p)
+            plain.append(slot_of[2] ^ p)
         elif kind == "movx":
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, disp = item
             p = emit_opcode(_required_key(item))

@@ -46,6 +46,12 @@ _TOKEN = re.compile(r"\b(" + "|".join(sorted(_SPELLINGS, key=len, reverse=True))
 # these bodies must be left unchanged - fails safe, exactly like _TRANSFER below.
 _PINS_LEGACY_REGISTER = re.compile(r"\b(?:lahf|sahf|[abcd]h)\b")
 
+# A body that pins rax/rdx by architecture: div/idiv read the dividend from and write
+# the quotient/remainder to the fixed rdx:rax pair, and cqo/cdq sign-extend rax into
+# rdx. rax is in the rename pool, so remapping it there would divide the wrong value;
+# these bodies must be left unchanged, exactly like the legacy-register pin above.
+_PINS_FIXED_REGISTER = re.compile(r"\b(?:idiv|div|cqo|cdq)\b")
+
 
 def rename_body(body: str, rng: random.Random) -> str:
     """Rewrite the scratch registers in one handler body under a random bijection.
@@ -54,10 +60,11 @@ def rename_body(body: str, rng: random.Random) -> str:
     with each scratch spelling mapped to its permuted register's spelling of the
     same width. ``rcx`` and every non-pool register are left untouched, so the
     body's meaning is preserved while its register fingerprint changes per handler.
-    A body that pins a legacy register (``lahf``/``sahf`` or a high-byte spelling)
-    is returned unchanged, since remapping rax to r8-r15 there would miscompile.
+    A body that pins a register - a legacy one (``lahf``/``sahf`` or a high-byte
+    spelling) or the rax/rdx that ``div``/``idiv``/``cqo``/``cdq`` fix by architecture
+    - is returned unchanged, since remapping rax there would miscompile.
     """
-    if _PINS_LEGACY_REGISTER.search(body):
+    if _PINS_LEGACY_REGISTER.search(body) or _PINS_FIXED_REGISTER.search(body):
         return body
     permutation = rng.sample(range(len(_POOL)), len(_POOL))
     mapping = {

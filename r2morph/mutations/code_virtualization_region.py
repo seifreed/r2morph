@@ -35,6 +35,8 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_bswap,
     _decode_cmov,
     _decode_cmp_mem,
+    _decode_cqo,
+    _decode_div,
     _decode_fp_arith,
     _decode_fp_arith_idx,
     _decode_fp_arith_mem,
@@ -145,6 +147,10 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     bswap = _decode_bswap(text)
     if bswap is not None:
         return [*bswap]
+    # ``cqo``/``cdq`` are also typed "null"; match by mnemonic before the type gate.
+    cqo = _decode_cqo(text)
+    if cqo is not None:
+        return [*cqo]
     if insn.get("family") == "vec":
         # SSE/FP ops share their GP twin's ``type`` (movsd->mov, addsd->add) but
         # carry family "vec". Route them here first: scalar FP load/store is
@@ -256,6 +262,9 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     if kind == "not":
         not_op = _decode_not(text)
         return [*not_op] if not_op is not None else None
+    if kind == "div":
+        div = _decode_div(text)
+        return [*div] if div is not None else None
     if kind == "lea":
         lea = _decode_lea(text, insn.get("addr", 0), insn.get("size", 0))
         if lea is not None:
@@ -361,17 +370,24 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     return None
 
 
-def _writes_register(item: tuple[Any, ...]) -> int | None:
-    """The logical register slot an item writes, or ``None`` if it writes no GP
-    register (a comparison, a memory store, a stack adjustment, or a branch).
+# Logical context slots of the division-implicit registers: the dividend/quotient
+# lives in rax and the high dividend/remainder in rdx.
+_RAX_SLOT = GP_REGISTERS.index("rax")
+_RDX_SLOT = GP_REGISTERS.index("rdx")
 
-    Used by the stack-balance guard to invalidate a frame-pointer snapshot when
-    the snapshot register is overwritten before a ``mov rsp, reg`` consumes it.
+
+def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
+    """The logical register slots an item writes (empty if it writes no GP register:
+    a comparison, a memory store, a stack adjustment, or a branch).
+
+    Used by the stack-balance guard to invalidate a frame-pointer snapshot when the
+    snapshot register is overwritten before a ``mov rsp, reg`` consumes it. Most ops
+    write one slot; ``div``/``idiv`` write two (quotient to rax, remainder to rdx).
     """
     kind = item[0]
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
-        return op.dst_index
+        return frozenset({op.dst_index})
     if kind in (
         "imul",
         "imul3",
@@ -385,13 +401,19 @@ def _writes_register(item: tuple[Any, ...]) -> int | None:
         "leaidx",
         "leaidxnb",
         "loadidx",
+        "not",
+        "bswap",
     ):
-        return int(item[1])
+        return frozenset({int(item[1])})
     if kind in ("shift", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
-        return int(item[2])
+        return frozenset({int(item[2])})
     if kind in ("movx", "movxidx", "movxreg"):
-        return int(item[4])
-    return None
+        return frozenset({int(item[4])})
+    if kind == "div":
+        return frozenset({_RAX_SLOT, _RDX_SLOT})  # quotient -> rax, remainder -> rdx
+    if kind == "cqo":
+        return frozenset({_RDX_SLOT})  # sign-extends rax into rdx
+    return frozenset()
 
 
 def _merge_stack_state(
@@ -471,7 +493,7 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
             out_snapshot = (int(item[1]), depth)
         else:
             written = _writes_register(tuple(item))
-            out_snapshot = None if (snapshot is not None and written == snapshot[0]) else snapshot
+            out_snapshot = None if (snapshot is not None and snapshot[0] in written) else snapshot
         if kind in ("exit", "vret"):
             if depth != 0:
                 return False  # unbalanced stack at a terminator

@@ -1189,6 +1189,41 @@ def _decode_not(text: str) -> tuple[Any, ...] | None:
     return None
 
 
+def _decode_div(text: str) -> tuple[Any, ...] | None:
+    """Decode ``div reg`` / ``idiv reg`` (register divisor, 32/64-bit).
+
+    The dividend is the implicit ``rdx:rax`` pair and the results are the quotient in
+    rax and the remainder in rdx; the handler runs the real ``div``/``idiv`` so the
+    quotient, remainder and the #DE on divide-by-zero all match the native op (its
+    flags are architecturally undefined, so none are captured). A memory divisor is
+    left native. Returns ``("div", "s"|"u", divisor_slot, width)``.
+    """
+    parts = text.split()
+    if len(parts) != 2 or "[" in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in ("div", "idiv"):
+        return None
+    reg = _register_operand(parts[1].lower())
+    if reg is None or reg[1] not in (32, 64):
+        return None
+    return ("div", "s" if mnemonic == "idiv" else "u", reg[0], reg[1])
+
+
+def _decode_cqo(text: str) -> tuple[Any, ...] | None:
+    """Decode ``cqo`` / ``cdq`` (sign-extend rax into rdx, setting up an idiv).
+
+    Sets no flags and takes no explicit operand: rax is sign-extended into rdx (the
+    64-bit ``cqo`` or the 32-bit ``cdq``). Returns ``("cqo", width)``.
+    """
+    mnemonic = text.split()[0].lower() if text else ""
+    if mnemonic == "cqo":
+        return ("cqo", 64)
+    if mnemonic == "cdq":
+        return ("cqo", 32)
+    return None
+
+
 def _decode_bswap(text: str) -> tuple[Any, ...] | None:
     """Decode ``bswap reg`` (byte-order reversal, register operand, 32/64-bit only).
 

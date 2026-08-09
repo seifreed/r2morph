@@ -738,6 +738,52 @@ def _not_handler_asm(handler_key: str, key: str) -> str:
     )
 
 
+def _div_handler_asm(handler_key: str, key: str) -> str:
+    """Assembly body for ``div reg`` / ``idiv reg`` (register divisor).
+
+    Reads three slot indices (divisor, then the implicit rax and rdx, emitted as
+    permuted operand bytes): the divisor is loaded into r11 first so it survives even
+    when it aliases rax or rdx, then the dividend halves are loaded into rax/rdx and
+    the real division runs. Quotient (rax) and remainder (rdx) are written back to
+    their slots. Division leaves the flags undefined, so none are captured; a divide
+    by zero faults exactly as the native op.
+    """
+    _, signedness, width_text = handler_key.split("_")
+    width = int(width_text)
+    mnemonic = "idiv" if signedness == "s" else "div"
+    divisor = "r11" if width == 64 else "r11d"
+    ax = "rax" if width == 64 else "eax"
+    dx = "rdx" if width == 64 else "edx"
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+3]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+        f"  mov {divisor}, {'qword' if width == 64 else 'dword'} ptr [rsp+r8*8]\n"
+        f"  mov {ax}, {'qword' if width == 64 else 'dword'} ptr [rsp+r9*8]\n"
+        f"  mov {dx}, {'qword' if width == 64 else 'dword'} ptr [rsp+r10*8]\n"
+        f"  {mnemonic} {divisor}\n"
+        "  mov qword ptr [rsp+r9*8], rax\n"
+        "  mov qword ptr [rsp+r10*8], rdx\n"
+        "  add rsi, 4\n  jmp vm_dispatch\n"
+    )
+
+
+def _cqo_handler_asm(handler_key: str, key: str) -> str:
+    """Assembly body for ``cqo`` / ``cdq`` (sign-extend rax into rdx, no flags).
+
+    Reads the implicit rax and rdx slot indices, loads rax, sign-extends it into rdx
+    with the real instruction, and stores rdx back (rax is unchanged).
+    """
+    width = int(handler_key.split("_")[1])
+    return (
+        f"  movzx r9d, byte ptr [rsi+1]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+2]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+        + ("  mov rax, qword ptr [rsp+r9*8]\n  cqo\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n  cdq\n")
+        + "  mov qword ptr [rsp+r10*8], rdx\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def _bswap_handler_asm(handler_key: str, key: str) -> str:
     """Assembly body for ``bswap reg`` (byte-order reversal, no flags, 32/64-bit).
 
