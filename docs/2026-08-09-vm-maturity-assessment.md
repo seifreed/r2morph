@@ -34,6 +34,17 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   place of the former `xor_key` constant). The straight-line engine VM still carries
   its own `xor_key` too now — all three VMs key their operand cipher on the runtime checksum.
 
+- **Anti-debug probe — no foldable constants left.** The tracer probe's three
+  syscall numbers (`openat`/`read`/`close`) and the `AT_FDCWD` dirfd were the last
+  plaintext immediates in it; a decompiler folded them and attributed the probe as
+  `sys_openat`/`sys_read`/`sys_close`, pointing straight at the `/proc/self/status`
+  read. They now live in the same checksum-keyed island as the path words and scan
+  tag and de-mask at runtime, so IDA renders the three syscalls as bare, unnamed
+  `syscall` instructions with no attributable constant (number, dirfd and flags all
+  opaque — IDA-verified on a virtualized `dataset/elf_vm_incall` build). The probe's
+  *structure* (three syscalls, a tag scan, a digit check) is still visible; only its
+  constants are gone. (gaps 3/5, done for the constants)
+
 **Still recovered by the decompiler, and still below the reference protectors:** the
 engine VM's operand key (region+nested done, engine pending); the register file is a
 computable stack index; the self-checksum loop and probe *structure* are visible; and
