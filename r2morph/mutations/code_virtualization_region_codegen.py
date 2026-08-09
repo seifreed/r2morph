@@ -32,6 +32,7 @@ from r2morph.mutations.code_virtualization_engine import (
     RSP_INDEX,
 )
 from r2morph.mutations.code_virtualization_engine_rename import rename_local_body
+from r2morph.mutations.code_virtualization_fold import ARITH_VARIANT_BITS
 from r2morph.mutations.code_virtualization_region_codegen_encode import (
     _item_size as _item_size,
 )
@@ -606,13 +607,25 @@ def handler_instances_asm(
     # idiom, shared by every matching handler.
     spec = build_isa_spec(isa_seed)
     flag_variant = spec.flag_variant
-    arith_variant = spec.arith_variant
+    build_arith_variant = spec.arith_variant
     compare_variant = spec.compare_variant
     shift_variant = spec.shift_variant
     addr_variant = spec.addr_variant
     lines: list[str] = []
     for index in sorted(index_to_key):
         handler_key = index_to_key[index]
+        # Give each *instance* of an arithmetic handler its own MBA fold: every fold
+        # computes the same result by a different instruction sequence, so duplicate
+        # handlers for one operation diverge semantically, not only in their junk.
+        # The arithmetic fold has no cross-handler encoding coupling (unlike the
+        # flag/compare/shift representation, which stays per-build), so varying it per
+        # instance is safe. isa_seed 0 keeps the canonical fold (0), so builds that
+        # opt out of the ISA personality stay byte-identical.
+        arith_variant = (
+            random.Random((isa_seed << 16) ^ index).randrange(1 << ARITH_VARIANT_BITS)
+            if isa_seed
+            else build_arith_variant
+        )
         # Reachable head junk makes duplicate handlers diverge in executed code.
         lines.append(f"H_{index}:\n{_live_junk_asm(junk_rng, index)}")
         # Everything the dispatch chain below appends for this handler is its body;

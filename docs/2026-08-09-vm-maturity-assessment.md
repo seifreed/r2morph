@@ -113,10 +113,15 @@ folded into it remain visible; only the anti-debug constants were relocated.
    carries ~30–44 handler instances with a floor of two per opcode, each copy
    diverging in executed code (per-instance live junk, opaque predicates, scratch
    renames) so a decompiler cannot fold them back together. The lone-instance tell
-   — an opcode that decompiles to a single case — is gone. This narrows but does not
-   erase the gap to the reference protectors' hundreds of *semantically* distinct
-   handler variants: the copies here are behaviourally interchangeable, differing in
-   junk rather than in the fold they compute.
+   — an opcode that decompiles to a single case — is gone. Duplicate *arithmetic*
+   handlers now also diverge **semantically**: each instance draws its own MBA fold
+   from a 4096-value space (35/36 distinct across a mid-size region), so two copies
+   of the same operation compute it by different instruction sequences rather than
+   only wearing different junk. The flag/compare/shift representation stays per-build
+   (it is a shared encoding producer and consumer handlers must agree on), so this
+   is not yet the reference protectors' hundreds of fully-distinct handler families,
+   but the arithmetic core — the bulk of most handler sets — is no longer trivially
+   collapsible by behaviour.
 3. **Key material is compile-time constant**, so every cipher in the VM is recoverable
    by constant propagation (see above).
 4. **The register file is a flat stack array** with a computable index, so a
