@@ -38,13 +38,15 @@ def test_scheme_generates_nonzero_table_key() -> None:
     assert 1 <= scheme.table_key < (1 << 32)
 
 
-def test_dispatch_decrypts_the_table_with_the_scheme_key() -> None:
+def test_dispatch_decrypts_the_table_without_exposing_a_constant_key() -> None:
     region = _tiny_region()
     scheme = build_region_scheme(region, random.Random(0))
     asm = _interpreter_asm(region, scheme)
-    # The dispatch must XOR each loaded table entry with the per-instance key
-    # before sign-extending and jumping; without it the table would be plaintext.
-    assert f"xor eax, {hex(scheme.table_key)}" in asm
+    # The dispatch decrypts each loaded table entry with the self-checksum broadcast
+    # alone (see the diffuse test below), so the table is not plaintext, yet no
+    # build-constant key is XORed into eax -- the decode exposes no table-key literal
+    # a decompiler could read off the pseudocode.
+    assert f"xor eax, {hex(scheme.table_key)}" not in asm
 
 
 def test_dispatch_diffuses_the_table_key_with_the_self_checksum() -> None:

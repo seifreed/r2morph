@@ -316,13 +316,15 @@ class TestCodeVirtualization:
         scheme = build_vm_scheme(random.Random(3))
         assert 1 <= scheme.table_key < (1 << 32)
 
-    def test_dispatch_decrypts_the_table_with_the_scheme_key(self):
-        # The engine dispatch must XOR each loaded table offset with the
-        # per-instance key before jumping, so the handler table is not a plaintext
-        # switch a disassembler can recover (parity with the region VM).
+    def test_dispatch_decrypts_the_table_without_exposing_a_constant_key(self):
+        # The dispatch decrypts each loaded table offset with the self-checksum
+        # broadcast alone (see the diffuse test below), so the handler table is not a
+        # plaintext switch a disassembler can recover, yet no build-constant table key
+        # is XORed into eax -- the decode exposes no table-key literal a decompiler
+        # could read off the pseudocode (parity with the region VM).
         scheme = build_vm_scheme(random.Random(3))
         asm = _interpreter_asm(0x401000, scheme)
-        assert f"xor eax, {hex(scheme.table_key)}" in asm
+        assert f"xor eax, {hex(scheme.table_key)}" not in asm
 
     def test_dispatch_diffuses_the_table_key_with_the_self_checksum(self):
         # The table-entry decrypt also folds the runtime self-checksum (broadcast

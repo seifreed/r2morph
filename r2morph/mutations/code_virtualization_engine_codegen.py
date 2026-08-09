@@ -651,12 +651,12 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return decode_block(
             opcode_xors=opcode_xors,
             bounds=bounds,
-            # The stored offsets are XOR-encrypted (not a plaintext switch) and the
-            # table key is diffused with the self-checksum (broadcast to 32 bits),
-            # so tampering corrupts handler resolution, not just opcodes.
+            # The stored offsets are XOR-encrypted (not a plaintext switch) with the
+            # self-checksum broadcast to 32 bits -- a value the decompiler cannot fold,
+            # so the decrypt exposes no build-constant table key -- and tampering
+            # corrupts handler resolution, not just opcodes.
             table_load="  lea r14, [rip + vm_table]\n  mov eax, dword ptr [r14 + rax*4]\n",
             table_xors=[
-                f"  xor eax, {hex(scheme.table_key)}\n",
                 f"  movzx ecx, byte ptr [rsp + {layout.checksum_offset}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
             ],
             rng=poly_rng,
@@ -790,7 +790,9 @@ def build_vm_blob(
     island_start = len(data) - _TRACER_ISLAND_LEN
     table_start = island_start - total * 4
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
-    table_key = scheme.table_key ^ (checksum * 0x01010101)
+    # The table key is the checksum broadcast alone -- no separate build-constant key
+    # -- so the decode exposes no table-key literal, only the opaque runtime checksum.
+    table_key = checksum * 0x01010101
     for entry_index in range(total):
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key

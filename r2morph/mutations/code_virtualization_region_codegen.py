@@ -922,12 +922,12 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             bounds=bounds,
             # Base-independent indirect dispatch: each table entry is a 32-bit signed
             # offset from vm_table to its handler. The offsets are XOR-encrypted (not
-            # a plaintext switch a disassembler recovers) and the table key is
-            # diffused with the self-checksum (broadcast to 32 bits), so tampering
-            # corrupts handler-address resolution too.
+            # a plaintext switch a disassembler recovers) with the self-checksum
+            # broadcast to 32 bits -- a value the decompiler cannot fold, so the table
+            # decrypt renders as `eax ^ (0x1010101 * v_checksum)` rather than exposing
+            # a build-constant table key -- and tampering corrupts handler resolution.
             table_load="  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n",
             table_xors=[
-                f"  xor eax, {hex(scheme.table_key)}\n",
                 f"  movzx ecx, byte ptr [rsp+{scheme.checksum_offset}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
             ],
             rng=poly_rng,
@@ -1060,10 +1060,12 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
     table_start = island_start - total * 4
     # Expected runtime self-checksum over the interpreter code (everything up to the
     # dispatch table, so neither the table encryption nor the island patch below
-    # perturbs it); the encoder folds it into the opcodes, the table key is diffused
-    # with it, and the tracer constants are masked by it.
+    # perturbs it); the encoder folds it into the opcodes, the table is encrypted
+    # with it, and the tracer constants are masked by it. The table key is the
+    # checksum broadcast alone -- no separate build-constant key -- so the decode
+    # exposes no table-key literal (only the opaque runtime checksum).
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
-    table_key = scheme.table_key ^ (checksum * 0x01010101)
+    table_key = checksum * 0x01010101
     for entry_index in range(total):
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key

@@ -67,7 +67,6 @@ logger = logging.getLogger(__name__)
 _KEY_OFFSET = 0x90  # active layer opcode XOR key (byte)
 _COUNT_OFFSET = 0x98  # active layer handler count (byte)
 _TABLE_OFFSET = 0xA0  # active layer dispatch-table base (absolute addr)
-_TKEY_OFFSET = 0xA8  # active layer dispatch-table XOR key (dword)
 _RETURN_BASE = 0xB0  # first parent-bytecode-pointer return slot
 
 _MIN_PEEL = 2  # shortest op run worth peeling into an inner layer
@@ -259,7 +258,6 @@ def _set_layer_slots(scheme: RegionScheme, layer: int, count: int) -> str:
         + f"  mov byte ptr [rsp+{_COUNT_OFFSET}], {count}\n"
         + f"  lea rax, [rip+vm_table_{layer}]\n"
         + f"  mov qword ptr [rsp+{_TABLE_OFFSET}], rax\n"
-        + f"  mov dword ptr [rsp+{_TKEY_OFFSET}], {hex(scheme.table_key)}\n"
     )
 
 
@@ -299,10 +297,11 @@ def _decode_block(rng: random.Random) -> str:
         ],
         bounds=f"  movzx ecx, byte ptr [rsp+{_COUNT_OFFSET}]\n  cmp al, cl\n  jae vm_exit\n",
         table_load=f"  mov r14, qword ptr [rsp+{_TABLE_OFFSET}]\n  mov eax, dword ptr [r14+rax*4]\n",
-        # Diffuse the table key with the self-checksum (broadcast to 32 bits) so
-        # tampering corrupts handler resolution in every layer, not just opcodes.
+        # Encrypt the table with the self-checksum broadcast to 32 bits -- a value the
+        # decompiler cannot fold, so the decrypt exposes no per-layer table-key literal
+        # -- and tampering corrupts handler resolution in every layer. One checksum
+        # covers the whole nested blob, so every layer's table shares this key.
         table_xors=[
-            f"  xor eax, dword ptr [rsp+{_TKEY_OFFSET}]\n",
             f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
         ],
         rng=rng,
@@ -506,8 +505,9 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     checksum = compute_build_checksum(bytes(data[:table0_start]), schemes[0].xor_key)
     chk_broadcast = checksum * 0x01010101
     for layer in range(count):
-        table_key = schemes[layer].table_key ^ chk_broadcast
-        _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], table_key)
+        # Every layer's table is encrypted with the shared checksum broadcast alone
+        # (no per-layer build-constant key), so the decode carries no table-key literal.
+        _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], chk_broadcast)
     patch_tracer_constants(data, island_start, checksum)
     try:
         encoded = [
