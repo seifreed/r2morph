@@ -894,12 +894,19 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
     # 0x00 (the counter reads sit inside the checksummed range, so the benign build
     # is bit-identical and neither the encoder nor the checksum computation change).
-    lines.append(timing_fold_asm(scheme.xor_key, slot=scheme.checksum_offset))
     # Tracer anti-debug woven into the same checksum slot: an attached ptrace
     # debugger (TracerPid != 0 in /proc/self/status) folds 0xFF and misdecodes every
     # opcode; an untraced native run and a Unicorn emulation both fold 0x00, so the
     # benign build stays bit-identical and the checksum computation is unchanged.
-    lines.append(tracer_detect_asm(slot=scheme.checksum_offset))
+    # Emit the timing and tracer folds in a per-build order: both fold a benign 0 and
+    # touch only the shared checksum slot, so their order is free, and shuffling it
+    # denies a fixed checksum->timing->tracer prologue signature.
+    anti_debug = [
+        timing_fold_asm(scheme.xor_key, slot=scheme.checksum_offset),
+        tracer_detect_asm(slot=scheme.checksum_offset),
+    ]
+    random.Random(scheme.junk_seed ^ 0x5EED).shuffle(anti_debug)
+    lines.extend(anti_debug)
     # Precompute the operand-cipher key broadcasts from the (now final) checksum byte
     # into their frame slots: the 32- and 64-bit operand decrypts read these instead
     # of a build-constant key. Runs after the anti-debug folds so a corrupted checksum
