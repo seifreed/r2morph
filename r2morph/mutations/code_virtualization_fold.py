@@ -46,6 +46,14 @@ _EXTRA_ADD_TEMPLATES: tuple[str, ...] = (
     # a + b == a - (-b): negate the addend and subtract, reaching the sum through a
     # subtraction rather than any add.
     "  mov {t}, {a}\n  neg {t}\n  sub r10, {t}\n",
+    # a + b == (a ^ b) + 2*(a & b), doubling the AND term with lea rather than a shift.
+    "  mov {t}, r10\n  and {t}, {a}\n  lea {t}, [{t} + {t}]\n  xor r10, {a}\n  add r10, {t}\n",
+    # a + b == b - ~a - 1: rebuild through the addend, subtracting the complement of a.
+    "  mov {t}, r10\n  not {t}\n  mov r10, {a}\n  sub r10, {t}\n  sub r10, 1\n",
+    # a + b == 2*(a | b) - (a ^ b), accumulated in the temp then moved back.
+    "  mov {t}, r10\n  or {t}, {a}\n  add {t}, {t}\n  xor r10, {a}\n  sub {t}, r10\n  mov r10, {t}\n",
+    # a + b == ~(~a - b): a double complement around a subtraction, needing no temp.
+    "  not r10\n  sub r10, {a}\n  not r10\n",
 )
 
 # Region-local boolean identities (``r10 = r10 <op> rax``), appended after the
