@@ -234,6 +234,18 @@ _OPAQUE_VARIANTS: tuple[tuple[str, str], ...] = (
     ("  lea rbp, [{s} + {s}]\n  test rbp, 1\n", "jz"),
     ("  mov rbp, {s}\n  or rbp, 1\n  test rbp, 1\n", "jnz"),
     ("  lea rbp, [{s} + 1]\n  or rbp, {s}\n  test rbp, 1\n", "jnz"),
+    # s*s + s == s*(s+1), a product of adjacent integers, always even.
+    ("  mov rbp, {s}\n  imul rbp, rbp\n  add rbp, {s}\n  test rbp, 1\n", "jz"),
+    # s*s - s == s*(s-1), also adjacent integers, always even.
+    ("  mov rbp, {s}\n  imul rbp, rbp\n  sub rbp, {s}\n  test rbp, 1\n", "jz"),
+    # 2*s(s+1), an even value doubled, still even.
+    ("  lea rbp, [{s} + 1]\n  imul rbp, {s}\n  shl rbp, 1\n  test rbp, 1\n", "jz"),
+    # 2*s | 1, an even value with the low bit forced on, always odd.
+    ("  lea rbp, [{s} + {s}]\n  or rbp, 1\n  test rbp, 1\n", "jnz"),
+    # s | 3, low two bits forced on, always odd.
+    ("  mov rbp, {s}\n  and rbp, {s}\n  or rbp, 3\n  test rbp, 1\n", "jnz"),
+    # s*s | 1, a square with the low bit forced on, always odd.
+    ("  mov rbp, {s}\n  imul rbp, rbp\n  or rbp, 1\n  test rbp, 1\n", "jnz"),
 )
 
 
