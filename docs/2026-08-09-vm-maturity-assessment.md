@@ -65,10 +65,25 @@ checksummed range and is therefore free of the circularity.
 
 ## Gap list, in priority order
 
-1. **The dispatch loop reconstructs as a `switch`.** The threaded shape barely helps:
-   in a threaded build only 2 of ~12 opcodes leave through the computed `jmp r10`;
-   the rest are inlined into a comparison tree that Hex-Rays folds back into a
-   `switch`. A protector-grade VM has no reconstructible central dispatch.
+1. **Half of all builds ship a dispatch the decompiler reconstructs exactly — remove
+   the switch shape.** The shape is drawn per build
+   (`code_virtualization_region.py:974`), for diversity, but the two shapes are not
+   of equal strength:
+   - `DISPATCH_SWITCH` emits an explicit `cmp al, mid` / `je` binary ladder
+     (`code_virtualization_dispatch.py:_switch_ladder`). Hex-Rays rebuilds it into a
+     clean `switch`, handing over the opcode-to-handler mapping directly. Every
+     switch-shape build decompiled here gave up its whole ISA this way.
+   - `DISPATCH_THREADED` dispatches through an offset table that is **XOR-encrypted
+     at runtime**, so IDA cannot resolve an entry statically, cannot synthesize a
+     switch, and could not even attribute the handlers to the interpreter (in a
+     forced-threaded build they landed in a separate 121-block function).
+
+   Shape diversity is worth less than a strong floor: a protector must not emit a
+   fully reconstructible variant half the time. The switch shape should stop being
+   selected and its now-dead ladder removed. Blast radius is ten files
+   (`dispatch.py`, both codegens, both scheme builders, the models, nesting, and
+   `tests/unit/test_code_virtualization_threaded_dispatch.py` plus the dispatch-shape
+   integration tests, which assert both shapes exist and must be updated with it).
 2. **The ISA is tiny and each opcode has one handler instance.** 8–13 opcodes against
    the reference protectors' hundreds of handler variants. Handler duplication and
    per-instance polymorphism exist in the codebase but do not multiply the *visible*
