@@ -237,7 +237,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     if kind == "acmp":
         test = _decode_two_operand(text, "test")
         return ["test", *test] if test is not None else None
-    if kind in ("shl", "shr", "sar"):
+    if kind in ("shl", "shr", "sar", "rol", "ror"):
         shift = _decode_shift(text)
         return ["shift", *shift] if shift is not None else None
     if kind == "mul":

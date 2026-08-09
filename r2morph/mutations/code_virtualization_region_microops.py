@@ -445,14 +445,26 @@ def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> s
     """
     _, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
+    is_rotate = mnemonic in ("rol", "ror")
     body = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
         f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
         f"  movzx ecx, byte ptr [rsi+1]\n  xor cl, {key}\n  xor cl, r13b\n"
     )
+    if is_rotate:
+        # Rotates leave SF/ZF/AF/PF unaffected and only define CF (and OF for count 1),
+        # so - unlike a shift, which overwrites all of them - the captured flags must
+        # merge the program's incoming flags with the rotate's CF/OF. Load the flags
+        # slot into RFLAGS before the rotate (the count decode above already clobbered
+        # the flags, but popfq discards that), run the real rotate, then capture: the
+        # result is bit-for-bit what the native rotate would leave.
+        body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
     body += f"  {mnemonic} rax, cl\n" if width == 64 else f"  {mnemonic} eax, cl\n"
-    body += shift_flag_capture_asm(shift_variant, _FLAGS_OFFSET)
+    if is_rotate:
+        body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    else:
+        body += shift_flag_capture_asm(shift_variant, _FLAGS_OFFSET)
     body += (
         f"  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
         "  add r9, 8\n"

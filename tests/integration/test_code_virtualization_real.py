@@ -2059,6 +2059,28 @@ def test_shift_micro_op_captures_the_carry_flag_for_the_branch(tmp_path: Path) -
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_rotate_micro_op_merges_program_flags_with_the_rotate_carry(tmp_path: Path) -> None:
+    # rol/ror share the vshift handler but, unlike a shift, leave SF/ZF/AF/PF untouched
+    # and only define CF, so the handler must merge the program flags with the rotate's
+    # CF rather than overwrite them. The fixture requires both: a ZF set before the rol
+    # must survive it (jnz not taken) and the ror's carry must be captured (jnc not
+    # taken); either rotate-flag error diverges to 99 instead of 42.
+    fixture = _DATASET / "elf_vm_rotate_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_rotate"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_rip_relative_memory_micro_ops_preserve_exit_code(tmp_path: Path) -> None:
     # A global load/store/subtract/RMW through rip-relative operands, all lowered to
     # the vloadrip/vstorerip micro-ops (proven structurally in the unit suite). The

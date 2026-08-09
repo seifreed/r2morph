@@ -177,12 +177,18 @@ def _decode_two_operand(disasm: str, mnemonic: str) -> tuple[int, int, bool, int
 
 
 def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
-    """Decode ``shl|shr|sar reg, imm8`` into (mnemonic, slot, count, width)."""
+    """Decode ``shl|shr|sar|rol|ror reg, imm8`` into (mnemonic, slot, count, width).
+
+    Rotates share the stack-shift handler: the CPU runs the real ``rol``/``ror``, so
+    the count masking and the flags match the native op bit-for-bit. ``rcl``/``rcr``
+    (rotate *through carry*) are deliberately excluded - their carry-chained result is
+    not a plain ``rol``/``ror`` and would misdecode.
+    """
     parts = disasm.split(None, 1)
     if len(parts) != 2 or "," not in parts[1]:
         return None
     mnemonic = parts[0].lower()
-    if mnemonic not in ("shl", "shr", "sar"):
+    if mnemonic not in ("shl", "shr", "sar", "rol", "ror"):
         return None
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     dst = _register_operand(left)
