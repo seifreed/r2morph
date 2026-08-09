@@ -29,9 +29,10 @@ _REF = {
     "and": lambda a, b: (a & b) & _MASK,
     "or": lambda a, b: (a | b) & _MASK,
 }
-# A spread of arith_variant values: canonical (0), each mnemonic group's low bits,
-# all-ones, and mixed selections, so every reachable pool entry is hit.
-_VARIANTS = (0, 1, 2, 3, 0o7070, 0xABC, (1 << ARITH_VARIANT_BITS) - 1, 0x555, 0xAAA)
+# arith_variant values that reach every pool entry: setting all four 4-bit group
+# nibbles to the same i for i in 0..15 exercises each mnemonic group's index i mod
+# its pool size, so across the range every reachable add/xor/and/or template is hit.
+_VARIANTS = tuple(i | (i << 4) | (i << 8) | (i << 12) for i in range(16))
 
 
 def _edge_operands() -> tuple[int, ...]:
@@ -95,7 +96,7 @@ def test_arith_fold_variant_zero_is_byte_identical_to_the_canonical_fold(mnemoni
 def test_arith_fold_variants_diverge() -> None:
     # Distinct variants selecting different pool entries produce different assembly.
     assert arith_fold("add", 0x5B, 1) != arith_fold("add", 0x5B, 2)
-    assert arith_fold("xor", 0x5B, 1 << 3) != arith_fold("xor", 0x5B, 2 << 3)
+    assert arith_fold("xor", 0x5B, 1 << 4) != arith_fold("xor", 0x5B, 2 << 4)
 
 
 def test_build_isa_spec_arith_variant_zero_is_canonical_and_diverges() -> None:

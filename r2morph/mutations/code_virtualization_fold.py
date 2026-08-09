@@ -35,6 +35,14 @@ _EXTRA_ADD_TEMPLATES: tuple[str, ...] = (
     "  mov {t}, r10\n  and {t}, {a}\n  xor r10, {a}\n  add r10, {t}\n  add r10, {t}\n",
     # a + b == 2*(a | b) - (a ^ b), doubling (a|b) with a self-add instead of lea.
     "  mov {t}, r10\n  xor {t}, {a}\n  or r10, {a}\n  add r10, r10\n  sub r10, {t}\n",
+    # a + b == 2*(a | b) - (a ^ b), doubling (a|b) with a shift instead of a self-add.
+    "  mov {t}, r10\n  xor {t}, {a}\n  or r10, {a}\n  shl r10, 1\n  sub r10, {t}\n",
+    # a + b == -(~a) - 1 + b: rebuild a from its complement (a = -(~a) - 1), then add b,
+    # so the fold needs no scratch register at all.
+    "  not r10\n  neg r10\n  sub r10, 1\n  add r10, {a}\n",
+    # a + b == (a & b) + (a | b), the AND/OR half-adder terms in the opposite order
+    # from the shared template (or first, then the and into the accumulator).
+    "  mov {t}, r10\n  or {t}, {a}\n  and r10, {a}\n  add r10, {t}\n",
 )
 
 # Region-local boolean identities (``r10 = r10 <op> rax``), appended after the
@@ -46,18 +54,26 @@ _EXTRA_BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
         "  mov rcx, r10\n  or rcx, rax\n  and r10, rax\n  not r10\n  and r10, rcx\n",
         # (a + b) - ((a & b) << 1), the carry term doubled with a shift.
         "  mov rcx, r10\n  and rcx, rax\n  shl rcx, 1\n  add r10, rax\n  sub r10, rcx\n",
+        # 2*(a | b) - (a + b), the OR doubled and the sum subtracted back off.
+        "  mov rcx, r10\n  or rcx, rax\n  add rcx, rcx\n  add r10, rax\n  sub rcx, r10\n  mov r10, rcx\n",
     ),
     "and": (
         # a - (a & ~b): the bits of a not in b, subtracted away.
         "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  sub r10, rcx\n",
         # (a | ~b) & b: the second operand masked by the first-or-not-second.
         "  mov rcx, rax\n  not rcx\n  or rcx, r10\n  mov r10, rax\n  and r10, rcx\n",
+        # (~b | a) & b: b masked by (a-or-not-b), the operands swapped from above.
+        "  mov rcx, rax\n  not rcx\n  or rcx, r10\n  and r10, rax\n",
     ),
     "or": (
         # a + (~a & b): a plus the bits of b it does not already carry.
         "  mov rcx, r10\n  not rcx\n  and rcx, rax\n  add r10, rcx\n",
         # (a & ~b) | b, the disjoint-a term or'd (not added) with b.
         "  mov rcx, rax\n  not rcx\n  and r10, rcx\n  or r10, rax\n",
+        # b + (a & ~b): the disjoint-a term added onto b instead of onto a.
+        "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  mov r10, rax\n  add r10, rcx\n",
+        # (a & b) + (a ^ b), the AND and XOR halves summed (carry + no-carry bits).
+        "  mov rcx, r10\n  xor rcx, rax\n  and r10, rax\n  add r10, rcx\n",
     ),
 }
 
@@ -66,11 +82,12 @@ _BOOL_POOL: dict[str, tuple[str, ...]] = {
     mnemonic: _BOOL_VARIANTS[mnemonic] + _EXTRA_BOOL_VARIANTS[mnemonic] for mnemonic in _EXTRA_BOOL_VARIANTS
 }
 
-# Bits of ``arith_variant`` each mnemonic group reads (3 bits -> up to 8 pool
-# entries). add and sub share the add pool; xor/and/or index their own.
-_BOOL_SHIFT: dict[str, int] = {"xor": 3, "and": 6, "or": 9}
-ARITH_VARIANT_BITS = 12
-_GROUP_MASK = 0x7
+# Bits of ``arith_variant`` each mnemonic group reads (4 bits -> up to 16 pool
+# entries, enough to reach every extended template). add/sub read [0:4), then
+# xor/and/or index their own pools from the next three nibbles.
+_BOOL_SHIFT: dict[str, int] = {"xor": 4, "and": 8, "or": 12}
+ARITH_VARIANT_BITS = 16
+_GROUP_MASK = 0xF
 
 
 def arith_fold(mnemonic: str, key: int, variant: int) -> str:
