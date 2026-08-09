@@ -7,6 +7,33 @@ decompiler as the adversary rather than a disassembler.
 resist a decompiler. One Hex-Rays press recovers the interpreter, the ISA, the key
 schedule and the anti-debug logic.** It is well below the reference protectors.
 
+## Cumulative hardening state (2026-08-09 session)
+
+The gaps below were worked in order; this is where the VM stands after that pass,
+re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
+
+- **Dispatch — resistant.** Only the runtime-XOR-encrypted threaded table remains;
+  the interpreter decompiles to an opaque `jmp rax`, no switch is reconstructed, and
+  the handlers are not attributed to the interpreter. (gap 1, closed)
+- **Handler set — much larger and no longer collapsible.** Per-op instance count is
+  a 3–6 draw (a mid-size region shows ~40–65 handlers, IDA reads a per-layer bound
+  in the low tens vs the mid-teens before), each arithmetic and (region) addressing
+  instance draws its own MBA fold from deepened pools, and emission order is shuffled
+  in both VMs so block layout no longer leaks the opcode ordering. Handler-head junk
+  and opaque-predicate pools were widened in both VMs. (gap 2, substantially advanced)
+- **Anti-debug constants — opaque.** `strcpy(…"/proc/self/status")` is gone; the path
+  words and `TracerPid` tag decompile as `0x0101010101010101 * v_checksum ^ 0x…`,
+  keyed on the self-checksum the decompiler cannot fold. (gaps 3/5, done for the
+  constants)
+
+**Still recovered by the decompiler, and still below the reference protectors:** the
+opcode/table XOR keys render as literals (the key schedule — `xor_key` is the
+blob-wide key woven through every operand decrypt, so hiding it is a core-cipher
+change, not a local one); the register file is a computable stack index; the
+self-checksum loop and probe *structure* are visible; and the payload is structurally
+obvious (appended RX `PT_LOAD`, one interpreter function). These are the remaining
+milestones and each is a dedicated redesign — see the gap list below.
+
 ## Method
 
 `dataset/elf_vm_incall_x86_64`, `elf_switch_abs_x86_64`, `elf_blockswap_x86_64` and
