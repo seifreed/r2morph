@@ -1174,10 +1174,15 @@ def _decode_incdec(text: str) -> tuple[Any, ...] | None:
     mnemonic = parts[0].lower()
     if mnemonic not in ("inc", "dec") or "[" in parts[1]:
         return None
-    reg = _register_operand(parts[1].lower())
-    if reg is None:
-        return None
-    return ("incdec", mnemonic, reg[0], reg[1])
+    operand = parts[1].lower()
+    reg = _register_operand(operand)
+    if reg is not None:
+        return ("incdec", mnemonic, reg[0], reg[1])
+    # 8-bit register (inc al / dec dl - a byte counter or char step). The handler
+    # merges the low byte back into the slot, preserving the upper bytes.
+    if operand in REGISTER8_INDEX:
+        return ("incdec", mnemonic, REGISTER8_INDEX[operand], 8)
+    return None
 
 
 def _decode_op_memdst(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> tuple[Any, ...] | None:

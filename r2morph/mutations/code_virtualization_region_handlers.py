@@ -422,10 +422,18 @@ def _incdec_handler_asm(handler_key: str, key: str, flag_variant: int = 0, arith
     body += arith_fold("add", 0, arith_variant)  # r10 = a +/- 1
     if width == 32:
         body += "  mov r10d, r10d\n"
+    elif width == 8:
+        # 8-bit: mask the operand and result to the low byte so the flag synthesis
+        # keys the sign/overflow off bit 7, not the slot's upper bytes.
+        body += "  and ebx, 0xFF\n  and r10d, 0xFF\n"
     body += _synth_flags_asm(width, synth_mode, flag_variant)
     # inc/dec preserve CF: drop the synthesized carry (bit 0) and OR in the program's.
     body += f"  and r11, -2\n  mov rcx, qword ptr [rsp+{_FLAGS_OFFSET}]\n  and ecx, 1\n  or r11, rcx\n"
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
+    if width == 8:
+        # An 8-bit inc/dec writes only the low byte: merge it back over the slot's
+        # preserved upper bytes rather than overwriting the whole 64-bit cell.
+        body += "  mov rcx, qword ptr [rsp+r8*8]\n  and rcx, -256\n  or r10, rcx\n"
     body += "  mov qword ptr [rsp+r8*8], r10\n"
     return body + "  add rsi, 2\n  jmp vm_dispatch\n"
 

@@ -2104,6 +2104,27 @@ def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_byte_inc_dec_merge_and_flags_preserve_exit_code(tmp_path: Path) -> None:
+    # An 8-bit inc/dec writes only the low byte: `inc al` with eax=0x1200 must yield
+    # eax=0x1201 (the handler merges the byte back over the preserved upper bytes; a
+    # whole-cell write would drop 0x12__), and `inc dl` wrapping 0xFF->0 must set ZF
+    # (8-bit synthesis). Either failure diverges from 42 to 99.
+    fixture = _DATASET / "elf_vm_incdec8_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_incdec8"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_byte_immediate_compare_preserves_exit_code(tmp_path: Path) -> None:
     # An 8-bit immediate compare - the byte classify `cmp al, 0x30` of a char routine.
     # It exercises the 1-byte immediate read (advance 3, not the 32-bit field's 6) and
