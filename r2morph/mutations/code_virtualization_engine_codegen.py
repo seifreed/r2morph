@@ -641,11 +641,17 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
     # 0x00 (the counter reads sit inside the checksummed range, so no encoder or
     # checksum change is needed and the benign build is bit-identical).
-    lines.append(timing_fold_asm(scheme.xor_key, slot=layout.checksum_offset))
     # Tracer anti-debug into the same checksum slot: an attached ptrace debugger
     # (TracerPid != 0) folds 0xFF and misdecodes every opcode; an untraced native
     # run and a Unicorn emulation both fold 0x00, so the benign build is unchanged.
-    lines.append(tracer_detect_asm(slot=layout.checksum_offset))
+    # Emit the timing and tracer folds in a per-build order (both fold a benign 0 and
+    # touch only the checksum slot, so order is free) to vary the prologue signature.
+    anti_debug = [
+        timing_fold_asm(scheme.xor_key, slot=layout.checksum_offset),
+        tracer_detect_asm(slot=layout.checksum_offset),
+    ]
+    random.Random(scheme.junk_seed ^ 0x5EED).shuffle(anti_debug)
+    lines.extend(anti_debug)
     # Precompute the operand-cipher key broadcasts from the (now final) checksum byte
     # into their frame slots, after the anti-debug folds so a corrupted checksum also
     # corrupts the operand key. rax/rcx are free scratch here.
