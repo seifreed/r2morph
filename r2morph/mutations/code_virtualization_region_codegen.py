@@ -19,7 +19,13 @@ import random
 import re
 import struct
 
-from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
+from r2morph.mutations.code_virtualization_antidebug import (
+    _TRACER_ISLAND_LEN,
+    patch_tracer_constants,
+    timing_fold_asm,
+    tracer_const_island_asm,
+    tracer_detect_asm,
+)
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
@@ -835,7 +841,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # debugger (TracerPid != 0 in /proc/self/status) folds 0xFF and misdecodes every
     # opcode; an untraced native run and a Unicorn emulation both fold 0x00, so the
     # benign build stays bit-identical and the checksum computation is unchanged.
-    lines.append(tracer_detect_asm(slot=scheme.checksum_offset, key=scheme.table_key))
+    lines.append(tracer_detect_asm(slot=scheme.checksum_offset))
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
@@ -953,9 +959,12 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     if ijmp_targets:
         entries = "".join(f"  .quad ijmp_map - {addr}\n  .long {offset}\n" for addr, offset in ijmp_targets)
         ijmp_map = f"ijmp_map:\n  .long {len(ijmp_targets)}\n{entries}"
+    # The tracer-constant island trails the dispatch table (outside the checksummed
+    # span, before the appended bytecode); build_region_blob patches its qwords once
+    # the build checksum is known and accounts for its length when locating the table.
     lines.append(
         f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
-        f"{ijmp_map}vm_table:\n{table}bytecode:\n"
+        f"{ijmp_map}vm_table:\n{table}{tracer_const_island_asm()}bytecode:\n"
     )
     # Thread the dispatch: every handler tail (and the retarget) ends with a back
     # jump to the (now removed) central dispatcher; splice a freshly shuffled
@@ -988,21 +997,25 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         return None
     data = bytearray(encoding)
     total = sum(len(indices) for indices in scheme.dup.values())
-    # The dispatch table (``total`` 32-bit offsets) is the tail of the assembled
-    # interpreter; XOR-encrypt each entry in place so the handler addresses are
-    # not a plaintext jump table. The dispatch decrypts them at runtime with the
-    # same key, and keystone cannot XOR a label difference it computes itself, so
-    # the encryption happens here on the assembled bytes.
-    table_start = len(data) - total * 4
-    # Expected runtime self-checksum over the interpreter code (everything up to
-    # the dispatch table, so the table encryption below does not perturb it); the
-    # encoder folds it into the opcodes, and the table key is diffused with it too.
+    # The assembled interpreter ends with the dispatch table (``total`` 32-bit
+    # offsets) followed by the tracer-constant island; both trail vm_table and are
+    # excluded from the checksummed span. XOR-encrypt each table entry in place so
+    # the handler addresses are not a plaintext jump table (the dispatch decrypts
+    # them at runtime with the same key, and keystone cannot XOR a label difference
+    # it computes itself, so the encryption happens here on the assembled bytes).
+    island_start = len(data) - _TRACER_ISLAND_LEN
+    table_start = island_start - total * 4
+    # Expected runtime self-checksum over the interpreter code (everything up to the
+    # dispatch table, so neither the table encryption nor the island patch below
+    # perturbs it); the encoder folds it into the opcodes, the table key is diffused
+    # with it, and the tracer constants are masked by it.
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
     table_key = scheme.table_key ^ (checksum * 0x01010101)
     for entry_index in range(total):
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
+    patch_tracer_constants(data, island_start, checksum)
     # The bytecode is appended right after the interpreter, so its base is the
     # cave plus the interpreter's assembled length; rip-relative targets are
     # encoded relative to it. A target too far to express as a signed 32-bit

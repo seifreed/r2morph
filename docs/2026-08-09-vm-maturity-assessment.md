@@ -35,7 +35,7 @@ Structural tells at the file level: the payload lands in extra unnamed `RX` `PT_
 segments above the image, and the interpreter is a single contiguous function whose
 bounds IDA resolves exactly.
 
-## The anti-debug constants cannot be hidden by masking
+## The anti-debug constants cannot be hidden by *immediate* masking (now solved by checksum-keying)
 
 `code_virtualization_antidebug.py` already stores the procfs path and the `TracerPid`
 tag as `const ^ mask` with a per-build mask, specifically to avoid plaintext
@@ -62,6 +62,21 @@ from the checksum is circular today, because the checksummed range covers the
 immediates being masked; breaking that requires either a two-pass assembly or
 placing the masked constants in the appended bytecode region, which lies outside the
 checksummed range and is therefore free of the circularity.
+
+**Done for the anti-debug constants.** The `/proc/self/status` path words and the
+`TracerPid` scan tag now live in a small constant island appended after the
+dispatch table — outside the checksummed `[vm_entry, vm_table)` span, so free of the
+circularity — stored as `const ^ broadcast(checksum)` and de-masked at runtime by
+XORing the interpreter's own self-checksum byte back out. Because the key is the
+result of a loop over the whole code segment, Hex-Rays keeps it as an opaque runtime
+variable and can no longer fold the expression: the prologue now decompiles to
+`filename[0] = 0x0101010101010101 * v_checksum ^ 0x…` rather than
+`strcpy(filename, "/proc/self/status")`, and the tracer tag compare reads
+`buf == (0x0101010101010101 * v_checksum ^ 0x…)` instead of the literal qword. The
+plaintext string — the single most damning line in this report — is gone from both
+the raw file and the pseudocode. The same mechanism now applies to both VMs and the
+nested interpreter. The self-checksum loop itself and the opcode/table constants
+folded into it remain visible; only the anti-debug constants were relocated.
 
 ## Gap list, in priority order
 
@@ -108,6 +123,13 @@ checksummed range and is therefore free of the circularity.
    devirtualizer can name every virtual register.
 5. **Integrity and anti-debug are observable and centralized** — one checksum byte,
    one slot, folded by two probes whose ranges and algorithms are all visible.
+
+   **Partly closed.** The anti-debug *constants* (the procfs path and the tracer tag)
+   no longer decompile to literals: they are checksum-keyed in an out-of-range island
+   (see above), so the decompiler renders opaque XOR expressions instead of
+   `"/proc/self/status"`. The checksum loop and the fold structure themselves are
+   still visible; hiding those needs the loop and probes virtualized too, not just
+   their constants.
 6. **The payload is structurally obvious**: appended `RX` segments, one contiguous
    interpreter function, contiguous bytecode at a resolvable symbol.
 

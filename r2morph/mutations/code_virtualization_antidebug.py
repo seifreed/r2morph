@@ -104,28 +104,68 @@ _STATUS_READ_LEN = 192
 _STATUS_SCAN_LIMIT = 180
 
 
-def _build_mask(key: int) -> int:
-    """A 64-bit per-build mask from the build's 32-bit ``table_key``.
+# The tracer constants (path words + scan tag) live in a data island appended
+# after the dispatch table, outside the checksummed ``[vm_entry, vm_table)`` span,
+# stored as ``const ^ broadcast(checksum)`` and de-masked at runtime against the
+# interpreter's own self-checksum byte. A masking immediate two instructions away
+# is constant-folded by a decompiler straight back to the plaintext string; the
+# self-checksum is the result of a loop over the whole code segment, which the
+# decompiler leaves as an opaque runtime value, so the folded expression can no
+# longer be evaluated and the ``/proc/self/status`` path and ``TracerPid`` tag
+# never render as literals. The island sits outside the checksummed range so the
+# masked bytes do not feed the checksum they are masked by (no circular fixpoint).
+_TRACER_ISLAND_LABEL = "tracer_const_island"
+# Three little-endian qwords: path low, path high, scan tag - patched after
+# assembly by :func:`patch_tracer_constants`.
+_TRACER_ISLAND_LEN = 24
 
-    Repeating the key in both halves keeps the mask derivation trivial while giving
-    2**32 distinct values, enough that the masked constants below are not a fixed
-    byte pattern a corpus scan can grep for across samples.
+
+def _broadcast_checksum_to(reg: str, slot: int) -> str:
+    """Load the self-checksum byte from ``slot`` and smear it across all 8 lanes.
+
+    ``checksum * 0x0101010101010101`` places the byte in every lane with no
+    inter-lane carry (the byte is ``< 256``), yielding the same 64-bit value the
+    build XORed into each stored constant. ``rcx`` is free scratch in this window.
     """
-    low = key & 0xFFFFFFFF
-    return (low << 32) | low
+    return f"  movzx {reg}, byte ptr [rsp+{slot}]\n  mov rcx, 0x0101010101010101\n  imul {reg}, rcx\n"
 
 
-def _load_masked_qword(reg: str, const: int, mask: int) -> str:
-    """Materialize ``const`` in ``reg`` without emitting it as a plaintext immediate.
+def _load_checksum_masked(reg: str, field_offset: int, slot: int) -> str:
+    """Reconstruct a stored constant into ``reg`` from the island, keyed by checksum.
 
-    The build stores ``const ^ mask`` and reconstructs ``const`` at runtime with one
-    XOR, so ``.text`` carries only per-build-varying immediates (``const ^ mask`` and
-    ``mask``), never the fixed constant. ``rdx`` is a free scratch in this window.
+    Loads ``const ^ broadcast(checksum)`` from ``[rip+island+field_offset]`` and
+    XORs the runtime checksum broadcast back out. Because the key is the opaque
+    self-checksum, a decompiler cannot fold the XOR to the underlying constant.
+    ``rdx``/``rcx`` are free scratch here.
     """
-    return f"  mov {reg}, {hex(const ^ mask)}\n  mov rdx, {hex(mask)}\n  xor {reg}, rdx\n"
+    label = _TRACER_ISLAND_LABEL if field_offset == 0 else f"{_TRACER_ISLAND_LABEL}+{field_offset}"
+    return f"  mov {reg}, qword ptr [rip+{label}]\n" + _broadcast_checksum_to("rdx", slot) + f"  xor {reg}, rdx\n"
 
 
-def tracer_detect_asm(slot: int, key: int) -> str:
+def tracer_const_island_asm() -> str:
+    """The appended constant island: three qword placeholders patched post-assembly.
+
+    Emitted after the dispatch table (so it stays outside the checksummed span) and
+    before the bytecode. The zero placeholders are overwritten by
+    :func:`patch_tracer_constants` once the build checksum is known.
+    """
+    return f"{_TRACER_ISLAND_LABEL}:\n  .quad 0\n  .quad 0\n  .quad 0\n"
+
+
+def patch_tracer_constants(data: bytearray, island_start: int, checksum: int) -> None:
+    """Write ``const ^ broadcast(checksum)`` into the island at ``island_start``.
+
+    Mirrors the runtime de-mask: the interpreter loads each qword and XORs the
+    checksum broadcast back out, recovering the path words and scan tag. The island
+    lies outside the checksummed range, so these writes do not perturb ``checksum``.
+    """
+    broadcast = (checksum & 0xFF) * 0x0101010101010101
+    for i, const in enumerate((_STATUS_PATH_LO, _STATUS_PATH_HI, _TRACERPID_TAG)):
+        offset = island_start + i * 8
+        data[offset : offset + 8] = ((const ^ broadcast) & 0xFFFFFFFFFFFFFFFF).to_bytes(8, "little")
+
+
+def tracer_detect_asm(slot: int) -> str:
     """Assembly that folds a *ptrace-tracer* signal into the checksum ``slot`` byte.
 
     Emitted right after :func:`timing_fold_asm`, in the same window where every GP
@@ -148,21 +188,22 @@ def tracer_detect_asm(slot: int, key: int) -> str:
 
     The ``/proc/self/status`` path words and the ``TracerPid`` scan tag would
     otherwise be fixed plaintext immediates - an anti-debug tell a static scan greps
-    for across every build. ``key`` (the build's ``table_key``) masks each of them
-    so ``.text`` carries only per-build-varying immediates; the real bytes are
-    reconstructed at runtime, so the folded result is unchanged.
+    for and a decompiler folds back to a literal string even when they are masked by
+    a second immediate. Each is instead stored as ``const ^ broadcast(checksum)`` in
+    the appended :func:`tracer_const_island_asm` and reconstructed here by XORing the
+    runtime self-checksum broadcast back out, so ``.text`` carries no plaintext and
+    the folded expression keys on a value the decompiler cannot evaluate.
 
     ``slot`` is the frame offset of the checksum byte (the same one the timing fold
-    and every opcode decrypt use).
+    and every opcode decrypt use); it doubles as the de-mask key here.
     """
-    mask = _build_mask(key)
     return (
         # Spell "/proc/self/status\0" just below the frame (transient scratch), each
-        # path word reconstructed from a masked immediate rather than a plaintext one.
+        # path word reconstructed from the checksum-keyed island, not a plaintext one.
         f"  lea r11, [rsp - {hex(_STATUS_PATH_OFFSET)}]\n"
-        + _load_masked_qword("rax", _STATUS_PATH_LO, mask)
+        + _load_checksum_masked("rax", 0, slot)
         + "  mov qword ptr [r11], rax\n"
-        + _load_masked_qword("rax", _STATUS_PATH_HI, mask)
+        + _load_checksum_masked("rax", 8, slot)
         + "  mov qword ptr [r11+8], rax\n"
         + "  mov word ptr [r11+16], 0x73\n"
         # openat(AT_FDCWD, path, O_RDONLY); rax = fd (or a no-op 257 under Unicorn).
@@ -172,9 +213,9 @@ def tracer_detect_asm(slot: int, key: int) -> str:
         + f"  mov rdi, r8\n  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n  xor eax, eax\n  mov edx, {_STATUS_READ_LEN}\n  syscall\n"
         + "  mov rdi, r8\n  mov eax, 3\n  syscall\n"
         # Scan the buffer for the "TracerPid:" line via an unaligned qword compare;
-        # the scan tag is reconstructed from a masked immediate for the same reason.
+        # the scan tag is reconstructed from the checksum-keyed island for the same reason.
         + f"  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n"
-        + _load_masked_qword("r9", _TRACERPID_TAG, mask)
+        + _load_checksum_masked("r9", 16, slot)
         + "  xor ecx, ecx\n  xor r8d, r8d\n"
         + "tracer_scan:\n"
         + f"  cmp r8d, {_STATUS_SCAN_LIMIT}\n  jae tracer_done\n"

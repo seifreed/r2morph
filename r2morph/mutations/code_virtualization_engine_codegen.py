@@ -12,7 +12,13 @@ import logging
 import random
 import struct
 
-from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
+from r2morph.mutations.code_virtualization_antidebug import (
+    _TRACER_ISLAND_LEN,
+    patch_tracer_constants,
+    timing_fold_asm,
+    tracer_const_island_asm,
+    tracer_detect_asm,
+)
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine_common import (
     _DWORD_BROADCAST,
@@ -628,7 +634,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # Tracer anti-debug into the same checksum slot: an attached ptrace debugger
     # (TracerPid != 0) folds 0xFF and misdecodes every opcode; an untraced native
     # run and a Unicorn emulation both fold 0x00, so the benign build is unchanged.
-    lines.append(tracer_detect_asm(slot=layout.checksum_offset, key=scheme.table_key))
+    lines.append(tracer_detect_asm(slot=layout.checksum_offset))
     poly_rng = random.Random(scheme.table_key)
     # Undo the opcode byte's position mask and fold in the key and the runtime
     # self-checksum the encoder pre-biased the opcode with, so a patched interpreter
@@ -687,7 +693,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
 
     table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
-    lines.append(f"vm_table:\n{table}bytecode:\n")
+    # The tracer-constant island trails the table (outside the checksummed span,
+    # before the appended bytecode); build_vm_blob patches it once the checksum is
+    # known and accounts for its length when locating the table.
+    lines.append(f"vm_table:\n{table}{tracer_const_island_asm()}bytecode:\n")
     # Thread the dispatch: every handler tail ends with a back jump to the (now
     # removed) central dispatcher; splice a freshly shuffled decode copy in for each
     # so control flows handler -> decode -> next handler with no shared hub block
@@ -757,13 +766,17 @@ def build_vm_blob(
     # everything up to the table, so the encryption below does not perturb it;
     # the encoder folds it into the opcodes and the table key is diffused with it.
     total = sum(len(indices) for indices in scheme.dup.values())
-    table_start = len(data) - total * 4
+    # The assembled interpreter ends with the table followed by the tracer-constant
+    # island; both trail vm_table and are excluded from the checksummed span.
+    island_start = len(data) - _TRACER_ISLAND_LEN
+    table_start = island_start - total * 4
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
     table_key = scheme.table_key ^ (checksum * 0x01010101)
     for entry_index in range(total):
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
+    patch_tracer_constants(data, island_start, checksum)
     # The bytecode is appended right after the interpreter, so its base is the cave
     # plus the assembled interpreter length; rip-relative globals are stored as a
     # signed 32-bit offset from it. A target too far to express leaves the run native.

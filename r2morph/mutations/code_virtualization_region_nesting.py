@@ -28,7 +28,13 @@ import random
 import struct
 from typing import Any
 
-from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
+from r2morph.mutations.code_virtualization_antidebug import (
+    _TRACER_ISLAND_LEN,
+    patch_tracer_constants,
+    timing_fold_asm,
+    tracer_const_island_asm,
+    tracer_detect_asm,
+)
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
 from r2morph.mutations.code_virtualization_region import build_region_scheme
@@ -385,7 +391,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # Tracer anti-debug across all layers: an attached ptrace debugger folds
         # 0xFF into the shared checksum slot and misdecodes every layer; an untraced
         # or Unicorn-emulated run folds 0x00 so the benign build stays consistent.
-        + tracer_detect_asm(slot=_CHECKSUM_OFFSET, key=schemes[0].table_key)
+        + tracer_detect_asm(slot=_CHECKSUM_OFFSET)
         + _set_layer_slots(schemes[0], 0, counts[0])
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
         + f"  mov qword ptr [rsp+{rsp_off}], rax\n"
@@ -446,6 +452,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             )
         )
 
+    # The tracer-constant island trails all dispatch tables (outside the checksummed
+    # span, which ends at vm_table_0) and precedes the reserved bytecode; the blob
+    # assembly patches it once the checksum is known.
+    island = tracer_const_island_asm()
     # Reserve every layer's bytecode but the innermost (which is appended).
     reservations = (
         "".join(f"bc_{layer}:\n  .space {lens[layer]}\n" for layer in range(count - 1)) + f"bc_{count - 1}:\n"
@@ -468,7 +478,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # handler with no hub block and no two copies sharing a byte layout. One rng
     # seeded from the outer layer's table key keeps the variant sequence
     # deterministic per build.
-    asm = thread_back_jumps(body + tables + reservations, lambda: _decode_block(poly_rng))
+    asm = thread_back_jumps(body + tables + island + reservations, lambda: _decode_block(poly_rng))
 
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
@@ -484,16 +494,21 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     bc_off[count - 1] = len(data)
     for layer in range(count - 2, -1, -1):
         bc_off[layer] = bc_off[layer + 1] - lens[layer]
-    table0_start = bc_off[0] - sum(counts) * 4
-    # Checksum covers only the interpreter code (up to the first table), so the
-    # table encryption below and the appended bytecode do not perturb the expected
-    # value; the encoder folds it into every layer's stream, and each layer's table
-    # key is diffused with it too (broadcast to 32 bits).
+    # The island sits between the last table and the reserved bytecode, so the
+    # tables occupy the sum(counts)*4 bytes ending _TRACER_ISLAND_LEN before bc_0.
+    island_start = bc_off[0] - _TRACER_ISLAND_LEN
+    table0_start = island_start - sum(counts) * 4
+    # Checksum covers only the interpreter code (up to the first table), so the table
+    # encryption below, the island patch and the appended bytecode do not perturb the
+    # expected value; the encoder folds it into every layer's stream, each layer's
+    # table key is diffused with it (broadcast to 32 bits), and the tracer constants
+    # are masked by it.
     checksum = compute_build_checksum(bytes(data[:table0_start]), schemes[0].xor_key)
     chk_broadcast = checksum * 0x01010101
     for layer in range(count):
         table_key = schemes[layer].table_key ^ chk_broadcast
         _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], table_key)
+    patch_tracer_constants(data, island_start, checksum)
     try:
         encoded = [
             encode_region(layers[layer], schemes[layer], cave_vaddr + bc_off[layer], checksum) for layer in range(count)
