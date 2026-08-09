@@ -91,6 +91,17 @@ checksummed range and is therefore free of the circularity.
    the reference protectors' hundreds of handler variants. Handler duplication and
    per-instance polymorphism exist in the codebase but do not multiply the *visible*
    case count enough to matter.
+
+   **Partly closed.** The per-op instance count was raised from a 1–2 draw to a 2–4
+   draw in the shared assignment (`_assign_opcode_multiplicity`), which both VMs now
+   use. A mid-size region that carried 8–13 handlers, one instance per opcode, now
+   carries ~30–44 handler instances with a floor of two per opcode, each copy
+   diverging in executed code (per-instance live junk, opaque predicates, scratch
+   renames) so a decompiler cannot fold them back together. The lone-instance tell
+   — an opcode that decompiles to a single case — is gone. This narrows but does not
+   erase the gap to the reference protectors' hundreds of *semantically* distinct
+   handler variants: the copies here are behaviourally interchangeable, differing in
+   junk rather than in the fold they compute.
 3. **Key material is compile-time constant**, so every cipher in the VM is recoverable
    by constant propagation (see above).
 4. **The register file is a flat stack array** with a computable index, so a

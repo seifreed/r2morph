@@ -1,11 +1,11 @@
 """Regression: the per-build opcode assignment must always fit the single-byte
 dispatch space, no matter how many op-keys exist.
 
-Each op-key draws one or two interchangeable opcodes; their sum plus an exit
-marker must fit in a byte. A micro-op addition once pushed the op-key count high
-enough that the summed multiplicity could reach 256, which threw in
-build_vm_scheme and silently rolled back the whole virtualization pass. The clamp
-must keep the total within budget structurally, not by luck of the key count.
+Each op-key draws several interchangeable opcodes; their sum plus an exit marker
+must fit in a byte. A micro-op addition once pushed the op-key count high enough
+that the summed multiplicity could reach 256, which threw in build_vm_scheme and
+silently rolled back the whole virtualization pass. The shed must keep the total
+within budget structurally, not by luck of the key count.
 """
 
 from __future__ import annotations

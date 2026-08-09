@@ -30,7 +30,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedOp,
     decode_instruction,
 )
-from r2morph.mutations.code_virtualization_engine_common import _OPCODE_BUDGET
+from r2morph.mutations.code_virtualization_engine_common import _assign_opcode_multiplicity
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_cmov,
     _decode_cmp_mem,
@@ -921,24 +921,12 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     N entries wide instead of a full 256.
     """
     keys = sorted(region.op_keys)
-    if len(keys) > _OPCODE_BUDGET:
-        raise ValueError(f"{len(keys)} op-keys exceed the {_OPCODE_BUDGET}-value single-byte opcode budget")
-    # Give each handler one or two interchangeable instances; the total must stay
-    # within a byte so opcodes still index the table directly and a value remains
-    # above it for the dispatch bounds-guard exit. If duplication would overflow
-    # the budget, downgrade duplicated handlers (rng-ordered) until it fits; the
-    # clamp only draws extra randomness when it triggers, so schemes that already
-    # fit are byte-identical to before.
-    multiplicity = {key: rng.randint(1, 2) for key in keys}
+    # Each handler gets several interchangeable instances (never a lone one), shed
+    # to fit the single-byte opcode space so opcodes still index the table directly
+    # and a value remains above it for the dispatch bounds-guard exit. Shares the
+    # engine VM's assignment so both interpreters duplicate handlers identically.
+    multiplicity = _assign_opcode_multiplicity(keys, rng)
     total = sum(multiplicity.values())
-    if total > _OPCODE_BUDGET:
-        downgradable = [key for key in keys if multiplicity[key] == 2]
-        rng.shuffle(downgradable)
-        for key in downgradable:
-            if total <= _OPCODE_BUDGET:
-                break
-            multiplicity[key] = 1
-            total -= 1
     indices = rng.sample(range(total), total)
     dup: dict[str, tuple[int, ...]] = {}
     cursor = 0

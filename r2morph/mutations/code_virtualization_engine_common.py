@@ -11,6 +11,10 @@ from __future__ import annotations
 
 import random
 import struct
+from collections.abc import Hashable, Sequence
+from typing import TypeVar
+
+_OpKey = TypeVar("_OpKey", bound=Hashable)
 
 # ModR/M register order; index is the VM register-context slot.
 GP_REGISTERS: tuple[str, ...] = (
@@ -366,28 +370,40 @@ class VMScheme:
 _EXIT_OPCODE_HEADROOM = 8
 _OPCODE_BUDGET = 256 - _EXIT_OPCODE_HEADROOM
 
+# Every operation is emitted as several interchangeable handler instances rather
+# than one, so no opcode decompiles to a single switch case a devirtualizer can
+# name outright; per-instance junk and opaque predicates keep the copies from
+# folding back together. The floor is above one (a lone instance is the very tell
+# a commercial protector avoids) and the ceiling stays small so a typical ISA
+# still fits the single-byte opcode space with room for the exit marker; when a
+# draw would overflow the budget, instances are shed down to a floor of one.
+_HANDLER_MIN_INSTANCES = 2
+_HANDLER_MAX_INSTANCES = 4
 
-def _assign_opcode_multiplicity(
-    op_keys: tuple[tuple[str, bool, int], ...], rng: random.Random
-) -> dict[tuple[str, bool, int], int]:
-    """One or two interchangeable opcodes per op-key, clamped to the byte budget.
 
-    Each op-key draws multiplicity 1 or 2; if the total would exceed the opcode
-    budget, duplicated ops are downgraded (rng-ordered) until it fits, so the
-    scheme is always valid however many op-keys exist. The clamp only draws extra
-    randomness when it triggers, so schemes that already fit are unchanged.
+def _assign_opcode_multiplicity(op_keys: Sequence[_OpKey], rng: random.Random) -> dict[_OpKey, int]:
+    """Several interchangeable opcodes per op-key, shed to fit the byte budget.
+
+    Each op-key draws a multiplicity in
+    ``[_HANDLER_MIN_INSTANCES, _HANDLER_MAX_INSTANCES]``; if the total would
+    exceed the opcode budget, instances are shed (rng-ordered, one at a time,
+    never below one) until it fits, so the scheme is always valid however many
+    op-keys exist. The shed only draws extra randomness when it triggers, so
+    schemes that already fit are unaffected by it.
     """
     if len(op_keys) > _OPCODE_BUDGET:
         raise ValueError(f"{len(op_keys)} op-keys exceed the {_OPCODE_BUDGET}-value single-byte opcode budget")
-    multiplicity = {op_key: rng.randint(1, 2) for op_key in op_keys}
+    multiplicity = {op_key: rng.randint(_HANDLER_MIN_INSTANCES, _HANDLER_MAX_INSTANCES) for op_key in op_keys}
     total = sum(multiplicity.values())
-    if total > _OPCODE_BUDGET:
-        downgradable = [op_key for op_key in op_keys if multiplicity[op_key] == 2]
-        rng.shuffle(downgradable)
-        for op_key in downgradable:
+    while total > _OPCODE_BUDGET:
+        # len(op_keys) <= _OPCODE_BUDGET is guaranteed above, so once every key is
+        # at one the total is within budget and this loop has already exited.
+        reducible = [op_key for op_key in op_keys if multiplicity[op_key] > 1]
+        rng.shuffle(reducible)
+        for op_key in reducible:
             if total <= _OPCODE_BUDGET:
                 break
-            multiplicity[op_key] = 1
+            multiplicity[op_key] -= 1
             total -= 1
     return multiplicity
 
