@@ -60,9 +60,12 @@ def _sf(width: int, spelling: int) -> str:
     sh = width - 1
     if spelling == 0:
         return f"  mov {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 7\n  or r11, rcx\n"
-    # Alternate: isolate the sign bit with a mask, then shift it down to bit 7.
+    # Alternate: isolate the sign bit with a mask, then shift it to bit 7.
     if width == 64:
         return f"  mov {c}, {r}\n  mov {t}, 0x8000000000000000\n  and {c}, {t}\n  shr {c}, 56\n  or r11, rcx\n"
+    if width == 8:
+        # The 8-bit sign bit (bit 7) is already the SF position (bit 7): mask it, no shift.
+        return f"  mov {c}, {r}\n  and {c}, 0x80\n  or r11, rcx\n"
     return f"  mov {c}, {r}\n  and {c}, 0x80000000\n  shr {c}, 24\n  or r11, rcx\n"
 
 
@@ -151,8 +154,11 @@ def synth_flags_asm(width: int, mode: str, variant: int = 0) -> str:
     """Branchlessly synthesize the readable flags of ``a <op> b`` into r11.
 
     Reads ``a`` in rbx, ``b`` in rbp and the result in r10 (32-bit spellings for
-    ``width == 32``); builds the RFLAGS image in r11; rcx/rax/r9 are scratch and r8
-    is preserved. ``mode`` is ``"add"``, ``"sub"`` or ``"logic"`` (and/or/xor/test).
+    ``width`` 32 and 8); builds the RFLAGS image in r11; rcx/rax/r9 are scratch and
+    r8 is preserved. ``width`` 8 reuses the 32-bit register spellings but keys the
+    sign bit off ``width - 1`` (7); the caller must mask ``a``/``b``/result to the
+    low byte first so the upper bytes of the context slots do not perturb the sign,
+    carry or overflow. ``mode`` is ``"add"``, ``"sub"`` or ``"logic"`` (and/or/xor/test).
     SF, ZF and PF are always set; add/sub additionally set CF and OF (logic clears
     both, so nothing is emitted for them). AF is read by no conditional jump and is
     omitted. ``variant`` selects, per flag, one of two algebraically-equivalent

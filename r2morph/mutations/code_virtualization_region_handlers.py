@@ -648,6 +648,11 @@ def _compare_handler_asm(
         body += compare_compute(mnemonic, 0, arith_variant, compare_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
+    elif width == 8:
+        # 8-bit compare: mask the operands and result to the low byte so the flag
+        # synthesis (which keys the sign bit off width-1 = 7 and reads a/b for CF/OF)
+        # sees clean 8-bit values, not the upper bytes of the 64-bit context slots.
+        body += "  and ebx, 0xFF\n  and ebp, 0xFF\n  and r10d, 0xFF\n"
     body += _synth_flags_asm(width, synth_mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"

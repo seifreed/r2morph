@@ -2081,6 +2081,29 @@ def test_rotate_micro_op_merges_program_flags_with_the_rotate_carry(tmp_path: Pa
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> None:
+    # An 8-bit register test/cmp - the byte terminator of a char loop (`test al,al;jz`)
+    # and a byte equality (`cmp dl,bl;jne`). The synthesized 8-bit flags key the sign
+    # bit off bit 7 and mask the operands to the low byte; a wrong 8-bit ZF/SF would
+    # take a branch the native code does not, diverging from 42. The fixture cannot be
+    # virtualized at all on a build without 8-bit compare support (functions_virtualized
+    # would be 0), so the count assertion also pins the new coverage.
+    fixture = _DATASET / "elf_vm_cmp8_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_cmp8"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_rip_relative_memory_micro_ops_preserve_exit_code(tmp_path: Path) -> None:
     # A global load/store/subtract/RMW through rip-relative operands, all lowered to
     # the vloadrip/vstorerip micro-ops (proven structurally in the unit suite). The
