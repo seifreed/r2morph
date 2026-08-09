@@ -612,7 +612,14 @@ def handler_instances_asm(
     shift_variant = spec.shift_variant
     build_addr_variant = spec.addr_variant
     lines: list[str] = []
-    for index in sorted(index_to_key):
+    # Emit the handler instances in a per-build shuffled order rather than opcode
+    # order: the dispatch table addresses each by label (``H_{index} - vm_table``),
+    # so file order is free, and shuffling it keeps the physical layout from leaking
+    # the opcode ordering a positional handler-matcher would read off the block
+    # sequence. Seeded from the build so the output stays reproducible.
+    emit_order = sorted(index_to_key)
+    random.Random(body_seed ^ 0x9E3779B9).shuffle(emit_order)
+    for index in emit_order:
         handler_key = index_to_key[index]
         # Give each *instance* of an arithmetic or memory-addressing handler its own
         # MBA fold: every fold computes the same result by a different instruction
