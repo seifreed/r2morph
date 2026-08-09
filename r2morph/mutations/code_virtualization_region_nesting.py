@@ -79,6 +79,20 @@ _MIN_PEEL = 2  # shortest op run worth peeling into an inner layer
 _MAX_LAYERS = (0x100 - _RETURN_BASE) // 8
 
 
+def _shuffled_anti_debug(xor_key: int) -> str:
+    """The timing and tracer anti-debug folds in a per-build order.
+
+    Both fold a benign 0 into the shared checksum slot and touch nothing else, so
+    their order is free; shuffling it denies a fixed prologue probe signature.
+    """
+    folds = [
+        timing_fold_asm(xor_key, slot=_CHECKSUM_OFFSET),
+        tracer_detect_asm(slot=_CHECKSUM_OFFSET),
+    ]
+    random.Random(xor_key ^ 0x5EED).shuffle(folds)
+    return "".join(folds)
+
+
 def _branch_targets(instructions: list[tuple[Any, ...]]) -> set[int]:
     """Item indices some control-transfer item resolves to.
 
@@ -382,15 +396,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # flag-dead arith folds through it in the nested layers too.
         f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
         + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
-        # Timing anti-debug folded into the same checksum slot as the single-layer
-        # entry: it sits inside the checksummed span (before vm_table_0) and folds
-        # 0x00 on an untraced run, so the benign build stays consistent while a
-        # single-stepped run misdecodes every opcode across all layers.
-        + timing_fold_asm(schemes[0].xor_key, slot=_CHECKSUM_OFFSET)
-        # Tracer anti-debug across all layers: an attached ptrace debugger folds
-        # 0xFF into the shared checksum slot and misdecodes every layer; an untraced
-        # or Unicorn-emulated run folds 0x00 so the benign build stays consistent.
-        + tracer_detect_asm(slot=_CHECKSUM_OFFSET)
+        # Timing + tracer anti-debug folded into the same checksum slot (both fold 0x00
+        # benign, so a single-stepped or ptrace-attached run misdecodes every layer).
+        # Both touch only that slot, so their order is free; emit them in a per-build
+        # order to vary the shared prologue's probe signature.
+        + _shuffled_anti_debug(schemes[0].xor_key)
         # Precompute the operand-cipher key broadcasts from the (now final) shared
         # checksum byte into their frame slots: every layer's operand decrypt reads
         # these instead of a build-constant key. After the anti-debug folds, so a
