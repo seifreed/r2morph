@@ -48,7 +48,7 @@ _PUSH_RAX = (
 )
 
 
-def _vpush_handler_asm(key: int) -> str:
+def _vpush_handler_asm(key: str) -> str:
     """Read the operand slot's value and push it onto the vstack.
 
     The single slot operand sits at ``[rsi+1]`` (one field, so no permutation),
@@ -60,7 +60,7 @@ def _vpush_handler_asm(key: int) -> str:
     )
 
 
-def _vpop_handler_asm(key: int) -> str:
+def _vpop_handler_asm(key: str) -> str:
     """Pop the top vstack cell into the operand slot and drop the depth pointer."""
     return (
         f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
@@ -120,7 +120,7 @@ def _vpushi_handler_asm(handler_key: str, key_qword: str, key_dword: str) -> str
     return decode + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vbinop_handler_asm(handler_key: str, key: int, arith_variant: int = 0) -> str:
+def _vbinop_handler_asm(handler_key: str, key: str, arith_variant: int = 0) -> str:
     """Pop the top two cells, fold them with the shared MBA builder, push the result.
 
     The operands were pushed dst-then-src, so the cell below the top is ``a == dst``
@@ -139,7 +139,7 @@ def _vbinop_handler_asm(handler_key: str, key: int, arith_variant: int = 0) -> s
     )
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += arith_fold(mnemonic, key, arith_variant)
+    body += arith_fold(mnemonic, 0, arith_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += (
@@ -151,7 +151,7 @@ def _vbinop_handler_asm(handler_key: str, key: int, arith_variant: int = 0) -> s
     return body
 
 
-def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, arith_variant: int = 0) -> str:
+def _vbinopsynth_handler_asm(handler_key: str, key: str, flag_variant: int = 0, arith_variant: int = 0) -> str:
     """Fold the top two vstack cells AND synthesize the readable flags, then push.
 
     The flag-live counterpart of ``_vbinop_handler_asm``: where that serves ops whose
@@ -182,7 +182,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, 
     body += "  mov rbx, r10\n  mov rbp, rax\n  mov r8, r9\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += arith_fold(mnemonic, key, arith_variant)
+    body += arith_fold(mnemonic, 0, arith_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)
@@ -197,7 +197,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: int, flag_variant: int = 0, 
 
 
 def _vcmpsynth_handler_asm(
-    handler_key: str, key: int, flag_variant: int = 0, arith_variant: int = 0, compare_variant: int = 0
+    handler_key: str, key: str, flag_variant: int = 0, arith_variant: int = 0, compare_variant: int = 0
 ) -> str:
     """Pop the top two vstack cells, synthesize the compare flags, push nothing.
 
@@ -227,11 +227,11 @@ def _vcmpsynth_handler_asm(
     # cmp -> flags of a - b (== a + (-b)); test -> flags of a & b. Result is discarded.
     if compare_variant == 0:
         if op == "cmp":
-            body += "  neg rax\n" + arith_fold("add", key, arith_variant)
+            body += "  neg rax\n" + arith_fold("add", 0, arith_variant)
         else:
-            body += arith_fold("and", key, arith_variant)
+            body += arith_fold("and", 0, arith_variant)
     else:
-        body += compare_compute(op, key, arith_variant, compare_variant)
+        body += compare_compute(op, 0, arith_variant, compare_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)
@@ -240,7 +240,7 @@ def _vcmpsynth_handler_asm(
     return body
 
 
-def _vload_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+def _vload_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Load ``[base+disp]`` and push the value onto the vstack.
 
     Reuses the shared MBA-folded address prologue (``_mem_address_asm``), which
@@ -257,7 +257,7 @@ def _vload_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: i
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+def _vstore_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Pop the top vstack cell and store it to ``[base+disp]``.
 
     The pop happens first, into rbx (which the address prologue preserves), because
@@ -277,7 +277,7 @@ def _vstore_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: 
 
 
 def _vstoreidx_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Pop the top vstack cell and store it to ``[base+index*scale+disp]``.
 
@@ -299,7 +299,7 @@ def _vstoreidx_handler_asm(
 
 
 def _vloadidx_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Load ``[base+index*scale+disp]`` and push the value onto the vstack.
 
@@ -318,7 +318,7 @@ def _vloadidx_handler_asm(
 
 
 def _vloadrip_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Load ``[rip+disp]`` (a global) and push the value onto the vstack.
 
@@ -335,7 +335,7 @@ def _vloadrip_handler_asm(
 
 
 def _vstorerip_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Pop the top vstack cell and store it to ``[rip+disp]`` (a global).
 
@@ -355,7 +355,7 @@ def _vstorerip_handler_asm(
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vlea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+def _vlea_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Compute a ``lea`` effective address and push it onto the vstack (no deref).
 
     Reuses the shared MBA-folded address prologue (base+disp, or bytecode-base
@@ -373,7 +373,7 @@ def _vlea_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: in
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vleaidx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+def _vleaidx_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Compute a scaled-index ``lea`` address (base+index*scale+disp) and push it.
 
     Like :func:`_vlea_handler_asm` but with the shared scaled-index prologue; no
@@ -386,7 +386,7 @@ def _vleaidx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm:
 
 
 def _vleaidxnb_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Compute a no-base scaled-index ``lea`` address (index*scale+disp) and push it.
 
@@ -400,7 +400,7 @@ def _vleaidxnb_handler_asm(
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vmovx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
+def _vmovx_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Load ``byte|word [base+disp]`` with zero/sign extension and push it.
 
     The micro-op form of ``movzx/movsx reg, [base+disp]``: the shared address
@@ -418,7 +418,7 @@ def _vmovx_handler_asm(handler_key: str, key: int, key_dword: str, field_perm: i
 
 
 def _vmovxidx_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Load ``byte|word [base+index*scale+disp]`` with zero/sign extension and push it.
 
@@ -431,7 +431,7 @@ def _vmovxidx_handler_asm(
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _vshift_handler_asm(handler_key: str, key: int, shift_variant: int = 0) -> str:
+def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> str:
     """Pop the top vstack cell, shift it by the carried count, capture flags, push.
 
     Lowers a native ``shl``/``shr``/``sar reg, imm``: the shifted register value is

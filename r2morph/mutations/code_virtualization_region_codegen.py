@@ -60,6 +60,8 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _FRAME_SIZE,
     _GUARD,
+    _KEY_DWORD_SLOT,
+    _KEY_QWORD_SLOT,
     _VSP_OFFSET,
     _cmp_memory_handler_asm,
     _compare_handler_asm,
@@ -120,7 +122,6 @@ from r2morph.mutations.code_virtualization_region_microops import (
 )
 from r2morph.mutations.code_virtualization_region_models import (
     _DWORD_BROADCAST,
-    _QWORD_BROADCAST,
     Region,
     RegionScheme,
 )
@@ -314,14 +315,14 @@ def _call_handler_asm(index: int, key_dword: str, slot: tuple[int, ...]) -> str:
     return _call_bridge_asm(index, slot, target, 5)
 
 
-def _icall_handler_asm(index: int, key: int, slot: tuple[int, ...]) -> str:
+def _icall_handler_asm(index: int, key: str, slot: tuple[int, ...]) -> str:
     """Register-indirect ``call reg``: the target is the program value of a GP
     register, read from its frame slot. Base-independent (no r15), so it nests."""
     target = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n" "  mov r10, qword ptr [rsp+r8*8]\n"
     return _call_bridge_asm(index, slot, target, 2)
 
 
-def _ijmp_handler_asm(index: int, key: int) -> str:
+def _ijmp_handler_asm(index: int, key: str) -> str:
     """Register-indirect jump (``jmp reg``): re-enter the VM at the virtualized copy
     of the computed target. The target is the program value of a GP register (read
     from its frame slot, same operand layout as ``icall``); it is looked up in the
@@ -363,7 +364,7 @@ def _ijmp_scan_asm(index: int) -> str:
     )
 
 
-def _ijmpmem_handler_asm(index: int, key: int, key_dword: str, field_perm: int, addr_variant: int = 0) -> str:
+def _ijmpmem_handler_asm(index: int, key: str, key_dword: str, field_perm: int, addr_variant: int = 0) -> str:
     """Memory-indirect computed jump ``jmp qword [base+index*scale+disp]`` (non-PIE
     jump-table switch). The shared indexed-address prologue computes the table-entry
     address into r10; dereferencing it loads the case target from the preserved rodata
@@ -372,7 +373,7 @@ def _ijmpmem_handler_asm(index: int, key: int, key_dword: str, field_perm: int, 
     return address + "  mov r10, qword ptr [r10]\n" + _ijmp_scan_asm(index)
 
 
-def _ijmpmemnb_handler_asm(index: int, key: int, key_dword: str, field_perm: int, addr_variant: int = 0) -> str:
+def _ijmpmemnb_handler_asm(index: int, key: str, key_dword: str, field_perm: int, addr_variant: int = 0) -> str:
     """No-base memory-indirect computed jump ``jmp qword [index*scale+disp]`` - the
     common non-PIE switch where the table base is the displacement. Like
     :func:`_ijmpmem_handler_asm` without the base add."""
@@ -416,7 +417,7 @@ def _vret_handler_asm(
 
 
 def _call_mem_handler_asm(
-    index: int, key: int, key_dword: str, slot: tuple[int, ...], riprel: bool, field_perm: int, addr_variant: int = 0
+    index: int, key: str, key_dword: str, slot: tuple[int, ...], riprel: bool, field_perm: int, addr_variant: int = 0
 ) -> str:
     """Memory-indirect ``call qword [mem]``: the callee address is a pointer loaded
     from memory (vtable / IAT-GOT dispatch). The shared memory-address prologue
@@ -430,7 +431,7 @@ def _call_mem_handler_asm(
 
 
 def _call_mem_idx_handler_asm(
-    index: int, key: int, key_dword: str, slot: tuple[int, ...], field_perm: int, addr_variant: int = 0
+    index: int, key: str, key_dword: str, slot: tuple[int, ...], field_perm: int, addr_variant: int = 0
 ) -> str:
     """Indexed memory-indirect ``call qword [base+index*scale+disp]`` (function-
     pointer table dispatch). The shared indexed-address prologue computes the
@@ -524,7 +525,7 @@ def _jcc_handler_asm(condition: str, retarget_target: str) -> str:
     )
 
 
-def _setcc_slot_read(offset: int, key: int, reg: str) -> str:
+def _setcc_slot_read(offset: int, key: str, reg: str) -> str:
     """Read the destination slot index at ``[rsi+offset]`` into 64-bit ``reg``.
 
     Mirrors the micro-op slot read: the byte is un-masked with the build key and
@@ -533,7 +534,7 @@ def _setcc_slot_read(offset: int, key: int, reg: str) -> str:
     return f"  movzx {reg}d, byte ptr [rsi+{offset}]\n  xor {reg}b, {key}\n  xor {reg}b, r13b\n"
 
 
-def _setcc_handler_asm(condition: str, key: int) -> str:
+def _setcc_handler_asm(condition: str, key: str) -> str:
     """Emit a conditional-set handler that carries no native setcc.
 
     Computes the condition (0/1) arithmetically from the captured RFLAGS - like
@@ -549,7 +550,7 @@ def _setcc_handler_asm(condition: str, key: int) -> str:
     )
 
 
-def _cmov_handler_asm(condition: str, width: int, key: int) -> str:
+def _cmov_handler_asm(condition: str, width: int, key: str) -> str:
     """Emit a conditional-move handler that carries no native cmov.
 
     Computes a 0/-1 mask from the captured RFLAGS - like ``_jcc_handler_asm`` -
@@ -578,7 +579,7 @@ def _cmov_handler_asm(condition: str, width: int, key: int) -> str:
     )
 
 
-def _movx_reg_handler_asm(handler_key: str, key: int) -> str:
+def _movx_reg_handler_asm(handler_key: str, key: str) -> str:
     """Emit a register-source movzx/movsx handler.
 
     The source register's full value already lives in its slot, so its low byte,
@@ -611,7 +612,7 @@ def _movx_reg_handler_asm(handler_key: str, key: int) -> str:
 def handler_instances_asm(
     index_to_key: dict[int, str],
     *,
-    key: int,
+    key: str,
     key_qword: str,
     key_dword: str,
     rsp_off: int,
@@ -853,9 +854,13 @@ def handler_instances_asm(
 
 
 def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
-    key = scheme.xor_key
-    key_qword = hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF)
-    key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
+    # The operand cipher key is the runtime self-checksum, not a build constant: the
+    # byte key is the checksum slot read directly, and the 32/64-bit keys are its
+    # broadcasts, precomputed into frame slots at entry (see the setup below). Every
+    # handler decrypts operands against these, so no operand-cipher literal is exposed.
+    key = f"byte ptr [rsp+{scheme.checksum_offset}]"
+    key_qword = f"qword ptr [rsp+{_KEY_QWORD_SLOT}]"
+    key_dword = f"dword ptr [rsp+{_KEY_DWORD_SLOT}]"
     retarget_target = (
         f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
         # Un-mask the position the encoder folded into the target (r13b holds it
@@ -895,6 +900,20 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # opcode; an untraced native run and a Unicorn emulation both fold 0x00, so the
     # benign build stays bit-identical and the checksum computation is unchanged.
     lines.append(tracer_detect_asm(slot=scheme.checksum_offset))
+    # Precompute the operand-cipher key broadcasts from the (now final) checksum byte
+    # into their frame slots: the 32- and 64-bit operand decrypts read these instead
+    # of a build-constant key. Runs after the anti-debug folds so a corrupted checksum
+    # (a traced run) also corrupts the operand key and misdecodes, matching the opcode
+    # path. rax/rcx are free scratch here (every GP register is already spilled).
+    lines.append(
+        f"  movzx eax, byte ptr [rsp+{scheme.checksum_offset}]\n"
+        "  imul eax, eax, 0x1010101\n"
+        f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
+        f"  movzx rax, byte ptr [rsp+{scheme.checksum_offset}]\n"
+        "  mov rcx, 0x0101010101010101\n"
+        "  imul rax, rcx\n"
+        f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
+    )
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
@@ -906,11 +925,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # unchanged; only the interpreter's code grows (one copy per handler).
     poly_rng = random.Random(scheme.table_key)
     handler_count = sum(len(indices) for indices in scheme.dup.values())
-    # Undo the opcode byte's position mask and fold in the key and the runtime
-    # self-checksum: the encoder pre-biased the opcode with the expected checksum, so
-    # a faithful interpreter cancels it and a tampered one misdecodes every opcode.
+    # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
+    # pass XORed in: a faithful interpreter cancels the checksum and a tampered one
+    # misdecodes every opcode. There is no separate constant key term -- the byte key
+    # IS the checksum -- so the opcode decrypt exposes no operand-cipher literal.
     opcode_xors = [
-        f"  xor al, {key}\n",
         "  xor al, r13b\n",
         f"  xor al, byte ptr [rsp+{scheme.checksum_offset}]\n",
     ]

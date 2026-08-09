@@ -6,16 +6,17 @@ register operations is *peeled* out of the outer bytecode into an inner stream
 that a second, independently-keyed interpreter executes, reached through an
 ``enter_inner`` transfer opcode and returning through ``inner_exit``. The two
 layers share one register frame (so the peeled run has the same effect it would
-have had inline) but have their own opcode permutation, XOR key, dispatch-table
-key and dispatch table - so recovering the outer VM only reveals a second VM to
-peel.
+have had inline) but have their own opcode permutation and dispatch table - so
+recovering the outer VM only reveals a second VM to peel. The opcode/operand
+cipher key and the dispatch-table key are the shared runtime self-checksum, so
+neither is a build constant a decompiler can read off either layer.
 
 One shared, slot-driven dispatcher serves both layers: the transfer handlers
-write the active layer's opcode key, handler count, dispatch-table base and
-table key into frame slots, so every existing handler builder is reused
-verbatim (each keeps its own baked operand key and jumps to the one
-``vm_dispatch``). Only flag-independent register-op runs are peeled, so no
-branch target ever crosses the layer boundary.
+write the active layer's handler count and dispatch-table base into frame slots,
+so every existing handler builder is reused verbatim (each decrypts its operands
+against the shared checksum and jumps to the one ``vm_dispatch``). Only
+flag-independent register-op runs are peeled, so no branch target ever crosses
+the layer boundary.
 
 The runtime self-checksum (:mod:`code_virtualization_region_integrity`) spans
 both layers' code, so tampering with either layer diverges both.
@@ -43,7 +44,13 @@ from r2morph.mutations.code_virtualization_region_codegen import (
     encode_region,
     handler_instances_asm,
 )
-from r2morph.mutations.code_virtualization_region_handlers import _FRAME_SIZE, _GUARD, _VSP_OFFSET
+from r2morph.mutations.code_virtualization_region_handlers import (
+    _FRAME_SIZE,
+    _GUARD,
+    _KEY_DWORD_SLOT,
+    _KEY_QWORD_SLOT,
+    _VSP_OFFSET,
+)
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
     checksum_prologue_asm,
@@ -51,7 +58,6 @@ from r2morph.mutations.code_virtualization_region_integrity import (
 )
 from r2morph.mutations.code_virtualization_region_models import (
     _DWORD_BROADCAST,
-    _QWORD_BROADCAST,
     Region,
     RegionScheme,
     _op_key,
@@ -64,7 +70,6 @@ logger = logging.getLogger(__name__)
 # transfer handlers write them. Each parent->child transition gets its own
 # return-pointer slot at _RETURN_BASE + index*8, so a chain of nested layers
 # returns correctly without a runtime stack.
-_KEY_OFFSET = 0x90  # active layer opcode XOR key (byte)
 _COUNT_OFFSET = 0x98  # active layer handler count (byte)
 _TABLE_OFFSET = 0xA0  # active layer dispatch-table base (absolute addr)
 _RETURN_BASE = 0xB0  # first parent-bytecode-pointer return slot
@@ -72,10 +77,6 @@ _RETURN_BASE = 0xB0  # first parent-bytecode-pointer return slot
 _MIN_PEEL = 2  # shortest op run worth peeling into an inner layer
 # Cap layers so the per-transition return slots stay below the red zone (0x100).
 _MAX_LAYERS = (0x100 - _RETURN_BASE) // 8
-
-
-def _key_parts(key: int) -> tuple[str, str]:
-    return hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF), hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
 
 
 def _branch_targets(instructions: list[tuple[Any, ...]]) -> set[int]:
@@ -247,33 +248,33 @@ def _index_to_key(scheme: RegionScheme, offset: int = 0) -> dict[int, str]:
     return {offset + index: key for key, indices in scheme.dup.items() for index in indices}
 
 
-def _set_layer_slots(scheme: RegionScheme, layer: int, count: int) -> str:
+def _set_layer_slots(layer: int, count: int) -> str:
     """Assembly that points the shared decode at one layer's parameters.
 
-    Writes this layer's opcode key, handler count, dispatch-table base and table
-    key, so the inlined decode copies resolve the active layer's handlers.
+    Writes this layer's handler count and dispatch-table base so the inlined decode
+    copies resolve the active layer's handlers. The opcode/operand cipher key is the
+    shared self-checksum (not per layer), so no per-layer key slot is written.
     """
     return (
-        f"  mov byte ptr [rsp+{_KEY_OFFSET}], {scheme.xor_key}\n"
-        + f"  mov byte ptr [rsp+{_COUNT_OFFSET}], {count}\n"
+        f"  mov byte ptr [rsp+{_COUNT_OFFSET}], {count}\n"
         + f"  lea rax, [rip+vm_table_{layer}]\n"
         + f"  mov qword ptr [rsp+{_TABLE_OFFSET}], rax\n"
     )
 
 
-def _enter_inner_asm(child_scheme: RegionScheme, child: int, child_count: int, return_slot: int) -> str:
+def _enter_inner_asm(child: int, child_count: int, return_slot: int) -> str:
     """Handler that saves the resume point and transfers down to layer ``child``."""
     return (
         f"  lea rax, [rsi+1]\n  mov qword ptr [rsp+{return_slot}], rax\n"
-        + _set_layer_slots(child_scheme, child, child_count)
+        + _set_layer_slots(child, child_count)
         + f"  lea rsi, [rip+bc_{child}]\n  mov r15, rsi\n  jmp vm_dispatch\n"
     )
 
 
-def _inner_exit_asm(parent_scheme: RegionScheme, parent: int, parent_count: int, return_slot: int) -> str:
+def _inner_exit_asm(parent: int, parent_count: int, return_slot: int) -> str:
     """Handler that restores the parent layer's parameters and resumes it."""
     return (
-        _set_layer_slots(parent_scheme, parent, parent_count)
+        _set_layer_slots(parent, parent_count)
         + f"  mov rsi, qword ptr [rsp+{return_slot}]\n  lea r15, [rip+bc_{parent}]\n  jmp vm_dispatch\n"
     )
 
@@ -291,7 +292,6 @@ def _decode_block(rng: random.Random) -> str:
     # unchanged; only interpreter code size grows (scanned once).
     return decode_block(
         opcode_xors=[
-            f"  xor al, byte ptr [rsp+{_KEY_OFFSET}]\n",
             "  xor al, r13b\n",
             f"  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n",
         ],
@@ -391,7 +391,15 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # 0xFF into the shared checksum slot and misdecodes every layer; an untraced
         # or Unicorn-emulated run folds 0x00 so the benign build stays consistent.
         + tracer_detect_asm(slot=_CHECKSUM_OFFSET)
-        + _set_layer_slots(schemes[0], 0, counts[0])
+        # Precompute the operand-cipher key broadcasts from the (now final) shared
+        # checksum byte into their frame slots: every layer's operand decrypt reads
+        # these instead of a build-constant key. After the anti-debug folds, so a
+        # corrupted checksum also corrupts the operand key across all layers.
+        + f"  movzx eax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul eax, eax, 0x1010101\n"
+        + f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
+        + f"  movzx rax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
+        + f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
+        + _set_layer_slots(0, counts[0])
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
         + f"  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
@@ -408,19 +416,20 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # vIP against ``[r15, r15+len)``.
     lens = [sum(_item_size(item) for item in layer.instructions) for layer in layers]
 
+    # One checksum covers the whole nested blob, so every layer's operand cipher key
+    # is the same runtime self-checksum (byte read directly, 32/64-bit broadcasts from
+    # the frame slots set once at entry) -- no build-constant key literal per layer.
+    key = f"byte ptr [rsp+{_CHECKSUM_OFFSET}]"
+    key_qword = f"qword ptr [rsp+{_KEY_QWORD_SLOT}]"
+    key_dword = f"dword ptr [rsp+{_KEY_DWORD_SLOT}]"
     layer_bodies: list[str] = []
     for layer in range(count):
         scheme = schemes[layer]
-        key_qword, key_dword = _key_parts(scheme.xor_key)
         extra: dict[str, str] = {}
         if layer + 1 < count:  # transfer down to the next layer
-            extra["enter_inner"] = _enter_inner_asm(
-                schemes[layer + 1], layer + 1, counts[layer + 1], _RETURN_BASE + layer * 8
-            )
+            extra["enter_inner"] = _enter_inner_asm(layer + 1, counts[layer + 1], _RETURN_BASE + layer * 8)
         if layer > 0:  # return up to the parent layer
-            extra["inner_exit"] = _inner_exit_asm(
-                schemes[layer - 1], layer - 1, counts[layer - 1], _RETURN_BASE + (layer - 1) * 8
-            )
+            extra["inner_exit"] = _inner_exit_asm(layer - 1, counts[layer - 1], _RETURN_BASE + (layer - 1) * 8)
         retarget_target = (
             f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
             # Un-mask the position the encoder folded into the branch target (r13b
@@ -433,7 +442,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         layer_bodies.append(
             handler_instances_asm(
                 _index_to_key(scheme, offset=offsets[layer]),
-                key=scheme.xor_key,
+                key=key,
                 key_qword=key_qword,
                 key_dword=key_dword,
                 rsp_off=rsp_off,

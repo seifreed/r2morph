@@ -208,7 +208,9 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
         # ``key XOR position`` so no single handler reveals a reusable key.
         position = len(plain) & 0xFF
         opcode = pick(scheme.dup[handler_key])
-        plain.append(opcode ^ position ^ checksum)
+        # The whole-blob pass below XORs every byte with the checksum, so the opcode
+        # gets it there; applying it here too would cancel it. Position-mask only.
+        plain.append(opcode ^ position)
         return position
 
     def emit_imm(value: int, width: int, position: int) -> None:
@@ -624,5 +626,8 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             emit_opcode("nop")
         elif kind in ("exit", "vret", "enter_inner", "inner_exit", "fsave", "frestore"):
             emit_opcode(_required_key(item))
-    key = scheme.xor_key
-    return bytes(byte ^ key for byte in plain)
+    # Encrypt the whole bytecode with the runtime self-checksum byte, not a
+    # build-constant key: the handlers decrypt each byte against the checksum (read
+    # from its frame slot, broadcast for multi-byte operands), so no operand-cipher
+    # literal appears in the interpreter and a tampered checksum misdecodes the stream.
+    return bytes(byte ^ (checksum & 0xFF) for byte in plain)

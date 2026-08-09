@@ -31,7 +31,7 @@ def xmm_reload_asm() -> str:
 
 
 def _fp_memory_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Assembly body for a scalar-FP load/store handler (``movsd``/``movss`` xmm
     <-> [base+disp] or [rip+disp]).
@@ -63,7 +63,7 @@ def _fp_memory_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
+def _fp_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP register-register arithmetic handler
     (``addsd``/``subsd``/``mulsd``/``divsd`` and their ``ss`` forms).
 
@@ -91,7 +91,7 @@ def _fp_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> st
 
 
 def _fp_indexed_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Assembly body for a scalar-FP load/store with scaled-index addressing
     (``movsd/movss xmm, [base+index*scale+disp]`` - array-of-double access), with or
@@ -121,7 +121,7 @@ def _fp_indexed_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_packed_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
+def _fp_packed_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for a packed-FP register-register op (``addpd``/``addps`` and
     the sub/mul/div forms), operating on all lanes of the 128-bit register.
 
@@ -145,7 +145,7 @@ def _fp_packed_arith_handler_asm(handler_key: str, key: int, field_perm: int = 0
 
 
 def _fp_packed_arith_mem_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Assembly body for packed-FP arithmetic with a ``[base+disp]`` memory source
     (``addpd xmm, [base+disp]`` and the sub/mul/div forms).
@@ -172,7 +172,7 @@ def _fp_packed_arith_mem_handler_asm(
 
 
 def _fp_packed_mem_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Assembly body for a packed 128-bit load/store (``movaps``/``movups`` etc.
     xmm <-> [base+disp], [rip+disp] or [base+index*scale+disp]).
@@ -197,7 +197,7 @@ def _fp_packed_mem_handler_asm(
 
 
 def _fp_arith_mem_handler_asm(
-    handler_key: str, key: int, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Assembly body for scalar-FP arithmetic with a memory source - either
     ``[base+disp]`` or rip-relative ``[rip+disp]`` (the constant-pool form).
@@ -223,7 +223,7 @@ def _fp_arith_mem_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
-def _fp_convert_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
+def _fp_convert_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for an int<->float conversion handler (``cvtsi2sd/ss``
     int->float, ``cvttsd2si/ss`` float->int, truncating).
 
@@ -265,7 +265,7 @@ def _fp_convert_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> 
     )
 
 
-def _fp_compare_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
+def _fp_compare_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP register-register compare
     (``ucomisd``/``comisd`` and the ``ss`` forms).
 
@@ -289,7 +289,7 @@ def _fp_compare_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> 
     )
 
 
-def _fp_move_handler_asm(handler_key: str, key: int, field_perm: int = 0) -> str:
+def _fp_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for a register-register xmm move (full 128-bit copy, or a
     scalar movsd/movss that preserves the destination's upper lane(s)).
 
