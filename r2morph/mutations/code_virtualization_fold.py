@@ -108,9 +108,10 @@ def arith_fold(mnemonic: str, key: int, variant: int) -> str:
     return pool[index]
 
 
-# Bits of ``addr_variant`` that pick the address-fold template. 3 bits index the
-# whole add pool (shared + region-local extras).
-ADDR_VARIANT_BITS = 3
+# Bits of ``addr_variant`` that pick the address-fold template. 4 bits reach every
+# entry of the widened add pool (shared + region-local extras); 3 would leave the
+# last extras unreachable.
+ADDR_VARIANT_BITS = 4
 
 
 def addr_fold(addend: str, temp: str, key: int, variant: int) -> str:
