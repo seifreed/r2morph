@@ -19,7 +19,7 @@ import pytest
 from r2morph.mutations.code_virtualization_region_flags import FLAG_VARIANT_BITS, synth_flags_asm
 from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
 
-_MASK = {8: 0xFF, 32: 0xFFFFFFFF, 64: 0xFFFFFFFFFFFFFFFF}
+_MASK = {8: 0xFF, 16: 0xFFFF, 32: 0xFFFFFFFF, 64: 0xFFFFFFFFFFFFFFFF}
 # The flag bits synth_flags_asm builds (AF is deliberately omitted).
 _ZF, _SF, _CF, _OF, _PF = 1 << 6, 1 << 7, 1 << 0, 1 << 11, 1 << 2
 _COVERED = {
@@ -97,7 +97,7 @@ def _cpu_flags(mnemonic: str, width: int, a: int, b: int) -> int:
     rax, _rbx, _rbp, _r10, _r11 = _regs()
     from unicorn.x86_const import UC_X86_REG_RCX, UC_X86_REG_RDX
 
-    reg = {8: ("al", "cl"), 32: ("eax", "ecx"), 64: ("rax", "rcx")}[width]
+    reg = {8: ("al", "cl"), 16: ("ax", "cx"), 32: ("eax", "ecx"), 64: ("rax", "rcx")}[width]
     asm = f"  {mnemonic} {reg[0]}, {reg[1]}\n  pushfq\n  pop rdx\n"
     out = _run(asm, {rax: a, UC_X86_REG_RCX: b}, [UC_X86_REG_RDX])
     return out[UC_X86_REG_RDX]
@@ -112,7 +112,7 @@ def _synth_flags(mode: str, width: int, variant: int, a: int, b: int, result: in
 
 
 @pytest.mark.parametrize("mnemonic", sorted(_NATIVE))
-@pytest.mark.parametrize("width", (8, 32, 64))
+@pytest.mark.parametrize("width", (8, 16, 32, 64))
 @pytest.mark.parametrize("variant", _VARIANTS)
 def test_synthesized_flags_match_the_cpu_for_every_variant(mnemonic: str, width: int, variant: int) -> None:
     pytest.importorskip("keystone")

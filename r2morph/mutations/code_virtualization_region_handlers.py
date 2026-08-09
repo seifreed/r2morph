@@ -426,6 +426,8 @@ def _incdec_handler_asm(handler_key: str, key: str, flag_variant: int = 0, arith
         # 8-bit: mask the operand and result to the low byte so the flag synthesis
         # keys the sign/overflow off bit 7, not the slot's upper bytes.
         body += "  and ebx, 0xFF\n  and r10d, 0xFF\n"
+    elif width == 16:
+        body += "  and ebx, 0xFFFF\n  and r10d, 0xFFFF\n"
     body += _synth_flags_asm(width, synth_mode, flag_variant)
     # inc/dec preserve CF: drop the synthesized carry (bit 0) and OR in the program's.
     body += f"  and r11, -2\n  mov rcx, qword ptr [rsp+{_FLAGS_OFFSET}]\n  and ecx, 1\n  or r11, rcx\n"
@@ -434,6 +436,9 @@ def _incdec_handler_asm(handler_key: str, key: str, flag_variant: int = 0, arith
         # An 8-bit inc/dec writes only the low byte: merge it back over the slot's
         # preserved upper bytes rather than overwriting the whole 64-bit cell.
         body += "  mov rcx, qword ptr [rsp+r8*8]\n  and rcx, -256\n  or r10, rcx\n"
+    elif width == 16:
+        # A 16-bit inc/dec writes only the low word: merge over the upper 48 bits.
+        body += "  mov rcx, qword ptr [rsp+r8*8]\n  and rcx, -65536\n  or r10, rcx\n"
     body += "  mov qword ptr [rsp+r8*8], r10\n"
     return body + "  add rsi, 2\n  jmp vm_dispatch\n"
 
@@ -665,6 +670,9 @@ def _compare_handler_asm(
         # synthesis (which keys the sign bit off width-1 = 7 and reads a/b for CF/OF)
         # sees clean 8-bit values, not the upper bytes of the 64-bit context slots.
         body += "  and ebx, 0xFF\n  and ebp, 0xFF\n  and r10d, 0xFF\n"
+    elif width == 16:
+        # 16-bit compare: same, masked to the low word (the sign bit keys off bit 15).
+        body += "  and ebx, 0xFFFF\n  and ebp, 0xFFFF\n  and r10d, 0xFFFF\n"
     body += _synth_flags_asm(width, synth_mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"

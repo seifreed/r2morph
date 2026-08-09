@@ -158,24 +158,29 @@ def _decode_two_operand(disasm: str, mnemonic: str) -> tuple[int, int, bool, int
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     dst = _register_operand(left)
     if dst is None:
-        # 8-bit register destination (al/dl/... - a char loop's `test al, al`
-        # terminator or a byte classify `cmp al, 0x30`). Both the register-register
-        # and the immediate byte form are handled; the 1-byte immediate is read
-        # width-sized, so it does not collide with the 32/64-bit immediate layout.
-        if left not in REGISTER8_INDEX:
-            return None
-        slot8 = REGISTER8_INDEX[left]
-        if right in REGISTER8_INDEX:
-            return (slot8, REGISTER8_INDEX[right], False, 8)
-        if any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
-            return None
-        try:
-            immediate8 = int(right, 0)
-        except ValueError:
-            return None
-        if not immediate_fits_width(immediate8, 8):
-            return None
-        return (slot8, immediate8, True, 8)
+        # Sub-32-bit register destination: a char loop's `test al, al` terminator,
+        # a byte classify `cmp al, 0x30`, or a word compare `cmp ax, bx`. The 8-bit
+        # register-register and immediate-byte forms are handled; the 16-bit form is
+        # register-register only, since its 2-byte immediate would need a masked word
+        # field the compare handler does not yet read.
+        for index, sub_width in ((REGISTER8_INDEX, 8), (REGISTER16_INDEX, 16)):
+            if left not in index:
+                continue
+            slot_lo = index[left]
+            if right in index:
+                return (slot_lo, index[right], False, sub_width)
+            if sub_width != 8:
+                return None
+            if any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
+                return None
+            try:
+                immediate8 = int(right, 0)
+            except ValueError:
+                return None
+            if not immediate_fits_width(immediate8, 8):
+                return None
+            return (slot_lo, immediate8, True, 8)
+        return None
     slot, width = dst
     src = _register_operand(right)
     if src is not None:
@@ -1178,10 +1183,12 @@ def _decode_incdec(text: str) -> tuple[Any, ...] | None:
     reg = _register_operand(operand)
     if reg is not None:
         return ("incdec", mnemonic, reg[0], reg[1])
-    # 8-bit register (inc al / dec dl - a byte counter or char step). The handler
-    # merges the low byte back into the slot, preserving the upper bytes.
+    # Sub-32-bit register (inc al / dec dx - a byte or word counter). The handler
+    # merges the low byte(s) back into the slot, preserving the upper bytes.
     if operand in REGISTER8_INDEX:
         return ("incdec", mnemonic, REGISTER8_INDEX[operand], 8)
+    if operand in REGISTER16_INDEX:
+        return ("incdec", mnemonic, REGISTER16_INDEX[operand], 16)
     return None
 
 
