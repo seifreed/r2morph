@@ -115,9 +115,29 @@ _STATUS_SCAN_LIMIT = 180
 # never render as literals. The island sits outside the checksummed range so the
 # masked bytes do not feed the checksum they are masked by (no circular fixpoint).
 _TRACER_ISLAND_LABEL = "tracer_const_island"
-# Three little-endian qwords: path low, path high, scan tag - patched after
-# assembly by :func:`patch_tracer_constants`.
-_TRACER_ISLAND_LEN = 24
+# Six little-endian qwords, all checksum-masked and patched after assembly by
+# :func:`patch_tracer_constants`: path low, path high, scan tag, then the three
+# syscall numbers (openat/read/close). The syscall numbers are masked for the same
+# reason as the string: a plaintext ``mov rax, 257`` lets a decompiler attribute the
+# probe as ``sys_openat`` / ``sys_read`` / ``sys_close``; loading the number from the
+# checksum-keyed island leaves the syscall register opaque, so the anti-debug syscalls
+# are no longer named in the pseudocode.
+_SYS_OPENAT = 257
+_SYS_READ = 0
+_SYS_CLOSE = 3
+# Field offsets into the island for the syscall-number qwords.
+_SYS_OPENAT_OFFSET = 24
+_SYS_READ_OFFSET = 32
+_SYS_CLOSE_OFFSET = 40
+_TRACER_ISLAND_CONSTS = (
+    _STATUS_PATH_LO,
+    _STATUS_PATH_HI,
+    _TRACERPID_TAG,
+    _SYS_OPENAT,
+    _SYS_READ,
+    _SYS_CLOSE,
+)
+_TRACER_ISLAND_LEN = 8 * len(_TRACER_ISLAND_CONSTS)
 
 
 def _broadcast_checksum_to(reg: str, slot: int) -> str:
@@ -149,7 +169,8 @@ def tracer_const_island_asm() -> str:
     before the bytecode. The zero placeholders are overwritten by
     :func:`patch_tracer_constants` once the build checksum is known.
     """
-    return f"{_TRACER_ISLAND_LABEL}:\n  .quad 0\n  .quad 0\n  .quad 0\n"
+    quads = "".join("  .quad 0\n" for _ in _TRACER_ISLAND_CONSTS)
+    return f"{_TRACER_ISLAND_LABEL}:\n{quads}"
 
 
 def patch_tracer_constants(data: bytearray, island_start: int, checksum: int) -> None:
@@ -160,7 +181,7 @@ def patch_tracer_constants(data: bytearray, island_start: int, checksum: int) ->
     lies outside the checksummed range, so these writes do not perturb ``checksum``.
     """
     broadcast = (checksum & 0xFF) * 0x0101010101010101
-    for i, const in enumerate((_STATUS_PATH_LO, _STATUS_PATH_HI, _TRACERPID_TAG)):
+    for i, const in enumerate(_TRACER_ISLAND_CONSTS):
         offset = island_start + i * 8
         data[offset : offset + 8] = ((const ^ broadcast) & 0xFFFFFFFFFFFFFFFF).to_bytes(8, "little")
 
@@ -207,11 +228,19 @@ def tracer_detect_asm(slot: int) -> str:
         + "  mov qword ptr [r11+8], rax\n"
         + "  mov word ptr [r11+16], 0x73\n"
         # openat(AT_FDCWD, path, O_RDONLY); rax = fd (or a no-op 257 under Unicorn).
-        + "  mov rax, 257\n  mov rdi, -100\n  mov rsi, r11\n  xor edx, edx\n  xor r10d, r10d\n  syscall\n"
+        # The syscall number is reconstructed from the checksum-keyed island, not a
+        # plaintext immediate, so a decompiler cannot fold rax to 257 and name openat.
+        + _load_checksum_masked("rax", _SYS_OPENAT_OFFSET, slot)
+        + "  mov rdi, -100\n  mov rsi, r11\n  xor edx, edx\n  xor r10d, r10d\n  syscall\n"
         + "  mov r8, rax\n"
-        # read(fd, buf, len) into the transient buffer, then close(fd).
-        + f"  mov rdi, r8\n  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n  xor eax, eax\n  mov edx, {_STATUS_READ_LEN}\n  syscall\n"
-        + "  mov rdi, r8\n  mov eax, 3\n  syscall\n"
+        # read(fd, buf, len) into the transient buffer, then close(fd) - both syscall
+        # numbers likewise de-masked from the island so neither is named in pseudocode.
+        + f"  mov rdi, r8\n  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n"
+        + _load_checksum_masked("rax", _SYS_READ_OFFSET, slot)
+        + f"  mov edx, {_STATUS_READ_LEN}\n  syscall\n"
+        + "  mov rdi, r8\n"
+        + _load_checksum_masked("rax", _SYS_CLOSE_OFFSET, slot)
+        + "  syscall\n"
         # Scan the buffer for the "TracerPid:" line via an unaligned qword compare;
         # the scan tag is reconstructed from the checksum-keyed island for the same reason.
         + f"  lea rsi, [rsp - {hex(_STATUS_BUF_OFFSET)}]\n"

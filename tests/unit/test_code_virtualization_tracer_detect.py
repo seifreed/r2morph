@@ -128,6 +128,16 @@ def test_tracer_detect_emits_no_plaintext_constant_immediate() -> None:
     assert hex(_TRACERPID_TAG) not in asm
 
 
+def test_tracer_detect_syscall_numbers_are_not_plaintext_immediates() -> None:
+    # The openat/close syscall numbers must not appear as plaintext immediates: a
+    # ``mov rax, 257`` lets a decompiler attribute the probe as sys_openat/read/close.
+    # They are de-masked from the checksum-keyed island instead, so the number in the
+    # syscall register is opaque and the syscalls stay unnamed in the pseudocode.
+    asm = tracer_detect_asm(slot=_SLOT)
+    assert str(_SYS_OPENAT) not in asm
+    assert "mov eax, 3" not in asm and "mov rax, 3" not in asm
+
+
 def test_tracer_island_masks_constants_by_checksum() -> None:
     # The stored island bytes vary with the build checksum and never carry the
     # plaintext constants: two checksums produce different ciphertext, and the
