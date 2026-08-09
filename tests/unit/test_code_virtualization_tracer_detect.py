@@ -136,6 +136,8 @@ def test_tracer_detect_syscall_numbers_are_not_plaintext_immediates() -> None:
     asm = tracer_detect_asm(slot=_SLOT)
     assert str(_SYS_OPENAT) not in asm
     assert "mov eax, 3" not in asm and "mov rax, 3" not in asm
+    # The AT_FDCWD dirfd (-100) is an openat tell on its own; it is masked too.
+    assert "-100" not in asm
 
 
 def test_tracer_island_masks_constants_by_checksum() -> None:

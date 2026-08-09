@@ -125,10 +125,15 @@ _TRACER_ISLAND_LABEL = "tracer_const_island"
 _SYS_OPENAT = 257
 _SYS_READ = 0
 _SYS_CLOSE = 3
-# Field offsets into the island for the syscall-number qwords.
+# AT_FDCWD, the openat dirfd. A plaintext ``mov rdi, -100`` is itself an openat tell
+# even once the syscall number is masked, so it is masked too, leaving the openat
+# call with no foldable constant in the decompiler.
+_AT_FDCWD = -100 & 0xFFFFFFFFFFFFFFFF
+# Field offsets into the island for the syscall-setup qwords.
 _SYS_OPENAT_OFFSET = 24
 _SYS_READ_OFFSET = 32
 _SYS_CLOSE_OFFSET = 40
+_AT_FDCWD_OFFSET = 48
 _TRACER_ISLAND_CONSTS = (
     _STATUS_PATH_LO,
     _STATUS_PATH_HI,
@@ -136,6 +141,7 @@ _TRACER_ISLAND_CONSTS = (
     _SYS_OPENAT,
     _SYS_READ,
     _SYS_CLOSE,
+    _AT_FDCWD,
 )
 _TRACER_ISLAND_LEN = 8 * len(_TRACER_ISLAND_CONSTS)
 
@@ -231,7 +237,8 @@ def tracer_detect_asm(slot: int) -> str:
         # The syscall number is reconstructed from the checksum-keyed island, not a
         # plaintext immediate, so a decompiler cannot fold rax to 257 and name openat.
         + _load_checksum_masked("rax", _SYS_OPENAT_OFFSET, slot)
-        + "  mov rdi, -100\n  mov rsi, r11\n  xor edx, edx\n  xor r10d, r10d\n  syscall\n"
+        + _load_checksum_masked("rdi", _AT_FDCWD_OFFSET, slot)
+        + "  mov rsi, r11\n  xor edx, edx\n  xor r10d, r10d\n  syscall\n"
         + "  mov r8, rax\n"
         # read(fd, buf, len) into the transient buffer, then close(fd) - both syscall
         # numbers likewise de-masked from the island so neither is named in pseudocode.
