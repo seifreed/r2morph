@@ -166,7 +166,7 @@ def _junk_asm(rng: random.Random) -> str:
     would abort the whole virtualization.
     """
     lines = []
-    for _ in range(rng.randint(0, 4)):
+    for _ in range(rng.randint(1, 6)):
         template = rng.choice(_JUNK_TEMPLATES)
         lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
     return "".join(lines)
