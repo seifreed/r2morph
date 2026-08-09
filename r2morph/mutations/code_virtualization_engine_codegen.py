@@ -61,7 +61,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedOp,
 )
 from r2morph.mutations.code_virtualization_engine_rename import rename_body
-from r2morph.mutations.code_virtualization_fold import addr_fold, arith_fold
+from r2morph.mutations.code_virtualization_fold import ARITH_VARIANT_BITS, addr_fold, arith_fold
 from r2morph.mutations.code_virtualization_layout import (
     idx_offsets,
     idx_permuted_fields,
@@ -346,7 +346,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             + addr_fold("rax", "rcx", key, isa.addr_variant)
         )
 
-    def mem_handler_body(kind: str, width: int) -> str:
+    def mem_handler_body(kind: str, width: int, arith_variant: int) -> str:
         # base+disp items are 7 bytes (opcode+reg+base+disp32); rip-relative items
         # are 6 (opcode+reg+offset32); indexed items are 9 (opcode+reg+base+index+
         # scale+disp32). r10 holds the address in every case.
@@ -391,7 +391,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             if mnemonic == "sub":
                 body += "  neg rax\n"
             body += "  mov r10, qword ptr [rsp + r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp + r8*8]\n"
-            body += arith_fold(mnemonic, key, isa.arith_variant)
+            body += arith_fold(mnemonic, key, arith_variant)
             if width == 64:
                 body += "  mov qword ptr [rsp + r8*8], r10\n"
             else:
@@ -549,9 +549,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             body += "  movups xmm0, xmmword ptr [r11]\n  movups xmmword ptr [r10], xmm0\n"
         return body + "  add rsi, 7\n  jmp vm_dispatch\n"
 
-    def handler_body(mnemonic: str, is_immediate: bool, width: int) -> str:
+    def handler_body(mnemonic: str, is_immediate: bool, width: int, arith_variant: int) -> str:
         if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
-            return microop_handler_body(mnemonic, width, key, layout.vsp_offset, layout.vstack_base, isa.arith_variant)
+            return microop_handler_body(mnemonic, width, key, layout.vsp_offset, layout.vstack_base, arith_variant)
         if mnemonic in _FP_PACKED_ARITH_KINDS:
             return fp_packed_arith_handler_body(mnemonic)
         if mnemonic in _FP_PACKED_MEM_KINDS:
@@ -565,7 +565,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         if mnemonic in _FP_MEM_KINDS:
             return fp_mem_handler_body(mnemonic, width)
         if mnemonic in _MEM_OP_KINDS:
-            return mem_handler_body(mnemonic, width)
+            return mem_handler_body(mnemonic, width, arith_variant)
         # Operands carry the opcode's stream position too (r13 still holds it from
         # the dispatch), so each is un-masked by both the key and r13b - there is
         # no lone constant-key decrypt repeated across every handler.
@@ -677,10 +677,23 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
     for index in range(total):
         mnemonic, is_immediate, width = index_to_key[index]
+        # Give each *instance* of an arithmetic handler its own MBA fold (drawn from
+        # the build's isa seed and the handler index), so duplicate handlers for one
+        # operation diverge semantically, not only in junk and register allocation.
+        # The arithmetic fold has no cross-handler encoding coupling; the addressing
+        # personality stays per-build. engine_isa_seed 0 keeps the canonical fold, so
+        # builds that opt out of the ISA personality stay byte-identical.
+        arith_variant = (
+            random.Random((scheme.engine_isa_seed << 16) ^ index).randrange(1 << ARITH_VARIANT_BITS)
+            if scheme.engine_isa_seed
+            else isa.arith_variant
+        )
         # Reachable head junk makes duplicate handlers diverge in executed code, and
         # a per-handler scratch-register bijection makes the body itself diverge, so
         # duplicate handlers share neither junk nor register-allocation fingerprint.
-        body = rename_body(handler_body(mnemonic, is_immediate, width), random.Random(scheme.body_seed ^ index))
+        body = rename_body(
+            handler_body(mnemonic, is_immediate, width, arith_variant), random.Random(scheme.body_seed ^ index)
+        )
         lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng, index)}{body}")
 
     lines.append("vm_exit:\n")
