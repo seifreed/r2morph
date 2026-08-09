@@ -62,6 +62,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_mov_from_rsp,
     _decode_mov_to_rsp,
     _decode_movx,
+    _decode_not,
     _decode_op_mem,
     _decode_op_mem_indexed,
     _decode_op_memdst,
@@ -246,6 +247,9 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
             return ["imul", *imul]
         imul3 = _decode_imul3(text)
         return ["imul3", *imul3] if imul3 is not None else None
+    if kind == "not":
+        not_op = _decode_not(text)
+        return [*not_op] if not_op is not None else None
     if kind == "lea":
         lea = _decode_lea(text, insn.get("addr", 0), insn.get("size", 0))
         if lea is not None:

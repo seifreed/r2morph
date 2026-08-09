@@ -1166,6 +1166,29 @@ def _decode_movx(text: str) -> tuple[Any, ...] | None:
     return None
 
 
+def _decode_not(text: str) -> tuple[Any, ...] | None:
+    """Decode ``not reg`` (bitwise complement, register operand).
+
+    ``not`` sets no flags and touches only its operand, so the handler runs the real
+    complement on the slot with no flag capture. A sub-32-bit form complements only
+    the low byte/word of the loaded slot, preserving the upper bytes; a 32-bit form
+    zero-extends, both exactly as the native instruction. Returns
+    ``("not", reg_slot, width)`` or ``None`` for a memory operand.
+    """
+    parts = text.split()
+    if len(parts) != 2 or parts[0].lower() != "not" or "[" in parts[1]:
+        return None
+    operand = parts[1].lower()
+    reg = _register_operand(operand)
+    if reg is not None:
+        return ("not", reg[0], reg[1])
+    if operand in REGISTER8_INDEX:
+        return ("not", REGISTER8_INDEX[operand], 8)
+    if operand in REGISTER16_INDEX:
+        return ("not", REGISTER16_INDEX[operand], 16)
+    return None
+
+
 def _decode_incdec(text: str) -> tuple[Any, ...] | None:
     """Decode ``inc reg`` / ``dec reg`` (register operand).
 

@@ -2104,6 +2104,26 @@ def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_bitwise_not_preserves_exit_code(tmp_path: Path) -> None:
+    # `not reg` (bitwise complement, no flags): 32-bit zero-extends (0x0F -> low byte
+    # 0xF0), 64-bit not of 0 is -1, and 8-bit `not dl` flips only the low byte of
+    # edx=0x1200 to 0x12FF (upper bytes preserved). A wrong width diverges from 42.
+    fixture = _DATASET / "elf_vm_not_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_not"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_word_compare_and_inc_merge_preserve_exit_code(tmp_path: Path) -> None:
     # 16-bit word ops (WORD / wide-char code): `cmp ax, cx` equality, `inc dx`
     # wrapping 0xFFFF->0 (16-bit ZF synthesis), and `inc bx` on ebx=0x00FF0000 keeping

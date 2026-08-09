@@ -80,6 +80,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _mov_to_rsp_handler_asm,
     _movx_handler_asm,
     _movx_indexed_handler_asm,
+    _not_handler_asm,
     _op_handler_asm,
     _op_mba_handler_asm,
     _op_mem_indexed_handler_asm,
@@ -761,6 +762,8 @@ def handler_instances_asm(
             lines.append(_leave_handler_asm(key, rsp_off))
         elif handler_key.startswith("imul_"):
             lines.append(_imul_handler_asm(handler_key, key, field_perm))
+        elif handler_key.startswith("not_"):
+            lines.append(_not_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
             lines.append(
                 _cmp_memory_handler_asm(

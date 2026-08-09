@@ -718,6 +718,26 @@ def _imul_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     )
 
 
+def _not_handler_asm(handler_key: str, key: str) -> str:
+    """Assembly body for ``not reg`` (bitwise complement, no flags).
+
+    The slot value is loaded into rax and the width-sized complement is taken on the
+    matching sub-register: a 64-bit ``not`` complements the whole cell, a 32-bit one
+    zero-extends, and the 8/16-bit forms complement only the low byte/word and leave
+    the upper bytes of the loaded cell untouched - all exactly as the native op. ``not``
+    sets no flags, so the flags slot is not touched.
+    """
+    width = int(handler_key.split("_")[1])
+    sub = {8: "al", 16: "ax", 32: "eax", 64: "rax"}[width]
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        "  mov rax, qword ptr [rsp+r8*8]\n"
+        f"  not {sub}\n"
+        "  mov qword ptr [rsp+r8*8], rax\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
 def _push_handler_asm(key: str, rsp_off: int) -> str:
     """Assembly body for ``push reg`` against the relocated virtual stack.
 

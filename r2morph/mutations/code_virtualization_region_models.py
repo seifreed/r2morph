@@ -242,6 +242,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"imul_{item[3]}"
     if kind == "imul3":
         return f"imul3_{item[4]}"
+    if kind == "not":
+        return f"not_{item[2]}"  # bitwise complement: width
     if kind == "push":
         return f"push_{item[2]}"
     if kind == "pop":
