@@ -372,13 +372,15 @@ _OPCODE_BUDGET = 256 - _EXIT_OPCODE_HEADROOM
 
 # Every operation is emitted as several interchangeable handler instances rather
 # than one, so no opcode decompiles to a single switch case a devirtualizer can
-# name outright; per-instance junk and opaque predicates keep the copies from
-# folding back together. The floor is above one (a lone instance is the very tell
-# a commercial protector avoids) and the ceiling stays small so a typical ISA
-# still fits the single-byte opcode space with room for the exit marker; when a
-# draw would overflow the budget, instances are shed down to a floor of one.
-_HANDLER_MIN_INSTANCES = 2
-_HANDLER_MAX_INSTANCES = 4
+# name outright; per-instance junk, opaque predicates and (for arithmetic and
+# addressing) per-instance MBA folds keep the copies from folding back together.
+# Now that the copies diverge semantically and not only in junk, the count is
+# pushed higher to widen the visible handler set toward a commercial protector's
+# many variants: the floor is well above one and the ceiling large, bounded only
+# by the single-byte opcode space (a draw that would overflow the budget is shed
+# down to a floor of one, so a large ISA still fits).
+_HANDLER_MIN_INSTANCES = 3
+_HANDLER_MAX_INSTANCES = 6
 
 
 def _assign_opcode_multiplicity(op_keys: Sequence[_OpKey], rng: random.Random) -> dict[_OpKey, int]:
