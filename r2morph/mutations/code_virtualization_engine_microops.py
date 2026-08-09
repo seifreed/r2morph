@@ -42,7 +42,14 @@ MICROOP_IMM_KINDS: tuple[str, ...] = _MICROOP_IMM_KINDS
 
 
 def microop_handler_body(
-    kind: str, width: int, key: int, vsp_offset: int, vstack_base: int, arith_variant: int = 0
+    kind: str,
+    width: int,
+    key: str,
+    key_dword: str,
+    key_qword: str,
+    vsp_offset: int,
+    vstack_base: int,
+    arith_variant: int = 0,
 ) -> str:
     """Assembly body for one micro-op primitive; ends with the shared dispatch jump.
 
@@ -83,14 +90,12 @@ def microop_handler_body(
         # zero-extends into the low half of the 64-bit cell, which is all the width-32
         # fold reads. The operand is the only field, so it sits at [rsi+1].
         if width == 64:
-            key_qword = hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF)
             decode = (
                 f"  mov rax, qword ptr [rsi+1]\n  mov r10, {key_qword}\n  xor rax, r10\n"
                 f"  movzx r10, r13b\n  mov r11, {hex(_QWORD_BROADCAST)}\n  imul r10, r11\n  xor rax, r10\n"
             )
             advance = 9
         else:
-            key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
             decode = (
                 f"  mov eax, dword ptr [rsi+1]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
                 f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
@@ -117,7 +122,7 @@ def microop_handler_body(
     )
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += arith_fold(mnemonic, key, arith_variant)
+    body += arith_fold(mnemonic, 0, arith_variant)
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += (

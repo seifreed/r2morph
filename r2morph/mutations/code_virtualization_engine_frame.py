@@ -34,6 +34,11 @@ _CHECKSUM_SIZE = 0x8
 _XMM_SIZE = 0x100
 _VSP_SIZE = 0x8
 _VSTACK_SIZE = 0x40
+# The operand-cipher key's 32/64-bit self-checksum broadcasts, each a qword cell,
+# precomputed once at entry so handlers decrypt operands against the runtime
+# checksum rather than a build constant.
+_KEY_DWORD_SIZE = 0x8
+_KEY_QWORD_SIZE = 0x8
 
 
 @dataclass(frozen=True)
@@ -45,6 +50,8 @@ class FrameLayout:
     xmm_offset: int
     vsp_offset: int
     vstack_base: int
+    key_dword_offset: int
+    key_qword_offset: int
 
 
 def build_frame_layout(frame_size: int, rng: random.Random) -> FrameLayout:
@@ -61,6 +68,8 @@ def build_frame_layout(frame_size: int, rng: random.Random) -> FrameLayout:
         ("xmm", _XMM_SIZE),
         ("vsp", _VSP_SIZE),
         ("vstack", _VSTACK_SIZE),
+        ("keydword", _KEY_DWORD_SIZE),
+        ("keyqword", _KEY_QWORD_SIZE),
     ]
     rng.shuffle(regions)
     slack = window_end - window_start - sum(size for _, size in regions)
@@ -74,7 +83,15 @@ def build_frame_layout(frame_size: int, rng: random.Random) -> FrameLayout:
         slack -= gap
         offsets[name] = cursor
         cursor += size
-    return FrameLayout(frame_size, offsets["checksum"], offsets["xmm"], offsets["vsp"], offsets["vstack"])
+    return FrameLayout(
+        frame_size,
+        offsets["checksum"],
+        offsets["xmm"],
+        offsets["vsp"],
+        offsets["vstack"],
+        offsets["keydword"],
+        offsets["keyqword"],
+    )
 
 
 # The canonical fixed layout, used when a build carries no frame seed (frame_seed
@@ -85,4 +102,6 @@ DEFAULT_FRAME_LAYOUT = FrameLayout(
     xmm_offset=0x90,
     vsp_offset=0x190,
     vstack_base=0x198,
+    key_dword_offset=0x1D8,
+    key_qword_offset=0x1E0,
 )

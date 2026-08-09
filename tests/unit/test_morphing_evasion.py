@@ -256,11 +256,13 @@ class TestCodeVirtualization:
         ops = [decode_instruction("mov rax, 0x3c"), decode_instruction("xor rdi, rdi")]
         assert all(ops)
         scheme = build_vm_scheme(random.Random(1))
-        bytecode = encode_bytecode(ops, scheme)
+        checksum = 0xA7
+        bytecode = encode_bytecode(ops, scheme, checksum=checksum)
         # The exit opcode is the last byte: position-masked with its own stream
-        # offset, then XOR-encrypted. Undo both to recover the exit marker.
+        # offset, then XOR-encrypted with the runtime self-checksum (not a build-
+        # constant key). Undo both to recover the exit marker.
         position = (len(bytecode) - 1) & 0xFF
-        assert bytecode[-1] ^ scheme.xor_key ^ position == scheme.exit_opcode
+        assert bytecode[-1] ^ checksum ^ position == scheme.exit_opcode
 
     def test_build_vm_scheme_is_polymorphic(self):
         first = build_vm_scheme(random.Random(1))

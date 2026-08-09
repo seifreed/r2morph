@@ -48,8 +48,11 @@ def test_engine_isa_seed_diverges_across_builds() -> None:
 def test_arith_variant_flows_into_the_microop_handler() -> None:
     # A non-zero variant must change the emitted fold for at least one build, proving
     # the parameter is threaded through to the handler body (not silently dropped).
-    canonical = microop_handler_body(_ADD_KIND, 64, 42, 0x80, 0x88, 0)
-    assert any(microop_handler_body(_ADD_KIND, 64, 42, 0x80, 0x88, v) != canonical for v in range(1, 64))
+    k = "byte ptr [rsp + 0x80]"
+    kd = "dword ptr [rsp + 0x1d8]"
+    kq = "qword ptr [rsp + 0x1e0]"
+    canonical = microop_handler_body(_ADD_KIND, 64, k, kd, kq, 0x80, 0x88, 0)
+    assert any(microop_handler_body(_ADD_KIND, 64, k, kd, kq, 0x80, 0x88, v) != canonical for v in range(1, 64))
 
 
 def test_engine_addr_seed_zero_is_canonical() -> None:

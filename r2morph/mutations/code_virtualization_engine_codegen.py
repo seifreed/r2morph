@@ -116,7 +116,9 @@ def encode_bytecode(
         # The position is reused to mask this item's operands so they are not all
         # decrypted by one constant key byte a handler trivially reveals.
         position = len(plain) & 0xFF
-        plain.append(opcode ^ position ^ checksum)
+        # The whole-blob pass below XORs every byte with the checksum, so the opcode
+        # gets it there; applying it here too would cancel it. Position-mask only.
+        plain.append(opcode ^ position)
         return position
 
     fp = scheme.field_perm
@@ -265,8 +267,11 @@ def encode_bytecode(
             field_bytes = {"dst": bytes([slot_of[op.dst_index]]), "src": bytes([slot_of[op.value]])}
         emit_fields(position, op_permuted_fields(op.is_immediate, op.width, fp), field_bytes)
     emit_opcode(scheme.exit_opcode)  # no operands
-    key = scheme.xor_key
-    return bytes(byte ^ key for byte in plain)
+    # Encrypt the whole bytecode with the runtime self-checksum byte, not a
+    # build-constant key: the handlers decrypt each byte against the checksum (read
+    # from its frame slot, broadcast for multi-byte operands), so no operand-cipher
+    # literal appears and a tampered checksum misdecodes the stream.
+    return bytes(byte ^ (checksum & 0xFF) for byte in plain)
 
 
 def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = False) -> str:
@@ -279,9 +284,6 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     frame's xmm save area and the epilogue reloads them, so a run that moves FP
     data through xmm preserves it; a GP-only run skips both.
     """
-    key = scheme.xor_key
-    key_qword = hex((key * _QWORD_BROADCAST) & 0xFFFFFFFFFFFFFFFF)
-    key_dword = hex((key * _DWORD_BROADCAST) & 0xFFFFFFFF)
     # This build's ISA personality: the arithmetic-fold variant every operation
     # handler uses (variant 0 == the shared canonical fold, byte-identical).
     isa = build_engine_isa_spec(scheme.engine_isa_seed)
@@ -298,6 +300,13 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     layout = (
         build_frame_layout(_FRAME_SIZE, random.Random(scheme.frame_seed)) if scheme.frame_seed else DEFAULT_FRAME_LAYOUT
     )
+    # The operand cipher key is the runtime self-checksum, not a build constant: the
+    # byte key is the checksum slot read directly, the 32/64-bit keys are its
+    # broadcasts, precomputed into frame slots at entry. Handlers decrypt operands
+    # against these, so no operand-cipher literal is exposed.
+    key = f"byte ptr [rsp + {layout.checksum_offset}]"
+    key_qword = f"qword ptr [rsp + {layout.key_qword_offset}]"
+    key_dword = f"dword ptr [rsp + {layout.key_dword_offset}]"
 
     def mem_addr_prologue() -> str:
         # Shared head of every memory handler: reg slot [rsi+1] -> r8, base slot
@@ -312,7 +321,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
-            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + addr_fold("rax", "rcx", key, isa.addr_variant)
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n" + addr_fold("rax", "rcx", 0, isa.addr_variant)
         )
 
     def mem_riprel_prologue() -> str:
@@ -325,7 +334,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
-            "  movsxd rax, eax\n  mov r10, r15\n" + addr_fold("rax", "rcx", key, isa.addr_variant)
+            "  movsxd rax, eax\n  mov r10, r15\n" + addr_fold("rax", "rcx", 0, isa.addr_variant)
         )
 
     def mem_idx_prologue() -> str:
@@ -342,8 +351,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r11*8]\n  shl r10, cl\n"
             "  mov r11, qword ptr [rsp + r9*8]\n"
-            + addr_fold("r11", "rcx", key, isa.addr_variant)
-            + addr_fold("rax", "rcx", key, isa.addr_variant)
+            + addr_fold("r11", "rcx", 0, isa.addr_variant)
+            + addr_fold("rax", "rcx", 0, isa.addr_variant)
         )
 
     def mem_handler_body(kind: str, width: int, arith_variant: int) -> str:
@@ -391,7 +400,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             if mnemonic == "sub":
                 body += "  neg rax\n"
             body += "  mov r10, qword ptr [rsp + r8*8]\n" if width == 64 else "  mov r10d, dword ptr [rsp + r8*8]\n"
-            body += arith_fold(mnemonic, key, arith_variant)
+            body += arith_fold(mnemonic, 0, arith_variant)
             if width == 64:
                 body += "  mov qword ptr [rsp + r8*8], r10\n"
             else:
@@ -411,7 +420,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n"
-            + addr_fold("rax", "rcx", key, isa.addr_variant)
+            + addr_fold("rax", "rcx", 0, isa.addr_variant)
             + f"  shl r8, 4\n  lea r11, [rsp + r8 + {layout.xmm_offset}]\n"
         )
 
@@ -425,7 +434,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
             f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             "  movsxd rax, eax\n  mov r10, r15\n"
-            + addr_fold("rax", "rcx", key, isa.addr_variant)
+            + addr_fold("rax", "rcx", 0, isa.addr_variant)
             + f"  shl r8, 4\n  lea r11, [rsp + r8 + {layout.xmm_offset}]\n"
         )
 
@@ -551,7 +560,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
     def handler_body(mnemonic: str, is_immediate: bool, width: int, arith_variant: int) -> str:
         if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
-            return microop_handler_body(mnemonic, width, key, layout.vsp_offset, layout.vstack_base, arith_variant)
+            return microop_handler_body(
+                mnemonic, width, key, key_dword, key_qword, layout.vsp_offset, layout.vstack_base, arith_variant
+            )
         if mnemonic in _FP_PACKED_ARITH_KINDS:
             return fp_packed_arith_handler_body(mnemonic)
         if mnemonic in _FP_PACKED_MEM_KINDS:
@@ -625,23 +636,31 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt; runs after the register spill. The
     # trailing offset table (encrypted after assembly) is excluded from the span.
-    lines.append(checksum_prologue_asm(key, slot=layout.checksum_offset, end_label="vm_table"))
+    lines.append(checksum_prologue_asm(scheme.xor_key, slot=layout.checksum_offset, end_label="vm_table"))
     # Timing anti-debug woven into the same checksum slot: a single-stepped run
     # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
     # 0x00 (the counter reads sit inside the checksummed range, so no encoder or
     # checksum change is needed and the benign build is bit-identical).
-    lines.append(timing_fold_asm(key, slot=layout.checksum_offset))
+    lines.append(timing_fold_asm(scheme.xor_key, slot=layout.checksum_offset))
     # Tracer anti-debug into the same checksum slot: an attached ptrace debugger
     # (TracerPid != 0) folds 0xFF and misdecodes every opcode; an untraced native
     # run and a Unicorn emulation both fold 0x00, so the benign build is unchanged.
     lines.append(tracer_detect_asm(slot=layout.checksum_offset))
+    # Precompute the operand-cipher key broadcasts from the (now final) checksum byte
+    # into their frame slots, after the anti-debug folds so a corrupted checksum also
+    # corrupts the operand key. rax/rcx are free scratch here.
+    lines.append(
+        f"  movzx eax, byte ptr [rsp + {layout.checksum_offset}]\n  imul eax, eax, 0x1010101\n"
+        f"  mov dword ptr [rsp + {layout.key_dword_offset}], eax\n"
+        f"  movzx rax, byte ptr [rsp + {layout.checksum_offset}]\n  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
+        f"  mov qword ptr [rsp + {layout.key_qword_offset}], rax\n"
+    )
     poly_rng = random.Random(scheme.table_key)
-    # Undo the opcode byte's position mask and fold in the key and the runtime
-    # self-checksum the encoder pre-biased the opcode with, so a patched interpreter
-    # misdecodes; the bounds guard then routes any out-of-range byte (the exit
-    # marker) to vm_exit.
+    # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
+    # pass XORed in: a faithful interpreter cancels the checksum and a tampered one
+    # misdecodes. No separate constant key term -- the byte key IS the checksum -- so
+    # the opcode decrypt exposes no operand-cipher literal.
     opcode_xors = [
-        f"  xor al, {key}\n",
         "  xor al, r13b\n",
         f"  xor al, byte ptr [rsp + {layout.checksum_offset}]\n",
     ]
