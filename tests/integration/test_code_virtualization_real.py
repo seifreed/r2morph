@@ -2104,6 +2104,27 @@ def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_variable_count_shift_preserves_exit_code(tmp_path: Path) -> None:
+    # Variable-count (cl) shifts/rotates: shl 1<<4=16, shr 0x80>>7=1, rol 1 by 3 = 8,
+    # and a cl=0 shift that must leave the flags unchanged (a ZF set before it survives,
+    # so jnz is not taken - the handler merges the program flags for the zero-count
+    # case). A wrong value or clobbered zero-count flags diverges from 42.
+    fixture = _DATASET / "elf_vm_shiftreg_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_shiftreg"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_bit_test_preserves_exit_code(tmp_path: Path) -> None:
     # bt (bit test) sets CF from the selected bit and leaves ZF unchanged. bit 3 of
     # 0x08 is 1 (register index), bit 5 of 0x08 is 0 (immediate index), and a ZF set

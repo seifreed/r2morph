@@ -431,6 +431,38 @@ def _vmovxidx_handler_asm(
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _vshiftreg_handler_asm(handler_key: str, key: str) -> str:
+    """Pop the top vstack cell, shift/rotate it by the runtime ``cl``, capture, push.
+
+    Lowers a variable-count ``shl``/``shr``/``sar``/``rol``/``ror reg, cl``: the count
+    is read from the implicit rcx slot into cl and the CPU runs the real shift (masking
+    the count itself, faithful to the native op). Because a runtime count of zero leaves
+    every flag unchanged, the program flags are loaded before the shift and captured
+    after - so ``cl == 0`` records the unchanged flags and ``cl != 0`` records the
+    shift's, exactly as the native op leaves them. rcx is pinned by the renamer, so cl
+    survives; the vstack pointer bookkeeping mirrors the immediate-count handler.
+    """
+    _, mnemonic, width_text = handler_key.split("_")
+    width = int(width_text)
+    body = (
+        f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+        "  sub r9, 8\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        "  mov rcx, qword ptr [rsp+r8*8]\n"
+        f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
+    )
+    body += f"  {mnemonic} rax, cl\n" if width == 64 else f"  {mnemonic} eax, cl\n"
+    body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    body += (
+        f"  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
+        "  add r9, 8\n"
+        f"  mov qword ptr [rsp+{_VSP}], r9\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+    return body
+
+
 def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> str:
     """Pop the top vstack cell, shift it by the carried count, capture flags, push.
 

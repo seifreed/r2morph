@@ -141,6 +141,7 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
         "vmovx",
         "vmovxidx",
         "vshift",
+        "vshiftreg",
         "vcmpsynth",
     )
     targets = _branch_targets(instructions)

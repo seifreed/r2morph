@@ -57,6 +57,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 9  # opcode + (unused) reg + base + index slots + scale shift + 4-byte disp
     if kind == "vshift":
         return 2  # opcode + count byte
+    if kind == "vshiftreg":
+        return 2  # opcode + implicit rcx (count register) slot
     if kind in ("op", "opmba", "opsynth"):
         op: VirtualizedOp = item[1]
         if op.is_immediate:
@@ -307,6 +309,11 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             # Shift the top vstack cell by a one-byte count (no permutation needed).
             p = emit_opcode(_required_key(item))
             plain.append(item[2] ^ p)
+        elif kind == "vshiftreg":
+            # Shift the top vstack cell by the runtime cl, read from the implicit rcx
+            # slot (logical 1), emitted as a permuted slot byte.
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[1] ^ p)
         elif kind in ("vbinop", "vbinopsynth", "vcmpsynth"):
             # The fold/compare takes its operands off the vstack: opcode only.
             emit_opcode(_required_key(item))

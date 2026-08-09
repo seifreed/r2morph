@@ -76,6 +76,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_rsp_arith,
     _decode_setcc,
     _decode_shift,
+    _decode_shift_reg,
     _decode_two_operand,
     _parse_indexed_operand,
     _parse_mem_operand,
@@ -258,7 +259,10 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
         return ["test", *test] if test is not None else None
     if kind in ("shl", "shr", "sar", "rol", "ror"):
         shift = _decode_shift(text)
-        return ["shift", *shift] if shift is not None else None
+        if shift is not None:
+            return ["shift", *shift]
+        shift_reg = _decode_shift_reg(text)
+        return [*shift_reg] if shift_reg is not None else None
     if kind == "mul":
         imul = _decode_imul(text)
         if imul is not None:
@@ -411,7 +415,7 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         "bswap",
     ):
         return frozenset({int(item[1])})
-    if kind in ("shift", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
+    if kind in ("shift", "shiftreg", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
         return frozenset({int(item[2])})
     if kind in ("movx", "movxidx", "movxreg"):
         return frozenset({int(item[4])})
@@ -670,6 +674,13 @@ def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] |
             _, mnemonic, slot, count, width = item
             new_items.append(["vpush", slot])
             new_items.append(["vshift", mnemonic, count, width])
+            new_items.append(["vpop", slot])
+        elif kind == "shiftreg":
+            # ("shiftreg", mnemonic, slot, width): variable count in cl. Push the
+            # register, shift the top cell by the runtime cl (capturing flags), pop back.
+            _, mnemonic, slot, width = item
+            new_items.append(["vpush", slot])
+            new_items.append(["vshiftreg", mnemonic, width])
             new_items.append(["vpop", slot])
         elif kind == "opmemidx":  # <op> reg, [base+index*scale+disp] -- reg is src and dst
             _, mnemonic, reg, base, index, shift, disp, width = item

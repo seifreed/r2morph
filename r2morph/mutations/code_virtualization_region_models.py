@@ -226,6 +226,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"vstorerip_{item[2]}"  # pop the vstack top to [rip+disp]: width
     if kind == "vshift":
         return f"vshift_{item[1]}_{item[3]}"  # stack shift: mnemonic + width
+    if kind == "vshiftreg":
+        return f"vshiftreg_{item[1]}_{item[2]}"  # stack shift by runtime cl: mnemonic + width
     if kind == "vcmpsynth":
         return f"vcmpsynth_{item[1]}_{item[2]}"  # stack compare (flags only): op + width
     if kind in ("op", "opmba", "opsynth"):

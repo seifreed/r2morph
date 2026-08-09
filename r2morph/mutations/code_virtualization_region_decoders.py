@@ -226,6 +226,29 @@ def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
     return (mnemonic, slot, count, width)
 
 
+def _decode_shift_reg(disasm: str) -> tuple[Any, ...] | None:
+    """Decode a variable-count ``shl|shr|sar|rol|ror reg, cl`` into a shiftreg item.
+
+    x86 variable shifts and rotates take their count only in ``cl``; the handler loads
+    that count from the rcx slot at runtime and runs the real shift, so the CPU's count
+    masking and flags (including the count == 0 case, which leaves the flags unchanged)
+    match the native op. Returns ``("shiftreg", mnemonic, dst_slot, width)``.
+    """
+    parts = disasm.split(None, 1)
+    if len(parts) != 2 or "," not in parts[1]:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in ("shl", "shr", "sar", "rol", "ror"):
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    if right != "cl":
+        return None
+    dst = _register_operand(left)
+    if dst is None:
+        return None
+    return ("shiftreg", mnemonic, dst[0], dst[1])
+
+
 def _decode_imul(disasm: str) -> tuple[int, int, int] | None:
     """Decode the two-operand register form ``imul reg, reg`` into (dst, src, width)."""
     parts = disasm.split(None, 1)
