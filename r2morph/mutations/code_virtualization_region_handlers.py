@@ -625,6 +625,10 @@ def _compare_handler_asm(
             "r10", "r11"
         )
         advance = 10
+    elif is_immediate and width == 8:
+        # The 8-bit immediate is a single byte, position+key masked like a slot byte.
+        body += f"  movzx eax, byte ptr [rsi+{off['imm']}]\n  xor al, {key}\n  xor al, r13b\n"
+        advance = 3
     elif is_immediate:
         body += f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n" + _unmask_dword(
             "r11"

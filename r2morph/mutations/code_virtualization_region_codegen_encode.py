@@ -63,7 +63,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
             return 2 + (8 if op.width == 64 else 4)
         return 3
     if kind in ("cmp", "test"):
-        return 2 + (8 if item[4] == 64 else 4) if item[3] else 3
+        # immediate: opcode + dst slot + width-sized immediate; register: opcode + 2 slots.
+        return (2 + item[4] // 8) if item[3] else 3
     if kind in ("shift", "imul"):
         return 3
     if kind == "imul3":

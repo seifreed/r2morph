@@ -158,13 +158,24 @@ def _decode_two_operand(disasm: str, mnemonic: str) -> tuple[int, int, bool, int
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     dst = _register_operand(left)
     if dst is None:
-        # 8-bit register operands (al/dl/... - the byte compare of a char loop's
-        # `test al, al` / `cmp dl, bl` terminator) route here too. They are
-        # register-register only: the immediate handler path reads a dword-sized
-        # field, so an 8-bit immediate compare would misdecode - left native.
-        if left in REGISTER8_INDEX and right in REGISTER8_INDEX:
-            return (REGISTER8_INDEX[left], REGISTER8_INDEX[right], False, 8)
-        return None
+        # 8-bit register destination (al/dl/... - a char loop's `test al, al`
+        # terminator or a byte classify `cmp al, 0x30`). Both the register-register
+        # and the immediate byte form are handled; the 1-byte immediate is read
+        # width-sized, so it does not collide with the 32/64-bit immediate layout.
+        if left not in REGISTER8_INDEX:
+            return None
+        slot8 = REGISTER8_INDEX[left]
+        if right in REGISTER8_INDEX:
+            return (slot8, REGISTER8_INDEX[right], False, 8)
+        if any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
+            return None
+        try:
+            immediate8 = int(right, 0)
+        except ValueError:
+            return None
+        if not immediate_fits_width(immediate8, 8):
+            return None
+        return (slot8, immediate8, True, 8)
     slot, width = dst
     src = _register_operand(right)
     if src is not None:

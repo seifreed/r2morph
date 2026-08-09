@@ -2104,6 +2104,27 @@ def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_byte_immediate_compare_preserves_exit_code(tmp_path: Path) -> None:
+    # An 8-bit immediate compare - the byte classify `cmp al, 0x30` of a char routine.
+    # It exercises the 1-byte immediate read (advance 3, not the 32-bit field's 6) and
+    # the 8-bit ZF/CF synthesis: al=0x41 equals 0x41 (je not taken) and is not below
+    # 0x30 (jb not taken), so a wrong 1-byte read or 8-bit carry diverges from 42 to 99.
+    fixture = _DATASET / "elf_vm_cmp8imm_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_cmp8imm"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_rip_relative_memory_micro_ops_preserve_exit_code(tmp_path: Path) -> None:
     # A global load/store/subtract/RMW through rip-relative operands, all lowered to
     # the vloadrip/vstorerip micro-ops (proven structurally in the unit suite). The
