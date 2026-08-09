@@ -29,9 +29,8 @@ import struct
 from typing import Any
 
 from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
-from r2morph.mutations.code_virtualization_dispatch import decode_block, switch_dispatch, thread_back_jumps
+from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
-from r2morph.mutations.code_virtualization_engine_common import DISPATCH_SWITCH
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import (
     _item_size,
@@ -243,42 +242,34 @@ def _index_to_key(scheme: RegionScheme, offset: int = 0) -> dict[int, str]:
     return {offset + index: key for key, indices in scheme.dup.items() for index in indices}
 
 
-def _set_layer_slots(scheme: RegionScheme, layer: int, count: int, offset: int | None = None) -> str:
-    """Assembly that points the shared dispatcher at one layer's parameters.
+def _set_layer_slots(scheme: RegionScheme, layer: int, count: int) -> str:
+    """Assembly that points the shared decode at one layer's parameters.
 
-    The threaded shape (``offset is None``) writes this layer's dispatch-table base
-    and key; the switch shape has no table, so it instead stashes the layer's global
-    handler-index offset (a byte) in the now-unused table slot, letting the shared
-    comparison tree map the layer-local opcode to its global handler index.
+    Writes this layer's opcode key, handler count, dispatch-table base and table
+    key, so the inlined decode copies resolve the active layer's handlers.
     """
-    base = f"  mov byte ptr [rsp+{_KEY_OFFSET}], {scheme.xor_key}\n" f"  mov byte ptr [rsp+{_COUNT_OFFSET}], {count}\n"
-    if offset is None:
-        return (
-            base
-            + f"  lea rax, [rip+vm_table_{layer}]\n"
-            + f"  mov qword ptr [rsp+{_TABLE_OFFSET}], rax\n"
-            + f"  mov dword ptr [rsp+{_TKEY_OFFSET}], {hex(scheme.table_key)}\n"
-        )
-    return base + f"  mov byte ptr [rsp+{_TABLE_OFFSET}], {offset}\n"
+    return (
+        f"  mov byte ptr [rsp+{_KEY_OFFSET}], {scheme.xor_key}\n"
+        + f"  mov byte ptr [rsp+{_COUNT_OFFSET}], {count}\n"
+        + f"  lea rax, [rip+vm_table_{layer}]\n"
+        + f"  mov qword ptr [rsp+{_TABLE_OFFSET}], rax\n"
+        + f"  mov dword ptr [rsp+{_TKEY_OFFSET}], {hex(scheme.table_key)}\n"
+    )
 
 
-def _enter_inner_asm(
-    child_scheme: RegionScheme, child: int, child_count: int, return_slot: int, offset: int | None = None
-) -> str:
+def _enter_inner_asm(child_scheme: RegionScheme, child: int, child_count: int, return_slot: int) -> str:
     """Handler that saves the resume point and transfers down to layer ``child``."""
     return (
         f"  lea rax, [rsi+1]\n  mov qword ptr [rsp+{return_slot}], rax\n"
-        + _set_layer_slots(child_scheme, child, child_count, offset)
+        + _set_layer_slots(child_scheme, child, child_count)
         + f"  lea rsi, [rip+bc_{child}]\n  mov r15, rsi\n  jmp vm_dispatch\n"
     )
 
 
-def _inner_exit_asm(
-    parent_scheme: RegionScheme, parent: int, parent_count: int, return_slot: int, offset: int | None = None
-) -> str:
+def _inner_exit_asm(parent_scheme: RegionScheme, parent: int, parent_count: int, return_slot: int) -> str:
     """Handler that restores the parent layer's parameters and resumes it."""
     return (
-        _set_layer_slots(parent_scheme, parent, parent_count, offset)
+        _set_layer_slots(parent_scheme, parent, parent_count)
         + f"  mov rsi, qword ptr [rsp+{return_slot}]\n  lea r15, [rip+bc_{parent}]\n  jmp vm_dispatch\n"
     )
 
@@ -363,18 +354,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # layer reads and writes the same frame slots for a given logical register.
     schemes = [build_region_scheme(layer, rng) for layer in layers]
     slot = schemes[0].slot_perm
-    # The outer layer's draw picks the whole build's dispatch shape (one shared
-    # dispatcher serves every layer); captured before the reconstruction below drops
-    # it. A threaded build stays byte-identical, so this only changes switch builds.
-    dispatch_shape = schemes[0].dispatch_shape
     schemes = _relayer_sharing_frame(schemes, slot)
     counts = [_scheme_count(s) for s in schemes]
     offsets = [sum(counts[:i]) for i in range(count)]  # global handler-index base per layer
     rsp_off = slot[RSP_INDEX] * 8
-    # The switch shape dispatches on a single byte (the layer-local opcode plus the
-    # layer's global offset), so it needs the whole handler space to fit in a byte;
-    # a larger build keeps the threaded table dispatch.
-    is_switch = dispatch_shape == DISPATCH_SWITCH and sum(counts) <= 255
 
     spill = "".join(
         f"  mov qword ptr [rsp+{slot[i] * 8}], {name}\n" for i, name in enumerate(GP_REGISTERS) if name != "rsp"
@@ -393,9 +376,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # Zero the virtual operand stack pointer before any micro-op runs; peeled
         # flag-dead arith folds through it in the nested layers too.
         f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
-        + checksum_prologue_asm(
-            schemes[0].xor_key, end_label="vm_code_end" if is_switch else "vm_table_0", slot=_CHECKSUM_OFFSET
-        )
+        + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
         # Timing anti-debug folded into the same checksum slot as the single-layer
         # entry: it sits inside the checksummed span (before vm_table_0) and folds
         # 0x00 on an untraced run, so the benign build stays consistent while a
@@ -405,7 +386,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # 0xFF into the shared checksum slot and misdecodes every layer; an untraced
         # or Unicorn-emulated run folds 0x00 so the benign build stays consistent.
         + tracer_detect_asm(slot=_CHECKSUM_OFFSET, key=schemes[0].table_key)
-        + _set_layer_slots(schemes[0], 0, counts[0], offsets[0] if is_switch else None)
+        + _set_layer_slots(schemes[0], 0, counts[0])
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
         + f"  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
@@ -429,19 +410,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         extra: dict[str, str] = {}
         if layer + 1 < count:  # transfer down to the next layer
             extra["enter_inner"] = _enter_inner_asm(
-                schemes[layer + 1],
-                layer + 1,
-                counts[layer + 1],
-                _RETURN_BASE + layer * 8,
-                offsets[layer + 1] if is_switch else None,
+                schemes[layer + 1], layer + 1, counts[layer + 1], _RETURN_BASE + layer * 8
             )
         if layer > 0:  # return up to the parent layer
             extra["inner_exit"] = _inner_exit_asm(
-                schemes[layer - 1],
-                layer - 1,
-                counts[layer - 1],
-                _RETURN_BASE + (layer - 1) * 8,
-                offsets[layer - 1] if is_switch else None,
+                schemes[layer - 1], layer - 1, counts[layer - 1], _RETURN_BASE + (layer - 1) * 8
             )
         retarget_target = (
             f"  mov eax, dword ptr [rsi+1]\n  xor eax, {key_dword}\n"
@@ -483,49 +456,19 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         + f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(layers[0].exit_vaddr)}\n"
     )
     poly_rng = random.Random(schemes[0].table_key)
-    if is_switch:
-        # Switch shape: one central binary-search dispatcher every layer reaches via
-        # `jmp vm_dispatch` (no threading, no offset table). It decodes the opcode
-        # with the active layer's key, bounds-checks the layer-local index, adds the
-        # layer's global offset, and routes through the compare/branch tree over the
-        # whole handler space to the shared H_<global> handlers. vm_code_end marks the
-        # end of the checksummed code before the reserved bytecode.
-        dispatcher = switch_dispatch(
-            opcode_xors=[
-                f"  xor al, byte ptr [rsp+{_KEY_OFFSET}]\n",
-                "  xor al, r13b\n",
-                f"  xor al, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n",
-            ],
-            bounds=(
-                f"  movzx ecx, byte ptr [rsp+{_COUNT_OFFSET}]\n  cmp al, cl\n  jae vm_exit\n"
-                f"  add al, byte ptr [rsp+{_TABLE_OFFSET}]\n"
-            ),
-            total=sum(counts),
-            rng=poly_rng,
-            label_prefix="H",
-        )
-        asm = (
-            entry
-            + dispatcher
-            + "".join(layer_bodies)
-            + (f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(layers[0].exit_vaddr)}\n")
-            + "vm_code_end:\n"
-            + reservations
-        )
-    else:
-        tables = "".join(
-            f"vm_table_{layer}:\n"
-            + "".join(f"  .long H_{offsets[layer] + j} - vm_table_{layer}\n" for j in range(counts[layer]))
-            for layer in range(count)
-        )
-        # Thread the dispatch: splice a freshly shuffled decode copy in for every back
-        # jump to the (now removed) shared dispatcher - handler tails, the entry, the
-        # retarget and the enter_inner/inner_exit transfer stubs all end with
-        # `jmp vm_dispatch`, so control flows directly handler -> decode -> next
-        # handler with no hub block and no two copies sharing a byte layout. One rng
-        # seeded from the outer layer's table key keeps the variant sequence
-        # deterministic per build.
-        asm = thread_back_jumps(body + tables + reservations, lambda: _decode_block(poly_rng))
+    tables = "".join(
+        f"vm_table_{layer}:\n"
+        + "".join(f"  .long H_{offsets[layer] + j} - vm_table_{layer}\n" for j in range(counts[layer]))
+        for layer in range(count)
+    )
+    # Thread the dispatch: splice a freshly shuffled decode copy in for every back
+    # jump to the (now removed) shared dispatcher - handler tails, the entry, the
+    # retarget and the enter_inner/inner_exit transfer stubs all end with
+    # `jmp vm_dispatch`, so control flows directly handler -> decode -> next
+    # handler with no hub block and no two copies sharing a byte layout. One rng
+    # seeded from the outer layer's table key keeps the variant sequence
+    # deterministic per build.
+    asm = thread_back_jumps(body + tables + reservations, lambda: _decode_block(poly_rng))
 
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
@@ -541,22 +484,16 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     bc_off[count - 1] = len(data)
     for layer in range(count - 2, -1, -1):
         bc_off[layer] = bc_off[layer + 1] - lens[layer]
-    if is_switch:
-        # No dispatch tables: the checksum covers the whole interpreter code (up to
-        # the first reserved bytecode, i.e. vm_code_end) and nothing is encrypted in
-        # place. The encoder still folds the checksum into every layer's opcodes.
-        checksum = compute_build_checksum(bytes(data[: bc_off[0]]), schemes[0].xor_key)
-    else:
-        table0_start = bc_off[0] - sum(counts) * 4
-        # Checksum covers only the interpreter code (up to the first table), so the
-        # table encryption below and the appended bytecode do not perturb the expected
-        # value; the encoder folds it into every layer's stream, and each layer's table
-        # key is diffused with it too (broadcast to 32 bits).
-        checksum = compute_build_checksum(bytes(data[:table0_start]), schemes[0].xor_key)
-        chk_broadcast = checksum * 0x01010101
-        for layer in range(count):
-            table_key = schemes[layer].table_key ^ chk_broadcast
-            _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], table_key)
+    table0_start = bc_off[0] - sum(counts) * 4
+    # Checksum covers only the interpreter code (up to the first table), so the
+    # table encryption below and the appended bytecode do not perturb the expected
+    # value; the encoder folds it into every layer's stream, and each layer's table
+    # key is diffused with it too (broadcast to 32 bits).
+    checksum = compute_build_checksum(bytes(data[:table0_start]), schemes[0].xor_key)
+    chk_broadcast = checksum * 0x01010101
+    for layer in range(count):
+        table_key = schemes[layer].table_key ^ chk_broadcast
+        _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], table_key)
     try:
         encoded = [
             encode_region(layers[layer], schemes[layer], cave_vaddr + bc_off[layer], checksum) for layer in range(count)

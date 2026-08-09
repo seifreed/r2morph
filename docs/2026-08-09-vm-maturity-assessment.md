@@ -79,11 +79,14 @@ checksummed range and is therefore free of the circularity.
      forced-threaded build they landed in a separate 121-block function).
 
    Shape diversity is worth less than a strong floor: a protector must not emit a
-   fully reconstructible variant half the time. The switch shape should stop being
-   selected and its now-dead ladder removed. Blast radius is ten files
-   (`dispatch.py`, both codegens, both scheme builders, the models, nesting, and
-   `tests/unit/test_code_virtualization_threaded_dispatch.py` plus the dispatch-shape
-   integration tests, which assert both shapes exist and must be updated with it).
+   fully reconstructible variant half the time.
+
+   **Closed.** The switch shape, its ladder emitter (`switch_dispatch` /
+   `_switch_ladder`) and the per-build `dispatch_shape` field are gone from both
+   VMs; every build now dispatches through the threaded encrypted offset table.
+   Dropping the draw shifts the scheme RNG stream, so generated code changes for a
+   given seed (behaviour does not). The dispatch-shape tests now pin the floor —
+   no build emits a compare/branch ladder — instead of asserting both shapes exist.
 2. **The ISA is tiny and each opcode has one handler instance.** 8–13 opcodes against
    the reference protectors' hundreds of handler variants. Handler duplication and
    per-instance polymorphism exist in the codebase but do not multiply the *visible*
@@ -101,7 +104,7 @@ checksummed range and is therefore free of the circularity.
 
 Region-level virtualization of whole functions including in-function calls, switch
 tables and FP; VM-in-VM nesting; per-build operand-field permutation, ISA
-personality, dispatch-shape selection and handler junk; bytecode encrypted against a
+personality and handler junk; bytecode encrypted against a
 runtime self-checksum so tampering misdecodes rather than branching to a failure
 path; position-independent output. The weakness is not the feature set — it is that
 none of it is opaque to a decompiler.

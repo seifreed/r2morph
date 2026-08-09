@@ -48,7 +48,6 @@ from r2morph.mutations.code_mobility import (
 )
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_engine import (
-    DISPATCH_THREADED,
     _interpreter_asm,
     build_vm_scheme,
     decode_instruction,
@@ -320,19 +319,15 @@ class TestCodeVirtualization:
     def test_dispatch_decrypts_the_table_with_the_scheme_key(self):
         # The engine dispatch must XOR each loaded table offset with the
         # per-instance key before jumping, so the handler table is not a plaintext
-        # switch a disassembler can recover (parity with the region VM). The offset
-        # table only exists in the threaded shape, so force it for this property.
+        # switch a disassembler can recover (parity with the region VM).
         scheme = build_vm_scheme(random.Random(3))
-        scheme.dispatch_shape = DISPATCH_THREADED
         asm = _interpreter_asm(0x401000, scheme)
         assert f"xor eax, {hex(scheme.table_key)}" in asm
 
     def test_dispatch_diffuses_the_table_key_with_the_self_checksum(self):
         # The table-entry decrypt also folds the runtime self-checksum (broadcast
         # to 32 bits), so tampering corrupts handler resolution, not just opcodes.
-        # The offset-table decrypt is a threaded-shape property, so force it here.
         scheme = build_vm_scheme(random.Random(3))
-        scheme.dispatch_shape = DISPATCH_THREADED
         asm = _interpreter_asm(0x401000, scheme)
         assert "imul ecx, ecx, 0x1010101" in asm
 

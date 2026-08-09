@@ -13,7 +13,7 @@ import random
 import struct
 
 from r2morph.mutations.code_virtualization_antidebug import timing_fold_asm, tracer_detect_asm
-from r2morph.mutations.code_virtualization_dispatch import decode_block, switch_dispatch, thread_back_jumps
+from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine_common import (
     _DWORD_BROADCAST,
     _FP_ARITH_KINDS,
@@ -30,7 +30,6 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _MICROOP_STACK_KINDS,
     _QWORD_BROADCAST,
     _SHIFT_KINDS,
-    DISPATCH_SWITCH,
     GP_REGISTERS,
     RSP_INDEX,
     VMScheme,
@@ -619,11 +618,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             lines.append(f"  movups xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}], xmm{xmm}\n")
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt; runs after the register spill. The
-    # threaded shape excludes the trailing offset table (encrypted after assembly);
-    # the switch shape has no table, so the checksum runs up to vm_code_end.
-    is_switch = scheme.dispatch_shape == DISPATCH_SWITCH
-    checksum_end = "vm_code_end" if is_switch else "vm_table"
-    lines.append(checksum_prologue_asm(key, slot=layout.checksum_offset, end_label=checksum_end))
+    # trailing offset table (encrypted after assembly) is excluded from the span.
+    lines.append(checksum_prologue_asm(key, slot=layout.checksum_offset, end_label="vm_table"))
     # Timing anti-debug woven into the same checksum slot: a single-stepped run
     # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
     # 0x00 (the counter reads sit inside the checksummed range, so no encoder or
@@ -637,8 +633,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # Undo the opcode byte's position mask and fold in the key and the runtime
     # self-checksum the encoder pre-biased the opcode with, so a patched interpreter
     # misdecodes; the bounds guard then routes any out-of-range byte (the exit
-    # marker) to vm_exit. Both dispatch shapes share these two pieces, so the
-    # checksum still folds into the opcode decrypt either way.
+    # marker) to vm_exit.
     opcode_xors = [
         f"  xor al, {key}\n",
         "  xor al, r13b\n",
@@ -667,19 +662,12 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip + bytecode]\n  mov r15, rsi\n"
     )
-    if is_switch:
-        # Switch shape: the entry falls into one central dispatcher block that every
-        # handler jumps back to; it decodes the opcode once and routes through a
-        # compare/branch ladder (no offset table, no computed goto).
-        lines.append(entry_setup)
-        lines.append(switch_dispatch(opcode_xors=opcode_xors, bounds=bounds, total=total, rng=poly_rng))
-    else:
-        # Threaded shape: the decode is inlined at the entry and (via
-        # thread_back_jumps below) at every handler tail, so there is no central
-        # dispatcher node - each handler decodes the next opcode and jumps straight
-        # to it. Shuffling the order-independent XOR groups keeps every copy the same
-        # length, so assembled size and executed instruction count are unchanged.
-        lines.append(entry_setup + make_decode())
+    # The decode is inlined at the entry and (via thread_back_jumps below) at every
+    # handler tail, so there is no central dispatcher node - each handler decodes the
+    # next opcode and jumps straight to it. Shuffling the order-independent XOR groups
+    # keeps every copy the same length, so assembled size and executed instruction
+    # count are unchanged.
+    lines.append(entry_setup + make_decode())
 
     for index in range(total):
         mnemonic, is_immediate, width = index_to_key[index]
@@ -697,13 +685,6 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         for xmm in range(16):
             lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}]\n")
     lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
-
-    if is_switch:
-        # No offset table; mark the end of the checksummed interpreter code right
-        # before the appended bytecode. Handler tails already jump to vm_dispatch, so
-        # the run needs no threading pass.
-        lines.append("vm_code_end:\nbytecode:\n")
-        return "".join(lines)
 
     table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
     lines.append(f"vm_table:\n{table}bytecode:\n")
@@ -769,26 +750,20 @@ def build_vm_blob(
         return None
 
     data = bytearray(encoding)
-    if scheme.dispatch_shape == DISPATCH_SWITCH:
-        # The switch shape has no offset table; the whole assembled interpreter
-        # (vm_entry..vm_code_end) is the checksummed region, and the encoder folds
-        # that expected checksum into every opcode.
-        checksum = compute_build_checksum(bytes(data), scheme.xor_key)
-    else:
-        # The dispatch table is the tail ``total`` 32-bit entries of the assembled
-        # interpreter; XOR-encrypt each in place so the handler addresses are not a
-        # plaintext jump table (the dispatch decrypts them at runtime; keystone
-        # cannot XOR a label difference it computes itself). The self-checksum spans
-        # everything up to the table, so the encryption below does not perturb it;
-        # the encoder folds it into the opcodes and the table key is diffused with it.
-        total = sum(len(indices) for indices in scheme.dup.values())
-        table_start = len(data) - total * 4
-        checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
-        table_key = scheme.table_key ^ (checksum * 0x01010101)
-        for entry_index in range(total):
-            offset = table_start + entry_index * 4
-            encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
-            data[offset : offset + 4] = encrypted.to_bytes(4, "little")
+    # The dispatch table is the tail ``total`` 32-bit entries of the assembled
+    # interpreter; XOR-encrypt each in place so the handler addresses are not a
+    # plaintext jump table (the dispatch decrypts them at runtime; keystone
+    # cannot XOR a label difference it computes itself). The self-checksum spans
+    # everything up to the table, so the encryption below does not perturb it;
+    # the encoder folds it into the opcodes and the table key is diffused with it.
+    total = sum(len(indices) for indices in scheme.dup.values())
+    table_start = len(data) - total * 4
+    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
+    table_key = scheme.table_key ^ (checksum * 0x01010101)
+    for entry_index in range(total):
+        offset = table_start + entry_index * 4
+        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
+        data[offset : offset + 4] = encrypted.to_bytes(4, "little")
     # The bytecode is appended right after the interpreter, so its base is the cave
     # plus the assembled interpreter length; rip-relative globals are stored as a
     # signed 32-bit offset from it. A target too far to express leaves the run native.

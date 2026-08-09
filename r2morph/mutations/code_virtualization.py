@@ -493,9 +493,8 @@ class CodeVirtualizationPass(MutationPass):
         if blob_vaddr is None:
             return None
         # Nest by default, falling back to a single layer if the region has no
-        # peelable register-op run. Both builders pick the dispatch shape (threaded
-        # jump table or binary-search switch) per build from the region scheme, so
-        # the dispatch architecture varies whether the build nests or not.
+        # peelable register-op run. Both builders dispatch through the same
+        # encrypted offset-table computed goto, inlined at every handler tail.
         blob = None
         if use_nesting and self.vm_nesting_depth >= 2:
             blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)

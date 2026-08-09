@@ -12,11 +12,12 @@ no binary); the exit-code integration suite proves the threading stays correct,
 but those pass with or without threading, so the structural property needs its
 own assertion.
 
-The engine VM also has an alternate ``switch`` shape selected per build: one
-central dispatcher block reached by every handler, ending in a compare/branch
-(binary-search) ladder instead of the threaded offset-table computed goto. These
-tests pin both shapes and that they are structurally different, so a devirtualizer
-cannot assume a single fixed dispatcher structure. The region VM stays threaded.
+Threaded dispatch is the only shape either VM emits. A central dispatcher ending
+in a compare/branch ladder over the opcode indices was removed: a decompiler
+rebuilds such a ladder into a plain ``switch`` and recovers the whole
+opcode-to-handler mapping, while the offset table here is XOR-encrypted at
+runtime. The ladder-absence tests below pin that floor over a seed sweep, so no
+build can regress to the reconstructible shape.
 """
 
 from __future__ import annotations
@@ -25,31 +26,17 @@ import random
 from typing import Any
 
 from r2morph.mutations.code_virtualization_dispatch import decode_block
-from r2morph.mutations.code_virtualization_engine import (
-    DISPATCH_SWITCH,
-    DISPATCH_THREADED,
-    VMScheme,
-    build_vm_scheme,
-)
 from r2morph.mutations.code_virtualization_engine import _interpreter_asm as _engine_interpreter_asm
+from r2morph.mutations.code_virtualization_engine import build_vm_scheme
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm as _region_interpreter_asm
-
-
-def _engine_scheme(dispatch_shape: int) -> VMScheme:
-    """A fixed-seed engine scheme forced to one dispatch shape.
-
-    Same seed for both shapes, so the dispatch mechanism is the only structural
-    difference between the interpreters they generate.
-    """
-    scheme = build_vm_scheme(random.Random(0))
-    scheme.dispatch_shape = dispatch_shape
-    return scheme
-
 
 # The decode block's first instruction; one copy per handler tail plus the entry,
 # so a threaded interpreter has at least two and a central one has exactly one.
 _DECODE_HEAD = "movzx eax, byte ptr [rsi]"
+
+# Enough seeds that any surviving per-build shape choice would show up.
+_SEED_SWEEP = range(16)
 
 # Representative decode pieces (the three opcode XORs deliberately differ in byte
 # length, so a length-invariant result proves shuffling does not change size).
@@ -78,8 +65,17 @@ def _tiny_region() -> Any:
     return region
 
 
+def _region_asm(seed: int) -> str:
+    region = _tiny_region()
+    return _region_interpreter_asm(region, build_region_scheme(region, random.Random(seed)))
+
+
+def _engine_asm(seed: int) -> str:
+    return _engine_interpreter_asm(0x1000, build_vm_scheme(random.Random(seed)))
+
+
 def test_region_interpreter_has_no_central_dispatch_label() -> None:
-    asm = _region_interpreter_asm(_tiny_region(), build_region_scheme(_tiny_region(), random.Random(0)))
+    asm = _region_asm(0)
     assert "vm_dispatch:" not in asm
     assert "jmp vm_dispatch" not in asm
 
@@ -87,53 +83,39 @@ def test_region_interpreter_has_no_central_dispatch_label() -> None:
 def test_region_interpreter_inlines_the_decode_per_handler() -> None:
     # Threaded: the decode head appears at the entry and at every handler tail, so
     # there is more than one copy - a central dispatcher would have exactly one.
-    asm = _region_interpreter_asm(_tiny_region(), build_region_scheme(_tiny_region(), random.Random(0)))
-    assert asm.count(_DECODE_HEAD) > 1
+    assert _region_asm(0).count(_DECODE_HEAD) > 1
 
 
-def test_threaded_engine_interpreter_has_no_central_dispatch_label() -> None:
+def test_engine_interpreter_has_no_central_dispatch_label() -> None:
     # The threaded shape inlines the decode, so no handler jumps to a shared block.
-    asm = _engine_interpreter_asm(0x1000, _engine_scheme(DISPATCH_THREADED))
+    asm = _engine_asm(0)
     assert "vm_dispatch:" not in asm
     assert "jmp vm_dispatch" not in asm
 
 
-def test_threaded_engine_interpreter_inlines_the_decode_per_handler() -> None:
-    asm = _engine_interpreter_asm(0x1000, _engine_scheme(DISPATCH_THREADED))
-    assert asm.count(_DECODE_HEAD) > 1
+def test_engine_interpreter_inlines_the_decode_per_handler() -> None:
+    assert _engine_asm(0).count(_DECODE_HEAD) > 1
 
 
-def test_switch_engine_interpreter_has_one_central_dispatch_block() -> None:
-    # The switch shape routes every handler back to one central dispatcher, so the
-    # decode appears exactly once (not inlined per handler) - the opposite structural
-    # property from the threaded shape above.
-    asm = _engine_interpreter_asm(0x1000, _engine_scheme(DISPATCH_SWITCH))
-    assert "vm_dispatch:" in asm
-    assert asm.count(_DECODE_HEAD) == 1
+def test_engine_interpreter_never_emits_a_compare_branch_ladder() -> None:
+    # No seed may produce the removed switch shape: its tell is a direct
+    # ``je h_<index>`` leaf per opcode, which a decompiler rebuilds into a switch.
+    assert not [seed for seed in _SEED_SWEEP if "je h_" in _engine_asm(seed)]
 
 
-def test_switch_engine_interpreter_routes_through_a_compare_branch_ladder() -> None:
-    # The switch dispatcher ends in a binary-search ladder of cmp/je leaves, with no
-    # offset table and no computed goto.
-    asm = _engine_interpreter_asm(0x1000, _engine_scheme(DISPATCH_SWITCH))
-    assert "je h_" in asm
-    assert "vm_table" not in asm
-    assert "jmp rax" not in asm
+def test_region_interpreter_never_emits_a_compare_branch_ladder() -> None:
+    # Same floor for the region VM, whose handler labels are capital ``H_<index>``.
+    assert not [seed for seed in _SEED_SWEEP if "je H_" in _region_asm(seed)]
 
 
-def test_engine_dispatch_shapes_are_structurally_different() -> None:
-    # Pin that the two build shapes are genuinely distinct interpreters: the threaded
-    # build carries the offset table and computed goto and inlines the decode with no
-    # central node; the switch build has one central dispatcher and a compare/branch
-    # ladder instead.
-    threaded = _engine_interpreter_asm(0x1000, _engine_scheme(DISPATCH_THREADED))
-    switch = _engine_interpreter_asm(0x1000, _engine_scheme(DISPATCH_SWITCH))
+def test_engine_interpreter_always_dispatches_through_the_offset_table() -> None:
+    # Every build routes through the XOR-encrypted offset table and its computed
+    # goto, so no build ships a statically resolvable handler mapping.
+    assert all("vm_table" in _engine_asm(seed) and "jmp rax" in _engine_asm(seed) for seed in _SEED_SWEEP)
 
-    assert "vm_table" in threaded and "jmp rax" in threaded
-    assert "vm_dispatch:" not in threaded
 
-    assert "vm_dispatch:" in switch and "je h_" in switch
-    assert "vm_table" not in switch and "jmp rax" not in switch
+def test_region_interpreter_always_dispatches_through_the_offset_table() -> None:
+    assert all("vm_table" in _region_asm(seed) and "jmp rax" in _region_asm(seed) for seed in _SEED_SWEEP)
 
 
 def test_decode_block_is_polymorphic_across_seeds() -> None:

@@ -18,7 +18,7 @@ the exit path.
 
 Because the benign contribution is ``0`` for all variants, the polymorphism below
 has no Python mirror to keep in sync and cannot desync the checksum. The emitted
-counter reads sit inside ``[vm_entry, vm_table/vm_code_end)`` - the range
+counter reads sit inside ``[vm_entry, vm_table)`` - the range
 ``compute_build_checksum`` already covers - so neither the encoder nor the
 checksum computation changes.
 

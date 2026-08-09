@@ -285,16 +285,6 @@ _XMM_SAVE_OFFSET = 0x90
 _VSP_OFFSET = 0x190
 _VSTACK_BASE = 0x198
 
-# Per-build dispatch-mechanism shape. The interpreter routes the decoded opcode to
-# its handler with one of two structurally different mechanisms, selected per build
-# so no single dispatcher shape is a stable devirtualization target:
-#   THREADED - a computed goto over an offset table, with the decode inlined at
-#              every handler tail (no central dispatcher node).
-#   SWITCH   - one central dispatcher block ending in a balanced compare/branch
-#              (binary-search) ladder over the dense opcode indices.
-DISPATCH_THREADED = 0
-DISPATCH_SWITCH = 1
-
 
 class VMScheme:
     """Per-instance randomization of the VM, for polymorphism and opacity.
@@ -315,7 +305,6 @@ class VMScheme:
         "table_key",
         "junk_seed",
         "field_perm",
-        "dispatch_shape",
         "body_seed",
         "frame_seed",
         "engine_isa_seed",
@@ -330,7 +319,6 @@ class VMScheme:
         table_key: int,
         junk_seed: int,
         field_perm: int = 0,
-        dispatch_shape: int = DISPATCH_THREADED,
         body_seed: int = 0,
         frame_seed: int = 0,
         engine_isa_seed: int = 0,
@@ -355,10 +343,6 @@ class VMScheme:
         # the handlers derive each item's field offsets from it (via the shared
         # layout module), so the operand layout differs per build. 0 is identity.
         self.field_perm = field_perm
-        # Which dispatch mechanism this build's interpreter uses (see the module
-        # constants). Varying it per build denies a devirtualizer a single fixed
-        # dispatcher shape to recognize.
-        self.dispatch_shape = dispatch_shape
         # Seeds the per-handler scratch-register bijection: each handler instance
         # derives its own permutation of the scratch pool from this, so no two
         # handler bodies share a fixed register-allocation fingerprint. 0 leaves
@@ -412,12 +396,11 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     """Draw a fresh randomized VM scheme from ``rng`` (seedable, replayable).
 
     Each operation gets one or two interchangeable opcode indices; the indices
-    are a per-instance permutation of the dense range ``0..total-1`` that the
-    dispatch consumes directly (as a table index in the threaded shape or a
-    binary-search key in the switch shape), while the exit marker is any byte
-    ``>= total`` and routes through the shared bounds guard. Two builds share
-    neither the opcode->operation mapping nor the duplication nor, in general,
-    the dispatch shape, and the same operation appears under several opcodes.
+    are a per-instance permutation of the dense range ``0..total-1`` the dispatch
+    consumes directly as an offset-table index, while the exit marker is any byte
+    ``>= total`` and routes through the bounds guard. Two builds share neither the
+    opcode->operation mapping nor the duplication, and the same operation appears
+    under several opcodes.
     """
     multiplicity = _assign_opcode_multiplicity(_OP_KEYS, rng)
     total = sum(multiplicity.values())
@@ -434,7 +417,6 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     table_key = rng.randrange(1, 1 << 32)
     junk_seed = rng.randrange(1 << 31)
     field_perm = rng.randrange(1, 1 << 31)
-    dispatch_shape = rng.randint(DISPATCH_THREADED, DISPATCH_SWITCH)
     body_seed = rng.randrange(1 << 31)
     frame_seed = rng.randrange(1 << 31)
     # Drawn last so adding the ISA personality does not shift any earlier field's
@@ -448,7 +430,6 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         table_key,
         junk_seed,
         field_perm,
-        dispatch_shape,
         body_seed,
         frame_seed,
         engine_isa_seed,
