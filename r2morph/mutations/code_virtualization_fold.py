@@ -43,6 +43,9 @@ _EXTRA_ADD_TEMPLATES: tuple[str, ...] = (
     # a + b == (a & b) + (a | b), the AND/OR half-adder terms in the opposite order
     # from the shared template (or first, then the and into the accumulator).
     "  mov {t}, r10\n  or {t}, {a}\n  and r10, {a}\n  add r10, {t}\n",
+    # a + b == a - (-b): negate the addend and subtract, reaching the sum through a
+    # subtraction rather than any add.
+    "  mov {t}, {a}\n  neg {t}\n  sub r10, {t}\n",
 )
 
 # Region-local boolean identities (``r10 = r10 <op> rax``), appended after the
@@ -56,6 +59,9 @@ _EXTRA_BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
         "  mov rcx, r10\n  and rcx, rax\n  shl rcx, 1\n  add r10, rax\n  sub r10, rcx\n",
         # 2*(a | b) - (a + b), the OR doubled and the sum subtracted back off.
         "  mov rcx, r10\n  or rcx, rax\n  add rcx, rcx\n  add r10, rax\n  sub rcx, r10\n  mov r10, rcx\n",
+        # (a & ~b) + (~a & b), the two disjoint half-terms of the XOR summed (no carry
+        # can occur between them, so the add equals an or/xor here).
+        "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  not r10\n  and r10, rax\n  add r10, rcx\n",
     ),
     "and": (
         # a - (a & ~b): the bits of a not in b, subtracted away.
