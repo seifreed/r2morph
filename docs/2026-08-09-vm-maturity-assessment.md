@@ -26,13 +26,19 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   keyed on the self-checksum the decompiler cannot fold. (gaps 3/5, done for the
   constants)
 
+- **Key schedule — hidden for the region and nested VMs.** Both the dispatch-table
+  key and the opcode/operand cipher key are now the runtime self-checksum, not build
+  constants: the table decrypt and every operand decrypt render as
+  `X ^ (0x…01 * v_checksum)`, so no key literal is exposed (IDA-verified — the
+  prologue shows `0x1010101 * v_checksum` and `0x0101010101010101 * v_checksum` in
+  place of the former `xor_key` constant). The straight-line engine VM still carries
+  its own `xor_key` (separate encoder/handlers) — a scoped follow-up.
+
 **Still recovered by the decompiler, and still below the reference protectors:** the
-opcode/table XOR keys render as literals (the key schedule — `xor_key` is the
-blob-wide key woven through every operand decrypt, so hiding it is a core-cipher
-change, not a local one); the register file is a computable stack index; the
-self-checksum loop and probe *structure* are visible; and the payload is structurally
-obvious (appended RX `PT_LOAD`, one interpreter function). These are the remaining
-milestones and each is a dedicated redesign — see the gap list below.
+engine VM's operand key (region+nested done, engine pending); the register file is a
+computable stack index; the self-checksum loop and probe *structure* are visible; and
+the payload is structurally obvious (appended RX `PT_LOAD`, one interpreter function).
+These are the remaining milestones and each is a dedicated redesign — see the gap list.
 
 ## Method
 
