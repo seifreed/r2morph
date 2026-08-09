@@ -675,7 +675,13 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # count are unchanged.
     lines.append(entry_setup + make_decode())
 
-    for index in range(total):
+    # Emit the handler instances in a per-build shuffled order rather than opcode
+    # order: the dispatch table addresses each by label (h_{index} - vm_table), so
+    # file order is free, and shuffling it keeps the physical layout from leaking the
+    # opcode ordering a positional handler-matcher would read off the block sequence.
+    emit_order = list(range(total))
+    random.Random(scheme.body_seed ^ 0x9E3779B9).shuffle(emit_order)
+    for index in emit_order:
         mnemonic, is_immediate, width = index_to_key[index]
         # Give each *instance* of an arithmetic handler its own MBA fold (drawn from
         # the build's isa seed and the handler index), so duplicate handlers for one
