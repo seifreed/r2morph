@@ -140,6 +140,15 @@ def test_tracer_detect_syscall_numbers_are_not_plaintext_immediates() -> None:
     assert "-100" not in asm
 
 
+def test_tracer_detect_tracerpid_zero_compare_is_not_a_plaintext_immediate() -> None:
+    # The '0' the tracer digit is compared against must not appear as ``cmp al, 0x30``:
+    # a decompiler folds that to ``!= '0'`` and names the TracerPid check. It is
+    # de-masked from the checksum-keyed island and compared register-to-register.
+    asm = tracer_detect_asm(slot=_SLOT)
+    assert "0x30" not in asm
+    assert "cmp al, dil" in asm
+
+
 def test_tracer_island_masks_constants_by_checksum() -> None:
     # The stored island bytes vary with the build checksum and never carry the
     # plaintext constants: two checksums produce different ciphertext, and the

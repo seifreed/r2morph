@@ -130,10 +130,15 @@ _SYS_CLOSE = 3
 # call with no foldable constant in the decompiler.
 _AT_FDCWD = -100 & 0xFFFFFFFFFFFFFFFF
 # Field offsets into the island for the syscall-setup qwords.
+# The ASCII '0' the tracer digit is compared against. A plaintext ``cmp al, 0x30``
+# is itself the tell - a decompiler folds it to ``!= '0'`` and names the TracerPid
+# check - so it is masked too, leaving the compare with no foldable literal.
+_TRACERPID_ZERO = 0x30
 _SYS_OPENAT_OFFSET = 24
 _SYS_READ_OFFSET = 32
 _SYS_CLOSE_OFFSET = 40
 _AT_FDCWD_OFFSET = 48
+_TRACERPID_ZERO_OFFSET = 56
 _TRACER_ISLAND_CONSTS = (
     _STATUS_PATH_LO,
     _STATUS_PATH_HI,
@@ -142,6 +147,7 @@ _TRACER_ISLAND_CONSTS = (
     _SYS_READ,
     _SYS_CLOSE,
     _AT_FDCWD,
+    _TRACERPID_ZERO,
 )
 _TRACER_ISLAND_LEN = 8 * len(_TRACER_ISLAND_CONSTS)
 
@@ -257,8 +263,12 @@ def tracer_detect_asm(slot: int) -> str:
         + f"  cmp r8d, {_STATUS_SCAN_LIMIT}\n  jae tracer_done\n"
         + "  mov rax, qword ptr [rsi+r8]\n  cmp rax, r9\n  je tracer_found\n  inc r8\n  jmp tracer_scan\n"
         + "tracer_found:\n"
-        # The digit after "TracerPid:\t"; anything but '0' (0x30) means a tracer.
-        + f"  movzx eax, byte ptr [rsi+r8+{_TRACERPID_DIGIT_OFFSET}]\n  cmp al, 0x30\n  setne cl\n"
+        # The digit after "TracerPid:\t"; anything but '0' means a tracer. The '0'
+        # is de-masked from the checksum-keyed island so the compare carries no
+        # plaintext 0x30 for a decompiler to fold into a named TracerPid check.
+        + f"  movzx eax, byte ptr [rsi+r8+{_TRACERPID_DIGIT_OFFSET}]\n"
+        + _load_checksum_masked("rdi", _TRACERPID_ZERO_OFFSET, slot)
+        + "  cmp al, dil\n  setne cl\n"
         + "tracer_done:\n"
         + f"  neg cl\n  xor byte ptr [rsp+{slot}], cl\n"
     )
