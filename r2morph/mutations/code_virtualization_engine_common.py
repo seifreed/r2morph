@@ -400,8 +400,8 @@ _OPCODE_BUDGET = 256 - _EXIT_OPCODE_HEADROOM
 # many variants: the floor is well above one and the ceiling large, bounded only
 # by the single-byte opcode space (a draw that would overflow the budget is shed
 # down to a floor of one, so a large ISA still fits).
-_HANDLER_MIN_INSTANCES = 3
-_HANDLER_MAX_INSTANCES = 6
+_HANDLER_MIN_INSTANCES = 4
+_HANDLER_MAX_INSTANCES = 8
 
 
 def _assign_opcode_multiplicity(op_keys: Sequence[_OpKey], rng: random.Random) -> dict[_OpKey, int]:
