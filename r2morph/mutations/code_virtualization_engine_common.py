@@ -280,7 +280,7 @@ def _live_junk_asm(rng: random.Random, index: int) -> str:
     """A short run of reachable, state-neutral junk for the head of a handler,
     sometimes capped with an opaque-predicate branch over an unreachable body."""
     lines = []
-    for _ in range(rng.randint(0, 3)):
+    for _ in range(rng.randint(1, 4)):
         template = rng.choice(_LIVE_JUNK_TEMPLATES)
         lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
     if rng.random() < 0.5:
