@@ -244,6 +244,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"imul3_{item[4]}"
     if kind == "not":
         return f"not_{item[2]}"  # bitwise complement: width
+    if kind == "bswap":
+        return f"bswap_{item[2]}"  # byte-order reversal: width
     if kind == "push":
         return f"push_{item[2]}"
     if kind == "pop":

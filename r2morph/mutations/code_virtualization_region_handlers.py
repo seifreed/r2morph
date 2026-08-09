@@ -738,6 +738,24 @@ def _not_handler_asm(handler_key: str, key: str) -> str:
     )
 
 
+def _bswap_handler_asm(handler_key: str, key: str) -> str:
+    """Assembly body for ``bswap reg`` (byte-order reversal, no flags, 32/64-bit).
+
+    The slot value is loaded into rax and the width-sized byte swap is taken on the
+    matching sub-register: a 32-bit ``bswap`` zero-extends, a 64-bit one reverses all
+    eight bytes, both exactly as the native op. ``bswap`` sets no flags.
+    """
+    width = int(handler_key.split("_")[1])
+    sub = "eax" if width == 32 else "rax"
+    return (
+        f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        "  mov rax, qword ptr [rsp+r8*8]\n"
+        f"  bswap {sub}\n"
+        "  mov qword ptr [rsp+r8*8], rax\n"
+        "  add rsi, 2\n  jmp vm_dispatch\n"
+    )
+
+
 def _push_handler_asm(key: str, rsp_off: int) -> str:
     """Assembly body for ``push reg`` against the relocated virtual stack.
 

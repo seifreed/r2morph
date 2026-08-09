@@ -67,7 +67,7 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return (2 + item[4] // 8) if item[3] else 3
     if kind in ("shift", "imul"):
         return 3
-    if kind == "not":
+    if kind in ("not", "bswap"):
         return 2  # opcode + reg slot
     if kind == "imul3":
         return 7  # opcode + dst slot + src slot + 4-byte immediate
@@ -542,7 +542,7 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             _, _mnemonic, reg_slot, _width = item
             p = emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot] ^ p)
-        elif kind == "not":
+        elif kind in ("not", "bswap"):
             _, reg_slot, _width = item
             p = emit_opcode(_required_key(item))
             plain.append(slot_of[reg_slot] ^ p)

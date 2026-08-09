@@ -32,6 +32,7 @@ from r2morph.mutations.code_virtualization_engine import (
 )
 from r2morph.mutations.code_virtualization_engine_common import _assign_opcode_multiplicity
 from r2morph.mutations.code_virtualization_region_decoders import (
+    _decode_bswap,
     _decode_cmov,
     _decode_cmp_mem,
     _decode_fp_arith,
@@ -139,6 +140,11 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     convert = _decode_fp_convert(text)
     if convert is not None:
         return [*convert]
+    # ``bswap`` is typed "null" by the disassembler, so match it by mnemonic ahead of
+    # the type gate; the decoder returns None for anything that is not a bswap.
+    bswap = _decode_bswap(text)
+    if bswap is not None:
+        return [*bswap]
     if insn.get("family") == "vec":
         # SSE/FP ops share their GP twin's ``type`` (movsd->mov, addsd->add) but
         # carry family "vec". Route them here first: scalar FP load/store is

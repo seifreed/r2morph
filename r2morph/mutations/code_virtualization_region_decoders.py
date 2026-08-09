@@ -1189,6 +1189,22 @@ def _decode_not(text: str) -> tuple[Any, ...] | None:
     return None
 
 
+def _decode_bswap(text: str) -> tuple[Any, ...] | None:
+    """Decode ``bswap reg`` (byte-order reversal, register operand, 32/64-bit only).
+
+    ``bswap`` sets no flags and is defined only for 32- and 64-bit operands, so the
+    handler runs the real byte swap on the slot with no flag capture. Returns
+    ``("bswap", reg_slot, width)`` or ``None``.
+    """
+    parts = text.split()
+    if len(parts) != 2 or parts[0].lower() != "bswap":
+        return None
+    reg = _register_operand(parts[1].lower())
+    if reg is None or reg[1] not in (32, 64):
+        return None
+    return ("bswap", reg[0], reg[1])
+
+
 def _decode_incdec(text: str) -> tuple[Any, ...] | None:
     """Decode ``inc reg`` / ``dec reg`` (register operand).
 
