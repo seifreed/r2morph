@@ -70,10 +70,22 @@ _EXTRA_BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
         # (a & ~b) + (~a & b), the two disjoint half-terms of the XOR summed (no carry
         # can occur between them, so the add equals an or/xor here).
         "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  not r10\n  and r10, rax\n  add r10, rcx\n",
+        # ~((a & b) | ~(a | b)): the complement of the "both-equal" mask is the XOR.
+        "  mov rcx, r10\n  or rcx, rax\n  not rcx\n  and r10, rax\n  or r10, rcx\n  not r10\n",
+        # (a | b) - (a & b), forming the AND term first (commuted from the base form).
+        "  mov rcx, rax\n  and rcx, r10\n  or r10, rax\n  sub r10, rcx\n",
+        # (a + b) - ((a & b) << 1), the carry term doubled with a self-add.
+        "  mov rcx, r10\n  and rcx, rax\n  add rcx, rcx\n  add r10, rax\n  sub r10, rcx\n",
     ),
     "and": (
         # a - (a & ~b): the bits of a not in b, subtracted away.
         "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  sub r10, rcx\n",
+        # a ^ (a & ~b): removing the bits of a absent from b leaves the AND.
+        "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  xor r10, rcx\n",
+        # (a | b) - (a ^ b), forming the XOR term first (commuted from the base form).
+        "  mov rcx, rax\n  xor rcx, r10\n  or r10, rax\n  sub r10, rcx\n",
+        # (a + b) - (a | b), forming the OR term first (commuted from the base form).
+        "  mov rcx, rax\n  or rcx, r10\n  add r10, rax\n  sub r10, rcx\n",
         # (a | ~b) & b: the second operand masked by the first-or-not-second.
         "  mov rcx, rax\n  not rcx\n  or rcx, r10\n  mov r10, rax\n  and r10, rcx\n",
         # (~b | a) & b: b masked by (a-or-not-b), the operands swapped from above.
@@ -88,6 +100,12 @@ _EXTRA_BOOL_VARIANTS: dict[str, tuple[str, ...]] = {
         "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  mov r10, rax\n  add r10, rcx\n",
         # (a & b) + (a ^ b), the AND and XOR halves summed (carry + no-carry bits).
         "  mov rcx, r10\n  xor rcx, rax\n  and r10, rax\n  add r10, rcx\n",
+        # a ^ (~a & b): adding the bits of b absent from a completes the OR (disjoint).
+        "  mov rcx, r10\n  not rcx\n  and rcx, rax\n  xor r10, rcx\n",
+        # (a & b) | (a ^ b), the AND and XOR halves or'd (commuted from the base form).
+        "  mov rcx, rax\n  and rcx, r10\n  xor r10, rax\n  or r10, rcx\n",
+        # b | (a & ~b): the bits of a absent from b, or'd onto b.
+        "  mov rcx, rax\n  not rcx\n  and rcx, r10\n  mov r10, rax\n  or r10, rcx\n",
     ),
 }
 
