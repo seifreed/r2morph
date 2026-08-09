@@ -33,6 +33,7 @@ from r2morph.mutations.code_virtualization_engine import (
 from r2morph.mutations.code_virtualization_engine_common import _assign_opcode_multiplicity
 from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_bswap,
+    _decode_bt,
     _decode_cmov,
     _decode_cmp_mem,
     _decode_cqo,
@@ -245,6 +246,11 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
         compare = _decode_two_operand(text, "cmp")
         if compare is not None:
             return ["cmp", *compare]
+        # ``bt`` (bit test) is typed "cmp" by the disassembler; try it before the
+        # memory-compare decoder, which would reject it anyway.
+        bit_test = _decode_bt(text)
+        if bit_test is not None:
+            return [*bit_test]
         memory_cmp = _decode_cmp_mem(text, insn.get("addr", 0), insn.get("size", 0))
         return [*memory_cmp] if memory_cmp is not None else None
     if kind == "acmp":

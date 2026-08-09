@@ -73,6 +73,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 4  # opcode + divisor slot + implicit rax + rdx slots
     if kind == "cqo":
         return 3  # opcode + implicit rax + rdx slots
+    if kind == "bt":
+        return 3  # opcode + value slot + index slot (or 1-byte immediate index)
     if kind == "imul3":
         return 7  # opcode + dst slot + src slot + 4-byte immediate
     if kind in ("load", "store", "fpload", "fpstore"):
@@ -564,6 +566,12 @@ def encode_region(region: Region, scheme: RegionScheme, bytecode_base: int, chec
             p = emit_opcode(_required_key(item))
             plain.append(slot_of[0] ^ p)
             plain.append(slot_of[2] ^ p)
+        elif kind == "bt":
+            _, value_slot, index_value, is_imm, _width = item
+            p = emit_opcode(_required_key(item))
+            plain.append(slot_of[value_slot] ^ p)
+            # register index: its slot byte; immediate index: the raw bit number.
+            plain.append((index_value if is_imm else slot_of[index_value]) ^ p)
         elif kind == "movx":
             _, _ext, _src_size, _dst_width, reg_slot, base_slot, disp = item
             p = emit_opcode(_required_key(item))

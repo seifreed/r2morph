@@ -250,6 +250,8 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"div_{item[1]}_{item[3]}"  # signedness (s/u) + width
     if kind == "cqo":
         return f"cqo_{item[1]}"  # sign-extend rax->rdx: width
+    if kind == "bt":
+        return f"bt_{'i' if item[3] else 'r'}_{item[4]}"  # bit test: immediate/register + width
     if kind == "push":
         return f"push_{item[2]}"
     if kind == "pop":

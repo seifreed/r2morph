@@ -784,6 +784,32 @@ def _cqo_handler_asm(handler_key: str, key: str) -> str:
     )
 
 
+def _bt_handler_asm(handler_key: str, key: str) -> str:
+    """Assembly body for ``bt reg, reg`` / ``bt reg, imm`` (bit test).
+
+    Loads the value and the bit index (from a slot for the register form, or the
+    unmasked immediate byte for the immediate form) into registers, then runs the
+    real ``bt`` and merges its CF into the flags slot: the program's other flags are
+    loaded first so ZF stays put and the architecturally-undefined SF/OF/AF/PF keep a
+    defined (program) value, exactly what the native op leaves. Nothing is written
+    back to a register slot.
+    """
+    _, mode, width_text = handler_key.split("_")
+    width = int(width_text)
+    is_immediate = mode == "i"
+    body = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+    if is_immediate:
+        body += f"  movzx r10d, byte ptr [rsi+2]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+    else:
+        body += f"  movzx r9d, byte ptr [rsi+2]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        body += "  mov r10, qword ptr [rsp+r9*8]\n"
+    body += "  mov rax, qword ptr [rsp+r8*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r8*8]\n"
+    body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
+    body += "  bt rax, r10\n" if width == 64 else "  bt eax, r10d\n"
+    body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+    return body + "  add rsi, 3\n  jmp vm_dispatch\n"
+
+
 def _bswap_handler_asm(handler_key: str, key: str) -> str:
     """Assembly body for ``bswap reg`` (byte-order reversal, no flags, 32/64-bit).
 

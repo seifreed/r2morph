@@ -64,6 +64,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _KEY_QWORD_SLOT,
     _VSP_OFFSET,
     _bswap_handler_asm,
+    _bt_handler_asm,
     _cmp_memory_handler_asm,
     _compare_handler_asm,
     _cqo_handler_asm,
@@ -773,6 +774,8 @@ def handler_instances_asm(
             lines.append(_div_handler_asm(handler_key, key))
         elif handler_key.startswith("cqo_"):
             lines.append(_cqo_handler_asm(handler_key, key))
+        elif handler_key.startswith("bt_"):
+            lines.append(_bt_handler_asm(handler_key, key))
         elif handler_key.startswith(("cmpmem_", "cmpriprel_")):
             lines.append(
                 _cmp_memory_handler_asm(

@@ -1189,6 +1189,37 @@ def _decode_not(text: str) -> tuple[Any, ...] | None:
     return None
 
 
+def _decode_bt(text: str) -> tuple[Any, ...] | None:
+    """Decode ``bt reg, reg`` / ``bt reg, imm`` (bit test, 32/64-bit).
+
+    ``bt`` copies the selected bit into CF and leaves ZF unchanged (the other status
+    flags are architecturally undefined); the handler runs the real ``bt`` and merges
+    its CF into the flags slot, keeping the rest. The value register and either a
+    register bit index or an immediate one are supported. Returns
+    ``("bt", value_slot, index_value, is_immediate, width)``.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != 2 or parts[0].lower() != "bt" or "," not in parts[1]:
+        return None
+    left, right = (token.strip().lower() for token in parts[1].split(",", 1))
+    value = _register_operand(left)
+    if value is None or value[1] not in (32, 64):
+        return None
+    slot, width = value
+    index = _register_operand(right)
+    if index is not None:
+        return ("bt", slot, index[0], False, width) if index[1] == width else None
+    if any(marker in right for marker in ("[", "]", "rip", ":", "ptr")):
+        return None
+    try:
+        immediate = int(right, 0)
+    except ValueError:
+        return None
+    if not 0 <= immediate < width:
+        return None
+    return ("bt", slot, immediate, True, width)
+
+
 def _decode_div(text: str) -> tuple[Any, ...] | None:
     """Decode ``div reg`` / ``idiv reg`` (register divisor, 32/64-bit).
 

@@ -2104,6 +2104,27 @@ def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> No
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
+def test_bit_test_preserves_exit_code(tmp_path: Path) -> None:
+    # bt (bit test) sets CF from the selected bit and leaves ZF unchanged. bit 3 of
+    # 0x08 is 1 (register index), bit 5 of 0x08 is 0 (immediate index), and a ZF set
+    # before `bt rbx, 8` must survive it (the handler merges CF into the flags slot
+    # while keeping the program's ZF). A wrong CF or a clobbered ZF diverges from 42.
+    fixture = _DATASET / "elf_vm_bt_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    mutated = tmp_path / "mutated_bt"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+
+
 def test_division_preserves_exit_code(tmp_path: Path) -> None:
     # div/idiv/cqo virtualized (modulo hashing, index math). Unsigned 100/7 = 14 rem 2
     # and signed -55/4 via cqo+idiv = -13 (truncating toward zero). The handlers run
