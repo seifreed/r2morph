@@ -93,14 +93,21 @@ def _op_handler_asm(handler_key: str, key: str, key_qword: str, key_dword: str, 
         body += f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         body += "  mov rax, qword ptr [rsp+r9*8]\n" if width == 64 else "  mov eax, dword ptr [rsp+r9*8]\n"
         advance = 3
+    # Read-modify-write through r11 with the slot store AFTER the flag capture, so the
+    # register-file cipher's encrypting xor on the store never clobbers the op's flags.
     if mnemonic == "mov":
         body += "  mov qword ptr [rsp+r8*8], rax\n"
     elif width == 64:
-        body += f"  {mnemonic} qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        body += (
+            f"  mov r11, qword ptr [rsp+r8*8]\n  {mnemonic} r11, rax\n"
+            f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+            "  mov qword ptr [rsp+r8*8], r11\n"
+        )
     else:
         body += (
             f"  mov r11d, dword ptr [rsp+r8*8]\n  {mnemonic} r11d, eax\n"
-            f"  mov qword ptr [rsp+r8*8], r11\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+            f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+            "  mov qword ptr [rsp+r8*8], r11\n"
         )
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
@@ -691,10 +698,14 @@ def _shift_handler_asm(handler_key: str, key: str, field_perm: int = 0, shift_va
         body += f"  mov rax, qword ptr [rsp+r8*8]\n  {mnemonic} rax, cl\n"
     else:
         body += f"  mov eax, dword ptr [rsp+r8*8]\n  {mnemonic} eax, cl\n"
+    # Move the result to r11 (a flag-neutral mov) so the flag capture runs on the
+    # shift's flags before the register-file cipher encrypts the slot store; the store
+    # is emitted after the capture so the encrypting xor never clobbers those flags.
     return (
         body
-        + "  mov qword ptr [rsp+r8*8], rax\n"
+        + "  mov r11, rax\n"
         + shift_flag_capture_asm(shift_variant, _FLAGS_OFFSET)
+        + "  mov qword ptr [rsp+r8*8], r11\n"
         + "  add rsi, 3\n  jmp vm_dispatch\n"
     )
 
@@ -708,13 +719,16 @@ def _imul_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
     )
+    # Load the source operand into r11 via a mov (so the register-file cipher decrypts
+    # it like any slot read - a direct memory-operand imul would not be ciphered) and
+    # store the product after the flag capture so the encrypting xor keeps the flags.
     if width == 64:
-        body += "  mov rax, qword ptr [rsp+r8*8]\n  imul rax, qword ptr [rsp+r9*8]\n"
+        body += "  mov rax, qword ptr [rsp+r8*8]\n  mov r11, qword ptr [rsp+r9*8]\n  imul rax, r11\n"
     else:
-        body += "  mov eax, dword ptr [rsp+r8*8]\n  imul eax, dword ptr [rsp+r9*8]\n"
+        body += "  mov eax, dword ptr [rsp+r8*8]\n  mov r11d, dword ptr [rsp+r9*8]\n  imul eax, r11d\n"
     return (
         body
-        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 3\n  jmp vm_dispatch\n"
+        + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  mov qword ptr [rsp+r8*8], rax\n  add rsi, 3\n  jmp vm_dispatch\n"
     )
 
 
@@ -875,8 +889,9 @@ def _rspadj_handler_asm(handler_key: str, key_dword: str, rsp_off: int) -> str:
         f"  mov eax, dword ptr [rsi+1]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
         + _unmask_dword("r11")
         + "  movsxd rax, eax\n"
-        f"  {mnemonic} qword ptr [rsp+{rsp_off}], rax\n"
+        f"  mov r11, qword ptr [rsp+{rsp_off}]\n  {mnemonic} r11, rax\n"
         f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        f"  mov qword ptr [rsp+{rsp_off}], r11\n"
         "  add rsi, 5\n  jmp vm_dispatch\n"
     )
 
@@ -952,5 +967,5 @@ def _imul3_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: i
         body += "  mov r10d, dword ptr [rsp+r9*8]\n  imul r10d, eax\n  mov rax, r10\n"
     return (
         body
-        + f"  mov qword ptr [rsp+r8*8], rax\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  add rsi, 7\n  jmp vm_dispatch\n"
+        + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n  mov qword ptr [rsp+r8*8], rax\n  add rsi, 7\n  jmp vm_dispatch\n"
     )

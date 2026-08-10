@@ -62,6 +62,7 @@ from r2morph.mutations.code_virtualization_region_models import (
     RegionScheme,
     _op_key,
 )
+from r2morph.mutations.code_virtualization_region_regcipher import cipher_register_slots
 
 logger = logging.getLogger(__name__)
 
@@ -410,9 +411,18 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         + f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
         + f"  movzx rax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
         + f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
+        # Encrypt the GP registers spilled before the key existed (mirrors the single
+        # region prologue); handler accesses decrypt on read / encrypt on write.
+        + "".join(
+            f"  mov rax, qword ptr [rsp+{slot[i] * 8}]\n"
+            f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+            f"  mov qword ptr [rsp+{slot[i] * 8}], rax\n"
+            for i, name in enumerate(GP_REGISTERS)
+            if name != "rsp"
+        )
         + _set_layer_slots(0, counts[0])
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
-        + f"  mov qword ptr [rsp+{rsp_off}], rax\n"
+        + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
     )
 
@@ -451,23 +461,25 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         )
         retarget = retarget_target + "  mov rsi, r9\n  jmp vm_dispatch\n"
         layer_bodies.append(
-            handler_instances_asm(
-                _index_to_key(scheme, offset=offsets[layer]),
-                key=key,
-                key_qword=key_qword,
-                key_dword=key_dword,
-                rsp_off=rsp_off,
-                junk_rng=junk_rng,
-                reload_seq=reload_seq,
-                retarget=retarget,
-                retarget_target=retarget_target,
-                frame_size=_FRAME_SIZE,
-                slot=slot,
-                bytecode_len=lens[layer],
-                extra=extra,
-                field_perm=scheme.field_perm,
-                body_seed=scheme.body_seed,
-                isa_seed=scheme.isa_seed,
+            cipher_register_slots(
+                handler_instances_asm(
+                    _index_to_key(scheme, offset=offsets[layer]),
+                    key=key,
+                    key_qword=key_qword,
+                    key_dword=key_dword,
+                    rsp_off=rsp_off,
+                    junk_rng=junk_rng,
+                    reload_seq=reload_seq,
+                    retarget=retarget,
+                    retarget_target=retarget_target,
+                    frame_size=_FRAME_SIZE,
+                    slot=slot,
+                    bytecode_len=lens[layer],
+                    extra=extra,
+                    field_perm=scheme.field_perm,
+                    body_seed=scheme.body_seed,
+                    isa_seed=scheme.isa_seed,
+                )
             )
         )
 

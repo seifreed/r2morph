@@ -103,6 +103,7 @@ from r2morph.mutations.code_virtualization_region_integrity import (
     compute_build_checksum,
 )
 from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
+from r2morph.mutations.code_virtualization_region_regcipher import cipher_register_slots
 from r2morph.mutations.code_virtualization_region_microops import (
     _frestore_handler_asm,
     _fsave_handler_asm,
@@ -302,7 +303,7 @@ def _call_bridge_asm(index: int, slot: tuple[int, ...], target_asm: str, advance
         target_asm
         + "  mov r12, rsp\n  mov rbx, rsi\n"
         + loads
-        + f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n"
+        + f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n  xor rsp, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
         + f"call_resume_{index}:\n  mov rsp, r12\n"
         + spills
@@ -939,6 +940,19 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         "  imul rax, rcx\n"
         f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
     )
+    # The GP registers were spilled to their slots before the key existed; now that the
+    # key is materialized, encrypt those slots in place so every subsequent handler
+    # access (which decrypts on read, encrypts on write) sees ciphered context. rax is
+    # free scratch here; the relocated-rsp slot is written already-encrypted below.
+    lines.append(
+        "".join(
+            f"  mov rax, qword ptr [rsp+{slot[index] * 8}]\n"
+            f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+            f"  mov qword ptr [rsp+{slot[index] * 8}], rax\n"
+            for index, name in enumerate(GP_REGISTERS)
+            if name != "rsp"
+        )
+    )
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
@@ -991,7 +1005,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
     entry_setup = (
         f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
-        f"  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
+        f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
     )
     lines.append(entry_setup + make_decode())
@@ -1013,23 +1027,28 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     total = len(index_to_key)
 
     junk_rng = random.Random(scheme.junk_seed)
+    # Encrypt the register file: cipher every GP-slot load/store in the handler bodies
+    # (the reload sequence and the relocated-rsp accesses ride along, being slot
+    # offsets below the array end) so the context is stored XOR'd with the checksum key.
     lines.append(
-        handler_instances_asm(
-            index_to_key,
-            key=key,
-            key_qword=key_qword,
-            key_dword=key_dword,
-            rsp_off=rsp_off,
-            junk_rng=junk_rng,
-            reload_seq=reload_seq,
-            retarget=retarget,
-            retarget_target=retarget_target,
-            frame_size=_FRAME_SIZE,
-            slot=slot,
-            bytecode_len=sum(_item_size(item) for item in region.instructions),
-            field_perm=scheme.field_perm,
-            body_seed=scheme.body_seed,
-            isa_seed=scheme.isa_seed,
+        cipher_register_slots(
+            handler_instances_asm(
+                index_to_key,
+                key=key,
+                key_qword=key_qword,
+                key_dword=key_dword,
+                rsp_off=rsp_off,
+                junk_rng=junk_rng,
+                reload_seq=reload_seq,
+                retarget=retarget,
+                retarget_target=retarget_target,
+                frame_size=_FRAME_SIZE,
+                slot=slot,
+                bytecode_len=sum(_item_size(item) for item in region.instructions),
+                field_perm=scheme.field_perm,
+                body_seed=scheme.body_seed,
+                isa_seed=scheme.isa_seed,
+            )
         )
     )
 
