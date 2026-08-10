@@ -24,6 +24,7 @@ from r2morph.mutations.code_virtualization_fold import arith_fold
 from r2morph.mutations.code_virtualization_region_compare import compare_compute
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
+    _KEY_QWORD_SLOT,
     _VSP_OFFSET,
     _VSTACK_BASE,
     _indexed_address_asm,
@@ -38,10 +39,18 @@ from r2morph.mutations.code_virtualization_region_shift import shift_flag_captur
 
 _VSP = hex(_VSP_OFFSET)
 _VBASE = hex(_VSTACK_BASE)
+# Operand-stack cipher: every vstack cell is stored XOR'd with the self-checksum
+# qword broadcast (the same key slot the operand cipher materializes at entry) and
+# un-XOR'd on pop. The key is the opaque runtime checksum, so a decompiler renders
+# the cells as ``v ^ (0x0101010101010101 * v_checksum)`` rather than plaintext
+# micro-op operands, and it cannot fold the XOR away. Cells are only ever touched by
+# push/pop here, so there is no entry/exit boundary to cipher.
+_VKEY = f"qword ptr [rsp+{_KEY_QWORD_SLOT}]"
 
-# Push the value in rax onto the vstack and bump the depth pointer.
+# Push the value in rax onto the vstack (ciphered) and bump the depth pointer.
 _PUSH_RAX = (
     f"  mov r9, qword ptr [rsp+{_VSP}]\n"
+    f"  xor rax, {_VKEY}\n"
     f"  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
     "  add r9, 8\n"
     f"  mov qword ptr [rsp+{_VSP}], r9\n"
@@ -66,7 +75,7 @@ def _vpop_handler_asm(key: str) -> str:
         f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
         "  mov qword ptr [rsp+r8*8], rax\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
         "  add rsi, 2\n  jmp vm_dispatch\n"
@@ -94,7 +103,7 @@ def _frestore_handler_asm() -> str:
     return (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
         f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], rax\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
         "  add rsi, 1\n  jmp vm_dispatch\n"
@@ -133,9 +142,9 @@ def _vbinop_handler_asm(handler_key: str, key: str, arith_variant: int = 0) -> s
     body = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
         "  sub r9, 8\n"
-        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n  xor r10, {_VKEY}\n"
     )
     if mnemonic == "sub":
         body += "  neg rax\n"
@@ -143,6 +152,7 @@ def _vbinop_handler_asm(handler_key: str, key: str, arith_variant: int = 0) -> s
     if width == 32:
         body += "  mov r10d, r10d\n"
     body += (
+        f"  xor r10, {_VKEY}\n"
         f"  mov qword ptr [rsp+r9+{_VBASE}], r10\n"
         "  add r9, 8\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
@@ -173,9 +183,9 @@ def _vbinopsynth_handler_asm(handler_key: str, key: str, flag_variant: int = 0, 
     body = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
         "  sub r9, 8\n"
-        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n  xor r10, {_VKEY}\n"
     )
     # Save the originals for the synthesis (a and b before any negation) and park the
     # result cell index in r8, which survives the flag synthesis.
@@ -188,6 +198,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: str, flag_variant: int = 0, 
     body += _synth_flags_asm(width, mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     body += (
+        f"  xor r10, {_VKEY}\n"
         f"  mov qword ptr [rsp+r8+{_VBASE}], r10\n"
         "  lea r9, [r8+8]\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
@@ -217,9 +228,9 @@ def _vcmpsynth_handler_asm(
     body = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
         "  sub r9, 8\n"
-        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov r10, qword ptr [rsp+r9+{_VBASE}]\n  xor r10, {_VKEY}\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
     # Save the originals for the synthesis (a and b before any negation).
@@ -268,7 +279,7 @@ def _vstore_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
     pop = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n  xor rbx, {_VKEY}\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
     body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
@@ -290,7 +301,7 @@ def _vstoreidx_handler_asm(
     pop = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n  xor rbx, {_VKEY}\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
     body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
@@ -347,7 +358,7 @@ def _vstorerip_handler_asm(
     pop = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n  xor rbx, {_VKEY}\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
     body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
@@ -447,7 +458,7 @@ def _vshiftreg_handler_asm(handler_key: str, key: str) -> str:
     body = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
         f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         "  mov rcx, qword ptr [rsp+r8*8]\n"
         f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
@@ -455,6 +466,7 @@ def _vshiftreg_handler_asm(handler_key: str, key: str) -> str:
     body += f"  {mnemonic} rax, cl\n" if width == 64 else f"  {mnemonic} eax, cl\n"
     body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
     body += (
+        f"  xor rax, {_VKEY}\n"
         f"  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
         "  add r9, 8\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
@@ -481,7 +493,7 @@ def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> s
     body = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp+r9+{_VBASE}]\n  xor rax, {_VKEY}\n"
         f"  movzx ecx, byte ptr [rsi+1]\n  xor cl, {key}\n  xor cl, r13b\n"
     )
     if is_rotate:
@@ -498,6 +510,7 @@ def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> s
     else:
         body += shift_flag_capture_asm(shift_variant, _FLAGS_OFFSET)
     body += (
+        f"  xor rax, {_VKEY}\n"
         f"  mov qword ptr [rsp+r9+{_VBASE}], rax\n"
         "  add r9, 8\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
