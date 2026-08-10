@@ -89,3 +89,52 @@ accesses must flip together in one commit, gated by the full real-exec suite.
 Do not merge unless the full real-exec suite is green — a partial encryption is
 caught there (as the rejected rsp-carve-out attempt was, by 18 memory-handler
 failures).
+
+## Implementation recipe (derived; the vstack landed with this exact method)
+
+Key operands (module constants in region_handlers): the checksum qword key is a
+uniform byte broadcast, so one slot reads at any width —
+`_RFK_Q/D/W/B = "{qword|dword|word|byte} ptr [rsp+_KEY_QWORD_SLOT]"`. A sub-width
+read/write needs no merge: the untouched upper lanes stay validly encrypted.
+
+Per-site rules:
+- **Every slot read** `mov REG, <w> ptr [rsp+rN*8]` → append `xor REG, <w>-key`.
+  Universally safe (a slot always holds a real register value; decrypt → real),
+  regardless of whether the value is used as data or an address base. Most are two
+  recurring width-ternary patterns (src→rax/eax off r9, dst→r10/r10d off r8) that
+  fold with one `replace_all` each.
+- **Flag-dead / mov result write** `mov <w> ptr [rsp+rN*8], REG` → prepend
+  `xor REG, <w>-key`. REG is dead after (jmp follows), and no flag capture follows,
+  so the encrypting xor's flag clobber is harmless.
+- **Flag-LIVE RMW write** (`{op} qword [slot], rax; pushfq` and the 32-bit
+  `mov r11d,[slot]; {op} r11d,eax; mov [slot],r11; pushfq`): the encrypting xor
+  sets flags, so it must NOT sit between the op and `pushfq`. Restructure to
+  `mov r11,[slot]; xor r11,key (decrypt); {op} r11,rax; pushfq; pop [FLAGS];
+  xor r11,key (encrypt); mov [slot],r11`. This is the delicate class — handle each
+  explicitly, never mechanically.
+- **ALU-operand read** (`imul rax,[slot]`): load to a scratch first
+  (`mov r11,[slot]; xor r11,key; imul rax,r11`).
+- **Sub-width setcc/movx** (`mov byte [slot], cl`, `mov r11b, byte [slot]`): use
+  `_RFK_B/_RFK_W` at the matching width; partial stores leave upper lanes encrypted.
+- **div implicit rax/rdx**: the divisor slot read decrypts; rax/rdx come from
+  already-decrypted slots, so no extra work beyond the standard read rule.
+
+Boundaries (region entry in region_codegen `_interpreter_asm`; nesting entry in
+region_nesting `build_nested_region_blob`):
+- The GP spill runs BEFORE the key exists → after the key-materialize block, add a
+  post-key pass that re-reads each of the 15 spilled data slots and XORs them in
+  place (`mov rax,[slot]; xor rax,_RFK_Q; mov [slot],rax`).
+- The relocated-rsp write in entry_setup runs AFTER the key → encrypt inline.
+- The call-path rsp read (`mov rsp, qword ptr [r12+slot[RSP_INDEX]*8]`) reads the
+  encrypted rsp with r12 as base while overwriting rsp → decrypt via r12:
+  `mov rsp,[r12+..]; xor rsp, qword ptr [r12+_KEY_QWORD_SLOT]`.
+- `reload_seq` (exit restore) is emitted INSIDE the vret/exit handler bodies, so
+  its reads are covered by the standard read rule automatically.
+
+Nesting scope: `handler_instances_asm` is SHARED by region and nesting, so every
+handler-body edit covers both VMs — only the two entry sequences (spill pass +
+rsp write, once each) are nesting-specific. This roughly halves the surface.
+
+Gate: full `test_code_virtualization_real.py` (114 tests, 87 fixtures across every
+handler family). Commit only when green; otherwise revert so the branch never
+carries a partial (misdecoding) cipher.
