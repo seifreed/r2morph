@@ -119,6 +119,20 @@ Per-site rules:
 - **div implicit rax/rdx**: the divisor slot read decrypts; rax/rdx come from
   already-decrypted slots, so no extra work beyond the standard read rule.
 
+The relocated program rsp is IN the encrypted array (`rsp_off = slot[RSP_INDEX]*8`,
+inside `[0x00,0x80)`) — it cannot be carved out (see the rejected attempt above), so
+every one of the ~41 `rsp_off` accesses is a slot access under this cipher:
+- push/pop/mov-rsp/leave/pushi read or write `[rsp+rsp_off]` → decrypt on read,
+  encrypt on write, exactly like a data slot.
+- `_rspadj_handler_asm` does `{op} qword [rsp+rsp_off], rax; pushfq` — a flag-LIVE
+  RMW on the rsp slot → apply the flag-RMW restructure (decrypt→op→pushfq→encrypt).
+- the codegen `vcall`/`vret` rsp reads/writes and the call-path
+  `mov rsp,[r12+slot[RSP_INDEX]*8]` (decrypt via r12) and the entry_setup rsp write.
+This puts the true surface near ~130 sites (≈90 GP-data + ≈41 rsp), which is why
+this is a dedicated multi-hour pass, not a single-turn edit. A partial application
+(some rsp accesses ciphered, some not) misdecodes the program stack pointer — a
+wrong address, caught by the pushpop/leave/prologue/call fixtures.
+
 Boundaries (region entry in region_codegen `_interpreter_asm`; nesting entry in
 region_nesting `build_nested_region_blob`):
 - The GP spill runs BEFORE the key exists → after the key-materialize block, add a
