@@ -28,12 +28,31 @@ indexed/encrypted array the decompiler cannot read as a plain register file.
 Handlers index slots dynamically (`[rsp+rN*8]`, rN from the bytecode), so the
 rsp slot cannot be statically exempted while it lives in the indexed array.
 
-## De-risking insight
+## Rejected: separating the program rsp (gate-disproven)
 
-Move the relocated program rsp **out of the indexed array into its own dedicated
-frame slot** first. Then only the 15 pure-data slots are encrypted; the 41
-pointer uses stay plaintext and untouched by the cipher. This collapses the
-correctness surface from "88 data + 41 pointer" to "88 data".
+The first attempt moved the relocated program rsp into its own dedicated slot
+outside the array, on the premise that rsp is never a dynamic slot operand (the
+register-*value* decoder does reject it). The real-exec gate rejected this: 18
+memory-operand handlers failed. rsp *is* reached dynamically — not as a value
+operand but as a **memory-addressing base register**. Stack-relative addressing
+(`[rsp+disp]`, ubiquitous for locals) decodes base=RSP_INDEX and reads the rsp
+value from the array slot at runtime, so pulling rsp out of the array starves
+every stack-relative load/store. The relocated rsp must stay in the array.
+
+## Correct model: uniform encryption, no special slot
+
+Because rsp is read dynamically as a memory base like any other register, there
+is no slot to exempt. Encrypt the whole array uniformly: **decrypt on every slot
+read, encrypt on every slot write, with no exceptions.** rsp then rides the
+cipher like the rest and every base-register read decrypts it back before use —
+consistent by construction. This is conceptually simpler than a carve-out but
+covers more sites: the data-operand loads/stores, the memory-handler
+base-register loads, the push/pop/rspadj/leave and call-path rsp reads, plus the
+entry spill and exit reload.
+
+Key timing: the checksum-broadcast key slots are materialized *after* the entry
+spill, so the spill cannot encrypt inline — add a short post-key pass that
+re-reads each occupied slot and XORs it in place once the key is ready.
 
 ## Key material (reuse, no new setup)
 
@@ -45,19 +64,28 @@ slot for 32-bit accesses). The key is checksum-derived, so IDA cannot fold the
 XOR to plaintext — the frame renders as `v ^ (0x0101010101010101 * v_checksum)`,
 exactly like the already-hidden operand cipher and anti-debug constants.
 
-## Stages (one gated commit each)
+## Execution (atomic, one gated commit)
 
-1. **Separate program-rsp** into a dedicated non-indexed frame slot; route the
-   41 `rsp_off` uses to it; drop rsp from the indexed array. Behavior-preserving.
-   Gate: the rsp fixtures (movtorsp, pushpop, pushimm, leave, prologue) plus the
-   full suite stay green.
-2. **Encrypt the 15 GP data slots**, all-or-nothing atomically: encrypt on entry
-   spill, decrypt on exit reload, decrypt-on-load / encrypt-on-store at every
-   handler site (including the ALU-operand sites, restructured to load→op). Use
-   the reused key slots. Gate: full real-exec suite green.
-3. **Nesting parity + XMM** as needed for FP regions.
-4. **IDA verify**: the frame values render as checksum-keyed XORs, no plaintext
-   register moves; dispatch stays opaque; fixtures still run.
+The encryption is all-or-nothing: any slot access that reads plaintext where the
+array now holds ciphertext (or vice-versa) misdecodes, so the whole array's
+accesses must flip together in one commit, gated by the full real-exec suite.
 
-Do not merge a stage whose gate is not green — a partial encryption (some slots
-encrypted, some not) misdecodes and is caught by the suite.
+1. **Enumerate every slot access** — data loads/stores, memory-handler
+   base-register loads, push/pop/rspadj/leave, the call-path rsp read, the entry
+   spill, the exit reload — across region_handlers / region_microops /
+   region_fp_handlers / region_codegen / region_nesting.
+2. **Wrap each** with the reused checksum key: `xor REG, <key slot>` (width-matched
+   dword/qword) after every load, before every store. ALU-operand sites
+   (`imul rax,[slot]`, `add [slot],rax`) restructure to load→decrypt→op→
+   encrypt→store.
+3. **Post-key spill encryption pass**: after the key slots are materialized,
+   re-read each occupied array slot and XOR it in place (the spill ran before the
+   key existed).
+4. **Nesting + XMM parity.**
+5. **IDA verify**: frame values render as checksum-keyed XORs
+   (`v ^ (0x0101010101010101 * v_checksum)`), no plaintext register moves;
+   dispatch stays opaque; the dataset fixtures still run.
+
+Do not merge unless the full real-exec suite is green — a partial encryption is
+caught there (as the rejected rsp-carve-out attempt was, by 18 memory-handler
+failures).
