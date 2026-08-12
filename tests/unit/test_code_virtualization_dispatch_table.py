@@ -38,6 +38,24 @@ def test_scheme_generates_nonzero_table_key() -> None:
     assert 1 <= scheme.table_key < (1 << 32)
 
 
+def test_scheme_gp_slots_leave_a_hole_in_the_contiguous_context_array() -> None:
+    schemes = [build_region_scheme(_tiny_region(), random.Random(seed)) for seed in range(64)]
+    assert all(set(range(16)) - set(scheme.slot_perm) for scheme in schemes)
+
+
+def test_scheme_gp_slots_use_safe_outlier_cells() -> None:
+    schemes = [build_region_scheme(_tiny_region(), random.Random(seed)) for seed in range(64)]
+    assert all(set(scheme.slot_perm) & {0x90 // 8, 0xA8 // 8} for scheme in schemes)
+
+
+def test_scheme_gp_slots_do_not_overlap_flags_or_checksum() -> None:
+    schemes = [build_region_scheme(_tiny_region(), random.Random(seed)) for seed in range(64)]
+    assert all(
+        {scheme.flags_offset, scheme.checksum_offset}.isdisjoint(slot * 8 for slot in scheme.slot_perm)
+        for scheme in schemes
+    )
+
+
 def test_dispatch_decrypts_the_table_without_exposing_a_constant_key() -> None:
     region = _tiny_region()
     scheme = build_region_scheme(region, random.Random(0))

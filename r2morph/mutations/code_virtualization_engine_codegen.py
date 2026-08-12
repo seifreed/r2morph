@@ -208,6 +208,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # so control flows handler -> decode -> next handler with no shared hub block
     # and no two copies sharing a byte layout.
     interpreter = "".join(lines[:handler_start]) + cipher_register_slots(
-        "".join(lines[handler_start:]), layout.key_qword_offset
+        "".join(lines[handler_start:]),
+        frozenset(index * 8 for index in slot),
+        layout.key_qword_offset,
     )
     return thread_back_jumps(interpreter, make_decode)

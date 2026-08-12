@@ -242,7 +242,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     scheme.isa_seed,
                 ),
                 junk_rng,
-            )
+            ),
+            frozenset(index * 8 for index in slot),
         )
     )
 
@@ -283,10 +284,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     interpreter = thread_back_jumps("".join(lines), make_decode)
     # Relocate the flags slot: every flag capture/restore and the branch-free jcc's
     # flags read renders as the memory operand `[rsp + 128]` (the canonical 0x80
-    # slot). 128 is unique to the flags slot in this interpreter - the GP slots are
-    # <= 120, the checksum sits at >= 0x88 (never 128), and the xmm area is indexed
-    # (`[rsp + r8 + ...]`) - so this rewrites exactly the flag references, moving the
-    # slot off its fixed frame offset without threading it through every handler.
+    # slot). GP outliers use 0x90/0xA8, the checksum never uses 0x80, and the xmm
+    # area is indexed (`[rsp + r8 + ...]`), so this rewrites exactly the flag
+    # references without threading the offset through every handler.
     return re.sub(r"\[rsp\s*\+\s*128\]", f"[rsp + {scheme.flags_offset}]", interpreter)
 
 

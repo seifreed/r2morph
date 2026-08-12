@@ -1,8 +1,8 @@
 """Post-process VM handler assembly to encrypt its GP register file.
 
-The region VM keeps the program's 16 GP registers in a flat frame array at
+The region VM keeps the program's 16 GP registers in per-build frame slots at
 ``[rsp + slot*8]`` (the relocated program rsp included, at ``[rsp + rsp_off]``).
-Stored in the clear, a decompiler reads that array as a plain register context.
+Stored in the clear, a decompiler reads those slots as a plain register context.
 
 This module ciphers it in one place instead of at every handler site: it rewrites
 each register-slot ``mov`` in generated handler assembly to XOR the value with
@@ -28,16 +28,13 @@ from __future__ import annotations
 
 import re
 
-# Must match code_virtualization_region_handlers._KEY_QWORD_SLOT and _FLAGS_OFFSET.
+# Must match code_virtualization_region_handlers._KEY_QWORD_SLOT.
 _KEY_QWORD_SLOT = 0x208
-_GP_ARRAY_END = 0x80  # the 16 GP slots occupy [0x00, 0x80); the flags word starts here
 
 # A register-file slot displacement: a scaled register index (dynamic operand - the
 # index register may be any GP register, since the per-instance renamer rewrites the
-# scratch pool to named registers like rax/rbx) or a plain decimal below the GP array
-# end (the fixed spill/reload/rsp slot offsets, emitted as decimals). Fixed frame
-# words - flags 0x80, checksum, the key slots, the virtual stack ``[rsp+r+0x288]`` -
-# are all at or above 0x80, or carry a ``r+`` term or a hex offset, so none match.
+# scratch pool to named registers like rax/rbx) or a plain decimal in the explicit
+# slot-offset set supplied by the scheme. Fixed frame words therefore cannot match.
 # Whitespace around ``+`` and ``*`` is optional: the GP handlers emit ``[rsp+r8*8]``,
 # the FP handlers ``[rsp + r9*8]``.
 _DISP = r"(?:\w+\s*\*\s*8|\d+)"
@@ -49,23 +46,27 @@ def _key(width: str, key_qword_offset: int) -> str:
     return f"{width} ptr [rsp+{key_qword_offset}]"
 
 
-def _is_slot(disp: str) -> bool:
-    """A scaled index is always a slot; a fixed decimal is one only below the array end."""
-    return "*" in disp or int(disp) < _GP_ARRAY_END
+def _is_slot(disp: str, slot_offsets: frozenset[int]) -> bool:
+    """A scaled index is always a slot; a fixed decimal must name a scheme slot."""
+    return "*" in disp or int(disp) in slot_offsets
 
 
-def cipher_register_slots(asm: str, key_qword_offset: int = _KEY_QWORD_SLOT) -> str:
+def cipher_register_slots(
+    asm: str,
+    slot_offsets: frozenset[int],
+    key_qword_offset: int = _KEY_QWORD_SLOT,
+) -> str:
     """Return ``asm`` with every GP register-slot load decrypted and store encrypted."""
     out: list[str] = []
     for line in asm.split("\n"):
         read = _READ_RE.match(line)
-        if read and _is_slot(read.group(4)):
+        if read and _is_slot(read.group(4), slot_offsets):
             indent, reg, width, _ = read.groups()
             out.append(line)
             out.append(f"{indent}xor {reg}, {_key(width, key_qword_offset)}")
             continue
         write = _WRITE_RE.match(line)
-        if write and _is_slot(write.group(3)):
+        if write and _is_slot(write.group(3), slot_offsets):
             indent, dest, _, reg = write.groups()
             width = dest.split(" ", 1)[0]
             out.append(f"{indent}xor {reg}, {_key(width, key_qword_offset)}")

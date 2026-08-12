@@ -46,6 +46,7 @@ logger = logging.getLogger(__name__)
 
 _RAX_SLOT = GP_REGISTERS.index("rax")
 _RDX_SLOT = GP_REGISTERS.index("rdx")
+_CANONICAL_FLAGS_OFFSET = 0x80
 
 
 @dataclass
@@ -484,7 +485,15 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
         count = multiplicity[key]
         dup[key] = tuple(indices[cursor : cursor + count])
         cursor += count
-    slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
+    # Leave at least one hole in the historical 16-qword context array and place
+    # the displaced register in frame cells unused by both single and nested VMs.
+    # This keeps the frame size and every other region stable while denying a
+    # decompiler one contiguous register-context signature.
+    outlier_slots = (0x90 // 8, 0xA8 // 8)
+    outlier_count = rng.randint(1, len(outlier_slots))
+    selected_slots = rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS) - outlier_count)
+    selected_slots.extend(rng.sample(outlier_slots, outlier_count))
+    slot_perm = tuple(rng.sample(selected_slots, len(selected_slots)))
     xor_key = rng.randrange(1, 256)
     junk_seed = rng.randrange(1 << 31)
     table_key = rng.randrange(1, 1 << 32)
@@ -495,8 +504,10 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     # frame's free middle, qword-aligned and distinct: the checksum in [0x88, 0x100)
     # (never 0x80, which stays reserved as the flag handlers' rendered slot), and the
     # flags slot anywhere in [0x80, 0x100) except the checksum's slot.
-    checksum_offset = rng.randrange(0x88, 0x100, 8)
-    flags_offset = rng.choice([off for off in range(0x80, 0x100, 8) if off != checksum_offset])
+    occupied_offsets = {slot * 8 for slot in slot_perm}
+    free_offsets = [off for off in range(0x80, 0x100, 8) if off not in occupied_offsets]
+    checksum_offset = rng.choice([off for off in free_offsets if off != _CANONICAL_FLAGS_OFFSET])
+    flags_offset = rng.choice([off for off in free_offsets if off != checksum_offset])
     # Drawn last so adding the ISA-personality seed does not shift any earlier field's
     # value for a given seed. Selects this build's handler-implementation personality
     # (the flag-synthesis spelling; see code_virtualization_region_isa).

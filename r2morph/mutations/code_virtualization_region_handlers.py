@@ -44,8 +44,9 @@ class IntegerHandlerConfig:
     compare_variant: int = 0
 
 
-# Stack frame: 16 GP context slots in [0x00, 0x80), the captured RFLAGS and the
-# self-checksum byte in [0x80, 0x100) (both slots relocated per build), the 16 XMM
+# Stack frame: 16 GP context slots selected from [0x00, 0x80) plus the unused
+# 0x90/0xA8 cells, the captured RFLAGS and self-checksum in the remaining
+# [0x80, 0x100) cells (both relocated per build), the 16 XMM
 # save slots (16 bytes each) in [0x100, 0x200), the System V red zone in [0x200,
 # 0x280), and the interpreter's virtual operand stack in [0x280, 0x300). Nothing
 # reads the red zone by offset, so riding it below the new vstack window only

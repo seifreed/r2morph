@@ -39,7 +39,7 @@ re-verified by decompiling a freshly virtualized `fixtures/dataset/elf_vm_incall
   and its bytecode is XORed with the checksum byte, so it carries no `xor_key` literal
   either.
 
-- **Register files — checksum-ciphered in all three VMs.** All 16 GP slots, including the
+- **Register files — checksum-ciphered in all three VMs, scattered in region VMs.** All 16 GP slots, including the
   relocated program `rsp`, are stored XORed with the runtime checksum broadcast;
   every handler decrypts on read and encrypts on write. A fresh IDA run over seed
   `20260811` renders the entry context as 15 independent
@@ -47,8 +47,12 @@ re-verified by decompiling a freshly virtualized `fixtures/dataset/elf_vm_incall
   dispatch, rather than plaintext register values. The same transform now covers
   the straight-line engine's per-build frame layout. IDA renders its entry as 15
   checksum-keyed slot expressions, its relocated `rsp` as a keyed pointer, and its
-  exit reloads as keyed reads. The physical array remains contiguous, so this
-  closes plaintext static recovery, not runtime tracing.
+  exit reloads as keyed reads. Region and nested schemes now move one or two GP
+  slots into safe outlier cells on every build, leaving holes in the historical
+  16-qword array. IDA confirms the change: the previous consecutive locals at
+  `rsp+0x100..0x178` became a gapped set with holes at `0x110`, `0x118`, `0x180`
+  and `0x188`, plus outliers at `0x190` and `0x1A8`. The straight-line engine
+  remains physically contiguous, and runtime tracing can still observe all three.
 
 - **Payload segment multiplicity — reduced.** The injector now relocates the
   program-header table once and extends that terminal RX load for later VM blobs.
@@ -77,9 +81,10 @@ re-verified by decompiling a freshly virtualized `fixtures/dataset/elf_vm_incall
 
 **Still recovered by the decompiler, and still below the reference protectors:** the
 self-checksum loop and anti-debug probe *structure* (the checksum loop, tag scan and
-timestamp reads) remain visible even though their constants are gone; the ciphered
-register array remains contiguous; and the payload is structurally obvious (one
-appended RX `PT_LOAD`, large interpreter functions). These are the remaining
+timestamp reads) remain visible even though their constants are gone; the
+spill/encrypt register-frame pattern remains visible (and the straight-line engine
+is still contiguous); and the payload is structurally obvious (one appended RX
+`PT_LOAD`, large interpreter functions). These are the remaining
 milestones and each is a dedicated redesign — see the gap list.
 
 ## Method
@@ -104,6 +109,14 @@ bytes), preserved exit code 45, and produced one appended RX `LOAD`. IDA attribu
 only 225 instructions to the interpreter entry, stopped at its opaque indirect
 jump, and left the handler body range unattributed.
 
+The 2026-08-12 scattered-frame recheck used `elf_vm_redzone_x86_64`, seed
+`20260812`, nesting depth 1 and SHA-256
+`50139691a46424fcffb8b8e9666b2e092c0277249130e25fff68f79dd96f5c8c`.
+It virtualized the caller and red-zone callee, preserved exit code 42, and produced
+one appended RX `LOAD` (`0x202000..0x2082e1`). IDA resolved the two interpreters as
+8,833 and 15,525-byte functions and decompiled the scattered checksum-ciphered
+frame described above.
+
 ## What the decompiler recovers
 
 The interpreter decompiles through its prologue and stops at an opaque indirect
@@ -115,7 +128,7 @@ pseudocode, with no manual work:
 | Dispatch | opaque bounded indirect `jmp rax`; no switch or handler attribution |
 | Opcode cipher | runtime self-checksum plus stream position; no key literal |
 | Operand cipher | checksum-broadcast XOR; no build-constant key |
-| Register file | contiguous stack array whose values are checksum-ciphered |
+| Register file | gapped checksum-ciphered frame in region/nested VMs; contiguous checksum-ciphered array in the engine VM |
 | Self-checksum | two pointers converge from both range ends; range and fold remain explicit |
 | Tracer probe | three unnamed syscalls and an opaque tag compare; scan structure visible |
 | Handler count | roughly 40–65 polymorphic instances, not attributed to the dispatcher |
@@ -217,14 +230,17 @@ folded into it remain visible; only the anti-debug constants were relocated.
    **Closed.** Opcode, operand, dispatch-table, register-file and virtual-stack
    ciphers are keyed by the runtime self-checksum or its lane broadcast; no separate
    build-constant key remains in the decompiled decode paths.
-4. **The register file is a flat stack array** with a computable index, so a
+4. **The register file is a recognizable stack context** with a computable index, so a
    devirtualizer can name every virtual register.
 
    **Substantially closed for static recovery.** The per-build slot permutation
    already breaks positional naming, and every GP slot is now checksum-ciphered at
    rest across the region, nested and straight-line engine VMs. IDA sees the entry encryption but cannot
-   fold the runtime key or recover plaintext handler accesses. The remaining tell is
-   the contiguous array itself; a runtime tracer can still observe decrypt/use/store.
+   fold the runtime key or recover plaintext handler accesses. Region and nested
+   builds now guarantee at least one hole and one safe outlier in the GP layout, so
+   their physical context is no longer one contiguous 16-qword array. The engine
+   layout remains contiguous, the spill/encrypt pattern is still recognizable, and
+   a runtime tracer can still observe decrypt/use/store.
 5. **Integrity and anti-debug are observable and centralized** — one checksum byte,
    one slot, folded by two probes whose ranges and algorithms are all visible.
 

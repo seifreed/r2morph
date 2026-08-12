@@ -533,7 +533,8 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                     ),
                     junk_rng,
                     extra,
-                )
+                ),
+                frozenset(index * 8 for index in slot),
             )
         )
 
