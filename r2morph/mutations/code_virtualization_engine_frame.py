@@ -1,13 +1,13 @@
 """Per-build frame-layout relocation for the engine VM.
 
-Besides the 16 GP register slots, the interpreter's private frame holds a
+Besides the 16 scattered GP register slots, the interpreter's private frame holds a
 self-checksum byte, the xmm save area, and the micro-op virtual operand stack.
 Placing those at fixed offsets every build hands a devirtualizer a stable map of
 the VM's internal state - the checksum slot in particular is a named signature.
 This module packs the three at per-build-randomized offsets (order permuted, with
 jitter) inside the movable middle of the frame, while keeping three things fixed:
-the frame *size* (so the ``sub rsp, N`` entry signature is stable), the 16 GP
-slots at the base (their register->slot shuffling is ``slot_perm``'s job), and the
+the frame *size* (so the ``sub rsp, N`` entry signature is stable), the GP
+candidate window at the base (their register->slot selection is ``slot_perm``'s job), and the
 System V red zone pinned at the top so a leaf callee's red-zone data survives.
 
 The layout is self-consistent by construction: every offset the interpreter emits
@@ -22,19 +22,19 @@ from dataclasses import dataclass
 
 import r2morph.core.randomness as random
 
-# The 16 GP register slots occupy [0, _GP_REGION_END); the System V red zone is
+# GP register slots are selected from [0, _GP_REGION_END); the System V red zone is
 # pinned to the top _RED_ZONE_SIZE bytes. The relocatable regions live between.
-_GP_REGION_END = 0x80
+_GP_REGION_END = 0xA0
 _RED_ZONE_SIZE = 0x80
 
 # Byte budgets for the relocatable regions. The checksum needs one byte but takes
 # a qword cell for alignment; the xmm save area is 16 slots of 16 bytes; the vsp
 # is a single pointer word; the micro-op stack's peak depth is two cells (each
-# arithmetic op pushes at most two and pops back to empty), so eight is ample.
+# arithmetic op pushes at most two and pops back to empty), so four is ample.
 _CHECKSUM_SIZE = 0x8
 _XMM_SIZE = 0x100
 _VSP_SIZE = 0x8
-_VSTACK_SIZE = 0x40
+_VSTACK_SIZE = 0x20
 # The operand-cipher key's 32/64-bit self-checksum broadcasts, each a qword cell,
 # precomputed once at entry so handlers decrypt operands against the runtime
 # checksum rather than a build constant.
@@ -95,14 +95,13 @@ def build_frame_layout(frame_size: int, rng: random.Random) -> FrameLayout:
     )
 
 
-# The canonical fixed layout, used when a build carries no frame seed (frame_seed
-# 0) so existing behaviour is reproduced byte-for-byte.
+# The canonical fixed layout, used when a build carries no frame seed.
 DEFAULT_FRAME_LAYOUT = FrameLayout(
     frame_size=0x290,
-    checksum_offset=0x80,
-    xmm_offset=0x90,
-    vsp_offset=0x190,
-    vstack_base=0x198,
+    checksum_offset=0xA0,
+    xmm_offset=0xB0,
+    vsp_offset=0x1B0,
+    vstack_base=0x1B8,
     key_dword_offset=0x1D8,
     key_qword_offset=0x1E0,
 )

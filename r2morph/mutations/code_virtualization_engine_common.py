@@ -293,26 +293,15 @@ def _live_junk_asm(rng: random.Random, index: int) -> str:
 
 
 # Private stack frame the interpreter carves below the caller's rsp. The
-# 16 GP context slots occupy [0x00, 0x80); the runtime self-checksum byte sits at
-# 0x80; the 16 xmm save slots (16 bytes each) occupy [0x90, 0x190); the virtual
-# operand stack (micro-op VM) occupies [0x190, 0x210) - its pointer word at 0x190
-# and its cells from 0x198; the System V red zone [original_rsp-128, original_rsp)
+# 16 GP context slots are scattered across [0x00, 0xA0); the runtime
+# self-checksum, xmm save slots and virtual operand stack are packed per build in
+# [0xA0, 0x210); the System V red zone [original_rsp-128, original_rsp)
 # maps to the top [0x210, 0x290) and is left untouched, so leaf-function red-zone
 # data survives. The vstack sits in interpreter-private space below the red zone,
 # the same trust class as the xmm save area. The xmm slots are only spilled/reloaded
 # when the run contains an FP op (see ``has_fp``); a GP-only run pays the frame but
 # not the save/restore.
 _FRAME_SIZE = 0x290
-# Frame byte holding the interpreter's runtime self-checksum (below the xmm area).
-_CHECKSUM_OFFSET = 0x80
-# Base of the 16-entry, 16-byte-per-slot xmm save area: slot i at this + i*16.
-_XMM_SAVE_OFFSET = 0x90
-# Virtual operand stack for the micro-op VM: a pointer word (current depth in
-# bytes, starts 0) followed by the cells. Reg-reg arithmetic lowers to push/binop/
-# pop primitives that route operands through this stack instead of one handler
-# computing the whole result, so a handler no longer maps one-to-one to a native op.
-_VSP_OFFSET = 0x190
-_VSTACK_BASE = 0x198
 
 
 @dataclass(eq=False, repr=False, slots=True)
@@ -406,7 +395,11 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         dup[op_key] = tuple(indices[cursor : cursor + count])
         cursor += count
     exit_opcode = rng.randrange(total, 256)
-    slot_perm = tuple(rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS)))
+    outlier_slots = tuple(range(len(GP_REGISTERS), 0xA0 // 8))
+    outlier_count = rng.randint(1, len(outlier_slots))
+    selected_slots = rng.sample(range(len(GP_REGISTERS)), len(GP_REGISTERS) - outlier_count)
+    selected_slots.extend(rng.sample(outlier_slots, outlier_count))
+    slot_perm = tuple(rng.sample(selected_slots, len(selected_slots)))
     xor_key = rng.randrange(1, 256)
     table_key = rng.randrange(1, 1 << 32)
     junk_seed = rng.randrange(1 << 31)
