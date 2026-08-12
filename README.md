@@ -72,7 +72,7 @@ pip install "r2morph[all]"           # + frida, hypothesis
 ```bash
 git clone https://github.com/seifreed/r2morph.git
 cd r2morph
-pip install -e ".[dev]"
+pip install -r requirements.txt
 ```
 
 ---
