@@ -24,10 +24,10 @@ _x86_const = pytest.importorskip("unicorn.x86_const")
 _PT_LOAD = 1
 _EXIT_SYSCALL = 0x3C
 _PAGE_SIZE = 0x1000
-# The stack sits below every base we load images at (0 for a linked-at-zero
-# image, 0x5555_5555_4000 for a conventional PIE base), so a biased image can
-# never overlap it. RSP starts mid-region so both pushes and reads stay mapped.
-_STACK_BASE = 0x200000
+# Keep the stack in a high canonical user-space range, clear of both ordinary
+# images and large appended VM segments. RSP starts mid-region so both pushes
+# and reads stay mapped.
+_STACK_BASE = 0x7FFF_0000_0000
 _STACK_SIZE = 0x10000
 _STACK_TOP = _STACK_BASE + _STACK_SIZE // 2
 # Instruction cap to bound a runaway emulation; sized well above a faithful run.
