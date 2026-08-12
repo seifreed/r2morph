@@ -10,10 +10,9 @@ from __future__ import annotations
 
 import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_antidebug import (
-    timing_fold_asm,
     tracer_const_island_asm,
-    tracer_detect_asm,
 )
+from r2morph.mutations.code_virtualization_bootstrap import build_bootstrap_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine_common import (
     _FRAME_SIZE,
@@ -89,37 +88,6 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # dispatch folds into every opcode decrypt; runs after the register spill. The
     # trailing offset table (encrypted after assembly) is excluded from the span.
     lines.append(checksum_prologue_asm(scheme.xor_key, slot=layout.checksum_offset, end_label="vm_table"))
-    # Timing anti-debug woven into the same checksum slot: a single-stepped run
-    # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
-    # 0x00 (the counter reads sit inside the checksummed range, so no encoder or
-    # checksum change is needed and the benign build is bit-identical).
-    # Tracer anti-debug into the same checksum slot: an attached ptrace debugger
-    # (TracerPid != 0) folds 0xFF and misdecodes every opcode; an untraced native
-    # run and a Unicorn emulation both fold 0x00, so the benign build is unchanged.
-    # Emit the timing and tracer folds in a per-build order (both fold a benign 0 and
-    # touch only the checksum slot, so order is free) to vary the prologue signature.
-    anti_debug = [
-        timing_fold_asm(scheme.xor_key, slot=layout.checksum_offset),
-        tracer_detect_asm(slot=layout.checksum_offset),
-    ]
-    random.Random(scheme.junk_seed ^ 0x5EED).shuffle(anti_debug)
-    lines.extend(anti_debug)
-    # Precompute the operand-cipher key broadcasts from the (now final) checksum byte
-    # into their frame slots, after the anti-debug folds so a corrupted checksum also
-    # corrupts the operand key. rax/rcx are free scratch here.
-    lines.append(
-        f"  movzx eax, byte ptr [rsp + {layout.checksum_offset}]\n  imul eax, eax, 0x1010101\n"
-        f"  mov dword ptr [rsp + {layout.key_dword_offset}], eax\n"
-        f"  movzx rax, byte ptr [rsp + {layout.checksum_offset}]\n  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
-        f"  mov qword ptr [rsp + {layout.key_qword_offset}], rax\n"
-    )
-    for index, name in enumerate(GP_REGISTERS):
-        if name != "rsp":
-            lines.append(
-                f"  mov rcx, qword ptr [rsp + {slot[index] * 8}]\n"
-                "  xor rcx, rax\n"
-                f"  mov qword ptr [rsp + {slot[index] * 8}], rcx\n"
-            )
     poly_rng = random.Random(scheme.table_key)
     # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
     # pass XORed in: a faithful interpreter cancels the checksum and a tampered one
@@ -158,7 +126,26 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # next opcode and jumps straight to it. Shuffling the order-independent XOR groups
     # keeps every copy the same length, so assembled size and executed instruction
     # count are unchanged.
-    lines.append(entry_setup + make_decode())
+    key_setup = (
+        f"  movzx eax, byte ptr [rsp + {layout.checksum_offset}]\n  imul eax, eax, 0x1010101\n"
+        f"  mov dword ptr [rsp + {layout.key_dword_offset}], eax\n"
+        f"  movzx rax, byte ptr [rsp + {layout.checksum_offset}]\n"
+        "  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
+        f"  mov qword ptr [rsp + {layout.key_qword_offset}], rax\n"
+    )
+    encrypt_slots = "".join(
+        f"  mov rcx, qword ptr [rsp + {slot[index] * 8}]\n"
+        "  xor rcx, rax\n"
+        f"  mov qword ptr [rsp + {slot[index] * 8}], rcx\n"
+        for index, name in enumerate(GP_REGISTERS)
+        if name != "rsp"
+    )
+    bootstrap, bootstrap_table = build_bootstrap_asm(
+        layout.checksum_offset,
+        scheme.junk_seed,
+        key_setup + encrypt_slots + entry_setup + make_decode(),
+    )
+    lines.append(bootstrap)
     handler_start = len(lines)
 
     # Emit the handler instances in a per-build shuffled order rather than opcode
@@ -199,10 +186,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
 
     table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
-    # The tracer-constant island trails the table (outside the checksummed span,
-    # before the appended bytecode); build_vm_blob patches it once the checksum is
-    # known and accounts for its length when locating the table.
-    lines.append(f"vm_table:\n{table}{tracer_const_island_asm()}bytecode:\n")
+    # The bootstrap table and tracer-constant island trail the main table, outside
+    # the checksummed span and before the appended bytecode.
+    lines.append(f"vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n")
     # Thread the dispatch: every handler tail ends with a back jump to the (now
     # removed) central dispatcher; splice a freshly shuffled decode copy in for each
     # so control flows handler -> decode -> next handler with no shared hub block

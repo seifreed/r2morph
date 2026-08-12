@@ -34,9 +34,12 @@ import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_antidebug import (
     _TRACER_ISLAND_LEN,
     patch_tracer_constants,
-    timing_fold_asm,
     tracer_const_island_asm,
-    tracer_detect_asm,
+)
+from r2morph.mutations.code_virtualization_bootstrap import (
+    BOOTSTRAP_TABLE_SIZE,
+    build_bootstrap_asm,
+    encrypt_bootstrap_table,
 )
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
@@ -91,20 +94,6 @@ class _NestedEncodingContext:
     offsets: list[int]
     lengths: list[int]
     cave_vaddr: int
-
-
-def _shuffled_anti_debug(xor_key: int) -> str:
-    """The timing and tracer anti-debug folds in a per-build order.
-
-    Both fold a benign 0 into the shared checksum slot and touch nothing else, so
-    their order is free; shuffling it denies a fixed prologue probe signature.
-    """
-    folds = [
-        timing_fold_asm(xor_key, slot=_CHECKSUM_OFFSET),
-        tracer_detect_asm(slot=_CHECKSUM_OFFSET),
-    ]
-    random.Random(xor_key ^ 0x5EED).shuffle(folds)
-    return "".join(folds)
 
 
 def _branch_targets(instructions: list[tuple[Any, ...]]) -> set[int]:
@@ -368,7 +357,8 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
         bytecode_offsets[layer] = bytecode_offsets[layer + 1] - context.lengths[layer]
 
     island_start = bytecode_offsets[0] - _TRACER_ISLAND_LEN
-    table_start = island_start - sum(context.counts) * 4
+    bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
+    table_start = bootstrap_start - sum(context.counts) * 4
     checksum = compute_build_checksum(bytes(data[:table_start]), context.schemes[0].xor_key)
     checksum_broadcast = checksum * 0x01010101
     for layer in range(count):
@@ -378,6 +368,7 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
             context.counts[layer],
             checksum_broadcast,
         )
+    encrypt_bootstrap_table(data, bootstrap_start, checksum)
     patch_tracer_constants(data, island_start, checksum)
     try:
         encoded_layers = [
@@ -445,26 +436,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     has_in_function_call = any(item[0] == "vcall" for item in region.instructions)
     floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
 
-    entry = (
-        # Zero the virtual operand stack pointer before any micro-op runs; peeled
-        # flag-dead arith folds through it in the nested layers too.
-        f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
-        + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
-        # Timing + tracer anti-debug folded into the same checksum slot (both fold 0x00
-        # benign, so a single-stepped or ptrace-attached run misdecodes every layer).
-        # Both touch only that slot, so their order is free; emit them in a per-build
-        # order to vary the shared prologue's probe signature.
-        + _shuffled_anti_debug(schemes[0].xor_key)
-        # Precompute the operand-cipher key broadcasts from the (now final) shared
-        # checksum byte into their frame slots: every layer's operand decrypt reads
-        # these instead of a build-constant key. After the anti-debug folds, so a
-        # corrupted checksum also corrupts the operand key across all layers.
-        + f"  movzx eax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul eax, eax, 0x1010101\n"
+    ready = (
+        f"  movzx eax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul eax, eax, 0x1010101\n"
         + f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
         + f"  movzx rax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
         + f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
-        # Encrypt the GP registers spilled before the key existed (mirrors the single
-        # region prologue); handler accesses decrypt on read / encrypt on write.
         + "".join(
             f"  mov rax, qword ptr [rsp+{slot[i] * 8}]\n"
             f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
@@ -476,6 +452,14 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
         + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
+    )
+    bootstrap, bootstrap_table = build_bootstrap_asm(_CHECKSUM_OFFSET, schemes[0].junk_seed, ready)
+    entry = (
+        # Zero the virtual operand stack pointer before any micro-op runs; peeled
+        # flag-dead arith folds through it in the nested layers too.
+        f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
+        + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
+        + bootstrap
     )
 
     # Shared junk stream so duplicate handlers across layers stay distinct.
@@ -564,7 +548,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # handler with no hub block and no two copies sharing a byte layout. One rng
     # seeded from the outer layer's table key keeps the variant sequence
     # deterministic per build.
-    asm = thread_back_jumps(body + tables + island + reservations, lambda: _decode_block(poly_rng))
+    asm = thread_back_jumps(body + tables + bootstrap_table + island + reservations, lambda: _decode_block(poly_rng))
 
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)

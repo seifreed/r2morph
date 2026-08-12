@@ -23,9 +23,12 @@ import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_antidebug import (
     _TRACER_ISLAND_LEN,
     patch_tracer_constants,
-    timing_fold_asm,
     tracer_const_island_asm,
-    tracer_detect_asm,
+)
+from r2morph.mutations.code_virtualization_bootstrap import (
+    BOOTSTRAP_TABLE_SIZE,
+    build_bootstrap_asm,
+    encrypt_bootstrap_table,
 )
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import (
@@ -101,50 +104,6 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # scratch registers it clobbers are already saved. The trailing offset table
     # (encrypted after assembly) is excluded from the checksummed span.
     lines.append(checksum_prologue_asm(scheme.xor_key, slot=scheme.checksum_offset, end_label="vm_table"))
-    # Timing anti-debug woven into the same checksum slot: a single-stepped run
-    # folds 0xFF into the byte and misdecodes every opcode; an untraced run folds
-    # 0x00 (the counter reads sit inside the checksummed range, so the benign build
-    # is bit-identical and neither the encoder nor the checksum computation change).
-    # Tracer anti-debug woven into the same checksum slot: an attached ptrace
-    # debugger (TracerPid != 0 in /proc/self/status) folds 0xFF and misdecodes every
-    # opcode; an untraced native run and a Unicorn emulation both fold 0x00, so the
-    # benign build stays bit-identical and the checksum computation is unchanged.
-    # Emit the timing and tracer folds in a per-build order: both fold a benign 0 and
-    # touch only the shared checksum slot, so their order is free, and shuffling it
-    # denies a fixed checksum->timing->tracer prologue signature.
-    anti_debug = [
-        timing_fold_asm(scheme.xor_key, slot=scheme.checksum_offset),
-        tracer_detect_asm(slot=scheme.checksum_offset),
-    ]
-    random.Random(scheme.junk_seed ^ 0x5EED).shuffle(anti_debug)
-    lines.extend(anti_debug)
-    # Precompute the operand-cipher key broadcasts from the (now final) checksum byte
-    # into their frame slots: the 32- and 64-bit operand decrypts read these instead
-    # of a build-constant key. Runs after the anti-debug folds so a corrupted checksum
-    # (a traced run) also corrupts the operand key and misdecodes, matching the opcode
-    # path. rax/rcx are free scratch here (every GP register is already spilled).
-    lines.append(
-        f"  movzx eax, byte ptr [rsp+{scheme.checksum_offset}]\n"
-        "  imul eax, eax, 0x1010101\n"
-        f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
-        f"  movzx rax, byte ptr [rsp+{scheme.checksum_offset}]\n"
-        "  mov rcx, 0x0101010101010101\n"
-        "  imul rax, rcx\n"
-        f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
-    )
-    # The GP registers were spilled to their slots before the key existed; now that the
-    # key is materialized, encrypt those slots in place so every subsequent handler
-    # access (which decrypts on read, encrypts on write) sees ciphered context. rax is
-    # free scratch here; the relocated-rsp slot is written already-encrypted below.
-    lines.append(
-        "".join(
-            f"  mov rax, qword ptr [rsp+{slot[index] * 8}]\n"
-            f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
-            f"  mov qword ptr [rsp+{slot[index] * 8}], rax\n"
-            for index, name in enumerate(GP_REGISTERS)
-            if name != "rsp"
-        )
-    )
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
@@ -200,7 +159,28 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
     )
-    lines.append(entry_setup + make_decode())
+    key_setup = (
+        f"  movzx eax, byte ptr [rsp+{scheme.checksum_offset}]\n"
+        "  imul eax, eax, 0x1010101\n"
+        f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
+        f"  movzx rax, byte ptr [rsp+{scheme.checksum_offset}]\n"
+        "  mov rcx, 0x0101010101010101\n"
+        "  imul rax, rcx\n"
+        f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
+    )
+    encrypt_slots = "".join(
+        f"  mov rax, qword ptr [rsp+{slot[index] * 8}]\n"
+        f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+        f"  mov qword ptr [rsp+{slot[index] * 8}], rax\n"
+        for index, name in enumerate(GP_REGISTERS)
+        if name != "rsp"
+    )
+    bootstrap, bootstrap_table = build_bootstrap_asm(
+        scheme.checksum_offset,
+        scheme.junk_seed,
+        key_setup + encrypt_slots + entry_setup + make_decode(),
+    )
+    lines.append(bootstrap)
 
     reload_seq = "".join(
         f"  mov {name}, qword ptr [rsp+{slot[index] * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
@@ -253,10 +233,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # Runtime target map for computed jumps (ijmp): a count followed by (map-relative
     # target delta, bytecode offset) pairs the ijmp handler scans to re-enter the VM
     # at a virtualized target. Empty for an ordinary region, so its blob is unchanged.
-    # It is emitted BEFORE vm_table so the dispatch table stays the tail of the
-    # assembled interpreter - build_region_blob locates the table (for its runtime
-    # decryption and the self-checksum) as the last ``total*4`` bytes, so any data
-    # after the table would corrupt both.
+    # It is emitted BEFORE vm_table so build_region_blob can locate the main and
+    # bootstrap tables as the fixed-size suffix before the tracer island.
     #
     # Each key is the link-time delta ``ijmp_map - target`` instead of the target
     # address itself, so the map holds no absolute address and the scan matches at
@@ -270,12 +248,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     if ijmp_targets:
         entries = "".join(f"  .quad ijmp_map - {addr}\n  .long {offset}\n" for addr, offset in ijmp_targets)
         ijmp_map = f"ijmp_map:\n  .long {len(ijmp_targets)}\n{entries}"
-    # The tracer-constant island trails the dispatch table (outside the checksummed
-    # span, before the appended bytecode); build_region_blob patches its qwords once
-    # the build checksum is known and accounts for its length when locating the table.
+    # The bootstrap table and tracer-constant island trail the main dispatch table,
+    # outside the checksummed span and before the appended bytecode.
     lines.append(
         f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
-        f"{ijmp_map}vm_table:\n{table}{tracer_const_island_asm()}bytecode:\n"
+        f"{ijmp_map}vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n"
     )
     # Thread the dispatch: every handler tail (and the retarget) ends with a back
     # jump to the (now removed) central dispatcher; splice a freshly shuffled
@@ -307,14 +284,15 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         return None
     data = bytearray(encoding)
     total = sum(len(indices) for indices in scheme.dup.values())
-    # The assembled interpreter ends with the dispatch table (``total`` 32-bit
-    # offsets) followed by the tracer-constant island; both trail vm_table and are
-    # excluded from the checksummed span. XOR-encrypt each table entry in place so
+    # The assembled interpreter ends with the main and bootstrap offset tables,
+    # followed by the tracer-constant island; all trail vm_table and are excluded
+    # from the checksummed span. XOR-encrypt each table entry in place so
     # the handler addresses are not a plaintext jump table (the dispatch decrypts
     # them at runtime with the same key, and keystone cannot XOR a label difference
     # it computes itself, so the encryption happens here on the assembled bytes).
     island_start = len(data) - _TRACER_ISLAND_LEN
-    table_start = island_start - total * 4
+    bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
+    table_start = bootstrap_start - total * 4
     # Expected runtime self-checksum over the interpreter code (everything up to the
     # dispatch table, so neither the table encryption nor the island patch below
     # perturbs it); the encoder folds it into the opcodes, the table is encrypted
@@ -327,6 +305,7 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
+    encrypt_bootstrap_table(data, bootstrap_start, checksum)
     patch_tracer_constants(data, island_start, checksum)
     # The bytecode is appended right after the interpreter, so its base is the
     # cave plus the interpreter's assembled length; rip-relative targets are

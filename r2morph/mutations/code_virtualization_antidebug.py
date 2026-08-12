@@ -178,8 +178,8 @@ def _load_checksum_masked(reg: str, field_offset: int, slot: int) -> str:
 def tracer_const_island_asm() -> str:
     """The appended constant island: three qword placeholders patched post-assembly.
 
-    Emitted after the dispatch table (so it stays outside the checksummed span) and
-    before the bytecode. The zero placeholders are overwritten by
+    Emitted after the encrypted offset tables (so it stays outside the checksummed
+    span) and before the bytecode. The zero placeholders are overwritten by
     :func:`patch_tracer_constants` once the build checksum is known.
     """
     quads = "".join("  .quad 0\n" for _ in _TRACER_ISLAND_CONSTS)
@@ -202,10 +202,10 @@ def patch_tracer_constants(data: bytearray, island_start: int, checksum: int) ->
 def tracer_detect_asm(slot: int) -> str:
     """Assembly that folds a *ptrace-tracer* signal into the checksum ``slot`` byte.
 
-    Emitted right after :func:`timing_fold_asm`, in the same window where every GP
-    register is spilled to the frame and the VM-internal ``rsi``/``r13``/``r14``/
-    ``r15`` are not yet loaded, so the whole block is free to use every register but
-    ``rsp``. It opens ``/proc/self/status``, reads the header into a transient
+    Runs as one integrity-keyed bootstrap state while every GP register is spilled
+    to the frame and the VM-internal ``rsi``/``r13``/``r14``/``r15`` are not yet
+    loaded, so the whole block is free to use every register but ``rsp``. It opens
+    ``/proc/self/status``, reads the header into a transient
     buffer below the frame, scans for the ``TracerPid:`` line, and folds a
     *branch-free* 0-or-0xFF byte into ``slot``: ``0x00`` when the tracer PID is
     ``'0'`` (no debugger) and ``0xFF`` otherwise.
@@ -278,8 +278,8 @@ def tracer_detect_asm(slot: int) -> str:
 def timing_fold_asm(key: int, slot: int) -> str:
     """Assembly that folds a timing signal into the checksum ``slot`` byte.
 
-    Emitted after ``checksum_prologue_asm`` and before dispatch. ``key`` (the
-    build's ``xor_key``) selects the shift, the scratch registers, the fence
+    Runs as one integrity-keyed bootstrap state. ``key`` (the build's ``xor_key``)
+    selects the shift, the scratch registers, the fence
     bracketing, the read instruction and the reduce spelling; because the benign
     contribution is ``0`` for every choice, the variation is free of any Python
     mirror. ``slot`` is the frame offset of the checksum byte (engine and region

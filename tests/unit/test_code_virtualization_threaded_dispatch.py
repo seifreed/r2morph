@@ -86,6 +86,12 @@ def test_region_interpreter_inlines_the_decode_per_handler() -> None:
     assert _region_asm(0).count(_DECODE_HEAD) > 1
 
 
+def test_region_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
+    asm = _region_asm(0)
+
+    assert asm.index("jmp rax") < min(asm.index("rdtsc"), asm.index("syscall"))
+
+
 def test_engine_interpreter_has_no_central_dispatch_label() -> None:
     # The threaded shape inlines the decode, so no handler jumps to a shared block.
     asm = _engine_asm(0)
@@ -95,6 +101,12 @@ def test_engine_interpreter_has_no_central_dispatch_label() -> None:
 
 def test_engine_interpreter_inlines_the_decode_per_handler() -> None:
     assert _engine_asm(0).count(_DECODE_HEAD) > 1
+
+
+def test_engine_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
+    asm = _engine_asm(0)
+
+    assert asm.index("jmp rax") < min(asm.index("rdtsc"), asm.index("syscall"))
 
 
 def test_engine_interpreter_never_emits_a_compare_branch_ladder() -> None:

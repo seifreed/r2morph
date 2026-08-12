@@ -41,6 +41,18 @@ _DECODE_HEAD = "  mov r13, rsi\n  sub r13, r15\n  movzx eax, byte ptr [rsi]\n"
 _DECODE_TAIL = "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
 
 
+def offset_jump_block(
+    *,
+    index_setup: str,
+    bounds: str,
+    table_load: str,
+    table_xors: list[str],
+    rng: random.Random,
+) -> str:
+    """Jump through one runtime-encrypted relative-offset table."""
+    return index_setup + bounds + table_load + "".join(rng.sample(table_xors, len(table_xors))) + _DECODE_TAIL
+
+
 def decode_block(
     *,
     opcode_xors: list[str],
@@ -50,13 +62,12 @@ def decode_block(
     rng: random.Random,
 ) -> str:
     """Assemble one polymorphic decode copy with its two XOR groups shuffled."""
-    return (
-        _DECODE_HEAD
-        + "".join(rng.sample(opcode_xors, len(opcode_xors)))
-        + bounds
-        + table_load
-        + "".join(rng.sample(table_xors, len(table_xors)))
-        + _DECODE_TAIL
+    return offset_jump_block(
+        index_setup=_DECODE_HEAD + "".join(rng.sample(opcode_xors, len(opcode_xors))),
+        bounds=bounds,
+        table_load=table_load,
+        table_xors=table_xors,
+        rng=rng,
     )
 
 
