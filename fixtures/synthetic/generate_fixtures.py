@@ -5,9 +5,10 @@ Generate test fixtures for real binary tests.
 Creates simple ELF binaries for testing mutations.
 """
 
-import subprocess
 import sys
 from pathlib import Path
+
+from r2morph.adapters.process import run_process
 
 FIXTURES_DIR = Path(__file__).parent
 
@@ -100,18 +101,16 @@ def compile_program(source: str, output: Path, extra_flags: list | None = None):
     ]
 
     try:
-        subprocess.run(cmd, check=True, capture_output=True)
-        # Make executable
-        output.chmod(0o755)
-        # Remove source
-        source_file.unlink(missing_ok=True)
-        return True
-    except subprocess.CalledProcessError as e:
-        print(f"Failed to compile {output}: {e.stderr.decode()}", file=sys.stderr)
-        return False
+        result = run_process(cmd)
     except FileNotFoundError:
         print("gcc not found, skipping compilation", file=sys.stderr)
         return False
+    if result.returncode != 0:
+        print(f"Failed to compile {output}: {result.stderr_text}", file=sys.stderr)
+        return False
+    output.chmod(0o755)
+    source_file.unlink(missing_ok=True)
+    return True
 
 
 def generate_fixtures():

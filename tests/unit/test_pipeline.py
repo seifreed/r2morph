@@ -39,7 +39,7 @@ class TestPipeline:
 
     def test_pipeline_run(self, tmp_path):
         """Test running pipeline on a real binary."""
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 

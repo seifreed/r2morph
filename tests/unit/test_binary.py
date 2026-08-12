@@ -26,7 +26,7 @@ class TestBinary:
 
     def test_binary_context_manager(self):
         """Test using Binary as a context manager."""
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -35,7 +35,7 @@ class TestBinary:
 
     def test_binary_analyze(self):
         """Test binary analysis."""
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -45,7 +45,7 @@ class TestBinary:
 
     def test_get_functions(self):
         """Test getting functions from binary."""
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -57,7 +57,7 @@ class TestBinary:
 
     def test_get_arch_info(self):
         """Test getting architecture information."""
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 

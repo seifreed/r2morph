@@ -25,17 +25,17 @@ class TestRealAnalysis:
     @pytest.fixture
     def simple_binary(self):
         """Path to simple test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "simple"
+        return Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
 
     @pytest.fixture
     def loop_binary(self):
         """Path to loop test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "loop"
+        return Path(__file__).parents[2] / "fixtures" / "synthetic" / "loop"
 
     @pytest.fixture
     def conditional_binary(self):
         """Path to conditional test binary."""
-        return Path(__file__).parent.parent / "fixtures" / "conditional"
+        return Path(__file__).parents[2] / "fixtures" / "synthetic" / "conditional"
 
     def test_binary_analyzer_real(self, simple_binary):
         """Test binary analyzer with real binary."""

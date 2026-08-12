@@ -24,7 +24,7 @@ class TestMorphEngine:
     """Tests for the MorphEngine class."""
 
     def test_engine_load_and_analyze(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -56,7 +56,7 @@ class TestMorphEngine:
         assert names_after == ["InstructionSubstitution"]
 
     def test_save_delegates_to_injected_binary_signer(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -76,7 +76,7 @@ class TestMorphEngine:
             assert used_config is engine.config
 
     def test_engine_run_and_save(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 

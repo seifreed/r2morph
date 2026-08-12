@@ -20,7 +20,7 @@ class TestBinaryValidator:
 
     @pytest.fixture
     def simple_binary(self):
-        return Path(__file__).parent.parent / "fixtures" / "simple"
+        return Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
 
     def test_validator_default_case(self, simple_binary, tmp_path):
         if not simple_binary.exists():

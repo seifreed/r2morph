@@ -4,7 +4,7 @@ import platform
 from pathlib import Path
 
 _ROOT = Path(__file__).resolve().parents[2]
-_FIXTURES = _ROOT / "tests" / "fixtures"
+_FIXTURES = _ROOT / "fixtures" / "synthetic"
 _DATASET = _ROOT / "fixtures" / "dataset"
 
 

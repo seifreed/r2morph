@@ -40,7 +40,7 @@ class TestNopInsertionPass:
         assert nop_pass._is_safe_self_redundancy("ebx", 64) is False
 
     def test_nop_apply(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -85,7 +85,7 @@ class TestInstructionSubstitutionPass:
         pytest.importorskip("yaml")
         from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -108,7 +108,7 @@ class TestRegisterSubstitutionPass:
         assert reg_pass.name == "RegisterSubstitution"
 
     def test_reg_apply(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -131,7 +131,7 @@ class TestInstructionExpansionPass:
         assert expand_pass.name == "InstructionExpansion"
 
     def test_expand_apply(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -154,7 +154,7 @@ class TestBlockReorderingPass:
         assert block_pass.name == "BlockReordering"
 
     def test_block_apply(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -179,7 +179,7 @@ class TestControlFlowFlatteningPass:
         assert cff_pass.min_blocks == 3
 
     def test_cff_apply(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
@@ -202,7 +202,7 @@ class TestDeadCodeInjectionPass:
         assert dc_pass.name == "DeadCodeInjection"
 
     def test_dead_code_apply(self, tmp_path):
-        test_file = Path(__file__).parent.parent / "fixtures" / "simple"
+        test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
             pytest.skip("Test binary not available")
 
