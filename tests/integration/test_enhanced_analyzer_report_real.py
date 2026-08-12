@@ -8,7 +8,7 @@ pytestmark = [pytest.mark.experimental]
 
 
 def test_enhanced_analyzer_generate_and_save_report(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -33,7 +33,7 @@ def test_enhanced_analyzer_generate_and_save_report(tmp_path: Path):
 
 
 def test_enhanced_analyzer_display_recommendations_no_detection(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

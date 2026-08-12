@@ -23,7 +23,7 @@ from tests._doubles.slow_mutation_pass import SlowMutationPass
 def test_execute_parallel_returns_partial_results_on_timeout() -> None:
     executor = ParallelMutator({"timeout": 0.01, "max_workers": 1, "chunk_size": 1})
 
-    with Binary(Path("dataset/elf_x86_64")) as binary:
+    with Binary(Path("fixtures/dataset/elf_x86_64")) as binary:
         binary.analyze()
         records, stats = executor.execute_parallel([SlowMutationPass(sleep_seconds=1.0)], binary)
 

@@ -8,7 +8,7 @@ from r2morph.profiling.profiler import BinaryProfiler
 
 
 def test_hotpath_detector_real():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -26,7 +26,7 @@ def test_hotpath_detector_real():
 
 
 def test_profiler_parsing_and_cold_functions():
-    profiler = BinaryProfiler(Path("dataset/elf_x86_64"))
+    profiler = BinaryProfiler(Path("fixtures/dataset/elf_x86_64"))
     sample_output = """
       12.34%  bin  [.] sym.main
        2.00%  bin  [.] sym.helper

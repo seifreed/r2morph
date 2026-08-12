@@ -63,7 +63,7 @@ class ValidationFramework:
         Args:
             test_data_dir: Directory containing test samples
         """
-        self.test_data_dir = Path(test_data_dir) if test_data_dir else Path("dataset")
+        self.test_data_dir = Path(test_data_dir) if test_data_dir else Path("fixtures/dataset")
         self.test_samples: list[TestSample] = []
         self.benchmark_results: list[BenchmarkResult] = []
 

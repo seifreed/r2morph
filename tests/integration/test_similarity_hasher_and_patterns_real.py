@@ -8,7 +8,7 @@ from r2morph.detection.similarity_hasher import SimilarityHasher
 
 
 def test_similarity_hasher_compare_files_real(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -32,7 +32,7 @@ def test_similarity_hasher_compare_files_real(tmp_path: Path):
 
 
 def test_pattern_matcher_scan_and_search_real():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

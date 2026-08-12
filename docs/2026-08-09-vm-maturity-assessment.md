@@ -12,7 +12,7 @@ the appended executable payload and its interpreter functions.
 ## Cumulative hardening state (2026-08-12 session)
 
 The gaps below were worked in order; this is where the VM stands after that pass,
-re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
+re-verified by decompiling a freshly virtualized `fixtures/dataset/elf_vm_incall_x86_64`:
 
 - **Dispatch — resistant.** Only the runtime-XOR-encrypted threaded table remains;
   the interpreter decompiles to an opaque `jmp rax`, no switch is reconstructed, and
@@ -52,7 +52,7 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
 
 - **Payload segment multiplicity — reduced.** The injector now relocates the
   program-header table once and extends that terminal RX load for later VM blobs.
-  On `dataset/elf_vm_incall_x86_64`, two virtualized functions now add one program
+  On `fixtures/dataset/elf_vm_incall_x86_64`, two virtualized functions now add one program
   header and IDA reports one appended RX `LOAD` (`0x402000..0x40bb84`) instead of
   two appended loads. The single large executable payload remains structurally
   obvious.
@@ -71,7 +71,7 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   read. They now live in the same checksum-keyed island as the path words and scan
   tag and de-mask at runtime, so IDA renders the three syscalls as bare, unnamed
   `syscall` instructions with no attributable constant (number, dirfd and flags all
-  opaque — IDA-verified on a virtualized `dataset/elf_vm_incall` build). The probe's
+  opaque — IDA-verified on a virtualized `fixtures/dataset/elf_vm_incall` build). The probe's
   *structure* (three syscalls, a tag scan, a digit check) is still visible; only its
   constants are gone. (gaps 3/5, done for the constants)
 
@@ -84,7 +84,7 @@ milestones and each is a dedicated redesign — see the gap list.
 
 ## Method
 
-`dataset/elf_vm_incall_x86_64`, `elf_switch_abs_x86_64`, `elf_blockswap_x86_64` and
+`fixtures/dataset/elf_vm_incall_x86_64`, `elf_switch_abs_x86_64`, `elf_blockswap_x86_64` and
 `elf_vm_arith_x86_64` virtualized at `probability=1.0`, `vm_nesting_depth=2`, several
 seeds, then opened in IDA Pro (idalib) with auto-analysis and decompiled. The
 initial baseline covered both former dispatch shapes; current builds only use the

@@ -25,7 +25,7 @@ def test_dependency_analyzer_basic() -> None:
 
 
 def test_diff_analyzer_on_modified_copy(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

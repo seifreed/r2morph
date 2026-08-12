@@ -7,7 +7,7 @@ from r2morph.devirtualization.vm_handler_analyzer import (
 
 
 def test_vm_handler_classification_and_signatures():
-    with Binary("dataset/elf_x86_64") as bin_obj:
+    with Binary("fixtures/dataset/elf_x86_64") as bin_obj:
         analyzer = VMHandlerAnalyzer(bin_obj)
 
         arithmetic = [{"disasm": "add eax, ebx"}, {"disasm": "sub eax, 1"}]
@@ -26,7 +26,7 @@ def test_vm_handler_classification_and_signatures():
 
 
 def test_vm_handler_equivalent_x86_and_confidence():
-    with Binary("dataset/elf_x86_64") as bin_obj:
+    with Binary("fixtures/dataset/elf_x86_64") as bin_obj:
         analyzer = VMHandlerAnalyzer(bin_obj)
 
         handler = VMHandler(
@@ -56,7 +56,7 @@ def test_vm_handler_equivalent_x86_and_confidence():
 
 
 def test_vm_handler_equivalent_x86_memory_and_stack():
-    with Binary("dataset/elf_x86_64") as bin_obj:
+    with Binary("fixtures/dataset/elf_x86_64") as bin_obj:
         analyzer = VMHandlerAnalyzer(bin_obj)
 
         memory_handler = VMHandler(
@@ -81,7 +81,7 @@ def test_vm_handler_equivalent_x86_memory_and_stack():
 
 
 def test_vm_handler_context_and_stats():
-    with Binary("dataset/elf_x86_64") as bin_obj:
+    with Binary("fixtures/dataset/elf_x86_64") as bin_obj:
         analyzer = VMHandlerAnalyzer(bin_obj)
         assert analyzer.get_handler_statistics() == {}
 

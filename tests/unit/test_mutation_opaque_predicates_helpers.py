@@ -18,7 +18,7 @@ def test_opaque_predicate_generators():
 
 
 def test_opaque_predicate_apply_real_binary(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

@@ -1,6 +1,6 @@
 """Characterization of ELFHandler.get_symbol_tables on a real 64-bit ELF.
 
-Pins the exact symbol dicts (static + dynamic) against dataset/elf_x86_64 so
+Pins the exact symbol dicts (static + dynamic) against fixtures/dataset/elf_x86_64 so
 the duplicated symtab/dynsym collection loops can be unified without changing
 observable output. No mocks (CLAUDE.md sec.4): a real handler parses a real
 binary via lief, which is skipped when unavailable.
@@ -18,7 +18,7 @@ _HAS_LIEF = importlib.util.find_spec("lief") is not None
 
 @pytest.mark.skipif(not _HAS_LIEF, reason="lief not available")
 def test_get_symbol_tables_exact_real_elf64() -> None:
-    handler = ELFHandler(Path("dataset/elf_x86_64"))
+    handler = ELFHandler(Path("fixtures/dataset/elf_x86_64"))
 
     result = handler.get_symbol_tables()
 

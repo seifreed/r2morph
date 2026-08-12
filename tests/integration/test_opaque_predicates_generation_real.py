@@ -9,8 +9,8 @@ from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 
 
 def test_opaque_predicates_generate_x86_and_arm() -> None:
-    x86_path = Path("dataset/elf_x86_64")
-    arm_path = Path("dataset/macho_arm64")
+    x86_path = Path("fixtures/dataset/elf_x86_64")
+    arm_path = Path("fixtures/dataset/macho_arm64")
     if not x86_path.exists() or not arm_path.exists():
         pytest.skip("Dataset binaries not available")
 

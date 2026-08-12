@@ -9,7 +9,7 @@ from r2morph.devirtualization.iterative_simplifier import (
 
 
 def test_iterative_simplifier_sequential():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze()
@@ -26,7 +26,7 @@ def test_iterative_simplifier_sequential():
 
 
 def test_iterative_simplifier_parallel_execution():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze()

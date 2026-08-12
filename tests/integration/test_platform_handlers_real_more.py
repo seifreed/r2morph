@@ -10,7 +10,7 @@ from r2morph.platform.pe_handler import PEHandler
 
 
 def test_elf_handler_parses_real_binary() -> None:
-    elf_path = Path("dataset/elf_x86_64")
+    elf_path = Path("fixtures/dataset/elf_x86_64")
     if not elf_path.exists():
         pytest.skip("ELF test binary not available")
 
@@ -31,7 +31,7 @@ def test_elf_handler_parses_real_binary() -> None:
 
 
 def test_macho_handler_parses_real_binary() -> None:
-    macho_path = Path("dataset/macho_arm64")
+    macho_path = Path("fixtures/dataset/macho_arm64")
     if not macho_path.exists():
         pytest.skip("Mach-O test binary not available")
 
@@ -56,7 +56,7 @@ def test_macho_handler_parses_real_binary() -> None:
 
 
 def test_pe_handler_parses_real_binary(tmp_path: Path) -> None:
-    pe_path = Path("dataset/pe_x86_64.exe")
+    pe_path = Path("fixtures/dataset/pe_x86_64.exe")
     if not pe_path.exists():
         pytest.skip("PE test binary not available")
 

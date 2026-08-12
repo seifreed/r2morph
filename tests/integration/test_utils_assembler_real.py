@@ -9,7 +9,7 @@ from r2morph.utils.assembler import R2Assembler, get_common_opcode
 
 
 def test_r2assembler_basic_roundtrip(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

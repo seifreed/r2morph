@@ -1,5 +1,5 @@
 """
-Shared Unicorn loader for the ELF fixtures under ``dataset/``.
+Shared Unicorn loader for the ELF fixtures under ``fixtures/dataset/``.
 
 Runs a produced binary for real - PT_LOADs mapped page by page, entry executed
 until the exit syscall - so a test can compare the exit code of an original and

@@ -105,7 +105,7 @@ class TestSelfMutation:
         r2morph_path = get_r2morph_install_path()
 
         # Create a simple test binary (we'll use a dataset binary)
-        dataset_dir = r2morph_path / "dataset"
+        dataset_dir = r2morph_path / "fixtures" / "dataset"
         test_binaries = list(dataset_dir.glob("*")) if dataset_dir.exists() else []
 
         if not test_binaries:

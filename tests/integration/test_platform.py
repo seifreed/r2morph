@@ -28,7 +28,7 @@ class TestCodeSigner:
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "macho_arm64"
 
     def test_manager_initialization(self):
         """Test CodeSigner initialization."""
@@ -99,7 +99,7 @@ class TestELFHandler:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_handler_initialization(self, ls_elf):
         """Test ELFHandler initialization."""
@@ -156,7 +156,7 @@ class TestMachOHandler:
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "macho_arm64"
 
     def test_handler_initialization(self, ls_macos):
         """Test MachOHandler initialization."""
@@ -213,7 +213,7 @@ class TestPEHandler:
     @pytest.fixture
     def pe_x86_64_exe(self):
         """Path to pe_x86_64.exe PE binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "pe_x86_64.exe"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "pe_x86_64.exe"
 
     def test_handler_initialization(self, pe_x86_64_exe):
         """Test PEHandler initialization."""

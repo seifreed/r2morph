@@ -9,7 +9,7 @@ from r2morph.devirtualization.vm_handler_analyzer import (
 
 
 def test_vm_handler_classification_and_semantics():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze()

@@ -5,7 +5,7 @@ import r2morph.platform.pe_handler_repair as pe_repair
 from r2morph.platform.pe_handler_parsing import calculate_pe_checksum, get_checksum_offset
 from r2morph.platform.repair_aggregation import aggregate_repair_results
 
-_PE_FIXTURE = Path(__file__).parents[2] / "dataset" / "pe_x86_64.exe"
+_PE_FIXTURE = Path(__file__).parents[2] / "fixtures" / "dataset" / "pe_x86_64.exe"
 
 
 def test_fix_checksum_writes_expected_value(tmp_path) -> None:

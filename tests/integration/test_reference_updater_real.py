@@ -24,12 +24,12 @@ class TestReferenceUpdaterReal:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "macho_arm64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "macho_arm64"
 
     def test_updater_initialization(self, ls_elf):
         """Test ReferenceUpdater initialization with real binary."""

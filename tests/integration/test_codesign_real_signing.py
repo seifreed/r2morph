@@ -12,7 +12,7 @@ def test_codesign_roundtrip_on_macho(tmp_path: Path) -> None:
     if platform.system() != "Darwin":
         pytest.skip("Codesign test requires macOS")
 
-    macho_path = Path("dataset/macho_arm64")
+    macho_path = Path("fixtures/dataset/macho_arm64")
     if not macho_path.exists():
         pytest.skip("Mach-O test binary not available")
 

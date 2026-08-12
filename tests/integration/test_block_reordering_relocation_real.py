@@ -17,8 +17,8 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.block_reordering import BlockReorderingPass
 
-_JUMPCHAIN = Path("dataset/elf_jumpchain_x86_64")
-_BLOCKSWAP = Path("dataset/elf_blockswap_x86_64")
+_JUMPCHAIN = Path("fixtures/dataset/elf_jumpchain_x86_64")
+_BLOCKSWAP = Path("fixtures/dataset/elf_blockswap_x86_64")
 _ENTRY = 0x1000
 _MAX_STEPS = 64
 

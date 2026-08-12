@@ -15,7 +15,7 @@ def _flip_first_byte(path: Path) -> None:
 
 
 def test_diff_analyzer_real_compare_and_report(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

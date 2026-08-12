@@ -1,7 +1,7 @@
 """
 Devirtualization recovery oracle against a hand-built VM-interpreter fixture.
 
-``dataset/elf_vm_interp_x86_64`` is a minimal, generic bytecode interpreter shaped
+``fixtures/dataset/elf_vm_interp_x86_64`` is a minimal, generic bytecode interpreter shaped
 like a code-virtualization VM: a computed-goto dispatch loop that fetches an opcode,
 indexes a handler table, and jumps through it, with each handler mutating a virtual
 accumulator and jumping back to the dispatcher. It is the oracle the literal-recursion

@@ -9,7 +9,7 @@ from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
 
 
 def test_evasion_scorer_on_real_files(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

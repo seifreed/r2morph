@@ -6,7 +6,7 @@ from r2morph.analysis.diff_analyzer import DiffAnalyzer
 
 
 def test_diff_analyzer_identical_files(tmp_path: Path):
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -23,7 +23,7 @@ def test_diff_analyzer_identical_files(tmp_path: Path):
 
 
 def test_diff_analyzer_visualization_writes_file(tmp_path: Path):
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -46,7 +46,7 @@ def test_diff_analyzer_visualization_writes_file(tmp_path: Path):
 
 
 def test_diff_analyzer_report_contains_sections(tmp_path: Path):
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

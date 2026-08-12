@@ -10,7 +10,7 @@ from r2morph.session_mutation_flow import apply_mutation
 
 
 def test_session_mutation_flow_applies_and_tracks_mutations(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

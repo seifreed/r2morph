@@ -17,7 +17,7 @@ def test_regression_framework_api_baseline(tmp_path: Path):
 def test_regression_framework_detection_baseline(tmp_path: Path):
     framework = RegressionTestFramework(baseline_dir=str(tmp_path))
 
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     baseline = framework.create_detection_baseline("det_check", str(binary_path))
 
     assert baseline.test_id == "det_check"

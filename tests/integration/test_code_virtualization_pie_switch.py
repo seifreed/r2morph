@@ -36,7 +36,7 @@ from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
 
-_FIXTURE = Path(__file__).resolve().parents[2] / "dataset" / "elf_switch_pie_x86_64"
+_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_switch_pie_x86_64"
 
 
 def _pie_switch_region() -> object:

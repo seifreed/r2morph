@@ -198,7 +198,7 @@ def create_memory_intensive_func():
 
 def prepare_test_files(count=10):
     """Prepare test files for benchmarking."""
-    dataset_dir = Path("dataset")
+    dataset_dir = Path("fixtures/dataset")
     dataset_dir.mkdir(exist_ok=True)
 
     # Look for existing test files

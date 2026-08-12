@@ -21,8 +21,8 @@ def test_regression_api_baseline_roundtrip(tmp_path: Path) -> None:
 
 
 def test_regression_detection_baseline_and_hash_mismatch(tmp_path: Path) -> None:
-    binary_path = Path("dataset/elf_x86_64")
-    alt_binary = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
+    alt_binary = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists() or not alt_binary.exists():
         pytest.skip("Dataset binaries not available")
 

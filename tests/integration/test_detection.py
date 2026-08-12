@@ -26,12 +26,12 @@ class TestEntropyAnalyzer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     @pytest.fixture
     def pe_x86_64_exe(self):
         """Path to pe_x86_64.exe PE binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "pe_x86_64.exe"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "pe_x86_64.exe"
 
     def test_analyze_file_elf(self, ls_elf):
         """Test entropy analysis on ELF binary."""
@@ -100,7 +100,7 @@ class TestEvasionScorer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_score_mutations(self, ls_elf, tmp_path):
         """Test evasion scoring on mutated binary."""
@@ -184,7 +184,7 @@ class TestSimilarityHasher:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_hasher_initialization(self):
         """Test SimilarityHasher initialization."""

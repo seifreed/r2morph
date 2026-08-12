@@ -27,7 +27,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration.elf_emulator import emulate_exit_code
 
-_DATASET = Path(__file__).resolve().parents[2] / "dataset"
+_DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 # Plain straight-line PIE: arithmetic plus one rip-relative .rodata load. No
 # switch and no computed jump, so it isolates the injection itself.
 FIXTURE_PIE = _DATASET / "elf_vm_pie_x86_64"

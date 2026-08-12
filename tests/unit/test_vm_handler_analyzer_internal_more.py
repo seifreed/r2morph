@@ -7,7 +7,7 @@ from r2morph.devirtualization.vm_handler_analyzer import VMHandler, VMHandlerAna
 
 
 def test_vm_handler_analyzer_internal_helpers():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

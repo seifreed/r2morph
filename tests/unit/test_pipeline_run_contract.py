@@ -48,7 +48,7 @@ EXPECTED_SYMBOLIC_KEYS = {
 
 
 def _fixture_binary(tmp_path: Path) -> Path:
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF test binary not available")
     work_path = tmp_path / "run_contract_sample.bin"

@@ -15,7 +15,7 @@ from r2morph.core.binary import Binary
     ],
 )
 def test_assembly_service_basic_encoding(instruction):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         encoded = assembler.assemble(bin_obj, instruction)
@@ -23,7 +23,7 @@ def test_assembly_service_basic_encoding(instruction):
 
 
 def test_assembly_service_movzx_fallback():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         encoded = assembler.assemble(bin_obj, "movzx eax, bl")
@@ -31,7 +31,7 @@ def test_assembly_service_movzx_fallback():
 
 
 def test_assembly_service_segment_prefix_fallback():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         encoded = assembler.assemble(bin_obj, "mov dword fs:[rax], ecx")
@@ -39,7 +39,7 @@ def test_assembly_service_segment_prefix_fallback():
 
 
 def test_assembly_service_symbolic_resolution():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         resolved = assembler._resolve_symbolic_vars(bin_obj, "mov eax, [var_10h]")

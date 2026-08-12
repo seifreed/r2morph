@@ -86,7 +86,7 @@ _CONTAINER_IMAGE = "alpine:3"
 _CONTAINER_TIMEOUT_SECONDS = 900
 _EXECUTABLE_MODE = 0o755
 
-_DATASET = Path(__file__).resolve().parents[2] / "dataset"
+_DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 # Plain arithmetic over a straight-line region, virtualized whole.
 _ARITH_FIXTURE = _DATASET / "elf_vm_pie_x86_64"
 _ARITH_EXIT_CODE = 73
@@ -125,7 +125,7 @@ def _native_exit_code(executable: Path) -> int:
 
 
 def _staged_copy(fixture: Path, destination: Path) -> Path:
-    """The fixture copied out of ``dataset/`` so nothing shared is ever mutated."""
+    """The fixture copied out of ``fixtures/dataset/`` so nothing shared is ever mutated."""
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
     staged = destination / fixture.name

@@ -1,6 +1,6 @@
 """Characterization of ELFHandler.get_sections on a real 64-bit ELF.
 
-Pins the section-header parse end-to-end against dataset/elf_x86_64 (a real,
+Pins the section-header parse end-to-end against fixtures/dataset/elf_x86_64 (a real,
 statically-linked x86-64 binary) so the per-entry struct unpacking can be
 refactored without changing observable output. No mocks (CLAUDE.md sec.4):
 the real handler parses a real on-disk binary.
@@ -26,7 +26,7 @@ _EXPECTED_SECTION_KEYS = {
 
 
 def test_get_sections_parses_real_elf64() -> None:
-    handler = ELFHandler(Path("dataset/elf_x86_64"))
+    handler = ELFHandler(Path("fixtures/dataset/elf_x86_64"))
 
     sections = handler.get_sections()
 
@@ -61,7 +61,7 @@ _EXPECTED_SEGMENT_KEYS = {
 
 
 def test_get_segments_parses_real_elf64() -> None:
-    handler = ELFHandler(Path("dataset/elf_x86_64"))
+    handler = ELFHandler(Path("fixtures/dataset/elf_x86_64"))
 
     segments = handler.get_segments()
 

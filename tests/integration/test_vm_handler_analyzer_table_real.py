@@ -9,7 +9,7 @@ from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 def _choose_binary_with_room(tmp_path: Path) -> Path | None:
     candidates = [
         Path(get_platform_binary("generic")),
-        Path("dataset/pe_x86_64.exe"),
+        Path("fixtures/dataset/pe_x86_64.exe"),
     ]
 
     for src in candidates:

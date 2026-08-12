@@ -26,7 +26,7 @@ class TestSimilarityHasherComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_hasher_init(self):
         """Test SimilarityHasher initialization."""
@@ -90,7 +90,7 @@ class TestEntropyAnalyzerComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_analyzer_init(self):
         """Test EntropyAnalyzer initialization."""
@@ -138,7 +138,7 @@ class TestEvasionScorerComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_scorer_init(self):
         """Test EvasionScorer initialization."""

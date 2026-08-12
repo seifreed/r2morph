@@ -8,7 +8,7 @@ pytestmark = [pytest.mark.experimental]
 
 
 def test_enhanced_analysis_orchestrator_paths(tmp_path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     orchestrator = EnhancedAnalysisOrchestrator(binary_path=binary_path, output_dir=tmp_path)
 
     bin_obj = orchestrator._load_binary()

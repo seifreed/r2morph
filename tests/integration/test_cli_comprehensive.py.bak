@@ -19,17 +19,17 @@ class TestCLIComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "ls"
 
     @pytest.fixture
     def ls_macos(self):
         """Path to ls macOS binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "ls_macOS"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "ls_macOS"
 
     @pytest.fixture
     def pafish_pe(self):
         """Path to pafish PE binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "pafish.exe"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "pafish.exe"
 
     def test_version_command(self):
         """Test version command."""

@@ -23,7 +23,7 @@ from r2morph.validation.manager import ValidationManager
 
 
 def _load_binary():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     bin_obj = Binary(binary_path)
     bin_obj.__enter__()
     bin_obj.analyze()

@@ -33,7 +33,7 @@ def test_fuzzer_generate_inputs_types():
 
 
 def test_fuzzer_runs_on_real_binary(tmp_path: Path):
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

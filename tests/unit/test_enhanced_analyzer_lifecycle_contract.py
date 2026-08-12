@@ -4,7 +4,7 @@ from r2morph.analysis.enhanced_analyzer_lifecycle import cleanup_binary, load_bi
 
 
 def test_enhanced_analyzer_lifecycle_helpers_cover_basic_flow():
-    binary = load_binary(Path("dataset/elf_x86_64"))
+    binary = load_binary(Path("fixtures/dataset/elf_x86_64"))
     try:
         assert binary is not None
         assert hasattr(binary, "analyze")

@@ -15,7 +15,7 @@ def test_macho_handler_basic_properties():
     if platform.system() != "Darwin":
         pytest.skip("macOS-only test")
 
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
 
@@ -45,7 +45,7 @@ def test_macho_handler_lipo_fallbacks(tmp_path: Path):
     if not _has_lipo():
         pytest.skip("lipo not available")
 
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
 

@@ -7,7 +7,7 @@ from r2morph.detection.pattern_matcher import PatternMatcher
 
 
 def test_pattern_matcher_search_strings_and_patterns():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         matcher = PatternMatcher(bin_obj)
 
@@ -35,7 +35,7 @@ def test_pattern_matcher_search_strings_and_patterns():
 
 
 def test_pattern_matcher_import_hiding_and_string_encryption():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         matcher = PatternMatcher(bin_obj)
         import_hiding = matcher._detect_import_hiding()
@@ -46,7 +46,7 @@ def test_pattern_matcher_import_hiding_and_string_encryption():
 
 
 def test_pattern_matcher_closed_binary_raises_runtime_error(tmp_path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     bin_obj = Binary(binary_path)
     bin_obj.open()
     matcher = PatternMatcher(bin_obj)

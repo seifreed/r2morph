@@ -22,7 +22,7 @@ def _sha256(path: Path) -> str:
 
 
 def test_benchmark_summary_report_and_export(tmp_path: Path) -> None:
-    sample_path = Path("dataset/elf_x86_64")
+    sample_path = Path("fixtures/dataset/elf_x86_64")
     if not sample_path.exists():
         pytest.skip("ELF test binary not available")
 
@@ -91,7 +91,7 @@ def test_benchmark_summary_report_and_export(tmp_path: Path) -> None:
 
 
 def test_benchmark_accuracy_and_percentiles() -> None:
-    framework = ValidationFramework(test_data_dir="dataset")
+    framework = ValidationFramework(test_data_dir="fixtures/dataset")
 
     expected = {
         "packer_detected": True,

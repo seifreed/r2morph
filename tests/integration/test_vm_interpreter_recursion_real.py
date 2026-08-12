@@ -1,7 +1,7 @@
 """
 Literal recursion: virtualizing a real interpreter's own dispatch loop.
 
-``dataset/elf_vm_interp_reg_x86_64`` is a generic bytecode interpreter whose
+``fixtures/dataset/elf_vm_interp_reg_x86_64`` is a generic bytecode interpreter whose
 dispatch is the classic two-instruction register-indirect form (load the handler
 address from the table, jump through the register). The opt-in dispatch-region
 contract lowers that computed goto to an ``ijmp`` and builds a target map so the

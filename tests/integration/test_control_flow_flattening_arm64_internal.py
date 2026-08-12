@@ -17,7 +17,7 @@ def test_control_flow_flattening_arm64_internal_helpers(tmp_path: Path):
     if platform.system() != "Darwin":
         pytest.skip("macOS-only test")
 
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
 

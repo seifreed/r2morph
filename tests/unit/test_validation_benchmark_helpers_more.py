@@ -55,7 +55,7 @@ def test_test_sample_hash_and_existence(tmp_path: Path) -> None:
 
 
 def test_benchmark_accuracy_metrics_calculation() -> None:
-    framework = ValidationFramework(test_data_dir="dataset")
+    framework = ValidationFramework(test_data_dir="fixtures/dataset")
     expected = {
         "packer_detected": True,
         "vm_protection": True,
@@ -79,7 +79,7 @@ def test_benchmark_accuracy_metrics_calculation() -> None:
 
 
 def test_benchmark_percentile_and_summary(tmp_path: Path) -> None:
-    framework = ValidationFramework(test_data_dir="dataset")
+    framework = ValidationFramework(test_data_dir="fixtures/dataset")
     assert calculate_percentile([], 95) == 0.0
     assert calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0
     assert calculate_percentile(list(range(1, 101)), 99) >= 1.0
@@ -99,7 +99,7 @@ def test_benchmark_percentile_and_summary(tmp_path: Path) -> None:
 
 
 def test_benchmark_export_formats(tmp_path: Path) -> None:
-    framework = ValidationFramework(test_data_dir="dataset")
+    framework = ValidationFramework(test_data_dir="fixtures/dataset")
     sample = _make_sample(tmp_path)
     perf_ok = PerformanceMetrics(0.25, 3.0, 0.0, 0.0, True, None)
     acc = AccuracyMetrics(1, 0, 1, 0, 1.0, 1.0, 1.0, 1.0)

@@ -6,7 +6,7 @@ refactor next). The pre-existing suite only covers the patch-integrity
 mismatch branch; the happy path, the full ValidationOutcome shape, and
 the control-flow-failure branch are unpinned.
 
-No mocks / monkeypatch (§4): a real Binary over the dataset/elf_x86_64
+No mocks / monkeypatch (§4): a real Binary over the fixtures/dataset/elf_x86_64
 fixture, and a named real-Binary subclass that overrides one method to
 force the control-flow-recovery failure path.
 """
@@ -21,12 +21,12 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.validation.manager import ValidationManager
 
-_FIXTURE = Path("dataset/elf_x86_64")
+_FIXTURE = Path("fixtures/dataset/elf_x86_64")
 
 
 def _work_copy(tmp_path: Path) -> Path:
     if not _FIXTURE.exists():
-        pytest.skip("dataset/elf_x86_64 fixture not available")
+        pytest.skip("fixtures/dataset/elf_x86_64 fixture not available")
     work = tmp_path / "vm_structural_sample"
     work.write_bytes(_FIXTURE.read_bytes())
     return work

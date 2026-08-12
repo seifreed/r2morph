@@ -25,7 +25,7 @@ class TestR2AssemblerComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_assembler_init(self, ls_elf):
         """Test R2Assembler initialization."""
@@ -142,7 +142,7 @@ class TestMorphSessionComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_session_init(self, ls_elf, tmp_path):
         """Test MorphSession initialization."""

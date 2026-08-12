@@ -5,7 +5,7 @@ import lief
 
 from r2morph.platform.elf_handler_section_mutation import add_section
 
-_ELF_FIXTURE = Path(__file__).parents[2] / "dataset" / "elf_vm_arith_x86_64"
+_ELF_FIXTURE = Path(__file__).parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
 
 
 def test_elf_handler_section_mutation_persists_new_section(tmp_path: Path) -> None:

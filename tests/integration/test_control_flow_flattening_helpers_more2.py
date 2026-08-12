@@ -10,7 +10,7 @@ from r2morph.mutations.control_flow_flattening_strategies import add_opaque_pred
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:
-    src = Path("dataset/elf_x86_64")
+    src = Path("fixtures/dataset/elf_x86_64")
     dst = tmp_path / name
     dst.write_bytes(src.read_bytes())
     return dst

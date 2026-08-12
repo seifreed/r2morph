@@ -12,7 +12,7 @@ from r2morph.detection.pattern_matcher import PatternMatcher
 
 
 def test_pattern_matcher_scans_strings_and_imports(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -32,7 +32,7 @@ def test_pattern_matcher_scans_strings_and_imports(tmp_path: Path) -> None:
 
 
 def test_pattern_matcher_find_patterns_and_search_strings(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -69,7 +69,7 @@ def test_pattern_matcher_find_patterns_and_search_strings(tmp_path: Path) -> Non
 
 
 def test_control_flow_analyzer_real_basic(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -89,7 +89,7 @@ def test_control_flow_analyzer_real_basic(tmp_path: Path) -> None:
 
 
 def test_packer_signature_detection_paths(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

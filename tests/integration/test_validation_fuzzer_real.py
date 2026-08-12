@@ -12,7 +12,7 @@ def test_mutation_fuzzer_with_random_inputs(tmp_path: Path) -> None:
     if platform.system() != "Darwin":
         pytest.skip("Binary execution test requires macOS")
 
-    source = Path("dataset/macho_arm64")
+    source = Path("fixtures/dataset/macho_arm64")
     if not source.exists():
         pytest.skip("Mach-O test binary not available")
 

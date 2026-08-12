@@ -18,7 +18,7 @@ from r2morph.analysis.symbolic.structural_resistance import StructuralResistance
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 
-_DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
+_DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
 FIXTURE = _DATASET / "elf_vm_shift_x86_64"
 
 

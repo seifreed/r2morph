@@ -34,7 +34,7 @@ class TestControlFlowFlatteningExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_flatten_with_min_blocks_requirement(self, ls_elf, tmp_path):
         """Test flattening with minimum blocks requirement."""
@@ -125,7 +125,7 @@ class TestDeadCodeInjectionExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_inject_with_zero_probability(self, ls_elf, tmp_path):
         """Test injection with zero probability."""
@@ -161,7 +161,7 @@ class TestOpaquePredicatesExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_opaque_with_zero_probability(self, ls_elf, tmp_path):
         """Test opaque predicates with zero probability."""
@@ -197,7 +197,7 @@ class TestNopInsertionExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_nop_with_zero_probability(self, ls_elf, tmp_path):
         """Test NOP insertion with zero probability."""
@@ -263,7 +263,7 @@ class TestBinaryProfilerExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_profiler_short_duration(self, ls_elf, tmp_path):
         """Test profiling with short duration."""
@@ -298,7 +298,7 @@ class TestCaveFinderExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_find_caves_large_min_size(self, ls_elf):
         """Test finding caves with large minimum size."""
@@ -330,7 +330,7 @@ class TestRelocationManagerExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_manager_many_relocations(self, ls_elf):
         """Test managing many relocations."""
@@ -371,7 +371,7 @@ class TestMorphSessionExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_session_multiple_checkpoints(self, tmp_path, ls_elf):
         """Test creating multiple checkpoints."""
@@ -428,7 +428,7 @@ class TestR2AssemblerExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_assembler_with_binary(self, ls_elf):
         """Test R2Assembler with actual binary."""

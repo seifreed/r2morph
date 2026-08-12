@@ -7,7 +7,7 @@ from r2morph.relocations.manager import RelocationManager
 
 
 def test_relocation_manager_address_mapping_real(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -25,7 +25,7 @@ def test_relocation_manager_address_mapping_real(tmp_path: Path):
 
 
 def test_relocation_manager_calculate_space_needed_real(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

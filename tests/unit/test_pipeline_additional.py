@@ -53,7 +53,7 @@ def test_remove_pass_by_name_no_match_is_noop() -> None:
 
 
 def test_pipeline_run_with_real_pass(tmp_path: Path) -> None:
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF test binary not available")
 
@@ -74,7 +74,7 @@ def test_pipeline_run_with_real_pass(tmp_path: Path) -> None:
 
 
 def test_pipeline_run_empty(tmp_path: Path) -> None:
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF test binary not available")
 

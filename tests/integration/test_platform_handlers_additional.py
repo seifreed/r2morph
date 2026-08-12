@@ -7,7 +7,7 @@ from r2morph.platform.pe_handler import PEHandler
 
 
 def test_elf_handler_header_and_validation():
-    elf_path = Path("dataset/elf_x86_64")
+    elf_path = Path("fixtures/dataset/elf_x86_64")
     if not elf_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -26,7 +26,7 @@ def test_elf_handler_header_and_validation():
 
 
 def test_pe_handler_checksum_and_validation(tmp_path: Path):
-    pe_path = Path("dataset/pe_x86_64.exe")
+    pe_path = Path("fixtures/dataset/pe_x86_64.exe")
     if not pe_path.exists():
         pytest.skip("PE binary not available")
 

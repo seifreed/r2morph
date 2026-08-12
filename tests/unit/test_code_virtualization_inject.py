@@ -50,7 +50,7 @@ from tests.utils.elf_load_invariants import (
     program_headers,
 )
 
-_DATASET = Path(__file__).resolve().parents[2] / "dataset"
+_DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 # Non-PIE absolute image: p_vaddr values are the final runtime addresses.
 _FIXTURE_EXEC = _DATASET / "elf_switch_abs_x86_64"
 # Position-independent image: a RW/DYNAMIC load sits above the code, which the

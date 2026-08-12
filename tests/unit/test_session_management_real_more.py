@@ -9,7 +9,7 @@ from r2morph.session import MorphSession
 
 
 def test_session_checkpoint_and_finalize(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

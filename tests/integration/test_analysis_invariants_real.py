@@ -9,7 +9,7 @@ from r2morph.core.binary import Binary
 
 
 def test_invariant_detection_and_validation() -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

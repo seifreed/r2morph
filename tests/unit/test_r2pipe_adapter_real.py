@@ -8,7 +8,7 @@ from r2morph.protocols import DisassemblerInterface
 
 def test_r2pipe_adapter_open_and_commands():
     adapter = R2PipeAdapter()
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     adapter.open(binary_path, flags=["-2"])
     assert adapter.is_open() is True

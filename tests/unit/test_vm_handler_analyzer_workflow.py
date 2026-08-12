@@ -5,7 +5,7 @@ from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer, VMHa
 
 
 def test_vm_handler_analyzer_real_function_workflow():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
@@ -21,7 +21,7 @@ def test_vm_handler_analyzer_real_function_workflow():
 
 
 def test_vm_handler_architecture_statistics():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")

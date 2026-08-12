@@ -10,7 +10,7 @@ from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 def _copy_binary(tmp_path: Path, name: str) -> Path:
     src = Path(get_platform_binary("generic"))
     if platform.system() == "Windows":
-        fallback = Path("dataset/pe_x86_64.exe")
+        fallback = Path("fixtures/dataset/pe_x86_64.exe")
         if ensure_exists(fallback):
             src = fallback
     if not ensure_exists(src):

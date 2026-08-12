@@ -1,7 +1,7 @@
 """
 Virtualizing an interpreter whose flags cross the dispatch (pushfq/popfq).
 
-``dataset/elf_vm_interp_stack_x86_64`` is a bytecode interpreter with the classic
+``fixtures/dataset/elf_vm_interp_stack_x86_64`` is a bytecode interpreter with the classic
 register-indirect dispatch plus a "check" opcode that preserves a condition flag
 across a flag-live scratch computation by bracketing it with ``pushfq``/``popfq`` -
 the flag-preservation idiom, the shape where flag state crosses the computed jump.

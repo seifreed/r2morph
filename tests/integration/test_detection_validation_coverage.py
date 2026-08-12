@@ -26,7 +26,7 @@ class TestEntropyAnalyzerDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_entropy_analyzer_init(self):
         """Test EntropyAnalyzer initialization."""
@@ -87,7 +87,7 @@ class TestSimilarityHasherDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_similarity_hasher_init(self):
         """Test SimilarityHasher initialization."""
@@ -137,7 +137,7 @@ class TestEvasionScorerDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_evasion_scorer_init(self):
         """Test EvasionScorer initialization."""
@@ -169,7 +169,7 @@ class TestBinaryValidatorDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_validator_init(self):
         """Test BinaryValidator initialization."""

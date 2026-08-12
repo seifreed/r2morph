@@ -20,7 +20,7 @@ from r2morph.platform.macho_handler_repair import _iter_macho_binaries
 
 lief = pytest.importorskip("lief")
 
-_DATASET = Path(__file__).resolve().parents[2] / "dataset"
+_DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 _THIN_FIXTURE = _DATASET / "macho_arm64"
 
 

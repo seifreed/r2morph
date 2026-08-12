@@ -22,7 +22,7 @@ class TestCLIMainCallback:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_main_callback_basic_mode(self, ls_elf, tmp_path):
         """Test main callback with -i and -o flags."""
@@ -188,7 +188,7 @@ class TestCLIAnalyzeCommand:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_analyze_command_basic(self, ls_elf):
         """Test analyze command displays binary statistics."""
@@ -222,7 +222,7 @@ class TestCLIFunctionsCommand:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_functions_command_basic(self, ls_elf):
         """Test functions command lists functions."""

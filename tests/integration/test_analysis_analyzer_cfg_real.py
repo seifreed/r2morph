@@ -10,7 +10,7 @@ from r2morph.core.binary import Binary
 
 
 def test_binary_analyzer_candidates_and_stats() -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -35,7 +35,7 @@ def test_binary_analyzer_candidates_and_stats() -> None:
 
 
 def test_cfg_builder_real_function() -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

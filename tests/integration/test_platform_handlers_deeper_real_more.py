@@ -12,7 +12,7 @@ from r2morph.platform.pe_handler import PEHandler
 
 
 def _dataset_path(name: str) -> Path:
-    return Path("dataset") / name
+    return Path("fixtures/dataset") / name
 
 
 def test_elf_handler_entrypoint_arch_and_cave(tmp_path: Path) -> None:

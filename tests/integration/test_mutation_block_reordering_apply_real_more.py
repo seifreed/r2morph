@@ -9,7 +9,7 @@ from r2morph.mutations.block_reordering import BlockReorderingPass
 
 
 def test_block_reordering_apply_real(tmp_path: Path) -> None:
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF test binary not available")
 

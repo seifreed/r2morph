@@ -5,7 +5,7 @@ from r2morph.core.binary import Binary
 
 
 def test_invariant_detection_on_real_function():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
@@ -21,7 +21,7 @@ def test_invariant_detection_on_real_function():
 
 
 def test_semantic_validator_batch():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")

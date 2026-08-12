@@ -45,7 +45,7 @@ def _map_vaddr_to_paddr(binary: Binary, vaddr: int) -> int | None:
 
 
 def test_binary_write_bytes_and_nop_fill(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -68,7 +68,7 @@ def test_binary_write_bytes_and_nop_fill(tmp_path: Path) -> None:
 
 
 def test_binary_resolve_symbolic_vars_and_assemble(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -94,7 +94,7 @@ def test_binary_resolve_symbolic_vars_and_assemble(tmp_path: Path) -> None:
 
 
 def test_binary_arch_info_and_reload(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

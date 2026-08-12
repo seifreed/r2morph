@@ -14,7 +14,7 @@ CliRunner = typer_testing.CliRunner
 
 
 def test_cli_simple_mode(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -45,7 +45,7 @@ def test_cli_version_function() -> None:
 
 
 def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -74,7 +74,7 @@ def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
 def test_cli_warns_for_symbolic_validation_mode(
     tmp_path: Path,
 ) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

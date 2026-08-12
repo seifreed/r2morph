@@ -29,7 +29,7 @@ class TestBinaryAnalyzerComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_get_functions_list(self, ls_elf):
         """Test getting function list."""
@@ -118,7 +118,7 @@ class TestCFGBuilder:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_build_cfg(self, ls_elf):
         """Test building CFG."""
@@ -176,7 +176,7 @@ class TestDependencyAnalyzer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_analyze_dependencies(self, ls_elf):
         """Test analyzing dependencies."""
@@ -204,7 +204,7 @@ class TestDiffAnalyzer:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_diff_analyzer(self, ls_elf, tmp_path):
         """Test diff analyzer."""
@@ -291,7 +291,7 @@ class TestInvariantDetector:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_invariant_detector(self, ls_elf):
         """Test invariant detector."""

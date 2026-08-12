@@ -22,7 +22,7 @@ def _section_vaddr_and_paddr(binary: Binary) -> tuple[int, int]:
 
 
 def test_control_flow_flattening_add_opaque_predicate_x86(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -46,7 +46,7 @@ def test_control_flow_flattening_add_opaque_predicate_x86(tmp_path: Path) -> Non
 
 
 def test_control_flow_flattening_insert_dead_code_x86(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 
@@ -69,7 +69,7 @@ def test_control_flow_flattening_insert_dead_code_x86(tmp_path: Path) -> None:
 
 
 def test_control_flow_flattening_dispatcher_arm() -> None:
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O test binary not available")
 
@@ -84,7 +84,7 @@ def test_control_flow_flattening_dispatcher_arm() -> None:
 
 
 def test_control_flow_flattening_dispatcher_x86() -> None:
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF test binary not available")
 

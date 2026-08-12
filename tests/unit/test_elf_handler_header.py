@@ -1,6 +1,6 @@
 """Characterization of ELFHandler._parse_elf_header on a real 64-bit ELF.
 
-Pins the exact parsed header dict against dataset/elf_x86_64 so the 64/32-bit
+Pins the exact parsed header dict against fixtures/dataset/elf_x86_64 so the 64/32-bit
 header parsing can be de-duplicated without changing observable output. No
 mocks (CLAUDE.md sec.4): a real handler parses a real on-disk binary.
 """
@@ -11,7 +11,7 @@ from r2morph.platform.elf_handler import ELFHandler
 
 
 def test_parse_elf_header_exact_real_elf64() -> None:
-    handler = ELFHandler(Path("dataset/elf_x86_64"))
+    handler = ELFHandler(Path("fixtures/dataset/elf_x86_64"))
 
     header = handler._parse_elf_header()
 
@@ -39,5 +39,5 @@ def test_parse_elf_header_exact_real_elf64() -> None:
 
 
 def test_parse_elf_header_is_cached() -> None:
-    handler = ELFHandler(Path("dataset/elf_x86_64"))
+    handler = ELFHandler(Path("fixtures/dataset/elf_x86_64"))
     assert handler._parse_elf_header() is handler._parse_elf_header()

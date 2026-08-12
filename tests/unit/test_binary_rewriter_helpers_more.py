@@ -7,7 +7,7 @@ from r2morph.devirtualization.binary_rewriter import BinaryFormat, BinaryRewrite
 
 
 def test_binary_rewriter_helpers_with_real_binary(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

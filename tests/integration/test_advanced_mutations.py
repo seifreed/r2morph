@@ -25,7 +25,7 @@ class TestOpaquePredicates:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_opaque_predicate_pass(self, ls_elf, tmp_path):
         """Test opaque predicate insertion."""
@@ -97,7 +97,7 @@ class TestDeadCodeInjection:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_dead_code_injection(self, ls_elf, tmp_path):
         """Test dead code injection."""
@@ -171,7 +171,7 @@ class TestControlFlowFlattening:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_control_flow_flattening(self, ls_elf, tmp_path):
         """Test control flow flattening."""

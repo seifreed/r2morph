@@ -20,7 +20,7 @@ EXPERIMENTAL_MUTATIONS = ["expand", "block"]
 @pytest.fixture
 def test_binary() -> Path:
     """Stable ELF x86_64 binary for product tests."""
-    binary = Path("dataset/elf_x86_64")
+    binary = Path("fixtures/dataset/elf_x86_64")
     if not binary.exists():
         pytest.skip("ELF test binary not available")
     return binary

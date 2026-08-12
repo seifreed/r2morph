@@ -5,7 +5,7 @@ from r2morph.detection.pattern_matcher_search import find_patterns, search_strin
 
 
 def test_pattern_matcher_search_helpers_work_on_real_binary():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     with Binary(binary_path) as bin_obj:
         raw_strings = bin_obj.r2.cmd("izz") or ""
         sample_term = ""

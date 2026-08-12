@@ -1,7 +1,7 @@
 """Characterization of MachOHandler._parse_macho_basic on a real arm64 binary.
 
 _parse_macho_basic is the LIEF-free fallback parser. It is exercised here
-directly against dataset/macho_arm64 (a real thin arm64 Mach-O) so the magic
+directly against fixtures/dataset/macho_arm64 (a real thin arm64 Mach-O) so the magic
 detection and load-command parsing can be refactored without changing
 observable output. No mocks (CLAUDE.md sec.4): the real handler parses a real
 on-disk binary.
@@ -13,7 +13,7 @@ from r2morph.platform.macho_handler import MachOHandler
 
 
 def test_parse_macho_basic_real_arm64() -> None:
-    handler = MachOHandler(Path("dataset/macho_arm64"))
+    handler = MachOHandler(Path("fixtures/dataset/macho_arm64"))
 
     commands, segments = handler._parse_macho_basic()
 

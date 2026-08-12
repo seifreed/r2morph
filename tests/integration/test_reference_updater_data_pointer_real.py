@@ -22,7 +22,7 @@ def _find_rw_section(binary: Binary) -> int:
 
 
 def test_reference_updater_data_pointer_updates(tmp_path: Path):
-    src = Path("dataset/macho_arm64")
+    src = Path("fixtures/dataset/macho_arm64")
     dst = tmp_path / "macho_ref_updater"
     dst.write_bytes(src.read_bytes())
 

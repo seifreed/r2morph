@@ -9,7 +9,7 @@ def test_get_section_name_contract() -> None:
 
 
 def test_parse_elf_header_contract() -> None:
-    header, is_64bit, is_little_endian = parse_elf_header(Path("dataset/elf_x86_64"))
+    header, is_64bit, is_little_endian = parse_elf_header(Path("fixtures/dataset/elf_x86_64"))
     assert header is not None
     assert is_64bit is True
     assert is_little_endian is True

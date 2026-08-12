@@ -35,7 +35,7 @@ class TestMutationsComprehensiveReal:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_dead_code_injection_basic(self, ls_elf, tmp_path):
         """Test dead code injection."""

@@ -37,7 +37,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 
-_DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
+_DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
 FIXTURE = _DATASET / "elf_vm_arith_x86_64"
 
 # linux/ptrace request numbers (uapi/linux/ptrace.h); stable kernel ABI.

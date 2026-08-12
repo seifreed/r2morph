@@ -15,7 +15,7 @@ def _copy_binary(tmp_path: Path, src: Path, name: str) -> Path:
 
 
 def test_elf_handler_symbols_and_preserve(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     handler = ELFHandler(binary_path)
 
     symbols = handler.get_symbol_tables()
@@ -27,7 +27,7 @@ def test_elf_handler_symbols_and_preserve(tmp_path: Path):
 
 
 def test_pe_handler_checksum(tmp_path: Path):
-    binary_path = _copy_binary(tmp_path, Path("dataset/pe_x86_64.exe"), "pe_tmp.exe")
+    binary_path = _copy_binary(tmp_path, Path("fixtures/dataset/pe_x86_64.exe"), "pe_tmp.exe")
     handler = PEHandler(binary_path)
 
     checksum = handler._calculate_checksum()
@@ -40,7 +40,7 @@ def test_pe_handler_checksum(tmp_path: Path):
 def test_macho_handler_repair_and_codesign(tmp_path: Path):
     if platform.system() != "Darwin":
         return
-    binary_path = _copy_binary(tmp_path, Path("dataset/macho_arm64"), "macho_tmp")
+    binary_path = _copy_binary(tmp_path, Path("fixtures/dataset/macho_arm64"), "macho_tmp")
     handler = MachOHandler(binary_path)
 
     ok, _msg = handler.validate_integrity()

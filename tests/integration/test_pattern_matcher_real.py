@@ -9,7 +9,7 @@ from r2morph.detection.pattern_matcher import PatternMatcher
 
 
 def test_pattern_matcher_scan_and_searches() -> None:
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF test binary not available")
 

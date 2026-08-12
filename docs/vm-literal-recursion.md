@@ -182,7 +182,7 @@ They are ordered roughly by dependency.
 
 Built and green (each its own commit, in the doc's recommended order):
 
-- **(d) Devirtualization oracle.** `dataset/elf_vm_interp_x86_64` is a hand-built
+- **(d) Devirtualization oracle.** `fixtures/dataset/elf_vm_interp_x86_64` is a hand-built
   computed-goto interpreter fixture (exit 45). The three recovery stubs in
   `vm_handler_analyzer.py` are implemented: `_extract_table_from_block` recovers
   the handler table from the dispatch block's register-indirect jump operand;
@@ -208,7 +208,7 @@ Built and green (each its own commit, in the doc's recommended order):
   illegal `movzx r10d, ah`); such bodies are now left unrenamed.
 
 **Green — the end-to-end round trip.** Against a register-indirect dispatch fixture
-(`dataset/elf_vm_interp_reg_x86_64`, exit 45), the whole function extracts into an
+(`fixtures/dataset/elf_vm_interp_reg_x86_64`, exit 45), the whole function extracts into an
 `ijmp` region, the interpreter blob assembles, injects, the trampoline is patched,
 and the mutated binary — now running a virtualized copy of its own fetch/decode/
 dispatch cycle — still emulates to exit 45 across a seed sweep. Covered by
@@ -240,7 +240,7 @@ and its suite are unchanged.
   `tests/unit/test_code_virtualization_fsave_classify.py`,
   `..._fsave_handler.py`, `..._fsave_flag_liveness.py`, and the load-bearing round trip
   `tests/integration/test_vm_interpreter_flagcross_real.py`
-  (`dataset/elf_vm_interp_stack_x86_64`, exit 45 — a broken save/restore changes the
+  (`fixtures/dataset/elf_vm_interp_stack_x86_64`, exit 45 — a broken save/restore changes the
   exit code).
 
 Symbolic closure — deliberately not done. The (d) oracle does **not** recover the

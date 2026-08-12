@@ -8,7 +8,7 @@ from r2morph.detection.similarity_hasher import SimilarityHasher
 
 
 def test_similarity_hasher_byte_comparison(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

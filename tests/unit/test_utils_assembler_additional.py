@@ -13,7 +13,7 @@ def test_get_common_opcode_lookup():
 
 
 def test_r2assembler_disassemble_roundtrip():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

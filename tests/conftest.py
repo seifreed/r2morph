@@ -60,7 +60,7 @@ def stable_elf_binary() -> Path:
     """
     Stable ELF x86_64 fixture used by product-smoke tests.
     """
-    return Path(__file__).parent.parent / "dataset" / "elf_x86_64"
+    return Path(__file__).parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
 
 @pytest.fixture
@@ -68,7 +68,7 @@ def stable_runtime_corpus() -> list[dict[str, object]]:
     """
     Small runtime corpus for product validation.
     """
-    corpus_path = Path(__file__).parent.parent / "dataset" / "runtime_corpus.json"
+    corpus_path = Path(__file__).parent.parent / "fixtures" / "dataset" / "runtime_corpus.json"
     return json.loads(corpus_path.read_text(encoding="utf-8"))
 
 
@@ -77,7 +77,7 @@ def stable_runtime_corpus_path() -> Path:
     """
     Path to the canonical runtime corpus fixture used by product flows.
     """
-    return Path(__file__).parent.parent / "dataset" / "runtime_corpus.json"
+    return Path(__file__).parent.parent / "fixtures" / "dataset" / "runtime_corpus.json"
 
 
 def _compile_c_binary(tmp_path: Path, name: str, source: str) -> Path:
@@ -432,7 +432,7 @@ _start:
 @pytest.fixture
 def deterministic_macho_sample(tmp_path: Path) -> Path:
     """Stable local Mach-O sample copied from dataset for format-level tests."""
-    source = Path(__file__).parent.parent / "dataset" / "macho_arm64"
+    source = Path(__file__).parent.parent / "fixtures" / "dataset" / "macho_arm64"
     if not source.exists():
         pytest.skip("Mach-O sample not available")
     target = tmp_path / "macho_arm64"
@@ -444,7 +444,7 @@ def deterministic_macho_sample(tmp_path: Path) -> Path:
 @pytest.fixture
 def deterministic_pe_sample(tmp_path: Path) -> Path:
     """Stable local PE sample copied from dataset for format-level tests."""
-    source = Path(__file__).parent.parent / "dataset" / "pe_x86_64.exe"
+    source = Path(__file__).parent.parent / "fixtures" / "dataset" / "pe_x86_64.exe"
     if not source.exists():
         pytest.skip("PE sample not available")
     target = tmp_path / "pe_x86_64.exe"

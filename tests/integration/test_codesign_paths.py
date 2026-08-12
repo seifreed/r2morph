@@ -17,7 +17,7 @@ def test_codesign_verify_and_needs_signing(tmp_path: Path):
     if not _has_codesign():
         pytest.skip("codesign not available")
 
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
 

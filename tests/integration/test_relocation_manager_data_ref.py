@@ -8,7 +8,7 @@ from r2morph.relocations.manager import RelocationManager
 
 
 def test_relocation_manager_update_data_ref(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

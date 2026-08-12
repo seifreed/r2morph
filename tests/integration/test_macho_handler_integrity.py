@@ -10,7 +10,7 @@ from r2morph.platform.macho_handler import MachOHandler
 def test_macho_handler_basic_integrity(tmp_path: Path):
     if platform.system() != "Darwin":
         pytest.skip("Mach-O integrity requires macOS tools")
-    macho_path = Path("dataset/macho_arm64")
+    macho_path = Path("fixtures/dataset/macho_arm64")
     if not macho_path.exists():
         pytest.skip("Mach-O binary not available")
 
@@ -37,7 +37,7 @@ def test_macho_handler_basic_integrity(tmp_path: Path):
 
 def test_codesigner_adhoc_missing_identity():
     signer = CodeSigner()
-    dummy_path = Path("dataset/macho_arm64")
+    dummy_path = Path("fixtures/dataset/macho_arm64")
     if not dummy_path.exists():
         pytest.skip("Mach-O binary not available")
 

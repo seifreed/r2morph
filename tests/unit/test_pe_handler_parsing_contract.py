@@ -12,7 +12,7 @@ from r2morph.platform.pe_handler_parsing import (
 )
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-_PE_BINARY = _REPO_ROOT / "dataset" / "pe_x86_64.exe"
+_PE_BINARY = _REPO_ROOT / "fixtures" / "dataset" / "pe_x86_64.exe"
 
 
 def test_pe_handler_parsing_round_trip() -> None:

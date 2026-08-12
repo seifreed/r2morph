@@ -10,7 +10,7 @@ from r2morph.platform.macho_handler import MachOHandler
 
 
 def _dataset_path(name: str) -> Path:
-    return Path("dataset") / name
+    return Path("fixtures/dataset") / name
 
 
 def test_macho_handler_extract_architecture_lipo(tmp_path: Path) -> None:

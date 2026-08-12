@@ -11,7 +11,7 @@ if importlib.util.find_spec("r2pipe") is None:
 
 
 def _dataset_path(name: str) -> Path:
-    return Path(__file__).parent.parent.parent / "dataset" / name
+    return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / name
 
 
 def test_cli_no_args_shows_usage():

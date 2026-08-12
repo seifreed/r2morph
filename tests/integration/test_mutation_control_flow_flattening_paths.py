@@ -10,7 +10,7 @@ from r2morph.mutations.control_flow_flattening_strategies import insert_dead_cod
 
 
 def test_control_flow_flattening_select_candidates():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -25,7 +25,7 @@ def test_control_flow_flattening_select_candidates():
 
 
 def test_control_flow_flattening_obfuscate_jump_guard(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -46,7 +46,7 @@ def test_control_flow_flattening_obfuscate_jump_guard(tmp_path: Path):
 
 
 def test_control_flow_flattening_dead_code_insert_guard(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

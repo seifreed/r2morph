@@ -28,7 +28,7 @@ class TestCLIComprehensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_cli_simple_mode_with_positional_args(self, ls_elf, tmp_path):
         """Test CLI simple mode with positional arguments."""
@@ -221,7 +221,7 @@ class TestDependencyAnalyzerExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_analyze_function_dependencies(self, ls_elf):
         """Test analyzing function dependencies."""
@@ -317,7 +317,7 @@ class TestInvariantDetectorExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_detect_all_invariants(self, ls_elf):
         """Test detecting all types of invariants."""
@@ -392,7 +392,7 @@ class TestHotPathDetectorExtensive:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_detector_init(self, ls_elf):
         """Test HotPathDetector initialization."""
@@ -467,7 +467,7 @@ class TestBinaryMethodsExtended:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_binary_write_bytes(self, ls_elf, tmp_path):
         """Test writing bytes at specific address."""

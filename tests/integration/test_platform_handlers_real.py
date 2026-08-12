@@ -6,7 +6,7 @@ from r2morph.platform.pe_handler import PEHandler
 
 
 def test_elf_handler_real_binary():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     handler = ELFHandler(binary_path)
 
     assert handler.is_elf()
@@ -29,7 +29,7 @@ def test_elf_handler_real_binary():
 
 
 def test_macho_handler_real_binary():
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     handler = MachOHandler(binary_path)
 
     assert handler.is_macho()
@@ -50,7 +50,7 @@ def test_macho_handler_real_binary():
 
 
 def test_pe_handler_real_binary():
-    binary_path = Path("dataset/pe_x86_64.exe")
+    binary_path = Path("fixtures/dataset/pe_x86_64.exe")
     handler = PEHandler(binary_path)
 
     assert handler.is_pe()

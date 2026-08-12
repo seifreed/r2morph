@@ -29,7 +29,7 @@ class TestControlFlowFlatteningReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_flatten_basic(self, ls_elf, tmp_path):
         """Test basic control flow flattening."""
@@ -80,7 +80,7 @@ class TestDeadCodeInjectionReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_inject_basic(self, ls_elf, tmp_path):
         """Test basic dead code injection."""
@@ -131,7 +131,7 @@ class TestOpaquePredicatesReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_opaque_basic(self, ls_elf, tmp_path):
         """Test basic opaque predicate insertion."""
@@ -182,7 +182,7 @@ class TestNopInsertionDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_nop_standard(self, ls_elf, tmp_path):
         """Test standard NOP insertion."""
@@ -258,7 +258,7 @@ class TestProfilingReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_profiler_basic(self, ls_elf, tmp_path):
         """Test basic profiling."""
@@ -389,4 +389,4 @@ class TestSessionReal:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"

@@ -26,7 +26,7 @@ class TestBinaryComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_binary_context_manager(self, ls_elf):
         """Test binary as context manager."""
@@ -259,7 +259,7 @@ class TestPipelineComprehensive:
     @pytest.fixture
     def ls_elf(self):
         """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_pipeline_init(self):
         """Test Pipeline initialization."""

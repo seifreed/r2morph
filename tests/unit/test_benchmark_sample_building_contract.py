@@ -15,7 +15,7 @@ from r2morph.validation.benchmark_types import TestSeverity
 def test_build_test_sample_materializes_catalog_record(tmp_path) -> None:
     sample = build_test_sample(tmp_path, DEFAULT_TEST_SAMPLES[0])
 
-    assert sample.file_path == str(tmp_path / Path("dataset/vmprotect_sample.exe"))
+    assert sample.file_path == str(tmp_path / Path("vmprotect_sample.exe"))
     assert sample.sample_hash == str(DEFAULT_TEST_SAMPLES[0]["sample_hash"])
     assert sample.severity is TestSeverity.CRITICAL
     assert sample.source == "research_collection"

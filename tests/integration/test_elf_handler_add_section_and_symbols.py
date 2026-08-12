@@ -7,7 +7,7 @@ from r2morph.platform.elf_handler import ELFHandler
 
 
 def test_elf_handler_add_section_and_preserve_symbols(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

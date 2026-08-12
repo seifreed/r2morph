@@ -35,7 +35,7 @@ from r2morph.mutations.code_virtualization_engine import (
 # and call ``vm_real._emulate_exit_code``.
 from tests.integration.elf_emulator import emulate_exit_code as _emulate_exit_code
 
-_DATASET = Path(__file__).resolve().parents[1].parent / "dataset"
+_DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
 FIXTURE = _DATASET / "elf_vm_arith_x86_64"
 FIXTURE32 = _DATASET / "elf_vm_arith32_x86_64"
 # Multi-block fixture: exercises the basic-block-bounded run extraction so a

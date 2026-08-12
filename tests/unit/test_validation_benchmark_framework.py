@@ -98,7 +98,7 @@ def test_validation_framework_metrics_and_exports(tmp_path):
 
 
 def test_benchmark_detection_and_pipeline(tmp_path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     sample_hash = hashlib.sha256(binary_path.read_bytes()).hexdigest()
 
     sample = TestSample(

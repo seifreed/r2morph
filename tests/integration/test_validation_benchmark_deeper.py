@@ -21,7 +21,7 @@ def _sha256(path: Path) -> str:
 
 
 def test_validation_benchmark_deeper_paths(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     sample_hash = _sha256(binary_path)
 
     framework = ValidationFramework(test_data_dir=str(tmp_path))

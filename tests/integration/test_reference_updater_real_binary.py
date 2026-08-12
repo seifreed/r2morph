@@ -27,7 +27,7 @@ def _read_bytes(bin_obj, addr: int, size: int) -> bytes:
 
 
 def test_reference_updater_updates_call_jump_and_data(tmp_path):
-    src_candidates = [Path("dataset/pe_x86_64.exe"), Path(get_platform_binary("generic"))]
+    src_candidates = [Path("fixtures/dataset/pe_x86_64.exe"), Path(get_platform_binary("generic"))]
     src_binary = next((p for p in src_candidates if ensure_exists(p)), None)
     if not src_binary:
         return

@@ -30,7 +30,7 @@ class TestControlFlowGraph:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_basic_block_creation(self):
         """Test creating basic blocks with various properties."""
@@ -201,7 +201,7 @@ class TestDependencyAnalysis:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_instruction_def_creation(self):
         """Test creating instruction definition."""
@@ -294,7 +294,7 @@ class TestInvariantDetection:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_invariant_type_values(self):
         """Test all invariant type enum values."""
@@ -392,7 +392,7 @@ class TestRelocationModules:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_cave_finder(self, ls_elf):
         """Test cave finder functionality."""
@@ -451,7 +451,7 @@ class TestCodeSigning:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_codesign_init(self, ls_elf, tmp_path):
         """Test code signer initialization."""

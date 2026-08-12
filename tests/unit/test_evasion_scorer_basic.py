@@ -42,7 +42,7 @@ def test_evasion_scorer_hash_entropy_signature_scores(tmp_path: Path):
 
 
 def test_evasion_scorer_structure_score_with_real_binary(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

@@ -44,7 +44,7 @@ class TestRelocationManagerDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_manager_init(self, ls_elf):
         """Test RelocationManager initialization."""
@@ -139,7 +139,7 @@ class TestReferenceUpdaterDetailed:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_reference_types(self):
         """Test all reference types."""
@@ -193,7 +193,7 @@ class TestRelocationManagerAdvanced:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_overlapping_relocations(self, ls_elf):
         """Test handling overlapping relocations."""

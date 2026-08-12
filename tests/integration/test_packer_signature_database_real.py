@@ -10,7 +10,7 @@ from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerT
 
 
 def test_packer_signature_detection_real_binary() -> None:
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF test binary not available")
 

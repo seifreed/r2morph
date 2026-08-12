@@ -6,7 +6,7 @@ from r2morph.analysis.enhanced_analyzer_models import AnalysisResults
 
 
 def test_enhanced_analyzer_detection_helpers_cover_basic_flow():
-    binary = load_binary(Path("dataset/elf_x86_64"))
+    binary = load_binary(Path("fixtures/dataset/elf_x86_64"))
     results = AnalysisResults()
     try:
         detector, detection_result = run_detection(binary, results)

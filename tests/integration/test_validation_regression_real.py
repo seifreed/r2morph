@@ -8,7 +8,7 @@ from r2morph.validation.regression import RegressionTestFramework, RegressionTes
 
 
 def test_regression_detection_baseline_and_run(tmp_path: Path) -> None:
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

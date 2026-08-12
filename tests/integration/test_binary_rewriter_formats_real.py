@@ -9,9 +9,9 @@ from r2morph.devirtualization.binary_rewriter import BinaryFormat, BinaryRewrite
 @pytest.mark.parametrize(
     "binary_path, expected_format",
     [
-        (Path("dataset/elf_x86_64"), BinaryFormat.ELF),
-        (Path("dataset/pe_x86_64.exe"), BinaryFormat.PE),
-        (Path("dataset/macho_arm64"), BinaryFormat.MACHO),
+        (Path("fixtures/dataset/elf_x86_64"), BinaryFormat.ELF),
+        (Path("fixtures/dataset/pe_x86_64.exe"), BinaryFormat.PE),
+        (Path("fixtures/dataset/macho_arm64"), BinaryFormat.MACHO),
     ],
 )
 def test_binary_rewriter_analyze_binary_formats(binary_path: Path, expected_format: BinaryFormat):
@@ -27,7 +27,7 @@ def test_binary_rewriter_analyze_binary_formats(binary_path: Path, expected_form
 
 
 def test_binary_rewriter_rewrite_no_patches(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     output_path = tmp_path / "elf_rewritten"
 
     with Binary(binary_path) as bin_obj:

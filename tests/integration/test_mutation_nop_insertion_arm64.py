@@ -8,7 +8,7 @@ from r2morph.mutations.nop_insertion import NopInsertionPass
 
 
 def test_nop_insertion_arm64_path(tmp_path: Path):
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
 
@@ -27,7 +27,7 @@ def test_nop_insertion_arm64_does_not_record_encoding_identical_rewrites(tmp_pat
     """ARM64 `mov w0, #0` is an alias of `movz w0, #0` and assembles to the same
     bytes; rewriting one as the other changes nothing, so it must not be recorded
     or counted as a mutation."""
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
 

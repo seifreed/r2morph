@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def setup_test_environment():
     """Set up the test environment with sample files."""
-    dataset_dir = Path("dataset")
+    dataset_dir = Path("fixtures/dataset")
     dataset_dir.mkdir(exist_ok=True)
 
     # Check if test files exist
@@ -30,7 +30,7 @@ def setup_test_environment():
     existing_files = [f for f in test_files if f.exists()]
 
     if not existing_files:
-        logger.warning("No test files found in dataset/ directory")
+        logger.warning("No test files found in fixtures/dataset/ directory")
         logger.info("Please ensure test binaries are available for comprehensive validation")
         return []
 
@@ -574,7 +574,7 @@ def main():
 
     # Set up test environment
     test_files = setup_test_environment()
-    print(f"Found {len(test_files)} test files in dataset/")
+    print(f"Found {len(test_files)} test files in fixtures/dataset/")
 
     # Run tests based on arguments
     try:

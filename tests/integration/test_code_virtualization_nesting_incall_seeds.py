@@ -26,7 +26,7 @@ from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration.elf_emulator import emulate_exit_code
 
 # Self-recursive fixture: recurse(9) sums 9+8+...+0 = 45.
-FIXTURE_INCALL = Path(__file__).resolve().parents[1].parent / "dataset" / "elf_vm_incall_x86_64"
+FIXTURE_INCALL = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_incall_x86_64"
 EXPECTED_EXIT_CODE = 45
 # Layout seeds that produced a vcall into the middle of a peeled run.
 BROKEN_LAYOUT_SEEDS = (20, 37, 52, 74)

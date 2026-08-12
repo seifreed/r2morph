@@ -1,6 +1,6 @@
 """Flag-liveness regression for instruction substitution.
 
-``dataset/elf_flag_live_x86_64`` zeroes ``rsi`` with the flag-neutral ``mov rsi, 0``
+``fixtures/dataset/elf_flag_live_x86_64`` zeroes ``rsi`` with the flag-neutral ``mov rsi, 0``
 between a ``cmp`` (which sets ZF) and a ``jz`` (which reads it). Every equivalent in
 that register's group is flag-setting (``xor``/``sub``), so substituting would change
 ZF and flip the branch. The pass must refuse the substitution while the flags are
@@ -15,7 +15,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 
-_FIXTURE = Path("dataset/elf_flag_live_x86_64")
+_FIXTURE = Path("fixtures/dataset/elf_flag_live_x86_64")
 _CANDIDATE_ADDR = 0x1008  # `mov rsi, 0`
 _FLAG_SETTING_SECOND_BYTES = {0x31, 0x29}  # xor / sub opcodes
 

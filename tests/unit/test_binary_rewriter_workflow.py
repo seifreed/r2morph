@@ -9,7 +9,7 @@ from r2morph.devirtualization.binary_rewriter import (
 
 
 def test_binary_rewriter_basic_workflow(tmp_path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze()

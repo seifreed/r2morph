@@ -14,7 +14,7 @@ from r2morph.analysis.enhanced_analyzer_phases import (
 
 
 def test_enhanced_analyzer_phase_helpers_basic_flow(tmp_path):
-    binary = load_binary(Path("dataset/elf_x86_64"))
+    binary = load_binary(Path("fixtures/dataset/elf_x86_64"))
     console = Console(record=True)
     results = AnalysisResults()
     try:
@@ -23,7 +23,9 @@ def test_enhanced_analyzer_phase_helpers_basic_flow(tmp_path):
         symbolic_result = run_symbolic_analysis(binary, console, results)
         assert symbolic_result is None or isinstance(symbolic_result, int)
         assert isinstance(run_dynamic_analysis(console), bool)
-        rewrite_result = run_binary_rewriting(binary, Path("dataset/elf_x86_64"), console, results, output_dir=tmp_path)
+        rewrite_result = run_binary_rewriting(
+            binary, Path("fixtures/dataset/elf_x86_64"), console, results, output_dir=tmp_path
+        )
         assert rewrite_result is None or isinstance(rewrite_result, str)
     finally:
         binary.__exit__(None, None, None)

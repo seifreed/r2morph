@@ -7,7 +7,7 @@ from r2morph.validation.validator import BinaryValidator, RuntimeComparisonConfi
 
 
 def test_binary_validator_validate_with_inputs(tmp_path: Path):
-    source = Path("dataset/elf_x86_64")
+    source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
 

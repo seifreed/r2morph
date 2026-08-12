@@ -9,8 +9,8 @@ from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, 
 @pytest.mark.parametrize(
     "binary_path",
     [
-        Path("dataset/pe_x86_64.exe"),
-        Path("dataset/macho_arm64"),
+        Path("fixtures/dataset/pe_x86_64.exe"),
+        Path("fixtures/dataset/macho_arm64"),
     ],
 )
 def test_binary_rewriter_metadata_updates(binary_path: Path, tmp_path: Path):
@@ -32,7 +32,7 @@ def test_binary_rewriter_metadata_updates(binary_path: Path, tmp_path: Path):
 
 
 def test_binary_rewriter_relocation_updates(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

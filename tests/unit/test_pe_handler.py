@@ -209,7 +209,7 @@ class TestValidate:
         assert handler.validate() is False
 
     def test_validate_valid_pe(self):
-        binary_path = Path(__file__).parents[2] / "dataset" / "pe_x86_64.exe"
+        binary_path = Path(__file__).parents[2] / "fixtures" / "dataset" / "pe_x86_64.exe"
         handler = PEHandler(binary_path)
         result = handler.validate()
         assert result is True

@@ -19,8 +19,8 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 
-_FLAG_LIVE = Path("dataset/elf_cff_flaglive_x86_64")
-_FLAG_DEAD = Path("dataset/elf_cff_flagdead_x86_64")
+_FLAG_LIVE = Path("fixtures/dataset/elf_cff_flaglive_x86_64")
+_FLAG_DEAD = Path("fixtures/dataset/elf_cff_flagdead_x86_64")
 _NOP = 0x90
 _MIN_SLED = 5
 

@@ -7,7 +7,7 @@ from r2morph.detection.obfuscation_detector import ObfuscationAnalysisResult, Ob
 
 
 def test_obfuscation_detector_analyze_binary_real():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
@@ -27,7 +27,7 @@ def test_obfuscation_detector_analyze_binary_real():
 
 
 def test_obfuscation_detector_report_real():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

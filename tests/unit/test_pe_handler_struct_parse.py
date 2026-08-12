@@ -10,7 +10,7 @@ broad ``except Exception`` blocks that logged at debug level and returned
    destructuring demanded 29 variables, AND for PE32+ the data slice was
    ``[:120]`` while the format only consumed 96 bytes. ``struct.unpack``
    raised ``unpack requires a buffer of N bytes`` on every real PE binary
-   (verified against ``dataset/pe_x86_64.exe``, a PE32+ x86_64 file).
+   (verified against ``fixtures/dataset/pe_x86_64.exe``, a PE32+ x86_64 file).
 
 2. ``get_sections``' lief-free fallback -- the per-section format was
    ``"<IIIIIIII"`` (8 fields, 32 bytes) but the destructuring expected 9
@@ -24,7 +24,7 @@ Both used to fail silently:
 * ``get_sections`` returned ``[]`` when lief was unavailable.
 
 No-mocks regression (CLAUDE.md sec.4): exercises the real PE32+ x86_64
-binary tracked in ``dataset/``. For ``get_sections`` the lief-free
+binary tracked in ``fixtures/dataset/``. For ``get_sections`` the lief-free
 fallback path is reached via a hand-written ``PEHandler`` subclass that
 overrides ``_parse_lief`` to return ``None`` (a fake, not a mock).
 """
@@ -36,7 +36,7 @@ from pathlib import Path
 from r2morph.platform.pe_handler import PEHandler
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-_PE_BINARY = _REPO_ROOT / "dataset" / "pe_x86_64.exe"
+_PE_BINARY = _REPO_ROOT / "fixtures" / "dataset" / "pe_x86_64.exe"
 
 
 def test_read_pe_header_returns_dict_for_real_pe32_plus() -> None:
@@ -48,7 +48,7 @@ def test_read_pe_header_returns_dict_for_real_pe32_plus() -> None:
     header = handler._read_pe_header()
 
     assert header is not None, "_read_pe_header must succeed on a real PE binary"
-    assert header["is_pe32_plus"] is True, "dataset/pe_x86_64.exe is PE32+"
+    assert header["is_pe32_plus"] is True, "fixtures/dataset/pe_x86_64.exe is PE32+"
     assert header["num_sections"] >= 1, f"got num_sections={header['num_sections']!r}"
     assert header["entry_point"] > 0, f"got entry_point={header['entry_point']!r}"
     # Microsoft's PE spec puts CheckSum at offset 64 from the start of

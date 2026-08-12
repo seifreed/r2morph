@@ -9,7 +9,7 @@ def test_r2pipe_adapter_open_cmd_close():
     adapter = R2PipeAdapter()
     assert adapter.is_open() is False
 
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     adapter.open(binary_path, flags=["-2"])
     assert adapter.is_open() is True
 

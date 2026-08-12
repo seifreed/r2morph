@@ -30,7 +30,7 @@ class TestCLI100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_cli_simple_without_output_auto_generate(self, ls_elf, tmp_path):
         """Test CLI simple mode without output (auto-generates filename)."""
@@ -126,7 +126,7 @@ class TestProfiler100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_profiler_parse_perf_output(self, ls_elf, tmp_path):
         """Test parsing perf output."""
@@ -189,7 +189,7 @@ class TestInvariants100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_detect_all_invariants_complete(self, ls_elf):
         """Test detecting all invariants comprehensively."""
@@ -262,7 +262,7 @@ class TestDependencies100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_analyze_all_dependency_types(self, ls_elf):
         """Test analyzing all types of dependencies."""
@@ -327,7 +327,7 @@ class TestReferenceUpdater100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_update_all_reference_types(self, ls_elf, tmp_path):
         """Test updating all types of references."""
@@ -379,7 +379,7 @@ class TestHotPathDetector100Percent:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_detect_all_hot_paths(self, ls_elf):
         """Test detecting hot paths comprehensively."""
@@ -444,7 +444,7 @@ class TestBinaryExtensiveMethods:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_binary_write_instruction(self, ls_elf, tmp_path):
         """Test write_instruction method."""
@@ -511,7 +511,7 @@ class TestMutationPassesComplete:
 
     @pytest.fixture
     def ls_elf(self):
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
+        return Path(__file__).parent.parent.parent / "fixtures" / "dataset" / "elf_x86_64"
 
     def test_all_mutations_with_different_configs(self, ls_elf, tmp_path):
         """Test all mutations with various configurations."""

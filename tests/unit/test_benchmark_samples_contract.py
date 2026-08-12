@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from r2morph.validation.benchmark_samples import DEFAULT_TEST_SAMPLES
 from r2morph.validation.benchmark_types import TestSeverity
 
@@ -25,4 +27,4 @@ def test_default_benchmark_samples_have_expected_shape() -> None:
     for sample in DEFAULT_TEST_SAMPLES:
         assert required_keys.issubset(sample)
         assert isinstance(sample["severity"], TestSeverity)
-        assert str(sample["file_path"]).startswith("dataset/")
+        assert Path(sample["file_path"]).parent == Path(".")

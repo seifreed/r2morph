@@ -317,7 +317,7 @@ class TestValidateBinaryIntegrity:
 
     def test_validate_without_repair_returns_detected_issues(self, tmp_path):
         elf_path = tmp_path / "test.elf"
-        copyfile(Path(__file__).parents[2] / "dataset" / "elf_x86_64", elf_path)
+        copyfile(Path(__file__).parents[2] / "fixtures" / "dataset" / "elf_x86_64", elf_path)
 
         result = validate_binary_integrity(elf_path, repair=False)
 
@@ -332,7 +332,7 @@ class TestValidateBinaryIntegrity:
 
     def test_validate_with_repair_revalidates_binary(self, tmp_path):
         elf_path = tmp_path / "test.elf"
-        copyfile(Path(__file__).parents[2] / "dataset" / "elf_x86_64", elf_path)
+        copyfile(Path(__file__).parents[2] / "fixtures" / "dataset" / "elf_x86_64", elf_path)
 
         result = validate_binary_integrity(elf_path, repair=True)
 

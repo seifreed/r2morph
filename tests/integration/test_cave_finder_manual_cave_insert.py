@@ -7,7 +7,7 @@ from r2morph.relocations.cave_finder import CaveFinder, CodeCave
 
 
 def test_cave_finder_manual_insert_and_allocate(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 

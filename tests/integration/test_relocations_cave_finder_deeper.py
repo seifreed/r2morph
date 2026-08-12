@@ -6,7 +6,7 @@ from r2morph.relocations.cave_finder import CaveFinder
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:
-    src = Path("dataset/elf_x86_64")
+    src = Path("fixtures/dataset/elf_x86_64")
     dst = tmp_path / name
     shutil.copy2(src, dst)
     return dst

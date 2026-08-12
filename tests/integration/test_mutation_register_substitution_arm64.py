@@ -8,7 +8,7 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
 
 def test_register_substitution_arm64_skip(tmp_path: Path):
-    binary_path = Path("dataset/macho_arm64")
+    binary_path = Path("fixtures/dataset/macho_arm64")
     if not binary_path.exists():
         pytest.skip("Mach-O binary not available")
 

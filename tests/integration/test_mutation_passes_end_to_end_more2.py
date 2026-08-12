@@ -12,7 +12,7 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
 def test_multiple_mutation_passes_on_x86_binary(tmp_path):
     random.seed(1234)
-    src = "dataset/pe_x86_64.exe"
+    src = "fixtures/dataset/pe_x86_64.exe"
     target = tmp_path / "pe_x86_64_mut.exe"
     shutil.copy2(src, target)
 

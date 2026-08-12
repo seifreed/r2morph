@@ -16,7 +16,7 @@ def _sha256(path: Path) -> str:
 
 
 def test_regression_framework_mismatch_reporting(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
     baseline_dir = tmp_path / "baselines"
 
     framework = RegressionTestFramework(baseline_dir=str(baseline_dir))

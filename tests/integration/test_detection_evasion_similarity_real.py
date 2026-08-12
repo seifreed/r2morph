@@ -7,14 +7,14 @@ from r2morph.detection.similarity_hasher import SimilarityHasher
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:
-    src = Path("dataset/elf_x86_64")
+    src = Path("fixtures/dataset/elf_x86_64")
     dst = tmp_path / name
     dst.write_bytes(src.read_bytes())
     return dst
 
 
 def test_evasion_scorer_real(tmp_path: Path):
-    original = Path("dataset/elf_x86_64")
+    original = Path("fixtures/dataset/elf_x86_64")
     if not original.exists():
         pytest.skip("ELF binary not available")
 
@@ -35,7 +35,7 @@ def test_evasion_scorer_real(tmp_path: Path):
 
 
 def test_similarity_hasher_real(tmp_path: Path):
-    original = Path("dataset/elf_x86_64")
+    original = Path("fixtures/dataset/elf_x86_64")
     if not original.exists():
         pytest.skip("ELF binary not available")
 

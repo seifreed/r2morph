@@ -25,7 +25,7 @@ class BenchmarkSampleRecord(TypedDict):
 
 DEFAULT_TEST_SAMPLES: list[BenchmarkSampleRecord] = [
     {
-        "file_path": "dataset/vmprotect_sample.exe",
+        "file_path": "vmprotect_sample.exe",
         "sample_hash": "abcd1234567890abcd1234567890abcd1234567890abcd1234567890abcd1234",
         "expected_packer": "VMProtect",
         "expected_vm_protection": True,
@@ -37,7 +37,7 @@ DEFAULT_TEST_SAMPLES: list[BenchmarkSampleRecord] = [
         "source": "research_collection",
     },
     {
-        "file_path": "dataset/themida_sample.exe",
+        "file_path": "themida_sample.exe",
         "sample_hash": "efgh5678901234efgh5678901234efgh5678901234efgh5678901234efgh5678",
         "expected_packer": "Themida",
         "expected_vm_protection": True,
@@ -49,7 +49,7 @@ DEFAULT_TEST_SAMPLES: list[BenchmarkSampleRecord] = [
         "source": "malware_zoo",
     },
     {
-        "file_path": "dataset/upx_sample.exe",
+        "file_path": "upx_sample.exe",
         "sample_hash": "ijkl9012345678ijkl9012345678ijkl9012345678ijkl9012345678ijkl9012",
         "expected_packer": "UPX",
         "expected_vm_protection": False,
@@ -61,7 +61,7 @@ DEFAULT_TEST_SAMPLES: list[BenchmarkSampleRecord] = [
         "source": "test_samples",
     },
     {
-        "file_path": "dataset/custom_vm_sample.exe",
+        "file_path": "custom_vm_sample.exe",
         "sample_hash": "mnop3456789012mnop3456789012mnop3456789012mnop3456789012mnop3456",
         "expected_packer": "Custom",
         "expected_vm_protection": True,
@@ -73,7 +73,7 @@ DEFAULT_TEST_SAMPLES: list[BenchmarkSampleRecord] = [
         "source": "academic_research",
     },
     {
-        "file_path": "dataset/clean_sample.exe",
+        "file_path": "clean_sample.exe",
         "sample_hash": "qrst7890123456qrst7890123456qrst7890123456qrst7890123456qrst7890",
         "expected_packer": None,
         "expected_vm_protection": False,

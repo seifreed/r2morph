@@ -160,7 +160,7 @@ r2morph mutate input.elf -o output.elf --format sarif --report mutations.sarif
 r2morph mutate input.elf -o output.elf --seed 1337
 
 # Runtime validation
-r2morph validate original.elf mutated.elf --corpus dataset/runtime_corpus.json
+r2morph validate original.elf mutated.elf --corpus fixtures/dataset/runtime_corpus.json
 
 # CI gate: fail if severity below threshold
 r2morph mutate input.elf -o output.elf --report report.json --min-severity bounded-only

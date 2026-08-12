@@ -12,7 +12,7 @@ def _load_binary(binary_path: Path) -> Binary:
 
 
 def test_iterative_simplifier_sequential_real(tmp_path: Path):
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with _load_binary(binary_path) as bin_obj:
         simplifier = IterativeSimplifier(bin_obj)
@@ -31,7 +31,7 @@ def test_iterative_simplifier_sequential_real(tmp_path: Path):
 
 
 def test_iterative_simplifier_parallel_real():
-    binary_path = Path("dataset/elf_x86_64")
+    binary_path = Path("fixtures/dataset/elf_x86_64")
 
     with _load_binary(binary_path) as bin_obj:
         simplifier = IterativeSimplifier(bin_obj)
