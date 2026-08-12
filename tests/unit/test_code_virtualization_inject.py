@@ -1,12 +1,10 @@
 """
-Contract: VM blobs share one appended load segment above the image.
+Contract: VM blobs occupy adjacent fragmented loads above the image.
 
-The injector appends a page-aligned read/execute ``PT_LOAD`` mapped above every
-pre-existing one, relocating the program-header table into that same segment so
-it can grow by one entry (a typical image leaves no slack behind its table) and
-so the kernel still derives ``AT_PHDR`` from a ``PT_LOAD`` containing
-``e_phoff``. Later blobs extend that segment rather than growing the program
-header table again. ET_EXEC and ET_DYN take the same path.
+The injector relocates the program-header table into a page-aligned read-only
+``PT_LOAD`` and maps each VM blob through adjacent read/execute fragments. This
+keeps the VM's address range contiguous while denying static tools one large RX
+container. ET_EXEC and ET_DYN take the same path.
 
 These tests drive the real injector against real ELF files and verify the
 result by re-parsing the produced bytes with ``struct`` - an oracle independent
@@ -19,6 +17,7 @@ otherwise notice.
 
 from __future__ import annotations
 
+import itertools
 import shutil
 import struct
 from dataclasses import astuple, replace
@@ -32,6 +31,7 @@ from r2morph.mutations.code_virtualization_inject import (
     _PHDR_ENTRY_SIZE,
     _SEGMENT_ALIGN,
     _file_size,
+    _fragment_sizes,
     _read_physical,
     _write_physical,
     inject_blob,
@@ -81,6 +81,7 @@ _BLOB_SIZE = 256
 _BLOB = bytes((index * 13 + 5) & 0xFF for index in range(_BLOB_SIZE))
 # Comfortably past one r2 command buffer (~2 KiB of blob = ~4 KiB of hex).
 _OVERSIZED_BLOB_SIZE = 8192
+_FRAGMENTED_BLOB_SIZE = 0x9000
 
 
 def _align_up(value: int, alignment: int) -> int:
@@ -167,9 +168,13 @@ def _write_synthetic_elf(path: Path, e_phnum: int = _SYNTHETIC_PHNUM, e_phentsiz
 
 
 def _blob_at(path: Path, vaddr: int, size: int) -> bytes:
-    """Resolve ``vaddr`` to a file offset through the appended segment."""
-    appended = program_headers(path)[-1]
-    offset = appended.p_offset + (vaddr - appended.p_vaddr)
+    """Resolve ``vaddr`` to the contiguous file bytes behind RX fragments."""
+    owner = next(
+        entry
+        for entry in program_headers(path)
+        if entry.p_type == PT_LOAD and entry.p_vaddr <= vaddr < entry.p_vaddr + entry.p_memsz
+    )
+    offset = owner.p_offset + (vaddr - owner.p_vaddr)
     return path.read_bytes()[offset : offset + size]
 
 
@@ -245,26 +250,28 @@ def test_predict_blob_vaddr_matches_the_vaddr_injection_returns(tmp_path: Path) 
     assert predicted == _inject_into(target, _BLOB)
 
 
-def test_inject_blob_increments_program_header_count_by_one(tmp_path: Path) -> None:
+def test_inject_blob_adds_table_load_and_rx_fragments(tmp_path: Path) -> None:
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
     before = struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0]
 
     _inject_into(target, _BLOB)
 
-    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + 1
+    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + 1 + len(_fragment_sizes(_BLOB))
 
 
-def test_second_blob_reuses_terminal_segment_without_growing_program_header_count(tmp_path: Path) -> None:
+def test_second_blob_adds_its_own_table_and_fragment_headers(tmp_path: Path) -> None:
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
     _inject_into(target, _BLOB)
     after_first = struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0]
 
     _inject_into(target, _BLOB[::-1])
 
-    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first
+    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first + 1 + len(
+        _fragment_sizes(_BLOB[::-1])
+    )
 
 
-def test_second_blob_reuse_maps_each_blob_at_its_returned_address(tmp_path: Path) -> None:
+def test_second_fragmented_blob_maps_each_blob_at_its_returned_address(tmp_path: Path) -> None:
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
 
     first = _inject_into(target, _BLOB)
@@ -281,7 +288,7 @@ def test_second_blob_reuse_maps_each_blob_at_its_returned_address(tmp_path: Path
     )
 
 
-def test_predict_second_blob_address_matches_reused_segment_injection(tmp_path: Path) -> None:
+def test_predict_second_blob_address_matches_fragmented_injection(tmp_path: Path) -> None:
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
     _inject_into(target, _BLOB)
 
@@ -290,7 +297,7 @@ def test_predict_second_blob_address_matches_reused_segment_injection(tmp_path: 
     assert predicted == _inject_into(target, _BLOB[::-1])
 
 
-def test_second_blob_reuse_preserves_strict_loader_invariants(tmp_path: Path) -> None:
+def test_second_fragmented_blob_preserves_strict_loader_invariants(tmp_path: Path) -> None:
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
     _inject_into(target, _BLOB)
 
@@ -299,15 +306,19 @@ def test_second_blob_reuse_preserves_strict_loader_invariants(tmp_path: Path) ->
     assert_loadable(target)
 
 
-def test_inject_blob_relocates_phoff_inside_the_appended_segment(tmp_path: Path) -> None:
+def test_inject_blob_relocates_phoff_inside_a_read_only_load(tmp_path: Path) -> None:
     """The kernel derives AT_PHDR from the PT_LOAD that contains e_phoff."""
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
 
     _inject_into(target, _BLOB)
 
     e_phoff = struct.unpack_from("<Q", target.read_bytes(), _E_PHOFF)[0]
-    appended = program_headers(target)[-1]
-    assert appended.p_offset <= e_phoff < appended.p_offset + appended.p_filesz
+    owner = next(
+        entry
+        for entry in program_headers(target)
+        if entry.p_type == PT_LOAD and entry.p_offset <= e_phoff < entry.p_offset + entry.p_filesz
+    )
+    assert owner.p_flags == _PF_R
 
 
 def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) -> None:
@@ -318,9 +329,30 @@ def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) ->
 
     headers = program_headers(target)
     pt_phdr = next(entry for entry in headers if entry.p_type == PT_PHDR)
-    appended = headers[-1]
-    expected = (appended.p_offset, appended.p_vaddr, len(headers) * _PHDR_ENTRY_SIZE)
+    e_phoff = struct.unpack_from("<Q", target.read_bytes(), _E_PHOFF)[0]
+    table_load = next(entry for entry in headers if entry.p_type == PT_LOAD and entry.p_offset == e_phoff)
+    expected = (table_load.p_offset, table_load.p_vaddr, len(headers) * _PHDR_ENTRY_SIZE)
     assert (pt_phdr.p_offset, pt_phdr.p_vaddr, pt_phdr.p_filesz) == expected
+
+
+def test_large_blob_is_split_into_adjacent_rx_fragments(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+    blob = bytes((index * 17 + 3) & 0xFF for index in range(_FRAGMENTED_BLOB_SIZE))
+    before = len(program_headers(target))
+
+    injected = _inject_into(target, blob)
+
+    fragments = program_headers(target)[before + 1 :]
+    assert (
+        injected is not None
+        and len(fragments) > 1
+        and all((entry.p_type, entry.p_flags) == (PT_LOAD, _PF_R | _PF_X) for entry in fragments)
+        and all(
+            left.p_vaddr + left.p_memsz == right.p_vaddr and left.p_offset + left.p_filesz == right.p_offset
+            for left, right in itertools.pairwise(fragments)
+        )
+        and _blob_at(target, injected, len(blob)) == blob
+    )
 
 
 @pytest.mark.parametrize("fixture", [_FIXTURE_EXEC, _FIXTURE_DYN])

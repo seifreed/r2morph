@@ -1,16 +1,17 @@
 """
 radare2-native executable-region injection for code virtualization.
 
-Places a generated VM interpreter blob into an ELF64 binary by appending a
-read/execute ``PT_LOAD`` segment above every existing one. Later blobs extend
-that terminal segment when its geometry proves it owns the end of the file,
-instead of exposing one extra load segment per virtualized function. ET_EXEC
-and ET_DYN images take the identical path.
+Places a generated VM interpreter blob into an ELF64 binary by relocating the
+program-header table into a read-only ``PT_LOAD`` and mapping the blob through
+several adjacent read/execute loads above every existing segment. The VM still
+sees one contiguous address range, while a static tool no longer receives one
+large executable container that identifies the complete payload at a glance.
+ET_EXEC and ET_DYN images take the identical path.
 
 A typical image leaves no slack after its program-header table (``.gnu.hash``
 starts immediately behind it), so the table cannot simply grow in place: the
-whole table is copied into the appended region and grown by one entry there.
-Keeping the relocated table *inside* the new segment is what preserves
+whole table is copied into the appended region and grown there. Keeping the
+relocated table *inside* a load segment is what preserves
 ``AT_PHDR`` - the kernel derives it from whichever ``PT_LOAD`` contains
 ``e_phoff`` - which static-PIE startup depends on. A ``PT_PHDR`` entry, when
 present, is retargeted at the relocated table so a dynamic loader still
@@ -29,6 +30,7 @@ injection leaves the binary untouched.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import struct
 from dataclasses import dataclass
@@ -62,9 +64,13 @@ _PF_R = 0x4
 # p_align)` congruence requirement trivially; a violating segment would be
 # mapped from the wrong file offset.
 _SEGMENT_ALIGN = 0x1000
-# Each injection adds one program header, so the table would grow without bound
-# over a long mutation run. Refuse past this many entries.
+# Each injection adds a table load and up to this many executable fragments.
+# Refuse before the program-header table or its reserved file window can overflow.
 _MAX_PHDR_ENTRIES = 128
+_MAX_RX_FRAGMENTS = 8
+_PHDR_RESERVE_SIZE = ((_MAX_PHDR_ENTRIES * _PHDR_ENTRY_SIZE + _SEGMENT_ALIGN - 1) // _SEGMENT_ALIGN) * _SEGMENT_ALIGN
+_MIN_FRAGMENT_PAGES = 2
+_FRAGMENT_PAGE_VARIANTS = 4
 
 # r2 truncates a single command past its line buffer (~4 KiB), so each `wx`/`p8`
 # carries at most this many bytes (2x hex chars); larger blobs are chunked. A VM
@@ -135,7 +141,7 @@ class _Load:
 
 @dataclass(frozen=True)
 class _Placement:
-    """Where the next appended segment lands.
+    """Where the next relocated table and fragmented blob land.
 
     Every field is derived from file size and header geometry alone - never
     from the blob - so :func:`predict_blob_vaddr` and :func:`inject_blob`
@@ -145,21 +151,12 @@ class _Placement:
     file_size: int
     append_offset: int
     segment_vaddr: int
-    phdr_table_size: int
+    blob_offset: int
+    blob_segment_vaddr: int
     blob_vaddr: int
     e_phoff: int
     e_phnum: int
     table: bytes
-
-
-@dataclass(frozen=True)
-class _Reuse:
-    """A terminal executable segment that can safely absorb another blob."""
-
-    blob_offset: int
-    blob_vaddr: int
-    entry_offset: int
-    segment_size: int
 
 
 def _phdr_table_geometry(header: bytes) -> tuple[int, int] | None:
@@ -171,8 +168,14 @@ def _phdr_table_geometry(header: bytes) -> tuple[int, int] | None:
     e_phnum = struct.unpack_from("<H", header, _E_PHNUM)[0]
     if e_phoff == 0 or e_phnum == 0 or e_phentsize != _PHDR_ENTRY_SIZE:
         return None
-    if e_phnum >= _MAX_PHDR_ENTRIES:
-        logger.debug("Program-header table already holds %d entries (cap %d); skipping", e_phnum, _MAX_PHDR_ENTRIES)
+    growth_headroom = 1 + _MAX_RX_FRAGMENTS
+    if e_phnum + growth_headroom > _MAX_PHDR_ENTRIES:
+        logger.debug(
+            "Program-header table holds %d entries without %d-entry fragmentation headroom (cap %d); skipping",
+            e_phnum,
+            growth_headroom,
+            _MAX_PHDR_ENTRIES,
+        )
         return None
     return e_phoff, e_phnum
 
@@ -232,68 +235,59 @@ def _plan_placement(binary: Any) -> _Placement | None:
 
     exec_vaddr, exec_r2_vaddr = anchor
     segment_vaddr = _align_up(max(load.vaddr + load.memsz for load in loads), _SEGMENT_ALIGN)
-    phdr_table_size = (e_phnum + 1) * _PHDR_ENTRY_SIZE
+    blob_offset = _align_up(_align_up(file_size, _SEGMENT_ALIGN) + _PHDR_RESERVE_SIZE, _SEGMENT_ALIGN)
+    blob_segment_vaddr = segment_vaddr + _PHDR_RESERVE_SIZE
     return _Placement(
         file_size=file_size,
         append_offset=_align_up(file_size, _SEGMENT_ALIGN),
         segment_vaddr=segment_vaddr,
-        phdr_table_size=phdr_table_size,
-        blob_vaddr=exec_r2_vaddr + (segment_vaddr + phdr_table_size - exec_vaddr),
+        blob_offset=blob_offset,
+        blob_segment_vaddr=blob_segment_vaddr,
+        blob_vaddr=exec_r2_vaddr + (blob_segment_vaddr - exec_vaddr),
         e_phoff=e_phoff,
         e_phnum=e_phnum,
         table=table,
     )
 
 
-def _plan_reuse(placement: _Placement) -> _Reuse | None:
-    """Reuse the relocated-table segment when it exclusively owns EOF."""
-    base = (placement.e_phnum - 1) * _PHDR_ENTRY_SIZE
-    p_type, p_flags = struct.unpack_from("<II", placement.table, base + _P_TYPE)
-    offset = struct.unpack_from("<Q", placement.table, base + _P_OFFSET)[0]
-    vaddr = struct.unpack_from("<Q", placement.table, base + _P_VADDR)[0]
-    filesz = struct.unpack_from("<Q", placement.table, base + _P_FILESZ)[0]
-    memsz = struct.unpack_from("<Q", placement.table, base + _P_MEMSZ)[0]
-    loads = _parse_loads(placement.table, placement.e_phnum)
-    if (
-        p_type != _PT_LOAD
-        or p_flags != _PF_R | _PF_X
-        or offset != placement.e_phoff
-        or offset + filesz != placement.file_size
-        or filesz != memsz
-        or vaddr + memsz != max(load.vaddr + load.memsz for load in loads)
-    ):
-        return None
-
-    rebase_delta = placement.blob_vaddr - placement.segment_vaddr - placement.phdr_table_size
-    return _Reuse(
-        blob_offset=placement.file_size,
-        blob_vaddr=vaddr + filesz + rebase_delta,
-        entry_offset=placement.e_phoff + base,
-        segment_size=filesz,
-    )
-
-
-def _retarget_phdr_entry(table: bytearray, base: int, placement: _Placement) -> None:
+def _retarget_phdr_entry(table: bytearray, base: int, placement: _Placement, table_size: int) -> None:
     """Point a ``PT_PHDR`` entry at the relocated program-header table."""
     struct.pack_into("<Q", table, base + _P_OFFSET, placement.append_offset)
     struct.pack_into("<Q", table, base + _P_VADDR, placement.segment_vaddr)
     struct.pack_into("<Q", table, base + _P_PADDR, placement.segment_vaddr)
-    struct.pack_into("<Q", table, base + _P_FILESZ, placement.phdr_table_size)
-    struct.pack_into("<Q", table, base + _P_MEMSZ, placement.phdr_table_size)
+    struct.pack_into("<Q", table, base + _P_FILESZ, table_size)
+    struct.pack_into("<Q", table, base + _P_MEMSZ, table_size)
 
 
-def _new_load_entry(placement: _Placement, blob_size: int) -> bytes:
-    """The appended read/execute ``PT_LOAD`` covering table plus blob."""
-    segment_size = placement.phdr_table_size + blob_size
+def _load_entry(flags: int, offset: int, vaddr: int, size: int) -> bytes:
+    """One appended ``PT_LOAD`` with page-congruent file and virtual offsets."""
     entry = bytearray(_PHDR_ENTRY_SIZE)
-    struct.pack_into("<II", entry, _P_TYPE, _PT_LOAD, _PF_R | _PF_X)
-    struct.pack_into("<Q", entry, _P_OFFSET, placement.append_offset)
-    struct.pack_into("<Q", entry, _P_VADDR, placement.segment_vaddr)
-    struct.pack_into("<Q", entry, _P_PADDR, placement.segment_vaddr)
-    struct.pack_into("<Q", entry, _P_FILESZ, segment_size)
-    struct.pack_into("<Q", entry, _P_MEMSZ, segment_size)
+    struct.pack_into("<II", entry, _P_TYPE, _PT_LOAD, flags)
+    struct.pack_into("<Q", entry, _P_OFFSET, offset)
+    struct.pack_into("<Q", entry, _P_VADDR, vaddr)
+    struct.pack_into("<Q", entry, _P_PADDR, vaddr)
+    struct.pack_into("<Q", entry, _P_FILESZ, size)
+    struct.pack_into("<Q", entry, _P_MEMSZ, size)
     struct.pack_into("<Q", entry, _P_ALIGN, _SEGMENT_ALIGN)
     return bytes(entry)
+
+
+def _fragment_sizes(blob: bytes) -> tuple[int, ...]:
+    """Split a blob at page boundaries using per-blob deterministic spans."""
+    if not blob:
+        return ()
+    digest = hashlib.sha256(blob).digest()
+    sizes: list[int] = []
+    remaining = len(blob)
+    for index in range(_MAX_RX_FRAGMENTS - 1):
+        pages = _MIN_FRAGMENT_PAGES + digest[index] % _FRAGMENT_PAGE_VARIANTS
+        size = pages * _SEGMENT_ALIGN
+        if remaining <= size:
+            break
+        sizes.append(size)
+        remaining -= size
+    sizes.append(remaining)
+    return tuple(sizes)
 
 
 def _header_load_index(table: bytes, e_phnum: int) -> int | None:
@@ -307,7 +301,7 @@ def _header_load_index(table: bytes, e_phnum: int) -> int | None:
     return None
 
 
-def _grow_header_segment(table: bytearray, placement: _Placement) -> None:
+def _grow_header_segment(table: bytearray, placement: _Placement, new_phnum: int) -> None:
     """Keep the ELF header's segment spanning the grown program-header table.
 
     Adding an entry lengthens the header-plus-table prefix, and a loader that
@@ -320,7 +314,7 @@ def _grow_header_segment(table: bytearray, placement: _Placement) -> None:
     index = _header_load_index(bytes(table), placement.e_phnum)
     if index is None:
         return
-    required = _ELF64_HEADER_SIZE + (placement.e_phnum + 1) * _PHDR_ENTRY_SIZE
+    required = _ELF64_HEADER_SIZE + new_phnum * _PHDR_ENTRY_SIZE
     base = index * _PHDR_ENTRY_SIZE
     vaddr = struct.unpack_from("<Q", table, base + _P_VADDR)[0]
     if struct.unpack_from("<Q", table, base + _P_FILESZ)[0] >= required or required > placement.file_size:
@@ -337,19 +331,33 @@ def _grow_header_segment(table: bytearray, placement: _Placement) -> None:
     struct.pack_into("<Q", table, base + _P_MEMSZ, max(memsz, required))
 
 
-def _relocated_phdr_table(placement: _Placement, blob_size: int) -> bytes:
-    """The original entries, ``PT_PHDR`` retargeted, plus the new ``PT_LOAD``.
+def _relocated_phdr_table(placement: _Placement, fragment_sizes: tuple[int, ...]) -> bytes:
+    """Original entries, a read-only table load, and adjacent RX fragments.
 
-    The new entry goes last and has the highest virtual address: the kernel
+    The final fragment goes last and has the highest virtual address: the kernel
     sizes an ET_DYN total mapping from the last ``PT_LOAD`` in table order.
     """
+    new_phnum = placement.e_phnum + 1 + len(fragment_sizes)
+    table_size = new_phnum * _PHDR_ENTRY_SIZE
     table = bytearray(placement.table)
     for index in range(placement.e_phnum):
         base = index * _PHDR_ENTRY_SIZE
         if struct.unpack_from("<I", table, base + _P_TYPE)[0] == _PT_PHDR:
-            _retarget_phdr_entry(table, base, placement)
-    _grow_header_segment(table, placement)
-    return bytes(table) + _new_load_entry(placement, blob_size)
+            _retarget_phdr_entry(table, base, placement, table_size)
+    _grow_header_segment(table, placement, new_phnum)
+    table.extend(_load_entry(_PF_R, placement.append_offset, placement.segment_vaddr, table_size))
+    consumed = 0
+    for size in fragment_sizes:
+        table.extend(
+            _load_entry(
+                _PF_R | _PF_X,
+                placement.blob_offset + consumed,
+                placement.blob_segment_vaddr + consumed,
+                size,
+            )
+        )
+        consumed += size
+    return bytes(table)
 
 
 def predict_blob_vaddr(binary: Any) -> int | None:
@@ -365,30 +373,12 @@ def predict_blob_vaddr(binary: Any) -> int | None:
     placement = _plan_placement(binary)
     if placement is None:
         return None
-    reuse = _plan_reuse(placement)
-    return reuse.blob_vaddr if reuse is not None else placement.blob_vaddr
-
-
-def _extend_segment(binary: Any, reuse: _Reuse, blob: bytes) -> int | None:
-    """Append ``blob`` and grow the owning terminal load entry in place."""
-    segment_size = reuse.segment_size + len(blob)
-    _write_physical(binary, reuse.blob_offset, blob)
-    _write_physical(binary, reuse.entry_offset + _P_FILESZ, struct.pack("<Q", segment_size))
-    _write_physical(binary, reuse.entry_offset + _P_MEMSZ, struct.pack("<Q", segment_size))
-    if _read_physical(binary, reuse.blob_offset, len(blob)) != blob:
-        logger.warning("VM blob read-back mismatch at file offset 0x%x; injection failed", reuse.blob_offset)
-        return None
-    logger.debug(
-        "Injected %d-byte VM blob at vaddr 0x%x by extending the terminal load segment",
-        len(blob),
-        reuse.blob_vaddr,
-    )
-    return reuse.blob_vaddr
+    return placement.blob_vaddr
 
 
 def inject_blob(binary: Any, blob: bytes) -> int | None:
     """
-    Append ``blob`` in a new executable segment mapped above the whole image.
+    Append ``blob`` in adjacent executable fragments mapped above the whole image.
 
     Returns the virtual address (in r2's address space) the blob is mapped
     at, or ``None`` when the binary's geometry does not admit a new segment
@@ -396,26 +386,30 @@ def inject_blob(binary: Any, blob: bytes) -> int | None:
     """
     placement = _plan_placement(binary)
     if placement is None:
-        logger.debug("ELF64 geometry admits no appended load segment; skipping virtualization")
+        logger.debug("ELF64 geometry admits no fragmented payload; skipping virtualization")
         return None
-    reuse = _plan_reuse(placement)
-    if reuse is not None:
-        return _extend_segment(binary, reuse, blob)
-
+    fragment_sizes = _fragment_sizes(blob)
+    if not fragment_sizes:
+        return None
+    new_phnum = placement.e_phnum + 1 + len(fragment_sizes)
+    if new_phnum > _MAX_PHDR_ENTRIES:
+        return None
     padding = bytes(placement.append_offset - placement.file_size)
-    _write_physical(binary, placement.file_size, padding + _relocated_phdr_table(placement, len(blob)) + blob)
+    table = _relocated_phdr_table(placement, fragment_sizes)
+    table_padding = bytes(placement.blob_offset - placement.append_offset - len(table))
+    _write_physical(binary, placement.file_size, padding + table + table_padding + blob)
     _write_physical(binary, _E_PHOFF, struct.pack("<Q", placement.append_offset))
-    _write_physical(binary, _E_PHNUM, struct.pack("<H", placement.e_phnum + 1))
+    _write_physical(binary, _E_PHNUM, struct.pack("<H", new_phnum))
 
-    blob_offset = placement.append_offset + placement.phdr_table_size
-    if _read_physical(binary, blob_offset, len(blob)) != blob:
-        logger.warning("VM blob read-back mismatch at file offset 0x%x; injection failed", blob_offset)
+    if _read_physical(binary, placement.blob_offset, len(blob)) != blob:
+        logger.warning("VM blob read-back mismatch at file offset 0x%x; injection failed", placement.blob_offset)
         return None
 
     logger.debug(
-        "Injected %d-byte VM blob at vaddr 0x%x (file 0x%x) in a new load segment",
+        "Injected %d-byte VM blob at vaddr 0x%x (file 0x%x) across %d RX fragments",
         len(blob),
         placement.blob_vaddr,
-        blob_offset,
+        placement.blob_offset,
+        len(fragment_sizes),
     )
     return placement.blob_vaddr
