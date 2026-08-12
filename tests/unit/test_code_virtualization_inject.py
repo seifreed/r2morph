@@ -1,11 +1,12 @@
 """
-Contract: the VM blob is injected in a brand-new load segment above the image.
+Contract: VM blobs share one appended load segment above the image.
 
 The injector appends a page-aligned read/execute ``PT_LOAD`` mapped above every
 pre-existing one, relocating the program-header table into that same segment so
 it can grow by one entry (a typical image leaves no slack behind its table) and
 so the kernel still derives ``AT_PHDR`` from a ``PT_LOAD`` containing
-``e_phoff``. ET_EXEC and ET_DYN take the same path.
+``e_phoff``. Later blobs extend that segment rather than growing the program
+header table again. ET_EXEC and ET_DYN take the same path.
 
 These tests drive the real injector against real ELF files and verify the
 result by re-parsing the produced bytes with ``struct`` - an oracle independent
@@ -251,6 +252,51 @@ def test_inject_blob_increments_program_header_count_by_one(tmp_path: Path) -> N
     _inject_into(target, _BLOB)
 
     assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + 1
+
+
+def test_second_blob_reuses_terminal_segment_without_growing_program_header_count(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+    _inject_into(target, _BLOB)
+    after_first = struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0]
+
+    _inject_into(target, _BLOB[::-1])
+
+    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first
+
+
+def test_second_blob_reuse_maps_each_blob_at_its_returned_address(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+
+    first = _inject_into(target, _BLOB)
+    second = _inject_into(target, _BLOB[::-1])
+
+    assert (
+        first is not None
+        and second is not None
+        and (
+            _blob_at(target, first, _BLOB_SIZE),
+            _blob_at(target, second, _BLOB_SIZE),
+        )
+        == (_BLOB, _BLOB[::-1])
+    )
+
+
+def test_predict_second_blob_address_matches_reused_segment_injection(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+    _inject_into(target, _BLOB)
+
+    predicted = _predict_for(target)
+
+    assert predicted == _inject_into(target, _BLOB[::-1])
+
+
+def test_second_blob_reuse_preserves_strict_loader_invariants(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+    _inject_into(target, _BLOB)
+
+    _inject_into(target, _BLOB[::-1])
+
+    assert_loadable(target)
 
 
 def test_inject_blob_relocates_phoff_inside_the_appended_segment(tmp_path: Path) -> None:

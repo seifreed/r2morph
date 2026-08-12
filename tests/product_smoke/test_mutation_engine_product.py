@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from r2morph import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations import NopInsertionPass
 from r2morph.mutations.base import MutationPass
 from r2morph.validation import BinaryValidator
@@ -62,7 +63,7 @@ def test_product_mutate_generates_stable_report(stable_elf_binary: Path, tmp_pat
     with MorphEngine() as engine:
         engine.load_binary(stable_elf_binary).analyze()
         engine.add_mutation(NopInsertionPass(config={"probability": 0.4}))
-        result = engine.run(validation_mode="structural", report_path=report)
+        result = engine.run(EngineRunOptions(validation_mode="structural", report_path=report))
         engine.save(output)
 
     assert output.exists()
@@ -97,7 +98,7 @@ def test_product_symbolic_validation_report_is_explicit(
     with MorphEngine() as engine:
         engine.load_binary(stable_elf_binary).analyze()
         engine.add_mutation(_ForcedRollbackPass())
-        result = engine.run(validation_mode="symbolic", report_path=report)
+        result = engine.run(EngineRunOptions(validation_mode="symbolic", report_path=report))
         engine.save(output)
 
     assert report.exists()
@@ -124,7 +125,7 @@ def test_product_symbolic_report_keeps_mutation_level_metadata(
     with MorphEngine() as engine:
         engine.load_binary(stable_elf_binary).analyze()
         engine.add_mutation(_ForcedRollbackPass())
-        result = engine.run(validation_mode="symbolic", report_path=report)
+        result = engine.run(EngineRunOptions(validation_mode="symbolic", report_path=report))
 
     assert result["validation_mode"] == "symbolic"
     payload = json.loads(report.read_text(encoding="utf-8"))
@@ -411,7 +412,7 @@ def test_product_runtime_validation_with_corpus(
     with MorphEngine() as engine:
         engine.load_binary(stable_elf_binary).analyze()
         engine.add_mutation(NopInsertionPass(config={"probability": 0.4}))
-        engine.run(validation_mode="structural")
+        engine.run(EngineRunOptions(validation_mode="structural"))
         engine.save(output)
 
     validator = BinaryValidator(timeout=5)
@@ -437,7 +438,7 @@ def test_product_cli_validate_with_canonical_corpus(
     with MorphEngine() as engine:
         engine.load_binary(stable_elf_binary).analyze()
         engine.add_mutation(NopInsertionPass(config={"probability": 0.4}))
-        engine.run(validation_mode="structural")
+        engine.run(EngineRunOptions(validation_mode="structural"))
         engine.save(output)
 
     validate_result = subprocess.run(
@@ -465,22 +466,11 @@ def test_product_cli_validate_with_canonical_corpus(
 def test_product_fail_fast_rolls_back_invalid_pass(
     stable_elf_binary: Path,
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ):
     if not stable_elf_binary.exists():
         pytest.skip("Stable ELF fixture not available")
 
-    from r2morph.validation.manager import ValidationIssue, ValidationManager, ValidationOutcome
-
-    def _always_fail(self, binary, pass_result):
-        return ValidationOutcome(
-            validator_type="structural",
-            passed=False,
-            scope="pass",
-            issues=[ValidationIssue(validator="test", message="forced failure")],
-        )
-
-    monkeypatch.setattr(ValidationManager, "validate_pass", _always_fail)
+    from tests._doubles.failing_validation_manager import FailingValidationManager
 
     output = tmp_path / "rolled_back.bin"
 
@@ -488,7 +478,13 @@ def test_product_fail_fast_rolls_back_invalid_pass(
         engine.load_binary(stable_elf_binary).analyze()
         engine.add_mutation(_ForcedRollbackPass())
         with pytest.raises(RuntimeError):
-            engine.run(validation_mode="structural", rollback_policy="fail-fast")
+            engine.run(
+                EngineRunOptions(
+                    validation_mode="structural",
+                    rollback_policy="fail-fast",
+                    validation_manager=FailingValidationManager(),
+                )
+            )
         engine.save(output)
 
     assert output.exists()
@@ -499,22 +495,11 @@ def test_product_fail_fast_rolls_back_invalid_pass(
 def test_product_skip_invalid_pass_reports_discarded_mutations(
     stable_elf_binary: Path,
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ):
     if not stable_elf_binary.exists():
         pytest.skip("Stable ELF fixture not available")
 
-    from r2morph.validation.manager import ValidationIssue, ValidationManager, ValidationOutcome
-
-    def _always_fail(self, binary, pass_result):
-        return ValidationOutcome(
-            validator_type="structural",
-            passed=False,
-            scope="pass",
-            issues=[ValidationIssue(validator="test", message="forced failure")],
-        )
-
-    monkeypatch.setattr(ValidationManager, "validate_pass", _always_fail)
+    from tests._doubles.failing_validation_manager import FailingValidationManager
 
     report = tmp_path / "rollback.report.json"
 
@@ -522,9 +507,12 @@ def test_product_skip_invalid_pass_reports_discarded_mutations(
         engine.load_binary(stable_elf_binary).analyze()
         engine.add_mutation(_ForcedRollbackPass())
         result = engine.run(
-            validation_mode="structural",
-            rollback_policy="skip-invalid-pass",
-            report_path=report,
+            EngineRunOptions(
+                validation_mode="structural",
+                rollback_policy="skip-invalid-pass",
+                validation_manager=FailingValidationManager(),
+                report_path=report,
+            )
         )
 
     assert result["rolled_back_passes"] == 1

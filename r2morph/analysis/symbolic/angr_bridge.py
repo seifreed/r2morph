@@ -157,7 +157,7 @@ class AngrBridge:
             angr_cfg: angr CFG
         """
         # For now, assume direct address mapping (same virtual addresses)
-        for r2_addr, r2_block in r2_cfg.blocks.items():
+        for r2_addr, _r2_block in r2_cfg.blocks.items():
             if angr_cfg.get_any_node(r2_addr):
                 self._r2_to_angr_mapping[r2_addr] = r2_addr
                 self._angr_to_r2_mapping[r2_addr] = r2_addr

@@ -11,12 +11,13 @@ def build_gate_detail(
     gate_failure_priority: list[dict[str, Any]],
     gate_failure_summary: dict[str, Any] | None,
     gate_failure_severity_priority: list[dict[str, Any]],
-    failed_gates_rows: list[dict[str, Any]],
-    failed_gates_by_pass: dict[str, dict[str, Any]],
-    failed_gates_expected_severity: dict[str, Any],
+    gates: dict[str, Any],
 ) -> dict[str, Any]:
     """Build the only_failed_gates detail section."""
     gfs = gate_failure_summary or {}
+    failed_gates_rows = gates["failed_gates_rows"]
+    failed_gates_by_pass = gates["failed_gates_by_pass"]
+    failed_gates_expected_severity = gates["failed_gates_expected_severity"]
     return {
         "priority": failed_gates_rows,
         "by_pass": failed_gates_by_pass,

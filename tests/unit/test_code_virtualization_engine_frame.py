@@ -11,6 +11,7 @@ exit codes across the GP and FP handlers that address every relocated region).
 
 from __future__ import annotations
 
+import itertools
 import random
 
 from r2morph.mutations.code_virtualization_engine_frame import (
@@ -56,7 +57,7 @@ def test_relocated_regions_never_overlap_and_stay_in_the_window() -> None:
         regions = _regions(layout)
         assert regions[0][0] >= _GP_REGION_END  # below: GP slots
         assert regions[-1][0] + regions[-1][1] <= _FRAME_SIZE - _RED_ZONE_SIZE  # above: red zone
-        for (start, size), (next_start, _) in zip(regions, regions[1:]):
+        for (start, size), (next_start, _) in itertools.pairwise(regions):
             assert start + size <= next_start
 
 

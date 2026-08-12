@@ -23,7 +23,8 @@ import subprocess
 import sys
 
 _PROBE = """
-import json, random
+import json
+import r2morph.core.randomness as random
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
 pass_obj = RegisterSubstitutionPass()

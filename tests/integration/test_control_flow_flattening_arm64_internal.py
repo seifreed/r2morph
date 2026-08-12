@@ -7,7 +7,6 @@ import pytest
 from r2morph.analysis.cfg import BasicBlock
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_dispatcher import DispatcherGenerator
-from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_strategies import (
     add_opaque_predicate,
     insert_dead_code_with_predicate,
@@ -44,7 +43,7 @@ def test_control_flow_flattening_arm64_internal_helpers(tmp_path: Path):
         if addr == 0:
             pytest.skip("Invalid instruction address")
 
-        ok_pred = add_opaque_predicate(bin_obj, addr, 16, arch_family, bits, OpaquePredicateGenerator())
+        ok_pred = add_opaque_predicate(bin_obj, addr, 16, arch_family, bits)
         ok_dead = insert_dead_code_with_predicate(bin_obj, addr, 16, arch_family, bits)
 
         blocks = [BasicBlock(address=0x1000, size=4), BasicBlock(address=0x2000, size=4)]

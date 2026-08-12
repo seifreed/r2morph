@@ -43,6 +43,7 @@ class BlockType(Enum):
     PLT_STUB = "plt_stub"
 
 
+@dataclass(repr=False)
 class BasicBlock:
     """
     Represents a basic block in the control flow graph.
@@ -53,23 +54,14 @@ class BasicBlock:
     - No branches except at the end
     """
 
-    def __init__(
-        self,
-        address: int,
-        size: int,
-        instructions: list[dict[str, Any]] | None = None,
-        successors: list[int] | None = None,
-        predecessors: list[int] | None = None,
-        block_type: BlockType = BlockType.NORMAL,
-    ):
-        self.address = address
-        self.size = size
-        self.instructions = instructions if instructions is not None else []
-        self.successors = successors if successors is not None else []
-        self.predecessors = predecessors if predecessors is not None else []
-        self.block_type = block_type
-        self.edge_types: dict[int, EdgeType] = {}
-        self.metadata: dict[str, Any] = {}
+    address: int
+    size: int
+    instructions: list[dict[str, Any]] = field(default_factory=list)
+    successors: list[int] = field(default_factory=list)
+    predecessors: list[int] = field(default_factory=list)
+    block_type: BlockType = BlockType.NORMAL
+    edge_types: dict[int, EdgeType] = field(default_factory=dict, init=False)
+    metadata: dict[str, Any] = field(default_factory=dict, init=False)
 
     def __repr__(self) -> str:
         return f"<BasicBlock @ 0x{self.address:x} size={self.size} type={self.block_type.value}>"

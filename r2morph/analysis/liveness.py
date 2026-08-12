@@ -10,7 +10,7 @@ Provides detailed liveness computation including:
 
 import logging
 import re
-from typing import Any
+from typing import Any, ClassVar
 
 from r2morph.analysis.cfg import BasicBlock, ControlFlowGraph
 from r2morph.analysis.dataflow_models import Register
@@ -20,6 +20,8 @@ from r2morph.analysis.liveness_models import (
     InterferenceGraph,
     LiveRange,
 )
+
+_INSTRUCTION_PART_COUNT = 2
 
 logger = logging.getLogger(__name__)
 
@@ -38,12 +40,12 @@ class LivenessAnalysis:
     """
 
     # ABI-specific register sets for call instruction analysis
-    _CALL_USED_REGS = {
+    _CALL_USED_REGS: ClassVar[dict[str, list[tuple[str, int]]]] = {
         "sysv_amd64": [("rdi", 64), ("rsi", 64), ("rdx", 64), ("rcx", 64), ("r8", 64), ("r9", 64)],
         "win64": [("rcx", 64), ("rdx", 64), ("r8", 64), ("r9", 64)],
         "cdecl_32": [],  # Arguments passed on stack
     }
-    _CALL_DEFINED_REGS = {
+    _CALL_DEFINED_REGS: ClassVar[dict[str, list[tuple[str, int]]]] = {
         "sysv_amd64": [
             ("rax", 64),
             ("rdx", 64),
@@ -226,7 +228,7 @@ class LivenessAnalysis:
 
     def _build_interference_graph(self) -> None:
         """Build interference graph from live ranges."""
-        for reg_name, ranges in self._live_ranges.items():
+        for reg_name in self._live_ranges:
             self._interference_graph.add_node(reg_name)
 
         all_ranges: list[tuple[str, LiveRange]] = []
@@ -239,7 +241,7 @@ class LivenessAnalysis:
                 if reg1 != reg2 and range1.overlaps(range2):
                     self._interference_graph.add_edge(reg1, reg2)
 
-    def _extract_registers_used(self, insn: dict) -> set[Register]:
+    def _extract_registers_used(self, insn: dict[str, Any]) -> set[Register]:
         """Extract registers used by an instruction."""
         used: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
@@ -254,41 +256,41 @@ class LivenessAnalysis:
 
         # call instructions implicitly use argument registers per ABI
         if mnemonic == "call":
-            for reg_name, reg_size in self._CALL_USED_REGS.get(self._abi, self._CALL_USED_REGS["sysv_amd64"]):
-                used.add(Register(reg_name, reg_size))
+            used = {
+                Register(reg_name, reg_size)
+                for reg_name, reg_size in self._CALL_USED_REGS.get(self._abi, self._CALL_USED_REGS["sysv_amd64"])
+            }
             # Also extract explicit operand registers (e.g., call rax)
             operand_parts = disasm.split(None, 1)
-            if len(operand_parts) >= 2:
-                for reg in self._parse_registers_from_string(operand_parts[1]):
-                    used.add(reg)
+            if len(operand_parts) >= _INSTRUCTION_PART_COUNT:
+                used.update(self._parse_registers_from_string(operand_parts[1]))
             return used
 
         operand_parts = disasm.split(None, 1)
-        if len(operand_parts) < 2:
+        if len(operand_parts) < _INSTRUCTION_PART_COUNT:
             return used
 
-        operands = operand_parts[1]
+        return self._registers_used_by_operands(operand_parts[1], disasm)
+
+    def _registers_used_by_operands(self, operands: str, disasm: str) -> set[Register]:
+        used: set[Register] = set()
         if "," in operands:
             parts = operands.split(",")
-            if len(parts) >= 2:
+            if len(parts) >= _INSTRUCTION_PART_COUNT:
                 src = parts[1].strip()
-                for reg in self._parse_registers_from_string(src):
-                    used.add(reg)
+                used.update(self._parse_registers_from_string(src))
             dest = parts[0].strip()
             if "[" in dest:
-                for reg in self._parse_registers_from_string(dest):
-                    used.add(reg)
+                used.update(self._parse_registers_from_string(dest))
         else:
-            for reg in self._parse_registers_from_string(operands):
-                used.add(reg)
+            used.update(self._parse_registers_from_string(operands))
 
         if "(" in disasm and ")" in disasm:
-            for reg in self._parse_registers_from_string(disasm):
-                used.add(reg)
+            used.update(self._parse_registers_from_string(disasm))
 
         return used
 
-    def _extract_registers_defined(self, insn: dict) -> set[Register]:
+    def _extract_registers_defined(self, insn: dict[str, Any]) -> set[Register]:
         """Extract registers defined by an instruction."""
         defined: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
@@ -307,7 +309,7 @@ class LivenessAnalysis:
             return defined
 
         operand_parts = disasm.split(None, 1)
-        if len(operand_parts) < 2:
+        if len(operand_parts) < _INSTRUCTION_PART_COUNT:
             return defined
 
         operands = operand_parts[1]

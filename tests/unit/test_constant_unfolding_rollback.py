@@ -18,6 +18,7 @@ Both are exercised through a real in-memory binary double (no mocks).
 from __future__ import annotations
 
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
+from r2morph.mutations.constant_unfolding_helpers import UnfoldMutation
 from tests._doubles.in_memory_unfold_binary import InMemoryUnfoldBinary
 
 BASE_ADDR = 0x1000
@@ -32,12 +33,14 @@ def _apply(binary: InMemoryUnfoldBinary) -> tuple[bool, ConstantUnfoldingPass]:
     pass_ = ConstantUnfoldingPass()
     applied = pass_._apply_single_unfold(
         binary,
-        FUNC,
-        BASE_ADDR,
-        ORIG_SIZE,
-        "mov eax, 42",
-        ["xor eax, eax"],
-        {},
+        UnfoldMutation(
+            function_address=FUNC["addr"],
+            address=BASE_ADDR,
+            original_size=ORIG_SIZE,
+            original_disassembly="mov eax, 42",
+            instructions=("xor eax, eax",),
+            baseline={},
+        ),
     )
     return applied, pass_
 

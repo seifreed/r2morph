@@ -3,10 +3,10 @@ Fuzzer for testing mutated binaries with random inputs.
 """
 
 import logging
-import random
 import string
 from pathlib import Path
 
+import r2morph.core.randomness as random
 from r2morph.validation import fuzzer_inputs
 from r2morph.validation.fuzzer_models import FuzzResult
 from r2morph.validation.validator import BinaryValidator

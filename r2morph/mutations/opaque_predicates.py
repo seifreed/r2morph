@@ -7,11 +7,12 @@ but appear complex to analysis tools.
 
 from __future__ import annotations
 
+import json
 import logging
-import random
 from typing import Any
 
-from r2morph.core.constants import OPAQUE_PREDICATE_MIN_FUNCTION_SIZE
+import r2morph.core.randomness as random
+from r2morph.core.constants import ARCH_BITS_64, OPAQUE_PREDICATE_MIN_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
@@ -75,7 +76,7 @@ class OpaquePredicatePass(MutationPass):
             "functions_mutated": funcs_mutated,
         }
 
-    def _insert_opaque_predicates(self, binary: Any, func: dict) -> int:
+    def _insert_opaque_predicates(self, binary: Any, func: dict[str, Any]) -> int:
         """
         Insert opaque predicates in a function.
 
@@ -91,8 +92,6 @@ class OpaquePredicatePass(MutationPass):
 
         try:
             bb_json = binary.r2.cmd(f"afbj @ 0x{func_addr:x}")
-            import json
-
             basic_blocks = json.loads(bb_json) if bb_json else []
         except (ValueError, OSError, BrokenPipeError, json.JSONDecodeError) as e:
             logger.debug(f"Failed to get basic blocks: {e}")
@@ -123,43 +122,39 @@ class OpaquePredicatePass(MutationPass):
                 ]
             )
 
-            predicate_code = self._generate_predicate(binary, predicate_type)
+            assembled = self._assemble_predicate(binary, self._generate_predicate(binary, predicate_type), bb_addr)
+            if assembled and len(assembled) <= bb_size:
+                orig_bytes_hex = ""
+                if binary.r2:
+                    orig_bytes_hex = binary.r2.cmd(f"p8 {len(assembled)} @ 0x{bb_addr:x}") or ""
+                orig_bytes = b""
+                if orig_bytes_hex.strip():
+                    try:
+                        orig_bytes = bytes.fromhex(orig_bytes_hex.strip())
+                    except ValueError:
+                        logger.debug(f"Invalid hex in original bytes: {orig_bytes_hex[:20]}...")
+                        orig_bytes = b""
 
-            if predicate_code:
-                assembled = self._assemble_predicate(binary, predicate_code, bb_addr)
-                if assembled and len(assembled) <= bb_size:
-                    orig_bytes_hex = ""
-                    if binary.r2:
-                        orig_bytes_hex = binary.r2.cmd(f"p8 {len(assembled)} @ 0x{bb_addr:x}") or ""
-                    orig_bytes = b""
-                    if orig_bytes_hex.strip():
-                        try:
-                            orig_bytes = bytes.fromhex(orig_bytes_hex.strip())
-                        except ValueError:
-                            logger.debug(f"Invalid hex in original bytes: {orig_bytes_hex[:20]}...")
-                            orig_bytes = b""
+                if binary.write_bytes(bb_addr, assembled):
+                    self._record_mutation(
+                        function_address=func_addr,
+                        start_address=bb_addr,
+                        end_address=bb_addr + len(assembled) - 1,
+                        original_bytes=orig_bytes,
+                        mutated_bytes=assembled,
+                        original_disasm=f"block at 0x{bb_addr:x}",
+                        mutated_disasm=f"opaque {predicate_type} predicate",
+                        mutation_kind="opaque_predicate",
+                        metadata={"predicate_type": predicate_type, "structural_baseline": baseline},
+                    )
+                    mutations += 1
+                    logger.debug(f"Inserted {predicate_type} predicate at 0x{bb_addr:x}")
 
-                    if binary.write_bytes(bb_addr, assembled):
-                        self._record_mutation(
-                            function_address=func_addr,
-                            start_address=bb_addr,
-                            end_address=bb_addr + len(assembled) - 1,
-                            original_bytes=orig_bytes,
-                            mutated_bytes=assembled,
-                            original_disasm=f"block at 0x{bb_addr:x}",
-                            mutated_disasm=f"opaque {predicate_type} predicate",
-                            mutation_kind="opaque_predicate",
-                            metadata={"predicate_type": predicate_type, "structural_baseline": baseline},
-                        )
-                        mutations += 1
-                        logger.debug(f"Inserted {predicate_type} predicate at 0x{bb_addr:x}")
-
-        if mutations > 0 and self._validation_manager is not None and mutation_checkpoint is not None:
-            if self._records:
-                outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
-                if not outcome.passed:
-                    self._rollback_mutation(binary, mutation_checkpoint)
-                    return 0
+        if mutations > 0 and self._validation_manager is not None and mutation_checkpoint is not None and self._records:
+            outcome = self._validation_manager.validate_mutation(binary, self._records[-1].to_dict())
+            if not outcome.passed:
+                self._rollback_mutation(binary, mutation_checkpoint)
+                return 0
 
         return mutations
 
@@ -224,7 +219,7 @@ class OpaquePredicatePass(MutationPass):
         Returns:
             Assembly instructions
         """
-        reg = "rax" if bits == 64 else "eax"
+        reg = "rax" if bits == ARCH_BITS_64 else "eax"
 
         if predicate_type == "always_true":
             predicates = [
@@ -290,7 +285,7 @@ class OpaquePredicatePass(MutationPass):
         Returns:
             Assembly instructions
         """
-        reg = "x0" if bits == 64 else "r0"
+        reg = "x0" if bits == ARCH_BITS_64 else "r0"
 
         if predicate_type == "always_true":
             predicates = [

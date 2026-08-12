@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from r2morph.mutations.full_cff import DispatcherBlock
-from r2morph.mutations.full_cff_patching import patch_function_blocks
+from r2morph.mutations.full_cff_patching import PatchFunctionRequest, patch_function_blocks
 
 
 class _Binary:
@@ -82,16 +82,18 @@ def test_full_cff_patching_applies_jump_and_records_mutation() -> None:
     ]
 
     patched = patch_function_blocks(
-        binary=binary,
-        cfg=SimpleNamespace(function_address=0x1000),
-        dispatcher_blocks=dispatcher_blocks,
-        dispatcher_addr=0x3000,
-        validation_manager=validation_manager,
-        create_mutation_checkpoint=create_mutation_checkpoint,
-        record_mutation=record_mutation,
-        session=session,
-        records=records,
-        rollback_policy="best-effort",
+        PatchFunctionRequest(
+            binary=binary,
+            cfg=SimpleNamespace(function_address=0x1000),
+            dispatcher_blocks=dispatcher_blocks,
+            dispatcher_addr=0x3000,
+            validation_manager=validation_manager,
+            create_mutation_checkpoint=create_mutation_checkpoint,
+            record_mutation=record_mutation,
+            session=session,
+            records=records,
+            rollback_policy="best-effort",
+        )
     )
 
     assert patched == 1
@@ -109,16 +111,18 @@ def test_full_cff_patching_rolls_back_failed_validation() -> None:
     records: list[_Record] = []
 
     patched = patch_function_blocks(
-        binary=binary,
-        cfg=SimpleNamespace(function_address=0x1000),
-        dispatcher_blocks=[DispatcherBlock(state_value=0, block_address=0x1000, block_size=0x10)],
-        dispatcher_addr=0x3000,
-        validation_manager=validation_manager,
-        create_mutation_checkpoint=lambda label: f"checkpoint:{label}",
-        record_mutation=lambda **kwargs: records.append(_Record(kwargs)),
-        session=session,
-        records=records,
-        rollback_policy="best-effort",
+        PatchFunctionRequest(
+            binary=binary,
+            cfg=SimpleNamespace(function_address=0x1000),
+            dispatcher_blocks=[DispatcherBlock(state_value=0, block_address=0x1000, block_size=0x10)],
+            dispatcher_addr=0x3000,
+            validation_manager=validation_manager,
+            create_mutation_checkpoint=lambda label: f"checkpoint:{label}",
+            record_mutation=lambda **kwargs: records.append(_Record(kwargs)),
+            session=session,
+            records=records,
+            rollback_policy="best-effort",
+        )
     )
 
     assert patched == 0

@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
-from r2morph.reporting.report_helpers_classification import (
+from r2morph.reporting.report_pass_classification import (
     _has_structural_risk,
     _has_symbolic_risk,
     _is_clean_pass,

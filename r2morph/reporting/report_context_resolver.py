@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.reporting.report_builder_models import ReportContext
 from r2morph.reporting.report_context_gate_state import _resolve_report_gate_state
 
 
@@ -13,7 +14,7 @@ def _resolve_report_context(
     resolved_only_pass: str | None,
     resolved_only_pass_failure: str | None,
     only_expected_severity: str | None,
-) -> dict[str, Any]:
+) -> ReportContext:
     """Resolve the initial report context from payload and filters."""
     summary = payload.get("summary") or {}
     requested_validation_mode = summary.get(
@@ -47,21 +48,21 @@ def _resolve_report_context(
     degraded_validation = requested_validation_mode != effective_validation_mode
     degraded_passes = list((validation_policy or {}).get("limited_passes", []))
     degradation_roles = dict(summary.get("degradation_roles", {}))
-    return {
-        "summary": summary,
-        "resolved_only_pass": resolved_only_pass,
-        "resolved_only_pass_failure": resolved_only_pass_failure,
-        "requested_validation_mode": requested_validation_mode,
-        "effective_validation_mode": effective_validation_mode,
-        "validation_policy": validation_policy,
-        "gate_evaluation": gate_evaluation,
-        "gate_requested": gate_requested,
-        "gate_results": gate_results,
-        "gate_failure_summary": gate_failure_summary,
-        "gate_failure_priority": gate_failure_priority,
-        "gate_failure_severity_priority": gate_failure_severity_priority,
-        "failed_gates": failed_gates,
-        "degraded_validation": degraded_validation,
-        "degraded_passes": degraded_passes,
-        "degradation_roles": degradation_roles,
-    }
+    return ReportContext(
+        summary=summary,
+        resolved_only_pass=resolved_only_pass,
+        resolved_only_pass_failure=resolved_only_pass_failure,
+        requested_validation_mode=requested_validation_mode,
+        effective_validation_mode=effective_validation_mode,
+        validation_policy=validation_policy,
+        gate_evaluation=gate_evaluation,
+        gate_requested=gate_requested,
+        gate_results=gate_results,
+        gate_failure_summary=gate_failure_summary,
+        gate_failure_priority=gate_failure_priority,
+        gate_failure_severity_priority=gate_failure_severity_priority,
+        failed_gates=failed_gates,
+        degraded_validation=degraded_validation,
+        degraded_passes=degraded_passes,
+        degradation_roles=degradation_roles,
+    )

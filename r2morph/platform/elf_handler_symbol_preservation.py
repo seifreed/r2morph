@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from importlib import import_module
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -11,7 +12,7 @@ logger = logging.getLogger(__name__)
 def preserve_symbols(binary_path: Path) -> bool:
     """Check whether symbol tables are still readable after a mutation."""
     try:
-        import lief
+        lief = import_module("lief")
     except ImportError:
         logger.warning("lief library required for symbol preservation. Install with: pip install lief")
         return False

@@ -1,25 +1,17 @@
 from __future__ import annotations
 
-from r2morph.validation import performance_regression_measurement
 from r2morph.validation.performance_regression import PerformanceBenchmark
+from r2morph.validation.performance_regression_models import BenchmarkConfig
 
 
-def test_measurement_helpers_delegate_from_benchmark(monkeypatch) -> None:
-    benchmark = PerformanceBenchmark()
+def test_measurement_helpers_execute_real_callable() -> None:
+    benchmark = PerformanceBenchmark(BenchmarkConfig(warmup_runs=0, measured_runs=2))
+    calls: list[None] = []
 
-    monkeypatch.setattr(
-        performance_regression_measurement,
-        "measure_execution_time",
-        lambda config, func, *args, **kwargs: [1.0, 2.0],
-    )
-    monkeypatch.setattr(
-        performance_regression_measurement,
-        "measure_memory_usage",
-        lambda func, *args, **kwargs: {"current_memory_mb": 1.0, "peak_memory_mb": 2.0},
-    )
+    def record_call() -> None:
+        calls.append(None)
 
-    assert benchmark.measure_execution_time(lambda: None) == [1.0, 2.0]
-    assert benchmark.measure_memory_usage(lambda: None) == {
-        "current_memory_mb": 1.0,
-        "peak_memory_mb": 2.0,
-    }
+    timings = benchmark.measure_execution_time(record_call)
+    memory = benchmark.measure_memory_usage(record_call)
+
+    assert len(timings) == 2 and len(calls) == 3 and set(memory) == {"current_memory_mb", "peak_memory_mb"}

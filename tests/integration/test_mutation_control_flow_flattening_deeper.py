@@ -16,9 +16,8 @@ def _find_jump_instruction(binary: Binary) -> dict | None:
             continue
         insns = binary.get_function_disasm(addr)
         for insn in insns:
-            if insn.get("mnemonic") == "jmp" and "0x" in insn.get("disasm", ""):
-                if insn.get("size", 0) >= 5:
-                    return insn
+            if insn.get("mnemonic") == "jmp" and "0x" in insn.get("disasm", "") and insn.get("size", 0) >= 5:
+                return insn
     return None
 
 

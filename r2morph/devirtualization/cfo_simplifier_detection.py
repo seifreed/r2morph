@@ -20,6 +20,10 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+_MIN_DISPATCHER_PREDECESSORS = 3
+_BINARY_OPERAND_COUNT = 2
+_MAX_DIRECT_SUCCESSORS = 3
+
 
 def detect_obfuscation_patterns(simplifier: Any) -> list[CFOPattern]:
     """Detect various control flow obfuscation patterns."""
@@ -55,7 +59,7 @@ def detect_dispatcher_flattening(simplifier: Any) -> bool:
         dispatcher_candidates = []
 
         for address, block in simplifier.blocks.items():
-            if len(block.predecessors) >= 3:
+            if len(block.predecessors) >= _MIN_DISPATCHER_PREDECESSORS:
                 has_switch_pattern = False
                 state_variable = None
 
@@ -67,7 +71,7 @@ def detect_dispatcher_flattening(simplifier: Any) -> bool:
 
                     if "cmp" in opcode and "operands" in instr:
                         operands = instr.get("operands", [])
-                        if operands and len(operands) >= 2:
+                        if operands and len(operands) >= _BINARY_OPERAND_COUNT:
                             state_variable = operands[0].get("value", "")
 
                 if has_switch_pattern:
@@ -96,19 +100,17 @@ def detect_opaque_predicates(simplifier: Any) -> bool:
     try:
         opaque_count = 0
 
-        for address, block in simplifier.blocks.items():
+        for _address, block in simplifier.blocks.items():
             for instr in block.instructions:
                 opcode = instr.get("opcode", "").lower()
 
                 if "cmp" in opcode or "test" in opcode:
                     operands = instr.get("operands", [])
-                    if len(operands) >= 2:
+                    if len(operands) >= _BINARY_OPERAND_COUNT:
                         op1 = operands[0].get("value", "")
                         op2 = operands[1].get("value", "")
 
-                        if op1 == op2:
-                            opaque_count += 1
-                        elif simplifier._is_constant_expression(op1, op2):
+                        if op1 == op2 or simplifier._is_constant_expression(op1, op2):
                             opaque_count += 1
 
         return opaque_count > 0
@@ -123,13 +125,11 @@ def detect_indirect_jumps(simplifier: Any) -> bool:
     try:
         indirect_count = 0
 
-        for address, block in simplifier.blocks.items():
+        for _address, block in simplifier.blocks.items():
             for instr in block.instructions:
                 opcode = instr.get("opcode", "").lower()
 
-                if "jmp" in opcode and "[" in opcode:
-                    indirect_count += 1
-                elif "call" in opcode and "[" in opcode:
+                if ("jmp" in opcode and "[" in opcode) or ("call" in opcode and "[" in opcode):
                     indirect_count += 1
 
         return indirect_count > 0
@@ -160,8 +160,8 @@ def detect_fake_control_flow(simplifier: Any) -> bool:
 def detect_switch_case_obfuscation(simplifier: Any) -> bool:
     """Detect obfuscated switch-case statements."""
     try:
-        for address, block in simplifier.blocks.items():
-            if len(block.successors) > 3:
+        for _address, block in simplifier.blocks.items():
+            if len(block.successors) > _MAX_DIRECT_SUCCESSORS:
                 for instr in block.instructions:
                     opcode = instr.get("opcode", "").lower()
                     if "jmp" in opcode and any(reg in opcode for reg in ["eax", "rax", "ebx", "rbx"]):

@@ -16,7 +16,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.mutations.code_virtualization_region import _classify, _flag_dead_op_indices
+from r2morph.mutations.code_virtualization_region import _flag_dead_op_indices
+from r2morph.mutations.code_virtualization_region_classification import _classify
 
 
 def _add(dst: str, src: str) -> list[Any]:

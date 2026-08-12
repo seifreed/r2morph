@@ -18,8 +18,9 @@ a slot offset) is untouched.
 
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass
+
+import r2morph.core.randomness as random
 
 # The 16 GP register slots occupy [0, _GP_REGION_END); the System V red zone is
 # pinned to the top _RED_ZONE_SIZE bytes. The relocatable regions live between.

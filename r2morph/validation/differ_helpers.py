@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from r2morph.validation.differ_models import ByteDiff
 
@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 def compare_section_bytes(
     original: Binary,
     mutated: Binary,
-    orig_section: dict,
-    mut_section: dict,
+    orig_section: dict[str, Any],
+    mut_section: dict[str, Any],
     context_bytes: int,
 ) -> list[ByteDiff]:
     """Compare bytes within a pair of sections."""
@@ -30,9 +30,6 @@ def compare_section_bytes(
             mut_section.get("addr", mut_section.get("virtual_address", 0)), min(orig_size, mut_size, 4096)
         )
     except Exception:
-        return diffs
-
-    if orig_data is None or mut_data is None:
         return diffs
 
     return compute_byte_diffs(orig_data, mut_data, orig_addr, context_bytes)

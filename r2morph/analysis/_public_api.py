@@ -86,7 +86,7 @@ LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     "is_address_calculation": ("r2morph.analysis.dataflow_queries", "is_address_calculation"),
     "is_safe_to_mutate": ("r2morph.analysis.dataflow_queries", "is_safe_to_mutate"),
     "build_call_graph": ("r2morph.analysis.call_graph_builder", "build_call_graph"),
-    "build_call_graph_cached": ("r2morph.analysis.call_graph_builder", "build_call_graph_cached"),
+    "build_call_graph_cached": ("r2morph.analysis.call_graph_cache", "build_call_graph_cached"),
     "check_enhanced_dependencies": ("r2morph.analysis.enhanced_analyzer", "check_enhanced_dependencies"),
     "create_exclusion_zones": ("r2morph.analysis.critical_nodes", "create_exclusion_zones"),
     "get_safe_mutation_addresses": ("r2morph.analysis.critical_nodes", "get_safe_mutation_addresses"),
@@ -106,4 +106,6 @@ SYMBOLIC_NAMES = frozenset(
     }
 )
 
-__all__ = sorted(LAZY_EXPORTS) + sorted(SYMBOLIC_NAMES)
+__all__: list[str] = []
+__all__.extend(sorted(LAZY_EXPORTS))
+__all__.extend(sorted(SYMBOLIC_NAMES))

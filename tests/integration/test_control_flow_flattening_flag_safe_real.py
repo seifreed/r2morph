@@ -38,12 +38,11 @@ def _find_nop_sled(data: bytes) -> tuple[int, int]:
     for i, byte in enumerate(data + b"\x00"):
         if byte == _NOP:
             run_start = i if run_start is None else run_start
-        else:
-            if run_start is not None:
-                run_len = i - run_start
-                if run_len > best_len:
-                    best_off, best_len = run_start, run_len
-                run_start = None
+        elif run_start is not None:
+            run_len = i - run_start
+            if run_len > best_len:
+                best_off, best_len = run_start, run_len
+            run_start = None
     assert best_len >= _MIN_SLED, "fixture must contain a NOP sled"
     return best_off, best_len
 

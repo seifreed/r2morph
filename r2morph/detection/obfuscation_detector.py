@@ -18,10 +18,13 @@ from r2morph.core.binary import Binary
 from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 from r2morph.detection.obfuscation_detector_models import ObfuscationAnalysisResult, ObfuscationType
-from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
+from r2morph.detection.packer_signature_models import PackerType
+from r2morph.detection.packer_signatures import PackerSignatureDatabase
 from r2morph.detection.pattern_matcher import PatternMatcher
 
 logger = logging.getLogger(__name__)
+
+_DYNAMIC_ANALYSIS_CONFIDENCE_THRESHOLD = 0.5
 
 
 class ObfuscationDetector:
@@ -114,8 +117,8 @@ class ObfuscationDetector:
         result.requires_dynamic_analysis = (
             result.packer_detected != PackerType.NONE
             or entropy_result.is_packed
-            or pattern_result.anti_debug_confidence > 0.5
-            or pattern_result.anti_vm_confidence > 0.5
+            or pattern_result.anti_debug_confidence > _DYNAMIC_ANALYSIS_CONFIDENCE_THRESHOLD
+            or pattern_result.anti_vm_confidence > _DYNAMIC_ANALYSIS_CONFIDENCE_THRESHOLD
         )
 
         if result.confidence_scores:

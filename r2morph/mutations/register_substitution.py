@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from r2morph.core.constants import ARCH_BITS_64
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.register_substitution_helpers import (
     count_register_uses,
@@ -20,6 +21,22 @@ from r2morph.mutations.register_substitution_helpers import (
 )
 
 logger = logging.getLogger(__name__)
+
+_UNSAFE_MNEMONICS = {
+    "xlat",
+    "movabs",
+    "cmovz",
+    "cmovnz",
+    "cmove",
+    "cmovne",
+    "setne",
+    "sete",
+    "setz",
+    "setnz",
+    "lock",
+    "xadd",
+    "cmpxchg",
+}
 
 
 class RegisterSubstitutionPass(MutationPass):
@@ -111,8 +128,86 @@ class RegisterSubstitutionPass(MutationPass):
         binary: Any,
         functions: list[dict[str, Any]],
         arch: str,
-    ) -> list[tuple[dict, list[dict], list[tuple[str, str]]]]:
+    ) -> list[tuple[dict[str, Any], list[dict[str, Any]], list[tuple[str, str]]]]:
         return select_candidates(binary, functions, arch, self.probability, self.max_substitutions)
+
+    @staticmethod
+    def _register_only_in_memory(disasm: str, register: str) -> bool:
+        if "[" not in disasm or "]" not in disasm:
+            return False
+        before_memory, remainder = disasm.split("[", maxsplit=1)
+        memory, after_memory = remainder.split("]", maxsplit=1)
+        return register in memory and register not in before_memory + after_memory
+
+    def _substituted_disasm(self, instruction: dict[str, Any], original: str, substitute: str) -> str | None:
+        disasm = str(instruction.get("disasm", "")).lower()
+        if original not in disasm:
+            return None
+        mnemonic = disasm.split()[0] if disasm else ""
+        if mnemonic in _UNSAFE_MNEMONICS:
+            return None
+        if mnemonic in ("movzx", "movsx") and not self._is_safe_size_extension_substitution(
+            disasm, original, substitute
+        ):
+            return None
+        if mnemonic == "lea" and not self._is_safe_lea_substitution(disasm, original, substitute):
+            return None
+        if self._register_only_in_memory(disasm, original):
+            return None
+        return disasm.replace(original, substitute)
+
+    def _apply_instruction_substitution(
+        self,
+        binary: Any,
+        function: dict[str, Any],
+        instruction: dict[str, Any],
+        original_register: str,
+        substitute_register: str,
+    ) -> bool:
+        replacement = self._substituted_disasm(instruction, original_register, substitute_register)
+        address = instruction.get("addr", 0)
+        original_size = instruction.get("size", 0)
+        if replacement is None or address == 0 or original_size == 0:
+            return False
+        checkpoint = self._create_mutation_checkpoint("reg")
+        baseline = {}
+        if self._validation_manager is not None:
+            baseline = self._validation_manager.capture_structural_baseline(binary, function["addr"])
+        original_bytes = binary.read_bytes(address, original_size)
+        new_bytes = binary.assemble(replacement, function["addr"])
+        if not new_bytes or len(new_bytes) > original_size:
+            return False
+        if not binary.write_bytes(address, new_bytes):
+            return False
+        if len(new_bytes) < original_size and not binary.nop_fill(
+            address + len(new_bytes), original_size - len(new_bytes)
+        ):
+            self._rollback_uncommitted(
+                binary,
+                checkpoint,
+                reason="Register-substitution NOP fill failed; aborting (fail-fast)",
+            )
+            return False
+        logger.debug(
+            f"Substituted {original_register} -> {substitute_register} at 0x{address:x}: "
+            f"'{instruction.get('disasm', '').lower()}' -> '{replacement}'"
+        )
+        record = self._record_mutation(
+            function_address=function["addr"],
+            start_address=address,
+            end_address=address + original_size - 1,
+            original_bytes=original_bytes,
+            mutated_bytes=binary.read_bytes(address, original_size),
+            original_disasm=instruction.get("disasm", ""),
+            mutated_disasm=replacement,
+            mutation_kind="register_substitution",
+            metadata={
+                "original_register": original_register,
+                "substitute_register": substitute_register,
+                "structural_baseline": baseline,
+            },
+        )
+        return not self._validate_mutation_or_rollback(binary, record, checkpoint)
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -133,7 +228,7 @@ class RegisterSubstitutionPass(MutationPass):
         bits = arch_info.get("bits", 0)
 
         arch_key = arch
-        if arch == "arm" and bits == 64:
+        if arch == "arm" and bits == ARCH_BITS_64:
             arch_key = "arm64"
 
         register_classes = self._get_register_class(arch_key)
@@ -152,115 +247,18 @@ class RegisterSubstitutionPass(MutationPass):
         logger.info(f"Register substitution: processing {len(functions)} functions")
 
         for func, instructions, selected in self._select_candidates(binary, functions, arch):
-
             func_mutations = 0
             for orig_reg, subst_reg in selected:
                 substituted_count = 0
-
                 for insn in instructions:
-                    disasm = insn.get("disasm", "").lower()
-
-                    if orig_reg not in disasm:
-                        continue
-
-                    mnemonic = disasm.split()[0] if disasm else ""
-
-                    # Category 1: ALWAYS SKIP - Hardware/semantic restrictions
-                    # These cannot be safely substituted due to hardware constraints
-                    always_skip_mnemonics = [
-                        "xlat",  # Table lookup with implicit AL register
-                        "movabs",  # 64-bit immediate/address - complex syntax issues
-                        "cmovz",
-                        "cmovnz",
-                        "cmove",
-                        "cmovne",  # Conditional moves
-                        "setne",
-                        "sete",
-                        "setz",
-                        "setnz",  # Set byte on condition
-                        "lock",  # Atomic operations prefix
-                        "xadd",  # Atomic exchange-and-add
-                        "cmpxchg",  # Atomic compare-and-exchange
-                    ]
-                    if mnemonic in always_skip_mnemonics:
-                        continue
-
-                    # Category 2: VALIDATE FIRST - Can be resolved with proper checks
-                    # movzx/movsx: Size-extension instructions with manual encoding fallback
-                    if mnemonic in ["movzx", "movsx"]:
-                        if not self._is_safe_size_extension_substitution(disasm, orig_reg, subst_reg):
-                            continue
-
-                    # LEA: Address calculation - only safe if substituting destination
-                    if mnemonic == "lea":
-                        if not self._is_safe_lea_substitution(disasm, orig_reg, subst_reg):
-                            continue
-
-                    # Skip instructions with memory addresses to avoid corrupting them
-                    if "[" in disasm and "]" in disasm:
-                        # Check if register is only in memory operand (skip these)
-                        parts = disasm.split("[")
-                        if len(parts) > 1:
-                            mem_part = parts[1].split("]")[0]
-                            # If register only appears in memory operand, skip
-                            non_mem_part = parts[0] + (parts[1].split("]")[1] if "]" in parts[1] else "")
-                            if orig_reg not in non_mem_part and orig_reg in mem_part:
-                                continue
-
-                    new_disasm = disasm.replace(orig_reg, subst_reg)
-
-                    addr = insn.get("addr", 0)
-                    orig_size = insn.get("size", 0)
-
-                    if addr == 0 or orig_size == 0:
-                        continue
-
+                    address = insn.get("addr", 0)
                     try:
-                        mutation_checkpoint = self._create_mutation_checkpoint("reg")
-                        baseline = {}
-                        if self._validation_manager is not None:
-                            baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
-                        original_bytes = binary.read_bytes(addr, orig_size)
-                        new_bytes = binary.assemble(new_disasm, func["addr"])
-
-                        if new_bytes:
-                            new_size = len(new_bytes)
-
-                            if new_size <= orig_size:
-                                if not binary.write_bytes(addr, new_bytes):
-                                    continue
-
-                                if new_size < orig_size:
-                                    if not binary.nop_fill(addr + new_size, orig_size - new_size):
-                                        continue
-
-                                logger.debug(
-                                    f"Substituted {orig_reg} -> {subst_reg} at 0x{addr:x}: '{disasm}' -> '{new_disasm}'"
-                                )
-                                mutated_bytes = binary.read_bytes(addr, orig_size)
-                                record = self._record_mutation(
-                                    function_address=func["addr"],
-                                    start_address=addr,
-                                    end_address=addr + orig_size - 1,
-                                    original_bytes=original_bytes,
-                                    mutated_bytes=mutated_bytes,
-                                    original_disasm=insn.get("disasm", ""),
-                                    mutated_disasm=new_disasm,
-                                    mutation_kind="register_substitution",
-                                    metadata={
-                                        "original_register": orig_reg,
-                                        "substitute_register": subst_reg,
-                                        "structural_baseline": baseline,
-                                    },
-                                )
-                                if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
-                                    continue
-                                substituted_count += 1
-                                func_mutations += 1
-                            else:
-                                logger.debug(f"Skipping substitution at 0x{addr:x}: new instruction too large")
-                    except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                        logger.debug(f"Failed to substitute at 0x{addr:x}: {e}")
+                        if not self._apply_instruction_substitution(binary, func, insn, orig_reg, subst_reg):
+                            continue
+                        substituted_count += 1
+                        func_mutations += 1
+                    except (ValueError, OSError, BrokenPipeError, RuntimeError) as error:
+                        logger.debug(f"Failed to substitute at 0x{address:x}: {error}")
 
                 if substituted_count > 0:
                     logger.info(

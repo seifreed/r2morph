@@ -524,9 +524,12 @@ INV_SBOX = [
 ]
 
 RCON = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36]
+_AES_256_KEY_SIZE_BYTES = 32
+_AES_WORD_SIZE_BYTES = 4
+_AES_BLOCK_SIZE_BYTES = 16
 
 
-def aes_key_expansion(key: bytes) -> list:
+def aes_key_expansion(key: bytes) -> list[bytes]:
     """
     AES-256 key expansion (corrected implementation).
 
@@ -538,8 +541,8 @@ def aes_key_expansion(key: bytes) -> list:
     - Nr = 14 (number of rounds)
     - Round constants: RCON[0..9] for key expansion
     """
-    if len(key) != 32:
-        key = key[:32].ljust(32, b"\x00")
+    if len(key) != _AES_256_KEY_SIZE_BYTES:
+        key = key[:_AES_256_KEY_SIZE_BYTES].ljust(_AES_256_KEY_SIZE_BYTES, b"\x00")
 
     w = []
     for i in range(8):
@@ -552,7 +555,7 @@ def aes_key_expansion(key: bytes) -> list:
             temp = [temp[1], temp[2], temp[3], temp[0]]
             temp = [SBOX[b] for b in temp]
             temp[0] ^= RCON[i // 8 - 1]
-        elif i % 8 == 4:
+        elif i % 8 == _AES_WORD_SIZE_BYTES:
             temp = [SBOX[b] for b in temp]
 
         w.append([w[i - 8][j] ^ temp[j] for j in range(4)])
@@ -570,8 +573,8 @@ def _derive_block_keystream(key: bytes) -> bytes:
     if they diverge, StackStrings AES_256 output cannot be decoded at
     runtime.
     """
-    if len(key) != 32:
-        key = key[:32].ljust(32, b"\x00")
+    if len(key) != _AES_256_KEY_SIZE_BYTES:
+        key = key[:_AES_256_KEY_SIZE_BYTES].ljust(_AES_256_KEY_SIZE_BYTES, b"\x00")
     return bytes(key[i] ^ key[i + 16] for i in range(16))
 
 
@@ -588,8 +591,8 @@ def aes_encrypt_block(block: bytes, key: bytes) -> bytes:
     it were a 16-byte round key, raising IndexError for every input, and
     no decode stub ever implemented its inverse.
     """
-    if len(block) != 16:
-        block = block[:16].ljust(16, b"\x00")
+    if len(block) != _AES_BLOCK_SIZE_BYTES:
+        block = block[:_AES_BLOCK_SIZE_BYTES].ljust(_AES_BLOCK_SIZE_BYTES, b"\x00")
     keystream = _derive_block_keystream(key)
     return bytes(block[i] ^ keystream[i] for i in range(16))
 
@@ -615,8 +618,8 @@ def aes_encrypt_string(data: bytes, key: bytes) -> tuple[bytes, bytes]:
     Returns:
         Tuple of (encrypted_data, normalized_32_byte_key)
     """
-    if len(key) != 32:
-        key = key[:32].ljust(32, b"\x00")
+    if len(key) != _AES_256_KEY_SIZE_BYTES:
+        key = key[:_AES_256_KEY_SIZE_BYTES].ljust(_AES_256_KEY_SIZE_BYTES, b"\x00")
 
     padded_len = (len(data) + 15) // 16 * 16
     padded_data = data.ljust(padded_len, b"\x00")

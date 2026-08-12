@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from r2morph.validation.binary_region_comparator_observables import (
+    ObservableComparison,
     check_observables,
     compare_register_states,
     compare_stack_and_memory,
@@ -11,7 +12,7 @@ class _ComparableValue:
     def __init__(self, value: int) -> None:
         self.value = value
 
-    def __ne__(self, other: object) -> bool:  # pragma: no cover - exercised indirectly
+    def __ne__(self, other: object) -> bool:
         return isinstance(other, _ComparableValue) and self.value != other.value
 
 
@@ -75,13 +76,15 @@ def test_check_observables_populates_report_and_mismatches() -> None:
     mismatches: list[dict[str, object]] = []
 
     check_observables(
-        region_report,
-        mismatches,
-        {"start_address": 0x1000, "end_address": 0x1004},
-        original,
-        mutated,
-        ["rax"],
-        "sp",
+        ObservableComparison(
+            region_report=region_report,
+            mismatches=mismatches,
+            mutation={"start_address": 0x1000, "end_address": 0x1004},
+            original_final=original,
+            mutated_final=mutated,
+            compared_registers=["rax"],
+            stack_reg="sp",
+        )
     )
 
     assert region_report["mismatches"] == ["successor_address", "rax", "memory_writes"]

@@ -8,8 +8,6 @@ Covers:
 - Type propagation
 """
 
-from unittest.mock import MagicMock
-
 from r2morph.analysis.type_inference import (
     PointerAnalysis,
     PrimitiveType,
@@ -20,6 +18,7 @@ from r2morph.analysis.type_inference import (
     infer_type,
     propagate_types,
 )
+from tests._doubles.in_memory_typed_binary import InMemoryTypedBinary
 
 
 class TestTypeInfo:
@@ -209,10 +208,7 @@ class TestTypeInference:
         """Test type inference from mov immediate."""
         inferrer = TypeInference()
 
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "mov eax, 0x42"},
-        ]
+        binary = InMemoryTypedBinary(disasm_by_addr={0x1000: [{"offset": 0x1000, "disasm": "mov eax, 0x42"}]})
 
         type_info = inferrer.infer_type(binary, 0x1000)
         assert type_info.category == TypeCategory.PRIMITIVE
@@ -221,10 +217,7 @@ class TestTypeInference:
         """Test type inference from LEA."""
         inferrer = TypeInference()
 
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "lea rax, [rip+0x1000]"},
-        ]
+        binary = InMemoryTypedBinary(disasm_by_addr={0x1000: [{"offset": 0x1000, "disasm": "lea rax, [rip+0x1000]"}]})
 
         type_info = inferrer.infer_type(binary, 0x1000)
         assert type_info.category == TypeCategory.POINTER
@@ -233,10 +226,7 @@ class TestTypeInference:
         """Test type inference from comparison."""
         inferrer = TypeInference()
 
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "cmp eax, ebx"},
-        ]
+        binary = InMemoryTypedBinary(disasm_by_addr={0x1000: [{"offset": 0x1000, "disasm": "cmp eax, ebx"}]})
 
         type_info = inferrer.infer_type(binary, 0x1000)
         assert type_info.primitive == PrimitiveType.BOOL
@@ -245,12 +235,15 @@ class TestTypeInference:
         """Test type propagation through function."""
         inferrer = TypeInference()
 
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "mov eax, 0x42"},
-            {"offset": 0x1005, "disasm": "add eax, ebx"},
-            {"offset": 0x100A, "disasm": "ret"},
-        ]
+        binary = InMemoryTypedBinary(
+            disasm_by_addr={
+                0x1000: [
+                    {"offset": 0x1000, "disasm": "mov eax, 0x42"},
+                    {"offset": 0x1005, "disasm": "add eax, ebx"},
+                    {"offset": 0x100A, "disasm": "ret"},
+                ]
+            }
+        )
 
         types = inferrer.propagate_types(binary, 0x1000)
         assert len(types) >= 0
@@ -541,8 +534,6 @@ class TestTypeInference:
         disassembly raises is recorded with an empty parameter map (graceful
         error path). This is the oracle for extracting the loop into a helper.
         """
-        from tests._doubles.in_memory_typed_binary import InMemoryTypedBinary
-
         inferrer = TypeInference()
         binary = InMemoryTypedBinary(
             arch="x86_64",
@@ -567,22 +558,16 @@ class TestTypeInference:
         """Test mutation safety check."""
         inferrer = TypeInference()
 
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "mov eax, 0x42"},
-        ]
+        binary = InMemoryTypedBinary(disasm_by_addr={0x1000: [{"offset": 0x1000, "disasm": "mov eax, 0x42"}]})
 
-        is_safe, reason = inferrer.is_safe_to_mutate(binary, 0x1000, "register_substitution")
+        is_safe, _reason = inferrer.is_safe_to_mutate(binary, 0x1000, "register_substitution")
         assert is_safe is True
 
     def test_is_safe_to_mutate_pointer(self):
         """Test mutation safety check with pointer."""
         inferrer = TypeInference()
 
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "lea rax, [rip+0x1000]"},
-        ]
+        binary = InMemoryTypedBinary(disasm_by_addr={0x1000: [{"offset": 0x1000, "disasm": "lea rax, [rip+0x1000]"}]})
 
         is_safe, reason = inferrer.is_safe_to_mutate(binary, 0x1000, "register_substitution")
         assert is_safe is False
@@ -602,13 +587,10 @@ class TestPointerAnalysis:
         """Test computing aliases."""
         analysis = PointerAnalysis()
 
-        binary = MagicMock()
-        binary.get_functions.return_value = [
-            {"offset": 0x1000, "name": "main"},
-        ]
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "lea rax, [0x2000]"},
-        ]
+        binary = InMemoryTypedBinary(
+            functions=[{"offset": 0x1000, "name": "main"}],
+            disasm_by_addr={0x1000: [{"offset": 0x1000, "disasm": "lea rax, [0x2000]"}]},
+        )
 
         analysis.compute_aliases(binary)
 
@@ -663,18 +645,14 @@ class TestConvenienceFunctions:
 
     def test_infer_type_function(self):
         """Test infer_type convenience function."""
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "mov eax, 0x42"},
-        ]
+        binary = InMemoryTypedBinary(disasm_by_addr={0x1000: [{"offset": 0x1000, "disasm": "mov eax, 0x42"}]})
 
         type_info = infer_type(binary, 0x1000)
         assert isinstance(type_info, TypeInfo)
 
     def test_propagate_types_function(self):
         """Test propagate_types convenience function."""
-        binary = MagicMock()
-        binary.get_function_disasm.return_value = []
+        binary = InMemoryTypedBinary()
 
         types = propagate_types(binary, 0x1000)
         assert isinstance(types, dict)

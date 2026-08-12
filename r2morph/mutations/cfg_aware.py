@@ -14,11 +14,10 @@ from typing import Any
 
 from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph
 from r2morph.analysis.critical_nodes import (
-    AddressRange,
-    CriticalNode,
     CriticalNodeDetector,
     MutationSafetyScorer,
 )
+from r2morph.analysis.critical_nodes_models import AddressRange, CriticalNode
 from r2morph.mutations.base import MutationPass, MutationResult
 
 logger = logging.getLogger(__name__)
@@ -318,7 +317,7 @@ class CFGAwareNOPInsertion(CFGAwareMutationPass):
             }
 
         safe_addresses = []
-        for addr, block in cfg.blocks.items():
+        for addr, _block in cfg.blocks.items():
             if not self.should_skip(addr):
                 score = self.score_mutation_site(addr)
                 if score >= self.min_safety_score:

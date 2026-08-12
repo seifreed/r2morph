@@ -8,10 +8,11 @@ constants and a fixed set of bitwise/arithmetic operators are permitted.
 from __future__ import annotations
 
 import ast
+from collections.abc import Callable
 from typing import Any
 
 # Safe operator tables for evaluating arithmetic AST nodes
-_SAFE_BINOPS = {
+_SAFE_BINOPS: dict[type[ast.operator], Callable[[int, int], int]] = {
     ast.BitAnd: lambda a, b: a & b,
     ast.BitOr: lambda a, b: a | b,
     ast.BitXor: lambda a, b: a ^ b,
@@ -21,7 +22,7 @@ _SAFE_BINOPS = {
     ast.LShift: lambda a, b: a << b,
     ast.RShift: lambda a, b: a >> b,
 }
-_SAFE_UNARYOPS = {
+_SAFE_UNARYOPS: dict[type[ast.unaryop], Callable[[int], int]] = {
     ast.Invert: lambda a: ~a,
     ast.USub: lambda a: -a,
     ast.UAdd: lambda a: +a,

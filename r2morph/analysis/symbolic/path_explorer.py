@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import time
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -81,8 +83,6 @@ class PathExplorer:
         Returns:
             ExplorationResult with findings
         """
-        import time
-
         start_time = time.time()
 
         try:
@@ -102,7 +102,8 @@ class PathExplorer:
 
             # Set up targets if specified
             if target_addresses:
-                simgr.use_technique(angr.exploration_techniques.Explorer(find=target_addresses))
+                explorer_factory: Callable[..., Any] = angr.exploration_techniques.Explorer
+                simgr.use_technique(explorer_factory(find=target_addresses))
 
             # Explore paths
             paths_explored = 0

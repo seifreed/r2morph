@@ -8,8 +8,8 @@ from r2morph.crypto.aes import (
 )
 
 __all__ = [
-    "aes_key_expansion",
-    "aes_encrypt_block",
     "aes_decrypt_block",
+    "aes_encrypt_block",
     "aes_encrypt_string",
+    "aes_key_expansion",
 ]

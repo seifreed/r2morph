@@ -244,16 +244,8 @@ class TestCacheStorage:
         with tempfile.TemporaryDirectory() as d:
             yield Path(d)
 
-    def test_pickle_storage_save_load(self, temp_storage_dir):
-        storage = CacheStorage(cache_dir=temp_storage_dir, storage_type="pickle")
-
-        storage.save("test_key", {"data": [1, 2, 3]})
-        loaded = storage.load("test_key")
-
-        assert loaded == {"data": [1, 2, 3]}
-
-    def test_json_storage_save_load(self, temp_storage_dir):
-        storage = CacheStorage(cache_dir=temp_storage_dir, storage_type="json")
+    def test_structured_storage_save_load(self, temp_storage_dir):
+        storage = CacheStorage(cache_dir=temp_storage_dir)
 
         storage.save("test_key", {"data": [1, 2, 3]})
         loaded = storage.load("test_key")

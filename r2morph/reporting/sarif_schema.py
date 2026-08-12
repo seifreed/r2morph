@@ -10,6 +10,7 @@ Reference: https://docs.oasis-open.org/sarif/sarif/v2.1.0/csprd02/sarif-v2.1.0-c
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -253,6 +254,4 @@ class SARIFReport:
         return d
 
     def to_json(self) -> str:
-        import json
-
         return json.dumps(self.to_dict(), indent=2)

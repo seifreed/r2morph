@@ -23,6 +23,7 @@ from r2morph.mutations.abi_aware_base import (
     ABIValidationError,
 )
 from r2morph.mutations.abi_hook import (
+    ABICheckOptions,
     ABICheckResult,
     ABIMutationHook,
     ABISnapshot,
@@ -88,10 +89,12 @@ class TestABIMutationHook:
         binary = MockBinary()
         hook = ABIMutationHook(
             binary,
-            check_stack_alignment=True,
-            check_callee_saved=False,
-            check_red_zone=True,
-            check_shadow_space=False,
+            options=ABICheckOptions(
+                stack_alignment=True,
+                callee_saved=False,
+                red_zone=True,
+                shadow_space=False,
+            ),
         )
 
         assert hook.check_stack_alignment is True

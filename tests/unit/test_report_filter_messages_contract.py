@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-from r2morph.reporting.report_context import PassClassFilters
+from r2morph.reporting.report_context import FilterFlags, SeverityFilter
 from r2morph.reporting.report_filter_messages import build_report_filter_messages
 
 
 def test_report_filter_messages_cover_pass_and_risk_filters() -> None:
     messages = build_report_filter_messages(
-        only_pass="pass-a",
-        resolved_only_pass="pass-b",
-        only_pass_failure="fail-a",
-        resolved_only_pass_failure="fail-b",
-        pass_classes=PassClassFilters(
+        FilterFlags(
+            only_pass="pass-a",
+            only_pass_failure="fail-a",
             only_risky_passes=True,
             only_uncovered_passes=False,
             only_covered_passes=True,
@@ -18,7 +16,11 @@ def test_report_filter_messages_cover_pass_and_risk_filters() -> None:
             only_structural_risk=True,
             only_symbolic_risk=False,
         ),
-        selected_risk_pass_names={"pass-a", "pass-b"},
+        SeverityFilter(
+            resolved_only_pass="pass-b",
+            resolved_only_pass_failure="fail-b",
+            selected_risk_pass_names={"pass-a", "pass-b"},
+        ),
     )
 
     assert messages == [
@@ -31,14 +33,4 @@ def test_report_filter_messages_cover_pass_and_risk_filters() -> None:
 
 
 def test_report_filter_messages_can_be_empty() -> None:
-    assert (
-        build_report_filter_messages(
-            only_pass=None,
-            resolved_only_pass=None,
-            only_pass_failure=None,
-            resolved_only_pass_failure=None,
-            pass_classes=PassClassFilters(),
-            selected_risk_pass_names=set(),
-        )
-        == []
-    )
+    assert build_report_filter_messages(FilterFlags(), SeverityFilter()) == []

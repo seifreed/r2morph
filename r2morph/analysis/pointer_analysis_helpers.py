@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+_BRACKET_PART_COUNT = 2
+
 
 def extract_lea_target(disasm: str) -> int | None:
     """Extract LEA target from disassembly."""
     parts = disasm.split("[")
-    if len(parts) < 2:
+    if len(parts) < _BRACKET_PART_COUNT:
         return None
 
     bracket_content = parts[1].split("]")[0]
@@ -14,7 +16,7 @@ def extract_lea_target(disasm: str) -> int | None:
         try:
             return int(bracket_content, 16)
         except ValueError:
-            # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
+            # Symbolic and register operands are not numeric candidates.
             pass
 
     return None
@@ -39,4 +41,4 @@ def compute_transitive_aliases(points_to: dict[int, set[int]]) -> dict[int, set[
     return aliases
 
 
-__all__ = ["extract_lea_target", "compute_transitive_aliases"]
+__all__ = ["compute_transitive_aliases", "extract_lea_target"]

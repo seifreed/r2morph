@@ -19,9 +19,9 @@ Anti-disassembly makes static analysis difficult by:
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.anti_disassembly_snippets import (
     ALL_ANTI_DISASM_X64,
@@ -41,6 +41,8 @@ from r2morph.mutations.anti_disassembly_snippets import (
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
+
+_BLOCK_INJECTION_PROBABILITY = 0.3
 
 
 class AntiDisassemblyPass(MutationPass):
@@ -134,7 +136,7 @@ class AntiDisassemblyPass(MutationPass):
                 continue
 
             for block in blocks:
-                if random.random() > 0.3:
+                if random.random() > _BLOCK_INJECTION_PROBABILITY:
                     continue
 
                 block_addr = block.get("addr", 0)
@@ -186,9 +188,6 @@ class AntiDisassemblyPass(MutationPass):
 
 __all__ = [
     "ALL_ANTI_DISASM_X64",
-    "AntiDisassemblyPass",
-    "AntiDisasmSnippet",
-    "AntiDisasmType",
     "FALSE_BRANCH_X64",
     "JUMP_MIDDLE_X64",
     "OVERLAPPING_X64",
@@ -196,6 +195,9 @@ __all__ = [
     "SEH_BASED_X64",
     "SEH_BASED_X86",
     "TRAMPOLINE_X64",
+    "AntiDisasmSnippet",
+    "AntiDisasmType",
+    "AntiDisassemblyPass",
     "generate_false_disasm_sequence",
     "generate_opaque_predicate_x64",
     "generate_sled_obfuscation",

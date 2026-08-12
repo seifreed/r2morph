@@ -32,31 +32,31 @@ from r2morph.detection.pattern_matcher_models import PatternMatchResult
 from r2morph.detection.similarity_hasher import SimilarityHasher
 
 __all__ = [
-    # Entropy analysis
-    "EntropyAnalyzer",
-    "EntropyResult",
-    # Evasion scoring
-    "EvasionScorer",
-    "EvasionScore",
-    # Similarity hashing
-    "SimilarityHasher",
-    # Packer signatures
-    "PackerSignatureDatabase",
-    "PackerSignature",
-    "PackerType",
-    # Control flow analysis
-    "ControlFlowAnalyzer",
-    "ControlFlowAnalysisResult",
-    # Pattern matching
-    "PatternMatcher",
-    "PatternMatchResult",
-    # Obfuscation detection (facade)
-    "ObfuscationDetector",
-    "ObfuscationAnalysisResult",
-    "ObfuscationType",
     # Anti-analysis bypass
     "AntiAnalysisBypass",
     "AntiAnalysisType",
-    "BypassTechnique",
     "BypassResult",
+    "BypassTechnique",
+    "ControlFlowAnalysisResult",
+    # Control flow analysis
+    "ControlFlowAnalyzer",
+    # Entropy analysis
+    "EntropyAnalyzer",
+    "EntropyResult",
+    "EvasionScore",
+    # Evasion scoring
+    "EvasionScorer",
+    "ObfuscationAnalysisResult",
+    # Obfuscation detection (facade)
+    "ObfuscationDetector",
+    "ObfuscationType",
+    "PackerSignature",
+    # Packer signatures
+    "PackerSignatureDatabase",
+    "PackerType",
+    "PatternMatchResult",
+    # Pattern matching
+    "PatternMatcher",
+    # Similarity hashing
+    "SimilarityHasher",
 ]

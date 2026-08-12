@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.validation.benchmark import ValidationFramework
+from r2morph.validation.benchmark_reporting_summary import calculate_percentile
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
@@ -113,5 +114,5 @@ def test_benchmark_accuracy_and_percentiles() -> None:
     assert metrics.true_negatives == 2
     assert metrics.false_negatives == 1
 
-    assert framework._calculate_percentile([], 95) == 0.0
-    assert framework._calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0
+    assert calculate_percentile([], 95) == 0.0
+    assert calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0

@@ -189,8 +189,8 @@ __all__ = [
     "hash_crc32",
     "hash_djb2",
     "hash_fnv1a",
-    "hash_ror13",
     "hash_ror7",
+    "hash_ror13",
     "rol32",
     "ror32",
 ]

@@ -27,6 +27,8 @@ from r2morph.reporting.sarif_schema import (
     SARIFThreadFlowLocation,
 )
 
+_MIN_CODE_FLOW_MUTATIONS = 2
+
 
 def build_related_locations(validations: list[Any], binary_path: str) -> list[SARIFLocation]:
     related: list[SARIFLocation] = []
@@ -53,7 +55,7 @@ def build_code_flows(mutations: list[Any], binary_path: str) -> list[SARIFCodeFl
 
     flows: list[SARIFCodeFlow] = []
     for func_name, func_mutations in by_function.items():
-        if len(func_mutations) < 2:
+        if len(func_mutations) < _MIN_CODE_FLOW_MUTATIONS:
             continue
         sorted_mutations = sorted(func_mutations, key=lambda mutation: mutation.address)
         thread_locs: list[SARIFThreadFlowLocation] = []

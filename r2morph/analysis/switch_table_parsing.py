@@ -8,6 +8,9 @@ from typing import Any
 from r2morph.analysis.switch_table_models import IndirectJump
 from r2morph.analysis.switch_table_patterns import JUMP_TABLE_PATTERNS, PLT_PATTERNS, TAIL_CALL_PATTERNS
 
+_INDEXED_OFFSET_GROUP_COUNT = 2
+_INDEXED_SCALED_OFFSET_GROUP_COUNT = 3
+
 
 def match_jumptable_operands(disasm: str) -> dict[str, Any] | None:
     """Match a jump-table addressing pattern and extract its operands."""
@@ -22,14 +25,14 @@ def match_jumptable_operands(disasm: str) -> dict[str, Any] | None:
         scale = 1
         displacement = 0
 
-        if ptype == "indexed_scaled_offset" and len(groups) >= 3:
+        if ptype == "indexed_scaled_offset" and len(groups) >= _INDEXED_SCALED_OFFSET_GROUP_COUNT:
             index_register = groups[0]
             scale = int(groups[1])
             displacement = int(groups[2], 16)
-        elif ptype == "indexed_scaled" and len(groups) >= 2:
+        elif ptype == "indexed_scaled" and len(groups) >= _INDEXED_OFFSET_GROUP_COUNT:
             index_register = groups[0]
             scale = int(groups[1])
-        elif ptype == "indexed_offset" and len(groups) >= 2:
+        elif ptype == "indexed_offset" and len(groups) >= _INDEXED_OFFSET_GROUP_COUNT:
             base_register = groups[0]
             displacement = int(groups[1], 16)
         elif ptype == "indexed":

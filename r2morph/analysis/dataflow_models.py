@@ -205,10 +205,7 @@ _X86_ALIAS_FAMILIES = (
     {"r15", "r15d", "r15w", "r15b"},
 )
 
-_ARM64_ALIAS_FAMILIES = tuple({f"x{n}", f"w{n}"} for n in range(31)) + (
-    {"sp", "wsp"},
-    {"lr", "x30"},
-)
+_ARM64_ALIAS_FAMILIES = (*tuple({f"x{n}", f"w{n}"} for n in range(31)), {"sp", "wsp"}, {"lr", "x30"})
 
 _ARM32_ALIAS_FAMILIES = (
     {"r0"},

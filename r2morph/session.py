@@ -176,8 +176,6 @@ class MorphSession:
 
     def _remove_checkpoint(self, checkpoint: Checkpoint) -> None:
         """Remove a checkpoint file."""
-        if checkpoint is None:
-            return
         try:
             if checkpoint.binary_path.exists():
                 checkpoint.binary_path.unlink()

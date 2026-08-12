@@ -15,6 +15,8 @@ node and raised ``RecursionError`` on this input; afterwards it returns a
 valid topological order.
 """
 
+import itertools
+
 from r2morph.analysis.call_graph import CallEdge, CallGraph, CallNode, CallType
 
 # Chain length comfortably beyond CPython's default recursion limit so the
@@ -30,7 +32,7 @@ def _build_linear_chain(length: int) -> tuple[CallGraph, list[int]]:
     addresses = [BASE_ADDRESS + i * STRIDE for i in range(length)]
     for i, addr in enumerate(addresses):
         cg.add_node(CallNode(address=addr, name=f"f{i}"))
-    for caller, callee in zip(addresses, addresses[1:]):
+    for caller, callee in itertools.pairwise(addresses):
         cg.add_edge(CallEdge(caller, callee, CallType.DIRECT))
     return cg, addresses
 
@@ -44,7 +46,7 @@ def test_topological_sort_deep_chain_no_recursion_error() -> None:
     assert set(order) == set(addresses)
     # Every callee must precede its caller in a valid topological order.
     position = {addr: idx for idx, addr in enumerate(order)}
-    for caller, callee in zip(addresses, addresses[1:]):
+    for caller, callee in itertools.pairwise(addresses):
         assert position[callee] < position[caller]
 
 
@@ -187,13 +189,13 @@ def _build_cycle(addresses: list[int]) -> CallGraph:
     cg = CallGraph()
     for i, addr in enumerate(addresses):
         cg.add_node(CallNode(address=addr, name=f"n{i}"))
-    for src, dst in zip(addresses, addresses[1:] + addresses[:1]):
+    for src, dst in zip(addresses, addresses[1:] + addresses[:1], strict=False):
         cg.add_edge(CallEdge(src, dst, CallType.DIRECT))
     return cg
 
 
 def test_scc_deep_acyclic_chain_no_recursion_error() -> None:
-    cg, addresses = _build_linear_chain(CHAIN_LENGTH)
+    cg, _addresses = _build_linear_chain(CHAIN_LENGTH)
 
     sccs = cg.find_strongly_connected_components()
 
@@ -260,7 +262,7 @@ def test_scc_edge_to_absent_callee_node() -> None:
 
 
 def test_detect_recursion_deep_acyclic_chain_no_recursion_error() -> None:
-    cg, addresses = _build_linear_chain(CHAIN_LENGTH)
+    cg, _addresses = _build_linear_chain(CHAIN_LENGTH)
 
     assert cg.find_recursive_chains() == []
     assert cg.find_recursive_functions() == []
@@ -275,7 +277,7 @@ def test_detect_recursion_deep_cycle_chain_reconstructed() -> None:
     assert len(chains) == 1
     # The recursive implementation reconstructs the cycle as the full
     # path from the entry node back to it (closing node repeated).
-    assert chains[0] == addresses + [addresses[0]]
+    assert chains[0] == [*addresses, addresses[0]]
     assert sorted(cg.find_recursive_functions()) == sorted(addresses)
     depth_node = cg.get_node(addresses[0])
     assert depth_node is not None

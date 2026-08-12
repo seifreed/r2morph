@@ -5,6 +5,7 @@ Update references (jumps, calls, pointers) after code modifications.
 import json
 import logging
 from enum import Enum
+from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.utils import ByteOrder, get_endianness
@@ -56,7 +57,8 @@ class ReferenceUpdater:
         Returns:
             True if successful
         """
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{jump_addr:x}")
             insns = json.loads(insn_json)
@@ -70,45 +72,40 @@ class ReferenceUpdater:
 
             if "rel" in jump_type.lower() or "cjmp" in jump_type.lower():
                 new_offset = new_target - (jump_addr + size)
-
                 new_insn = f"{mnemonic} {new_offset}"
-
-                new_bytes = self.binary.assemble(new_insn)
-
-                if new_bytes and len(new_bytes) <= size:
-                    if not self.binary.write_bytes(jump_addr, new_bytes):
-                        logger.warning(f"write_bytes failed for jump at 0x{jump_addr:x}")
-                        return False
-
-                    if len(new_bytes) < size:
-                        self.binary.nop_fill(jump_addr + len(new_bytes), size - len(new_bytes))
-
-                    self.updated_refs.add(jump_addr)
-                    logger.debug(f"Updated jump at 0x{jump_addr:x} -> 0x{new_target:x}")
-                    return True
-                else:
-                    logger.warning(f"New jump instruction too large at 0x{jump_addr:x}")
-                    return False
-
+                absolute = False
             else:
                 new_insn = f"{mnemonic} 0x{new_target:x}"
-                new_bytes = self.binary.assemble(new_insn)
-
-                if new_bytes and len(new_bytes) <= size:
-                    if not self.binary.write_bytes(jump_addr, new_bytes):
-                        logger.warning(f"write_bytes failed for jump at 0x{jump_addr:x}")
-                        return False
-                    if len(new_bytes) < size:
-                        self.binary.nop_fill(jump_addr + len(new_bytes), size - len(new_bytes))
-
-                    self.updated_refs.add(jump_addr)
-                    logger.debug(f"Updated absolute jump at 0x{jump_addr:x} -> 0x{new_target:x}")
-                    return True
+                absolute = True
+            jump_description = "absolute jump" if absolute else "jump"
+            success_message = f"Updated {jump_description} at 0x{jump_addr:x} -> 0x{new_target:x}"
+            return self._write_retargeted_jump(jump_addr, size, new_insn, success_message)
 
         except (ValueError, OSError, BrokenPipeError, json.JSONDecodeError) as e:
             logger.error(f"Failed to update jump at 0x{jump_addr:x}: {e}")
 
         return False
+
+    def _write_retargeted_jump(
+        self,
+        jump_addr: int,
+        size: int,
+        new_instruction: str,
+        success_message: str,
+    ) -> bool:
+        new_bytes = self.binary.assemble(new_instruction)
+        if not new_bytes or len(new_bytes) > size:
+            logger.warning(f"New jump instruction too large at 0x{jump_addr:x}")
+            return False
+        if not self.binary.write_bytes(jump_addr, new_bytes):
+            logger.warning(f"write_bytes failed for jump at 0x{jump_addr:x}")
+            return False
+        if len(new_bytes) < size:
+            self.binary.nop_fill(jump_addr + len(new_bytes), size - len(new_bytes))
+
+        self.updated_refs.add(jump_addr)
+        logger.debug(success_message)
+        return True
 
     def update_call_target(self, call_addr: int, old_target: int, new_target: int) -> bool:
         """
@@ -122,7 +119,8 @@ class ReferenceUpdater:
         Returns:
             True if successful
         """
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{call_addr:x}")
             insns = json.loads(insn_json)
@@ -169,7 +167,8 @@ class ReferenceUpdater:
         Returns:
             True if successful
         """
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             if ptr_size is None:
                 arch_info = self.binary.get_arch_info()
@@ -209,7 +208,7 @@ class ReferenceUpdater:
 
         return False
 
-    def find_references_to(self, target_addr: int) -> list[dict]:
+    def find_references_to(self, target_addr: int) -> list[dict[str, Any]]:
         """
         Find all references to a target address.
 
@@ -223,11 +222,10 @@ class ReferenceUpdater:
 
         refs = []
 
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         xrefs_json = self.binary.r2.cmd(f"axtj @ 0x{target_addr:x}")
         if xrefs_json:
-            import json
-
             try:
                 xrefs = json.loads(xrefs_json)
                 refs.extend(xrefs)

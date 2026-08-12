@@ -71,9 +71,10 @@ simple block reordering.
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
+from r2morph.core.constants import X86_RELATIVE_BRANCH_SIZE_BYTES
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
@@ -82,11 +83,12 @@ from r2morph.mutations.control_flow_flattening_helpers import (
     is_conditional_jump,
     select_candidates,
 )
-from r2morph.mutations.instruction_substitution_helpers import flags_live_at
 from r2morph.mutations.control_flow_flattening_strategies import (
+    BlockStrategyContext,
     apply_block_strategies,
     insert_dead_code_with_predicate,
 )
+from r2morph.mutations.instruction_substitution_helpers import flags_live_at
 
 logger = logging.getLogger(__name__)
 
@@ -220,10 +222,10 @@ class ControlFlowFlatteningPass(MutationPass):
             "functions_processed": functions_processed,
         }
 
-    def _select_candidates(self, binary: Any, functions: list[dict]) -> list[dict]:
+    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return select_candidates(binary, functions, self.min_blocks)
 
-    def _flatten_function(self, binary: Any, func: dict) -> dict[str, int] | None:
+    def _flatten_function(self, binary: Any, func: dict[str, Any]) -> dict[str, int] | None:
         """
         Apply control flow flattening transformations to a function.
 
@@ -281,15 +283,17 @@ class ControlFlowFlatteningPass(MutationPass):
         # Track how many predicates we've added
         predicates_to_add = min(self.opaque_density, len(blocks) - 1)
         predicates_added = apply_block_strategies(
-            binary,
+            BlockStrategyContext(
+                binary=binary,
+                arch_family=arch_family,
+                bits=bits,
+                mutations=mutations,
+                predicate_generator=self._predicate_generator,
+                jump_obfuscator=self._jump_obfuscator,
+            ),
             blocks,
             all_instrs,
-            arch_family,
-            bits,
             predicates_to_add,
-            mutations,
-            self._predicate_generator,
-            self._jump_obfuscator,
         )
 
         # Strategy 3: Look for NOP sleds we can replace with dead code + opaque predicates
@@ -298,7 +302,7 @@ class ControlFlowFlatteningPass(MutationPass):
             if predicates_added >= predicates_to_add:
                 break
 
-            if nop_size >= 5:  # Need at least 5 bytes for meaningful dead code
+            if nop_size >= X86_RELATIVE_BRANCH_SIZE_BYTES:
                 # The dead-code sequences clobber status flags (e.g. xor reg,reg
                 # sets ZF). Inserting them where flags are live before a
                 # downstream conditional would flip the branch, so only insert
@@ -311,9 +315,8 @@ class ControlFlowFlatteningPass(MutationPass):
                     mutations["total"] += 1
 
         if mutations["total"] > 0:
-            if not self._apply_validation_and_rollback(
-                binary, func_addr, func_name, blocks, mutations, baseline, mutation_checkpoint
-            ):
+            self._record_cff_mutation(func_addr, blocks, mutations, baseline)
+            if not self._mutation_is_valid(binary, func_name, mutation_checkpoint):
                 return None
 
             logger.info(
@@ -325,21 +328,14 @@ class ControlFlowFlatteningPass(MutationPass):
         logger.debug(f"No mutations applied to {func_name}")
         return None
 
-    def _apply_validation_and_rollback(
+    def _record_cff_mutation(
         self,
-        binary: Any,
         func_addr: int,
-        func_name: str,
         blocks: list[Any],
         mutations: dict[str, int],
         baseline: dict[str, Any],
-        mutation_checkpoint: str | None,
-    ) -> bool:
-        """Record the CFF mutation and validate it, rolling back on failure.
-
-        Returns True if the mutation is kept, False if it was rolled back
-        (the caller must then abandon the function).
-        """
+    ) -> None:
+        """Record the applied CFF mutation."""
         self._record_mutation(
             function_address=func_addr,
             start_address=blocks[0].get("addr", 0) if blocks else func_addr,
@@ -356,6 +352,8 @@ class ControlFlowFlatteningPass(MutationPass):
             },
         )
 
+    def _mutation_is_valid(self, binary: Any, func_name: str, mutation_checkpoint: str | None) -> bool:
+        """Validate the latest mutation and roll it back on failure."""
         if self._validation_manager is None or mutation_checkpoint is None or not self._records:
             return True
 
@@ -384,5 +382,5 @@ class ControlFlowFlatteningPass(MutationPass):
     def _is_conditional_jump(self, mnemonic: str, arch: str) -> bool:
         return is_conditional_jump(mnemonic, arch)
 
-    def _find_nop_sequences(self, instructions: list[dict]) -> list[tuple[int, int]]:
+    def _find_nop_sequences(self, instructions: list[dict[str, Any]]) -> list[tuple[int, int]]:
         return find_nop_sequences(instructions)

@@ -9,6 +9,7 @@ generator import a common base without importing each other.
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from typing import Any
 
 from r2morph.mutations.code_virtualization_engine import VirtualizedOp
@@ -21,6 +22,7 @@ _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101
 
 
+@dataclass(eq=False, repr=False, slots=True)
 class RegionScheme:
     """Per-instance handler layout, bytecode key, and register-slot layout.
 
@@ -34,64 +36,19 @@ class RegionScheme:
     slot indices in the bytecode reveal no register.
     """
 
-    __slots__ = (
-        "dup",
-        "xor_key",
-        "junk_seed",
-        "slot_perm",
-        "table_key",
-        "field_perm",
-        "body_seed",
-        "checksum_offset",
-        "flags_offset",
-        "isa_seed",
-    )
-
-    def __init__(
-        self,
-        dup: dict[str, tuple[int, ...]],
-        xor_key: int,
-        junk_seed: int,
-        slot_perm: tuple[int, ...],
-        table_key: int,
-        field_perm: int = 0,
-        body_seed: int = 0,
-        checksum_offset: int = 0x88,
-        flags_offset: int = 0x80,
-        isa_seed: int = 0,
-    ) -> None:
-        self.dup = dup
-        self.xor_key = xor_key
-        self.junk_seed = junk_seed
-        self.slot_perm = slot_perm
-        # 32-bit key the dispatch table offsets are XOR-encrypted with, so the
-        # handler addresses are not a plaintext jump table for a devirtualizer.
-        self.table_key = table_key
-        # Seed for the per-build operand field-order permutation: the encoder and
-        # the handlers both derive each item's field offsets from it, so a build
-        # lays operands out in its own order and a devirtualizer's field-offset
-        # model does not transfer across samples. 0 is the identity layout.
-        self.field_perm = field_perm
-        # Seeds the per-handler scratch-register bijection: each pure-VM-internal
-        # handler instance derives its own permutation of the scratch pool from
-        # this, so duplicate handlers share no register-allocation fingerprint.
-        # 0 leaves the bodies in their canonical register spelling.
-        self.body_seed = body_seed
-        # Frame byte offset of the runtime self-checksum, relocated per build so the
-        # checksum slot is not a fixed frame fingerprint. Lives in the free gap above
-        # the flags slot and below the xmm save area; 0x88 is the canonical default.
-        self.checksum_offset = checksum_offset
-        # Frame byte offset of the captured RFLAGS slot, relocated per build so it is
-        # not a fixed frame fingerprint. Qword-aligned in [0x80, 0x100), distinct
-        # from the checksum slot; 0x80 is the canonical default.
-        self.flags_offset = flags_offset
-        # Seeds this build's semantic ISA personality: which of several equivalent
-        # implementations each handler family uses (currently the flag-synthesis
-        # spelling; see code_virtualization_region_isa). 0 is the canonical
-        # personality, byte-identical to the pre-feature handlers.
-        self.isa_seed = isa_seed
+    dup: dict[str, tuple[int, ...]]
+    xor_key: int
+    junk_seed: int
+    slot_perm: tuple[int, ...]
+    table_key: int
+    field_perm: int = 0
+    body_seed: int = 0
+    checksum_offset: int = 0x88
+    flags_offset: int = 0x80
+    isa_seed: int = 0
 
 
+@dataclass(eq=False, repr=False, slots=True)
 class Region:
     """A lowered single-exit function ready to encode to VM bytecode.
 
@@ -105,212 +62,138 @@ class Region:
     dispatch-region contract, so an ordinary region encodes byte-identically.
     """
 
-    __slots__ = ("instructions", "exit_vaddr", "entry_vaddr", "op_keys", "body_ranges", "target_map")
+    instructions: list[tuple[Any, ...]]
+    exit_vaddr: int
+    entry_vaddr: int
+    op_keys: set[str]
+    body_ranges: list[tuple[int, int]]
+    target_map: dict[int, int] = field(default_factory=dict)
 
-    def __init__(
-        self,
-        instructions: list[tuple[Any, ...]],
-        exit_vaddr: int,
-        entry_vaddr: int,
-        op_keys: set[str],
-        body_ranges: list[tuple[int, int]],
-        target_map: dict[int, int] | None = None,
-    ) -> None:
-        self.instructions = instructions
-        self.exit_vaddr = exit_vaddr  # default exit, used by the unknown-opcode guard
-        self.entry_vaddr = entry_vaddr
-        self.op_keys = op_keys
-        self.body_ranges = body_ranges  # (addr, size) of each virtualized body instruction
-        self.target_map = target_map if target_map is not None else {}
+
+_KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
+    "lea": (4,),
+    "learip": (3,),
+    "leaidx": (6,),
+    "leaidxnb": (5,),
+    "opmemidx": (1, 7),
+    "incdec": (1, 3),
+    "movx": (1, 2, 3),
+    "movxidx": (1, 2, 3),
+    "movxreg": (1, 2, 3),
+    "load": (4,),
+    "store": (4,),
+    "fpload": (4,),
+    "fpstore": (4,),
+    "fploadrip": (3,),
+    "fpstorerip": (3,),
+    "fploadidx": (6,),
+    "fpstoreidx": (6,),
+    "fploadidxnb": (5,),
+    "fpstoreidxnb": (5,),
+    "fparith": (1, 4),
+    "fparithmem": (1, 5),
+    "fparithmemrip": (1, 4),
+    "fparithmemidx": (1, 7),
+    "cvti2f": (1, 2),
+    "cvtf2i": (1, 2),
+    "fpcmp": (1,),
+    "fpmov": (1,),
+    "fppacked": (1,),
+    "fppackedmem": (1,),
+    "fppackedmemrip": (1,),
+    "fppackedmemidx": (1,),
+    "riprel_load": (3,),
+    "riprel_store": (3,),
+    "cmpmem": (4,),
+    "cmpriprel": (3,),
+    "opmem": (1, 5),
+    "opriprel": (1, 4),
+    "opmemdst": (1, 5),
+    "opmemdstrip": (1, 4),
+    "vpushi": (2,),
+    "vbinop": (1, 2),
+    "vbinopsynth": (1, 2),
+    "vload": (3,),
+    "vstore": (3,),
+    "vloadidx": (5,),
+    "vstoreidx": (5,),
+    "vloadrip": (2,),
+    "vlea": (3,),
+    "vlearip": (2,),
+    "vleaidx": (5,),
+    "vleaidxnb": (4,),
+    "vmovx": (1, 2, 3),
+    "vmovxidx": (1, 2, 3),
+    "vstorerip": (2,),
+    "vshift": (1, 3),
+    "vshiftreg": (1, 2),
+    "vcmpsynth": (1, 2),
+    "imul": (3,),
+    "imul3": (4,),
+    "not": (2,),
+    "bswap": (2,),
+    "div": (1, 3),
+    "cqo": (1,),
+    "push": (2,),
+    "pop": (2,),
+    "rspadj": (1,),
+    "jcc": (1,),
+    "setcc": (1,),
+    "cmov": (1, 4),
+    "exit": (1,),
+    "vret": (1,),
+}
+
+_IDENTITY_KEYS = {
+    "fppload",
+    "fppstore",
+    "fpploadrip",
+    "fppstorerip",
+    "fpploadidx",
+    "fppstoreidx",
+    "vpush",
+    "vpop",
+    "pushi",
+    "movfromrsp",
+    "movtorsp",
+    "leave",
+    "call",
+    "vcall",
+    "icall",
+    "callmem",
+    "callmemrip",
+    "callmemidx",
+    "jmp",
+    "ijmp",
+    "ijmpmem",
+    "ijmpmemnb",
+    "fsave",
+    "frestore",
+    "nop",
+    "enter_inner",
+    "inner_exit",
+}
 
 
 def _op_key(item: tuple[Any, ...]) -> str | None:
     kind: str = item[0]
-    if kind == "lea":
-        return f"lea_{item[4]}"
-    if kind == "learip":
-        return f"learip_{item[3]}"
-    if kind == "leaidx":
-        return f"leaidx_{item[6]}"
-    if kind == "leaidxnb":
-        return f"leaidxnb_{item[5]}"
-    if kind == "opmemidx":
-        return f"opmemidx_{item[1]}_{item[7]}"
-    if kind == "incdec":
-        return f"incdec_{item[1]}_{item[3]}"
-    if kind == "movx":
-        return f"movx_{item[1]}_{item[2]}_{item[3]}"
-    if kind == "movxidx":
-        return f"movxidx_{item[1]}_{item[2]}_{item[3]}"
-    if kind == "movxreg":
-        return f"movxreg_{item[1]}_{item[2]}_{item[3]}"  # register source: ext, src_size, dst_width
-    if kind in ("load", "store", "fpload", "fpstore"):
-        return f"{kind}_{item[4]}"
-    if kind in ("fploadrip", "fpstorerip"):
-        return f"{kind}_{item[3]}"
-    if kind in ("fploadidx", "fpstoreidx"):
-        return f"{kind}_{item[6]}"
-    if kind in ("fploadidxnb", "fpstoreidxnb"):
-        return f"{kind}_{item[5]}"
-    if kind == "fparith":
-        return f"fparith_{item[1]}_{item[4]}"
-    if kind == "fparithmem":
-        return f"fparithmem_{item[1]}_{item[5]}"
-    if kind == "fparithmemrip":
-        return f"fparithmemrip_{item[1]}_{item[4]}"
-    if kind == "fparithmemidx":
-        return f"fparithmemidx_{item[1]}_{item[7]}"
-    if kind in ("cvti2f", "cvtf2i"):
-        return f"{kind}_{item[1]}_{item[2]}"  # fp_width, gp_width
-    if kind == "fpcmp":
-        return f"fpcmp_{item[1]}"
-    if kind == "fpmov":
-        return f"fpmov_{item[1]}"
-    if kind == "fppacked":
-        return f"fppacked_{item[1]}"
-    if kind == "fppackedmem":
-        return f"fppackedmem_{item[1]}"
-    if kind == "fppackedmemrip":
-        return f"fppackedmemrip_{item[1]}"
-    if kind == "fppackedmemidx":
-        return f"fppackedmemidx_{item[1]}"
-    if kind in ("fppload", "fppstore", "fpploadrip", "fppstorerip", "fpploadidx", "fppstoreidx"):
-        return kind
-    if kind in ("riprel_load", "riprel_store"):
-        return f"{kind}_{item[3]}"
-    if kind == "cmpmem":
-        return f"cmpmem_{item[4]}"
-    if kind == "cmpriprel":
-        return f"cmpriprel_{item[3]}"
-    if kind == "opmem":
-        return f"opmem_{item[1]}_{item[5]}"
-    if kind == "opriprel":
-        return f"opriprel_{item[1]}_{item[4]}"
-    if kind == "opmemdst":
-        return f"opmemdst_{item[1]}_{item[5]}"
-    if kind == "opmemdstrip":
-        return f"opmemdstrip_{item[1]}_{item[4]}"
-    if kind == "vpush":
-        return "vpush"  # slot push primitive (one slot operand, no width)
-    if kind == "vpop":
-        return "vpop"  # slot pop primitive (one slot operand, no width)
-    if kind == "vpushi":
-        return f"vpushi_{item[2]}"  # immediate push, width-sized cell
-    if kind == "vbinop":
-        return f"vbinop_{item[1]}_{item[2]}"  # flag-dead stack fold: mnemonic + width
-    if kind == "vbinopsynth":
-        return f"vbinopsynth_{item[1]}_{item[2]}"  # flag-live stack fold: mnemonic + width
-    if kind == "vload":
-        return f"vload_{item[3]}"  # push [base+disp] onto the vstack: width
-    if kind == "vstore":
-        return f"vstore_{item[3]}"  # pop the vstack top to [base+disp]: width
-    if kind == "vloadidx":
-        return f"vloadidx_{item[5]}"  # push [base+index*scale+disp] onto the vstack: width
-    if kind == "vstoreidx":
-        return f"vstoreidx_{item[5]}"  # pop the vstack top to [base+index*scale+disp]: width
-    if kind == "vloadrip":
-        return f"vloadrip_{item[2]}"  # push [rip+disp] onto the vstack: width
-    if kind == "vlea":
-        return f"vlea_{item[3]}"  # push lea address of [base+disp] onto the vstack: width
-    if kind == "vlearip":
-        return f"vlearip_{item[2]}"  # push lea address of [rip+disp] onto the vstack: width
-    if kind == "vleaidx":
-        return f"vleaidx_{item[5]}"  # push lea address of [base+index*scale+disp]: width
-    if kind == "vleaidxnb":
-        return f"vleaidxnb_{item[4]}"  # push lea address of [index*scale+disp] (no base): width
-    if kind == "vmovx":
-        return f"vmovx_{item[1]}_{item[2]}_{item[3]}"  # push extended [base+disp]: ext, src_size, dst_width
-    if kind == "vmovxidx":
-        return f"vmovxidx_{item[1]}_{item[2]}_{item[3]}"  # push extended indexed load: ext, src_size, dst_width
-    if kind == "vstorerip":
-        return f"vstorerip_{item[2]}"  # pop the vstack top to [rip+disp]: width
-    if kind == "vshift":
-        return f"vshift_{item[1]}_{item[3]}"  # stack shift: mnemonic + width
-    if kind == "vshiftreg":
-        return f"vshiftreg_{item[1]}_{item[2]}"  # stack shift by runtime cl: mnemonic + width
-    if kind == "vcmpsynth":
-        return f"vcmpsynth_{item[1]}_{item[2]}"  # stack compare (flags only): op + width
     if kind in ("op", "opmba", "opsynth"):
-        op: VirtualizedOp = item[1]
-        # opsynth: a flag-live add/sub computed by MBA with hand-synthesized flags.
-        return f"{kind}_{op.mnemonic}_{'i' if op.is_immediate else 'r'}_{op.width}"
-    if kind == "cmp":
-        return f"cmp_{'i' if item[3] else 'r'}_{item[4]}"
-    if kind == "test":
-        return f"test_{'i' if item[3] else 'r'}_{item[4]}"
+        operation: VirtualizedOp = item[1]
+        operand_kind = "i" if operation.is_immediate else "r"
+        return f"{kind}_{operation.mnemonic}_{operand_kind}_{operation.width}"
+    if kind in ("cmp", "test", "bt"):
+        operand_kind = "i" if item[3] else "r"
+        return f"{kind}_{operand_kind}_{item[4]}"
     if kind == "shift":
         return f"{item[1]}_{item[4]}"
-    if kind == "imul":
-        return f"imul_{item[3]}"
-    if kind == "imul3":
-        return f"imul3_{item[4]}"
-    if kind == "not":
-        return f"not_{item[2]}"  # bitwise complement: width
-    if kind == "bswap":
-        return f"bswap_{item[2]}"  # byte-order reversal: width
-    if kind == "div":
-        return f"div_{item[1]}_{item[3]}"  # signedness (s/u) + width
-    if kind == "cqo":
-        return f"cqo_{item[1]}"  # sign-extend rax->rdx: width
-    if kind == "bt":
-        return f"bt_{'i' if item[3] else 'r'}_{item[4]}"  # bit test: immediate/register + width
-    if kind == "push":
-        return f"push_{item[2]}"
-    if kind == "pop":
-        return f"pop_{item[2]}"
-    if kind == "pushi":
-        return "pushi"
-    if kind == "rspadj":
-        return f"rspadj_{item[1]}"
-    if kind == "movfromrsp":
-        return "movfromrsp"
-    if kind == "movtorsp":
-        return "movtorsp"
-    if kind == "leave":
-        return "leave"
-    if kind == "call":
-        return "call"  # bridge out to a native callee and back
-    if kind == "vcall":
-        return "vcall"  # in-function call: push a resume vIP and re-enter the VM at the callee
-    if kind == "icall":
-        return "icall"  # register-indirect call (target from a frame slot)
-    if kind == "callmem":
-        return "callmem"  # memory-indirect call (target pointer at base+disp)
-    if kind == "callmemrip":
-        return "callmemrip"  # memory-indirect call (target pointer at rip+disp)
-    if kind == "callmemidx":
-        return "callmemidx"  # memory-indirect call (pointer at base+index*scale+disp)
-    if kind == "jmp":
-        return "jmp"
-    if kind == "ijmp":
-        return "ijmp"  # register-indirect jump: computed VM exit to a runtime target
-    if kind == "ijmpmem":
-        return "ijmpmem"  # memory-indirect jump (target pointer at base+index*scale+disp)
-    if kind == "ijmpmemnb":
-        return "ijmpmemnb"  # memory-indirect jump, no base (pointer at index*scale+disp)
-    if kind == "fsave":
-        return "fsave"  # native pushfq: save the virtual RFLAGS onto the vstack
-    if kind == "frestore":
-        return "frestore"  # native popfq: restore the virtual RFLAGS from the vstack
-    if kind == "jcc":
-        return f"jcc_{item[1]}"
-    if kind == "setcc":
-        return f"setcc_{item[1]}"  # condition
-    if kind == "cmov":
-        return f"cmov_{item[1]}_{item[4]}"  # condition, width
-    if kind == "nop":
-        return "nop"
-    if kind == "exit":
-        return f"exit_{item[1]}"
-    if kind == "vret":
-        # Return-aware ret terminator: resume the VM at a pushed resume vIP, or fall
-        # back to the native return at this address. Keyed per address like exit.
-        return f"vret_{item[1]}"
-    if kind == "enter_inner":
-        return "enter_inner"  # transfer to the nested inner VM layer
-    if kind == "inner_exit":
-        return "inner_exit"  # return from a nested inner VM layer to its parent
-    return None
+    if kind in _IDENTITY_KEYS:
+        return kind
+
+    field_indexes = _KEY_FIELD_INDEXES.get(kind)
+    if field_indexes is None:
+        return None
+    suffix = "_".join(str(item[index]) for index in field_indexes)
+    return f"{kind}_{suffix}"
 
 
 def _required_key(item: tuple[Any, ...]) -> str:

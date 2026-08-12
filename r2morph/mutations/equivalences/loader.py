@@ -7,6 +7,7 @@ into concrete instruction patterns.
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -52,7 +53,7 @@ def load_equivalence_rules(arch: str = "x86") -> list[list[str]]:
     return groups
 
 
-def _expand_group(group: dict) -> list[list[str]]:
+def _expand_group(group: dict[str, Any]) -> list[list[str]]:
     """
     Expand a group definition into concrete equivalence groups.
 
@@ -86,7 +87,7 @@ def _expand_group(group: dict) -> list[list[str]]:
     return expanded_groups
 
 
-def _expand_template(instruction: str, register: str, mappings: dict) -> str:
+def _expand_template(instruction: str, register: str, mappings: dict[str, str]) -> str:
     """
     Expand a single instruction template with register values.
 

@@ -45,10 +45,7 @@ class R2Assembler:
             b'\\x31\\xc0'
         """
         try:
-            if address:
-                result = self.r2.cmd(f'"pa {instruction}" @ {address}')
-            else:
-                result = self.r2.cmd(f"pa {instruction}")
+            result = self.r2.cmd(f'"pa {instruction}" @ {address}') if address else self.r2.cmd(f"pa {instruction}")
 
             hex_str = result.strip()
             if hex_str:

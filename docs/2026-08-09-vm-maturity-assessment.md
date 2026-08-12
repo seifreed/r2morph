@@ -1,13 +1,15 @@
-# VM maturity assessment — 2026-08-09
+# VM maturity assessment — 2026-08-12
 
 Measured against a commercial protector baseline (VMProtect / Themida), using the
 decompiler as the adversary rather than a disassembler.
 
-**Verdict: the region VM is a correct, feature-rich virtualizer that does not yet
-resist a decompiler. One Hex-Rays press recovers the interpreter, the ISA, the key
-schedule and the anti-debug logic.** It is well below the reference protectors.
+**Verdict: the VM pipeline is a correct, feature-rich virtualizer with meaningful
+static-decompiler resistance, but it remains below the reference protectors.**
+Hex-Rays no longer reconstructs the dispatch, handlers, keys or plaintext VM
+context, but it still recovers the integrity and anti-debug prologue and identifies
+the appended executable payload and its interpreter functions.
 
-## Cumulative hardening state (2026-08-09 session)
+## Cumulative hardening state (2026-08-12 session)
 
 The gaps below were worked in order; this is where the VM stands after that pass,
 re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
@@ -37,6 +39,31 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   and its bytecode is XORed with the checksum byte, so it carries no `xor_key` literal
   either.
 
+- **Register files — checksum-ciphered in all three VMs.** All 16 GP slots, including the
+  relocated program `rsp`, are stored XORed with the runtime checksum broadcast;
+  every handler decrypts on read and encrypts on write. A fresh IDA run over seed
+  `20260811` renders the entry context as 15 independent
+  `slot ^= 0x0101010101010101 * v_checksum` expressions before opaque threaded
+  dispatch, rather than plaintext register values. The same transform now covers
+  the straight-line engine's per-build frame layout. IDA renders its entry as 15
+  checksum-keyed slot expressions, its relocated `rsp` as a keyed pointer, and its
+  exit reloads as keyed reads. The physical array remains contiguous, so this
+  closes plaintext static recovery, not runtime tracing.
+
+- **Payload segment multiplicity — reduced.** The injector now relocates the
+  program-header table once and extends that terminal RX load for later VM blobs.
+  On `dataset/elf_vm_incall_x86_64`, two virtualized functions now add one program
+  header and IDA reports one appended RX `LOAD` (`0x402000..0x40bb84`) instead of
+  two appended loads. The single large executable payload remains structurally
+  obvious.
+
+- **Self-checksum traversal — no longer linear.** The three VMs share an
+  alternating-ends traversal: each iteration consumes one byte from each end of
+  the interpreter and converges inward, with the per-build variant selecting which
+  end is mixed first. IDA no longer emits the former single-pointer linear `for`,
+  but it still recovers the two pointers, range and fold. This breaks the simplest
+  checksum-loop signatures without pretending the integrity design is hidden.
+
 - **Anti-debug probe — no foldable constants left.** The tracer probe's three
   syscall numbers (`openat`/`read`/`close`) and the `AT_FDCWD` dirfd were the last
   plaintext immediates in it; a decompiler folded them and attributed the probe as
@@ -49,39 +76,53 @@ re-verified by decompiling a freshly virtualized `dataset/elf_vm_incall_x86_64`:
   constants are gone. (gaps 3/5, done for the constants)
 
 **Still recovered by the decompiler, and still below the reference protectors:** the
-register file is a computable stack index; the self-checksum loop and the anti-debug
-probe *structure* (the checksum loop, the tag scan, the two timestamp reads) are still
-visible even though their constants are gone; and the payload is structurally obvious
-(appended RX `PT_LOAD`, one interpreter function). These are the remaining milestones
-and each is a dedicated redesign — see the gap list.
+self-checksum loop and anti-debug probe *structure* (the checksum loop, tag scan and
+timestamp reads) remain visible even though their constants are gone; the ciphered
+register array remains contiguous; and the payload is structurally obvious (one
+appended RX `PT_LOAD`, large interpreter functions). These are the remaining
+milestones and each is a dedicated redesign — see the gap list.
 
 ## Method
 
 `dataset/elf_vm_incall_x86_64`, `elf_switch_abs_x86_64`, `elf_blockswap_x86_64` and
 `elf_vm_arith_x86_64` virtualized at `probability=1.0`, `vm_nesting_depth=2`, several
-seeds, then opened in IDA Pro (idalib) with auto-analysis and decompiled. Both
-dispatch shapes were covered: the shape is drawn per build
-(`code_virtualization_region.py:974`), so seeds were chosen to hit each.
+seeds, then opened in IDA Pro (idalib) with auto-analysis and decompiled. The
+initial baseline covered both former dispatch shapes; current builds only use the
+encrypted threaded shape.
+
+The 2026-08-11 recheck used `elf_vm_incall_x86_64`, seed `20260811`, nesting
+depth 2 and SHA-256
+`7c7d9799be38b8d7ae1e34d24211dcaaac0b97680f443bde576a1b26b9a61cd1`.
+It virtualized two functions (35 native instructions, 39,644 bytecode bytes),
+preserved exit code 45, and was opened through the IDA MCP with auto-analysis.
+
+The 2026-08-12 engine recheck used `elf_vm_run_callfallback_x86_64`, seed
+`20260812`, and SHA-256
+`5ccc5324fe0cea773bd60ee7d8c649d2fd5f6bf6f5586735df038ecfae04f93b`.
+It virtualized one straight-line run (three native instructions, 51,917 generated
+bytes), preserved exit code 45, and produced one appended RX `LOAD`. IDA attributed
+only 225 instructions to the interpreter entry, stopped at its opaque indirect
+jump, and left the handler body range unattributed.
 
 ## What the decompiler recovers
 
-The interpreter decompiles into a single function with a `while(1)` and a `switch`
-over the opcode. Everything below is read directly off the pseudocode, with no
-manual work:
+The interpreter decompiles through its prologue and stops at an opaque indirect
+jump; handlers are not attributed to it. Everything below is read directly off the
+pseudocode, with no manual work:
 
 | Asset | How it appears |
 |---|---|
-| Dispatch | `while(1) { ... switch (v25) { case 8u: ... } }` |
-| Opcode cipher | one line: `v24 = v43 ^ ((BYTE)vip - (BYTE)base) ^ v44 ^ *vip` |
-| Operand cipher | `(0x0101010101010101 * delta) ^ *(qword*)(p+1) ^ K`, `K` a literal |
-| Register file | a plain stack array, slot index `delta ^ byte ^ K` |
-| Self-checksum | `for (i = start_0; i < byte_402857; ++i)` — range and algorithm both explicit |
-| Tracer probe | `strcpy(v31, "/proc/self/status")` plus the `TracerPid` tag as a literal qword |
-| Handler count | 8–13 opcodes, one instance each |
+| Dispatch | opaque bounded indirect `jmp rax`; no switch or handler attribution |
+| Opcode cipher | runtime self-checksum plus stream position; no key literal |
+| Operand cipher | checksum-broadcast XOR; no build-constant key |
+| Register file | contiguous stack array whose values are checksum-ciphered |
+| Self-checksum | two pointers converge from both range ends; range and fold remain explicit |
+| Tracer probe | three unnamed syscalls and an opaque tag compare; scan structure visible |
+| Handler count | roughly 40–65 polymorphic instances, not attributed to the dispatcher |
 
-Structural tells at the file level: the payload lands in extra unnamed `RX` `PT_LOAD`
-segments above the image, and the interpreter is a single contiguous function whose
-bounds IDA resolves exactly.
+Structural tells at the file level: the payload lands in one extra unnamed RX
+`PT_LOAD` above the image, and each interpreter remains a large contiguous function
+whose bounds IDA resolves exactly.
 
 ## The anti-debug constants cannot be hidden by *immediate* masking (now solved by checksum-keying)
 
@@ -172,19 +213,35 @@ folded into it remain visible; only the anti-debug constants were relocated.
    collapsible by behaviour.
 3. **Key material is compile-time constant**, so every cipher in the VM is recoverable
    by constant propagation (see above).
+
+   **Closed.** Opcode, operand, dispatch-table, register-file and virtual-stack
+   ciphers are keyed by the runtime self-checksum or its lane broadcast; no separate
+   build-constant key remains in the decompiled decode paths.
 4. **The register file is a flat stack array** with a computable index, so a
    devirtualizer can name every virtual register.
+
+   **Substantially closed for static recovery.** The per-build slot permutation
+   already breaks positional naming, and every GP slot is now checksum-ciphered at
+   rest across the region, nested and straight-line engine VMs. IDA sees the entry encryption but cannot
+   fold the runtime key or recover plaintext handler accesses. The remaining tell is
+   the contiguous array itself; a runtime tracer can still observe decrypt/use/store.
 5. **Integrity and anti-debug are observable and centralized** — one checksum byte,
    one slot, folded by two probes whose ranges and algorithms are all visible.
 
    **Partly closed.** The anti-debug *constants* (the procfs path and the tracer tag)
    no longer decompile to literals: they are checksum-keyed in an out-of-range island
    (see above), so the decompiler renders opaque XOR expressions instead of
-   `"/proc/self/status"`. The checksum loop and the fold structure themselves are
-   still visible; hiding those needs the loop and probes virtualized too, not just
-   their constants.
+   `"/proc/self/status"`. The checksum traversal now alternates both range ends and
+   varies which end is read first, so the old single-pointer signature is gone, but
+   the range and fold structure remain visible. Hiding those needs the integrity and
+   probes virtualized too, not just their constants or traversal spelling.
 6. **The payload is structurally obvious**: appended `RX` segments, one contiguous
    interpreter function, contiguous bytecode at a resolvable symbol.
+
+   **Partly closed.** All VM blobs in one mutation run now share a single appended
+   RX segment, so segment count no longer reveals the number of virtualized
+   functions. The segment and the large contiguous interpreter functions are still
+   immediately visible and remain a major maturity gap.
 
 ## What is already good
 

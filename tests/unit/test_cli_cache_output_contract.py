@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from r2morph.cli_cache_output import (
     build_cache_cleared_message,
@@ -16,8 +16,8 @@ def test_cli_cache_output_builds_stats_lines() -> None:
         misses=1,
         total_size_bytes=2 * 1024 * 1024,
         entry_count=4,
-        oldest_entry=datetime(2024, 1, 1, tzinfo=timezone.utc),
-        newest_entry=datetime(2024, 1, 2, tzinfo=timezone.utc),
+        oldest_entry=datetime(2024, 1, 1, tzinfo=UTC),
+        newest_entry=datetime(2024, 1, 2, tzinfo=UTC),
     )
 
     assert build_cache_statistics_lines(stats) == [

@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.equivalences import load_equivalence_rules
 
@@ -20,8 +20,8 @@ def init_substitution_rules() -> tuple[dict[str, list[list[str]]], dict[str, dic
         "arm64": load_equivalence_rules("arm64"),
     }
 
-    for arch in equivalence_groups:
-        for group in equivalence_groups[arch]:
+    for groups in equivalence_groups.values():
+        for group in groups:
             random.shuffle(group)
 
     pattern_to_group: dict[str, dict[str, int]] = {}
@@ -187,7 +187,7 @@ def select_candidates(
     arch_family: str,
     pattern_to_group: dict[str, dict[str, int]],
     equivalence_groups: dict[str, list[list[str]]],
-) -> list[tuple[dict, list]]:
+) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
     """Select functions that contain substitution candidates."""
     result = []
     for func in functions:
@@ -204,7 +204,7 @@ def select_candidates(
         disasms = [insn.get("disasm", "").lower() for insn in instructions]
         candidates = []
         for index, insn in enumerate(instructions):
-            original_pattern, equivalents, group_idx = get_equivalents(
+            _original_pattern, equivalents, _group_idx = get_equivalents(
                 insn, arch_family, pattern_to_group, equivalence_groups
             )
             if equivalents and len(equivalents) > 1:

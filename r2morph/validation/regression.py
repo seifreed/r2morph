@@ -216,12 +216,3 @@ class RegressionTestFramework:
             report.append("")
 
         return "\n".join(report)
-
-
-class RegressionTester:
-    """Compatibility wrapper that instantiates the legacy tester on demand."""
-
-    def __new__(cls, *args: Any, **kwargs: Any) -> Any:
-        from r2morph.validation.regression_legacy import RegressionTester as LegacyRegressionTester
-
-        return LegacyRegressionTester(*args, **kwargs)

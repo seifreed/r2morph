@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+_MIN_DENSE_CASE_COUNT = 2
+
 
 class JumpTableType(Enum):
     """Type of jump table."""
@@ -62,7 +64,7 @@ class JumpTable:
     def is_dense(self) -> bool:
         """Check if case values are dense (no gaps)."""
         case_values = sorted(e.case_value for e in self.entries if e.case_value is not None)
-        if len(case_values) < 2:
+        if len(case_values) < _MIN_DENSE_CASE_COUNT:
             return True
         return case_values[-1] - case_values[0] + 1 == len(case_values)
 

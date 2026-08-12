@@ -2,11 +2,10 @@
 radare2-native executable-region injection for code virtualization.
 
 Places a generated VM interpreter blob into an ELF64 binary by appending a
-brand-new read/execute ``PT_LOAD`` segment above every existing one. The blob
-is written past end-of-file at a page-aligned offset and mapped at a
-page-aligned virtual address above the whole image, so no unrelated file byte
-is ever aliased into the address space and no segment can overlap another.
-ET_EXEC and ET_DYN images take the identical path.
+read/execute ``PT_LOAD`` segment above every existing one. Later blobs extend
+that terminal segment when its geometry proves it owns the end of the file,
+instead of exposing one extra load segment per virtualized function. ET_EXEC
+and ET_DYN images take the identical path.
 
 A typical image leaves no slack after its program-header table (``.gnu.hash``
 starts immediately behind it), so the table cannot simply grow in place: the
@@ -148,8 +147,19 @@ class _Placement:
     segment_vaddr: int
     phdr_table_size: int
     blob_vaddr: int
+    e_phoff: int
     e_phnum: int
     table: bytes
+
+
+@dataclass(frozen=True)
+class _Reuse:
+    """A terminal executable segment that can safely absorb another blob."""
+
+    blob_offset: int
+    blob_vaddr: int
+    entry_offset: int
+    segment_size: int
 
 
 def _phdr_table_geometry(header: bytes) -> tuple[int, int] | None:
@@ -229,8 +239,37 @@ def _plan_placement(binary: Any) -> _Placement | None:
         segment_vaddr=segment_vaddr,
         phdr_table_size=phdr_table_size,
         blob_vaddr=exec_r2_vaddr + (segment_vaddr + phdr_table_size - exec_vaddr),
+        e_phoff=e_phoff,
         e_phnum=e_phnum,
         table=table,
+    )
+
+
+def _plan_reuse(placement: _Placement) -> _Reuse | None:
+    """Reuse the relocated-table segment when it exclusively owns EOF."""
+    base = (placement.e_phnum - 1) * _PHDR_ENTRY_SIZE
+    p_type, p_flags = struct.unpack_from("<II", placement.table, base + _P_TYPE)
+    offset = struct.unpack_from("<Q", placement.table, base + _P_OFFSET)[0]
+    vaddr = struct.unpack_from("<Q", placement.table, base + _P_VADDR)[0]
+    filesz = struct.unpack_from("<Q", placement.table, base + _P_FILESZ)[0]
+    memsz = struct.unpack_from("<Q", placement.table, base + _P_MEMSZ)[0]
+    loads = _parse_loads(placement.table, placement.e_phnum)
+    if (
+        p_type != _PT_LOAD
+        or p_flags != _PF_R | _PF_X
+        or offset != placement.e_phoff
+        or offset + filesz != placement.file_size
+        or filesz != memsz
+        or vaddr + memsz != max(load.vaddr + load.memsz for load in loads)
+    ):
+        return None
+
+    rebase_delta = placement.blob_vaddr - placement.segment_vaddr - placement.phdr_table_size
+    return _Reuse(
+        blob_offset=placement.file_size,
+        blob_vaddr=vaddr + filesz + rebase_delta,
+        entry_offset=placement.e_phoff + base,
+        segment_size=filesz,
     )
 
 
@@ -324,7 +363,27 @@ def predict_blob_vaddr(binary: Any) -> int | None:
     would be refused, for the same reasons.
     """
     placement = _plan_placement(binary)
-    return None if placement is None else placement.blob_vaddr
+    if placement is None:
+        return None
+    reuse = _plan_reuse(placement)
+    return reuse.blob_vaddr if reuse is not None else placement.blob_vaddr
+
+
+def _extend_segment(binary: Any, reuse: _Reuse, blob: bytes) -> int | None:
+    """Append ``blob`` and grow the owning terminal load entry in place."""
+    segment_size = reuse.segment_size + len(blob)
+    _write_physical(binary, reuse.blob_offset, blob)
+    _write_physical(binary, reuse.entry_offset + _P_FILESZ, struct.pack("<Q", segment_size))
+    _write_physical(binary, reuse.entry_offset + _P_MEMSZ, struct.pack("<Q", segment_size))
+    if _read_physical(binary, reuse.blob_offset, len(blob)) != blob:
+        logger.warning("VM blob read-back mismatch at file offset 0x%x; injection failed", reuse.blob_offset)
+        return None
+    logger.debug(
+        "Injected %d-byte VM blob at vaddr 0x%x by extending the terminal load segment",
+        len(blob),
+        reuse.blob_vaddr,
+    )
+    return reuse.blob_vaddr
 
 
 def inject_blob(binary: Any, blob: bytes) -> int | None:
@@ -339,6 +398,9 @@ def inject_blob(binary: Any, blob: bytes) -> int | None:
     if placement is None:
         logger.debug("ELF64 geometry admits no appended load segment; skipping virtualization")
         return None
+    reuse = _plan_reuse(placement)
+    if reuse is not None:
+        return _extend_segment(binary, reuse, blob)
 
     padding = bytes(placement.append_offset - placement.file_size)
     _write_physical(binary, placement.file_size, padding + _relocated_phdr_table(placement, len(blob)) + blob)

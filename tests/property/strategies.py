@@ -149,10 +149,7 @@ def create_x86_register_strategy(bits: int = 64) -> "SearchStrategy[str]":
     if not HYPOTHESIS_AVAILABLE:
         raise ImportError("Hypothesis not installed")
 
-    if bits == 64:
-        registers = X86_REGISTERS_64[:8]
-    else:
-        registers = X86_REGISTERS_32[:8]
+    registers = X86_REGISTERS_64[:8] if bits == 64 else X86_REGISTERS_32[:8]
 
     return st.sampled_from(registers)
 
@@ -249,7 +246,7 @@ def create_function_strategy(
     def make_function(instructions: list[str], address: int, name: str) -> Function:
         instr_objs = []
         current_addr = address
-        for i, instr_str in enumerate(instructions):
+        for _i, instr_str in enumerate(instructions):
             instr_objs.append(
                 Instruction(
                     address=current_addr,
@@ -530,7 +527,7 @@ def get_simple_function(address: int = 0x1000, num_instructions: int = 5) -> Fun
     instructions = []
     current_addr = address
 
-    for i in range(num_instructions):
+    for _i in range(num_instructions):
         instr_str = get_simple_instruction()
         instructions.append(
             Instruction(
@@ -552,23 +549,23 @@ def get_simple_function(address: int = 0x1000, num_instructions: int = 5) -> Fun
 
 if HYPOTHESIS_AVAILABLE:
     __all__ = [
-        "create_x86_register_strategy",
-        "create_x86_instruction_strategy",
-        "create_instruction_sequence_strategy",
-        "create_address_strategy",
-        "create_function_strategy",
-        "create_function_with_loops_strategy",
-        "create_function_with_branches_strategy",
-        "create_binary_with_functions_strategy",
-        "create_mutation_seed_strategy",
-        "create_mutation_pass_strategy",
-        "Instruction",
         "Function",
+        "Instruction",
+        "create_address_strategy",
+        "create_binary_with_functions_strategy",
+        "create_function_strategy",
+        "create_function_with_branches_strategy",
+        "create_function_with_loops_strategy",
+        "create_instruction_sequence_strategy",
+        "create_mutation_pass_strategy",
+        "create_mutation_seed_strategy",
+        "create_x86_instruction_strategy",
+        "create_x86_register_strategy",
     ]
 else:
     __all__ = [
-        "get_simple_instruction",
-        "get_simple_function",
-        "Instruction",
         "Function",
+        "Instruction",
+        "get_simple_function",
+        "get_simple_instruction",
     ]

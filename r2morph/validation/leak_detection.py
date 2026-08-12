@@ -7,10 +7,12 @@ using memory profiling and garbage collection tracking.
 
 import gc
 import logging
+import time
 import tracemalloc
 from pathlib import Path
 from typing import Any
 
+from r2morph.core.binary import Binary
 from r2morph.validation.leak_detection_models import (
     LeakDetectionResult,
     MemoryLeak,
@@ -28,6 +30,9 @@ from r2morph.validation.resource_leak_detection import (
 )
 
 logger = logging.getLogger(__name__)
+
+_MIN_LEAK_SNAPSHOTS = 2
+_GC_PRESSURE_GROWTH_THRESHOLD = 1000
 
 ObjectTracker = _ObjectTracker
 ResourceLeak = _ResourceLeak
@@ -77,8 +82,6 @@ class MemoryLeakDetector:
             tracer_running = False
 
         gc_gen0, gc_gen1, gc_gen2 = self._get_gc_stats()
-
-        import time
 
         return MemorySnapshot(
             timestamp=time.time(),
@@ -138,7 +141,7 @@ class MemoryLeakDetector:
         Returns:
             LeakDetectionResult with analysis
         """
-        if len(snapshots) < 2:
+        if len(snapshots) < _MIN_LEAK_SNAPSHOTS:
             return LeakDetectionResult(
                 passed=True,
                 leaks_detected=0,
@@ -189,7 +192,7 @@ class MemoryLeakDetector:
         gc_growth = (final.gc_gen0 + final.gc_gen1 + final.gc_gen2) - (
             initial.gc_gen0 + initial.gc_gen1 + initial.gc_gen2
         )
-        if gc_growth > 1000:
+        if gc_growth > _GC_PRESSURE_GROWTH_THRESHOLD:
             leaks.append(
                 MemoryLeak(
                     leak_type="gc_pressure",
@@ -291,7 +294,6 @@ class MemoryLeakDetector:
         Returns:
             LeakDetectionResult
         """
-        from r2morph import Binary
 
         def run_pass() -> None:
             with Binary(binary_path, flags=["-2"], writable=True) as binary:

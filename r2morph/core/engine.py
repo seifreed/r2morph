@@ -8,7 +8,6 @@ from pathlib import Path
 from typing import Any
 
 from r2morph.core.binary import Binary
-from r2morph.core.constants import SEVERITY_ORDER as SEVERITY_ORDER
 from r2morph.core.engine_lifecycle import analyze as analyze_lifecycle
 from r2morph.core.engine_lifecycle import load_binary as load_binary_lifecycle
 from r2morph.core.engine_mutations import add_mutation as add_mutation_lifecycle
@@ -17,48 +16,9 @@ from r2morph.core.engine_mutations import remove_mutation as remove_mutation_lif
 from r2morph.core.engine_output import build_report as build_report_output
 from r2morph.core.engine_output import save_binary as save_binary_output
 from r2morph.core.engine_output import save_report as save_report_output
+from r2morph.core.engine_run import EngineRunOptions
 from r2morph.core.engine_run import run as run_lifecycle
 from r2morph.core.engine_wiring import build_engine_wiring
-from r2morph.core.report_helpers import (  # noqa: F401
-    REPORT_SCHEMA_VERSION,
-    _build_discarded_mutation_priority,
-    _build_evidence_summary_for_pass,
-    _build_observable_mismatch_map,
-    _build_observable_mismatch_priority,
-    _build_pass_capability_summary_map,
-    _build_pass_region_evidence_map,
-    _build_pass_triage_map,
-    _build_pass_validation_context,
-    _build_symbolic_summary_for_pass,
-    _build_validation_role_map,
-    _enrich_validation_policy,
-    _pass_severity_requirements_met,
-    _severity_threshold_met,
-    _sort_pass_evidence,
-    _summarize_degradation_roles,
-    _summarize_diff_digest,
-    _summarize_discarded_mutations,
-    _summarize_normalized_pass_results,
-    _summarize_observable_mismatches_by_pass,
-    _summarize_pass_capability_rows,
-    _summarize_pass_coverage_buckets,
-    _summarize_pass_evidence,
-    _summarize_pass_evidence_compact,
-    _summarize_pass_risk_buckets,
-    _summarize_pass_timings,
-    _summarize_pass_triage_rows,
-    _summarize_structural_evidence,
-    _summarize_symbolic_coverage_by_pass,
-    _summarize_symbolic_issue_passes,
-    _summarize_symbolic_overview,
-    _summarize_symbolic_severity_by_pass,
-    _summarize_symbolic_statuses,
-    _summarize_symbolic_view_from_mutations,
-    _summarize_validation_adjustment_rows,
-    _summarize_validation_adjustments,
-    _summarize_validation_role_rows,
-    _summary_first,
-)
 from r2morph.protocols import (
     BinarySignerProtocol,
     GateFailureReporterProtocol,
@@ -68,7 +28,6 @@ from r2morph.protocols import (
     ReportViewBuilderProtocol,
 )
 from r2morph.session import MorphSession
-from r2morph.validation import BinaryValidator
 
 logger = logging.getLogger(__name__)
 
@@ -145,27 +104,8 @@ class MorphEngine:
     def remove_mutation(self, mutation_name: str) -> "MorphEngine":
         return remove_mutation_lifecycle(self, mutation_name)
 
-    def run(
-        self,
-        *,
-        validation_mode: str = "structural",
-        rollback_policy: str = "skip-invalid-pass",
-        checkpoint_per_mutation: bool = False,
-        runtime_validator: BinaryValidator | None = None,
-        runtime_validate_per_pass: bool = False,
-        report_path: str | Path | None = None,
-        seed: int | None = None,
-    ) -> dict[str, Any]:
-        return run_lifecycle(
-            self,
-            validation_mode=validation_mode,
-            rollback_policy=rollback_policy,
-            checkpoint_per_mutation=checkpoint_per_mutation,
-            runtime_validator=runtime_validator,
-            runtime_validate_per_pass=runtime_validate_per_pass,
-            report_path=report_path,
-            seed=seed,
-        )
+    def run(self, options: EngineRunOptions | None = None) -> dict[str, Any]:
+        return run_lifecycle(self, options)
 
     def save(self, output_path: str | Path) -> None:
         save_binary_output(self, output_path)

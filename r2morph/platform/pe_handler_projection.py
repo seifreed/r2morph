@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import Any
 
 
-def project_imports(binary: Any) -> list[dict]:
+def project_imports(binary: Any) -> list[dict[str, Any]]:
     """Convert LIEF imports into plain dictionaries."""
-    imports: list[dict] = []
+    imports: list[dict[str, Any]] = []
     for entry in binary.imports:
         items = []
         for func in entry.entries:
@@ -19,9 +19,9 @@ def project_imports(binary: Any) -> list[dict]:
     return imports
 
 
-def project_exports(binary: Any) -> list[dict]:
+def project_exports(binary: Any) -> list[dict[str, Any]]:
     """Convert LIEF exports into plain dictionaries."""
-    exports: list[dict] = []
+    exports: list[dict[str, Any]] = []
     for func in binary.exported_functions:
         exports.append(
             {
@@ -33,9 +33,9 @@ def project_exports(binary: Any) -> list[dict]:
     return exports
 
 
-def project_relocations(binary: Any) -> list[dict]:
+def project_relocations(binary: Any) -> list[dict[str, Any]]:
     """Convert LIEF relocations into plain dictionaries."""
-    relocations: list[dict] = []
+    relocations: list[dict[str, Any]] = []
     for reloc in binary.relocations:
         relocations.append(
             {

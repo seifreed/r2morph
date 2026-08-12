@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+_WORD_SIZE_BYTES = 2
+_DWORD_SIZE_BYTES = 4
+_QWORD_SIZE_BYTES = 8
+
 
 def get_value_range(type_info: Any) -> tuple[int, int] | None:
     """Return the numeric value range for an integer type."""
@@ -13,11 +17,11 @@ def get_value_range(type_info: Any) -> tuple[int, int] | None:
     size = type_info.size
     if size == 1:
         return (0, 255)
-    if size == 2:
+    if size == _WORD_SIZE_BYTES:
         return (0, 65535)
-    if size == 4:
+    if size == _DWORD_SIZE_BYTES:
         return (0, 2**32 - 1)
-    if size == 8:
+    if size == _QWORD_SIZE_BYTES:
         return (0, 2**64 - 1)
     return None
 

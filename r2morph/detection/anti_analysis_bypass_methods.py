@@ -44,28 +44,28 @@ def apply_bypass(
     timing_baseline: dict[str, float],
 ) -> bool:
     """Apply a specific bypass technique."""
+    applied = False
     try:
         if bypass_technique == BypassTechnique.ENVIRONMENT_MASKING:
-            return apply_environment_masking(active_bypasses, environment_backup)
-        if bypass_technique == BypassTechnique.API_REDIRECTION:
-            return apply_api_redirection(active_bypasses)
-        if bypass_technique == BypassTechnique.TIMING_MANIPULATION:
-            return apply_timing_manipulation(active_bypasses, timing_baseline)
-        if bypass_technique == BypassTechnique.REGISTRY_SPOOFING:
-            return apply_registry_spoofing(active_bypasses)
-        if bypass_technique == BypassTechnique.FILE_SYSTEM_HOOKS:
-            return apply_filesystem_hooks(active_bypasses)
-        if bypass_technique == BypassTechnique.PROCESS_HIDING:
-            return apply_process_hiding(active_bypasses)
-        if bypass_technique == BypassTechnique.HARDWARE_EMULATION:
-            return apply_hardware_emulation(active_bypasses)
-
-        logger.warning(f"Unknown bypass technique: {bypass_technique}")
-        return False
+            applied = apply_environment_masking(active_bypasses, environment_backup)
+        elif bypass_technique == BypassTechnique.API_REDIRECTION:
+            applied = apply_api_redirection(active_bypasses)
+        elif bypass_technique == BypassTechnique.TIMING_MANIPULATION:
+            applied = apply_timing_manipulation(active_bypasses, timing_baseline)
+        elif bypass_technique == BypassTechnique.REGISTRY_SPOOFING:
+            applied = apply_registry_spoofing(active_bypasses)
+        elif bypass_technique == BypassTechnique.FILE_SYSTEM_HOOKS:
+            applied = apply_filesystem_hooks(active_bypasses)
+        elif bypass_technique == BypassTechnique.PROCESS_HIDING:
+            applied = apply_process_hiding(active_bypasses)
+        elif bypass_technique == BypassTechnique.HARDWARE_EMULATION:
+            applied = apply_hardware_emulation(active_bypasses)
+        else:
+            logger.warning(f"Unknown bypass technique: {bypass_technique}")
 
     except Exception as e:
         logger.error(f"Failed to apply {bypass_technique.value}: {e}")
-        return False
+    return applied
 
 
 def apply_environment_masking(

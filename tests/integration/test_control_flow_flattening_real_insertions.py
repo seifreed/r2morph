@@ -6,7 +6,6 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_dispatcher import DispatcherGenerator
-from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_strategies import (
     add_opaque_predicate,
     insert_dead_code_with_predicate,
@@ -39,7 +38,7 @@ def test_control_flow_flattening_add_opaque_predicate_x86(tmp_path: Path) -> Non
         arch, bits = binary.get_arch_family()
         assert arch == "x86"
 
-        ok = add_opaque_predicate(binary, vaddr, size, arch, bits, OpaquePredicateGenerator())
+        ok = add_opaque_predicate(binary, vaddr, size, arch, bits)
         assert ok is True
 
     data = work_path.read_bytes()

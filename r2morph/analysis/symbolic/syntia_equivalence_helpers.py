@@ -2,9 +2,13 @@
 
 from __future__ import annotations
 
-import random
+import logging
 import re
 from collections.abc import Callable
+
+import r2morph.core.randomness as random
+
+logger = logging.getLogger(__name__)
 
 
 def normalize_expression(expression: str) -> str:
@@ -50,7 +54,8 @@ def synthesis_equivalence_check(
             val2 = evaluator(expr2, test_values)
             if val1 == val2:
                 matches += 1
-        except Exception:
+        except (ArithmeticError, LookupError, SyntaxError, TypeError, ValueError) as exc:
+            logger.debug("Equivalence sample could not be evaluated: %s", exc)
             continue
 
     return matches / test_count if test_count > 0 else 0.0

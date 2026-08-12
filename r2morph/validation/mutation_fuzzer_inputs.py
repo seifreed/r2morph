@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import json
-import random
+import string
 import tempfile
 
+import r2morph.core.randomness as random
 from r2morph.validation.mutation_fuzzer_types import FuzzConfig, FuzzTestCase
+
+_ENVIRONMENT_INPUT_PROBABILITY = 0.3
 
 
 def generate_random_input(config: FuzzConfig, size_hint: int) -> bytes:
@@ -17,8 +20,6 @@ def generate_random_input(config: FuzzConfig, size_hint: int) -> bytes:
 
 def generate_ascii_input(config: FuzzConfig, size_hint: int) -> bytes:
     """Generate printable ASCII input."""
-    import string
-
     size = size_hint or random.randint(config.min_input_size, min(config.max_input_size, 1024))
     chars = string.printable
     return "".join(random.choice(chars) for _ in range(size)).encode()
@@ -100,8 +101,6 @@ def generate_format_string_input(config: FuzzConfig, size_hint: int) -> bytes:
 
 def generate_path_like_input(config: FuzzConfig, size_hint: int) -> bytes:
     """Generate path-like inputs."""
-    import string
-
     path_chars = string.ascii_letters + string.digits + "/\\._-"
 
     paths = [
@@ -145,7 +144,7 @@ def generate_test_case(config: FuzzConfig, index: int) -> FuzzTestCase:
     ]
 
     env = {}
-    if random.random() < 0.3:
+    if random.random() < _ENVIRONMENT_INPUT_PROBABILITY:
         env["FUZZ_ENV"] = "test"
 
     return FuzzTestCase(

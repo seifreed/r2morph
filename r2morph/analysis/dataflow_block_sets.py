@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 
+_MIN_INSTRUCTION_PART_COUNT = 2
 
-def compute_block_use(instructions: list[dict]) -> set[tuple[str, int]]:
+
+def compute_block_use(instructions: list[dict[str, Any]]) -> set[tuple[str, int]]:
     """Compute registers used before being defined in a block."""
     used: set[tuple[str, int]] = set()
     defined: set[tuple[str, int]] = set()
@@ -22,7 +26,7 @@ def compute_block_use(instructions: list[dict]) -> set[tuple[str, int]]:
     return used
 
 
-def compute_block_def(instructions: list[dict]) -> set[tuple[str, int]]:
+def compute_block_def(instructions: list[dict[str, Any]]) -> set[tuple[str, int]]:
     """Compute registers defined in a block."""
     defined: set[tuple[str, int]] = set()
 
@@ -32,7 +36,7 @@ def compute_block_def(instructions: list[dict]) -> set[tuple[str, int]]:
     return defined
 
 
-def _extract_used_registers(insn: dict) -> set[tuple[str, int]]:
+def _extract_used_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
     """Extract registers used by an instruction."""
     used: set[tuple[str, int]] = set()
     disasm = insn.get("disasm", "").lower()
@@ -41,13 +45,13 @@ def _extract_used_registers(insn: dict) -> set[tuple[str, int]]:
         return used
 
     operand_parts = disasm.split(None, 1)
-    if len(operand_parts) < 2:
+    if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
         return used
 
     operands = operand_parts[1]
     if "," in operands:
         src_parts = operands.split(",")
-        if len(src_parts) >= 2:
+        if len(src_parts) >= _MIN_INSTRUCTION_PART_COUNT:
             src = src_parts[1].strip()
             used.update(extract_registers_from_operand(src))
 
@@ -58,7 +62,7 @@ def _extract_used_registers(insn: dict) -> set[tuple[str, int]]:
     return used
 
 
-def _extract_defined_registers(insn: dict) -> set[tuple[str, int]]:
+def _extract_defined_registers(insn: dict[str, Any]) -> set[tuple[str, int]]:
     """Extract registers defined by an instruction."""
     defined: set[tuple[str, int]] = set()
     disasm = insn.get("disasm", "").lower()
@@ -71,7 +75,7 @@ def _extract_defined_registers(insn: dict) -> set[tuple[str, int]]:
         return defined
 
     operand_parts = disasm.split(None, 1)
-    if len(operand_parts) < 2:
+    if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
         return defined
 
     operands = operand_parts[1]

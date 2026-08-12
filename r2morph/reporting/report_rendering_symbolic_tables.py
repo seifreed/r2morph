@@ -20,23 +20,23 @@ from r2morph.reporting.report_rendering_symbolic_table_helpers import (
 def _render_match_table(
     *,
     console: Console,
-    observable_match: int,
-    observable_mismatch: int,
-    bounded_only: int,
-    observable_not_run: int,
+    symbolic_state: dict[str, Any],
     summary: dict[str, Any],
     pass_results: dict[str, Any],
-    by_pass: dict[str, dict[str, int]],
 ) -> list[dict[str, Any]]:
     """Render the symbolic match/coverage overview and return resolved coverage_rows."""
     console.print(
         "[bold]Symbolic Mutation Summary[/bold]: "
-        f"{observable_match} observable match, "
-        f"{observable_mismatch} observable mismatch, "
-        f"{bounded_only} bounded-step only, "
-        f"{observable_not_run} without symbolic coverage"
+        f"{symbolic_state.get('observable_match', 0)} observable match, "
+        f"{symbolic_state.get('observable_mismatch', 0)} observable mismatch, "
+        f"{symbolic_state.get('bounded_only', 0)} bounded-step only, "
+        f"{symbolic_state.get('observable_not_run', 0)} without symbolic coverage"
     )
-    coverage_rows = build_symbolic_coverage_rows(summary=summary, pass_results=pass_results, by_pass=by_pass)
+    coverage_rows = build_symbolic_coverage_rows(
+        summary=summary,
+        pass_results=pass_results,
+        by_pass=symbolic_state.get("by_pass", {}),
+    )
     for row in coverage_rows:
         console.print(
             f"  [cyan]{row['pass_name']}[/cyan]: "
@@ -138,6 +138,11 @@ def _render_coverage_table(
                 f"symbolic_recommended={str(row.get('symbolic_recommended', False)).lower()}, "
                 f"symbolic_confidence={row.get('symbolic_confidence', 'unknown')}"
             )
+    _render_discarded_mutations(console, summary)
+    _render_symbolic_mismatches(console, mismatch_rows)
+
+
+def _render_discarded_mutations(console: Console, summary: dict[str, Any]) -> None:
     discarded_priority = list(summary.get("discarded_mutation_priority", []))
     discarded_summary = dict(summary.get("discarded_mutation_summary", {}) or {})
     if discarded_priority or discarded_summary.get("by_pass"):
@@ -148,14 +153,21 @@ def _render_coverage_table(
                 f"  [cyan]{row['pass_name']}[/cyan]: "
                 f"discarded={row.get('discarded_count', 0)}" + (f", reasons={reasons}" if reasons else "")
             )
-    if mismatch_rows:
-        console.print("[bold]Symbolic Mismatches[/bold]:")
-        for pass_name, start, end, observables in mismatch_rows:
-            if start is None or end is None:
-                location = "unknown"
-            elif start == end:
-                location = f"0x{start:x}"
-            else:
-                location = f"0x{start:x}-0x{end:x}"
-            details = ", ".join(observables) if observables else "unknown"
-            console.print(f"  [red]{pass_name}[/red] @ {location}: {details}")
+
+
+def _render_symbolic_mismatches(
+    console: Console,
+    mismatch_rows: list[tuple[str, int | None, int | None, list[str]]],
+) -> None:
+    if not mismatch_rows:
+        return
+    console.print("[bold]Symbolic Mismatches[/bold]:")
+    for pass_name, start, end, observables in mismatch_rows:
+        if start is None or end is None:
+            location = "unknown"
+        elif start == end:
+            location = f"0x{start:x}"
+        else:
+            location = f"0x{start:x}-0x{end:x}"
+        details = ", ".join(observables) if observables else "unknown"
+        console.print(f"  [red]{pass_name}[/red] @ {location}: {details}")

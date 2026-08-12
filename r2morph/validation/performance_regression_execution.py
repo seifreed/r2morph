@@ -7,17 +7,14 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation.performance_regression_models import BenchmarkConfig, PerformanceSnapshot
+from r2morph.core.binary import Binary
+from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+from r2morph.mutations.nop_insertion import NopInsertionPass
+from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
 
 def build_mutation_class_map() -> dict[str, Any]:
     """Build the mutation class lookup used by the benchmark pipeline."""
-
-    from r2morph.mutations import (
-        InstructionSubstitutionPass,
-        NopInsertionPass,
-        RegisterSubstitutionPass,
-    )
 
     return {
         "nop": NopInsertionPass,
@@ -34,8 +31,6 @@ def create_mutation_pipeline(
     """Create a callable that runs the configured mutation pipeline."""
 
     def run_mutation_pipeline() -> None:
-        from r2morph import Binary
-
         with Binary(binary_path) as binary:
             binary.analyze()
             for mutation_name in mutations:
@@ -62,30 +57,3 @@ def build_performance_metrics(
         "peak_memory_mb": memory_metrics["peak_memory_mb"],
         "current_memory_mb": memory_metrics["current_memory_mb"],
     }
-
-
-def build_performance_snapshot(
-    *,
-    config: BenchmarkConfig,
-    binary_path: Path,
-    mutations: list[str],
-    exec_times: list[float],
-    memory_metrics: dict[str, float],
-    commit_hash: str,
-    environment: dict[str, str],
-    timestamp: str,
-) -> PerformanceSnapshot:
-    """Build a performance snapshot from measured execution data."""
-
-    metrics = build_performance_metrics(exec_times, memory_metrics)
-    return PerformanceSnapshot(
-        commit_hash=commit_hash,
-        timestamp=timestamp,
-        metrics=metrics,
-        environment=environment,
-        metadata={
-            "binary": str(binary_path),
-            "mutations": mutations,
-            "runs": config.measured_runs,
-        },
-    )

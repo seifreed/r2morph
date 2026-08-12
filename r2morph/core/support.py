@@ -7,6 +7,8 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
+from r2morph.core.constants import ARCH_BITS_64
+
 
 @dataclass(frozen=True)
 class SupportMatrix:
@@ -62,7 +64,7 @@ def _normalize_architecture_name(architecture: str, bits: int | None = None) -> 
     lowered = normalized_arch.lower()
     if lowered in {"x86_64", "x86-64", "amd64", "x64"}:
         return "x86_64"
-    if lowered == "x86" and bits == 64:
+    if lowered == "x86" and bits == ARCH_BITS_64:
         return "x86_64"
     if lowered in {"x86", "i386", "i686"}:
         return "x86"

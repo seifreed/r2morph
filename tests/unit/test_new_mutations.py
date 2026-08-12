@@ -3,8 +3,6 @@ Tests for new mutation passes: DataFlow, StringObfuscation, ImportObfuscation,
 ConstantUnfolding, and ParallelExecutor.
 """
 
-from unittest.mock import MagicMock
-
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
 from r2morph.mutations.import_obfuscation import ImportTableObfuscationPass
@@ -15,6 +13,16 @@ from r2morph.mutations.parallel_executor import (
     create_parallel_executor,
 )
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
+
+
+class _Binary:
+    r2 = None
+
+    def __init__(self, assembled: bytes = b"") -> None:
+        self.assembled = assembled
+
+    def assemble(self, _instruction: str) -> bytes:
+        return self.assembled
 
 
 class TestDataFlowMutationPass:
@@ -183,10 +191,7 @@ class TestImportTableObfuscationPass:
         """Test ELF import extraction with empty result."""
         p = ImportTableObfuscationPass()
 
-        mock_binary = MagicMock()
-        mock_binary.r2 = None
-
-        imports = p._get_imports_elf(mock_binary)
+        imports = p._get_imports_elf(_Binary())
 
         assert imports == []
 
@@ -218,10 +223,7 @@ class TestConstantUnfoldingPass:
         """Test zero constant unfolding."""
         p = ConstantUnfoldingPass()
 
-        mock_binary = MagicMock()
-        mock_binary.assemble = MagicMock(return_value=b"\x31\xc0")
-
-        instructions = p._unfold_zero("eax", 32, mock_binary, 0x1000)
+        instructions = p._unfold_zero("eax", 32, _Binary(b"\x31\xc0"), 0x1000)
 
         assert instructions is not None
         assert len(instructions) == 1
@@ -231,10 +233,7 @@ class TestConstantUnfoldingPass:
         """Test one constant unfolding."""
         p = ConstantUnfoldingPass()
 
-        mock_binary = MagicMock()
-        mock_binary.assemble = MagicMock(return_value=b"\x40")
-
-        instructions = p._unfold_one("eax", 32, mock_binary, 0x1000)
+        instructions = p._unfold_one("eax", 32, _Binary(b"\x40"), 0x1000)
 
         assert instructions is not None
         assert len(instructions) >= 1
@@ -312,7 +311,7 @@ class TestParallelExecutor:
         """Test MutationTask dataclass."""
         task = MutationTask(
             pass_name="NopInsertion",
-            pass_instance=MagicMock(),
+            pass_instance=DataFlowMutationPass(),
             function_addresses=[0x1000, 0x2000],
             config={"seed": 42},
         )
@@ -341,10 +340,7 @@ class TestParallelExecutor:
         """Test speedup estimation with single task."""
         executor = ParallelMutator()
 
-        mock_pass = MagicMock()
-        mock_pass.enabled = True
-
-        speedup = executor.estimate_speedup([mock_pass], 5)
+        speedup = executor.estimate_speedup([DataFlowMutationPass()], 5)
 
         assert speedup == 1.0
 
@@ -352,10 +348,7 @@ class TestParallelExecutor:
         """Test speedup estimation with multiple tasks."""
         executor = ParallelMutator(config={"max_workers": 4})
 
-        mock_pass = MagicMock()
-        mock_pass.enabled = True
-
-        speedup = executor.estimate_speedup([mock_pass], 100)
+        speedup = executor.estimate_speedup([DataFlowMutationPass()], 100)
 
         assert speedup > 1.0
 

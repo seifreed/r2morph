@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.core.report_helpers import _summarize_degradation_roles, _summarize_pass_timings
+from r2morph.core.report_helpers_summary_metrics import _summarize_pass_timings
+from r2morph.core.report_helpers_validation import _summarize_degradation_roles
 
 
 def summarize_degradation_roles(pass_results: dict[str, Any]) -> dict[str, int]:

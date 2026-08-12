@@ -38,6 +38,6 @@ def get_struct_layout(factory: Any, binary: Binary, address: int) -> list[Any] |
     return fields if fields else None
 
 
-def infer_access_type(factory: Any, binary: Binary, xref: dict) -> Any | None:
+def infer_access_type(factory: Any, binary: Binary, xref: dict[str, Any]) -> Any | None:
     """Infer the type of a memory access."""
     return factory.create_primitive_type(PrimitiveType.UINT64)

@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from r2morph.validation.binary_region_comparator_results import (
+    RegionReportInput,
     build_binary_comparison_result,
     build_region_report,
 )
@@ -8,16 +9,18 @@ from r2morph.validation.binary_region_comparator_results import (
 
 def test_build_region_report_includes_expected_fields() -> None:
     report = build_region_report(
-        {"start_address": 0x1000, "end_address": 0x1003},
-        0x2000,
-        0x3000,
-        7,
-        14,
-        2,
-        3,
-        [0x4000],
-        [0x5000],
-        ["rax", "rbx"],
+        RegionReportInput(
+            mutation={"start_address": 0x1000, "end_address": 0x1003},
+            resolved_original=0x2000,
+            resolved_mutated=0x3000,
+            step_budget=7,
+            region_exit_budget=14,
+            original_steps=2,
+            mutated_steps=3,
+            original_trace_addresses=[0x4000],
+            mutated_trace_addresses=[0x5000],
+            compared_registers=["rax", "rbx"],
+        )
     )
 
     assert report == {

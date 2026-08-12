@@ -5,11 +5,21 @@ from __future__ import annotations
 import gc
 import io
 import logging
+import os
 from typing import Any
+
+import psutil
 
 from r2morph.validation.leak_detection_models import ResourceLeak, ResourceLeakTestResult
 
 logger = logging.getLogger(__name__)
+
+
+def _is_open_file(tracked_object: object) -> bool:
+    try:
+        return isinstance(tracked_object, io.IOBase) and not tracked_object.closed
+    except ReferenceError:
+        return False
 
 
 class ResourceLeakDetector:
@@ -23,33 +33,19 @@ class ResourceLeakDetector:
 
     def _get_resource_counts(self) -> dict[str, int]:
         """Get current resource counts."""
-        import os
-
         resources = {}
 
         try:
             resources["file_descriptors"] = len(os.listdir("/proc/self/fd"))
         except Exception:
             try:
-                import psutil
-
                 resources["file_descriptors"] = psutil.Process().num_fds()
             except Exception:
                 resources["file_descriptors"] = 0
 
-        # Filter by concrete type before touching attributes: probing
-        # `hasattr(obj, "closed")` over every gc object invokes
-        # __getattr__ on arbitrary objects, and on objects with
-        # side-effecting __getattr__ (e.g. pytest's MarkGenerator,
-        # `pytest.mark`) it would synthesize `pytest.mark.closed` and
-        # emit a PytestUnknownMarkWarning -- fatal under `pytest -W
-        # error`. io.IOBase.closed is a plain, side-effect-free property
-        # and covers the real OS-backed file objects we care about.
-        resources["open_files"] = sum(1 for obj in gc.get_objects() if isinstance(obj, io.IOBase) and not obj.closed)
+        resources["open_files"] = sum(map(_is_open_file, gc.get_objects()))
 
         try:
-            import psutil
-
             proc = psutil.Process()
             resources["open_connections"] = len(proc.connections())
         except Exception:

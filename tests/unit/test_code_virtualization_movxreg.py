@@ -11,7 +11,8 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.mutations.code_virtualization_engine import decode_instruction
-from r2morph.mutations.code_virtualization_region import _classify, _flag_dead_op_indices
+from r2morph.mutations.code_virtualization_region import _flag_dead_op_indices
+from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 
 

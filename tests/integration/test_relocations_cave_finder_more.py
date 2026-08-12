@@ -38,7 +38,7 @@ def test_cave_finder_allocate_and_insert_real(tmp_path: Path):
         cave = finder.find_cave_for_size(4)
         assert cave is not None
 
-        addr, size = finder.allocate_cave(cave, 4)
+        _addr, size = finder.allocate_cave(cave, 4)
         assert size == 4
 
         inserted = finder.insert_code_in_cave(b"\x90\x90\x90\x90")

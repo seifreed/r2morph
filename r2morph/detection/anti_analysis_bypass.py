@@ -32,6 +32,7 @@ from r2morph.detection.anti_analysis_bypass_models import (
     BypassTechnique,
 )
 from r2morph.detection.anti_analysis_detection import (
+    check_pattern_match,
     detect_anti_analysis_techniques,
     load_anti_analysis_patterns,
 )
@@ -115,8 +116,6 @@ class AntiAnalysisBypass:
 
     def _check_pattern_match(self, pattern: AntiAnalysisPattern, binary: Any) -> float:
         """Check if a pattern matches the binary."""
-        from r2morph.detection.anti_analysis_detection import check_pattern_match
-
         return check_pattern_match(pattern, binary)
 
     def _get_bypass_methods(self, technique: AntiAnalysisType) -> list[BypassTechnique]:

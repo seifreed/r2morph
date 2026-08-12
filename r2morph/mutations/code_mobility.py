@@ -49,9 +49,9 @@ appends return jumps at the end of each relocated block.
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_mobility_helpers import (
@@ -65,8 +65,27 @@ from r2morph.mutations.code_mobility_models import (
     calculate_section_offsets,
     estimate_size_with_jumps,
 )
+from r2morph.relocations.cave_finder import CaveFinder
 
 logger = logging.getLogger(__name__)
+
+_RELATIVE_JUMP_SIZE_BYTES = 5
+_SIGNED_32_MIN = -(1 << 31)
+_SIGNED_32_MAX = (1 << 31) - 1
+
+
+def _relocation_bytes(block: MobileBlock, cave_addr: int) -> tuple[bytes, bytes, bytes] | None:
+    return_target = block.original_address + block.size
+    return_offset = return_target - (cave_addr + block.size + _RELATIVE_JUMP_SIZE_BYTES)
+    trampoline_offset = cave_addr - (block.original_address + _RELATIVE_JUMP_SIZE_BYTES)
+    if not all(_SIGNED_32_MIN <= offset <= _SIGNED_32_MAX for offset in (return_offset, trampoline_offset)):
+        logger.debug(f"Relative jump out of range for block at 0x{block.original_address:x}")
+        return None
+    return (
+        b"\xe9" + return_offset.to_bytes(4, "little", signed=True),
+        b"\xe9" + trampoline_offset.to_bytes(4, "little", signed=True),
+        b"\x90" * (block.size - _RELATIVE_JUMP_SIZE_BYTES),
+    )
 
 
 class CodeMobilityPass(MutationPass):
@@ -188,8 +207,6 @@ class CodeMobilityPass(MutationPass):
 
         interleaved_blocks = self._interleave_blocks(plan.blocks)
 
-        from r2morph.relocations.cave_finder import CaveFinder
-
         caves = CaveFinder(binary).find_caves()
         cave_idx = 0
         blocks_moved = 0
@@ -198,11 +215,11 @@ class CodeMobilityPass(MutationPass):
             self._create_mutation_checkpoint("code_mobility")
 
         for block in interleaved_blocks:
-            if block.size < 5:
+            if block.size < _RELATIVE_JUMP_SIZE_BYTES:
                 continue
 
             original_bytes = binary.read_bytes(block.original_address, block.size)
-            if not original_bytes or len(original_bytes) < 5:
+            if not original_bytes or len(original_bytes) < _RELATIVE_JUMP_SIZE_BYTES:
                 continue
 
             disasm = binary.get_function_disasm(block.original_address)
@@ -210,7 +227,7 @@ class CodeMobilityPass(MutationPass):
             if "[rip" in disasm_text:
                 continue
 
-            needed = block.size + 5
+            needed = block.size + _RELATIVE_JUMP_SIZE_BYTES
             cave_addr = None
             while cave_idx < len(caves):
                 c = caves[cave_idx]
@@ -228,22 +245,13 @@ class CodeMobilityPass(MutationPass):
             if cave_addr is None:
                 continue
 
-            return_target = block.original_address + block.size
-            ret_offset = return_target - (cave_addr + block.size + 5)
-            if ret_offset < -2147483648 or ret_offset > 2147483647:
-                logger.debug(f"Return offset out of range for block at 0x{block.original_address:x}")
+            relocation = _relocation_bytes(block, cave_addr)
+            if relocation is None:
                 continue
-            return_jmp = b"\xe9" + ret_offset.to_bytes(4, "little", signed=True)
+            return_jmp, trampoline, nops = relocation
 
             if not binary.write_bytes(cave_addr, original_bytes + return_jmp):
                 continue
-
-            tramp_offset = cave_addr - (block.original_address + 5)
-            if tramp_offset < -2147483648 or tramp_offset > 2147483647:
-                logger.debug(f"Trampoline offset out of range for block at 0x{block.original_address:x}")
-                continue
-            trampoline = b"\xe9" + tramp_offset.to_bytes(4, "little", signed=True)
-            nops = b"\x90" * (block.size - 5)
 
             if not binary.write_bytes(block.original_address, trampoline + nops):
                 # Block copied to the cave but the redirect trampoline

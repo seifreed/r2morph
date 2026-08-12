@@ -8,7 +8,7 @@ import typer
 from rich import print as rprint
 
 from r2morph.cli_workflow_selection import limited_symbolic_passes
-from r2morph.cli_workflow_validation_policy import build_validation_mode_policy
+from r2morph.cli_workflow_validation_policy import ValidationModeRequest, build_validation_mode_policy
 from r2morph.core.config import EngineConfig
 from r2morph.reporting import SEVERITY_ORDER
 
@@ -19,7 +19,8 @@ def warn_experimental_validation_mode(validation_mode: str) -> None:
         return
     rprint("[yellow]Experimental validation mode selected:[/yellow] symbolic")
     rprint(
-        "[yellow]This mode performs bounded symbolic prechecks and structural fallback; it does not prove general semantic equivalence.[/yellow]"
+        "[yellow]This mode performs bounded symbolic prechecks and structural fallback; "
+        "it does not prove general semantic equivalence.[/yellow]"
     )
 
 
@@ -62,39 +63,24 @@ def resolve_pass_severity_requirements(
     return resolved
 
 
-def resolve_validation_mode(
-    *,
-    requested_mode: str,
-    mutations: list[str],
-    config: EngineConfig,
-    seed: int | None,
-    allow_limited_symbolic: bool,
-    limited_symbolic_policy: str,
-) -> tuple[str, dict[str, Any] | None]:
+def resolve_validation_mode(request: ValidationModeRequest) -> tuple[str, dict[str, Any] | None]:
     """Resolve requested vs effective validation mode for limited symbolic passes."""
-    if requested_mode != "symbolic":
-        return requested_mode, None
+    if request.requested_mode != "symbolic":
+        return request.requested_mode, None
 
-    policy = build_validation_mode_policy(
-        requested_mode=requested_mode,
-        mutations=mutations,
-        config=config,
-        seed=seed,
-        allow_limited_symbolic=allow_limited_symbolic,
-        limited_symbolic_policy=limited_symbolic_policy,
-    )
+    policy = build_validation_mode_policy(request)
     limited = policy["limited_passes"]
     if not limited:
-        return requested_mode, None
+        return request.requested_mode, None
 
     if policy["policy"] == "allow":
         names = ", ".join(item["pass_name"] for item in limited)
         rprint(f"[yellow]Limited symbolic coverage explicitly allowed for:[/yellow] {names}")
         for item in limited:
             rprint(f"[yellow]- {item['pass_name']}: symbolic confidence={item['confidence']}[/yellow]")
-        return requested_mode, {
-            "requested_mode": requested_mode,
-            "effective_mode": requested_mode,
+        return request.requested_mode, {
+            "requested_mode": request.requested_mode,
+            "effective_mode": request.requested_mode,
             "policy": "allow",
             "reason": "explicit-override",
             "limited_passes": limited,
@@ -105,7 +91,7 @@ def resolve_validation_mode(
         rprint(f"[yellow]Limited symbolic support detected for:[/yellow] {names}")
         rprint("[yellow]Degrading validation mode from symbolic to runtime.[/yellow]")
         return "runtime", {
-            "requested_mode": requested_mode,
+            "requested_mode": request.requested_mode,
             "effective_mode": "runtime",
             "policy": policy["policy"],
             "reason": policy["reason"],
@@ -117,7 +103,7 @@ def resolve_validation_mode(
         rprint(f"[yellow]Limited symbolic support detected for:[/yellow] {names}")
         rprint("[yellow]Degrading validation mode from symbolic to structural.[/yellow]")
         return "structural", {
-            "requested_mode": requested_mode,
+            "requested_mode": request.requested_mode,
             "effective_mode": "structural",
             "policy": policy["policy"],
             "reason": policy["reason"],
@@ -125,12 +111,12 @@ def resolve_validation_mode(
         }
 
     _warn_or_block_limited_symbolic(
-        mutations,
-        config,
-        seed=seed,
-        allow_limited_symbolic=allow_limited_symbolic,
+        request.mutations,
+        request.config,
+        seed=request.seed,
+        allow_limited_symbolic=request.allow_limited_symbolic,
     )
-    return requested_mode, None
+    return request.requested_mode, None
 
 
 def _warn_or_block_limited_symbolic(

@@ -10,6 +10,7 @@ This module extends the base SemanticValidator with:
 
 import logging
 import time
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.analysis.cfg import ControlFlowGraph
@@ -17,9 +18,7 @@ from r2morph.core.binary import Binary
 from r2morph.validation.constraint_cache import (
     ConstraintCache as _ConstraintCache,
 )
-from r2morph.validation.constraint_cache import (
-    ConstraintCacheEntry as _ConstraintCacheEntry,
-)
+from r2morph.validation.constraint_cache_models import ConstraintCacheEntry as _ConstraintCacheEntry
 from r2morph.validation.extended_semantic_models import ValidationResult
 from r2morph.validation.extended_semantic_validation import ExtendedSemanticValidationMixin
 from r2morph.validation.semantic import MutationRegion, SemanticValidator, ValidationMode, ValidationResultStatus
@@ -33,11 +32,23 @@ from r2morph.validation.state_merging import (
 
 logger = logging.getLogger(__name__)
 
+_FUNCTION_SEMANTIC_STAGE = "function_semantic_validation"
+
 
 ConstraintCache = _ConstraintCache
 ConstraintCacheEntry = _ConstraintCacheEntry
 ImprovedStateMerging = _ImprovedStateMerging
 ANGR_AVAILABLE = _ANGR_AVAILABLE
+
+
+@dataclass(frozen=True)
+class ExtendedSemanticConfig:
+    """Resource limits and cache policy for extended validation."""
+
+    max_states: int = 10000
+    max_steps: int = 500
+    use_constraint_cache: bool = True
+    merge_interval: int = 100
 
 
 class ExtendedSemanticValidator(ExtendedSemanticValidationMixin, SemanticValidator):
@@ -55,10 +66,7 @@ class ExtendedSemanticValidator(ExtendedSemanticValidationMixin, SemanticValidat
         self,
         binary: Binary,
         mode: ValidationMode = ValidationMode.STANDARD,
-        max_states: int = 10000,
-        max_steps: int = 500,
-        use_constraint_cache: bool = True,
-        merge_interval: int = 100,
+        config: ExtendedSemanticConfig | None = None,
     ) -> None:
         """
         Initialize extended semantic validator.
@@ -66,20 +74,18 @@ class ExtendedSemanticValidator(ExtendedSemanticValidationMixin, SemanticValidat
         Args:
             binary: Binary to validate
             mode: Validation mode
-            max_states: Maximum concurrent states (increased from 1000)
-            max_steps: Maximum execution steps (increased from default)
-            use_constraint_cache: Whether to use constraint caching
-            merge_interval: Number of steps between state merges
+            config: Resource limits and cache policy
         """
         super().__init__(binary, mode)
+        config = config or ExtendedSemanticConfig()
 
         self._angr_available = ANGR_AVAILABLE
-        self.max_states = max_states
-        self.max_steps = max_steps
-        self.use_constraint_cache = use_constraint_cache
-        self.merge_interval = merge_interval
+        self.max_states = config.max_states
+        self.max_steps = config.max_steps
+        self.use_constraint_cache = config.use_constraint_cache
+        self.merge_interval = config.merge_interval
 
-        self._constraint_cache = ConstraintCache() if use_constraint_cache else None
+        self._constraint_cache = ConstraintCache() if config.use_constraint_cache else None
         self._state_merger = ImprovedStateMerging()
         self._validation_cache: dict[int, ValidationResult] = {}
 
@@ -105,7 +111,7 @@ class ExtendedSemanticValidator(ExtendedSemanticValidationMixin, SemanticValidat
             end_address=function_address,
             original_bytes=b"",
             mutated_bytes=b"",
-            pass_name="function_semantic_validation",
+            pass_name=_FUNCTION_SEMANTIC_STAGE,
             function_address=function_address,
         )
 
@@ -151,7 +157,7 @@ class ExtendedSemanticValidator(ExtendedSemanticValidationMixin, SemanticValidat
             except Exception:
                 remaining.append(state)
 
-        for pc, states in pc_groups.items():
+        for _pc, states in pc_groups.items():
             if len(states) == 1:
                 merged.append(states[0])
             elif len(states) <= self._state_merger.k_limit:
@@ -234,5 +240,5 @@ def create_extended_validator(
     return ExtendedSemanticValidator(
         binary=binary,
         mode=mode_enum,
-        **defaults,
+        config=ExtendedSemanticConfig(**defaults),
     )

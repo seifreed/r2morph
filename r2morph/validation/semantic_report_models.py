@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -112,7 +112,7 @@ class SemanticValidationReport:
         """Create a report with the current timestamp."""
         return cls(
             binary_path=binary_path,
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             mode=mode,
             results=results or [],
             metadata=metadata or {},

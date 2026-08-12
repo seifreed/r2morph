@@ -14,8 +14,21 @@ Usage:
 """
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
+
+
+@dataclass(frozen=True, slots=True)
+class PipelineRunOptions:
+    """Collaborators and policy for one pipeline execution."""
+
+    session: Any | None = None
+    validation_manager: Any | None = None
+    runtime_validator: Any | None = None
+    runtime_validate_per_pass: bool = False
+    rollback_policy: str = "skip-invalid-pass"
+    checkpoint_per_mutation: bool = False
 
 
 @runtime_checkable
@@ -196,31 +209,6 @@ class MemoryManagerProtocol(Protocol):
 
 
 @runtime_checkable
-class ReportEmitterProtocol(Protocol):
-    """Protocol for report emission."""
-
-    def emit_report_payload(
-        self,
-        filtered_payload: dict[str, Any],
-        output: str | None,
-        summary_only: bool,
-    ) -> None:
-        """Write and/or print a filtered report payload."""
-        ...
-
-    def enforce_report_requirements(
-        self,
-        require_results: bool,
-        severity_rows: list[dict[str, Any]],
-        min_severity_rank: int | None,
-        mutation_count: int,
-        **kwargs: Any,
-    ) -> None:
-        """Apply report exit-code policy for empty views."""
-        ...
-
-
-@runtime_checkable
 class ReportViewBuilderProtocol(Protocol):
     """Protocol for precomputing the persisted report views."""
 
@@ -289,19 +277,6 @@ class ValidatorProtocol(Protocol):
         mutations: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """Validate mutations against original binary."""
-        ...
-
-
-@runtime_checkable
-class ConsoleRendererProtocol(Protocol):
-    """Protocol for console rendering services."""
-
-    def render_report(self, payload: dict[str, Any], **kwargs: Any) -> None:
-        """Render a complete report payload."""
-        ...
-
-    def render_summary(self, summary: dict[str, Any]) -> None:
-        """Render just the summary section."""
         ...
 
 
@@ -390,13 +365,7 @@ class PipelineProtocol(Protocol):
     def run(
         self,
         binary: Any,
-        *,
-        session: Any | None = None,
-        validation_manager: Any | None = None,
-        runtime_validator: Any | None = None,
-        runtime_validate_per_pass: bool = False,
-        rollback_policy: str = "skip-invalid-pass",
-        checkpoint_per_mutation: bool = False,
+        options: PipelineRunOptions | None = None,
     ) -> dict[str, Any]:
         """Execute every registered pass on the binary and return statistics."""
         ...
@@ -418,21 +387,20 @@ class ReportBuilderProtocol(Protocol):
 
 
 __all__ = [
-    "DisassemblerInterface",
-    "BinaryReaderProtocol",
-    "BinaryWriterProtocol",
-    "BinaryAccessProtocol",
     "AssemblyServiceProtocol",
-    "MemoryManagerProtocol",
-    "ReportEmitterProtocol",
-    "ReportViewBuilderProtocol",
+    "BinaryAccessProtocol",
+    "BinaryReaderProtocol",
     "BinarySignerProtocol",
-    "MutationPassProtocol",
-    "PipelineProtocol",
-    "ReportBuilderProtocol",
-    "ValidatorProtocol",
-    "ConsoleRendererProtocol",
+    "BinaryWriterProtocol",
+    "DisassemblerInterface",
     "GateEvaluatorProtocol",
     "GateFailureReporterProtocol",
+    "MemoryManagerProtocol",
+    "MutationPassProtocol",
+    "PipelineProtocol",
+    "PipelineRunOptions",
+    "ReportBuilderProtocol",
+    "ReportViewBuilderProtocol",
     "SummaryAggregatorProtocol",
+    "ValidatorProtocol",
 ]

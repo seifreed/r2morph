@@ -20,9 +20,10 @@ sampled inputs.
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
+from r2morph.core.constants import ARCH_BITS_64
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 
@@ -61,7 +62,7 @@ class PatternSubstitutionPass(MutationPass):
         self._ensure_analyzed(binary)
 
         arch_family, bits = binary.get_arch_family()
-        if arch_family != "x86" or bits != 64:
+        if arch_family != "x86" or bits != ARCH_BITS_64:
             logger.warning(f"Pattern substitution supports x86_64 only, got: {arch_family}/{bits}")
             return {"mutations_applied": 0, "skipped": True, "reason": "unsupported architecture"}
 

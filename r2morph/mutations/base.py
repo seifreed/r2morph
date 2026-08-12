@@ -5,12 +5,13 @@ Base class for mutation passes.
 from __future__ import annotations
 
 import logging
-import random
 import time
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from itertools import zip_longest
-from typing import Any
+from typing import Any, NotRequired, TypedDict, Unpack
+
+import r2morph.core.randomness as random
 
 # Mutation passes accept any object satisfying BinaryAccessProtocol.
 # We use Any at runtime to avoid circular imports; the protocol is
@@ -32,6 +33,28 @@ class PassSupport:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+class PassSupportArgs(TypedDict):
+    formats: tuple[str, ...]
+    architectures: tuple[str, ...]
+    validators: tuple[str, ...]
+    stability: str
+    notes: NotRequired[tuple[str, ...]]
+    validator_capabilities: NotRequired[dict[str, Any]]
+
+
+class MutationRecordArgs(TypedDict):
+    function_address: int | None
+    start_address: int
+    end_address: int
+    original_bytes: bytes
+    mutated_bytes: bytes
+    original_disasm: str
+    mutated_disasm: str
+    mutation_kind: str
+    metadata: NotRequired[dict[str, Any] | None]
+    status: NotRequired[str]
 
 
 @dataclass
@@ -178,7 +201,7 @@ class MutationPass(ABC):
         Args:
             factor: Reduction factor (0.0-1.0)
         """
-        pass  # Default no-op; subclasses override as needed
+        return None
 
     def run(self, binary: Any) -> dict[str, Any]:
         """Run the mutation pass on a binary.
@@ -266,24 +289,15 @@ class MutationPass(ABC):
         """Get statistics from the last run."""
         return self._stats
 
-    def set_support(
-        self,
-        *,
-        formats: tuple[str, ...],
-        architectures: tuple[str, ...],
-        validators: tuple[str, ...],
-        stability: str,
-        notes: tuple[str, ...] = (),
-        validator_capabilities: dict[str, Any] | None = None,
-    ) -> None:
+    def set_support(self, **support: Unpack[PassSupportArgs]) -> None:
         """Declare pass support information for product reporting."""
         self._support = PassSupport(
-            formats=formats,
-            architectures=architectures,
-            validators=validators,
-            stability=stability,
-            notes=notes,
-            validator_capabilities=validator_capabilities or {},
+            formats=support["formats"],
+            architectures=support["architectures"],
+            validators=support["validators"],
+            stability=support["stability"],
+            notes=support.get("notes", ()),
+            validator_capabilities=support.get("validator_capabilities") or {},
         )
 
     def get_support(self) -> PassSupport:
@@ -327,33 +341,20 @@ class MutationPass(ABC):
         self._session.checkpoint(checkpoint_name, f"{self.name} mutation {self._mutation_counter}")
         return checkpoint_name
 
-    def _record_mutation(
-        self,
-        *,
-        function_address: int | None,
-        start_address: int,
-        end_address: int,
-        original_bytes: bytes,
-        mutated_bytes: bytes,
-        original_disasm: str,
-        mutated_disasm: str,
-        mutation_kind: str,
-        metadata: dict[str, Any] | None = None,
-        status: str = "applied",
-    ) -> MutationRecord:
+    def _record_mutation(self, **details: Unpack[MutationRecordArgs]) -> MutationRecord:
         """Append a structured mutation record to the pass."""
         record = MutationRecord(
             pass_name=self.name,
-            function_address=function_address,
-            start_address=start_address,
-            end_address=end_address,
-            original_bytes=original_bytes.hex(),
-            mutated_bytes=mutated_bytes.hex(),
-            original_disasm=original_disasm,
-            mutated_disasm=mutated_disasm,
-            mutation_kind=mutation_kind,
-            metadata=metadata or {},
-            status=status,
+            function_address=details["function_address"],
+            start_address=details["start_address"],
+            end_address=details["end_address"],
+            original_bytes=details["original_bytes"].hex(),
+            mutated_bytes=details["mutated_bytes"].hex(),
+            original_disasm=details["original_disasm"],
+            mutated_disasm=details["mutated_disasm"],
+            mutation_kind=details["mutation_kind"],
+            metadata=details.get("metadata") or {},
+            status=details.get("status", "applied"),
             recorded_after_seconds=(
                 round(time.perf_counter() - self._run_started_at, 6) if self._run_started_at is not None else None
             ),

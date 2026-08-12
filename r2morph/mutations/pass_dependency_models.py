@@ -54,7 +54,6 @@ class PassDependency:
             return f"{self.source_pass} recommends {self.target_pass}"
         if self.dep_type == DependencyType.REQUIRES_ABSENCE:
             return f"{self.source_pass} requires absence of {self.target_pass}"
-        return f"{self.source_pass} -> {self.target_pass}"
 
 
 @dataclass

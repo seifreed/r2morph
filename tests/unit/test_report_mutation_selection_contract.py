@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from r2morph.reporting import report_helpers as helpers_mod
-from r2morph.reporting.report_filters import ReportFilters
+from r2morph.reporting.report_builder_models import ReportContext
+from r2morph.reporting.report_context import FilterFlags
 from r2morph.reporting.report_mutation_selection import _select_report_mutations
 
 
@@ -33,36 +33,24 @@ def test_select_report_mutations_filters_and_trims_degraded_rows() -> None:
         [{"pass_name": "risky-pass", "mutation": "risky-pass"}],
     )
 
-    assert (
-        _select_report_mutations(
-            all_mutations=mutations,
-            degraded_validation=True,
-            failed_gates=True,
-            only_degraded=False,
-            only_failed_gates=False,
-            only_risky_filters=True,
-            selected_risk_pass_names={"risky-pass"},
-            resolved_only_pass="risky-pass",
-            only_status="mismatch",
-            degraded_passes=degraded_passes,
-        )
-        == expected
+    context = ReportContext(
+        summary={},
+        resolved_only_pass="risky-pass",
+        resolved_only_pass_failure=None,
+        requested_validation_mode=None,
+        effective_validation_mode=None,
+        validation_policy=None,
+        gate_evaluation={},
+        gate_requested={},
+        gate_results={},
+        gate_failure_summary={},
+        gate_failure_priority=[],
+        gate_failure_severity_priority=[],
+        failed_gates=True,
+        degraded_validation=True,
+        degraded_passes=degraded_passes,
+        degradation_roles={},
     )
+    filters = FilterFlags(only_status="mismatch", only_risky_passes=True)
 
-    assert helpers_mod._select_report_mutations is _select_report_mutations
-
-    assert (
-        ReportFilters.select_report_mutations(
-            all_mutations=mutations,
-            degraded_validation=True,
-            failed_gates=True,
-            only_degraded=False,
-            only_failed_gates=False,
-            only_risky_filters=True,
-            selected_risk_pass_names={"risky-pass"},
-            resolved_only_pass="risky-pass",
-            only_status="mismatch",
-            degraded_passes=degraded_passes,
-        )
-        == expected
-    )
+    assert _select_report_mutations(mutations, context, filters, {"risky-pass"}) == expected

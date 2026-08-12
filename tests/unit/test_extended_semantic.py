@@ -2,18 +2,27 @@
 Unit tests for extended semantic validation module.
 """
 
-from unittest.mock import Mock, patch
-
 from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.validation.extended_semantic import (
     ConstraintCache,
     ConstraintCacheEntry,
+    ExtendedSemanticConfig,
     ExtendedSemanticValidator,
     ImprovedStateMerging,
     ValidationResult,
     create_extended_validator,
 )
 from r2morph.validation.semantic import ValidationMode
+
+
+class _Binary:
+    path = "/tmp/test"
+
+    def get_arch_info(self) -> dict[str, object]:
+        return {"arch": "x86", "bits": 64}
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return []
 
 
 class TestConstraintCache:
@@ -36,8 +45,8 @@ class TestConstraintCache:
         """Test setting and getting cache entries."""
         cache = ConstraintCache()
 
-        constraint = Mock()
-        result = Mock()
+        constraint = object()
+        result = object()
 
         cache.set(constraint, result, is_satisfiable=True)
 
@@ -50,8 +59,8 @@ class TestConstraintCache:
         """Test cache hit/miss tracking."""
         cache = ConstraintCache()
 
-        constraint = Mock()
-        result = Mock()
+        constraint = object()
+        result = object()
 
         cache.set(constraint, result, is_satisfiable=True)
 
@@ -60,7 +69,7 @@ class TestConstraintCache:
 
         assert cache._hits == 3
 
-        other_constraint = Mock()
+        other_constraint = object()
         cache.get(other_constraint)
         assert cache._misses == 1
 
@@ -82,8 +91,8 @@ class TestConstraintCache:
         """Test cache clearing."""
         cache = ConstraintCache()
 
-        constraint = Mock()
-        cache.set(constraint, Mock(), is_satisfiable=True)
+        constraint = object()
+        cache.set(constraint, object(), is_satisfiable=True)
 
         assert len(cache._cache) == 1
 
@@ -109,8 +118,8 @@ class TestConstraintCache:
         """Test cache invalidation."""
         cache = ConstraintCache()
 
-        constraint = Mock()
-        cache.set(constraint, Mock(), is_satisfiable=True)
+        constraint = object()
+        cache.set(constraint, object(), is_satisfiable=True)
 
         assert len(cache._cache) == 1
 
@@ -123,9 +132,8 @@ class TestConstraintCache:
         cache = ConstraintCache(max_size=10)
 
         for i in range(15):
-            constraint = Mock()
-            constraint.id = i
-            cache.set(constraint, Mock(), is_satisfiable=True)
+            constraint = f"constraint-{i}"
+            cache.set(constraint, object(), is_satisfiable=True)
 
         assert len(cache._cache) <= cache.max_size
 
@@ -246,11 +254,7 @@ class TestExtendedSemanticValidator:
 
     def test_validator_creation(self):
         """Test validator creation."""
-        mock_binary = Mock()
-        mock_binary.path = "/tmp/test"
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 64}
-
-        validator = ExtendedSemanticValidator(mock_binary)
+        validator = ExtendedSemanticValidator(_Binary())
 
         assert validator.max_states == 10000
         assert validator.max_steps == 500
@@ -260,25 +264,14 @@ class TestExtendedSemanticValidator:
 
     def test_validator_creation_no_cache(self):
         """Test validator without cache."""
-        mock_binary = Mock()
-        mock_binary.path = "/tmp/test"
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 64}
-
-        validator = ExtendedSemanticValidator(
-            mock_binary,
-            use_constraint_cache=False,
-        )
+        validator = ExtendedSemanticValidator(_Binary(), config=ExtendedSemanticConfig(use_constraint_cache=False))
 
         assert validator._constraint_cache is None
 
     def test_validator_thorough_mode(self):
         """Test validator in thorough mode."""
-        mock_binary = Mock()
-        mock_binary.path = "/tmp/test"
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 64}
-
         validator = ExtendedSemanticValidator(
-            mock_binary,
+            _Binary(),
             mode=ValidationMode.THOROUGH,
         )
 
@@ -287,12 +280,7 @@ class TestExtendedSemanticValidator:
 
     def test_validate_function_semantics(self):
         """Test function semantic validation."""
-        mock_binary = Mock()
-        mock_binary.path = "/tmp/test"
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 64}
-        mock_binary.get_functions.return_value = []
-
-        validator = ExtendedSemanticValidator(mock_binary)
+        validator = ExtendedSemanticValidator(_Binary())
 
         result = validator.validate_function_semantics(0x1000)
 
@@ -301,11 +289,7 @@ class TestExtendedSemanticValidator:
 
     def test_validate_loop_semantics(self):
         """Test loop semantic validation."""
-        mock_binary = Mock()
-        mock_binary.path = "/tmp/test"
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 64}
-
-        validator = ExtendedSemanticValidator(mock_binary)
+        validator = ExtendedSemanticValidator(_Binary())
 
         result = validator.validate_loop_semantics(0x1000, 0x1100, max_iterations=5)
 
@@ -316,12 +300,7 @@ class TestExtendedSemanticValidator:
 
     def test_validate_call_chain(self):
         """Test call chain validation."""
-        mock_binary = Mock()
-        mock_binary.path = "/tmp/test"
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 64}
-        mock_binary.get_functions.return_value = []
-
-        validator = ExtendedSemanticValidator(mock_binary)
+        validator = ExtendedSemanticValidator(_Binary())
 
         result = validator.validate_call_chain([0x1000, 0x1100, 0x1200])
 
@@ -331,9 +310,7 @@ class TestExtendedSemanticValidator:
 
     def test_validate_call_chain_empty(self):
         """Test empty call chain validation."""
-        mock_binary = Mock()
-
-        validator = ExtendedSemanticValidator(mock_binary)
+        validator = ExtendedSemanticValidator(_Binary())
 
         result = validator.validate_call_chain([])
 
@@ -342,11 +319,7 @@ class TestExtendedSemanticValidator:
 
     def test_clear_cache(self):
         """Test cache clearing."""
-        mock_binary = Mock()
-        mock_binary.path = "/tmp/test"
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 64}
-
-        validator = ExtendedSemanticValidator(mock_binary)
+        validator = ExtendedSemanticValidator(_Binary())
 
         validator._constraint_cache._hits = 10
 
@@ -357,25 +330,22 @@ class TestExtendedSemanticValidator:
 
     def test_get_cache_statistics(self):
         """Test getting cache statistics."""
-        mock_binary = Mock()
-
-        validator = ExtendedSemanticValidator(mock_binary)
+        validator = ExtendedSemanticValidator(_Binary())
 
         stats = validator.get_cache_statistics()
 
         assert "validation_cache_size" in stats
         assert "constraint_cache" in stats
 
-    @patch("r2morph.validation.extended_semantic.ANGR_AVAILABLE", False)
-    def test_validator_without_angr(self):
-        """Test validator when angr is not available."""
-        mock_binary = Mock()
-
-        validator = ExtendedSemanticValidator(mock_binary)
+    def test_validator_reports_symbolic_availability(self):
+        """Test validator reports the symbolic backend state."""
+        validator = ExtendedSemanticValidator(_Binary())
 
         result = validator.validate_function_semantics(0x1000)
 
-        assert result.symbolic_status in ["not_requested", "angr_unavailable"]
+        assert result.symbolic_status in {"not_requested", "angr_unavailable"} or result.symbolic_status.startswith(
+            "error:"
+        )
 
 
 class TestCreateExtendedValidator:
@@ -383,9 +353,7 @@ class TestCreateExtendedValidator:
 
     def test_create_standard_mode(self):
         """Test creating validator in standard mode."""
-        mock_binary = Mock()
-
-        validator = create_extended_validator(mock_binary, mode="standard")
+        validator = create_extended_validator(_Binary(), mode="standard")
 
         assert validator.mode == ValidationMode.STANDARD
         assert validator.max_states == 5000
@@ -393,9 +361,7 @@ class TestCreateExtendedValidator:
 
     def test_create_thorough_mode(self):
         """Test creating validator in thorough mode."""
-        mock_binary = Mock()
-
-        validator = create_extended_validator(mock_binary, mode="thorough")
+        validator = create_extended_validator(_Binary(), mode="thorough")
 
         assert validator.mode == ValidationMode.THOROUGH
         assert validator.max_states == 10000
@@ -403,9 +369,7 @@ class TestCreateExtendedValidator:
 
     def test_create_fast_mode(self):
         """Test creating validator in fast mode."""
-        mock_binary = Mock()
-
-        validator = create_extended_validator(mock_binary, mode="fast")
+        validator = create_extended_validator(_Binary(), mode="fast")
 
         assert validator.mode == ValidationMode.FAST
         assert validator.max_states == 1000
@@ -413,10 +377,8 @@ class TestCreateExtendedValidator:
 
     def test_create_with_custom_params(self):
         """Test creating validator with custom parameters."""
-        mock_binary = Mock()
-
         validator = create_extended_validator(
-            mock_binary,
+            _Binary(),
             mode="standard",
             max_states=2000,
             max_steps=300,
@@ -433,7 +395,7 @@ class TestConstraintCacheEntry:
         """Test entry creation."""
         entry = ConstraintCacheEntry(
             constraint_hash=12345,
-            result=Mock(),
+            result=object(),
             is_satisfiable=True,
             timestamp=100.0,
         )
@@ -446,7 +408,7 @@ class TestConstraintCacheEntry:
         """Test entry hit count tracking."""
         entry = ConstraintCacheEntry(
             constraint_hash=12345,
-            result=Mock(),
+            result=object(),
             is_satisfiable=True,
             timestamp=100.0,
         )

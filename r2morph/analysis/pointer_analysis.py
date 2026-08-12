@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from r2morph.analysis.pointer_analysis_helpers import compute_transitive_aliases, extract_lea_target
 from r2morph.core.binary import Binary
 
@@ -41,7 +43,7 @@ class PointerAnalysis:
         for insn in disasm:
             self._extract_pointer_use(binary, insn)
 
-    def _extract_pointer_use(self, binary: Binary, insn: dict) -> None:
+    def _extract_pointer_use(self, binary: Binary, insn: dict[str, Any]) -> None:
         """Extract pointer use from instruction."""
         disasm = insn.get("disasm", "").lower()
         addr = insn.get("offset", 0)

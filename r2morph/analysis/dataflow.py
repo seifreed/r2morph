@@ -29,6 +29,8 @@ from r2morph.analysis.dataflow_parsing import extract_registers_from_operand
 from r2morph.analysis.dataflow_queries import get_value_at as _get_value_at
 from r2morph.analysis.dataflow_queries import is_safe_to_mutate as _is_safe_to_mutate
 
+_MIN_INSTRUCTION_PART_COUNT = 2
+
 DataFlowDirection = _DataFlowDirection
 
 logger = logging.getLogger(__name__)
@@ -107,7 +109,7 @@ class DataFlowAnalyzer:
         """Get registers defined in a block."""
         return {Register(reg, size) for reg, size in compute_block_def(block.instructions)}
 
-    def _extract_used_registers(self, insn: dict) -> set[Register]:
+    def _extract_used_registers(self, insn: dict[str, Any]) -> set[Register]:
         """Extract registers used by an instruction."""
         used: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
@@ -116,13 +118,13 @@ class DataFlowAnalyzer:
             return used
 
         operand_parts = disasm.split(None, 1)
-        if len(operand_parts) < 2:
+        if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
             return used
 
         operands = operand_parts[1]
         if "," in operands:
             src_parts = operands.split(",")
-            if len(src_parts) >= 2:
+            if len(src_parts) >= _MIN_INSTRUCTION_PART_COUNT:
                 src = src_parts[1].strip()
                 for reg in self._extract_registers_from_operand(src):
                     used.add(reg)
@@ -133,7 +135,7 @@ class DataFlowAnalyzer:
 
         return used
 
-    def _extract_defined_registers(self, insn: dict) -> set[Register]:
+    def _extract_defined_registers(self, insn: dict[str, Any]) -> set[Register]:
         """Extract registers defined by an instruction."""
         defined: set[Register] = set()
         disasm = insn.get("disasm", "").lower()
@@ -146,7 +148,7 @@ class DataFlowAnalyzer:
             return defined
 
         operand_parts = disasm.split(None, 1)
-        if len(operand_parts) < 2:
+        if len(operand_parts) < _MIN_INSTRUCTION_PART_COUNT:
             return defined
 
         operands = operand_parts[1]
@@ -249,7 +251,7 @@ class DataFlowAnalyzer:
         """Build definition-use chains."""
         chains_by_def: dict[tuple[int, str], DefUseChain] = {}
 
-        for addr, block in sorted(self.cfg.blocks.items()):
+        for _addr, block in sorted(self.cfg.blocks.items()):
             for insn in block.instructions:
                 insn_addr = insn.get("offset", 0)
 
@@ -263,7 +265,7 @@ class DataFlowAnalyzer:
                         live_range=(insn_addr, insn_addr),
                     )
 
-        for addr, block in sorted(self.cfg.blocks.items()):
+        for _addr, block in sorted(self.cfg.blocks.items()):
             for insn in block.instructions:
                 insn_addr = insn.get("offset", 0)
 
@@ -299,10 +301,9 @@ class DataFlowAnalyzer:
         latest_addr = -1
 
         for defn in reaching:
-            if defn.register and defn.register.name == reg.name:
-                if defn.address > latest_addr and defn.address < address:
-                    latest_def = defn
-                    latest_addr = defn.address
+            if defn.register and defn.register.name == reg.name and latest_addr < defn.address < address:
+                latest_def = defn
+                latest_addr = defn.address
 
         return latest_def
 

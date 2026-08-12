@@ -23,6 +23,14 @@ def _fake_result(name: str) -> SimpleNamespace:
     )
 
 
+class _TestValidationFramework(ValidationFramework):
+    def benchmark_detection(self, sample):
+        return _fake_result(f"d:{sample.description}")
+
+    def _generate_validation_summary(self, results):
+        return {"total_tests": len(results), "success_rate": 1.0, "avg_execution_time": 1.0}
+
+
 def test_benchmark_suite_execution_helper_runs_all_categories() -> None:
     def detect(sample):
         return _fake_result(f"d:{sample.description}")
@@ -36,11 +44,17 @@ def test_benchmark_suite_execution_helper_runs_all_categories() -> None:
     results, summary = benchmark_suite.run_validation_suite(
         [_FakeSample()],
         [BenchmarkCategory.DETECTION, BenchmarkCategory.DEVIRTUALIZATION, BenchmarkCategory.FULL_PIPELINE],
-        detect,
-        devirt,
-        pipeline,
-        lambda items: {"total_tests": len(items), "success_rate": 1.0, "avg_execution_time": 1.0},
-        __import__("logging").getLogger("test"),
+        benchmark_suite.ValidationSuiteActions(
+            detection=detect,
+            devirtualization=devirt,
+            full_pipeline=pipeline,
+            summarize=lambda items: {
+                "total_tests": len(items),
+                "success_rate": 1.0,
+                "avg_execution_time": 1.0,
+            },
+            logger=__import__("logging").getLogger("test"),
+        ),
     )
 
     assert [result.name for result in results] == ["d:sample", "v:sample", "p:sample"]
@@ -48,13 +62,8 @@ def test_benchmark_suite_execution_helper_runs_all_categories() -> None:
 
 
 def test_validation_framework_delegates_suite_execution(tmp_path) -> None:
-    framework = ValidationFramework(test_data_dir=str(tmp_path))
+    framework = _TestValidationFramework(test_data_dir=str(tmp_path))
     framework.test_samples = [_FakeSample()]
-    framework._generate_validation_summary = lambda results: {  # type: ignore[method-assign]
-        "total_tests": len(results),
-        "success_rate": 1.0,
-        "avg_execution_time": 1.0,
-    }
 
     summary = framework.run_validation_suite([BenchmarkCategory.DETECTION])
 

@@ -363,7 +363,7 @@ class TestExceptionEdgePreservation:
 
                 frames = reader.read_exception_frames()
 
-                for func_addr, frame in frames.items():
+                for _func_addr, frame in frames.items():
                     for lp in frame.landing_pads:
                         assert manager.should_preserve(
                             lp.address

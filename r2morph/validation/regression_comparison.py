@@ -17,12 +17,12 @@ def compare_outputs(expected: dict[str, Any], actual: dict[str, Any]) -> list[st
     if extra_keys:
         issues.append(f"Extra output keys: {extra_keys}")
 
-    for key in expected.keys():
+    for key, expected_value in expected.items():
         if key not in actual:
             continue
 
-        if values_differ(expected[key], actual[key], key):
-            issues.append(f"Value mismatch for '{key}': expected {expected[key]}, got {actual[key]}")
+        if values_differ(expected_value, actual[key], key):
+            issues.append(f"Value mismatch for '{key}': expected {expected_value}, got {actual[key]}")
 
     return issues
 

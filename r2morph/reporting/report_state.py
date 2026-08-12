@@ -4,10 +4,8 @@ from typing import Any
 
 from r2morph.reporting.report_helpers import _normalized_pass_map
 from r2morph.reporting.report_mismatch_resolution import (
-    _merge_mismatch_observables_from_mutations as _merge_mismatch_observables_from_mutations,
-)
-from r2morph.reporting.report_mismatch_resolution import (
-    _resolve_mismatch_view_from_summary as _resolve_mismatch_view_from_summary,
+    _merge_mismatch_observables_from_mutations,
+    _resolve_mismatch_view_from_summary,
 )
 from r2morph.reporting.report_pass_filters import (
     resolve_pass_filter_sets as _resolve_pass_filter_sets_impl,
@@ -20,7 +18,6 @@ def resolve_general_symbolic_state(
     mutations: list[dict[str, Any]],
     pass_results: dict[str, Any],
     summarize_symbolic_func: Any,
-    render_symbolic_func: Any,
 ) -> dict[str, Any]:
     """
     Resolve symbolic summary inputs for the general report path.
@@ -30,7 +27,6 @@ def resolve_general_symbolic_state(
         mutations: List of mutations
         pass_results: Pass results dict
         summarize_symbolic_func: Function to summarize symbolic view
-        render_symbolic_func: Function to render symbolic sections
 
     Returns:
         Dict with symbolic state
@@ -45,18 +41,6 @@ def resolve_general_symbolic_state(
         mismatch_rows,
     ) = summarize_symbolic_func(summary=summary, mutations=mutations)
 
-    render_symbolic_func(
-        symbolic_requested=symbolic_requested,
-        observable_match=observable_match,
-        observable_mismatch=observable_mismatch,
-        bounded_only=bounded_only,
-        observable_not_run=observable_not_run,
-        summary=summary,
-        pass_results=pass_results,
-        by_pass=by_pass,
-        mismatch_rows=mismatch_rows,
-    )
-
     summary_normalized_pass_results = list(summary.get("normalized_pass_results", []) or [])
     return {
         "symbolic_requested": symbolic_requested,
@@ -65,6 +49,7 @@ def resolve_general_symbolic_state(
         "bounded_only": bounded_only,
         "observable_not_run": observable_not_run,
         "by_pass": by_pass,
+        "mismatch_rows": mismatch_rows,
         "summary_normalized_pass_results": summary_normalized_pass_results,
         "normalized_pass_map": _normalized_pass_map(summary_normalized_pass_results),
     }

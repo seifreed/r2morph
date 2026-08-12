@@ -6,9 +6,8 @@ equivalent replacement code with weighted probabilities.
 """
 
 import logging
-import random
-from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.pattern_generators import (
     generator_add_inc_chain,
     generator_add_to_lea,
@@ -38,7 +37,7 @@ from r2morph.mutations.pattern_rules import (
     match_sub_reg_imm_small,
     match_xor_reg_reg_all,
 )
-from r2morph.mutations.pattern_types import BasicBlock, Generator, Instruction, MatchRule
+from r2morph.mutations.pattern_types import BasicBlock, Generator, Instruction, MatchResult, MatchRule
 
 logger = logging.getLogger(__name__)
 
@@ -72,32 +71,30 @@ class MutationPatternPool:
 
             for match in reversed(matches):
                 if random.randint(0, 100) <= self.mutation_probability:
-                    block = self._mutate(block, match.index, match.length, match.operands, os_type, verbose)
+                    block = self._mutate(block, match, os_type, verbose)
 
         return block
 
     def _mutate(
         self,
         block: BasicBlock,
-        ins_idx: int,
-        n_match_ins: int,
-        operands: list[Any],
+        match: MatchResult,
         os_type: str,
         verbose: bool,
     ) -> BasicBlock:
-        generators_list, weights = zip(*self.generators)
+        generators_list, weights = zip(*self.generators, strict=False)
         selected_generator = random.choices(generators_list, weights=weights, k=1)[0]
 
-        new_instructions = selected_generator(operands, os_type)
+        new_instructions = selected_generator(match.operands, os_type)
 
         if verbose:
             self._log_mutation(
-                block.instructions[ins_idx].address if ins_idx < len(block.instructions) else 0,
-                block.instructions[ins_idx : ins_idx + n_match_ins],
+                block.instructions[match.index].address if match.index < len(block.instructions) else 0,
+                block.instructions[match.index : match.index + match.length],
                 new_instructions,
             )
 
-        block.instructions[ins_idx : ins_idx + n_match_ins] = new_instructions
+        block.instructions[match.index : match.index + match.length] = new_instructions
 
         return block
 

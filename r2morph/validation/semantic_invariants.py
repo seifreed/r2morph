@@ -9,9 +9,10 @@ This module defines pass-level invariants that must be preserved during mutation
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import ARCH_BITS_64
 from r2morph.validation.semantic_invariant_helpers import compute_stack_delta_for_bytes, normalize_architecture
 from r2morph.validation.semantic_invariant_models import (
     InvariantCategory,
@@ -20,19 +21,20 @@ from r2morph.validation.semantic_invariant_models import (
     InvariantViolation,
     SemanticInvariantRegistry,
 )
+from r2morph.validation.semantic_models import MutationRegion
 
 logger = logging.getLogger(__name__)
 
 __all__ = [
+    "ControlFlowPreservationChecker",
     "InvariantCategory",
     "InvariantSeverity",
     "InvariantSpec",
     "InvariantViolation",
+    "RegisterPreservationChecker",
+    "SemanticInvariantChecker",
     "SemanticInvariantRegistry",
     "StackBalanceChecker",
-    "RegisterPreservationChecker",
-    "ControlFlowPreservationChecker",
-    "SemanticInvariantChecker",
 ]
 
 
@@ -93,7 +95,7 @@ class StackBalanceChecker:
 class RegisterPreservationChecker:
     """Checks register preservation invariants."""
 
-    CALLEE_SAVED = {
+    CALLEE_SAVED: ClassVar[dict[str, list[str]]] = {
         "x86": ["ebx", "esi", "edi", "ebp"],
         "x86_64": ["rbx", "r12", "r13", "r14", "r15", "rbp"],
         "arm": ["r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"],
@@ -111,9 +113,9 @@ class RegisterPreservationChecker:
         bits = arch_info.get("bits", 64)
 
         if "x86" in arch:
-            key = "x86_64" if bits == 64 else "x86"
+            key = "x86_64" if bits == ARCH_BITS_64 else "x86"
         elif "arm" in arch:
-            key = "arm64" if bits == 64 else "arm"
+            key = "arm64" if bits == ARCH_BITS_64 else "arm"
         else:
             return []
 
@@ -243,11 +245,7 @@ class SemanticInvariantChecker:
 
     def check_mutation(
         self,
-        pass_type: str,
-        start_address: int,
-        end_address: int,
-        original_bytes: bytes,
-        mutated_bytes: bytes,
+        region: MutationRegion,
         original_successors: list[int] | None = None,
         mutated_successors: list[int] | None = None,
         mutated_registers: set[str] | None = None,
@@ -256,11 +254,7 @@ class SemanticInvariantChecker:
         Check all invariants for a mutation.
 
         Args:
-            pass_type: Type of mutation pass
-            start_address: Start address of mutation
-            end_address: End address of mutation
-            original_bytes: Original bytes
-            mutated_bytes: Mutated bytes
+            region: Mutated code region
             original_successors: Original control flow successors
             mutated_successors: Mutated control flow successors
             mutated_registers: Set of modified registers
@@ -270,32 +264,43 @@ class SemanticInvariantChecker:
         """
         violations: list[InvariantViolation] = []
 
-        invariants = self.registry.get_invariants_for_pass(pass_type)
+        invariants = self.registry.get_invariants_for_pass(region.pass_name)
 
         for inv in invariants:
             if inv.category == InvariantCategory.STACK:
                 violations.extend(
-                    self.stack_checker.check_region(start_address, end_address, original_bytes, mutated_bytes)
+                    self.stack_checker.check_region(
+                        region.start_address,
+                        region.end_address,
+                        region.original_bytes,
+                        region.mutated_bytes,
+                    )
                 )
 
             elif inv.category == InvariantCategory.REGISTER:
                 if mutated_registers:
                     violations.extend(
                         self.register_checker.check_register_usage(
-                            start_address, end_address, pass_type, mutated_registers
+                            region.start_address,
+                            region.end_address,
+                            region.pass_name,
+                            mutated_registers,
                         )
                     )
 
-            elif inv.category == InvariantCategory.CONTROL_FLOW:
-                if original_successors is not None and mutated_successors is not None:
-                    violations.extend(
-                        self.cf_checker.check_successor_preservation(
-                            start_address,
-                            end_address,
-                            original_successors,
-                            mutated_successors,
-                        )
+            elif (
+                inv.category == InvariantCategory.CONTROL_FLOW
+                and original_successors is not None
+                and mutated_successors is not None
+            ):
+                violations.extend(
+                    self.cf_checker.check_successor_preservation(
+                        region.start_address,
+                        region.end_address,
+                        original_successors,
+                        mutated_successors,
                     )
+                )
 
         return violations
 

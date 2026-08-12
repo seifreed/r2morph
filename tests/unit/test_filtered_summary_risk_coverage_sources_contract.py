@@ -31,13 +31,15 @@ def test_resolve_filtered_summary_risk_coverage_sources_prefers_persisted_summar
     }
 
     resolved = _resolve_filtered_summary_risk_coverage_sources(
-        summary=summary,
-        risky_pass_names={"fallback-risk"},
-        structural_risk_pass_names={"fallback-structural"},
-        symbolic_risk_pass_names={"fallback-symbolic"},
-        covered_pass_names={"fallback-covered"},
-        uncovered_pass_names={"fallback-uncovered"},
-        clean_pass_names={"fallback-clean"},
+        summary,
+        {
+            "risky": {"fallback-risk"},
+            "structural": {"fallback-structural"},
+            "symbolic": {"fallback-symbolic"},
+            "covered": {"fallback-covered"},
+            "uncovered": {"fallback-uncovered"},
+            "clean": {"fallback-clean"},
+        },
     )
 
     assert resolved == {
@@ -68,13 +70,15 @@ def test_resolve_filtered_summary_risk_coverage_sources_falls_back_to_renderer_s
     }
 
     resolved = _resolve_filtered_summary_risk_coverage_sources(
-        summary=summary,
-        risky_pass_names={"fallback-risk"},
-        structural_risk_pass_names={"fallback-structural"},
-        symbolic_risk_pass_names={"fallback-symbolic"},
-        covered_pass_names={"fallback-covered"},
-        uncovered_pass_names={"fallback-uncovered"},
-        clean_pass_names={"fallback-clean"},
+        summary,
+        {
+            "risky": {"fallback-risk"},
+            "structural": {"fallback-structural"},
+            "symbolic": {"fallback-symbolic"},
+            "covered": {"fallback-covered"},
+            "uncovered": {"fallback-uncovered"},
+            "clean": {"fallback-clean"},
+        },
     )
 
     assert resolved == {

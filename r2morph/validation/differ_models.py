@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
@@ -155,8 +156,6 @@ class DiffReport:
 
     def to_json(self, indent: int = 2) -> str:
         """Convert to JSON string."""
-        import json
-
         return json.dumps(self.to_dict(), indent=indent)
 
     def write_report(self, path: Path) -> None:
@@ -183,11 +182,11 @@ class DiffReport:
 
 
 __all__ = [
-    "DiffType",
-    "ChangeSeverity",
-    "ByteDiff",
-    "SectionDiff",
-    "FunctionDiff",
     "BinaryDiff",
+    "ByteDiff",
+    "ChangeSeverity",
     "DiffReport",
+    "DiffType",
+    "FunctionDiff",
+    "SectionDiff",
 ]

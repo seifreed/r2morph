@@ -23,6 +23,8 @@ from r2morph.platform.elf_structs import ELF_MAGIC, SHF_EXECINSTR
 
 logger = logging.getLogger(__name__)
 
+_ELF_MAGIC_SIZE_BYTES = 4
+
 
 class ELFHandler:
     """Handles ELF-specific operations for binary analysis and transformation.
@@ -63,8 +65,8 @@ class ELFHandler:
         """
         try:
             with open(self.binary_path, "rb") as f:
-                magic = f.read(4)
-                if len(magic) < 4:
+                magic = f.read(_ELF_MAGIC_SIZE_BYTES)
+                if len(magic) < _ELF_MAGIC_SIZE_BYTES:
                     return False
                 return magic == ELF_MAGIC
         except OSError as e:
@@ -284,4 +286,4 @@ class ELFHandler:
         return project_find_code_cave(self.binary_path, self.get_sections(), min_size)
 
 
-__all__ = ["ELFHandler", "SHF_EXECINSTR"]
+__all__ = ["SHF_EXECINSTR", "ELFHandler"]

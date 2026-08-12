@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from r2morph.reporting.sarif_catalogs import MITRE_ATTACK
 from r2morph.reporting.sarif_formatter_builders import (
@@ -28,8 +28,8 @@ def test_sarif_formatter_builders_round_trip() -> None:
     report_data = ReportData(
         binary_path="input.exe",
         output_path="output.exe",
-        start_time=datetime(2026, 6, 14, 12, 0, tzinfo=timezone.utc),
-        end_time=datetime(2026, 6, 14, 12, 5, tzinfo=timezone.utc),
+        start_time=datetime(2026, 6, 14, 12, 0, tzinfo=UTC),
+        end_time=datetime(2026, 6, 14, 12, 5, tzinfo=UTC),
         exit_code=7,
     )
 

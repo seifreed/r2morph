@@ -19,8 +19,8 @@ import pytest
 
 from r2morph.mutations.code_virtualization_engine import _OPAQUE_VARIANTS as _ENGINE_VARIANTS
 from r2morph.mutations.code_virtualization_engine import _opaque_predicate_asm as _engine_opaque
-from r2morph.mutations.code_virtualization_region_codegen import _OPAQUE_VARIANTS as _REGION_VARIANTS
-from r2morph.mutations.code_virtualization_region_codegen import _opaque_predicate_asm as _region_opaque
+from r2morph.mutations.code_virtualization_region_control_handlers import _OPAQUE_VARIANTS as _REGION_VARIANTS
+from r2morph.mutations.code_virtualization_region_control_handlers import _opaque_predicate_asm as _region_opaque
 
 # Both VMs carry their own parallel junk machinery; the opaque predicate is the
 # same technique in each, so every test runs against both builders.

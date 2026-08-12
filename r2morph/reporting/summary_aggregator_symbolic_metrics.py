@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from r2morph.core.report_helpers import (
-    _summarize_observable_mismatches_by_pass,
+from r2morph.core.report_helpers_observables import _summarize_observable_mismatches_by_pass
+from r2morph.core.report_helpers_symbolic_summary import (
     _summarize_symbolic_coverage_by_pass,
     _summarize_symbolic_issue_passes,
     _summarize_symbolic_statuses,

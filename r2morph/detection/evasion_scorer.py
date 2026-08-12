@@ -5,6 +5,7 @@ Score how effective mutations are at evading detection.
 import logging
 from pathlib import Path
 
+from r2morph.core.binary import Binary
 from r2morph.detection.evasion_scorer_helpers import (
     DEFAULT_EVASION_WEIGHTS,
     compose_evasion_score,
@@ -112,8 +113,6 @@ class EvasionScorer:
         Returns:
             Score 0-100
         """
-        from r2morph.core.binary import Binary
-
         try:
             with Binary(original_path) as orig, Binary(morphed_path) as morph:
                 orig.analyze()
@@ -128,10 +127,11 @@ class EvasionScorer:
                 orig_func_map = {f["offset"]: f for f in orig_funcs}
                 morph_func_map = {f["offset"]: f for f in morph_funcs}
 
-                for addr in orig_func_map:
-                    if addr in morph_func_map:
-                        orig_size = orig_func_map[addr].get("size", 0)
-                        morph_size = morph_func_map[addr].get("size", 0)
+                for addr, orig_func in orig_func_map.items():
+                    morph_func = morph_func_map.get(addr)
+                    if morph_func is not None:
+                        orig_size = orig_func.get("size", 0)
+                        morph_size = morph_func.get("size", 0)
 
                         if orig_size != morph_size:
                             changed += 1
@@ -159,7 +159,7 @@ class EvasionScorer:
             Score 0-100
         """
 
-        def extract_ngrams(path: Path, n: int = 4) -> set:
+        def extract_ngrams(path: Path, n: int = 4) -> set[bytes]:
             with open(path, "rb") as f:
                 data = f.read()
 

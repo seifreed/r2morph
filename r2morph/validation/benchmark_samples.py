@@ -112,4 +112,4 @@ def build_test_samples(
     return [build_test_sample(test_data_dir, data) for data in samples]
 
 
-__all__ = ["BenchmarkSampleRecord", "DEFAULT_TEST_SAMPLES", "build_test_sample", "build_test_samples"]
+__all__ = ["DEFAULT_TEST_SAMPLES", "BenchmarkSampleRecord", "build_test_sample", "build_test_samples"]

@@ -8,6 +8,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any
 
+from r2morph.platform.codesign import CodeSigner
 from r2morph.platform.repair_aggregation import aggregate_repair_results
 
 logger = logging.getLogger(__name__)
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 lief: ModuleType | None
 try:
     import lief
-except ImportError:  # pragma: no cover - optional dependency
+except ImportError:
     lief = None
 
 
@@ -78,15 +79,14 @@ def repair_integrity(
     entitlements: Path | None = None,
     hardened: bool = False,
     timestamp: bool = False,
+    system_name: str | None = None,
 ) -> bool:
     """Best-effort repair of Mach-O integrity post-mutation."""
-    if platform.system() != "Darwin":
+    if (system_name or platform.system()) != "Darwin":
         return False
     if not handler.is_macho():
         return False
     try:
-        from r2morph.platform.codesign import CodeSigner
-
         signer = CodeSigner()
 
         if lief is not None:
@@ -102,7 +102,7 @@ def repair_integrity(
                     logger.error(f"Failed to rewrite Mach-O with LIEF: {e}")
 
         signer.remove_signature(handler.binary_path)
-        return signer.sign_binary(
+        return signer.sign(
             handler.binary_path,
             adhoc=True,
             entitlements=entitlements,

@@ -8,6 +8,8 @@ from typing import Any
 
 from r2morph.validation.semantic_invariant_models import InvariantCategory
 
+_SUCCESS_STATUS_VALUE = "pass"
+
 
 class ValidationMode(Enum):
     """Semantic validation mode."""
@@ -20,7 +22,7 @@ class ValidationMode(Enum):
 class ValidationResultStatus(Enum):
     """Status of semantic validation result."""
 
-    PASS = "pass"
+    PASS = _SUCCESS_STATUS_VALUE
     FAIL = "fail"
     ERROR = "error"
     SKIP = "skip"

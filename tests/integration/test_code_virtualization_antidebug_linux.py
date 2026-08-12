@@ -23,6 +23,7 @@ is not "green because skipped" forever.
 
 from __future__ import annotations
 
+import contextlib
 import ctypes
 import os
 import shutil
@@ -63,10 +64,8 @@ def _ptrace(request: int, pid: int, addr: int, data: int) -> int:
 
 def _reap(pid: int) -> None:
     _ptrace(_PTRACE_KILL, pid, 0, 0)
-    try:
+    with contextlib.suppress(ChildProcessError):
         os.waitpid(pid, 0)
-    except ChildProcessError:
-        pass
 
 
 def _run_single_stepped(path: Path) -> int | None:

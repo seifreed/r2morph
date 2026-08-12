@@ -63,7 +63,7 @@ def test_symbolic_names_are_part_of_the_lazy_public_api() -> None:
     ``angr`` import (which would emit the unavoidable third-party
     ``cle`` ``DeprecationWarning``).
     """
-    import r2morph.analysis as analysis
+    from r2morph import analysis
 
     for name in (
         "AngrBridge",

@@ -2,35 +2,41 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 
-def build_region_report(
-    mutation: dict[str, object],
-    resolved_original: object,
-    resolved_mutated: object,
-    step_budget: int,
-    region_exit_budget: int,
-    original_steps: int,
-    mutated_steps: int,
-    original_trace_addresses: list[object],
-    mutated_trace_addresses: list[object],
-    compared_registers: list[str],
-) -> dict[str, object]:
+@dataclass(frozen=True)
+class RegionReportInput:
+    """Resolved addresses and bounded-step observations for one region."""
+
+    mutation: dict[str, object]
+    resolved_original: object
+    resolved_mutated: object
+    step_budget: int
+    region_exit_budget: int
+    original_steps: int
+    mutated_steps: int
+    original_trace_addresses: list[object]
+    mutated_trace_addresses: list[object]
+    compared_registers: list[str]
+
+
+def build_region_report(result: RegionReportInput) -> dict[str, object]:
     """Build the region-report skeleton before finalization."""
     return {
-        "start_address": mutation["start_address"],
-        "end_address": mutation["end_address"],
-        "original_loaded_address": resolved_original,
-        "mutated_loaded_address": resolved_mutated,
-        "step_budget": step_budget,
-        "region_exit_budget": region_exit_budget,
+        "start_address": result.mutation["start_address"],
+        "end_address": result.mutation["end_address"],
+        "original_loaded_address": result.resolved_original,
+        "mutated_loaded_address": result.resolved_mutated,
+        "step_budget": result.step_budget,
+        "region_exit_budget": result.region_exit_budget,
         "step_strategy": "region-exit",
-        "original_region_exit_steps": original_steps,
-        "mutated_region_exit_steps": mutated_steps,
-        "original_trace_addresses": original_trace_addresses,
-        "mutated_trace_addresses": mutated_trace_addresses,
-        "registers_checked": list(compared_registers) + ["eflags", "stack_delta"],
+        "original_region_exit_steps": result.original_steps,
+        "mutated_region_exit_steps": result.mutated_steps,
+        "original_trace_addresses": result.original_trace_addresses,
+        "mutated_trace_addresses": result.mutated_trace_addresses,
+        "registers_checked": [*result.compared_registers, "eflags", "stack_delta"],
         "mismatches": [],
     }
 

@@ -2,11 +2,15 @@
 Hot path detection for performance-aware mutations.
 """
 
+import json
 import logging
+from typing import Any
 
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+_MAX_SIMPLE_BLOCK_INPUTS = 2
 
 
 class HotPathDetector:
@@ -45,11 +49,10 @@ class HotPathDetector:
             func_addr = func.get("offset", 0)
             func_name = func.get("name", f"0x{func_addr:x}")
 
-            assert self.binary.r2 is not None
+            if self.binary.r2 is None:
+                raise RuntimeError("Binary disassembler is not open")
             try:
                 bb_json = self.binary.r2.cmd(f"afbj @ 0x{func_addr:x}")
-                import json
-
                 bbs = json.loads(bb_json) if bb_json else []
 
                 hot_blocks = self._identify_hot_blocks(bbs)
@@ -62,7 +65,7 @@ class HotPathDetector:
 
         return hot_paths
 
-    def _identify_hot_blocks(self, basic_blocks: list[dict]) -> list[int]:
+    def _identify_hot_blocks(self, basic_blocks: list[dict[str, Any]]) -> list[int]:
         """
         Identify hot basic blocks heuristically.
 
@@ -80,7 +83,7 @@ class HotPathDetector:
             if bb.get("type") == "head":
                 hot_blocks.append(addr)
 
-            if bb.get("ninstr", 0) > 0 and bb.get("inputs", 0) > 2:
+            if bb.get("ninstr", 0) > 0 and bb.get("inputs", 0) > _MAX_SIMPLE_BLOCK_INPUTS:
                 hot_blocks.append(addr)
 
         return hot_blocks

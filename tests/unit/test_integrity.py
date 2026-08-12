@@ -8,9 +8,53 @@ Covers:
 - Platform-specific integrity checks
 """
 
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from shutil import copyfile
+from typing import Any
 
 from r2morph.validation.integrity import BinaryIntegrityValidator, validate_binary_integrity
+
+
+class _Handler:
+    def __init__(self) -> None:
+        self.is_elf_value = True
+        self.is_macho_value = True
+        self.sections: list[dict[str, Any]] = []
+        self.segments: list[dict[str, Any]] = []
+        self.entry_point: int | None = None
+        self.load_commands: list[dict[str, Any]] = []
+        self.validation_result: tuple[bool, Any] = (True, [])
+        self.repair_result: bool | tuple[bool, list[str]] = True
+
+    def is_elf(self) -> bool:
+        return self.is_elf_value
+
+    def is_macho(self) -> bool:
+        return self.is_macho_value
+
+    def get_sections(self) -> list[dict[str, Any]]:
+        return self.sections
+
+    def get_segments(self) -> list[dict[str, Any]]:
+        return self.segments
+
+    def get_entry_point(self) -> int | None:
+        return self.entry_point
+
+    def get_load_commands(self) -> list[dict[str, Any]]:
+        return self.load_commands
+
+    def validate_integrity(self) -> tuple[bool, Any]:
+        return self.validation_result
+
+    def repair_integrity(self) -> bool | tuple[bool, list[str]]:
+        return self.repair_result
+
+    def mark_executable(self) -> None:
+        return None
+
+    def refresh_headers(self) -> None:
+        return None
 
 
 class TestBinaryIntegrityValidatorFormatDetection:
@@ -66,95 +110,91 @@ class TestELFIntegrity:
         elf_path = tmp_path / "test.elf"
         elf_path.write_bytes(b"\x7fELF" + b"\x00" * 100)
 
-        mock_handler = MagicMock()
-        mock_handler.is_elf.return_value = True
-        mock_handler.get_sections.return_value = [
+        handler = _Handler()
+        handler.is_elf_value = True
+        handler.sections = [
             {"name": ".text", "virtual_address": 0x1000, "size": 0x1000},
             {"name": ".data", "virtual_address": 0x2000, "size": 0x1000},
         ]
-        mock_handler.get_segments.return_value = [
+        handler.segments = [
             {"virtual_address": 0x1000, "virtual_size": 0x2000, "flags": 5},
         ]
-        mock_handler.get_entry_point.return_value = 0x1000
+        handler.entry_point = 0x1000
 
-        with patch("r2morph.platform.elf_handler.ELFHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(elf_path)
-            validator._format = "elf"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(elf_path)
+        validator._format = "elf"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert is_valid
-            assert len(issues) == 0
+        is_valid, issues = validator.validate()
+        assert is_valid
+        assert len(issues) == 0
 
     def test_elf_missing_sections(self, tmp_path):
         """Validate ELF with missing sections."""
         elf_path = tmp_path / "test.elf"
         elf_path.write_bytes(b"\x7fELF" + b"\x00" * 100)
 
-        mock_handler = MagicMock()
-        mock_handler.is_elf.return_value = True
-        mock_handler.get_sections.return_value = []
-        mock_handler.get_segments.return_value = [
+        handler = _Handler()
+        handler.is_elf_value = True
+        handler.sections = []
+        handler.segments = [
             {"virtual_address": 0x1000, "virtual_size": 0x2000, "flags": 5},
         ]
-        mock_handler.get_entry_point.return_value = 0x1000
+        handler.entry_point = 0x1000
 
-        with patch("r2morph.platform.elf_handler.ELFHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(elf_path)
-            validator._format = "elf"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(elf_path)
+        validator._format = "elf"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert not is_valid
-            assert any("No sections" in i for i in issues)
+        is_valid, issues = validator.validate()
+        assert not is_valid
+        assert any("No sections" in i for i in issues)
 
     def test_elf_missing_required_sections(self, tmp_path):
         """Validate ELF missing required sections."""
         elf_path = tmp_path / "test.elf"
         elf_path.write_bytes(b"\x7fELF" + b"\x00" * 100)
 
-        mock_handler = MagicMock()
-        mock_handler.is_elf.return_value = True
-        mock_handler.get_sections.return_value = [
+        handler = _Handler()
+        handler.is_elf_value = True
+        handler.sections = [
             {"name": ".rodata", "virtual_address": 0x1000, "size": 0x1000},
         ]
-        mock_handler.get_segments.return_value = [
+        handler.segments = [
             {"virtual_address": 0x1000, "virtual_size": 0x2000, "flags": 5},
         ]
-        mock_handler.get_entry_point.return_value = 0x1000
+        handler.entry_point = 0x1000
 
-        with patch("r2morph.platform.elf_handler.ELFHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(elf_path)
-            validator._format = "elf"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(elf_path)
+        validator._format = "elf"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert not is_valid
-            assert any(".text" in i for i in issues)
+        is_valid, issues = validator.validate()
+        assert not is_valid
+        assert any(".text" in i for i in issues)
 
     def test_elf_wx_segment(self, tmp_path):
         """Validate ELF with writable and executable segment."""
         elf_path = tmp_path / "test.elf"
         elf_path.write_bytes(b"\x7fELF" + b"\x00" * 100)
 
-        mock_handler = MagicMock()
-        mock_handler.is_elf.return_value = True
-        mock_handler.get_sections.return_value = [
+        handler = _Handler()
+        handler.is_elf_value = True
+        handler.sections = [
             {"name": ".text", "virtual_address": 0x1000, "size": 0x1000},
             {"name": ".data", "virtual_address": 0x2000, "size": 0x1000},
         ]
-        mock_handler.get_segments.return_value = [
+        handler.segments = [
             {"virtual_address": 0x1000, "virtual_size": 0x2000, "flags": 0x3},  # WX
         ]
-        mock_handler.get_entry_point.return_value = 0x1000
+        handler.entry_point = 0x1000
 
-        with patch("r2morph.platform.elf_handler.ELFHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(elf_path)
-            validator._format = "elf"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(elf_path)
+        validator._format = "elf"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert any("writable and executable" in i.lower() for i in issues)
+        _is_valid, issues = validator.validate()
+        assert any("writable and executable" in i.lower() for i in issues)
 
 
 class TestMachOIntegrity:
@@ -165,60 +205,57 @@ class TestMachOIntegrity:
         macho_path = tmp_path / "test.macho"
         macho_path.write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 100)
 
-        mock_handler = MagicMock()
-        mock_handler.is_macho.return_value = True
-        mock_handler.validate_integrity.return_value = (True, "")
-        mock_handler.get_segments.return_value = [
+        handler = _Handler()
+        handler.is_macho_value = True
+        handler.validation_result = (True, "")
+        handler.segments = [
             {"name": "__TEXT", "virtual_address": 0x1000, "virtual_size": 0x1000},
             {"name": "__LINKEDIT", "virtual_address": 0x2000, "virtual_size": 0x1000},
         ]
-        mock_handler.get_load_commands.return_value = [{"command": "LC_SEGMENT_64"}]
+        handler.load_commands = [{"command": "LC_SEGMENT_64"}]
 
-        with patch("r2morph.platform.macho_handler.MachOHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(macho_path)
-            validator._format = "macho"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(macho_path)
+        validator._format = "macho"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert is_valid
+        is_valid, _issues = validator.validate()
+        assert is_valid
 
     def test_macho_missing_text_segment(self, tmp_path):
         """Validate Mach-O missing __TEXT segment."""
         macho_path = tmp_path / "test.macho"
         macho_path.write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 100)
 
-        mock_handler = MagicMock()
-        mock_handler.is_macho.return_value = True
-        mock_handler.validate_integrity.return_value = (True, "")
-        mock_handler.get_segments.return_value = [
+        handler = _Handler()
+        handler.is_macho_value = True
+        handler.validation_result = (True, "")
+        handler.segments = [
             {"name": "__DATA", "virtual_address": 0x1000, "virtual_size": 0x1000},
         ]
-        mock_handler.get_load_commands.return_value = [{"command": "LC_SEGMENT_64"}]
+        handler.load_commands = [{"command": "LC_SEGMENT_64"}]
 
-        with patch("r2morph.platform.macho_handler.MachOHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(macho_path)
-            validator._format = "macho"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(macho_path)
+        validator._format = "macho"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert any("__TEXT" in i for i in issues)
+        _is_valid, issues = validator.validate()
+        assert any("__TEXT" in i for i in issues)
 
     def test_macho_repair(self, tmp_path):
         """Test Mach-O repair."""
         macho_path = tmp_path / "test.macho"
         macho_path.write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 100)
 
-        mock_handler = MagicMock()
-        mock_handler.repair_integrity.return_value = True
+        handler = _Handler()
+        handler.repair_result = True
 
-        with patch("r2morph.platform.macho_handler.MachOHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(macho_path)
-            validator._format = "macho"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(macho_path)
+        validator._format = "macho"
+        validator._handler = handler
 
-            success, repairs = validator.repair()
-            assert success
-            assert "Repaired Mach-O signature" in repairs
+        success, repairs = validator.repair()
+        assert success
+        assert "Repaired Mach-O signature" in repairs
 
 
 class TestPEIntegrity:
@@ -230,16 +267,15 @@ class TestPEIntegrity:
         pe_data = b"MZ" + b"\x00" * 58 + b"\x40\x00\x00\x00" + b"PE\x00\x00" + b"\x00" * 100
         pe_path.write_bytes(pe_data)
 
-        mock_handler = MagicMock()
-        mock_handler.validate_integrity.return_value = (True, [])
+        handler = _Handler()
+        handler.validation_result = (True, [])
 
-        with patch("r2morph.platform.pe_handler.PEHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(pe_path)
-            validator._format = "pe"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(pe_path)
+        validator._format = "pe"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert is_valid
+        is_valid, _issues = validator.validate()
+        assert is_valid
 
     def test_pe_checksum_mismatch(self, tmp_path):
         """Validate PE with checksum mismatch."""
@@ -247,17 +283,16 @@ class TestPEIntegrity:
         pe_data = b"MZ" + b"\x00" * 58 + b"\x40\x00\x00\x00" + b"PE\x00\x00" + b"\x00" * 100
         pe_path.write_bytes(pe_data)
 
-        mock_handler = MagicMock()
-        mock_handler.validate_integrity.return_value = (False, ["Checksum mismatch"])
+        handler = _Handler()
+        handler.validation_result = (False, ["Checksum mismatch"])
 
-        with patch("r2morph.platform.pe_handler.PEHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(pe_path)
-            validator._format = "pe"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(pe_path)
+        validator._format = "pe"
+        validator._handler = handler
 
-            is_valid, issues = validator.validate()
-            assert not is_valid
-            assert any("Checksum" in i for i in issues)
+        is_valid, issues = validator.validate()
+        assert not is_valid
+        assert any("Checksum" in i for i in issues)
 
     def test_pe_repair(self, tmp_path):
         """Test PE repair."""
@@ -265,46 +300,47 @@ class TestPEIntegrity:
         pe_data = b"MZ" + b"\x00" * 58 + b"\x40\x00\x00\x00" + b"PE\x00\x00" + b"\x00" * 100
         pe_path.write_bytes(pe_data)
 
-        mock_handler = MagicMock()
-        mock_handler.repair_integrity.return_value = (True, ["Checksum updated"])
+        handler = _Handler()
+        handler.repair_result = (True, ["Checksum updated"])
 
-        with patch("r2morph.platform.pe_handler.PEHandler", return_value=mock_handler):
-            validator = BinaryIntegrityValidator(pe_path)
-            validator._format = "pe"
-            validator._handler = mock_handler
+        validator = BinaryIntegrityValidator(pe_path)
+        validator._format = "pe"
+        validator._handler = handler
 
-            success, repairs = validator.repair()
-            assert success
-            assert "Checksum updated" in repairs
+        success, repairs = validator.repair()
+        assert success
+        assert "Checksum updated" in repairs
 
 
 class TestValidateBinaryIntegrity:
     """Test the convenience function."""
 
-    def test_validate_without_repair(self, tmp_path):
-        """Validate without repair."""
+    def test_validate_without_repair_returns_detected_issues(self, tmp_path):
         elf_path = tmp_path / "test.elf"
-        elf_path.write_bytes(b"\x7fELF" + b"\x00" * 100)
+        copyfile(Path(__file__).parents[2] / "dataset" / "elf_x86_64", elf_path)
 
-        mock_validator = MagicMock()
-        mock_validator.validate.return_value = (True, [])
+        result = validate_binary_integrity(elf_path, repair=False)
 
-        with patch("r2morph.validation.integrity.BinaryIntegrityValidator", return_value=mock_validator):
-            is_valid, issues, repairs = validate_binary_integrity(elf_path, repair=False)
-            assert is_valid
-            assert len(issues) == 0
-            assert len(repairs) == 0
+        assert result == (
+            False,
+            [
+                "Missing required section: .data",
+                "Entry point 0x201120 not in any executable segment",
+            ],
+            [],
+        )
 
-    def test_validate_with_repair(self, tmp_path):
-        """Validate with repair."""
+    def test_validate_with_repair_revalidates_binary(self, tmp_path):
         elf_path = tmp_path / "test.elf"
-        elf_path.write_bytes(b"\x7fELF" + b"\x00" * 100)
+        copyfile(Path(__file__).parents[2] / "dataset" / "elf_x86_64", elf_path)
 
-        mock_validator = MagicMock()
-        mock_validator.validate_and_repair.return_value = (True, [], ["Checksum fixed"])
+        result = validate_binary_integrity(elf_path, repair=True)
 
-        with patch("r2morph.validation.integrity.BinaryIntegrityValidator", return_value=mock_validator):
-            is_valid, issues, repairs = validate_binary_integrity(elf_path, repair=True)
-            assert is_valid
-            assert len(repairs) == 1
-            assert "Checksum fixed" in repairs
+        assert result == (
+            False,
+            [
+                "Missing required section: .data",
+                "Entry point 0x201120 not in any executable segment",
+            ],
+            [],
+        )

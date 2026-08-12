@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any
 
-from r2morph.validation.validator import ValidationResult
+from r2morph.validation.validator_runtime import ValidationResult
 
 
 class RegressionTestType(Enum):
@@ -42,7 +42,7 @@ class RegressionTest:
     test_cases: list[dict[str, Any]]
     expected_mutations: int | None = None
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return asdict(self)
 
@@ -59,7 +59,7 @@ class RegressionResult:
     timestamp: str
     errors: list[str]
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary."""
         return {
             "test_name": self.test_name,

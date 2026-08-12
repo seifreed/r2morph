@@ -6,11 +6,21 @@ data (``__slots__`` + ``__init__``), no behaviour, no sibling dependency.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True, slots=True)
+class VirtualizedAddress:
+    base_index: int
+    disp: int
+    index_index: int = 0
+    scale: int = 0
+
 
 class VirtualizedOp:
     """A single decoded instruction destined for the VM bytecode."""
 
-    __slots__ = ("mnemonic", "dst_index", "value", "is_immediate", "width")
+    __slots__ = ("dst_index", "is_immediate", "mnemonic", "value", "width")
 
     def __init__(self, mnemonic: str, dst_index: int, value: int, is_immediate: bool, width: int) -> None:
         self.mnemonic = mnemonic
@@ -29,19 +39,17 @@ class VirtualizedMemOp:
     stack - it only spills registers), and a 32-bit load zero-extends.
     """
 
-    __slots__ = ("kind", "reg_index", "base_index", "disp", "width", "index_index", "scale")
+    __slots__ = ("base_index", "disp", "index_index", "kind", "reg_index", "scale", "width")
 
-    def __init__(
-        self, kind: str, reg_index: int, base_index: int, disp: int, width: int, index_index: int = 0, scale: int = 0
-    ) -> None:
+    def __init__(self, kind: str, reg_index: int, address: VirtualizedAddress, width: int) -> None:
         self.kind = kind
         self.reg_index = reg_index
-        self.base_index = base_index
-        self.disp = disp
+        self.base_index = address.base_index
+        self.disp = address.disp
         self.width = width
         # Only used by the ``*idx`` kinds: address = base + index*(2**scale) + disp.
-        self.index_index = index_index
-        self.scale = scale
+        self.index_index = address.index_index
+        self.scale = address.scale
 
 
 class VirtualizedFpMemOp:
@@ -56,19 +64,17 @@ class VirtualizedFpMemOp:
     register on exit.
     """
 
-    __slots__ = ("kind", "xmm_index", "base_index", "disp", "width", "index_index", "scale")
+    __slots__ = ("base_index", "disp", "index_index", "kind", "scale", "width", "xmm_index")
 
-    def __init__(
-        self, kind: str, xmm_index: int, base_index: int, disp: int, width: int, index_index: int = 0, scale: int = 0
-    ) -> None:
+    def __init__(self, kind: str, xmm_index: int, address: VirtualizedAddress, width: int) -> None:
         self.kind = kind
         self.xmm_index = xmm_index
-        self.base_index = base_index
-        self.disp = disp
+        self.base_index = address.base_index
+        self.disp = address.disp
         self.width = width
         # Only used by the ``*idx`` kinds: address = base + index*(2**scale) + disp.
-        self.index_index = index_index
-        self.scale = scale
+        self.index_index = address.index_index
+        self.scale = address.scale
 
 
 class VirtualizedFpArithOp:
@@ -81,7 +87,7 @@ class VirtualizedFpArithOp:
     place FP is computed, never spelled out as the mnemonic in the bytecode.
     """
 
-    __slots__ = ("op", "dst_index", "src_index", "width")
+    __slots__ = ("dst_index", "op", "src_index", "width")
 
     def __init__(self, op: str, dst_index: int, src_index: int, width: int) -> None:
         self.op = op
@@ -99,7 +105,7 @@ class VirtualizedFpConvertOp:
     The xmm value lives in the frame's xmm save area, the GP value in its slot.
     """
 
-    __slots__ = ("direction", "fp_width", "gp_width", "xmm_index", "gp_slot")
+    __slots__ = ("direction", "fp_width", "gp_slot", "gp_width", "xmm_index")
 
     def __init__(self, direction: str, fp_width: int, gp_width: int, xmm_index: int, gp_slot: int) -> None:
         self.direction = direction
@@ -117,21 +123,19 @@ class VirtualizedFpArithMemOp:
     ``width`` is 64 (sd) or 32 (ss). The xmm operand lives in the frame's save area.
     """
 
-    __slots__ = ("op", "xmm_index", "base_index", "disp", "width", "index_index", "scale")
+    __slots__ = ("base_index", "disp", "index_index", "op", "scale", "width", "xmm_index")
 
-    def __init__(
-        self, op: str, xmm_index: int, base_index: int, disp: int, width: int, index_index: int = -1, scale: int = 0
-    ) -> None:
+    def __init__(self, op: str, xmm_index: int, address: VirtualizedAddress, width: int) -> None:
         self.op = op
         self.xmm_index = xmm_index
         # base_index < 0 marks the rip-relative form (disp carries the absolute
         # target); index_index >= 0 marks the scaled-index form (address =
         # base + index*(2**scale) + disp).
-        self.base_index = base_index
-        self.disp = disp
+        self.base_index = address.base_index
+        self.disp = address.disp
         self.width = width
-        self.index_index = index_index
-        self.scale = scale
+        self.index_index = address.index_index
+        self.scale = address.scale
 
 
 class VirtualizedFpPackedOp:
@@ -142,7 +146,7 @@ class VirtualizedFpPackedOp:
     preserved. ``dst_index``/``src_index`` are 0-15 xmm register numbers.
     """
 
-    __slots__ = ("mnemonic", "dst_index", "src_index")
+    __slots__ = ("dst_index", "mnemonic", "src_index")
 
     def __init__(self, mnemonic: str, dst_index: int, src_index: int) -> None:
         self.mnemonic = mnemonic
@@ -158,7 +162,7 @@ class VirtualizedFpPackedMemOp:
     slot read at runtime for the program's real address.
     """
 
-    __slots__ = ("kind", "xmm_index", "base_index", "disp")
+    __slots__ = ("base_index", "disp", "kind", "xmm_index")
 
     def __init__(self, kind: str, xmm_index: int, base_index: int, disp: int) -> None:
         self.kind = kind

@@ -10,8 +10,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from r2morph.analysis.call_graph import CallEdge, CallGraph, CallNode, CallType
+from r2morph.analysis.call_graph import CallGraph
 from r2morph.analysis.call_graph_entry_points import find_entry_points
+from r2morph.analysis.call_graph_models import CallEdge, CallNode, CallType
 from r2morph.analysis.call_graph_parsing import (
     determine_call_type,
     extract_call_target,
@@ -106,7 +107,7 @@ class CallGraphBuilder:
         except Exception as e:
             logger.debug(f"Error extracting calls from 0x{func_addr:x}: {e}")
 
-    def _process_instruction(self, binary: Binary, func_addr: int, insn: dict, cg: CallGraph) -> None:
+    def _process_instruction(self, binary: Binary, func_addr: int, insn: dict[str, Any], cg: CallGraph) -> None:
         """Process a single instruction for call extraction."""
         disasm = insn.get("disasm", "").lower()
         offset = insn.get("offset", 0)
@@ -207,20 +208,3 @@ def build_call_graph(binary: Binary, include_indirect: bool = True, include_plt:
     """
     builder = CallGraphBuilder(include_indirect=include_indirect, include_plt=include_plt)
     return builder.build(binary)
-
-
-def build_call_graph_cached(
-    binary: Binary,
-    cache: Any | None = None,
-    include_indirect: bool = True,
-    include_plt: bool = True,
-) -> CallGraph:
-    """Compatibility wrapper that delegates to call_graph_cache."""
-    from r2morph.analysis.call_graph_cache import build_call_graph_cached as _build_call_graph_cached
-
-    return _build_call_graph_cached(
-        binary,
-        cache=cache,
-        include_indirect=include_indirect,
-        include_plt=include_plt,
-    )

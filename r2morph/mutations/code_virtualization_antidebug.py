@@ -30,7 +30,7 @@ never the not-yet-loaded ``rsi``/``r13``/``r14``/``r15``.
 
 from __future__ import annotations
 
-import random
+import r2morph.core.randomness as random
 
 # A benign inter-read delta is a few hundred native cycles, far under ``2**16``;
 # a single-step trap (a kernel round-trip per instruction) inflates it past any of
@@ -150,6 +150,7 @@ _TRACER_ISLAND_CONSTS = (
     _TRACERPID_ZERO,
 )
 _TRACER_ISLAND_LEN = 8 * len(_TRACER_ISLAND_CONSTS)
+_PERSONALITY_COIN_FLIP = 0.5
 
 
 def _broadcast_checksum_to(reg: str, slot: int) -> str:
@@ -286,8 +287,8 @@ def timing_fold_asm(key: int, slot: int) -> str:
     """
     rng = random.Random(key)
     shift = rng.choice(_SHIFT_CHOICES)
-    use_rdtscp = rng.random() < 0.5
-    use_lfence = rng.random() < 0.5
+    use_rdtscp = rng.random() < _PERSONALITY_COIN_FLIP
+    use_lfence = rng.random() < _PERSONALITY_COIN_FLIP
     reduce_spelling = rng.choice(_REDUCE_CHOICES)
     combine = rng.choice(_COMBINE_CHOICES)
 

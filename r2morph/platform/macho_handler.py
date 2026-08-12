@@ -2,11 +2,14 @@
 Mach-O format specific handling (macOS/iOS).
 """
 
+import importlib
 import logging
 import struct
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
+from r2morph.adapters.process import ProcessError, run_process
+from r2morph.platform.macho_arch import MACHO_MAGICS_64, MAGIC_SIZE_BYTES, resolve_macho_arch
 from r2morph.platform.macho_handler_repair import (
     fix_bind_symbols as repair_fix_bind_symbols,
 )
@@ -28,25 +31,12 @@ from r2morph.platform.macho_handler_repair import (
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    import lief
-else:
-    try:
-        import lief
-    except ImportError:
-        lief = None
+try:
+    lief: Any = importlib.import_module("lief")
+except ImportError:
+    lief = None
 
 LIEF_AVAILABLE = lief is not None
-
-# Mach-O magic numbers as read little-endian. ``_NATIVE_LE`` values mark a
-# little-endian thin binary (MH_MAGIC / MH_MAGIC_64); ``_NATIVE_BE`` are the
-# byte-swapped forms that mark a big-endian thin binary; ``_FAT_BE`` are the
-# fat-binary magics as read big-endian. ``_MAGIC_64`` selects the 64-bit
-# header/segment layout.
-_MACHO_MAGICS_NATIVE_LE = {0xFEEDFACE, 0xFEEDFACF}
-_MACHO_MAGICS_NATIVE_BE = {0xCEFAEDFE, 0xCFFAEDFE}
-_FAT_MAGICS_BE = {0xCAFEBABE, 0xCAFEBABF, 0xBEBAFECA, 0xBFBAFECA}
-_MACHO_MAGICS_64 = {0xFEEDFACF, 0xCFFAEDFE}
 
 # Load-command type -> human-readable name (the subset the fallback parser
 # reports; unknown commands are rendered as their hex value).
@@ -65,6 +55,8 @@ _MACHO_LOAD_COMMAND_NAMES = {
 # LC_SEGMENT command type (32-bit) and LC_SEGMENT_64 (64-bit).
 _LC_SEGMENT = 0x1
 _LC_SEGMENT_64 = 0x19
+_LOAD_COMMAND_HEADER_SIZE_BYTES = 8
+_MAX_LOAD_COMMAND_SIZE_BYTES = 0x100000
 
 
 class MachOHandler:
@@ -94,82 +86,7 @@ class MachOHandler:
             logger.error(f"Failed to parse Mach-O with LIEF: {e}")
             return None
 
-    @staticmethod
-    def _resolve_macho_arch(f: Any, file_size: int) -> tuple[str, int, int] | None:
-        """Resolve the thin Mach-O slice to parse.
-
-        Reads the leading magic and returns ``(endian, offset, magic)`` for the
-        thin Mach-O image: directly for a thin binary, or after seeking to the
-        first architecture slice of a fat binary. Returns ``None`` when the file
-        is not a recognizable Mach-O / fat binary or an offset is out of range.
-        """
-        magic_bytes = f.read(4)
-        if len(magic_bytes) != 4:
-            return None
-        le_magic = struct.unpack("<I", magic_bytes)[0]
-        be_magic = struct.unpack(">I", magic_bytes)[0]
-
-        endian = "<"
-        offset = 0
-        magic = le_magic
-
-        if be_magic in _FAT_MAGICS_BE:
-            endian = ">" if be_magic in {0xCAFEBABE, 0xCAFEBABF} else "<"
-            f.seek(0)
-            magic = struct.unpack(endian + "I", f.read(4))[0]
-            if magic in {0xCAFEBABE, 0xBEBAFECA}:
-                nfat = struct.unpack(endian + "I", f.read(4))[0]
-                if nfat < 1 or nfat > 100:
-                    logger.warning(f"Invalid nfat count: {nfat}")
-                    return None
-                arch_data = f.read(20)
-                if len(arch_data) != 20:
-                    return None
-                _, _, arch_offset, _, _ = struct.unpack(endian + "IIIII", arch_data)
-                if arch_offset >= file_size:
-                    logger.warning(f"Invalid arch_offset 0x{arch_offset:x} exceeds file size 0x{file_size:x}")
-                    return None
-                offset = arch_offset
-            elif magic in {0xCAFEBABF, 0xBFBAFECA}:
-                nfat = struct.unpack(endian + "I", f.read(4))[0]
-                if nfat < 1 or nfat > 100:
-                    logger.warning(f"Invalid nfat count: {nfat}")
-                    return None
-                arch_data = f.read(32)
-                if len(arch_data) != 32:
-                    return None
-                _, _, arch_offset, _, _, _ = struct.unpack(endian + "IIQQII", arch_data)
-                if arch_offset >= file_size:
-                    logger.warning(f"Invalid arch_offset 0x{arch_offset:x} exceeds file size 0x{file_size:x}")
-                    return None
-                offset = arch_offset
-            else:
-                return None
-            f.seek(offset)
-            magic_bytes = f.read(4)
-            if len(magic_bytes) != 4:
-                return None
-            le_magic = struct.unpack("<I", magic_bytes)[0]
-            be_magic = struct.unpack(">I", magic_bytes)[0]
-            if le_magic in _MACHO_MAGICS_NATIVE_LE:
-                endian = "<"
-                magic = le_magic
-            elif le_magic in _MACHO_MAGICS_NATIVE_BE:
-                endian = ">"
-                magic = be_magic
-            else:
-                return None
-        elif le_magic in _MACHO_MAGICS_NATIVE_LE:
-            endian = "<"
-        elif le_magic in _MACHO_MAGICS_NATIVE_BE:
-            endian = ">"
-            magic = be_magic
-        else:
-            return None
-
-        return endian, offset, magic
-
-    def _parse_macho_basic(self) -> tuple[list[dict], list[dict]]:
+    def _parse_macho_basic(self) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
         """
         Minimal Mach-O parser fallback when LIEF is unavailable.
 
@@ -179,48 +96,48 @@ class MachOHandler:
         try:
             file_size = self.binary_path.stat().st_size
             with open(self.binary_path, "rb") as f:
-                arch = self._resolve_macho_arch(f, file_size)
+                arch = resolve_macho_arch(f, file_size)
                 if arch is None:
                     return [], []
                 endian, offset, magic = arch
 
-                is_64 = magic in _MACHO_MAGICS_64
+                is_64 = magic in MACHO_MAGICS_64
                 header_size = 32 if is_64 else 28
-                f.seek(offset + 4)
-                header = f.read(header_size - 4)
-                if len(header) != header_size - 4:
+                f.seek(offset + MAGIC_SIZE_BYTES)
+                header = f.read(header_size - MAGIC_SIZE_BYTES)
+                if len(header) != header_size - MAGIC_SIZE_BYTES:
                     return [], []
                 # Only ncmds is needed; it is the 4th u32 of the mach_header and
                 # sits at the same offset in the 32- and 64-bit layouts.
                 ncmds = struct.unpack(endian + "I", header[12:16])[0]
 
-                commands: list[dict] = []
-                segments: list[dict] = []
+                commands: list[dict[str, Any]] = []
+                segments: list[dict[str, Any]] = []
                 f.seek(offset + header_size)
 
                 for _ in range(ncmds):
-                    cmd_header = f.read(8)
-                    if len(cmd_header) != 8:
+                    cmd_header = f.read(_LOAD_COMMAND_HEADER_SIZE_BYTES)
+                    if len(cmd_header) != _LOAD_COMMAND_HEADER_SIZE_BYTES:
                         break
                     cmd, cmdsize = struct.unpack(endian + "II", cmd_header)
-                    if cmdsize < 8:
+                    if cmdsize < _LOAD_COMMAND_HEADER_SIZE_BYTES:
                         break
-                    if cmdsize > 0x100000:
+                    if cmdsize > _MAX_LOAD_COMMAND_SIZE_BYTES:
                         logger.warning(f"Unusually large cmdsize: {cmdsize}, skipping")
-                        f.seek(cmdsize - 8, 1)
+                        f.seek(cmdsize - _LOAD_COMMAND_HEADER_SIZE_BYTES, 1)
                         continue
                     commands.append({"command": _MACHO_LOAD_COMMAND_NAMES.get(cmd, f"0x{cmd:08x}")})
 
                     if cmd not in (_LC_SEGMENT, _LC_SEGMENT_64):
-                        f.seek(cmdsize - 8, 1)
+                        f.seek(cmdsize - _LOAD_COMMAND_HEADER_SIZE_BYTES, 1)
                         continue
 
                     seg_header_size = 56 if cmd == _LC_SEGMENT else 72
-                    seg_data = f.read(seg_header_size - 8)
-                    if len(seg_data) == seg_header_size - 8:
+                    seg_data = f.read(seg_header_size - _LOAD_COMMAND_HEADER_SIZE_BYTES)
+                    if len(seg_data) == seg_header_size - _LOAD_COMMAND_HEADER_SIZE_BYTES:
                         segments.append(self._parse_macho_segment(seg_data, cmd, endian))
                     remaining = cmdsize - seg_header_size
-                    if remaining > 0 and remaining < 0x100000:
+                    if remaining > 0 and remaining < _MAX_LOAD_COMMAND_SIZE_BYTES:
                         f.seek(remaining, 1)
                     elif remaining < 0:
                         logger.warning(f"Invalid remaining size: {remaining}")
@@ -291,7 +208,7 @@ class MachOHandler:
         except Exception:
             return False
 
-    def get_load_commands(self) -> list[dict]:
+    def get_load_commands(self) -> list[dict[str, Any]]:
         """
         Get Mach-O load commands.
 
@@ -313,7 +230,7 @@ class MachOHandler:
                 lief_commands.append({"command": str(name)})
         return lief_commands
 
-    def get_segments(self) -> list[dict]:
+    def get_segments(self) -> list[dict[str, Any]]:
         """Get Mach-O segments."""
         if lief is None:
             _commands, segments = self._parse_macho_basic()
@@ -380,6 +297,7 @@ class MachOHandler:
         entitlements: Path | None = None,
         hardened: bool = False,
         timestamp: bool = False,
+        system_name: str | None = None,
     ) -> bool:
         """Best-effort repair of Mach-O integrity post-mutation."""
         return repair_repair_integrity(
@@ -387,6 +305,7 @@ class MachOHandler:
             entitlements=entitlements,
             hardened=hardened,
             timestamp=timestamp,
+            system_name=system_name,
         )
 
     def is_fat_binary(self) -> bool:
@@ -421,18 +340,12 @@ class MachOHandler:
         """
         logger.info(f"Extracting {arch} from fat binary")
 
-        import subprocess
-
         try:
-            result = subprocess.run(
-                ["lipo", str(self.binary_path), "-thin", arch, "-output", str(output_path)],
-                capture_output=True,
-                timeout=30,
-            )
+            result = run_process(["lipo", self.binary_path, "-thin", arch, "-output", output_path], timeout=30)
 
             return result.returncode == 0
 
-        except subprocess.SubprocessError as e:
+        except ProcessError as e:
             logger.error(f"Failed to extract architecture: {e}")
             return False
 
@@ -449,20 +362,18 @@ class MachOHandler:
         """
         logger.info(f"Creating fat binary from {len(thin_binaries)} architectures")
 
-        import subprocess
-
         try:
-            cmd = ["lipo", "-create"] + [str(p) for p in thin_binaries] + ["-output", str(output_path)]
+            cmd: list[str | Path] = ["lipo", "-create", *thin_binaries, "-output", output_path]
 
-            result = subprocess.run(cmd, capture_output=True, timeout=30)
+            result = run_process(cmd, timeout=30)
 
             return result.returncode == 0
 
-        except subprocess.SubprocessError as e:
+        except ProcessError as e:
             logger.error(f"Failed to create fat binary: {e}")
             return False
 
-    def get_sections(self) -> list[dict]:
+    def get_sections(self) -> list[dict[str, Any]]:
         """
         Get Mach-O sections from all segments.
 
@@ -470,7 +381,7 @@ class MachOHandler:
             List of section dictionaries
         """
         binary = self._parse_lief()
-        sections: list[dict] = []
+        sections: list[dict[str, Any]] = []
 
         for macho in self._iter_macho_binaries(binary):
             for seg in getattr(macho, "segments", []):

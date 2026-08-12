@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.code_mobility_models import MobileBlock
 
 

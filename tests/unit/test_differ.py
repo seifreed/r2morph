@@ -11,7 +11,7 @@ Covers:
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from typing import Any
 
 from r2morph.validation.differ import (
     BinaryDiff,
@@ -24,6 +24,34 @@ from r2morph.validation.differ import (
     SectionDiff,
     compare_binaries,
 )
+
+
+class _Binary:
+    def __init__(self, path: str) -> None:
+        self.path = Path(path)
+        self.sections: list[dict[str, Any]] = []
+        self.functions: list[dict[str, Any]] = []
+        self.arch_info: dict[str, Any] = {"arch": "x86_64", "bits": 64}
+        self.contents = b"\x90" * 100
+        self.disassembly: list[dict[str, Any]] = []
+
+    def is_analyzed(self) -> bool:
+        return True
+
+    def get_sections(self) -> list[dict[str, Any]]:
+        return self.sections
+
+    def get_functions(self) -> list[dict[str, Any]]:
+        return self.functions
+
+    def get_arch_info(self) -> dict[str, Any]:
+        return self.arch_info
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        return self.contents[:size]
+
+    def get_function_disasm(self, address: int) -> list[dict[str, Any]]:
+        return self.disassembly
 
 
 class TestByteDiff:
@@ -294,26 +322,18 @@ class TestDiffReport:
 class TestBinaryDiffer:
     """Test BinaryDiffer comparison operations."""
 
-    def _create_mock_binary(self, path="/bin/test"):
-        """Create a mock binary object."""
-        binary = MagicMock()
-        binary.path = Path(path)
-        binary.is_analyzed.return_value = True
-        binary.get_sections.return_value = []
-        binary.get_functions.return_value = []
-        binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
-        binary.read_bytes.return_value = b"\x90" * 100
-        return binary
+    def _create_binary(self, path: str = "/bin/test") -> _Binary:
+        return _Binary(path)
 
     def test_compare_empty(self):
         """Test comparison with no differences."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_sections.return_value = [
+        original.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1000},
         ]
-        mutated.get_sections.return_value = [
+        mutated.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1000},
         ]
 
@@ -325,13 +345,13 @@ class TestBinaryDiffer:
 
     def test_compare_sections_added(self):
         """Test section added detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_sections.return_value = [
+        original.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1000},
         ]
-        mutated.get_sections.return_value = [
+        mutated.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1000},
             {"name": ".added", "addr": 0x2000, "size": 0x500},
         ]
@@ -345,14 +365,14 @@ class TestBinaryDiffer:
 
     def test_compare_sections_removed(self):
         """Test section removed detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_sections.return_value = [
+        original.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1000},
             {"name": ".removed", "addr": 0x2000, "size": 0x500},
         ]
-        mutated.get_sections.return_value = [
+        mutated.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1000},
         ]
 
@@ -365,13 +385,13 @@ class TestBinaryDiffer:
 
     def test_compare_sections_modified(self):
         """Test section modified detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_sections.return_value = [
+        original.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1000},
         ]
-        mutated.get_sections.return_value = [
+        mutated.sections = [
             {"name": ".text", "addr": 0x1000, "size": 0x1200},
         ]
 
@@ -383,13 +403,13 @@ class TestBinaryDiffer:
 
     def test_compare_functions_added(self):
         """Test function added detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_functions.return_value = [
+        original.functions = [
             {"offset": 0x1000, "name": "main", "size": 0x50},
         ]
-        mutated.get_functions.return_value = [
+        mutated.functions = [
             {"offset": 0x1000, "name": "main", "size": 0x50},
             {"offset": 0x2000, "name": "added_func", "size": 0x30},
         ]
@@ -402,14 +422,14 @@ class TestBinaryDiffer:
 
     def test_compare_functions_removed(self):
         """Test function removed detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_functions.return_value = [
+        original.functions = [
             {"offset": 0x1000, "name": "main", "size": 0x50},
             {"offset": 0x2000, "name": "removed_func", "size": 0x30},
         ]
-        mutated.get_functions.return_value = [
+        mutated.functions = [
             {"offset": 0x1000, "name": "main", "size": 0x50},
         ]
 
@@ -421,13 +441,13 @@ class TestBinaryDiffer:
 
     def test_compare_functions_modified(self):
         """Test function modified detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_functions.return_value = [
+        original.functions = [
             {"offset": 0x1000, "name": "main", "size": 0x50},
         ]
-        mutated.get_functions.return_value = [
+        mutated.functions = [
             {"offset": 0x1000, "name": "main", "size": 0x70},
         ]
 
@@ -439,11 +459,11 @@ class TestBinaryDiffer:
 
     def test_compare_architecture_change(self):
         """Test architecture change detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
-        mutated.get_arch_info.return_value = {"arch": "arm64", "bits": 64}
+        original.arch_info = {"arch": "x86_64", "bits": 64}
+        mutated.arch_info = {"arch": "arm64", "bits": 64}
 
         differ = BinaryDiffer(original, mutated)
         report = differ.compare()
@@ -454,11 +474,11 @@ class TestBinaryDiffer:
 
     def test_compare_bits_change(self):
         """Test bits change detection."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
-        mutated.get_arch_info.return_value = {"arch": "x86_64", "bits": 32}
+        original.arch_info = {"arch": "x86_64", "bits": 64}
+        mutated.arch_info = {"arch": "x86_64", "bits": 32}
 
         differ = BinaryDiffer(original, mutated)
         report = differ.compare()
@@ -468,18 +488,18 @@ class TestBinaryDiffer:
 
     def test_compare_section_bytes(self):
         """Test section byte comparison."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
         # Sections have same address but different sizes to trigger modification
-        original.get_sections.return_value = [
+        original.sections = [
             {"name": ".text", "addr": 0x1000, "size": 20},
         ]
-        mutated.get_sections.return_value = [
+        mutated.sections = [
             {"name": ".text", "addr": 0x1000, "size": 21},
         ]
-        original.read_bytes.return_value = b"\x90" * 20
-        mutated.read_bytes.return_value = b"\xcc" * 20
+        original.contents = b"\x90" * 20
+        mutated.contents = b"\xcc" * 20
 
         differ = BinaryDiffer(original, mutated, context_bytes=2)
         report = differ.compare()
@@ -490,17 +510,17 @@ class TestBinaryDiffer:
 
     def test_context_bytes(self):
         """Test context bytes in diff."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
-        original.get_sections.return_value = [
+        original.sections = [
             {"name": ".text", "addr": 0x1000, "size": 12},
         ]
-        mutated.get_sections.return_value = [
+        mutated.sections = [
             {"name": ".text", "addr": 0x1000, "size": 12},
         ]
-        original.read_bytes.return_value = b"AAAABBBBCCCC"
-        mutated.read_bytes.return_value = b"AAAAXBBBCCCC"
+        original.contents = b"AAAABBBBCCCC"
+        mutated.contents = b"AAAAXBBBCCCC"
 
         differ = BinaryDiffer(original, mutated, context_bytes=3)
         report = differ.compare()
@@ -512,21 +532,21 @@ class TestBinaryDiffer:
 
     def test_get_function_diff(self):
         """Test getting function-specific diff."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
         # get_function_diff uses read_bytes and get_function_disasm (not get_function_bytes)
-        original.read_bytes.return_value = b"\x90" * 10
-        mutated.read_bytes.return_value = b"\xcc" * 10
-        original.get_function_disasm.return_value = [
+        original.contents = b"\x90" * 10
+        mutated.contents = b"\xcc" * 10
+        original.disassembly = [
             {"offset": 0x1000, "size": 1, "disasm": "nop"},
             {"offset": 0x1001, "size": 9, "disasm": "nop"},
         ]
-        mutated.get_function_disasm.return_value = [
+        mutated.disassembly = [
             {"offset": 0x1000, "size": 1, "disasm": "int3"},
             {"offset": 0x1001, "size": 9, "disasm": "int3"},
         ]
-        mutated.get_functions.return_value = [
+        mutated.functions = [
             {"offset": 0x1000, "name": "test_func"},
         ]
 
@@ -539,12 +559,12 @@ class TestBinaryDiffer:
 
     def test_get_function_diff_none(self):
         """Test getting function diff when not available."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
         # get_function_diff returns None when disasm is empty
-        original.get_function_disasm.return_value = []
-        mutated.get_function_disasm.return_value = []
+        original.disassembly = []
+        mutated.disassembly = []
 
         differ = BinaryDiffer(original, mutated)
         func_diff = differ.get_function_diff(0x1000)
@@ -553,8 +573,8 @@ class TestBinaryDiffer:
 
     def test_compute_byte_diffs_size_diff(self):
         """Test byte diffs with size difference."""
-        original = self._create_mock_binary("/bin/original")
-        mutated = self._create_mock_binary("/bin/mutated")
+        original = self._create_binary("/bin/original")
+        mutated = self._create_binary("/bin/mutated")
 
         differ = BinaryDiffer(original, mutated)
         diffs = differ._compute_byte_diffs(b"\x90\x90\x90", b"\x90\x90\x90\x90", 0x1000)
@@ -569,19 +589,8 @@ class TestCompareBinaries:
 
     def test_compare_binaries_function(self):
         """Test compare_binaries function."""
-        original = MagicMock()
-        original.path = Path("/bin/original")
-        original.is_analyzed.return_value = True
-        original.get_sections.return_value = []
-        original.get_functions.return_value = []
-        original.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
-
-        mutated = MagicMock()
-        mutated.path = Path("/bin/mutated")
-        mutated.is_analyzed.return_value = True
-        mutated.get_sections.return_value = []
-        mutated.get_functions.return_value = []
-        mutated.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        original = _Binary("/bin/original")
+        mutated = _Binary("/bin/mutated")
 
         report = compare_binaries(original, mutated)
 

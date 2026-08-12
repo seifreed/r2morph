@@ -38,6 +38,7 @@ from r2morph.validation.benchmark_samples import (
     DEFAULT_TEST_SAMPLES,
     build_test_samples,
 )
+from r2morph.validation.benchmark_suite import ValidationSuiteActions
 from r2morph.validation.benchmark_suite import run_validation_suite as run_validation_suite_impl
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
@@ -89,12 +90,6 @@ class ValidationFramework:
             PerformanceMetrics object
         """
         return measure_performance(func, *args, **kwargs)
-
-    def _calculate_percentile(self, values: list[float], percentile: int) -> float:
-        """Compatibility delegator for benchmark percentile calculations."""
-        from r2morph.validation.benchmark_reporting_summary import calculate_percentile
-
-        return calculate_percentile(values, percentile)
 
     def _calculate_accuracy_metrics(self, expected: dict[str, Any], actual: dict[str, Any]) -> AccuracyMetrics:
         """
@@ -148,11 +143,13 @@ class ValidationFramework:
         results, summary = run_validation_suite_impl(
             self.test_samples,
             categories,
-            self.benchmark_detection,
-            self.benchmark_devirtualization,
-            self.benchmark_full_pipeline,
-            self._generate_validation_summary,
-            logger,
+            ValidationSuiteActions(
+                detection=self.benchmark_detection,
+                devirtualization=self.benchmark_devirtualization,
+                full_pipeline=self.benchmark_full_pipeline,
+                summarize=self._generate_validation_summary,
+                logger=logger,
+            ),
         )
         self.benchmark_results.extend(results)
         return summary

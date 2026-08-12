@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -10,13 +11,26 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from r2morph.reporting.report_gate_helpers import (
-    _attach_gate_evaluation,
+from r2morph.reporting.gate_evaluator import GateEvaluationRequest
+from r2morph.reporting.report_gate_helpers import _attach_gate_evaluation
+from r2morph.reporting.report_gate_severity_policy import (
     _pass_severity_requirements_met,
     _severity_threshold_met,
 )
+from r2morph.reporting.sarif_formatter import format_as_sarif
 
 console = Console()
+
+
+@dataclass(frozen=True)
+class GateOutputOptions:
+    """Severity gate requirements and optional report destination."""
+
+    report_path: Path | None
+    min_severity: str | None
+    min_severity_rank: int | None
+    pass_severity_requirements: list[tuple[str, str, int]] | None
+    report_format: str = "json"
 
 
 def print_mutation_summary(result: dict[str, Any], output_path: Path | None = None) -> None:
@@ -56,54 +70,49 @@ def print_mutation_summary(result: dict[str, Any], output_path: Path | None = No
 
 
 def evaluate_and_write_gates(
-    *,
     report_payload: dict[str, Any],
-    report_path: Path | None,
-    min_severity: str | None,
-    min_severity_rank: int | None,
-    pass_severity_requirements: list[tuple[str, str, int]] | None,
-    report_format: str = "json",
+    options: GateOutputOptions,
 ) -> None:
     """Evaluate severity gates, write report, and exit on failure."""
     severity_rows = list(report_payload.get("summary", {}).get("symbolic_severity_by_pass", []))
-    min_severity_passed = _severity_threshold_met(severity_rows, min_severity_rank)
+    min_severity_passed = _severity_threshold_met(severity_rows, options.min_severity_rank)
     pass_requirements_ok = True
     pass_requirement_failures: list[str] = []
-    if pass_severity_requirements:
+    if options.pass_severity_requirements:
         pass_requirements_ok, pass_requirement_failures = _pass_severity_requirements_met(
             severity_rows,
-            pass_severity_requirements,
+            options.pass_severity_requirements,
         )
     report_payload = _attach_gate_evaluation(
         report_payload,
-        min_severity=min_severity,
-        min_severity_passed=min_severity_passed,
-        require_pass_severity=pass_severity_requirements or [],
-        require_pass_severity_passed=pass_requirements_ok,
-        require_pass_severity_failures=pass_requirement_failures,
+        GateEvaluationRequest(
+            min_severity=options.min_severity,
+            min_severity_passed=min_severity_passed,
+            pass_severity_requirements=options.pass_severity_requirements or [],
+            pass_severity_requirements_passed=pass_requirements_ok,
+            pass_severity_failures=pass_requirement_failures,
+        ),
     )
-    if report_path is not None:
-        if report_format.lower() == "sarif":
-            from r2morph.reporting.sarif_formatter import format_as_sarif
-
+    if options.report_path is not None:
+        if options.report_format.lower() == "sarif":
             sarif = format_as_sarif(
                 report_payload.get("mutations", []),
                 report_payload.get("validation", {}).get("results", []),
                 report_payload.get("input", {}).get("path", ""),
             )
-            report_path.write_text(sarif.to_json(), encoding="utf-8")
+            options.report_path.write_text(sarif.to_json(), encoding="utf-8")
         else:
-            report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
-    if min_severity is not None and not min_severity_passed:
-        console.print(f"[bold yellow]Severity gate failed:[/bold yellow] min_severity={min_severity}")
+            options.report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
+    if options.min_severity is not None and not min_severity_passed:
+        console.print(f"[bold yellow]Severity gate failed:[/bold yellow] min_severity={options.min_severity}")
         raise typer.Exit(1)
-    if min_severity is not None:
-        console.print(f"[cyan]Severity gate passed:[/cyan] min_severity={min_severity}")
-    if pass_severity_requirements and not pass_requirements_ok:
+    if options.min_severity is not None:
+        console.print(f"[cyan]Severity gate passed:[/cyan] min_severity={options.min_severity}")
+    if options.pass_severity_requirements and not pass_requirements_ok:
         console.print("[bold yellow]Pass severity gate failed:[/bold yellow] " + ", ".join(pass_requirement_failures))
         raise typer.Exit(1)
-    if pass_severity_requirements:
+    if options.pass_severity_requirements:
         console.print(
             "[cyan]Pass severity gate passed:[/cyan] "
-            + ", ".join(f"{pn}<={s}" for pn, s, _ in pass_severity_requirements)
+            + ", ".join(f"{pn}<={s}" for pn, s, _ in options.pass_severity_requirements)
         )

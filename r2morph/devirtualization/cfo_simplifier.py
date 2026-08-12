@@ -14,6 +14,7 @@ Key Features:
 """
 
 import logging
+import time
 from typing import Any
 
 from .cfo_simplifier_detection import (
@@ -44,6 +45,8 @@ except ImportError:
     nx = None
 
 logger = logging.getLogger(__name__)
+
+_BINARY_OPERAND_COUNT = 2
 
 
 class CFOSimplifier:
@@ -79,8 +82,6 @@ class CFOSimplifier:
         Returns:
             CFOSimplificationResult with analysis results
         """
-        import time
-
         start_time = time.time()
 
         try:
@@ -109,21 +110,17 @@ class CFOSimplifier:
                 changes_made = False
 
                 # Apply each simplification technique
-                if CFOPattern.DISPATCHER_FLATTENING in patterns:
-                    if self._simplify_dispatcher_flattening():
-                        changes_made = True
+                if CFOPattern.DISPATCHER_FLATTENING in patterns and self._simplify_dispatcher_flattening():
+                    changes_made = True
 
-                if CFOPattern.OPAQUE_PREDICATES in patterns:
-                    if self._eliminate_opaque_predicates():
-                        changes_made = True
+                if CFOPattern.OPAQUE_PREDICATES in patterns and self._eliminate_opaque_predicates():
+                    changes_made = True
 
-                if CFOPattern.INDIRECT_JUMPS in patterns:
-                    if self._resolve_indirect_jumps():
-                        changes_made = True
+                if CFOPattern.INDIRECT_JUMPS in patterns and self._resolve_indirect_jumps():
+                    changes_made = True
 
-                if CFOPattern.FAKE_CONTROL_FLOW in patterns:
-                    if self._remove_fake_control_flow():
-                        changes_made = True
+                if CFOPattern.FAKE_CONTROL_FLOW in patterns and self._remove_fake_control_flow():
+                    changes_made = True
 
                 # Check for convergence
                 if not changes_made:
@@ -145,7 +142,7 @@ class CFOSimplifier:
         except Exception as e:
             logger.error(f"CFO simplification failed: {e}")
             return CFOSimplificationResult(
-                success=False, execution_time=time.time() - start_time, warnings=[f"Simplification failed: {str(e)}"]
+                success=False, execution_time=time.time() - start_time, warnings=[f"Simplification failed: {e!s}"]
             )
 
     def _build_cfg(self, function_address: int) -> None:
@@ -172,37 +169,15 @@ class CFOSimplifier:
 
             # Build block objects
             for block_info in blocks_info:
-                address = block_info.get("addr", 0)
-
-                # Get instructions for this block
-                instructions = self.binary.r2.cmdj(f"pdj {block_info.get('ninstr', 0)} @ {address}")
-                if not instructions:
-                    instructions = []
-
-                # Create block object
-                block = ControlFlowBlock(address=address, instructions=instructions)
-
-                # Add successors
-                if "jump" in block_info:
-                    block.successors.add(block_info["jump"])
-                if "fail" in block_info:
-                    block.successors.add(block_info["fail"])
-
-                self.blocks[address] = block
+                block = self._load_block(block_info)
+                self.blocks[block.address] = block
 
             # Build predecessor relationships
-            for address, block in self.blocks.items():
-                for successor in block.successors:
-                    if successor in self.blocks:
-                        self.blocks[successor].predecessors.add(address)
+            self._connect_predecessors()
 
             # Build NetworkX graph if available
             if NETWORKX_AVAILABLE:
-                self.cfg = nx.DiGraph()
-                for address, block in self.blocks.items():
-                    self.cfg.add_node(address)
-                    for successor in block.successors:
-                        self.cfg.add_edge(address, successor)
+                self._build_graph()
 
             logger.debug(f"Built CFG with {len(self.blocks)} blocks")
 
@@ -253,10 +228,7 @@ class CFOSimplifier:
                 return True
 
             # Check for mathematical identities (x - x, x ^ x, etc.)
-            if op1 == op2:
-                return True
-
-            return False
+            return op1 == op2
 
         except Exception:
             return False
@@ -270,7 +242,7 @@ class CFOSimplifier:
                 return False
 
             operands = instr.get("operands", [])
-            if len(operands) < 2:
+            if len(operands) < _BINARY_OPERAND_COUNT:
                 return False
 
             op1 = operands[0].get("value", "")
@@ -298,7 +270,7 @@ class CFOSimplifier:
                     try:
                         return int(mem_ref, 16) if "x" in mem_ref else int(mem_ref)
                     except ValueError:
-                        # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
+                        # Symbolic and register operands are not numeric candidates.
                         pass
 
             return None
@@ -339,7 +311,7 @@ class CFOSimplifier:
                     # Look for mov instructions that set the state variable
                     if "mov" in opcode:
                         operands = instr.get("operands", [])
-                        if len(operands) >= 2:
+                        if len(operands) >= _BINARY_OPERAND_COUNT:
                             dest = operands[0].get("value", "")
                             src = operands[1].get("value", "")
 
@@ -351,3 +323,23 @@ class CFOSimplifier:
 
         except Exception:
             return []
+
+    def _load_block(self, block_info: dict[str, Any]) -> ControlFlowBlock:
+        address = block_info.get("addr", 0)
+        instructions = self.binary.r2.cmdj(f"pdj {block_info.get('ninstr', 0)} @ {address}") or []
+        block = ControlFlowBlock(address=address, instructions=instructions)
+        block.successors.update(block_info[key] for key in ("jump", "fail") if key in block_info)
+        return block
+
+    def _connect_predecessors(self) -> None:
+        for address, block in self.blocks.items():
+            for successor in block.successors:
+                if successor in self.blocks:
+                    self.blocks[successor].predecessors.add(address)
+
+    def _build_graph(self) -> None:
+        self.cfg = nx.DiGraph()
+        for address, block in self.blocks.items():
+            self.cfg.add_node(address)
+            for successor in block.successors:
+                self.cfg.add_edge(address, successor)

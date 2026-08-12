@@ -8,6 +8,8 @@ from typing import Any, cast
 
 from rich import print as rprint
 
+from r2morph.reporting.sarif_formatter import format_as_sarif
+
 
 def load_report_payload(report_file: Path) -> dict[str, Any]:
     """Load a persisted report payload from disk."""
@@ -25,8 +27,6 @@ def emit_report_output(
     """Emit the requested report output format."""
     if output_format.lower() != "sarif":
         return
-
-    from r2morph.reporting.sarif_formatter import format_as_sarif
 
     sarif_report = format_as_sarif(mutations, validations, binary_path)
     sarif_json = sarif_report.to_json()

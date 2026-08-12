@@ -1,9 +1,9 @@
 """Characterization tests for the AES substitution tables in r2morph.crypto.aes.
 
 These lock the exact contents of SBOX / INV_SBOX / RCON. They exist because
-the tables were reflowed by Black when the legacy ``# fmt: off`` pragma was
-removed (commit 563f70d): the values must remain byte-identical and must keep
-their defining mathematical relationships, independent of formatting.
+the tables were reformatted in commit 563f70d: the values must remain
+byte-identical and keep their defining mathematical relationships independent
+of formatting.
 
 Scope note: these tests deliberately cover only the tables, which are correct
 and stable. The block/string cipher functions (aes_encrypt_block /

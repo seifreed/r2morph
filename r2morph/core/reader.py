@@ -8,6 +8,7 @@ Handles all read operations: bytes, functions, disassembly, sections, etc.
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
@@ -15,8 +16,34 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_VARIABLE_LOCATION_PART_COUNT = 2
+
 # Upper bound on a single read request to avoid pathological allocations
 MAX_READ_SIZE = 100 * 1024 * 1024  # 100MB
+
+
+def _decode_hex_bytes(hex_data: str, address: int, expected_size: int) -> bytes:
+    stripped_data = hex_data.strip()
+    if not stripped_data:
+        return b""
+
+    invalid_character = next(
+        (character for character in stripped_data if character not in "0123456789abcdefABCDEF"),
+        None,
+    )
+    if invalid_character is not None:
+        logger.error(f"Invalid hex character in read result at 0x{address:x}: {invalid_character}")
+        return b""
+
+    try:
+        result = bytes.fromhex(stripped_data)
+    except ValueError as error:
+        logger.error(f"Failed to parse hex at 0x{address:x}: {error}")
+        return b""
+    if len(result) != expected_size:
+        logger.warning(f"Read size mismatch at 0x{address:x}: expected {expected_size}, got {len(result)}")
+        return b""
+    return result
 
 
 class BinaryReader:
@@ -67,25 +94,7 @@ class BinaryReader:
 
         try:
             hex_data = self._r2.cmd(f"p8 {size} @ 0x{address:x}")
-            if hex_data is None:
-                logger.debug(f"r2 returned None for read at 0x{address:x}")
-                return b""
-            hex_data = hex_data.strip()
-            if not hex_data:
-                return b""
-            for c in hex_data:
-                if c not in "0123456789abcdefABCDEF":
-                    logger.error(f"Invalid hex character in read result at 0x{address:x}: {c}")
-                    return b""
-            try:
-                result = bytes.fromhex(hex_data)
-                if len(result) != size:
-                    logger.warning(f"Read size mismatch at 0x{address:x}: expected {size}, got {len(result)}")
-                    return b""
-                return result
-            except ValueError as e:
-                logger.error(f"Failed to parse hex at 0x{address:x}: {e}")
-                return b""
+            return _decode_hex_bytes(hex_data, address, size)
         except (ValueError, OSError) as e:
             logger.error(f"Failed to read bytes at 0x{address:x}: {e}")
             return b""
@@ -212,58 +221,50 @@ class BinaryReader:
 
         # Pattern to match symbolic variables
         var_pattern = r"\[(var_(?:bp_)?|arg_)([0-9a-f]+)h(_\d+)?\]"
-        import re
-
         matches = list(re.finditer(var_pattern, instruction, re.IGNORECASE))
 
         if not matches:
             return instruction
 
-        # Get variable and argument information from current function if available
-        var_map = {}
-        if function_addr:
-            try:
-                vars_output = self._r2.cmd(f"afv @ {function_addr}")
-                for line in vars_output.split("\n"):
-                    if ("var_" in line or "arg" in line) and "@" in line:
-                        parts = line.split("@")
-                        if len(parts) == 2:
-                            var_name = parts[0].split()[-1].strip()
-                            location = parts[1].strip()
-                            var_map[var_name] = location
-            except Exception as e:
-                logger.debug(f"Could not parse function variables at 0x{function_addr:x}: {e}")
+        var_map = self._read_variable_locations(function_addr)
 
         # Replace variables with resolved addresses
         resolved = instruction
         for match in reversed(matches):
-            prefix = match.group(1)
-            offset_hex = match.group(2)
-            suffix = match.group(3) or ""
-            offset = int(offset_hex, 16)
-
-            # Construct variable name
-            if prefix == "var_bp_":
-                var_name = f"var_bp_{offset_hex}h{suffix}"
-            elif prefix == "var_":
-                var_name = f"var_{offset_hex}h{suffix}"
-            else:
-                var_name = f"arg_{offset_hex}h{suffix}"
-
-            # Try function analysis first, then fallback
-            if var_name in var_map:
-                replacement = f"[{var_map[var_name]}]"
-            else:
-                if prefix == "var_bp_":
-                    replacement = f"[rbp - 0x{offset:x}]"
-                elif prefix == "arg_":
-                    replacement = f"[rsp + 0x{offset:x}]"
-                else:
-                    replacement = f"[rsp + 0x{offset:x}]"
-
+            replacement = self._resolve_symbolic_match(match, var_map)
             resolved = resolved[: match.start()] + replacement + resolved[match.end() :]
 
         return resolved
+
+    def _read_variable_locations(self, function_addr: int | None) -> dict[str, str]:
+        locations: dict[str, str] = {}
+        if function_addr is None or self._r2 is None:
+            return locations
+        try:
+            variables_output = self._r2.cmd(f"afv @ {function_addr}")
+            for line in variables_output.split("\n"):
+                if ("var_" in line or "arg" in line) and "@" in line:
+                    parts = line.split("@")
+                    if len(parts) == _VARIABLE_LOCATION_PART_COUNT:
+                        variable_name = parts[0].split()[-1].strip()
+                        locations[variable_name] = parts[1].strip()
+        except Exception as error:
+            logger.debug(f"Could not parse function variables at 0x{function_addr:x}: {error}")
+        return locations
+
+    @staticmethod
+    def _resolve_symbolic_match(match: re.Match[str], variable_locations: dict[str, str]) -> str:
+        prefix = match.group(1)
+        offset_hex = match.group(2)
+        variable_name = f"{prefix}{offset_hex}h{match.group(3) or ''}"
+        location = variable_locations.get(variable_name)
+        if location is not None:
+            return f"[{location}]"
+
+        offset = int(offset_hex, 16)
+        if prefix == "var_bp_":
+            return f"[rbp - 0x{offset:x}]"
+        return f"[rsp + 0x{offset:x}]"
 
     def resolve_physical_offset(self, address: int) -> int | None:
         """

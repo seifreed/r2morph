@@ -36,7 +36,7 @@ def test_inject_with_trampolines_writes_direct_site_to_destination_jumps() -> No
     # Each site receives a 5-byte E9 rel32 near jump to its destination.
     trampolines = {addr: data for addr, data in binary.writes if addr in sites}
     assert set(trampolines) == set(sites)
-    for site, dest in zip(sites, destinations):
+    for site, dest in zip(sites, destinations, strict=False):
         jmp = trampolines[site]
         assert len(jmp) == 5
         assert jmp[0] == 0xE9

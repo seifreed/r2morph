@@ -20,6 +20,7 @@ import pytest
 
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 
 pytestmark = pytest.mark.skipif(os.environ.get("SKIP_REAL_BINARY_TESTS") == "1", reason="Real binary tests disabled")
 
@@ -108,7 +109,7 @@ class TestRealBinaryMutation:
             engine.add_mutation("substitute")
             engine.add_mutation("register")
 
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
 
             assert result.get("passes_run", 0) >= 0, f"Mutation failed: {result.get('error')}"
 
@@ -134,7 +135,7 @@ class TestRealBinaryMutation:
             engine.load_binary(cat_path).analyze()
             engine.add_mutation("nop")
 
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
             assert result.get("passes_run", 0) >= 0
 
             engine.save(output_path)
@@ -173,7 +174,7 @@ class TestRealBinaryMutation:
             engine.load_binary(whoami_path).analyze()
             engine.add_mutation("nop")
 
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
             assert result.get("passes_run", 0) >= 0
 
             engine.save(output_path)
@@ -195,7 +196,7 @@ class TestRealBinaryMutation:
             engine.load_binary(binary_path).analyze()
             engine.add_mutation("nop")
 
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
             assert result.get("passes_run", 0) >= 0, f"Failed for {binary_path}"
 
             engine.save(output_path)
@@ -221,9 +222,11 @@ class TestRealBinaryMutation:
             engine.add_mutation("register")
 
             result = engine.run(
-                validation_mode="structural",
-                rollback_policy="skip-invalid-pass",
-                seed=REAL_BINARY_TEST_SEED,
+                EngineRunOptions(
+                    validation_mode="structural",
+                    rollback_policy="skip-invalid-pass",
+                    seed=REAL_BINARY_TEST_SEED,
+                )
             )
 
             # Should succeed with at least some mutations
@@ -257,7 +260,7 @@ class TestBinaryPreservation:
             original_format = engine.binary.info.get("core", {}).get("format", "")
 
             engine.add_mutation("nop")
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
 
             if result.get("passes_run", 0) >= 0:
                 engine.save(output_path)
@@ -283,7 +286,7 @@ class TestBinaryPreservation:
             engine.load_binary(ls_path).analyze()
 
             engine.add_mutation("nop")
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
 
             if result.get("passes_run", 0) >= 0:
                 engine.save(output_path)
@@ -316,7 +319,7 @@ class TestBehavioralEquivalence:
         with MorphEngine(config=config.to_dict()) as engine:
             engine.load_binary(true_path).analyze()
             engine.add_mutation("nop")
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
 
             if result.get("passes_run", 0) >= 0:
                 engine.save(output_path)
@@ -340,7 +343,7 @@ class TestBehavioralEquivalence:
         with MorphEngine(config=config.to_dict()) as engine:
             engine.load_binary(echo_path).analyze()
             engine.add_mutation("nop")
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
 
             if result.get("passes_run", 0) >= 0:
                 engine.save(output_path)
@@ -348,11 +351,11 @@ class TestBehavioralEquivalence:
         test_args = ["test", "message", "123"]
 
         orig_result = subprocess.run(
-            [str(echo_path)] + test_args,
+            [str(echo_path), *test_args],
             capture_output=True,
         )
         mut_result = subprocess.run(
-            [str(output_path)] + test_args,
+            [str(output_path), *test_args],
             capture_output=True,
         )
 
@@ -385,9 +388,11 @@ class TestRecoveryAndRollback:
             engine.add_mutation("block")  # Experimental
 
             engine.run(
-                validation_mode="structural",
-                rollback_policy="skip-invalid-pass",
-                seed=REAL_BINARY_TEST_SEED,
+                EngineRunOptions(
+                    validation_mode="structural",
+                    rollback_policy="skip-invalid-pass",
+                    seed=REAL_BINARY_TEST_SEED,
+                )
             )
 
             # Should succeed with rollback

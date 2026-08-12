@@ -6,6 +6,7 @@ automatic repair for ELF, Mach-O, and PE binaries.
 """
 
 import logging
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -60,17 +61,14 @@ class BinaryIntegrityValidator:
             return self._handler
 
         if self._format == "elf":
-            from r2morph.platform.elf_handler import ELFHandler
-
-            self._handler = ELFHandler(self.binary_path)
+            handler_type = import_module("r2morph.platform.elf_handler").ELFHandler
+            self._handler = handler_type(self.binary_path)
         elif self._format in ("macho", "fat_macho"):
-            from r2morph.platform.macho_handler import MachOHandler
-
-            self._handler = MachOHandler(self.binary_path)
+            handler_type = import_module("r2morph.platform.macho_handler").MachOHandler
+            self._handler = handler_type(self.binary_path)
         elif self._format == "pe":
-            from r2morph.platform.pe_handler import PEHandler
-
-            self._handler = PEHandler(self.binary_path)
+            handler_type = import_module("r2morph.platform.pe_handler").PEHandler
+            self._handler = handler_type(self.binary_path)
 
         return self._handler
 

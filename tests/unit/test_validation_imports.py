@@ -19,7 +19,6 @@ VALIDATION_MODULES = [
     "r2morph.validation.semantic_report_summary",
     "r2morph.validation.semantic_report_parsing",
     "r2morph.validation.semantic_invariant_helpers",
-    "r2morph.validation.semantic_invariant_catalogs",
     "r2morph.validation.benchmark",
     "r2morph.validation.benchmark_reporting_exports",
     "r2morph.validation.benchmark_reporting_io",

@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 lief: ModuleType | None
 try:
     import lief
-except ImportError:  # pragma: no cover - optional dependency
+except ImportError:
     lief = None
 
 
@@ -221,7 +221,7 @@ def full_repair(handler: Any) -> tuple[bool, list[str]]:
     """Full PE repair after mutation."""
     checksum_result = fix_checksum(handler)
     checks = [
-        ("checksum", (checksum_result if isinstance(checksum_result, tuple) else (checksum_result, []))),
+        ("checksum", (checksum_result, [])),
         ("imports", fix_imports(handler)),
         ("exports", fix_exports(handler)),
         ("resources", fix_resources(handler)),

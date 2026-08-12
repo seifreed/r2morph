@@ -3,13 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from r2morph.validation.mutation_fuzzer_campaign import (
-    build_campaign_result,
     build_exception_fuzz_result,
     build_success_fuzz_result,
     build_timeout_fuzz_result,
     save_failing_case,
 )
-from r2morph.validation.mutation_fuzzer_types import FuzzCampaignResult, FuzzConfig, FuzzResult, FuzzTestCase
+from r2morph.validation.mutation_fuzzer_types import FuzzResult, FuzzTestCase
 
 
 class _ValidationResult:
@@ -76,27 +75,6 @@ def test_build_timeout_and_exception_results() -> None:
     assert timeout_result.timeout is True
     assert exception_result.crash is True
     assert exception_result.original_error == "boom"
-
-
-def test_build_campaign_result_preserves_metadata() -> None:
-    result = build_campaign_result(
-        total_tests=5,
-        passed=4,
-        failed=1,
-        crashes=0,
-        timeouts=1,
-        results=[],
-        seed=123,
-        config=FuzzConfig(num_tests=5, timeout=2, seed=123),
-        start_time="2024-01-01T00:00:00",
-        end_time="2024-01-01T00:00:10",
-        duration_seconds=10.0,
-    )
-
-    assert isinstance(result, FuzzCampaignResult)
-    assert result.seed == 123
-    assert result.config.num_tests == 5
-    assert result.success_rate == 80.0
 
 
 def test_save_failing_case_writes_json(tmp_path: Path) -> None:

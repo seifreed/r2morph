@@ -158,15 +158,15 @@ class TypeInference:
         """
         return _infer_type_impl(self, binary, address)
 
-    def _infer_from_instruction(self, binary: Binary, insn: dict) -> TypeInfo:
+    def _infer_from_instruction(self, binary: Binary, insn: dict[str, Any]) -> TypeInfo:
         """Infer type from an instruction."""
         return _infer_from_instruction_impl(self, binary, insn)
 
-    def _infer_from_mov(self, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
+    def _infer_from_mov(self, binary: Binary, insn: dict[str, Any], disasm: str) -> TypeInfo:
         """Infer type from mov instruction."""
         return _infer_from_mov_impl(self, binary, insn, disasm)
 
-    def _infer_arithmetic_type(self, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
+    def _infer_arithmetic_type(self, binary: Binary, insn: dict[str, Any], disasm: str) -> TypeInfo:
         """Infer type from arithmetic instruction."""
         return _infer_arithmetic_type_impl(self, binary, insn, disasm)
 
@@ -288,7 +288,7 @@ class TypeInference:
         self,
         binary: Binary,
         func_addr: int,
-        disasm: list[dict],
+        disasm: list[dict[str, Any]],
     ) -> dict[str, TypeInfo]:
         """
         Infer types for ARM registers in a function.

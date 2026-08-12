@@ -17,9 +17,7 @@ def _project_rows(rows: list[dict[str, Any]], fields: list[str]) -> list[dict[st
         projected: dict[str, Any] = {}
         for f in fields:
             val = row.get(f)
-            if isinstance(val, bool):
-                projected[f] = val
-            elif isinstance(val, int):
+            if isinstance(val, (bool, int)):
                 projected[f] = val
             elif isinstance(val, dict):
                 projected[f] = dict(val)

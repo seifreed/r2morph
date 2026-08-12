@@ -12,7 +12,6 @@ Covers:
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from r2morph.analysis.call_graph import (
     CallEdge,
@@ -25,6 +24,27 @@ from r2morph.analysis.call_graph_builder import (
     CallGraphBuilder,
     build_call_graph,
 )
+
+
+class _Binary:
+    def __init__(
+        self,
+        functions: list[dict[str, object]] | None = None,
+        disassembly: list[dict[str, object]] | None = None,
+        path: Path | None = None,
+    ) -> None:
+        self.functions = functions or []
+        self.disassembly = disassembly or []
+        self.path = path or Path("/tmp/call-graph.bin")
+
+    def is_analyzed(self) -> bool:
+        return True
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return self.functions
+
+    def get_function_disasm(self, address: int) -> list[dict[str, object]]:
+        return self.disassembly
 
 
 class TestCallNode:
@@ -413,19 +433,19 @@ class TestCallGraphBuilder:
     """Test CallGraphBuilder class."""
 
     def _create_mock_binary(self, functions=None):
-        """Create a mock binary for testing."""
-        binary = MagicMock()
-        binary.is_analyzed.return_value = True
-        binary.get_functions.return_value = functions or [
-            {"offset": 0x1000, "name": "main", "size": 0x50},
-            {"offset": 0x2000, "name": "func1", "size": 0x30},
-            {"offset": 0x3000, "name": "func2", "size": 0x30},
-        ]
-        binary.get_function_disasm.return_value = [
-            {"offset": 0x1000, "disasm": "call 0x2000"},
-            {"offset": 0x1010, "disasm": "call 0x3000"},
-        ]
-        return binary
+        """Create an in-memory binary for testing."""
+        return _Binary(
+            functions=functions
+            or [
+                {"offset": 0x1000, "name": "main", "size": 0x50},
+                {"offset": 0x2000, "name": "func1", "size": 0x30},
+                {"offset": 0x3000, "name": "func2", "size": 0x30},
+            ],
+            disassembly=[
+                {"offset": 0x1000, "disasm": "call 0x2000"},
+                {"offset": 0x1010, "disasm": "call 0x3000"},
+            ],
+        )
 
     def test_build_basic(self):
         """Test basic call graph building."""
@@ -461,7 +481,7 @@ class TestCallGraphBuilder:
                 {"offset": 0x2000, "name": "sym.imp.printf", "size": 0x10},
             ]
         )
-        binary.get_function_disasm.return_value = []
+        binary.disassembly = []
 
         builder = CallGraphBuilder(include_plt=False)
         cg = builder.build(binary)
@@ -506,12 +526,7 @@ class TestBuildCallGraphFunction:
 
     def test_build_call_graph_basic(self):
         """Test basic call graph building."""
-        binary = MagicMock()
-        binary.is_analyzed.return_value = True
-        binary.get_functions.return_value = [
-            {"offset": 0x1000, "name": "main", "size": 0x50},
-        ]
-        binary.get_function_disasm.return_value = []
+        binary = _Binary(functions=[{"offset": 0x1000, "name": "main", "size": 0x50}])
 
         cg = build_call_graph(binary)
 
@@ -520,10 +535,7 @@ class TestBuildCallGraphFunction:
 
     def test_build_call_graph_options(self):
         """Test call graph building with options."""
-        binary = MagicMock()
-        binary.is_analyzed.return_value = True
-        binary.get_functions.return_value = []
-        binary.get_function_disasm.return_value = []
+        binary = _Binary()
 
         cg = build_call_graph(binary, include_indirect=False, include_plt=False)
 
@@ -656,14 +668,9 @@ class TestCallGraphCaching:
 
     def test_build_call_graph_cached_no_cache(self):
         """Test cached build without cache object."""
-        from r2morph.analysis.call_graph_builder import build_call_graph_cached
+        from r2morph.analysis.call_graph_cache import build_call_graph_cached
 
-        binary = MagicMock()
-        binary.is_analyzed.return_value = True
-        binary.get_functions.return_value = [
-            {"offset": 0x1000, "name": "main", "size": 0x50},
-        ]
-        binary.get_function_disasm.return_value = []
+        binary = _Binary(functions=[{"offset": 0x1000, "name": "main", "size": 0x50}])
 
         cg = build_call_graph_cached(binary, cache=None)
 
@@ -674,16 +681,13 @@ class TestCallGraphCaching:
         """Test cached build with cache object."""
         import tempfile
 
-        from r2morph.analysis.call_graph_builder import build_call_graph_cached
+        from r2morph.analysis.call_graph_cache import build_call_graph_cached
         from r2morph.core.analysis_cache import AnalysisCache
 
-        binary = MagicMock()
-        binary.is_analyzed.return_value = True
-        binary.get_functions.return_value = [
-            {"offset": 0x1000, "name": "main", "size": 0x50},
-        ]
-        binary.get_function_disasm.return_value = []
-        binary.path = Path(tempfile.mktemp())
+        binary = _Binary(
+            functions=[{"offset": 0x1000, "name": "main", "size": 0x50}],
+            path=Path(tempfile.mktemp()),
+        )
 
         with tempfile.TemporaryDirectory() as tmpdir:
             cache = AnalysisCache(cache_dir=tmpdir)
@@ -697,15 +701,10 @@ class TestCallGraphCaching:
         """Test that cache hit returns same call graph."""
         import tempfile
 
-        from r2morph.analysis.call_graph_builder import build_call_graph_cached
+        from r2morph.analysis.call_graph_cache import build_call_graph_cached
         from r2morph.core.analysis_cache import AnalysisCache
 
-        binary = MagicMock()
-        binary.is_analyzed.return_value = True
-        binary.get_functions.return_value = [
-            {"offset": 0x1000, "name": "main", "size": 0x50},
-        ]
-        binary.get_function_disasm.return_value = []
+        binary = _Binary(functions=[{"offset": 0x1000, "name": "main", "size": 0x50}])
 
         with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:
             f.write(b"fake binary data for cache test")

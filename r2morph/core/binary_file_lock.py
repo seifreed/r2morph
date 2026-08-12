@@ -58,81 +58,74 @@ class BinaryFileLock:
 
         lock_file: Any = None
         try:
-            lock_file = open(self.lock_path, "w")
-
+            lock_file = self.lock_path.open("w")
             if FCNTL_AVAILABLE:
-                lock_type = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
-                start_time = time.time()
-                while True:
-                    try:
-                        fcntl.flock(lock_file.fileno(), lock_type)
-                        self._lock_file = lock_file
-                        self._locked = True
-                        logger.debug(f"Acquired lock for {self.binary_path}")
-                        return True
-                    except OSError:
-                        if not blocking:
-                            lock_file.close()
-                            return False
-                        if time.time() - start_time > self.timeout:
-                            logger.warning(f"Lock acquisition timeout for {self.binary_path}")
-                            lock_file.close()
-                            return False
-                        time.sleep(0.1)
-            elif HAS_MSVCRT:
-                start_time = time.time()
-                while True:
-                    try:
-                        _msvcrt = __import__("msvcrt")
-                        _msvcrt.locking(
-                            lock_file.fileno(),
-                            _msvcrt.LK_NBLCK if not blocking else _msvcrt.LK_LOCK,
-                            1,
-                        )
-                        self._lock_file = lock_file
-                        self._locked = True
-                        logger.debug(f"Acquired lock for {self.binary_path}")
-                        return True
-                    except OSError:
-                        if not blocking:
-                            lock_file.close()
-                            return False
-                        if time.time() - start_time > self.timeout:
-                            logger.warning(f"Lock acquisition timeout for {self.binary_path}")
-                            lock_file.close()
-                            return False
-                        time.sleep(0.1)
-            else:
-                logger.warning("No native locking available, using directory-based fallback")
-                lock_dir = self.lock_path.with_suffix(".lockdir")
-                self._lock_dir_path = lock_dir
-                start_time = time.time()
-                while True:
-                    try:
-                        lock_dir.mkdir(parents=True, exist_ok=False)
-                        self._lock_file = lock_file
-                        self._locked = True
-                        logger.debug(f"Acquired lock for {self.binary_path}")
-                        return True
-                    except FileExistsError:
-                        if not blocking:
-                            lock_file.close()
-                            return False
-                        if time.time() - start_time > self.timeout:
-                            logger.warning(f"Lock acquisition timeout for {self.binary_path}")
-                            lock_file.close()
-                            return False
-                        time.sleep(0.1)
-                    except Exception as exc:
-                        logger.error(f"Failed to acquire lock for {self.binary_path}: {exc}")
-                        lock_file.close()
-                        return False
-
+                return self._acquire_fcntl(lock_file, blocking)
+            if HAS_MSVCRT:
+                return self._acquire_msvcrt(lock_file, blocking)
+            return self._acquire_directory(lock_file, blocking)
         except Exception as exc:
             logger.error(f"Failed to acquire lock for {self.binary_path}: {exc}")
             if lock_file:
                 lock_file.close()
             return False
+
+    def _acquire_fcntl(self, lock_file: Any, blocking: bool) -> bool:
+        lock_type = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
+        started_at = time.time()
+        while True:
+            try:
+                fcntl.flock(lock_file.fileno(), lock_type)
+                return self._mark_acquired(lock_file)
+            except OSError:
+                if not self._wait_for_retry(lock_file, blocking, started_at):
+                    return False
+
+    def _acquire_msvcrt(self, lock_file: Any, blocking: bool) -> bool:
+        started_at = time.time()
+        while True:
+            try:
+                msvcrt_module = __import__("msvcrt")
+                mode = msvcrt_module.LK_LOCK if blocking else msvcrt_module.LK_NBLCK
+                msvcrt_module.locking(lock_file.fileno(), mode, 1)
+                return self._mark_acquired(lock_file)
+            except OSError:
+                if not self._wait_for_retry(lock_file, blocking, started_at):
+                    return False
+
+    def _acquire_directory(self, lock_file: Any, blocking: bool) -> bool:
+        logger.warning("No native locking available, using directory-based fallback")
+        lock_dir = self.lock_path.with_suffix(".lockdir")
+        self._lock_dir_path = lock_dir
+        started_at = time.time()
+        while True:
+            try:
+                lock_dir.mkdir(parents=True, exist_ok=False)
+                return self._mark_acquired(lock_file)
+            except FileExistsError:
+                if not self._wait_for_retry(lock_file, blocking, started_at):
+                    return False
+            except Exception as exc:
+                logger.error(f"Failed to acquire lock for {self.binary_path}: {exc}")
+                lock_file.close()
+                return False
+
+    def _mark_acquired(self, lock_file: Any) -> bool:
+        self._lock_file = lock_file
+        self._locked = True
+        logger.debug(f"Acquired lock for {self.binary_path}")
+        return True
+
+    def _wait_for_retry(self, lock_file: Any, blocking: bool, started_at: float) -> bool:
+        if not blocking:
+            lock_file.close()
+            return False
+        if time.time() - started_at > self.timeout:
+            logger.warning(f"Lock acquisition timeout for {self.binary_path}")
+            lock_file.close()
+            return False
+        time.sleep(0.1)
+        return True
 
     def release(self) -> None:
         """Release the file lock and always close the lock file."""

@@ -5,7 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from r2morph.core.engine_run import run
+from r2morph.core.engine_run import EngineRunOptions, run
+from r2morph.protocols import PipelineRunOptions
 
 
 class _FakeBinary:
@@ -44,8 +45,13 @@ class _FakePipeline:
         self.passes = [SimpleNamespace(config={}), SimpleNamespace(config={})]
         self.calls: list[dict[str, object]] = []
 
-    def run(self, binary: _FakeBinary, **kwargs: object) -> dict[str, object]:
-        self.calls.append({"binary": binary, **kwargs})
+    def run(self, binary: _FakeBinary, options: PipelineRunOptions) -> dict[str, object]:
+        self.calls.append(
+            {
+                "binary": binary,
+                "runtime_validate_per_pass": options.runtime_validate_per_pass,
+            }
+        )
         return {
             "validation": {"all_passed": True},
             "pass_results": {"pass_a": {}},
@@ -86,10 +92,12 @@ def test_engine_run_helper_applies_seed_validation_and_report(tmp_path: Path) ->
 
     result = run(
         fake_engine,
-        validation_mode="structural",
-        runtime_validator=runtime_validator,
-        report_path=report_path,
-        seed=7,
+        EngineRunOptions(
+            validation_mode="structural",
+            runtime_validator=runtime_validator,
+            report_path=report_path,
+            seed=7,
+        ),
     )
 
     assert fake_engine.analyze_calls == 1

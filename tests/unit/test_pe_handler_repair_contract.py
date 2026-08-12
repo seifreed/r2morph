@@ -1,19 +1,24 @@
+import shutil
 from pathlib import Path
 
 import r2morph.platform.pe_handler_repair as pe_repair
+from r2morph.platform.pe_handler_parsing import calculate_pe_checksum, get_checksum_offset
+from r2morph.platform.repair_aggregation import aggregate_repair_results
+
+_PE_FIXTURE = Path(__file__).parents[2] / "dataset" / "pe_x86_64.exe"
 
 
-def test_fix_checksum_writes_expected_value(tmp_path, monkeypatch) -> None:
+def test_fix_checksum_writes_expected_value(tmp_path) -> None:
     binary_path = tmp_path / "test.exe"
-    binary_path.write_bytes(b"MZ" + b"\x00" * 128)
-
-    monkeypatch.setattr(pe_repair, "calculate_pe_checksum", lambda path: 0x11223344)
-    monkeypatch.setattr(pe_repair, "get_checksum_offset", lambda path: 8)
+    shutil.copy2(_PE_FIXTURE, binary_path)
+    expected = calculate_pe_checksum(binary_path)
+    checksum_offset = get_checksum_offset(binary_path)
 
     handler = type("Handler", (), {"binary_path": binary_path})()
 
     assert pe_repair.fix_checksum(handler) is True
-    assert binary_path.read_bytes()[8:12] == b"\x44\x33\x22\x11"
+    assert checksum_offset is not None
+    assert int.from_bytes(binary_path.read_bytes()[checksum_offset : checksum_offset + 4], "little") == expected
 
 
 def test_validate_integrity_rejects_non_pe() -> None:
@@ -31,19 +36,9 @@ def test_validate_integrity_rejects_non_pe() -> None:
     assert issues == ["Not a PE binary"]
 
 
-def test_full_repair_aggregates_results(monkeypatch) -> None:
-    handler = object()
+def test_repair_aggregation_collects_failures_and_messages() -> None:
+    success, repairs = aggregate_repair_results(
+        [("imports", (True, ["imports"])), ("exports", (False, ["exports"])), ("headers", True)]
+    )
 
-    monkeypatch.setattr(pe_repair, "fix_checksum", lambda _handler: True)
-    monkeypatch.setattr(pe_repair, "fix_imports", lambda _handler: (True, ["imports"]))
-    monkeypatch.setattr(pe_repair, "fix_exports", lambda _handler: (False, ["exports"]))
-    monkeypatch.setattr(pe_repair, "fix_resources", lambda _handler: (True, []))
-    monkeypatch.setattr(pe_repair, "refresh_headers", lambda _handler: True)
-
-    success, repairs = pe_repair.full_repair(handler)
-
-    assert success is False
-    assert "imports" in repairs
-    assert "exports" in repairs
-    assert "Headers refreshed" in repairs
-    assert "Warning: exports repair may have issues" in repairs
+    assert success is False and repairs == ["imports", "exports", "Warning: exports repair may have issues"]

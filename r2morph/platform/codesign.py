@@ -5,14 +5,24 @@ Code signing utilities for different platforms.
 import logging
 import platform
 import shutil
-import subprocess
 from pathlib import Path
+from typing import TypedDict, Unpack
+
+from r2morph.adapters.process import ProcessError, run_process
 
 logger = logging.getLogger(__name__)
 
 # RFC 3161 timestamp authority used by signtool to countersign Authenticode
 # signatures so they remain valid after the signing certificate expires.
 SIGNTOOL_TIMESTAMP_URL = "http://timestamp.digicert.com"
+
+
+class SigningOptions(TypedDict, total=False):
+    identity: str | None
+    adhoc: bool
+    entitlements: Path | None
+    hardened: bool
+    timestamp: bool
 
 
 class CodeSigner:
@@ -31,11 +41,7 @@ class CodeSigner:
     def sign(
         self,
         binary_path: Path,
-        identity: str | None = None,
-        adhoc: bool = True,
-        entitlements: Path | None = None,
-        hardened: bool = False,
-        timestamp: bool = False,
+        **options: Unpack[SigningOptions],
     ) -> bool:
         """
         Sign a binary.
@@ -48,15 +54,9 @@ class CodeSigner:
         Returns:
             True if successful
         """
+        identity = options.get("identity")
         if self.platform == "Darwin":
-            return self._sign_macos(
-                binary_path,
-                identity,
-                adhoc,
-                entitlements=entitlements,
-                hardened=hardened,
-                timestamp=timestamp,
-            )
+            return self._sign_macos(binary_path, options)
         elif self.platform == "Windows":
             return self._sign_windows(binary_path, identity)
         else:
@@ -79,33 +79,10 @@ class CodeSigner:
             return not self.verify(binary_path)
         return False
 
-    def sign_binary(
-        self,
-        binary_path: Path,
-        identity: str | None = None,
-        adhoc: bool = True,
-        entitlements: Path | None = None,
-        hardened: bool = False,
-        timestamp: bool = False,
-    ) -> bool:
-        """Sign a binary using platform defaults."""
-        return self.sign(
-            binary_path,
-            identity=identity,
-            adhoc=adhoc,
-            entitlements=entitlements,
-            hardened=hardened,
-            timestamp=timestamp,
-        )
-
     def _sign_macos(
         self,
         binary_path: Path,
-        identity: str | None,
-        adhoc: bool,
-        entitlements: Path | None = None,
-        hardened: bool = False,
-        timestamp: bool = False,
+        options: SigningOptions,
     ) -> bool:
         """
         Sign binary on macOS.
@@ -118,6 +95,8 @@ class CodeSigner:
         Returns:
             True if successful
         """
+        identity = options.get("identity")
+        adhoc = options.get("adhoc", True)
         try:
             if adhoc:
                 cmd = ["codesign", "-s", "-", "-f", str(binary_path)]
@@ -126,23 +105,24 @@ class CodeSigner:
             else:
                 logger.error("Identity required for non-adhoc signing")
                 return False
-            if not timestamp:
+            if not options.get("timestamp", False):
                 cmd.append("--timestamp=none")
-            if hardened:
+            if options.get("hardened", False):
                 cmd += ["--options", "runtime"]
+            entitlements = options.get("entitlements")
             if entitlements:
                 cmd += ["--entitlements", str(entitlements)]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = run_process(cmd, timeout=30)
 
             if result.returncode == 0:
                 logger.info(f"Successfully signed {binary_path.name}")
                 return True
             else:
-                logger.error(f"Signing failed: {result.stderr}")
+                logger.error(f"Signing failed: {result.stderr_text}")
                 return False
 
-        except subprocess.SubprocessError as e:
+        except ProcessError as e:
             logger.error(f"Failed to sign binary: {e}")
             return False
 
@@ -178,16 +158,16 @@ class CodeSigner:
                 str(binary_path),
             ]
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            result = run_process(cmd, timeout=60)
 
             if result.returncode == 0:
                 logger.info(f"Successfully signed {binary_path.name}")
                 return True
             else:
-                logger.error(f"Signing failed: {result.stderr}")
+                logger.error(f"Signing failed: {result.stderr_text}")
                 return False
 
-        except (subprocess.SubprocessError, FileNotFoundError) as e:
+        except (ProcessError, FileNotFoundError) as e:
             logger.error(f"Failed to sign binary: {e}")
             return False
 
@@ -211,16 +191,11 @@ class CodeSigner:
     def _verify_macos(self, binary_path: Path) -> bool:
         """Verify macOS code signature."""
         try:
-            result = subprocess.run(
-                ["codesign", "--verify", "--deep", "--strict", str(binary_path)],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
+            result = run_process(["codesign", "--verify", "--deep", "--strict", binary_path], timeout=10)
 
             return result.returncode == 0
 
-        except subprocess.SubprocessError:
+        except ProcessError:
             return False
 
     def _verify_windows(self, binary_path: Path) -> bool:
@@ -230,16 +205,11 @@ class CodeSigner:
                 logger.warning("signtool not available on PATH")
                 return False
 
-            result = subprocess.run(
-                ["signtool", "verify", "/pa", str(binary_path)],
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
+            result = run_process(["signtool", "verify", "/pa", binary_path], timeout=10)
 
             return result.returncode == 0
 
-        except (subprocess.SubprocessError, FileNotFoundError):
+        except (ProcessError, FileNotFoundError):
             return False
 
     def remove_signature(self, binary_path: Path) -> bool:
@@ -254,13 +224,9 @@ class CodeSigner:
         """
         if self.platform == "Darwin":
             try:
-                result = subprocess.run(
-                    ["codesign", "--remove-signature", str(binary_path)],
-                    capture_output=True,
-                    timeout=10,
-                )
+                result = run_process(["codesign", "--remove-signature", binary_path], timeout=10)
                 return result.returncode == 0
-            except subprocess.SubprocessError:
+            except ProcessError:
                 return False
 
         return True

@@ -7,6 +7,7 @@ commonly used in obfuscation to make simple arithmetic operations appear complex
 """
 
 import logging
+import operator
 import re
 import time
 from dataclasses import dataclass, field
@@ -39,6 +40,18 @@ else:
 Z3_AVAILABLE = z3 is not None
 
 logger = logging.getLogger(__name__)
+
+_BINARY_OPERATORS = {
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+    "&": operator.and_,
+    "|": operator.or_,
+    "^": operator.xor,
+}
+
+_MAX_TRUTH_TABLE_VARIABLES = 3
+_BINARY_EXPRESSION_PART_COUNT = 2
 
 
 class MBAComplexity(Enum):
@@ -180,7 +193,7 @@ class MBASolver:
             mba = self.analyze_mba_expression(expression)
 
             if method == "auto":
-                if len(mba.variables) <= 3 and mba.complexity == MBAComplexity.SIMPLE:
+                if len(mba.variables) <= _MAX_TRUTH_TABLE_VARIABLES and mba.complexity == MBAComplexity.SIMPLE:
                     method = "truth_table"
                 elif mba.complexity == MBAComplexity.SIMPLE:
                     method = "patterns"
@@ -270,10 +283,10 @@ class MBASolver:
             # This is a very simplified parser - a real implementation would need
             # a proper expression parser for MBA expressions
 
-            for op in ["+", "-", "*", "&", "|", "^"]:
-                if op in expression:
-                    parts = expression.split(op, 1)
-                    if len(parts) == 2:
+            for operator_symbol, binary_operator in _BINARY_OPERATORS.items():
+                if operator_symbol in expression:
+                    parts = expression.split(operator_symbol, 1)
+                    if len(parts) == _BINARY_EXPRESSION_PART_COUNT:
                         left = parts[0].strip()
                         right = parts[1].strip()
 
@@ -281,18 +294,7 @@ class MBASolver:
                         right_z3 = self._parse_operand_to_z3(right, z3_vars)
 
                         if left_z3 is not None and right_z3 is not None:
-                            if op == "+":
-                                return left_z3 + right_z3
-                            elif op == "-":
-                                return left_z3 - right_z3
-                            elif op == "*":
-                                return left_z3 * right_z3
-                            elif op == "&":
-                                return left_z3 & right_z3
-                            elif op == "|":
-                                return left_z3 | right_z3
-                            elif op == "^":
-                                return left_z3 ^ right_z3
+                            return binary_operator(left_z3, right_z3)
 
             return self._parse_operand_to_z3(expression, z3_vars)
 
@@ -311,7 +313,7 @@ class MBASolver:
             num = int(operand)
             return z3.BitVecVal(num, 64)
         except ValueError:
-            # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
+            # Symbolic and register operands are not numeric candidates.
             pass
 
         return None
@@ -357,7 +359,7 @@ class MBASolver:
         """Evaluate expression with given variable assignment using safe AST evaluation."""
         return evaluate_expression(expression, assignment)
 
-    def _find_simple_equivalent(self, truth_table: dict[tuple, int], variables: list[str]) -> str | None:
+    def _find_simple_equivalent(self, truth_table: dict[tuple[int, ...], int], variables: list[str]) -> str | None:
         """Find simple equivalent expression from truth table."""
         return find_simple_equivalent(truth_table, variables)
 

@@ -29,8 +29,9 @@ runtime and cannot be resolved statically.
 
 from __future__ import annotations
 
-import random
 from collections.abc import Callable
+
+import r2morph.core.randomness as random
 
 # Handlers terminate with this back jump to the (removed) shared dispatcher; the
 # threading pass splices a fresh decode copy in for each occurrence.

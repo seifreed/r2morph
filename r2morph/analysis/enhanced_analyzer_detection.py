@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.detection.obfuscation_detector import ObfuscationDetector
+
 
 def run_detection(binary: Any, results: Any) -> Any:
     """Run obfuscation detection on the binary and populate results."""
-    from r2morph.detection import ObfuscationDetector
-
     detector = ObfuscationDetector()
     results.detection_result = detector.analyze_binary(binary)
     results.custom_vm = detector.detect_custom_virtualizer(binary)

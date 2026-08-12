@@ -144,7 +144,7 @@ if HYPOTHESIS_AVAILABLE:
             overlaps = detector.detect_overlaps(regions)
 
             for i, start in enumerate(starts):
-                for j, other_start in enumerate(starts[i + 1 :], i + 1):
+                for _j, other_start in enumerate(starts[i + 1 :], i + 1):
                     if other_start < start + 0x100:
                         assume(False)
 
@@ -385,8 +385,7 @@ if HYPOTHESIS_AVAILABLE:
         )
         def test_shift_shift_inverse(self, value: int, shift: int):
             """Left shift then right shift by same amount may not preserve (due to truncation)."""
-            if shift > 24:
-                shift = 24
+            shift = min(shift, 24)
             shifted_left = value << shift
             shifted_back = shifted_left >> shift
 

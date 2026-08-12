@@ -6,13 +6,13 @@ import logging
 import shutil
 from typing import Any
 
+from r2morph.core.binary import Binary
+
 logger = logging.getLogger(__name__)
 
 
 def apply_mutation(session: Any, mutation_pass: Any, description: str = "") -> dict[str, Any]:
     """Apply a mutation pass inside a MorphSession and handle rollback on failure."""
-    from r2morph.core.binary import Binary
-
     if session.current_binary is None:
         raise ValueError("No active binary in session")
 

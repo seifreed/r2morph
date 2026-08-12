@@ -12,7 +12,10 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_layout import pair_offsets
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
+    _QWORD_WIDTH_BITS,
     _XMM_SAVE_OFFSET,
+)
+from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _indexed_address_asm,
     _indexed_address_nobase_asm,
     _mem_address_asm,
@@ -50,8 +53,8 @@ def _fp_memory_handler_asm(
     width = int(width_text)
     riprel = kind.endswith("rip")
     is_load = kind.startswith("fpload")
-    move = "movsd" if width == 64 else "movss"
-    mem = "qword" if width == 64 else "dword"
+    move = "movsd" if width == _QWORD_WIDTH_BITS else "movss"
+    mem = "qword" if width == _QWORD_WIDTH_BITS else "dword"
     body, advance = _mem_address_asm(riprel, key, key_dword, field_perm, addr_variant)
     # r8 holds the XMM index; scale to the 16-byte slot stride (no *16 index scale
     # exists, so shift into r11 and address base+index+disp at scale 1).
@@ -77,7 +80,7 @@ def _fp_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> st
     """
     _, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
-    instr = mnemonic + ("sd" if width == 64 else "ss")
+    instr = mnemonic + ("sd" if width == _QWORD_WIDTH_BITS else "ss")
     off = pair_offsets("dst", "src", field_perm)
     return (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
@@ -105,8 +108,8 @@ def _fp_indexed_handler_asm(
     """
     kind, width_text = handler_key.split("_")
     width = int(width_text)
-    move = "movsd" if width == 64 else "movss"
-    mem = "qword" if width == 64 else "dword"
+    move = "movsd" if width == _QWORD_WIDTH_BITS else "movss"
+    mem = "qword" if width == _QWORD_WIDTH_BITS else "dword"
     if kind.endswith("nb"):
         body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
     else:
@@ -212,8 +215,8 @@ def _fp_arith_mem_handler_asm(
     """
     kind, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
-    instr = mnemonic + ("sd" if width == 64 else "ss")
-    mem = "qword" if width == 64 else "dword"
+    instr = mnemonic + ("sd" if width == _QWORD_WIDTH_BITS else "ss")
+    mem = "qword" if width == _QWORD_WIDTH_BITS else "dword"
     if kind.endswith("idx"):
         body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
@@ -248,14 +251,14 @@ def _fp_convert_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> 
         "  shl r8, 4\n"
     )
     if kind == "cvti2f":
-        instr = "cvtsi2sd" if fp_width == 64 else "cvtsi2ss"
+        instr = "cvtsi2sd" if fp_width == _QWORD_WIDTH_BITS else "cvtsi2ss"
         return decode + (
             f"  mov {gp_reg}, {gp_mem} ptr [rsp + r9*8]\n"
             f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instr} xmm0, {gp_reg}\n"
             f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
             "  add rsi, 3\n  jmp vm_dispatch\n"
         )
-    instr = "cvttsd2si" if fp_width == 64 else "cvttss2si"
+    instr = "cvttsd2si" if fp_width == _QWORD_WIDTH_BITS else "cvttss2si"
     # The eax form zeroes the upper 32 bits of rax, so the full qword slot write is
     # the zero-extended result.
     return decode + (

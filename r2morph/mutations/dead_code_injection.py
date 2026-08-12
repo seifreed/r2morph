@@ -28,9 +28,9 @@ Note:
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.dead_code_injection_helpers import (
@@ -150,7 +150,7 @@ class DeadCodeInjectionPass(MutationPass):
             "code_complexity": self.code_complexity,
         }
 
-    def _inject_dead_code(self, binary: Any, func: dict) -> tuple[int, int]:
+    def _inject_dead_code(self, binary: Any, func: dict[str, Any]) -> tuple[int, int]:
         """
         Inject dead code in a function.
 

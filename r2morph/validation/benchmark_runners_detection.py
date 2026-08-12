@@ -6,6 +6,8 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from r2morph.core.binary import Binary
+from r2morph.detection.obfuscation_detector import ObfuscationDetector
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
@@ -21,9 +23,6 @@ def benchmark_detection(
     measure_performance: Callable[[Callable[[], dict[str, Any]]], tuple[PerformanceMetrics, Any]],
     calculate_accuracy_metrics: Callable[[dict[str, Any], dict[str, Any]], AccuracyMetrics],
 ) -> BenchmarkResult:
-    from r2morph import Binary
-    from r2morph.detection import ObfuscationDetector
-
     def run_detection() -> dict[str, Any]:
         with Binary(sample.file_path) as bin_obj:
             bin_obj.analyze()

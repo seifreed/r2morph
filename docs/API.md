@@ -9,7 +9,7 @@ r2morph is a metamorphic mutation engine for binary transformation. The API is o
 - **Analysis**: Binary analysis utilities
 - **Validation**: Validation and testing framework
 - **Reporting**: SARIF and report generation
-- **CLI**: Command-line interface (TUI)
+- **CLI**: Command-line interface
 
 ## Quick Start
 
@@ -336,39 +336,6 @@ cached = cache.get(binary_data=binary_bytes, analysis_type="cfg")
 # Get statistics
 stats = cache.get_stats()
 print(f"Hit rate: {stats.hit_rate:.2%}")
-```
-
-## TUI Module
-
-### `r2morph.tui`
-
-Interactive terminal UI for mutation selection.
-
-```python
-from r2morph.tui import (
-    MutationTUI,
-    TUIFunction,
-    TUIPass,
-    create_default_passes,
-)
-
-# Create TUI
-tui = MutationTUI()
-
-# Define functions
-functions = [
-    TUIFunction(address=0x1000, name="main", size=256),
-    TUIFunction(address=0x2000, name="helper", size=128),
-]
-
-# Define passes
-passes = create_default_passes()
-
-# Run interactive session
-result = tui.run(functions, passes, on_execute=my_callback)
-
-if result and result.confirmed:
-    print("User confirmed mutations")
 ```
 
 ## Examples

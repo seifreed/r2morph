@@ -325,7 +325,7 @@ class TestProfilingReal:
             # Get first function
             functions = binary.get_functions()
             if len(functions) > 0 and hot_paths:
-                func_name = list(hot_paths.keys())[0]
+                func_name = next(iter(hot_paths.keys()))
                 block_addr = hot_paths[func_name][0] if hot_paths[func_name] else 0
                 if block_addr:
                     is_hot = detector.is_hot_path(func_name, block_addr, hot_paths)

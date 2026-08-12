@@ -9,6 +9,8 @@ from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
 
+_MIN_NOP_RUN_SIZE_BYTES = 3
+
 _X86_CONDITIONAL_JUMPS = frozenset(
     {
         "je",
@@ -71,7 +73,7 @@ _ARM_CONDITIONAL_BRANCHES = frozenset(
 )
 
 
-def select_candidates(binary: Any, functions: list[dict], min_blocks: int) -> list[dict]:
+def select_candidates(binary: Any, functions: list[dict[str, Any]], min_blocks: int) -> list[dict[str, Any]]:
     """Select functions suitable for flattening and sort them by block count."""
     candidates = []
 
@@ -85,7 +87,7 @@ def select_candidates(binary: Any, functions: list[dict], min_blocks: int) -> li
     return candidates
 
 
-def candidate_block_count(binary: Any, func: dict, min_blocks: int) -> int | None:
+def candidate_block_count(binary: Any, func: dict[str, Any], min_blocks: int) -> int | None:
     """Return the basic-block count if ``func`` is a flattening candidate."""
     if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
         return None
@@ -117,12 +119,10 @@ def is_conditional_jump(mnemonic: str, arch: str) -> bool:
 
     if mnemonic.startswith("j") and mnemonic not in ("jmp", "j"):
         return True
-    if mnemonic.startswith("b") and mnemonic not in ("b", "br", "bx", "blr", "bl"):
-        return True
-    return False
+    return bool(mnemonic.startswith("b") and mnemonic not in ("b", "br", "bx", "blr", "bl"))
 
 
-def _instruction_is_nop(insn: dict) -> bool:
+def _instruction_is_nop(insn: dict[str, Any]) -> bool:
     """True if a radare2 instruction record is a NOP.
 
     ``get_function_disasm`` records expose the mnemonic under ``type``/``opcode``
@@ -133,7 +133,7 @@ def _instruction_is_nop(insn: dict) -> bool:
     return bool(insn.get("opcode", insn.get("disasm", "")).strip().lower().startswith("nop"))
 
 
-def find_nop_sequences(instructions: list[dict]) -> list[tuple[int, int]]:
+def find_nop_sequences(instructions: list[dict[str, Any]]) -> list[tuple[int, int]]:
     """Find sequences of NOP instructions that can be replaced."""
     sequences = []
     i = 0
@@ -144,13 +144,13 @@ def find_nop_sequences(instructions: list[dict]) -> list[tuple[int, int]]:
             continue
 
         start_addr, total_size, i = consume_nop_run(instructions, i)
-        if total_size >= 3:
+        if total_size >= _MIN_NOP_RUN_SIZE_BYTES:
             sequences.append((start_addr, total_size))
 
     return sequences
 
 
-def consume_nop_run(instructions: list[dict], i: int) -> tuple[int, int, int]:
+def consume_nop_run(instructions: list[dict[str, Any]], i: int) -> tuple[int, int, int]:
     """Accumulate the consecutive NOP run starting at index ``i``."""
     insn = instructions[i]
     start_addr = insn.get("addr", insn.get("offset", 0))

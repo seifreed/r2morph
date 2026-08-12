@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from r2morph.validation.benchmark import ValidationFramework
+from r2morph.validation.benchmark_reporting_summary import calculate_percentile
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
@@ -79,9 +80,9 @@ def test_benchmark_accuracy_metrics_calculation() -> None:
 
 def test_benchmark_percentile_and_summary(tmp_path: Path) -> None:
     framework = ValidationFramework(test_data_dir="dataset")
-    assert framework._calculate_percentile([], 95) == 0.0
-    assert framework._calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0
-    assert framework._calculate_percentile(list(range(1, 101)), 99) >= 1.0
+    assert calculate_percentile([], 95) == 0.0
+    assert calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0
+    assert calculate_percentile(list(range(1, 101)), 99) >= 1.0
 
     sample = _make_sample(tmp_path)
     perf_ok = PerformanceMetrics(0.5, 10.0, 0.0, 0.0, True, None)

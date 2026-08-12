@@ -4,12 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.analysis.exception_models import (  # noqa: F401
-    ExceptionAction,
-    ExceptionFrame,
-    ExceptionTableEntry,
-    LandingPad,
-)
+from r2morph.analysis.exception_models import LandingPad
 from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.binary import Binary
 
@@ -59,9 +54,8 @@ class ExceptionAwareCFGBuilder:
         frames = self.exception_reader.read_exception_frames()
 
         for frame in frames.values():
-            if frame.function_start <= address < frame.function_end:
-                if frame.landing_pads:
-                    return True
+            if frame.function_start <= address < frame.function_end and frame.landing_pads:
+                return True
 
         return False
 

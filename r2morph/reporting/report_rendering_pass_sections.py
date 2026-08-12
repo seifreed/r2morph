@@ -71,15 +71,15 @@ def _render_pass_validation_context(
 
 
 def _render_only_pass_sections(
-    *,
     pass_name: str,
-    pass_symbolic_summary: dict[str, Any] | None,
-    pass_evidence: dict[str, Any] | None,
-    pass_validation_context: dict[str, Any] | None,
-    pass_region_evidence: list[dict[str, Any]] | None = None,
-    pass_capabilities: dict[str, Any] | None = None,
+    pass_view: dict[str, Any],
 ) -> None:
     """Render summary blocks for a single filtered pass."""
+    pass_symbolic_summary = pass_view.get("symbolic_summary")
+    pass_evidence = pass_view.get("evidence")
+    pass_region_evidence = pass_view.get("region_evidence")
+    pass_validation_context = pass_view.get("validation_context")
+    pass_capabilities = pass_view.get("capabilities")
     if pass_symbolic_summary and pass_symbolic_summary.get("symbolic_requested", 0) > 0:
         _get_console().print("[bold]Pass Symbolic Summary[/bold]:")
         _get_console().print(

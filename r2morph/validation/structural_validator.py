@@ -11,13 +11,25 @@ is not a circular import.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.analysis.invariants import InvariantDetector
 from r2morph.core.binary import Binary
-from r2morph.validation.manager import ValidationIssue, ValidationOutcome
+from r2morph.validation.manager_models import ValidationIssue, ValidationOutcome
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class StructuralCheck:
+    """Mutation location and issue sink shared by structural checks."""
+
+    binary: Binary
+    function_address: int
+    start: int
+    end: int
+    issues: list[ValidationIssue]
 
 
 class StructuralValidator:
@@ -53,9 +65,9 @@ class StructuralValidator:
         raw_function_address = mutation.get("function_address")
         baseline = mutation.get("metadata", {}).get("structural_baseline", {})
         if raw_function_address is not None and raw_function_address != 0:
-            function_address = int(raw_function_address)
-            self._check_invariants(binary, baseline, function_address, start, end, issues)
-            self._check_control_flow(binary, function_address, start, end, issues)
+            check = StructuralCheck(binary, int(raw_function_address), start, end, issues)
+            self._check_invariants(check, baseline)
+            self._check_control_flow(check)
 
         return ValidationOutcome(
             validator_type=validator_type,
@@ -67,24 +79,20 @@ class StructuralValidator:
 
     def _check_invariants(
         self,
-        binary: Binary,
+        check: StructuralCheck,
         baseline: dict[str, Any],
-        function_address: int,
-        start: int,
-        end: int,
-        issues: list[ValidationIssue],
     ) -> None:
-        detector = InvariantDetector(binary)
+        detector = InvariantDetector(check.binary)
         expected = baseline.get("invariants", [])
         try:
-            current = detector.detect_all_invariants(function_address)
+            current = detector.detect_all_invariants(check.function_address)
         except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-            issues.append(
+            check.issues.append(
                 ValidationIssue(
                     validator="structural",
                     message="Failed to analyze mutated function",
-                    address_range=(start, end),
-                    evidence={"error": str(e), "function_address": function_address},
+                    address_range=(check.start, check.end),
+                    evidence={"error": str(e), "function_address": check.function_address},
                 )
             )
             current = []
@@ -93,33 +101,29 @@ class StructuralValidator:
             current_keys = {(inv.invariant_type.value, inv.location) for inv in current}
             missing = [inv for inv in expected if (inv["type"], inv["location"]) not in current_keys]
             if missing:
-                issues.append(
+                check.issues.append(
                     ValidationIssue(
                         validator="invariants",
                         message="Mutation invalidated previously observed invariants",
-                        address_range=(start, end),
+                        address_range=(check.start, check.end),
                         evidence={"missing_invariants": missing},
                     )
                 )
 
     def _check_control_flow(
         self,
-        binary: Binary,
-        function_address: int,
-        start: int,
-        end: int,
-        issues: list[ValidationIssue],
+        check: StructuralCheck,
     ) -> None:
         try:
-            binary.get_function_disasm(function_address)
-            binary.get_basic_blocks(function_address)
+            check.binary.get_function_disasm(check.function_address)
+            check.binary.get_basic_blocks(check.function_address)
         except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-            issues.append(
+            check.issues.append(
                 ValidationIssue(
                     validator="control_flow",
                     message="Failed to recover function control-flow after mutation",
-                    address_range=(start, end),
-                    evidence={"error": str(e), "function_address": function_address},
+                    address_range=(check.start, check.end),
+                    evidence={"error": str(e), "function_address": check.function_address},
                 )
             )
 
@@ -131,12 +135,11 @@ class StructuralValidator:
         mode: str,
     ) -> dict[str, Any]:
         """Capture a lightweight invariant baseline before mutation."""
-        if mode == "off" or function_address in (None, 0):
+        if mode == "off" or function_address is None or function_address == 0:
             return {}
 
         detector = InvariantDetector(binary)
         try:
-            assert function_address is not None
             invariants = detector.detect_all_invariants(function_address)
         except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
             logger.debug(f"Failed to capture invariants for 0x{function_address:x}: {e}")

@@ -42,7 +42,7 @@ class DarwinBinarySigner:
                 logger.warning(f"Failed to mark Mach-O executable: {e}")
         else:
             signer = CodeSigner()
-            if not signer.sign_binary(
+            if not signer.sign(
                 output_path,
                 adhoc=True,
                 entitlements=entitlements,

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import heapq
 import logging
-import random
 import time
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
 
 logger = logging.getLogger(__name__)

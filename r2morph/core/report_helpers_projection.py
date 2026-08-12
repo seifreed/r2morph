@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
@@ -50,23 +51,29 @@ def _build_pass_region_evidence_map(
     return _build_pass_region_evidence_map_summary(pass_results)
 
 
+@dataclass(frozen=True)
+class PassProjectionMaps:
+    """Per-pass lookups used by the normalized report projection."""
+
+    triage: dict[str, Any]
+    capabilities: dict[str, Any]
+    validation_roles: dict[str, Any]
+    evidence: dict[str, Any]
+    symbolic: dict[str, Any]
+
+
 def _summarize_normalized_pass_results(
     pass_results: dict[str, Any],
-    *,
-    pass_triage_map: dict[str, Any],
-    pass_capability_summary_map: dict[str, Any],
-    validation_role_map: dict[str, Any],
-    pass_evidence_map: dict[str, Any],
-    pass_symbolic_summary: dict[str, Any],
+    maps: PassProjectionMaps,
 ) -> list[dict[str, Any]]:
     """Build a compact normalized per-pass view for tooling/report consumers."""
     rows: list[dict[str, Any]] = []
     for pass_name in sorted(pass_results):
-        symbolic_summary = dict(pass_symbolic_summary.get(pass_name, {}) or {})
-        evidence = dict(pass_evidence_map.get(pass_name, {}) or {})
-        triage = dict(pass_triage_map.get(pass_name, {}) or {})
-        capability = dict(pass_capability_summary_map.get(pass_name, {}) or {})
-        validation_context = dict(validation_role_map.get(pass_name, {}) or {})
+        symbolic_summary = dict(maps.symbolic.get(pass_name, {}) or {})
+        evidence = dict(maps.evidence.get(pass_name, {}) or {})
+        triage = dict(maps.triage.get(pass_name, {}) or {})
+        capability = dict(maps.capabilities.get(pass_name, {}) or {})
+        validation_context = dict(maps.validation_roles.get(pass_name, {}) or {})
         rows.append(
             {
                 "pass_name": pass_name,

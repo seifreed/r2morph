@@ -35,6 +35,6 @@ from .r2pipe_adapter import R2PipeAdapter
 
 __all__ = [
     "DisassemblerInterface",
-    "R2PipeAdapter",
     "MockDisassembler",
+    "R2PipeAdapter",
 ]

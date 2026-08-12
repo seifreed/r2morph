@@ -6,10 +6,11 @@ import logging
 from abc import abstractmethod
 from typing import Any
 
+from r2morph.analysis.cfg import CFGBuilder
 from r2morph.analysis.pattern_preservation import (
     PatternPreservationManager,
-    PatternType,
 )
+from r2morph.analysis.pattern_preservation_models import PatternType
 from r2morph.mutations.cfg_aware import CFGAwareMutationPass
 from r2morph.mutations.hardened_models import HardenedMutationResult
 from r2morph.validation.cfg_integrity import (
@@ -35,7 +36,6 @@ class HardenedMutationPass(CFGAwareMutationPass):
     def __init__(
         self,
         name: str = "hardened",
-        enabled: bool = True,
         exclusion_radius: int = 8,
         min_safety_score: float = 0.5,
         preserve_patterns: bool = True,
@@ -46,7 +46,6 @@ class HardenedMutationPass(CFGAwareMutationPass):
 
         Args:
             name: Pass name
-            enabled: Whether pass is enabled
             exclusion_radius: Radius around critical nodes to exclude
             min_safety_score: Minimum safety score for mutation sites
             preserve_patterns: Whether to preserve critical patterns
@@ -134,8 +133,6 @@ class HardenedMutationPass(CFGAwareMutationPass):
         Returns:
             Function-level mutation result
         """
-        from r2morph.analysis.cfg import CFGBuilder
-
         func_name = f"func_{func_addr:x}"
 
         try:

@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from r2morph.validation.performance_regression import PerformanceBenchmark
 from r2morph.validation.performance_regression_models import BenchmarkConfig
 
 logger = logging.getLogger(__name__)
@@ -16,8 +17,6 @@ class PerformanceRegressionSuite:
 
     def __init__(self, config: BenchmarkConfig | None = None) -> None:
         self.config = config or BenchmarkConfig()
-        from r2morph.validation.performance_regression import PerformanceBenchmark
-
         self.benchmark = PerformanceBenchmark(self.config)
         self.test_binaries: list[tuple[Path, list[str], str]] = []
 

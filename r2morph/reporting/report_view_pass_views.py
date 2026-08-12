@@ -4,27 +4,25 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.reporting.report_context import ReportViewInputs
+
 
 def build_pass_views(
-    *,
-    normalized_pass_results: list[dict[str, Any]],
-    pass_region_evidence_map: dict[str, list[dict[str, Any]]],
-    pass_validation_context: dict[str, Any],
-    pass_symbolic_summary: dict[str, Any],
-    pass_evidence_map: dict[str, Any],
-    pass_capability_summary_map: dict[str, Any],
-    normalized_pass_map: dict[str, dict[str, Any]],
-    triage_priority: list[dict[str, Any]],
-    discarded_by_pass: dict[str, dict[str, Any]],
-    failed_gates_by_pass: dict[str, dict[str, Any]],
+    inputs: ReportViewInputs,
+    lookups: dict[str, Any],
+    gates: dict[str, Any],
 ) -> dict[str, Any]:
     """Build base_general_pass_rows, general_pass_row_map, general_pass_rows, only_pass."""
+    normalized_pass_map = lookups["normalized_pass_map"]
+    triage_priority = lookups["triage_priority"]
+    discarded_by_pass = lookups["discarded_by_pass"]
+    failed_gates_by_pass = gates["failed_gates_by_pass"]
     base_general_pass_rows = [
         {
             **dict(row),
-            "region_evidence_count": len(pass_region_evidence_map.get(str(row.get("pass_name", "")), [])),
+            "region_evidence_count": len(inputs.pass_region_evidence_map.get(str(row.get("pass_name", "")), [])),
         }
-        for row in normalized_pass_results
+        for row in inputs.normalized_pass_results
         if row.get("pass_name")
     ]
     only_pass = {}
@@ -34,18 +32,18 @@ def build_pass_views(
             continue
         only_pass[pass_name] = {
             "normalized": dict(normalized_pass_map.get(pass_name, row)),
-            "symbolic_summary": dict(pass_symbolic_summary.get(pass_name, {})),
-            "evidence": dict(pass_evidence_map.get(pass_name, {})),
-            "region_evidence": list(pass_region_evidence_map.get(pass_name, [])),
-            "validation_context": dict(pass_validation_context.get(pass_name, {})),
-            "capabilities": dict(pass_capability_summary_map.get(pass_name, {})),
+            "symbolic_summary": dict(inputs.pass_symbolic_summary.get(pass_name, {})),
+            "evidence": dict(inputs.pass_evidence_map.get(pass_name, {})),
+            "region_evidence": list(inputs.pass_region_evidence_map.get(pass_name, [])),
+            "validation_context": dict(inputs.pass_validation_context.get(pass_name, {})),
+            "capabilities": dict(inputs.pass_capability_summary_map.get(pass_name, {})),
         }
     general_pass_row_map = {}
     for row in base_general_pass_rows:
         pass_name = str(row.get("pass_name", ""))
         if not pass_name:
             continue
-        validation_context = dict(pass_validation_context.get(pass_name, {}) or {})
+        validation_context = dict(inputs.pass_validation_context.get(pass_name, {}) or {})
         discarded_row = dict(discarded_by_pass.get(pass_name, {}) or {})
         gate_row = dict(failed_gates_by_pass.get(pass_name, {}) or {})
         general_pass_row_map[pass_name] = {

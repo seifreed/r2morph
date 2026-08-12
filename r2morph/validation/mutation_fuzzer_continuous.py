@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import statistics
+from importlib import import_module
 from pathlib import Path
 
 from r2morph.validation.mutation_fuzzer_types import FuzzCampaignResult, FuzzConfig
@@ -15,10 +16,9 @@ class ContinuousFuzzer:
     """Continuous fuzzing framework for regression testing."""
 
     def __init__(self, config: FuzzConfig | None = None) -> None:
-        from r2morph.validation.mutation_fuzzer import MutationPassFuzzer
-
+        mutation_pass_fuzzer_cls = import_module("r2morph.validation.mutation_fuzzer").MutationPassFuzzer
         self.config = config or FuzzConfig()
-        self.fuzzer = MutationPassFuzzer(self.config)
+        self.fuzzer = mutation_pass_fuzzer_cls(self.config)
         self.campaign_history: list[FuzzCampaignResult] = []
         self.regression_threshold = 0.95
 

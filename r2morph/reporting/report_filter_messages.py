@@ -2,27 +2,25 @@
 
 from __future__ import annotations
 
-from r2morph.reporting.report_context import PassClassFilters
+from r2morph.reporting.report_context import FilterFlags, SeverityFilter
 
 
 def build_report_filter_messages(
-    *,
-    only_pass: str | None,
-    resolved_only_pass: str | None,
-    only_pass_failure: str | None,
-    resolved_only_pass_failure: str | None,
-    pass_classes: PassClassFilters,
-    selected_risk_pass_names: set[str],
+    filters: FilterFlags,
+    severity: SeverityFilter,
 ) -> list[str]:
     """Return compact filter-resolution/status messages."""
     messages: list[str] = []
 
-    if only_pass is not None and resolved_only_pass != only_pass:
-        messages.append(f"[bold]Pass Filter Resolution[/bold]: {only_pass} -> {resolved_only_pass}")
-    if only_pass_failure is not None and resolved_only_pass_failure != only_pass_failure:
+    if filters.only_pass is not None and severity.resolved_only_pass != filters.only_pass:
+        messages.append(f"[bold]Pass Filter Resolution[/bold]: {filters.only_pass} -> {severity.resolved_only_pass}")
+    if filters.only_pass_failure is not None and severity.resolved_only_pass_failure != filters.only_pass_failure:
         messages.append(
-            f"[bold]Pass Failure Filter Resolution[/bold]: {only_pass_failure} -> {resolved_only_pass_failure}"
+            "[bold]Pass Failure Filter Resolution[/bold]: "
+            f"{filters.only_pass_failure} -> {severity.resolved_only_pass_failure}"
         )
+    pass_classes = filters.pass_classes
+    selected_risk_pass_names = severity.selected_risk_pass_names
     if pass_classes.only_risky_passes:
         messages.append(f"[bold]Risky Pass Filter[/bold]: {len(selected_risk_pass_names)} risky pass(es) detected")
     if pass_classes.only_uncovered_passes:

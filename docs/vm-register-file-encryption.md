@@ -1,10 +1,14 @@
-# Region VM register-file encryption (gap #4)
+# VM register-file encryption (gap #4)
 
-Status: planned, staged. Highest-payoff structural gap toward VMProtect/Themida
-maturity. This document is the safe execution plan; each stage is a separate
-commit gated by `tests/integration/test_code_virtualization_real.py` (87 dataset
-fixtures across every handler family — the loud gate that turns a slot-access
-miscompile into a red exit-code test rather than a silent one).
+Status: implemented and IDA-verified. The implementation is gated by real-exec
+dataset fixtures across every handler family, so a slot-access miscompile becomes
+a wrong exit code rather than a silent regression.
+
+The shared slot transform also covers the straight-line engine VM. Its key slot is
+relocated per build, so the transform accepts that frame-specific offset while the
+region and nested VMs retain their fixed default. A 2026-08-12 IDA recheck of
+`elf_vm_run_callfallback_x86_64` showed all 16 engine GP slots keyed by the runtime
+self-checksum broadcast; all 20 real fallback fixtures preserved their exit codes.
 
 ## The tell
 

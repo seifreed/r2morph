@@ -85,3 +85,16 @@ class ValidationResult:
             "runtime_details": list(self.runtime_details),
             "test_cases": list(self.test_cases),
         }
+
+
+@dataclass(frozen=True)
+class ValidationObservations:
+    """Runtime observations collected before result assembly."""
+
+    all_outputs_match: bool
+    errors: list[str]
+    original_outputs: list[dict[str, Any]]
+    mutated_outputs: list[dict[str, Any]]
+    file_differences: dict[str, dict[str, str]]
+    runtime_details: list[dict[str, Any]]
+    test_cases: list[ValidationTestCase]

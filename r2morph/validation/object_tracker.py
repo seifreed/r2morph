@@ -9,7 +9,7 @@ class ObjectTracker:
     """Track object creation and deletion to detect leaks."""
 
     def __init__(self) -> None:
-        self._tracked_objects: WeakSet = WeakSet()
+        self._tracked_objects: WeakSet[object] = WeakSet()
         self._creation_counts: dict[str, int] = {}
         self._deletion_counts: dict[str, int] = {}
         self._enabled = False

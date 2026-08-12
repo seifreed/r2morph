@@ -12,6 +12,7 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 from r2morph import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations import (
     InstructionSubstitutionPass,
     NopInsertionPass,
@@ -32,7 +33,7 @@ def test_deterministic_nop_fixture_produces_real_mutations(deterministic_nop_elf
                 }
             )
         )
-        result = engine.run(validation_mode="structural", seed=1337)
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=1337))
         report = engine.build_report(result)
 
     assert result["total_mutations"] > 0
@@ -58,7 +59,7 @@ def test_deterministic_nop_fixture_gets_real_binary_symbolic_coverage(
                 }
             )
         )
-        result = engine.run(validation_mode="symbolic", seed=1337)
+        result = engine.run(EngineRunOptions(validation_mode="symbolic", seed=1337))
         report = engine.build_report(result)
 
     assert result["total_mutations"] > 0
@@ -116,7 +117,7 @@ def test_deterministic_instruction_substitution_fixture_gets_symbolic_coverage(
                 }
             )
         )
-        result = engine.run(validation_mode="symbolic", seed=1337)
+        result = engine.run(EngineRunOptions(validation_mode="symbolic", seed=1337))
         report = engine.build_report(result)
 
     assert result["total_mutations"] > 0
@@ -166,7 +167,7 @@ def test_deterministic_register_fixture_produces_real_substitutions(deterministi
                 }
             )
         )
-        result = engine.run(validation_mode="structural", seed=1337)
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=1337))
         report = engine.build_report(result)
 
     assert result["total_mutations"] > 0
@@ -191,7 +192,7 @@ def test_deterministic_register_fixture_reports_real_binary_symbolic_mismatch(
                 }
             )
         )
-        result = engine.run(validation_mode="symbolic", seed=1337)
+        result = engine.run(EngineRunOptions(validation_mode="symbolic", seed=1337))
         report = engine.build_report(result)
 
     assert result["total_mutations"] > 0
@@ -234,7 +235,7 @@ def test_deterministic_fail_fixture_stays_clean(deterministic_fail_elf):
     with MorphEngine(config={"seed": 1337}) as engine:
         engine.load_binary(deterministic_fail_elf).analyze()
         engine.add_mutation(NopInsertionPass(config={"probability": 1.0, "seed": 1337}))
-        result = engine.run(validation_mode="structural", seed=1337)
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=1337))
         report = engine.build_report(result)
 
     assert result["total_mutations"] == 0

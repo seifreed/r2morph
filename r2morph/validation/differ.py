@@ -86,9 +86,6 @@ class BinaryDiffer:
         except Exception:
             return None
 
-        if orig_data is None or mut_data is None:
-            return None
-
         try:
             orig_disasm = self.original.get_function_disasm(address)
             mut_disasm = self.mutated.get_function_disasm(address)
@@ -152,13 +149,13 @@ def compare_binaries(original: Binary, mutated: Binary) -> DiffReport:
 
 
 __all__ = [
-    "DiffType",
-    "ChangeSeverity",
-    "ByteDiff",
-    "SectionDiff",
-    "FunctionDiff",
     "BinaryDiff",
-    "DiffReport",
     "BinaryDiffer",
+    "ByteDiff",
+    "ChangeSeverity",
+    "DiffReport",
+    "DiffType",
+    "FunctionDiff",
+    "SectionDiff",
     "compare_binaries",
 ]

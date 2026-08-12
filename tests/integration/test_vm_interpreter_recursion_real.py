@@ -85,7 +85,7 @@ def test_dispatch_target_map_covers_the_handler_addresses() -> None:
     binary.open()
     try:
         region = _dispatch_region(binary)
-        assert region is not None and _HANDLER_ADDRESSES <= set(region.target_map)
+        assert region is not None and set(region.target_map) >= _HANDLER_ADDRESSES
     finally:
         binary.close()
 

@@ -8,12 +8,17 @@ and adding decode stubs that run at runtime.
 from __future__ import annotations
 
 import logging
-import random
-from typing import Any
+from typing import Any, ClassVar
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
+
+_ASCII_UPPER_A = 0x41
+_ASCII_UPPER_Z = 0x5A
+_ASCII_LOWER_A = 0x61
+_ASCII_LOWER_Z = 0x7A
 
 
 class StringObfuscationPass(MutationPass):
@@ -37,7 +42,7 @@ class StringObfuscationPass(MutationPass):
         - preserve_null: Whether to preserve null terminators (default: True)
     """
 
-    ENCODINGS = ["xor", "rot13", "swap"]
+    ENCODINGS: ClassVar[list[str]] = ["xor", "rot13", "swap"]
 
     def __init__(self, config: dict[str, Any] | None = None):
         super().__init__(name="StringObfuscation", config=config)
@@ -137,10 +142,10 @@ class StringObfuscationPass(MutationPass):
         """Apply ROT13 encoding to alphabetic characters."""
         result = bytearray()
         for b in data:
-            if 0x41 <= b <= 0x5A:  # A-Z
-                result.append(((b - 0x41 + 13) % 26) + 0x41)
-            elif 0x61 <= b <= 0x7A:  # a-z
-                result.append(((b - 0x61 + 13) % 26) + 0x61)
+            if _ASCII_UPPER_A <= b <= _ASCII_UPPER_Z:
+                result.append(((b - _ASCII_UPPER_A + 13) % 26) + _ASCII_UPPER_A)
+            elif _ASCII_LOWER_A <= b <= _ASCII_LOWER_Z:
+                result.append(((b - _ASCII_LOWER_A + 13) % 26) + _ASCII_LOWER_A)
             else:
                 result.append(b)
         return bytes(result)
@@ -177,6 +182,16 @@ class StringObfuscationPass(MutationPass):
             return self._swap_encode(data), 0
         else:
             return data, 0
+
+    @staticmethod
+    def _warn_referenced_string(binary: Any, address: int) -> None:
+        references = binary.get_xrefs_to(address)
+        if references:
+            logger.warning(
+                f"String at 0x{address:x} has {len(references)} code references - "
+                "callers may need a decode stub. Use the runtime stack-string pass "
+                "for runtime strings."
+            )
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -252,12 +267,7 @@ class StringObfuscationPass(MutationPass):
                     if not binary.write_bytes(addr, encoded_bytes):
                         continue
 
-                    refs = binary.get_xrefs_to(addr)
-                    if refs:
-                        logger.warning(
-                            f"String at 0x{addr:x} has {len(refs)} code references - "
-                            f"callers may need decode stub. Consider using StackStringsPass instead for runtime strings."
-                        )
+                    self._warn_referenced_string(binary, addr)
 
                     record = self._record_mutation(
                         function_address=None,

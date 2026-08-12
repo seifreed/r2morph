@@ -8,7 +8,8 @@ Covers:
 - Trampoline generation
 """
 
-from unittest.mock import MagicMock, patch
+from pathlib import Path
+from typing import Any
 
 from r2morph.relocations.cave_finder import CodeCave
 from r2morph.relocations.cave_injector import (
@@ -18,6 +19,31 @@ from r2morph.relocations.cave_injector import (
     CodeCaveInjector,
     SectionPermissions,
 )
+
+
+class _Disassembler:
+    def __init__(self) -> None:
+        self.output = ""
+
+    def cmd(self, command: str) -> str:
+        return self.output
+
+
+class _Binary:
+    def __init__(self) -> None:
+        self.path = Path("/nonexistent/test-binary")
+        self.sections: list[dict[str, Any]] = []
+        self.arch_info: dict[str, Any] = {}
+        self.r2 = _Disassembler()
+
+    def get_sections(self) -> list[dict[str, Any]]:
+        return self.sections
+
+    def get_arch_info(self) -> dict[str, Any]:
+        return self.arch_info
+
+    def write_bytes(self, address: int, contents: bytes) -> bool:
+        return True
 
 
 class TestCodeCaveAllocation:
@@ -77,12 +103,12 @@ class TestCodeCaveInjector:
 
     def test_find_executable_caves(self):
         """Test finding executable caves."""
-        mock_binary = MagicMock()
-        mock_binary.get_sections.return_value = [
+        mock_binary = _Binary()
+        mock_binary.sections = [
             {"name": ".text", "vaddr": 0x1000, "vsize": 0x1000, "perm": "rx"},
             {"name": ".data", "vaddr": 0x2000, "vsize": 0x1000, "perm": "rw"},
         ]
-        mock_binary.r2.cmd.return_value = "90" * 256 + "00" * 256
+        mock_binary.r2.output = "90" * 256 + "00" * 256
 
         injector = CodeCaveInjector(mock_binary)
         caves = injector.find_executable_caves()
@@ -91,28 +117,21 @@ class TestCodeCaveInjector:
 
     def test_find_cave_for_code(self):
         """Test finding cave for specific code size."""
-        mock_binary = MagicMock()
-        mock_binary.get_sections.return_value = [
+        mock_binary = _Binary()
+        mock_binary.sections = [
             {"name": ".text", "vaddr": 0x1000, "vsize": 0x1000, "perm": "rx"},
         ]
-        mock_binary.r2.cmd.return_value = "90" * 100 + "00" * 100
+        mock_binary.r2.output = "90" * 100 + "00" * 100
 
         injector = CodeCaveInjector(mock_binary)
 
-        mock_cave = MagicMock()
-        mock_cave.address = 0x1000
-        mock_cave.size = 200
-        mock_cave.is_executable = True
-        mock_cave.section = ".text"
-
-        with patch.object(injector, "find_executable_caves", return_value=[mock_cave]):
-            cave = injector.find_cave_for_code(50)
-            assert cave is not None
-            assert cave.size >= 50
+        cave = injector.find_cave_for_code(50)
+        assert cave is not None
+        assert cave.size >= 50
 
     def test_align_address(self):
         """Test address alignment."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         injector = CodeCaveInjector(mock_binary)
 
         assert injector._align_address(0x1001, 16) == 0x1010
@@ -122,7 +141,7 @@ class TestCodeCaveInjector:
 
     def test_allocate_from_cave(self):
         """Test allocation from cave."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         injector = CodeCaveInjector(mock_binary)
 
         cave = CodeCave(
@@ -141,7 +160,7 @@ class TestCodeCaveInjector:
 
     def test_allocate_from_cave_with_alignment(self):
         """Test allocation with alignment."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         injector = CodeCaveInjector(mock_binary)
 
         cave = CodeCave(
@@ -158,9 +177,9 @@ class TestCodeCaveInjector:
 
     def test_create_cave_section_elf(self):
         """Test creating ELF section."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"format": "ELF64", "arch": "x86_64", "bits": 64}
-        mock_binary.get_sections.return_value = [
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"format": "ELF64", "arch": "x86_64", "bits": 64}
+        mock_binary.sections = [
             {"name": ".text", "vaddr": 0x1000, "vsize": 0x1000},
         ]
 
@@ -175,9 +194,9 @@ class TestCodeCaveInjector:
 
     def test_create_cave_section_pe(self):
         """Test creating PE section."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"format": "PE+", "arch": "x86_64", "bits": 64}
-        mock_binary.get_sections.return_value = [
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"format": "PE+", "arch": "x86_64", "bits": 64}
+        mock_binary.sections = [
             {"name": ".text", "vaddr": 0x1000, "vsize": 0x1000},
         ]
 
@@ -191,9 +210,9 @@ class TestCodeCaveInjector:
 
     def test_create_cave_section_macho(self):
         """Test creating Mach-O section."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"format": "Mach-O-64", "arch": "arm64", "bits": 64}
-        mock_binary.get_sections.return_value = [
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"format": "Mach-O-64", "arch": "arm64", "bits": 64}
+        mock_binary.sections = [
             {"name": "__TEXT", "vaddr": 0x1000, "vsize": 0x1000},
         ]
 
@@ -207,32 +226,24 @@ class TestCodeCaveInjector:
 
     def test_insert_code_existing_cave(self):
         """Test inserting code into existing cave."""
-        mock_binary = MagicMock()
-        mock_binary.get_sections.return_value = [
+        mock_binary = _Binary()
+        mock_binary.sections = [
             {"name": ".text", "vaddr": 0x1000, "vsize": 0x1000, "perm": "rx"},
         ]
-        mock_binary.r2.cmd.return_value = "90" * 200
+        mock_binary.r2.output = "90" * 200
 
         injector = CodeCaveInjector(mock_binary)
 
-        mock_cave = CodeCave(
-            address=0x1000,
-            size=200,
-            section=".text",
-            is_executable=True,
-        )
+        code = b"\x90" * 50
+        allocation = injector.insert_code(code)
 
-        with patch.object(injector, "find_cave_for_code", return_value=mock_cave):
-            code = b"\x90" * 50
-            allocation = injector.insert_code(code)
-
-            assert allocation is not None
-            assert allocation.cave_type == CaveType.EXISTING
+        assert allocation is not None
+        assert allocation.cave_type == CaveType.EXISTING
 
     def test_extend_section(self):
         """Test extending existing section."""
-        mock_binary = MagicMock()
-        mock_binary.get_sections.return_value = [
+        mock_binary = _Binary()
+        mock_binary.sections = [
             {"name": ".text", "vaddr": 0x1000, "vsize": 0x1000},
         ]
 
@@ -245,7 +256,7 @@ class TestCodeCaveInjector:
 
     def test_get_total_injected_size(self):
         """Test total injected size calculation."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         injector = CodeCaveInjector(mock_binary)
 
         injector._allocations = [
@@ -258,7 +269,7 @@ class TestCodeCaveInjector:
 
     def test_clear_allocations(self):
         """Test clearing allocations."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         injector = CodeCaveInjector(mock_binary)
 
         injector._allocations = [

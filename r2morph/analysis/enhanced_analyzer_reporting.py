@@ -8,18 +8,20 @@ from typing import Any
 from rich.console import Console
 from rich.table import Table
 
+from r2morph.analysis.enhanced_analyzer_models import AnalysisResults
+
 logger = logging.getLogger(__name__)
+
+_TECHNIQUE_PREVIEW_COUNT = 10
 
 
 def display_detection_results(
     console: Console,
     binary_path: Path,
-    detection_result: Any,
-    custom_vm: dict[str, Any],
-    layers: dict[str, Any],
-    metamorphic: dict[str, Any],
+    results: AnalysisResults,
     verbose: bool = False,
 ) -> None:
+    detection_result = results.detection_result
     if detection_result is None:
         return
 
@@ -40,32 +42,31 @@ def display_detection_results(
     console.print(table)
     console.print("\n[bold cyan]Extended Detection:[/bold cyan]")
 
-    if custom_vm.get("detected"):
-        vm_type = custom_vm.get("vm_type", "unknown")
-        confidence = custom_vm.get("confidence", 0)
+    if results.custom_vm.get("detected"):
+        vm_type = results.custom_vm.get("vm_type", "unknown")
+        confidence = results.custom_vm.get("confidence", 0)
         console.print(f"  Custom Virtualizer: {vm_type} ({confidence:.2f})")
 
-    if layers.get("layers_detected", 0) > 0:
-        layers_count = layers["layers_detected"]
+    if results.layers.get("layers_detected", 0) > 0:
+        layers_count = results.layers["layers_detected"]
         console.print(f"  Packing Layers: {layers_count}")
 
-    if metamorphic.get("detected"):
-        poly_ratio = metamorphic.get("polymorphic_ratio", 0)
+    if results.metamorphic.get("detected"):
+        poly_ratio = results.metamorphic.get("polymorphic_ratio", 0)
         console.print(f"  Metamorphic Engine: {poly_ratio:.1%}")
 
     if detection_result.obfuscation_techniques:
         console.print("\n[bold cyan]Obfuscation Techniques:[/bold cyan]")
-        for i, technique in enumerate(detection_result.obfuscation_techniques[:10], 1):
+        for i, technique in enumerate(detection_result.obfuscation_techniques[:_TECHNIQUE_PREVIEW_COUNT], 1):
             console.print(f"  {i}. {technique}")
-        if len(detection_result.obfuscation_techniques) > 10:
-            remaining = len(detection_result.obfuscation_techniques) - 10
+        if len(detection_result.obfuscation_techniques) > _TECHNIQUE_PREVIEW_COUNT:
+            remaining = len(detection_result.obfuscation_techniques) - _TECHNIQUE_PREVIEW_COUNT
             console.print(f"  ... and {remaining} more")
 
     if verbose:
         console.print("\n[dim]Verbose detection details enabled[/dim]")
-        console.print(
-            f"  Detection details: {detection_result.to_dict() if hasattr(detection_result, 'to_dict') else detection_result}"
-        )
+        details = detection_result.to_dict() if hasattr(detection_result, "to_dict") else detection_result
+        console.print(f"  Detection details: {details}")
 
 
 def display_analysis_results(console: Console, results: Any) -> None:

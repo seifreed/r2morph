@@ -6,14 +6,15 @@ to discover edge cases and validate mutation correctness.
 """
 
 import logging
-import random
 import time
 from datetime import datetime
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
+import r2morph.core.randomness as random
+from r2morph.adapters.process import ProcessTimeoutError
 from r2morph.validation.mutation_fuzzer_campaign import (
-    build_campaign_result,
     build_exception_fuzz_result,
     build_success_fuzz_result,
     build_timeout_fuzz_result,
@@ -33,6 +34,7 @@ from r2morph.validation.mutation_fuzzer_types import (
     FuzzResult,
     FuzzTestCase,
 )
+from r2morph.validation.validator import BinaryValidator
 
 logger = logging.getLogger(__name__)
 
@@ -108,10 +110,6 @@ class MutationPassFuzzer:
         Returns:
             FuzzCampaignResult
         """
-        import subprocess
-
-        from r2morph.validation.validator import BinaryValidator
-
         start_time = time.time()
         results: list[FuzzResult] = []
 
@@ -168,7 +166,7 @@ class MutationPassFuzzer:
 
                 results.append(fuzz_result)
 
-            except subprocess.TimeoutExpired:
+            except ProcessTimeoutError:
                 timeouts += 1
                 failed += 1
 
@@ -195,7 +193,7 @@ class MutationPassFuzzer:
 
         end_time = time.time()
 
-        return build_campaign_result(
+        return FuzzCampaignResult(
             total_tests=self.config.num_tests,
             passed=passed,
             failed=failed,
@@ -236,13 +234,13 @@ def create_fuzzer(
 
 def __getattr__(name: str) -> Any:
     if name == "ContinuousFuzzer":
-        from r2morph.validation.mutation_fuzzer_continuous import ContinuousFuzzer
-
-        globals()[name] = ContinuousFuzzer
-        return ContinuousFuzzer
+        continuous_fuzzer_type = import_module("r2morph.validation.mutation_fuzzer_continuous").ContinuousFuzzer
+        globals()[name] = continuous_fuzzer_type
+        return continuous_fuzzer_type
     if name == "create_continuous_fuzzer":
-        from r2morph.validation.mutation_fuzzer_continuous import create_continuous_fuzzer
-
+        create_continuous_fuzzer = import_module(
+            "r2morph.validation.mutation_fuzzer_continuous"
+        ).create_continuous_fuzzer
         globals()[name] = create_continuous_fuzzer
         return create_continuous_fuzzer
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

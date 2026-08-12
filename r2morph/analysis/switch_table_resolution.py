@@ -10,6 +10,12 @@ from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 
+_BITS_64 = 64
+_MAX_CANONICAL_64_ADDRESS = 0x7FFFFFFFFFFF
+_MAX_SIGNED_32 = 0x7FFFFFFF
+_ADDRESS_MASK_64 = 0xFFFFFFFFFFFFFFFF
+_ADDRESS_MASK_32 = 0xFFFFFFFF
+
 
 def resolve_jump_table(
     binary: Binary,
@@ -68,9 +74,9 @@ def read_jump_table_entries(
                 break
 
             target = int.from_bytes(target_bytes, "little", signed=False)
-            if bits == 64 and target > 0x7FFFFFFFFFFF:
-                target -= 1 << 64
-            elif bits != 64 and target > 0x7FFFFFFF:
+            if bits == _BITS_64 and target > _MAX_CANONICAL_64_ADDRESS:
+                target -= 1 << _BITS_64
+            elif bits != _BITS_64 and target > _MAX_SIGNED_32:
                 target -= 1 << 32
 
             if target == 0 or target in seen_targets:
@@ -90,14 +96,14 @@ def read_jump_table_entries(
 
 def normalize_address(addr: int, bits: int) -> int:
     """Normalize an address to valid range."""
-    if bits == 64:
-        if addr > 0xFFFFFFFFFFFFFFFF:
-            addr = addr & 0xFFFFFFFFFFFFFFFF
-        if addr > 0x7FFFFFFFFFFF:
+    if bits == _BITS_64:
+        if addr > _ADDRESS_MASK_64:
+            addr &= _ADDRESS_MASK_64
+        if addr > _MAX_CANONICAL_64_ADDRESS:
             return 0
     else:
-        addr = addr & 0xFFFFFFFF
-        if addr > 0x7FFFFFFF:
+        addr &= _ADDRESS_MASK_32
+        if addr > _MAX_SIGNED_32:
             return 0
     return addr
 

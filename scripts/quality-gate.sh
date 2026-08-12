@@ -27,12 +27,12 @@ cd "${REPO_ROOT}"
 PYPROJECT="${REPO_ROOT}/pyproject.toml"
 SRC_DIR="${REPO_ROOT}/r2morph"
 
-if [[ -f "${REPO_ROOT}/venv/bin/activate" ]]; then
-    # shellcheck disable=SC1091
-    source "${REPO_ROOT}/venv/bin/activate"
-elif [[ -f "${REPO_ROOT}/.venv/bin/activate" ]]; then
+if [[ -f "${REPO_ROOT}/.venv/bin/activate" ]]; then
     # shellcheck disable=SC1091
     source "${REPO_ROOT}/.venv/bin/activate"
+elif [[ -f "${REPO_ROOT}/venv/bin/activate" ]]; then
+    # shellcheck disable=SC1091
+    source "${REPO_ROOT}/venv/bin/activate"
 fi
 
 # ---------------------------------------------------------------------------
@@ -391,7 +391,7 @@ run_mypy() {
 run_bandit() {
     section "bandit (security)"
     require_tool bandit || return
-    local args=(-r "${SRC_DIR}" -q)
+    local args=(-r "${SRC_DIR}" -q --severity-level low --confidence-level low)
     # Use pyproject config only if a [tool.bandit] section exists
     if grep -qE '^\[tool\.bandit\]' "${PYPROJECT}" 2>/dev/null; then
         args+=(-c "${PYPROJECT}")
@@ -414,7 +414,7 @@ run_pip_audit() {
         return
     fi
     local output rc
-    output="$(pip-audit --strict --disable-pip 2>&1)"
+    output="$(PIPAPI_PYTHON_LOCATION="$(command -v python)" pip-audit --strict --cache-dir "${TMPDIR:-/tmp}/r2morph-pip-audit" 2>&1)"
     rc=$?
     if [[ ${rc} -eq 0 ]]; then
         pass "pip-audit: no known vulnerabilities"

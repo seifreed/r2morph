@@ -11,8 +11,8 @@ the integration suite exercises these prologues, so a wrong fold surfaces there.
 from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_fold import addr_fold
-from r2morph.mutations.code_virtualization_region_handlers import _indexed_address_asm, _mem_address_asm
 from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
+from r2morph.mutations.code_virtualization_region_memory_handlers import _indexed_address_asm, _mem_address_asm
 
 _KEY = 0x5A
 _KD = "0x0"

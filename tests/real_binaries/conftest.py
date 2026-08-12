@@ -203,9 +203,10 @@ def pytest_collection_modifyitems(config, items):
     has_r2_available = _check_r2_available()
 
     for item in items:
-        if "temp_binary" in str(item.fixturenames) or "temp_binary_with_functions" in str(item.fixturenames):
-            if not has_gcc_available:
-                item.add_marker(skip_no_gcc)
+        if (
+            "temp_binary" in str(item.fixturenames) or "temp_binary_with_functions" in str(item.fixturenames)
+        ) and not has_gcc_available:
+            item.add_marker(skip_no_gcc)
 
         if "has_r2" in str(item.fixturenames) and not has_r2_available:
             item.add_marker(skip_no_r2)

@@ -1,5 +1,12 @@
 """Named constants for r2morph to replace magic numbers."""
 
+# Architecture and instruction encoding contracts
+ARCH_BITS_32 = 32
+ARCH_BITS_64 = 64
+SIGNED_32_MIN = -(1 << 31)
+SIGNED_32_MAX = (1 << 31) - 1
+X86_RELATIVE_BRANCH_SIZE_BYTES = 5
+
 # Binary size thresholds (in megabytes)
 LARGE_BINARY_THRESHOLD_MB = 50
 VERY_LARGE_BINARY_THRESHOLD_MB = 100

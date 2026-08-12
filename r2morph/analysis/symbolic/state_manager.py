@@ -67,7 +67,7 @@ class StateManager:
         # State storage
         self.active_states: dict[int, Any] = {}
         self.state_metrics: dict[int, StateMetrics] = {}
-        self.state_priority_queue: list[tuple] = []  # (priority, state_id)
+        self.state_priority_queue: list[tuple[float, int]] = []  # (priority, state_id)
 
         # Coverage tracking
         self.global_coverage: set[int] = set()

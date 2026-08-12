@@ -53,7 +53,7 @@ FIXTURE_SWITCH_ABS = _DATASET / "elf_switch_abs_x86_64"
 FIXTURE_MULTIRET = _DATASET / "elf_multiret_jccdiamond_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
-from unicorn import UcError  # noqa: E402
+UcError = unicorn.UcError
 
 
 def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:

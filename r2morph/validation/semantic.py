@@ -11,7 +11,8 @@ This module provides:
 """
 
 import logging
-from datetime import datetime, timezone
+import time
+from datetime import UTC, datetime
 from typing import Any
 
 from r2morph.core.binary import Binary
@@ -32,14 +33,14 @@ from r2morph.validation.semantic_symbolic import (
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "ValidationMode",
-    "ValidationResultStatus",
     "MutationRegion",
+    "ObservableComparison",
     "SemanticCheck",
     "SemanticValidationReport",
     "SemanticValidationResult",
-    "ObservableComparison",
     "SemanticValidator",
+    "ValidationMode",
+    "ValidationResultStatus",
     "validate_semantic_equivalence",
 ]
 
@@ -84,8 +85,6 @@ class SemanticValidator:
         Returns:
             SemanticValidationResult
         """
-        import time
-
         start_time = time.time()
 
         result = SemanticValidationResult(
@@ -95,13 +94,7 @@ class SemanticValidator:
         )
 
         try:
-            violations = self.invariant_checker.check_mutation(
-                pass_type=region.pass_name,
-                start_address=region.start_address,
-                end_address=region.end_address,
-                original_bytes=region.original_bytes,
-                mutated_bytes=region.mutated_bytes,
-            )
+            violations = self.invariant_checker.check_mutation(region)
             result.violations = violations
 
             for violation in violations:
@@ -118,9 +111,9 @@ class SemanticValidator:
                 )
                 result.checks.append(check)
 
-            if any(v.severity == InvariantSeverity.CRITICAL for v in violations):
-                result.status = ValidationResultStatus.FAIL
-            elif any(v.severity == InvariantSeverity.ERROR for v in violations):
+            if any(v.severity == InvariantSeverity.CRITICAL for v in violations) or any(
+                v.severity == InvariantSeverity.ERROR for v in violations
+            ):
                 result.status = ValidationResultStatus.FAIL
 
             if check_symbolic and self._angr_available:
@@ -168,7 +161,7 @@ class SemanticValidator:
 
         return SemanticValidationReport(
             binary_path=str(self.binary.path) if self.binary.path else "memory",
-            timestamp=datetime.now(timezone.utc).isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             mode=self.mode,
             results=results,
         )

@@ -16,6 +16,7 @@ import pytest
 
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("SKIP_CROSS_VALIDATION_TESTS") == "1", reason="Cross-validation tests disabled"
@@ -31,7 +32,7 @@ def run_tool(tool_name: str, args: list, timeout: int = 10) -> tuple:
     """Run a tool and return (success, stdout, stderr)."""
     try:
         result = subprocess.run(
-            [tool_name] + args,
+            [tool_name, *args],
             capture_output=True,
             timeout=timeout,
         )
@@ -83,7 +84,7 @@ int main() {
             len(list(engine.binary.get_functions()))
 
             engine.add_mutation("nop")
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
 
             if result.get("passes_run", 0) >= 0:
                 engine.save(output)
@@ -119,7 +120,7 @@ int main() {
             with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
-                result = engine.run(validation_mode="structural")
+                result = engine.run(EngineRunOptions(validation_mode="structural"))
 
                 if result.get("passes_run", 0) >= 0:
                     engine.save(output)
@@ -176,7 +177,7 @@ int main() { printf("test"); return 0; }
             with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
-                result = engine.run(validation_mode="structural")
+                result = engine.run(EngineRunOptions(validation_mode="structural"))
 
                 if result.get("passes_run", 0) >= 0:
                     engine.save(output)
@@ -240,7 +241,7 @@ int main() { return 42; }
             with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
-                result = engine.run(validation_mode="structural")
+                result = engine.run(EngineRunOptions(validation_mode="structural"))
 
                 if result.get("passes_run", 0) >= 0:
                     engine.save(output)
@@ -279,7 +280,7 @@ int main() { return 42; }
             with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
-                result = engine.run(validation_mode="structural")
+                result = engine.run(EngineRunOptions(validation_mode="structural"))
 
                 if result.get("passes_run", 0) >= 0:
                     engine.save(output)
@@ -338,7 +339,7 @@ class TestFileCrossValidation:
             with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(test_binary).analyze()
                 engine.add_mutation("nop")
-                result = engine.run(validation_mode="structural")
+                result = engine.run(EngineRunOptions(validation_mode="structural"))
 
                 if result.get("passes_run", 0) >= 0:
                     engine.save(output)
@@ -406,7 +407,7 @@ int main() {
             with MorphEngine(config=config.to_dict()) as engine:
                 engine.load_binary(string_binary).analyze()
                 engine.add_mutation("nop")
-                result = engine.run(validation_mode="structural")
+                result = engine.run(EngineRunOptions(validation_mode="structural"))
 
                 if result.get("passes_run", 0) >= 0:
                     engine.save(output)

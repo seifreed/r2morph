@@ -15,6 +15,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_HIGH_SECTION_ENTROPY = 7.0
+_SIGNATURE_CONFIDENCE_THRESHOLD = 0.5
+
 
 def get_entry_bytes(binary: Binary, entry_point: int, size: int = 32) -> bytes:
     """Read bytes at the entry point."""
@@ -99,7 +102,7 @@ def detect_packing_layers(
                         data = bytes.fromhex(data_hex.strip())
                         entropy = calculate_entropy(data)
 
-                        if entropy > 7.0:
+                        if entropy > _HIGH_SECTION_ENTROPY:
                             high_entropy_sections.append(
                                 {
                                     "name": section.get("name", ""),
@@ -122,7 +125,7 @@ def detect_packing_layers(
         for signature in signatures:
             confidence = calculate_signature_confidence(signature, sections_list, entry_bytes, binary, entropy_analyzer)
 
-            if confidence > 0.5:
+            if confidence > _SIGNATURE_CONFIDENCE_THRESHOLD:
                 result["packers"].append(
                     {
                         "name": signature.name,

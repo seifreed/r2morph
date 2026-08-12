@@ -39,6 +39,17 @@ class GateFailure:
         }
 
 
+@dataclass(frozen=True)
+class GateEvaluationRequest:
+    """Resolved CLI gate requirements and their evaluation results."""
+
+    min_severity: str | None
+    min_severity_passed: bool
+    pass_severity_requirements: list[tuple[str, str, int]]
+    pass_severity_requirements_passed: bool
+    pass_severity_failures: list[str]
+
+
 class GateEvaluator:
     """Evaluates severity thresholds and gate failures for mutation reports."""
 
@@ -104,26 +115,22 @@ class GateEvaluator:
     @staticmethod
     def attach_gate_evaluation(
         report_payload: dict[str, Any],
-        min_severity: str | None,
-        min_severity_passed: bool,
-        require_pass_severity: list[tuple[str, str, int]],
-        require_pass_severity_passed: bool,
-        require_pass_severity_failures: list[str],
+        request: GateEvaluationRequest,
     ) -> dict[str, Any]:
         """Attach CLI gate evaluation metadata to a report payload."""
         gate_evaluation = {
             "requested": {
-                "min_severity": min_severity,
+                "min_severity": request.min_severity,
                 "require_pass_severity": [
                     {"pass_name": pass_name, "max_severity": severity}
-                    for pass_name, severity, _rank in require_pass_severity
+                    for pass_name, severity, _rank in request.pass_severity_requirements
                 ],
             },
             "results": {
-                "min_severity_passed": min_severity_passed,
-                "require_pass_severity_passed": require_pass_severity_passed,
-                "require_pass_severity_failures": list(require_pass_severity_failures),
-                "all_passed": min_severity_passed and require_pass_severity_passed,
+                "min_severity_passed": request.min_severity_passed,
+                "require_pass_severity_passed": request.pass_severity_requirements_passed,
+                "require_pass_severity_failures": list(request.pass_severity_failures),
+                "all_passed": request.min_severity_passed and request.pass_severity_requirements_passed,
             },
         }
         gate_failures = GateEvaluator.summarize_gate_failures(gate_evaluation)

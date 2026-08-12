@@ -9,9 +9,9 @@ affecting program semantics.
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.block_reordering_helpers import (
     calculate_jump_cost,

@@ -2,15 +2,10 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from r2morph.detection.packer_signatures import PackerSignature
+from r2morph.detection.packer_signature_models import PackerSignature, PackerType
 
 
 def vm_protector_signatures() -> list[PackerSignature]:
-    from r2morph.detection.packer_signatures import PackerSignature, PackerType
-
     return [
         PackerSignature(
             name="VMProtect 3.x",
@@ -56,8 +51,6 @@ def vm_protector_signatures() -> list[PackerSignature]:
 
 
 def compressor_signatures() -> list[PackerSignature]:
-    from r2morph.detection.packer_signatures import PackerSignature, PackerType
-
     return [
         PackerSignature(
             name="UPX",
@@ -112,8 +105,6 @@ def compressor_signatures() -> list[PackerSignature]:
 
 
 def protector_signatures() -> list[PackerSignature]:
-    from r2morph.detection.packer_signatures import PackerSignature, PackerType
-
     return [
         PackerSignature(
             name="ASProtect",
@@ -165,8 +156,6 @@ def protector_signatures() -> list[PackerSignature]:
 
 
 def other_signatures() -> list[PackerSignature]:
-    from r2morph.detection.packer_signatures import PackerSignature, PackerType
-
     return [
         PackerSignature(
             name="PESpin",

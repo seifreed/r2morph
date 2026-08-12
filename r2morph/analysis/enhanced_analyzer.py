@@ -7,6 +7,7 @@ devirtualization, and reporting.
 """
 
 import logging
+from importlib.util import find_spec
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,8 @@ from r2morph.analysis.enhanced_analyzer_reporting import (
     generate_report,
     save_report,
 )
+from r2morph.detection.anti_analysis_bypass import AntiAnalysisBypass
+from r2morph.detection.obfuscation_detector import ObfuscationDetector
 
 logger = logging.getLogger(__name__)
 
@@ -81,10 +84,7 @@ class EnhancedAnalysisOrchestrator:
         display_detection_results(
             self.console,
             self.binary_path,
-            self.results.detection_result,
-            self.results.custom_vm,
-            self.results.layers,
-            self.results.metamorphic,
+            self.results,
             verbose=verbose,
         )
 
@@ -95,8 +95,6 @@ class EnhancedAnalysisOrchestrator:
         Returns:
             BypassResult if bypasses were applied, None otherwise
         """
-        from r2morph.detection import AntiAnalysisBypass
-
         self.console.print("\n[bold yellow]Applying Anti-Analysis Bypass...[/bold yellow]")
         bypass_framework = AntiAnalysisBypass()
         detected_techniques = bypass_framework.detect_anti_analysis_techniques(self._binary)
@@ -144,8 +142,6 @@ class EnhancedAnalysisOrchestrator:
             Complete analysis report dictionary
         """
         if self._detector is None:
-            from r2morph.detection import ObfuscationDetector
-
             self._detector = ObfuscationDetector()
 
         return generate_report(self._detector, self._binary, self.results, self.console)
@@ -240,9 +236,4 @@ def check_enhanced_dependencies() -> bool:
     Returns:
         True if dependencies are available, False otherwise
     """
-    import importlib.util
-
-    return (
-        importlib.util.find_spec("r2morph.detection") is not None
-        and importlib.util.find_spec("r2morph.devirtualization") is not None
-    )
+    return find_spec("r2morph.detection") is not None and find_spec("r2morph.devirtualization") is not None

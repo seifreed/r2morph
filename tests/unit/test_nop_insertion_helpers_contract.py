@@ -16,6 +16,8 @@ class _Binary:
         raise ValueError(addr)
 
     def assemble(self, insn: str, function_addr: int | None = None):
+        if insn.startswith(("inc ", "push ", "pop ")):
+            return b"\x40"
         table = {
             "jmp 1": b"\xeb\x01",
             "inc eax": b"\x40",
@@ -25,9 +27,8 @@ class _Binary:
         return table.get(insn)
 
 
-def test_nop_insertion_helpers_cover_the_core_paths(monkeypatch) -> None:
-    monkeypatch.setattr(nop_helpers.random, "choice", lambda seq: seq[0])
-    monkeypatch.setattr(nop_helpers.random, "shuffle", lambda seq: None)
+def test_nop_insertion_helpers_cover_the_core_paths() -> None:
+    nop_helpers.random.seed(42)
 
     binary = _Binary()
     functions = [

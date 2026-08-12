@@ -44,46 +44,10 @@ def test_cli_version_function() -> None:
     assert result is None
 
 
-def test_cli_warns_for_experimental_mutations(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
     source = Path("dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
-
-    class FakeEngine:
-        def __init__(self, config=None):
-            self.config = config or {}
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def load_binary(self, path):
-            self.path = Path(path)
-            return self
-
-        def analyze(self):
-            return self
-
-        def add_mutation(self, mutation):
-            return self
-
-        def run(self, **kwargs):
-            return {
-                "total_mutations": 0,
-                "passes_run": 1,
-                "pass_results": {"BlockReordering": {"mutations_applied": 0}},
-                "validation": {"all_passed": True},
-            }
-
-        def save(self, output_path):
-            Path(output_path).write_bytes(self.path.read_bytes())
-
-        def build_report(self, result=None):
-            return {"pass_results": {}, "mutations": []}
-
-    monkeypatch.setattr(cli, "MorphEngine", FakeEngine)
 
     runner = CliRunner()
     output = tmp_path / "out.bin"
@@ -108,49 +72,11 @@ def test_cli_warns_for_experimental_mutations(monkeypatch: pytest.MonkeyPatch, t
 
 
 def test_cli_warns_for_symbolic_validation_mode(
-    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     source = Path("dataset/elf_x86_64")
     if not source.exists():
         pytest.skip("ELF test binary not available")
-
-    class FakeEngine:
-        def __init__(self, config=None):
-            self.config = config or {}
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc, tb):
-            return False
-
-        def load_binary(self, path):
-            self.path = Path(path)
-            return self
-
-        def analyze(self):
-            return self
-
-        def add_mutation(self, mutation):
-            return self
-
-        def run(self, **kwargs):
-            return {
-                "total_mutations": 0,
-                "passes_run": 1,
-                "pass_results": {"NopInsertion": {"mutations_applied": 0}},
-                "validation": {"all_passed": True, "total_issues": 0},
-                "validation_mode": kwargs.get("validation_mode"),
-            }
-
-        def save(self, output_path):
-            Path(output_path).write_bytes(self.path.read_bytes())
-
-        def build_report(self, result=None):
-            return {"pass_results": {}, "mutations": []}
-
-    monkeypatch.setattr(cli, "MorphEngine", FakeEngine)
 
     runner = CliRunner()
     output = tmp_path / "out.bin"

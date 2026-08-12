@@ -11,23 +11,6 @@ from typing import Any
 from rich.console import Console
 
 from r2morph.core.report_helpers_indexing import _index_rows_by_pass_name
-from r2morph.reporting.report_evidence_sorting import (
-    _sort_pass_evidence as _sort_pass_evidence,
-)
-from r2morph.reporting.report_helpers_symbolic_view import (
-    _summarize_symbolic_view_from_mutations as _summarize_symbolic_view_from_mutations,
-)
-from r2morph.reporting.report_mutation_selection import (
-    _select_report_mutations as _select_report_mutations,
-)
-from r2morph.reporting.report_pass_classification import (  # noqa: F401
-    _has_structural_risk,
-    _has_symbolic_risk,
-    _is_clean_pass,
-    _is_covered_pass,
-    _is_risky_pass,
-    _is_uncovered_pass,
-)
 from r2morph.reporting.report_summary_lookup import _summary_first as _summary_first_impl
 
 console = Console()

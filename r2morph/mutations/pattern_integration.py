@@ -9,16 +9,19 @@ Provides unified interface for:
 """
 
 import logging
-import random
 from dataclasses import dataclass
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.junk_generator import JunkGenerator, create_junk_generator
 from r2morph.mutations.pattern_pool import (
     get_pattern_pools,
 )
+from r2morph.mutations.pattern_types import Instruction
 
 logger = logging.getLogger(__name__)
+
+_INSTRUCTION_PART_COUNT = 2
 
 
 @dataclass
@@ -83,7 +86,7 @@ class PatternMatchIntegration:
                     if random.randint(0, 100) <= pool.mutation_probability:
                         old_insns = converted[match.index : match.index + match.length]
 
-                        gen_list, weights = zip(*pool.generators)
+                        gen_list, weights = zip(*pool.generators, strict=False)
                         chosen_gen = random.choices(gen_list, weights=weights, k=1)[0]
 
                         new_insns = chosen_gen(match.operands, os_type)
@@ -116,8 +119,6 @@ class PatternMatchIntegration:
 
         Non-dict items (already Instruction objects) are passed through unchanged.
         """
-        from r2morph.mutations.pattern_types import Instruction
-
         converted = []
         for ins in block_instructions:
             if isinstance(ins, dict):
@@ -165,7 +166,7 @@ class PatternMatchIntegration:
         for pool in get_pattern_pools():
             for rule in pool.match_rules:
                 for match in rule(converted):
-                    gen_list, weights = zip(*pool.generators)
+                    gen_list, weights = zip(*pool.generators, strict=False)
                     chosen_gen = random.choices(gen_list, weights=weights, k=1)[0]
                     replacement = chosen_gen(match.operands, os_type)
                     edits.append(
@@ -183,7 +184,7 @@ class PatternMatchIntegration:
         """Extract operand at index from instruction dict."""
         disasm = str(ins.get("disasm", ""))
         parts = disasm.split(maxsplit=1)
-        if len(parts) < 2:
+        if len(parts) < _INSTRUCTION_PART_COUNT:
             return ""
         operands = parts[1].split(",")
         if idx < len(operands):
@@ -269,7 +270,7 @@ def create_pattern_integration(
 
 
 __all__ = [
-    "PatternMatchIntegration",
     "PatternMatchConfig",
+    "PatternMatchIntegration",
     "create_pattern_integration",
 ]

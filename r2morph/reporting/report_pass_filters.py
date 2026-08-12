@@ -6,7 +6,7 @@ from collections.abc import Callable
 from typing import Any
 
 from r2morph.reporting.report_pass_filter_fallbacks import (
-    _resolve_pass_filter_fallbacks as _resolve_pass_filter_fallbacks,
+    _resolve_pass_filter_fallbacks,
 )
 from r2morph.reporting.report_pass_filter_views import _normalize_pass_filter_views
 from r2morph.reporting.report_pass_triage_rows import _pass_names_from_triage_rows

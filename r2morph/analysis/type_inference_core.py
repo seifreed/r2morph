@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from r2morph.analysis.type_inference_factory import (
     _create_int_type,
@@ -18,6 +18,11 @@ from r2morph.core.binary import Binary
 
 if TYPE_CHECKING:
     from r2morph.analysis.type_inference import TypeInference
+
+_OPERAND_COUNT = 2
+_POINTER_NEIGHBOR_DISTANCE_BYTES = 32
+_POINTER_SIZE_BYTES = 8
+_SMALL_PRIMITIVE_MAX_BYTES = 4
 
 
 def infer_type(self: TypeInference, binary: Binary, address: int) -> TypeInfo:
@@ -44,7 +49,7 @@ def infer_type(self: TypeInference, binary: Binary, address: int) -> TypeInfo:
     )
 
 
-def _infer_from_instruction(self: TypeInference, binary: Binary, insn: dict) -> TypeInfo:
+def _infer_from_instruction(self: TypeInference, binary: Binary, insn: dict[str, Any]) -> TypeInfo:
     """Infer type from an instruction."""
     disasm = insn.get("disasm", "").lower()
 
@@ -66,17 +71,17 @@ def _infer_from_instruction(self: TypeInference, binary: Binary, insn: dict) -> 
     )
 
 
-def _infer_from_mov(self: TypeInference, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
+def _infer_from_mov(self: TypeInference, binary: Binary, insn: dict[str, Any], disasm: str) -> TypeInfo:
     """Infer type from mov instruction."""
     parts = disasm.split(None, 1)
-    if len(parts) < 2:
+    if len(parts) < _OPERAND_COUNT:
         return TypeInfo(
             type_id=self._new_type_id(),
             category=TypeCategory.UNKNOWN,
         )
 
     operands = parts[1].split(",")
-    if len(operands) < 2:
+    if len(operands) < _OPERAND_COUNT:
         return TypeInfo(
             type_id=self._new_type_id(),
             category=TypeCategory.UNKNOWN,
@@ -101,7 +106,7 @@ def _infer_from_mov(self: TypeInference, binary: Binary, insn: dict, disasm: str
     )
 
 
-def _infer_arithmetic_type(self: TypeInference, binary: Binary, insn: dict, disasm: str) -> TypeInfo:
+def _infer_arithmetic_type(self: TypeInference, binary: Binary, insn: dict[str, Any], disasm: str) -> TypeInfo:
     """Infer type from arithmetic instruction."""
     operand_size = _extract_operand_size(disasm)
     return _create_int_type(self, operand_size)
@@ -147,7 +152,7 @@ def _unify_adjacent_types(self: TypeInference, types: dict[int, TypeInfo]) -> No
         prev_type = types[prev_addr]
         curr_type = types[curr_addr]
 
-        if prev_type.category == TypeCategory.UNKNOWN or curr_type.category == TypeCategory.UNKNOWN:
+        if TypeCategory.UNKNOWN in (prev_type.category, curr_type.category):
             continue
 
         if (
@@ -186,7 +191,10 @@ def _promote_pointer_neighbors(self: TypeInference, types: dict[int, TypeInfo]) 
         for other_addr, other_type in types.items():
             if other_addr == addr:
                 continue
-            if other_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64) and abs(other_addr - addr) < 32:
+            if (
+                other_type.primitive in (PrimitiveType.UINT64, PrimitiveType.INT64)
+                and abs(other_addr - addr) < _POINTER_NEIGHBOR_DISTANCE_BYTES
+            ):
                 types[other_addr] = TypeInfo(
                     type_id=other_type.type_id,
                     category=TypeCategory.POINTER,
@@ -223,12 +231,14 @@ def _refine_primitive_to_pointer(
     next_addr: int | None,
 ) -> None:
     """Reinterpret a 64-bit integer as a pointer when the value 8 bytes later is a small primitive."""
-    if not (curr_type.size == 8 and curr_type.primitive in (PrimitiveType.INT64, PrimitiveType.UINT64)):
+    if not (
+        curr_type.size == _POINTER_SIZE_BYTES and curr_type.primitive in (PrimitiveType.INT64, PrimitiveType.UINT64)
+    ):
         return
-    if not (next_addr and (next_addr - curr_addr) == 8):
+    if not (next_addr and (next_addr - curr_addr) == _POINTER_SIZE_BYTES):
         return
     next_type = types[next_addr]
-    if next_type.category == TypeCategory.PRIMITIVE and next_type.size <= 4:
+    if next_type.category == TypeCategory.PRIMITIVE and next_type.size <= _SMALL_PRIMITIVE_MAX_BYTES:
         types[curr_addr] = TypeInfo(
             type_id=curr_type.type_id,
             category=TypeCategory.POINTER,
@@ -245,7 +255,7 @@ def _refine_unknown_type(
     curr_type: TypeInfo,
 ) -> None:
     """Assume an unknown 8-byte value is a pointer and an unknown 4-byte value a 32-bit integer."""
-    if curr_type.size == 8:
+    if curr_type.size == _POINTER_SIZE_BYTES:
         types[curr_addr] = TypeInfo(
             type_id=curr_type.type_id,
             category=TypeCategory.POINTER,
@@ -253,7 +263,7 @@ def _refine_unknown_type(
             alignment=8,
             confidence=0.5,
         )
-    elif curr_type.size == 4:
+    elif curr_type.size == _SMALL_PRIMITIVE_MAX_BYTES:
         types[curr_addr] = TypeInfo(
             type_id=curr_type.type_id,
             category=TypeCategory.PRIMITIVE,
@@ -265,22 +275,22 @@ def _refine_unknown_type(
 
 
 __all__ = [
+    "_create_int_type",
+    "_extract_operand_size",
+    "_get_operand_size",
+    "_infer_arithmetic_type",
+    "_infer_from_instruction",
+    "_infer_from_mov",
+    "_promote_pointer_neighbors",
+    "_propagate_through_phis",
+    "_refine_primitive_to_pointer",
+    "_refine_types",
+    "_refine_unknown_type",
+    "_unify_adjacent_types",
     "create_array_type",
     "create_pointer_type",
     "create_primitive_type",
     "create_struct_type",
-    "_create_int_type",
-    "_extract_operand_size",
-    "_get_operand_size",
     "infer_type",
     "propagate_types",
-    "_infer_from_instruction",
-    "_infer_from_mov",
-    "_infer_arithmetic_type",
-    "_propagate_through_phis",
-    "_unify_adjacent_types",
-    "_promote_pointer_neighbors",
-    "_refine_types",
-    "_refine_primitive_to_pointer",
-    "_refine_unknown_type",
 ]

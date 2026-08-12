@@ -31,27 +31,12 @@ class RegionTracker:
         self._regions_by_address: dict[int, list[int]] = {}
         self._region_counter = 0
 
-    def track_mutation(
-        self,
-        start: int,
-        end: int,
-        pass_name: str,
-        affected_registers: set[str] | None = None,
-        affected_memory: set[int] | None = None,
-        control_flow_changed: bool = False,
-        metadata: dict[str, Any] | None = None,
-    ) -> int:
+    def track_mutation(self, region: MutationRegion) -> int:
         """
         Track a mutation region.
 
         Args:
-            start: Start address
-            end: End address
-            pass_name: Mutation pass name
-            affected_registers: Set of affected registers
-            affected_memory: Set of affected memory addresses
-            control_flow_changed: Whether control flow was modified
-            metadata: Additional metadata
+            region: Mutation region to track
 
         Returns:
             Region ID
@@ -59,19 +44,9 @@ class RegionTracker:
         region_id = self._region_counter
         self._region_counter += 1
 
-        region = MutationRegion(
-            start=start,
-            end=end,
-            pass_name=pass_name,
-            affected_registers=affected_registers or set(),
-            affected_memory=affected_memory or set(),
-            control_flow_changed=control_flow_changed,
-            metadata=metadata or {},
-        )
-
         self._regions[region_id] = region
 
-        for addr in range(start, end):
+        for addr in range(region.start, region.end):
             if addr not in self._regions_by_address:
                 self._regions_by_address[addr] = []
             self._regions_by_address[addr].append(region_id)
@@ -155,7 +130,10 @@ class ConflictDetector:
                         severity=ConflictSeverity.HIGH,
                         region1=region1,
                         region2=region2,
-                        description=f"Regions overlap: 0x{region1.start:x}-0x{region1.end:x} and 0x{region2.start:x}-0x{region2.end:x}",
+                        description=(
+                            f"Regions overlap: 0x{region1.start:x}-0x{region1.end:x} "
+                            f"and 0x{region2.start:x}-0x{region2.end:x}"
+                        ),
                         resolution_hint="Consider reordering mutations or using different addresses",
                     )
                     conflicts.append(conflict)

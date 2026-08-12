@@ -21,6 +21,8 @@ import time
 from dataclasses import replace
 from typing import Any
 
+from r2morph.detection.obfuscation_detector import ObfuscationDetector
+
 from .iterative_simplifier_models import (
     SimplificationMetrics,
     SimplificationPass,
@@ -31,6 +33,11 @@ from .iterative_simplifier_models import (
 from .iterative_simplifier_passes import CFOSimplificationPass, MBASimplificationPass, VMDevirtualizationPass
 
 logger = logging.getLogger(__name__)
+
+_GOOD_IMPROVEMENT_THRESHOLD = 0.1
+_MODERATE_IMPROVEMENT_THRESHOLD = 0.05
+_MAX_RETAINED_CHECKPOINTS = 5
+_MIN_MEANINGFUL_REDUCTION = 0.01
 
 
 class IterativeSimplifier:
@@ -80,15 +87,7 @@ class IterativeSimplifier:
         """
         start_time = time.time()
 
-        # Set parameters
-        if binary:
-            self.binary = binary
-        if strategy:
-            self.strategy = strategy
-        if max_iterations:
-            self.max_iterations = max_iterations
-        if timeout:
-            self.timeout = timeout
+        self._configure_run(binary, strategy, max_iterations, timeout)
 
         if not self.binary:
             return SimplificationResult(
@@ -180,7 +179,7 @@ class IterativeSimplifier:
             return SimplificationResult(
                 success=False,
                 strategy_used=self.strategy,
-                errors=[f"Simplification failed: {str(e)}"],
+                errors=[f"Simplification failed: {e!s}"],
                 metrics=self.metrics,
             )
 
@@ -213,8 +212,6 @@ class IterativeSimplifier:
         """Preprocess the binary for simplification."""
         try:
             # Identify obfuscation patterns
-            from ..detection import ObfuscationDetector
-
             detector = ObfuscationDetector()
             if hasattr(detector, "analyze_binary"):
                 detection_result = detector.analyze_binary(self.binary)
@@ -314,10 +311,10 @@ class IterativeSimplifier:
             return
 
         # Adjust based on improvement rate
-        if improvement > 0.1:  # Good improvement
+        if improvement > _GOOD_IMPROVEMENT_THRESHOLD:
             # Continue with current approach
             pass
-        elif improvement > 0.05:  # Moderate improvement
+        elif improvement > _MODERATE_IMPROVEMENT_THRESHOLD:
             # Slightly more aggressive
             self.convergence_threshold = max(0.005, self.convergence_threshold * 0.8)
         else:  # Poor improvement
@@ -359,8 +356,8 @@ class IterativeSimplifier:
             context["optimization_applied"] = True
 
             # Clean up intermediate data if needed
-            if len(context.get("checkpoints", [])) > 5:
-                context["checkpoints"] = context["checkpoints"][-5:]
+            if len(context.get("checkpoints", [])) > _MAX_RETAINED_CHECKPOINTS:
+                context["checkpoints"] = context["checkpoints"][-_MAX_RETAINED_CHECKPOINTS:]
 
         except Exception as e:
             logger.error(f"Result optimization failed: {e}")
@@ -373,7 +370,7 @@ class IterativeSimplifier:
 
         try:
             # Check if we achieved meaningful simplification
-            if self.metrics.complexity_reduction < 0.01:
+            if self.metrics.complexity_reduction < _MIN_MEANINGFUL_REDUCTION:
                 validation["warnings"].append("Very low complexity reduction achieved")
 
             # Check for potential issues
@@ -463,3 +460,19 @@ class IterativeSimplifier:
             "devirtualized_handlers": self.metrics.devirtualized_handlers,
             "checkpoints": len(self.checkpoints),
         }
+
+    def _configure_run(
+        self,
+        binary: Any,
+        strategy: SimplificationStrategy | None,
+        max_iterations: int | None,
+        timeout: int | None,
+    ) -> None:
+        if binary:
+            self.binary = binary
+        if strategy:
+            self.strategy = strategy
+        if max_iterations:
+            self.max_iterations = max_iterations
+        if timeout:
+            self.timeout = timeout

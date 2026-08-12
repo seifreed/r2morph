@@ -21,7 +21,7 @@ only the byte offsets, never how a byte is decrypted.
 
 from __future__ import annotations
 
-import random
+import r2morph.core.randomness as random
 
 # (field name, byte size). The opcode is implicit at offset 0; these are operands.
 Field = tuple[str, int]

@@ -25,6 +25,7 @@ emitting a corrupt one.
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from typing import Any
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,7 @@ _MIN_BLOCKS = 3
 _MAX_LAYOUT_ITERATIONS = 12
 
 
-class _BailOut(Exception):
+class _BailOutError(Exception):
     """Raised when a function cannot be reordered with a byte-correct result."""
 
 
@@ -63,39 +64,28 @@ def reorder_function_blocks(
     (too few blocks, an unchanged order was drawn, or the function could not be
     relocated with a byte-correct result).
     """
-    if len(blocks) < _MIN_BLOCKS:
-        return 0
-
-    ordered = sorted(blocks, key=lambda b: b["addr"])
-    func_start = ordered[0]["addr"]
-    func_end = ordered[-1]["addr"] + ordered[-1]["size"]
-    budget = func_end - func_start
-
     try:
-        plans = _build_block_plans(binary, ordered, func_start, func_end)
-    except _BailOut as exc:
-        logger.debug("Skipping reorder of %s: %s", func.get("name"), exc)
-        return 0
-
-    new_order = _draw_new_order(ordered, rng)
-    if new_order is None:
-        return 0
-
-    try:
+        if len(blocks) < _MIN_BLOCKS:
+            raise _BailOutError("too few blocks")
+        ordered = sorted(blocks, key=lambda block: block["addr"])
+        func_start = ordered[0]["addr"]
+        func_end = ordered[-1]["addr"] + ordered[-1]["size"]
+        budget = func_end - func_start
+        plans = _build_block_plans(binary, ordered, func_start)
+        new_order = _draw_new_order(ordered, rng)
+        if new_order is None:
+            raise _BailOutError("shuffle kept the original order")
         layout = _lay_out(binary, new_order, plans, func_start, budget)
-    except _BailOut as exc:
+        buffer = bytearray()
+        for block in new_order:
+            buffer += layout.block_bytes[block["addr"]]
+        if len(buffer) > budget:
+            raise _BailOutError("encoded blocks exceed the original byte budget")
+        buffer += b"\x90" * (budget - len(buffer))
+        if not binary.write_bytes(func_start, bytes(buffer)):
+            raise _BailOutError("write rejected")
+    except _BailOutError as exc:
         logger.debug("Skipping reorder of %s: %s", func.get("name"), exc)
-        return 0
-
-    buffer = bytearray()
-    for block in new_order:
-        buffer += layout.block_bytes[block["addr"]]
-    if len(buffer) > budget:
-        return 0
-    buffer += b"\x90" * (budget - len(buffer))
-
-    if not binary.write_bytes(func_start, bytes(buffer)):
-        logger.debug("Reorder of %s failed: write rejected", func.get("name"))
         return 0
 
     logger.info(
@@ -110,7 +100,7 @@ def reorder_function_blocks(
 class _BlockPlan:
     """Relocation plan for a single basic block."""
 
-    __slots__ = ("addr", "items", "fallthrough")
+    __slots__ = ("addr", "fallthrough", "items")
 
     def __init__(self, addr: int, items: list[tuple[str, Any]], fallthrough: int | None):
         self.addr = addr
@@ -129,11 +119,18 @@ class _Layout:
         self.block_bytes = block_bytes
 
 
+@dataclass(frozen=True, slots=True)
+class _EncodingContext:
+    binary: Any
+    address_map: dict[int, int]
+    function_start: int
+    function_end: int
+
+
 def _build_block_plans(
     binary: Any,
     ordered: list[dict[str, Any]],
     func_start: int,
-    func_end: int,
 ) -> dict[int, _BlockPlan]:
     """Decode every block and classify each instruction, or bail."""
     plans: dict[int, _BlockPlan] = {}
@@ -142,12 +139,12 @@ def _build_block_plans(
         addr = block["addr"]
         size = block["size"]
         if addr != next_addr:
-            raise _BailOut("blocks are not contiguous")
+            raise _BailOutError("blocks are not contiguous")
         next_addr = addr + size
 
         instructions = binary.r2.cmdj(f"pdbj @ 0x{addr:x}")
         if not instructions:
-            raise _BailOut(f"no instructions for block 0x{addr:x}")
+            raise _BailOutError(f"no instructions for block 0x{addr:x}")
 
         items = _classify_instructions(instructions)
         fallthrough = _fallthrough_target(instructions, ordered, index)
@@ -162,20 +159,20 @@ def _classify_instructions(instructions: list[dict[str, Any]]) -> list[tuple[str
     for insn in instructions:
         disasm = insn.get("disasm", "")
         if "rip" in disasm.lower():
-            raise _BailOut("RIP-relative operand cannot be relocated")
+            raise _BailOutError("RIP-relative operand cannot be relocated")
 
         insn_type = insn.get("type", "")
         target = insn.get("jump")
         if insn_type in _RELATIVE_TRANSFER_TYPES and isinstance(target, int):
             mnemonic = disasm.split()[0] if disasm else ""
             if not mnemonic:
-                raise _BailOut("unparseable branch mnemonic")
+                raise _BailOutError("unparseable branch mnemonic")
             items.append((_BRANCH, (mnemonic, target)))
             continue
 
         raw = insn.get("bytes")
         if not raw:
-            raise _BailOut("instruction without bytes")
+            raise _BailOutError("instruction without bytes")
         items.append((_RAW, bytes.fromhex(raw)))
     return items
 
@@ -193,7 +190,7 @@ def _fallthrough_target(
     """
     last = instructions[-1]
     last_type = last.get("type", "")
-    if last_type == "jmp" or last_type == "ret":
+    if last_type in {"jmp", "ret"}:
         return None
     if last_type == "cjmp":
         fail = last.get("fail")
@@ -213,7 +210,7 @@ def _draw_new_order(
     rng.shuffle(shuffled)
     if shuffled == tail:
         return None
-    return [ordered[0]] + shuffled
+    return [ordered[0], *shuffled]
 
 
 def _lay_out(
@@ -225,37 +222,36 @@ def _lay_out(
 ) -> _Layout:
     """Assign addresses and encode blocks, iterating to a fixed point."""
     addr_map = {block["addr"]: block["addr"] for block in new_order}
-    order_index = {block["addr"]: i for i, block in enumerate(new_order)}
 
     for _ in range(_MAX_LAYOUT_ITERATIONS):
         cursor = func_start
         next_map: dict[int, int] = {}
         block_bytes: dict[int, bytes] = {}
+        encoding = _EncodingContext(binary, addr_map, func_start, func_start + budget)
 
         for position, block in enumerate(new_order):
             old_addr = block["addr"]
             next_map[old_addr] = cursor
             plan = plans[old_addr]
-            successor_is_adjacent = _successor_adjacent(plan, new_order, position, order_index)
-            encoded = _encode_block(binary, plan, cursor, addr_map, func_start, budget, successor_is_adjacent)
+            successor_is_adjacent = _successor_adjacent(plan, new_order, position)
+            encoded = _encode_block(encoding, plan, cursor, successor_is_adjacent)
             block_bytes[old_addr] = encoded
             cursor += len(encoded)
 
         total = cursor - func_start
         if next_map == addr_map:
             if total > budget:
-                raise _BailOut("reordered layout exceeds original byte budget")
+                raise _BailOutError("reordered layout exceeds original byte budget")
             return _Layout(block_bytes)
         addr_map = next_map
 
-    raise _BailOut("layout did not converge")
+    raise _BailOutError("layout did not converge")
 
 
 def _successor_adjacent(
     plan: _BlockPlan,
     new_order: list[dict[str, Any]],
     position: int,
-    order_index: dict[int, int],
 ) -> bool:
     """True if the block's fall-through successor is the next physical block."""
     if plan.fallthrough is None:
@@ -266,16 +262,12 @@ def _successor_adjacent(
 
 
 def _encode_block(
-    binary: Any,
+    context: _EncodingContext,
     plan: _BlockPlan,
     start: int,
-    addr_map: dict[int, int],
-    func_start: int,
-    func_end_budget: int,
     successor_is_adjacent: bool,
 ) -> bytes:
     """Encode one block at ``start`` using the current address estimates."""
-    func_end = func_start + func_end_budget
     out = bytearray()
     cursor = start
     for kind, payload in plan.items:
@@ -284,14 +276,19 @@ def _encode_block(
             cursor += len(payload)
             continue
         mnemonic, target = payload
-        new_target = _remap_target(target, addr_map, func_start, func_end)
-        encoded = _assemble_at(binary, f"{mnemonic} 0x{new_target:x}", cursor)
+        new_target = _remap_target(
+            target,
+            context.address_map,
+            context.function_start,
+            context.function_end,
+        )
+        encoded = _assemble_at(context.binary, f"{mnemonic} 0x{new_target:x}", cursor)
         out += encoded
         cursor += len(encoded)
 
     if plan.fallthrough is not None and not successor_is_adjacent:
-        new_target = addr_map[plan.fallthrough]
-        encoded = _assemble_at(binary, f"jmp 0x{new_target:x}", cursor)
+        new_target = context.address_map[plan.fallthrough]
+        encoded = _assemble_at(context.binary, f"jmp 0x{new_target:x}", cursor)
         out += encoded
 
     return bytes(out)
@@ -303,18 +300,18 @@ def _remap_target(target: int, addr_map: dict[int, int], func_start: int, func_e
         return addr_map[target]
     if target < func_start or target >= func_end:
         return target
-    raise _BailOut(f"branch into middle of block at 0x{target:x}")
+    raise _BailOutError(f"branch into middle of block at 0x{target:x}")
 
 
 def _assemble_at(binary: Any, instruction: str, address: int) -> bytes:
     """Assemble ``instruction`` as if located at ``address`` (rel-correct)."""
     result = binary.r2.cmd(f"pa {instruction} @ 0x{address:x}").strip()
     if not result:
-        raise _BailOut(f"failed to assemble {instruction!r}")
+        raise _BailOutError(f"failed to assemble {instruction!r}")
     try:
         return bytes.fromhex(result)
     except ValueError as exc:
-        raise _BailOut(f"bad encoding for {instruction!r}: {result!r}") from exc
+        raise _BailOutError(f"bad encoding for {instruction!r}: {result!r}") from exc
 
 
 __all__ = ["reorder_function_blocks"]

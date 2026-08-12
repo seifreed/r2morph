@@ -5,12 +5,17 @@ Generates semantically neutral junk code using Keystone assembler
 and the gadgets library.
 """
 
-import random
 from dataclasses import dataclass
+from importlib import import_module
 from typing import Any
 
-from r2morph.analysis.register_tracker import REG_SIZES_MAP, RegTracker
+import r2morph.core.randomness as random
+from r2morph.core.register_tracker import REG_SIZES_MAP, RegTracker
 from r2morph.mutations.gadgets import Gadgets, create_gadgets
+
+_FALLBACK_SUBREGISTER_INDEX = 4
+_REGISTER_STORE_MIN_BUDGET_BYTES = 16
+_MAX_INSTRUCTION_ATTEMPTS = 10
 
 
 @dataclass
@@ -38,9 +43,8 @@ class JunkGenerator:
 
     def _init_assembler(self) -> None:
         try:
-            from keystone import KS_ARCH_X86, KS_MODE_64, Ks
-
-            self._assembler = Ks(KS_ARCH_X86, KS_MODE_64)
+            keystone = import_module("keystone")
+            self._assembler = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
         except ImportError:
             self._assembler = None
 
@@ -75,7 +79,7 @@ class JunkGenerator:
             return primary_reg
 
         regs, weights = self.get_register_choice()
-        reg_weight_map = dict(zip(regs, weights))
+        reg_weight_map = dict(zip(regs, weights, strict=False))
 
         stored_weights = [0 if r == primary_reg else reg_weight_map.get(r, 0) for r in stored_regs]
 
@@ -134,7 +138,11 @@ class JunkGenerator:
             idx = list(subreg_names).index(subreg) if subreg in subreg_names else 0
             sec_subreg = sec_subregs[idx] if idx < len(sec_subregs) else subreg
             if sec_subreg is None:
-                sec_subreg = subreg_names[4] if len(subreg_names) > 4 else subreg
+                sec_subreg = (
+                    subreg_names[_FALLBACK_SUBREGISTER_INDEX]
+                    if len(subreg_names) > _FALLBACK_SUBREGISTER_INDEX
+                    else subreg
+                )
         else:
             sec_subreg = subreg
 
@@ -179,7 +187,7 @@ class JunkGenerator:
             # Skipping only the store branch lets control fall through to
             # the junk-instruction emission below, which decrements
             # `available` and guarantees termination.
-            if not self._reg_tracker.is_stored(reg) and available > 16:
+            if not self._reg_tracker.is_stored(reg) and available > _REGISTER_STORE_MIN_BUDGET_BYTES:
                 store_code, store_size = self.store_register(reg)
                 restore_code = (
                     self._reg_tracker.get_stored_registers()[-1] if self._reg_tracker.get_stored_registers() else None
@@ -192,7 +200,7 @@ class JunkGenerator:
                 ins, ins_size = self.get_junk_instruction(reg)
 
                 attempts = 0
-                while available - ins_size < 0 and attempts < 10:
+                while available - ins_size < 0 and attempts < _MAX_INSTRUCTION_ATTEMPTS:
                     ins, ins_size = self.get_junk_instruction(reg)
                     attempts += 1
 

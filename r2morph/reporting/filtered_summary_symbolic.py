@@ -1,14 +1,27 @@
 """Symbolic-analysis section helpers for filtered report payloads.
 
 Leaf detail-builders for the symbolic-issue / coverage / severity sections of a
-filtered summary, extracted verbatim from filtered_summary_builder.py -- no logic
+filtered summary, extracted from the report flow -- no logic
 changes. Called only by the pass-section orchestrator; never call back into it.
 """
 
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.core.report_helpers_symbolic_summary import classify_symbolic_severity
-from r2morph.reporting.report_helpers import _sort_pass_evidence, _visible_rows_from_map
+from r2morph.reporting.report_evidence_sorting import _sort_pass_evidence
+from r2morph.reporting.report_helpers import _visible_rows_from_map
+
+
+@dataclass(frozen=True, slots=True)
+class SymbolicPopulation:
+    filtered_summary: dict[str, Any]
+    summary: dict[str, Any]
+    pass_results: dict[str, Any]
+    by_pass: dict[str, dict[str, int]]
+    degraded_passes: list[dict[str, Any]]
+    only_degraded: bool
+    summary_sources: dict[str, Any]
 
 
 def _symbolic_issue_passes_from_by_pass(by_pass: dict[str, dict[str, int]]) -> list[dict[str, Any]]:
@@ -53,18 +66,15 @@ def _symbolic_coverage_from_by_pass(by_pass: dict[str, dict[str, int]]) -> list[
     ]
 
 
-def _populate_symbolic_issue_passes(
-    *,
-    filtered_summary: dict[str, Any],
-    summary: dict[str, Any],
-    pass_results: dict[str, Any],
-    by_pass: dict[str, dict[str, int]],
-    summary_symbolic_issue_map: dict[str, Any],
-    summary_pass_evidence_compact: list[dict[str, Any]],
-    summary_pass_evidence_map: dict[str, Any],
-    summary_general_symbolic: dict[str, Any],
-) -> None:
+def _populate_symbolic_issue_passes(state: SymbolicPopulation) -> None:
     """Populate pass_evidence and symbolic_issue_passes sections."""
+    filtered_summary = state.filtered_summary
+    summary = state.summary
+    pass_results = state.pass_results
+    by_pass = state.by_pass
+    summary_symbolic_issue_map = state.summary_sources["symbolic_issue_map"]
+    summary_pass_evidence_compact = state.summary_sources["pass_evidence_compact"]
+    summary_general_symbolic = state.summary_sources["general_symbolic"]
     pass_evidence_priority_rows = list(summary.get("pass_evidence_priority", []))
     if pass_evidence_priority_rows:
         filtered_summary["pass_evidence"] = [
@@ -106,17 +116,15 @@ def _populate_symbolic_issue_passes(
         filtered_summary["symbolic_issue_passes"] = _symbolic_issue_passes_from_by_pass(by_pass)
 
 
-def _populate_symbolic_coverage_and_severity(
-    *,
-    filtered_summary: dict[str, Any],
-    by_pass: dict[str, dict[str, int]],
-    degraded_passes: list[dict[str, Any]],
-    only_degraded: bool,
-    summary_symbolic_coverage_map: dict[str, Any],
-    summary_symbolic_severity_map: dict[str, Any],
-    pass_results: dict[str, Any],
-) -> None:
+def _populate_symbolic_coverage_and_severity(state: SymbolicPopulation) -> None:
     """Populate symbolic_coverage_by_pass and symbolic_severity_by_pass sections."""
+    filtered_summary = state.filtered_summary
+    by_pass = state.by_pass
+    degraded_passes = state.degraded_passes
+    only_degraded = state.only_degraded
+    pass_results = state.pass_results
+    summary_symbolic_coverage_map = state.summary_sources["symbolic_coverage_map"]
+    summary_symbolic_severity_map = state.summary_sources["symbolic_severity_map"]
     if not filtered_summary["symbolic_coverage_by_pass"]:
         filtered_summary["symbolic_coverage_by_pass"] = _visible_rows_from_map(
             summary_symbolic_coverage_map, set(filtered_summary["passes"])
@@ -163,20 +171,18 @@ def _populate_symbolic_coverage_and_severity(
         ]
 
 
-def _populate_filtered_summary_symbolic_sections(
-    *,
-    filtered_summary: dict[str, Any],
-    summary: dict[str, Any],
-    pass_results: dict[str, Any],
-    by_pass: dict[str, dict[str, int]],
-    degraded_passes: list[dict[str, Any]],
-    only_degraded: bool,
-    summary_symbolic_issue_map: dict[str, Any],
-    summary_symbolic_coverage_map: dict[str, Any],
-    summary_symbolic_severity_map: dict[str, Any],
-    summary_pass_symbolic_summary: dict[str, Any],
-) -> None:
+def _populate_filtered_summary_symbolic_sections(state: SymbolicPopulation) -> None:
     """Populate symbolic report sections with summary-first fallbacks."""
+    filtered_summary = state.filtered_summary
+    summary = state.summary
+    pass_results = state.pass_results
+    by_pass = state.by_pass
+    degraded_passes = state.degraded_passes
+    only_degraded = state.only_degraded
+    summary_symbolic_issue_map = state.summary_sources["symbolic_issue_map"]
+    summary_symbolic_coverage_map = state.summary_sources["symbolic_coverage_map"]
+    summary_symbolic_severity_map = state.summary_sources["symbolic_severity_map"]
+    summary_pass_symbolic_summary = state.summary_sources["pass_symbolic_summary"]
     filtered_summary["symbolic_issue_passes"] = list(summary.get("symbolic_issue_passes", []))
     filtered_summary["symbolic_coverage_by_pass"] = list(summary.get("symbolic_coverage_by_pass", []))
     filtered_summary["symbolic_severity_by_pass"] = list(summary.get("symbolic_severity_by_pass", []))

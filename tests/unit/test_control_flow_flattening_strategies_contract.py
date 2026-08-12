@@ -2,15 +2,17 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
-from r2morph.mutations.control_flow_flattening_strategies import apply_block_strategies
+from r2morph.mutations.control_flow_flattening_strategies import BlockStrategyContext, apply_block_strategies
 
 
 class _FakeBinary:
     def __init__(self) -> None:
         self.writes: list[tuple[int, bytes]] = []
 
-    def assemble(self, insn: str) -> bytes:
+    def assemble(self, insn: str) -> bytes | None:
         if insn == "cmp eax, eax":
             return b"\x39\xc0"
         if insn == "test eax, eax":
@@ -28,16 +30,26 @@ class _FakeJumpObfuscator:
     def __init__(self) -> None:
         self.calls: list[tuple[str, int]] = []
 
-    def obfuscate_jump(self, binary, last_insn, block, arch_family, bits) -> bool:  # noqa: ANN001
+    def obfuscate_jump(
+        self,
+        binary: Any,
+        last_insn: dict[str, Any],
+        block: dict[str, Any],
+        arch_family: str,
+        bits: int,
+    ) -> bool:
+        del binary, last_insn, block
         self.calls.append((arch_family, bits))
         return True
 
 
 class _FakePredicateGenerator(OpaquePredicateGenerator):
-    def get_x86(self, bits: int) -> list[list[str]]:  # noqa: D401
+    def get_x86(self, bits: int) -> list[list[str]]:
+        del bits
         return [["nop"]]
 
-    def get_arm(self, bits: int) -> list[list[str]]:  # noqa: D401
+    def get_arm(self, bits: int) -> list[list[str]]:
+        del bits
         return [["nop"]]
 
 
@@ -59,20 +71,27 @@ def test_apply_block_strategies_mutates_counts_and_writes() -> None:
     mutations = {"opaque_predicates": 0, "jump_obfuscations": 0, "total": 0}
 
     added = apply_block_strategies(
-        binary,
+        BlockStrategyContext(
+            binary=binary,
+            arch_family="x86",
+            bits=64,
+            mutations=mutations,
+            predicate_generator=predicate_generator,
+            jump_obfuscator=jump_obfuscator,
+        ),
         blocks,
         all_instrs,
-        "x86",
-        64,
         2,
-        mutations,
-        predicate_generator,
-        jump_obfuscator,
     )
 
-    assert added == 1
-    assert mutations["opaque_predicates"] == 1
-    assert mutations["jump_obfuscations"] == 1
-    assert mutations["total"] == 2
-    assert binary.writes
-    assert jump_obfuscator.calls == [("x86", 64)]
+    assert (
+        added,
+        mutations,
+        bool(binary.writes),
+        jump_obfuscator.calls,
+    ) == (
+        1,
+        {"opaque_predicates": 1, "jump_obfuscations": 1, "total": 2},
+        True,
+        [("x86", 64)],
+    )

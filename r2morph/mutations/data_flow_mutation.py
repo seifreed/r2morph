@@ -8,9 +8,9 @@ by understanding register and value flow through basic blocks.
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.data_flow_mutation_helpers import (
@@ -81,6 +81,68 @@ class DataFlowMutationPass(MutationPass):
     ) -> list[tuple[dict[str, Any], str, str]]:
         return find_safe_substitution_candidates(instructions, live_in, arch)
 
+    def _analyze_candidates(
+        self, binary: Any, function: dict[str, Any], arch: str
+    ) -> list[tuple[dict[str, Any], str, str]] | None:
+        try:
+            instructions = binary.get_function_disasm(function["addr"])
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as error:
+            logger.debug(f"Failed to get disasm for {function.get('name')}: {error}")
+            return None
+        live_in = self._analyze_function_liveness(instructions) if self.use_liveness else {}
+        return self._find_safe_substitution_candidates(instructions, live_in, arch)
+
+    def _apply_substitution(
+        self,
+        binary: Any,
+        function: dict[str, Any],
+        instruction: dict[str, Any],
+        original_register: str,
+        substitute_register: str,
+    ) -> bool:
+        address = instruction.get("addr", 0)
+        size = instruction.get("size", 0)
+        disasm = instruction.get("disasm", "")
+        checkpoint = self._create_mutation_checkpoint("df")
+        baseline = {}
+        if self._validation_manager is not None:
+            baseline = self._validation_manager.capture_structural_baseline(binary, function["addr"])
+        original_bytes = binary.read_bytes(address, size)
+        replacement = disasm.lower().replace(original_register.lower(), substitute_register.lower())
+        new_bytes = binary.assemble(replacement, function["addr"])
+        if not new_bytes or len(new_bytes) > size or not binary.write_bytes(address, new_bytes):
+            return False
+        if len(new_bytes) < size and not binary.nop_fill(address + len(new_bytes), size - len(new_bytes)):
+            logger.warning(
+                "NOP fill failed at 0x%x after data-flow substitution; rolling back", address + len(new_bytes)
+            )
+            self._rollback_uncommitted(
+                binary,
+                checkpoint,
+                reason="data_flow_mutation NOP fill failed; aborting (fail-fast)",
+            )
+            return False
+        record = self._record_mutation(
+            function_address=function["addr"],
+            start_address=address,
+            end_address=address + size - 1,
+            original_bytes=original_bytes,
+            mutated_bytes=binary.read_bytes(address, size),
+            original_disasm=disasm,
+            mutated_disasm=replacement,
+            mutation_kind="data_flow_substitution",
+            metadata={
+                "original_register": original_register,
+                "substitute_register": substitute_register,
+                "liveness_guided": self.use_liveness,
+                "structural_baseline": baseline,
+            },
+        )
+        if self._validate_mutation_or_rollback(binary, record, checkpoint):
+            return False
+        logger.info(f"Data flow: substituted {original_register} -> {substitute_register} at 0x{address:x}")
+        return True
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply data flow-aware mutations to the binary.
@@ -107,7 +169,6 @@ class DataFlowMutationPass(MutationPass):
         mutations_applied = 0
         functions_mutated = 0
         liveness_used = 0
-        dead_regs_found = 0
 
         logger.info(f"Data flow mutation: processing {len(functions)} functions")
 
@@ -115,20 +176,10 @@ class DataFlowMutationPass(MutationPass):
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
 
-            try:
-                instructions = binary.get_function_disasm(func["addr"])
-            except Exception as e:
-                logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
+            candidates = self._analyze_candidates(binary, func, arch)
+            if candidates is None:
                 continue
-
-            if self.use_liveness:
-                live_in = self._analyze_function_liveness(instructions)
-                liveness_used += 1
-            else:
-                live_in = {}
-
-            candidates = self._find_safe_substitution_candidates(instructions, live_in, arch)
-
+            liveness_used += int(self.use_liveness)
             if not candidates:
                 continue
 
@@ -142,71 +193,16 @@ class DataFlowMutationPass(MutationPass):
                 if func_mutations >= self.max_mutations:
                     break
 
-                addr = insn.get("addr", 0)
-                size = insn.get("size", 0)
-                disasm = insn.get("disasm", "")
-
-                if addr == 0 or size == 0:
+                address = insn.get("addr", 0)
+                if address == 0 or insn.get("size", 0) == 0:
                     continue
-
                 try:
-                    mutation_checkpoint = self._create_mutation_checkpoint("df")
-                    baseline = {}
-                    if self._validation_manager is not None:
-                        baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
-                    original_bytes = binary.read_bytes(addr, size)
-
-                    new_disasm = disasm.lower().replace(orig_reg.lower(), subst_reg.lower())
-                    new_bytes = binary.assemble(new_disasm, func["addr"])
-
-                    if new_bytes and len(new_bytes) <= size:
-                        if not binary.write_bytes(addr, new_bytes):
-                            continue
-
-                        if len(new_bytes) < size and not binary.nop_fill(addr + len(new_bytes), size - len(new_bytes)):
-                            # Shorter replacement written but trailing gap
-                            # not NOP-filled -> stale tail of the original
-                            # instruction remains. nop_fill's bool was
-                            # ignored and the patch recorded as success.
-                            # Roll back like the validation-failure path.
-                            logger.warning(
-                                "NOP fill failed at 0x%x after data-flow substitution; rolling back",
-                                addr + len(new_bytes),
-                            )
-                            self._rollback_uncommitted(
-                                binary,
-                                mutation_checkpoint,
-                                reason="data_flow_mutation NOP fill failed; aborting (fail-fast)",
-                            )
-                            continue
-
-                        mutated_bytes = binary.read_bytes(addr, size)
-                        record = self._record_mutation(
-                            function_address=func["addr"],
-                            start_address=addr,
-                            end_address=addr + size - 1,
-                            original_bytes=original_bytes,
-                            mutated_bytes=mutated_bytes,
-                            original_disasm=disasm,
-                            mutated_disasm=new_disasm,
-                            mutation_kind="data_flow_substitution",
-                            metadata={
-                                "original_register": orig_reg,
-                                "substitute_register": subst_reg,
-                                "liveness_guided": self.use_liveness,
-                                "structural_baseline": baseline,
-                            },
-                        )
-                        if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
-                            continue
-
-                        logger.info(f"Data flow: substituted {orig_reg} -> {subst_reg} at 0x{addr:x}")
-                        func_mutations += 1
-                        mutations_applied += 1
-                        dead_regs_found += 1
-
-                except Exception as e:
-                    logger.debug(f"Failed data flow mutation at 0x{addr:x}: {e}")
+                    if not self._apply_substitution(binary, func, insn, orig_reg, subst_reg):
+                        continue
+                    func_mutations += 1
+                    mutations_applied += 1
+                except (ValueError, OSError, BrokenPipeError, RuntimeError) as error:
+                    logger.debug(f"Failed data flow mutation at 0x{address:x}: {error}")
 
             if func_mutations > 0:
                 functions_mutated += 1
@@ -221,7 +217,7 @@ class DataFlowMutationPass(MutationPass):
             "functions_mutated": functions_mutated,
             "total_functions": len(functions),
             "liveness_analysis_used": liveness_used,
-            "dead_registers_found": dead_regs_found,
+            "dead_registers_found": mutations_applied,
             "use_liveness": self.use_liveness,
             "use_reaching_defs": self.use_reaching_defs,
         }

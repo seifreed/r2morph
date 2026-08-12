@@ -11,6 +11,7 @@ Supported ABIs:
 """
 
 import logging
+from collections.abc import Collection
 from typing import Any
 
 from r2morph.analysis.abi_detection import detect_abi
@@ -21,6 +22,55 @@ from r2morph.core.binary import Binary
 logger = logging.getLogger(__name__)
 
 ABI_SPECS = _ABI_SPECS
+_MIN_INSTRUCTION_PART_COUNT = 2
+_PUSH_MNEMONICS = ("push", "pushf", "pushfq", "pushfw")
+_POP_MNEMONICS = ("pop", "popf", "popfq", "popfw")
+_REGISTER_WRITE_MNEMONICS = ("mov", "add", "sub", "xor", "or", "and", "lea", "inc", "dec")
+
+
+def _stack_adjustment(mnemonic: str, disasm: str, word_size: int) -> int | None:
+    if mnemonic in _PUSH_MNEMONICS:
+        return -word_size
+    if mnemonic in _POP_MNEMONICS:
+        return word_size
+    if mnemonic not in ("sub", "add") or not any(register in disasm for register in ("rsp", "esp", "sp")):
+        return None
+
+    parts = disasm.replace(",", " ").split()
+    try:
+        immediate = int(parts[2].strip(","), 0)
+    except (IndexError, ValueError):
+        return None
+    return -immediate if mnemonic == "sub" else immediate
+
+
+def _collect_edge_registers(
+    instructions: list[dict[str, Any]],
+    mnemonics: tuple[str, ...],
+    callee_saved: Collection[str],
+) -> set[str]:
+    registers = set()
+    for instruction in instructions:
+        parts = instruction.get("disasm", "").lower().replace(",", " ").split()
+        if len(parts) >= _MIN_INSTRUCTION_PART_COUNT and parts[0] in mnemonics and parts[1] in callee_saved:
+            registers.add(parts[1])
+    return registers
+
+
+def _modified_unsaved_registers(
+    instructions: list[dict[str, Any]],
+    callee_saved: Collection[str],
+    saved: set[str],
+) -> set[str]:
+    modified = set()
+    for instruction in instructions:
+        parts = instruction.get("disasm", "").lower().replace(",", " ").split()
+        if len(parts) < _MIN_INSTRUCTION_PART_COUNT or parts[0] not in _REGISTER_WRITE_MNEMONICS:
+            continue
+        destination = parts[1]
+        if destination in callee_saved and destination not in saved:
+            modified.add(destination)
+    return modified
 
 
 class ABIChecker:
@@ -65,28 +115,15 @@ class ABIChecker:
             return violations
 
         stack_delta = 0
+        word_size = 8 if self.abi.abi_type in (ABIType.X86_64_SYSTEM_V, ABIType.X86_64_WINDOWS) else 4
         for insn in instructions:
             addr = insn.get("offset", insn.get("addr", 0))
             disasm = insn.get("disasm", "").lower()
             mnemonic = disasm.split()[0] if disasm else ""
 
-            if mnemonic in ("push", "pushf", "pushfq", "pushfw"):
-                stack_delta -= 8 if self.abi.abi_type in (ABIType.X86_64_SYSTEM_V, ABIType.X86_64_WINDOWS) else 4
-            elif mnemonic in ("pop", "popf", "popfq", "popfw"):
-                stack_delta += 8 if self.abi.abi_type in (ABIType.X86_64_SYSTEM_V, ABIType.X86_64_WINDOWS) else 4
-            elif mnemonic in ("sub", "add") and ("rsp" in disasm or "esp" in disasm or "sp" in disasm):
-                parts = disasm.replace(",", " ").split()
-                for i, part in enumerate(parts):
-                    if part in ("sub", "add") and i + 2 < len(parts):
-                        try:
-                            imm = int(parts[i + 2].strip(","), 0)
-                            if mnemonic == "sub":
-                                stack_delta -= imm
-                            else:
-                                stack_delta += imm
-                        except ValueError:
-                            # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                            pass
+            adjustment = _stack_adjustment(mnemonic, disasm, word_size)
+            if adjustment is not None:
+                stack_delta += adjustment
             elif mnemonic in ("call", "callq"):
                 alignment = self.abi.stack_alignment
                 misaligned = stack_delta % alignment
@@ -95,7 +132,10 @@ class ABIChecker:
                     violations.append(
                         ABIViolation(
                             violation_type=ABIViolationType.STACK_ALIGNMENT,
-                            description=f"Stack misaligned by {misaligned} bytes at call (expected {alignment}-byte alignment)",
+                            description=(
+                                f"Stack misaligned by {misaligned} bytes at call "
+                                f"(expected {alignment}-byte alignment)"
+                            ),
                             location=addr,
                             details={
                                 "alignment": alignment,
@@ -107,9 +147,15 @@ class ABIChecker:
 
             elif mnemonic in ("ret", "retn", "retq", "retl"):
                 expected_delta = 0
-                if self.abi.abi_type in (ABIType.X86_64_SYSTEM_V, ABIType.X86_64_WINDOWS):
-                    if stack_delta != expected_delta:
-                        logger.debug(f"Stack imbalance at return: delta={stack_delta} (expected {expected_delta})")
+                if (
+                    self.abi.abi_type
+                    in (
+                        ABIType.X86_64_SYSTEM_V,
+                        ABIType.X86_64_WINDOWS,
+                    )
+                    and stack_delta != expected_delta
+                ):
+                    logger.debug(f"Stack imbalance at return: delta={stack_delta} (expected {expected_delta})")
 
         return violations
 
@@ -157,7 +203,10 @@ class ABIChecker:
                 violations.append(
                     ABIViolation(
                         violation_type=ABIViolationType.RED_ZONE_CLOBBER,
-                        description=f"Mutation region ({region_size} bytes) exceeds red zone ({self.abi.red_zone_size} bytes) in leaf function",
+                        description=(
+                            f"Mutation region ({region_size} bytes) exceeds red zone "
+                            f"({self.abi.red_zone_size} bytes) in leaf function"
+                        ),
                         location=function_address,
                         details={
                             "red_zone_size": self.abi.red_zone_size,
@@ -214,7 +263,7 @@ class ABIChecker:
                                     found_shadow = True
                                     break
                             except ValueError:
-                                # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
+                                # Symbolic and register operands are not numeric candidates.
                                 pass
 
                     if "push" in prev_disasm:
@@ -225,7 +274,10 @@ class ABIChecker:
                     violations.append(
                         ABIViolation(
                             violation_type=ABIViolationType.SHADOW_SPACE_VIOLATION,
-                            description=f"Call without proper shadow space allocation ({self.abi.shadow_space_size} bytes required)",
+                            description=(
+                                "Call without proper shadow space allocation "
+                                f"({self.abi.shadow_space_size} bytes required)"
+                            ),
                             location=addr,
                             details={
                                 "shadow_space_size": self.abi.shadow_space_size,
@@ -255,35 +307,21 @@ class ABIChecker:
         except Exception:
             return violations
 
-        saved_regs: set[str] = set()
-        restored_regs: set[str] = set()
-        modified_regs: set[str] = set()
-
-        for insn in instructions[:15]:
-            disasm = insn.get("disasm", "").lower()
-            parts = disasm.replace(",", " ").split()
-            if len(parts) >= 2 and parts[0] in ("push", "pushf", "pushfq"):
-                reg = parts[1].rstrip(",")
-                if reg in self.abi.callee_saved_regs:
-                    saved_regs.add(reg)
-
-        for insn in reversed(instructions[-15:]):
-            disasm = insn.get("disasm", "").lower()
-            parts = disasm.replace(",", " ").split()
-            if len(parts) >= 2 and parts[0] in ("pop", "popf", "popfq"):
-                reg = parts[1].rstrip(",")
-                if reg in self.abi.callee_saved_regs:
-                    restored_regs.add(reg)
-
-        for insn in instructions:
-            disasm = insn.get("disasm", "").lower()
-            parts = disasm.replace(",", " ").split()
-            if len(parts) >= 2:
-                mnemonic = parts[0]
-                if mnemonic in ("mov", "add", "sub", "xor", "or", "and", "lea", "inc", "dec"):
-                    dest = parts[1].rstrip(",")
-                    if dest in self.abi.callee_saved_regs and dest not in saved_regs:
-                        modified_regs.add(dest)
+        saved_regs = _collect_edge_registers(
+            instructions[:15],
+            _PUSH_MNEMONICS,
+            self.abi.callee_saved_regs,
+        )
+        restored_regs = _collect_edge_registers(
+            list(reversed(instructions[-15:])),
+            _POP_MNEMONICS,
+            self.abi.callee_saved_regs,
+        )
+        modified_regs = _modified_unsaved_registers(
+            instructions,
+            self.abi.callee_saved_regs,
+            saved_regs,
+        )
 
         for reg in modified_regs:
             if reg not in saved_regs and reg not in restored_regs:

@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import platform
+import sys
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from r2morph import __version__
 from r2morph.core.support import PRODUCT_SUPPORT
-from r2morph.reporting.report_assembler_artifacts import build_report_artifacts
 
 
 @dataclass(frozen=True)
@@ -31,32 +32,6 @@ class ReportComputation:
     enrichments: dict[str, Any]
     artifacts: dict[str, Any]
     pass_evidence_priority: list[dict[str, Any]]
-
-
-def compute_report_artifacts(
-    *,
-    payload: dict[str, Any],
-    pass_results: dict[str, Any],
-    enrichments: dict[str, Any],
-    aggregate_structural_regions: list[dict[str, Any]],
-    gate_failures: dict[str, Any] | None,
-    gate_failure_priority: list[dict[str, Any]],
-    gate_failure_severity_priority: list[dict[str, Any]],
-    pipeline_passes: list[Any],
-    report_view_builder: Any,
-) -> dict[str, Any]:
-    """Compute validation, triage, and view artifacts for the report."""
-    return build_report_artifacts(
-        payload=payload,
-        pass_results=pass_results,
-        enrichments=enrichments,
-        aggregate_structural_regions=aggregate_structural_regions,
-        gate_failures=gate_failures,
-        gate_failure_priority=gate_failure_priority,
-        gate_failure_severity_priority=gate_failure_severity_priority,
-        pipeline_passes=pipeline_passes,
-        report_view_builder=report_view_builder,
-    )
 
 
 def build_report_document(comp: ReportComputation) -> dict[str, Any]:
@@ -197,10 +172,6 @@ def build_summary_section(comp: ReportComputation) -> dict[str, Any]:
 
 
 def build_report_metadata(payload: dict[str, Any]) -> dict[str, Any]:
-    import sys
-
-    from r2morph import __version__
-
     return {
         "tool": "r2morph",
         "version": __version__,

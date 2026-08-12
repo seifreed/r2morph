@@ -16,6 +16,7 @@ if importlib.util.find_spec("yaml") is None:
     pytest.skip("pyyaml not installed", allow_module_level=True)
 
 from r2morph import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
 from r2morph.mutations.pattern_substitution import PatternSubstitutionPass
 
@@ -42,7 +43,7 @@ def test_pattern_substitution_produces_valid_size_reducing_mutations(
     with MorphEngine(config={"seed": 1337}) as engine:
         engine.load_binary(deterministic_pattern_subst_elf).analyze()
         engine.add_mutation(PatternSubstitutionPass(config={"probability": 1.0, "max_substitutions_per_function": 20}))
-        result = engine.run(validation_mode="structural", seed=1337)
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=1337))
         report = engine.build_report(result)
 
     assert result["total_mutations"] > 0
@@ -58,7 +59,7 @@ def test_pattern_substitution_preserves_instruction_region_size(
     with MorphEngine(config={"seed": 7}) as engine:
         engine.load_binary(deterministic_pattern_subst_elf).analyze()
         engine.add_mutation(PatternSubstitutionPass(config={"probability": 1.0}))
-        result = engine.run(validation_mode="structural", seed=7)
+        result = engine.run(EngineRunOptions(validation_mode="structural", seed=7))
         report = engine.build_report(result)
 
     # Every mutation rewrites a region in place: the mutated byte span must equal

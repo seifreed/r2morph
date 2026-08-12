@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.core.constants import ARCH_BITS_64
+
 
 class DispatcherGenerator:
     """Builds reference flattened-dispatcher assembly templates."""
@@ -52,7 +54,7 @@ class DispatcherGenerator:
         Returns:
             Assembly instructions
         """
-        reg = "rax" if bits == 64 else "eax"
+        reg = "rax" if bits == ARCH_BITS_64 else "eax"
 
         code = [
             "; Flattened control flow dispatcher",
@@ -60,7 +62,7 @@ class DispatcherGenerator:
             ".dispatcher_loop:",
         ]
 
-        for i, block in enumerate(blocks):
+        for i, _block in enumerate(blocks):
             code.extend(
                 [
                     f"cmp {reg}, {i}",
@@ -98,7 +100,7 @@ class DispatcherGenerator:
         Returns:
             Assembly instructions
         """
-        reg = "x0" if bits == 64 else "r0"
+        reg = "x0" if bits == ARCH_BITS_64 else "r0"
 
         code = [
             "; Flattened control flow dispatcher",
@@ -106,7 +108,7 @@ class DispatcherGenerator:
             ".dispatcher_loop:",
         ]
 
-        for i, block in enumerate(blocks):
+        for i, _block in enumerate(blocks):
             code.extend(
                 [
                     f"cmp {reg}, #{i}",

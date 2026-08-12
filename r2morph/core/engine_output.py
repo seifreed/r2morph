@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
+from shutil import copy2
 from typing import Any, cast
 
 logger = logging.getLogger(__name__)
@@ -24,7 +25,8 @@ def build_report(engine: Any, result: dict[str, Any] | None = None) -> dict[str,
 
 def save_binary(engine: Any, output_path: str | Path) -> None:
     """Save the transformed binary through the engine state."""
-    if not engine.binary:
+    binary = engine.binary
+    if binary is None:
         raise RuntimeError("No binary loaded.")
 
     output = Path(output_path)
@@ -33,10 +35,7 @@ def save_binary(engine: Any, output_path: str | Path) -> None:
     if engine._session is not None:
         engine._session.finalize(output)
     else:
-        assert engine.binary is not None
-        from shutil import copy2
-
-        copy2(engine.binary.path, output)
+        copy2(binary.path, output)
         logger.info(f"Binary successfully saved to: {output}")
 
     engine._binary_signer.sign_output(output, engine.config)

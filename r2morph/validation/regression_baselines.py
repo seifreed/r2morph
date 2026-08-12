@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import importlib.util
 import time
+from importlib import import_module
+from importlib.util import find_spec
 from typing import Any
 
 from r2morph.validation.regression_models import BaselineResult, RegressionTestType
@@ -15,15 +16,15 @@ def compute_detection_output(binary_path: str) -> tuple[dict[str, Any], float]:
     Returns the projected output dict and the wall-clock execution time. Shared by
     baseline construction and the live detection test so the two projections cannot drift.
     """
-    from r2morph import Binary
-    from r2morph.detection import ObfuscationDetector
+    binary_type = import_module("r2morph").Binary
+    detector_type = import_module("r2morph.detection").ObfuscationDetector
 
     start_time = time.time()
 
-    with Binary(binary_path) as bin_obj:
+    with binary_type(binary_path) as bin_obj:
         bin_obj.analyze()
 
-        detector = ObfuscationDetector()
+        detector = detector_type()
         result = detector.analyze_binary(bin_obj)
 
         output = {
@@ -82,14 +83,13 @@ def compute_api_checks() -> dict[str, Any]:
     """
     api_checks: dict[str, Any] = {}
 
-    api_checks["binary_import"] = importlib.util.find_spec("r2morph") is not None
-    api_checks["detection_import"] = importlib.util.find_spec("r2morph.detection") is not None
-    api_checks["devirtualization_import"] = importlib.util.find_spec("r2morph.devirtualization") is not None
+    api_checks["binary_import"] = find_spec("r2morph") is not None
+    api_checks["detection_import"] = find_spec("r2morph.detection") is not None
+    api_checks["devirtualization_import"] = find_spec("r2morph.devirtualization") is not None
 
     try:
-        from r2morph.detection import ObfuscationDetector
-
-        detector = ObfuscationDetector()
+        detector_type = import_module("r2morph.detection").ObfuscationDetector
+        detector = detector_type()
         api_checks["detector_instantiation"] = True
 
         api_checks["analyze_binary_method"] = hasattr(detector, "analyze_binary")
@@ -100,10 +100,9 @@ def compute_api_checks() -> dict[str, Any]:
         api_checks["analyze_binary_method"] = False
 
     try:
-        from r2morph.detection import PackerType
-
+        packer_type = import_module("r2morph.detection").PackerType
         api_checks["packer_type_enum"] = True
-        api_checks["packer_type_count"] = len(list(PackerType))
+        api_checks["packer_type_count"] = len(list(packer_type))
     except ImportError:
         api_checks["packer_type_enum"] = False
         api_checks["packer_type_count"] = 0

@@ -3,8 +3,10 @@ Similarity hashing for comparing binaries (fuzzy hashing).
 """
 
 import logging
-import subprocess
+import re
 from pathlib import Path
+
+from r2morph.adapters.process import ProcessError, run_process
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +38,9 @@ class SimilarityHasher:
             True if available
         """
         try:
-            subprocess.run([tool, "--version"], capture_output=True, timeout=5)
+            run_process([tool, "--version"], timeout=5)
             return True
-        except (subprocess.SubprocessError, FileNotFoundError):
+        except (ProcessError, FileNotFoundError):
             return False
 
     def hash_file(self, path: Path) -> dict[str, str | None]:
@@ -75,14 +77,14 @@ class SimilarityHasher:
             ssdeep hash or None
         """
         try:
-            result = subprocess.run(["ssdeep", "-b", str(path)], capture_output=True, text=True, timeout=30)
+            result = run_process(["ssdeep", "-b", path], timeout=30)
 
             if result.returncode == 0:
-                output = result.stdout.strip()
+                output = result.stdout_text.strip()
                 if "," in output:
                     return output.split(",")[0]
 
-        except subprocess.SubprocessError as e:
+        except ProcessError as e:
             logger.error(f"ssdeep failed: {e}")
 
         return None
@@ -98,14 +100,14 @@ class SimilarityHasher:
             TLSH hash or None
         """
         try:
-            result = subprocess.run(["tlsh", "-f", str(path)], capture_output=True, text=True, timeout=30)
+            result = run_process(["tlsh", "-f", path], timeout=30)
 
             if result.returncode == 0:
-                output = result.stdout.strip()
+                output = result.stdout_text.strip()
                 if output:
                     return output
 
-        except subprocess.SubprocessError as e:
+        except ProcessError as e:
             logger.error(f"tlsh failed: {e}")
 
         return None
@@ -122,17 +124,15 @@ class SimilarityHasher:
             Similarity score 0-100, or None
         """
         try:
-            result = subprocess.run(["ssdeep", "-a", "-s", hash1, hash2], capture_output=True, text=True, timeout=10)
+            result = run_process(["ssdeep", "-a", "-s", hash1, hash2], timeout=10)
 
             if result.returncode == 0:
-                output = result.stdout.strip()
-                import re
-
+                output = result.stdout_text.strip()
                 match = re.search(r"(\d+)", output)
                 if match:
                     return int(match.group(1))
 
-        except subprocess.SubprocessError as e:
+        except ProcessError as e:
             logger.error(f"ssdeep comparison failed: {e}")
 
         return None

@@ -8,6 +8,7 @@ Handles mutation tracking and r2 connection reloading to prevent OOM.
 from __future__ import annotations
 
 import logging
+from functools import cache
 from typing import TYPE_CHECKING
 
 from r2morph.core.constants import BATCH_MUTATION_CHECKPOINT
@@ -101,13 +102,7 @@ class MemoryManager:
         self._reload_binary(binary)
 
 
-# Singleton instance for convenience
-_default_memory_manager: MemoryManager | None = None
-
-
+@cache
 def get_memory_manager() -> MemoryManager:
     """Get the default MemoryManager instance."""
-    global _default_memory_manager
-    if _default_memory_manager is None:
-        _default_memory_manager = MemoryManager()
-    return _default_memory_manager
+    return MemoryManager()

@@ -400,7 +400,7 @@ class TestBuildSSAForm:
         assert ssa[0x2030].phi_functions
 
     def test_ssa_converter_is_public_analysis_export(self):
-        from r2morph.analysis import SSAConverter as exported
+        from r2morph.analysis import SSAConverter as ExportedSSAConverter
         from r2morph.analysis.ssa import SSAConverter
 
-        assert exported is SSAConverter
+        assert ExportedSSAConverter is SSAConverter

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from r2morph.reporting.report_helpers_classification import _has_structural_risk
+from r2morph.reporting.report_pass_classification import _has_structural_risk
 
 
 def test_has_structural_risk_accepts_report_state_fallback_signature() -> None:

@@ -35,16 +35,13 @@ def _pass_names_from_triage_rows(
         )
         structural_risk = structural_issue_count > 0
         risky = symbolic_risk or structural_risk
-        if kind == "risky" and risky:
-            selected.add(pass_name)
-        elif kind == "structural" and structural_risk:
-            selected.add(pass_name)
-        elif kind == "symbolic" and symbolic_risk:
-            selected.add(pass_name)
-        elif kind == "clean" and clean:
-            selected.add(pass_name)
-        elif kind == "covered" and covered:
-            selected.add(pass_name)
-        elif kind == "uncovered" and uncovered:
+        if (
+            (kind == "risky" and risky)
+            or (kind == "structural" and structural_risk)
+            or (kind == "symbolic" and symbolic_risk)
+            or (kind == "clean" and clean)
+            or (kind == "covered" and covered)
+            or (kind == "uncovered" and uncovered)
+        ):
             selected.add(pass_name)
     return selected

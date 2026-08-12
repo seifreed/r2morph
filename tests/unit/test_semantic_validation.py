@@ -7,8 +7,6 @@ Covers:
 - CI integration
 """
 
-from unittest.mock import MagicMock
-
 from r2morph.validation.semantic import (
     MutationRegion,
     ObservableComparison,
@@ -30,6 +28,15 @@ from r2morph.validation.semantic_invariants import (
     SemanticInvariantRegistry,
     StackBalanceChecker,
 )
+
+
+class _Binary:
+    def __init__(self, arch: str = "x86_64", bits: int = 64) -> None:
+        self.path = "/tmp/test"
+        self.arch_info = {"arch": arch, "bits": bits}
+
+    def get_arch_info(self) -> dict[str, str | int]:
+        return self.arch_info
 
 
 class TestInvariantSpec:
@@ -131,8 +138,8 @@ class TestStackBalanceChecker:
 
     def test_check_region_no_change(self):
         """Check region with no stack change."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         checker = StackBalanceChecker(mock_binary)
         original = b"\x90\x90\x90"
@@ -143,8 +150,8 @@ class TestStackBalanceChecker:
 
     def test_check_region_push_pop_balance(self):
         """Check region with balanced push/pop."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         checker = StackBalanceChecker(mock_binary)
         original = b"\x50\x58"
@@ -155,8 +162,8 @@ class TestStackBalanceChecker:
 
     def test_check_region_stack_mismatch(self):
         """Check region with stack imbalance."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         checker = StackBalanceChecker(mock_binary)
         original = b"\x50\x50\x58"
@@ -172,8 +179,8 @@ class TestRegisterPreservationChecker:
 
     def test_get_callee_saved_x86_64(self):
         """Get callee-saved registers for x86_64."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         checker = RegisterPreservationChecker(mock_binary)
         regs = checker.get_callee_saved_registers()
@@ -184,8 +191,8 @@ class TestRegisterPreservationChecker:
 
     def test_get_callee_saved_x86(self):
         """Get callee-saved registers for x86."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86", "bits": 32}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86", "bits": 32}
 
         checker = RegisterPreservationChecker(mock_binary)
         regs = checker.get_callee_saved_registers()
@@ -196,8 +203,8 @@ class TestRegisterPreservationChecker:
 
     def test_check_callee_saved_violation(self):
         """Check detects callee-saved register modification."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         checker = RegisterPreservationChecker(mock_binary)
         violations = checker.check_register_usage(0x1000, 0x1010, "nop", {"rbx", "rax"})
@@ -211,7 +218,7 @@ class TestControlFlowPreservationChecker:
 
     def test_successor_preservation_pass(self):
         """Check preserves successors."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         checker = ControlFlowPreservationChecker(mock_binary)
 
         violations = checker.check_successor_preservation(
@@ -224,7 +231,7 @@ class TestControlFlowPreservationChecker:
 
     def test_missing_successor(self):
         """Check detects missing successor."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         checker = ControlFlowPreservationChecker(mock_binary)
 
         violations = checker.check_successor_preservation(
@@ -238,7 +245,7 @@ class TestControlFlowPreservationChecker:
 
     def test_extra_successor(self):
         """Check detects extra successor."""
-        mock_binary = MagicMock()
+        mock_binary = _Binary()
         checker = ControlFlowPreservationChecker(mock_binary)
 
         violations = checker.check_successor_preservation(
@@ -255,23 +262,25 @@ class TestSemanticInvariantChecker:
 
     def test_check_mutation_pass(self):
         """Check mutation passes all invariants."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         checker = SemanticInvariantChecker(mock_binary)
         violations = checker.check_mutation(
-            pass_type="nop",
-            start_address=0x1000,
-            end_address=0x1010,
-            original_bytes=b"\x90" * 16,
-            mutated_bytes=b"\x90" * 16,
+            MutationRegion(
+                pass_name="nop",
+                start_address=0x1000,
+                end_address=0x1010,
+                original_bytes=b"\x90" * 16,
+                mutated_bytes=b"\x90" * 16,
+            )
         )
         assert len(violations) == 0
 
     def test_invariant_summary(self):
         """Get invariant summary."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         checker = SemanticInvariantChecker(mock_binary)
         violations = [
@@ -405,8 +414,8 @@ class TestSemanticValidator:
 
     def test_validator_creation(self):
         """Create a semantic validator."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.FAST)
         assert validator.mode == ValidationMode.FAST
@@ -414,8 +423,8 @@ class TestSemanticValidator:
 
     def test_validate_mutation_pass(self):
         """Validate a passing mutation."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
         mock_binary.path = "/tmp/test"
 
         validator = SemanticValidator(mock_binary)
@@ -432,8 +441,8 @@ class TestSemanticValidator:
 
     def test_validate_mutations(self):
         """Validate multiple mutations."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
         mock_binary.path = "/tmp/test"
 
         validator = SemanticValidator(mock_binary)
@@ -464,8 +473,8 @@ class TestValidateSemanticEquivalence:
 
     def test_convenience_function(self):
         """Test validate_semantic_equivalence function."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
         mock_binary.path = "/tmp/test"
 
         mutations = [
@@ -493,24 +502,24 @@ class TestValidationModes:
 
     def test_fast_mode(self):
         """Fast mode should skip symbolic."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.FAST)
         assert validator.mode == ValidationMode.FAST
 
     def test_standard_mode(self):
         """Standard mode."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.STANDARD)
         assert validator.mode == ValidationMode.STANDARD
 
     def test_thorough_mode(self):
         """Thorough mode."""
-        mock_binary = MagicMock()
-        mock_binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
+        mock_binary = _Binary()
+        mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.THOROUGH)
         assert validator.mode == ValidationMode.THOROUGH

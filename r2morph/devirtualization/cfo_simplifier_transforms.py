@@ -20,6 +20,8 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+_MIN_DISPATCH_TARGET_COUNT = 2
+
 
 def simplify_dispatcher_flattening(simplifier: Any) -> bool:
     """Simplify dispatcher-based control flow flattening."""
@@ -55,17 +57,16 @@ def eliminate_opaque_predicates(simplifier: Any) -> bool:
     try:
         changes_made = False
 
-        for address, block in simplifier.blocks.items():
+        for _address, block in simplifier.blocks.items():
             for i, instr in enumerate(block.instructions):
                 opcode = instr.get("opcode", "").lower()
 
-                if any(jmp in opcode for jmp in ["je", "jne", "jz", "jnz", "jg", "jl"]):
-                    if i > 0:
-                        prev_instr = block.instructions[i - 1]
-                        if simplifier._is_opaque_comparison(prev_instr):
-                            block.instructions[i - 1] = {"opcode": "nop", "comment": "removed_opaque_cmp"}
-                            block.instructions[i] = {"opcode": "jmp", "comment": "simplified_jump"}
-                            changes_made = True
+                if any(jmp in opcode for jmp in ["je", "jne", "jz", "jnz", "jg", "jl"]) and i > 0:
+                    prev_instr = block.instructions[i - 1]
+                    if simplifier._is_opaque_comparison(prev_instr):
+                        block.instructions[i - 1] = {"opcode": "nop", "comment": "removed_opaque_cmp"}
+                        block.instructions[i] = {"opcode": "jmp", "comment": "simplified_jump"}
+                        changes_made = True
 
         return changes_made
 
@@ -79,7 +80,7 @@ def resolve_indirect_jumps(simplifier: Any) -> bool:
     try:
         changes_made = False
 
-        for address, block in simplifier.blocks.items():
+        for _address, block in simplifier.blocks.items():
             for i, instr in enumerate(block.instructions):
                 opcode = instr.get("opcode", "").lower()
 
@@ -137,7 +138,7 @@ def analyze_dispatch_targets(simplifier: Any, dispatcher_info: DispatcherInfo) -
                 if state_value is not None:
                     dispatcher_info.dispatch_table[state_value] = successor
 
-        if len(dispatcher_info.dispatch_table) >= 2:
+        if len(dispatcher_info.dispatch_table) >= _MIN_DISPATCH_TARGET_COUNT:
             dispatcher_info.pattern_confidence = min(1.0, 0.5 + (len(dispatcher_info.dispatch_table) * 0.1))
 
     except Exception as e:

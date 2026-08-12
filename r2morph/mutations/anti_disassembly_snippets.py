@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass
 from enum import Enum
+
+import r2morph.core.randomness as random
 
 
 class AntiDisasmType(Enum):
@@ -242,7 +243,7 @@ def generate_opaque_predicate_x64(arch: str = "x64") -> str:
         ("mov eax, 0\ncmp eax, eax\nje always_taken", "R == R, JE always taken"),
         ("mov eax, 1\nmov ecx, 1\ncmp eax, ecx\nje always_taken", "1 == 1, JE always taken"),
     ]
-    predicate, desc = random.choice(predicates)
+    predicate, _desc = random.choice(predicates)
     return predicate
 
 
@@ -268,8 +269,6 @@ def generate_sled_obfuscation(size: int = 16) -> str:
 
 __all__ = [
     "ALL_ANTI_DISASM_X64",
-    "AntiDisasmSnippet",
-    "AntiDisasmType",
     "FALSE_BRANCH_X64",
     "JUMP_MIDDLE_X64",
     "OVERLAPPING_X64",
@@ -277,6 +276,8 @@ __all__ = [
     "SEH_BASED_X64",
     "SEH_BASED_X86",
     "TRAMPOLINE_X64",
+    "AntiDisasmSnippet",
+    "AntiDisasmType",
     "generate_false_disasm_sequence",
     "generate_opaque_predicate_x64",
     "generate_sled_obfuscation",

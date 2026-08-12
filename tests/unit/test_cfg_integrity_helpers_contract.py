@@ -25,13 +25,13 @@ def test_create_cfg_snapshot_collects_edges_and_patterns() -> None:
     )
 
     class _Builder:
-        def build_cfg(self, function_address: int, func_name: str):  # noqa: ARG002
+        def build_cfg(self, function_address: int, func_name: str):
             return cfg
 
     class _Manager:
         _analyzed = True
 
-        def get_patterns_in_range(self, start: int, end: int):  # noqa: ARG002
+        def get_patterns_in_range(self, start: int, end: int):
             return [
                 SimpleNamespace(
                     start_address=0x1000, end_address=0x1100, type=SimpleNamespace(value="jump_table"), source="test"

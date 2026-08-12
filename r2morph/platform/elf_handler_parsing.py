@@ -17,13 +17,15 @@ from r2morph.platform.elf_structs import (
 
 logger = logging.getLogger(__name__)
 
+_ELF_IDENT_SIZE_BYTES = 16
+
 
 def parse_elf_header(binary_path: Path) -> tuple[dict[str, Any] | None, bool | None, bool | None]:
     """Parse and return the ELF header plus cached class/endian flags."""
     try:
         with open(binary_path, "rb") as f:
-            e_ident = f.read(16)
-            if len(e_ident) < 16 or e_ident[:4] != ELF_MAGIC:
+            e_ident = f.read(_ELF_IDENT_SIZE_BYTES)
+            if len(e_ident) < _ELF_IDENT_SIZE_BYTES or e_ident[:4] != ELF_MAGIC:
                 logger.error("Invalid ELF magic number")
                 return None, None, None
 

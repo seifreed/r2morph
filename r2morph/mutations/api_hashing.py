@@ -36,9 +36,12 @@ from r2morph.mutations.api_hashing_resolvers import (
     generate_resolver_x86 as _generate_resolver_x86,
 )
 from r2morph.mutations.base import MutationPass
-from r2morph.relocations.cave_finder import CaveFinder
+from r2morph.relocations.cave_finder import CaveFinder, CodeCave
 
 logger = logging.getLogger(__name__)
+
+_SIGNED_32_MIN = -(1 << 31)
+_SIGNED_32_MAX = (1 << 31) - 1
 
 COMMON_WINDOWS_APIS = _hashes.COMMON_WINDOWS_APIS
 COMMON_LINUX_APIS = _hashes.COMMON_LINUX_APIS
@@ -142,6 +145,97 @@ class APIHashingPass(MutationPass):
                 return self._hash_api(known)
         return None
 
+    @staticmethod
+    def _allocate_stub(caves: list[CodeCave], cave_index: int, stub_size: int) -> tuple[int | None, int]:
+        while cave_index < len(caves):
+            cave = caves[cave_index]
+            if cave.size >= stub_size:
+                caves[cave_index] = CodeCave(
+                    address=cave.address + stub_size,
+                    size=cave.size - stub_size,
+                    section=cave.section,
+                    is_executable=cave.is_executable,
+                )
+                return cave.address, cave_index
+            cave_index += 1
+        return None, cave_index
+
+    @staticmethod
+    def _build_stub(api_name: str, hash_value: int, plt_address: int, cave_address: int) -> bytes | None:
+        jump_offset = plt_address - (cave_address + 10)
+        if not _SIGNED_32_MIN <= jump_offset <= _SIGNED_32_MAX:
+            logger.debug(f"Stub jump offset out of range for {api_name} (cave 0x{cave_address:x})")
+            return None
+        load_hash = b"\xb8" + (hash_value & 0xFFFFFFFF).to_bytes(4, "little")
+        return load_hash + b"\xe9" + jump_offset.to_bytes(4, "little", signed=True)
+
+    @staticmethod
+    def _find_xrefs(binary: Any, plt_address: int) -> list[dict[str, Any]]:
+        if binary.r2 is None:
+            return []
+        try:
+            return binary.r2.cmdj(f"axtj @ {plt_address}") or []
+        except (ValueError, OSError, BrokenPipeError, RuntimeError):
+            return []
+
+    @staticmethod
+    def _patch_call_sites(binary: Any, xrefs: list[dict[str, Any]], cave_address: int) -> list[dict[str, str]]:
+        patched_sites = []
+        for xref in xrefs:
+            call_site = xref.get("from", 0)
+            original_call = binary.read_bytes(call_site, 5) if call_site else b""
+            if not original_call or original_call[0:1] != b"\xe8":
+                continue
+            new_offset = cave_address - (call_site + 5)
+            if not _SIGNED_32_MIN <= new_offset <= _SIGNED_32_MAX:
+                logger.debug(f"Call-site offset out of range for call at 0x{call_site:x}")
+                continue
+            patched_call = b"\xe8" + new_offset.to_bytes(4, "little", signed=True)
+            if binary.write_bytes(call_site, patched_call):
+                patched_sites.append(
+                    {
+                        "address": hex(call_site),
+                        "original_bytes": original_call.hex(),
+                        "patched_bytes": patched_call.hex(),
+                    }
+                )
+        return patched_sites
+
+    def _apply_hashed_import(
+        self, binary: Any, imported: dict[str, Any], hash_value: int, caves: list[CodeCave], cave_index: int
+    ) -> tuple[bool, int]:
+        stub_size = 10
+        api_name = imported.get("name", "")
+        plt_address = imported.get("address", 0)
+        cave_address, cave_index = self._allocate_stub(caves, cave_index, stub_size)
+        if cave_address is None:
+            return False, cave_index
+        stub_bytes = self._build_stub(api_name, hash_value, plt_address, cave_address)
+        if stub_bytes is None:
+            return False, cave_index
+        original_cave = binary.read_bytes(cave_address, stub_size)
+        if not original_cave:
+            logger.debug(f"Skipping API hashing for {api_name}: cannot read cave bytes at 0x{cave_address:x}")
+            return False, cave_index
+        if not binary.write_bytes(cave_address, stub_bytes):
+            return False, cave_index
+        patched_sites = self._patch_call_sites(binary, self._find_xrefs(binary, plt_address), cave_address)
+        if not patched_sites:
+            return False, cave_index
+        self._record_mutation(
+            function_address=None,
+            start_address=cave_address,
+            end_address=cave_address + stub_size,
+            original_bytes=original_cave,
+            mutated_bytes=stub_bytes,
+            original_disasm=f"import {api_name} @ 0x{plt_address:x}",
+            mutated_disasm=f"mov eax, 0x{hash_value:08x}; jmp 0x{plt_address:x}",
+            mutation_kind="api_hashing",
+            metadata={"patched_call_sites": patched_sites},
+        )
+        logger.debug(f"Hashed {api_name} -> 0x{hash_value:08X} ({len(patched_sites)} call sites patched)")
+        return True, cave_index
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply API hashing mutation.
@@ -175,92 +269,9 @@ class APIHashingPass(MutationPass):
                 skipped_count += 1
                 continue
 
-            stub_size = 10
-            cave_addr = None
-            while cave_idx < len(caves):
-                c = caves[cave_idx]
-                if c.size >= stub_size:
-                    cave_addr = c.address
-                    caves[cave_idx] = type(c)(
-                        address=c.address + stub_size,
-                        size=c.size - stub_size,
-                        section=c.section,
-                        is_executable=c.is_executable,
-                    )
-                    break
-                cave_idx += 1
-
-            if cave_addr is None:
-                continue
-
-            mov_eax = b"\xb8" + (hash_value & 0xFFFFFFFF).to_bytes(4, "little")
-            jmp_off = plt_addr - (cave_addr + 5 + 5)
-            if jmp_off < -2147483648 or jmp_off > 2147483647:
-                logger.debug(f"Stub jump offset out of range for {api_name} (cave 0x{cave_addr:x})")
-                continue
-            jmp_plt = b"\xe9" + jmp_off.to_bytes(4, "little", signed=True)
-            stub_bytes = mov_eax + jmp_plt
-
-            original_cave = binary.read_bytes(cave_addr, stub_size)
-            if not original_cave:
-                logger.debug(
-                    "Skipping API hashing for %s: cannot read %d cave bytes at 0x%x "
-                    "(no faithful original to record)",
-                    api_name,
-                    stub_size,
-                    cave_addr,
-                )
-                continue
-
-            if not binary.write_bytes(cave_addr, stub_bytes):
-                continue
-
-            xrefs: list[dict[str, Any]] = []
-            if binary.r2 is not None:
-                try:
-                    xrefs = binary.r2.cmdj(f"axtj @ {plt_addr}") or []
-                except Exception:
-                    xrefs = []
-
-            patched = 0
-            patched_sites: list[dict[str, str]] = []
-            for xref in xrefs:
-                call_site = xref.get("from", 0)
-                if call_site == 0:
-                    continue
-                original_call = binary.read_bytes(call_site, 5)
-                if not original_call or original_call[0:1] != b"\xe8":
-                    continue
-
-                new_off = cave_addr - (call_site + 5)
-                if new_off < -2147483648 or new_off > 2147483647:
-                    logger.debug(f"Call-site offset out of range for call at 0x{call_site:x}")
-                    continue
-                patched_call = b"\xe8" + new_off.to_bytes(4, "little", signed=True)
-                if binary.write_bytes(call_site, patched_call):
-                    patched += 1
-                    patched_sites.append(
-                        {
-                            "address": hex(call_site),
-                            "original_bytes": original_call.hex(),
-                            "patched_bytes": patched_call.hex(),
-                        }
-                    )
-
-            if patched > 0:
-                self._record_mutation(
-                    function_address=None,
-                    start_address=cave_addr,
-                    end_address=cave_addr + stub_size,
-                    original_bytes=original_cave,
-                    mutated_bytes=stub_bytes,
-                    original_disasm=f"import {api_name} @ 0x{plt_addr:x}",
-                    mutated_disasm=f"mov eax, 0x{hash_value:08x}; jmp 0x{plt_addr:x}",
-                    mutation_kind="api_hashing",
-                    metadata={"patched_call_sites": patched_sites},
-                )
+            applied, cave_idx = self._apply_hashed_import(binary, imp, hash_value, caves, cave_idx)
+            if applied:
                 hashed_count += 1
-                logger.debug(f"Hashed {api_name} -> 0x{hash_value:08X} ({patched} call sites patched)")
 
         return {
             "imports_found": len(imports),

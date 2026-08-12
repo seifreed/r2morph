@@ -9,7 +9,10 @@ Primary product flow:
 import argparse
 import json
 import sys
+import traceback
+from importlib import import_module
 from pathlib import Path
+from typing import Annotated, Any, cast
 
 import typer
 from rich import print as rprint
@@ -18,6 +21,14 @@ from rich.table import Table
 
 from r2morph import __version__
 from r2morph.cli_cache_command import handle_cache_command
+from r2morph.cli_options import (
+    CommandCallback,
+    EnhancedAnalysisOptions,
+    MainCommandOptions,
+    MorphCommandOptions,
+    ReportViewOptions,
+    ValidateCommandOptions,
+)
 from r2morph.cli_output_helpers import (
     build_binary_analysis_rows,
     build_function_limit_notice,
@@ -27,10 +38,16 @@ from r2morph.cli_path_resolution import (
     build_missing_input_help_lines,
     resolve_main_cli_paths,
 )
-from r2morph.cli_workflows import _build_runtime_validator, _run_morph_workflow, _run_simple_mode
+from r2morph.cli_workflows import (
+    MorphWorkflowRequest,
+    SimpleModeRequest,
+    _build_runtime_validator,
+    _run_morph_workflow,
+    _run_simple_mode,
+)
 from r2morph.core.engine import MorphEngine
 from r2morph.core.support import PRODUCT_SUPPORT
-from r2morph.reporting.cli_commands import handle_report_command
+from r2morph.reporting.cli_commands import ReportCommandOptions, handle_report_command
 from r2morph.reporting.report_context import PassClassFilters
 from r2morph.utils.logging import setup_logging
 
@@ -62,33 +79,17 @@ KNOWN_COMMANDS = {
 }
 
 
-def _load_binary_analyzer() -> type:
+def _load_binary_analyzer() -> type[Any]:
     """Lazy import for analysis-only flows outside the stable mutate/report path."""
-    from r2morph.analysis.analyzer import BinaryAnalyzer
-
-    return BinaryAnalyzer
+    return cast(type[Any], import_module("r2morph.analysis.analyzer").BinaryAnalyzer)
 
 
-def _load_diff_analyzer() -> type:
+def _load_diff_analyzer() -> type[Any]:
     """Lazy import for diff-only flows outside the stable mutate/report hot path."""
-    from r2morph.analysis.diff_analyzer import DiffAnalyzer
-
-    return DiffAnalyzer
+    return cast(type[Any], import_module("r2morph.analysis.diff_analyzer").DiffAnalyzer)
 
 
-@app.callback()
-def main_callback(
-    ctx: typer.Context,
-    input_opt: Path | None = typer.Option(None, "--input", "-i", help="Input binary file (alternative style)"),
-    output_opt: Path | None = typer.Option(None, "--output", "-o", help="Output binary file (alternative style)"),
-    aggressive: bool = typer.Option(
-        False, "--aggressive", "-a", help="Aggressive mode: more mutations, higher probability"
-    ),
-    force: bool = typer.Option(False, "--force", "-f", help="Force mutations to be different from original"),
-    seed: int | None = typer.Option(None, "--seed", help="Deterministic seed for stable mutation selection"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-    debug: bool = typer.Option(False, "--debug", "-d", help="Enable debug output"),
-) -> None:
+def _handle_main(options: MainCommandOptions) -> None:
     """
     r2morph - mutation engine with validation
 
@@ -108,13 +109,13 @@ def main_callback(
         r2morph functions input.exe
         r2morph morph input.exe -m nop
     """
-    if ctx.invoked_subcommand is not None:
+    if options.ctx.invoked_subcommand is not None:
         return
 
     input_file, output_file = resolve_main_cli_paths(
-        input_opt,
-        output_opt,
-        [arg for arg in ctx.args if not arg.startswith("-")],
+        options.input_opt,
+        options.output_opt,
+        [arg for arg in options.ctx.args if not arg.startswith("-")],
     )
 
     if input_file is None:
@@ -124,26 +125,30 @@ def main_callback(
 
     try:
         _run_simple_mode(
-            input_file,
-            output_file,
-            aggressive=aggressive,
-            force=force,
-            seed=seed,
-            verbose=verbose,
-            debug=debug,
+            SimpleModeRequest(
+                input_file=input_file,
+                output_file=output_file,
+                aggressive=options.aggressive,
+                force=options.force,
+                seed=options.seed,
+                verbose=options.verbose,
+                debug=options.debug,
+            )
         )
     except Exception as e:
         console.print(f"[bold red]Error:[/bold red] {e}")
-        if verbose or debug:
-            import traceback
-
+        if options.verbose or options.debug:
             console.print(traceback.format_exc())
-        raise typer.Exit(1)
+        raise typer.Exit(1) from e
+
+
+main_callback = CommandCallback("main_callback", MainCommandOptions, _handle_main)
+app.callback()(main_callback)
 
 
 @app.command()
 def analyze(
-    binary: Path = typer.Argument(..., help="Path to binary file", exists=True),
+    binary: Annotated[Path, typer.Argument(help="Path to binary file", exists=True)],
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
 ) -> None:
     """
@@ -172,22 +177,10 @@ def analyze(
             raise
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
 
-@experimental_app.command("analyze-enhanced")
-def analyze_enhanced(
-    binary: Path = typer.Argument(..., help="Path to binary file", exists=True),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-    detect_only: bool = typer.Option(False, "--detect-only", help="Only run obfuscation detection"),
-    symbolic: bool = typer.Option(False, "--symbolic", help="Enable symbolic execution analysis"),
-    dynamic: bool = typer.Option(False, "--dynamic", help="Enable dynamic instrumentation"),
-    devirt: bool = typer.Option(False, "--devirt", help="Enable devirtualization analysis"),
-    iterative: bool = typer.Option(False, "--iterative", help="Enable iterative simplification"),
-    rewrite: bool = typer.Option(False, "--rewrite", help="Enable binary rewriting"),
-    bypass: bool = typer.Option(False, "--bypass", help="Enable anti-analysis bypass"),
-    output: Path = typer.Option(None, "--output", "-o", help="Output directory for results"),
-) -> None:
+def _handle_enhanced_analysis(options: EnhancedAnalysisOptions) -> None:
     """
     Experimental analysis for obfuscated binaries (secondary workflow).
     Requires enhanced dependencies: pip install 'r2morph[enhanced]'
@@ -199,13 +192,13 @@ def analyze_enhanced(
     - Binary rewriting and reconstruction
     - Anti-analysis bypass framework
     """
-    setup_logging("DEBUG" if verbose else "INFO")
+    setup_logging("DEBUG" if options.verbose else "INFO")
 
-    from r2morph.analysis.enhanced_analyzer import (
-        AnalysisOptions,
-        EnhancedAnalysisOrchestrator,
-        check_enhanced_dependencies,
-    )
+    analyzer_module = import_module("r2morph.analysis.enhanced_analyzer")
+    models_module = import_module("r2morph.analysis.enhanced_analyzer_models")
+    enhanced_analysis_orchestrator = analyzer_module.EnhancedAnalysisOrchestrator
+    check_enhanced_dependencies = analyzer_module.check_enhanced_dependencies
+    analysis_options = models_module.AnalysisOptions
 
     if not check_enhanced_dependencies():
         console.print("[bold red]Error:[/bold red] Enhanced analysis requires additional dependencies.")
@@ -214,37 +207,39 @@ def analyze_enhanced(
 
     with console.status("[bold green]Analyzing obfuscated binary..."):
         try:
-            options = AnalysisOptions(
-                verbose=verbose,
-                detect_only=detect_only,
-                symbolic=symbolic,
-                dynamic=dynamic,
-                devirt=devirt,
-                iterative=iterative,
-                rewrite=rewrite,
-                bypass=bypass,
+            analysis_configuration = analysis_options(
+                verbose=options.verbose,
+                detect_only=options.detect_only,
+                symbolic=options.symbolic,
+                dynamic=options.dynamic,
+                devirt=options.devirt,
+                iterative=options.iterative,
+                rewrite=options.rewrite,
+                bypass=options.bypass,
             )
 
-            orchestrator = EnhancedAnalysisOrchestrator(
-                binary_path=binary,
-                output_dir=output,
+            orchestrator = enhanced_analysis_orchestrator(
+                binary_path=options.binary,
+                output_dir=options.output,
                 console=console,
             )
 
-            orchestrator.analyze(options)
+            orchestrator.analyze(analysis_configuration)
 
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
-            if verbose:
-                import traceback
-
+            if options.verbose:
                 console.print(traceback.format_exc())
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
+
+
+analyze_enhanced = CommandCallback("analyze_enhanced", EnhancedAnalysisOptions, _handle_enhanced_analysis)
+experimental_app.command("analyze-enhanced")(analyze_enhanced)
 
 
 @app.command()
 def functions(
-    binary: Path = typer.Argument(..., help="Path to binary file", exists=True),
+    binary: Annotated[Path, typer.Argument(help="Path to binary file", exists=True)],
     limit: int = typer.Option(20, "--limit", "-l", help="Maximum functions to display"),
     verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
 ) -> None:
@@ -278,90 +273,10 @@ def functions(
 
         except Exception as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(1) from e
 
 
-@app.command()
-def morph(
-    binary: Path = typer.Argument(..., help="Path to binary file", exists=True),
-    output: Path = typer.Option(None, "--output", "-o", help="Output path for morphed binary"),
-    mutations: list[str] = typer.Option(
-        ["nop", "substitute", "register"],
-        "--mutation",
-        "-m",
-        help="Mutations to apply (stable: nop, substitute, register; experimental: expand, block)",
-    ),
-    aggressive: bool = typer.Option(False, "--aggressive", "-a", help="Aggressive mode: more mutations"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force mutations to be different from original"),
-    validation_mode: str = typer.Option(
-        "structural",
-        "--validation-mode",
-        help="Validation mode: structural, runtime, symbolic, off",
-    ),
-    allow_limited_symbolic: bool = typer.Option(
-        False,
-        "--allow-limited-symbolic",
-        help="Allow symbolic mode for passes that declare limited symbolic support",
-    ),
-    limited_symbolic_policy: str = typer.Option(
-        "block",
-        "--limited-symbolic-policy",
-        help="How to handle limited symbolic passes: block, degrade-runtime, degrade-structural",
-    ),
-    rollback_policy: str = typer.Option(
-        "skip-invalid-pass",
-        "--rollback-policy",
-        help="Rollback policy: fail-fast, skip-invalid-pass, skip-invalid-mutation",
-    ),
-    report: Path | None = typer.Option(
-        None,
-        "--report",
-        help="Write a machine-readable JSON report",
-    ),
-    runtime_corpus: Path | None = typer.Option(
-        None,
-        "--runtime-corpus",
-        help="Optional JSON corpus for runtime validation during mutate",
-    ),
-    runtime_compare_files: bool = typer.Option(
-        False,
-        "--runtime-compare-files",
-        help="Compare monitored files during runtime validation",
-    ),
-    runtime_normalize_whitespace: bool = typer.Option(
-        False,
-        "--runtime-normalize-whitespace",
-        help="Ignore trailing whitespace differences during runtime validation",
-    ),
-    runtime_timeout: int = typer.Option(
-        10,
-        "--runtime-timeout",
-        help="Timeout per runtime validation test case in seconds",
-    ),
-    min_severity: str | None = typer.Option(
-        None,
-        "--min-severity",
-        help="Fail with code 1 unless the final report contains at least one pass at or above: mismatch, without-coverage, bounded-only, clean, not-requested",
-    ),
-    require_pass_severity: list[str] = typer.Option(
-        None,
-        "--require-pass-severity",
-        help="Require a specific pass severity in the final report, e.g. InstructionSubstitution=bounded-only",
-    ),
-    seed: int | None = typer.Option(None, "--seed", help="Deterministic seed for mutation selection"),
-    cache: bool = typer.Option(
-        False,
-        "--cache",
-        help="Enable analysis caching for faster repeated runs",
-    ),
-    clear_cache: bool = typer.Option(
-        False,
-        "--clear-cache",
-        help="Clear the analysis cache before running",
-    ),
-    report_format: str = typer.Option("json", "--format", help="Report format: json (default) or sarif"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-) -> None:
+def _handle_morph(options: MorphCommandOptions) -> None:
     """
     Apply tracked mutations to a binary and validate the result.
 
@@ -370,20 +285,19 @@ def morph(
         r2morph mutate binary.exe -m nop -m substitute --report report.json
         r2morph mutate binary.exe --cache  # Enable caching for faster repeated runs
     """
-    setup_logging("DEBUG" if verbose else "INFO")
+    setup_logging("DEBUG" if options.verbose else "INFO")
 
-    if not output:
-        output = binary.parent / f"{binary.stem}_morphed{binary.suffix}"
+    output = options.output or options.binary.parent / f"{options.binary.stem}_morphed{options.binary.suffix}"
 
-    if clear_cache:
-        from r2morph.core.analysis_cache import AnalysisCache
-
-        cleared = AnalysisCache().clear()
+    if options.clear_cache:
+        analysis_cache = import_module("r2morph.core.analysis_cache").AnalysisCache
+        cleared = analysis_cache().clear()
         console.print(f"[cyan]Cleared {cleared} cache entries[/cyan]")
 
+    selected_mutations = options.mutations or ["nop", "substitute", "register"]
     unknown = [
         m
-        for m in mutations
+        for m in selected_mutations
         if m not in set(PRODUCT_SUPPORT.stable_mutations) | set(PRODUCT_SUPPORT.experimental_mutations)
     ]
     if unknown:
@@ -391,143 +305,35 @@ def morph(
         raise typer.Exit(2)
 
     _run_morph_workflow(
-        binary=binary,
-        output=output,
-        mutations=mutations,
-        aggressive=aggressive,
-        force=force,
-        validation_mode=validation_mode,
-        allow_limited_symbolic=allow_limited_symbolic,
-        limited_symbolic_policy=limited_symbolic_policy,
-        rollback_policy=rollback_policy,
-        report=report,
-        runtime_corpus=runtime_corpus,
-        runtime_compare_files=runtime_compare_files,
-        runtime_normalize_whitespace=runtime_normalize_whitespace,
-        runtime_timeout=runtime_timeout,
-        min_severity=min_severity,
-        require_pass_severity=require_pass_severity,
-        seed=seed,
-        report_format=report_format,
+        MorphWorkflowRequest(
+            binary=options.binary,
+            output=output,
+            mutations=selected_mutations,
+            aggressive=options.aggressive,
+            force=options.force,
+            validation_mode=options.validation_mode,
+            allow_limited_symbolic=options.allow_limited_symbolic,
+            limited_symbolic_policy=options.limited_symbolic_policy,
+            rollback_policy=options.rollback_policy,
+            report=options.report,
+            runtime_corpus=options.runtime_corpus,
+            runtime_compare_files=options.runtime_compare_files,
+            runtime_normalize_whitespace=options.runtime_normalize_whitespace,
+            runtime_timeout=options.runtime_timeout,
+            min_severity=options.min_severity,
+            require_pass_severity=options.require_pass_severity,
+            seed=options.seed,
+            report_format=options.report_format,
+        )
     )
 
 
-@app.command(name="mutate")
-def mutate(
-    binary: Path = typer.Argument(..., help="Path to binary file", exists=True),
-    output: Path = typer.Option(None, "--output", "-o", help="Output path for morphed binary"),
-    mutations: list[str] = typer.Option(
-        ["nop", "substitute", "register"],
-        "--mutation",
-        "-m",
-        help="Mutations to apply (stable: nop, substitute, register; experimental: expand, block)",
-    ),
-    aggressive: bool = typer.Option(False, "--aggressive", "-a", help="Aggressive mode: more mutations"),
-    force: bool = typer.Option(False, "--force", "-f", help="Force mutations to be different from original"),
-    validation_mode: str = typer.Option(
-        "structural",
-        "--validation-mode",
-        help="Validation mode: structural, runtime, symbolic, off",
-    ),
-    allow_limited_symbolic: bool = typer.Option(
-        False,
-        "--allow-limited-symbolic",
-        help="Allow symbolic mode for passes that declare limited symbolic support",
-    ),
-    limited_symbolic_policy: str = typer.Option(
-        "block",
-        "--limited-symbolic-policy",
-        help="How to handle limited symbolic passes: block, degrade-runtime, degrade-structural",
-    ),
-    rollback_policy: str = typer.Option(
-        "skip-invalid-pass",
-        "--rollback-policy",
-        help="Rollback policy: fail-fast, skip-invalid-pass, skip-invalid-mutation",
-    ),
-    report: Path | None = typer.Option(
-        None,
-        "--report",
-        help="Write a machine-readable JSON report",
-    ),
-    runtime_corpus: Path | None = typer.Option(
-        None,
-        "--runtime-corpus",
-        help="Optional JSON corpus for runtime validation during mutate",
-    ),
-    runtime_compare_files: bool = typer.Option(
-        False,
-        "--runtime-compare-files",
-        help="Compare monitored files during runtime validation",
-    ),
-    runtime_normalize_whitespace: bool = typer.Option(
-        False,
-        "--runtime-normalize-whitespace",
-        help="Ignore trailing whitespace differences during runtime validation",
-    ),
-    runtime_timeout: int = typer.Option(
-        10,
-        "--runtime-timeout",
-        help="Timeout per runtime validation test case in seconds",
-    ),
-    min_severity: str | None = typer.Option(
-        None,
-        "--min-severity",
-        help="Fail with code 1 unless the final report contains at least one pass at or above: mismatch, without-coverage, bounded-only, clean, not-requested",
-    ),
-    require_pass_severity: list[str] = typer.Option(
-        None,
-        "--require-pass-severity",
-        help="Require a specific pass severity in the final report, e.g. InstructionSubstitution=bounded-only",
-    ),
-    seed: int | None = typer.Option(None, "--seed", help="Deterministic seed for mutation selection"),
-    report_format: str = typer.Option("json", "--format", help="Report format: json (default) or sarif"),
-    verbose: bool = typer.Option(False, "--verbose", "-v", help="Enable verbose output"),
-) -> None:
-    """Alias for `morph` using the product-oriented command name."""
-    return morph(
-        binary=binary,
-        output=output,
-        mutations=mutations,
-        aggressive=aggressive,
-        force=force,
-        validation_mode=validation_mode,
-        allow_limited_symbolic=allow_limited_symbolic,
-        limited_symbolic_policy=limited_symbolic_policy,
-        rollback_policy=rollback_policy,
-        report=report,
-        runtime_corpus=runtime_corpus,
-        runtime_compare_files=runtime_compare_files,
-        runtime_normalize_whitespace=runtime_normalize_whitespace,
-        runtime_timeout=runtime_timeout,
-        min_severity=min_severity,
-        require_pass_severity=require_pass_severity,
-        seed=seed,
-        report_format=report_format,
-        verbose=verbose,
-    )
+morph = CommandCallback("morph", MorphCommandOptions, _handle_morph)
+app.command()(morph)
+app.command(name="mutate")(morph)
 
 
-@app.command()
-def validate(
-    original: Path = typer.Argument(..., help="Original binary", exists=True),
-    mutated: Path = typer.Argument(..., help="Mutated binary", exists=True),
-    corpus: Path | None = typer.Option(
-        None,
-        "--corpus",
-        help="Optional JSON corpus describing runtime test cases (see dataset/runtime_corpus.json)",
-    ),
-    compare_files: bool = typer.Option(
-        False,
-        "--compare-files",
-        help="Compare monitored output files in addition to stdout/stderr/exitcode",
-    ),
-    normalize_whitespace: bool = typer.Option(
-        False,
-        "--normalize-whitespace",
-        help="Ignore trailing whitespace differences in stdout/stderr",
-    ),
-    timeout: int = typer.Option(10, "--timeout", help="Timeout per test case in seconds"),
-) -> None:
+def _handle_validate(options: ValidateCommandOptions) -> None:
     """
     Run runtime validation for an original/mutated binary pair.
 
@@ -545,20 +351,24 @@ def validate(
         ]
     """
     validator = _build_runtime_validator(
-        timeout=timeout,
-        corpus=corpus,
-        compare_files=compare_files,
-        normalize_whitespace=normalize_whitespace,
+        timeout=options.timeout,
+        corpus=options.corpus,
+        compare_files=options.compare_files,
+        normalize_whitespace=options.normalize_whitespace,
     )
-    result = validator.validate(original, mutated)
+    result = validator.validate(options.original, options.mutated)
     console.print_json(json.dumps(result.to_dict()))
     raise typer.Exit(0 if result.passed else 1)
 
 
+validate = CommandCallback("validate", ValidateCommandOptions, _handle_validate)
+app.command()(validate)
+
+
 @app.command()
 def diff(
-    original: Path = typer.Argument(..., help="Original binary", exists=True),
-    mutated: Path = typer.Argument(..., help="Mutated binary", exists=True),
+    original: Annotated[Path, typer.Argument(help="Original binary", exists=True)],
+    mutated: Annotated[Path, typer.Argument(help="Mutated binary", exists=True)],
 ) -> None:
     """
     Show a lightweight diff summary between two binaries.
@@ -570,128 +380,37 @@ def diff(
     raise typer.Exit(0)
 
 
-@app.command()
-def report(
-    report_file: Path = typer.Argument(..., help="Report JSON generated by mutate", exists=True),
-    only_pass: str | None = typer.Option(
-        None,
-        "--only-pass",
-        help="Show only mutations produced by the specified pass name",
-    ),
-    only_status: str | None = typer.Option(
-        None,
-        "--only-status",
-        help="Show only mutations with the specified symbolic_status",
-    ),
-    only_mismatches: bool = typer.Option(
-        False,
-        "--only-mismatches",
-        help="Show only mutations with symbolic observable mismatches",
-    ),
-    summary_only: bool = typer.Option(
-        False,
-        "--summary-only",
-        help="Show only the textual summary without printing report JSON",
-    ),
-    output: Path | None = typer.Option(
-        None,
-        "--output",
-        "-o",
-        help="Write the filtered report JSON to a file",
-    ),
-    require_results: bool = typer.Option(
-        False,
-        "--require-results",
-        help="Exit with code 1 when the filtered view contains no mutations",
-    ),
-    min_severity: str | None = typer.Option(
-        None,
-        "--min-severity",
-        help="Require at least one pass with severity: mismatch, without-coverage, bounded-only, clean, not-requested",
-    ),
-    only_expected_severity: str | None = typer.Option(
-        None,
-        "--only-expected-severity",
-        help="Filter persisted gate failures by expected severity: mismatch, without-coverage, bounded-only, clean, not-requested",
-    ),
-    only_pass_failure: str | None = typer.Option(
-        None,
-        "--only-pass-failure",
-        help="Filter persisted gate failures to a specific pass name",
-    ),
-    only_degraded: bool = typer.Option(
-        False,
-        "--only-degraded",
-        help="Show/report only executions where requested and effective validation modes differ",
-    ),
-    only_failed_gates: bool = typer.Option(
-        False,
-        "--only-failed-gates",
-        help="Show/report only executions where persisted CLI gate evaluation failed",
-    ),
-    only_risky_passes: bool = typer.Option(
-        False,
-        "--only-risky-passes",
-        help="Show/report only passes with symbolic mismatches, structural issues, or non-clean symbolic severity",
-    ),
-    only_structural_risk: bool = typer.Option(
-        False,
-        "--only-structural-risk",
-        help="Show/report only passes with structural issues",
-    ),
-    only_symbolic_risk: bool = typer.Option(
-        False,
-        "--only-symbolic-risk",
-        help="Show/report only passes with symbolic mismatches or non-clean symbolic severity",
-    ),
-    only_clean_passes: bool = typer.Option(
-        False,
-        "--only-clean-passes",
-        help="Show/report only passes with no structural issues and clean symbolic evidence",
-    ),
-    only_covered_passes: bool = typer.Option(
-        False,
-        "--only-covered-passes",
-        help="Show/report only clean passes with effective symbolic coverage",
-    ),
-    only_uncovered_passes: bool = typer.Option(
-        False,
-        "--only-uncovered-passes",
-        help="Show/report only clean passes without effective symbolic coverage",
-    ),
-    output_format: str = typer.Option(
-        "json",
-        "--format",
-        "-f",
-        help="Output format: json (default) or sarif",
-    ),
-) -> None:
-    """
-    Display a previously generated engine report.
-    """
+def _handle_report(options: ReportViewOptions) -> None:
+    """Display a previously generated engine report."""
     handle_report_command(
-        report_file=report_file,
-        only_pass=only_pass,
-        only_status=only_status,
-        only_mismatches=only_mismatches,
-        summary_only=summary_only,
-        output=output,
-        require_results=require_results,
-        min_severity=min_severity,
-        only_expected_severity=only_expected_severity,
-        only_pass_failure=only_pass_failure,
-        only_degraded=only_degraded,
-        only_failed_gates=only_failed_gates,
-        pass_classes=PassClassFilters(
-            only_risky_passes=only_risky_passes,
-            only_structural_risk=only_structural_risk,
-            only_symbolic_risk=only_symbolic_risk,
-            only_uncovered_passes=only_uncovered_passes,
-            only_covered_passes=only_covered_passes,
-            only_clean_passes=only_clean_passes,
+        options.report_file,
+        ReportCommandOptions(
+            only_pass=options.only_pass,
+            only_status=options.only_status,
+            only_mismatches=options.only_mismatches,
+            summary_only=options.summary_only,
+            output=options.output,
+            require_results=options.require_results,
+            min_severity=options.min_severity,
+            only_expected_severity=options.only_expected_severity,
+            only_pass_failure=options.only_pass_failure,
+            only_degraded=options.only_degraded,
+            only_failed_gates=options.only_failed_gates,
+            pass_classes=PassClassFilters(
+                only_risky_passes=options.only_risky_passes,
+                only_structural_risk=options.only_structural_risk,
+                only_symbolic_risk=options.only_symbolic_risk,
+                only_uncovered_passes=options.only_uncovered_passes,
+                only_covered_passes=options.only_covered_passes,
+                only_clean_passes=options.only_clean_passes,
+            ),
+            output_format=options.output_format,
         ),
-        output_format=output_format,
     )
+
+
+report = CommandCallback("report", ReportViewOptions, _handle_report)
+app.command()(report)
 
 
 @app.command()
@@ -707,7 +426,7 @@ def version() -> None:
 def cache(
     clear: bool = typer.Option(False, "--clear", "-c", help="Clear all cached analysis results"),
     stats: bool = typer.Option(False, "--stats", "-s", help="Show cache statistics"),
-    path: Path | None = typer.Option(None, "--path", "-p", help="Custom cache directory path"),
+    path: Annotated[Path | None, typer.Option("--path", "-p", help="Custom cache directory path")] = None,
 ) -> None:
     """
     Manage the analysis cache.
@@ -721,7 +440,7 @@ def cache(
         handle_cache_command(clear=clear, stats=stats, path=path, console=console)
     except SystemExit as exc:
         code = exc.code
-        raise typer.Exit(code if isinstance(code, int) else (0 if code is None else 1))
+        raise typer.Exit(code if isinstance(code, int) else (0 if code is None else 1)) from exc
 
 
 def main() -> None:
@@ -742,13 +461,15 @@ def main() -> None:
         input_file = Path(args.input_opt or args.input_file)
         output_file = Path(args.output_opt or args.output_file) if (args.output_opt or args.output_file) else None
         _run_simple_mode(
-            input_file,
-            output_file,
-            aggressive=args.aggressive,
-            force=args.force,
-            seed=args.seed,
-            verbose=args.verbose,
-            debug=args.debug,
+            SimpleModeRequest(
+                input_file=input_file,
+                output_file=output_file,
+                aggressive=args.aggressive,
+                force=args.force,
+                seed=args.seed,
+                verbose=args.verbose,
+                debug=args.debug,
+            )
         )
         return
     app()

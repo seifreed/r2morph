@@ -5,12 +5,45 @@ Detects code invariants that must be preserved during mutations.
 """
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
 from r2morph.analysis.invariant_models import Invariant, InvariantType
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+_MIN_INSTRUCTION_PART_COUNT = 2
+
+
+def _architecture_family(arch: str) -> str:
+    if arch in {"x86", "x64"}:
+        return arch
+    if arch in {"arm", "arm64", "aarch64"}:
+        return "arm"
+    return arch
+
+
+def _boundary_registers(instructions: list[dict[str, Any]], opcode: str, callee_saved: set[str]) -> set[str]:
+    registers: set[str] = set()
+    for instruction in instructions:
+        parts = instruction.get("disasm", "").lower().split()
+        if len(parts) >= _MIN_INSTRUCTION_PART_COUNT and parts[0] == opcode:
+            register = parts[1].strip(",")
+            if register in callee_saved:
+                registers.add(register)
+    return registers
+
+
+def _modified_registers(instructions: list[dict[str, Any]], callee_saved: set[str]) -> set[str]:
+    writing_opcodes = {"mov", "add", "sub", "xor", "or", "and", "lea"}
+    modified: set[str] = set()
+    for instruction in instructions:
+        parts = instruction.get("disasm", "").lower().split()
+        if len(parts) < _MIN_INSTRUCTION_PART_COUNT or parts[0] not in writing_opcodes:
+            continue
+        destination = parts[1].split(",")[0]
+        modified.update(register for register in callee_saved if register in destination)
+    return modified
 
 
 class InvariantDetector:
@@ -18,7 +51,7 @@ class InvariantDetector:
     Detects invariants in binary code that must be preserved during mutation.
     """
 
-    CALLEE_SAVED_REGS = {
+    CALLEE_SAVED_REGS: ClassVar[dict[str, list[str]]] = {
         "x86": ["ebx", "esi", "edi", "ebp"],
         "x64": ["rbx", "r12", "r13", "r14", "r15", "rbp"],
         "arm": ["r4", "r5", "r6", "r7", "r8", "r9", "r10", "r11"],
@@ -81,7 +114,7 @@ class InvariantDetector:
                         ret_imm = int(ret_suffix.strip().rstrip(","), 0)
                         stack_delta += ret_imm
                     except ValueError:
-                        # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
+                        # Symbolic and register operands are not numeric candidates.
                         pass
                 if stack_delta != 0:
                     invariants.append(
@@ -125,14 +158,7 @@ class InvariantDetector:
         """
         invariants: list[Invariant] = []
 
-        if arch in ["x86", "x64"]:
-            arch_family = "x64" if arch == "x64" else "x86"
-        elif arch in ["arm", "arm64", "aarch64"]:
-            arch_family = "arm"
-        else:
-            arch_family = arch
-
-        callee_saved = set(self.CALLEE_SAVED_REGS.get(arch_family, []))
+        callee_saved = set(self.CALLEE_SAVED_REGS.get(_architecture_family(arch), []))
 
         if not callee_saved:
             return invariants
@@ -142,41 +168,9 @@ class InvariantDetector:
         except Exception:
             return invariants
 
-        modified_regs = set()
-        saved_regs = set()
-        restored_regs = set()
-
-        for _i, insn in enumerate(instructions[:10]):
-            disasm = insn.get("disasm", "").lower()
-            parts = disasm.split()
-            if len(parts) >= 2 and parts[0] == "push":
-                reg = parts[1].strip(",")
-                if reg in callee_saved:
-                    saved_regs.add(reg)
-
-        for _i, insn in enumerate(reversed(instructions[-10:])):
-            disasm = insn.get("disasm", "").lower()
-            parts = disasm.split()
-            if len(parts) >= 2 and parts[0] == "pop":
-                reg = parts[1].strip(",")
-                if reg in callee_saved:
-                    restored_regs.add(reg)
-
-        for insn in instructions:
-            disasm = insn.get("disasm", "").lower()
-            parts = disasm.split()
-            if not parts:
-                continue
-
-            mnemonic = parts[0]
-
-            if len(parts) >= 2:
-                if mnemonic in ["mov", "add", "sub", "xor", "or", "and", "lea"]:
-                    dest_op = parts[1].split(",")[0]
-                    if any(reg in dest_op for reg in callee_saved):
-                        for reg in callee_saved:
-                            if reg in dest_op:
-                                modified_regs.add(reg)
+        saved_regs = _boundary_registers(instructions[:10], "push", callee_saved)
+        restored_regs = _boundary_registers(list(reversed(instructions[-10:])), "pop", callee_saved)
+        modified_regs = _modified_registers(instructions, callee_saved)
 
         for reg in modified_regs:
             if reg not in saved_regs or reg not in restored_regs:

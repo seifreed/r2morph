@@ -176,11 +176,7 @@ class CriticalNodeDetector:
         if not self._exclusion_zones:
             self.get_exclusion_zones()
 
-        for zone in self._exclusion_zones:
-            if address in zone:
-                return True
-
-        return False
+        return any(address in zone for zone in self._exclusion_zones)
 
     def get_critical_type(self, address: int) -> str | None:
         """

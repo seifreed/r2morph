@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 import logging
-import random
 import re
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
+
+_MIN_INSTRUCTION_PART_COUNT = 2
 
 REGISTER_CLASSES: dict[str, dict[str, list[str]]] = {
     "x86": {
@@ -343,20 +345,20 @@ def _register_tokens(text: str) -> list[str]:
 def _transfer_abi(disasm: str) -> tuple[frozenset[str], frozenset[str]] | None:
     """(inputs, outputs) canonical register sets for a call/syscall, else None."""
     tokens = disasm.split()
-    if not tokens:
-        return None
-    mnemonic = tokens[0]
-    if mnemonic in ("syscall", "sysenter"):
-        return _SYSCALL_INPUT_REGISTERS, _SYSCALL_OUTPUT_REGISTERS
-    if mnemonic == "int" and len(tokens) > 1 and tokens[1].rstrip(",") in _SYSCALL_INT_VECTORS:
-        return _SYSCALL_INPUT_REGISTERS, _SYSCALL_OUTPUT_REGISTERS
-    if mnemonic == "svc":
-        return _SVC_INPUT_REGISTERS, _SVC_OUTPUT_REGISTERS
-    if mnemonic == "call":
-        return _CALL_INPUT_REGISTERS_X86, _CALL_OUTPUT_REGISTERS
-    if mnemonic in ("bl", "blr", "blx"):
-        return _CALL_INPUT_REGISTERS_ARM, _CALL_OUTPUT_REGISTERS
-    return None
+    transfer = None
+    if tokens:
+        mnemonic = tokens[0]
+        if mnemonic in ("syscall", "sysenter") or (
+            mnemonic == "int" and len(tokens) > 1 and tokens[1].rstrip(",") in _SYSCALL_INT_VECTORS
+        ):
+            transfer = (_SYSCALL_INPUT_REGISTERS, _SYSCALL_OUTPUT_REGISTERS)
+        elif mnemonic == "svc":
+            transfer = (_SVC_INPUT_REGISTERS, _SVC_OUTPUT_REGISTERS)
+        elif mnemonic == "call":
+            transfer = (_CALL_INPUT_REGISTERS_X86, _CALL_OUTPUT_REGISTERS)
+        elif mnemonic in ("bl", "blr", "blx"):
+            transfer = (_CALL_INPUT_REGISTERS_ARM, _CALL_OUTPUT_REGISTERS)
+    return transfer
 
 
 def _destination_register(disasm: str) -> str | None:
@@ -367,7 +369,7 @@ def _destination_register(disasm: str) -> str | None:
     mnemonic = parts[0]
     if mnemonic in _NO_DESTINATION_MNEMONICS or mnemonic.startswith("b."):
         return None
-    if len(parts) < 2:
+    if len(parts) < _MIN_INSTRUCTION_PART_COUNT:
         return None
     first_operand = parts[1].split(",", 1)[0].strip()
     if "[" in first_operand:  # memory destination writes memory, not a register
@@ -380,7 +382,7 @@ def _source_registers(disasm: str) -> set[str]:
     """Registers read by an instruction (every operand register that is not a
     write-only destination)."""
     parts = disasm.split(None, 1)
-    if len(parts) < 2:
+    if len(parts) < _MIN_INSTRUCTION_PART_COUNT:
         return set()
     tokens = set(_register_tokens(parts[1]))
     if parts[0] in _PURE_WRITE_MNEMONICS:
@@ -463,19 +465,20 @@ def _implicit_register_bases(disasm: str) -> frozenset[str]:
     if not tokens:
         return frozenset()
     mnemonic = tokens[0]
+    registers: frozenset[str] = frozenset()
     if mnemonic in _REP_PREFIXES:
         following = tokens[1] if len(tokens) > 1 else ""
-        return _STRING_OP_REGISTERS if any(f in following for f in _STRING_OP_FRAGMENTS) else frozenset()
-    if mnemonic in _IMPLICIT_RDX_RAX_MNEMONICS:
-        return frozenset({"rax", "rdx"})
-    if mnemonic == "imul":  # implicit rdx:rax only in the single-operand form
+        registers = _STRING_OP_REGISTERS if any(f in following for f in _STRING_OP_FRAGMENTS) else frozenset()
+    elif mnemonic in _IMPLICIT_RDX_RAX_MNEMONICS:
+        registers = frozenset({"rax", "rdx"})
+    elif mnemonic == "imul":  # implicit rdx:rax only in the single-operand form
         operands = disasm[len(mnemonic) :].strip()
-        return frozenset({"rax", "rdx"}) if operands and "," not in operands else frozenset()
-    if mnemonic in _IMPLICIT_FIXED_REGISTERS:
-        return frozenset(_IMPLICIT_FIXED_REGISTERS[mnemonic])
-    if any(mnemonic.startswith(f) for f in _STRING_OP_FRAGMENTS):
-        return _STRING_OP_REGISTERS
-    return frozenset()
+        registers = frozenset({"rax", "rdx"}) if operands and "," not in operands else frozenset()
+    elif mnemonic in _IMPLICIT_FIXED_REGISTERS:
+        registers = frozenset(_IMPLICIT_FIXED_REGISTERS[mnemonic])
+    elif any(mnemonic.startswith(f) for f in _STRING_OP_FRAGMENTS):
+        registers = _STRING_OP_REGISTERS
+    return registers
 
 
 def implicit_operand_pins(instructions: list[dict[str, Any]]) -> set[str]:
@@ -531,7 +534,7 @@ def count_register_uses(instructions: list[dict[str, Any]], register: str) -> in
 def is_safe_size_extension_substitution(disasm: str, orig_reg: str, subst_reg: str) -> bool:
     """Check if register substitution is safe for movzx/movsx instructions."""
     parts = disasm.split(",")
-    if len(parts) < 2:
+    if len(parts) < _MIN_INSTRUCTION_PART_COUNT:
         return False
 
     dest = parts[0].split()[-1].strip()
@@ -547,39 +550,23 @@ def is_safe_size_extension_substitution(disasm: str, orig_reg: str, subst_reg: s
         )
         return False
 
-    source_family = None
-    orig_family = None
-    subst_family = None
-    for family, regs in _X86_REGISTER_FAMILIES.items():
-        if source in regs:
-            source_family = family
-        if orig_reg in regs:
-            orig_family = family
-        if subst_reg in regs:
-            subst_family = family
-
-    if orig_reg == dest:
-        if subst_family and orig_family and subst_family == orig_family:
-            logger.debug(f"Skipping dest substitution {disasm}: {subst_reg} is in same family as {dest}")
-            return False
-    elif orig_reg == source:
-        if subst_family and source_family and subst_family == source_family:
-            logger.debug(
-                f"Skipping source substitution {disasm}: {subst_reg} would be in same family as source {source}"
-            )
-            return False
+    source_family = _CANONICAL_REGISTER.get(source)
+    orig_family = _CANONICAL_REGISTER.get(orig_reg)
+    subst_family = _CANONICAL_REGISTER.get(subst_reg)
+    same_family_conflict = subst_family is not None and (
+        (orig_reg == dest and subst_family == orig_family) or (orig_reg == source and subst_family == source_family)
+    )
+    if same_family_conflict:
+        logger.debug(f"Skipping substitution {disasm}: {subst_reg} conflicts with the operand register family")
+        return False
 
     dest_mem_size = REGISTER_SIZES.get(dest, 0)
     source_mem_size = REGISTER_SIZES.get(source, 0)
-    if dest_mem_size > 0 and source_mem_size > 0:
-        if dest_mem_size < source_mem_size:
-            logger.debug(
-                f"Skipping size extension: dest size ({dest_mem_size}) must be >= source size ({source_mem_size})"
-            )
-            return False
-        if dest_mem_size == source_mem_size:
-            logger.debug(f"Skipping size extension: dest size ({dest_mem_size}) equals source size ({source_mem_size})")
-            return False
+    if dest_mem_size > 0 and source_mem_size > 0 and dest_mem_size <= source_mem_size:
+        logger.debug(
+            f"Skipping size extension: dest size ({dest_mem_size}) must exceed source size ({source_mem_size})"
+        )
+        return False
 
     return True
 
@@ -587,7 +574,7 @@ def is_safe_size_extension_substitution(disasm: str, orig_reg: str, subst_reg: s
 def is_safe_lea_substitution(disasm: str, orig_reg: str, subst_reg: str) -> bool:
     """Check if register substitution is safe for LEA."""
     parts = disasm.split(",", 1)
-    if len(parts) < 2:
+    if len(parts) < _MIN_INSTRUCTION_PART_COUNT:
         return False
 
     dest = parts[0].split()[-1].strip()
@@ -611,7 +598,7 @@ def select_candidates(
     arch: str,
     probability: float,
     max_substitutions: int,
-) -> list[tuple[dict, list[dict], list[tuple[str, str]]]]:
+) -> list[tuple[dict[str, Any], list[dict[str, Any]], list[tuple[str, str]]]]:
     """Select functions with substitution candidates."""
     result = []
     for func in functions:
@@ -640,8 +627,8 @@ __all__ = [
     "abi_live_registers",
     "count_register_uses",
     "find_substitution_candidates",
-    "implicit_operand_pins",
     "get_register_class",
+    "implicit_operand_pins",
     "is_safe_lea_substitution",
     "is_safe_size_extension_substitution",
     "select_candidates",

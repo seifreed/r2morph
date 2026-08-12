@@ -45,7 +45,7 @@ class ValidationResult:
 
 
 __all__ = [
-    "ValidationSeverity",
     "ValidationIssue",
     "ValidationResult",
+    "ValidationSeverity",
 ]

@@ -18,7 +18,6 @@ from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
 from r2morph.detection.evasion_scorer import EvasionScorer
 from r2morph.detection.similarity_hasher import SimilarityHasher
 from r2morph.validation.fuzzer import MutationFuzzer
-from r2morph.validation.regression import RegressionTest, RegressionTester
 from r2morph.validation.validator import BinaryValidator, ValidationResult
 
 
@@ -253,47 +252,3 @@ class TestMutationFuzzerDetailed:
         """Test MutationFuzzer initialization."""
         fuzzer = MutationFuzzer()
         assert fuzzer is not None
-
-
-class TestRegressionTesterDetailed:
-    """Detailed tests for RegressionTester."""
-
-    @pytest.fixture
-    def tmp_test_dir(self, tmp_path):
-        test_dir = tmp_path / "regression"
-        test_dir.mkdir()
-        return test_dir
-
-    def test_regression_tester_init(self, tmp_test_dir):
-        """Test RegressionTester initialization."""
-        tester = RegressionTester(tmp_test_dir)
-        assert tester.test_dir == tmp_test_dir
-        assert len(tester.tests) == 0
-        assert len(tester.results) == 0
-
-    def test_regression_tester_default_dir(self):
-        """Test RegressionTester with default directory."""
-        tester = RegressionTester()
-        assert tester.test_dir is not None
-        assert len(tester.tests) == 0
-
-    def test_load_tests_nonexistent_file(self, tmp_test_dir):
-        """Test loading tests from nonexistent file."""
-        tester = RegressionTester(tmp_test_dir)
-        tester.load_tests()
-        assert len(tester.tests) == 0
-
-    def test_regression_test_dataclass(self):
-        """Test RegressionTest dataclass."""
-        test = RegressionTest(
-            name="test1",
-            binary_path="/path/to/binary",
-            mutations=["nop", "substitute"],
-            test_cases=[{"args": ["--help"]}],
-            expected_mutations=10,
-        )
-        assert test.name == "test1"
-        assert len(test.mutations) == 2
-        test_dict = test.to_dict()
-        assert isinstance(test_dict, dict)
-        assert test_dict["name"] == "test1"

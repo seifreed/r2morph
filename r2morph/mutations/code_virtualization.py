@@ -21,10 +21,11 @@ corrupt one.
 from __future__ import annotations
 
 import logging
-import random
 import struct
-from typing import Any
+from dataclasses import dataclass
+from typing import Any, cast
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_engine import (
@@ -41,13 +42,15 @@ from r2morph.mutations.code_virtualization_engine import (
     decode_instruction,
     inject_junk_ops,
 )
+from r2morph.mutations.code_virtualization_engine_models import VirtualizedAddress
 from r2morph.mutations.code_virtualization_inject import inject_blob, predict_blob_vaddr
 from r2morph.mutations.code_virtualization_region import (
     build_region_scheme,
     extract_region,
 )
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
-from r2morph.mutations.code_virtualization_region_decoders import (
+from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    FpIndexedItem,
     _decode_fp_arith,
     _decode_fp_arith_idx,
     _decode_fp_arith_mem,
@@ -58,6 +61,8 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _decode_fp_packed_arith,
     _decode_fp_packed_mem,
     _decode_fp_riprel,
+)
+from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_lea,
     _decode_lea_indexed,
     _decode_memory_mov,
@@ -71,6 +76,10 @@ from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 
 logger = logging.getLogger(__name__)
 
+_FP_INDEXED_TUPLE_SIZE = 7
+_BYTE_WIDTH_BITS = 8
+_MIN_NESTING_DEPTH = 2
+
 # Minimum instructions in a run worth virtualizing.
 _MIN_RUN_LENGTH = 2
 # A relative trampoline jump needs 5 bytes in the run's byte span.
@@ -82,10 +91,7 @@ _MAX_DISPATCH_INSNS = 256
 
 _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
 
-
-def _decode_run_item(
-    text: str, insn_addr: int = 0, insn_size: int = 0
-) -> (
+VirtualizedRunItem = (
     VirtualizedOp
     | VirtualizedMemOp
     | VirtualizedFpMemOp
@@ -94,8 +100,148 @@ def _decode_run_item(
     | VirtualizedFpArithMemOp
     | VirtualizedFpPackedOp
     | VirtualizedFpPackedMemOp
-    | None
-):
+)
+
+
+def _decode_fp_memory_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedFpMemOp | None:
+    decoded = _decode_fp_mem(text)
+    if decoded is not None:
+        kind, xmm_index, base_slot, disp, width = decoded
+        return VirtualizedFpMemOp(kind, xmm_index, VirtualizedAddress(base_slot, disp), width)
+    rip_relative = _decode_fp_riprel(text, insn_addr, insn_size)
+    if rip_relative is not None:
+        kind, xmm_index, target, width = rip_relative
+        return VirtualizedFpMemOp(kind, xmm_index, VirtualizedAddress(-1, target), width)
+    indexed = _decode_fp_indexed(text)
+    if indexed is not None and len(indexed) == _FP_INDEXED_TUPLE_SIZE:
+        kind, xmm_index, base_slot, index_slot, shift, disp, width = cast(FpIndexedItem, indexed)
+        return VirtualizedFpMemOp(
+            kind,
+            xmm_index,
+            VirtualizedAddress(base_slot, disp, index_slot, shift),
+            width,
+        )
+    return None
+
+
+def _decode_fp_arithmetic_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedRunItem | None:
+    decoded = _decode_fp_arith(text)
+    if decoded is not None:
+        _kind, operation, destination, source, width = decoded
+        return VirtualizedFpArithOp(operation, destination, source, width)
+    converted = _decode_fp_convert(text)
+    if converted is not None:
+        direction, fp_width, gp_width, first, second = converted
+        xmm_index, gp_slot = (first, second) if direction == "cvti2f" else (second, first)
+        return VirtualizedFpConvertOp(direction, fp_width, gp_width, xmm_index, gp_slot)
+    memory = _decode_fp_arith_mem(text)
+    if memory is not None:
+        _kind, operation, xmm_index, base_slot, disp, width = memory
+        return VirtualizedFpArithMemOp(operation, xmm_index, VirtualizedAddress(base_slot, disp, -1), width)
+    rip_relative = _decode_fp_arith_riprel(text, insn_addr, insn_size)
+    if rip_relative is not None:
+        _kind, operation, xmm_index, target, width = rip_relative
+        return VirtualizedFpArithMemOp(operation, xmm_index, VirtualizedAddress(-1, target, -1), width)
+    indexed = _decode_fp_arith_idx(text)
+    if indexed is not None:
+        _kind, operation, xmm_index, base_slot, index_slot, shift, disp, width = indexed
+        return VirtualizedFpArithMemOp(
+            operation,
+            xmm_index,
+            VirtualizedAddress(base_slot, disp, index_slot, shift),
+            width,
+        )
+    return None
+
+
+def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
+    decoded = _decode_fp_packed_arith(text)
+    if decoded is not None:
+        _kind, mnemonic, destination, source = decoded
+        return VirtualizedFpPackedOp(mnemonic, destination, source)
+    memory = _decode_fp_packed_mem(text)
+    if memory is not None:
+        kind, xmm_index, base_slot, disp = memory
+        return VirtualizedFpPackedMemOp(kind, xmm_index, base_slot, disp)
+    return None
+
+
+def _decode_gp_memory_item(text: str, insn_addr: int, insn_size: int) -> VirtualizedMemOp | None:
+    decoded = _decode_memory_mov(text)
+    if decoded is not None:
+        kind, register_slot, base_slot, disp, width = decoded
+        return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
+    extended = _decode_movx(text)
+    if extended is not None and extended[0] == "movx":
+        _, extension, source_size, width, register_slot, base_slot, disp = extended
+        kind = f"mov{extension}x{'b' if source_size == _BYTE_WIDTH_BITS else 'w'}"
+        return VirtualizedMemOp(kind, register_slot, VirtualizedAddress(base_slot, disp), width)
+    if extended is not None and extended[0] == "movxidx":
+        _, extension, source_size, width, register_slot, base_slot, index_slot, shift, disp = extended
+        kind = f"mov{extension}x{'b' if source_size == _BYTE_WIDTH_BITS else 'w'}idx"
+        return VirtualizedMemOp(
+            kind,
+            register_slot,
+            VirtualizedAddress(base_slot, disp, index_slot, shift),
+            width,
+        )
+    rip_relative = _decode_riprel_mov(text, insn_addr, insn_size)
+    if rip_relative is not None:
+        kind, register_slot, target, width = rip_relative
+        return VirtualizedMemOp(
+            "loadrip" if kind == "riprel_load" else "storerip",
+            register_slot,
+            VirtualizedAddress(-1, target),
+            width,
+        )
+    return None
+
+
+def _decode_memory_arithmetic_item(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> VirtualizedMemOp | None:
+    if mnemonic not in _MEM_ARITH_MNEMONICS:
+        return None
+    decoded = _decode_op_mem(text, mnemonic, insn_addr, insn_size)
+    if decoded is not None and decoded[0] == "opmem":
+        _, _mnemonic, register_slot, base_slot, disp, width = decoded
+        return VirtualizedMemOp(f"mem{mnemonic}", register_slot, VirtualizedAddress(base_slot, disp), width)
+    if decoded is not None and decoded[0] == "opriprel":
+        _, _mnemonic, register_slot, target, width = decoded
+        return VirtualizedMemOp(f"mem{mnemonic}rip", register_slot, VirtualizedAddress(-1, target), width)
+    indexed = _decode_op_mem_indexed(text, mnemonic)
+    if indexed is not None and indexed[0] == "opmemidx":
+        _, _mnemonic, register_slot, base_slot, index_slot, shift, disp, width = indexed
+        return VirtualizedMemOp(
+            f"mem{mnemonic}idx",
+            register_slot,
+            VirtualizedAddress(base_slot, disp, index_slot, shift),
+            width,
+        )
+    return None
+
+
+def _decode_lea_item(text: str, mnemonic: str, insn_addr: int, insn_size: int) -> VirtualizedMemOp | None:
+    if mnemonic != "lea":
+        return None
+    decoded = _decode_lea(text, insn_addr, insn_size)
+    if decoded is not None and decoded[0] == "lea":
+        _, register_slot, base_slot, disp, width = decoded
+        return VirtualizedMemOp("lea", register_slot, VirtualizedAddress(base_slot, disp), width)
+    if decoded is not None and decoded[0] == "learip":
+        _, register_slot, target, width = decoded
+        return VirtualizedMemOp("learip", register_slot, VirtualizedAddress(-1, target), width)
+    indexed = _decode_lea_indexed(text)
+    if indexed is not None and indexed[0] == "leaidx":
+        _, register_slot, base_slot, index_slot, shift, disp, width = indexed
+        return VirtualizedMemOp(
+            "leaidx",
+            register_slot,
+            VirtualizedAddress(base_slot, disp, index_slot, shift),
+            width,
+        )
+    return None
+
+
+def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> VirtualizedRunItem | None:
     """Decode one instruction into a VM item: a register/immediate op, a memory
     load/store ``mov``, a scalar ``movsd``/``movss`` xmm<->[base+disp], an ``<op>
     reg, [base+disp]``, a ``mov reg, [rip+disp]``, or ``None`` if the VM cannot
@@ -103,128 +249,40 @@ def _decode_run_item(
     op = decode_instruction(text)
     if op is not None:
         return op
-    # Scalar FP load/store is tried before the GP mov decoders: movsd/movss share
-    # the "mov" prefix but route to the xmm save area, not a GP slot.
-    fp = _decode_fp_mem(text)
-    if fp is not None:
-        kind, xmm_index, base_slot, disp, width = fp
-        return VirtualizedFpMemOp(kind, xmm_index, base_slot, disp, width)
-    fp_rip = _decode_fp_riprel(text, insn_addr, insn_size)
-    if fp_rip is not None:
-        # The rip target is an absolute address carried in the disp field; the
-        # encoder stores it as an offset from the bytecode base. No base slot.
-        rip_kind, rip_xmm, target, rip_width = fp_rip
-        return VirtualizedFpMemOp(rip_kind, rip_xmm, -1, target, rip_width)
-    fp_idx = _decode_fp_indexed(text)
-    # Only the base form (7-tuple) is virtualized; the no-base "idxnb" form (an
-    # absolute [index*scale+disp], a 6-tuple without the base slot) stays native.
-    if fp_idx is not None and len(fp_idx) == 7:
-        idx_kind, idx_xmm, idx_base, idx_index, idx_shift, idx_disp, idx_width = fp_idx
-        return VirtualizedFpMemOp(idx_kind, idx_xmm, idx_base, idx_disp, idx_width, idx_index, idx_shift)
-    fp_arith = _decode_fp_arith(text)
-    if fp_arith is not None:
-        _kind, fp_op, dst_index, src_index, arith_width = fp_arith
-        return VirtualizedFpArithOp(fp_op, dst_index, src_index, arith_width)
-    cvt = _decode_fp_convert(text)
-    if cvt is not None:
-        direction, fp_w, gp_w, a, b = cvt
-        # _decode_fp_convert orders the last two fields by direction; normalize to
-        # (xmm_index, gp_slot) so the op carries them in a fixed order.
-        xmm_index, gp_slot = (a, b) if direction == "cvti2f" else (b, a)
-        return VirtualizedFpConvertOp(direction, fp_w, gp_w, xmm_index, gp_slot)
-    fp_arith_mem = _decode_fp_arith_mem(text)
-    if fp_arith_mem is not None:
-        _kind, am_op, am_xmm, am_base, am_disp, am_width = fp_arith_mem
-        return VirtualizedFpArithMemOp(am_op, am_xmm, am_base, am_disp, am_width)
-    fp_arith_rip = _decode_fp_arith_riprel(text, insn_addr, insn_size)
-    if fp_arith_rip is not None:
-        # rip-relative constant-pool source: base_index -1, disp carries the target.
-        _kind, ar_op, ar_xmm, ar_target, ar_width = fp_arith_rip
-        return VirtualizedFpArithMemOp(ar_op, ar_xmm, -1, ar_target, ar_width)
-    fp_arith_idx = _decode_fp_arith_idx(text)
-    if fp_arith_idx is not None:
-        _kind, ai_op, ai_xmm, ai_base, ai_index, ai_shift, ai_disp, ai_width = fp_arith_idx
-        return VirtualizedFpArithMemOp(ai_op, ai_xmm, ai_base, ai_disp, ai_width, ai_index, ai_shift)
-    fp_packed = _decode_fp_packed_arith(text)
-    if fp_packed is not None:
-        _kind, pk_mnemonic, pk_dst, pk_src = fp_packed
-        return VirtualizedFpPackedOp(pk_mnemonic, pk_dst, pk_src)
-    # Packed 128-bit load/store is tried before the GP mov decoders: movaps/movups
-    # share the "mov" prefix but move the full 128 bits through the xmm save area.
-    fp_packed_mem = _decode_fp_packed_mem(text)
-    if fp_packed_mem is not None:
-        pm_kind, pm_xmm, pm_base, pm_disp = fp_packed_mem
-        return VirtualizedFpPackedMemOp(pm_kind, pm_xmm, pm_base, pm_disp)
-    mem = _decode_memory_mov(text)
-    if mem is not None:
-        kind, reg_slot, base_slot, disp, width = mem
-        return VirtualizedMemOp(kind, reg_slot, base_slot, disp, width)
-    movx = _decode_movx(text)
-    if movx is not None and movx[0] == "movx":
-        _, ext, src_size, dst_width, reg_slot, base_slot, disp = movx
-        kind = f"mov{ext}x{'b' if src_size == 8 else 'w'}"
-        return VirtualizedMemOp(kind, reg_slot, base_slot, disp, dst_width)
-    if movx is not None and movx[0] == "movxidx":
-        _, ext, src_size, dst_width, reg_slot, base_slot, index_slot, shift, disp = movx
-        kind = f"mov{ext}x{'b' if src_size == 8 else 'w'}idx"
-        return VirtualizedMemOp(kind, reg_slot, base_slot, disp, dst_width, index_slot, shift)
-    riprel = _decode_riprel_mov(text, insn_addr, insn_size)
-    if riprel is not None:
-        kind, reg_slot, target, width = riprel
-        # The rip-relative target is an absolute address (carried in the disp field);
-        # the encoder stores it as an offset from the bytecode base. No base slot.
-        return VirtualizedMemOp("loadrip" if kind == "riprel_load" else "storerip", reg_slot, -1, target, width)
     mnemonic = text.split(None, 1)[0].lower() if text.strip() else ""
-    if mnemonic in _MEM_ARITH_MNEMONICS:
-        decoded = _decode_op_mem(text, mnemonic, insn_addr, insn_size)
-        if decoded is not None and decoded[0] == "opmem":
-            _, _mnemonic, reg_slot, base_slot, disp, width = decoded
-            return VirtualizedMemOp(f"mem{mnemonic}", reg_slot, base_slot, disp, width)
-        if decoded is not None and decoded[0] == "opriprel":
-            _, _mnemonic, reg_slot, target, width = decoded
-            return VirtualizedMemOp(f"mem{mnemonic}rip", reg_slot, -1, target, width)
-        indexed = _decode_op_mem_indexed(text, mnemonic)
-        if indexed is not None and indexed[0] == "opmemidx":
-            _, _mnemonic, reg_slot, base_slot, index_slot, shift, disp, width = indexed
-            return VirtualizedMemOp(f"mem{mnemonic}idx", reg_slot, base_slot, disp, width, index_slot, shift)
-    elif mnemonic == "lea":
-        decoded = _decode_lea(text, insn_addr, insn_size)
-        if decoded is not None and decoded[0] == "lea":
-            _, reg_slot, base_slot, disp, width = decoded
-            return VirtualizedMemOp("lea", reg_slot, base_slot, disp, width)
-        if decoded is not None and decoded[0] == "learip":
-            _, reg_slot, target, width = decoded
-            return VirtualizedMemOp("learip", reg_slot, -1, target, width)
-        indexed = _decode_lea_indexed(text)
-        if indexed is not None and indexed[0] == "leaidx":
-            _, reg_slot, base_slot, index_slot, shift, disp, width = indexed
-            return VirtualizedMemOp("leaidx", reg_slot, base_slot, disp, width, index_slot, shift)
-    return None
+    decoded_items = (
+        _decode_fp_memory_item(text, insn_addr, insn_size),
+        _decode_fp_arithmetic_item(text, insn_addr, insn_size),
+        _decode_fp_packed_item(text),
+        _decode_gp_memory_item(text, insn_addr, insn_size),
+        _decode_memory_arithmetic_item(text, mnemonic, insn_addr, insn_size),
+        _decode_lea_item(text, mnemonic, insn_addr, insn_size),
+    )
+    return next((item for item in decoded_items if item is not None), None)
 
 
 class _Run:
     """A virtualizable straight-line run inside one basic block."""
 
-    __slots__ = ("start", "continuation", "ops")
+    __slots__ = ("continuation", "ops", "start")
 
     def __init__(
         self,
         start: int,
         continuation: int,
-        ops: list[
-            VirtualizedOp
-            | VirtualizedMemOp
-            | VirtualizedFpMemOp
-            | VirtualizedFpArithOp
-            | VirtualizedFpConvertOp
-            | VirtualizedFpArithMemOp
-            | VirtualizedFpPackedOp
-            | VirtualizedFpPackedMemOp
-        ],
+        ops: list[VirtualizedRunItem],
     ) -> None:
         self.start = start
         self.continuation = continuation
         self.ops = ops
+
+
+@dataclass(frozen=True)
+class _RunBuild:
+    blob_vaddr: int
+    blob: bytes
+    original_bytes: bytes
+    span: int
 
 
 class CodeVirtualizationPass(MutationPass):
@@ -297,54 +355,54 @@ class CodeVirtualizationPass(MutationPass):
             index = end
         return None
 
-    def _virtualize_run(self, binary: Any, run: _Run) -> dict[str, Any] | None:
-        """Inject the VM for ``run`` and install the trampoline."""
+    @staticmethod
+    def _build_run(binary: Any, run: _Run) -> _RunBuild | None:
         blob_vaddr = predict_blob_vaddr(binary)
         if blob_vaddr is None:
             return None
-
         rng = random.Random(random.getrandbits(64))
         ops = inject_junk_ops(run.ops, rng)
-        scheme = build_vm_scheme(rng)
-        blob = build_vm_blob(ops, blob_vaddr, run.continuation, scheme)
+        blob = build_vm_blob(ops, blob_vaddr, run.continuation, build_vm_scheme(rng))
         if blob is None:
             return None
-
         span = run.continuation - run.start
         original_bytes = binary.read_bytes(run.start, span)
         if not original_bytes or len(original_bytes) != span:
             return None
+        return _RunBuild(blob_vaddr, blob, bytes(original_bytes), span)
 
+    def _install_run(self, binary: Any, run: _Run, build: _RunBuild) -> dict[str, Any] | None:
         checkpoint = self._create_mutation_checkpoint("virtualize")
-
-        injected_vaddr = inject_blob(binary, blob)
+        injected_vaddr = inject_blob(binary, build.blob)
         if injected_vaddr is None:
             return None
-        if injected_vaddr != blob_vaddr:
+        if injected_vaddr != build.blob_vaddr:
             self._rollback_uncommitted(binary, checkpoint, reason="VM blob landed at an unexpected vaddr; aborting")
             return None
-
         relative = injected_vaddr - (run.start + _TRAMPOLINE_SIZE)
-        trampoline = b"\xe9" + struct.pack("<i", relative) + b"\x90" * (span - _TRAMPOLINE_SIZE)
+        trampoline = b"\xe9" + struct.pack("<i", relative) + b"\x90" * (build.span - _TRAMPOLINE_SIZE)
         if not binary.write_bytes(run.start, trampoline):
             self._rollback_uncommitted(binary, checkpoint, reason="failed to write VM trampoline; aborting")
             return None
-
-        mutated_bytes = binary.read_bytes(run.start, span)
         record = self._record_mutation(
             function_address=run.start,
             start_address=run.start,
             end_address=run.continuation - 1,
-            original_bytes=original_bytes,
-            mutated_bytes=mutated_bytes,
+            original_bytes=build.original_bytes,
+            mutated_bytes=binary.read_bytes(run.start, build.span),
             original_disasm=f"; {len(run.ops)} instructions",
-            mutated_disasm=f"; trampoline -> VM ({len(blob)} bytes)",
+            mutated_disasm=f"; trampoline -> VM ({len(build.blob)} bytes)",
             mutation_kind="code_virtualization",
-            metadata={"instructions_count": len(run.ops), "bytecode_size": len(blob)},
+            metadata={"instructions_count": len(run.ops), "bytecode_size": len(build.blob)},
         )
         if self._validate_mutation_or_rollback(binary, record, checkpoint):
             return None
-        return {"instructions": len(run.ops), "bytecode": len(blob)}
+        return {"instructions": len(run.ops), "bytecode": len(build.blob)}
+
+    def _virtualize_run(self, binary: Any, run: _Run) -> dict[str, Any] | None:
+        """Inject the VM for ``run`` and install the trampoline."""
+        build = self._build_run(binary, run)
+        return None if build is None else self._install_run(binary, run, build)
 
     def _virtualize_function(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
         """Virtualize a whole single-exit function via the control-flow VM."""
@@ -483,31 +541,25 @@ class CodeVirtualizationPass(MutationPass):
         # as a single layer.
         return self._emit_region(binary, func, region, rng, use_nesting=False)
 
-    def _emit_region(
-        self, binary: Any, func: dict[str, Any], region: Any, rng: random.Random, use_nesting: bool
-    ) -> dict[str, Any] | None:
-        """Build the interpreter for a lowered region, inject it, patch the
-        trampoline, and overwrite the dead body. Shared by the whole-function and
-        dispatch paths; ``use_nesting`` requests the nested-layer blob."""
+    def _build_region_payload(
+        self, binary: Any, region: Any, rng: random.Random, use_nesting: bool
+    ) -> tuple[int, bytes, bytes] | None:
         blob_vaddr = predict_blob_vaddr(binary)
         if blob_vaddr is None:
             return None
-        # Nest by default, falling back to a single layer if the region has no
-        # peelable register-op run. Both builders dispatch through the same
-        # encrypted offset-table computed goto, inlined at every handler tail.
         blob = None
-        if use_nesting and self.vm_nesting_depth >= 2:
+        if use_nesting and self.vm_nesting_depth >= _MIN_NESTING_DEPTH:
             blob = build_nested_region_blob(region, blob_vaddr, rng, depth=self.vm_nesting_depth)
         if blob is None:
-            scheme = build_region_scheme(region, rng)
-            blob = build_region_blob(region, blob_vaddr, scheme)
+            blob = build_region_blob(region, blob_vaddr, build_region_scheme(region, rng))
         if blob is None:
             return None
-
         original_bytes = binary.read_bytes(region.entry_vaddr, _TRAMPOLINE_SIZE)
         if not original_bytes or len(original_bytes) != _TRAMPOLINE_SIZE:
             return None
+        return blob_vaddr, blob, bytes(original_bytes)
 
+    def _install_region_payload(self, binary: Any, region: Any, blob_vaddr: int, blob: bytes) -> tuple[Any] | None:
         checkpoint = self._create_mutation_checkpoint("virtualize_function")
         injected_vaddr = inject_blob(binary, blob)
         if injected_vaddr is None:
@@ -515,27 +567,42 @@ class CodeVirtualizationPass(MutationPass):
         if injected_vaddr != blob_vaddr:
             self._rollback_uncommitted(binary, checkpoint, reason="VM blob landed at an unexpected vaddr; aborting")
             return None
-
         relative = injected_vaddr - (region.entry_vaddr + _TRAMPOLINE_SIZE)
         trampoline = b"\xe9" + struct.pack("<i", relative)
         if not binary.write_bytes(region.entry_vaddr, trampoline):
             self._rollback_uncommitted(binary, checkpoint, reason="failed to write VM trampoline; aborting")
             return None
+        return (checkpoint,)
 
-        # The original body instructions are now unreachable (the VM does their
-        # work and exits to the terminators, which stay native). Overwrite them
-        # with per-instance random bytes so the logic cannot be recovered. Only
-        # body ranges are filled - terminators and the trampoline are skipped.
+    def _overwrite_region_body(self, binary: Any, region: Any, checkpoint: Any) -> bool:
         trampoline_end = region.entry_vaddr + _TRAMPOLINE_SIZE
-        for addr, size in region.body_ranges:
-            fill_start = max(addr, trampoline_end)
-            fill_size = addr + size - fill_start
+        for address, size in region.body_ranges:
+            fill_start = max(address, trampoline_end)
+            fill_size = address + size - fill_start
             if fill_size <= 0:
                 continue
             junk = bytes(random.randrange(256) for _ in range(fill_size))
             if not binary.write_bytes(fill_start, junk):
                 self._rollback_uncommitted(binary, checkpoint, reason="failed to overwrite dead body; aborting")
-                return None
+                return False
+        return True
+
+    def _emit_region(
+        self, binary: Any, func: dict[str, Any], region: Any, rng: random.Random, use_nesting: bool
+    ) -> dict[str, Any] | None:
+        """Build the interpreter for a lowered region, inject it, patch the
+        trampoline, and overwrite the dead body. Shared by the whole-function and
+        dispatch paths; ``use_nesting`` requests the nested-layer blob."""
+        payload = self._build_region_payload(binary, region, rng, use_nesting)
+        if payload is None:
+            return None
+        blob_vaddr, blob, original_bytes = payload
+        installed = self._install_region_payload(binary, region, blob_vaddr, blob)
+        if installed is None:
+            return None
+        checkpoint = installed[0]
+        if not self._overwrite_region_body(binary, region, checkpoint):
+            return None
 
         instruction_count = sum(1 for item in region.instructions if item[0] != "exit")
         record = self._record_mutation(

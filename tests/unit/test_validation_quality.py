@@ -3,6 +3,8 @@ Tests for validation quality features: Fuzzer integration,
 Continuous fuzzing, Performance regression, and Memory leak detection.
 """
 
+import weakref
+
 from r2morph.validation.leak_detection import (
     MemoryLeak,
     MemoryLeakDetector,
@@ -485,6 +487,19 @@ class TestResourceLeakDetector:
             if leak.resource_type in ("file_descriptors", "open_files", "open_connections")
         ]
         assert len(critical_leaks) == 0 or all(leak.leaked_count <= 10 for leak in critical_leaks)
+
+    def test_start_monitoring_dead_weak_proxy_records_resources(self):
+        class WeakTarget:
+            pass
+
+        target = WeakTarget()
+        dead_proxy = weakref.proxy(target)
+        del target
+
+        detector = ResourceLeakDetector()
+        detector.start_monitoring()
+
+        assert id(dead_proxy) > 0
 
 
 class TestDataclasses:

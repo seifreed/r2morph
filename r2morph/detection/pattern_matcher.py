@@ -25,6 +25,11 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_DETECTION_CONFIDENCE_THRESHOLD = 0.1
+_MIN_STRING_COUNT = 10
+_SPARSE_STRINGS_PER_KB = 0.5
+_MAX_HIDDEN_IMPORT_COUNT = 20
+
 
 class PatternMatcher:
     """
@@ -85,7 +90,8 @@ class PatternMatcher:
             "apis_found": [],
         }
 
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             strings_output = self.binary.r2.cmd("izz")
 
@@ -96,7 +102,7 @@ class PatternMatcher:
 
             result["apis_found"] = found_apis
             result["confidence"] = min(1.0, len(found_apis) / len(self.ANTI_DEBUG_APIS))
-            result["detected"] = result["confidence"] > 0.1  # At least one API found
+            result["detected"] = result["confidence"] > _DETECTION_CONFIDENCE_THRESHOLD
 
             for window in self.DEBUGGER_WINDOWS:
                 if window in strings_output:
@@ -122,7 +128,8 @@ class PatternMatcher:
             "artifacts_found": [],
         }
 
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             strings_output = self.binary.r2.cmd("izz")
 
@@ -133,7 +140,7 @@ class PatternMatcher:
 
             result["artifacts_found"] = found_artifacts
             result["confidence"] = min(1.0, len(found_artifacts) / len(self.VM_ARTIFACTS) * 2)  # Scale up
-            result["detected"] = result["confidence"] > 0.1
+            result["detected"] = result["confidence"] > _DETECTION_CONFIDENCE_THRESHOLD
 
             for key in self.ANTI_ANALYSIS_REGISTRY:
                 if key.lower() in strings_output.lower():
@@ -167,7 +174,8 @@ class PatternMatcher:
         Returns:
             True if string encryption is likely
         """
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             strings_output = self.binary.r2.cmd("iz")
 
@@ -177,13 +185,13 @@ class PatternMatcher:
             lines = strings_output.strip().split("\n")
             total_strings = len(lines)
 
-            if total_strings < 10:
+            if total_strings < _MIN_STRING_COUNT:
                 return False
 
             binary_size = self.binary.info.get("bin", {}).get("size", 0)
             if binary_size > 0:
                 strings_per_kb = (total_strings * 1024) / binary_size
-                if strings_per_kb < 0.5:  # Very few strings
+                if strings_per_kb < _SPARSE_STRINGS_PER_KB:
                     return True
 
             return False
@@ -199,7 +207,8 @@ class PatternMatcher:
         Returns:
             True if import hiding is likely
         """
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             imports = self.binary.r2.cmdj("iij") or []
 
@@ -225,10 +234,7 @@ class PatternMatcher:
             has_dynamic_loading = bool(import_names & dynamic_load_apis)
 
             import_count = len(imports)
-            if import_count < 20 and has_dynamic_loading:
-                return True
-
-            return False
+            return bool(import_count < _MAX_HIDDEN_IMPORT_COUNT and has_dynamic_loading)
 
         except (ValueError, TypeError, KeyError) as e:
             logger.debug(f"Error detecting import hiding: {e}")

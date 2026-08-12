@@ -9,8 +9,12 @@ from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
 
+_CONDITIONAL_SUCCESSOR_COUNT = 2
+_BITS_32 = 32
+_FAILURE_PREVIEW_COUNT = 5
 
-def select_candidates(binary: Any, functions: list[dict], min_blocks: int) -> list[dict]:
+
+def select_candidates(binary: Any, functions: list[dict[str, Any]], min_blocks: int) -> list[dict[str, Any]]:
     """Select candidate functions for full CFF."""
     candidates = []
 
@@ -30,7 +34,8 @@ def select_candidates(binary: Any, functions: list[dict], min_blocks: int) -> li
             if len(blocks) >= min_blocks:
                 func["_block_count"] = len(blocks)
                 candidates.append(func)
-        except Exception:
+        except (KeyError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            logger.debug("Cannot inspect flattening candidate %#x: %s", func_addr, exc)
             continue
 
     candidates.sort(key=lambda f: f.get("_block_count", 0), reverse=True)
@@ -46,7 +51,7 @@ def generate_state_table(dispatcher_blocks: list[Any]) -> dict[int, tuple[int, i
             state_table[db.state_value] = (-1, None)
         elif len(db.successor_states) == 1:
             state_table[db.state_value] = (db.successor_states[0], None)
-        elif len(db.successor_states) == 2:
+        elif len(db.successor_states) == _CONDITIONAL_SUCCESSOR_COUNT:
             state_table[db.state_value] = (
                 db.successor_states[0],
                 db.successor_states[1],
@@ -76,7 +81,7 @@ def generate_x86_dispatcher(
 ) -> list[str]:
     """Generate x86/x86_64 dispatcher code."""
     instructions = []
-    reg = "eax" if bits == 32 else "rax"
+    reg = "eax" if bits == _BITS_32 else "rax"
 
     state_values = sorted(state_table.keys())
     if not state_values:
@@ -102,12 +107,11 @@ def generate_x86_dispatcher(
             instructions.append("jmp dispatcher_loop")
             instructions.append(f"mov {reg}, {next_false}")
             instructions.append("jmp dispatcher_loop")
+        elif next_true == -1:
+            instructions.append("ret")
         else:
-            if next_true == -1:
-                instructions.append("ret")
-            else:
-                instructions.append(f"mov {reg}, {next_true}")
-                instructions.append("jmp dispatcher_loop")
+            instructions.append(f"mov {reg}, {next_true}")
+            instructions.append("jmp dispatcher_loop")
 
     instructions.append("dispatcher_end:")
     return instructions
@@ -119,7 +123,7 @@ def generate_arm_dispatcher(
 ) -> list[str]:
     """Generate ARM/ARM64 dispatcher code."""
     instructions = []
-    reg = "r0" if bits == 32 else "x0"
+    reg = "r0" if bits == _BITS_32 else "x0"
 
     state_values = sorted(state_table.keys())
     if not state_values:
@@ -141,12 +145,11 @@ def generate_arm_dispatcher(
             instructions.append("b dispatcher_loop")
             instructions.append(f"mov {reg}, #{next_false}")
             instructions.append("b dispatcher_loop")
+        elif next_true == -1:
+            instructions.append("bx lr")
         else:
-            if next_true == -1:
-                instructions.append("bx lr")
-            else:
-                instructions.append(f"mov {reg}, #{next_true}")
-                instructions.append("b dispatcher_loop")
+            instructions.append(f"mov {reg}, #{next_true}")
+            instructions.append("b dispatcher_loop")
 
     return instructions
 
@@ -169,8 +172,8 @@ def assemble_dispatcher(binary: Any, instructions: list[str]) -> bytes | None:
 
     if failures:
         logger.warning(
-            f"Failed to assemble {len(failures)} dispatcher instructions: {failures[:5]}"
-            + ("..." if len(failures) > 5 else "")
+            f"Failed to assemble {len(failures)} dispatcher instructions: {failures[:_FAILURE_PREVIEW_COUNT]}"
+            + ("..." if len(failures) > _FAILURE_PREVIEW_COUNT else "")
         )
 
     return assembled if assembled else None

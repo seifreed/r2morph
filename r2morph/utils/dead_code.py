@@ -11,7 +11,14 @@ These utilities generate architecture-appropriate instruction sequences that:
 - Can be assembled by radare2's inline assembler
 """
 
-import random
+import r2morph.core.randomness as random
+
+_BITS_64 = 64
+_X86_FULL_SEQUENCE_MIN_BYTES = 15
+_X86_MEDIUM_SEQUENCE_MIN_BYTES = 8
+_X86_SMALL_SEQUENCE_MIN_BYTES = 5
+_ARM_FULL_SEQUENCE_MIN_BYTES = 12
+_ARM_MEDIUM_SEQUENCE_MIN_BYTES = 8
 
 
 def generate_x86_dead_code(bits: int = 64, complexity: str = "medium") -> list[str]:
@@ -47,10 +54,7 @@ def _generate_x86_medium(bits: int) -> list[str]:
     affect program state. All templates use push/pop pairs or
     self-canceling operations to preserve register values.
     """
-    if bits == 64:
-        regs = ["rax", "rbx", "rcx", "rdx"]
-    else:
-        regs = ["eax", "ebx", "ecx", "edx"]
+    regs = ["rax", "rbx", "rcx", "rdx"] if bits == _BITS_64 else ["eax", "ebx", "ecx", "edx"]
 
     reg = random.choice(regs)
 
@@ -114,10 +118,7 @@ def _generate_x86_complex(bits: int) -> list[str]:
     by radare2's inline assembler, so we use longer instruction
     sequences instead.
     """
-    if bits == 64:
-        regs = ["rax", "rbx", "rcx", "rdx"]
-    else:
-        regs = ["eax", "ebx", "ecx", "edx"]
+    regs = ["rax", "rbx", "rcx", "rdx"] if bits == _BITS_64 else ["eax", "ebx", "ecx", "edx"]
 
     reg_a = random.choice(regs)
     reg_b = random.choice([r for r in regs if r != reg_a])
@@ -208,10 +209,7 @@ def generate_arm_dead_code(bits: int = 32, complexity: str = "medium") -> list[s
 
 def _generate_arm_medium(bits: int) -> list[str]:
     """Generate medium complexity ARM dead code."""
-    if bits == 64:
-        regs = ["x0", "x1", "x2", "x3"]
-    else:
-        regs = ["r0", "r1", "r2", "r3"]
+    regs = ["x0", "x1", "x2", "x3"] if bits == _BITS_64 else ["r0", "r1", "r2", "r3"]
 
     reg = random.choice(regs)
 
@@ -235,10 +233,7 @@ def _generate_arm_medium(bits: int) -> list[str]:
 
 def _generate_arm_complex(bits: int) -> list[str]:
     """Generate complex ARM dead code."""
-    if bits == 64:
-        regs = ["x0", "x1", "x2", "x3"]
-    else:
-        regs = ["r0", "r1", "r2", "r3"]
+    regs = ["x0", "x1", "x2", "x3"] if bits == _BITS_64 else ["r0", "r1", "r2", "r3"]
 
     reg = random.choice(regs)
     reg2 = random.choice([r for r in regs if r != reg])
@@ -278,12 +273,7 @@ def generate_nop_sequence(arch: str, bits: int, size: int) -> bytes:
         # x86/x64: single-byte NOP is 0x90
         return b"\x90" * size
     elif "arm" in arch.lower():
-        if bits == 64:
-            # AArch64: NOP is 0xD503201F (4 bytes, little-endian)
-            nop = b"\x1f\x20\x03\xd5"
-        else:
-            # ARM32: NOP is 0xE320F000 (4 bytes) or 0x00F020E3 little-endian
-            nop = b"\x00\xf0\x20\xe3"
+        nop = b"\x1f\x20\x03\xd5" if bits == _BITS_64 else b"\x00\xf0\x20\xe3"
         num_nops = size // 4
         return nop * num_nops + b"\x00" * (size % 4)
     else:
@@ -306,10 +296,7 @@ def generate_register_preserving_sequence(arch: str, bits: int) -> list[str]:
         List of assembly instructions forming a register-preserving wrapper
     """
     if "x86" in arch.lower():
-        if bits == 64:
-            regs = ["rax", "rbx", "rcx", "rdx"]
-        else:
-            regs = ["eax", "ebx", "ecx", "edx"]
+        regs = ["rax", "rbx", "rcx", "rdx"] if bits == _BITS_64 else ["eax", "ebx", "ecx", "edx"]
 
         reg = random.choice(regs)
 
@@ -325,7 +312,7 @@ def generate_register_preserving_sequence(arch: str, bits: int) -> list[str]:
         return random.choice(templates)
 
     elif "arm" in arch.lower():
-        if bits == 64:
+        if bits == _BITS_64:
             reg = random.choice(["x9", "x10", "x11"])
             # AArch64 uses str/ldr with stack
             return [
@@ -356,13 +343,12 @@ def generate_x86_dead_code_for_size(max_size: int, bits: int) -> list[str]:
     Returns:
         List of assembly instructions
     """
-    if bits == 64:
-        reg = random.choice(["rax", "rbx", "rcx", "rdx"])
-    else:
-        reg = random.choice(["eax", "ebx", "ecx", "edx"])
+    reg = (
+        random.choice(["rax", "rbx", "rcx", "rdx"]) if bits == _BITS_64 else random.choice(["eax", "ebx", "ecx", "edx"])
+    )
 
     # Different complexity levels based on available space
-    if max_size >= 15:
+    if max_size >= _X86_FULL_SEQUENCE_MIN_BYTES:
         # Full sequence with push/pop preservation
         return [
             f"push {reg}",
@@ -371,14 +357,14 @@ def generate_x86_dead_code_for_size(max_size: int, bits: int) -> list[str]:
             f"test {reg}, {reg}",  # ZF = 1 (opaque predicate)
             f"pop {reg}",
         ]
-    elif max_size >= 8:
+    elif max_size >= _X86_MEDIUM_SEQUENCE_MIN_BYTES:
         # Medium sequence
         return [
             f"push {reg}",
             f"xor {reg}, {reg}",
             f"pop {reg}",
         ]
-    elif max_size >= 5:
+    elif max_size >= _X86_SMALL_SEQUENCE_MIN_BYTES:
         # Small sequence
         return [
             f"push {reg}",
@@ -401,18 +387,15 @@ def generate_arm_dead_code_for_size(max_size: int, bits: int) -> list[str]:
     Returns:
         List of assembly instructions
     """
-    if bits == 64:
-        reg = random.choice(["x9", "x10", "x11"])
-    else:
-        reg = random.choice(["r4", "r5", "r6"])
+    reg = random.choice(["x9", "x10", "x11"]) if bits == _BITS_64 else random.choice(["r4", "r5", "r6"])
 
-    if max_size >= 12:
+    if max_size >= _ARM_FULL_SEQUENCE_MIN_BYTES:
         return [
             f"mov {reg}, #0x42",
             f"eor {reg}, {reg}, #0x42",  # Result is 0
             f"cmp {reg}, #0",  # Always equal (ZF=1)
         ]
-    elif max_size >= 8:
+    elif max_size >= _ARM_MEDIUM_SEQUENCE_MIN_BYTES:
         return [
             f"eor {reg}, {reg}, {reg}",
             "nop",

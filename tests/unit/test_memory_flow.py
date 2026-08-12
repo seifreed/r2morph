@@ -523,7 +523,7 @@ class TestMemoryFlowWiring:
         assert "0x1004" in result["memory_accesses"]
 
     def test_memory_flow_analyzer_is_public_analysis_export(self):
-        from r2morph.analysis import MemoryFlowAnalyzer as exported
+        from r2morph.analysis import MemoryFlowAnalyzer as ExportedMemoryFlowAnalyzer
         from r2morph.analysis.memory_flow import MemoryFlowAnalyzer
 
-        assert exported is MemoryFlowAnalyzer
+        assert ExportedMemoryFlowAnalyzer is MemoryFlowAnalyzer

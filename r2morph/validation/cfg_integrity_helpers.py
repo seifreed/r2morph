@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from r2morph.analysis.cfg import CFGBuilder
-from r2morph.analysis.pattern_preservation import PatternPreservationManager, PatternType, PreservedPattern
+from r2morph.analysis.pattern_preservation import PatternPreservationManager
+from r2morph.analysis.pattern_preservation_models import PatternType, PreservedPattern
 from r2morph.validation.cfg_integrity_models import (
     CFGSnapshot,
     IntegrityCheck,
@@ -197,8 +199,6 @@ def _check_edge_preservation(snapshot: CFGSnapshot, report: IntegrityReport) -> 
 
 
 def _extract_jump_target(disasm: str) -> int | None:
-    import re
-
     match = re.search(r"0x([0-9a-fA-F]+)", disasm)
     if match:
         try:

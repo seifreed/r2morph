@@ -9,7 +9,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation.mutation_fuzzer_types import FuzzCampaignResult, FuzzResult, FuzzTestCase
+from r2morph.validation.mutation_fuzzer_types import FuzzResult, FuzzTestCase
 
 logger = logging.getLogger(__name__)
 
@@ -84,36 +84,6 @@ def build_exception_fuzz_result(
         timeout=False,
         mutation_count=len(mutation_names),
         mutation_names=mutation_names,
-    )
-
-
-def build_campaign_result(
-    *,
-    total_tests: int,
-    passed: int,
-    failed: int,
-    crashes: int,
-    timeouts: int,
-    results: list[FuzzResult],
-    seed: int,
-    config: Any,
-    start_time: str,
-    end_time: str,
-    duration_seconds: float,
-) -> FuzzCampaignResult:
-    """Build the final campaign summary."""
-    return FuzzCampaignResult(
-        total_tests=total_tests,
-        passed=passed,
-        failed=failed,
-        crashes=crashes,
-        timeouts=timeouts,
-        results=results,
-        seed=seed,
-        config=config,
-        start_time=start_time,
-        end_time=end_time,
-        duration_seconds=duration_seconds,
     )
 
 

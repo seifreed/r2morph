@@ -28,6 +28,8 @@ PSUTIL_AVAILABLE = psutil is not None
 
 logger = logging.getLogger(__name__)
 
+_MAX_VM_CPU_COUNT = 2
+
 
 def load_anti_analysis_patterns() -> list[AntiAnalysisPattern]:
     """Load known anti-analysis patterns."""
@@ -239,7 +241,7 @@ def check_vm_environment() -> float:
 
         if PSUTIL_AVAILABLE:
             cpu_count = psutil.cpu_count()
-            if cpu_count is not None and cpu_count <= 2:
+            if cpu_count is not None and cpu_count <= _MAX_VM_CPU_COUNT:
                 vm_indicators.append("low_cpu_count")
 
             memory = psutil.virtual_memory().total

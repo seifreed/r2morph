@@ -12,7 +12,7 @@ from typing import Any
 
 from r2morph.analysis.abi_checker import ABIChecker
 from r2morph.core.binary import Binary
-from r2morph.validation.manager import ValidationIssue
+from r2morph.validation.manager_models import ValidationIssue
 
 
 class AbiValidator:

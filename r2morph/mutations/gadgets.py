@@ -5,12 +5,15 @@ Provides categorized gadgets (instruction sequences) for generating
 junk code that preserves program semantics.
 """
 
-import random
 from collections.abc import Callable
 
+import r2morph.core.randomness as random
 from r2morph.analysis.os_flags import OSFlags
-from r2morph.analysis.register_tracker import REG_ALL, RegTracker
+from r2morph.core.register_tracker import REG_ALL, REG_SIZES_MAP, RegTracker
 from r2morph.mutations.gadgets_catalogs import build_jump_gadgets, build_operate_gadgets, build_stack_gadgets
+
+_MAX_GADGET_ATTEMPTS = 10
+_MAX_SIGNED_32 = 0x7FFFFFFF
 
 
 class Gadgets:
@@ -22,11 +25,11 @@ class Gadgets:
         self._in_loop: bool = False
         self._label_counter: int = 0
         self._os_type = os_type
-        self.stack_gadgets: dict[str, tuple[Callable, Callable, int]] = {}
-        self.jump_gadgets: dict[str, tuple[Callable, int]] = {}
-        self.operate_gadgets: dict[str, tuple[Callable, int, int]] = {}
-        self.branch_gadgets: dict[str, tuple[Callable, int, int]] = {}
-        self.loop_gadgets: dict[str, tuple[Callable, int, int]] = {}
+        self.stack_gadgets: dict[str, tuple[Callable[..., str], Callable[..., str], int]] = {}
+        self.jump_gadgets: dict[str, tuple[Callable[..., str], int]] = {}
+        self.operate_gadgets: dict[str, tuple[Callable[..., str], int, int]] = {}
+        self.branch_gadgets: dict[str, tuple[Callable[..., str], int, int]] = {}
+        self.loop_gadgets: dict[str, tuple[Callable[..., str], int, int]] = {}
         self._ensure_initialized()
 
     def get_asm_label(self) -> str:
@@ -51,7 +54,7 @@ class Gadgets:
         for _ in range(n):
             tmp_gadget = ""
             attempts = 0
-            while tmp_gadget == "" and attempts < 10:
+            while tmp_gadget == "" and attempts < _MAX_GADGET_ATTEMPTS:
                 selected_key = random.choices(gadget_keys, weights=gadget_weights, k=1)[0]
                 selected_func = self.operate_gadgets[selected_key][0]
                 tmp_gadget = selected_func(reg, sec_reg)
@@ -62,8 +65,6 @@ class Gadgets:
         return gadget
 
     def _get_subreg_gadgets(self, reg: str) -> tuple[tuple[str, ...], list[int]]:
-        from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
         subreg_flags = REG_SIZES_MAP.get(reg, REG_ALL)
 
         gadget_keys = tuple(self.operate_gadgets.keys())
@@ -71,7 +72,8 @@ class Gadgets:
         gadget_flags = [self.operate_gadgets[k][1] for k in gadget_keys]
 
         updated_weights = [
-            weight if (flags & subreg_flags) != 0 else 0 for weight, flags in zip(gadget_weights, gadget_flags)
+            weight if (flags & subreg_flags) != 0 else 0
+            for weight, flags in zip(gadget_weights, gadget_flags, strict=False)
         ]
 
         return gadget_keys, updated_weights
@@ -152,12 +154,9 @@ class Gadgets:
         flag = random.choice(self.os_flags.flags)
         label = self.get_asm_label()
         gadget = ""
-        if flag > 0x7FFFFFFF:
+        if flag > _MAX_SIGNED_32:
             sec_reg_tmp = self.reg_tracker.get_subregisters(sec_reg)
-            if sec_reg_tmp and len(sec_reg_tmp) > 1:
-                sec_reg_32 = sec_reg_tmp[1]
-            else:
-                sec_reg_32 = sec_reg
+            sec_reg_32 = sec_reg_tmp[1] if sec_reg_tmp and len(sec_reg_tmp) > 1 else sec_reg
             gadget += f"mov {sec_reg}, {reg};"
             gadget += f"and {sec_reg_32}, {flag};"
         else:

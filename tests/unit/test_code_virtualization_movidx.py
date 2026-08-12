@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_region import _lower_arith_to_microops
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
-from r2morph.mutations.code_virtualization_region_decoders import _decode_memory_mov_indexed
+from r2morph.mutations.code_virtualization_region_memory_decoders import _decode_memory_mov_indexed
 from r2morph.mutations.code_virtualization_region_models import _op_key
 
 

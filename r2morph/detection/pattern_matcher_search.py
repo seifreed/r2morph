@@ -21,7 +21,8 @@ def find_patterns(binary: Any, patterns: list[bytes]) -> dict[bytes, list[int]]:
     """
     results: dict[bytes, list[int]] = {}
 
-    assert binary.r2 is not None
+    if binary.r2 is None:
+        raise RuntimeError("Binary disassembler is not open")
     try:
         for pattern in patterns:
             cmd = f"/x {pattern.hex()}"
@@ -61,7 +62,8 @@ def search_strings(binary: Any, search_terms: list[str], case_sensitive: bool = 
     """
     results: dict[str, bool] = {}
 
-    assert binary.r2 is not None
+    if binary.r2 is None:
+        raise RuntimeError("Binary disassembler is not open")
     try:
         strings_output = binary.r2.cmd("izz")
 

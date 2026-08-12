@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+import json
+from importlib import import_module
+from typing import TYPE_CHECKING, Any, cast
 
 from r2morph.analysis.call_graph_models import CallEdge, CallNode, CallType
 
@@ -59,15 +61,12 @@ def call_graph_to_dot(call_graph: Any) -> str:
 
 
 def call_graph_to_json(call_graph: Any) -> str:
-    import json
-
     return json.dumps(call_graph_to_dict(call_graph), indent=2)
 
 
 def call_graph_from_dict(data: dict[str, Any]) -> CallGraph:
-    from r2morph.analysis.call_graph import CallGraph
-
-    cg = CallGraph()
+    call_graph_cls = import_module("r2morph.analysis.call_graph").CallGraph
+    cg = call_graph_cls()
     cg.entry_points = [int(ep, 16) for ep in data.get("entry_points", [])]
 
     for addr_str, node_data in data.get("nodes", {}).items():
@@ -101,10 +100,8 @@ def call_graph_from_dict(data: dict[str, Any]) -> CallGraph:
     for scc in data.get("strongly_connected_components", []):
         cg._strongly_connected.append({int(addr, 16) for addr in scc})
 
-    return cg
+    return cast("CallGraph", cg)
 
 
 def call_graph_from_json(json_str: str) -> CallGraph:
-    import json
-
     return call_graph_from_dict(json.loads(json_str))

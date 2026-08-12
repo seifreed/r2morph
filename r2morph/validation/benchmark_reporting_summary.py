@@ -8,11 +8,13 @@ from typing import Any
 from r2morph.validation.benchmark_reporting_breakdown import build_category_breakdown, build_severity_breakdown
 from r2morph.validation.benchmark_types import BenchmarkResult
 
+_HIGH_PERCENTILE_THRESHOLD = 99
+
 
 def calculate_percentile(values: list[float], percentile: int) -> float:
     if not values:
         return 0.0
-    n = 100 if percentile >= 99 else 20
+    n = 100 if percentile >= _HIGH_PERCENTILE_THRESHOLD else 20
     index = (n * percentile) // 100 - 1
     if len(values) >= n:
         return statistics.quantiles(values, n=n)[index]

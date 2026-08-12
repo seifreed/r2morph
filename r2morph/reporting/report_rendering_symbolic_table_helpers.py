@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.core.report_helpers_symbolic_summary import classify_symbolic_severity
-from r2morph.reporting.report_helpers import _sort_pass_evidence
+from r2morph.reporting.report_evidence_sorting import _sort_pass_evidence
 
 
 def build_symbolic_coverage_rows(

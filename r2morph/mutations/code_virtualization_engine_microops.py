@@ -18,7 +18,9 @@ MBA builder, so ``v<op>`` still never spells the native operation.
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 
+from r2morph.core.constants import ARCH_BITS_32, ARCH_BITS_64
 from r2morph.mutations.code_virtualization_engine_common import (
     _DWORD_BROADCAST,
     _MICROOP_BINOP_KINDS,
@@ -41,16 +43,26 @@ MICROOP_BINOP_KINDS: tuple[str, ...] = _MICROOP_BINOP_KINDS
 MICROOP_IMM_KINDS: tuple[str, ...] = _MICROOP_IMM_KINDS
 
 
-def microop_handler_body(
-    kind: str,
-    width: int,
-    key: str,
-    key_dword: str,
-    key_qword: str,
-    vsp_offset: int,
-    vstack_base: int,
-    arith_variant: int = 0,
-) -> str:
+@dataclass(frozen=True)
+class MicroopHandlerConfig:
+    key: str
+    key_dword: str
+    key_qword: str
+    vsp_offset: int
+    vstack_base: int
+    arith_variant: int = 0
+
+
+@dataclass(frozen=True)
+class MicroopEmitter:
+    scheme: VMScheme
+    slot_of: tuple[int, ...]
+    emit_opcode: Callable[[int], int]
+    emit_fields: Callable[[int, list[tuple[str, int]], dict[str, bytes]], None]
+    pick: Callable[[tuple[int, ...]], int]
+
+
+def microop_handler_body(kind: str, width: int, config: MicroopHandlerConfig) -> str:
     """Assembly body for one micro-op primitive; ends with the shared dispatch jump.
 
     ``vpush s``/``vpop s`` carry one slot-index operand at ``[rsi+1]`` (the only
@@ -59,28 +71,28 @@ def microop_handler_body(
     ``rsp`` at this build's frame offsets; only scratch registers (rax/r8/r9/r10/
     rcx) are touched, all dead across the threaded dispatch.
     """
-    _VSP = hex(vsp_offset)
-    _VBASE = hex(vstack_base)
+    vsp_hex = hex(config.vsp_offset)
+    vstack_base_hex = hex(config.vstack_base)
     if kind == "vpush":
         # Read src slot -> r8, push its value onto the vstack, bump the pointer.
         return (
-            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {config.key}\n  xor r8b, r13b\n"
             "  mov rax, qword ptr [rsp + r8*8]\n"
-            f"  mov r9, qword ptr [rsp + {_VSP}]\n"
-            f"  mov qword ptr [rsp + r9 + {_VBASE}], rax\n"
+            f"  mov r9, qword ptr [rsp + {vsp_hex}]\n"
+            f"  mov qword ptr [rsp + r9 + {vstack_base_hex}], rax\n"
             "  add r9, 8\n"
-            f"  mov qword ptr [rsp + {_VSP}], r9\n"
+            f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
             "  add rsi, 2\n  jmp vm_dispatch\n"
         )
     if kind == "vpop":
         # Pop the top cell into the dst slot, drop the pointer.
         return (
-            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n"
-            f"  mov r9, qword ptr [rsp + {_VSP}]\n"
+            f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {config.key}\n  xor r8b, r13b\n"
+            f"  mov r9, qword ptr [rsp + {vsp_hex}]\n"
             "  sub r9, 8\n"
-            f"  mov rax, qword ptr [rsp + r9 + {_VBASE}]\n"
+            f"  mov rax, qword ptr [rsp + r9 + {vstack_base_hex}]\n"
             "  mov qword ptr [rsp + r8*8], rax\n"
-            f"  mov qword ptr [rsp + {_VSP}], r9\n"
+            f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
             "  add rsi, 2\n  jmp vm_dispatch\n"
         )
     if kind == "vpushi":
@@ -89,24 +101,24 @@ def microop_handler_body(
         # and r13b broadcast) so value and masking are identical. A 32-bit immediate
         # zero-extends into the low half of the 64-bit cell, which is all the width-32
         # fold reads. The operand is the only field, so it sits at [rsi+1].
-        if width == 64:
+        if width == ARCH_BITS_64:
             decode = (
-                f"  mov rax, qword ptr [rsi+1]\n  mov r10, {key_qword}\n  xor rax, r10\n"
+                f"  mov rax, qword ptr [rsi+1]\n  mov r10, {config.key_qword}\n  xor rax, r10\n"
                 f"  movzx r10, r13b\n  mov r11, {hex(_QWORD_BROADCAST)}\n  imul r10, r11\n  xor rax, r10\n"
             )
             advance = 9
         else:
             decode = (
-                f"  mov eax, dword ptr [rsi+1]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+                f"  mov eax, dword ptr [rsi+1]\n  mov r11d, {config.key_dword}\n  xor eax, r11d\n"
                 f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             )
             advance = 5
         return (
             decode
-            + f"  mov r9, qword ptr [rsp + {_VSP}]\n"
-            + f"  mov qword ptr [rsp + r9 + {_VBASE}], rax\n"
+            + f"  mov r9, qword ptr [rsp + {vsp_hex}]\n"
+            + f"  mov qword ptr [rsp + r9 + {vstack_base_hex}], rax\n"
             + "  add r9, 8\n"
-            + f"  mov qword ptr [rsp + {_VSP}], r9\n"
+            + f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
             + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
         )
     # v<op>: pop b (top) into rax and a (below) into r10, fold r10 = a <op> b with no
@@ -114,69 +126,55 @@ def microop_handler_body(
     # so a == dst and b == src; sub negates b first so a + (-b) == dst - src.
     mnemonic = _MNEMONIC_OF[kind]
     body = (
-        f"  mov r9, qword ptr [rsp + {_VSP}]\n"
+        f"  mov r9, qword ptr [rsp + {vsp_hex}]\n"
         "  sub r9, 8\n"
-        f"  mov rax, qword ptr [rsp + r9 + {_VBASE}]\n"
+        f"  mov rax, qword ptr [rsp + r9 + {vstack_base_hex}]\n"
         "  sub r9, 8\n"
-        f"  mov r10, qword ptr [rsp + r9 + {_VBASE}]\n"
+        f"  mov r10, qword ptr [rsp + r9 + {vstack_base_hex}]\n"
     )
     if mnemonic == "sub":
         body += "  neg rax\n"
-    body += arith_fold(mnemonic, 0, arith_variant)
-    if width == 32:
+    body += arith_fold(mnemonic, 0, config.arith_variant)
+    if width == ARCH_BITS_32:
         body += "  mov r10d, r10d\n"
     body += (
-        f"  mov qword ptr [rsp + r9 + {_VBASE}], r10\n"
+        f"  mov qword ptr [rsp + r9 + {vstack_base_hex}], r10\n"
         "  add r9, 8\n"
-        f"  mov qword ptr [rsp + {_VSP}], r9\n"
+        f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
         "  add rsi, 1\n  jmp vm_dispatch\n"
     )
     return body
 
 
-def emit_arith_microops(
-    op: VirtualizedOp,
-    scheme: VMScheme,
-    slot_of: tuple[int, ...],
-    emit_opcode: Callable[[int], int],
-    emit_fields: Callable[[int, list[tuple[str, int]], dict[str, bytes]], None],
-    pick: Callable[[tuple[int, ...]], int],
-) -> None:
+def emit_arith_microops(op: VirtualizedOp, emitter: MicroopEmitter) -> None:
     """Emit the push/push/binop/pop bytecode for one reg-reg arithmetic op.
 
     Pushes dst then src (so the fold sees a == dst, b == src), folds, pops into dst.
     ``emit_opcode``/``emit_fields``/``pick`` are the encoder's per-build closures.
     """
-    dst = {"slot": bytes([slot_of[op.dst_index]])}
-    src = {"slot": bytes([slot_of[op.value]])}
+    dst = {"slot": bytes([emitter.slot_of[op.dst_index]])}
+    src = {"slot": bytes([emitter.slot_of[op.value]])}
     order = [("slot", 1)]
-    position = emit_opcode(pick(scheme.dup[("vpush", False, 64)]))
-    emit_fields(position, order, dst)
-    position = emit_opcode(pick(scheme.dup[("vpush", False, 64)]))
-    emit_fields(position, order, src)
-    emit_opcode(pick(scheme.dup[(_BINOP_OF[op.mnemonic], False, op.width)]))
-    position = emit_opcode(pick(scheme.dup[("vpop", False, 64)]))
-    emit_fields(position, order, dst)
+    position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpush", False, 64)]))
+    emitter.emit_fields(position, order, dst)
+    position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpush", False, 64)]))
+    emitter.emit_fields(position, order, src)
+    emitter.emit_opcode(emitter.pick(emitter.scheme.dup[(_BINOP_OF[op.mnemonic], False, op.width)]))
+    position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpop", False, 64)]))
+    emitter.emit_fields(position, order, dst)
 
 
-def emit_arith_imm_microops(
-    op: VirtualizedOp,
-    scheme: VMScheme,
-    slot_of: tuple[int, ...],
-    emit_opcode: Callable[[int], int],
-    emit_fields: Callable[[int, list[tuple[str, int]], dict[str, bytes]], None],
-    pick: Callable[[tuple[int, ...]], int],
-) -> None:
+def emit_arith_imm_microops(op: VirtualizedOp, emitter: MicroopEmitter) -> None:
     """Emit push_slot(dst)/push_imm/binop/pop(dst) for one immediate arithmetic op.
 
     Same dst-then-operand order as the reg-reg form, so ``sub`` folds dst - imm; the
     fold and pop primitives are shared with the reg-reg lowering.
     """
-    dst = {"slot": bytes([slot_of[op.dst_index]])}
-    position = emit_opcode(pick(scheme.dup[("vpush", False, 64)]))
-    emit_fields(position, [("slot", 1)], dst)
-    position = emit_opcode(pick(scheme.dup[("vpushi", False, op.width)]))
-    emit_fields(position, [("imm", op.width // 8)], {"imm": pack_immediate(op.value, op.width)})
-    emit_opcode(pick(scheme.dup[(_BINOP_OF[op.mnemonic], False, op.width)]))
-    position = emit_opcode(pick(scheme.dup[("vpop", False, 64)]))
-    emit_fields(position, [("slot", 1)], dst)
+    dst = {"slot": bytes([emitter.slot_of[op.dst_index]])}
+    position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpush", False, 64)]))
+    emitter.emit_fields(position, [("slot", 1)], dst)
+    position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpushi", False, op.width)]))
+    emitter.emit_fields(position, [("imm", op.width // 8)], {"imm": pack_immediate(op.value, op.width)})
+    emitter.emit_opcode(emitter.pick(emitter.scheme.dup[(_BINOP_OF[op.mnemonic], False, op.width)]))
+    position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpop", False, 64)]))
+    emitter.emit_fields(position, [("slot", 1)], dst)

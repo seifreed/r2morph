@@ -9,10 +9,13 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+_MIN_PLT_STUB_SIZE_BYTES = 6
+_LONG_PLT_STUB_SIZE_BYTES = 10
+
 
 def is_plt_stub_pattern(data: bytes) -> bool:
     """Check if bytes match common PLT stub patterns."""
-    if len(data) < 6:
+    if len(data) < _MIN_PLT_STUB_SIZE_BYTES:
         return False
 
     if data[:2] == b"\xff\x25":
@@ -21,13 +24,10 @@ def is_plt_stub_pattern(data: bytes) -> bool:
     if data[:2] == b"\xff\x27":
         return True
 
-    if len(data) >= 10 and data[:6] == b"\xff\x35" and data[6:10] == b"\x48\x8d\x3d":
+    if len(data) >= _LONG_PLT_STUB_SIZE_BYTES and data[:6] == b"\xff\x35" and data[6:10] == b"\x48\x8d\x3d":
         return True
 
-    if data[:6] == b"\x48\x8b\x1d" or data[:6] == b"\x48\x8b\x05":
-        return True
-
-    return False
+    return bool(data[:6] == b"H\x8b\x1d" or data[:6] == b"H\x8b\x05")
 
 
 def detect_tail_calls(
@@ -95,7 +95,8 @@ def detect_plt_got_thunks(binary: Any) -> dict[int, dict[str, Any]]:
 
         try:
             data = binary.read_bytes(start, min(size, 0x1000))
-        except Exception:
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            logger.debug("Cannot read PLT candidate at %#x: %s", start, exc)
             continue
 
         if not data:

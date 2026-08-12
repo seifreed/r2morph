@@ -13,11 +13,12 @@ Features:
 
 import logging
 import os
-import random
-import subprocess
 import tempfile
 from dataclasses import dataclass, field
 from typing import Any
+
+import r2morph.core.randomness as random
+from r2morph.adapters.process import ProcessError, run_process
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class Instruction:
             opcode=data.get("opcode", data.get("disasm", "")),
             bytes_hex=data.get("bytes", ""),
             ins_type=data.get("type", ""),
-            jump_target=data.get("jump", None),
+            jump_target=data.get("jump"),
             mutated=data.get("mutated", False),
             comment=data.get("comment", ""),
         )
@@ -73,8 +74,8 @@ class BasicBlock:
         bb = cls(
             address=data.get("addr", 0),
             label=data.get("label", f"block_{hex(data.get('addr', 0))}"),
-            jump=data.get("jump", None),
-            fail=data.get("fail", None),
+            jump=data.get("jump"),
+            fail=data.get("fail"),
         )
         ops = data.get("ops", data.get("instructions", []))
         for op in ops:
@@ -83,6 +84,27 @@ class BasicBlock:
             elif isinstance(op, Instruction):
                 bb.instructions.append(op)
         return bb
+
+
+@dataclass(frozen=True)
+class NASMOutputOptions:
+    base_address: int = 0x1000
+    entry_label: str = "_start"
+    architecture: str = "x86"
+    bits: int = 64
+    include_comments: bool = True
+
+
+@dataclass(frozen=True)
+class ShellcodeExportOptions:
+    base_address: int = 0x1000
+    shuffle: bool = False
+    save_asm: bool = False
+    verbose: bool = False
+
+
+DEFAULT_NASM_OUTPUT_OPTIONS = NASMOutputOptions()
+DEFAULT_SHELLCODE_EXPORT_OPTIONS = ShellcodeExportOptions()
 
 
 def generate_block_asm(block: BasicBlock, labels: dict[int, str]) -> str:
@@ -157,7 +179,7 @@ def shuffle_blocks(blocks: list[BasicBlock]) -> list[BasicBlock]:
     other_blocks = blocks[1:]
     random.shuffle(other_blocks)
 
-    return [first_block] + other_blocks
+    return [first_block, *other_blocks]
 
 
 def remove_redundant_fallthrough(blocks: list[BasicBlock], labels: dict[int, str]) -> list[BasicBlock]:
@@ -200,11 +222,7 @@ def remove_redundant_fallthrough(blocks: list[BasicBlock], labels: dict[int, str
 def generate_final_asm(
     blocks: list[BasicBlock],
     labels: dict[int, str],
-    base_address: int = 0x1000,
-    entry_label: str = "_start",
-    architecture: str = "x86",
-    bits: int = 64,
-    include_comments: bool = True,
+    options: NASMOutputOptions = DEFAULT_NASM_OUTPUT_OPTIONS,
 ) -> str:
     """
     Generate complete NASM-compatible assembly file.
@@ -223,17 +241,17 @@ def generate_final_asm(
     """
     lines = []
 
-    if architecture == "x86":
-        lines.append(f"BITS {bits}")
+    if options.architecture == "x86":
+        lines.append(f"BITS {options.bits}")
     lines.append("default rel")
-    lines.append(f"global {entry_label}")
+    lines.append(f"global {options.entry_label}")
     lines.append("section .text")
-    lines.append(f"{entry_label}:")
+    lines.append(f"{options.entry_label}:")
     lines.append("")
 
     for block in blocks:
         block_asm = generate_block_asm(block, labels)
-        if include_comments:
+        if options.include_comments:
             lines.append(f"; Block at original address: 0x{block.address:x}")
         lines.append(block_asm)
         lines.append("")
@@ -277,18 +295,14 @@ def assemble_nasm(
                 saved_path = os.path.join(os.getcwd(), os.path.basename(asm_file.name))
                 logger.info(f"ASM file saved at: {saved_path}")
 
-            result = subprocess.run(
-                [nasm_path, "-f", "bin", asm_file.name, "-o", output_path],
-                capture_output=True,
-                text=True,
-            )
+            result = run_process([nasm_path, "-f", "bin", asm_file.name, "-o", output_path])
 
             if result.returncode != 0:
-                return False, f"NASM assembly failed: {result.stderr}", asm_file_path
+                return False, f"NASM assembly failed: {result.stderr_text}", asm_file_path
 
             return True, f"Successfully assembled to {output_path}", asm_file_path
 
-    except subprocess.SubprocessError as e:
+    except ProcessError as e:
         return False, f"NASM subprocess error: {e}", asm_file_path
     except FileNotFoundError:
         return False, f"NASM not found at path: {nasm_path}. Please install NASM.", asm_file_path
@@ -347,11 +361,14 @@ class NASMExporter:
         """Patch control flow instructions to use symbolic labels."""
         for block in self.blocks:
             for ins in block.instructions:
-                if ins.ins_type in ("jmp", "cjmp", "call"):
-                    if ins.jump_target is not None and ins.jump_target in self.labels:
-                        target_label = self.labels[ins.jump_target]
-                        ins.opcode = f"{ins.mnemonic} {target_label}"
-                        ins.mutated = True
+                if (
+                    ins.ins_type in ("jmp", "cjmp", "call")
+                    and ins.jump_target is not None
+                    and ins.jump_target in self.labels
+                ):
+                    target_label = self.labels[ins.jump_target]
+                    ins.opcode = f"{ins.mnemonic} {target_label}"
+                    ins.mutated = True
 
     def do_shuffle_blocks(self) -> None:
         """Shuffle blocks while keeping entry point first."""
@@ -366,11 +383,13 @@ class NASMExporter:
         return generate_final_asm(
             self.blocks,
             self.labels,
-            self.base_address,
-            self.entry_label,
-            self.architecture,
-            self.bits,
-            include_comments,
+            NASMOutputOptions(
+                base_address=self.base_address,
+                entry_label=self.entry_label,
+                architecture=self.architecture,
+                bits=self.bits,
+                include_comments=include_comments,
+            ),
         )
 
     def assemble(self, output_path: str, save_asm: bool = False) -> tuple[bool, str]:
@@ -415,10 +434,7 @@ class NASMExporter:
 def export_shellcode(
     blocks: list[dict[str, Any]],
     output_path: str,
-    base_address: int = 0x1000,
-    shuffle: bool = False,
-    save_asm: bool = False,
-    verbose: bool = False,
+    options: ShellcodeExportOptions = DEFAULT_SHELLCODE_EXPORT_OPTIONS,
 ) -> tuple[bool, str, str | None]:
     """
     Convenience function to export shellcode to NASM.
@@ -434,20 +450,20 @@ def export_shellcode(
     Returns:
         Tuple of (success, message, asm_code_or_none)
     """
-    exporter = NASMExporter(base_address=base_address)
+    exporter = NASMExporter(base_address=options.base_address)
 
     for block_dict in blocks:
         exporter.add_block_from_dict(block_dict)
 
     success, message, asm_code = exporter.export(
         output_path=output_path,
-        shuffle=shuffle,
-        save_asm=save_asm,
+        shuffle=options.shuffle,
+        save_asm=options.save_asm,
     )
 
-    if verbose:
+    if options.verbose:
         logger.info(f"Export result: {message}")
-        if save_asm and asm_code:
+        if options.save_asm and asm_code:
             logger.info(f"Generated {len(asm_code.split(chr(10)))} lines of assembly")
 
     return success, message, asm_code

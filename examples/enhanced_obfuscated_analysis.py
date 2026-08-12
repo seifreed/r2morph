@@ -88,7 +88,7 @@ def demonstrate_symbolic_execution(binary: Binary):
             return
 
         # Analyze first few functions
-        for i, func in enumerate(functions[:3]):
+        for _i, func in enumerate(functions[:3]):
             func_addr = func.get("offset", 0)
             func_name = func.get("name", f"func_{func_addr:x}")
 
@@ -163,7 +163,7 @@ def demonstrate_vm_handler_analysis(binary: Binary, obfuscation_result):
     print("=" * 60)
 
     if not obfuscation_result.vm_detected:
-        print("  ℹ️  No virtualization detected - skipping VM analysis")
+        print("  Info: No virtualization detected - skipping VM analysis")
         return
 
     try:

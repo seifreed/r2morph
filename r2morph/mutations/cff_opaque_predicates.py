@@ -9,7 +9,10 @@ an internal-only seam.
 
 from __future__ import annotations
 
-import random
+import r2morph.core.randomness as random
+
+_BITS_32 = 32
+_BITS_64 = 64
 
 
 class OpaquePredicateGenerator:
@@ -31,10 +34,7 @@ class OpaquePredicateGenerator:
         Returns:
             List of instruction sequences
         """
-        if bits == 64:
-            regs = ["rax", "rbx", "rcx", "rdx"]
-        else:
-            regs = ["eax", "ebx", "ecx", "edx"]
+        regs = ["rax", "rbx", "rcx", "rdx"] if bits == _BITS_64 else ["eax", "ebx", "ecx", "edx"]
 
         reg = random.choice(regs)
 
@@ -63,15 +63,15 @@ class OpaquePredicateGenerator:
             ],
             # Save and restore flags for transparent predicate insertion
             [
-                "pushf" if bits == 32 else "pushfq",
+                "pushf" if bits == _BITS_32 else "pushfq",
                 "nop",
-                "popf" if bits == 32 else "popfq",
+                "popf" if bits == _BITS_32 else "popfq",
             ],
             # 2*(x/2) always has bit 0 clear: opaque false on odd test
             [
                 f"push {reg}",
                 f"mov {reg}, 42",
-                f"and {reg}, 0xFFFFFFFE" if bits == 32 else f"and {reg}, 0xFFFFFFFFFFFFFFFE",
+                f"and {reg}, 0xFFFFFFFE" if bits == _BITS_32 else f"and {reg}, 0xFFFFFFFFFFFFFFFE",
                 f"test {reg}, 1",
                 f"pop {reg}",
             ],
@@ -90,10 +90,7 @@ class OpaquePredicateGenerator:
         Returns:
             List of instruction sequences
         """
-        if bits == 64:
-            regs = ["x9", "x10", "x11"]  # Temporary registers
-        else:
-            regs = ["r4", "r5", "r6"]
+        regs = ["x9", "x10", "x11"] if bits == _BITS_64 else ["r4", "r5", "r6"]
 
         reg = random.choice(regs)
 

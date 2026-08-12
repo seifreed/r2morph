@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.hardened_base import HardenedMutationPass
 
 
@@ -13,8 +13,6 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
 
     def __init__(
         self,
-        name: str = "hardened_cff",
-        enabled: bool = True,
         preserve_patterns: bool = True,
         validate_integrity: bool = True,
         max_functions: int = 5,
@@ -22,8 +20,7 @@ class HardenedControlFlowFlattening(HardenedMutationPass):
         probability: float = 0.5,
     ):
         super().__init__(
-            name=name,
-            enabled=enabled,
+            name="hardened_cff",
             preserve_patterns=preserve_patterns,
             validate_integrity=validate_integrity,
         )

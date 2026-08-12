@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 logger = logging.getLogger(__name__)
+
+_HEX_PREFIX_LENGTH = 2
+_BINARY_OPERAND_COUNT = 2
+_MAX_BYTE_VALUE = 255
+_MAX_EXPANDABLE_FUNCTION_SIZE_BYTES = 1000
 
 EXPANSION_RULES: dict[str, dict[tuple[str, ...], list[list[tuple[str, ...]]]]] = {
     "x86": {
@@ -55,6 +61,66 @@ EXPANSION_RULES: dict[str, dict[tuple[str, ...], list[list[tuple[str, ...]]]]] =
     },
 }
 
+_SIZE_SPECIFIERS = frozenset({"dword", "qword", "byte", "word", "ptr"})
+
+
+def _is_register_operand(operand: str) -> bool:
+    if not operand or operand in _SIZE_SPECIFIERS:
+        return False
+    if operand.startswith(("[", "-[", "0x", "-0x")):
+        return False
+    if operand.isdigit() or (operand.startswith("-") and operand[1:].isdigit()):
+        return False
+    if operand.lower().endswith("h") and all(char in "0123456789abcdefABCDEF" for char in operand[:-1]):
+        return False
+    return not re.fullmatch(r"\[.+\]", operand) and "," not in operand
+
+
+def _is_immediate_operand(operand: str) -> bool:
+    if operand.isdigit():
+        return True
+    unsigned = operand[1:] if operand.startswith("-") else operand
+    if unsigned.startswith("0x") and len(unsigned) > _HEX_PREFIX_LENGTH:
+        return all(char in "0123456789abcdefABCDEF" for char in unsigned[2:])
+    return unsigned.lower().endswith("h") and all(char in "0123456789abcdefABCDEF" for char in unsigned[:-1])
+
+
+def _parse_supported_immediate(operand: str) -> int | None:
+    try:
+        return int(operand, 16) if operand.startswith("0x") else int(operand)
+    except ValueError:
+        return None
+
+
+def _second_operand_matches(pattern: str, operand: str) -> bool:
+    if pattern == "reg":
+        return _is_register_operand(operand)
+    if pattern == "0":
+        return operand in {"0", "0x0"}
+    if not _is_immediate_operand(operand):
+        return False
+    value = _parse_supported_immediate(operand)
+    if pattern == "small_imm":
+        return value is not None and 0 <= value <= _MAX_BYTE_VALUE
+    if pattern.isdigit() or pattern.startswith("-"):
+        return value == int(pattern)
+    return True
+
+
+def _pattern_matches(pattern: tuple[str, ...], mnemonic: str, operands: list[str]) -> bool:
+    if mnemonic != pattern[0]:
+        return False
+    pattern_operands = pattern[1:]
+    if not pattern_operands:
+        return True
+    if pattern_operands[0] != "reg" or not operands or not _is_register_operand(operands[0]):
+        return False
+    if len(pattern_operands) == 1:
+        return True
+    if len(pattern_operands) != _BINARY_OPERAND_COUNT:
+        return True
+    return len(operands) >= _BINARY_OPERAND_COUNT and _second_operand_matches(pattern_operands[1], operands[1])
+
 
 def match_expansion_pattern(
     instruction: dict[str, Any],
@@ -74,100 +140,9 @@ def match_expansion_pattern(
     mnemonic = parts[0]
     operands = [p.strip(",") for p in parts[1:]] if len(parts) > 1 else []
     expansions: list[list[tuple[str, ...]]] = []
-    size_specifiers = {"dword", "qword", "byte", "word", "ptr"}
-
-    import re
-
-    def is_register_operand(op: str) -> bool:
-        if not op:
-            return False
-        if op in size_specifiers:
-            return False
-        if op.startswith("[") or op.startswith("-["):
-            return False
-        if op.startswith("0x") or op.startswith("-0x"):
-            return False
-        if op.isdigit() or (op.startswith("-") and op[1:].isdigit()):
-            return False
-        if op.endswith("h") or op.endswith("H"):
-            hex_part = op[:-1]
-            if all(c in "0123456789abcdefABCDEF" for c in hex_part):
-                return False
-        if re.match(r"^\[.+\]$", op):
-            return False
-        if "," in op:
-            return False
-        return True
-
-    def is_immediate_operand(op: str) -> bool:
-        if not op:
-            return False
-        if op.isdigit():
-            return True
-        if op.startswith("-") and len(op) > 1:
-            rest = op[1:]
-            if rest.isdigit():
-                return True
-            if rest.startswith("0x") and len(rest) > 2:
-                return all(c in "0123456789abcdefABCDEF" for c in rest[2:])
-        if op.startswith("0x") and len(op) > 2:
-            return all(c in "0123456789abcdefABCDEF" for c in op[2:])
-        if op.endswith("h") or op.endswith("H"):
-            hex_part = op[:-1]
-            return all(c in "0123456789abcdefABCDEF" for c in hex_part)
-        return False
-
     for pattern, expansion_list in expansion_rules[arch_family].items():
-        pattern_mnemonic = pattern[0]
-        pattern_ops = list(pattern[1:]) if len(pattern) > 1 else []
-
-        if mnemonic != pattern_mnemonic:
-            continue
-
-        if not pattern_ops:
+        if _pattern_matches(pattern, mnemonic, operands):
             expansions.extend(expansion_list)
-            continue
-
-        if len(pattern_ops) == 1 and pattern_ops[0] == "reg":
-            if operands and is_register_operand(operands[0]):
-                expansions.extend(expansion_list)
-            continue
-
-        if len(pattern_ops) >= 1 and pattern_ops[0] == "reg":
-            if not operands or not is_register_operand(operands[0]):
-                continue
-
-            if len(pattern_ops) == 2:
-                second_pattern = pattern_ops[1]
-                if len(operands) >= 2:
-                    second_op = operands[1]
-                    if second_pattern == "reg":
-                        if is_register_operand(second_op):
-                            expansions.extend(expansion_list)
-                    elif second_pattern == "0":
-                        if second_op == "0" or second_op == "0x0":
-                            expansions.extend(expansion_list)
-                    elif second_pattern == "small_imm":
-                        if is_immediate_operand(second_op):
-                            try:
-                                val = int(second_op, 16) if second_op.startswith("0x") else int(second_op)
-                                if 0 <= val <= 255:
-                                    expansions.extend(expansion_list)
-                            except ValueError:
-                                pass
-                    elif second_pattern.isdigit() or second_pattern.startswith("-"):
-                        if is_immediate_operand(second_op):
-                            try:
-                                expected = int(second_pattern)
-                                actual = int(second_op, 16) if second_op.startswith("0x") else int(second_op)
-                                if expected == actual:
-                                    expansions.extend(expansion_list)
-                            except ValueError:
-                                pass
-                    else:
-                        expansions.extend(expansion_list)
-            else:
-                expansions.extend(expansion_list)
 
     return expansions
 
@@ -221,10 +196,7 @@ def is_safe_to_expand(instruction: dict[str, Any], function_size: int) -> bool:
     if insn_type in ["jmp", "cjmp", "call", "ret", "ujmp"]:
         return False
 
-    if function_size > 1000:
-        return False
-
-    return True
+    return function_size <= _MAX_EXPANDABLE_FUNCTION_SIZE_BYTES
 
 
 __all__ = [

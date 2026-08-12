@@ -4,16 +4,16 @@ Pattern-matching rules for instruction mutation.
 Each ``match_*`` scans a list of instructions and returns the
 :class:`~r2morph.mutations.pattern_types.MatchResult` positions a generator can
 rewrite. Rules are pure leaf functions depending only on
-:mod:`r2morph.mutations.pattern_types`; register-size metadata is pulled lazily
-from the register tracker to keep the import graph acyclic.
+:mod:`r2morph.mutations.pattern_types` and core register metadata.
 """
 
+from r2morph.core.register_tracker import REG_16, REG_32, REG_64, REG_SIZES_MAP
 from r2morph.mutations.pattern_types import Instruction, MatchResult
+
+_MAX_SMALL_IMMEDIATE = 8
 
 
 def match_mov_reg_reg_reg64_reg16(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_16, REG_64, REG_SIZES_MAP
-
     matches = []
 
     for idx, ins in enumerate(instructions):
@@ -23,11 +23,8 @@ def match_mov_reg_reg_reg64_reg16(instructions: list[Instruction]) -> list[Match
         if not hasattr(ins, "operand_1") or not hasattr(ins, "operand_2"):
             continue
 
-        op1 = ins.operand_1 if hasattr(ins, "operand_1") else ""
-        op2 = ins.operand_2 if hasattr(ins, "operand_2") else ""
-
-        if not isinstance(op1, str) or not isinstance(op2, str):
-            continue
+        op1 = ins.operand_1
+        op2 = ins.operand_2
 
         op1_size = REG_SIZES_MAP.get(op1.lower() if op1 else "", 0)
         op2_size = REG_SIZES_MAP.get(op2.lower() if op2 else "", 0)
@@ -39,8 +36,6 @@ def match_mov_reg_reg_reg64_reg16(instructions: list[Instruction]) -> list[Match
 
 
 def match_push_pop_reg64_reg16(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
     matches = []
 
     for idx in range(len(instructions) - 1):
@@ -65,8 +60,6 @@ def match_push_pop_reg64_reg16(instructions: list[Instruction]) -> list[MatchRes
 
 
 def _match_reg_zero_imm(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
     matches = []
 
     for idx in range(len(instructions) - 1):
@@ -97,8 +90,6 @@ def _match_reg_zero_imm(instructions: list[Instruction], mnemonic: str) -> list[
 
 
 def _match_reg_self_op(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
     matches = []
 
     for idx in range(len(instructions) - 1):
@@ -145,8 +136,6 @@ def match_sub_reg_same(instructions: list[Instruction]) -> list[MatchResult]:
 
 
 def _match_unary_reg(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
-
     matches = []
 
     for idx in range(len(instructions) - 1):
@@ -182,8 +171,6 @@ def match_dec_reg(instructions: list[Instruction]) -> list[MatchResult]:
 
 
 def _match_shift_reg_imm(instructions: list[Instruction], mnemonics: tuple[str, ...]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_32, REG_64, REG_SIZES_MAP
-
     matches = []
     shift_values = {"1", "2", "4", "8"}
 
@@ -225,8 +212,6 @@ def match_shr_reg_imm(instructions: list[Instruction]) -> list[MatchResult]:
 
 
 def _match_binary_reg_imm_small(instructions: list[Instruction], mnemonic: str) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_SIZES_MAP
-
     matches = []
 
     for idx in range(len(instructions) - 1):
@@ -247,7 +232,7 @@ def _match_binary_reg_imm_small(instructions: list[Instruction], mnemonic: str) 
 
         try:
             imm_val = int(op2, 0) if op2.startswith("0x") else int(op2)
-            if not (1 <= imm_val <= 8):
+            if not (1 <= imm_val <= _MAX_SMALL_IMMEDIATE):
                 continue
         except ValueError:
             continue
@@ -269,8 +254,6 @@ def match_sub_reg_imm_small(instructions: list[Instruction]) -> list[MatchResult
 
 
 def match_lea_reg_off(instructions: list[Instruction]) -> list[MatchResult]:
-    from r2morph.analysis.register_tracker import REG_64, REG_SIZES_MAP
-
     matches = []
 
     for idx in range(len(instructions) - 1):

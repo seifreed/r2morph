@@ -25,6 +25,6 @@ else:
 FRIDA_AVAILABLE = frida is not None
 
 __all__ = [
-    "FridaEngine",
     "FRIDA_AVAILABLE",
+    "FridaEngine",
 ]

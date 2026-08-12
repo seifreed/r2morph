@@ -5,6 +5,7 @@ This module provides the main interface to Frida for instrumenting
 target processes and collecting runtime information.
 """
 
+import json
 import logging
 import time
 from collections import deque
@@ -138,10 +139,9 @@ class FridaEngine:
         result = InstrumentationResult()
 
         try:
-            if not self.device:
-                if not self.initialize():
-                    result.error_message = "Failed to initialize Frida device"
-                    return result
+            if not self.device and not self.initialize():
+                result.error_message = "Failed to initialize Frida device"
+                return result
 
             binary_path = Path(binary_path)
 
@@ -507,8 +507,6 @@ class FridaEngine:
             True if export successful
         """
         try:
-            import json
-
             export_data = {
                 "statistics": self.get_runtime_statistics(),
                 "api_calls": list(self.api_calls),

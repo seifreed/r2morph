@@ -6,12 +6,9 @@ def test_analysis_cache_storage_export_matches_analysis_cache() -> None:
     assert ExportedCacheStorage is CacheStorage
 
 
-def test_analysis_cache_storage_round_trip_pickle_and_json(tmp_path) -> None:
-    pickle_storage = CacheStorage(cache_dir=tmp_path / "pickle", storage_type="pickle")
-    json_storage = CacheStorage(cache_dir=tmp_path / "json", storage_type="json")
+def test_analysis_cache_storage_round_trip_structured_data(tmp_path) -> None:
+    storage = CacheStorage(cache_dir=tmp_path)
 
-    pickle_storage.save("one", {"mode": "pickle"})
-    json_storage.save("two", {"mode": "json"})
+    storage.save("one", {"mode": "structured", "edge": (1, 2), "bytes": b"sample"})
 
-    assert pickle_storage.load("one") == {"mode": "pickle"}
-    assert json_storage.load("two") == {"mode": "json"}
+    assert storage.load("one") == {"mode": "structured", "edge": (1, 2), "bytes": b"sample"}

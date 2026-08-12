@@ -8,12 +8,15 @@ from __future__ import annotations
 
 import logging
 import re
+from functools import cache
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+_EXTENDED_REGISTER_ENCODING_START = 8
 
 
 # Register encoding tables for manual instruction encoding
@@ -211,7 +214,7 @@ class AssemblyService:
             dest_code = reg32_encoding[dest]
         elif dest in reg64_encoding:
             dest_code = reg64_encoding[dest]
-            if dest_code >= 8:
+            if dest_code >= _EXTENDED_REGISTER_ENCODING_START:
                 # High register (r8-r15): REX.R bit extends ModR/M reg field
                 rex |= 0x44  # REX + REX.R
                 dest_code &= 0x07
@@ -282,13 +285,7 @@ class AssemblyService:
         return None
 
 
-# Singleton instance for convenience
-_default_assembly_service: AssemblyService | None = None
-
-
+@cache
 def get_assembly_service() -> AssemblyService:
     """Get the default AssemblyService instance."""
-    global _default_assembly_service
-    if _default_assembly_service is None:
-        _default_assembly_service = AssemblyService()
-    return _default_assembly_service
+    return AssemblyService()

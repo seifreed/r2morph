@@ -119,7 +119,7 @@ class TestPEIntegrityBasic:
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         handler = PEHandler(test_file)
-        success, repairs = handler.full_repair()
+        success, _repairs = handler.full_repair()
 
         assert not success
 
@@ -418,7 +418,7 @@ class TestPESectionHandling:
         handler = PEHandler(test_file)
 
         if handler.is_pe():
-            valid, issues = handler.validate_integrity()
+            _valid, _issues = handler.validate_integrity()
 
             pass
 
@@ -466,10 +466,10 @@ class TestPERepairWorkflow:
 
         handler = PEHandler(test_file)
 
-        valid, issues = handler.validate_integrity()
+        valid, _issues = handler.validate_integrity()
         assert not valid
 
-        success, repairs = handler.full_repair()
+        success, _repairs = handler.full_repair()
         assert not success
 
     def test_refresh_headers_non_pe(self, tmp_path):
@@ -490,7 +490,7 @@ class TestPERepairWorkflow:
 
         handler = PEHandler(test_file)
 
-        success, fixes = handler.fix_imports()
+        success, _fixes = handler.fix_imports()
 
         assert success
 
@@ -501,7 +501,7 @@ class TestPERepairWorkflow:
 
         handler = PEHandler(test_file)
 
-        success, fixes = handler.fix_exports()
+        success, _fixes = handler.fix_exports()
 
         assert success
 
@@ -512,7 +512,7 @@ class TestPERepairWorkflow:
 
         handler = PEHandler(test_file)
 
-        success, fixes = handler.fix_resources()
+        success, _fixes = handler.fix_resources()
 
         assert success
 

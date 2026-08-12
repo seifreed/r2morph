@@ -7,7 +7,7 @@ name = "r2morph"
 version = "0.3.0"
 description = "Metamorphic binary mutation engine with structural validation"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12,<3.14"
 license = {text = "MIT"}
 authors = [
     {name = "Marc Rivero", email = "mriverolopez@gmail.com"}
@@ -31,8 +31,6 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Security",
@@ -52,13 +50,27 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=7.4.0",
+    "pytest>=9.0.3",
     "pytest-cov>=4.1.0",
-    "pytest-mock>=3.11.1",
+    "hypothesis>=6.165.3",
     "black>=23.0.0",
     "ruff>=0.1.0",
     "mypy>=1.5.0",
+    "types-networkx>=3.0.0",
+    "types-PyYAML>=6.0.0",
+    "bandit>=1.7.5",
+    "pip-audit>=2.6.0",
+    "pip>=26.1.2",
     "ipython>=8.12.0",
+    "click>=8.3.3",
+    "GitPython>=3.1.59",
+    "idna>=3.15",
+    "msgpack>=1.2.1",
+    "pygments>=2.20.0",
+    "requests>=2.33.0",
+    "urllib3>=2.7.0",
+    "protobuf>=6.33.5",
+    "unicorn>=2.0.0",
 ]
 docs = [
     "mkdocs>=1.5.0",
@@ -66,7 +78,7 @@ docs = [
     "mkdocstrings[python]>=0.22.0",
 ]
 enhanced = [
-    "angr>=9.2.0; platform_system != \"Windows\"",
+    "angr>=9.3.2; platform_system != \"Windows\"",
     "z3-solver>=4.12.0",
     "frida>=16.0.0; platform_system != \"Windows\"",
     "frida-tools>=12.0.0; platform_system != \"Windows\"",
@@ -79,7 +91,7 @@ enhanced = [
 syntia = [
     "cvc5>=1.0.0",
     "pysmt>=0.9.0",
-    "claripy>=9.2.0",
+    "claripy>=9.3.2",
 ]
 devirtualization = [
     "miasm>=0.1.0",
@@ -92,7 +104,7 @@ machine-learning = [
     "transformers>=4.30.0",
 ]
 all = [
-    "angr>=9.2.0; platform_system != \"Windows\"",
+    "angr>=9.3.2; platform_system != \"Windows\"",
     "z3-solver>=4.12.0",
     "frida>=16.0.0; platform_system != \"Windows\"",
     "frida-tools>=12.0.0; platform_system != \"Windows\"",
@@ -103,7 +115,7 @@ all = [
     "psutil>=5.9.0",
     "cvc5>=1.0.0",
     "pysmt>=0.9.0",
-    "claripy>=9.2.0",
+    "claripy>=9.3.2",
     "miasm>=0.1.0",
     "unicorn>=2.0.0",
     "qiling>=1.4.0",
@@ -146,53 +158,86 @@ markers = [
 ]
 filterwarnings = [
     "error",
-    # EX-002 (CLAUDE.md > Excepciones aprobadas): ultra-narrow, scoped
-    # strictly to the third-party `cle` ctypes _layout_ DeprecationWarning
-    # emitted at `import angr` on Python 3.14+. Not r2morph code; no
-    # released cle/angr version fixes it. Everything else stays `error`.
-    "ignore:Due to '_pack_', the .* Structure will use memory layout compatible with MSVC:DeprecationWarning",
 ]
 
 [tool.coverage.run]
 source = ["r2morph"]
 branch = true
 omit = [
-    "tests/*",
-    "r2morph/adapters/*",
-    "*/__pycache__/*",
 ]
 
 [tool.coverage.report]
-exclude_lines = [
-    "pragma: no cover",
-    "def __repr__",
-    "raise NotImplementedError",
-    "if __name__ == .__main__.:",
-    "if TYPE_CHECKING:",
-]
+exclude_lines = []
+fail_under = 80
 
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "UP"]
-ignore = ["E501"]
+select = ["E", "F", "W", "B", "S", "I", "N", "UP", "SIM", "PL", "RUF"]
+ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = [
+    "PLC0415",
+    "N802",
+    "PLR0913",
+    "PLR0915",
+    "PLR0917",
+    "PLR2004",
+    "PLW1510",
+    "S101",
+    "S105",
+    "S106",
+    "S108",
+    "S110",
+    "S112",
+    "S306",
+    "S311",
+    "S603",
+    "S606",
+    "S607",
+]
+"examples/**/*.py" = ["PLC0415", "PLR0912", "PLR0915", "PLR2004", "S112", "S311"]
 
 [tool.black]
 line-length = 120
-target-version = ["py310"]
+target-version = ["py312"]
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
+strict = true
+disallow_untyped_defs = true
+disallow_any_generics = true
 warn_return_any = true
 warn_unused_ignores = true
-disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_unreachable = true
+strict_equality = true
+no_implicit_optional = true
 
 [[tool.mypy.overrides]]
-module = ["z3", "z3.*", "capstone", "capstone.*", "keystone", "keystone.*", "unicorn", "unicorn.*", "frida", "frida.*", "r2pipe", "r2pipe.*"]
+module = [
+    "angr", "angr.*",
+    "archinfo", "archinfo.*",
+    "capstone", "capstone.*",
+    "claripy", "claripy.*",
+    "frida", "frida.*",
+    "keystone", "keystone.*",
+    "lief", "lief.*",
+    "miasm", "miasm.*",
+    "psutil", "psutil.*",
+    "qiling", "qiling.*",
+    "r2pipe", "r2pipe.*",
+    "unicorn", "unicorn.*",
+    "z3", "z3.*",
+]
 ignore_missing_imports = true
-follow_untyped_imports = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "build", "dist"]
+skips = []
 
 [tool.setuptools.packages.find]
 where = ["."]

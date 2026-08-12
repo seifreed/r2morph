@@ -4,32 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.core.report_helpers_discarded import (
-    _build_discarded_mutation_priority as _build_discarded_mutation_priority,
-)
-from r2morph.core.report_helpers_discarded import (
-    _summarize_discarded_mutations as _summarize_discarded_mutations,
-)
 from r2morph.core.report_helpers_evidence_summary import (
     _build_pass_region_evidence_map as _build_pass_region_evidence_map_impl,
 )
 from r2morph.core.report_helpers_evidence_summary import (
     _summarize_pass_evidence as _summarize_pass_evidence_impl,
-)
-from r2morph.core.report_helpers_observables import (
-    _build_observable_mismatch_map as _build_observable_mismatch_map,
-)
-from r2morph.core.report_helpers_observables import (
-    _build_observable_mismatch_priority as _build_observable_mismatch_priority,
-)
-from r2morph.core.report_helpers_observables import (
-    _summarize_observable_mismatches_by_pass as _summarize_observable_mismatches_by_pass,
-)
-from r2morph.core.report_helpers_projection import (
-    _build_pass_capability_summary_map as _build_pass_capability_summary_map,
-)
-from r2morph.core.report_helpers_projection import (
-    _summarize_pass_capability_rows as _summarize_pass_capability_rows,
 )
 from r2morph.core.report_helpers_structural_evidence import (
     _summarize_structural_evidence as _summarize_structural_evidence_summary,

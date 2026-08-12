@@ -5,6 +5,9 @@ from typing import Any
 
 from r2morph.devirtualization.binary_rewriter_models import CodePatch
 
+_MAX_PATCH_SIZE_CHANGE_BYTES = 1024
+_CODE_CAVE_SIZE_INCREASE_THRESHOLD_BYTES = 100
+
 
 def validate_patches(
     patches: list[CodePatch],
@@ -28,7 +31,7 @@ def validate_patches(
             if patch.new_instructions and not validate_instructions(patch.new_instructions):
                 warnings.append(f"Patch {i}: Invalid instructions")
 
-            if abs(patch.size_change) > 1024:
+            if abs(patch.size_change) > _MAX_PATCH_SIZE_CHANGE_BYTES:
                 warnings.append(f"Patch {i}: Large size change ({patch.size_change} bytes)")
 
     except Exception as e:
@@ -51,7 +54,7 @@ def plan_rewrite_strategy(patches: list[CodePatch]) -> dict[str, Any]:
         strategy["patch_order"] = sorted_patches
 
         total_size_increase = sum(max(0, p.size_change) for p in patches)
-        if total_size_increase > 100:
+        if total_size_increase > _CODE_CAVE_SIZE_INCREASE_THRESHOLD_BYTES:
             strategy["use_code_caves"] = True
 
         if any(p.size_change != 0 for p in patches):

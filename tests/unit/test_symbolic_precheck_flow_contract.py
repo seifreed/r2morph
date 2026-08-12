@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from r2morph.validation.symbolic_precheck_flow import run_symbolic_precheck
+from r2morph.validation.symbolic_precheck_flow import SymbolicPrecheckHooks, run_symbolic_precheck
 
 
 class _StubBridge:
@@ -34,12 +34,14 @@ def test_run_symbolic_precheck_supports_scope_and_records_steps() -> None:
                 }
             ],
         },
-        supports_scope=lambda _binary, _pass_result: (True, "supported", {}),
-        estimate_steps=lambda _pass_name, _mutation: 1,
-        build_hint=lambda _pass_result: {"symbolic_semantic_hint_supported": True},
-        compare_observables=lambda *_args: {"symbolic_observable_check_performed": False},
-        compare_transition=lambda *_args: {"symbolic_transition_check_performed": False},
-        import_module_fn=lambda _name: bridge_module,
+        SymbolicPrecheckHooks(
+            supports_scope=lambda _binary, _pass_result: (True, "supported", {}),
+            estimate_steps=lambda _pass_name, _mutation: 1,
+            build_hint=lambda _pass_result: {"symbolic_semantic_hint_supported": True},
+            compare_observables=lambda *_args: {"symbolic_observable_check_performed": False},
+            compare_transition=lambda *_args: {"symbolic_transition_check_performed": False},
+        ),
+        lambda _name: bridge_module,
     )
 
     assert payload["symbolic_status"] == "bounded-step-known-equivalence"

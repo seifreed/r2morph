@@ -6,7 +6,6 @@ and ensure mutation passes remain efficient.
 """
 
 from datetime import datetime
-from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -17,7 +16,7 @@ from r2morph.validation import (
 )
 from r2morph.validation.performance_regression_execution import (
     build_mutation_class_map,
-    build_performance_snapshot,
+    build_performance_metrics,
     create_mutation_pipeline,
 )
 from r2morph.validation.performance_regression_models import (
@@ -126,15 +125,16 @@ class PerformanceBenchmark:
 
         exec_times = self.measure_execution_time(run_mutation_pipeline)
         memory_metrics = self.measure_memory_usage(run_mutation_pipeline)
-        return build_performance_snapshot(
-            config=self.config,
-            binary_path=binary_path,
-            mutations=mutations,
-            exec_times=exec_times,
-            memory_metrics=memory_metrics,
+        return PerformanceSnapshot(
             commit_hash=self._get_git_hash(),
-            environment=self._get_environment_info(),
             timestamp=datetime.now().isoformat(),
+            metrics=build_performance_metrics(exec_times, memory_metrics),
+            environment=self._get_environment_info(),
+            metadata={
+                "binary": str(binary_path),
+                "mutations": mutations,
+                "runs": self.config.measured_runs,
+            },
         )
 
     def save_baseline(
@@ -247,17 +247,11 @@ def create_benchmark(
     return PerformanceBenchmark(config)
 
 
-PerformanceRegressionSuite = import_module(
-    "r2morph.validation.performance_regression_suite",
-).PerformanceRegressionSuite
-
-
 __all__ = [
-    "PerformanceMetric",
-    "PerformanceSnapshot",
-    "PerformanceRegression",
     "BenchmarkConfig",
     "PerformanceBenchmark",
-    "PerformanceRegressionSuite",
+    "PerformanceMetric",
+    "PerformanceRegression",
+    "PerformanceSnapshot",
     "create_benchmark",
 ]

@@ -3,26 +3,35 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.validation.address_parsing import parse_address
 
+StepResult = tuple[list[list[int]], list[dict[str, Any]], int, int, str | None]
+SymbolicScope = tuple[Binary, dict[str, Any], Any]
+EquivalenceStatus = tuple[str, str, str, str]
+
+
+@dataclass(frozen=True)
+class SymbolicPrecheckHooks:
+    supports_scope: Callable[[Binary, dict[str, Any]], tuple[bool, str, dict[str, Any]]]
+    estimate_steps: Callable[[str, dict[str, Any]], int]
+    build_hint: Callable[[dict[str, Any]], dict[str, Any]]
+    compare_observables: Callable[[Binary, dict[str, Any], Any], dict[str, Any]]
+    compare_transition: Callable[[Binary, dict[str, Any], Any], dict[str, Any]]
+
 
 def run_symbolic_precheck(
     binary: Binary,
     pass_result: dict[str, Any],
-    *,
-    supports_scope: Callable[[Binary, dict[str, Any]], tuple[bool, str, dict[str, Any]]],
-    estimate_steps: Callable[[str, dict[str, Any]], int],
-    build_hint: Callable[[dict[str, Any]], dict[str, Any]],
-    compare_observables: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
-    compare_transition: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
+    hooks: SymbolicPrecheckHooks,
     import_module_fn: Callable[[str], Any] = import_module,
 ) -> dict[str, Any]:
     """Run a bounded symbolic precheck for the experimental mode."""
-    supported, payload = _init_scope_payload(binary, pass_result, supports_scope)
+    supported, payload = _init_scope_payload(binary, pass_result, hooks.supports_scope)
     if not supported:
         return payload
 
@@ -34,21 +43,9 @@ def run_symbolic_precheck(
             return payload
 
         bridge = bridge_module.AngrBridge(binary)
-        initialized, stepped_regions, total_flat, total_unsat, step_error = _execute_bounded_steps(
-            bridge, pass_result, estimate_steps
-        )
-        _record_bounded_step_results(
-            payload, pass_result, initialized, stepped_regions, total_flat, total_unsat, build_hint
-        )
-        _finalize_precheck_status(
-            payload,
-            binary,
-            pass_result,
-            bridge_module,
-            step_error,
-            compare_observables=compare_observables,
-            compare_transition=compare_transition,
-        )
+        step_result = _execute_bounded_steps(bridge, pass_result, hooks.estimate_steps)
+        _record_bounded_step_results(payload, pass_result, step_result, hooks.build_hint)
+        _finalize_precheck_status(payload, (binary, pass_result, bridge_module), step_result[-1], hooks)
         return payload
     except Exception as e:  # angr/claripy backend may raise any exception type
         payload["symbolic_status"] = "backend-error"
@@ -136,13 +133,11 @@ def _execute_bounded_steps(
 def _record_bounded_step_results(
     payload: dict[str, Any],
     pass_result: dict[str, Any],
-    initialized: list[list[int]],
-    stepped_regions: list[dict[str, Any]],
-    total_flat_successors: int,
-    total_unsat_successors: int,
+    step_result: StepResult,
     build_hint: Callable[[dict[str, Any]], dict[str, Any]],
 ) -> None:
     """Record the bounded-step accumulators and substitution hint into the payload."""
+    initialized, stepped_regions, total_flat_successors, total_unsat_successors, _error = step_result
     payload["symbolic_status"] = "bounded-step-passed"
     payload["symbolic_reason"] = "symbolic backend initialized and executed one bounded step per mutation region"
     payload["symbolic_initialized_regions"] = initialized
@@ -155,20 +150,15 @@ def _record_bounded_step_results(
 
 def _resolve_shellcode_equivalence(
     payload: dict[str, Any],
-    binary: Binary,
-    pass_result: dict[str, Any],
-    bridge_module: Any,
-    compare_observables: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
-    compare_transition: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
-    *,
-    match_status: str,
-    match_reason: str,
-    mismatch_status: str,
-    mismatch_reason: str,
+    scope: SymbolicScope,
+    hooks: SymbolicPrecheckHooks,
+    status: EquivalenceStatus,
 ) -> None:
     """Run shellcode observable/transition checks and map them to a status."""
-    payload.update(compare_observables(binary, pass_result, bridge_module))
-    payload.update(compare_transition(binary, pass_result, bridge_module))
+    binary, pass_result, bridge_module = scope
+    match_status, match_reason, mismatch_status, mismatch_reason = status
+    payload.update(hooks.compare_observables(binary, pass_result, bridge_module))
+    payload.update(hooks.compare_transition(binary, pass_result, bridge_module))
     if payload.get("symbolic_observable_check_performed"):
         transition_ok = payload.get("symbolic_transition_equivalent", True)
         if payload.get("symbolic_observable_equivalent") and transition_ok:
@@ -181,13 +171,9 @@ def _resolve_shellcode_equivalence(
 
 def _finalize_precheck_status(
     payload: dict[str, Any],
-    binary: Binary,
-    pass_result: dict[str, Any],
-    bridge_module: Any,
+    scope: SymbolicScope,
     step_error: str | None,
-    *,
-    compare_observables: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
-    compare_transition: Callable[[Binary, dict[str, Any], Any], dict[str, Any]],
+    hooks: SymbolicPrecheckHooks,
 ) -> None:
     """Set the terminal symbolic status, including shellcode fallback checks."""
     if step_error is not None:
@@ -198,15 +184,14 @@ def _finalize_precheck_status(
         if payload.get("symbolic_semantic_hint_supported"):
             _resolve_shellcode_equivalence(
                 payload,
-                binary,
-                pass_result,
-                bridge_module,
-                compare_observables,
-                compare_transition,
-                match_status="shellcode-observables-match",
-                match_reason="binary symbolic step failed but shellcode observable/transition checks matched",
-                mismatch_status="shellcode-observable-mismatch",
-                mismatch_reason="binary symbolic step failed and shellcode observable or transition checks diverged",
+                scope,
+                hooks,
+                (
+                    "shellcode-observables-match",
+                    "binary symbolic step failed but shellcode observable/transition checks matched",
+                    "shellcode-observable-mismatch",
+                    "binary symbolic step failed and shellcode observable or transition checks diverged",
+                ),
             )
         return
     if payload.get("symbolic_semantic_hint_supported"):
@@ -214,13 +199,12 @@ def _finalize_precheck_status(
         payload["symbolic_reason"] = "symbolic bounded step passed and substitutions map to a known equivalence group"
         _resolve_shellcode_equivalence(
             payload,
-            binary,
-            pass_result,
-            bridge_module,
-            compare_observables,
-            compare_transition,
-            match_status="bounded-step-observables-match",
-            match_reason="bounded symbolic step passed and observable/transition effects matched",
-            mismatch_status="bounded-step-observable-mismatch",
-            mismatch_reason="bounded symbolic step passed but observable or transition effects diverged",
+            scope,
+            hooks,
+            (
+                "bounded-step-observables-match",
+                "bounded symbolic step passed and observable/transition effects matched",
+                "bounded-step-observable-mismatch",
+                "bounded symbolic step passed but observable or transition effects diverged",
+            ),
         )

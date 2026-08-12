@@ -4,10 +4,12 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from r2morph.validation.validator_execution import normalize_output, run_binary
+from r2morph.validation.validator_execution import run_binary
+from r2morph.validation.validator_execution_text import normalize_output
 from r2morph.validation.validator_results import build_validation_result, calculate_similarity
 from r2morph.validation.validator_runtime import (
     RuntimeComparisonConfig,
+    ValidationObservations,
     ValidationResult,
     ValidationTestCase,
 )
@@ -160,20 +162,26 @@ class BinaryValidator:
                         all_outputs_match = False
 
         result = build_validation_result(
-            all_outputs_match=all_outputs_match,
-            errors=errors,
-            original_outputs=original_outputs,
-            mutated_outputs=mutated_outputs,
+            ValidationObservations(
+                all_outputs_match=all_outputs_match,
+                errors=errors,
+                original_outputs=original_outputs,
+                mutated_outputs=mutated_outputs,
+                file_differences=file_differences,
+                runtime_details=runtime_details,
+                test_cases=self.test_cases,
+            ),
             comparison=self.comparison,
-            file_differences=file_differences,
-            runtime_details=runtime_details,
-            test_cases=self.test_cases,
         )
 
         logger.info(f"Validation result: {result}")
         return result
 
-    def _calculate_similarity(self, original_outputs: list[dict], mutated_outputs: list[dict]) -> float:
+    def _calculate_similarity(
+        self,
+        original_outputs: list[dict[str, Any]],
+        mutated_outputs: list[dict[str, Any]],
+    ) -> float:
         """
         Calculate similarity percentage between outputs.
 

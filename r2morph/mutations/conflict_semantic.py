@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 
 class SemanticConflictDetector:
@@ -15,7 +15,7 @@ class SemanticConflictDetector:
     3. Mutations change program behavior in ways that interact unexpectedly
     """
 
-    INVARIANT_PATTERNS = {
+    INVARIANT_PATTERNS: ClassVar[dict[str, dict[str, list[str]]]] = {
         "x86": {
             "calling_convention": ["eax", "ecx", "edx"],
             "callee_saved": ["ebx", "esi", "edi", "ebp", "esp"],
@@ -125,8 +125,10 @@ class SemanticConflictDetector:
                             "type": "semantic_control_flow",
                             "severity": "high",
                             "mutation_indices": [idx1, idx2],
-                            "description": "Multiple control flow mutations may interact unexpectedly",
-                            "resolution": "Apply control flow mutations in separate passes or verify combined semantics",
+                            "description": ("Multiple control flow mutations may interact unexpectedly"),
+                            "resolution": (
+                                "Apply control flow mutations in separate passes or verify combined semantics"
+                            ),
                         }
                     )
 

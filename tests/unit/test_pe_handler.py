@@ -3,7 +3,7 @@ Unit tests for PE handler module.
 """
 
 import struct
-from unittest.mock import patch
+from pathlib import Path
 
 from r2morph.platform.pe_handler import PEHandler
 
@@ -133,8 +133,7 @@ class TestGetImports:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            imports = handler.get_imports()
+        imports = handler.get_imports()
         assert imports == []
 
 
@@ -143,8 +142,7 @@ class TestGetExports:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            exports = handler.get_exports()
+        exports = handler.get_exports()
         assert exports == []
 
 
@@ -153,8 +151,7 @@ class TestGetRelocations:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            relocations = handler.get_relocations()
+        relocations = handler.get_relocations()
         assert relocations == []
 
 
@@ -189,8 +186,7 @@ class TestValidateIntegrity:
         )
         binary_path.write_bytes(mz_header + pe_sig + coff_header + b"\x00" * 500)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            is_valid, issues = handler.validate_integrity()
+        is_valid, issues = handler.validate_integrity()
         assert isinstance(is_valid, bool)
         assert isinstance(issues, list)
 
@@ -212,15 +208,10 @@ class TestValidate:
         handler = PEHandler(binary_path)
         assert handler.validate() is False
 
-    def test_validate_valid_pe(self, tmp_path):
-        binary_path = tmp_path / "test.exe"
-        pe_sig = b"PE\x00\x00"
-        mz_header = b"MZ" + b"\x00" * 58 + struct.pack("<I", 0x40)
-        coff_header = b"\x00" * 200
-        binary_path.write_bytes(mz_header + pe_sig + coff_header)
+    def test_validate_valid_pe(self):
+        binary_path = Path(__file__).parents[2] / "dataset" / "pe_x86_64.exe"
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            result = handler.validate()
+        result = handler.validate()
         assert result is True
 
 
@@ -247,8 +238,7 @@ class TestFixImports:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            success, fixes = handler.fix_imports()
+        success, fixes = handler.fix_imports()
         assert success is True
         assert fixes == []
 
@@ -258,8 +248,7 @@ class TestFixExports:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            success, fixes = handler.fix_exports()
+        success, fixes = handler.fix_exports()
         assert success is True
         assert fixes == []
 
@@ -269,8 +258,7 @@ class TestFixResources:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            success, fixes = handler.fix_resources()
+        success, fixes = handler.fix_resources()
         assert success is True
         assert fixes == []
 
@@ -320,16 +308,14 @@ class TestSectionsParsing:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"not a pe file at all")
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            sections = handler.get_sections()
+        sections = handler.get_sections()
         assert sections == []
 
     def test_parse_sections_short_file(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 10)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            sections = handler.get_sections()
+        sections = handler.get_sections()
         assert sections == []
 
     def test_parse_sections_uses_cache(self, tmp_path):
@@ -339,9 +325,8 @@ class TestSectionsParsing:
         coff_header = b"\x00" * 20
         binary_path.write_bytes(mz_header + pe_sig + coff_header + b"\x00" * 500)
         handler = PEHandler(binary_path)
-        with patch("r2morph.platform.pe_handler.lief", None):
-            sections1 = handler.get_sections()
-            sections2 = handler.get_sections()
+        sections1 = handler.get_sections()
+        sections2 = handler.get_sections()
         assert sections1 == sections2
 
 

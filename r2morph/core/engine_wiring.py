@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from r2morph.pipeline.pipeline import Pipeline
+from r2morph.platform.binary_signer import DarwinBinarySigner
 from r2morph.protocols import (
     BinarySignerProtocol,
     GateFailureReporterProtocol,
@@ -11,6 +13,9 @@ from r2morph.protocols import (
     ReportBuilderProtocol,
     ReportViewBuilderProtocol,
 )
+from r2morph.reporting.gate_evaluator import GateFailureReporter
+from r2morph.reporting.report_assembler import ReportAssembler
+from r2morph.reporting.report_view_builder import ReportViewBuilder
 
 
 @dataclass(frozen=True)
@@ -30,12 +35,6 @@ def build_engine_wiring(
     report_builder: ReportBuilderProtocol | None = None,
 ) -> EngineWiring:
     """Resolve MorphEngine dependencies without exposing construction details."""
-    from r2morph.pipeline.pipeline import Pipeline
-    from r2morph.platform.binary_signer import DarwinBinarySigner
-    from r2morph.reporting.gate_evaluator import GateFailureReporter
-    from r2morph.reporting.report_assembler import ReportAssembler
-    from r2morph.reporting.report_view_builder import ReportViewBuilder
-
     resolved_gate_failure_reporter: GateFailureReporterProtocol = (
         gate_failure_reporter if gate_failure_reporter is not None else GateFailureReporter()
     )

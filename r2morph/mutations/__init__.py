@@ -6,7 +6,6 @@ from r2morph.mutations.abi_aware_base import (
     ABIAwareMutationPass,
     ABIResult,
     ABIValidationError,
-    create_abi_aware_pass,
 )
 from r2morph.mutations.abi_hook import (
     ABICheckResult,
@@ -19,15 +18,11 @@ from r2morph.mutations.base import MutationPass, MutationRecord, MutationResult,
 from r2morph.mutations.block_reordering import BlockReorderingPass
 from r2morph.mutations.cfg_aware import CFGAwareMutationPass
 from r2morph.mutations.conflict_detector import (
-    Conflict,
     ConflictDetector,
-    ConflictSeverity,
-    ConflictType,
-    MutationRegion,
     RegionTracker,
-    Resolution,
     analyze_mutations_for_conflicts,
 )
+from r2morph.mutations.conflict_models import Conflict, ConflictSeverity, ConflictType, MutationRegion, Resolution
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
@@ -48,14 +43,13 @@ from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.parallel_executor import (
-    MutationResult as ParallelMutationResult,
-)
-from r2morph.mutations.parallel_executor import (
-    MutationTask,
     ParallelMutator,
-    ParallelStats,
     create_parallel_executor,
 )
+from r2morph.mutations.parallel_executor_models import (
+    MutationResult as ParallelMutationResult,
+)
+from r2morph.mutations.parallel_executor_models import MutationTask, ParallelStats
 from r2morph.mutations.pass_dependencies import (
     PassDependencyRegistry,
     get_pass_dependency_registry,
@@ -71,60 +65,59 @@ from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
 
 __all__ = [
-    "MutationPass",
-    "PassSupport",
-    "MutationRecord",
-    "MutationResult",
-    "NopInsertionPass",
-    "InstructionSubstitutionPass",
-    "BlockReorderingPass",
-    "RegisterSubstitutionPass",
-    "InstructionExpansionPass",
-    "ControlFlowFlatteningPass",
-    "DeadCodeInjectionPass",
-    "CFGAwareMutationPass",
-    # Hardened mutations
-    "HardenedMutationPass",
-    "HardenedControlFlowFlattening",
-    "HardenedOpaquePredicates",
-    "create_hardened_cff_pass",
-    "create_hardened_opaque_pass",
+    "ABIAwareMutationPass",
+    "ABICheckResult",
     # ABI hooks
     "ABIMutationHook",
-    "ABICheckResult",
-    "ABISnapshot",
-    "ABIViolationAction",
-    "create_abi_hook",
     "ABIResult",
+    "ABISnapshot",
     "ABIValidationError",
-    "ABIAwareMutationPass",
-    "create_abi_aware_pass",
-    # Pass dependencies
-    "DependencyType",
-    "PassDependency",
-    "DependencyViolation",
-    "PassDependencyRegistry",
-    "get_pass_dependency_registry",
-    "validate_pipeline_order",
-    "suggest_pipeline_order",
+    "ABIViolationAction",
+    "BlockReorderingPass",
+    "CFGAwareMutationPass",
     # Conflict detection
     "Conflict",
     "ConflictDetector",
     "ConflictSeverity",
     "ConflictType",
-    "MutationRegion",
-    "RegionTracker",
-    "Resolution",
-    "analyze_mutations_for_conflicts",
+    "ConstantUnfoldingPass",
+    "ControlFlowFlatteningPass",
     # New mutations
     "DataFlowMutationPass",
-    "StringObfuscationPass",
+    "DeadCodeInjectionPass",
+    # Pass dependencies
+    "DependencyType",
+    "DependencyViolation",
+    "HardenedControlFlowFlattening",
+    # Hardened mutations
+    "HardenedMutationPass",
+    "HardenedOpaquePredicates",
     "ImportTableObfuscationPass",
-    "ConstantUnfoldingPass",
+    "InstructionExpansionPass",
+    "InstructionSubstitutionPass",
+    "MutationPass",
+    "MutationRecord",
+    "MutationRegion",
+    "MutationResult",
+    "MutationTask",
+    "NopInsertionPass",
+    "ParallelMutationResult",
     # Parallel executor
     "ParallelMutator",
-    "MutationTask",
-    "ParallelMutationResult",
     "ParallelStats",
+    "PassDependency",
+    "PassDependencyRegistry",
+    "PassSupport",
+    "RegionTracker",
+    "RegisterSubstitutionPass",
+    "Resolution",
+    "StringObfuscationPass",
+    "analyze_mutations_for_conflicts",
+    "create_abi_hook",
+    "create_hardened_cff_pass",
+    "create_hardened_opaque_pass",
     "create_parallel_executor",
+    "get_pass_dependency_registry",
+    "suggest_pipeline_order",
+    "validate_pipeline_order",
 ]

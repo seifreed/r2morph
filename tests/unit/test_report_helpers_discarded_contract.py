@@ -1,6 +1,4 @@
-from r2morph.core import report_helpers as helpers_mod
 from r2morph.core import report_helpers_discarded as discarded_mod
-from r2morph.core import report_helpers_evidence as evidence_mod
 
 
 def test_discarded_mutation_summaries_and_priority() -> None:
@@ -76,15 +74,6 @@ def test_discarded_mutation_summaries_and_priority() -> None:
             "reasons": {"rollback": 1, "skip_invalid_pass": 1},
         },
     ]
-
-    assert getattr(helpers_mod, "_summarize_discarded_mutations") is discarded_mod._summarize_discarded_mutations
-    assert (
-        getattr(helpers_mod, "_build_discarded_mutation_priority") is discarded_mod._build_discarded_mutation_priority
-    )
-    assert getattr(evidence_mod, "_summarize_discarded_mutations") is discarded_mod._summarize_discarded_mutations
-    assert (
-        getattr(evidence_mod, "_build_discarded_mutation_priority") is discarded_mod._build_discarded_mutation_priority
-    )
 
 
 def test_impact_severity_selects_highest_regardless_of_reason_insertion_order() -> None:

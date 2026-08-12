@@ -2,11 +2,25 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import ARCH_BITS_32, ARCH_BITS_64
 from r2morph.validation.shellcode_equivalence_common import load_shellcode_state_pair, record_mismatch
+
+
+@dataclass(frozen=True)
+class TransitionRuntime:
+    """Symbolic runtime and architecture details for transition checks."""
+
+    angr: Any
+    claripy: Any
+    options: Any
+    shellcode_arch: str
+    stack_reg: str
+    bit_width: int
 
 
 def compare_instruction_substitution_transition(
@@ -32,6 +46,7 @@ def compare_instruction_substitution_transition(
 
     options = angr_module.options
     claripy = import_module("claripy")
+    runtime = TransitionRuntime(angr_module, claripy, options, shellcode_arch, stack_reg, bit_width)
     compared_regions: list[dict[str, Any]] = []
     mismatches: list[dict[str, Any]] = []
 
@@ -41,7 +56,8 @@ def compare_instruction_substitution_transition(
             if not isinstance(metadata.get("equivalence_group_index"), int):
                 continue
             region_report, region_mismatches = _compare_transition_region(
-                angr_module, claripy, options, mutation, shellcode_arch, stack_reg, bit_width
+                mutation,
+                runtime,
             )
             compared_regions.append(region_report)
             mismatches.extend(region_mismatches)
@@ -58,29 +74,27 @@ def _transition_arch_config(arch_info: dict[str, Any]) -> tuple[str, str, int] |
     """Return (shellcode_arch, stack_reg, bit_width) or None when unsupported."""
     arch = arch_info.get("arch")
     bits = arch_info.get("bits")
-    if arch in {"x86", "x86_64"} and bits == 64:
+    if arch in {"x86", "x86_64"} and bits == ARCH_BITS_64:
         return "amd64", "rsp", 64
-    if arch == "x86" and bits == 32:
+    if arch == "x86" and bits == ARCH_BITS_32:
         return "x86", "esp", 32
     return None
 
 
 def _compare_transition_region(
-    angr_module: Any,
-    claripy: Any,
-    options: Any,
     mutation: dict[str, Any],
-    shellcode_arch: str,
-    stack_reg: str,
-    bit_width: int,
+    runtime: TransitionRuntime,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Compare successor address + stack delta for one substitution region."""
     original_project, original_state, mutated_project, mutated_state = load_shellcode_state_pair(
-        angr_module, options, mutation, shellcode_arch
+        runtime.angr,
+        runtime.options,
+        mutation,
+        runtime.shellcode_arch,
     )
-    shared_stack = claripy.BVV(0x100000, bit_width)
-    setattr(original_state.regs, stack_reg, shared_stack)
-    setattr(mutated_state.regs, stack_reg, shared_stack)
+    shared_stack = runtime.claripy.BVV(0x100000, runtime.bit_width)
+    setattr(original_state.regs, runtime.stack_reg, shared_stack)
+    setattr(mutated_state.regs, runtime.stack_reg, shared_stack)
 
     original_succ = list(original_project.factory.successors(original_state).flat_successors)
     mutated_succ = list(mutated_project.factory.successors(mutated_state).flat_successors)
@@ -102,8 +116,8 @@ def _compare_transition_region(
     if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
         record_mismatch(region_report, region_mismatches, mutation, "successor_address")
 
-    original_stack = getattr(original_final.regs, stack_reg)
-    mutated_stack = getattr(mutated_final.regs, stack_reg)
+    original_stack = getattr(original_final.regs, runtime.stack_reg)
+    mutated_stack = getattr(mutated_final.regs, runtime.stack_reg)
     if original_final.solver.satisfiable(extra_constraints=[original_stack != mutated_stack]):
         record_mismatch(region_report, region_mismatches, mutation, "stack_delta")
     return region_report, region_mismatches

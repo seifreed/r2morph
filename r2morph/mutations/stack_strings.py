@@ -36,12 +36,13 @@ Advanced techniques:
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.stack_strings_helpers import (
     EncodingScheme,
+    StackStringOptions,
     _add_shift_decode_loop_x64,
     _format_plain_stack_byte,
     _xor_rolling_decode_loop_x64,
@@ -138,11 +139,13 @@ class StackStringsPass(MutationPass):
 
         return generator(
             string_data,
-            encoding=self.encoding,
-            xor_key=xor_key,
-            add_shift=add_shift,
-            interleave_junk=self.interleave_junk,
-            junk_probability=self.junk_probability,
+            StackStringOptions(
+                encoding=self.encoding,
+                xor_key=xor_key,
+                add_shift=add_shift,
+                interleave_junk=self.interleave_junk,
+                junk_probability=self.junk_probability,
+            ),
         )
 
     def apply(self, binary: Any) -> dict[str, Any]:
@@ -188,7 +191,7 @@ class StackStringsPass(MutationPass):
 
             arch_info = binary.get_arch_info()
             arch = "x64" if arch_info.get("arch") in ("x86_64", "x64", "amd64") else "x86"
-            asm_code, junk_used = self._generate_stack_string_asm(string_data, arch)
+            _asm_code, _junk_used = self._generate_stack_string_asm(string_data, arch)
 
             transformed_count += 1
             logger.debug(f"Transformed string at 0x{string_info['address']:x}")
@@ -219,6 +222,7 @@ class StackStringsPass(MutationPass):
 
 __all__ = [
     "EncodingScheme",
+    "StackStringOptions",
     "StackStringsPass",
     "_add_shift_decode_loop_x64",
     "_format_plain_stack_byte",

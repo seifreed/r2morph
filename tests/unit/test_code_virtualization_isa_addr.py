@@ -10,6 +10,8 @@ the addend register survives; variant 0 is asserted byte-identical to ``_mba_add
 
 from __future__ import annotations
 
+from contextlib import suppress
+
 import keystone
 import unicorn
 from unicorn import x86_const
@@ -46,10 +48,8 @@ def _run(asm: str, a: int, b: int, addend: str) -> tuple[int, int]:
     uc.mem_write(_CODE, code)
     uc.reg_write(x86_const.UC_X86_REG_R10, a)
     uc.reg_write(_ADDEND_REG[addend], b)
-    try:
+    with suppress(unicorn.UcError):
         uc.emu_start(_CODE, _CODE + len(code))
-    except unicorn.UcError:
-        pass  # the trailing hlt stops emulation
     return uc.reg_read(x86_const.UC_X86_REG_R10), uc.reg_read(_ADDEND_REG[addend])
 
 

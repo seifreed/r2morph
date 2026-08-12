@@ -5,16 +5,15 @@ Extracted from cli.py -- no logic changes.
 
 from typing import Any
 
-from r2morph.reporting.report_context import PassClassFilters
-from r2morph.reporting.report_helpers import _summarize_symbolic_view_from_mutations
+from r2morph.reporting.filtered_summary_payloads import _build_general_filtered_summary
+from r2morph.reporting.report_builder_models import ReportContext
+from r2morph.reporting.report_context import FilterFlags, PassClassFilters
+from r2morph.reporting.report_helpers_symbolic_view import _summarize_symbolic_view_from_mutations
 from r2morph.reporting.report_mismatch_state import (
     resolve_only_mismatches_state as _resolve_only_mismatches_state_impl,
 )
 from r2morph.reporting.report_mutation_selection import _select_report_mutations
 from r2morph.reporting.report_pass_resolution import resolve_only_pass_view
-from r2morph.reporting.report_rendering_sections import (
-    _render_symbolic_sections as _render_symbolic_sections_impl,
-)
 from r2morph.reporting.report_state import (
     resolve_general_symbolic_state as _resolve_general_symbolic_state_impl,
 )
@@ -24,33 +23,14 @@ from r2morph.reporting.report_state import (
 
 
 def _resolve_general_report_flow_state(
-    *,
     payload: dict[str, Any],
-    summary: dict[str, Any],
     pass_results: dict[str, Any],
-    requested_validation_mode: str | None,
-    effective_validation_mode: str | None,
-    degraded_validation: bool,
-    degraded_passes: list[dict[str, Any]],
-    failed_gates: bool,
-    validation_policy: dict[str, Any] | None,
-    gate_evaluation: dict[str, Any],
-    gate_failure_summary: dict[str, Any],
-    gate_failure_priority: list[dict[str, Any]],
-    gate_failure_severity_priority: list[dict[str, Any]],
-    resolved_only_pass: str | None,
-    only_status: str | None,
-    only_degraded: bool,
-    only_failed_gates: bool,
-    pass_classes: PassClassFilters,
-    summary_builder: Any = None,
+    context: ReportContext,
+    filters: FilterFlags,
 ) -> dict[str, Any]:
-    """Resolve summary-first state for the general report path.
-
-    Args:
-        summary_builder: Callable with same signature as _build_general_filtered_summary.
-            Injected to avoid circular import between resolver and filtered_summary_builder.
-    """
+    """Resolve summary-first state for the general report path."""
+    summary = context.summary
+    pass_classes = filters.pass_classes
     general_state = _resolve_general_report_state(
         summary=summary,
         payload=payload,
@@ -59,63 +39,22 @@ def _resolve_general_report_flow_state(
     )
     only_risky_filters = pass_classes.any_active
     mutations, adjusted_degraded_passes = _select_report_mutations(
-        all_mutations=payload.get("mutations", []),
-        degraded_validation=degraded_validation,
-        failed_gates=failed_gates,
-        only_degraded=only_degraded,
-        only_failed_gates=only_failed_gates,
-        only_risky_filters=only_risky_filters,
-        selected_risk_pass_names=general_state["selected_risk_pass_names"],
-        resolved_only_pass=resolved_only_pass,
-        only_status=only_status,
-        degraded_passes=degraded_passes,
+        payload.get("mutations", []),
+        context,
+        filters,
+        general_state["selected_risk_pass_names"],
     )
     symbolic_state = _resolve_general_symbolic_state_impl(
         summary=summary,
         mutations=mutations,
         pass_results=pass_results,
         summarize_symbolic_func=_summarize_symbolic_view_from_mutations,
-        render_symbolic_func=_render_symbolic_sections_impl,
     )
-    if summary_builder is None:
-        from r2morph.reporting.filtered_summary_builder import _build_general_filtered_summary
-
-        summary_builder = _build_general_filtered_summary
-    filtered_summary, degradation_roles = summary_builder(
-        summary=summary,
-        mutations=mutations,
-        pass_results=pass_results,
-        pass_support=general_state["pass_support"],
-        requested_validation_mode=requested_validation_mode,
-        effective_validation_mode=effective_validation_mode,
-        degraded_validation=degraded_validation,
-        degraded_passes=adjusted_degraded_passes,
-        risky_pass_names=general_state["risky_pass_names"],
-        structural_risk_pass_names=general_state["structural_risk_pass_names"],
-        symbolic_risk_pass_names=general_state["symbolic_risk_pass_names"],
-        covered_pass_names=general_state["covered_pass_names"],
-        uncovered_pass_names=general_state["uncovered_pass_names"],
-        clean_pass_names=general_state["clean_pass_names"],
-        failed_gates=failed_gates,
-        validation_policy=validation_policy,
-        gate_evaluation=gate_evaluation,
-        gate_failure_summary=gate_failure_summary,
-        gate_failure_priority=gate_failure_priority,
-        gate_failure_severity_priority=gate_failure_severity_priority,
-        symbolic_requested=symbolic_state["symbolic_requested"],
-        observable_match=symbolic_state["observable_match"],
-        observable_mismatch=symbolic_state["observable_mismatch"],
-        bounded_only=symbolic_state["bounded_only"],
-        observable_not_run=symbolic_state["observable_not_run"],
-        by_pass=symbolic_state["by_pass"],
-        degradation_roles=dict(summary.get("degradation_roles", {})),
-        normalized_pass_map=symbolic_state["normalized_pass_map"],
-        selected_risk_pass_names=general_state["selected_risk_pass_names"],
-        resolved_only_pass=resolved_only_pass,
-        only_risky_filters=only_risky_filters,
-        only_degraded=only_degraded,
-        pass_classes=pass_classes,
-        only_failed_gates=only_failed_gates,
+    filtered_summary, degradation_roles = _build_general_filtered_summary(
+        context,
+        filters,
+        {**general_state, "mutations": mutations, "degraded_passes": adjusted_degraded_passes},
+        {**symbolic_state, "pass_results": pass_results},
     )
     return {
         **general_state,

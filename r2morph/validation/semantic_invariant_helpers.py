@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+from r2morph.core.constants import ARCH_BITS_64
+
 
 def normalize_architecture(arch: str, bits: int) -> str:
     """Normalize a reported architecture string to the checker family."""
     if "x86" in arch or arch == "x86_64":
-        return "x86_64" if bits == 64 else "x86"
+        return "x86_64" if bits == ARCH_BITS_64 else "x86"
     if "arm" in arch:
-        return "arm64" if bits == 64 else "arm"
+        return "arm64" if bits == ARCH_BITS_64 else "arm"
     return arch
 
 

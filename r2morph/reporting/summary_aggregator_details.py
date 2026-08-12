@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.core.report_helpers import _summarize_diff_digest, _summarize_discarded_mutations
+from r2morph.core.report_helpers_discarded import _summarize_discarded_mutations
+from r2morph.core.report_helpers_summary_metrics import _summarize_diff_digest
 
 
 def summarize_diff_digest(pass_results: dict[str, Any]) -> dict[str, Any]:

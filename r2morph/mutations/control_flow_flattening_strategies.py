@@ -2,28 +2,40 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_helpers import assemble_bounded
+from r2morph.mutations.control_flow_flattening_helpers import (
+    is_conditional_jump as _is_conditional_jump,
+)
 from r2morph.utils.dead_code import (
     generate_arm_dead_code_for_size,
     generate_nop_sequence,
     generate_x86_dead_code_for_size,
 )
 
+_MIN_PRECEDING_INSTRUCTION_COUNT = 2
+_MIN_PREDICATE_SPACE_BYTES = 2
+
+
+@dataclass(frozen=True)
+class BlockStrategyContext:
+    binary: Any
+    arch_family: str
+    bits: int
+    mutations: dict[str, int]
+    predicate_generator: OpaquePredicateGenerator
+    jump_obfuscator: JumpObfuscator
+
 
 def apply_block_strategies(
-    binary: Any,
+    context: BlockStrategyContext,
     blocks: list[Any],
     all_instrs: list[Any],
-    arch_family: str,
-    bits: int,
     predicates_to_add: int,
-    mutations: dict[str, int],
-    predicate_generator: OpaquePredicateGenerator,
-    jump_obfuscator: JumpObfuscator,
 ) -> int:
     """Apply per-block opaque-predicate and jump-obfuscation strategies."""
     predicates_added = 0
@@ -42,36 +54,35 @@ def apply_block_strategies(
         last_addr = last_insn.get("offset", 0)
         mnemonic = last_insn.get("mnemonic", "").lower()
 
-        if is_conditional_jump(mnemonic, arch_family) and try_add_opaque_predicate(
-            binary,
+        if is_conditional_jump(mnemonic, context.arch_family) and try_add_opaque_predicate(
+            context,
             block_instrs,
             last_addr,
-            arch_family,
-            bits,
-            predicate_generator,
         ):
             predicates_added += 1
-            mutations["opaque_predicates"] += 1
-            mutations["total"] += 1
+            context.mutations["opaque_predicates"] += 1
+            context.mutations["total"] += 1
 
-        if mnemonic == "jmp" and i < len(blocks) - 1:
-            if jump_obfuscator.obfuscate_jump(binary, last_insn, block, arch_family, bits):
-                mutations["jump_obfuscations"] += 1
-                mutations["total"] += 1
+        if (
+            mnemonic == "jmp"
+            and i < len(blocks) - 1
+            and context.jump_obfuscator.obfuscate_jump(
+                context.binary, last_insn, block, context.arch_family, context.bits
+            )
+        ):
+            context.mutations["jump_obfuscations"] += 1
+            context.mutations["total"] += 1
 
     return predicates_added
 
 
 def try_add_opaque_predicate(
-    binary: Any,
+    context: BlockStrategyContext,
     block_instrs: list[Any],
     last_addr: int,
-    arch_family: str,
-    bits: int,
-    predicate_generator: OpaquePredicateGenerator,
 ) -> bool:
     """Insert an opaque predicate into the slack space before a conditional jump."""
-    if len(block_instrs) < 2:
+    if len(block_instrs) < _MIN_PRECEDING_INSTRUCTION_COUNT:
         return False
 
     prev_insn = block_instrs[-2]
@@ -79,13 +90,21 @@ def try_add_opaque_predicate(
     prev_size = prev_insn.get("size", 0)
     available_space = last_addr - (prev_addr + prev_size)
 
-    if available_space < 2:
+    if available_space < _MIN_PREDICATE_SPACE_BYTES:
         return False
 
-    if not add_opaque_predicate(binary, prev_addr + prev_size, available_space, arch_family, bits, predicate_generator):
-        return False
-
-    return True
+    predicates = (
+        context.predicate_generator.get_x86(context.bits)
+        if context.arch_family == "x86"
+        else context.predicate_generator.get_arm(context.bits)
+    )
+    return _write_opaque_predicate(
+        context.binary,
+        prev_addr + prev_size,
+        available_space,
+        (context.arch_family, context.bits),
+        predicates,
+    )
 
 
 def add_opaque_predicate(
@@ -94,16 +113,26 @@ def add_opaque_predicate(
     available_size: int,
     arch: str,
     bits: int,
-    predicate_generator: OpaquePredicateGenerator,
 ) -> bool:
     """Add an opaque predicate at the specified address."""
+    predicate_generator = OpaquePredicateGenerator()
     if arch == "x86":
         predicates = predicate_generator.get_x86(bits)
     elif arch == "arm":
         predicates = predicate_generator.get_arm(bits)
     else:
         return False
+    return _write_opaque_predicate(binary, addr, available_size, (arch, bits), predicates)
 
+
+def _write_opaque_predicate(
+    binary: Any,
+    addr: int,
+    available_size: int,
+    platform: tuple[str, int],
+    predicates: list[list[str]],
+) -> bool:
+    arch, bits = platform
     for predicate_insns in predicates:
         assembled = assemble_bounded(binary, predicate_insns, available_size)
         if assembled is None:
@@ -138,8 +167,6 @@ def insert_dead_code_with_predicate(binary: Any, addr: int, size: int, arch: str
 
 def is_conditional_jump(mnemonic: str, arch: str) -> bool:
     """Check if an instruction is a conditional jump/branch."""
-    from r2morph.mutations.control_flow_flattening_helpers import is_conditional_jump as _is_conditional_jump
-
     return _is_conditional_jump(mnemonic, arch)
 
 

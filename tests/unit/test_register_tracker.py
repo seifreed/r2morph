@@ -2,7 +2,7 @@
 Unit tests for register_tracker module.
 """
 
-from r2morph.analysis.register_tracker import (
+from r2morph.core.register_tracker import (
     REG_8H,
     REG_8L,
     REG_16,

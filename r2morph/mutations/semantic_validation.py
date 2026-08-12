@@ -118,10 +118,14 @@ class SemanticValidator:
 
             if preserve_registers:
                 op = self._get_operand(ins, 0)
-                if op and isinstance(op, str) and op.lower() in self.PRESERVED_REGISTERS_64:
-                    if mnemonic not in (*self.PUSH_OPCODES, *self.POP_OPCODES, "mov"):
-                        if mnemonic in ["add", "sub", "xor", "and", "or", "inc", "dec", "shl", "shr", "lea"]:
-                            preserved_touched.add(op.lower())
+                if (
+                    isinstance(op, str)
+                    and op
+                    and op.lower() in self.PRESERVED_REGISTERS_64
+                    and mnemonic not in (*self.PUSH_OPCODES, *self.POP_OPCODES, "mov")
+                    and mnemonic in ["add", "sub", "xor", "and", "or", "inc", "dec", "shl", "shr", "lea"]
+                ):
+                    preserved_touched.add(op.lower())
 
         if stack_depth != 0:
             result.add_error(
@@ -168,7 +172,6 @@ class SemanticValidator:
 
         saved_registers: set[str] = set()
         restored_registers: set[str] = set()
-        stack_adjustments: list[int] = []
 
         prologue_end = 0
         epilogue_start = len(instructions)
@@ -180,17 +183,6 @@ class SemanticValidator:
             if mnemonic in self.PUSH_OPCODES and isinstance(op, str) and op.lower() in preserved:
                 saved_registers.add(op.lower())
                 prologue_end = max(prologue_end, idx + 1)
-
-            if mnemonic in ("sub", "add") and isinstance(op, str) and "rsp" in op.lower():
-                try:
-                    imm = int(self._get_operand(ins, 1) or "0", 0)
-                    if mnemonic == "sub":
-                        stack_adjustments.append(imm)
-                    else:
-                        stack_adjustments.append(-imm)
-                except (ValueError, TypeError):
-                    # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                    pass
 
         for idx in range(len(instructions) - 1, -1, -1):
             ins = instructions[idx]
@@ -249,12 +241,14 @@ class SemanticValidator:
         mut_result = self.validate_basic_block(mutated_instructions)
 
         if orig_result.metadata.get("stack_depth", 0) != mut_result.metadata.get("stack_depth", 0):
+            original_depth = orig_result.metadata.get("stack_depth", 0)
+            mutated_depth = mut_result.metadata.get("stack_depth", 0)
             result.add_error(
                 "STACK_DEPTH_MISMATCH",
-                f"Stack depth changed from {orig_result.metadata.get('stack_depth', 0)} to {mut_result.metadata.get('stack_depth', 0)}",
+                f"Stack depth changed from {original_depth} to {mutated_depth}",
                 0,
-                original_depth=orig_result.metadata.get("stack_depth", 0),
-                mutated_depth=mut_result.metadata.get("stack_depth", 0),
+                original_depth=original_depth,
+                mutated_depth=mutated_depth,
             )
 
         orig_pushes = sum(1 for i in original_instructions if self._get_mnemonic(i) in self.PUSH_OPCODES)
@@ -269,7 +263,7 @@ class SemanticValidator:
                 0,
             )
 
-        for idx, ins in enumerate(mutated_instructions):
+        for _idx, ins in enumerate(mutated_instructions):
             mnemonic = self._get_mnemonic(ins)
             if mnemonic in self.UNSAFE_OPCODES:
                 result.add_warning(
@@ -283,6 +277,53 @@ class SemanticValidator:
         result.metadata["mutated_valid"] = mut_result.valid
 
         return result
+
+    @classmethod
+    def _track_junk_registers(
+        cls,
+        mnemonic: str,
+        operands: tuple[str | None, str | None, str | None],
+        registers_written: set[str],
+        registers_read: set[str],
+    ) -> None:
+        writing_opcodes = {
+            "mov",
+            "lea",
+            "pop",
+            "inc",
+            "dec",
+            "add",
+            "sub",
+            "xor",
+            "and",
+            "or",
+            "shl",
+            "shr",
+            "rol",
+            "ror",
+        }
+        for index, operand in enumerate(operands):
+            if not isinstance(operand, str) or operand.startswith("["):
+                continue
+            register = operand.lower().strip("[]")
+            if register not in cls.ALL_REGISTERS_64 or mnemonic not in writing_opcodes:
+                continue
+            (registers_written if index == 0 else registers_read).add(register)
+
+    @staticmethod
+    def _warn_junk_memory_access(
+        result: ValidationResult,
+        mnemonic: str,
+        address: int,
+        operands: tuple[str | None, str | None, str | None],
+    ) -> None:
+        memory_opcodes = {"mov", "lea", "add", "sub", "xor", "and", "or", "cmp", "test"}
+        if mnemonic in memory_opcodes and any(isinstance(operand, str) and "[" in operand for operand in operands[1:]):
+            result.add_warning(
+                "JUNK_MEMORY_ACCESS",
+                f"Junk code accesses memory: {mnemonic}",
+                address,
+            )
 
     def validate_junk_code(
         self,
@@ -306,7 +347,7 @@ class SemanticValidator:
         registers_read: set[str] = set()
         has_unsafe: bool = False
 
-        for idx, ins in enumerate(junk_instructions):
+        for _idx, ins in enumerate(junk_instructions):
             mnemonic = self._get_mnemonic(ins)
             address = self._get_address(ins)
 
@@ -319,49 +360,13 @@ class SemanticValidator:
                     mnemonic=mnemonic,
                 )
 
-            op1 = self._get_operand(ins, 0)
-            op2 = self._get_operand(ins, 1)
-            op3 = self._get_operand(ins, 2)
-
-            for op in [op1, op2, op3]:
-                if isinstance(op, str):
-                    op_lower = op.lower().strip("[]")
-                    if op_lower in self.ALL_REGISTERS_64:
-                        if op.startswith("["):
-                            pass
-                        elif mnemonic in (
-                            "mov",
-                            "lea",
-                            "pop",
-                            "inc",
-                            "dec",
-                            "add",
-                            "sub",
-                            "xor",
-                            "and",
-                            "or",
-                            "shl",
-                            "shr",
-                            "rol",
-                            "ror",
-                        ):
-                            if op == op1:
-                                registers_written.add(op_lower)
-                            else:
-                                registers_read.add(op_lower)
-                        elif mnemonic in self.PUSH_OPCODES:
-                            pass
-                        elif mnemonic in self.POP_OPCODES:
-                            pass
-
-            if mnemonic in ("mov", "lea", "add", "sub", "xor", "and", "or", "cmp", "test"):
-                for op in [op2, op3]:
-                    if isinstance(op, str) and "[" in op:
-                        result.add_warning(
-                            "JUNK_MEMORY_ACCESS",
-                            f"Junk code accesses memory: {mnemonic}",
-                            address,
-                        )
+            operands = (
+                self._get_operand(ins, 0),
+                self._get_operand(ins, 1),
+                self._get_operand(ins, 2),
+            )
+            self._track_junk_registers(mnemonic, operands, registers_written, registers_read)
+            self._warn_junk_memory_access(result, mnemonic, address, operands)
 
         if has_unsafe:
             result.valid = False
@@ -378,7 +383,7 @@ class SemanticValidator:
     ) -> ValidationResult:
         """Validate control flow integrity."""
 
-        for idx, ins in enumerate(instructions):
+        for _idx, ins in enumerate(instructions):
             mnemonic = self._get_mnemonic(ins)
             address = self._get_address(ins)
 
@@ -416,8 +421,8 @@ def create_validator(arch: str = "x86_64") -> SemanticValidator:
 
 __all__ = [
     "SemanticValidator",
-    "ValidationResult",
     "ValidationIssue",
+    "ValidationResult",
     "ValidationSeverity",
     "create_validator",
 ]

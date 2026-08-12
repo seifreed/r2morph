@@ -8,9 +8,6 @@ from r2morph.core.constants import SEVERITY_ORDER as CORE_SEVERITY_ORDER
 from r2morph.reporting.gate_evaluator import (
     build_gate_failure_severity_priority as _build_gate_failure_severity_priority,
 )
-from r2morph.reporting.report_severity_parsing import (
-    _expected_severity_rank_from_failure as _expected_severity_rank_from_failure,
-)
 
 SEVERITY_ORDER = CORE_SEVERITY_ORDER
 

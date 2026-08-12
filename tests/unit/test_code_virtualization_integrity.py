@@ -13,6 +13,7 @@ from __future__ import annotations
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OPS,
     _CHECKSUM_ROTATES,
+    _checksum_bytes,
     _checksum_step,
     checksum_prologue_asm,
     compute_build_checksum,
@@ -32,6 +33,24 @@ def test_prologue_asm_emits_the_variant_step() -> None:
     asm = checksum_prologue_asm(15)
     assert f"  {op} dl, byte ptr [rdi]\n" in asm
     assert f"  {rotate} dl, {amount}\n" in asm
+
+
+def test_checksum_traversal_alternates_both_ends_in_variant_order() -> None:
+    code = bytes(range(7))
+
+    assert {
+        "low_first": tuple(_checksum_bytes(code, 0)),
+        "high_first": tuple(_checksum_bytes(code, 42)),
+    } == {
+        "low_first": (0, 6, 1, 5, 2, 4, 3),
+        "high_first": (6, 0, 5, 1, 4, 2, 3),
+    }
+
+
+def test_prologue_asm_reads_both_checksum_range_ends() -> None:
+    asm = checksum_prologue_asm(0)
+
+    assert "byte ptr [rdi]" in asm and "byte ptr [rcx]" in asm
 
 
 def test_compute_build_checksum_is_byte_sensitive() -> None:

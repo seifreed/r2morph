@@ -10,24 +10,21 @@ from r2morph.reporting.filtered_summary_risk_coverage_sources import (
 
 
 def _build_filtered_summary_risk_coverage_sections(
-    *,
     summary: dict[str, Any],
-    risky_pass_names: set[str],
-    structural_risk_pass_names: set[str],
-    symbolic_risk_pass_names: set[str],
-    covered_pass_names: set[str],
-    uncovered_pass_names: set[str],
-    clean_pass_names: set[str],
+    general_state: dict[str, Any],
 ) -> dict[str, Any]:
     """Build filtered_summary risk/coverage sections from persisted summary first."""
+    live_buckets = {
+        "risky": general_state["risky_pass_names"],
+        "structural": general_state["structural_risk_pass_names"],
+        "symbolic": general_state["symbolic_risk_pass_names"],
+        "covered": general_state["covered_pass_names"],
+        "uncovered": general_state["uncovered_pass_names"],
+        "clean": general_state["clean_pass_names"],
+    }
     buckets = _resolve_filtered_summary_risk_coverage_sources(
-        summary=summary,
-        risky_pass_names=risky_pass_names,
-        structural_risk_pass_names=structural_risk_pass_names,
-        symbolic_risk_pass_names=symbolic_risk_pass_names,
-        covered_pass_names=covered_pass_names,
-        uncovered_pass_names=uncovered_pass_names,
-        clean_pass_names=clean_pass_names,
+        summary,
+        live_buckets,
     )
     return {
         "pass_coverage_buckets": {

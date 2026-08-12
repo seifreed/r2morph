@@ -63,7 +63,7 @@ class DefUseAnalyzer:
 
     def _build_use_webs(self) -> None:
         """Build use webs from reaching definitions."""
-        for addr, block in self.cfg.blocks.items():
+        for _addr, block in self.cfg.blocks.items():
             for insn in block.instructions:
                 insn_addr = insn.get("offset", 0)
                 regs_used = self._extract_registers(insn)
@@ -79,7 +79,7 @@ class DefUseAnalyzer:
                     )
                     self._use_webs[insn_addr] = web
 
-    def _extract_registers(self, insn: dict) -> set[Register]:
+    def _extract_registers(self, insn: dict[str, Any]) -> set[Register]:
         """Extract registers mentioned in an instruction."""
         regs = set()
         disasm = insn.get("disasm", "").lower()
@@ -119,9 +119,8 @@ class DefUseAnalyzer:
                 for insn in block.instructions:
                     if insn.get("offset", 0) == prev_addr:
                         for defn in self._dataflow.get_block_definitions(block):
-                            if defn.register and defn.register.name == reg.name:
-                                if defn not in definitions:
-                                    definitions.append(defn)
+                            if defn.register and defn.register.name == reg.name and defn not in definitions:
+                                definitions.append(defn)
                         break
 
         return definitions

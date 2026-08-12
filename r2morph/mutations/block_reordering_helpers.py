@@ -2,21 +2,23 @@
 
 from __future__ import annotations
 
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+
+_MIN_BLOCK_COUNT = 2
+_MIN_REORDERABLE_FUNCTION_SIZE_BYTES = 20
+_MAX_BLOCK_COUNT = 50
 
 
 def can_reorder_function(func: dict[str, Any], blocks: list[dict[str, Any]]) -> bool:
     """Check if a function is safe to reorder."""
-    if len(blocks) < 2:
+    if len(blocks) < _MIN_BLOCK_COUNT:
         return False
-    if func.get("size", 0) < 20:
+    if func.get("size", 0) < _MIN_REORDERABLE_FUNCTION_SIZE_BYTES:
         return False
-    if len(blocks) > 50:
-        return False
-    return True
+    return len(blocks) <= _MAX_BLOCK_COUNT
 
 
 def generate_reordering(blocks: list[dict[str, Any]]) -> list[int]:
@@ -25,7 +27,7 @@ def generate_reordering(blocks: list[dict[str, Any]]) -> list[int]:
     if len(indices) > 1:
         reorderable = indices[1:]
         random.shuffle(reorderable)
-        return [indices[0]] + reorderable
+        return [indices[0], *reorderable]
     return indices
 
 

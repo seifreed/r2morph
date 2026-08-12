@@ -9,26 +9,34 @@ ValidationIssue/ValidationOutcome) is not a circular import.
 
 from __future__ import annotations
 
-from importlib import import_module  # noqa: F401
+from collections.abc import Callable
+from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.validation.binary_region_comparator import BinaryRegionComparator
+from r2morph.validation.mutation_annotator import MutationAnnotator
+from r2morph.validation.shellcode_equivalence import ShellcodeEquivalenceChecker
+from r2morph.validation.symbolic_precheck_flow import SymbolicPrecheckHooks, run_symbolic_precheck
+from r2morph.validation.symbolic_scope_gate import SymbolicScopeGate
+
+_MINIMUM_EQUIVALENCE_MEMBERS = 2
 
 
 class SymbolicValidator:
     """Bounded symbolic-equivalence checks for a pass, composed of
     extracted collaborators (clean-arch decomposition)."""
 
-    def __init__(self) -> None:
-        from r2morph.validation.binary_region_comparator import BinaryRegionComparator
-        from r2morph.validation.mutation_annotator import MutationAnnotator
-        from r2morph.validation.shellcode_equivalence import ShellcodeEquivalenceChecker
-        from r2morph.validation.symbolic_scope_gate import SymbolicScopeGate
-
+    def __init__(
+        self,
+        bridge_module_loader: Callable[[str], Any] = import_module,
+        shellcode_checker: Any | None = None,
+    ) -> None:
         self._scope_gate = SymbolicScopeGate()
         self._mutation_annotator = MutationAnnotator()
-        self._shellcode_checker = ShellcodeEquivalenceChecker()
+        self._shellcode_checker = shellcode_checker or ShellcodeEquivalenceChecker()
         self._binary_comparator = BinaryRegionComparator()
+        self._bridge_module_loader = bridge_module_loader
 
     def _build_instruction_substitution_symbolic_hint(self, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Add a narrow semantic hint for instruction substitutions from known equivalence groups."""
@@ -55,7 +63,12 @@ class SymbolicValidator:
             original = metadata.get("equivalence_original_pattern")
             replacement = metadata.get("equivalence_replacement_pattern")
             group_index = metadata.get("equivalence_group_index")
-            if isinstance(group_index, int) and original in members and replacement in members and len(members) >= 2:
+            if (
+                isinstance(group_index, int)
+                and original in members
+                and replacement in members
+                and len(members) >= _MINIMUM_EQUIVALENCE_MEMBERS
+            ):
                 supported.append(
                     {
                         "start_address": mutation["start_address"],
@@ -100,15 +113,15 @@ class SymbolicValidator:
 
     def _run_symbolic_precheck(self, binary: Binary, pass_result: dict[str, Any]) -> dict[str, Any]:
         """Run a bounded symbolic precheck for the experimental mode."""
-        from r2morph.validation.symbolic_precheck_flow import run_symbolic_precheck
-
         return run_symbolic_precheck(
             binary,
             pass_result,
-            supports_scope=self._scope_gate._supports_symbolic_scope,
-            estimate_steps=self._scope_gate._estimate_symbolic_region_steps,
-            build_hint=self._build_instruction_substitution_symbolic_hint,
-            compare_observables=self._shellcode_checker._compare_instruction_substitution_observables,
-            compare_transition=self._shellcode_checker._compare_instruction_substitution_transition,
-            import_module_fn=import_module,
+            SymbolicPrecheckHooks(
+                supports_scope=self._scope_gate._supports_symbolic_scope,
+                estimate_steps=self._scope_gate._estimate_symbolic_region_steps,
+                build_hint=self._build_instruction_substitution_symbolic_hint,
+                compare_observables=self._shellcode_checker._compare_instruction_substitution_observables,
+                compare_transition=self._shellcode_checker._compare_instruction_substitution_transition,
+            ),
+            self._bridge_module_loader,
         )

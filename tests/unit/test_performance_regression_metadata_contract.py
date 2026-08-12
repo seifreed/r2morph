@@ -14,29 +14,15 @@ def test_metadata_helpers_expose_expected_shape() -> None:
     assert "cpu_count" in env
 
 
-def test_benchmark_metadata_methods_delegate(monkeypatch) -> None:
+def test_benchmark_metadata_methods_match_runtime_helpers() -> None:
     benchmark = PerformanceBenchmark()
 
-    monkeypatch.setattr(
-        performance_regression_metadata,
-        "get_git_hash",
-        lambda: "deadbeef",
+    assert (
+        benchmark._get_git_hash(),
+        benchmark._get_cpu_count(),
+        benchmark._get_environment_info(),
+    ) == (
+        performance_regression_metadata.get_git_hash(),
+        performance_regression_metadata.get_cpu_count(),
+        performance_regression_metadata.get_environment_info(),
     )
-    monkeypatch.setattr(
-        performance_regression_metadata,
-        "get_cpu_count",
-        lambda: 42,
-    )
-    monkeypatch.setattr(
-        performance_regression_metadata,
-        "get_environment_info",
-        lambda: {"python_version": "3.14", "platform": "test", "cpu_count": "42"},
-    )
-
-    assert benchmark._get_git_hash() == "deadbeef"
-    assert benchmark._get_cpu_count() == 42
-    assert benchmark._get_environment_info() == {
-        "python_version": "3.14",
-        "platform": "test",
-        "cpu_count": "42",
-    }

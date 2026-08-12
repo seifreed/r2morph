@@ -13,6 +13,8 @@ assertion.
 
 from __future__ import annotations
 
+import itertools
+
 from r2morph.mutations.code_virtualization_layout import (
     field_offsets,
     idx_offsets,
@@ -106,5 +108,5 @@ def test_opcode_stays_first_and_fields_pack_contiguously() -> None:
             spans = sorted((offsets[name], offsets[name] + size) for name, size in fields)
             # Contiguous, non-overlapping packing immediately after the opcode.
             assert spans[0][0] == 1
-            for (_, end), (start, _) in zip(spans[:-1], spans[1:], strict=True):
+            for (_, end), (start, _) in itertools.pairwise(spans):
                 assert start == end

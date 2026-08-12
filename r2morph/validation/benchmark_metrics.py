@@ -42,4 +42,4 @@ def calculate_accuracy_metrics(expected: dict[str, Any], actual: dict[str, Any])
     )
 
 
-__all__ = ["measure_performance", "calculate_accuracy_metrics"]
+__all__ = ["calculate_accuracy_metrics", "measure_performance"]

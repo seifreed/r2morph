@@ -15,7 +15,7 @@ def infer_function_params(
     factory: Any,
     binary: Binary,
     func_addr: int,
-    disasm: list[dict],
+    disasm: list[dict[str, Any]],
     calling_conv: dict[str, Any],
 ) -> dict[str, TypeInfo]:
     """Infer function parameter types from disassembly."""
@@ -86,7 +86,7 @@ def propagate_interprocedural_params(
 
 
 __all__ = [
-    "infer_function_params",
     "infer_all_function_param_types",
+    "infer_function_params",
     "propagate_interprocedural_params",
 ]

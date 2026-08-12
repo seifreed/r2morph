@@ -181,10 +181,10 @@ if signer.needs_signing(binary_path):
 ```python
 # Option 1: Ad-hoc signing
 signer = CodeSigner()
-signer.sign_binary(binary_path, adhoc=True)
+signer.sign(binary_path, adhoc=True)
 
 # Option 2: With entitlements
-signer.sign_binary(
+signer.sign(
     binary_path,
     adhoc=True,
     entitlements=entitlements_path,
@@ -193,7 +193,7 @@ signer.sign_binary(
 
 # Option 3: Remove signature first
 signer.remove_signature(binary_path)
-signer.sign_binary(binary_path, adhoc=True)
+signer.sign(binary_path, adhoc=True)
 ```
 
 ### macOS: "signature not valid"
@@ -213,7 +213,7 @@ if not signer.verify(binary_path):
 1. Remove and re-sign:
    ```python
    signer.remove_signature(binary_path)
-   signer.sign_binary(binary_path, adhoc=True)
+   signer.sign(binary_path, adhoc=True)
    ```
 2. Check for code signature load command issues
 3. Verify `__LINKEDIT` segment is intact
@@ -224,7 +224,7 @@ if not signer.verify(binary_path):
 
 **Solutions:**
 ```python
-signer.sign_binary(
+signer.sign(
     binary_path,
     adhoc=True,
     hardened=True,  # Enable hardened runtime
@@ -465,7 +465,7 @@ def safe_mutation_flow(input_path, output_path):
         if platform == "Darwin":
             signer = CodeSigner()
             if signer.needs_signing(output_path):
-                signer.sign_binary(output_path, adhoc=True)
+                signer.sign(output_path, adhoc=True)
         
     # 7. Validate output
     if handler:

@@ -16,12 +16,14 @@ Transformations:
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
 
 logger = logging.getLogger(__name__)
+
+_RIP_RELATIVE_PREVIEW_COUNT = 5
 
 SHORT_JUMP_EXCLUSIVE = {
     "loop": ("dec rcx", "jnz"),
@@ -63,6 +65,118 @@ class ShortJumpPatchingPass(MutationPass):
         """
         return SHORT_JUMP_EXCLUSIVE.get(mnemonic.lower())
 
+    @staticmethod
+    def _get_blocks(binary: Any, function: dict[str, Any]) -> list[dict[str, Any]]:
+        try:
+            raw_blocks = binary.get_basic_blocks(function["addr"])
+            return [block for block in raw_blocks if isinstance(block, dict)]
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as error:
+            logger.debug(f"Failed to get blocks for {function.get('name')}: {error}")
+            return []
+
+    @staticmethod
+    def _disassemble_block(binary: Any, block: dict[str, Any]) -> list[dict[str, Any]]:
+        block_size = block.get("size", 0)
+        if block_size < 1 or binary.r2 is None:
+            return []
+        try:
+            raw_instructions = binary.r2.cmdj(f"pdj {block_size} @ 0x{block.get('addr', 0):x}") or []
+            return [instruction for instruction in raw_instructions if isinstance(instruction, dict)]
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as error:
+            logger.debug(f"Failed to disassemble block: {error}")
+            return []
+
+    def _assemble_patch(
+        self, binary: Any, function_address: int, instruction: dict[str, Any]
+    ) -> tuple[bytes, str, str, str] | None:
+        mnemonic = instruction.get("mnemonic", "").lower()
+        replacement = self._get_replacement(mnemonic)
+        operand = instruction.get("jump")
+        if operand is None:
+            operand_text = instruction.get("opstr", "") or instruction.get("disasm", "")
+            parts = operand_text.split()
+            operand = parts[-1] if parts else None
+        if replacement is None or operand is None:
+            return None
+        target = f"0x{operand:x}" if isinstance(operand, int) else operand
+        prefix, jump = replacement
+        assembled = binary.assemble(f"{prefix}\n{jump} {target}", function_addr=function_address)
+        instruction_size = instruction.get("size", 0)
+        if not assembled:
+            logger.debug(f"Failed to assemble replacement at 0x{instruction.get('addr', 0):x}")
+            return None
+        if len(assembled) > instruction_size:
+            logger.debug(
+                f"Replacement too large at 0x{instruction.get('addr', 0):x}: {len(assembled)} > {instruction_size}"
+            )
+            return None
+        return assembled, prefix, jump, target
+
+    @staticmethod
+    def _pad_patch(
+        binary: Any, function_address: int, instruction_address: int, instruction_size: int, assembled: bytes
+    ) -> bool:
+        if len(assembled) == instruction_size:
+            return True
+        nop_count = instruction_size - len(assembled)
+        nop_pad = binary.assemble("\n".join(["nop"] * nop_count), function_addr=function_address)
+        if nop_pad and binary.write_bytes(instruction_address + len(assembled), nop_pad):
+            return True
+        logger.warning(
+            "NOP padding failed at 0x%x (need %d bytes); rolling back short-jump patch",
+            instruction_address + len(assembled),
+            nop_count,
+        )
+        return False
+
+    def _write_patch(
+        self,
+        binary: Any,
+        function_address: int,
+        instruction: dict[str, Any],
+        patch: tuple[bytes, str, str, str],
+    ) -> bool:
+        assembled, prefix, jump, target = patch
+        address = instruction.get("addr", 0)
+        size = instruction.get("size", 0)
+        original_bytes = binary.read_bytes(address, size)
+        if not original_bytes:
+            return False
+        checkpoint = self._create_mutation_checkpoint("short_jump")
+        baseline = {}
+        if self._validation_manager is not None:
+            baseline = self._validation_manager.capture_structural_baseline(binary, function_address)
+        if not binary.write_bytes(address, assembled):
+            return False
+        if not self._pad_patch(binary, function_address, address, size, assembled):
+            self._rollback_uncommitted(
+                binary,
+                checkpoint,
+                reason="Short-jump NOP padding failed; aborting (fail-fast)",
+            )
+            return False
+        mnemonic = instruction.get("mnemonic", "").lower()
+        mutated_bytes = binary.read_bytes(address, size)
+        record = self._record_mutation(
+            function_address=function_address,
+            start_address=address,
+            end_address=address + size - 1,
+            original_bytes=original_bytes,
+            mutated_bytes=mutated_bytes if mutated_bytes else assembled,
+            original_disasm=instruction.get("disasm", ""),
+            mutated_disasm=f"{prefix}; {jump}",
+            mutation_kind="short_jump_patching",
+            metadata={
+                "original_mnemonic": mnemonic,
+                "replacement": f"{prefix}; {jump}",
+                "structural_baseline": baseline,
+            },
+        )
+        if self._validate_mutation_or_rollback(binary, record, checkpoint):
+            return False
+        logger.info(f"Patched {mnemonic} at 0x{address:x} -> {prefix}; {jump} {target}")
+        return True
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply short jump patching to the binary.
@@ -83,136 +197,21 @@ class ShortJumpPatchingPass(MutationPass):
         logger.info(f"Short jump patching: processing {len(functions)} functions")
 
         for func in functions:
-            try:
-                blocks = binary.get_basic_blocks(func["addr"])
-            except Exception as e:
-                logger.debug(f"Failed to get blocks for {func.get('name')}: {e}")
-                continue
-
             patches_in_func = 0
-
-            for block in blocks:
-                block_addr = block.get("addr", 0)
-                block_size = block.get("size", 0)
-
-                if block_size < 1:
-                    continue
-
-                try:
-                    insns = binary.r2.cmdj(f"pdj {block_size} @ 0x{block_addr:x}")
-                except Exception as e:
-                    logger.debug(f"Failed to disassemble block: {e}")
-                    continue
-
-                if not insns:
-                    continue
-
-                for insn in insns:
+            for block in self._get_blocks(binary, func):
+                for insn in self._disassemble_block(binary, block):
                     mnemonic = insn.get("mnemonic", "").lower()
-
-                    if mnemonic not in SHORT_JUMP_EXCLUSIVE:
+                    if (
+                        mnemonic not in SHORT_JUMP_EXCLUSIVE
+                        or random.random() > self.patch_probability
+                        or insn.get("size", 0) == 0
+                    ):
                         continue
-
-                    if random.random() > self.patch_probability:
+                    patch = self._assemble_patch(binary, func.get("addr", 0), insn)
+                    if patch is None or not self._write_patch(binary, func.get("addr", 0), insn, patch):
                         continue
-
-                    replacement = self._get_replacement(mnemonic)
-                    if not replacement:
-                        continue
-
-                    insn_addr = insn.get("addr", 0)
-                    insn_size = insn.get("size", 0)
-
-                    if insn_size == 0:
-                        continue
-
-                    operand = insn.get("jump", None)
-                    if operand is None:
-                        op_str = insn.get("opstr", "") or insn.get("disasm", "")
-                        parts = op_str.split()
-                        operand = parts[-1] if parts else None
-
-                    if operand is None:
-                        continue
-
-                    if isinstance(operand, int):
-                        target_label = f"0x{operand:x}"
-                    else:
-                        target_label = operand
-
-                    prefix_insn, jump_insn = replacement
-
-                    jump_asm = f"{prefix_insn}\n{jump_insn} {target_label}"
-
-                    assembled = binary.assemble(jump_asm, function_addr=func.get("addr"))
-                    if not assembled:
-                        logger.debug(f"Failed to assemble replacement at 0x{insn_addr:x}")
-                        continue
-
-                    if len(assembled) > insn_size:
-                        logger.debug(f"Replacement too large at 0x{insn_addr:x}: {len(assembled)} > {insn_size}")
-                        continue
-
-                    original_bytes = binary.read_bytes(insn_addr, insn_size)
-                    if not original_bytes:
-                        continue
-
-                    mutation_checkpoint = self._create_mutation_checkpoint("short_jump")
-                    baseline = {}
-                    if self._validation_manager is not None:
-                        baseline = self._validation_manager.capture_structural_baseline(binary, func.get("addr"))
-
-                    if binary.write_bytes(insn_addr, assembled):
-                        if len(assembled) < insn_size:
-                            # The shorter replacement is already written at
-                            # insn_addr; the tail still holds leftover bytes
-                            # from the longer original instruction. Those
-                            # bytes MUST be overwritten with NOPs or the
-                            # instruction stream is corrupt. If the padding
-                            # cannot be produced or written, roll the
-                            # already-written prefix back instead of
-                            # leaving (and recording) a broken patch.
-                            nop_count = insn_size - len(assembled)
-                            nop_pad = binary.assemble("\n".join(["nop"] * nop_count), function_addr=func.get("addr"))
-                            pad_ok = bool(nop_pad) and binary.write_bytes(insn_addr + len(assembled), nop_pad)
-                            if not pad_ok:
-                                logger.warning(
-                                    "NOP padding failed at 0x%x (need %d bytes); rolling back short-jump patch",
-                                    insn_addr + len(assembled),
-                                    nop_count,
-                                )
-                                self._rollback_uncommitted(
-                                    binary,
-                                    mutation_checkpoint,
-                                    reason="Short-jump NOP padding failed; aborting (fail-fast)",
-                                )
-                                continue
-
-                        mutated_bytes = binary.read_bytes(insn_addr, insn_size)
-                        record = self._record_mutation(
-                            function_address=func.get("addr"),
-                            start_address=insn_addr,
-                            end_address=insn_addr + insn_size - 1,
-                            original_bytes=original_bytes,
-                            mutated_bytes=mutated_bytes if mutated_bytes else assembled,
-                            original_disasm=insn.get("disasm", ""),
-                            mutated_disasm=f"{prefix_insn}; {jump_insn}",
-                            mutation_kind="short_jump_patching",
-                            metadata={
-                                "original_mnemonic": mnemonic,
-                                "replacement": f"{prefix_insn}; {jump_insn}",
-                                "structural_baseline": baseline,
-                            },
-                        )
-
-                        if self._validate_mutation_or_rollback(binary, record, mutation_checkpoint):
-                            continue
-
-                        patches_in_func += 1
-                        total_patched += 1
-                        logger.info(
-                            f"Patched {mnemonic} at 0x{insn_addr:x} -> {prefix_insn}; {jump_insn} {target_label}"
-                        )
+                    patches_in_func += 1
+                    total_patched += 1
 
             if patches_in_func > 0:
                 functions_patched += 1
@@ -250,10 +249,7 @@ def detect_rip_relative_displacement(insn: dict[str, Any]) -> bool:
     if "rip" in esil.lower():
         return True
 
-    if insn.get("type") in ["lea", "mov"] and "[rip" in disasm.lower():
-        return True
-
-    return False
+    return bool(insn.get("type") in ["lea", "mov"] and "[rip" in disasm.lower())
 
 
 def validate_instructions_for_rip_relative(instructions: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -335,7 +331,8 @@ class RIPRelativeValidationPass(MutationPass):
 
                 try:
                     insns = binary.r2.cmdj(f"pdj {block_size} @ 0x{block_addr:x}")
-                except Exception:
+                except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                    logger.debug("Cannot disassemble block at %#x: %s", block_addr, exc)
                     continue
 
                 for insn in insns:
@@ -362,10 +359,10 @@ class RIPRelativeValidationPass(MutationPass):
             logger.warning(
                 f"Found {len(rip_relative_found)} RIP-relative instructions in {functions_with_rip} functions"
             )
-            for item in rip_relative_found[:5]:
+            for item in rip_relative_found[:_RIP_RELATIVE_PREVIEW_COUNT]:
                 logger.warning(f"  0x{item['address']:x}: {item['disasm']} in {item['function']}")
-            if len(rip_relative_found) > 5:
-                logger.warning(f"  ... and {len(rip_relative_found) - 5} more")
+            if len(rip_relative_found) > _RIP_RELATIVE_PREVIEW_COUNT:
+                logger.warning(f"  ... and {len(rip_relative_found) - _RIP_RELATIVE_PREVIEW_COUNT} more")
 
         return {
             "valid": len(rip_relative_found) == 0,

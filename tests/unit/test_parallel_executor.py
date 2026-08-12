@@ -2,20 +2,15 @@
 Tests for parallel executor module.
 """
 
-from unittest.mock import Mock
-
 import pytest
 
 from r2morph.core.parallel_executor import (
-    MutationResult,
-    MutationTask,
     ParallelMutator,
-    ResolutionStrategy,
-    ResultMerger,
-    TaskStatus,
-    WorkQueue,
     create_parallel_mutator,
 )
+from r2morph.core.parallel_executor_models import MutationResult, MutationTask, ResolutionStrategy, TaskStatus
+from r2morph.core.parallel_result_merger import ResultMerger
+from r2morph.core.parallel_work_queue import WorkQueue
 
 
 class TestTaskStatus:
@@ -287,15 +282,13 @@ class TestResultMerger:
     def test_merge_results(self):
         """Test merging results."""
         merger = ResultMerger()
-        mock_binary = Mock()
-
         results = [
             MutationResult(1, 0x1000, "f1", True, mutations_applied=[{"a": 1}], bytes_modified=10, execution_time=0.1),
             MutationResult(2, 0x2000, "f2", True, mutations_applied=[{"b": 2}], bytes_modified=20, execution_time=0.2),
             MutationResult(3, 0x3000, "f3", False, error="failed"),
         ]
 
-        merged = merger.merge(mock_binary, results)
+        merged = merger.merge(None, results)
 
         assert merged["total_functions"] == 3
         assert merged["successful"] == 2
@@ -510,9 +503,7 @@ class TestResultMergerAdvanced:
     def test_merge_empty_results(self):
         """Test merging empty results."""
         merger = ResultMerger()
-        mock_binary = Mock()
-
-        merged = merger.merge(mock_binary, [])
+        merged = merger.merge(None, [])
 
         assert merged["total_functions"] == 0
         assert merged["successful"] == 0

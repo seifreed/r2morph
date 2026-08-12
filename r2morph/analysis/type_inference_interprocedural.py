@@ -34,8 +34,8 @@ def propagate_interprocedural_types(
 
 
 __all__ = [
-    "infer_function_params",
     "infer_all_function_param_types",
+    "infer_function_params",
     "propagate_interprocedural_params",
     "propagate_interprocedural_types",
 ]

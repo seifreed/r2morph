@@ -6,6 +6,9 @@ from typing import Any
 
 from .vm_handler_models import VMArchitecture, VMHandler, VMHandlerType
 
+_SHORT_HANDLER_INSTRUCTION_COUNT = 3
+_LONG_HANDLER_INSTRUCTION_COUNT = 50
+
 
 def calculate_handler_confidence(handler: VMHandler) -> float:
     """Calculate confidence score for handler classification."""
@@ -17,9 +20,9 @@ def calculate_handler_confidence(handler: VMHandler) -> float:
     if handler.equivalent_x86:
         confidence += 0.2
 
-    if len(handler.instructions) < 3:
+    if len(handler.instructions) < _SHORT_HANDLER_INSTRUCTION_COUNT:
         confidence -= 0.2
-    elif len(handler.instructions) > 50:
+    elif len(handler.instructions) > _LONG_HANDLER_INSTRUCTION_COUNT:
         confidence -= 0.1
 
     return max(0.0, min(1.0, confidence))

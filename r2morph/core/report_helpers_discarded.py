@@ -6,6 +6,8 @@ from typing import Any
 
 from r2morph.core.constants import IMPACT_SEVERITY_ORDER, UNKNOWN_SEVERITY_RANK
 
+_SKIP_INVALID_STAGE_REASON = "skip_invalid_pass"
+
 
 def _summarize_discarded_mutations(
     discarded_mutations: list[dict[str, Any]],
@@ -17,7 +19,7 @@ def _summarize_discarded_mutations(
         "symbolic_validation_failed": "high",
         "validation_failed": "high",
         "rollback": "medium",
-        "skip_invalid_pass": "medium",
+        _SKIP_INVALID_STAGE_REASON: "medium",
         "skip_invalid_mutation": "low",
         "unknown": "low",
     }

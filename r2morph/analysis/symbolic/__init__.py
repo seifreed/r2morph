@@ -31,20 +31,20 @@ except ImportError:
 SyntiaFramework = _SyntiaFramework
 
 __all__ = [
+    "MAX_CONSTRAINT_AST_DEPTH",
+    "SYNTIA_AVAILABLE",
     "AngrBridge",
     "ConstraintSolver",
     "ConstraintType",
-    "MAX_CONSTRAINT_AST_DEPTH",
     "MBAExpression",
     "PathExplorer",
     "ResistanceMeasurement",
-    "StateMetrics",
-    "SymbolicResistanceProbe",
     "SolverResult",
     "StateManager",
+    "StateMetrics",
     "StateSchedulingStrategy",
     "StructuralResistance",
     "StructuralResistanceProbe",
+    "SymbolicResistanceProbe",
     "SyntiaFramework",
-    "SYNTIA_AVAILABLE",
 ]

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 from r2morph.mutations.full_cff import DispatcherBlock
 from r2morph.mutations.full_cff_helpers import (
     assemble_dispatcher,
@@ -58,17 +56,3 @@ def test_full_cff_helpers_cover_selection_and_generation() -> None:
     assert generate_arm_dispatcher(state_table, 64)[0] == "mov x0, #0"
     assert assemble_dispatcher(binary, ["mov rax, 0", "ret"]) is not None
     assert assemble_dispatcher(binary, ["nop"]) is not None
-
-
-def test_full_cff_helpers_allow_mocked_binary_contexts() -> None:
-    binary = MagicMock()
-    binary.get_basic_blocks.return_value = [object(), object(), object(), object()]
-    binary.assemble.return_value = b"\x90"
-
-    candidates = select_candidates(
-        binary,
-        [{"name": "valid", "offset": 0x1000, "size": 100}],
-        min_blocks=3,
-    )
-    assert candidates[0]["_block_count"] == 4
-    assert assemble_dispatcher(binary, ["nop", "nop"]) == b"\x90\x90"

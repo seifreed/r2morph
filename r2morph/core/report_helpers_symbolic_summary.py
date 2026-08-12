@@ -169,9 +169,10 @@ def _build_symbolic_summary_for_pass(
     coverage_rows = _summarize_symbolic_coverage_by_pass(pass_mutations)
     issue_rows = _summarize_symbolic_issue_passes(pass_mutations)
     coverage = coverage_rows[0] if coverage_rows else {"pass_name": pass_name, **empty_symbolic_counts()}
-    severity = (
-        issue_rows[0]["severity"] if issue_rows else "clean" if coverage["symbolic_requested"] > 0 else "not-requested"
-    )
+    symbolic_requested = coverage.get("symbolic_requested", 0)
+    if not isinstance(symbolic_requested, int):
+        raise TypeError("symbolic_requested must be an integer")
+    severity = issue_rows[0]["severity"] if issue_rows else "clean" if symbolic_requested > 0 else "not-requested"
     return {
         **coverage,
         "severity": severity,

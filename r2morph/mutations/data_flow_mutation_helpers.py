@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
-import random
 from typing import Any
+
+import r2morph.core.randomness as random
+from r2morph.core.constants import ARCH_BITS_64
 
 SAFE_INSTRUCTIONS = {
     "nop",
@@ -167,7 +169,7 @@ def generate_dead_code_with_liveness(dead_regs: set[str], bits: int, size: int) 
 
     reg = random.choice(list(dead_regs))
 
-    if bits == 64:
+    if bits == ARCH_BITS_64:
         patterns = [
             [f"push {reg}", f"mov {reg}, 0", f"xor {reg}, {reg}", f"pop {reg}"],
             [f"push {reg}", f"add {reg}, 1", f"sub {reg}, 1", f"pop {reg}"],

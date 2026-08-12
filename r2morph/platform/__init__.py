@@ -9,7 +9,7 @@ from r2morph.platform.pe_handler import PEHandler
 
 __all__ = [
     "CodeSigner",
-    "PEHandler",
     "ELFHandler",
     "MachOHandler",
+    "PEHandler",
 ]

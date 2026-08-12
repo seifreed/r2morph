@@ -54,7 +54,8 @@ def _open_r2pipe_with_retry(binary: Any) -> None:
             _discard_failed_r2(binary)
             if attempt < _R2PIPE_OPEN_ATTEMPTS:
                 time.sleep(_R2PIPE_OPEN_RETRY_BACKOFF_SECONDS * attempt)
-    assert last_error is not None
+    if last_error is None:
+        raise RuntimeError("r2pipe open retry loop completed without an error")
     raise last_error
 
 

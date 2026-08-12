@@ -18,6 +18,9 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+_MAX_HISTORY_DEPTH = 50
+_MAX_CONSTRAINT_COUNT = 20
+
 
 class ImprovedStateMerging:
     """Advanced state merging for symbolic execution."""
@@ -38,7 +41,7 @@ class ImprovedStateMerging:
                 merge_points.append(addr)
 
         loops = cfg.find_loops()
-        for from_addr, to_addr in loops:
+        for _from_addr, to_addr in loops:
             if to_addr not in merge_points:
                 merge_points.append(to_addr)
 
@@ -53,14 +56,17 @@ class ImprovedStateMerging:
             if state1.addr != state2.addr:
                 return False
 
-            if hasattr(state1, "history") and hasattr(state2, "history"):
-                if state1.history.depth > 50 or state2.history.depth > 50:
-                    return True
-
-            if len(state1.solver.constraints) > 20 or len(state2.solver.constraints) > 20:
+            if (
+                hasattr(state1, "history")
+                and hasattr(state2, "history")
+                and (state1.history.depth > _MAX_HISTORY_DEPTH or state2.history.depth > _MAX_HISTORY_DEPTH)
+            ):
                 return True
 
-            return False
+            return bool(
+                len(state1.solver.constraints) > _MAX_CONSTRAINT_COUNT
+                or len(state2.solver.constraints) > _MAX_CONSTRAINT_COUNT
+            )
 
         except Exception:
             return False

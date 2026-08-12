@@ -3,7 +3,6 @@ Tests for parallel mutation execution.
 """
 
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from r2morph.core.parallel import (
     DependencyResolver,
@@ -15,6 +14,10 @@ from r2morph.core.parallel import (
     execute_parallel,
 )
 from r2morph.mutations.base import MutationPass
+
+
+class _Binary:
+    path = Path("/tmp/test")
 
 
 class FakePass(MutationPass):
@@ -158,10 +161,7 @@ class TestParallelMutationEngine:
 
     def test_single_pass_execution(self):
         """Execute a single pass."""
-        mock_binary = MagicMock()
-        mock_binary.path = Path("/tmp/test")
-
-        engine = ParallelMutationEngine(mock_binary, max_workers=1, use_checkpoints=False)
+        engine = ParallelMutationEngine(_Binary(), max_workers=1, use_checkpoints=False)
         passes = [FakePass("test")]
 
         results = engine.execute(passes)
@@ -171,10 +171,7 @@ class TestParallelMutationEngine:
 
     def test_multiple_independent_passes(self):
         """Execute multiple independent passes."""
-        mock_binary = MagicMock()
-        mock_binary.path = Path("/tmp/test")
-
-        engine = ParallelMutationEngine(mock_binary, max_workers=2, use_checkpoints=False)
+        engine = ParallelMutationEngine(_Binary(), max_workers=2, use_checkpoints=False)
         passes = [
             FakePass("pass1", result={"mutations_applied": 1}),
             FakePass("pass2", result={"mutations_applied": 2}),
@@ -187,10 +184,7 @@ class TestParallelMutationEngine:
 
     def test_failed_pass_with_stop_on_error(self):
         """Stop on pass failure when configured."""
-        mock_binary = MagicMock()
-        mock_binary.path = Path("/tmp/test")
-
-        engine = ParallelMutationEngine(mock_binary, max_workers=1, use_checkpoints=False)
+        engine = ParallelMutationEngine(_Binary(), max_workers=1, use_checkpoints=False)
         passes = [
             FakePass("pass1", should_fail=True),
             FakePass("pass2"),
@@ -202,10 +196,7 @@ class TestParallelMutationEngine:
 
     def test_continue_on_error(self):
         """Continue after pass failure when configured."""
-        mock_binary = MagicMock()
-        mock_binary.path = Path("/tmp/test")
-
-        engine = ParallelMutationEngine(mock_binary, max_workers=1, use_checkpoints=False)
+        engine = ParallelMutationEngine(_Binary(), max_workers=1, use_checkpoints=False)
         passes = [
             FakePass("pass1", should_fail=True),
             FakePass("pass2"),
@@ -223,10 +214,7 @@ class TestParallelMutationEngine:
 
     def test_get_results_summary(self):
         """Get results summary."""
-        mock_binary = MagicMock()
-        mock_binary.path = Path("/tmp/test")
-
-        engine = ParallelMutationEngine(mock_binary, max_workers=1, use_checkpoints=False)
+        engine = ParallelMutationEngine(_Binary(), max_workers=1, use_checkpoints=False)
         passes = [
             FakePass("pass1", result={"mutations_applied": 3}),
             FakePass("pass2", result={"mutations_applied": 2}),
@@ -245,31 +233,25 @@ class TestExecuteParallel:
 
     def test_execute_parallel_basic(self):
         """Test basic parallel execution."""
-        mock_binary = MagicMock()
-        mock_binary.path = Path("/tmp/test")
-
         passes = [
             FakePass("pass1"),
             FakePass("pass2"),
         ]
 
-        results = execute_parallel(mock_binary, passes)
+        results = execute_parallel(_Binary(), passes)
 
         assert "pass1" in results
         assert "pass2" in results
 
     def test_execute_parallel_with_workers(self):
         """Test parallel execution with worker count."""
-        mock_binary = MagicMock()
-        mock_binary.path = Path("/tmp/test")
-
         passes = [
             FakePass("pass1"),
             FakePass("pass2"),
             FakePass("pass3"),
         ]
 
-        results = execute_parallel(mock_binary, passes, max_workers=2)
+        results = execute_parallel(_Binary(), passes, max_workers=2)
 
         assert len(results) == 3
 

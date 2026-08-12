@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from typing import Any
 
 from r2morph.core.config import EngineConfig
@@ -29,20 +30,14 @@ def mutation_config(section: Any, seed: int | None, offset: int) -> dict[str, An
 
 def load_mutation_pass_types() -> dict[str, type]:
     """Lazy import mutation passes so stable report/validate flows avoid extra imports."""
-    from r2morph.mutations import (
-        BlockReorderingPass,
-        InstructionExpansionPass,
-        InstructionSubstitutionPass,
-        NopInsertionPass,
-        RegisterSubstitutionPass,
-    )
+    mutations_module = import_module("r2morph.mutations")
 
     return {
-        "nop": NopInsertionPass,
-        "substitute": InstructionSubstitutionPass,
-        "register": RegisterSubstitutionPass,
-        "expand": InstructionExpansionPass,
-        "block": BlockReorderingPass,
+        "nop": mutations_module.NopInsertionPass,
+        "substitute": mutations_module.InstructionSubstitutionPass,
+        "register": mutations_module.RegisterSubstitutionPass,
+        "expand": mutations_module.InstructionExpansionPass,
+        "block": mutations_module.BlockReorderingPass,
     }
 
 

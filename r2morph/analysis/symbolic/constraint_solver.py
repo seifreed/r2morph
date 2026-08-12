@@ -186,9 +186,7 @@ class ConstraintSolver:
 
     def check_semantic_equivalence(self, expr1: str, expr2: str, variables: set[str]) -> SolverResult:
         return _constraint_solver_analysis.check_semantic_equivalence(
-            expr1,
-            expr2,
-            variables,
+            _constraint_solver_analysis.SemanticEquivalenceQuery(expr1, expr2, variables),
             z3,
             self._parse_expression_to_z3,
             self.timeout,

@@ -14,9 +14,9 @@ side.
 
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass
 
+import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_fold import ADDR_VARIANT_BITS, ARITH_VARIANT_BITS
 
 

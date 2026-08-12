@@ -2,21 +2,18 @@
 
 from __future__ import annotations
 
+import os
 import platform
-import subprocess
 import sys
+
+from r2morph.adapters.process import run_process
 
 
 def get_git_hash() -> str:
     """Return the current git commit hash or a safe fallback."""
     try:
-        result = subprocess.run(
-            ["git", "rev-parse", "HEAD"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        return result.stdout.strip()[:12]
+        result = run_process(["git", "rev-parse", "HEAD"], check=True)
+        return result.stdout_text.strip()[:12]
     except Exception:
         return "unknown"
 
@@ -24,8 +21,6 @@ def get_git_hash() -> str:
 def get_cpu_count() -> int:
     """Return the detected CPU count, defaulting to 1."""
     try:
-        import os
-
         return os.cpu_count() or 1
     except Exception:
         return 1

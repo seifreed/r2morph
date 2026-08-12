@@ -19,6 +19,8 @@ from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
 
 logger = logging.getLogger(__name__)
 
+_MIN_PHI_PREDECESSORS = 2
+
 
 @dataclass
 class _RenameFrame:
@@ -164,7 +166,7 @@ class SSAConverter:
                 idom[addr] = None
 
         for block_addr, ssa_block in ssa_blocks.items():
-            if len(ssa_block.predecessors) >= 2:
+            if len(ssa_block.predecessors) >= _MIN_PHI_PREDECESSORS:
                 for pred_addr in ssa_block.predecessors:
                     runner: int | None = pred_addr
                     idom_block = idom.get(block_addr)
@@ -236,7 +238,7 @@ class SSAConverter:
         )
 
         operands: list[SSAVariable] = []
-        for pred_addr in predecessor_addrs:
+        for _pred_addr in predecessor_addrs:
             operand_version = max(0, version - 1)
             operands.append(
                 SSAVariable(
@@ -440,9 +442,8 @@ class SSAConverter:
             SSAVariable or None if not found
         """
         for block_addr, ssa_block in ssa_blocks.items():
-            if block_addr <= address:
-                if reg_name in ssa_block.definitions:
-                    return ssa_block.definitions[reg_name]
+            if block_addr <= address and reg_name in ssa_block.definitions:
+                return ssa_block.definitions[reg_name]
 
         return None
 

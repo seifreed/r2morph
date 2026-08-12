@@ -8,9 +8,12 @@ generators, and packing utilities used by
 
 from __future__ import annotations
 
-import random
 from dataclasses import dataclass, field
 from enum import Enum
+
+import r2morph.core.randomness as random
+
+_MAX_INLINE_KEY_SIZE_BYTES = 8
 
 
 class EncryptionScheme(Enum):
@@ -90,7 +93,7 @@ def rol_encrypt(data: bytes, shift: int) -> bytes:
     return bytes(result)
 
 
-def rc4_init(key: bytes) -> list:
+def rc4_init(key: bytes) -> list[int]:
     """Initialize RC4 S-box."""
     s_box = list(range(256))
     j = 0
@@ -142,7 +145,7 @@ def generate_xor_decrypt_stub_x64(key: bytes, data_size: int) -> bytes:
 .decrypt_loop:
     mov al, [rdi]
 """
-    if len(key) <= 8:
+    if len(key) <= _MAX_INLINE_KEY_SIZE_BYTES:
         for k in key:
             stub_asm += f"    xor al, 0x{k:02X}\n"
     else:
@@ -239,7 +242,7 @@ def generate_polymorphic_stub_x64(key: bytes, data_size: int, seed: int | None =
     )
 
     key_size = len(key)
-    if key_size <= 8:
+    if key_size <= _MAX_INLINE_KEY_SIZE_BYTES:
         key_load = "\n".join([f"mov {tmp_reg}, 0x" + key[::-1].hex() + "  ; key"])
     else:
         key_load = f"lea {tmp_reg}, [rip + key_table]"

@@ -15,7 +15,7 @@ class _Binary:
     def __init__(self) -> None:
         self.disasm_calls = 0
 
-    def get_function_disasm(self, function_address: int):  # noqa: ARG002
+    def get_function_disasm(self, function_address: int):
         self.disasm_calls += 1
         return [
             {"offset": 0x1000, "type": "mov"},

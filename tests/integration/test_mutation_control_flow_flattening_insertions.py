@@ -4,7 +4,6 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
-from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_strategies import (
     add_opaque_predicate,
     insert_dead_code_with_predicate,
@@ -33,7 +32,7 @@ def test_control_flow_flattening_insertion_paths(tmp_path: Path):
 
         # Create slack space and try opaque predicate insertion
         bin_obj.nop_fill(addr, 24)
-        inserted = add_opaque_predicate(bin_obj, addr, 24, arch, bits, OpaquePredicateGenerator())
+        inserted = add_opaque_predicate(bin_obj, addr, 24, arch, bits)
         assert isinstance(inserted, bool)
 
         # Try dead-code insertion on NOPs

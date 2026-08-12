@@ -19,6 +19,7 @@ from r2morph.mutations.code_virtualization_engine_isa import build_engine_isa_sp
 from r2morph.mutations.code_virtualization_engine_microops import (
     _MNEMONIC_OF,
     MICROOP_BINOP_KINDS,
+    MicroopHandlerConfig,
     microop_handler_body,
 )
 from r2morph.mutations.code_virtualization_fold import addr_fold, arith_fold
@@ -51,8 +52,11 @@ def test_arith_variant_flows_into_the_microop_handler() -> None:
     k = "byte ptr [rsp + 0x80]"
     kd = "dword ptr [rsp + 0x1d8]"
     kq = "qword ptr [rsp + 0x1e0]"
-    canonical = microop_handler_body(_ADD_KIND, 64, k, kd, kq, 0x80, 0x88, 0)
-    assert any(microop_handler_body(_ADD_KIND, 64, k, kd, kq, 0x80, 0x88, v) != canonical for v in range(1, 64))
+    canonical = microop_handler_body(_ADD_KIND, 64, MicroopHandlerConfig(k, kd, kq, 0x80, 0x88))
+    assert any(
+        microop_handler_body(_ADD_KIND, 64, MicroopHandlerConfig(k, kd, kq, 0x80, 0x88, v)) != canonical
+        for v in range(1, 64)
+    )
 
 
 def test_engine_addr_seed_zero_is_canonical() -> None:

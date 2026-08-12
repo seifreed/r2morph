@@ -12,6 +12,7 @@ This module provides:
 """
 
 import logging
+from functools import cache
 from typing import Any
 
 from r2morph.mutations.pass_dependency_catalogs import default_pass_dependencies
@@ -168,23 +169,22 @@ class PassDependencyRegistry:
         violations: list[DependencyViolation] = []
         executed: set[str] = set()
 
-        for i, pass_name in enumerate(passes):
+        for _i, pass_name in enumerate(passes):
             deps = self.get_dependencies(pass_name)
 
             for dep in deps:
                 if dep.dep_type == DependencyType.REQUIRES:
-                    if dep.target_pass not in executed:
-                        if not dep.optional:
-                            violations.append(
-                                DependencyViolation(
-                                    source_pass=pass_name,
-                                    target_pass=dep.target_pass,
-                                    violation_type="missing_requirement",
-                                    message=f"{pass_name} requires {dep.target_pass} to run first"
-                                    + (f" ({dep.reason})" if dep.reason else ""),
-                                    severity="error",
-                                )
+                    if dep.target_pass not in executed and not dep.optional:
+                        violations.append(
+                            DependencyViolation(
+                                source_pass=pass_name,
+                                target_pass=dep.target_pass,
+                                violation_type="missing_requirement",
+                                message=f"{pass_name} requires {dep.target_pass} to run first"
+                                + (f" ({dep.reason})" if dep.reason else ""),
+                                severity="error",
                             )
+                        )
 
                 elif dep.dep_type == DependencyType.CONFLICTS_WITH:
                     if dep.target_pass in executed:
@@ -212,18 +212,17 @@ class PassDependencyRegistry:
                             )
                         )
 
-                elif dep.dep_type == DependencyType.RECOMMENDS:
-                    if dep.target_pass not in executed:
-                        violations.append(
-                            DependencyViolation(
-                                source_pass=pass_name,
-                                target_pass=dep.target_pass,
-                                violation_type="missing_recommendation",
-                                message=f"{pass_name} works better after {dep.target_pass}"
-                                + (f" ({dep.reason})" if dep.reason else ""),
-                                severity="warning",
-                            )
+                elif dep.dep_type == DependencyType.RECOMMENDS and dep.target_pass not in executed:
+                    violations.append(
+                        DependencyViolation(
+                            source_pass=pass_name,
+                            target_pass=dep.target_pass,
+                            violation_type="missing_recommendation",
+                            message=f"{pass_name} works better after {dep.target_pass}"
+                            + (f" ({dep.reason})" if dep.reason else ""),
+                            severity="warning",
                         )
+                    )
 
             executed.add(pass_name)
 
@@ -254,16 +253,18 @@ class PassDependencyRegistry:
                 can_add = True
 
                 for dep in self.get_dependencies(pass_name):
-                    if dep.dep_type == DependencyType.REQUIRES:
-                        if dep.target_pass in pass_set and dep.target_pass not in ordered:
-                            if not dep.optional:
-                                can_add = False
-                                break
+                    if (
+                        dep.dep_type == DependencyType.REQUIRES
+                        and dep.target_pass in pass_set
+                        and dep.target_pass not in ordered
+                        and not dep.optional
+                    ):
+                        can_add = False
+                        break
 
-                    elif dep.dep_type == DependencyType.REQUIRES_ABSENCE:
-                        if dep.target_pass in ordered:
-                            can_add = False
-                            break
+                    if dep.dep_type == DependencyType.REQUIRES_ABSENCE and dep.target_pass in ordered:
+                        can_add = False
+                        break
 
                 if can_add:
                     ordered.append(pass_name)
@@ -312,9 +313,7 @@ class PassDependencyRegistry:
         }
 
 
-_pass_dependency_registry: PassDependencyRegistry | None = None
-
-
+@cache
 def get_pass_dependency_registry() -> PassDependencyRegistry:
     """
     Get the global pass dependency registry.
@@ -322,10 +321,7 @@ def get_pass_dependency_registry() -> PassDependencyRegistry:
     Returns:
         The global PassDependencyRegistry instance
     """
-    global _pass_dependency_registry
-    if _pass_dependency_registry is None:
-        _pass_dependency_registry = PassDependencyRegistry()
-    return _pass_dependency_registry
+    return PassDependencyRegistry()
 
 
 def validate_pipeline_order(passes: list[str]) -> tuple[bool, list[DependencyViolation]]:

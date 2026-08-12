@@ -34,10 +34,10 @@ The decrypt_stub is polymorphic and regenerated each time.
 from __future__ import annotations
 
 import logging
-import random
 import struct
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.self_modifying_code_helpers import (
     DecryptStub,
@@ -58,6 +58,11 @@ from r2morph.mutations.self_modifying_code_helpers import (
 from r2morph.relocations.cave_injector import CodeCaveInjector
 
 logger = logging.getLogger(__name__)
+
+_MIN_ENCRYPTABLE_FUNCTION_SIZE_BYTES = 16
+_RELATIVE_JUMP_SIZE_BYTES = 5
+_SIGNED_32_MIN = -(1 << 31)
+_SIGNED_32_MAX = (1 << 31) - 1
 
 
 class SelfModifyingCodePass(MutationPass):
@@ -134,7 +139,7 @@ class SelfModifyingCodePass(MutationPass):
         functions = binary.get_functions()
 
         for func in functions:
-            if func.get("size", 0) < 16:
+            if func.get("size", 0) < _MIN_ENCRYPTABLE_FUNCTION_SIZE_BYTES:
                 continue
 
             flags = func.get("flags", [])
@@ -239,14 +244,39 @@ class SelfModifyingCodePass(MutationPass):
         # --- Jump to original function (now decrypted) ---
         jmp_target = func_addr
         # Offset is relative to the address after the jmp instruction
-        jmp_from = cave_addr + len(stub) + 5  # 5 = size of jmp rel32
+        jmp_from = cave_addr + len(stub) + _RELATIVE_JUMP_SIZE_BYTES
         rel_offset = jmp_target - jmp_from
-        if rel_offset < -2147483648 or rel_offset > 2147483647:
+        if rel_offset < _SIGNED_32_MIN or rel_offset > _SIGNED_32_MAX:
             logger.debug(f"Stub jmp rel32 out of range ({rel_offset}) for func 0x{func_addr:x}; skipping")
             return None
         stub += b"\xe9" + struct.pack("<i", rel_offset)
 
         return bytes(stub)
+
+    @staticmethod
+    def _write_transformation(
+        binary: Any,
+        func_addr: int,
+        cave_addr: int,
+        stub_bytes: bytes,
+        encrypted_body: bytes,
+    ) -> bytes | None:
+        if not binary.write_bytes(cave_addr, stub_bytes):
+            logger.debug(f"Failed to write stub at cave 0x{cave_addr:x}")
+            return None
+        if not binary.write_bytes(func_addr + 5, encrypted_body):
+            logger.debug(f"Failed to write encrypted body at 0x{func_addr + 5:x}")
+            return None
+
+        jump_offset = cave_addr - (func_addr + _RELATIVE_JUMP_SIZE_BYTES)
+        if not _SIGNED_32_MIN <= jump_offset <= _SIGNED_32_MAX:
+            logger.debug(f"func->cave jmp rel32 out of range ({jump_offset}) for func 0x{func_addr:x}; skipping")
+            return None
+        jump_bytes = b"\xe9" + struct.pack("<i", jump_offset)
+        if not binary.write_bytes(func_addr, jump_bytes):
+            logger.debug(f"Failed to write jmp at 0x{func_addr:x}")
+            return None
+        return jump_bytes
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -282,7 +312,7 @@ class SelfModifyingCodePass(MutationPass):
             func_addr = func.get("addr", 0)
             func_size = func.get("size", 0)
 
-            if func_size < 16:
+            if func_size < _MIN_ENCRYPTABLE_FUNCTION_SIZE_BYTES:
                 continue
 
             key = self._generate_key(size=1)
@@ -294,7 +324,7 @@ class SelfModifyingCodePass(MutationPass):
                 logger.debug(f"Could not read function at 0x{func_addr:x}: {e}")
                 continue
 
-            if not original_bytes or len(original_bytes) < 5:
+            if not original_bytes or len(original_bytes) < _RELATIVE_JUMP_SIZE_BYTES:
                 continue
 
             # Save the first 5 bytes (will be overwritten by the jmp)
@@ -340,24 +370,8 @@ class SelfModifyingCodePass(MutationPass):
             if stub_bytes is None:
                 continue
 
-            # 1. Write the decryption stub into the cave
-            if not binary.write_bytes(cave_addr, stub_bytes):
-                logger.debug(f"Failed to write stub at cave 0x{cave_addr:x}")
-                continue
-
-            # 2. Write encrypted body over original function bytes (after first 5)
-            if not binary.write_bytes(func_addr + 5, encrypted_body):
-                logger.debug(f"Failed to write encrypted body at 0x{func_addr + 5:x}")
-                continue
-
-            # 3. Write a 5-byte jmp from func_addr to the stub
-            jmp_rel = cave_addr - (func_addr + 5)
-            if jmp_rel < -2147483648 or jmp_rel > 2147483647:
-                logger.debug(f"func->cave jmp rel32 out of range ({jmp_rel}) for func 0x{func_addr:x}; skipping")
-                continue
-            jmp_bytes = b"\xe9" + struct.pack("<i", jmp_rel)
-            if not binary.write_bytes(func_addr, jmp_bytes):
-                logger.debug(f"Failed to write jmp at 0x{func_addr:x}")
+            jmp_bytes = self._write_transformation(binary, func_addr, cave_addr, stub_bytes, encrypted_body)
+            if jmp_bytes is None:
                 continue
 
             # Record the mutation

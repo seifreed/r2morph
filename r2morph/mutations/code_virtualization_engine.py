@@ -30,11 +30,10 @@ the function untouched. Zero virtualizations always beats a corrupt one.
 
 from __future__ import annotations
 
-import random
-
+import r2morph.core.randomness as random
+from r2morph.mutations.code_virtualization_engine_build import build_vm_blob
 from r2morph.mutations.code_virtualization_engine_codegen import (
     _interpreter_asm,
-    build_vm_blob,
     encode_bytecode,
 )
 from r2morph.mutations.code_virtualization_engine_common import (
@@ -69,6 +68,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
 # straight-line (no branches), so insertion needs no target remap. Kept modest so
 # the per-run execution cost stays bounded. Mirrors the region lifter's tuning.
 _JUNK_OP_PROBABILITY = 0.35
+_INSTRUCTION_PART_COUNT = 2
 
 
 def inject_junk_ops(
@@ -137,6 +137,19 @@ def _register_slot(name: str) -> tuple[int, int] | None:
     return None
 
 
+def _decode_source(mnemonic: str, dst_slot: int, width: int, source: str) -> VirtualizedOp | None:
+    source_slot = _register_slot(source)
+    if source_slot is not None:
+        slot, source_width = source_slot
+        return VirtualizedOp(mnemonic, dst_slot, slot, False, width) if source_width == width else None
+    if any(marker in source for marker in ("[", "]", "rip", ":", "ptr")):
+        return None
+    immediate = _parse_immediate(source)
+    if immediate is None or not immediate_fits_width(immediate, width):
+        return None
+    return VirtualizedOp(mnemonic, dst_slot, immediate, True, width)
+
+
 def decode_instruction(disasm: str) -> VirtualizedOp | None:
     """
     Decode one disassembled instruction into a :class:`VirtualizedOp`.
@@ -146,21 +159,16 @@ def decode_instruction(disasm: str) -> VirtualizedOp | None:
     any stack-pointer involvement, or a register-to-register op whose operands
     disagree on width.
     """
-    text = disasm.strip()
-    if " " not in text:
+    parts = disasm.strip().split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
         return None
 
-    mnemonic, operand_text = text.split(None, 1)
-    mnemonic = mnemonic.lower()
+    mnemonic, operand_text = parts
+    mnemonic = "mov" if mnemonic.lower() == "movabs" else mnemonic.lower()
     # ``movabs`` is the disassembler's spelling of a ``mov`` with a 64-bit
     # immediate (or an absolute moffs, which the memory-operand guard below
     # rejects); treat it as a plain ``mov`` so 64-bit constants virtualize.
-    if mnemonic == "movabs":
-        mnemonic = "mov"
-    if mnemonic not in SUPPORTED_MNEMONICS:
-        return None
-
-    if "," not in operand_text:
+    if mnemonic not in SUPPORTED_MNEMONICS or "," not in operand_text:
         return None
     dst_token, src_token = operand_text.split(",", 1)
     dst = _register_slot(_normalize_operand(dst_token))
@@ -169,48 +177,33 @@ def decode_instruction(disasm: str) -> VirtualizedOp | None:
         return None
     dst_slot, width = dst
 
-    src = _register_slot(src_name)
-    if src is not None:
-        src_slot, src_width = src
-        if src_width != width:
-            return None
-        return VirtualizedOp(mnemonic, dst_slot, src_slot, is_immediate=False, width=width)
-
-    # Reject memory/RIP/segment operands - anything that is not a bare GP
-    # register or a plain immediate.
-    if any(marker in src_name for marker in ("[", "]", "rip", ":", "ptr")):
-        return None
-
-    immediate = _parse_immediate(src_name)
-    if immediate is None or not immediate_fits_width(immediate, width):
-        return None
-    return VirtualizedOp(mnemonic, dst_slot, immediate, is_immediate=True, width=width)
+    return _decode_source(mnemonic, dst_slot, width, src_name)
 
 
 __all__ = [
     "GP_REGISTERS",
-    "REGISTER_INDEX",
     "REGISTER32_INDEX",
+    "REGISTER_INDEX",
     "RSP_INDEX",
     "SUPPORTED_MNEMONICS",
-    "_SHIFT_KINDS",
     "_OPAQUE_VARIANTS",
-    "_opaque_predicate_asm",
-    "_interpreter_asm",
+    "_SHIFT_KINDS",
     "VMScheme",
-    "VirtualizedOp",
-    "VirtualizedMemOp",
-    "VirtualizedFpMemOp",
+    "VirtualizedFpArithMemOp",
     "VirtualizedFpArithOp",
     "VirtualizedFpConvertOp",
-    "VirtualizedFpArithMemOp",
-    "VirtualizedFpPackedOp",
+    "VirtualizedFpMemOp",
     "VirtualizedFpPackedMemOp",
-    "build_vm_scheme",
+    "VirtualizedFpPackedOp",
+    "VirtualizedMemOp",
+    "VirtualizedOp",
+    "_interpreter_asm",
+    "_opaque_predicate_asm",
     "build_vm_blob",
-    "encode_bytecode",
+    "build_vm_scheme",
     "decode_instruction",
-    "inject_junk_ops",
+    "encode_bytecode",
     "immediate_fits_width",
+    "inject_junk_ops",
     "pack_immediate",
 ]

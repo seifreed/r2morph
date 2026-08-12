@@ -21,66 +21,20 @@ The interpreter assembly and bytecode generation for a lowered region live in
 from __future__ import annotations
 
 import logging
-import random
+from dataclasses import dataclass
 from typing import Any
 
+import r2morph.core.randomness as random
+from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
     RSP_INDEX,
     VirtualizedOp,
-    decode_instruction,
 )
 from r2morph.mutations.code_virtualization_engine_common import _assign_opcode_multiplicity
-from r2morph.mutations.code_virtualization_region_decoders import (
-    _decode_bswap,
-    _decode_bt,
-    _decode_cmov,
-    _decode_cmp_mem,
-    _decode_cqo,
-    _decode_div,
-    _decode_fp_arith,
-    _decode_fp_arith_idx,
-    _decode_fp_arith_mem,
-    _decode_fp_arith_riprel,
-    _decode_fp_compare,
-    _decode_fp_convert,
-    _decode_fp_indexed,
-    _decode_fp_mem,
-    _decode_fp_move,
-    _decode_fp_packed_arith,
-    _decode_fp_packed_arith_idx,
-    _decode_fp_packed_arith_mem,
-    _decode_fp_packed_arith_riprel,
-    _decode_fp_packed_indexed,
-    _decode_fp_packed_mem,
-    _decode_fp_packed_riprel,
-    _decode_fp_riprel,
-    _decode_imul,
-    _decode_imul3,
-    _decode_incdec,
-    _decode_lea,
-    _decode_lea_indexed,
-    _decode_leave,
-    _decode_memory_mov,
-    _decode_memory_mov_indexed,
-    _decode_mov_from_rsp,
-    _decode_mov_to_rsp,
-    _decode_movx,
-    _decode_not,
-    _decode_op_mem,
-    _decode_op_mem_indexed,
-    _decode_op_memdst,
-    _decode_pop,
-    _decode_push,
-    _decode_riprel_mov,
-    _decode_rsp_arith,
-    _decode_setcc,
-    _decode_shift,
-    _decode_shift_reg,
-    _decode_two_operand,
-    _parse_indexed_operand,
-    _parse_mem_operand,
-    _parse_riprel_operand,
+from r2morph.mutations.code_virtualization_region_lowering import (
+    _remap_index_map,
+    lower_arith_to_microops,
 )
 from r2morph.mutations.code_virtualization_region_models import (
     Region,
@@ -90,300 +44,17 @@ from r2morph.mutations.code_virtualization_region_models import (
 
 logger = logging.getLogger(__name__)
 
-# r2 branch mnemonic -> the native conditional jump the interpreter emits.
-_CONDITION: dict[str, str] = {
-    "je": "je",
-    "jz": "je",
-    "jne": "jne",
-    "jnz": "jne",
-    "jl": "jl",
-    "jnge": "jl",
-    "jge": "jge",
-    "jnl": "jge",
-    "jg": "jg",
-    "jnle": "jg",
-    "jle": "jle",
-    "jng": "jle",
-    "jb": "jb",
-    "jc": "jb",
-    "jnae": "jb",
-    "jae": "jae",
-    "jnc": "jae",
-    "jnb": "jae",
-    "jbe": "jbe",
-    "jna": "jbe",
-    "ja": "ja",
-    "jnbe": "ja",
-    "js": "js",
-    "jns": "jns",
-    "jo": "jo",
-    "jno": "jno",
-    "jp": "jp",
-    "jpe": "jp",
-    "jnp": "jnp",
-    "jpo": "jnp",
-}
-
-# r2 instruction types for a register/memory-indirect jump (jmp reg / jmp [mem]) -
-# the defining dispatch instruction of a computed-goto interpreter.
-_COMPUTED_JUMP_TYPES = ("ujmp", "rjmp", "ijmp", "mjmp", "irjmp")
-
-
-def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[Any] | None:
-    """Build the VM item for one body instruction, or ``None`` if unsupported.
-
-    ``allow_computed_jump`` opts in to lowering a register-indirect jump to an
-    ``ijmp`` item. It is off by default so the straight-line region contract keeps
-    rejecting computed jumps; only the dispatch-region contract enables it.
-    """
-    kind = insn.get("type", "")
-    text = insn.get("opcode", "")
-    # int<->float conversions are type "null" and inconsistently typed family
-    # (the r64 cvtsi2sd is even family "cpu"), so they are matched by mnemonic
-    # ahead of the family gate; the decoder returns None for non-conversions.
-    convert = _decode_fp_convert(text)
-    if convert is not None:
-        return [*convert]
-    # ``bswap`` is typed "null" by the disassembler, so match it by mnemonic ahead of
-    # the type gate; the decoder returns None for anything that is not a bswap.
-    bswap = _decode_bswap(text)
-    if bswap is not None:
-        return [*bswap]
-    # ``cqo``/``cdq`` are also typed "null"; match by mnemonic before the type gate.
-    cqo = _decode_cqo(text)
-    if cqo is not None:
-        return [*cqo]
-    if insn.get("family") == "vec":
-        # SSE/FP ops share their GP twin's ``type`` (movsd->mov, addsd->add) but
-        # carry family "vec". Route them here first: scalar FP load/store is
-        # virtualized, everything else vec is left native (conservative).
-        fp_mem = _decode_fp_mem(text)
-        if fp_mem is not None:
-            return [*fp_mem]
-        fp_indexed = _decode_fp_indexed(text)
-        if fp_indexed is not None:
-            return [*fp_indexed]
-        fp_riprel = _decode_fp_riprel(text, insn.get("addr", 0), insn.get("size", 0))
-        if fp_riprel is not None:
-            return [*fp_riprel]
-        fp_arith = _decode_fp_arith(text)
-        if fp_arith is not None:
-            return [*fp_arith]
-        fp_arith_mem = _decode_fp_arith_mem(text)
-        if fp_arith_mem is not None:
-            return [*fp_arith_mem]
-        fp_arith_riprel = _decode_fp_arith_riprel(text, insn.get("addr", 0), insn.get("size", 0))
-        if fp_arith_riprel is not None:
-            return [*fp_arith_riprel]
-        fp_arith_idx = _decode_fp_arith_idx(text)
-        if fp_arith_idx is not None:
-            return [*fp_arith_idx]
-        fp_compare = _decode_fp_compare(text)
-        if fp_compare is not None:
-            return [*fp_compare]
-        fp_move = _decode_fp_move(text)
-        if fp_move is not None:
-            return [*fp_move]
-        fp_packed = _decode_fp_packed_arith(text)
-        if fp_packed is not None:
-            return [*fp_packed]
-        fp_packed_arith_mem = _decode_fp_packed_arith_mem(text)
-        if fp_packed_arith_mem is not None:
-            return [*fp_packed_arith_mem]
-        fp_packed_arith_riprel = _decode_fp_packed_arith_riprel(text, insn.get("addr", 0), insn.get("size", 0))
-        if fp_packed_arith_riprel is not None:
-            return [*fp_packed_arith_riprel]
-        fp_packed_arith_idx = _decode_fp_packed_arith_idx(text)
-        if fp_packed_arith_idx is not None:
-            return [*fp_packed_arith_idx]
-        fp_packed_mem = _decode_fp_packed_mem(text)
-        if fp_packed_mem is not None:
-            return [*fp_packed_mem]
-        fp_packed_indexed = _decode_fp_packed_indexed(text)
-        if fp_packed_indexed is not None:
-            return [*fp_packed_indexed]
-        fp_packed_riprel = _decode_fp_packed_riprel(text, insn.get("addr", 0), insn.get("size", 0))
-        return [*fp_packed_riprel] if fp_packed_riprel is not None else None
-    if kind == "nop":
-        return ["nop"]
-    if kind in ("mov", "add", "sub", "xor", "and", "or"):
-        op = decode_instruction(text)
-        if op is not None:
-            return ["op", op]
-        if kind in ("add", "sub"):
-            rsp_arith = _decode_rsp_arith(text)
-            if rsp_arith is not None:
-                return [*rsp_arith]
-        if kind == "mov":
-            from_rsp = _decode_mov_from_rsp(text)
-            if from_rsp is not None:
-                return [*from_rsp]
-            to_rsp = _decode_mov_to_rsp(text)
-            if to_rsp is not None:
-                return [*to_rsp]
-            memory = _decode_memory_mov(text)
-            if memory is not None:
-                return [*memory]
-            memory_idx = _decode_memory_mov_indexed(text)
-            if memory_idx is not None:
-                return [*memory_idx]
-            riprel = _decode_riprel_mov(text, insn.get("addr", 0), insn.get("size", 0))
-            if riprel is not None:
-                return [*riprel]
-            movx = _decode_movx(text)
-            return [*movx] if movx is not None else None
-        incdec = _decode_incdec(text)
-        if incdec is not None:
-            return [*incdec]
-        op_mem = _decode_op_mem(text, kind, insn.get("addr", 0), insn.get("size", 0))
-        if op_mem is not None:
-            return [*op_mem]
-        op_memdst = _decode_op_memdst(text, kind, insn.get("addr", 0), insn.get("size", 0))
-        if op_memdst is not None:
-            return [*op_memdst]
-        op_mem_idx = _decode_op_mem_indexed(text, kind)
-        return [*op_mem_idx] if op_mem_idx is not None else None
-    if kind == "cmp":
-        compare = _decode_two_operand(text, "cmp")
-        if compare is not None:
-            return ["cmp", *compare]
-        # ``bt`` (bit test) is typed "cmp" by the disassembler; try it before the
-        # memory-compare decoder, which would reject it anyway.
-        bit_test = _decode_bt(text)
-        if bit_test is not None:
-            return [*bit_test]
-        memory_cmp = _decode_cmp_mem(text, insn.get("addr", 0), insn.get("size", 0))
-        return [*memory_cmp] if memory_cmp is not None else None
-    if kind == "acmp":
-        test = _decode_two_operand(text, "test")
-        return ["test", *test] if test is not None else None
-    if kind in ("shl", "shr", "sar", "rol", "ror"):
-        shift = _decode_shift(text)
-        if shift is not None:
-            return ["shift", *shift]
-        shift_reg = _decode_shift_reg(text)
-        return [*shift_reg] if shift_reg is not None else None
-    if kind == "mul":
-        imul = _decode_imul(text)
-        if imul is not None:
-            return ["imul", *imul]
-        imul3 = _decode_imul3(text)
-        return ["imul3", *imul3] if imul3 is not None else None
-    if kind == "not":
-        not_op = _decode_not(text)
-        return [*not_op] if not_op is not None else None
-    if kind == "div":
-        div = _decode_div(text)
-        return [*div] if div is not None else None
-    if kind == "lea":
-        lea = _decode_lea(text, insn.get("addr", 0), insn.get("size", 0))
-        if lea is not None:
-            return [*lea]
-        lea_indexed = _decode_lea_indexed(text)
-        return [*lea_indexed] if lea_indexed is not None else None
-    if kind == "cmov":
-        # r2 types both setcc and cmovcc as "cmov". Both consume the flags the
-        # region captures into its flags slot; the handlers evaluate the condition
-        # arithmetically (like jcc), so they carry no native setcc/cmov.
-        setcc = _decode_setcc(text)
-        if setcc is not None:
-            return [*setcc]
-        cmov = _decode_cmov(text)
-        return [*cmov] if cmov is not None else None
-    if allow_computed_jump:
-        # Native pushfq/popfq bracketing the dispatch: the region synthesizes an
-        # operation's flags into the flags slot (never native RFLAGS), so a native
-        # flag save/restore is modelled as a copy of that slot to/from the vstack
-        # (fsave/frestore), not a native push of RFLAGS. Gated to the dispatch-region
-        # contract; matched save/restore is assumed (the flag-preservation idiom that
-        # is the only shape where flag state crosses the computed jump), so it stays
-        # vstack-balanced across the bracket. Any other flag use fails the branches
-        # below and is left native.
-        mnemonic = text.split()[0].lower() if text else ""
-        if mnemonic in ("pushfq", "pushfd", "pushf"):
-            return ["fsave"]
-        if mnemonic in ("popfq", "popfd", "popf"):
-            return ["frestore"]
-    if kind in ("push", "upush", "rpush"):
-        push = _decode_push(text)
-        return [*push] if push is not None else None
-    if kind in ("pop", "rpop"):
-        leave = _decode_leave(text)
-        if leave is not None:
-            return [*leave]
-        pop = _decode_pop(text)
-        return [*pop] if pop is not None else None
-    if kind == "call":
-        # Only a direct call with a resolvable target is virtualizable; an
-        # indirect call (call rax / call [mem]) has type "ucall"/"rcall" and never
-        # reaches here, and a direct call with no resolved target is left native.
-        target = insn.get("jump", -1)
-        return ["call", target] if isinstance(target, int) and target > 0 else None
-    if kind == "rcall":
-        # Register-indirect call (call reg): the target is the program value of a
-        # GP register, read from its frame slot at runtime. Memory-indirect calls
-        # (type ucall/mcall) are not handled and stay native.
-        parts = text.split()
-        if len(parts) == 2 and parts[1] in GP_REGISTERS and parts[1] != "rsp":
-            return ["icall", GP_REGISTERS.index(parts[1])]
-        return None
-    if kind == "ircall":
-        # Memory-indirect call (call qword [base+disp] / [rip+disp]): the target
-        # pointer is loaded from memory at runtime - vtable and IAT/GOT dispatch.
-        # The addressing reuses the load handlers' machinery; indexed forms stay
-        # native for now.
-        operand = text.split(None, 1)[1] if " " in text else ""
-        mem = _parse_mem_operand(operand)
-        if mem is not None:
-            base_slot, disp, _width = mem
-            return ["callmem", base_slot, disp]
-        riprel_ptr = _parse_riprel_operand(operand, insn.get("addr", 0), insn.get("size", 0))
-        if riprel_ptr is not None:
-            return ["callmemrip", riprel_ptr[0]]
-        return None
-    if kind == "ucall":
-        # Indexed memory-indirect call (call qword [base+index*scale+disp]):
-        # function-pointer table / array-of-vtables dispatch. A base is required;
-        # other unresolved indirect forms stay native.
-        operand = text.split(None, 1)[1] if " " in text else ""
-        indexed = _parse_indexed_operand(operand)
-        if indexed is not None:
-            base_slot, index_slot, scale_shift, idx_disp = indexed
-            return ["callmemidx", base_slot, index_slot, scale_shift, idx_disp]
-        return None
-    if kind == "jmp":
-        return ["jmp", insn.get("jump", -1)]
-    if allow_computed_jump and kind in _COMPUTED_JUMP_TYPES:
-        # Register-indirect jump (jmp reg): a computed control transfer whose
-        # target is the program value of a GP register, read from its frame slot
-        # at runtime - the defining dispatch instruction of a computed-goto
-        # interpreter. Modelled on the register-indirect call (icall) above.
-        # A memory-indirect computed jump (jmp qword [base+index*scale+disp]) is the
-        # non-PIE jump-table switch dispatch: the target pointer is loaded from the
-        # (preserved rodata) table at runtime and looked up in the target map, just
-        # like the register form. The no-base form [index*scale+disp] carries the
-        # table base in the displacement.
-        parts = text.split()
-        if len(parts) == 2 and parts[1] in GP_REGISTERS and parts[1] != "rsp":
-            return ["ijmp", GP_REGISTERS.index(parts[1])]
-        operand = text.split(None, 1)[1] if " " in text else ""
-        indexed = _parse_indexed_operand(operand, base_optional=True)
-        if indexed is not None:
-            base_slot, index_slot, scale_shift, disp = indexed
-            if base_slot < 0:
-                return ["ijmpmemnb", index_slot, scale_shift, disp]
-            return ["ijmpmem", base_slot, index_slot, scale_shift, disp]
-        return None
-    if kind == "cjmp":
-        condition = _CONDITION.get(text.split(None, 1)[0].lower())
-        return ["jcc", condition, insn.get("jump", -1)] if condition is not None else None
-    return None
-
-
-# Logical context slots of the division-implicit registers: the dividend/quotient
-# lives in rax and the high dividend/remainder in rdx.
 _RAX_SLOT = GP_REGISTERS.index("rax")
 _RDX_SLOT = GP_REGISTERS.index("rdx")
+
+
+@dataclass
+class _RegionBuild:
+    items: list[list[Any]]
+    item_index_of: dict[int, int]
+    exit_addrs: list[int]
+    ret_addrs: set[int]
+    body: list[dict[str, Any]]
 
 
 def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
@@ -419,11 +90,11 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         return frozenset({int(item[2])})
     if kind in ("movx", "movxidx", "movxreg"):
         return frozenset({int(item[4])})
-    if kind == "div":
-        return frozenset({_RAX_SLOT, _RDX_SLOT})  # quotient -> rax, remainder -> rdx
-    if kind == "cqo":
-        return frozenset({_RDX_SLOT})  # sign-extends rax into rdx
-    return frozenset()
+    special_writes = {
+        "div": frozenset({_RAX_SLOT, _RDX_SLOT}),
+        "cqo": frozenset({_RDX_SLOT}),
+    }
+    return special_writes.get(kind, frozenset())
 
 
 def _merge_stack_state(
@@ -455,6 +126,50 @@ def _merge_stack_state(
     return True
 
 
+def _stack_transition(
+    item: list[Any], depth: int, snapshot: tuple[int, int] | None
+) -> tuple[int, tuple[int, int] | None] | None:
+    kind = item[0]
+    if kind in ("push", "pushi"):
+        out_depth = depth + 8
+    elif kind == "pop":
+        out_depth = depth - 8
+    elif kind == "rspadj":
+        out_depth = depth + (item[2] if item[1] == "sub" else -item[2])
+    elif kind == "movtorsp":
+        if snapshot is None or item[1] != snapshot[0]:
+            return None
+        out_depth = snapshot[1]
+    elif kind == "leave":
+        if snapshot is None or item[1] != snapshot[0]:
+            return None
+        out_depth = snapshot[1] - 8
+    else:
+        out_depth = depth
+    if out_depth < 0 or (kind in ("exit", "vret") and depth != 0):
+        return None
+    out_snapshot: tuple[int, int] | None
+    if kind == "movfromrsp":
+        out_snapshot = (int(item[1]), depth)
+    else:
+        written = _writes_register(tuple(item))
+        out_snapshot = None if snapshot is not None and snapshot[0] in written else snapshot
+    return out_depth, out_snapshot
+
+
+def _stack_successors(item: list[Any], index: int) -> tuple[list[int], int | None]:
+    kind = item[0]
+    if kind in ("exit", "vret"):
+        return [], None
+    if kind == "vcall":
+        return [index + 1], int(item[1])
+    if kind == "jmp":
+        return [int(item[1])], None
+    if kind == "jcc":
+        return [index + 1, int(item[2])], None
+    return [index + 1], None
+
+
 def _stack_balanced(items: list[list[Any]]) -> bool:
     """Verify the region's virtual stack is balanced on every path.
 
@@ -476,52 +191,19 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
     while work:
         i = work.pop()
         current = state[i]
-        assert current is not None  # only assigned indices enter the worklist
+        if current is None:
+            raise RuntimeError("VM stack analysis queued an uninitialized state")
         depth, snapshot = current
         item = items[i]
-        kind = item[0]
-        if kind in ("push", "pushi"):
-            out_depth = depth + 8
-        elif kind == "pop":
-            out_depth = depth - 8
-        elif kind == "rspadj":
-            out_depth = depth + (item[2] if item[1] == "sub" else -item[2])
-        elif kind == "movtorsp":
-            if snapshot is None or item[1] != snapshot[0]:
-                return False  # restoring rsp from a register with no live snapshot
-            out_depth = snapshot[1]
-        elif kind == "leave":
-            if snapshot is None or item[1] != snapshot[0]:
-                return False
-            out_depth = snapshot[1] - 8  # mov rsp,rbp then pop rbp
-        else:
-            out_depth = depth
-        if out_depth < 0:
-            return False  # stack underflow
-        out_snapshot: tuple[int, int] | None
-        if kind == "movfromrsp":
-            out_snapshot = (int(item[1]), depth)
-        else:
-            written = _writes_register(tuple(item))
-            out_snapshot = None if (snapshot is not None and snapshot[0] in written) else snapshot
-        if kind in ("exit", "vret"):
-            if depth != 0:
-                return False  # unbalanced stack at a terminator
+        transition = _stack_transition(item, depth, snapshot)
+        if transition is None:
+            return False
+        out_depth, out_snapshot = transition
+        successors, call_target = _stack_successors(item, i)
+        if not successors:
             continue
-        if kind == "vcall":
-            # The call/return round-trips on the relocated stack (vcall pushes the
-            # resume vIP, the callee's vret pops it), so the call site is depth-neutral
-            # (out_depth == depth); the callee is validated as its own subroutine
-            # entered at depth 0.
-            if not _merge_stack_state(state, work, item[1], 0, None):
-                return False
-            successors = [i + 1]
-        elif kind == "jmp":
-            successors = [item[1]]
-        elif kind == "jcc":
-            successors = [i + 1, item[2]]
-        else:
-            successors = [i + 1]
+        if call_target is not None and not _merge_stack_state(state, work, call_target, 0, None):
+            return False
         for nxt in successors:
             if not _merge_stack_state(state, work, nxt, out_depth, out_snapshot):
                 return False
@@ -602,9 +284,12 @@ def _flag_dead_op_indices(items: list[list[Any]]) -> set[int]:
 
     dead = set()
     for i in range(n):
-        if items[i][0] == "op" and items[i][1].mnemonic in _MBA_OP_MNEMONICS:
-            if not any(needed_in[s] for s in _flag_successors(items, i)):
-                dead.add(i)
+        if (
+            items[i][0] == "op"
+            and items[i][1].mnemonic in _MBA_OP_MNEMONICS
+            and not any(needed_in[s] for s in _flag_successors(items, i))
+        ):
+            dead.add(i)
     return dead
 
 
@@ -618,180 +303,7 @@ _JUNK_OP_PROBABILITY = 0.35
 
 
 def _lower_arith_to_microops(items: list[list[Any]], index_map: dict[int, int] | None = None) -> list[list[Any]]:
-    """Lower each arithmetic and base+disp memory item into virtual-stack micro-ops
-    and remap every branch target index to its new position.
-
-    A single handler that computes a whole native op is a fingerprint; lowering it to
-    ``vpush``/``vload``/``vbinop*``/``vpop``/``vstore`` reuses a handful of stack
-    primitives across every op instead. Arithmetic pushes dst then src, so the fold
-    sees ``a == dst, b == src``; ``vpop`` writes the result back to dst. The fold kind
-    depends on flag liveness: ``opmba`` (flags proven dead) folds with ``vbinop`` (no
-    flag capture); ``opsynth`` (flags read by a later branch) folds with ``vbinopsynth``
-    (which also synthesizes the readable flags). Base+disp memory lowers too: a load
-    is ``vload``/``vpop``, a store ``vpush``/``vstore``, and a mem-source arith op
-    ``vpush``/``vload``/``vbinopsynth``/``vpop`` (mem forms are always flag-synthesizing
-    today). Rip-relative and scaled-index memory keep their single handlers.
-
-    Branches store their target as an item index; expanding an item shifts those
-    indices, so a position map is built as the new list is assembled and applied to
-    every ``jmp``/``jcc`` afterward. A branch can only target the start of an item, so
-    it maps to the sequence's first micro-op (never an interior one).
-    """
-    fold_of = {"opmba": "vbinop", "opsynth": "vbinopsynth"}
-    new_items: list[list[Any]] = []
-    old_to_new: dict[int, int] = {}
-    for old_index, item in enumerate(items):
-        old_to_new[old_index] = len(new_items)
-        kind = item[0]
-        fold = fold_of.get(kind)
-        if fold is not None:
-            op = item[1]
-            new_items.append(["vpush", op.dst_index])
-            if op.is_immediate:
-                new_items.append(["vpushi", op.value, op.width])
-            else:
-                new_items.append(["vpush", op.value])
-            new_items.append([fold, op.mnemonic, op.width])
-            new_items.append(["vpop", op.dst_index])
-        elif kind == "load":  # mov reg, [base+disp]
-            _, reg, base, disp, width = item
-            new_items.append(["vload", base, disp, width])
-            new_items.append(["vpop", reg])
-        elif kind == "store":  # mov [base+disp], reg
-            _, reg, base, disp, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vstore", base, disp, width])
-        elif kind == "opmem":  # <op> reg, [base+disp] -- reg is src and dst
-            _, mnemonic, reg, base, disp, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vload", base, disp, width])
-            # opmem is always flag-synthesizing today, so fold with vbinopsynth.
-            new_items.append(["vbinopsynth", mnemonic, width])
-            new_items.append(["vpop", reg])
-        elif kind == "shift":
-            # ("shift", mnemonic, slot, count, width): push the register, shift the
-            # top cell by the immediate count (capturing flags), pop the result back.
-            _, mnemonic, slot, count, width = item
-            new_items.append(["vpush", slot])
-            new_items.append(["vshift", mnemonic, count, width])
-            new_items.append(["vpop", slot])
-        elif kind == "shiftreg":
-            # ("shiftreg", mnemonic, slot, width): variable count in cl. Push the
-            # register, shift the top cell by the runtime cl (capturing flags), pop back.
-            _, mnemonic, slot, width = item
-            new_items.append(["vpush", slot])
-            new_items.append(["vshiftreg", mnemonic, width])
-            new_items.append(["vpop", slot])
-        elif kind == "opmemidx":  # <op> reg, [base+index*scale+disp] -- reg is src and dst
-            _, mnemonic, reg, base, index, shift, disp, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vloadidx", base, index, shift, disp, width])
-            # opmemidx is always flag-synthesizing today, so fold with vbinopsynth.
-            new_items.append(["vbinopsynth", mnemonic, width])
-            new_items.append(["vpop", reg])
-        elif kind == "loadidx":  # mov reg, [base+index*scale+disp]
-            _, reg, base, index, shift, disp, width = item
-            new_items.append(["vloadidx", base, index, shift, disp, width])
-            new_items.append(["vpop", reg])
-        elif kind == "storeidx":  # mov [base+index*scale+disp], reg
-            _, reg, base, index, shift, disp, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vstoreidx", base, index, shift, disp, width])
-        elif kind == "opmemdst":  # <op> [base+disp], reg -- read-modify-write
-            # The result is stored back to memory, so vload the current value, fold it
-            # with the register, and vstore the result. The address is recomputed by
-            # both vload and vstore, which is sound: base+disp is deterministic and no
-            # intervening micro-op writes the base slot (the op writes memory, not the
-            # base register), so both computations read the same address.
-            _, mnemonic, reg, base, disp, width = item
-            new_items.append(["vload", base, disp, width])
-            new_items.append(["vpush", reg])
-            new_items.append(["vbinopsynth", mnemonic, width])
-            new_items.append(["vstore", base, disp, width])
-        elif kind in ("cmp", "test"):
-            # ("cmp"|"test", slot, value, is_immediate, width): push both operands,
-            # then synthesize the flags off the stack (no result stored).
-            _, slot, value, is_immediate, width = item
-            new_items.append(["vpush", slot])
-            new_items.append(["vpushi", value, width] if is_immediate else ["vpush", value])
-            new_items.append(["vcmpsynth", kind, width])
-        elif kind == "cmpmem":  # cmp reg, [base+disp]
-            _, reg, base, disp, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vload", base, disp, width])
-            new_items.append(["vcmpsynth", "cmp", width])
-        elif kind == "cmpriprel":  # cmp reg, [rip+disp] -- a global
-            _, reg, target, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vloadrip", target, width])
-            new_items.append(["vcmpsynth", "cmp", width])
-        elif kind == "riprel_load":  # mov reg, [rip+disp]
-            _, reg, target, width = item
-            new_items.append(["vloadrip", target, width])
-            new_items.append(["vpop", reg])
-        elif kind == "riprel_store":  # mov [rip+disp], reg
-            _, reg, target, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vstorerip", target, width])
-        elif kind == "opriprel":  # <op> reg, [rip+disp] -- reg is src and dst
-            _, mnemonic, reg, target, width = item
-            new_items.append(["vpush", reg])
-            new_items.append(["vloadrip", target, width])
-            # opriprel is always flag-synthesizing today, so fold with vbinopsynth.
-            new_items.append(["vbinopsynth", mnemonic, width])
-            new_items.append(["vpop", reg])
-        elif kind == "opmemdstrip":  # <op> [rip+disp], reg -- read-modify-write global
-            _, mnemonic, reg, target, width = item
-            new_items.append(["vloadrip", target, width])
-            new_items.append(["vpush", reg])
-            new_items.append(["vbinopsynth", mnemonic, width])
-            new_items.append(["vstorerip", target, width])
-        elif kind == "movx":  # movzx/movsx reg, byte|word [base+disp]
-            _, ext, src_size, dst_width, reg, base, disp = item
-            new_items.append(["vmovx", ext, src_size, dst_width, base, disp])
-            new_items.append(["vpop", reg])
-        elif kind == "movxidx":  # movzx/movsx reg, byte|word [base+index*scale+disp]
-            _, ext, src_size, dst_width, reg, base, index, shift, disp = item
-            new_items.append(["vmovxidx", ext, src_size, dst_width, base, index, shift, disp])
-            new_items.append(["vpop", reg])
-        elif kind == "lea":  # lea reg, [base+disp] -- compute address, no deref/flags
-            _, reg, base, disp, width = item
-            new_items.append(["vlea", base, disp, width])
-            new_items.append(["vpop", reg])
-        elif kind == "learip":  # lea reg, [rip+disp] -- address of a global
-            _, reg, target, width = item
-            new_items.append(["vlearip", target, width])
-            new_items.append(["vpop", reg])
-        elif kind == "leaidx":  # lea reg, [base+index*scale+disp]
-            _, reg, base, index, shift, disp, width = item
-            new_items.append(["vleaidx", base, index, shift, disp, width])
-            new_items.append(["vpop", reg])
-        elif kind == "leaidxnb":  # lea reg, [index*scale+disp] -- no base
-            _, reg, index, shift, disp, width = item
-            new_items.append(["vleaidxnb", index, shift, disp, width])
-            new_items.append(["vpop", reg])
-        else:
-            new_items.append(item)
-    for item in new_items:
-        if item[0] in ("jmp", "vcall"):
-            item[1] = old_to_new[item[1]]
-        elif item[0] == "jcc":
-            item[2] = old_to_new[item[2]]
-    _remap_index_map(index_map, old_to_new)
-    return new_items
-
-
-def _remap_index_map(index_map: dict[int, int] | None, old_to_new: dict[int, int]) -> None:
-    """Remap a native-address -> item-index map through a lowering's position shift.
-
-    A computed jump's target map stores item indices that move when items are
-    lowered or junk is inserted, exactly like branch targets do; this reapplies the
-    same shift so the map keeps pointing at the right items.
-    """
-    if index_map is None:
-        return
-    for addr, old_index in list(index_map.items()):
-        index_map[addr] = old_to_new[old_index]
+    return lower_arith_to_microops(items, index_map)
 
 
 def _inject_junk_movs(
@@ -822,6 +334,70 @@ def _inject_junk_movs(
     return new_items
 
 
+def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump: bool) -> _RegionBuild | None:
+    if not instructions:
+        return None
+    exit_addrs = sorted(
+        {instruction["addr"] for instruction in instructions if instruction.get("type") in ("ret", "swi", "syscall")}
+    )
+    if not exit_addrs:
+        return None
+    exit_set = set(exit_addrs)
+    ret_addrs = {instruction["addr"] for instruction in instructions if instruction.get("type") == "ret"}
+    body = [instruction for instruction in instructions if instruction["addr"] not in exit_set]
+    if not body:
+        return None
+    items: list[list[Any]] = []
+    item_index_of: dict[int, int] = {}
+    for instruction in body:
+        item = classification._classify(instruction, allow_computed_jump=allow_computed_jump)
+        if item is None:
+            return None
+        item_index_of[instruction["addr"]] = len(items)
+        items.append(item)
+        next_address = instruction["addr"] + instruction.get("size", 0)
+        if item[0] not in ("jmp", "ijmp") and next_address in exit_set:
+            items.append(["jmp", next_address])
+    for address in exit_addrs:
+        items.append(["exit", address])
+    return _RegionBuild(items, item_index_of, exit_addrs, ret_addrs, body)
+
+
+def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, Any]]) -> bool:
+    exit_index_of = {int(item[1]): index for index, item in enumerate(build.items) if item[0] == "exit"}
+
+    def resolve(target: int) -> int | None:
+        return exit_index_of.get(target, build.item_index_of.get(target))
+
+    for item in build.items:
+        if item[0] == "jmp":
+            resolved = resolve(item[1])
+            if resolved is None:
+                return False
+            item[1] = resolved
+        elif item[0] == "jcc":
+            resolved = resolve(item[2])
+            if resolved is None:
+                return False
+            item[2] = resolved
+    function_start = min(instruction["addr"] for instruction in instructions)
+    function_end = max(instruction["addr"] + instruction.get("size", 0) for instruction in instructions)
+    has_internal_call = False
+    for item in build.items:
+        if item[0] == "call" and function_start <= item[1] < function_end:
+            resolved = build.item_index_of.get(item[1])
+            if resolved is None:
+                return False
+            item[0] = "vcall"
+            item[1] = resolved
+            has_internal_call = True
+    if has_internal_call:
+        for item in build.items:
+            if item[0] == "exit" and item[1] in build.ret_addrs:
+                item[0] = "vret"
+    return True
+
+
 def extract_region(
     instructions: list[dict[str, Any]], rng: random.Random | None = None, allow_computed_jump: bool = False
 ) -> Region | None:
@@ -836,92 +412,10 @@ def extract_region(
     via a target map (native address -> item index) built here. It is off by
     default so the straight-line contract and its guards are unchanged.
     """
-    if not instructions:
+    build = _build_region_items(instructions, allow_computed_jump)
+    if build is None or not _resolve_region_targets(build, instructions):
         return None
-
-    exit_addrs = sorted({insn["addr"] for insn in instructions if insn.get("type") in ("ret", "swi", "syscall")})
-    if not exit_addrs:
-        return None
-    exit_set = set(exit_addrs)
-    # A ret can return either to the real caller or - once the region virtualizes an
-    # in-function call - to a resume vIP a vcall pushed. Its terminator becomes a
-    # return-aware vret only in the latter case, so track which exits are rets.
-    ret_addrs = {insn["addr"] for insn in instructions if insn.get("type") == "ret"}
-    body = [insn for insn in instructions if insn["addr"] not in exit_set]
-    if not body:
-        return None
-
-    # Phase 1: build items, recording each instruction's item index and storing
-    # branch/fall-through targets as native addresses (resolved in phase 2). A
-    # target that is a terminator address denotes that terminator's exit item.
-    items: list[list[Any]] = []
-    item_index_of: dict[int, int] = {}
-    op_keys: set[str] = set()
-    for insn in body:
-        item = _classify(insn, allow_computed_jump=allow_computed_jump)
-        if item is None:
-            return None
-        item_index_of[insn["addr"]] = len(items)
-        items.append(item)
-        key = _op_key(tuple(item))
-        if key is not None:
-            op_keys.add(key)
-        # Fall-through into a terminator (everything except an unconditional jump -
-        # direct or computed - which never falls through).
-        next_addr = insn["addr"] + insn.get("size", 0)
-        if item[0] not in ("jmp", "ijmp") and next_addr in exit_set:
-            items.append(["jmp", next_addr])
-            op_keys.add("jmp")
-
-    exit_index_of: dict[int, int] = {}
-    for addr in exit_addrs:
-        exit_index_of[addr] = len(items)
-        items.append(["exit", addr])
-        op_keys.add(f"exit_{addr}")
-    if any(item[0] == "jmp" for item in items):
-        op_keys.add("jmp")
-
-    def resolve(target: int) -> int | None:
-        if target in exit_index_of:
-            return exit_index_of[target]
-        return item_index_of.get(target)
-
-    # Phase 2: resolve branch target addresses to item indices.
-    for item in items:
-        if item[0] == "jmp":
-            resolved = resolve(item[1])
-            if resolved is None:
-                return None
-            item[1] = resolved
-        elif item[0] == "jcc":
-            resolved = resolve(item[2])
-            if resolved is None:
-                return None
-            item[2] = resolved
-
-    # A call whose target lands inside this function's own span cannot bridge to
-    # native code (the dead-body fill overwrites that target), so it is virtualized
-    # as a VM-internal call instead: the target is resolved to its item index (like a
-    # jmp) and lowered to a vcall that pushes a resume vIP and re-enters the VM at the
-    # callee. Every ret then becomes a return-aware vret that resumes the VM at a
-    # pushed resume vIP or returns natively. A call target that is not a body
-    # instruction boundary (mid-instruction / gap) is unresolvable and stays native.
-    func_lo = min(insn["addr"] for insn in instructions)
-    func_hi = max(insn["addr"] + insn.get("size", 0) for insn in instructions)
-    has_in_function_call = False
-    for item in items:
-        if item[0] == "call" and func_lo <= item[1] < func_hi:
-            resolved = item_index_of.get(item[1])
-            if resolved is None:
-                return None
-            item[0] = "vcall"
-            item[1] = resolved
-            has_in_function_call = True
-    if has_in_function_call:
-        for item in items:
-            if item[0] == "exit" and item[1] in ret_addrs:
-                item[0] = "vret"
-
+    items = build.items
     if not _stack_balanced(items):
         return None
 
@@ -947,7 +441,7 @@ def extract_region(
     # when the region actually contains a computed jump; otherwise the map is empty
     # and the region's blob is byte-identical to the straight-line contract's.
     has_computed_jump = any(item[0] in ("ijmp", "ijmpmem", "ijmpmemnb") for item in items)
-    target_map: dict[int, int] | None = dict(item_index_of) if has_computed_jump else None
+    target_map: dict[int, int] | None = dict(build.item_index_of) if has_computed_jump else None
 
     items = _lower_arith_to_microops(items, target_map)
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
@@ -957,8 +451,15 @@ def extract_region(
         items = _inject_junk_movs(items, rng, target_map)
     op_keys = {key for item in items if (key := _op_key(tuple(item))) is not None}
 
-    body_ranges = [(insn["addr"], insn.get("size", 0)) for insn in body]
-    return Region([tuple(item) for item in items], exit_addrs[0], body[0]["addr"], op_keys, body_ranges, target_map)
+    body_ranges = [(instruction["addr"], instruction.get("size", 0)) for instruction in build.body]
+    return Region(
+        [tuple(item) for item in items],
+        build.exit_addrs[0],
+        build.body[0]["addr"],
+        op_keys,
+        body_ranges,
+        target_map if target_map is not None else {},
+    )
 
 
 def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:

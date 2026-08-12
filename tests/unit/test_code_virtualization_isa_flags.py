@@ -59,6 +59,7 @@ def _edge_operands(width: int) -> tuple[int, ...]:
 def _run(asm: str, reg_in: dict[int, int], reg_out: list[int]) -> dict[int, int]:
     keystone = pytest.importorskip("keystone")
     unicorn = pytest.importorskip("unicorn")
+    from unicorn.x86_const import UC_X86_REG_RSP
 
     ks = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
     code, _ = ks.asm(asm, 0x1000)
@@ -66,7 +67,7 @@ def _run(asm: str, reg_in: dict[int, int], reg_out: list[int]) -> dict[int, int]
     mu.mem_map(0x1000, 0x1000)
     mu.mem_write(0x1000, bytes(code))
     mu.mem_map(0x200000, 0x2000)
-    mu.reg_write(_RSP, 0x201000)
+    mu.reg_write(UC_X86_REG_RSP, 0x201000)
     for reg, value in reg_in.items():
         mu.reg_write(reg, value)
     mu.emu_start(0x1000, 0x1000 + len(code))
@@ -84,12 +85,6 @@ def _regs() -> tuple[int, int, int, int, int]:
     )
 
     return UC_X86_REG_RAX, UC_X86_REG_RBX, UC_X86_REG_RBP, UC_X86_REG_R10, UC_X86_REG_R11
-
-
-try:  # module-level rsp id used by _run; guarded so collection works without unicorn.
-    from unicorn.x86_const import UC_X86_REG_RSP as _RSP
-except ImportError:  # pragma: no cover - unicorn missing on this runner
-    _RSP = 0
 
 
 def _cpu_flags(mnemonic: str, width: int, a: int, b: int) -> int:
@@ -138,25 +133,34 @@ def test_flag_variant_zero_is_the_canonical_spelling(width: int, mode: str) -> N
     sh = width - 1
     lines = ["  xor r11d, r11d\n"]
     lines.append(
-        f"  mov {c}, {r}\n  neg {c}\n  or {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  xor {c}, 1\n  shl {c}, 6\n  or r11, rcx\n"
+        f"  mov {c}, {r}\n  neg {c}\n  or {c}, {r}\n  shr {c}, {sh}\n"
+        f"  and {c}, 1\n  xor {c}, 1\n  shl {c}, 6\n  or r11, rcx\n"
     )
     lines.append(f"  mov {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 7\n  or r11, rcx\n")
     if mode == "add":
         lines.append(
-            f"  mov {c}, {a}\n  and {c}, {b}\n  mov {u}, {a}\n  or {u}, {b}\n  mov {t}, {r}\n  not {t}\n  and {u}, {t}\n  or {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
+            f"  mov {c}, {a}\n  and {c}, {b}\n  mov {u}, {a}\n  or {u}, {b}\n"
+            f"  mov {t}, {r}\n  not {t}\n  and {u}, {t}\n  or {c}, {u}\n"
+            f"  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
         )
         lines.append(
-            f"  mov {c}, {a}\n  xor {c}, {r}\n  mov {u}, {b}\n  xor {u}, {r}\n  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
+            f"  mov {c}, {a}\n  xor {c}, {r}\n  mov {u}, {b}\n  xor {u}, {r}\n"
+            f"  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
         )
     elif mode == "sub":
         lines.append(
-            f"  mov {c}, {a}\n  not {c}\n  and {c}, {b}\n  mov {u}, {a}\n  not {u}\n  or {u}, {b}\n  and {u}, {r}\n  or {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
+            f"  mov {c}, {a}\n  not {c}\n  and {c}, {b}\n  mov {u}, {a}\n"
+            f"  not {u}\n  or {u}, {b}\n  and {u}, {r}\n  or {c}, {u}\n"
+            f"  shr {c}, {sh}\n  and {c}, 1\n  or r11, rcx\n"
         )
         lines.append(
-            f"  mov {c}, {a}\n  xor {c}, {b}\n  mov {u}, {a}\n  xor {u}, {r}\n  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
+            f"  mov {c}, {a}\n  xor {c}, {b}\n  mov {u}, {a}\n  xor {u}, {r}\n"
+            f"  and {c}, {u}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 11\n  or r11, rcx\n"
         )
     lines.append(
-        f"  movzx ecx, r10b\n  mov {u}, {c}\n  shr {u}, 4\n  xor {c}, {u}\n  mov {u}, {c}\n  shr {u}, 2\n  xor {c}, {u}\n  mov {u}, {c}\n  shr {u}, 1\n  xor {c}, {u}\n  not {c}\n  and ecx, 1\n  shl ecx, 2\n  or r11, rcx\n"
+        f"  movzx ecx, r10b\n  mov {u}, {c}\n  shr {u}, 4\n  xor {c}, {u}\n"
+        f"  mov {u}, {c}\n  shr {u}, 2\n  xor {c}, {u}\n  mov {u}, {c}\n"
+        f"  shr {u}, 1\n  xor {c}, {u}\n  not {c}\n  and ecx, 1\n  shl ecx, 2\n  or r11, rcx\n"
     )
     assert synth_flags_asm(width, mode, 0) == "".join(lines)
 

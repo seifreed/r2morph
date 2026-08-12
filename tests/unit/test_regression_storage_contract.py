@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import r2morph.validation.regression_storage as regression_storage
+from r2morph.validation import regression_storage
 from r2morph.validation.regression_models import BaselineResult, RegressionTestType
 
 

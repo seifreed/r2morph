@@ -26,6 +26,7 @@ from __future__ import annotations
 
 from r2morph.mutations.stack_strings import (
     EncodingScheme,
+    StackStringOptions,
     generate_stack_string_x64,
     generate_stack_string_x86,
 )
@@ -45,7 +46,10 @@ def test_x86_xor_rolling_emits_byte_writes_and_decode_loop() -> None:
     """Pre-fix the x86 XOR_ROLLING branch was missing entirely: the
     function returned only ``sub esp, N`` plus comments. Post-fix it
     matches the x64 layout (byte-writes + decode loop)."""
-    asm, _ = generate_stack_string_x86(_DATA, encoding=EncodingScheme.XOR_ROLLING, xor_key=0x55)
+    asm, _ = generate_stack_string_x86(
+        _DATA,
+        StackStringOptions(encoding=EncodingScheme.XOR_ROLLING, xor_key=0x55),
+    )
 
     assert _emits_string_bytes(asm, count=len(_DATA), address_register="esp"), (
         "generate_stack_string_x86 must emit one mov-byte per data byte; " f"got asm:\n{asm}"
@@ -62,7 +66,10 @@ def test_x86_xor_rolling_emits_byte_writes_and_decode_loop() -> None:
 def test_x86_add_shift_emits_byte_writes_and_decode_loop() -> None:
     """Pre-fix the x86 ADD_SHIFT branch was missing entirely. Post-fix it
     matches the x64 layout: byte-writes followed by ``sub byte`` decode."""
-    asm, _ = generate_stack_string_x86(_DATA, encoding=EncodingScheme.ADD_SHIFT, add_shift=7)
+    asm, _ = generate_stack_string_x86(
+        _DATA,
+        StackStringOptions(encoding=EncodingScheme.ADD_SHIFT, add_shift=7),
+    )
 
     assert _emits_string_bytes(asm, count=len(_DATA), address_register="esp"), (
         "generate_stack_string_x86 must emit one mov-byte per data byte; " f"got asm:\n{asm}"
@@ -78,8 +85,9 @@ def test_x86_and_x64_emit_equivalent_byte_count_for_xor_rolling() -> None:
     """The x86 generator should emit the same number of ``mov byte`` writes
     as the x64 generator does -- one per data byte. Pre-fix x86 emitted 0
     while x64 emitted len(data)."""
-    asm64, _ = generate_stack_string_x64(_DATA, encoding=EncodingScheme.XOR_ROLLING, xor_key=0x55)
-    asm86, _ = generate_stack_string_x86(_DATA, encoding=EncodingScheme.XOR_ROLLING, xor_key=0x55)
+    options = StackStringOptions(encoding=EncodingScheme.XOR_ROLLING, xor_key=0x55)
+    asm64, _ = generate_stack_string_x64(_DATA, options)
+    asm86, _ = generate_stack_string_x86(_DATA, options)
 
     rsp_writes = asm64.count("mov byte [rsp+")
     esp_writes = asm86.count("mov byte [esp+")

@@ -8,14 +8,8 @@ from r2morph.reporting.report_summary_lookup import _summary_first
 
 
 def _resolve_filtered_summary_risk_coverage_sources(
-    *,
     summary: dict[str, Any],
-    risky_pass_names: set[str],
-    structural_risk_pass_names: set[str],
-    symbolic_risk_pass_names: set[str],
-    covered_pass_names: set[str],
-    uncovered_pass_names: set[str],
-    clean_pass_names: set[str],
+    live_buckets: dict[str, set[str]],
 ) -> dict[str, list[str]]:
     """Resolve risk/coverage buckets, preferring the persisted summary buckets,
     then the renderer-state filter views, then the live fallback pass-name sets.
@@ -51,11 +45,11 @@ def _resolve_filtered_summary_risk_coverage_sources(
         return sorted(fallback)
 
     return {
-        "risky": _bucket(pass_risk_buckets, "risky", "risky", risky_pass_names),
-        "structural": _bucket(pass_risk_buckets, "structural", "structural_risk", structural_risk_pass_names),
-        "symbolic": _bucket(pass_risk_buckets, "symbolic", "symbolic_risk", symbolic_risk_pass_names),
-        "clean": _bucket(pass_risk_buckets, "clean", "clean", clean_pass_names),
-        "covered": _bucket(pass_coverage_buckets, "covered", "covered", covered_pass_names),
-        "uncovered": _bucket(pass_coverage_buckets, "uncovered", "uncovered", uncovered_pass_names),
-        "clean_only": _bucket(pass_coverage_buckets, "clean_only", None, clean_pass_names),
+        "risky": _bucket(pass_risk_buckets, "risky", "risky", live_buckets["risky"]),
+        "structural": _bucket(pass_risk_buckets, "structural", "structural_risk", live_buckets["structural"]),
+        "symbolic": _bucket(pass_risk_buckets, "symbolic", "symbolic_risk", live_buckets["symbolic"]),
+        "clean": _bucket(pass_risk_buckets, "clean", "clean", live_buckets["clean"]),
+        "covered": _bucket(pass_coverage_buckets, "covered", "covered", live_buckets["covered"]),
+        "uncovered": _bucket(pass_coverage_buckets, "uncovered", "uncovered", live_buckets["uncovered"]),
+        "clean_only": _bucket(pass_coverage_buckets, "clean_only", None, live_buckets["clean"]),
     }

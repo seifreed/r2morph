@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any
+from typing import Any, ClassVar
 
 
 class RecordingReportAssembler:
     """Records every assemble_report call; returns a fixed sentinel report."""
 
-    SENTINEL: dict[str, Any] = {"sentinel": "report"}
+    SENTINEL: ClassVar[dict[str, Any]] = {"sentinel": "report"}
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []

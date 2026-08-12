@@ -5,6 +5,8 @@ from __future__ import annotations
 from r2morph.analysis.cfg import BlockType, ControlFlowGraph
 from r2morph.analysis.critical_nodes_models import CriticalNode
 
+_MAX_SIMPLE_PREDECESSORS = 2
+
 
 def score_address(
     address: int,
@@ -27,7 +29,7 @@ def score_address(
             return 0.3
         if block.block_type == BlockType.CALL:
             return 0.4
-        if len(block.predecessors) > 2:
+        if len(block.predecessors) > _MAX_SIMPLE_PREDECESSORS:
             return 0.5
 
     return 0.8

@@ -40,7 +40,7 @@ def test_anti_disasm_snippet_bytes_hex_is_parseable(snippet) -> None:
     except ValueError as exc:
         raise AssertionError(
             f"snippet {snippet.description!r}: bytes_hex={snippet.bytes_hex!r} " f"is not valid hex ({exc})"
-        )
+        ) from exc
     assert decoded, f"snippet {snippet.description!r} decodes to empty bytes"
 
 

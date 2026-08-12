@@ -5,7 +5,6 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_dispatcher import DispatcherGenerator
-from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.control_flow_flattening_strategies import add_opaque_predicate
 
@@ -62,7 +61,7 @@ def test_control_flow_flattening_add_opaque_predicate(tmp_path: Path):
         addr = exec_section.get("vaddr", 0) + 0x10
         available_size = 8
 
-        ok = add_opaque_predicate(bin_obj, addr, available_size, arch_family, bits, OpaquePredicateGenerator())
+        ok = add_opaque_predicate(bin_obj, addr, available_size, arch_family, bits)
         assert isinstance(ok, bool)
         if ok:
             data_hex = bin_obj.r2.cmd(f"p8 {available_size} @ 0x{addr:x}")

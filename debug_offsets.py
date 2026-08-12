@@ -11,6 +11,8 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from r2morph.core.binary import Binary
 
+MIN_ARGUMENT_COUNT = 2
+
 
 def debug_instructions(binary_path: str):
     """Check instruction fields."""
@@ -39,7 +41,7 @@ def debug_instructions(binary_path: str):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    if len(sys.argv) < MIN_ARGUMENT_COUNT:
         print("Usage: python debug_offsets.py <binary>")
         sys.exit(1)
 

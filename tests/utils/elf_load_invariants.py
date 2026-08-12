@@ -20,6 +20,7 @@ fired.
 
 from __future__ import annotations
 
+import itertools
 import struct
 from dataclasses import dataclass
 from pathlib import Path
@@ -137,7 +138,7 @@ def _overlap_violations(image: Elf64Image) -> list[str]:
     """No two loadable ranges may claim the same virtual address."""
     occupied = sorted((entry for entry in _loads(image) if entry[1].p_memsz), key=lambda entry: entry[1].p_vaddr)
     violations = []
-    for (lower_index, lower), (upper_index, upper) in zip(occupied, occupied[1:], strict=False):
+    for (lower_index, lower), (upper_index, upper) in itertools.pairwise(occupied):
         if upper.p_vaddr < lower.p_vaddr + lower.p_memsz:
             violations.append(
                 f"{LOAD_VADDR_OVERLAP}: PT_LOAD #{lower_index} "

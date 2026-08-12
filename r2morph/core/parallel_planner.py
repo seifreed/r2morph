@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any
+from typing import Any, ClassVar
 
 from r2morph.core.parallel_planner_helpers import build_conflict_pairs, build_execution_stages
 from r2morph.protocols import MutationPassProtocol
@@ -75,7 +75,7 @@ class ExecutionPlan:
 class DependencyResolver:
     """Resolves dependencies between mutation passes."""
 
-    KNOWN_DEPENDENCIES: dict[str, PassDependency] = {
+    KNOWN_DEPENDENCIES: ClassVar[dict[str, PassDependency]] = {
         "nop": PassDependency("nop", requires=[], conflicts=[]),
         "substitute": PassDependency("substitute", requires=[], conflicts=[]),
         "register": PassDependency("register", requires=[], conflicts=["substitute"]),

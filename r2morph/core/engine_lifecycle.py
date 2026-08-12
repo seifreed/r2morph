@@ -79,14 +79,16 @@ def load_binary(
 
 def auto_detect_analysis_level(engine: Any) -> str:
     """Auto-detect optimal analysis level based on binary complexity."""
+    binary = engine.binary
+    if binary is None:
+        raise RuntimeError("No binary loaded. Call load_binary() first.")
     logger.info("Running quick analysis to estimate complexity...")
     start = time.time()
-    assert engine.binary is not None
-    engine.binary.analyze("aa")
-    quick_funcs = len(engine.binary.get_functions())
+    binary.analyze("aa")
+    quick_funcs = len(binary.get_functions())
     aa_time = time.time() - start
 
-    binary_size_mb = get_binary_size_mb(engine.binary.path)
+    binary_size_mb = get_binary_size_mb(binary.path)
     avg_func_size = (binary_size_mb * 1024 * 1024) / quick_funcs if quick_funcs > 0 else 0
 
     logger.info(
@@ -104,38 +106,35 @@ def auto_detect_analysis_level(engine: Any) -> str:
         logger.warning(
             f"Large binary ({quick_funcs} functions). Using 'aac' analysis (adds ~10-20s for call analysis)."
         )
-        assert engine.binary is not None
-        engine.binary.analyze("aac")
+        binary.analyze("aac")
     elif quick_funcs > MEDIUM_FUNCTION_COUNT_THRESHOLD:
         level = "aac"
         logger.info(f"Medium binary ({quick_funcs} functions). Using 'aac' analysis.")
-        assert engine.binary is not None
-        engine.binary.analyze("aac")
+        binary.analyze("aac")
     else:
         level = "aaa"
         logger.info(
             f"Small binary ({quick_funcs} functions). Using full 'aaa' analysis (~{int(aa_time * 3)}s estimated)."
         )
-        assert engine.binary is not None
-        engine.binary.analyze("aaa")
+        binary.analyze("aaa")
 
     return level
 
 
 def analyze(engine: Any, level: str = "auto") -> MorphEngine:
     """Analyze the loaded binary using the engine state."""
-    if not engine.binary:
+    binary = engine.binary
+    if binary is None:
         raise RuntimeError("No binary loaded. Call load_binary() first.")
 
     if level == "auto":
         level = auto_detect_analysis_level(engine)
     else:
         logger.info(f"Analyzing binary with level: {level}...")
-        assert engine.binary is not None
-        engine.binary.analyze(level)
+        binary.analyze(level)
 
-    functions = engine.binary.get_functions()
-    arch_info = engine.binary.get_arch_info()
+    functions = binary.get_functions()
+    arch_info = binary.get_arch_info()
 
     engine._stats = {
         "functions": len(functions),
@@ -147,8 +146,7 @@ def analyze(engine: Any, level: str = "auto") -> MorphEngine:
     logger.info(f"Analysis complete. Found {len(functions)} functions")
     logger.debug(f"Architecture: {arch_info}")
 
-    assert engine.binary is not None
-    binary_size_mb = get_binary_size_mb(engine.binary.path)
+    binary_size_mb = get_binary_size_mb(binary.path)
     if should_enable_memory_efficient_mode(binary_size_mb, len(functions)):
         engine._memory_efficient_mode = True
         logger.warning(

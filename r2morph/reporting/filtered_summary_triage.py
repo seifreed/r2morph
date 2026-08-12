@@ -2,29 +2,24 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from r2morph.reporting.filtered_summary_discarded import _populate_filtered_summary_discarded_sections
+from r2morph.reporting.filtered_summary_pass_details import PassDetailPopulation
 from r2morph.reporting.report_helpers import _summary_first, _visible_rows, _visible_rows_from_map
 
 
-def _populate_triage_and_results(
-    *,
-    filtered_summary: dict[str, Any],
-    summary: dict[str, Any],
-    summary_pass_triage_map: dict[str, Any],
-    summary_normalized_pass_results: list[dict[str, Any]],
-    summary_pass_capability_summary_map: dict[str, Any],
-    summary_validation_role_map: dict[str, Any],
-    summary_report_views: dict[str, Any],
-    summary_general_pass_rows: list[dict[str, Any]],
-    summary_general_passes: list[dict[str, Any]],
-    summary_discarded_mutation_summary: dict[str, Any],
-    summary_discarded_view: dict[str, Any],
-    summary_discarded_mutation_priority: list[dict[str, Any]],
-    summary_general_discards: dict[str, Any],
-) -> None:
+def _populate_triage_and_results(state: PassDetailPopulation) -> None:
     """Populate triage rows, normalized results, capability summary, and validation role rows."""
+    filtered_summary = state.filtered_summary
+    summary = state.context.summary
+    sources = state.summary_sources
+    summary_pass_triage_map = sources["pass_triage_map"]
+    summary_normalized_pass_results = sources["normalized_pass_results"]
+    summary_pass_capability_summary_map = sources["pass_capability_summary_map"]
+    summary_validation_role_map = sources["validation_role_map"]
+    summary_report_views = sources["report_views"]
+    summary_general_pass_rows = sources["general_pass_rows"]
+    summary_general_passes = sources["general_passes"]
+    summary_general_discards = sources["general_discards"]
     pass_triage_rows = list(
         _summary_first(summary, "pass_triage_rows", summary_report_views.get("triage_priority", [])) or []
     )
@@ -89,9 +84,9 @@ def _populate_triage_and_results(
 
     _populate_filtered_summary_discarded_sections(
         filtered_summary=filtered_summary,
-        summary_discarded_mutation_summary=summary_discarded_mutation_summary,
-        summary_discarded_view=summary_discarded_view,
-        summary_discarded_mutation_priority=summary_discarded_mutation_priority,
+        summary_discarded_mutation_summary=sources["discarded_mutation_summary"],
+        summary_discarded_view=sources["discarded_view"],
+        summary_discarded_mutation_priority=sources["discarded_mutation_priority"],
     )
     if "discarded_mutation_compact_summary" not in filtered_summary and summary_general_discards.get("summary"):
         filtered_summary["discarded_mutation_compact_summary"] = dict(summary_general_discards.get("summary", {}))

@@ -13,11 +13,12 @@ Examples:
 from __future__ import annotations
 
 import logging
-import random
-from typing import Any
+from typing import Any, ClassVar
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.constant_unfolding_helpers import (
+    UnfoldMutation,
     apply_single_unfold,
     calculate_sequence_size,
     match_unfold_pattern,
@@ -52,7 +53,7 @@ class ConstantUnfoldingPass(MutationPass):
         - size_limit: Max size increase factor (default: 3.0)
     """
 
-    UNFOLDING_PATTERNS = {
+    UNFOLDING_PATTERNS: ClassVar[dict[str, dict[str, Any]]] = {
         "zero": {
             "patterns": [
                 "xor {reg}, {reg}",
@@ -153,7 +154,9 @@ class ConstantUnfoldingPass(MutationPass):
         """
         return calculate_sequence_size(instructions, binary, base_addr)
 
-    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]]) -> list[tuple[dict, list]]:
+    def _select_candidates(
+        self, binary: Any, functions: list[dict[str, Any]]
+    ) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
         """
         Iterate functions, get disasm, and filter candidate instructions.
 
@@ -179,15 +182,56 @@ class ConstantUnfoldingPass(MutationPass):
     def _apply_single_unfold(
         self,
         binary: Any,
-        func: dict,
-        addr: int,
-        orig_size: int,
-        disasm: str,
-        unfolded: list[str],
-        baseline: dict,
+        mutation: UnfoldMutation,
     ) -> bool:
         """Assemble, write, validate, and record a single unfold. Returns True on success."""
-        return apply_single_unfold(self, binary, func, addr, orig_size, disasm, unfolded, baseline)
+        return apply_single_unfold(self, binary, mutation)
+
+    def _try_unfold_instruction(
+        self,
+        binary: Any,
+        func: dict[str, Any],
+        insn: dict[str, Any],
+        bits: int,
+    ) -> tuple[bool, bool, int]:
+        disasm = insn.get("disasm", "").lower()
+        addr = insn.get("addr", 0)
+        orig_size = insn.get("size", 0)
+        if addr == 0 or orig_size == 0:
+            return False, False, 0
+
+        is_constant = False
+        try:
+            unfolded, is_constant = self._match_unfold_pattern(disasm, bits, binary, func["addr"])
+            if not unfolded:
+                return False, is_constant, 0
+
+            new_size = self._calculate_sequence_size(unfolded, binary, func["addr"])
+            if new_size == 0:
+                return False, is_constant, 0
+            if new_size > orig_size and (
+                (self.size_limit > 1 and new_size > orig_size * self.size_limit) or new_size > orig_size + 16
+            ):
+                return False, is_constant, 0
+
+            baseline = {}
+            if self._validation_manager is not None:
+                baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
+            mutation = UnfoldMutation(
+                function_address=func["addr"],
+                address=addr,
+                original_size=orig_size,
+                original_disassembly=disasm,
+                instructions=tuple(unfolded),
+                baseline=baseline,
+            )
+            applied = self._apply_single_unfold(binary, mutation)
+            if applied:
+                logger.info("Unfolded constant: '%s' -> '%s' at 0x%x", disasm, "; ".join(unfolded), addr)
+            return applied, is_constant, new_size - orig_size if applied else 0
+        except (ValueError, OSError, BrokenPipeError, RuntimeError) as exc:
+            logger.debug("Failed to unfold constant at 0x%x: %s", addr, exc)
+            return False, is_constant, 0
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -229,41 +273,12 @@ class ConstantUnfoldingPass(MutationPass):
                 if func_mutations >= self.max_unfolds:
                     break
 
-                disasm = insn.get("disasm", "").lower()
-                addr = insn.get("addr", 0)
-                orig_size = insn.get("size", 0)
-
-                if addr == 0 or orig_size == 0:
-                    continue
-
-                try:
-                    unfolded, is_constant = self._match_unfold_pattern(disasm, bits, binary, func["addr"])
-                    if not unfolded:
-                        continue
-                    if is_constant:
-                        constants_unfolded += 1
-
-                    new_size = self._calculate_sequence_size(unfolded, binary, func["addr"])
-                    if new_size == 0:
-                        continue
-                    if new_size > orig_size:
-                        if self.size_limit > 1 and new_size > orig_size * self.size_limit:
-                            continue
-                        if new_size > orig_size + 16:
-                            continue
-
-                    baseline = {}
-                    if self._validation_manager is not None:
-                        baseline = self._validation_manager.capture_structural_baseline(binary, func["addr"])
-
-                    if self._apply_single_unfold(binary, func, addr, orig_size, disasm, unfolded, baseline):
-                        logger.info(f"Unfolded constant: '{disasm}' -> '{'; '.join(unfolded)}' at 0x{addr:x}")
-                        func_mutations += 1
-                        mutations_applied += 1
-                        size_increase += new_size - orig_size
-
-                except (ValueError, OSError, BrokenPipeError, RuntimeError) as e:
-                    logger.debug(f"Failed to unfold constant at 0x{addr:x}: {e}")
+                applied, is_constant, size_delta = self._try_unfold_instruction(binary, func, insn, bits)
+                constants_unfolded += int(is_constant)
+                if applied:
+                    func_mutations += 1
+                    mutations_applied += 1
+                    size_increase += size_delta
 
             if func_mutations > 0:
                 functions_mutated += 1

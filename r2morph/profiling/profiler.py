@@ -3,8 +3,11 @@ Binary profiling for guided mutations.
 """
 
 import logging
-import subprocess
+import platform
 from pathlib import Path
+from typing import Any
+
+from r2morph.adapters.process import run_process
 
 logger = logging.getLogger(__name__)
 
@@ -27,9 +30,9 @@ class BinaryProfiler:
             binary_path: Binary to profile
         """
         self.binary_path = binary_path
-        self.profile_data: dict = {}
+        self.profile_data: dict[str, Any] = {}
 
-    def profile(self, test_inputs: list[str] | None = None, duration: int = 10) -> dict:
+    def profile(self, test_inputs: list[str] | None = None, duration: int = 10) -> dict[str, Any]:
         """
         Profile binary execution.
 
@@ -46,7 +49,7 @@ class BinaryProfiler:
 
         return self.profile_data
 
-    def _profile_with_sampling(self, duration: int) -> dict:
+    def _profile_with_sampling(self, duration: int) -> dict[str, Any]:
         """
         Profile using sampling (perf, dtrace, etc).
 
@@ -56,8 +59,6 @@ class BinaryProfiler:
         Returns:
             Profile data
         """
-        import platform
-
         system = platform.system()
 
         if system == "Linux":
@@ -68,16 +69,16 @@ class BinaryProfiler:
             logger.warning("Profiling not available on this platform")
             return {}
 
-    def _profile_linux_perf(self, duration: int) -> dict:
+    def _profile_linux_perf(self, duration: int) -> dict[str, Any]:
         """Profile on Linux using perf."""
         try:
             cmd = ["perf", "record", "-F", "99", "-g", "--", str(self.binary_path)]
 
-            subprocess.run(cmd, timeout=duration)
+            run_process(cmd, timeout=duration)
 
-            report = subprocess.run(["perf", "report", "--stdio"], capture_output=True, text=True)
+            report = run_process(["perf", "report", "--stdio"])
 
-            hot_functions = self._parse_perf_output(report.stdout)
+            hot_functions = self._parse_perf_output(report.stdout_text)
 
             return {"hot_functions": hot_functions}
 
@@ -85,7 +86,7 @@ class BinaryProfiler:
             logger.error(f"perf profiling failed: {e}")
             return {}
 
-    def _profile_macos_dtrace(self, duration: int) -> dict:
+    def _profile_macos_dtrace(self, duration: int) -> dict[str, Any]:
         """Profile on macOS using dtrace/Instruments."""
         logger.info("Would use dtrace/Instruments for profiling")
         return {}

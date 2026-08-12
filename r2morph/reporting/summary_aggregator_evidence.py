@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.core.report_helpers import _summarize_structural_evidence
+from r2morph.core.report_helpers_structural_evidence import _summarize_structural_evidence
 from r2morph.reporting.summary_aggregator_evidence_rows import (
     _build_pass_evidence_summary,
     _summarize_pass_evidence_rows,

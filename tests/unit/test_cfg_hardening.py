@@ -8,8 +8,6 @@ Tests for Issue #3:
 - Tests with optimized binaries
 """
 
-from unittest.mock import patch
-
 import pytest
 
 from r2morph.analysis.pattern_preservation import (
@@ -398,10 +396,8 @@ class TestCFGIntegrityChecker:
 
         checker = CFGIntegrityChecker(binary)
 
-        with patch.object(checker._cfg_builder, "build_cfg") as mock_cfg:
-            mock_cfg.return_value = None
-            snapshot = checker.create_snapshot(0x1000)
-            assert snapshot is None
+        snapshot = checker.create_snapshot(0x1000)
+        assert snapshot is None
 
     def test_validate_without_snapshot(self):
         """Test validation without snapshot."""

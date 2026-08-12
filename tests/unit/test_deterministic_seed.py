@@ -8,10 +8,9 @@ Tests for Issue #6:
 - All passes support seed control
 """
 
-import random
-
 import pytest
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass, MutationRecord, MutationResult
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass

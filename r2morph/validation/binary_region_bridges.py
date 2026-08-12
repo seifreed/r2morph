@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
 from typing import Any
@@ -10,6 +11,9 @@ from typing import Any
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+_BITS_32 = 32
+_BITS_64 = 64
 
 
 def step_to_exit(
@@ -39,44 +43,49 @@ def step_to_exit(
     return final, steps, error, trace
 
 
-def build_state_pair(
-    original_bridge: Any,
-    mutated_bridge: Any,
-    original_binary: Binary,
-    claripy: Any,
-    options: Any,
-    resolved_original: Any,
-    resolved_mutated: Any,
-    start: int,
-) -> tuple[Any, Any, list[str], str]:
+@dataclass(frozen=True)
+class StatePairRequest:
+    """Dependencies and resolved addresses for paired symbolic states."""
+
+    original_bridge: Any
+    mutated_bridge: Any
+    original_binary: Binary
+    claripy: Any
+    options: Any
+    resolved_original: Any
+    resolved_mutated: Any
+    start: int
+
+
+def build_state_pair(request: StatePairRequest) -> tuple[Any, Any, list[str], str]:
     """Build seeded original/mutated blank states."""
-    original_state = original_bridge.angr_project.factory.blank_state(
-        addr=resolved_original,
+    original_state = request.original_bridge.angr_project.factory.blank_state(
+        addr=request.resolved_original,
         add_options={
-            options.ZERO_FILL_UNCONSTRAINED_MEMORY,
-            options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
+            request.options.ZERO_FILL_UNCONSTRAINED_MEMORY,
+            request.options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
         },
     )
-    mutated_state = mutated_bridge.angr_project.factory.blank_state(
-        addr=resolved_mutated,
+    mutated_state = request.mutated_bridge.angr_project.factory.blank_state(
+        addr=request.resolved_mutated,
         add_options={
-            options.ZERO_FILL_UNCONSTRAINED_MEMORY,
-            options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
+            request.options.ZERO_FILL_UNCONSTRAINED_MEMORY,
+            request.options.ZERO_FILL_UNCONSTRAINED_REGISTERS,
         },
     )
-    bit_width = 64 if original_binary.get_arch_info().get("bits") == 64 else 32
-    stack_reg = "rsp" if bit_width == 64 else "esp"
-    base_reg = "rbp" if bit_width == 64 else "ebp"
-    setattr(original_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-    setattr(mutated_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-    setattr(original_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
-    setattr(mutated_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
+    bit_width = _BITS_64 if request.original_binary.get_arch_info().get("bits") == _BITS_64 else _BITS_32
+    stack_reg = "rsp" if bit_width == _BITS_64 else "esp"
+    base_reg = "rbp" if bit_width == _BITS_64 else "ebp"
+    setattr(original_state.regs, stack_reg, request.claripy.BVV(0x100000, bit_width))
+    setattr(mutated_state.regs, stack_reg, request.claripy.BVV(0x100000, bit_width))
+    setattr(original_state.regs, base_reg, request.claripy.BVV(0x100000, bit_width))
+    setattr(mutated_state.regs, base_reg, request.claripy.BVV(0x100000, bit_width))
 
     compared_registers = ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
-    if bit_width == 32:
+    if bit_width == _BITS_32:
         compared_registers = ["eax", "ebx", "ecx", "edx", "esi", "edi"]
     for reg_name in compared_registers:
-        shared = claripy.BVS(f"{reg_name}_{start:x}", bit_width)
+        shared = request.claripy.BVS(f"{reg_name}_{request.start:x}", bit_width)
         if hasattr(original_state.regs, reg_name):
             setattr(original_state.regs, reg_name, shared)
         if hasattr(mutated_state.regs, reg_name):
@@ -117,13 +126,13 @@ def setup_symbolic_bridges(
     bridge_module: Any,
 ) -> dict[str, Any] | tuple[Any, Any, Any, Any, Any]:
     """Create AngrBridge for original and mutated binaries."""
-    from r2morph.analysis.symbolic.angr_bridge import AngrBridge
+    angr_bridge_cls = import_module("r2morph.analysis.symbolic.angr_bridge").AngrBridge
 
     with Binary(previous_binary_path, writable=False) as original_binary:
-        original_bridge, error = _create_original_bridge(original_binary, AngrBridge)
+        original_bridge, error = _create_original_bridge(original_binary, angr_bridge_cls)
         if error is not None:
             return error
-        mutated_bridge, error = _create_mutated_bridge(binary, original_bridge, AngrBridge)
+        mutated_bridge, error = _create_mutated_bridge(binary, original_bridge, angr_bridge_cls)
         if error is not None:
             return error
         angr_module = getattr(bridge_module, "angr", None)

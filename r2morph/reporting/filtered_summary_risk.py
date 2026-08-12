@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.reporting.report_helpers import _sort_pass_evidence
+from r2morph.reporting.report_evidence_sorting import _sort_pass_evidence
 
 
 def _apply_risk_filters(

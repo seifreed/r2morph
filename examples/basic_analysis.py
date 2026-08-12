@@ -60,7 +60,7 @@ def main():
             print(f"\n=== First Function Disassembly: {name} ===")
             disasm = binary.get_function_disasm(addr)
 
-            for i, insn in enumerate(disasm[:10]):
+            for insn in disasm[:10]:
                 insn_addr = insn.get("offset", 0)
                 insn_disasm = insn.get("disasm", "")
                 insn_bytes = insn.get("bytes", "")

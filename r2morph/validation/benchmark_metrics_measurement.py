@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import time
 from collections.abc import Callable
 from typing import Any
@@ -11,10 +12,8 @@ from r2morph.validation.benchmark_types import PerformanceMetrics
 
 def measure_performance(func: Callable[..., Any], *args: Any, **kwargs: Any) -> tuple[PerformanceMetrics, Any]:
     """Measure execution time, memory and CPU usage for a callable."""
-    psutil: Any
     try:
-        import psutil
-
+        psutil: Any = importlib.import_module("psutil")
         has_psutil = True
     except ImportError:
         psutil = None

@@ -7,6 +7,12 @@ import re
 
 from r2morph.core.safe_eval import safe_eval_arithmetic_node
 
+_SIMPLE_MAX_OPERATIONS = 3
+_SIMPLE_MAX_DEPTH = 2
+_MEDIUM_MAX_OPERATIONS = 10
+_MEDIUM_MAX_DEPTH = 4
+_BINARY_VARIABLE_COUNT = 2
+
 
 def load_mba_patterns() -> dict[str, str]:
     """Load known MBA patterns and their simplified forms."""
@@ -59,9 +65,9 @@ def assess_complexity(expression: str) -> str:
     op_count = sum(expression.count(op) for op in ["+", "-", "*", "/", "&", "|", "^", "~"])
     paren_depth = calculate_parentheses_depth(expression)
 
-    if op_count <= 3 and paren_depth <= 2:
+    if op_count <= _SIMPLE_MAX_OPERATIONS and paren_depth <= _SIMPLE_MAX_DEPTH:
         return "simple"
-    if op_count <= 10 and paren_depth <= 4:
+    if op_count <= _MEDIUM_MAX_OPERATIONS and paren_depth <= _MEDIUM_MAX_DEPTH:
         return "medium"
     return "complex"
 
@@ -117,34 +123,33 @@ def evaluate_expression(expression: str, assignment: dict[str, int]) -> int:
         return 0
 
 
-def find_simple_equivalent(truth_table: dict[tuple, int], variables: list[str]) -> str | None:
+def find_simple_equivalent(truth_table: dict[tuple[int, ...], int], variables: list[str]) -> str | None:
     """Find simple equivalent expression from truth table."""
     values = list(truth_table.values())
+    equivalent = None
     if all(v == 0 for v in values):
-        return "0"
-    if all(v == 1 for v in values):
-        return "1"
+        equivalent = "0"
+    elif all(v == 1 for v in values):
+        equivalent = "1"
 
-    for i, var in enumerate(variables):
-        if all(truth_table[inputs] == inputs[i] for inputs in truth_table):
-            return var
+    if equivalent is None:
+        for index, variable in enumerate(variables):
+            if all(truth_table[inputs] == inputs[index] for inputs in truth_table):
+                equivalent = variable
+                break
 
-    if len(variables) >= 2:
+    if equivalent is None and len(variables) >= _BINARY_VARIABLE_COUNT:
         var1, var2 = variables[0], variables[1]
 
         xor_match = all(truth_table[inputs] == (inputs[0] ^ inputs[1]) for inputs in truth_table)
         if xor_match:
-            return f"{var1} ^ {var2}"
+            equivalent = f"{var1} ^ {var2}"
+        elif all(truth_table[inputs] == (inputs[0] & inputs[1]) for inputs in truth_table):
+            equivalent = f"{var1} & {var2}"
+        elif all(truth_table[inputs] == (inputs[0] | inputs[1]) for inputs in truth_table):
+            equivalent = f"{var1} | {var2}"
 
-        and_match = all(truth_table[inputs] == (inputs[0] & inputs[1]) for inputs in truth_table)
-        if and_match:
-            return f"{var1} & {var2}"
-
-        or_match = all(truth_table[inputs] == (inputs[0] | inputs[1]) for inputs in truth_table)
-        if or_match:
-            return f"{var1} | {var2}"
-
-    return None
+    return equivalent
 
 
 def calculate_complexity_reduction(original: str, simplified: str) -> float:
@@ -161,19 +166,20 @@ def calculate_complexity_reduction(original: str, simplified: str) -> float:
 
 def generate_native_equivalent(simplified_expr: str) -> str | None:
     """Generate equivalent native assembly code."""
+    native_equivalent = None
     if simplified_expr == "0":
-        return "xor eax, eax"
-    if simplified_expr == "1":
-        return "mov eax, 1"
-    if "^" in simplified_expr:
-        return "xor eax, ebx"
-    if "&" in simplified_expr:
-        return "and eax, ebx"
-    if "|" in simplified_expr:
-        return "or eax, ebx"
-    if "+" in simplified_expr:
-        return "add eax, ebx"
-    if "-" in simplified_expr:
-        return "sub eax, ebx"
+        native_equivalent = "xor eax, eax"
+    elif simplified_expr == "1":
+        native_equivalent = "mov eax, 1"
+    elif "^" in simplified_expr:
+        native_equivalent = "xor eax, ebx"
+    elif "&" in simplified_expr:
+        native_equivalent = "and eax, ebx"
+    elif "|" in simplified_expr:
+        native_equivalent = "or eax, ebx"
+    elif "+" in simplified_expr:
+        native_equivalent = "add eax, ebx"
+    elif "-" in simplified_expr:
+        native_equivalent = "sub eax, ebx"
 
-    return None
+    return native_equivalent

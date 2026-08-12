@@ -14,13 +14,13 @@ from r2morph.relocations.manager import RelocationManager
 from r2morph.relocations.reference_updater import ReferenceUpdater
 
 __all__ = [
-    "RelocationManager",
-    "CaveFinder",
-    "CodeCave",
-    "CodeCaveInjector",
-    "CodeCaveAllocation",
     "CaveCreationOptions",
+    "CaveFinder",
     "CaveType",
-    "SectionPermissions",
+    "CodeCave",
+    "CodeCaveAllocation",
+    "CodeCaveInjector",
     "ReferenceUpdater",
+    "RelocationManager",
+    "SectionPermissions",
 ]

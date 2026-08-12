@@ -4,19 +4,15 @@ from __future__ import annotations
 
 from typing import Any
 
+from r2morph.reporting.report_builder_models import ReportContext
 from r2morph.reporting.report_view_resolution import _resolve_general_report_views
 
 
 def _build_filtered_summary_gate_sections(
-    *,
-    summary: dict[str, Any],
-    gate_evaluation: dict[str, Any],
-    gate_failure_summary: dict[str, Any],
-    gate_failure_priority: list[dict[str, Any]],
-    gate_failure_severity_priority: list[dict[str, Any]],
-    failed_gates: bool,
+    context: ReportContext,
 ) -> dict[str, Any]:
     """Build filtered_summary gate-related sections from persisted report views first."""
+    summary = context.summary
     resolved_general_views = _resolve_general_report_views(summary)
     report_views = resolved_general_views["report_views"]
     general_gates = resolved_general_views["general_gates"]
@@ -24,14 +20,14 @@ def _build_filtered_summary_gate_sections(
     summary_payload = dict(
         persisted_view.get("summary", {})
         or general_gates.get("summary", {})
-        or gate_failure_summary
+        or context.gate_failure_summary
         or general_gates.get("compact_summary", {})
     )
-    priority_payload = list(persisted_view.get("priority", []) or gate_failure_priority)
+    priority_payload = list(persisted_view.get("priority", []) or context.gate_failure_priority)
     severity_payload = list(
         persisted_view.get("severity_priority", [])
         or general_gates.get("severity_priority", [])
-        or gate_failure_severity_priority
+        or context.gate_failure_severity_priority
     )
     compact_summary = dict(persisted_view.get("compact_summary", {}) or general_gates.get("compact_summary", {}) or {})
     final_rows = list(persisted_view.get("final_rows", []) or [])
@@ -68,7 +64,7 @@ def _build_filtered_summary_gate_sections(
         final_rows = enriched_final_rows
     if not compact_summary:
         compact_summary = {
-            "failed": bool(persisted_view.get("failed", False) or failed_gates),
+            "failed": bool(persisted_view.get("failed", False) or context.failed_gates),
             "failure_count": int(
                 persisted_view.get("failure_count", 0) or summary_payload.get("require_pass_severity_failure_count", 0)
             ),
@@ -78,7 +74,7 @@ def _build_filtered_summary_gate_sections(
             "passes": list(persisted_view.get("passes", []) or []),
         }
     section: dict[str, Any] = {
-        "failed_gates": failed_gates or bool(persisted_view.get("failed", False)),
+        "failed_gates": context.failed_gates or bool(persisted_view.get("failed", False)),
         "gate_failure_priority": priority_payload,
         "gate_failure_severity_priority": severity_payload,
         "gate_failure_final_rows": final_rows,
@@ -87,8 +83,8 @@ def _build_filtered_summary_gate_sections(
         "gate_failure_compact_by_pass": dict(persisted_view.get("compact_by_pass", {}) or {}),
         "gate_failure_compact_summary": compact_summary,
     }
-    if gate_evaluation:
-        section["gate_evaluation"] = gate_evaluation
+    if context.gate_evaluation:
+        section["gate_evaluation"] = context.gate_evaluation
     if summary_payload:
         section["gate_failures"] = summary_payload
     return section

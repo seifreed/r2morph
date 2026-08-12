@@ -3,15 +3,29 @@
 from __future__ import annotations
 
 import logging
-import random
 import time
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, cast
 
-from r2morph.core.report_helpers import _build_pass_validation_context, _enrich_validation_policy
+import r2morph.core.randomness as random
+from r2morph.core.report_helpers_validation import _build_pass_validation_context, _enrich_validation_policy
+from r2morph.protocols import PipelineRunOptions
 from r2morph.validation import BinaryValidator, ValidationManager
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class EngineRunOptions:
+    validation_mode: str = "structural"
+    rollback_policy: str = "skip-invalid-pass"
+    checkpoint_per_mutation: bool = False
+    validation_manager: ValidationManager | None = None
+    runtime_validator: BinaryValidator | None = None
+    runtime_validate_per_pass: bool = False
+    report_path: str | Path | None = None
+    seed: int | None = None
 
 
 def _apply_seed_to_passes(engine: Any, seed: int) -> None:
@@ -23,10 +37,13 @@ def _apply_seed_to_passes(engine: Any, seed: int) -> None:
         mutation.config["_use_derived_seed"] = True
 
 
-def _build_validation_manager(validation_mode: str) -> ValidationManager | None:
+def _build_validation_manager(
+    validation_mode: str,
+    validation_manager: ValidationManager | None = None,
+) -> ValidationManager | None:
     if validation_mode in {"off", "runtime"}:
         return None
-    return ValidationManager(mode=validation_mode)
+    return validation_manager or ValidationManager(mode=validation_mode)
 
 
 def _apply_runtime_validation(
@@ -38,13 +55,15 @@ def _apply_runtime_validation(
     if runtime_validator is None or engine._original_path is None:
         return
 
-    assert engine.binary is not None
-    runtime_result = runtime_validator.validate(engine._original_path, engine.binary.path)
+    binary = engine.binary
+    if binary is None:
+        raise RuntimeError("No binary loaded. Call load_binary() first.")
+    runtime_result = runtime_validator.validate(engine._original_path, binary.path)
     result["validation"]["runtime"] = runtime_result.to_dict()
     result["validation"]["all_passed"] = result["validation"].get("all_passed", True) and runtime_result.passed
     if not runtime_result.passed and engine._session is not None:
         engine._session.rollback_to("initial")
-        engine.binary.reload()
+        binary.reload()
         if rollback_policy == "fail-fast":
             raise RuntimeError("Runtime validation failed after pipeline execution")
 
@@ -72,24 +91,17 @@ def _enrich_run_result(engine: Any, result: dict[str, Any], validation_mode: str
         result["validation_policy"] = enriched_validation_policy
 
     result["execution_time_seconds"] = round(time.time() - start_time, 3)
-    assert engine.binary is not None
-    result["input_path"] = str(engine._original_path or engine.binary.path)
-    result["working_path"] = str(engine.binary.path)
+    binary = engine.binary
+    if binary is None:
+        raise RuntimeError("No binary loaded. Call load_binary() first.")
+    result["input_path"] = str(engine._original_path or binary.path)
+    result["working_path"] = str(binary.path)
     result["config"] = dict(engine.config)
 
 
-def run(
-    engine: Any,
-    *,
-    validation_mode: str = "structural",
-    rollback_policy: str = "skip-invalid-pass",
-    checkpoint_per_mutation: bool = False,
-    runtime_validator: BinaryValidator | None = None,
-    runtime_validate_per_pass: bool = False,
-    report_path: str | Path | None = None,
-    seed: int | None = None,
-) -> dict[str, Any]:
+def run(engine: Any, options: EngineRunOptions | None = None) -> dict[str, Any]:
     """Run the transformation pipeline using the engine state."""
+    options = options or EngineRunOptions()
     if not engine.binary:
         raise RuntimeError("No binary loaded. Call load_binary() first.")
 
@@ -99,27 +111,29 @@ def run(
 
     logger.info("Starting transformation pipeline...")
     start_time = time.time()
-    if seed is not None:
-        _apply_seed_to_passes(engine, seed)
+    if options.seed is not None:
+        _apply_seed_to_passes(engine, options.seed)
 
-    validation_manager = _build_validation_manager(validation_mode)
+    validation_manager = _build_validation_manager(options.validation_mode, options.validation_manager)
 
     result = engine.pipeline.run(
         engine.binary,
-        session=engine._session,
-        validation_manager=validation_manager,
-        runtime_validator=runtime_validator,
-        runtime_validate_per_pass=runtime_validate_per_pass or validation_mode == "runtime",
-        rollback_policy=rollback_policy,
-        checkpoint_per_mutation=checkpoint_per_mutation,
+        PipelineRunOptions(
+            session=engine._session,
+            validation_manager=validation_manager,
+            runtime_validator=options.runtime_validator,
+            runtime_validate_per_pass=options.runtime_validate_per_pass or options.validation_mode == "runtime",
+            rollback_policy=options.rollback_policy,
+            checkpoint_per_mutation=options.checkpoint_per_mutation,
+        ),
     )
 
-    _apply_runtime_validation(engine, result, runtime_validator, rollback_policy)
-    _enrich_run_result(engine, result, validation_mode, start_time)
+    _apply_runtime_validation(engine, result, options.runtime_validator, options.rollback_policy)
+    _enrich_run_result(engine, result, options.validation_mode, start_time)
     engine._last_result = {**engine._stats, **result}
 
-    if report_path is not None:
-        engine.save_report(report_path, engine._last_result)
+    if options.report_path is not None:
+        engine.save_report(options.report_path, engine._last_result)
 
     logger.info("Transformation complete")
     return cast("dict[str, Any]", engine._last_result)

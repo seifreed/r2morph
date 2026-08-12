@@ -2,49 +2,18 @@
 
 from __future__ import annotations
 
-LAZY_RENDERING_NAMES = frozenset(
-    {
-        "CONSOLE",
-        "create_table",
-        "render_pass_capabilities",
-        "render_pass_validation_contexts",
-        "render_symbolic_sections",
-        "render_gate_sections",
-        "render_degradation_sections",
-        "render_only_mismatches_sections",
-        "render_only_pass_sections",
-        "render_report_filter_messages",
-        "render_summary_table",
-        "render_gate_evaluation_sections",
-        "render_general_report_sections",
-        "render_general_only_pass_sections",
-        "render_mismatch_summary_sections",
-        "render_validation_context_table",
-    }
-)
-
 LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     "SEVERITY_ORDER": ("r2morph.reporting.gate_evaluator", "SEVERITY_ORDER"),
     "GateEvaluator": ("r2morph.reporting.gate_evaluator", "GateEvaluator"),
     "GateFailure": ("r2morph.reporting.gate_evaluator", "GateFailure"),
-    "FilteredReport": ("r2morph.reporting.report_builder", "FilteredReport"),
-    "ReportBuilder": ("r2morph.reporting.report_builder", "ReportBuilder"),
-    "ReportContext": ("r2morph.reporting.report_builder", "ReportContext"),
-    "emit_report_payload": ("r2morph.reporting.report_emitter", "emit_report_payload"),
-    "enforce_report_requirements": ("r2morph.reporting.report_emitter", "enforce_report_requirements"),
-    "gate_failure_result_count": ("r2morph.reporting.report_emitter", "gate_failure_result_count"),
-    "report_view_has_results": ("r2morph.reporting.report_emitter", "report_view_has_results"),
-    "severity_threshold_met": ("r2morph.reporting.report_emitter", "severity_threshold_met"),
-    "PassFilterResolver": ("r2morph.reporting.report_filters", "PassFilterResolver"),
-    "ReportFilters": ("r2morph.reporting.report_filters", "ReportFilters"),
-    "ConsoleRenderer": ("r2morph.reporting.report_renderer", "ConsoleRenderer"),
-    "ReportRenderer": ("r2morph.reporting.report_renderer", "ReportRenderer"),
-    "_has_structural_risk": ("r2morph.reporting.report_helpers_classification", "_has_structural_risk"),
-    "_has_symbolic_risk": ("r2morph.reporting.report_helpers_classification", "_has_symbolic_risk"),
-    "_is_clean_pass": ("r2morph.reporting.report_helpers_classification", "_is_clean_pass"),
-    "_is_covered_pass": ("r2morph.reporting.report_helpers_classification", "_is_covered_pass"),
-    "_is_risky_pass": ("r2morph.reporting.report_helpers_classification", "_is_risky_pass"),
-    "_is_uncovered_pass": ("r2morph.reporting.report_helpers_classification", "_is_uncovered_pass"),
+    "FilteredReport": ("r2morph.reporting.report_builder_models", "FilteredReport"),
+    "ReportContext": ("r2morph.reporting.report_builder_models", "ReportContext"),
+    "_has_structural_risk": ("r2morph.reporting.report_pass_classification", "_has_structural_risk"),
+    "_has_symbolic_risk": ("r2morph.reporting.report_pass_classification", "_has_symbolic_risk"),
+    "_is_clean_pass": ("r2morph.reporting.report_pass_classification", "_is_clean_pass"),
+    "_is_covered_pass": ("r2morph.reporting.report_pass_classification", "_is_covered_pass"),
+    "_is_risky_pass": ("r2morph.reporting.report_pass_classification", "_is_risky_pass"),
+    "_is_uncovered_pass": ("r2morph.reporting.report_pass_classification", "_is_uncovered_pass"),
     "_normalized_pass_map": ("r2morph.reporting.report_helpers", "_normalized_pass_map"),
     "_summary_first": ("r2morph.reporting.report_helpers", "_summary_first"),
     "resolve_general_symbolic_state": (
@@ -93,4 +62,5 @@ LAZY_EXPORTS: dict[str, tuple[str, str]] = {
     ),
 }
 
-__all__ = sorted(LAZY_EXPORTS) + sorted(LAZY_RENDERING_NAMES)
+__all__: list[str] = []
+__all__.extend(sorted(LAZY_EXPORTS))

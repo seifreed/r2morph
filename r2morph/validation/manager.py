@@ -4,11 +4,13 @@ Validation management for mutation passes.
 
 from __future__ import annotations
 
-from importlib import import_module  # noqa: F401
 from typing import TYPE_CHECKING, Any
 
+from r2morph.validation.abi_validator import AbiValidator
 from r2morph.validation.manager_models import ValidationIssue, ValidationOutcome
-from r2morph.validation.manager_pass_validation import augment_pass_validation
+from r2morph.validation.manager_pass_validation import PassValidationRequest, augment_pass_validation
+from r2morph.validation.structural_validator import StructuralValidator
+from r2morph.validation.symbolic_validator import SymbolicValidator
 
 if TYPE_CHECKING:
     from r2morph.core.binary import Binary
@@ -19,16 +21,17 @@ class ValidationManager:
     Coordinates structural validation for mutations and passes.
     """
 
-    def __init__(self, mode: str = "structural", check_abi: bool = False) -> None:
-        from r2morph.validation.abi_validator import AbiValidator
-        from r2morph.validation.structural_validator import StructuralValidator
-        from r2morph.validation.symbolic_validator import SymbolicValidator
-
+    def __init__(
+        self,
+        mode: str = "structural",
+        check_abi: bool = False,
+        symbolic_validator: SymbolicValidator | None = None,
+    ) -> None:
         self.mode = mode
         self.check_abi = check_abi
         self._structural_validator = StructuralValidator()
         self._abi_validator = AbiValidator()
-        self._symbolic_validator = SymbolicValidator()
+        self._symbolic_validator = symbolic_validator or SymbolicValidator()
 
     def capture_structural_baseline(self, binary: Binary, function_address: int | None) -> dict[str, Any]:
         """Capture a lightweight baseline before mutation."""
@@ -80,13 +83,15 @@ class ValidationManager:
             },
         )
         augment_pass_validation(
-            binary,
-            pass_result,
-            result,
-            self._symbolic_validator,
-            self._abi_validator,
-            self.mode == "symbolic",
-            self.check_abi,
+            PassValidationRequest(
+                binary=binary,
+                pass_result=pass_result,
+                result=result,
+                symbolic_validator=self._symbolic_validator,
+                abi_validator=self._abi_validator,
+                symbolic_mode=self.mode == "symbolic",
+                check_abi=self.check_abi,
+            )
         )
 
         return result

@@ -2,29 +2,40 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
 
 
-def augment_pass_validation(
-    binary: Any,
-    pass_result: dict[str, Any],
-    result: Any,
-    symbolic_validator: Any,
-    abi_validator: Any,
-    symbolic_mode: bool,
-    check_abi: bool,
-) -> None:
-    """Attach symbolic and ABI evidence to a pass-level validation outcome."""
-    if symbolic_mode:
-        _augment_symbolic_pass_validation(binary, pass_result, result, symbolic_validator)
+@dataclass(frozen=True)
+class PassValidationRequest:
+    """Pass outcome and validators used for optional validation evidence."""
 
-    if check_abi:
-        abi_issues = abi_validator.collect_violations(binary, pass_result)
-        result.issues.extend(abi_issues)
+    binary: Any
+    pass_result: dict[str, Any]
+    result: Any
+    symbolic_validator: Any
+    abi_validator: Any
+    symbolic_mode: bool
+    check_abi: bool
+
+
+def augment_pass_validation(request: PassValidationRequest) -> None:
+    """Attach symbolic and ABI evidence to a pass-level validation outcome."""
+    if request.symbolic_mode:
+        _augment_symbolic_pass_validation(
+            request.binary,
+            request.pass_result,
+            request.result,
+            request.symbolic_validator,
+        )
+
+    if request.check_abi:
+        abi_issues = request.abi_validator.collect_violations(request.binary, request.pass_result)
+        request.result.issues.extend(abi_issues)
         if abi_issues:
-            result.passed = False
-            result.metadata["abi_violations"] = len(abi_issues)
+            request.result.passed = False
+            request.result.metadata["abi_violations"] = len(abi_issues)
 
 
 def _augment_symbolic_pass_validation(

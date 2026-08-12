@@ -6,6 +6,10 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from r2morph.core.binary import Binary
+from r2morph.devirtualization.cfo_simplifier import CFOSimplifier
+from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier
+from r2morph.devirtualization.iterative_simplifier_models import SimplificationStrategy
 from r2morph.validation.benchmark_types import BenchmarkCategory, BenchmarkResult, PerformanceMetrics, TestSample
 
 
@@ -14,10 +18,6 @@ def benchmark_devirtualization(
     *,
     measure_performance: Callable[[Callable[[], dict[str, Any]]], tuple[PerformanceMetrics, Any]],
 ) -> BenchmarkResult:
-    from r2morph import Binary
-    from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier
-    from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
-
     def run_devirtualization() -> dict[str, Any]:
         with Binary(sample.file_path) as bin_obj:
             bin_obj.analyze()

@@ -269,10 +269,12 @@ class TestRegionTracker:
         """Test tracking a mutation."""
         tracker = RegionTracker()
         region_id = tracker.track_mutation(
-            start=0x1000,
-            end=0x1100,
-            pass_name="test_pass",
-            affected_registers={"eax"},
+            MutationRegion(
+                start=0x1000,
+                end=0x1100,
+                pass_name="test_pass",
+                affected_registers={"eax"},
+            )
         )
 
         assert region_id == 0
@@ -282,8 +284,8 @@ class TestRegionTracker:
         """Test tracking multiple mutations."""
         tracker = RegionTracker()
 
-        region_id1 = tracker.track_mutation(start=0x1000, end=0x1100, pass_name="pass1")
-        region_id2 = tracker.track_mutation(start=0x2000, end=0x2100, pass_name="pass2")
+        region_id1 = tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="pass1"))
+        region_id2 = tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, pass_name="pass2"))
 
         assert region_id1 == 0
         assert region_id2 == 1
@@ -292,7 +294,7 @@ class TestRegionTracker:
     def test_get_regions_at(self):
         """Test getting regions at an address."""
         tracker = RegionTracker()
-        tracker.track_mutation(start=0x1000, end=0x1100, pass_name="test_pass")
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="test_pass"))
 
         regions = tracker.get_regions_at(0x1050)
         assert len(regions) == 1
@@ -301,7 +303,7 @@ class TestRegionTracker:
     def test_get_regions_at_no_match(self):
         """Test getting regions when no match."""
         tracker = RegionTracker()
-        tracker.track_mutation(start=0x1000, end=0x1100, pass_name="test_pass")
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="test_pass"))
 
         regions = tracker.get_regions_at(0x2000)
         assert len(regions) == 0
@@ -309,9 +311,9 @@ class TestRegionTracker:
     def test_get_overlaps(self):
         """Test finding overlapping regions."""
         tracker = RegionTracker()
-        tracker.track_mutation(start=0x1000, end=0x1100, pass_name="pass1")
-        tracker.track_mutation(start=0x1050, end=0x1150, pass_name="pass2")
-        tracker.track_mutation(start=0x2000, end=0x2100, pass_name="pass3")
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="pass1"))
+        tracker.track_mutation(MutationRegion(start=0x1050, end=0x1150, pass_name="pass2"))
+        tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, pass_name="pass3"))
 
         overlaps = tracker.get_overlaps()
         assert len(overlaps) == 1
@@ -321,8 +323,8 @@ class TestRegionTracker:
     def test_get_overlaps_none(self):
         """Test finding no overlapping regions."""
         tracker = RegionTracker()
-        tracker.track_mutation(start=0x1000, end=0x1100, pass_name="pass1")
-        tracker.track_mutation(start=0x2000, end=0x2100, pass_name="pass2")
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="pass1"))
+        tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, pass_name="pass2"))
 
         overlaps = tracker.get_overlaps()
         assert len(overlaps) == 0
@@ -330,7 +332,7 @@ class TestRegionTracker:
     def test_clear(self):
         """Test clearing tracked regions."""
         tracker = RegionTracker()
-        tracker.track_mutation(start=0x1000, end=0x1100, pass_name="test_pass")
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="test_pass"))
 
         tracker.clear()
         assert tracker.get_region_count() == 0

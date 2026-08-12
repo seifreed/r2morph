@@ -16,6 +16,7 @@ import pytest
 from r2morph import __version__
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("SKIP_SELF_MUTATION_TESTS") == "1", reason="Self-mutation tests disabled"
@@ -191,14 +192,14 @@ int main() {
 
             # Apply mutations
             engine.add_mutation("nop")
-            result = engine.run(validation_mode="structural")
+            result = engine.run(EngineRunOptions(validation_mode="structural"))
 
             if result.get("passes_run", 0) >= 0:
                 engine.save(output)
 
                 # Verify mutated binary still runs
                 run_result = subprocess.run([str(output)], capture_output=True, timeout=5)
-                assert run_result.returncode == 0 or run_result.returncode == 1
+                assert run_result.returncode in {0, 1}
 
     def test_self_referential_consistency(self, simple_binary, temp_dir):
         """Test that mutation engine maintains self-consistency."""
@@ -269,19 +270,20 @@ int main() {
                 engine.add_mutation("nop")
 
                 result = engine.run(
-                    validation_mode="structural",
-                    rollback_policy="skip-invalid-pass",
+                    EngineRunOptions(
+                        validation_mode="structural",
+                        rollback_policy="skip-invalid-pass",
+                    )
                 )
 
                 if result.get("passes_run", 0) >= 0:
                     engine.save(output)
                     outputs.append(output)
+                # If mutation fails, use previous output
+                elif outputs:
+                    outputs.append(outputs[-1])
                 else:
-                    # If mutation fails, use previous output
-                    if outputs:
-                        outputs.append(outputs[-1])
-                    else:
-                        pytest.skip("First mutation failed")
+                    pytest.skip("First mutation failed")
 
         # Verify all outputs run successfully
         for output in outputs:

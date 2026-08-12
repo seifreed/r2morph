@@ -21,7 +21,7 @@ _LAZY_EXPORTS = {
     "Pipeline": ("r2morph.pipeline.pipeline", "Pipeline"),
 }
 
-if TYPE_CHECKING:  # pragma: no cover - import-time typing only
+if TYPE_CHECKING:
     from r2morph.core.binary import Binary
     from r2morph.core.engine import MorphEngine
     from r2morph.pipeline.pipeline import Pipeline

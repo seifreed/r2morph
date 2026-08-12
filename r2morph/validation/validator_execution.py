@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
-import subprocess
 import tempfile
 from pathlib import Path
 from typing import Any
 
+from r2morph.adapters.process import ProcessContext, ProcessTimeoutError, run_process
 from r2morph.validation.validator_execution_files import collect_monitored_files
-from r2morph.validation.validator_execution_text import hash_text, normalize_output  # noqa: F401
 from r2morph.validation.validator_runtime import ValidationTestCase
+
+logger = logging.getLogger(__name__)
 
 
 def run_binary(binary_path: Path, test_case: ValidationTestCase, timeout: int) -> dict[str, Any]:
@@ -32,9 +34,8 @@ def run_binary(binary_path: Path, test_case: ValidationTestCase, timeout: int) -
     try:
         try:
             binary_path.chmod(0o755)
-        except (OSError, PermissionError):
-            # Best-effort chmod; some filesystems/permissions disallow it and execution still proceeds without it.
-            pass
+        except (OSError, PermissionError) as exc:
+            logger.debug("Could not mark runtime binary executable: %s", exc)
 
         if test_case.working_dir:
             run_dir = Path(test_case.working_dir)
@@ -46,25 +47,26 @@ def run_binary(binary_path: Path, test_case: ValidationTestCase, timeout: int) -
 
         local_binary = run_dir / binary_path.name
         shutil.copy2(binary_path, local_binary)
-        cmd = [str(local_binary)] + test_case.args
+        cmd = [str(local_binary), *test_case.args]
 
-        result = subprocess.run(
+        result = run_process(
             cmd,
-            input=test_case.stdin.encode() if test_case.stdin else None,
-            capture_output=True,
             timeout=timeout,
-            env={**os.environ, **test_case.env},
-            cwd=run_dir,
+            context=ProcessContext(
+                input_bytes=test_case.stdin.encode() if test_case.stdin else None,
+                env={**os.environ, **test_case.env},
+                cwd=run_dir,
+            ),
         )
 
         return {
-            "stdout": result.stdout.decode(errors="replace"),
-            "stderr": result.stderr.decode(errors="replace"),
+            "stdout": result.stdout_text,
+            "stderr": result.stderr_text,
             "exitcode": result.returncode,
             "files": collect_monitored_files(run_dir, test_case.monitored_files),
         }
 
-    except subprocess.TimeoutExpired:
+    except ProcessTimeoutError:
         return {"stdout": "", "stderr": "Timeout", "exitcode": -1, "files": {}}
     except Exception as e:
         return {"stdout": "", "stderr": str(e), "exitcode": -1, "files": {}}
@@ -72,5 +74,5 @@ def run_binary(binary_path: Path, test_case: ValidationTestCase, timeout: int) -
         if cleanup_dir and run_dir and run_dir.exists():
             try:
                 shutil.rmtree(run_dir)
-            except Exception:
-                pass
+            except OSError as exc:
+                logger.debug("Could not remove runtime directory: %s", exc)

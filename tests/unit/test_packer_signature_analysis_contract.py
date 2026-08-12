@@ -32,7 +32,7 @@ class _FakeEntropyAnalyzer:
     def __init__(self, overall_entropy: float) -> None:
         self._overall_entropy = overall_entropy
 
-    def analyze_file(self, _path):  # noqa: ANN001
+    def analyze_file(self, _path):
         return _FakeEntropyResult(self._overall_entropy)
 
 

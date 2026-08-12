@@ -59,7 +59,10 @@ class ABISpec:
     return_regs: list[str]
 
     def __repr__(self) -> str:
-        return f"<ABISpec {self.abi_type.value}: align={self.stack_alignment}, red_zone={self.red_zone_size}, shadow={self.shadow_space_size}>"
+        return (
+            f"<ABISpec {self.abi_type.value}: align={self.stack_alignment}, "
+            f"red_zone={self.red_zone_size}, shadow={self.shadow_space_size}>"
+        )
 
 
 ABI_SPECS: dict[str, ABISpec] = {

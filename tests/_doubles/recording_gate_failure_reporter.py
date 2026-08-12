@@ -2,15 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, ClassVar
 
 
 class RecordingGateFailureReporter:
     """Records every call and returns fixed sentinels (no real logic)."""
 
-    SUMMARY: dict[str, Any] = {"sentinel": "summary"}
-    PRIORITY: list[dict[str, Any]] = [{"sentinel": "priority"}]
-    SEVERITY_PRIORITY: list[dict[str, Any]] = [{"sentinel": "severity"}]
+    SUMMARY: ClassVar[dict[str, Any]] = {"sentinel": "summary"}
+    PRIORITY: ClassVar[list[dict[str, Any]]] = [{"sentinel": "priority"}]
+    SEVERITY_PRIORITY: ClassVar[list[dict[str, Any]]] = [{"sentinel": "severity"}]
 
     def __init__(self) -> None:
         self.summarize_calls: list[dict[str, Any]] = []

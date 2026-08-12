@@ -9,16 +9,28 @@ pyyaml>=6.0.0
 lief>=0.12.0
 
 # Development and testing dependencies
-pytest>=7.4.0
+pytest>=9.0.3
 pytest-cov>=4.1.0
-pytest-mock>=3.11.1
 black>=23.0.0
 ruff>=0.1.0
 mypy>=1.5.0
+types-networkx>=3.0.0
+types-PyYAML>=6.0.0
+bandit>=1.7.5
+pip-audit>=2.6.0
+pip>=26.1.2
 ipython>=8.12.0
+click>=8.3.3
+GitPython>=3.1.59
+idna>=3.15
+msgpack>=1.2.1
+pygments>=2.20.0
+requests>=2.33.0
+urllib3>=2.7.0
+protobuf>=6.33.5
 
 # Analysis/test extras exercised by the suite
-angr>=9.2.0; platform_system != "Windows"
+angr>=9.3.2; platform_system != "Windows"
 z3-solver>=4.12.0
 frida>=16.0.0; platform_system != "Windows"
 frida-tools>=12.0.0; platform_system != "Windows"
@@ -27,4 +39,4 @@ networkx>=3.0
 numpy>=1.24.0
 scipy>=1.10.0
 psutil>=5.9.0
-claripy>=9.2.0
+claripy>=9.3.2

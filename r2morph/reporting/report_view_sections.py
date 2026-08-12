@@ -17,20 +17,14 @@ def build_report_views(inputs: ReportViewInputs) -> ReportViews:
     pass_coverage_buckets = inputs.pass_coverage_buckets
     pass_triage_rows = inputs.pass_triage_rows
     normalized_pass_results = inputs.normalized_pass_results
-    pass_symbolic_summary = inputs.pass_symbolic_summary
-    pass_evidence_map = inputs.pass_evidence_map
     pass_region_evidence_map = inputs.pass_region_evidence_map
     pass_validation_context = inputs.pass_validation_context
-    pass_capability_summary_map = inputs.pass_capability_summary_map
     observable_mismatch_priority = inputs.observable_mismatch_priority
-    observable_mismatch_map = inputs.observable_mismatch_map
     symbolic_severity_by_pass = inputs.symbolic_severity_by_pass
     gate_failure_priority = inputs.gate_failure_priority
     gate_failure_summary = inputs.gate_failure_summary
     gate_failure_severity_priority = inputs.gate_failure_severity_priority
-    discarded_mutation_priority = inputs.discarded_mutation_priority
     discarded_mutation_summary = inputs.discarded_mutation_summary
-    validation_adjustment_rows = inputs.validation_adjustment_rows
 
     lookups = _build_lookup_maps(
         normalized_pass_results=normalized_pass_results,
@@ -41,7 +35,6 @@ def build_report_views(inputs: ReportViewInputs) -> ReportViews:
     normalized_pass_map = lookups["normalized_pass_map"]
     triage_priority = lookups["triage_priority"]
     symbolic_severity_map = lookups["symbolic_severity_map"]
-    discarded_by_pass = lookups["discarded_by_pass"]
 
     gates = build_gate_views(
         gate_failure_priority=gate_failure_priority,
@@ -49,24 +42,12 @@ def build_report_views(inputs: ReportViewInputs) -> ReportViews:
         gate_failure_severity_priority=gate_failure_severity_priority,
         normalized_pass_map=normalized_pass_map,
     )
-    failed_gates_rows = gates["failed_gates_rows"]
-    failed_gates_by_pass = gates["failed_gates_by_pass"]
-    failed_gates_expected_severity = gates["failed_gates_expected_severity"]
-
     passes = build_pass_views(
-        normalized_pass_results=normalized_pass_results,
-        pass_region_evidence_map=pass_region_evidence_map,
-        pass_validation_context=pass_validation_context,
-        pass_symbolic_summary=pass_symbolic_summary,
-        pass_evidence_map=pass_evidence_map,
-        pass_capability_summary_map=pass_capability_summary_map,
-        normalized_pass_map=normalized_pass_map,
-        triage_priority=triage_priority,
-        discarded_by_pass=discarded_by_pass,
-        failed_gates_by_pass=failed_gates_by_pass,
+        inputs,
+        lookups,
+        gates,
     )
     general_pass_rows = passes["general_pass_rows"]
-    only_pass = passes["only_pass"]
 
     mismatches = build_mismatch_views(
         observable_mismatch_priority=observable_mismatch_priority,
@@ -75,9 +56,6 @@ def build_report_views(inputs: ReportViewInputs) -> ReportViews:
         pass_validation_context=pass_validation_context,
         pass_region_evidence_map=pass_region_evidence_map,
     )
-    mismatch_rows = mismatches["mismatch_rows"]
-    mismatch_by_pass = mismatches["mismatch_by_pass"]
-
     filter_buckets = {
         "risky": list(pass_risk_buckets.get("risky", [])),
         "structural_risk": list(pass_risk_buckets.get("structural", [])),
@@ -88,54 +66,18 @@ def build_report_views(inputs: ReportViewInputs) -> ReportViews:
     }
 
     summary = build_summary_payload(
-        normalized_pass_results=normalized_pass_results,
-        symbolic_severity_by_pass=symbolic_severity_by_pass,
-        gate_failure_priority=gate_failure_priority,
-        gate_failure_summary=gate_failure_summary,
-        gate_failure_severity_priority=gate_failure_severity_priority,
-        discarded_mutation_priority=discarded_mutation_priority,
-        discarded_mutation_summary=discarded_mutation_summary,
-        validation_adjustment_rows=validation_adjustment_rows,
-        pass_risk_buckets=pass_risk_buckets,
-        pass_coverage_buckets=pass_coverage_buckets,
-        triage_priority=triage_priority,
-        general_pass_rows=general_pass_rows,
-        failed_gates_rows=failed_gates_rows,
-        failed_gates_expected_severity=failed_gates_expected_severity,
-        filter_buckets=filter_buckets,
+        inputs,
+        triage_priority,
+        general_pass_rows,
+        gates,
+        filter_buckets,
     )
-    degraded_rows = summary["degraded_rows"]
-    general_symbolic = summary["general_symbolic"]
-    general_gates = summary["general_gates"]
-    general_degradation = summary["general_degradation"]
-    general_discards = summary["general_discards"]
-    general_summary_payload = summary["general_summary_payload"]
-    general_summary_rows = summary["general_summary_rows"]
-    general_renderer_state = summary["general_renderer_state"]
-
-    return _assemble_report_views(
-        general_pass_rows=general_pass_rows,
-        general_summary_payload=general_summary_payload,
-        general_summary_rows=general_summary_rows,
-        general_renderer_state=general_renderer_state,
-        triage_priority=triage_priority,
-        filter_buckets=filter_buckets,
-        general_symbolic=general_symbolic,
-        general_gates=general_gates,
-        general_degradation=general_degradation,
-        general_discards=general_discards,
-        only_pass=only_pass,
-        observable_mismatch_priority=observable_mismatch_priority,
-        observable_mismatch_map=observable_mismatch_map,
-        mismatch_rows=mismatch_rows,
-        mismatch_by_pass=mismatch_by_pass,
-        gate_failure_priority=gate_failure_priority,
-        gate_failure_summary=gate_failure_summary,
-        gate_failure_severity_priority=gate_failure_severity_priority,
-        failed_gates_rows=failed_gates_rows,
-        failed_gates_by_pass=failed_gates_by_pass,
-        failed_gates_expected_severity=failed_gates_expected_severity,
-        degraded_rows=degraded_rows,
-        discarded_mutation_priority=discarded_mutation_priority,
-        discarded_mutation_summary=discarded_mutation_summary,
-    )
+    sections = {
+        **lookups,
+        **gates,
+        **passes,
+        **mismatches,
+        **summary,
+        "filter_buckets": filter_buckets,
+    }
+    return _assemble_report_views(inputs, sections)

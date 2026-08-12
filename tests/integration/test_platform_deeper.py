@@ -50,7 +50,7 @@ def test_macho_handler_repair_and_codesign(tmp_path: Path):
     assert repaired in {True, False}
 
     signer = CodeSigner()
-    signed = signer.sign_binary(binary_path, adhoc=True)
+    signed = signer.sign(binary_path, adhoc=True)
     assert signed in {True, False}
 
     verified = signer.verify(binary_path)

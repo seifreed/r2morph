@@ -2,8 +2,6 @@
 Unit tests for detection modules.
 """
 
-from unittest.mock import Mock
-
 from r2morph.detection.control_flow_detector import (
     ControlFlowAnalysisResult,
 )
@@ -23,6 +21,10 @@ from r2morph.detection.packer_signature_catalogs import (
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
 from r2morph.detection.pattern_catalogs import ANTI_DEBUG_APIS, VM_ARTIFACTS
 from r2morph.detection.pattern_matcher import PatternMatcher, PatternMatchResult
+
+
+class _PatternBinary:
+    pass
 
 
 class TestControlFlowAnalysisResult:
@@ -102,19 +104,19 @@ class TestPatternMatchResult:
 
 class TestPatternMatcher:
     def test_matcher_initialization(self):
-        binary = Mock()
+        binary = _PatternBinary()
         matcher = PatternMatcher(binary)
         assert matcher is not None
 
     def test_matcher_has_anti_debug_apis(self):
-        binary = Mock()
+        binary = _PatternBinary()
         matcher = PatternMatcher(binary)
         assert hasattr(matcher, "ANTI_DEBUG_APIS")
         assert "IsDebuggerPresent" in matcher.ANTI_DEBUG_APIS
         assert matcher.ANTI_DEBUG_APIS is ANTI_DEBUG_APIS
 
     def test_matcher_has_vm_artifacts(self):
-        binary = Mock()
+        binary = _PatternBinary()
         matcher = PatternMatcher(binary)
         assert hasattr(matcher, "VM_ARTIFACTS")
         assert "vmware" in matcher.VM_ARTIFACTS

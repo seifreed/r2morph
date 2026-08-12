@@ -22,11 +22,11 @@ This transformation makes control flow analysis much harder.
 from __future__ import annotations
 
 import logging
-import random
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.analysis.cfg import CFGBuilder, ControlFlowGraph
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.full_cff_helpers import (
@@ -37,7 +37,7 @@ from r2morph.mutations.full_cff_helpers import (
     generate_x86_dispatcher,
     select_candidates,
 )
-from r2morph.mutations.full_cff_patching import patch_function_blocks
+from r2morph.mutations.full_cff_patching import PatchFunctionRequest, patch_function_blocks
 from r2morph.relocations.cave_injector import CodeCaveInjector
 
 logger = logging.getLogger(__name__)
@@ -161,7 +161,7 @@ class FullControlFlowFlatteningPass(MutationPass):
             "total_functions": len(functions),
         }
 
-    def _select_candidates(self, binary: Any, functions: list[dict]) -> list[dict]:
+    def _select_candidates(self, binary: Any, functions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         return select_candidates(binary, functions, self.cff_config.min_blocks)
 
     def _flatten_function_cff(
@@ -211,16 +211,18 @@ class FullControlFlowFlatteningPass(MutationPass):
         dispatcher_addr = allocation.address
 
         patched = patch_function_blocks(
-            binary=binary,
-            cfg=cfg,
-            dispatcher_blocks=dispatcher_blocks,
-            dispatcher_addr=dispatcher_addr,
-            validation_manager=self._validation_manager,
-            create_mutation_checkpoint=self._create_mutation_checkpoint,
-            record_mutation=self._record_mutation,
-            session=self._session,
-            records=self._records,
-            rollback_policy=self._rollback_policy,
+            PatchFunctionRequest(
+                binary=binary,
+                cfg=cfg,
+                dispatcher_blocks=dispatcher_blocks,
+                dispatcher_addr=dispatcher_addr,
+                validation_manager=self._validation_manager,
+                create_mutation_checkpoint=self._create_mutation_checkpoint,
+                record_mutation=self._record_mutation,
+                session=self._session,
+                records=self._records,
+                rollback_policy=self._rollback_policy,
+            )
         )
 
         return {
@@ -232,7 +234,6 @@ class FullControlFlowFlatteningPass(MutationPass):
     def _create_dispatcher_blocks(self, cfg: ControlFlowGraph) -> list[DispatcherBlock]:
         """Create dispatcher blocks from CFG."""
         blocks = []
-        state_counter = 0
         state_mapping: dict[int, int] = {}
 
         entry_block = cfg.entry_block
@@ -241,7 +242,7 @@ class FullControlFlowFlatteningPass(MutationPass):
 
         sorted_blocks = sorted(cfg.blocks.values(), key=lambda b: b.address)
 
-        for block in sorted_blocks:
+        for state_counter, block in enumerate(sorted_blocks):
             state_mapping[block.address] = state_counter
 
             dispatcher_block = DispatcherBlock(
@@ -253,7 +254,6 @@ class FullControlFlowFlatteningPass(MutationPass):
             )
 
             blocks.append(dispatcher_block)
-            state_counter += 1
 
         for block in sorted_blocks:
             current_state = state_mapping[block.address]
@@ -301,14 +301,16 @@ class FullControlFlowFlatteningPass(MutationPass):
         dispatcher_addr: int,
     ) -> int:
         return patch_function_blocks(
-            binary=binary,
-            cfg=cfg,
-            dispatcher_blocks=dispatcher_blocks,
-            dispatcher_addr=dispatcher_addr,
-            validation_manager=self._validation_manager,
-            create_mutation_checkpoint=self._create_mutation_checkpoint,
-            record_mutation=self._record_mutation,
-            session=self._session,
-            records=self._records,
-            rollback_policy=self._rollback_policy,
+            PatchFunctionRequest(
+                binary=binary,
+                cfg=cfg,
+                dispatcher_blocks=dispatcher_blocks,
+                dispatcher_addr=dispatcher_addr,
+                validation_manager=self._validation_manager,
+                create_mutation_checkpoint=self._create_mutation_checkpoint,
+                record_mutation=self._record_mutation,
+                session=self._session,
+                records=self._records,
+                rollback_policy=self._rollback_policy,
+            )
         )

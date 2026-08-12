@@ -9,13 +9,11 @@ REPORTING_MODULES = [
     "r2morph.reporting",
     "r2morph.reporting.gate_evaluator",
     "r2morph.reporting.report_helpers",
-    "r2morph.reporting.report_helpers_classification",
     "r2morph.reporting.report_pass_classification",
     "r2morph.reporting.report_helpers_symbolic_view",
     "r2morph.reporting.report_evidence_sorting",
     "r2morph.reporting.report_summary_lookup",
     "r2morph.reporting.report_pass_filter_views",
-    "r2morph.reporting.report_rendering",
     "r2morph.reporting.report_rendering_sections",
     "r2morph.reporting.report_rendering_flow_sections",
     "r2morph.reporting.report_rendering_pass_sections",
@@ -23,29 +21,16 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_rendering_flow_section_helpers",
     "r2morph.reporting.report_rendering_symbolic_table_helpers",
     "r2morph.reporting.report_rendering_symbolic_table_fallbacks",
-    "r2morph.reporting.report_rendering_text_section_helpers",
-    "r2morph.reporting.report_rendering_table_helpers",
-    "r2morph.reporting.report_rendering_tables",
-    "r2morph.reporting.report_rendering_pass_tables",
-    "r2morph.reporting.report_rendering_flow_text_sections",
     "r2morph.reporting.report_rendering_symbolic_tables",
-    "r2morph.reporting.report_rendering_text_sections",
-    "r2morph.reporting.report_rendering_summary_tables",
-    "r2morph.reporting.report_rendering_summary_table_helpers",
     "r2morph.cli_output_helpers",
     "r2morph.cli_cache_command",
     "r2morph.reporting.report_pass_list_resolution",
     "r2morph.reporting.report_mutation_selection",
     "r2morph.reporting.report_flow_executor",
     "r2morph.reporting.report_flow_rendering",
-    "r2morph.reporting.report_renderer",
-    "r2morph.reporting.report_renderer_tables",
-    "r2morph.reporting.report_renderer_orchestrator",
     "r2morph.reporting.sarif_schema_core",
     "r2morph.reporting.sarif_formatter_builders",
-    "r2morph.reporting.sarif_formatter_run",
     "r2morph.reporting.sarif_result_builder_helpers",
-    "r2morph.tui_models",
     "r2morph.reporting._public_api",
     "r2morph.reporting.report_rendering_primitives",
     "r2morph.reporting.cli_commands",
@@ -53,8 +38,6 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_context_gate_state",
     "r2morph.reporting.report_context_compat",
     "r2morph.reporting.report_context_mapping",
-    "r2morph.reporting.report_orchestrator_context",
-    "r2morph.reporting.report_orchestrator_args",
     "r2morph.reporting.report_filter_messages",
     "r2morph.reporting.report_command_io",
     "r2morph.reporting.report_mismatch_state",
@@ -66,13 +49,11 @@ REPORTING_MODULES = [
     "r2morph.reporting.report_gate_severity_policy",
     "r2morph.reporting.report_gate_helpers",
     "r2morph.reporting.report_mismatch_resolution",
-    "r2morph.reporting.report_emitter",
     "r2morph.reporting.report_assembler",
     "r2morph.reporting.report_assembler_artifacts",
     "r2morph.reporting.report_assembler_document",
     "r2morph.reporting.report_resolver",
     "r2morph.reporting.report_orchestrator",
-    "r2morph.reporting.filtered_summary_builder",
     "r2morph.reporting.filtered_summary_payloads",
     "r2morph.reporting.filtered_summary_mismatch_payloads",
     "r2morph.reporting.filtered_summary_population",
@@ -86,7 +67,6 @@ REPORTING_MODULES = [
     "r2morph.reporting.filtered_summary_risk",
     "r2morph.reporting.filtered_summary_degradation",
     "r2morph.reporting.filtered_summary_triage",
-    "r2morph.reporting.filtered_summary_sections",
     "r2morph.reporting.filtered_summary_symbolic",
     "r2morph.reporting.report_view_builder",
     "r2morph.reporting.report_view_sections",
@@ -129,12 +109,7 @@ REPORTING_MODULES = [
     "r2morph.cli_workflow_validation_policy",
     "r2morph.reporting.sarif_result_builder",
     "r2morph.reporting.sarif_schema_core",
-    "r2morph.factories",
-    "r2morph.tui_diff_view",
-    "r2morph.tui_config_screen",
-    "r2morph.tui_pass_config",
     "r2morph.cli_workflows",
-    "r2morph.tui_progress_indicator",
     "r2morph.validation.performance_regression_execution",
     "r2morph.validation.mutation_fuzzer_campaign",
     "r2morph.core.engine_lifecycle",
@@ -284,8 +259,6 @@ REPORTING_MODULES = [
     "r2morph.validation.benchmark_reporting_exports",
     "r2morph.validation.benchmark_reporting_io",
     "r2morph.cli_workflow_validation",
-    "r2morph.tui_filters",
-    "r2morph.tui_presets",
     "r2morph.validation.benchmark_reporting_overview",
     "r2morph.validation.benchmark_reporting_summary",
     "r2morph.validation.benchmark_reporting_text",
@@ -298,7 +271,6 @@ REPORTING_MODULES = [
     "r2morph.validation.semantic_report_summary",
     "r2morph.validation.semantic_report_parsing",
     "r2morph.validation.semantic_invariant_helpers",
-    "r2morph.validation.semantic_invariant_catalogs",
     "r2morph.validation.cfg_integrity_helpers",
     "r2morph.validation.leak_detection_models",
     "r2morph.validation.object_tracker",
@@ -341,7 +313,6 @@ REPORTING_MODULES = [
     "r2morph.analysis.symbolic.state_manager_models",
     "r2morph.analysis.symbolic.state_manager_policies",
     "r2morph.platform.elf_handler_validation",
-    "r2morph.tui_diff_helpers",
     "r2morph.cli_cache_output",
     "r2morph.cli_path_resolution",
 ]
@@ -379,24 +350,16 @@ def test_package_root_defers_heavy_exports():
 def test_reporting_package_defers_heavy_exports():
     module = importlib.import_module("r2morph.reporting")
 
-    module.__dict__.pop("ReportBuilder", None)
+    module.__dict__.pop("ReportContext", None)
     module.__dict__.pop("SARIFFormatter", None)
-    sys.modules.pop("r2morph.reporting.report_builder", None)
+    sys.modules.pop("r2morph.reporting.report_builder_models", None)
     sys.modules.pop("r2morph.reporting.sarif_formatter", None)
 
-    assert "r2morph.reporting.report_builder" not in sys.modules
+    assert "r2morph.reporting.report_builder_models" not in sys.modules
     assert "r2morph.reporting.sarif_formatter" not in sys.modules
 
-    assert module.ReportBuilder.__name__ == "ReportBuilder"
+    assert module.ReportContext.__name__ == "ReportContext"
     assert module.SARIFFormatter.__name__ == "SARIFFormatter"
 
-    assert "r2morph.reporting.report_builder" in sys.modules
+    assert "r2morph.reporting.report_builder_models" in sys.modules
     assert "r2morph.reporting.sarif_formatter" in sys.modules
-
-
-def test_report_builder_only_keeps_payload_construction_helpers():
-    from r2morph.reporting.report_builder import ReportBuilder
-
-    assert not hasattr(ReportBuilder, "resolve_report_context")
-    assert not hasattr(ReportBuilder, "resolve_min_severity")
-    assert not hasattr(ReportBuilder, "resolve_report_pass_filter")

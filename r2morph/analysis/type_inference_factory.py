@@ -139,10 +139,8 @@ def create_struct_type(self: TypeInference, fields: list[tuple[str, TypeInfo, in
     total_size = 0
     max_alignment = 1
     for _, type_info, offset in fields:
-        if offset + type_info.size > total_size:
-            total_size = offset + type_info.size
-        if type_info.alignment > max_alignment:
-            max_alignment = type_info.alignment
+        total_size = max(total_size, offset + type_info.size)
+        max_alignment = max(max_alignment, type_info.alignment)
 
     return TypeInfo(
         type_id=self._new_type_id(),

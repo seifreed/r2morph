@@ -13,6 +13,8 @@ from r2morph.validation.differ_models import (
     SectionDiff,
 )
 
+_HIGH_BYTE_DIFF_COUNT = 10
+
 
 def _binary_path(binary: Binary) -> str:
     return str(binary.path) if binary.path else ""
@@ -76,7 +78,9 @@ def compare_sections(original: Binary, mutated: Binary, context_bytes: int) -> l
                 mutated_permissions=mut.get("perm", ""),
             )
             section_diff.byte_diffs = compare_section_bytes(original, mutated, orig, mut, context_bytes)
-            severity = ChangeSeverity.HIGH if len(section_diff.byte_diffs) > 10 else ChangeSeverity.MEDIUM
+            severity = (
+                ChangeSeverity.HIGH if len(section_diff.byte_diffs) > _HIGH_BYTE_DIFF_COUNT else ChangeSeverity.MEDIUM
+            )
             diffs.append(
                 BinaryDiff(
                     original_path=original_path,

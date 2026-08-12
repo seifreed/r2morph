@@ -8,6 +8,7 @@ Handles all write operations: bytes, instructions, NOP fills.
 from __future__ import annotations
 
 import logging
+import shutil
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -72,7 +73,7 @@ class BinaryWriter:
         self,
         address: int,
         data_len: int,
-        sections: list[dict] | None = None,
+        sections: list[dict[str, Any]] | None = None,
     ) -> bool:
         """
         Validate that write is within valid address space.
@@ -89,53 +90,69 @@ class BinaryWriter:
             logger.warning(f"Negative address: 0x{address:x}")
             return False
 
-        if sections:
-            valid = False
-            for section in sections:
-                vaddr = section.get("vaddr", section.get("virtual_address", 0))
-                if vaddr is None:
-                    vaddr = 0
-                vsize = section.get("vsize", section.get("virtual_size", section.get("size", 0)))
-                if vsize is None:
-                    vsize = 0
-                section_end = vaddr + vsize
-                if section_end < vaddr:
-                    continue
-                write_end = address + data_len
-                if write_end < address:
-                    continue
-                if vaddr <= address < section_end:
-                    if write_end <= section_end:
-                        valid = True
-                        break
-            if not valid:
-                end_addr = address + data_len
-                if end_addr < address:
-                    return False
-                for section in sections:
-                    vaddr = section.get("vaddr", section.get("virtual_address", 0))
-                    if vaddr is None:
-                        vaddr = 0
-                    vsize = section.get("vsize", section.get("virtual_size", section.get("size", 0)))
-                    if vsize is None:
-                        vsize = 0
-                    section_end = vaddr + vsize
-                    if section_end < vaddr:
-                        continue
-                    if vaddr <= address < section_end or vaddr <= end_addr <= section_end:
-                        valid = True
-                        break
-            if not valid:
-                logger.warning(f"Address 0x{address:x} outside known sections, write may fail")
-                return False
+        if not sections:
+            return True
+        write_end = address + data_len
+        if write_end < address:
+            return False
+
+        section_ranges = [bounds for section in sections if (bounds := self._section_bounds(section)) is not None]
+        contained = any(start <= address < end and write_end <= end for start, end in section_ranges)
+        overlaps = any(start <= address < end or start <= write_end <= end for start, end in section_ranges)
+        if not (contained or overlaps):
+            logger.warning(f"Address 0x{address:x} outside known sections, write may fail")
+            return False
         return True
+
+    @staticmethod
+    def _section_bounds(section: dict[str, Any]) -> tuple[int, int] | None:
+        start = section.get("vaddr", section.get("virtual_address", 0)) or 0
+        size = section.get("vsize", section.get("virtual_size", section.get("size", 0))) or 0
+        end = start + size
+        return None if end < start else (start, end)
+
+    def _write_through_disassembler(self, address: int, data: bytes) -> bool:
+        if self._r2 is None:
+            return False
+        hex_data = data.hex()
+        try:
+            self._r2.cmd(f"wx {hex_data} @ 0x{address:x}")
+            verification = self._r2.cmd(f"p8 {len(data)} @ 0x{address:x}")
+            return bool(verification and verification.strip().lower() == hex_data)
+        except (ValueError, OSError) as error:
+            logger.debug(f"Failed to write via r2 wx at 0x{address:x}: {error}")
+            return False
+
+    def _write_at_physical_offset(self, address: int, data: bytes, resolver: Any) -> bool:
+        physical_offset = resolver(address) if resolver else None
+        if physical_offset is None:
+            logger.error(
+                f"Cannot write at 0x{address:x}: r2 write failed and "
+                "physical offset could not be resolved (refusing to use "
+                "virtual address as file offset)"
+            )
+            return False
+        try:
+            with open(self._path, "r+b") as output:
+                output.seek(physical_offset)
+                output.write(data)
+                output.flush()
+                output.seek(physical_offset)
+                written = output.read(len(data))
+            if written == data:
+                logger.debug(f"Wrote {len(data)} bytes at physical offset 0x{physical_offset:x}")
+                return True
+            logger.error(f"Write verification failed at 0x{address:x}")
+        except (ValueError, OSError) as error:
+            logger.error(f"Failed to write bytes at 0x{address:x}: {error}")
+        return False
 
     def write_bytes(
         self,
         address: int,
         data: bytes,
         resolve_physical_offset_func: Any = None,
-        sections: list[dict] | None = None,
+        sections: list[dict[str, Any]] | None = None,
     ) -> bool:
         """
         Write bytes to binary at specified address.
@@ -163,46 +180,9 @@ class BinaryWriter:
             logger.warning(f"Address 0x{address:x} is outside valid bounds, write rejected")
             return False
 
-        hex_data = data.hex()
-        write_success = False
-
-        try:
-            self._r2.cmd(f"wx {hex_data} @ 0x{address:x}")
-            verify = self._r2.cmd(f"p8 {len(data)} @ 0x{address:x}")
-            if verify:
-                verify = verify.strip().lower()
-                if verify == hex_data.lower():
-                    write_success = True
-        except (ValueError, OSError) as e:
-            logger.debug(f"Failed to write via r2 wx at 0x{address:x}: {e}")
-
+        write_success = self._write_through_disassembler(address, data)
         if not write_success:
-            physical_offset = None
-            if resolve_physical_offset_func:
-                physical_offset = resolve_physical_offset_func(address)
-
-            if physical_offset is None:
-                logger.error(
-                    f"Cannot write at 0x{address:x}: r2 write failed and "
-                    f"physical offset could not be resolved (refusing to use "
-                    f"virtual address as file offset)"
-                )
-                return False
-
-            try:
-                with open(self._path, "r+b") as f:
-                    f.seek(physical_offset)
-                    f.write(data)
-                    f.flush()
-                    f.seek(physical_offset)
-                    written = f.read(len(data))
-                    if written == data:
-                        write_success = True
-                        logger.debug(f"Wrote {len(data)} bytes at physical offset 0x{physical_offset:x}")
-                    else:
-                        logger.error(f"Write verification failed at 0x{address:x}")
-            except (ValueError, OSError) as e:
-                logger.error(f"Failed to write bytes at 0x{address:x}: {e}")
+            write_success = self._write_at_physical_offset(address, data, resolve_physical_offset_func)
 
         if write_success:
             self._mutation_counter += 1
@@ -254,8 +234,6 @@ class BinaryWriter:
         Raises:
             RuntimeError: If binary path is not set
         """
-        import shutil
-
         if self._path is None:
             raise RuntimeError("Binary path not set")
 

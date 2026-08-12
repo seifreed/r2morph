@@ -5,11 +5,33 @@ Main relocation manager for handling code movement and reference updates.
 import json
 import logging
 from dataclasses import dataclass
+from typing import Any
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.utils import ByteOrder, get_endianness
 
 logger = logging.getLogger(__name__)
+
+_X86_NOP_OPCODE = 0x90
+
+
+def _parse_instruction_list(raw_instructions: str) -> list[dict[str, Any]]:
+    if not raw_instructions:
+        return []
+    try:
+        parsed = json.loads(raw_instructions)
+    except ValueError:
+        return []
+    return parsed if isinstance(parsed, list) else []
+
+
+def _parse_hex_bytes(raw_bytes: str) -> bytes:
+    if not raw_bytes:
+        return b""
+    try:
+        return bytes.fromhex(raw_bytes.strip())
+    except ValueError:
+        return b""
 
 
 @dataclass
@@ -109,7 +131,7 @@ class RelocationManager:
         logger.info(f"Updated {updated} references")
         return updated
 
-    def _find_all_xrefs(self) -> list[dict]:
+    def _find_all_xrefs(self) -> list[dict[str, Any]]:
         """
         Find all cross-references in the binary.
 
@@ -120,11 +142,10 @@ class RelocationManager:
 
         xrefs = []
 
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         xrefs_output = self.binary.r2.cmd("axtj")
         if xrefs_output:
-            import json
-
             try:
                 xrefs_data = json.loads(xrefs_output)
                 xrefs.extend(xrefs_data)
@@ -134,7 +155,7 @@ class RelocationManager:
         logger.debug(f"Found {len(xrefs)} cross-references")
         return xrefs
 
-    def _update_reference(self, xref: dict) -> bool:
+    def _update_reference(self, xref: dict[str, Any]) -> bool:
         """
         Update a single reference.
 
@@ -178,12 +199,11 @@ class RelocationManager:
             True if updated
         """
         try:
-            assert self.binary.r2 is not None
+            if self.binary.r2 is None:
+                raise RuntimeError("Binary disassembler is not open")
             insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{from_addr:x}")
             if not insn_json:
                 return False
-            import json
-
             insns = json.loads(insn_json)
             if not insns:
                 return False
@@ -233,7 +253,8 @@ class RelocationManager:
             arch_info = self.binary.get_arch_info()
             ptr_size = arch_info["bits"] // 8
 
-            assert self.binary.r2 is not None
+            if self.binary.r2 is None:
+                raise RuntimeError("Binary disassembler is not open")
             current_ptr_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ 0x{from_addr:x}")
             if not current_ptr_hex:
                 return False
@@ -262,38 +283,21 @@ class RelocationManager:
         Returns:
             True if space available
         """
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         insn_json = self.binary.r2.cmd(f"aoj 1 @ 0x{address:x}")
-
-        try:
-            insns = json.loads(insn_json) if insn_json else []
-        except ValueError:
-            return False
+        insns = _parse_instruction_list(insn_json)
         if not insns:
             return False
 
         current_size = insns[0].get("size", 0)
         next_addr = address + current_size
 
-        assert self.binary.r2 is not None
         next_bytes_hex = self.binary.r2.cmd(f"p8 {additional_bytes} @ 0x{next_addr:x}")
-        if not next_bytes_hex:
-            return False
-        try:
-            next_bytes = bytes.fromhex(next_bytes_hex.strip())
-        except ValueError:
-            return False
-
+        next_bytes = _parse_hex_bytes(next_bytes_hex)
         if not next_bytes:
             return False
-
-        if all(b == 0x90 for b in next_bytes):
-            return True
-
-        if all(b == 0x00 for b in next_bytes):
-            return True
-
-        return False
+        return all(byte == _X86_NOP_OPCODE for byte in next_bytes) or all(byte == 0 for byte in next_bytes)
 
     def shift_code_block(self, start_address: int, size: int, shift_amount: int) -> bool:
         """
@@ -310,7 +314,8 @@ class RelocationManager:
         try:
             logger.info(f"Shifting code block at 0x{start_address:x} (size={size}) by {shift_amount:+d} bytes")
 
-            assert self.binary.r2 is not None
+            if self.binary.r2 is None:
+                raise RuntimeError("Binary disassembler is not open")
             block_hex = self.binary.r2.cmd(f"p8 {size} @ 0x{start_address:x}")
             if not block_hex:
                 return False
@@ -324,9 +329,8 @@ class RelocationManager:
 
             self.add_relocation(start_address, new_address, size, "move")
 
-            if shift_amount > 0:
-                if not self.binary.nop_fill(start_address, min(size, shift_amount)):
-                    logger.warning(f"Failed to NOP-fill old location at 0x{start_address:x}")
+            if shift_amount > 0 and not self.binary.nop_fill(start_address, min(size, shift_amount)):
+                logger.warning(f"Failed to NOP-fill old location at 0x{start_address:x}")
 
             return True
 

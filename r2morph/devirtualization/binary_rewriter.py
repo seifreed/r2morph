@@ -15,8 +15,13 @@ Key Features:
 """
 
 import logging
+import time
 from typing import Any
 
+import capstone
+import keystone
+
+from r2morph.core.constants import ARCH_BITS_64
 from r2morph.devirtualization.binary_rewriter_io import (
     create_backup,
     perform_integrity_checks,
@@ -37,23 +42,8 @@ from r2morph.devirtualization.binary_rewriter_planning import (
     validate_patches,
 )
 
-capstone: Any
-try:
-    import capstone
-
-    CAPSTONE_AVAILABLE = True
-except ImportError:
-    CAPSTONE_AVAILABLE = False
-    capstone = None
-
-keystone: Any
-try:
-    import keystone
-
-    KEYSTONE_AVAILABLE = True
-except ImportError:
-    KEYSTONE_AVAILABLE = False
-    keystone = None
+CAPSTONE_AVAILABLE = True
+KEYSTONE_AVAILABLE = True
 
 logger = logging.getLogger(__name__)
 
@@ -109,31 +99,14 @@ class BinaryRewriter:
         Returns:
             RewriteResult with operation details
         """
-        import time
-
         start_time = time.time()
 
         try:
             logger.info(f"Starting binary rewrite to {output_path}")
 
-            if not self.binary:
-                return RewriteResult(
-                    success=False, output_path=output_path, errors=["No binary provided for rewriting"]
-                )
-
-            # Set patches if provided
-            if patches:
-                self.patches = patches
-
-            # Step 1: Analyze binary format and structure
-            if not self._analyze_binary():
-                return RewriteResult(success=False, output_path=output_path, errors=["Failed to analyze binary format"])
-
-            # Step 2: Initialize assembler/disassembler
-            if not self._initialize_codegen():
-                return RewriteResult(
-                    success=False, output_path=output_path, errors=["Failed to initialize code generation tools"]
-                )
+            preparation_failure = self._prepare_rewrite(output_path, patches)
+            if preparation_failure is not None:
+                return preparation_failure
 
             # Step 3: Validate patches
             validation_result = self._validate_patches()
@@ -187,9 +160,24 @@ class BinaryRewriter:
             return RewriteResult(
                 success=False,
                 output_path=output_path,
-                errors=[f"Rewriting failed: {str(e)}"],
+                errors=[f"Rewriting failed: {e!s}"],
                 execution_time=time.time() - start_time,
             )
+
+    def _prepare_rewrite(self, output_path: str, patches: list[CodePatch] | None) -> RewriteResult | None:
+        if not self.binary:
+            return RewriteResult(success=False, output_path=output_path, errors=["No binary provided for rewriting"])
+        if patches:
+            self.patches = patches
+        if not self._analyze_binary():
+            return RewriteResult(success=False, output_path=output_path, errors=["Failed to analyze binary format"])
+        if not self._initialize_codegen():
+            return RewriteResult(
+                success=False,
+                output_path=output_path,
+                errors=["Failed to initialize code generation tools"],
+            )
+        return None
 
     def add_patch(
         self,
@@ -309,7 +297,7 @@ class BinaryRewriter:
             # Map architecture
             arch_name = (self.arch or "").lower()
             if arch_name in ["x86", "i386", "x64", "amd64"]:
-                if self.bits == 64:
+                if self.bits == ARCH_BITS_64:
                     cs_arch = capstone.CS_ARCH_X86
                     cs_mode = capstone.CS_MODE_64
                     ks_arch = keystone.KS_ARCH_X86
@@ -320,7 +308,7 @@ class BinaryRewriter:
                     ks_arch = keystone.KS_ARCH_X86
                     ks_mode = keystone.KS_MODE_32
             elif arch_name in ["arm", "aarch64"]:
-                if self.bits == 64:
+                if self.bits == ARCH_BITS_64:
                     cs_arch = capstone.CS_ARCH_ARM64
                     cs_mode = capstone.CS_MODE_ARM
                     ks_arch = keystone.KS_ARCH_ARM64

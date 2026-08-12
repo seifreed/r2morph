@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from r2morph.mutations.abi_hook import (
+    ABICheckOptions,
     ABICheckResult,
     ABIMutationHook,
     ABISnapshot,
@@ -103,10 +104,12 @@ class ABIAwareMutationPass(MutationPass):
         self._abi_hook = ABIMutationHook(
             binary,
             action=self.abi_action,
-            check_stack_alignment="stack_alignment" in (self.abi_checks or ["stack_alignment", "callee_saved"]),
-            check_callee_saved="callee_saved" in (self.abi_checks or ["stack_alignment", "callee_saved"]),
-            check_red_zone="red_zone" in (self.abi_checks or []),
-            check_shadow_space="shadow_space" in (self.abi_checks or []),
+            options=ABICheckOptions(
+                stack_alignment="stack_alignment" in (self.abi_checks or ["stack_alignment", "callee_saved"]),
+                callee_saved="callee_saved" in (self.abi_checks or ["stack_alignment", "callee_saved"]),
+                red_zone="red_zone" in (self.abi_checks or []),
+                shadow_space="shadow_space" in (self.abi_checks or []),
+            ),
         )
 
         self._abi_result = ABIResult(
@@ -312,11 +315,9 @@ class ABIAwareMutationPass(MutationPass):
         if self._abi_hook.should_skip_mutation(function_address):
             return False
 
-        if self.abi_action == ABIViolationAction.BLOCK:
-            if function_address in self._abi_hook.blocked_functions:
-                return False
-
-        return True
+        return not (
+            self.abi_action == ABIViolationAction.BLOCK and function_address in self._abi_hook.blocked_functions
+        )
 
     def get_abi_diagnostics(self) -> dict[str, Any]:
         """
@@ -338,58 +339,3 @@ class ABIAwareMutationPass(MutationPass):
             ABIResult or None
         """
         return self._abi_result
-
-
-class _DelegatingABIAwarePass(ABIAwareMutationPass):
-    """Concrete ABI-aware pass that delegates to a wrapped pass instance."""
-
-    def __init__(
-        self,
-        delegate: MutationPass,
-        name: str,
-        config: dict[str, Any] | None = None,
-        enforce_abi: bool = True,
-        abi_action: str = "warn",
-        abi_checks: list[str] | None = None,
-    ) -> None:
-        super().__init__(
-            name=name, config=config, enforce_abi=enforce_abi, abi_action=abi_action, abi_checks=abi_checks
-        )
-        self._delegate = delegate
-
-    def apply_abi_aware(self, binary: Any, abi_hook: ABIMutationHook | None) -> dict[str, Any]:
-        return self._delegate.apply(binary)
-
-
-def create_abi_aware_pass(
-    pass_class: type,
-    name: str,
-    config: dict[str, Any] | None = None,
-    enforce_abi: bool = True,
-    abi_action: str = "warn",
-    abi_checks: list[str] | None = None,
-) -> ABIAwareMutationPass:
-    """
-    Factory function to create an ABI-aware mutation pass.
-
-    Args:
-        pass_class: Mutation pass class to wrap
-        name: Pass name
-        config: Configuration dictionary
-        enforce_abi: Whether to enable ABI checking
-        abi_action: Action on violation
-        abi_checks: List of ABI checks to enable
-
-    Returns:
-        ABI-aware mutation pass instance
-    """
-    pass_instance = pass_class(name=name, config=config)
-
-    return _DelegatingABIAwarePass(
-        delegate=pass_instance,
-        name=name,
-        config=config,
-        enforce_abi=enforce_abi,
-        abi_action=abi_action,
-        abi_checks=abi_checks,
-    )

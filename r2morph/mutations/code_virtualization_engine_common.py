@@ -9,12 +9,16 @@ layering (common <- models <- codegen <- aggregator).
 
 from __future__ import annotations
 
-import random
 import struct
 from collections.abc import Hashable, Sequence
+from dataclasses import dataclass
 from typing import TypeVar
 
+import r2morph.core.randomness as random
+from r2morph.core.constants import ARCH_BITS_64
+
 _OpKey = TypeVar("_OpKey", bound=Hashable)
+_LIVE_OPAQUE_PROBABILITY = 0.5
 
 # ModR/M register order; index is the VM register-context slot.
 GP_REGISTERS: tuple[str, ...] = (
@@ -89,7 +93,7 @@ _MEM_ARITH_MNEMONICS: tuple[str, ...] = ("add", "sub", "xor", "and", "or")
 # ``*rip`` kinds reach a global via the bytecode base plus a stored offset; the
 # handler strips the ``rip`` suffix and reuses the base kind's body with the
 # rip-relative address prologue, so every base+disp form has a global counterpart.
-_MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea") + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS)
+_MEM_BASE_KINDS: tuple[str, ...] = ("load", "store", "lea", *tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS))
 # movzx/movsx of a byte/word from [base+disp], zero-/sign-extended into the dst.
 # (No rip-relative counterpart: the decoder only produces the base+disp form.)
 _MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
@@ -97,7 +101,7 @@ _MEM_MOVX_KINDS: tuple[str, ...] = ("movzxb", "movzxw", "movsxb", "movsxw")
 # byte/word extends; the handler strips the ``idx`` suffix and reuses the base
 # kind's body with the indexed address prologue (a 9-byte item:
 # opcode+reg+base+index+scale+disp).
-_MEM_IDX_KINDS: tuple[str, ...] = ("lea",) + tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS) + _MEM_MOVX_KINDS
+_MEM_IDX_KINDS: tuple[str, ...] = ("lea", *tuple(f"mem{m}" for m in _MEM_ARITH_MNEMONICS), *_MEM_MOVX_KINDS)
 _MEM_OP_KINDS: tuple[str, ...] = (
     _MEM_BASE_KINDS
     + tuple(f"{kind}rip" for kind in _MEM_BASE_KINDS)
@@ -283,7 +287,7 @@ def _live_junk_asm(rng: random.Random, index: int) -> str:
     for _ in range(rng.randint(1, 4)):
         template = rng.choice(_LIVE_JUNK_TEMPLATES)
         lines.append("  " + template.format(small=rng.randint(1, 127), shift=rng.randint(1, 31)) + "\n")
-    if rng.random() < 0.5:
+    if rng.random() < _LIVE_OPAQUE_PROBABILITY:
         lines.append(_opaque_predicate_asm(rng, index))
     return "".join(lines)
 
@@ -311,6 +315,7 @@ _VSP_OFFSET = 0x190
 _VSTACK_BASE = 0x198
 
 
+@dataclass(eq=False, repr=False, slots=True)
 class VMScheme:
     """Per-instance randomization of the VM, for polymorphism and opacity.
 
@@ -322,66 +327,16 @@ class VMScheme:
     match another.
     """
 
-    __slots__ = (
-        "dup",
-        "exit_opcode",
-        "xor_key",
-        "slot_perm",
-        "table_key",
-        "junk_seed",
-        "field_perm",
-        "body_seed",
-        "frame_seed",
-        "engine_isa_seed",
-    )
-
-    def __init__(
-        self,
-        dup: dict[tuple[str, bool, int], tuple[int, ...]],
-        exit_opcode: int,
-        xor_key: int,
-        slot_perm: tuple[int, ...],
-        table_key: int,
-        junk_seed: int,
-        field_perm: int = 0,
-        body_seed: int = 0,
-        frame_seed: int = 0,
-        engine_isa_seed: int = 0,
-    ) -> None:
-        # Each operation gets one or more interchangeable opcode indices; the same
-        # operation can appear under different opcodes in the stream and each index
-        # emits its own handler instance (with its own junk), so the opcode->
-        # operation map is not one-to-one and opcode frequency reveals nothing.
-        self.dup = dup
-        self.exit_opcode = exit_opcode
-        self.xor_key = xor_key
-        # Per-instance bijection: logical register index -> shuffled frame slot.
-        self.slot_perm = slot_perm
-        # Seeds the deterministic per-build choice of opcode-among-duplicates and
-        # the per-handler-instance junk that diverges otherwise-identical copies.
-        self.junk_seed = junk_seed
-        # 32-bit key the dispatch-table offsets are XOR-encrypted with, so the
-        # handler addresses are not a plaintext jump table a disassembler recovers
-        # as a switch (the dispatch decrypts each entry before jumping).
-        self.table_key = table_key
-        # Seed for this build's operand field-order permutation: the encoder and
-        # the handlers derive each item's field offsets from it (via the shared
-        # layout module), so the operand layout differs per build. 0 is identity.
-        self.field_perm = field_perm
-        # Seeds the per-handler scratch-register bijection: each handler instance
-        # derives its own permutation of the scratch pool from this, so no two
-        # handler bodies share a fixed register-allocation fingerprint. 0 leaves
-        # the bodies in their canonical register spelling.
-        self.body_seed = body_seed
-        # Seeds the per-build frame-region relocation (checksum/xmm/vsp/vstack
-        # offsets); 0 leaves the canonical fixed layout so a devirtualizer cannot
-        # rely on a fixed frame map of the VM's internal state.
-        self.frame_seed = frame_seed
-        # Seeds this build's semantic ISA personality: the arithmetic-fold variant
-        # (see code_virtualization_engine_isa / the shared code_virtualization_fold),
-        # so two builds realize each operation with a different equivalent fold. 0
-        # leaves the canonical shared fold, byte-identical to the pre-feature engine.
-        self.engine_isa_seed = engine_isa_seed
+    dup: dict[tuple[str, bool, int], tuple[int, ...]]
+    exit_opcode: int
+    xor_key: int
+    slot_perm: tuple[int, ...]
+    table_key: int
+    junk_seed: int
+    field_perm: int = 0
+    body_seed: int = 0
+    frame_seed: int = 0
+    engine_isa_seed: int = 0
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -404,7 +359,7 @@ _HANDLER_MIN_INSTANCES = 4
 _HANDLER_MAX_INSTANCES = 8
 
 
-def _assign_opcode_multiplicity(op_keys: Sequence[_OpKey], rng: random.Random) -> dict[_OpKey, int]:
+def _assign_opcode_multiplicity[OpKey: Hashable](op_keys: Sequence[OpKey], rng: random.Random) -> dict[OpKey, int]:
     """Several interchangeable opcodes per op-key, shed to fit the byte budget.
 
     Each op-key draws a multiplicity in
@@ -488,6 +443,6 @@ def immediate_fits_width(value: int, width: int) -> bool:
 def pack_immediate(value: int, width: int) -> bytes:
     """Pack a width-bit immediate as little-endian, masking to its bit width so
     signed and unsigned values both encode to the same bytes the CPU expects."""
-    if width == 64:
+    if width == ARCH_BITS_64:
         return struct.pack("<Q", value & 0xFFFFFFFFFFFFFFFF)
     return struct.pack("<I", value & 0xFFFFFFFF)

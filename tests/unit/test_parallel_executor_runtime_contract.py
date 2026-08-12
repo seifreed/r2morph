@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass, field
 
 from r2morph.mutations.parallel_executor_models import ParallelStats
-from r2morph.mutations.parallel_executor_runtime import execute_parallel_runs
+from r2morph.mutations.parallel_executor_runtime import ParallelRunConfig, execute_parallel_runs
 
 
 @dataclass
@@ -40,12 +40,14 @@ def test_parallel_executor_runtime_collects_success_and_failure() -> None:
     records, stats = execute_parallel_runs(
         passes=[object()],
         binary=_Binary(),
-        max_workers=2,
-        timeout=5.0,
-        create_tasks=create_tasks,
-        execute_task=execute_task,
-        stats_factory=ParallelStats,
-        logger=logging.getLogger(__name__),
+        config=ParallelRunConfig(
+            max_workers=2,
+            timeout=5.0,
+            create_tasks=create_tasks,
+            execute_task=execute_task,
+            stats_factory=ParallelStats,
+            logger=logging.getLogger(__name__),
+        ),
     )
 
     assert records == ["r1", "r2"]

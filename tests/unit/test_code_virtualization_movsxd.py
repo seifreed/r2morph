@@ -12,9 +12,10 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from r2morph.mutations.code_virtualization_region import _classify, extract_region
-from r2morph.mutations.code_virtualization_region_codegen import _movx_reg_handler_asm
-from r2morph.mutations.code_virtualization_region_handlers import _movx_load_asm
+from r2morph.mutations.code_virtualization_region import extract_region
+from r2morph.mutations.code_virtualization_region_classification import _classify
+from r2morph.mutations.code_virtualization_region_control_handlers import _movx_reg_handler_asm
+from r2morph.mutations.code_virtualization_region_memory_handlers import _movx_load_asm
 
 
 def _insn(addr: int, size: int, opcode: str) -> dict[str, Any]:

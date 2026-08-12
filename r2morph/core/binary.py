@@ -17,14 +17,14 @@ from typing import TYPE_CHECKING, Any
 
 import r2pipe
 
+from r2morph.core.assembly import AssemblyService, get_assembly_service
 from r2morph.core.binary_lifecycle import analyze_binary, close_binary, open_binary, reload_binary, track_mutation_count
-from r2morph.core.constants import BATCH_MUTATION_CHECKPOINT
+from r2morph.core.constants import ARCH_BITS_64, BATCH_MUTATION_CHECKPOINT
+from r2morph.core.memory_manager import MemoryManager, get_memory_manager
+from r2morph.core.reader import BinaryReader
+from r2morph.core.writer import BinaryWriter
 
 if TYPE_CHECKING:
-    from r2morph.core.assembly import AssemblyService
-    from r2morph.core.memory_manager import MemoryManager
-    from r2morph.core.reader import BinaryReader
-    from r2morph.core.writer import BinaryWriter
     from r2morph.protocols import DisassemblerInterface
 
 logger = logging.getLogger(__name__)
@@ -103,8 +103,6 @@ class Binary:
         if self._assembly_service is None:
             with self._lock:
                 if self._assembly_service is None:
-                    from r2morph.core.assembly import get_assembly_service
-
                     self._assembly_service = get_assembly_service()
         return self._assembly_service
 
@@ -114,8 +112,6 @@ class Binary:
         if self._memory_manager is None:
             with self._lock:
                 if self._memory_manager is None:
-                    from r2morph.core.memory_manager import get_memory_manager
-
                     self._memory_manager = get_memory_manager()
         return self._memory_manager
 
@@ -125,8 +121,6 @@ class Binary:
         if self._reader is None:
             with self._lock:
                 if self._reader is None:
-                    from r2morph.core.reader import BinaryReader
-
                     self._reader = BinaryReader(self.r2)
         return self._reader
 
@@ -136,8 +130,6 @@ class Binary:
         if self._writer is None:
             with self._lock:
                 if self._writer is None:
-                    from r2morph.core.writer import BinaryWriter
-
                     self._writer = BinaryWriter(self.r2, self.path, self._writable)
         return self._writer
 
@@ -271,7 +263,7 @@ class Binary:
         bits = arch_info.get("bits", 64)
 
         if arch in ("arm", "arm64", "aarch64"):
-            if bits == 64:
+            if bits == ARCH_BITS_64:
                 nop_bytes = b"\x1f\x20\x03\xd5" * (size // 4)
                 # ARM64 instructions are always 4 bytes; pad remainder with x86 NOPs
                 # which are safe as padding but won't execute (only reached by alignment)

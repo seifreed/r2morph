@@ -74,9 +74,8 @@ def synthesize_obfuscated_sequence(
             synthesized.append(f"mov {output_registers[0]}, {input_registers[0]}")
             if len(input_registers) > 1:
                 synthesized.append(f"xor {output_registers[0]}, {input_registers[1]}")
-    elif "mov" in semantic_lower or "move" in semantic_lower:
-        if input_registers and output_registers:
-            synthesized.append(f"mov {output_registers[0]}, {input_registers[0]}")
+    elif ("mov" in semantic_lower or "move" in semantic_lower) and input_registers and output_registers:
+        synthesized.append(f"mov {output_registers[0]}, {input_registers[0]}")
 
     return synthesized if synthesized else None
 

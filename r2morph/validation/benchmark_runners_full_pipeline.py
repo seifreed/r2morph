@@ -6,6 +6,12 @@ import time
 from collections.abc import Callable
 from typing import Any
 
+from r2morph.core.binary import Binary
+from r2morph.detection.anti_analysis_bypass import AntiAnalysisBypass
+from r2morph.detection.obfuscation_detector import ObfuscationDetector
+from r2morph.devirtualization.cfo_simplifier import CFOSimplifier
+from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier
+from r2morph.devirtualization.iterative_simplifier_models import SimplificationStrategy
 from r2morph.validation.benchmark_types import (
     AccuracyMetrics,
     BenchmarkCategory,
@@ -21,11 +27,6 @@ def benchmark_full_pipeline(
     measure_performance: Callable[[Callable[[], dict[str, Any]]], tuple[PerformanceMetrics, Any]],
     calculate_accuracy_metrics: Callable[[dict[str, Any], dict[str, Any]], AccuracyMetrics],
 ) -> BenchmarkResult:
-    from r2morph import Binary
-    from r2morph.detection import AntiAnalysisBypass, ObfuscationDetector
-    from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier
-    from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
-
     def run_full_pipeline() -> dict[str, Any]:
         with Binary(sample.file_path) as bin_obj:
             bin_obj.analyze()

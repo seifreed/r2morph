@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
+from importlib import import_module
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 
 def run_cfo_simplification(binary: Any, console: Any, results: Any) -> int:
     """Run Control Flow Obfuscation simplification."""
-    from r2morph.devirtualization import CFOSimplifier
-
+    cfo_simplifier_cls = import_module("r2morph.devirtualization").CFOSimplifier
     console.print("\n[bold yellow]Running CFO simplification...[/bold yellow]")
     try:
-        cfo_simplifier = CFOSimplifier(binary)
+        cfo_simplifier = cfo_simplifier_cls(binary)
         functions = binary.get_functions()[:5]  # Limit for performance
 
         total_reduction = 0
@@ -43,14 +43,16 @@ def run_iterative_simplification(
     timeout: int = 60,
 ) -> dict[str, Any] | None:
     """Run iterative simplification passes."""
-    from r2morph.devirtualization import IterativeSimplifier
-    from r2morph.devirtualization.iterative_simplifier import SimplificationStrategy
+    iterative_simplifier_cls = import_module("r2morph.devirtualization").IterativeSimplifier
+    simplification_strategy = import_module(
+        "r2morph.devirtualization.iterative_simplifier_models"
+    ).SimplificationStrategy
 
     console.print("\n[bold yellow]Running iterative simplification...[/bold yellow]")
     try:
-        simplifier = IterativeSimplifier(binary)
+        simplifier = iterative_simplifier_cls(binary)
         result = simplifier.simplify(
-            strategy=SimplificationStrategy.ADAPTIVE,
+            strategy=simplification_strategy.ADAPTIVE,
             max_iterations=max_iterations,
             timeout=timeout,
         )
@@ -59,8 +61,9 @@ def run_iterative_simplification(
             console.print("Iterative simplification completed:")
             console.print(f"   Iterations: {result.metrics.iteration}")
             console.print(f"   Complexity reduction: {result.metrics.complexity_reduction:.1%}")
-            results.iterative_result = result.metrics.__dict__
-            return result.metrics.__dict__
+            metrics = cast(dict[str, Any], result.metrics.__dict__)
+            results.iterative_result = metrics
+            return metrics
 
         console.print("Iterative simplification failed")
         return None
@@ -73,20 +76,17 @@ def run_iterative_simplification(
 def run_symbolic_analysis(binary: Any, console: Any, results: Any) -> int | None:
     """Run symbolic execution analysis."""
     try:
-        from r2morph.analysis.symbolic import AngrBridge, PathExplorer
+        symbolic_module = import_module("r2morph.analysis.symbolic")
 
         console.print("\n[bold yellow]Running symbolic execution...[/bold yellow]")
 
         if binary is None:
             return None
-        angr_bridge = AngrBridge(binary)
+        angr_bridge = symbolic_module.AngrBridge(binary)
         if angr_bridge.angr_project:
-            path_explorer = PathExplorer(angr_bridge)
+            path_explorer = symbolic_module.PathExplorer(angr_bridge)
             functions = binary.get_functions()
-            if functions:
-                dispatcher_addr = functions[0].get("offset", 0)
-            else:
-                dispatcher_addr = binary.get_entrypoint()
+            dispatcher_addr = functions[0].get("offset", 0) if functions else binary.get_entrypoint()
 
             handlers = path_explorer.find_vm_handlers(dispatcher_addr, max_handlers=5)
             handlers_count = len(handlers)
@@ -104,11 +104,11 @@ def run_symbolic_analysis(binary: Any, console: Any, results: Any) -> int | None
 def run_dynamic_analysis(console: Any) -> bool:
     """Set up and run dynamic instrumentation."""
     try:
-        from r2morph.instrumentation import FridaEngine
+        frida_engine_cls = import_module("r2morph.instrumentation").FridaEngine
 
         console.print("\n[bold yellow]Setting up dynamic instrumentation...[/bold yellow]")
 
-        FridaEngine()
+        frida_engine_cls()
         console.print("Frida engine initialized")
         return True
 
@@ -126,11 +126,10 @@ def run_binary_rewriting(
     output_dir: Path | None = None,
 ) -> str | None:
     """Perform binary rewriting and reconstruction."""
-    from r2morph.devirtualization import BinaryRewriter
-
+    binary_rewriter_cls = import_module("r2morph.devirtualization").BinaryRewriter
     console.print("\n[bold yellow]Performing binary rewriting...[/bold yellow]")
     try:
-        rewriter = BinaryRewriter(binary)
+        rewriter = binary_rewriter_cls(binary)
 
         if output_dir:
             output_path = output_dir / f"{binary_path.stem}_rewritten{binary_path.suffix}"

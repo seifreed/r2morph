@@ -11,6 +11,8 @@ reader bits directly (no mocks, real emulation).
 
 from __future__ import annotations
 
+from contextlib import suppress
+
 import keystone
 import unicorn
 from unicorn import x86_const
@@ -57,10 +59,8 @@ def _run(mnemonic: str, width: int, count: int, value: int, variant: int) -> tup
     uc.mem_map(_STACK_BASE, _STACK_SIZE)
     uc.mem_write(_CODE_BASE, code)
     uc.reg_write(x86_const.UC_X86_REG_RSP, _RSP)
-    try:
+    with suppress(unicorn.UcError):
         uc.emu_start(_CODE_BASE, _CODE_BASE + len(code))
-    except unicorn.UcError:
-        pass  # the trailing hlt stops emulation
     stored = int.from_bytes(uc.mem_read(_RSP + _FLAGS_OFF, 8), "little")
     result = uc.reg_read(x86_const.UC_X86_REG_RAX)
     return stored & _READER_MASK, result

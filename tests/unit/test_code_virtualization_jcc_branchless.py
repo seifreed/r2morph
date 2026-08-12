@@ -9,8 +9,8 @@ mnemonic, and that every condition the lifter can emit is handled.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_region import _CONDITION
-from r2morph.mutations.code_virtualization_region_codegen import (
+from r2morph.mutations.code_virtualization_region_classification import _CONDITION
+from r2morph.mutations.code_virtualization_region_control_handlers import (
     _JCC_CONDITION_BASE,
     _jcc_handler_asm,
 )

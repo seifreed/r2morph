@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import ARCH_BITS_32, ARCH_BITS_64
 from r2morph.validation.shellcode_equivalence_common import load_shellcode_state_pair, record_mismatch
+
+
+@dataclass(frozen=True, slots=True)
+class _ObservableExecution:
+    angr: Any
+    claripy: Any
+    options: Any
+    shellcode_arch: str
+    observables: tuple[str, ...]
 
 
 def compare_instruction_substitution_observables(
@@ -29,9 +40,13 @@ def compare_instruction_substitution_observables(
             "symbolic_observable_reason": "unsupported architecture for observable check",
         }
     shellcode_arch, observables = config
-
-    options = angr_module.options
-    claripy = import_module("claripy")
+    execution = _ObservableExecution(
+        angr=angr_module,
+        claripy=import_module("claripy"),
+        options=angr_module.options,
+        shellcode_arch=shellcode_arch,
+        observables=observables,
+    )
     compared_regions: list[dict[str, Any]] = []
     mismatches: list[dict[str, Any]] = []
 
@@ -41,12 +56,8 @@ def compare_instruction_substitution_observables(
             if not isinstance(metadata.get("equivalence_group_index"), int):
                 continue
             region_report, region_mismatches = _compare_observable_region(
-                angr_module,
-                claripy,
-                options,
+                execution,
                 mutation,
-                shellcode_arch,
-                observables,
             )
             compared_regions.append(region_report)
             mismatches.extend(region_mismatches)
@@ -59,38 +70,36 @@ def compare_instruction_substitution_observables(
     return _build_observable_result(compared_regions, mismatches)
 
 
-def _observables_arch_config(arch_info: dict[str, Any]) -> tuple[str, list[str]] | None:
+def _observables_arch_config(arch_info: dict[str, Any]) -> tuple[str, tuple[str, ...]] | None:
     """Return (shellcode_arch, observables) or None when unsupported."""
     arch = arch_info.get("arch")
     bits = arch_info.get("bits")
-    if arch in {"x86", "x86_64"} and bits == 64:
-        return "amd64", ["rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rsp", "rbp", "eflags"]
-    if arch == "x86" and bits == 32:
-        return "x86", ["eax", "ebx", "ecx", "edx", "esi", "edi", "esp", "ebp", "eflags"]
+    if arch in {"x86", "x86_64"} and bits == ARCH_BITS_64:
+        return "amd64", ("rax", "rbx", "rcx", "rdx", "rsi", "rdi", "rsp", "rbp", "eflags")
+    if arch == "x86" and bits == ARCH_BITS_32:
+        return "x86", ("eax", "ebx", "ecx", "edx", "esi", "edi", "esp", "ebp", "eflags")
     return None
 
 
 def _seed_observable_registers(
-    claripy: Any,
+    execution: _ObservableExecution,
     original_state: Any,
     mutated_state: Any,
     mutation: dict[str, Any],
-    shellcode_arch: str,
-    observables: list[str],
 ) -> None:
     """Pin the stack/base pointers and share symbolic values for the tracked registers."""
-    bit_width = 64 if shellcode_arch == "amd64" else 32
-    stack_reg = "rsp" if shellcode_arch == "amd64" else "esp"
-    base_reg = "rbp" if shellcode_arch == "amd64" else "ebp"
-    setattr(original_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-    setattr(mutated_state.regs, stack_reg, claripy.BVV(0x100000, bit_width))
-    setattr(original_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
-    setattr(mutated_state.regs, base_reg, claripy.BVV(0x100000, bit_width))
+    bit_width = 64 if execution.shellcode_arch == "amd64" else 32
+    stack_reg = "rsp" if execution.shellcode_arch == "amd64" else "esp"
+    base_reg = "rbp" if execution.shellcode_arch == "amd64" else "ebp"
+    setattr(original_state.regs, stack_reg, execution.claripy.BVV(0x100000, bit_width))
+    setattr(mutated_state.regs, stack_reg, execution.claripy.BVV(0x100000, bit_width))
+    setattr(original_state.regs, base_reg, execution.claripy.BVV(0x100000, bit_width))
+    setattr(mutated_state.regs, base_reg, execution.claripy.BVV(0x100000, bit_width))
 
-    for reg_name in observables:
+    for reg_name in execution.observables:
         if reg_name in {stack_reg, base_reg, "eflags"}:
             continue
-        shared = claripy.BVS(
+        shared = execution.claripy.BVS(
             f"{reg_name}_{mutation['start_address']:x}",
             64 if reg_name.startswith("r") else 32,
         )
@@ -101,25 +110,21 @@ def _seed_observable_registers(
 
 
 def _compare_observable_region(
-    angr_module: Any,
-    claripy: Any,
-    options: Any,
+    execution: _ObservableExecution,
     mutation: dict[str, Any],
-    shellcode_arch: str,
-    observables: list[str],
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Compare observable register/flag effects for one substitution region."""
     original_project, original_state, mutated_project, mutated_state = load_shellcode_state_pair(
-        angr_module, options, mutation, shellcode_arch
+        execution.angr, execution.options, mutation, execution.shellcode_arch
     )
-    _seed_observable_registers(claripy, original_state, mutated_state, mutation, shellcode_arch, observables)
+    _seed_observable_registers(execution, original_state, mutated_state, mutation)
 
     original_succ = list(original_project.factory.successors(original_state).flat_successors)
     mutated_succ = list(mutated_project.factory.successors(mutated_state).flat_successors)
     region_report: dict[str, Any] = {
         "start_address": mutation["start_address"],
         "end_address": mutation["end_address"],
-        "observables_checked": list(observables),
+        "observables_checked": list(execution.observables),
         "original_successors": len(original_succ),
         "mutated_successors": len(mutated_succ),
         "mismatches": [],
@@ -135,7 +140,7 @@ def _compare_observable_region(
     if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
         record_mismatch(region_report, region_mismatches, mutation, "successor_address")
 
-    for observable in observables:
+    for observable in execution.observables:
         if not hasattr(original_final.regs, observable) or not hasattr(mutated_final.regs, observable):
             continue
         left = getattr(original_final.regs, observable)

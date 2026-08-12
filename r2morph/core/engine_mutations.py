@@ -6,6 +6,13 @@ import logging
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, cast
 
+from r2morph.mutations import (
+    BlockReorderingPass,
+    InstructionExpansionPass,
+    InstructionSubstitutionPass,
+    NopInsertionPass,
+    RegisterSubstitutionPass,
+)
 from r2morph.protocols import MutationPassProtocol
 
 if TYPE_CHECKING:
@@ -33,14 +40,6 @@ def add_mutation(engine: Any, mutation: MutationPassProtocol | str) -> MorphEngi
 
 def resolve_mutation_pass(name: str) -> MutationPassProtocol:
     """Resolve a mutation pass name to an instance."""
-    from r2morph.mutations import (
-        BlockReorderingPass,
-        InstructionExpansionPass,
-        InstructionSubstitutionPass,
-        NopInsertionPass,
-        RegisterSubstitutionPass,
-    )
-
     pass_map: dict[str, type[MutationPassProtocol]] = {
         "nop": NopInsertionPass,
         "substitute": InstructionSubstitutionPass,

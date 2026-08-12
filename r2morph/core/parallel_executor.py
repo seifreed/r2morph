@@ -11,11 +11,9 @@ import time
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from typing import Any
 
-from r2morph.core.parallel_executor_models import (  # noqa: F401
+from r2morph.core.parallel_executor_models import (
     MutationResult,
     MutationTask,
-    ResolutionStrategy,
-    TaskStatus,
 )
 from r2morph.core.parallel_executor_task_helpers import (
     build_failed_mutation_result,

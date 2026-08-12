@@ -10,6 +10,8 @@ from r2morph.export.nasm_export import (
     BasicBlock,
     Instruction,
     NASMExporter,
+    NASMOutputOptions,
+    ShellcodeExportOptions,
     _replace_target_with_label,
     assemble_nasm,
     generate_block_asm,
@@ -252,13 +254,13 @@ class TestGenerateFinalAsm:
     def test_32bit_mode(self):
         block = BasicBlock(address=0x1000, label="entry", instructions=[])
         labels = {}
-        result = generate_final_asm([block], labels, bits=32)
+        result = generate_final_asm([block], labels, NASMOutputOptions(bits=32))
         assert "BITS 32" in result
 
     def test_custom_entry_label(self):
         block = BasicBlock(address=0x1000, label="entry", instructions=[])
         labels = {}
-        result = generate_final_asm([block], labels, entry_label="start_here")
+        result = generate_final_asm([block], labels, NASMOutputOptions(entry_label="start_here"))
         assert "global start_here" in result
         assert "start_here:" in result
 
@@ -271,7 +273,7 @@ class TestGenerateFinalAsm:
             ],
         )
         labels = {}
-        result = generate_final_asm([block], labels, include_comments=False)
+        result = generate_final_asm([block], labels, NASMOutputOptions(include_comments=False))
         assert "; Block at original address:" not in result
 
 
@@ -439,7 +441,7 @@ _start:
             output_path = f.name
 
         try:
-            success, message, asm_path = assemble_nasm(asm_code, output_path)
+            success, _message, _asm_path = assemble_nasm(asm_code, output_path)
             if success:
                 assert os.path.exists(output_path)
                 with open(output_path, "rb") as f:
@@ -490,7 +492,7 @@ class TestExportShellcode:
         try:
             from r2morph.export.nasm_export import export_shellcode
 
-            success, message, asm_code = export_shellcode(blocks, output_path, base_address=0x1000, shuffle=False)
+            _success, _message, asm_code = export_shellcode(blocks, output_path, ShellcodeExportOptions())
             assert asm_code is not None
             assert "BITS 64" in asm_code
         finally:

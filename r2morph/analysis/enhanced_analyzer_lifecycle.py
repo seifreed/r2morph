@@ -6,13 +6,13 @@ import logging
 from pathlib import Path
 from typing import Any
 
+from r2morph.core.binary import Binary
+
 logger = logging.getLogger(__name__)
 
 
 def load_binary(binary_path: Path) -> Any:
     """Load and analyze the binary."""
-    from r2morph import Binary
-
     binary = Binary(str(binary_path))
     binary.__enter__()
     binary.analyze()
@@ -26,5 +26,5 @@ def cleanup_binary(binary: Any) -> None:
 
     try:
         binary.__exit__(None, None, None)
-    except Exception as exc:  # pragma: no cover - defensive cleanup path
+    except Exception as exc:
         logger.debug(f"Error cleaning up binary: {exc}")

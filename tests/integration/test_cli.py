@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from r2morph import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
@@ -307,7 +308,7 @@ class TestCLI:
         with MorphEngine() as engine:
             engine.load_binary(ls_elf).analyze()
             engine.add_mutation(_ReportFixturePass())
-            result = engine.run(validation_mode="symbolic", report_path=report)
+            result = engine.run(EngineRunOptions(validation_mode="symbolic", report_path=report))
 
         assert report.exists()
         payload = json.loads(report.read_text(encoding="utf-8"))
@@ -414,7 +415,7 @@ class TestCLI:
                     }
                 )
             )
-            engine.run(validation_mode="symbolic", seed=1337, report_path=report)
+            engine.run(EngineRunOptions(validation_mode="symbolic", seed=1337, report_path=report))
 
         assert report.exists()
 
@@ -463,7 +464,7 @@ class TestCLI:
                     }
                 )
             )
-            engine.run(validation_mode="symbolic", seed=1337, report_path=report)
+            engine.run(EngineRunOptions(validation_mode="symbolic", seed=1337, report_path=report))
 
         assert report.exists()
 
@@ -504,7 +505,7 @@ class TestCLI:
         with MorphEngine() as engine:
             engine.load_binary(ls_elf).analyze()
             engine.add_mutation(_ReportFixturePass())
-            engine.run(validation_mode="off", report_path=report)
+            engine.run(EngineRunOptions(validation_mode="off", report_path=report))
 
         assert report.exists()
 
@@ -551,7 +552,7 @@ class TestCLI:
                     }
                 )
             )
-            engine.run(validation_mode="symbolic", seed=1337, report_path=report)
+            engine.run(EngineRunOptions(validation_mode="symbolic", seed=1337, report_path=report))
 
         payload = json.loads(report.read_text(encoding="utf-8"))
         assert "pass_risk_buckets" in payload
@@ -648,7 +649,7 @@ class TestCLI:
                     }
                 )
             )
-            engine.run(validation_mode="symbolic", seed=1337, report_path=report)
+            engine.run(EngineRunOptions(validation_mode="symbolic", seed=1337, report_path=report))
 
         assert report.exists()
 
@@ -690,7 +691,7 @@ class TestCLI:
         with MorphEngine() as engine:
             engine.load_binary(ls_elf).analyze()
             engine.add_mutation(_ReportFixturePass())
-            engine.run(validation_mode="off", report_path=report)
+            engine.run(EngineRunOptions(validation_mode="off", report_path=report))
 
         assert report.exists()
 

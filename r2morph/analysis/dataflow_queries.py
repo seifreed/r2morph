@@ -71,7 +71,4 @@ def is_address_calculation(defn: Definition) -> bool:
     if "add" in insn and any(r in insn for r in ["rbp", "rsp", "ebp", "esp"]):
         return True
 
-    if "sub" in insn and any(r in insn for r in ["rbp", "rsp", "ebp", "esp"]):
-        return True
-
-    return False
+    return bool("sub" in insn and any(r in insn for r in ["rbp", "rsp", "ebp", "esp"]))

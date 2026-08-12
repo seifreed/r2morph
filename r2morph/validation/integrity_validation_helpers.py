@@ -105,36 +105,33 @@ def validate_macho_integrity(handler: Any) -> tuple[bool, list[str]]:
         if not load_commands:
             issues.append("No load commands found")
 
-        has_text = False
-        has_linkedit = False
-        for seg in segments:
-            name = seg.get("name", "")
-            if name == "__TEXT":
-                has_text = True
-            elif name == "__LINKEDIT":
-                has_linkedit = True
-
-        if not has_text:
-            issues.append("Missing __TEXT segment")
-        if not has_linkedit:
-            issues.append("Missing __LINKEDIT segment")
-
-        for seg in segments:
-            for other in segments:
-                if seg is other:
-                    continue
-                va1 = seg.get("virtual_address", 0)
-                size1 = seg.get("virtual_size", 0)
-                va2 = other.get("virtual_address", 0)
-                size2 = other.get("virtual_size", 0)
-
-                if va1 < va2 + size2 and va1 + size1 > va2:
-                    issues.append(f"Overlapping segments: {seg.get('name')} and {other.get('name')}")
+        issues.extend(_macho_segment_issues(segments))
 
     except Exception as e:
         issues.append(f"Mach-O validation error: {e}")
 
     return len(issues) == 0, issues
+
+
+def _macho_segment_issues(segments: list[dict[str, Any]]) -> list[str]:
+    issues = []
+    segment_names = {segment.get("name", "") for segment in segments}
+    if "__TEXT" not in segment_names:
+        issues.append("Missing __TEXT segment")
+    if "__LINKEDIT" not in segment_names:
+        issues.append("Missing __LINKEDIT segment")
+
+    for segment in segments:
+        for other in segments:
+            if segment is other:
+                continue
+            start = segment.get("virtual_address", 0)
+            size = segment.get("virtual_size", 0)
+            other_start = other.get("virtual_address", 0)
+            other_size = other.get("virtual_size", 0)
+            if start < other_start + other_size and start + size > other_start:
+                issues.append(f"Overlapping segments: {segment.get('name')} and {other.get('name')}")
+    return issues
 
 
 def validate_pe_integrity(handler: Any) -> tuple[bool, list[str]]:

@@ -3,27 +3,33 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from r2morph.core.engine import (
-    MorphEngine,
+from r2morph.core.engine import MorphEngine
+from r2morph.core.report_helpers_coverage import _summarize_pass_coverage_buckets
+from r2morph.core.report_helpers_evidence import (
     _build_evidence_summary_for_pass,
     _build_pass_region_evidence_map,
-    _build_pass_validation_context,
-    _build_symbolic_summary_for_pass,
-    _enrich_validation_policy,
-    _summarize_degradation_roles,
-    _summarize_diff_digest,
-    _summarize_pass_coverage_buckets,
     _summarize_pass_evidence,
-    _summarize_pass_risk_buckets,
-    _summarize_pass_timings,
     _summarize_structural_evidence,
+)
+from r2morph.core.report_helpers_risk import _summarize_pass_risk_buckets
+from r2morph.core.report_helpers_summary_metrics import (
+    _summarize_diff_digest,
+    _summarize_pass_timings,
+)
+from r2morph.core.report_helpers_symbolic_summary import (
+    _build_symbolic_summary_for_pass,
     _summarize_symbolic_coverage_by_pass,
     _summarize_symbolic_issue_passes,
     _summarize_symbolic_severity_by_pass,
 )
+from r2morph.core.report_helpers_validation import (
+    _build_pass_validation_context,
+    _enrich_validation_policy,
+    _summarize_degradation_roles,
+)
 from r2morph.core.support import classify_target_support
 from r2morph.mutations.base import MutationPass
-from r2morph.pipeline import Pipeline
+from r2morph.pipeline import Pipeline, PipelineRunOptions
 from r2morph.reporting.gate_evaluator import (
     build_gate_failure_priority as _build_gate_failure_priority,
 )
@@ -152,8 +158,10 @@ def test_pipeline_accumulates_mutation_history():
 
     result = pipeline.run(
         _FakeBinary(),
-        session=_FakeSession(),
-        validation_manager=_FakeValidationManager(passed=True),
+        PipelineRunOptions(
+            session=_FakeSession(),
+            validation_manager=_FakeValidationManager(passed=True),
+        ),
     )
 
     assert result["total_mutations"] == 1
@@ -429,9 +437,11 @@ def test_pipeline_rolls_back_failed_pass_validation():
 
     result = pipeline.run(
         binary,
-        session=session,
-        validation_manager=_FakeValidationManager(passed=False),
-        rollback_policy="skip-invalid-pass",
+        PipelineRunOptions(
+            session=session,
+            validation_manager=_FakeValidationManager(passed=False),
+            rollback_policy="skip-invalid-pass",
+        ),
     )
 
     assert result["total_mutations"] == 0
@@ -912,38 +922,15 @@ def test_summarize_symbolic_severity_by_pass_orders_rows():
     assert rows[2]["severity"] == "clean"
 
 
-def test_symbolic_validation_reports_bounded_step_metadata(monkeypatch):
-    manager = ValidationManager(mode="symbolic")
+def test_symbolic_validation_reports_bounded_step_metadata():
+    from r2morph.validation.symbolic_validator import SymbolicValidator
+    from tests._doubles.symbolic_validation_doubles import load_symbolic_bridge
+
+    manager = ValidationManager(
+        mode="symbolic",
+        symbolic_validator=SymbolicValidator(bridge_module_loader=load_symbolic_bridge),
+    )
     binary = _FakeBinary()
-
-    class _FakeFactory:
-        @staticmethod
-        def successors(state, num_inst=1):
-            assert num_inst == 1
-            return SimpleNamespace(
-                flat_successors=[SimpleNamespace(addr=state.addr + 1)],
-                unsat_successors=[],
-            )
-
-    class _FakeProject:
-        factory = _FakeFactory()
-
-    class _FakeBridge:
-        def __init__(self, _binary):
-            self.angr_project = _FakeProject()
-
-        @staticmethod
-        def create_symbolic_state(address):
-            return SimpleNamespace(addr=address)
-
-    monkeypatch.setattr(
-        "r2morph.validation.manager.import_module",
-        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
-    )
-    monkeypatch.setattr(
-        "r2morph.validation.symbolic_validator.import_module",
-        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
-    )
 
     outcome = manager.validate_pass(
         binary,
@@ -978,42 +965,22 @@ def test_symbolic_validation_reports_bounded_step_metadata(monkeypatch):
     ]
 
 
-def test_symbolic_pipeline_marks_known_instruction_equivalence_as_supported(monkeypatch):
-    class _FakeFactory:
-        @staticmethod
-        def successors(state, num_inst=1):
-            return SimpleNamespace(
-                flat_successors=[SimpleNamespace(addr=state.addr + 1)],
-                unsat_successors=[],
-            )
-
-    class _FakeProject:
-        factory = _FakeFactory()
-
-    class _FakeBridge:
-        def __init__(self, _binary):
-            self.angr_project = _FakeProject()
-
-        @staticmethod
-        def create_symbolic_state(address):
-            return SimpleNamespace(addr=address)
-
-    monkeypatch.setattr(
-        "r2morph.validation.manager.import_module",
-        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
-    )
-    monkeypatch.setattr(
-        "r2morph.validation.symbolic_validator.import_module",
-        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge),
-    )
+def test_symbolic_pipeline_marks_known_instruction_equivalence_as_supported():
+    from r2morph.validation.symbolic_validator import SymbolicValidator
+    from tests._doubles.symbolic_validation_doubles import load_symbolic_bridge
 
     pipeline = Pipeline()
     pipeline.add_pass(_InstructionSubstitutionSemanticPass())
 
     result = pipeline.run(
         _FakeBinary(),
-        session=_FakeSession(),
-        validation_manager=ValidationManager(mode="symbolic"),
+        PipelineRunOptions(
+            session=_FakeSession(),
+            validation_manager=ValidationManager(
+                mode="symbolic",
+                symbolic_validator=SymbolicValidator(bridge_module_loader=load_symbolic_bridge),
+            ),
+        ),
     )
 
     symbolic = result["validation"]["symbolic"]
@@ -1023,52 +990,11 @@ def test_symbolic_pipeline_marks_known_instruction_equivalence_as_supported(monk
     assert symbolic["statuses"][0]["status"] == "bounded-step-known-equivalence"
 
 
-def test_symbolic_pipeline_marks_observable_match_as_supported(monkeypatch):
-    class _FakeFactory:
-        @staticmethod
-        def successors(state, num_inst=1):
-            return SimpleNamespace(
-                flat_successors=[SimpleNamespace(addr=state.addr + 1)],
-                unsat_successors=[],
-            )
-
-    class _FakeProject:
-        factory = _FakeFactory()
-
-    class _FakeBridge:
-        def __init__(self, _binary):
-            self.angr_project = _FakeProject()
-
-        @staticmethod
-        def create_symbolic_state(address):
-            return SimpleNamespace(addr=address)
-
-    monkeypatch.setattr(
-        "r2morph.validation.manager.import_module",
-        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge, angr=None),
-    )
-    monkeypatch.setattr(
-        "r2morph.validation.symbolic_validator.import_module",
-        lambda _name: SimpleNamespace(ANGR_AVAILABLE=True, AngrBridge=_FakeBridge, angr=None),
-    )
-    monkeypatch.setattr(
-        "r2morph.validation.shellcode_equivalence.ShellcodeEquivalenceChecker._compare_instruction_substitution_observables",
-        lambda self, binary, pass_result, bridge_module: {
-            "symbolic_observable_check_performed": True,
-            "symbolic_observable_equivalent": True,
-            "symbolic_observable_reason": "observable register/flag effects matched",
-            "symbolic_observable_regions": [
-                {
-                    "start_address": 0x401010,
-                    "end_address": 0x401011,
-                    "observables_checked": ["eax", "eflags"],
-                    "original_successors": 1,
-                    "mutated_successors": 1,
-                    "mismatches": [],
-                }
-            ],
-            "symbolic_observable_mismatches": [],
-        },
+def test_symbolic_pipeline_marks_observable_match_as_supported():
+    from r2morph.validation.symbolic_validator import SymbolicValidator
+    from tests._doubles.symbolic_validation_doubles import (
+        ObservableMatchShellcodeChecker,
+        load_symbolic_bridge,
     )
 
     pipeline = Pipeline()
@@ -1076,8 +1002,16 @@ def test_symbolic_pipeline_marks_observable_match_as_supported(monkeypatch):
 
     result = pipeline.run(
         _FakeBinary(),
-        session=_FakeSession(),
-        validation_manager=ValidationManager(mode="symbolic"),
+        PipelineRunOptions(
+            session=_FakeSession(),
+            validation_manager=ValidationManager(
+                mode="symbolic",
+                symbolic_validator=SymbolicValidator(
+                    bridge_module_loader=load_symbolic_bridge,
+                    shellcode_checker=ObservableMatchShellcodeChecker(),
+                ),
+            ),
+        ),
     )
 
     symbolic = result["validation"]["symbolic"]

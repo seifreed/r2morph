@@ -335,9 +335,8 @@ def run_real_world_validation():
 
                                 if iter_result.success:
                                     devirt_success = True
-                                    print(
-                                        f"     Devirtualization successful: {complexity_reduction:.1f} complexity reduced"
-                                    )
+                                    result_message = f"     Devirtualization successful: {complexity_reduction:.1f}"
+                                    print(f"{result_message} complexity reduced")
                                 else:
                                     print("     Iterative simplification failed")
                             else:

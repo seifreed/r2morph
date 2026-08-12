@@ -40,10 +40,10 @@ different polymorphic variants while maintaining semantics.
 from __future__ import annotations
 
 import logging
-import random
 from collections.abc import Callable
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.polymorphic_engine_models import (
     EngineRunResult,
@@ -52,7 +52,7 @@ from r2morph.mutations.polymorphic_engine_models import (
     StateTransition,
 )
 from r2morph.mutations.polymorphic_engine_noop import NoOp
-from r2morph.mutations.polymorphic_engine_setup import setup_default_engine
+from r2morph.mutations.polymorphic_engine_setup import EngineSetupConfig, setup_default_engine
 
 logger = logging.getLogger(__name__)
 
@@ -365,15 +365,17 @@ class PolymorphicEnginePass(MutationPass):
         """
         setup_default_engine(
             self.engine,
-            enable_substitution=self.enable_substitution,
-            enable_pattern_substitution=self.enable_pattern_substitution,
-            enable_dead_code=self.enable_dead_code,
-            enable_reordering=self.enable_reordering,
-            enable_flattening=self.enable_flattening,
-            enable_virtualization=self.enable_virtualization,
-            enable_string_obfuscation=self.enable_string_obfuscation,
-            enable_mobility=self.enable_mobility,
-            enable_outlining=self.enable_outlining,
+            EngineSetupConfig(
+                enable_substitution=self.enable_substitution,
+                enable_pattern_substitution=self.enable_pattern_substitution,
+                enable_dead_code=self.enable_dead_code,
+                enable_reordering=self.enable_reordering,
+                enable_flattening=self.enable_flattening,
+                enable_virtualization=self.enable_virtualization,
+                enable_string_obfuscation=self.enable_string_obfuscation,
+                enable_mobility=self.enable_mobility,
+                enable_outlining=self.enable_outlining,
+            ),
         )
 
     def register_mutation(self, name: str, mutation: MutationPass) -> None:
@@ -430,4 +432,4 @@ class PolymorphicEnginePass(MutationPass):
         return stats
 
 
-__all__ = ["PolymorphicEngine", "PolymorphicEnginePass", "NoOp"]
+__all__ = ["NoOp", "PolymorphicEngine", "PolymorphicEnginePass"]

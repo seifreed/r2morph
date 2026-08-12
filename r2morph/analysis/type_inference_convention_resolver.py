@@ -12,12 +12,13 @@ from r2morph.analysis.type_inference_conventions import (
     _EMPTY_CONVENTION,
     _SYSV_AMD64_CONVENTION,
 )
+from r2morph.core.constants import ARCH_BITS_64
 
 
 def get_calling_convention(arch: str, bits: int) -> dict[str, Any]:
     """Get calling convention registers for architecture."""
     if arch in ("x86", "amd64", "x86_64"):
-        convention = _SYSV_AMD64_CONVENTION if bits == 64 else _CDECL_X86_32_CONVENTION
+        convention = _SYSV_AMD64_CONVENTION if bits == ARCH_BITS_64 else _CDECL_X86_32_CONVENTION
     elif arch in ("arm", "arm32"):
         convention = _AAPCS_ARM32_CONVENTION
     elif arch in ("arm64", "aarch64"):

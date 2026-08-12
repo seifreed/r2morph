@@ -22,7 +22,7 @@ def shuffle_blocks(blocks: list[dict]) -> list[dict]:
     first = blocks[0]
     rest = list(blocks[1:])
     random.shuffle(rest)
-    return [first] + rest
+    return [first, *rest]
 
 
 def remove_redundant_fallthrough(blocks: list[dict]) -> list[dict]:

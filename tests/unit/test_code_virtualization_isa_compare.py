@@ -19,6 +19,7 @@ import pytest
 
 from r2morph.mutations.code_virtualization_region_compare import compare_compute
 from r2morph.mutations.code_virtualization_region_flags import synth_flags_asm
+from r2morph.mutations.code_virtualization_region_handlers import IntegerHandlerConfig, _compare_handler_asm
 from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
 
 _MASK = {32: 0xFFFFFFFF, 64: 0xFFFFFFFFFFFFFFFF}
@@ -52,6 +53,7 @@ def _edge_operands(width: int) -> tuple[int, ...]:
 def _run(asm: str, reg_in: dict[int, int], reg_out: list[int]) -> dict[int, int]:
     keystone = pytest.importorskip("keystone")
     unicorn = pytest.importorskip("unicorn")
+    from unicorn.x86_const import UC_X86_REG_RSP
 
     ks = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
     code, _ = ks.asm(asm, 0x1000)
@@ -59,7 +61,7 @@ def _run(asm: str, reg_in: dict[int, int], reg_out: list[int]) -> dict[int, int]
     mu.mem_map(0x1000, 0x1000)
     mu.mem_write(0x1000, bytes(code))
     mu.mem_map(0x200000, 0x2000)
-    mu.reg_write(_RSP, 0x201000)
+    mu.reg_write(UC_X86_REG_RSP, 0x201000)
     for reg, value in reg_in.items():
         mu.reg_write(reg, value)
     mu.emu_start(0x1000, 0x1000 + len(code))
@@ -70,12 +72,6 @@ def _regs() -> tuple[int, int, int, int]:
     from unicorn.x86_const import UC_X86_REG_R11, UC_X86_REG_RAX, UC_X86_REG_RBP, UC_X86_REG_RBX
 
     return UC_X86_REG_RAX, UC_X86_REG_RBX, UC_X86_REG_RBP, UC_X86_REG_R11
-
-
-try:
-    from unicorn.x86_const import UC_X86_REG_RSP as _RSP
-except ImportError:  # pragma: no cover - unicorn missing on this runner
-    _RSP = 0
 
 
 def _cpu_flags(op: str, width: int, a: int, b: int) -> int:
@@ -121,10 +117,8 @@ def test_compare_flags_match_the_cpu_for_every_variant(
 
 
 def test_compare_variant_zero_keeps_the_inline_canonical_handler() -> None:
-    from r2morph.mutations.code_virtualization_region_handlers import _compare_handler_asm
-
-    canonical = _compare_handler_asm("cmp_r_64", _KEY, "0x0", "0x0", 0, 0, 0, compare_variant=0)
-    nonzero = _compare_handler_asm("cmp_r_64", _KEY, "0x0", "0x0", 0, 0, 0, compare_variant=1)
+    canonical = _compare_handler_asm(IntegerHandlerConfig("cmp_r_64", _KEY, "0x0", "0x0"))
+    nonzero = _compare_handler_asm(IntegerHandlerConfig("cmp_r_64", _KEY, "0x0", "0x0", compare_variant=1))
     # The +1-fold spelling is unique to a non-canonical build; variant 0 must not use it.
     assert "lea r10, [r10 + 1]" not in canonical
     assert nonzero != canonical

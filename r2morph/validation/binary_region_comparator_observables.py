@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.validation.binary_region_memory import collect_memory_write_signatures
@@ -23,11 +24,14 @@ def compare_register_states(
         if original_final.solver.satisfiable(extra_constraints=[left != right]):
             record(reg_name)
 
-    if hasattr(original_final.regs, "eflags") and hasattr(mutated_final.regs, "eflags"):
-        if original_final.solver.satisfiable(
+    if (
+        hasattr(original_final.regs, "eflags")
+        and hasattr(mutated_final.regs, "eflags")
+        and original_final.solver.satisfiable(
             extra_constraints=[original_final.regs.eflags != mutated_final.regs.eflags]
-        ):
-            record("eflags")
+        )
+    ):
+        record("eflags")
 
 
 def compare_stack_and_memory(
@@ -53,24 +57,41 @@ def compare_stack_and_memory(
         record("memory_writes")
 
 
-def check_observables(
-    region_report: dict[str, Any],
-    mismatches: list[dict[str, Any]],
-    mutation: dict[str, Any],
-    original_final: Any,
-    mutated_final: Any,
-    compared_registers: list[str],
-    stack_reg: str,
-) -> None:
+@dataclass(frozen=True)
+class ObservableComparison:
+    """Final symbolic states and report sinks for one mutation region."""
+
+    region_report: dict[str, Any]
+    mismatches: list[dict[str, Any]]
+    mutation: dict[str, Any]
+    original_final: Any
+    mutated_final: Any
+    compared_registers: list[str]
+    stack_reg: str
+
+
+def check_observables(comparison: ObservableComparison) -> None:
     """Compare observables between original and mutated final states."""
-    start, end = mutation["start_address"], mutation["end_address"]
+    start = comparison.mutation["start_address"]
+    end = comparison.mutation["end_address"]
 
     def _record(observable: str) -> None:
-        region_report["mismatches"].append(observable)
-        mismatches.append({"start_address": start, "end_address": end, "observable": observable})
+        comparison.region_report["mismatches"].append(observable)
+        comparison.mismatches.append({"start_address": start, "end_address": end, "observable": observable})
 
-    if getattr(original_final, "addr", None) != getattr(mutated_final, "addr", None):
+    if getattr(comparison.original_final, "addr", None) != getattr(comparison.mutated_final, "addr", None):
         _record("successor_address")
 
-    compare_register_states(original_final, mutated_final, compared_registers, _record)
-    compare_stack_and_memory(original_final, mutated_final, stack_reg, region_report, _record)
+    compare_register_states(
+        comparison.original_final,
+        comparison.mutated_final,
+        comparison.compared_registers,
+        _record,
+    )
+    compare_stack_and_memory(
+        comparison.original_final,
+        comparison.mutated_final,
+        comparison.stack_reg,
+        comparison.region_report,
+        _record,
+    )

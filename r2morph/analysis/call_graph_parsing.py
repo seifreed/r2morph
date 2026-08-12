@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from r2morph.analysis.call_graph import CallType
 
+_MIN_INSTRUCTION_PART_COUNT = 2
+
 
 def determine_call_type(name: str) -> CallType:
     """Determine the type of a function name."""
@@ -19,7 +21,7 @@ def determine_call_type(name: str) -> CallType:
 def extract_call_target(disasm: str) -> int | str | None:
     """Extract call target from disassembly."""
     parts = disasm.split(None, 1)
-    if len(parts) < 2:
+    if len(parts) < _MIN_INSTRUCTION_PART_COUNT:
         return None
 
     operand = parts[1].strip()
@@ -47,7 +49,7 @@ def is_tail_call(disasm: str) -> bool:
     if not disasm.startswith("jmp"):
         return False
     parts = disasm.split(None, 1)
-    if len(parts) < 2:
+    if len(parts) < _MIN_INSTRUCTION_PART_COUNT:
         return False
     operand = parts[1].strip()
     return operand.startswith("0x") or operand in ("rax", "rbx", "rcx", "rdx")

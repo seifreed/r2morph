@@ -11,13 +11,19 @@ jump instructions, and patches call-site cross-references.
 from __future__ import annotations
 
 import logging
-import random
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.base import MutationPass
-from r2morph.relocations.cave_finder import CaveFinder
+from r2morph.relocations.cave_finder import CaveFinder, CodeCave
 
 logger = logging.getLogger(__name__)
+
+_X86_CALL_OPCODE = 0xE8
+_RELATIVE_CALL_SIZE_BYTES = 5
+_SIGNED_32_MIN = -(1 << 31)
+_SIGNED_32_MAX = (1 << 31) - 1
+_MIN_EXECUTABLE_CAVE_SIZE_BYTES = 8
 
 
 class ImportTableObfuscationPass(MutationPass):
@@ -201,7 +207,7 @@ class ImportTableObfuscationPass(MutationPass):
                 if not xref_addr:
                     continue
                 opcode_bytes = binary.read_bytes(xref_addr, 1)
-                if opcode_bytes and opcode_bytes[0] == 0xE8:
+                if opcode_bytes and opcode_bytes[0] == _X86_CALL_OPCODE:
                     call_xrefs.append(xref)
         except Exception as e:
             logger.debug(f"Failed to get xrefs for 0x{plt_addr:x}: {e}")
@@ -229,11 +235,11 @@ class ImportTableObfuscationPass(MutationPass):
             call_site = xref.get("from", 0)
             if not call_site:
                 continue
-            original_bytes = binary.read_bytes(call_site, 5)
-            if not original_bytes or len(original_bytes) < 5:
+            original_bytes = binary.read_bytes(call_site, _RELATIVE_CALL_SIZE_BYTES)
+            if not original_bytes or len(original_bytes) < _RELATIVE_CALL_SIZE_BYTES:
                 continue
-            new_rel32 = stub_addr - (call_site + 5)
-            if new_rel32 < -2147483648 or new_rel32 > 2147483647:
+            new_rel32 = stub_addr - (call_site + _RELATIVE_CALL_SIZE_BYTES)
+            if new_rel32 < _SIGNED_32_MIN or new_rel32 > _SIGNED_32_MAX:
                 logger.debug(f"Offset out of range for call at 0x{call_site:x} -> stub 0x{stub_addr:x}")
                 continue
             patched_call = b"\xe8" + new_rel32.to_bytes(4, "little", signed=True)
@@ -241,6 +247,87 @@ class ImportTableObfuscationPass(MutationPass):
                 patched += 1
                 logger.debug(f"Patched call at 0x{call_site:x} -> stub 0x{stub_addr:x}")
         return patched
+
+    @staticmethod
+    def _allocate_stub(
+        binary: Any, caves: list[CodeCave], cave_index: int, stub_bytes: bytes
+    ) -> tuple[int | None, int]:
+        while cave_index < len(caves):
+            cave = caves[cave_index]
+            if cave.size < len(stub_bytes):
+                cave_index += 1
+                continue
+            stub_address = cave.address
+            if not binary.write_bytes(stub_address, stub_bytes):
+                logger.debug(f"Failed to write stub at 0x{stub_address:x}")
+                cave_index += 1
+                continue
+            cave.address += len(stub_bytes)
+            cave.size -= len(stub_bytes)
+            return stub_address, cave_index
+        return None, cave_index
+
+    def _obfuscate_import(
+        self,
+        binary: Any,
+        imported: dict[str, Any],
+        caves: list[CodeCave],
+        cave_index: int,
+        binary_format: str,
+    ) -> tuple[dict[str, Any] | None, int, bool]:
+        name = imported.get("name", "")
+        plt_address = imported.get("address", 0)
+        if not name or not plt_address:
+            return None, cave_index, False
+        call_xrefs = self._find_call_xrefs(binary, plt_address)
+        if not call_xrefs:
+            logger.debug(f"No call xrefs for import {name} at 0x{plt_address:x}, skipping")
+            return None, cave_index, False
+        stub_bytes = self._generate_jump_stub_x86_64(binary, plt_address)
+        if stub_bytes is None:
+            logger.debug(f"Failed to generate jump stub for {name}")
+            return None, cave_index, False
+        stub_address, cave_index = self._allocate_stub(binary, caves, cave_index, stub_bytes)
+        if stub_address is None:
+            return None, cave_index, True
+        patched = self._patch_call_sites(binary, call_xrefs, stub_address)
+        if patched == 0:
+            return None, cave_index, False
+        entry = {
+            "name": name,
+            "original_address": plt_address,
+            "stub_address": stub_address,
+            "call_sites_patched": patched,
+        }
+        self._record_mutation(
+            function_address=None,
+            start_address=stub_address,
+            end_address=stub_address + len(stub_bytes) - 1,
+            original_bytes=b"\x00" * len(stub_bytes),
+            mutated_bytes=stub_bytes,
+            original_disasm=f"import:{name}@0x{plt_address:x}",
+            mutated_disasm=f"stub@0x{stub_address:x}->{patched} call sites",
+            mutation_kind="import_obfuscation",
+            metadata={
+                "import_name": name,
+                "plt_address": plt_address,
+                "stub_address": stub_address,
+                "call_sites_patched": patched,
+                "format": binary_format,
+            },
+        )
+        logger.debug(f"Obfuscated import {name}: stub@0x{stub_address:x}, {patched} call sites patched")
+        return entry, cave_index, False
+
+    @staticmethod
+    def _analyze_xrefs(binary: Any) -> None:
+        try:
+            binary.r2.cmd("aaa")
+        except (OSError, RuntimeError) as error:
+            logger.warning(
+                "r2 'aaa' analysis failed before import obfuscation; xref-based rewriting may be incomplete: %s",
+                error,
+            )
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """
@@ -279,7 +366,7 @@ class ImportTableObfuscationPass(MutationPass):
         # Find executable caves for stub placement
         cave_finder = CaveFinder(binary, min_size=16)
         caves = cave_finder.find_caves()
-        exec_caves = [c for c in caves if c.is_executable and c.size >= 8]
+        exec_caves = [c for c in caves if c.is_executable and c.size >= _MIN_EXECUTABLE_CAVE_SIZE_BYTES]
 
         if not exec_caves:
             logger.warning("No executable code caves found for import obfuscation")
@@ -294,9 +381,6 @@ class ImportTableObfuscationPass(MutationPass):
         # Sort caves largest-first so we consume from the biggest one
         exec_caves.sort(key=lambda c: c.size, reverse=True)
 
-        imports_obfuscated = 0
-        stubs_created = 0
-        call_sites_patched = 0
         jump_table_entries: list[dict[str, Any]] = []
 
         logger.info(
@@ -304,14 +388,7 @@ class ImportTableObfuscationPass(MutationPass):
             f"selected {len(selected)}, caves available: {len(exec_caves)}"
         )
 
-        # Ensure r2 analysis is done for xrefs
-        try:
-            binary.r2.cmd("aaa")
-        except (OSError, RuntimeError) as exc:
-            logger.warning(
-                "r2 'aaa' analysis failed before import obfuscation; " "xref-based rewriting may be incomplete: %s",
-                exc,
-            )
+        self._analyze_xrefs(binary)
 
         if self._session is not None:
             self._create_mutation_checkpoint("import_obfuscation")
@@ -322,85 +399,15 @@ class ImportTableObfuscationPass(MutationPass):
             if random.random() > self.probability:
                 continue
 
-            name = imp.get("name", "")
-            plt_addr = imp.get("address", 0)
-
-            if not name or not plt_addr:
-                continue
-
-            # Find call-site xrefs to this import
-            call_xrefs = self._find_call_xrefs(binary, plt_addr)
-            if not call_xrefs:
-                logger.debug(f"No call xrefs for import {name} at 0x{plt_addr:x}, skipping")
-                continue
-
-            # Generate a jump stub targeting the original PLT address
-            stub_bytes = self._generate_jump_stub_x86_64(binary, plt_addr)
-            if stub_bytes is None:
-                logger.debug(f"Failed to generate jump stub for {name}")
-                continue
-
-            stub_size = len(stub_bytes)
-
-            # Find a cave with enough room
-            allocated = False
-            while cave_idx < len(exec_caves):
-                cave = exec_caves[cave_idx]
-                if cave.size >= stub_size:
-                    stub_addr = cave.address
-                    # Write the stub into the cave
-                    if not binary.write_bytes(stub_addr, stub_bytes):
-                        logger.debug(f"Failed to write stub at 0x{stub_addr:x}")
-                        cave_idx += 1
-                        continue
-                    # Advance the cave pointer
-                    cave.address += stub_size
-                    cave.size -= stub_size
-                    allocated = True
-                    break
-                cave_idx += 1
-
-            if not allocated:
+            entry, cave_idx, caves_exhausted = self._obfuscate_import(binary, imp, exec_caves, cave_idx, binary_format)
+            if caves_exhausted:
                 logger.warning("Ran out of code caves for import stubs")
                 break
+            if entry is not None:
+                jump_table_entries.append(entry)
 
-            # Patch all call sites to go through the stub
-            patched = self._patch_call_sites(binary, call_xrefs, stub_addr)
-
-            if patched > 0:
-                stubs_created += 1
-                call_sites_patched += patched
-                imports_obfuscated += 1
-
-                jump_table_entries.append(
-                    {
-                        "name": name,
-                        "original_address": plt_addr,
-                        "stub_address": stub_addr,
-                        "call_sites_patched": patched,
-                    }
-                )
-
-                self._record_mutation(
-                    function_address=None,
-                    start_address=stub_addr,
-                    end_address=stub_addr + stub_size - 1,
-                    original_bytes=b"\x00" * stub_size,
-                    mutated_bytes=stub_bytes,
-                    original_disasm=f"import:{name}@0x{plt_addr:x}",
-                    mutated_disasm=f"stub@0x{stub_addr:x}->{patched} call sites",
-                    mutation_kind="import_obfuscation",
-                    metadata={
-                        "import_name": name,
-                        "plt_address": plt_addr,
-                        "stub_address": stub_addr,
-                        "call_sites_patched": patched,
-                        "format": binary_format,
-                    },
-                )
-
-                logger.debug(f"Obfuscated import {name}: stub@0x{stub_addr:x}, " f"{patched} call sites patched")
-
+        imports_obfuscated = len(jump_table_entries)
+        call_sites_patched = sum(int(entry["call_sites_patched"]) for entry in jump_table_entries)
         if self._validation_manager is not None:
             self._validation_manager.capture_structural_baseline(binary, 0)
 
@@ -413,7 +420,7 @@ class ImportTableObfuscationPass(MutationPass):
             "mutations_applied": imports_obfuscated,
             "imports_found": len(imports),
             "imports_obfuscated": imports_obfuscated,
-            "stubs_created": stubs_created,
+            "stubs_created": imports_obfuscated,
             "call_sites_patched": call_sites_patched,
             "jump_table_entries": len(jump_table_entries),
             "format": binary_format,

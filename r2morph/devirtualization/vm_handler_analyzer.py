@@ -6,6 +6,7 @@ their semantic behavior using pattern matching and symbolic execution.
 """
 
 import logging
+import re
 from typing import Any
 
 from r2morph.analysis.cfg import CFGBuilder
@@ -19,6 +20,10 @@ logger = logging.getLogger(__name__)
 # r2 instruction types for a register/memory-indirect jump - the defining
 # dispatch instruction of a computed-goto VM (jmp reg / jmp [table + idx*scale]).
 _INDIRECT_JUMP_TYPES = frozenset({"ujmp", "rjmp", "mjmp", "ijmp"})
+_MIN_ADDRESS_BITS = 32
+_HANDLER_SAMPLE_SIZE = 20
+_MIN_HANDLER_TABLE_ENTRIES = 4
+_VALID_HANDLER_RATIO = 0.5
 
 
 class VMHandlerAnalyzer:
@@ -100,8 +105,6 @@ class VMHandlerAnalyzer:
                 # Common pattern: mov reg, [table + index*scale]
                 if "mov" in disasm and "[" in disasm and "+" in disasm:
                     # Extract potential table address
-                    import re
-
                     # Pattern for address constants
                     addr_pattern = r"0x([0-9a-fA-F]+)"
                     matches = re.findall(addr_pattern, disasm)
@@ -148,17 +151,15 @@ class VMHandlerAnalyzer:
             ptr_size = arch_info["bits"] // 8
 
             entries = []
-            max_addr = (1 << arch_info["bits"]) - 1 if arch_info["bits"] >= 32 else 0xFFFFFFFF
+            max_addr = (1 << arch_info["bits"]) - 1 if arch_info["bits"] >= _MIN_ADDRESS_BITS else 0xFFFFFFFF
             for i in range(0, min(256, 64) * ptr_size, ptr_size):  # Check up to 64 entries
-                assert self.binary.r2 is not None
+                if self.binary.r2 is None:
+                    raise RuntimeError("Binary disassembler is not open")
                 try:
                     entry_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ {table_addr + i}")
                     entry_bytes = bytes.fromhex(entry_hex.strip())
 
-                    if ptr_size == 8:
-                        entry = int.from_bytes(entry_bytes, "little")
-                    else:
-                        entry = int.from_bytes(entry_bytes, "little")
+                    entry = int.from_bytes(entry_bytes, "little")
 
                     entries.append(entry)
 
@@ -172,12 +173,12 @@ class VMHandlerAnalyzer:
 
             # Validate entries look like code addresses
             valid_entries = 0
-            for entry in entries[:20]:  # Check first 20 entries
+            for entry in entries[:_HANDLER_SAMPLE_SIZE]:
                 if self._is_valid_code_address(entry):
                     valid_entries += 1
 
             # At least 50% should be valid code addresses
-            return len(entries) >= 4 and (valid_entries / len(entries)) >= 0.5
+            return len(entries) >= _MIN_HANDLER_TABLE_ENTRIES and (valid_entries / len(entries)) >= _VALID_HANDLER_RATIO
 
         except Exception as e:
             logger.debug(f"Error validating handler table: {e}")
@@ -185,7 +186,8 @@ class VMHandlerAnalyzer:
 
     def _is_valid_code_address(self, addr: int) -> bool:
         """Check if address points to valid code."""
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             # Try to disassemble one instruction at this address
             disasm = self.binary.r2.cmd(f"pd 1 @ {addr}")
@@ -202,7 +204,8 @@ class VMHandlerAnalyzer:
         table base is that jump's memory-operand pointer; validate it as a
         handler table before trusting it.
         """
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             instructions = self.binary.r2.cmdj(f"pDj {block_size} @ {block_addr}") or []
         except Exception as e:
@@ -238,9 +241,10 @@ class VMHandlerAnalyzer:
             ptr_size = arch_info["bits"] // 8
 
             # Read table entries
-            max_addr = (1 << arch_info["bits"]) - 1 if arch_info["bits"] >= 32 else 0xFFFFFFFF
+            max_addr = (1 << arch_info["bits"]) - 1 if arch_info["bits"] >= _MIN_ADDRESS_BITS else 0xFFFFFFFF
             for i in range(0, 256 * ptr_size, ptr_size):  # Up to 256 handlers
-                assert self.binary.r2 is not None
+                if self.binary.r2 is None:
+                    raise RuntimeError("Binary disassembler is not open")
                 try:
                     entry_hex = self.binary.r2.cmd(f"p8 {ptr_size} @ {table_addr + i}")
                     entry_bytes = bytes.fromhex(entry_hex.strip())
@@ -316,7 +320,8 @@ class VMHandlerAnalyzer:
 
     def _get_handler_instructions(self, address: int) -> list[dict[str, Any]]:
         """Get instructions for a VM handler."""
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             # Try to get function disassembly
             instructions: list[dict[str, Any]] = self.binary.get_function_disasm(address)
@@ -360,9 +365,8 @@ class VMHandlerAnalyzer:
                 confidence = pattern_info["confidence"]
 
                 for pattern in pattern_list:
-                    if isinstance(pattern, str):
-                        if pattern in instruction_text:
-                            score += confidence
+                    if isinstance(pattern, str) and pattern in instruction_text:
+                        score += confidence
                     # Could add regex pattern matching here
 
             type_scores[handler_type] = score
@@ -469,7 +473,8 @@ class VMHandlerAnalyzer:
 
     def _instruction_operands(self, addr: int) -> list[dict[str, Any]]:
         """Structured operands of the instruction at ``addr`` (empty on failure)."""
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             analysis = self.binary.r2.cmdj(f"aoj 1 @ {addr}")
         except Exception as e:

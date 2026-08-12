@@ -30,7 +30,7 @@ from r2morph.analysis.memory_flow_models import (
 
 logger = logging.getLogger(__name__)
 
-__all__ = ["MemoryFlowAnalyzer", "InterproceduralDataFlowAnalyzer"]
+__all__ = ["InterproceduralDataFlowAnalyzer", "MemoryFlowAnalyzer"]
 
 
 class MemoryFlowAnalyzer:
@@ -260,54 +260,53 @@ class MemoryFlowAnalyzer:
     def _extract_access_size(self, disasm: str) -> int:
         """Extract memory access size from x86 instruction."""
         disasm_lower = disasm.lower()
+        access_size = 4
 
-        if "byte" in disasm_lower or "movzx" in disasm_lower and "al" in disasm_lower:
-            return 1
-        elif "word" in disasm_lower or "movzx" in disasm_lower and "ax" in disasm_lower:
-            return 2
-        elif "dword" in disasm_lower or "movzx" in disasm_lower and "eax" in disasm_lower:
-            return 4
+        if "byte" in disasm_lower or ("movzx" in disasm_lower and "al" in disasm_lower):
+            access_size = 1
+        elif "word" in disasm_lower or ("movzx" in disasm_lower and "ax" in disasm_lower):
+            access_size = 2
+        elif "dword" in disasm_lower or ("movzx" in disasm_lower and "eax" in disasm_lower):
+            access_size = 4
         elif "qword" in disasm_lower or ("mov" in disasm_lower and "rax" in disasm_lower):
-            return 8
+            access_size = 8
         elif "xmm" in disasm_lower or "movdqu" in disasm_lower or "movaps" in disasm_lower:
-            return 16
+            access_size = 16
         elif "ymm" in disasm_lower:
-            return 32
+            access_size = 32
         elif "zmm" in disasm_lower:
-            return 64
-
-        return 4
+            access_size = 64
+        return access_size
 
     def _extract_arm_access_size(self, disasm: str) -> int:
         """Extract memory access size from ARM instruction."""
         disasm_lower = disasm.lower()
+        access_size = 4
 
         if "ldrb" in disasm_lower or "strb" in disasm_lower:
-            return 1
+            access_size = 1
         elif "ldrh" in disasm_lower or "strh" in disasm_lower:
-            return 2
+            access_size = 2
         elif "ldrsw" in disasm_lower:
-            return 4
+            access_size = 4
         elif "ldrsb" in disasm_lower:
-            return 1
+            access_size = 1
         elif "ldrsh" in disasm_lower:
-            return 2
+            access_size = 2
         elif "ldr" in disasm_lower or "str" in disasm_lower:
-            if "w" in disasm_lower:
-                return 4
-            return 8
+            access_size = 4 if "w" in disasm_lower else 8
         elif "ldp" in disasm_lower or "stp" in disasm_lower:
-            return 16
+            access_size = 16
         elif "ldp" in disasm_lower and "q" in disasm_lower:
-            return 32
+            access_size = 32
         elif "vldr" in disasm_lower:
             if ".d" in disasm_lower:
-                return 8
+                access_size = 8
             elif ".s" in disasm_lower:
-                return 4
-            return 16
-
-        return 4
+                access_size = 4
+            else:
+                access_size = 16
+        return access_size
 
     def _identify_location(self, operand: str, address: int, stack_frame: dict[str, Any]) -> str:
         """Identify the memory location type."""
@@ -329,8 +328,8 @@ class MemoryFlowAnalyzer:
         dependencies: list[MemoryDependency] = []
         accesses_list = [(addr, acc) for addr, accs in self._accesses.items() for acc in accs]
 
-        for i, (addr1, acc1) in enumerate(accesses_list):
-            for addr2, acc2 in accesses_list[i + 1 :]:
+        for i, (_addr1, acc1) in enumerate(accesses_list):
+            for _addr2, acc2 in accesses_list[i + 1 :]:
                 if acc1.location.overlaps(acc2.location):
                     if acc1.access_type == MemoryAccessType.WRITE and acc2.access_type == MemoryAccessType.READ:
                         dependencies.append(

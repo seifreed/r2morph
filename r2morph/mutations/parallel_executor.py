@@ -14,7 +14,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.base import MutationPass, MutationRecord
 from r2morph.mutations.parallel_executor_models import MutationResult, MutationTask, ParallelStats
 from r2morph.mutations.parallel_executor_planning import build_task_plans
-from r2morph.mutations.parallel_executor_runtime import execute_parallel_runs
+from r2morph.mutations.parallel_executor_runtime import ParallelRunConfig, execute_parallel_runs
 from r2morph.mutations.parallel_executor_speedup import estimate_parallel_speedup
 
 # File-level write lock to prevent concurrent binary corruption
@@ -135,12 +135,14 @@ class ParallelMutator:
         return execute_parallel_runs(
             passes,
             binary,
-            max_workers=self.max_workers,
-            timeout=self.timeout,
-            create_tasks=self._create_tasks,
-            execute_task=self._execute_task,
-            stats_factory=ParallelStats,
-            logger=logger,
+            ParallelRunConfig(
+                max_workers=self.max_workers,
+                timeout=self.timeout,
+                create_tasks=self._create_tasks,
+                execute_task=self._execute_task,
+                stats_factory=ParallelStats,
+                logger=logger,
+            ),
         )
 
     def estimate_speedup(

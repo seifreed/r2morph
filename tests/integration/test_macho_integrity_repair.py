@@ -148,7 +148,7 @@ class TestMachOHandlerMethods:
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         handler = MachOHandler(test_file)
-        success, repairs = handler.full_repair()
+        success, _repairs = handler.full_repair()
 
         assert not success
 
@@ -257,14 +257,14 @@ class TestCodeSigner:
             result = signer.is_signed(test_file)
             assert result is True
 
-    def test_sign_binary_non_darwin(self, tmp_path):
-        """Test sign_binary on non-Darwin platforms."""
+    def test_sign_non_darwin_returns_true(self, tmp_path):
+        """Test signing on non-Darwin platforms."""
         signer = CodeSigner()
         test_file = tmp_path / "test.bin"
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         if signer.platform != "Darwin":
-            result = signer.sign_binary(test_file)
+            result = signer.sign(test_file)
             assert result is True
 
 
@@ -363,7 +363,7 @@ class TestMachOIntegrityDarwin:
 
         signer.remove_signature(test_binary)
 
-        result = signer.sign_binary(test_binary, adhoc=True)
+        result = signer.sign(test_binary, adhoc=True)
 
         if result:
             assert signer.verify(test_binary)
@@ -428,7 +428,7 @@ class TestMachOErrorHandling:
 
         assert handler.is_macho()
 
-        commands, segments = handler._parse_macho_basic()
+        commands, _segments = handler._parse_macho_basic()
 
         if not commands:
             pass
@@ -481,10 +481,10 @@ class TestMachORepairWorkflow:
 
         handler = MachOHandler(test_file)
 
-        valid, msg = handler.validate_integrity()
+        valid, _msg = handler.validate_integrity()
         assert not valid
 
-        success, repairs = handler.full_repair()
+        success, _repairs = handler.full_repair()
         assert not success
 
     @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS only")
@@ -506,11 +506,11 @@ class TestMachORepairWorkflow:
 
         handler = MachOHandler(test_binary)
 
-        valid1, _ = handler.validate_integrity()
+        _valid1, _ = handler.validate_integrity()
 
-        success, repairs = handler.full_repair()
+        _success, _repairs = handler.full_repair()
 
-        valid2, _ = handler.validate_integrity()
+        _valid2, _ = handler.validate_integrity()
 
 
 class TestCodeSignerErrorHandling:
@@ -554,11 +554,9 @@ class TestMachOPlatformIntegration:
         test_file.write_bytes(b"\x00" * 100)
         test_file.chmod(0o755)
 
-        test_file.stat().st_mode
+        original_mode = test_file.stat().st_mode
 
         handler = MachOHandler(test_file)
         handler.full_repair()
 
-        test_file.stat().st_mode
-        if handler.is_macho():
-            pass
+        assert test_file.stat().st_mode == original_mode

@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from r2morph.validation.binary_region_bridges import build_state_pair, validate_binary_paths
+from r2morph.validation.binary_region_bridges import StatePairRequest, build_state_pair, validate_binary_paths
 
 
 def test_validate_binary_paths_returns_paths_for_existing_artifacts(tmp_path: Path) -> None:
@@ -52,17 +52,19 @@ def test_build_state_pair_initializes_shared_registers_for_x64() -> None:
             return ("BVS", name, bits)
 
     original_state, mutated_state, compared_registers, stack_reg = build_state_pair(
-        FakeBridge(),
-        FakeBridge(),
-        SimpleNamespace(get_arch_info=lambda: {"bits": 64}),
-        FakeClaripy,
-        SimpleNamespace(
-            ZERO_FILL_UNCONSTRAINED_MEMORY="ZERO_FILL_UNCONSTRAINED_MEMORY",
-            ZERO_FILL_UNCONSTRAINED_REGISTERS="ZERO_FILL_UNCONSTRAINED_REGISTERS",
-        ),
-        0x401000,
-        0x401010,
-        0x401000,
+        StatePairRequest(
+            original_bridge=FakeBridge(),
+            mutated_bridge=FakeBridge(),
+            original_binary=SimpleNamespace(get_arch_info=lambda: {"bits": 64}),
+            claripy=FakeClaripy,
+            options=SimpleNamespace(
+                ZERO_FILL_UNCONSTRAINED_MEMORY="ZERO_FILL_UNCONSTRAINED_MEMORY",
+                ZERO_FILL_UNCONSTRAINED_REGISTERS="ZERO_FILL_UNCONSTRAINED_REGISTERS",
+            ),
+            resolved_original=0x401000,
+            resolved_mutated=0x401010,
+            start=0x401000,
+        )
     )
 
     assert (

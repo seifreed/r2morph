@@ -11,9 +11,11 @@ Provides capabilities beyond basic cave finding:
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
+from importlib import import_module
 from typing import Any
 
 from r2morph.core.binary import Binary
+from r2morph.core.constants import SIGNED_32_MAX, SIGNED_32_MIN, X86_RELATIVE_BRANCH_SIZE_BYTES
 from r2morph.relocations.cave_finder import CaveFinder, CodeCave
 
 logger = logging.getLogger(__name__)
@@ -64,6 +66,16 @@ class CaveCreationOptions:
     permissions: SectionPermissions = SectionPermissions.READ_EXECUTE
     alignment: int = 0x1000
     fill_byte: int = 0x90
+
+
+@dataclass(frozen=True)
+class _SectionAllocationRequest:
+    name: str
+    size: int
+    address: int
+    alignment: int
+    binary_format: str
+    planned_only: bool = False
 
 
 class CodeCaveInjector:
@@ -201,24 +213,18 @@ class CodeCaveInjector:
 
     def _record_section_allocation(
         self,
-        name: str,
-        size: int,
-        address: int,
-        alignment: int,
-        binary_format: str,
-        *,
-        planned_only: bool = False,
+        request: _SectionAllocationRequest,
     ) -> CodeCaveAllocation:
         """Track a created or planned section allocation in a single place."""
-        self._created_sections[name] = address
+        self._created_sections[request.name] = request.address
 
         allocation = CodeCaveAllocation(
-            address=address,
-            size=size,
+            address=request.address,
+            size=request.size,
             cave_type=CaveType.NEW_SECTION,
-            section_name=name,
-            alignment=alignment,
-            metadata={"format": binary_format, "planned_only": planned_only},
+            section_name=request.name,
+            alignment=request.alignment,
+            metadata={"format": request.binary_format, "planned_only": request.planned_only},
         )
         self._allocations.append(allocation)
         return allocation
@@ -229,21 +235,23 @@ class CodeCaveInjector:
         executable = self._is_executable_permission(options.permissions)
 
         try:
-            from r2morph.platform.elf_handler import ELFHandler
+            elf_handler_cls = import_module("r2morph.platform.elf_handler").ELFHandler
 
             flags = 0x6 if executable else 0x2
 
-            handler = ELFHandler(self.binary.path)
+            handler = elf_handler_cls(self.binary.path)
             vaddr = handler.add_section(options.name, section_size, flags=flags)
             if vaddr is None:
                 raise RuntimeError(f"ELFHandler.add_section failed for '{options.name}'")
 
             allocation = self._record_section_allocation(
-                options.name,
-                section_size,
-                vaddr,
-                options.alignment,
-                "ELF",
+                _SectionAllocationRequest(
+                    name=options.name,
+                    size=section_size,
+                    address=vaddr,
+                    alignment=options.alignment,
+                    binary_format="ELF",
+                )
             )
 
             logger.info(f"Created ELF section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
@@ -253,12 +261,14 @@ class CodeCaveInjector:
             logger.warning(f"Falling back to planned ELF section for '{options.name}': {e}")
             planned_addr = self._get_planned_section_address(options.alignment)
             return self._record_section_allocation(
-                options.name,
-                section_size,
-                planned_addr,
-                options.alignment,
-                "ELF",
-                planned_only=True,
+                _SectionAllocationRequest(
+                    name=options.name,
+                    size=section_size,
+                    address=planned_addr,
+                    alignment=options.alignment,
+                    binary_format="ELF",
+                    planned_only=True,
+                )
             )
 
     def _create_pe_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
@@ -267,23 +277,25 @@ class CodeCaveInjector:
         executable = self._is_executable_permission(options.permissions)
 
         try:
-            from r2morph.platform.pe_handler import PEHandler
+            pe_handler_cls = import_module("r2morph.platform.pe_handler").PEHandler
 
             characteristics = 0x60000020  # CODE | EXECUTE | READ
             if not executable:
                 characteristics = 0xC0000040  # INITIALIZED_DATA | READ | WRITE
 
-            handler = PEHandler(self.binary.path)
+            handler = pe_handler_cls(self.binary.path)
             vaddr = handler.add_section(options.name, section_size, characteristics=characteristics)
             if vaddr is None:
                 raise RuntimeError(f"PEHandler.add_section failed for '{options.name}'")
 
             allocation = self._record_section_allocation(
-                options.name,
-                section_size,
-                vaddr,
-                0x1000,
-                "PE",
+                _SectionAllocationRequest(
+                    name=options.name,
+                    size=section_size,
+                    address=vaddr,
+                    alignment=0x1000,
+                    binary_format="PE",
+                )
             )
 
             logger.info(f"Created PE section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
@@ -293,12 +305,14 @@ class CodeCaveInjector:
             logger.warning(f"Falling back to planned PE section for '{options.name}': {e}")
             planned_addr = self._get_planned_section_address(0x1000)
             return self._record_section_allocation(
-                options.name,
-                section_size,
-                planned_addr,
-                0x1000,
-                "PE",
-                planned_only=True,
+                _SectionAllocationRequest(
+                    name=options.name,
+                    size=section_size,
+                    address=planned_addr,
+                    alignment=0x1000,
+                    binary_format="PE",
+                    planned_only=True,
+                )
             )
 
     def _create_macho_section(self, options: CaveCreationOptions) -> CodeCaveAllocation | None:
@@ -306,17 +320,19 @@ class CodeCaveInjector:
         section_size = max(options.size, self.MIN_SECTION_SIZE)
 
         try:
-            import lief
+            lief = import_module("lief")
         except ImportError:
             logger.warning("lief required for Mach-O section creation")
             planned_addr = self._get_planned_section_address(0x4000)
             return self._record_section_allocation(
-                options.name,
-                section_size,
-                planned_addr,
-                0x4000,
-                "Mach-O",
-                planned_only=True,
+                _SectionAllocationRequest(
+                    name=options.name,
+                    size=section_size,
+                    address=planned_addr,
+                    alignment=0x4000,
+                    binary_format="Mach-O",
+                    planned_only=True,
+                )
             )
 
         try:
@@ -324,13 +340,15 @@ class CodeCaveInjector:
             if parsed is None:
                 raise RuntimeError("Failed to parse Mach-O binary with lief")
 
-            macho = parsed
+            macho: Any = parsed
             if isinstance(parsed, lief.MachO.FatBinary):
                 macho = parsed.at(0)
             if not isinstance(macho, lief.MachO.Binary):
                 raise RuntimeError("Parsed binary is not Mach-O")
 
-            section = lief.MachO.Section(options.name, list(bytes(section_size)))
+            section = lief.MachO.Section.create(options.name, list(bytes(section_size)))
+            if section is None:
+                raise RuntimeError(f"Failed to create Mach-O section '{options.name}'")
             section.alignment = 4  # 2^4 = 16-byte alignment
 
             text_segment = macho.get_segment("__TEXT")
@@ -345,11 +363,13 @@ class CodeCaveInjector:
                 raise RuntimeError(f"Mach-O section '{options.name}' added but vaddr is 0")
 
             allocation = self._record_section_allocation(
-                options.name,
-                section_size,
-                vaddr,
-                0x4000,
-                "Mach-O",
+                _SectionAllocationRequest(
+                    name=options.name,
+                    size=section_size,
+                    address=vaddr,
+                    alignment=0x4000,
+                    binary_format="Mach-O",
+                )
             )
 
             logger.info(f"Created Mach-O section '{options.name}' at 0x{vaddr:x} ({section_size} bytes)")
@@ -359,12 +379,14 @@ class CodeCaveInjector:
             logger.warning(f"Falling back to planned Mach-O section for '{options.name}': {e}")
             planned_addr = self._get_planned_section_address(0x4000)
             return self._record_section_allocation(
-                options.name,
-                section_size,
-                planned_addr,
-                0x4000,
-                "Mach-O",
-                planned_only=True,
+                _SectionAllocationRequest(
+                    name=options.name,
+                    size=section_size,
+                    address=planned_addr,
+                    alignment=0x4000,
+                    binary_format="Mach-O",
+                    planned_only=True,
+                )
             )
 
     def extend_section(
@@ -568,10 +590,10 @@ class CodeCaveInjector:
             Jump instruction bytes or None if jump is out of range
         """
         if "x86" in arch or arch == "x86_64":
-            relative_offset = to_addr - (from_addr + 5)
+            relative_offset = to_addr - (from_addr + X86_RELATIVE_BRANCH_SIZE_BYTES)
 
             # Validate that offset fits in signed 32-bit integer
-            if relative_offset < -2147483648 or relative_offset > 2147483647:
+            if relative_offset < SIGNED_32_MIN or relative_offset > SIGNED_32_MAX:
                 logger.error(
                     f"Jump offset out of range: from=0x{from_addr:x} to=0x{to_addr:x}, offset={relative_offset}"
                 )

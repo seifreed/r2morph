@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from r2morph.detection.packer_signatures import PackerType
+from r2morph.detection.packer_signature_models import PackerType
 
 
 class ObfuscationType(Enum):

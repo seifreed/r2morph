@@ -168,10 +168,7 @@ class PatternPreservationManager:
         Returns:
             True if address should be avoided
         """
-        for zone in self._exclusion_zones:
-            if zone.contains(address):
-                return True
-        return False
+        return any(zone.contains(address) for zone in self._exclusion_zones)
 
     def get_pattern_at(self, address: int) -> PreservedPattern | None:
         """
@@ -253,11 +250,10 @@ class PatternPreservationManager:
             if not self.should_avoid(addr):
                 if current_start is None:
                     current_start = addr
-            else:
-                if current_start is not None:
-                    if addr - current_start >= min_gap:
-                        safe_regions.append((current_start, addr))
-                    current_start = None
+            elif current_start is not None:
+                if addr - current_start >= min_gap:
+                    safe_regions.append((current_start, addr))
+                current_start = None
 
         if current_start is not None and end - current_start >= min_gap:
             safe_regions.append((current_start, end))

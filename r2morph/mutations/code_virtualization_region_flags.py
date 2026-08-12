@@ -27,11 +27,14 @@ from __future__ import annotations
 # Number of independently-selected flag spellings (ZF, SF, CF, OF, PF), i.e. the
 # width in bits of ``flag_variant``. 32 personalities from two spellings each.
 FLAG_VARIANT_BITS = 5
+_BYTE_WIDTH_BITS = 8
+_WORD_WIDTH_BITS = 16
+_QWORD_WIDTH_BITS = 64
 
 
 def _regs(width: int) -> tuple[str, str, str, str, str, str]:
     """(a, b, result, scratch c, scratch t, scratch u) register spellings."""
-    if width == 64:
+    if width == _QWORD_WIDTH_BITS:
         return "rbx", "rbp", "r10", "rcx", "rax", "r9"
     return "ebx", "ebp", "r10d", "ecx", "eax", "r9d"
 
@@ -61,12 +64,12 @@ def _sf(width: int, spelling: int) -> str:
     if spelling == 0:
         return f"  mov {c}, {r}\n  shr {c}, {sh}\n  and {c}, 1\n  shl {c}, 7\n  or r11, rcx\n"
     # Alternate: isolate the sign bit with a mask, then shift it to bit 7.
-    if width == 64:
+    if width == _QWORD_WIDTH_BITS:
         return f"  mov {c}, {r}\n  mov {t}, 0x8000000000000000\n  and {c}, {t}\n  shr {c}, 56\n  or r11, rcx\n"
-    if width == 8:
+    if width == _BYTE_WIDTH_BITS:
         # The 8-bit sign bit (bit 7) is already the SF position (bit 7): mask it, no shift.
         return f"  mov {c}, {r}\n  and {c}, 0x80\n  or r11, rcx\n"
-    if width == 16:
+    if width == _WORD_WIDTH_BITS:
         # The 16-bit sign bit (bit 15) shifts down to the SF position (bit 7).
         return f"  mov {c}, {r}\n  and {c}, 0x8000\n  shr {c}, 8\n  or r11, rcx\n"
     return f"  mov {c}, {r}\n  and {c}, 0x80000000\n  shr {c}, 24\n  or r11, rcx\n"
@@ -138,7 +141,7 @@ def _of_sub(width: int, spelling: int) -> str:
 
 
 def _pf(width: int, spelling: int) -> str:
-    _a, _b, _r, c, t, u = _regs(width)
+    _a, _b, _r, c, _t, u = _regs(width)
     if spelling == 0:
         return (
             f"  movzx ecx, r10b\n  mov {u}, {c}\n  shr {u}, 4\n  xor {c}, {u}\n"

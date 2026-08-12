@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
 from r2morph.analysis.cfg import ControlFlowGraph
@@ -18,6 +19,8 @@ if TYPE_CHECKING:
     from r2morph.validation.state_merging import ImprovedStateMerging
 
 logger = logging.getLogger(__name__)
+
+_MAX_SYMBOLIC_LOOP_STEPS = 100
 
 
 class ExtendedSemanticValidationMixin:
@@ -57,9 +60,8 @@ class ExtendedSemanticValidationMixin:
             return
 
         try:
-            from r2morph.analysis.symbolic import AngrBridge
-
-            bridge = AngrBridge(self.binary)
+            angr_bridge_cls = import_module("r2morph.analysis.symbolic").AngrBridge
+            bridge = angr_bridge_cls(self.binary)
             project = bridge.angr_project
 
             if project is None:
@@ -99,7 +101,7 @@ class ExtendedSemanticValidationMixin:
 
         except Exception as e:
             logger.debug(f"Symbolic validation failed: {e}")
-            result.symbolic_status = f"error: {str(e)}"
+            result.symbolic_status = f"error: {e!s}"
 
     def _validate_function_with_invariants(
         self,
@@ -151,9 +153,8 @@ class ExtendedSemanticValidationMixin:
             )
 
         try:
-            from r2morph.analysis.symbolic import AngrBridge
-
-            bridge = AngrBridge(self.binary)
+            angr_bridge_cls = import_module("r2morph.analysis.symbolic").AngrBridge
+            bridge = angr_bridge_cls(self.binary)
             project = bridge.angr_project
 
             if project is None:
@@ -169,7 +170,7 @@ class ExtendedSemanticValidationMixin:
 
             for iteration in range(max_iterations):
                 step_count = 0
-                while simgr.active and step_count < 100:
+                while simgr.active and step_count < _MAX_SYMBOLIC_LOOP_STEPS:
                     for state in list(simgr.active):
                         try:
                             if state.addr >= loop_end:
@@ -188,7 +189,7 @@ class ExtendedSemanticValidationMixin:
         except Exception as e:
             logger.debug(f"Loop validation failed: {e}")
             is_valid = False
-            message = f"Loop validation error: {str(e)}"
+            message = f"Loop validation error: {e!s}"
 
         return ValidationResult(
             is_valid=is_valid,

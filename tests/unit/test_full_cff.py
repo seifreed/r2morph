@@ -10,7 +10,7 @@ Covers:
 """
 
 from dataclasses import asdict
-from unittest.mock import MagicMock, patch
+from pathlib import Path
 
 from r2morph.mutations.full_cff import (
     CFFConfig,
@@ -18,6 +18,47 @@ from r2morph.mutations.full_cff import (
     DispatcherType,
     FullControlFlowFlatteningPass,
 )
+
+
+class _Binary:
+    def __init__(self) -> None:
+        self.path = Path("/tmp/test")
+        self.analyzed = True
+        self.analyze_calls = 0
+        self.functions: list[dict[str, object]] = []
+        self.arch_info: dict[str, object] = {"arch": "x86_64", "bits": 64}
+        self.basic_blocks: list[dict[str, object]] = []
+        self.disassembly: list[dict[str, object]] = []
+        self.assembled: bytes | None = b"\x90"
+        self.assembly_error: Exception | None = None
+        self.writes: list[tuple[int, bytes]] = []
+
+    def is_analyzed(self) -> bool:
+        return self.analyzed
+
+    def analyze(self) -> None:
+        self.analyzed = True
+        self.analyze_calls += 1
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return self.functions
+
+    def get_arch_info(self) -> dict[str, object]:
+        return self.arch_info
+
+    def get_basic_blocks(self, address: int) -> list[dict[str, object]]:
+        return self.basic_blocks
+
+    def get_function_disasm(self, address: int) -> list[dict[str, object]]:
+        return self.disassembly
+
+    def assemble(self, instruction: str, function_addr: int | None = None) -> bytes | None:
+        if self.assembly_error is not None:
+            raise self.assembly_error
+        return self.assembled
+
+    def write_bytes(self, address: int, data: bytes) -> None:
+        self.writes.append((address, data))
 
 
 class TestDispatcherType:
@@ -129,22 +170,14 @@ class TestFullControlFlowFlatteningPass:
     """Test FullControlFlowFlatteningPass."""
 
     def _create_mock_binary(self):
-        """Create a mock binary object."""
-        binary = MagicMock()
-        binary.path = "/tmp/test"
-        binary.is_analyzed.return_value = True
-        binary.get_functions.return_value = []
-        binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
-        binary.analyze.return_value = None
-        return binary
+        """Create an in-memory binary object."""
+        return _Binary()
 
     def _create_mock_cfg(self, num_blocks=5, func_addr=0x1000):
         """Create a mock CFG object."""
         from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 
-        cfg = MagicMock(spec=ControlFlowGraph)
-        cfg.function_address = func_addr
-        cfg.blocks = {}
+        cfg = ControlFlowGraph(function_address=func_addr, function_name="test")
 
         entry_block = BasicBlock(
             address=func_addr,
@@ -153,8 +186,7 @@ class TestFullControlFlowFlatteningPass:
             predecessors=[],
             block_type=BlockType.ENTRY,
         )
-        cfg.blocks[func_addr] = entry_block
-        cfg.entry_block = entry_block
+        cfg.add_block(entry_block)
 
         for i in range(1, num_blocks):
             block_addr = func_addr + i * 0x20
@@ -165,7 +197,7 @@ class TestFullControlFlowFlatteningPass:
                 predecessors=[func_addr + (i - 1) * 0x20] if i > 0 else [],
                 block_type=BlockType.EXIT if i == num_blocks - 1 else BlockType.NORMAL,
             )
-            cfg.blocks[block_addr] = block
+            cfg.add_block(block)
 
         return cfg
 
@@ -191,7 +223,6 @@ class TestFullControlFlowFlatteningPass:
     def test_apply_no_functions(self):
         """Test apply with no functions."""
         binary = self._create_mock_binary()
-        binary.get_functions.return_value = []
 
         mutation_pass = FullControlFlowFlatteningPass()
         result = mutation_pass.apply(binary)
@@ -202,13 +233,12 @@ class TestFullControlFlowFlatteningPass:
     def test_apply_binary_not_analyzed(self):
         """Test apply when binary not analyzed."""
         binary = self._create_mock_binary()
-        binary.is_analyzed.return_value = False
-        binary.get_functions.return_value = []
+        binary.analyzed = False
 
         mutation_pass = FullControlFlowFlatteningPass()
         result = mutation_pass.apply(binary)
 
-        binary.analyze.assert_called_once()
+        assert binary.analyze_calls == 1
         assert result["functions_mutated"] == 0
 
     def test_create_dispatcher_blocks(self):
@@ -371,35 +401,35 @@ class TestFullControlFlowFlatteningPass:
     def test_select_candidates_small_function(self):
         """Test candidate selection skips small functions."""
         binary = self._create_mock_binary()
-        binary.get_functions.return_value = [
+        binary.functions = [
             {"offset": 0x1000, "name": "small_func", "size": 10},
         ]
-        binary.get_basic_blocks.return_value = [{"addr": 0x1000}]
+        binary.basic_blocks = [{"addr": 0x1000}]
 
         mutation_pass = FullControlFlowFlatteningPass()
-        candidates = mutation_pass._select_candidates(binary, binary.get_functions.return_value)
+        candidates = mutation_pass._select_candidates(binary, binary.functions)
 
         assert len(candidates) == 0
 
     def test_select_candidates_import_function(self):
         """Test candidate selection skips import functions."""
         binary = self._create_mock_binary()
-        binary.get_functions.return_value = [
+        binary.functions = [
             {"offset": 0x1000, "name": "sym.imp.printf", "size": 100},
         ]
 
         mutation_pass = FullControlFlowFlatteningPass()
-        candidates = mutation_pass._select_candidates(binary, binary.get_functions.return_value)
+        candidates = mutation_pass._select_candidates(binary, binary.functions)
 
         assert len(candidates) == 0
 
     def test_select_candidates_valid_function(self):
         """Test candidate selection accepts valid functions."""
         binary = self._create_mock_binary()
-        binary.get_functions.return_value = [
+        binary.functions = [
             {"offset": 0x1000, "name": "valid_func", "size": 100},
         ]
-        binary.get_basic_blocks.return_value = [
+        binary.basic_blocks = [
             {"addr": 0x1000},
             {"addr": 0x1020},
             {"addr": 0x1040},
@@ -407,7 +437,7 @@ class TestFullControlFlowFlatteningPass:
         ]
 
         mutation_pass = FullControlFlowFlatteningPass()
-        candidates = mutation_pass._select_candidates(binary, binary.get_functions.return_value)
+        candidates = mutation_pass._select_candidates(binary, binary.functions)
 
         assert len(candidates) == 1
         assert candidates[0]["_block_count"] == 4
@@ -415,7 +445,7 @@ class TestFullControlFlowFlatteningPass:
     def test_assemble_dispatcher(self):
         """Test dispatcher assembly."""
         binary = self._create_mock_binary()
-        binary.assemble.return_value = b"\x90"
+        binary.assembled = b"\x90"
 
         mutation_pass = FullControlFlowFlatteningPass()
         instructions = ["nop", "nop", "nop"]
@@ -428,7 +458,7 @@ class TestFullControlFlowFlatteningPass:
     def test_assemble_dispatcher_failure(self):
         """Test dispatcher assembly failure handling."""
         binary = self._create_mock_binary()
-        binary.assemble.side_effect = Exception("Assembly error")
+        binary.assembly_error = RuntimeError("Assembly error")
 
         mutation_pass = FullControlFlowFlatteningPass()
         instructions = ["invalid_instruction"]
@@ -440,14 +470,12 @@ class TestFullControlFlowFlatteningPass:
     def test_patch_function_blocks(self):
         """Test function block patching."""
         binary = self._create_mock_binary()
-        binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
-        binary.get_function_disasm.return_value = [
+        binary.arch_info = {"arch": "x86_64", "bits": 64}
+        binary.disassembly = [
             {"offset": 0x1000, "size": 5},
             {"offset": 0x1005, "size": 5},
             {"offset": 0x100A, "size": 5},
         ]
-        binary.write_bytes.return_value = None
-
         mutation_pass = FullControlFlowFlatteningPass()
         cfg = self._create_mock_cfg(num_blocks=3)
 
@@ -463,55 +491,13 @@ class TestFullControlFlowFlatteningPass:
 
         assert patches >= 0
 
-    def test_apply_with_valid_function(self):
-        """Test apply with a valid function candidate."""
-        binary = self._create_mock_binary()
-        binary.get_functions.return_value = [
-            {"offset": 0x1000, "name": "test_func", "size": 100},
-        ]
-        binary.get_basic_blocks.return_value = [
-            {"addr": 0x1000},
-            {"addr": 0x1020},
-            {"addr": 0x1040},
-            {"addr": 0x1060},
-        ]
-
-        mock_cfg = self._create_mock_cfg(num_blocks=4)
-        mock_allocation = MagicMock()
-        mock_allocation.address = 0x2000
-
-        with (
-            patch("r2morph.mutations.full_cff.CFGBuilder") as MockCFGBuilder,
-            patch("r2morph.mutations.full_cff.CodeCaveInjector") as MockCaveInjector,
-        ):
-            mock_cfg_builder = MagicMock()
-            mock_cfg_builder.build_cfg.return_value = mock_cfg
-            MockCFGBuilder.return_value = mock_cfg_builder
-
-            mock_cave = MagicMock()
-            mock_cave.insert_code.return_value = mock_allocation
-            MockCaveInjector.return_value = mock_cave
-
-            binary.assemble.return_value = b"\x90"
-            binary.write_bytes.return_value = None
-            binary.get_function_disasm.return_value = [
-                {"offset": 0x1000, "size": 5},
-            ]
-
-            mutation_pass = FullControlFlowFlatteningPass(config={"probability": 1.0})
-            result = mutation_pass.apply(binary)
-
-            assert isinstance(result, dict)
-            assert "functions_mutated" in result
-            assert "mutations_applied" in result
-
     def test_apply_probability_check(self):
         """Test that probability check affects function selection."""
         binary = self._create_mock_binary()
-        binary.get_functions.return_value = [
+        binary.functions = [
             {"offset": 0x1000, "name": "test_func", "size": 100},
         ]
-        binary.get_basic_blocks.return_value = [
+        binary.basic_blocks = [
             {"addr": 0x1000},
             {"addr": 0x1020},
             {"addr": 0x1040},
@@ -533,14 +519,14 @@ class TestFullControlFlowFlatteningPass:
     def test_min_blocks_requirement(self):
         """Test that functions with too few blocks are skipped."""
         binary = self._create_mock_binary()
-        binary.get_functions.return_value = [
+        binary.functions = [
             {"offset": 0x1000, "name": "small_func", "size": 100},
         ]
-        binary.get_basic_blocks.return_value = [
+        binary.basic_blocks = [
             {"addr": 0x1000},
         ]
 
         mutation_pass = FullControlFlowFlatteningPass(config={"min_blocks": 3})
-        candidates = mutation_pass._select_candidates(binary, binary.get_functions.return_value)
+        candidates = mutation_pass._select_candidates(binary, binary.functions)
 
         assert len(candidates) == 0

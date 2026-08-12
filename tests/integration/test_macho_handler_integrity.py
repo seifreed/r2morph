@@ -43,9 +43,7 @@ def test_codesigner_adhoc_missing_identity():
 
     result = signer.sign(dummy_path, identity=None, adhoc=False)
 
-    if platform.system() == "Darwin":
-        assert result is False
-    elif platform.system() == "Windows":
+    if platform.system() == "Darwin" or platform.system() == "Windows":
         assert result is False
     else:
         assert result is True

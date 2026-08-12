@@ -3,6 +3,7 @@ from types import SimpleNamespace
 
 from rich.console import Console
 
+from r2morph.analysis.enhanced_analyzer_models import AnalysisResults
 from r2morph.analysis.enhanced_analyzer_reporting import (
     display_analysis_results,
     display_detection_results,
@@ -29,7 +30,11 @@ def test_enhanced_analyzer_reporting_helpers_expose_expected_contract(tmp_path: 
         obfuscation_techniques=["vm", "mba", "packing"],
         to_dict=lambda: {"status": "ok"},
     )
-    results = SimpleNamespace(
+    results = AnalysisResults(
+        detection_result=detection_result,
+        custom_vm={"detected": True, "vm_type": "custom", "confidence": 0.9},
+        layers={"layers_detected": 2},
+        metamorphic={"detected": True, "polymorphic_ratio": 0.25},
         cfo_reduction=3,
         iterative_result={"iteration": 2},
         vm_handlers=1,
@@ -40,10 +45,7 @@ def test_enhanced_analyzer_reporting_helpers_expose_expected_contract(tmp_path: 
     display_detection_results(
         console,
         Path("binary.bin"),
-        detection_result,
-        {"detected": True, "vm_type": "custom", "confidence": 0.9},
-        {"layers_detected": 2},
-        {"detected": True, "polymorphic_ratio": 0.25},
+        results,
         verbose=True,
     )
     display_analysis_results(console, results)

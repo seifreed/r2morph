@@ -9,6 +9,32 @@ from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
 
+_ARM_MOV_OPERAND_COUNT = 2
+_MAX_ARM_MOV_IMMEDIATE = 0xFFFF
+
+
+def _movz_replacement(disasm: str) -> str | None:
+    normalized = disasm.lower().replace("#", "")
+    if not normalized.startswith("mov "):
+        return None
+
+    parts = [part.strip() for part in normalized.split(",")]
+    if len(parts) != _ARM_MOV_OPERAND_COUNT:
+        return None
+
+    dst = parts[0].split()[-1]
+    immediate = parts[1]
+    if not dst.startswith(("w", "x")) or not (immediate.startswith("0x") or immediate.isdigit()):
+        return None
+
+    try:
+        value = int(immediate, 16) if immediate.startswith("0x") else int(immediate)
+    except ValueError:
+        return None
+    if not 0 <= value <= _MAX_ARM_MOV_IMMEDIATE:
+        return None
+    return f"movz {dst}, {hex(value)}"
+
 
 def apply_arm64_mov_substitution(binary: Any, max_substitutions: int) -> dict[str, Any]:
     """Apply safe ARM64 mov-immediate substitutions."""
@@ -29,35 +55,11 @@ def apply_arm64_mov_substitution(binary: Any, max_substitutions: int) -> dict[st
 
         func_mutations = 0
         for insn in instructions:
-            disasm = insn.get("disasm", "").lower().replace("#", "")
             addr = insn.get("addr", 0)
             size = insn.get("size", 0)
-
-            if not disasm.startswith("mov "):
+            new_insn = _movz_replacement(insn.get("disasm", ""))
+            if new_insn is None:
                 continue
-
-            parts = [p.strip() for p in disasm.split(",")]
-            if len(parts) != 2:
-                continue
-
-            dst = parts[0].split()[-1]
-            imm = parts[1]
-
-            if not (dst.startswith("w") or dst.startswith("x")):
-                continue
-
-            if not imm.startswith("0x") and not imm.isdigit():
-                continue
-
-            try:
-                imm_val = int(imm, 16) if imm.startswith("0x") else int(imm)
-            except ValueError:
-                continue
-
-            if imm_val < 0 or imm_val > 0xFFFF:
-                continue
-
-            new_insn = f"movz {dst}, {hex(imm_val)}"
             new_bytes = binary.assemble(new_insn, func_addr)
 
             if not new_bytes or len(new_bytes) != size:

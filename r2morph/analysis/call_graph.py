@@ -39,6 +39,46 @@ RecursionType = _RecursionType
 CallType = _CallType
 
 
+def _record_cycle(
+    nodes: dict[int, CallNode],
+    chains: list[list[int]],
+    path: list[int],
+    callee: int,
+) -> None:
+    cycle_start = path.index(callee) if callee in path else -1
+    if cycle_start < 0:
+        return
+    cycle = [*path[cycle_start:], callee]
+    chains.append(cycle)
+    for address in cycle:
+        if address in nodes:
+            nodes[address].is_recursive = True
+
+
+def _update_recursion_depths(nodes: dict[int, CallNode], chains: list[list[int]]) -> None:
+    for chain in chains:
+        for address in chain:
+            if address in nodes:
+                nodes[address].recursion_depth = max(nodes[address].recursion_depth, len(chain) - 1)
+
+
+def _close_scc(
+    stack: list[int],
+    on_stack: set[int],
+    components: list[set[int]],
+    root_node: int,
+) -> None:
+    component: set[int] = set()
+    while True:
+        member = stack.pop()
+        on_stack.remove(member)
+        component.add(member)
+        if member == root_node:
+            break
+    if len(component) > 1:
+        components.append(component)
+
+
 class CallGraph:
     """
     Directed call graph for inter-procedural analysis.
@@ -191,15 +231,6 @@ class CallGraph:
             rec_stack.add(node_addr)
             return self.nodes.get(node_addr)
 
-        def record_cycle(path: list[int], callee: int) -> None:
-            cycle_start = path.index(callee) if callee in path else -1
-            if cycle_start >= 0:
-                cycle = path[cycle_start:] + [callee]
-                self._recursive_chains.append(cycle)
-                for addr in cycle:
-                    if addr in self.nodes:
-                        self.nodes[addr].is_recursive = True
-
         # An explicit stack replaces the interpreter call stack so deep
         # call graphs (routine in real binaries) no longer raise
         # RecursionError. `path` is kept in lockstep with the work stack,
@@ -226,16 +257,13 @@ class CallGraph:
                             path.append(callee)
                             work.append(_RecursionFrame(callee, list(callee_node.callees)))
                     elif callee in rec_stack:
-                        record_cycle(path, callee)
+                        _record_cycle(self.nodes, self._recursive_chains, path, callee)
                 else:
                     rec_stack.remove(frame.node_addr)
                     work.pop()
                     path.pop()
 
-        for chain in self._recursive_chains:
-            for addr in chain:
-                if addr in self.nodes:
-                    self.nodes[addr].recursion_depth = max(self.nodes[addr].recursion_depth, len(chain) - 1)
+        _update_recursion_depths(self.nodes, self._recursive_chains)
 
     def find_strongly_connected_components(self) -> list[set[int]]:
         """
@@ -263,17 +291,6 @@ class CallGraph:
             stack.append(node)
             on_stack.add(node)
 
-        def close_scc(root_node: int) -> None:
-            scc: set[int] = set()
-            while True:
-                member = stack.pop()
-                on_stack.remove(member)
-                scc.add(member)
-                if member == root_node:
-                    break
-            if len(scc) > 1:
-                self._strongly_connected.append(scc)
-
         # Iterative Tarjan. An explicit work stack replaces the interpreter
         # call stack so deep call graphs (routine in real binaries) no
         # longer raise RecursionError. The simulation is mechanically
@@ -285,10 +302,7 @@ class CallGraph:
             if root in index:
                 continue
             begin(root)
-            root_obj = self.nodes.get(root)
-            if root_obj is None:
-                continue
-
+            root_obj = self.nodes[root]
             work: list[_SccFrame] = [_SccFrame(root, list(root_obj.callees))]
             while work:
                 frame = work[-1]
@@ -307,7 +321,7 @@ class CallGraph:
                         lowlinks[node] = min(lowlinks[node], index[successor])
                 else:
                     if lowlinks[node] == index[node]:
-                        close_scc(node)
+                        _close_scc(stack, on_stack, self._strongly_connected, node)
                     work.pop()
                     if work:
                         parent = work[-1].node

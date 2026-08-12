@@ -5,12 +5,9 @@ from pathlib import Path
 import pytest
 
 from r2morph.validation.regression import (
-    RegressionResult,
-    RegressionTester,
     RegressionTestFramework,
     RegressionTestType,
 )
-from r2morph.validation.validator import ValidationResult
 
 
 def test_regression_api_baseline_roundtrip(tmp_path: Path) -> None:
@@ -61,39 +58,3 @@ def test_regression_compare_helpers(tmp_path: Path) -> None:
         {"execution_time": 0.2},
     )
     assert perf_issues
-
-
-def test_regression_tester_mutation_lookup_and_results(tmp_path: Path) -> None:
-    tester = RegressionTester(test_dir=tmp_path)
-
-    mutation = tester._get_mutation_pass("nop")
-    assert mutation is not None
-
-    with pytest.raises(ValueError):
-        tester._get_mutation_pass("unknown-mutation")
-
-    validation = ValidationResult(
-        passed=True,
-        original_output="",
-        mutated_output="",
-        original_exitcode=0,
-        mutated_exitcode=0,
-        errors=[],
-        similarity_score=1.0,
-    )
-
-    tester.results = [
-        RegressionResult(
-            test_name="smoke",
-            passed=True,
-            mutations_applied=0,
-            expected_mutations=None,
-            validation_result=validation,
-            timestamp="2026-01-27T12:00:00",
-            errors=[],
-        )
-    ]
-
-    output_path = tmp_path / "results.json"
-    tester.save_results(output_file=output_path)
-    assert output_path.exists()

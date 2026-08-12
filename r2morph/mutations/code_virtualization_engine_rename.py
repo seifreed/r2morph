@@ -19,8 +19,9 @@ assembled body is the same length (the bytecode layout is unchanged).
 
 from __future__ import annotations
 
-import random
 import re
+
+import r2morph.core.randomness as random
 
 # The five interchangeable scratch registers, each as its (q, d, w, b) spellings.
 # rax keeps the legacy eax/ax/al names; r8-r11 use the d/w/b suffixes. rax has no

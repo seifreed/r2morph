@@ -35,6 +35,7 @@ _TEST_CHOICES = 2
 # Width of the per-build selector. build_isa_spec draws randrange(1 << bits); the
 # two op choices are derived independently from it, so 4 bits spread both evenly.
 COMPARE_VARIANT_BITS = 4
+_INVERTED_COMPUTE_VARIANT = 2
 
 
 def _cmp_compute(key: int, arith_variant: int, choice: int) -> str:
@@ -42,7 +43,7 @@ def _cmp_compute(key: int, arith_variant: int, choice: int) -> str:
     if choice == 1:
         # a - b == a + ~b + 1 (two's complement, +1 folded as a flag-neutral lea).
         return "  mov r10, rbx\n  not rax\n" + arith_fold("add", key, arith_variant) + "  lea r10, [r10 + 1]\n"
-    if choice == 2:
+    if choice == _INVERTED_COMPUTE_VARIANT:
         # a - b == ~(~a + b).
         return "  mov r10, rbx\n  not r10\n" + arith_fold("add", key, arith_variant) + "  not r10\n"
     # choice 0: a + (-b).

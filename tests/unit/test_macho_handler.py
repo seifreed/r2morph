@@ -5,7 +5,6 @@ Unit tests for Mach-O handler module.
 import platform
 import struct
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -150,7 +149,7 @@ class TestValidateIntegrity:
         binary_path = tmp_path / "test_binary"
         binary_path.write_bytes(b"\xfe\xed\xfa\xce" + b"\x00" * 100)
         handler = MachOHandler(binary_path)
-        ok, msg = handler.validate_integrity()
+        _ok, msg = handler.validate_integrity()
         # With lief, minimal test data triggers structural warnings
         assert msg == "" or "LIEF not available" in msg or "LINKEDIT" in msg
 
@@ -249,8 +248,7 @@ class TestRepairIntegrity:
         binary_path = tmp_path / "test_binary"
         binary_path.write_bytes(b"\xfe\xed\xfa\xce" + b"\x00" * 100)
         handler = MachOHandler(binary_path)
-        with patch("platform.system", return_value="Linux"):
-            result = handler.repair_integrity()
+        result = handler.repair_integrity(system_name="Linux")
         assert result is False
 
     def test_repair_integrity_not_macho(self, tmp_path):

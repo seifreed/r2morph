@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.core.report_helpers import _build_evidence_summary_for_pass, _summarize_pass_evidence
+from r2morph.core.report_helpers_evidence import _build_evidence_summary_for_pass, _summarize_pass_evidence
 
 
 def _build_pass_evidence_summary(

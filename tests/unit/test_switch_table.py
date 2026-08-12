@@ -8,8 +8,6 @@ Covers:
 - PLT/GOT thunk identification
 """
 
-from unittest.mock import MagicMock
-
 from r2morph.analysis.switch_table import (
     IndirectJump,
     JumpTable,
@@ -17,6 +15,36 @@ from r2morph.analysis.switch_table import (
     JumpTableType,
     SwitchTableAnalyzer,
 )
+
+
+class _Binary:
+    def __init__(
+        self,
+        *,
+        disassembly: list[dict[str, object]] | None = None,
+        functions: list[dict[str, object]] | None = None,
+        basic_blocks: list[dict[str, object]] | None = None,
+        raw_bytes: bytes = b"",
+    ) -> None:
+        self.disassembly = disassembly or []
+        self.functions = functions or []
+        self.basic_blocks = basic_blocks or []
+        self.raw_bytes = raw_bytes
+
+    def get_function_disasm(self, address: int) -> list[dict[str, object]]:
+        return self.disassembly
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return self.functions
+
+    def get_basic_blocks(self, address: int) -> list[dict[str, object]]:
+        return self.basic_blocks
+
+    def read_bytes(self, address: int, size: int) -> bytes:
+        return self.raw_bytes[:size]
+
+    def get_arch_info(self) -> dict[str, object]:
+        return {"bits": 64, "arch": "x86_64"}
 
 
 class TestJumpTableEntry:
@@ -135,8 +163,7 @@ class TestSwitchTableAnalyzer:
 
     def test_classify_jumptable_pattern(self):
         """Test jump table pattern classification."""
-        mock_binary = MagicMock()
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(_Binary())
 
         jump = analyzer._classify_indirect_jump(0x401000, "jmp [rax*4+0x405000]", 0x401000)
         assert jump is not None
@@ -147,17 +174,18 @@ class TestSwitchTableAnalyzer:
 
     def test_classify_tail_call(self):
         """Test tail call classification via detect_tail_calls."""
-        mock_binary = MagicMock()
-        mock_binary.get_function_disasm.return_value = [
-            {"offset": 0x401000, "type": "push", "opcode": "push rbp"},
-            {"offset": 0x401002, "type": "jmp", "opcode": "jmp 0x402000"},
-        ]
-        mock_binary.get_functions.return_value = [
-            {"offset": 0x401000, "name": "caller"},
-            {"offset": 0x402000, "name": "callee"},
-        ]
+        binary = _Binary(
+            disassembly=[
+                {"offset": 0x401000, "type": "push", "opcode": "push rbp"},
+                {"offset": 0x401002, "type": "jmp", "opcode": "jmp 0x402000"},
+            ],
+            functions=[
+                {"offset": 0x401000, "name": "caller"},
+                {"offset": 0x402000, "name": "callee"},
+            ],
+        )
 
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(binary)
         analyzer._cache_functions()
 
         # Tail calls are detected via detect_tail_calls, not _classify_indirect_jump
@@ -166,8 +194,7 @@ class TestSwitchTableAnalyzer:
 
     def test_classify_indirect_register(self):
         """Test indirect register jump."""
-        mock_binary = MagicMock()
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(_Binary())
 
         jump = analyzer._classify_indirect_jump(0x401000, "jmp [rax]", 0x401000)
         assert jump is not None
@@ -175,31 +202,31 @@ class TestSwitchTableAnalyzer:
 
     def test_detect_switch_pattern_simple(self):
         """Test simple switch pattern detection."""
-        mock_binary = MagicMock()
-        mock_binary.get_function_disasm.return_value = [
-            {"offset": 0x401000, "type": "cmp", "opcode": "cmp eax, 5"},
-            {"offset": 0x401002, "type": "ja", "opcode": "ja 0x401100"},
-            {"offset": 0x401004, "type": "jmp", "opcode": "jmp [rax*4+0x405000]"},
-        ]
-        mock_binary.get_basic_blocks.return_value = []
-        mock_binary.read_bytes.return_value = b"\x00\x10\x40\x00\x10\x10\x40\x00\x20\x10\x40\x00"
-        mock_binary.get_arch_info.return_value = {"bits": 64, "arch": "x86_64"}
+        binary = _Binary(
+            disassembly=[
+                {"offset": 0x401000, "type": "cmp", "opcode": "cmp eax, 5"},
+                {"offset": 0x401002, "type": "ja", "opcode": "ja 0x401100"},
+                {"offset": 0x401004, "type": "jmp", "opcode": "jmp [rax*4+0x405000]"},
+            ],
+            raw_bytes=b"\x00\x10\x40\x00\x10\x10\x40\x00\x20\x10\x40\x00",
+        )
 
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(binary)
         tables, jumps = analyzer.detect_switch_pattern(0x401000)
 
         assert len(tables) == 1 or len(jumps) >= 1
 
     def test_analyze_indirect_jumps(self):
         """Test indirect jump analysis."""
-        mock_binary = MagicMock()
-        mock_binary.get_function_disasm.return_value = [
-            {"offset": 0x401000, "type": "mov", "opcode": "mov eax, ebx"},
-            {"offset": 0x401002, "type": "jmp", "opcode": "jmp [rax*4+0x405000]"},
-            {"offset": 0x401006, "type": "ret", "opcode": "ret"},
-        ]
+        binary = _Binary(
+            disassembly=[
+                {"offset": 0x401000, "type": "mov", "opcode": "mov eax, ebx"},
+                {"offset": 0x401002, "type": "jmp", "opcode": "jmp [rax*4+0x405000]"},
+                {"offset": 0x401006, "type": "ret", "opcode": "ret"},
+            ]
+        )
 
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(binary)
         jumps = analyzer.analyze_indirect_jumps(0x401000)
 
         assert len(jumps) == 1
@@ -207,20 +234,21 @@ class TestSwitchTableAnalyzer:
 
     def test_detect_tail_calls_within_function(self):
         """Test tail call detection."""
-        mock_binary = MagicMock()
-        mock_binary.get_function_disasm.return_value = [
-            {"offset": 0x401000, "type": "push", "opcode": "push rbp"},
-            {"offset": 0x401002, "type": "mov", "opcode": "mov rbp, rsp"},
-            {"offset": 0x401004, "type": "jmp", "opcode": "jmp 0x402000"},
-            {"offset": 0x401008, "type": "pop", "opcode": "pop rbp"},
-            {"offset": 0x40100A, "type": "ret", "opcode": "ret"},
-        ]
-        mock_binary.get_functions.return_value = [
-            {"offset": 0x401000, "name": "caller_func"},
-            {"offset": 0x402000, "name": "target_func"},
-        ]
+        binary = _Binary(
+            disassembly=[
+                {"offset": 0x401000, "type": "push", "opcode": "push rbp"},
+                {"offset": 0x401002, "type": "mov", "opcode": "mov rbp, rsp"},
+                {"offset": 0x401004, "type": "jmp", "opcode": "jmp 0x402000"},
+                {"offset": 0x401008, "type": "pop", "opcode": "pop rbp"},
+                {"offset": 0x40100A, "type": "ret", "opcode": "ret"},
+            ],
+            functions=[
+                {"offset": 0x401000, "name": "caller_func"},
+                {"offset": 0x402000, "name": "target_func"},
+            ],
+        )
 
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(binary)
         tail_calls = analyzer.detect_tail_calls(0x401000)
 
         assert len(tail_calls) >= 0
@@ -238,14 +266,15 @@ class TestSwitchTableAnalyzer:
             entries=entries,
         )
 
-        mock_binary = MagicMock()
-        mock_binary.get_basic_blocks.return_value = [
-            {"addr": 0x401100, "size": 0x10},
-            {"addr": 0x401200, "size": 0x10},
-            {"addr": 0x401300, "size": 0x10},
-        ]
+        binary = _Binary(
+            basic_blocks=[
+                {"addr": 0x401100, "size": 0x10},
+                {"addr": 0x401200, "size": 0x10},
+                {"addr": 0x401300, "size": 0x10},
+            ]
+        )
 
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(binary)
         cases = analyzer.reconstruct_switch_cases(table, 0x401000)
 
         assert len(cases) == 3
@@ -255,22 +284,21 @@ class TestSwitchTableAnalyzer:
 
     def test_analyze_function_jumps(self):
         """Test comprehensive function jump analysis."""
-        mock_binary = MagicMock()
-        mock_binary.get_function_disasm.return_value = [
-            {"offset": 0x401000, "type": "cmp", "opcode": "cmp eax, 3"},
-            {"offset": 0x401002, "type": "ja", "opcode": "ja 0x401100"},
-            {"offset": 0x401004, "type": "jmp", "opcode": "jmp [rax*4+0x405000]"},
-            {"offset": 0x401008, "type": "jmp", "opcode": "jmp 0x402000"},
-        ]
-        mock_binary.get_basic_blocks.return_value = []
-        mock_binary.read_bytes.return_value = b"\x00\x10\x40\x00" * 4
-        mock_binary.get_arch_info.return_value = {"bits": 64, "arch": "x86_64"}
-        mock_binary.get_functions.return_value = [
-            {"offset": 0x401000, "name": "test_func"},
-            {"offset": 0x402000, "name": "other_func"},
-        ]
+        binary = _Binary(
+            disassembly=[
+                {"offset": 0x401000, "type": "cmp", "opcode": "cmp eax, 3"},
+                {"offset": 0x401002, "type": "ja", "opcode": "ja 0x401100"},
+                {"offset": 0x401004, "type": "jmp", "opcode": "jmp [rax*4+0x405000]"},
+                {"offset": 0x401008, "type": "jmp", "opcode": "jmp 0x402000"},
+            ],
+            functions=[
+                {"offset": 0x401000, "name": "test_func"},
+                {"offset": 0x402000, "name": "other_func"},
+            ],
+            raw_bytes=b"\x00\x10\x40\x00" * 4,
+        )
 
-        analyzer = SwitchTableAnalyzer(mock_binary)
+        analyzer = SwitchTableAnalyzer(binary)
         result = analyzer.analyze_function_jumps(0x401000)
 
         assert "jump_tables" in result

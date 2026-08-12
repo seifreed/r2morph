@@ -30,7 +30,7 @@ def test_cave_finder_insertion(tmp_path: Path):
 
         if caves:
             cave = caves[0]
-            addr, size = finder.allocate_cave(cave, min(4, cave.size))
+            _addr, size = finder.allocate_cave(cave, min(4, cave.size))
             assert size > 0
             inserted = finder.insert_code_in_cave(b"\x90\x90")
             assert inserted is None or isinstance(inserted, int)

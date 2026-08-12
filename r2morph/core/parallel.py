@@ -16,6 +16,7 @@ import logging
 import tempfile
 import threading
 from collections.abc import Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -23,7 +24,7 @@ from r2morph.core.binary import Binary
 from r2morph.core.binary_file_lock import BinaryFileLock
 from r2morph.core.parallel_checkpointing import has_failures, save_checkpoint
 from r2morph.core.parallel_execution_summary import build_parallel_results_summary
-from r2morph.core.parallel_pass_execution import execute_checkpointed_pass
+from r2morph.core.parallel_pass_execution import CheckpointedPassRequest, execute_checkpointed_pass
 from r2morph.core.parallel_planner import (
     DependencyResolver,
     PassResult,
@@ -45,6 +46,7 @@ PassDependency = _PassDependency
 logger = logging.getLogger(__name__)
 
 
+@dataclass(eq=False, repr=False)
 class ParallelMutationEngine:
     """
     Execute mutation passes in parallel where possible.
@@ -56,46 +58,27 @@ class ParallelMutationEngine:
     writes to the same binary file across processes.
     """
 
-    def __init__(
-        self,
-        binary: Binary,
-        max_workers: int = 4,
-        use_checkpoints: bool = True,
-        checkpoint_dir: Path | None = None,
-        use_file_lock: bool = True,
-        lock_timeout: float = 30.0,
-    ) -> None:
-        """
-        Initialize parallel mutation engine.
+    binary: Binary
+    max_workers: int = 4
+    use_checkpoints: bool = True
+    checkpoint_dir: Path = field(default_factory=lambda: Path(tempfile.mkdtemp()))
+    use_file_lock: bool = True
+    lock_timeout: float = 30.0
+    resolver: DependencyResolver = field(default_factory=DependencyResolver, init=False)
+    _lock: threading.Lock = field(default_factory=threading.Lock, init=False)
+    _binary_mutation_lock: threading.Lock = field(default_factory=threading.Lock, init=False)
+    _results: dict[str, PassResult] = field(default_factory=dict, init=False)
+    _stop_on_error: bool = field(default=False, init=False)
+    _file_lock: BinaryFileLock | None = field(default=None, init=False)
 
-        Args:
-            binary: Binary to mutate
-            max_workers: Maximum parallel workers
-            use_checkpoints: Whether to create checkpoints before each pass
-            checkpoint_dir: Directory for checkpoints
-            use_file_lock: Whether to use file locking for concurrent writes
-            lock_timeout: Timeout for acquiring file lock (seconds)
-        """
-        self.binary = binary
-        self.max_workers = max_workers
-        self.use_checkpoints = use_checkpoints
-        self.checkpoint_dir = checkpoint_dir or Path(tempfile.mkdtemp())
-        self.use_file_lock = use_file_lock
-        self.lock_timeout = lock_timeout
-        self.resolver = DependencyResolver()
-        self._lock = threading.Lock()
+    def __post_init__(self) -> None:
         # In-process serialization of binary mutation. BinaryFileLock only
         # coordinates across processes (one instance per process, and its
         # acquire() is a no-op for a second thread once _locked is set), so
         # it cannot prevent concurrent ThreadPoolExecutor pass-workers from
         # mutating the shared, non-thread-safe Binary/r2pipe at once.
-        self._binary_mutation_lock = threading.Lock()
-        self._results: dict[str, PassResult] = {}
-        self._stop_on_error = False
-        self._file_lock: BinaryFileLock | None = None
-
-        if use_file_lock and binary:
-            self._file_lock = BinaryFileLock(binary.path, timeout=lock_timeout)
+        if self.use_file_lock:
+            self._file_lock = BinaryFileLock(self.binary.path, timeout=self.lock_timeout)
 
     def _add_result(self, pass_name: str, result: PassResult) -> None:
         """Thread-safe result addition."""
@@ -204,15 +187,17 @@ class ParallelMutationEngine:
     ) -> PassResult:
         """Execute a single mutation pass with optional file locking."""
         return execute_checkpointed_pass(
-            binary=self.binary,
-            pass_obj=pass_obj,
-            checkpoint_dir=self.checkpoint_dir,
-            use_checkpoints=self.use_checkpoints,
-            file_lock=self._file_lock,
-            use_file_lock=self.use_file_lock,
-            binary_mutation_lock=self._binary_mutation_lock,
-            progress_callback=progress_callback,
-            logger=logger,
+            CheckpointedPassRequest(
+                binary=self.binary,
+                pass_obj=pass_obj,
+                checkpoint_dir=self.checkpoint_dir,
+                use_checkpoints=self.use_checkpoints,
+                file_lock=self._file_lock,
+                use_file_lock=self.use_file_lock,
+                binary_mutation_lock=self._binary_mutation_lock,
+                progress_callback=progress_callback,
+                logger=logger,
+            )
         )
 
     def rollback(self, pass_name: str) -> bool:

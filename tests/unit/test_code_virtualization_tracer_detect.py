@@ -16,6 +16,8 @@ the digit check and the branch-free reduction end to end without a real Linux ho
 
 from __future__ import annotations
 
+from contextlib import suppress
+
 import keystone
 import unicorn
 from unicorn import x86_const
@@ -82,10 +84,8 @@ def _fold_delta(status_payload: bytes | None) -> int:
             mu.reg_write(x86_const.UC_X86_REG_RAX, 0)
 
     uc.hook_add(unicorn.UC_HOOK_INSN, on_syscall, None, 1, 0, x86_const.UC_X86_INS_SYSCALL)
-    try:
+    with suppress(unicorn.UcError):
         uc.emu_start(_CODE_BASE, _CODE_BASE + len(code))
-    except unicorn.UcError:
-        pass  # the trailing hlt stops emulation
     return _SENTINEL ^ uc.mem_read(_RSP + _SLOT, 1)[0]
 
 
@@ -116,7 +116,7 @@ def test_tracer_detect_emitted_into_the_region_interpreter() -> None:
     asm = tracer_detect_asm(slot=_SLOT)
     # The observational read (syscalls) and the branch-free fold must be present.
     assert "syscall" in asm
-    assert "/proc/se" == _STATUS_PATH_LO.to_bytes(8, "little").decode()
+    assert _STATUS_PATH_LO.to_bytes(8, "little").decode() == "/proc/se"
     assert f"neg cl\n  xor byte ptr [rsp+{_SLOT}], cl" in asm
 
 

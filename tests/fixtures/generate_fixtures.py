@@ -81,7 +81,7 @@ int main() {
 """
 
 
-def compile_program(source: str, output: Path, extra_flags: list = None):
+def compile_program(source: str, output: Path, extra_flags: list | None = None):
     """Compile a C program to an executable."""
     extra_flags = extra_flags or []
 

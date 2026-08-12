@@ -1,4 +1,5 @@
 import importlib.util
+from typing import ClassVar
 
 import pytest
 
@@ -21,7 +22,7 @@ class _FakeRegs:
 
 
 class _FakeMemReads:
-    hardcopy = [1, 2, 3, 4, 5, 6]
+    hardcopy: ClassVar[list[int]] = [1, 2, 3, 4, 5, 6]
 
 
 class _FakeHistory:

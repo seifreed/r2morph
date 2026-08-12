@@ -22,18 +22,22 @@ from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_fold import arith_fold
 from r2morph.mutations.code_virtualization_region_compare import compare_compute
+from r2morph.mutations.code_virtualization_region_flags import synth_flags_asm as _synth_flags_asm
 from r2morph.mutations.code_virtualization_region_handlers import (
+    _DWORD_WIDTH_BITS,
     _FLAGS_OFFSET,
     _KEY_QWORD_SLOT,
+    _QWORD_WIDTH_BITS,
     _VSP_OFFSET,
     _VSTACK_BASE,
+    _unmask_dword,
+    _unmask_qword,
+)
+from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _indexed_address_asm,
     _indexed_address_nobase_asm,
     _mem_address_asm,
     _movx_load_asm,
-    _synth_flags_asm,
-    _unmask_dword,
-    _unmask_qword,
 )
 from r2morph.mutations.code_virtualization_region_shift import shift_flag_capture_asm
 
@@ -120,7 +124,7 @@ def _vpushi_handler_asm(handler_key: str, key_qword: str, key_dword: str) -> str
     ``[rsi+1]``.
     """
     width = int(handler_key.split("_")[1])
-    if width == 64:
+    if width == _QWORD_WIDTH_BITS:
         decode = f"  mov rax, qword ptr [rsi+1]\n  mov r10, {key_qword}\n  xor rax, r10\n" + _unmask_qword("r10", "r11")
         advance = 9
     else:
@@ -149,7 +153,7 @@ def _vbinop_handler_asm(handler_key: str, key: str, arith_variant: int = 0) -> s
     if mnemonic == "sub":
         body += "  neg rax\n"
     body += arith_fold(mnemonic, 0, arith_variant)
-    if width == 32:
+    if width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
     body += (
         f"  xor r10, {_VKEY}\n"
@@ -193,7 +197,7 @@ def _vbinopsynth_handler_asm(handler_key: str, key: str, flag_variant: int = 0, 
     if mnemonic == "sub":
         body += "  neg rax\n"
     body += arith_fold(mnemonic, 0, arith_variant)
-    if width == 32:
+    if width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
@@ -243,7 +247,7 @@ def _vcmpsynth_handler_asm(
             body += arith_fold("and", 0, arith_variant)
     else:
         body += compare_compute(op, 0, arith_variant, compare_variant)
-    if width == 32:
+    if width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
     body += _synth_flags_asm(width, mode, flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
@@ -262,7 +266,7 @@ def _vload_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: i
     """
     width = int(handler_key.split("_")[1])
     body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
-    body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+    body += "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
     # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
     # the vstack pointer from its frame slot before pushing.
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
@@ -283,7 +287,7 @@ def _vstore_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
     body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
-    store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
+    store = "  mov qword ptr [r10], rbx\n" if width == _QWORD_WIDTH_BITS else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -305,7 +309,7 @@ def _vstoreidx_handler_asm(
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
     body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
-    store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
+    store = "  mov qword ptr [r10], rbx\n" if width == _QWORD_WIDTH_BITS else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -322,7 +326,7 @@ def _vloadidx_handler_asm(
     """
     width = int(handler_key.split("_")[1])
     body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
-    body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+    body += "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
     # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
     # the vstack pointer from its frame slot before pushing.
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
@@ -341,7 +345,7 @@ def _vloadrip_handler_asm(
     """
     width = int(handler_key.split("_")[1])
     body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
-    body += "  mov rax, qword ptr [r10]\n" if width == 64 else "  mov eax, dword ptr [r10]\n"
+    body += "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -362,7 +366,7 @@ def _vstorerip_handler_asm(
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
     body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
-    store = "  mov qword ptr [r10], rbx\n" if width == 64 else "  mov dword ptr [r10], ebx\n"
+    store = "  mov qword ptr [r10], rbx\n" if width == _QWORD_WIDTH_BITS else "  mov dword ptr [r10], ebx\n"
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -378,7 +382,7 @@ def _vlea_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: in
     """
     sub, width_text = handler_key.split("_")
     body, advance = _mem_address_asm(sub == "vlearip", key, key_dword, field_perm, addr_variant)
-    body += "  mov eax, r10d\n" if int(width_text) == 32 else "  mov rax, r10\n"
+    body += "  mov eax, r10d\n" if int(width_text) == _DWORD_WIDTH_BITS else "  mov rax, r10\n"
     # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
     # the vstack pointer from its frame slot before pushing.
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
@@ -392,7 +396,7 @@ def _vleaidx_handler_asm(handler_key: str, key: str, key_dword: str, field_perm:
     """
     width = int(handler_key.split("_")[1])
     body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
-    body += "  mov eax, r10d\n" if width == 32 else "  mov rax, r10\n"
+    body += "  mov eax, r10d\n" if width == _DWORD_WIDTH_BITS else "  mov rax, r10\n"
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -407,7 +411,7 @@ def _vleaidxnb_handler_asm(
     """
     width = int(handler_key.split("_")[1])
     body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
-    body += "  mov eax, r10d\n" if width == 32 else "  mov rax, r10\n"
+    body += "  mov eax, r10d\n" if width == _DWORD_WIDTH_BITS else "  mov rax, r10\n"
     return body + _PUSH_RAX + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -463,7 +467,7 @@ def _vshiftreg_handler_asm(handler_key: str, key: str) -> str:
         "  mov rcx, qword ptr [rsp+r8*8]\n"
         f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
     )
-    body += f"  {mnemonic} rax, cl\n" if width == 64 else f"  {mnemonic} eax, cl\n"
+    body += f"  {mnemonic} rax, cl\n" if width == _QWORD_WIDTH_BITS else f"  {mnemonic} eax, cl\n"
     body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
     body += (
         f"  xor rax, {_VKEY}\n"
@@ -504,7 +508,7 @@ def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> s
         # the flags, but popfq discards that), run the real rotate, then capture: the
         # result is bit-for-bit what the native rotate would leave.
         body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
-    body += f"  {mnemonic} rax, cl\n" if width == 64 else f"  {mnemonic} eax, cl\n"
+    body += f"  {mnemonic} rax, cl\n" if width == _QWORD_WIDTH_BITS else f"  {mnemonic} eax, cl\n"
     if is_rotate:
         body += f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
     else:

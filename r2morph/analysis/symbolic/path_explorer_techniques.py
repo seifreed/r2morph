@@ -25,13 +25,15 @@ else:
 logger = logging.getLogger(__name__)
 
 ANGR_AVAILABLE = angr is not None
+_MAX_MEMORY_READS = 5
+_MAX_HISTORY_DEPTH = 50
+_MIN_BRANCH_OBSERVATIONS = 5
 
 
 class VMHandlerDetectionTechnique(ExplorationTechnique):
     """Exploration technique specialized for VM handler detection."""
 
     def __init__(self) -> None:
-        super().__init__()
         self.handler_patterns: set[int] = set()
         self.switch_tables: dict[int, list[int]] = {}
 
@@ -62,10 +64,10 @@ class VMHandlerDetectionTechnique(ExplorationTechnique):
             if hasattr(state, "history") and state.history.jump_kind == "Ijk_Boring":
                 score += 1.0
 
-            if len(state.history.mem_reads.hardcopy) > 5:
+            if len(state.history.mem_reads.hardcopy) > _MAX_MEMORY_READS:
                 score += 1.5
 
-            if state.history.depth > 50:
+            if state.history.depth > _MAX_HISTORY_DEPTH:
                 score -= 1.0
 
         except Exception as e:
@@ -78,7 +80,6 @@ class OpaquePredicateDetectionTechnique(ExplorationTechnique):
     """Exploration technique for detecting opaque predicates."""
 
     def __init__(self) -> None:
-        super().__init__()
         self.branch_outcomes: dict[int, list[bool]] = {}
         self.opaque_candidates: set[int] = set()
 
@@ -104,7 +105,7 @@ class OpaquePredicateDetectionTechnique(ExplorationTechnique):
                 self.branch_outcomes[branch_addr].append(taken)
 
                 outcomes = self.branch_outcomes[branch_addr]
-                if len(outcomes) >= 5 and len(set(outcomes)) == 1:
+                if len(outcomes) >= _MIN_BRANCH_OBSERVATIONS and len(set(outcomes)) == 1:
                     self.opaque_candidates.add(branch_addr)
                     logger.info(f"Potential opaque predicate at 0x{branch_addr:x}")
 

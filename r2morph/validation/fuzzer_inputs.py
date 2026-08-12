@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import random
 import string
+
+import r2morph.core.randomness as random
 
 
 def generate_fuzz_input(input_type: str) -> str:

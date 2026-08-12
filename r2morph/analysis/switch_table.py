@@ -37,6 +37,8 @@ from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 
+_BOUNDS_CHECK_MAX_DISTANCE_BYTES = 32
+
 __all__ = [
     "IndirectJump",
     "JumpTable",
@@ -44,6 +46,25 @@ __all__ = [
     "JumpTableType",
     "SwitchTableAnalyzer",
 ]
+
+
+def _find_bounds_checks(instructions: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
+    candidates: dict[int, dict[str, Any]] = {}
+    for instruction in instructions:
+        if instruction.get("type", "").lower() not in ("cmp", "test"):
+            continue
+        disasm = instruction.get("opcode", instruction.get("disasm", "")).lower()
+        match = re.search(r"cmp\s+([a-z]+),\s*([a-z0-9]+)", disasm)
+        if match is None:
+            continue
+        register, value = match.groups()
+        try:
+            bound = int(value, 0)
+        except ValueError:
+            continue
+        address = instruction.get("offset", 0)
+        candidates[address] = {"register": register, "bound": bound, "address": address}
+    return candidates
 
 
 class SwitchTableAnalyzer:
@@ -166,37 +187,21 @@ class SwitchTableAnalyzer:
 
         indirect_jumps = self.analyze_indirect_jumps(function_address)
 
-        bounds_check_candidates: dict[int, dict[str, Any]] = {}
-        for insn in instructions:
-            addr = insn.get("offset", 0)
-            mnemonic = insn.get("type", "").lower()
-            disasm = insn.get("opcode", insn.get("disasm", "")).lower()
-
-            if mnemonic in ("cmp", "test"):
-                match = re.search(r"cmp\s+([a-z]+),\s*([a-z0-9]+)", disasm)
-                if match:
-                    reg, val = match.groups()
-                    try:
-                        bound = int(val, 0)
-                        bounds_check_candidates[addr] = {"register": reg, "bound": bound, "address": addr}
-                    except ValueError:
-                        # Not a parseable numeric literal here (e.g. register/symbolic operand); expected, so this candidate is skipped.
-                        pass
+        bounds_check_candidates = _find_bounds_checks(instructions)
 
         for jump in indirect_jumps:
-            found_bounds = False
+            bounds_info = None
             for check_addr, check_info in bounds_check_candidates.items():
-                if check_addr < jump.address:
-                    if abs(check_addr - jump.address) < 32:
-                        found_bounds = True
-                        break
+                if check_addr < jump.address and abs(check_addr - jump.address) < _BOUNDS_CHECK_MAX_DISTANCE_BYTES:
+                    bounds_info = check_info
+                    break
 
             if jump.jump_type in ("jumptable", "indirect"):
                 table = self.resolve_jump_table(jump)
                 if table:
-                    if found_bounds:
+                    if bounds_info is not None:
                         table.bounds_check_address = check_addr
-                        table.bounds_check_register = check_info.get("register")
+                        table.bounds_check_register = bounds_info.get("register")
                     jump_tables.append(table)
                 else:
                     other_jumps.append(jump)

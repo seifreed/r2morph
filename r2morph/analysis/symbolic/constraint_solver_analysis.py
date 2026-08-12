@@ -4,11 +4,21 @@ from __future__ import annotations
 
 import logging
 import time
+from dataclasses import dataclass
 from typing import Any
 
 from r2morph.analysis.symbolic.constraint_solver_models import MBAExpression, SolverResult
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class SemanticEquivalenceQuery:
+    """Two symbolic expressions and their shared variables."""
+
+    expression_a: str
+    expression_b: str
+    variables: set[str]
 
 
 def detect_opaque_predicates(
@@ -115,9 +125,7 @@ def simplify_mba_expression(
 
 
 def check_semantic_equivalence(
-    expr1: str,
-    expr2: str,
-    variables: set[str],
+    query: SemanticEquivalenceQuery,
     z3_module: Any,
     parse_expression_to_z3: Any,
     timeout: int,
@@ -133,11 +141,11 @@ def check_semantic_equivalence(
         solver.set("timeout", timeout * 1000)
 
         z3_vars: dict[str, Any] = {}
-        for variable in variables:
+        for variable in query.variables:
             z3_vars[variable] = z3_module.BitVec(variable, 64)
 
-        z3_expr1 = parse_expression_to_z3(expr1, z3_vars)
-        z3_expr2 = parse_expression_to_z3(expr2, z3_vars)
+        z3_expr1 = parse_expression_to_z3(query.expression_a, z3_vars)
+        z3_expr2 = parse_expression_to_z3(query.expression_b, z3_vars)
 
         if z3_expr1 is None or z3_expr2 is None:
             return SolverResult(satisfiable=False, solving_time=time.time() - start_time, solver_used="z3")

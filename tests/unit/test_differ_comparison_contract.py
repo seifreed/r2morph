@@ -1,27 +1,38 @@
 from pathlib import Path
-from unittest.mock import MagicMock
 
 from r2morph.validation.differ_comparison import build_diff_report, compare_functions, compare_header, compare_sections
 from r2morph.validation.differ_models import ChangeSeverity, DiffType
 
 
-def _binary(path: str) -> MagicMock:
-    binary = MagicMock()
-    binary.path = Path(path)
-    binary.get_sections.return_value = []
-    binary.get_functions.return_value = []
-    binary.get_arch_info.return_value = {"arch": "x86_64", "bits": 64}
-    return binary
+class _Binary:
+    def __init__(self, path: str) -> None:
+        self.path = Path(path)
+        self.sections: list[dict[str, object]] = []
+        self.functions: list[dict[str, object]] = []
+        self.arch_info: dict[str, object] = {"arch": "x86_64", "bits": 64}
+
+    def get_sections(self) -> list[dict[str, object]]:
+        return self.sections
+
+    def get_functions(self) -> list[dict[str, object]]:
+        return self.functions
+
+    def get_arch_info(self) -> dict[str, object]:
+        return self.arch_info
+
+
+def _binary(path: str) -> _Binary:
+    return _Binary(path)
 
 
 def test_differ_comparison_helpers_build_report_from_real_inputs() -> None:
     original = _binary("/bin/original")
     mutated = _binary("/bin/mutated")
 
-    original.get_sections.return_value = [{"name": ".text", "addr": 0x1000, "size": 0x1000}]
-    mutated.get_sections.return_value = [{"name": ".text", "addr": 0x1000, "size": 0x1200}]
-    original.get_functions.return_value = [{"offset": 0x1000, "name": "main", "size": 0x50}]
-    mutated.get_functions.return_value = [{"offset": 0x1000, "name": "main", "size": 0x70}]
+    original.sections = [{"name": ".text", "addr": 0x1000, "size": 0x1000}]
+    mutated.sections = [{"name": ".text", "addr": 0x1000, "size": 0x1200}]
+    original.functions = [{"offset": 0x1000, "name": "main", "size": 0x50}]
+    mutated.functions = [{"offset": 0x1000, "name": "main", "size": 0x70}]
 
     report = build_diff_report(original, mutated, context_bytes=4)
 
@@ -36,11 +47,11 @@ def test_differ_comparison_helpers_keep_expected_severities() -> None:
     original = _binary("/bin/original")
     mutated = _binary("/bin/mutated")
 
-    original.get_sections.return_value = [{"name": ".removed", "addr": 0x1000, "size": 0x1000}]
-    mutated.get_sections.return_value = [{"name": ".added", "addr": 0x1000, "size": 0x1000}]
-    original.get_functions.return_value = [{"offset": 0x1000, "name": "main", "size": 0x50}]
-    mutated.get_functions.return_value = [{"offset": 0x2000, "name": "added", "size": 0x30}]
-    mutated.get_arch_info.return_value = {"arch": "arm64", "bits": 32}
+    original.sections = [{"name": ".removed", "addr": 0x1000, "size": 0x1000}]
+    mutated.sections = [{"name": ".added", "addr": 0x1000, "size": 0x1000}]
+    original.functions = [{"offset": 0x1000, "name": "main", "size": 0x50}]
+    mutated.functions = [{"offset": 0x2000, "name": "added", "size": 0x30}]
+    mutated.arch_info = {"arch": "arm64", "bits": 32}
 
     sections = compare_sections(original, mutated, context_bytes=2)
     functions = compare_functions(original, mutated)

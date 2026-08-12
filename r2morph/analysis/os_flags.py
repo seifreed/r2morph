@@ -5,8 +5,12 @@ Provides Windows and Linux flags/constants that can be used
 in junk code generation while preserving program semantics.
 """
 
-import random
 from typing import Final
+
+import r2morph.core.randomness as random
+
+_MAX_IMMEDIATE_16 = 0xFFFF
+_MAX_IMMEDIATE_8 = 0xFF
 
 WINFLAGS: Final[list[int]] = [
     0x00000001,
@@ -174,11 +178,11 @@ class OSFlags:
         return random.choice(self.flags)
 
     def get_safe_imm16(self) -> int:
-        flags_16 = [f for f in self.flags if f <= 0xFFFF]
+        flags_16 = [f for f in self.flags if f <= _MAX_IMMEDIATE_16]
         return random.choice(flags_16) if flags_16 else 0
 
     def get_safe_imm8(self) -> int:
-        flags_8 = [f for f in self.flags if f <= 0xFF]
+        flags_8 = [f for f in self.flags if f <= _MAX_IMMEDIATE_8]
         return random.choice(flags_8) if flags_8 else 0
 
 

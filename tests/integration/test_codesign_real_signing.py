@@ -20,5 +20,5 @@ def test_codesign_roundtrip_on_macho(tmp_path: Path) -> None:
     work_path.write_bytes(macho_path.read_bytes())
 
     signer = CodeSigner()
-    assert signer.sign_binary(work_path, adhoc=True) is True
+    assert signer.sign(work_path, adhoc=True) is True
     assert signer.verify(work_path) is True

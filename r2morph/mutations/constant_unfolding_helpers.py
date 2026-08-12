@@ -3,17 +3,33 @@
 from __future__ import annotations
 
 import logging
-import random
+from dataclasses import dataclass
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
 
+_BITS_64 = 64
+_ALTERNATE_ONE_PROBABILITY = 0.5
+_MAX_UNIT_OPERATION_COUNT = 3
+_MIN_INSTRUCTION_TOKEN_COUNT = 2
+
+
+@dataclass(frozen=True, slots=True)
+class UnfoldMutation:
+    function_address: int
+    address: int
+    original_size: int
+    original_disassembly: str
+    instructions: tuple[str, ...]
+    baseline: dict[str, Any]
+
 
 def get_reg_mapping(bits: int) -> dict[str, list[str]]:
     """Get register mapping for architecture."""
-    if bits == 64:
+    if bits == _BITS_64:
         return {
             "rax": ["rax", "eax", "r0"],
             "rbx": ["rbx", "ebx", "r3"],
@@ -48,7 +64,7 @@ def unfold_zero(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] |
 
 def unfold_one(reg: str, bits: int, binary: Any, base_addr: int) -> list[str] | None:
     """Unfold setting register to one."""
-    if random.random() < 0.5:
+    if random.random() < _ALTERNATE_ONE_PROBABILITY:
         return [f"xor {reg}, {reg}", f"inc {reg}"]
     return [f"mov {reg}, 1"]
 
@@ -61,7 +77,7 @@ def _unfold_constant_step(reg: str, value: int, max_sequence: int, unit_op: str,
     if value == 1:
         return [f"{unit_op} {reg}"]
 
-    if value <= 3:
+    if value <= _MAX_UNIT_OPERATION_COUNT:
         return [f"{unit_op} {reg}"] * value
 
     half = value // 2
@@ -102,7 +118,7 @@ def select_candidates(
     binary: Any,
     functions: list[dict[str, Any]],
     max_unfolds: int,
-) -> list[tuple[dict, list]]:
+) -> list[tuple[dict[str, Any], list[dict[str, Any]]]]:
     """Iterate functions, get disasm, and filter candidate instructions."""
     result = []
     for func in functions:
@@ -140,12 +156,12 @@ def match_unfold_pattern(
 ) -> tuple[list[str] | None, bool]:
     """Match instruction to an unfold pattern. Returns (unfolded_instructions, is_constant)."""
     parts = disasm.replace(",", " ").split()
-    if len(parts) < 2:
+    if len(parts) < _MIN_INSTRUCTION_TOKEN_COUNT:
         return None, False
 
     mnemonic = parts[0]
     reg = parts[1]
-    value_str = parts[2] if len(parts) > 2 else ""
+    value_str = parts[2] if len(parts) > _MIN_INSTRUCTION_TOKEN_COUNT else ""
 
     is_numeric = value_str.isdigit() or (
         value_str.startswith("0x") and all(c in "0123456789abcdefABCDEF" for c in value_str[2:])
@@ -155,31 +171,29 @@ def match_unfold_pattern(
 
     value = int(value_str, 0)
 
+    instructions = None
     if mnemonic == "mov" and value == 0:
-        return unfold_zero(reg, bits, binary, func_addr), True
-    if mnemonic == "mov" and value == 1:
-        return unfold_one(reg, bits, binary, func_addr), True
-    if mnemonic == "add" and 1 < value <= max_sequence:
-        return unfold_constant_add(reg, value, bits, max_sequence), True
-    if mnemonic == "sub" and 1 < value <= max_sequence:
-        return unfold_constant_sub(reg, value, bits, max_sequence), True
-    return None, False
+        instructions = unfold_zero(reg, bits, binary, func_addr)
+    elif mnemonic == "mov" and value == 1:
+        instructions = unfold_one(reg, bits, binary, func_addr)
+    elif mnemonic == "add" and 1 < value <= max_sequence:
+        instructions = unfold_constant_add(reg, value, bits, max_sequence)
+    elif mnemonic == "sub" and 1 < value <= max_sequence:
+        instructions = unfold_constant_sub(reg, value, bits, max_sequence)
+    return instructions, instructions is not None
 
 
 def apply_single_unfold(
     pass_obj: Any,
     binary: Any,
-    func: dict,
-    addr: int,
-    orig_size: int,
-    disasm: str,
-    unfolded: list[str],
-    baseline: dict,
+    mutation: UnfoldMutation,
 ) -> bool:
     """Assemble, write, validate, and record a single unfold. Returns True on success."""
+    addr = mutation.address
+    orig_size = mutation.original_size
     all_bytes = b""
-    for inst in unfolded:
-        inst_bytes = binary.assemble(inst, func["addr"])
+    for inst in mutation.instructions:
+        inst_bytes = binary.assemble(inst, mutation.function_address)
         if inst_bytes:
             all_bytes += inst_bytes
 
@@ -203,19 +217,19 @@ def apply_single_unfold(
 
     mutated_bytes = binary.read_bytes(addr, orig_size)
     record = pass_obj._record_mutation(
-        function_address=func["addr"],
+        function_address=mutation.function_address,
         start_address=addr,
         end_address=addr + orig_size - 1,
         original_bytes=original_bytes,
         mutated_bytes=mutated_bytes,
-        original_disasm=disasm,
-        mutated_disasm="; ".join(unfolded),
+        original_disasm=mutation.original_disassembly,
+        mutated_disasm="; ".join(mutation.instructions),
         mutation_kind="constant_unfolding",
         metadata={
-            "unfolded_instructions": len(unfolded),
+            "unfolded_instructions": len(mutation.instructions),
             "original_size": orig_size,
             "new_size": len(all_bytes),
-            "structural_baseline": baseline,
+            "structural_baseline": mutation.baseline,
         },
     )
     if pass_obj._validation_manager is not None:
@@ -233,6 +247,7 @@ def apply_single_unfold(
 
 
 __all__ = [
+    "UnfoldMutation",
     "apply_single_unfold",
     "calculate_sequence_size",
     "get_reg_mapping",

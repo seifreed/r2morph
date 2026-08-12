@@ -76,7 +76,7 @@ class TestCodeSigner:
         result = manager.needs_signing(morphed_path)
         assert isinstance(result, bool)
 
-    def test_sign_binary(self, ls_macos, tmp_path):
+    def test_sign_binary_with_platform_defaults(self, ls_macos, tmp_path):
         """Test signing a binary."""
         if platform.system() != "Darwin":
             pytest.skip("codesign tests require macOS")
@@ -89,7 +89,7 @@ class TestCodeSigner:
         test_binary = tmp_path / "test_sign"
         shutil.copy(ls_macos, test_binary)
 
-        result = manager.sign_binary(test_binary)
+        result = manager.sign(test_binary)
         assert result is not None
 
 

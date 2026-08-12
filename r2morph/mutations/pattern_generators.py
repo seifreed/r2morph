@@ -3,13 +3,15 @@ Replacement-code generators for instruction pattern mutation.
 
 Each ``generator_*`` produces a semantically equivalent instruction sequence
 for a matched pattern. Generators are pure leaf functions depending only on
-:mod:`r2morph.mutations.pattern_types`; the junk-enhanced variants lazily pull
-in the junk generator to keep the import graph acyclic.
+:mod:`r2morph.mutations.pattern_types` and the junk generator.
 """
 
 from typing import Any
 
+from r2morph.mutations.junk_generator import create_junk_generator
 from r2morph.mutations.pattern_types import Instruction
+
+_THIRD_OPERAND_INDEX = 2
 
 
 def _create_instruction(mnemonic: str, operands: list[str], ins_type: str = "") -> Instruction:
@@ -18,7 +20,7 @@ def _create_instruction(mnemonic: str, operands: list[str], ins_type: str = "") 
         mnemonic=mnemonic,
         operand_1=operands[0] if len(operands) > 0 else "",
         operand_2=operands[1] if len(operands) > 1 else "",
-        operand_3=operands[2] if len(operands) > 2 else "",
+        operand_3=operands[_THIRD_OPERAND_INDEX] if len(operands) > _THIRD_OPERAND_INDEX else "",
         operand_str=", ".join(operands),
         bytes="",
         type=ins_type if ins_type else mnemonic,
@@ -87,8 +89,6 @@ def generator_shl_to_lea(operands: list[Any], os_type: str) -> list[Instruction]
 
 
 def generator_push_pop_with_junk(operands: list[Any], os_type: str) -> list[Instruction]:
-    from r2morph.mutations.junk_generator import create_junk_generator
-
     dst, src = operands[0], operands[1]
 
     push = _create_instruction("push", [src], "push")
@@ -107,8 +107,6 @@ def generator_push_pop_with_junk(operands: list[Any], os_type: str) -> list[Inst
 
 
 def generator_xor_with_junk(operands: list[Any], os_type: str) -> list[Instruction]:
-    from r2morph.mutations.junk_generator import create_junk_generator
-
     reg = operands[0]
 
     junk_gen = create_junk_generator(os_type)
@@ -125,8 +123,6 @@ def generator_xor_with_junk(operands: list[Any], os_type: str) -> list[Instructi
 
 
 def generator_mov_with_junk_before(operands: list[Any], os_type: str) -> list[Instruction]:
-    from r2morph.mutations.junk_generator import create_junk_generator
-
     if len(operands) == 1:
         reg, src = operands[0], "0"
     else:

@@ -20,6 +20,18 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_CFF_CONFIDENCE_THRESHOLD = 0.3
+_CFF_BLOCK_THRESHOLD = 20
+_OPERAND_COUNT = 2
+_MBA_OPERATION_THRESHOLD = 5
+_MBA_RATIO_THRESHOLD = 0.4
+_INDIRECT_JUMP_RATIO_THRESHOLD = 0.1
+_VM_DETECTION_RATIO_THRESHOLD = 0.3
+_VM_PATTERN_THRESHOLD = 10
+_OPCODE_TOKEN_COUNT = 3
+_POLYMORPHIC_SCORE_THRESHOLD = 0.3
+_METAMORPHIC_RATIO_THRESHOLD = 0.2
+
 
 class ControlFlowAnalyzer:
     """
@@ -48,7 +60,7 @@ class ControlFlowAnalyzer:
         result = ControlFlowAnalysisResult()
 
         result.cff_confidence = self._detect_control_flow_flattening()
-        result.cff_detected = result.cff_confidence > 0.3
+        result.cff_detected = result.cff_confidence > _CFF_CONFIDENCE_THRESHOLD
         result.opaque_predicates_count = self._detect_opaque_predicates()
         result.mba_expressions_count = self._detect_mba_patterns()
 
@@ -94,7 +106,7 @@ class ControlFlowAnalyzer:
 
                 try:
                     blocks = self.binary.get_basic_blocks(func_addr)
-                    if len(blocks) > 20:  # Many basic blocks might indicate flattening
+                    if len(blocks) > _CFF_BLOCK_THRESHOLD:
                         dispatcher_found = self._check_dispatcher_pattern(blocks)
                         if dispatcher_found:
                             cff_indicators += 1
@@ -156,13 +168,12 @@ class ControlFlowAnalyzer:
                     for i, inst in enumerate(instructions):
                         disasm = inst.get("disasm", "").lower()
 
-                        if "cmp" in disasm and i + 1 < len(instructions):
-                            if "cmp" in disasm:
-                                parts = disasm.split(None, 1)
-                                if len(parts) == 2:
-                                    operands = [op.strip() for op in parts[1].split(",")]
-                                    if len(operands) >= 2 and operands[0] == operands[1]:
-                                        opaque_count += 1
+                        if "cmp" in disasm and i + 1 < len(instructions) and "cmp" in disasm:
+                            parts = disasm.split(None, 1)
+                            if len(parts) == _OPERAND_COUNT:
+                                operands = [op.strip() for op in parts[1].split(",")]
+                                if len(operands) >= _OPERAND_COUNT and operands[0] == operands[1]:
+                                    opaque_count += 1
 
                 except Exception as e:
                     logger.debug(f"Error analyzing function 0x{func_addr:x} for opaque predicates: {e}")
@@ -205,9 +216,13 @@ class ControlFlowAnalyzer:
                         if any(op in disasm for op in ["add", "sub", "mul", "imul"]):
                             arith_ops += 1
 
-                    if bool_ops > 5 and arith_ops > 5 and len(instructions) > 0:
+                    if (
+                        bool_ops > _MBA_OPERATION_THRESHOLD
+                        and arith_ops > _MBA_OPERATION_THRESHOLD
+                        and len(instructions) > 0
+                    ):
                         mix_ratio = (bool_ops + arith_ops) / len(instructions)
-                        if mix_ratio > 0.4:  # More than 40% boolean/arithmetic mix
+                        if mix_ratio > _MBA_RATIO_THRESHOLD:
                             mba_count += 1
 
                 except Exception as e:
@@ -263,7 +278,7 @@ class ControlFlowAnalyzer:
 
                     if len(instructions) > 0:
                         indirect_ratio = indirect_jumps / len(instructions)
-                        if indirect_ratio > 0.1:  # More than 10% indirect jumps
+                        if indirect_ratio > _INDIRECT_JUMP_RATIO_THRESHOLD:
                             vm_indicators += 1
                             result["indicators"].append(f"High indirect jump ratio in function at 0x{func_addr:x}")
 
@@ -274,7 +289,7 @@ class ControlFlowAnalyzer:
             if total_functions > 0:
                 vm_ratio = vm_indicators / min(total_functions, 20)
                 result["confidence"] = vm_ratio
-                result["detected"] = vm_ratio > 0.3  # 30% threshold
+                result["detected"] = vm_ratio > _VM_DETECTION_RATIO_THRESHOLD
                 result["handler_count"] = vm_indicators
 
         except Exception as e:
@@ -296,8 +311,8 @@ class ControlFlowAnalyzer:
             "vm_type": "unknown",
         }
 
-        assert self.binary.r2 is not None
-        assert self.binary.r2 is not None
+        if self.binary.r2 is None:
+            raise RuntimeError("Binary disassembler is not open")
         try:
             patterns = {
                 "register_based": [
@@ -323,7 +338,7 @@ class ControlFlowAnalyzer:
                     if matches:
                         pattern_count += len(matches.strip().split("\n")) if matches.strip() else 0
 
-                if pattern_count > 10:  # Threshold for pattern detection
+                if pattern_count > _VM_PATTERN_THRESHOLD:
                     result["detected"] = True
                     result["vm_type"] = vm_type
                     result["confidence"] = min(1.0, pattern_count / 50.0)
@@ -373,44 +388,19 @@ class ControlFlowAnalyzer:
             for func in functions[:20]:  # Limit analysis for performance
                 func_addr = self._get_function_address(func)
 
-                assert self.binary.r2 is not None
+                if self.binary.r2 is None:
+                    raise RuntimeError("Binary disassembler is not open")
                 try:
                     instructions = self.binary.r2.cmdj(f"pdfj @ {func_addr}")
                     if not instructions or "ops" not in instructions:
                         continue
 
-                    ops = instructions["ops"]
-
-                    dead_code_count = 0
-                    nop_count = 0
-                    redundant_moves = 0
-
-                    for op in ops:
-                        opcode = op.get("opcode", "").lower()
-
-                        if "nop" in opcode:
-                            nop_count += 1
-
-                        if "mov" in opcode and len(opcode.split()) >= 3:
-                            parts = opcode.split()
-                            if len(parts) >= 3:
-                                src = parts[2].rstrip(",")
-                                dst = parts[1].rstrip(",")
-                                if src == dst:
-                                    redundant_moves += 1
-
-                        if any(instr in opcode for instr in ["add", "sub", "xor"]) and "0" in opcode:
-                            dead_code_count += 1
-
-                    total_ops = len(ops)
-                    if total_ops > 0:
-                        poly_score = (dead_code_count + nop_count + redundant_moves) / total_ops
-
-                        if poly_score > 0.3:  # 30% threshold
-                            polymorphic_functions += 1
-                            result["indicators"].append(
-                                f"Function at 0x{func_addr:x} has {poly_score:.1%} polymorphic indicators"
-                            )
+                    poly_score = self._polymorphic_score(instructions["ops"])
+                    if poly_score > _POLYMORPHIC_SCORE_THRESHOLD:
+                        polymorphic_functions += 1
+                        result["indicators"].append(
+                            f"Function at 0x{func_addr:x} has {poly_score:.1%} polymorphic indicators"
+                        )
 
                 except Exception as e:
                     logger.debug(f"Error analyzing function 0x{func_addr:x} for polymorphic indicators: {e}")
@@ -419,7 +409,7 @@ class ControlFlowAnalyzer:
             if total_functions > 0:
                 result["polymorphic_ratio"] = polymorphic_functions / total_functions
 
-                if result["polymorphic_ratio"] > 0.2:  # 20% of functions
+                if result["polymorphic_ratio"] > _METAMORPHIC_RATIO_THRESHOLD:
                     result["detected"] = True
                     result["confidence"] = min(1.0, result["polymorphic_ratio"] * 2)
 
@@ -427,3 +417,16 @@ class ControlFlowAnalyzer:
             logger.error(f"Metamorphic detection failed: {e}")
 
         return result
+
+    @staticmethod
+    def _polymorphic_score(ops: list[dict[str, Any]]) -> float:
+        indicators = 0
+        for op in ops:
+            opcode = op.get("opcode", "").lower()
+            indicators += "nop" in opcode
+            indicators += any(instruction in opcode for instruction in ("add", "sub", "xor")) and "0" in opcode
+            parts = opcode.split()
+            indicators += (
+                "mov" in opcode and len(parts) >= _OPCODE_TOKEN_COUNT and parts[2].rstrip(",") == parts[1].rstrip(",")
+            )
+        return indicators / len(ops) if ops else 0.0

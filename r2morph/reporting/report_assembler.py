@@ -11,32 +11,38 @@ level.
 from collections.abc import Sequence
 from typing import Any
 
-from r2morph.core.report_helpers import (
+from r2morph.core.report_helpers_coverage import _summarize_pass_coverage_buckets
+from r2morph.core.report_helpers_evidence import (
     _build_evidence_summary_for_pass,
+    _summarize_pass_evidence,
+)
+from r2morph.core.report_helpers_observables import (
     _build_observable_mismatch_map,
     _build_observable_mismatch_priority,
-    _build_symbolic_summary_for_pass,
-    _summarize_degradation_roles,
-    _summarize_diff_digest,
     _summarize_observable_mismatches_by_pass,
-    _summarize_pass_coverage_buckets,
-    _summarize_pass_evidence,
-    _summarize_pass_risk_buckets,
+)
+from r2morph.core.report_helpers_risk import _summarize_pass_risk_buckets
+from r2morph.core.report_helpers_summary_metrics import (
+    _summarize_diff_digest,
     _summarize_pass_timings,
+)
+from r2morph.core.report_helpers_symbolic_summary import (
+    _build_symbolic_summary_for_pass,
     _summarize_symbolic_coverage_by_pass,
     _summarize_symbolic_issue_passes,
     _summarize_symbolic_severity_by_pass,
     _summarize_symbolic_statuses,
 )
+from r2morph.core.report_helpers_validation import _summarize_degradation_roles
 from r2morph.protocols import (
     GateFailureReporterProtocol,
     MutationPassProtocol,
     ReportViewBuilderProtocol,
 )
+from r2morph.reporting.report_assembler_artifacts import ArtifactBuildRequest, build_report_artifacts
 from r2morph.reporting.report_assembler_document import (
     ReportComputation,
     build_report_document,
-    compute_report_artifacts,
 )
 
 
@@ -100,30 +106,6 @@ class ReportAssembler:
             },
         }
 
-    def _compute_report_artifacts(
-        self,
-        payload: dict[str, Any],
-        pass_results: dict[str, Any],
-        enrichments: dict[str, Any],
-        aggregate_structural_regions: list[dict[str, Any]],
-        gate_failures: dict[str, Any] | None,
-        pipeline_passes: Sequence[MutationPassProtocol],
-    ) -> dict[str, Any]:
-        """Compute validation/triage/view artifacts for the final report."""
-        return compute_report_artifacts(
-            payload=payload,
-            pass_results=pass_results,
-            enrichments=enrichments,
-            aggregate_structural_regions=aggregate_structural_regions,
-            gate_failures=gate_failures,
-            gate_failure_priority=self._gate_failure_reporter.build_gate_failure_priority(gate_failures),
-            gate_failure_severity_priority=self._gate_failure_reporter.build_gate_failure_severity_priority(
-                gate_failures
-            ),
-            pipeline_passes=list(pipeline_passes),
-            report_view_builder=self._report_view_builder,
-        )
-
     def assemble_report(
         self,
         result: dict[str, Any] | None,
@@ -152,13 +134,20 @@ class ReportAssembler:
             else payload.get("gate_failures")
         )
         enrichments = self._enrich_pass_results(pass_results, mutations)
-        artifacts = self._compute_report_artifacts(
-            payload,
-            pass_results,
-            enrichments,
-            aggregate_structural_regions,
-            gate_failures,
-            pipeline_passes,
+        artifacts = build_report_artifacts(
+            ArtifactBuildRequest(
+                payload=payload,
+                pass_results=pass_results,
+                enrichments=enrichments,
+                aggregate_structural_regions=aggregate_structural_regions,
+                gate_failures=gate_failures,
+                gate_failure_priority=self._gate_failure_reporter.build_gate_failure_priority(gate_failures),
+                gate_failure_severity_priority=self._gate_failure_reporter.build_gate_failure_severity_priority(
+                    gate_failures
+                ),
+                pipeline_passes=pipeline_passes,
+                report_view_builder=self._report_view_builder,
+            )
         )
         comp = ReportComputation(
             payload=payload,

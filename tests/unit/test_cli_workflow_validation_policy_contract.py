@@ -1,15 +1,17 @@
-from r2morph.cli_workflow_validation_policy import build_validation_mode_policy
+from r2morph.cli_workflow_validation_policy import ValidationModeRequest, build_validation_mode_policy
 from r2morph.core.config import EngineConfig
 
 
 def test_build_validation_mode_policy_bypasses_non_symbolic_modes() -> None:
     result = build_validation_mode_policy(
-        requested_mode="runtime",
-        mutations=["register"],
-        config=EngineConfig(),
-        seed=None,
-        allow_limited_symbolic=False,
-        limited_symbolic_policy="block",
+        ValidationModeRequest(
+            requested_mode="runtime",
+            mutations=["register"],
+            config=EngineConfig(),
+            seed=None,
+            allow_limited_symbolic=False,
+            limited_symbolic_policy="block",
+        )
     )
 
     assert result == {
@@ -22,12 +24,14 @@ def test_build_validation_mode_policy_bypasses_non_symbolic_modes() -> None:
 
 def test_build_validation_mode_policy_degrades_limited_symbolic_passes() -> None:
     result = build_validation_mode_policy(
-        requested_mode="symbolic",
-        mutations=["register"],
-        config=EngineConfig(),
-        seed=None,
-        allow_limited_symbolic=False,
-        limited_symbolic_policy="degrade-runtime",
+        ValidationModeRequest(
+            requested_mode="symbolic",
+            mutations=["register"],
+            config=EngineConfig(),
+            seed=None,
+            allow_limited_symbolic=False,
+            limited_symbolic_policy="degrade-runtime",
+        )
     )
 
     assert result == {
@@ -40,12 +44,14 @@ def test_build_validation_mode_policy_degrades_limited_symbolic_passes() -> None
 
 def test_build_validation_mode_policy_allows_explicit_override() -> None:
     result = build_validation_mode_policy(
-        requested_mode="symbolic",
-        mutations=["register"],
-        config=EngineConfig(),
-        seed=None,
-        allow_limited_symbolic=True,
-        limited_symbolic_policy="block",
+        ValidationModeRequest(
+            requested_mode="symbolic",
+            mutations=["register"],
+            config=EngineConfig(),
+            seed=None,
+            allow_limited_symbolic=True,
+            limited_symbolic_policy="block",
+        )
     )
 
     assert result == {

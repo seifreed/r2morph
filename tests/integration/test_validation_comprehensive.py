@@ -16,7 +16,6 @@ if importlib.util.find_spec("yaml") is None:
 from r2morph import MorphEngine
 from r2morph.mutations import NopInsertionPass
 from r2morph.validation.fuzzer import FuzzResult, MutationFuzzer
-from r2morph.validation.regression import RegressionTester
 from r2morph.validation.validator import BinaryValidator, ValidationResult
 
 
@@ -143,71 +142,3 @@ class TestMutationFuzzerComprehensive:
         assert result.total_tests == 10
         assert result.passed == 8
         assert result.success_rate == 80.0
-
-
-class TestRegressionTesterComprehensive:
-    """Comprehensive tests for RegressionTester."""
-
-    @pytest.fixture
-    def ls_elf(self):
-        """Path to ls ELF binary."""
-        return Path(__file__).parent.parent.parent / "dataset" / "elf_x86_64"
-
-    def test_tester_init(self, tmp_path):
-        """Test RegressionTester initialization."""
-        test_dir = tmp_path / "regression_tests"
-        tester = RegressionTester(test_dir)
-
-        assert tester is not None
-        assert tester.test_dir == test_dir
-
-    def test_add_test(self, ls_elf, tmp_path):
-        """Test adding regression test."""
-        if not ls_elf.exists():
-            pytest.skip("ELF binary not available")
-
-        tester = RegressionTester(tmp_path)
-
-        tester.add_test(
-            name="version_test",
-            binary_path=str(ls_elf),
-            mutations=["NopInsertionPass"],
-            test_cases=[{"args": ["--version"]}],
-        )
-
-        assert len(tester.tests) == 1
-
-    def test_run_all_tests(self, ls_elf, tmp_path):
-        """Test running all regression tests."""
-        if not ls_elf.exists():
-            pytest.skip("ELF binary not available")
-
-        tester = RegressionTester(tmp_path)
-        tester.add_test(
-            name="basic_test",
-            binary_path=str(ls_elf),
-            mutations=["NopInsertionPass"],
-            test_cases=[{"args": ["--version"]}],
-        )
-
-        result = tester.run_all()
-        assert isinstance(result, list)
-
-    def test_save_results(self, ls_elf, tmp_path):
-        """Test saving regression results."""
-        if not ls_elf.exists():
-            pytest.skip("ELF binary not available")
-
-        tester = RegressionTester(tmp_path)
-        tester.add_test(
-            name="test1",
-            binary_path=str(ls_elf),
-            mutations=["NopInsertionPass"],
-            test_cases=[{"args": ["--version"]}],
-        )
-
-        tester.run_all()
-        output_file = tmp_path / "results.json"
-        tester.save_results(output_file)
-
-        assert output_file.exists()

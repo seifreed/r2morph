@@ -50,14 +50,20 @@ relocates non-entry chunks with trampoline jumps at original sites.
 from __future__ import annotations
 
 import logging
-import random
 from dataclasses import dataclass, field
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations.base import MutationPass
+from r2morph.relocations.cave_finder import CaveFinder, CodeCave
 
 logger = logging.getLogger(__name__)
+
+_MIN_OUTLINE_BLOCKS = 2
+_RELATIVE_JUMP_SIZE_BYTES = 5
+_SIGNED_32_MIN = -(1 << 31)
+_SIGNED_32_MAX = (1 << 31) - 1
 
 
 @dataclass
@@ -161,7 +167,7 @@ class FunctionOutliningPass(MutationPass):
 
     def _can_outline(self, blocks: list[dict[str, Any]]) -> tuple[bool, str]:
         """Check if function can be outlined."""
-        if len(blocks) < 2:
+        if len(blocks) < _MIN_OUTLINE_BLOCKS:
             return False, "insufficient blocks"
 
         for block in blocks:
@@ -247,6 +253,85 @@ class FunctionOutliningPass(MutationPass):
 
         return chunks
 
+    @staticmethod
+    def _chunk_bytes(binary: Any, chunk: OutlinedChunk) -> tuple[int, int, str, bytes] | None:
+        if not chunk.instructions:
+            return None
+        first_address = int(chunk.instructions[0].get("offset", chunk.original_address))
+        last_instruction = chunk.instructions[-1]
+        last_address = int(last_instruction.get("offset", first_address))
+        chunk_size = last_address + int(last_instruction.get("size", 1)) - first_address
+        disasm = "; ".join(str(instruction.get("disasm", "")) for instruction in chunk.instructions[:3])
+        if chunk_size < _RELATIVE_JUMP_SIZE_BYTES or "[rip" in disasm:
+            return None
+        original_bytes = binary.read_bytes(first_address, chunk_size)
+        if not original_bytes or len(original_bytes) < _RELATIVE_JUMP_SIZE_BYTES:
+            return None
+        return first_address, chunk_size, disasm, bytes(original_bytes)
+
+    @staticmethod
+    def _allocate_cave(caves: list[CodeCave], cave_index: int, size: int) -> tuple[int | None, int]:
+        while cave_index < len(caves):
+            cave = caves[cave_index]
+            if cave.size >= size:
+                caves[cave_index] = CodeCave(
+                    address=cave.address + size,
+                    size=cave.size - size,
+                    section=cave.section,
+                    is_executable=cave.is_executable,
+                )
+                return cave.address, cave_index
+            cave_index += 1
+        return None, cave_index
+
+    @staticmethod
+    def _relative_jump(target: int, next_instruction: int) -> bytes | None:
+        offset = target - next_instruction
+        if not _SIGNED_32_MIN <= offset <= _SIGNED_32_MAX:
+            return None
+        return b"\xe9" + offset.to_bytes(4, "little", signed=True)
+
+    def _relocate_chunk(
+        self,
+        binary: Any,
+        function_address: int,
+        chunk: OutlinedChunk,
+        caves: list[CodeCave],
+        cave_index: int,
+    ) -> tuple[bool, int]:
+        chunk_data = self._chunk_bytes(binary, chunk)
+        if chunk_data is None:
+            return False, cave_index
+        first_address, chunk_size, disasm, original_bytes = chunk_data
+        needed = chunk_size + _RELATIVE_JUMP_SIZE_BYTES
+        cave_address, cave_index = self._allocate_cave(caves, cave_index, needed)
+        if cave_address is None:
+            return False, cave_index
+        return_jump = self._relative_jump(first_address + chunk_size, cave_address + needed)
+        if return_jump is None:
+            logger.debug(f"Return offset out of range for chunk at 0x{first_address:x}")
+        if return_jump is None or not binary.write_bytes(cave_address, original_bytes + return_jump):
+            return False, cave_index
+        trampoline = self._relative_jump(cave_address, first_address + _RELATIVE_JUMP_SIZE_BYTES)
+        if trampoline is None:
+            logger.debug(f"Trampoline offset out of range for chunk at 0x{first_address:x}")
+            return False, cave_index
+        rewritten = trampoline + b"\x90" * (chunk_size - _RELATIVE_JUMP_SIZE_BYTES)
+        if not binary.write_bytes(first_address, rewritten):
+            logger.warning("Trampoline write failed at 0x%x; chunk not outlined, skipping record", first_address)
+            return False, cave_index
+        self._record_mutation(
+            function_address=function_address,
+            start_address=first_address,
+            end_address=first_address + chunk_size,
+            original_bytes=original_bytes,
+            mutated_bytes=rewritten,
+            original_disasm=disasm,
+            mutated_disasm=f"jmp 0x{cave_address:x} (outlined chunk)",
+            mutation_kind="function_outlining",
+        )
+        return True, cave_index
+
     def apply(self, binary: Any) -> dict[str, Any]:
         """
         Apply function outlining.
@@ -262,8 +347,6 @@ class FunctionOutliningPass(MutationPass):
         total_chunks = 0
         total_blocks = 0
         chunks_relocated = 0
-
-        from r2morph.relocations.cave_finder import CaveFinder
 
         caves = CaveFinder(binary).find_caves()
         cave_idx = 0
@@ -293,7 +376,7 @@ class FunctionOutliningPass(MutationPass):
                 continue
 
             chunks = self._split_into_chunks(blocks, binary, self.min_chunks, self.max_chunks)
-            if len(chunks) < 2:
+            if len(chunks) < _MIN_OUTLINE_BLOCKS:
                 continue
 
             outlined_func = OutlinedFunction(
@@ -304,84 +387,8 @@ class FunctionOutliningPass(MutationPass):
             )
 
             for chunk in chunks[1:]:
-                if not chunk.instructions:
-                    continue
-
-                first_addr = chunk.instructions[0].get("offset", chunk.original_address)
-                last_insn = chunk.instructions[-1]
-                last_addr = last_insn.get("offset", first_addr)
-                last_size = last_insn.get("size", 1)
-                chunk_size = (last_addr + last_size) - first_addr
-
-                if chunk_size < 5:
-                    continue
-
-                disasm_text = "; ".join(str(i.get("disasm", "")) for i in chunk.instructions[:3])
-                if "[rip" in disasm_text:
-                    continue
-
-                original_bytes = binary.read_bytes(first_addr, chunk_size)
-                if not original_bytes or len(original_bytes) < 5:
-                    continue
-
-                needed = chunk_size + 5
-                cave_addr = None
-                while cave_idx < len(caves):
-                    c = caves[cave_idx]
-                    if c.size >= needed:
-                        cave_addr = c.address
-                        caves[cave_idx] = type(c)(
-                            address=c.address + needed,
-                            size=c.size - needed,
-                            section=c.section,
-                            is_executable=c.is_executable,
-                        )
-                        break
-                    cave_idx += 1
-
-                if cave_addr is None:
-                    continue
-
-                return_target = first_addr + chunk_size
-                ret_off = return_target - (cave_addr + chunk_size + 5)
-                if ret_off < -2147483648 or ret_off > 2147483647:
-                    logger.debug(f"Return offset out of range for chunk at 0x{first_addr:x}")
-                    continue
-                return_jmp = b"\xe9" + ret_off.to_bytes(4, "little", signed=True)
-
-                if not binary.write_bytes(cave_addr, original_bytes + return_jmp):
-                    continue
-
-                tramp_off = cave_addr - (first_addr + 5)
-                if tramp_off < -2147483648 or tramp_off > 2147483647:
-                    logger.debug(f"Trampoline offset out of range for chunk at 0x{first_addr:x}")
-                    continue
-                trampoline = b"\xe9" + tramp_off.to_bytes(4, "little", signed=True)
-                nops = b"\x90" * (chunk_size - 5)
-                if not binary.write_bytes(first_addr, trampoline + nops):
-                    # The chunk is in the cave but the trampoline that
-                    # redirects the original site to it did not get
-                    # written, so the function was NOT actually
-                    # outlined. The original bytes at first_addr are
-                    # intact (no corruption); just don't record a
-                    # mutation that did not happen.
-                    logger.warning(
-                        "Trampoline write failed at 0x%x; chunk not outlined, skipping record",
-                        first_addr,
-                    )
-                    continue
-
-                self._record_mutation(
-                    function_address=func_addr,
-                    start_address=first_addr,
-                    end_address=first_addr + chunk_size,
-                    original_bytes=original_bytes,
-                    mutated_bytes=trampoline + nops,
-                    original_disasm=disasm_text,
-                    mutated_disasm=f"jmp 0x{cave_addr:x} (outlined chunk)",
-                    mutation_kind="function_outlining",
-                )
-                chunks_relocated += 1
+                relocated, cave_idx = self._relocate_chunk(binary, func_addr, chunk, caves, cave_idx)
+                chunks_relocated += int(relocated)
 
             outlined_functions.append(outlined_func)
             total_chunks += len(chunks)

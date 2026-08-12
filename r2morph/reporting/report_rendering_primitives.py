@@ -2,19 +2,16 @@
 
 from __future__ import annotations
 
+from functools import cache
 from typing import Any
 
 from rich.console import Console
 from rich.table import Table
 
-_console: Console | None = None
 
-
+@cache
 def _get_console() -> Console:
-    global _console
-    if _console is None:
-        _console = Console()
-    return _console
+    return Console()
 
 
 class _LazyConsole:

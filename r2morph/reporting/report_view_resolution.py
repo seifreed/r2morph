@@ -4,10 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from r2morph.reporting.report_context import PassClassFilters
-from r2morph.reporting.report_pass_list_resolution import (
-    resolve_general_filtered_passes as _resolve_general_filtered_passes_impl,
-)
 from r2morph.reporting.report_view_selection import _first_available
 
 
@@ -106,30 +102,3 @@ def _resolve_summary_pass_sources(summary: dict[str, Any]) -> dict[str, Any]:
         "general_discards": resolved_general_views["general_discards"],
         "general_triage_rows": list(report_views.get("general_triage_rows", []) or general_renderer_triage_rows),
     }
-
-
-def _resolve_general_filtered_passes(
-    *,
-    existing_passes: list[str],
-    summary_only_pass_view: dict[str, Any],
-    summary_general_passes: list[dict[str, Any]],
-    summary_general_pass_rows: list[dict[str, Any]],
-    summary_general_summary: dict[str, Any],
-    resolved_only_pass: str | None,
-    selected_risk_pass_names: set[str],
-    pass_classes: PassClassFilters,
-    only_failed_gates: bool,
-    gate_failure_priority: list[dict[str, Any]],
-) -> list[str]:
-    return _resolve_general_filtered_passes_impl(
-        existing_passes=existing_passes,
-        summary_only_pass_view=summary_only_pass_view,
-        summary_general_passes=summary_general_passes,
-        summary_general_pass_rows=summary_general_pass_rows,
-        summary_general_summary=summary_general_summary,
-        resolved_only_pass=resolved_only_pass,
-        selected_risk_pass_names=selected_risk_pass_names,
-        pass_classes=pass_classes,
-        only_failed_gates=only_failed_gates,
-        gate_failure_priority=gate_failure_priority,
-    )

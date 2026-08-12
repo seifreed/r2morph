@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from importlib import import_module
 from pathlib import Path
 from typing import Any
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 def collect_symbol_tables(binary_path: Path) -> dict[str, list[dict[str, Any]]]:
     """Collect ELF symbol tables via LIEF, or return empty tables if unavailable."""
     try:
-        import lief
+        lief = import_module("lief")
     except ImportError:
         logger.warning("lief library recommended for symbol table parsing. Install with: pip install lief")
         return {"symtab": [], "dynsym": []}

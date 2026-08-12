@@ -12,6 +12,8 @@ from .vm_handler_analyzer import VMHandlerAnalyzer
 
 logger = logging.getLogger(__name__)
 
+_MIN_MBA_COMPLEXITY_REDUCTION = 0.1
+
 
 class CFOSimplificationPass(SimplificationPass):
     """Control Flow Obfuscation simplification pass."""
@@ -58,7 +60,7 @@ class MBASimplificationPass(SimplificationPass):
             for expr in mba_expressions:
                 result = self.mba_solver.simplify_mba(expr)
 
-                if result.success and result.complexity_reduction > 0.1:
+                if result.success and result.complexity_reduction > _MIN_MBA_COMPLEXITY_REDUCTION:
                     changes_made = True
                     context.setdefault("mba_results", []).append(result)
 

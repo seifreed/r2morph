@@ -19,7 +19,7 @@ from r2morph.analysis._public_api import __all__ as __all__
 def __getattr__(name: str) -> _Any:
     if name in _SYMBOLIC_NAMES:
         try:
-            from r2morph.analysis import symbolic as _symbolic
+            _symbolic = import_module("r2morph.analysis.symbolic")
         except ImportError:
             resolved: dict[str, _Any] = {
                 "AngrBridge": None,

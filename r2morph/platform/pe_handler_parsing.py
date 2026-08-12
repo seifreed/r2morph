@@ -9,6 +9,13 @@ from typing import Any, BinaryIO
 
 logger = logging.getLogger(__name__)
 
+_PE_SIGNATURE_SIZE_BYTES = 4
+_COFF_HEADER_SIZE_BYTES = 20
+_PE32_PLUS_MAGIC = 0x20B
+_CHECKSUM_WORD_SIZE_BYTES = 4
+_CHECKSUM_HIGH_BIT = 0x80000000
+_SECTION_HEADER_SIZE_BYTES = 40
+
 
 def seek_to_pe_header(f: BinaryIO) -> int | None:
     """Validate the MZ stub, follow e_lfanew, and validate the PE signature.
@@ -19,12 +26,12 @@ def seek_to_pe_header(f: BinaryIO) -> int | None:
     if f.read(2) != b"MZ":
         return None
     f.seek(0x3C)
-    pe_offset_bytes = f.read(4)
-    if len(pe_offset_bytes) != 4:
+    pe_offset_bytes = f.read(_PE_SIGNATURE_SIZE_BYTES)
+    if len(pe_offset_bytes) != _PE_SIGNATURE_SIZE_BYTES:
         return None
     pe_offset: int = struct.unpack("<I", pe_offset_bytes)[0]
     f.seek(pe_offset)
-    if f.read(4) != b"PE\x00\x00":
+    if f.read(_PE_SIGNATURE_SIZE_BYTES) != b"PE\x00\x00":
         return None
     return pe_offset
 
@@ -37,15 +44,15 @@ def read_pe_header(binary_path: Path) -> dict[str, Any] | None:
             if pe_offset is None:
                 return None
 
-            coff_header = f.read(20)
-            if len(coff_header) != 20:
+            coff_header = f.read(_COFF_HEADER_SIZE_BYTES)
+            if len(coff_header) != _COFF_HEADER_SIZE_BYTES:
                 return None
             coff = parse_coff_header(coff_header)
 
             optional_header_offset = pe_offset + 24
             f.seek(optional_header_offset)
             magic = struct.unpack("<H", f.read(2))[0]
-            is_pe32_plus = magic == 0x20B
+            is_pe32_plus = magic == _PE32_PLUS_MAGIC
             header_size = 240 if is_pe32_plus else 96
 
             f.seek(optional_header_offset)
@@ -87,7 +94,7 @@ def get_checksum_offset(binary_path: Path) -> int | None:
 
             f.seek(0, 2)
             file_size = f.tell()
-            if checksum_offset + 4 > file_size:
+            if checksum_offset + _CHECKSUM_WORD_SIZE_BYTES > file_size:
                 return None
 
             return int(checksum_offset)
@@ -105,17 +112,17 @@ def calculate_pe_checksum(binary_path: Path) -> int:
         return sum(data) % (2**32)
 
     checksum = 0
-    for i in range(0, len(data), 4):
+    for i in range(0, len(data), _CHECKSUM_WORD_SIZE_BYTES):
         if i == checksum_offset:
             continue
 
-        chunk = data[i : i + 4]
-        if len(chunk) < 4:
-            chunk = chunk + b"\x00" * (4 - len(chunk))
+        chunk = data[i : i + _CHECKSUM_WORD_SIZE_BYTES]
+        if len(chunk) < _CHECKSUM_WORD_SIZE_BYTES:
+            chunk = chunk + b"\x00" * (_CHECKSUM_WORD_SIZE_BYTES - len(chunk))
 
         word = struct.unpack("<I", chunk)[0]
         checksum = (checksum + word) & 0xFFFFFFFF
-        if checksum >= 0x80000000:
+        if checksum >= _CHECKSUM_HIGH_BIT:
             checksum = (checksum & 0x7FFFFFFF) << 1 | 1
 
     checksum = (checksum + len(data)) & 0xFFFFFFFF
@@ -137,8 +144,8 @@ def get_sections_fallback(binary_path: Path) -> list[dict[str, Any]]:
             pe_offset = seek_to_pe_header(f)
             if pe_offset is None:
                 return []
-            coff_header = f.read(20)
-            if len(coff_header) != 20:
+            coff_header = f.read(_COFF_HEADER_SIZE_BYTES)
+            if len(coff_header) != _COFF_HEADER_SIZE_BYTES:
                 return []
             _machine, num_sections, _ts, _ptr_sym, _num_sym, size_optional, _chars = struct.unpack(
                 "<HHIIIHH", coff_header
@@ -151,8 +158,8 @@ def get_sections_fallback(binary_path: Path) -> list[dict[str, Any]]:
                 num_sections = max_sections
 
             for _ in range(num_sections):
-                section = f.read(40)
-                if len(section) != 40:
+                section = f.read(_SECTION_HEADER_SIZE_BYTES)
+                if len(section) != _SECTION_HEADER_SIZE_BYTES:
                     break
                 sections.append(parse_pe_section_entry(section))
         return sections

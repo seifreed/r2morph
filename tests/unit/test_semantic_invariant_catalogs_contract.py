@@ -1,6 +1,6 @@
 """Contracts for semantic invariant catalogs."""
 
-from r2morph.validation.semantic_invariant_catalogs import STANDARD_INVARIANTS
+from r2morph.validation.semantic_invariant_models import STANDARD_INVARIANTS
 
 
 def test_standard_invariants_are_stable_and_non_empty() -> None:

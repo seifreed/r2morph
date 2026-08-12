@@ -9,7 +9,6 @@ based on binary hash and analysis parameters.
 from __future__ import annotations
 
 import logging
-import pickle
 import threading
 from pathlib import Path
 from typing import Any
@@ -19,7 +18,7 @@ from r2morph.core.analysis_cache_cleanup import (
     cleanup_low_access_entries,
     enforce_size_limit,
 )
-from r2morph.core.analysis_cache_entries import load_cache_entry
+from r2morph.core.analysis_cache_entries import evict_cache_entry, iter_cache_entries, load_cache_entry
 from r2morph.core.analysis_cache_keys import build_cache_key, get_entry_path, hash_binary, hash_options
 from r2morph.core.analysis_cache_lifecycle import (
     start_cleanup_thread,
@@ -29,13 +28,15 @@ from r2morph.core.analysis_cache_models import CacheEntry, CacheKey, CacheStats
 from r2morph.core.analysis_cache_models import compute_binary_hash as _compute_binary_hash
 from r2morph.core.analysis_cache_models import compute_partial_hash as _compute_partial_hash
 from r2morph.core.analysis_cache_queries import (
-    get_entry_metadata,
-    invalidate_entries,
-    invalidate_region_entries,
     list_entries,
     refresh_cache_stats,
 )
-from r2morph.core.analysis_cache_storage import CacheStorage as _CacheStorage
+from r2morph.core.analysis_cache_storage import (
+    CacheStorage as _CacheStorage,
+)
+from r2morph.core.analysis_cache_storage import (
+    encode_cache_value,
+)
 from r2morph.core.constants import (
     ANALYSIS_CACHE_CLEANUP_INTERVAL_SECONDS,
     ANALYSIS_CACHE_MAX_AGE_DAYS,
@@ -131,14 +132,14 @@ class AnalysisCache:
         key = build_cache_key(binary_data, analysis_type, options)
 
         try:
-            pickled = pickle.dumps(result)
-        except (pickle.PickleError, TypeError):
+            encoded = encode_cache_value(result)
+        except (OverflowError, TypeError, ValueError):
             return
 
         entry = CacheEntry(
             key=key,
             data=result,
-            size_bytes=len(pickled),
+            size_bytes=len(encoded),
             metadata=metadata,
         )
 
@@ -156,43 +157,46 @@ class AnalysisCache:
             try:
                 old_entry = load_cache_entry(entry_path)
                 if old_entry is None:
-                    raise pickle.PickleError("unable to reload existing entry")
+                    raise ValueError("unable to reload existing entry")
                 existing_size = old_entry.size_bytes
-            except (pickle.PickleError, OSError) as exc:
+            except (OSError, ValueError) as exc:
                 logger.warning("Cannot read existing cache entry %s for size accounting: %s", entry_path, exc)
                 existing_size = 0
 
         try:
-            with open(entry_path, "wb") as f:
-                pickle.dump(entry, f)
+            entry_path.write_bytes(encode_cache_value(entry))
             with self._stats_lock:
                 if already_exists:
                     self._stats.total_size_bytes += entry.size_bytes - existing_size
                 else:
                     self._stats.total_size_bytes += entry.size_bytes
                     self._stats.entry_count += 1
-        except OSError as exc:
+        except (OSError, OverflowError, TypeError, ValueError) as exc:
             logger.warning("Cache write failed for %s: %s", entry_path, exc)
 
     def invalidate(self, binary_data: bytes, analysis_type: str | None = None) -> int:
-        return invalidate_entries(
-            self.cache_dir,
-            binary_data,
-            analysis_type,
-            self._hash_binary,
-            self._stats,
-            self._stats_lock,
-        )
+        binary_hash = self._hash_binary(binary_data)
+        removed = 0
+        for entry_path, entry in iter_cache_entries(self.cache_dir):
+            matching_type = analysis_type is None or entry.key.analysis_type == analysis_type
+            if entry.key.binary_hash == binary_hash and matching_type:
+                evict_cache_entry(entry_path, entry, self._stats, self._stats_lock)
+                removed += 1
+        return removed
 
     def invalidate_region(self, binary_hash: str, offset: int, size: int) -> int:
-        return invalidate_region_entries(
-            self.cache_dir,
-            binary_hash,
-            offset,
-            size,
-            self._stats,
-            self._stats_lock,
-        )
+        removed = 0
+        for entry_path, entry in iter_cache_entries(self.cache_dir):
+            if entry.key.binary_hash != binary_hash:
+                continue
+            regions = entry.metadata.get("regions", [])
+            if any(
+                offset + size >= region.get("offset", 0) and offset <= region.get("offset", 0) + region.get("size", 0)
+                for region in regions
+            ):
+                evict_cache_entry(entry_path, entry, self._stats, self._stats_lock)
+                removed += 1
+        return removed
 
     def clear(self) -> int:
         removed = 0
@@ -227,9 +231,21 @@ class AnalysisCache:
     def get_entry_metadata(
         self, binary_data: bytes, analysis_type: str, options: dict[str, Any] | None = None
     ) -> dict[str, Any] | None:
-        return get_entry_metadata(
-            self.cache_dir, binary_data, analysis_type, self._hash_binary, self._hash_options, options
+        key = CacheKey(
+            binary_hash=self._hash_binary(binary_data),
+            analysis_type=analysis_type,
+            options_hash=self._hash_options(options or {}),
         )
+        entry_path = self._get_entry_path(key)
+        if not entry_path.exists() or (entry := load_cache_entry(entry_path)) is None:
+            return None
+        return {
+            "created_at": entry.created_at.isoformat(),
+            "accessed_at": entry.accessed_at.isoformat(),
+            "access_count": entry.access_count,
+            "size_bytes": entry.size_bytes,
+            "metadata": entry.metadata,
+        }
 
     def list_entries(self, analysis_type: str | None = None) -> list[dict[str, Any]]:
         return list_entries(self.cache_dir, analysis_type)

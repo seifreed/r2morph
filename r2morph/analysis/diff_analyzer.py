@@ -151,13 +151,14 @@ class DiffAnalyzer:
                 orig_funcs = {f.get("offset", f.get("addr", 0)): f for f in orig.get_functions()}
                 morph_funcs = {f.get("offset", f.get("addr", 0)): f for f in morph.get_functions()}
 
-                for addr in orig_funcs:
-                    if addr in morph_funcs:
-                        orig_size = orig_funcs[addr].get("size", 0)
-                        morph_size = morph_funcs[addr].get("size", 0)
+                for addr, orig_func in orig_funcs.items():
+                    morph_func = morph_funcs.get(addr)
+                    if morph_func is not None:
+                        orig_size = orig_func.get("size", 0)
+                        morph_size = morph_func.get("size", 0)
 
                         if orig_size != morph_size:
-                            func_name = orig_funcs[addr].get("name", f"0x{addr:x}")
+                            func_name = orig_func.get("name", f"0x{addr:x}")
                             viz.append(
                                 f"  {func_name}: "
                                 f"{orig_size} bytes -> {morph_size} bytes "
@@ -248,10 +249,10 @@ class DiffAnalyzer:
 
         changed = 0
 
-        for addr in orig_funcs:
-            if addr in morph_funcs:
-                if orig_funcs[addr].get("size") != morph_funcs[addr].get("size"):
-                    changed += 1
+        for addr, orig_func in orig_funcs.items():
+            morph_func = morph_funcs.get(addr)
+            if morph_func is not None and orig_func.get("size") != morph_func.get("size"):
+                changed += 1
 
         return changed
 

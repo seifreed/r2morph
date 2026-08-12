@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.reporting.report_helpers import (
+    _normalized_pass_map,
     _pass_evidence_from_row,
     _symbolic_summary_from_normalized_row,
     _validation_context_from_role,
 )
-from r2morph.reporting.report_state import _normalized_pass_map as _normalized_pass_map_state
 
 
 def resolve_only_pass_view(
@@ -30,7 +30,7 @@ def resolve_only_pass_view(
     summary_pass_symbolic_summary = dict(summary.get("pass_symbolic_summary", {}) or {})
     summary_pass_validation_context = dict(summary.get("pass_validation_context", {}) or {})
     summary_pass_region_evidence_map = dict(summary.get("pass_region_evidence_map", {}) or {})
-    normalized_pass_map = _normalized_pass_map_state(list(summary.get("normalized_pass_results", []) or []))
+    normalized_pass_map = _normalized_pass_map(list(summary.get("normalized_pass_results", []) or []))
     symbolic_summary = filtered_summary.get("pass_symbolic_summary", {}).get(pass_name)
     if symbolic_summary is None:
         compact_row = dict(only_pass_map.get(pass_name, {}) or {})

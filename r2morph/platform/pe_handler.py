@@ -9,9 +9,10 @@ Handles:
 - PE header repair after mutations
 """
 
+import importlib
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from r2morph.platform.pe_handler_parsing import (
     calculate_pe_checksum,
@@ -56,13 +57,10 @@ from r2morph.platform.pe_handler_repair import (
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    import lief
-else:
-    try:
-        import lief
-    except ImportError:
-        lief = None
+try:
+    lief: Any = importlib.import_module("lief")
+except ImportError:
+    lief = None
 
 LIEF_AVAILABLE = lief is not None
 
@@ -88,7 +86,7 @@ class PEHandler:
         self.binary_path = binary_path
         self._binary: Any = None
         self._pe_offset: int | None = None
-        self._sections_cache: list[dict] | None = None
+        self._sections_cache: list[dict[str, Any]] | None = None
 
     def _parse_lief(self) -> Any:
         if lief is None:
@@ -147,7 +145,7 @@ class PEHandler:
         """Simple checksum (legacy)."""
         return calculate_simple_checksum(self.binary_path)
 
-    def get_sections(self) -> list[dict]:
+    def get_sections(self) -> list[dict[str, Any]]:
         """
         Get PE sections.
 
@@ -177,25 +175,25 @@ class PEHandler:
         self._sections_cache = sections
         return sections
 
-    def _get_sections_fallback(self) -> list[dict]:
+    def _get_sections_fallback(self) -> list[dict[str, Any]]:
         """Parse PE sections without lief by walking the section header table."""
         return get_sections_fallback(self.binary_path)
 
-    def get_imports(self) -> list[dict]:
+    def get_imports(self) -> list[dict[str, Any]]:
         """Get PE imports."""
         binary = self._parse_lief()
         if binary is None:
             return []
         return project_imports(binary)
 
-    def get_exports(self) -> list[dict]:
+    def get_exports(self) -> list[dict[str, Any]]:
         """Get PE exports."""
         binary = self._parse_lief()
         if binary is None:
             return []
         return project_exports(binary)
 
-    def get_relocations(self) -> list[dict]:
+    def get_relocations(self) -> list[dict[str, Any]]:
         """
         Get PE relocation entries.
 

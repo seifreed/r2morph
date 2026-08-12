@@ -85,6 +85,7 @@ from r2morph.mutations.self_modifying_code import (
 )
 from r2morph.mutations.stack_strings import (
     EncodingScheme,
+    StackStringOptions,
     StackStringsPass,
     add_shift_encode,
     find_printable_strings,
@@ -181,7 +182,7 @@ class TestStackStrings:
 
     def test_xor_rolling(self):
         data = b"Hello"
-        result, final_key = xor_rolling(data, 0x42)
+        result, _final_key = xor_rolling(data, 0x42)
         assert len(result) == len(data)
         assert result != data
 
@@ -200,26 +201,34 @@ class TestStackStrings:
 
     def test_generate_stack_string_x64_plain(self):
         string_data = b"Hello"
-        asm, junk = generate_stack_string_x64(string_data, EncodingScheme.PLAIN)
+        asm, _junk = generate_stack_string_x64(string_data, StackStringOptions(encoding=EncodingScheme.PLAIN))
         assert "sub rsp" in asm
         assert "mov byte" in asm
 
     def test_generate_stack_string_x64_xor(self):
         string_data = b"Hello"
-        asm, junk = generate_stack_string_x64(string_data, EncodingScheme.XOR_SINGLE, xor_key=0x55)
+        asm, _junk = generate_stack_string_x64(
+            string_data,
+            StackStringOptions(encoding=EncodingScheme.XOR_SINGLE, xor_key=0x55),
+        )
         assert "sub rsp" in asm
         assert "xor" in asm
 
     def test_generate_stack_string_x86_plain(self):
         string_data = b"Test"
-        asm, junk = generate_stack_string_x86(string_data, EncodingScheme.PLAIN)
+        asm, _junk = generate_stack_string_x86(string_data, StackStringOptions(encoding=EncodingScheme.PLAIN))
         assert "sub esp" in asm
         assert "mov byte" in asm
 
     def test_generate_stack_string_with_junk(self):
         string_data = b"Test"
-        asm, junk = generate_stack_string_x64(
-            string_data, EncodingScheme.PLAIN, interleave_junk=True, junk_probability=1.0
+        _asm, junk = generate_stack_string_x64(
+            string_data,
+            StackStringOptions(
+                encoding=EncodingScheme.PLAIN,
+                interleave_junk=True,
+                junk_probability=1.0,
+            ),
         )
         assert len(junk) > 0
 

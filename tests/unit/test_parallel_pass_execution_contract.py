@@ -6,7 +6,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
-from r2morph.core.parallel_pass_execution import execute_checkpointed_pass
+from r2morph.core.parallel_pass_execution import CheckpointedPassRequest, execute_checkpointed_pass
 
 
 class DummyPass:
@@ -53,15 +53,17 @@ def test_execute_checkpointed_pass_returns_completed_result() -> None:
         callback_calls: list[tuple[str, float]] = []
 
         result = execute_checkpointed_pass(
-            binary=binary,
-            pass_obj=pass_obj,
-            checkpoint_dir=Path(tmpdir),
-            use_checkpoints=True,
-            file_lock=lock,
-            use_file_lock=True,
-            binary_mutation_lock=DummyLock(),
-            progress_callback=lambda name, progress: callback_calls.append((name, progress)),
-            logger=SimpleNamespace(debug=lambda *args, **kwargs: None, error=lambda *args, **kwargs: None),
+            CheckpointedPassRequest(
+                binary=binary,
+                pass_obj=pass_obj,
+                checkpoint_dir=Path(tmpdir),
+                use_checkpoints=True,
+                file_lock=lock,
+                use_file_lock=True,
+                binary_mutation_lock=DummyLock(),
+                progress_callback=lambda name, progress: callback_calls.append((name, progress)),
+                logger=SimpleNamespace(debug=lambda *args, **kwargs: None, error=lambda *args, **kwargs: None),
+            )
         )
 
         assert result.status.value == "completed"

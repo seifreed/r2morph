@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from r2morph.validation.validator import ValidationResult
+from r2morph.validation.validator_runtime import ValidationResult
 
 
 @dataclass

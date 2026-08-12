@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.validation.validator_results_artifacts import build_compared_signals, build_output_hashes
-from r2morph.validation.validator_runtime import RuntimeComparisonConfig, ValidationResult, ValidationTestCase
+from r2morph.validation.validator_runtime import RuntimeComparisonConfig, ValidationObservations, ValidationResult
 
 
 def calculate_similarity(
@@ -49,17 +49,12 @@ def calculate_similarity(
 
 
 def build_validation_result(
-    *,
-    all_outputs_match: bool,
-    errors: list[str],
-    original_outputs: list[dict[str, Any]],
-    mutated_outputs: list[dict[str, Any]],
+    observations: ValidationObservations,
     comparison: RuntimeComparisonConfig,
-    file_differences: dict[str, dict[str, str]],
-    runtime_details: list[dict[str, Any]],
-    test_cases: list[ValidationTestCase],
 ) -> ValidationResult:
     """Build a `ValidationResult` from collected runtime observations."""
+    original_outputs = observations.original_outputs
+    mutated_outputs = observations.mutated_outputs
     similarity = calculate_similarity(original_outputs, mutated_outputs, comparison)
     orig_combined = "\n".join(o["stdout"] for o in original_outputs)
     mut_combined = "\n".join(o["stdout"] for o in mutated_outputs)
@@ -67,16 +62,16 @@ def build_validation_result(
     mut_exitcode = mutated_outputs[0]["exitcode"] if mutated_outputs else 0
 
     return ValidationResult(
-        passed=all_outputs_match and len(errors) == 0,
+        passed=observations.all_outputs_match and len(observations.errors) == 0,
         original_output=orig_combined,
         mutated_output=mut_combined,
         original_exitcode=orig_exitcode,
         mutated_exitcode=mut_exitcode,
-        errors=errors,
+        errors=observations.errors,
         similarity_score=similarity,
         compared_signals=build_compared_signals(comparison),
-        file_differences=file_differences,
+        file_differences=observations.file_differences,
         output_hashes=build_output_hashes(original_outputs, mutated_outputs, comparison),
-        runtime_details=runtime_details,
-        test_cases=[case.to_dict() for case in test_cases],
+        runtime_details=observations.runtime_details,
+        test_cases=[case.to_dict() for case in observations.test_cases],
     )

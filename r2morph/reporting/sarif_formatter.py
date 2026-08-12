@@ -21,10 +21,9 @@ from r2morph.reporting.sarif_formatter_builders import (
     build_mitre_taxonomy,
     build_rules,
 )
-from r2morph.reporting.sarif_formatter_run import build_report
 from r2morph.reporting.sarif_result_builder import SARIFResultBuilder
 from r2morph.reporting.sarif_rule_ids import get_mutation_rule_id, get_validation_rule_id
-from r2morph.reporting.sarif_schema import SARIFReport
+from r2morph.reporting.sarif_schema import SARIFReport, SARIFRun
 
 
 class SARIFFormatter:
@@ -51,13 +50,17 @@ class SARIFFormatter:
         invocations = build_invocations(report_data)
         taxonomy = build_mitre_taxonomy(MITRE_ATTACK)
 
-        return build_report(
-            tool,
-            results,
-            artifacts,
-            invocations,
-            [taxonomy],
-            str(Path.cwd()),
+        return SARIFReport(
+            runs=[
+                SARIFRun(
+                    tool=tool,
+                    results=results,
+                    artifacts=artifacts or None,
+                    invocations=invocations or None,
+                    taxonomies=[taxonomy],
+                    original_uri_base_ids={"SRCROOT": str(Path.cwd())},
+                )
+            ]
         )
 
     def _get_mutation_rule_id(self, pass_name: str) -> str:

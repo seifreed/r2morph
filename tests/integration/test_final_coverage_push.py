@@ -122,7 +122,7 @@ class TestControlFlowGraph:
                     try:
                         cfg.build()
                         if len(cfg.blocks) > 0:
-                            addr = list(cfg.blocks.keys())[0]
+                            addr = next(iter(cfg.blocks.keys()))
                             block = cfg.get_block(addr)
                             if block:
                                 assert isinstance(block, BasicBlock)
@@ -145,7 +145,7 @@ class TestControlFlowGraph:
                     try:
                         cfg.build()
                         if len(cfg.blocks) > 0:
-                            addr = list(cfg.blocks.keys())[0]
+                            addr = next(iter(cfg.blocks.keys()))
                             preds = cfg.get_predecessors(addr)
                             assert isinstance(preds, list)
                     except Exception:
@@ -167,7 +167,7 @@ class TestControlFlowGraph:
                     try:
                         cfg.build()
                         if len(cfg.blocks) > 0:
-                            addr = list(cfg.blocks.keys())[0]
+                            addr = next(iter(cfg.blocks.keys()))
                             succs = cfg.get_successors(addr)
                             assert isinstance(succs, list)
                     except Exception:
@@ -189,7 +189,7 @@ class TestControlFlowGraph:
                     try:
                         cfg.build()
                         if len(cfg.blocks) > 0:
-                            addr = list(cfg.blocks.keys())[0]
+                            addr = next(iter(cfg.blocks.keys()))
                             is_header = cfg.is_loop_header(addr)
                             assert isinstance(is_header, bool)
                     except Exception:
@@ -281,7 +281,7 @@ class TestDependencyAnalysis:
                     try:
                         analyzer.analyze_function(binary, func_addr)
                         # Try to find defines for a common register
-                        for addr, insn_def in analyzer.defs.items():
+                        for _addr, insn_def in analyzer.defs.items():
                             if len(insn_def.defines) > 0:
                                 assert isinstance(insn_def.defines, set)
                                 break

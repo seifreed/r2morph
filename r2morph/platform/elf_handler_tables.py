@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any, BinaryIO
 
+from r2morph.platform.elf_handler_parsing import get_section_name, read_shstrtab
 from r2morph.platform.elf_structs import (
     MAX_SECTION_ENTRY_SIZE,
     MAX_SECTIONS,
@@ -19,8 +20,6 @@ logger = logging.getLogger(__name__)
 
 def collect_sections(binary_path: Any, header: dict[str, Any], file_obj: BinaryIO) -> list[dict[str, Any]]:
     """Materialize ELF sections from a parsed header and file handle."""
-    from r2morph.platform.elf_handler_parsing import get_section_name, read_shstrtab
-
     try:
         is_64bit = header["is_64bit"]
         endian = "<" if header["is_little_endian"] else ">"

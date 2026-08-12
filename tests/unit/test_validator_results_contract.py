@@ -1,7 +1,7 @@
 """Contracts for validation result helpers."""
 
 from r2morph.validation.validator_results import build_validation_result, calculate_similarity
-from r2morph.validation.validator_runtime import RuntimeComparisonConfig, ValidationTestCase
+from r2morph.validation.validator_runtime import RuntimeComparisonConfig, ValidationObservations, ValidationTestCase
 
 
 def test_calculate_similarity_respects_enabled_signals() -> None:
@@ -46,25 +46,27 @@ def test_build_validation_result_serializes_runtime_details() -> None:
     )
 
     result = build_validation_result(
-        all_outputs_match=True,
-        errors=[],
-        original_outputs=[{"stdout": "out\n", "stderr": "err\n", "exitcode": 0, "files": {"out.txt": "aa"}}],
-        mutated_outputs=[{"stdout": "out\n", "stderr": "err\n", "exitcode": 0, "files": {"out.txt": "aa"}}],
+        ValidationObservations(
+            all_outputs_match=True,
+            errors=[],
+            original_outputs=[{"stdout": "out\n", "stderr": "err\n", "exitcode": 0, "files": {"out.txt": "aa"}}],
+            mutated_outputs=[{"stdout": "out\n", "stderr": "err\n", "exitcode": 0, "files": {"out.txt": "aa"}}],
+            file_differences={},
+            runtime_details=[
+                {
+                    "description": "help",
+                    "args": ["--help"],
+                    "working_dir": "/tmp",
+                    "original_exitcode": 0,
+                    "mutated_exitcode": 0,
+                    "stdout_match": True,
+                    "stderr_match": True,
+                    "files_compared": ["out.txt"],
+                }
+            ],
+            test_cases=[test_case],
+        ),
         comparison=comparison,
-        file_differences={},
-        runtime_details=[
-            {
-                "description": "help",
-                "args": ["--help"],
-                "working_dir": "/tmp",
-                "original_exitcode": 0,
-                "mutated_exitcode": 0,
-                "stdout_match": True,
-                "stderr_match": True,
-                "files_compared": ["out.txt"],
-            }
-        ],
-        test_cases=[test_case],
     )
 
     assert result.passed is True

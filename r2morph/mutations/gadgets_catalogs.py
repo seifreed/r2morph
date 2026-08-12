@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import random
 from collections.abc import Callable
 
+import r2morph.core.randomness as random
 from r2morph.analysis.os_flags import OSFlags
-from r2morph.analysis.register_tracker import REG_16, REG_32, REG_64, REG_ALL
+from r2morph.core.register_tracker import REG_16, REG_32, REG_64, REG_ALL
 
 
-def build_stack_gadgets() -> dict[str, tuple[Callable, Callable, int]]:
+def build_stack_gadgets() -> dict[str, tuple[Callable[..., str], Callable[..., str], int]]:
     return {
         "push_reg": (
             lambda reg: f"push {reg}",
@@ -24,7 +24,7 @@ def build_stack_gadgets() -> dict[str, tuple[Callable, Callable, int]]:
     }
 
 
-def build_jump_gadgets() -> dict[str, tuple[Callable, int]]:
+def build_jump_gadgets() -> dict[str, tuple[Callable[..., str], int]]:
     return {
         "jz": (lambda lbl: f"jz {lbl}", 1),
         "jnz": (lambda lbl: f"jnz {lbl}", 1),
@@ -39,7 +39,7 @@ def build_jump_gadgets() -> dict[str, tuple[Callable, int]]:
     }
 
 
-def build_operate_gadgets(os_flags: OSFlags, stack_depth: int) -> dict[str, tuple[Callable, int, int]]:
+def build_operate_gadgets(os_flags: OSFlags, stack_depth: int) -> dict[str, tuple[Callable[..., str], int, int]]:
     return {
         **_mov_gadgets(stack_depth),
         **_arithmetic_gadgets(stack_depth),
@@ -48,7 +48,7 @@ def build_operate_gadgets(os_flags: OSFlags, stack_depth: int) -> dict[str, tupl
     }
 
 
-def _mov_gadgets(stack_depth: int) -> dict[str, tuple]:
+def _mov_gadgets(stack_depth: int) -> dict[str, tuple[Callable[..., str], int, int]]:
     return {
         "mov_reg_reg": (
             lambda reg, sec_reg: f"mov {reg}, {sec_reg}",
@@ -83,7 +83,7 @@ def _mov_gadgets(stack_depth: int) -> dict[str, tuple]:
     }
 
 
-def _arithmetic_gadgets(stack_depth: int) -> dict[str, tuple]:
+def _arithmetic_gadgets(stack_depth: int) -> dict[str, tuple[Callable[..., str], int, int]]:
     return {
         "add_reg_reg": (
             lambda reg, sec_reg: f"add {reg}, {sec_reg}",
@@ -128,7 +128,7 @@ def _arithmetic_gadgets(stack_depth: int) -> dict[str, tuple]:
     }
 
 
-def _lea_gadgets(stack_depth: int) -> dict[str, tuple]:
+def _lea_gadgets(stack_depth: int) -> dict[str, tuple[Callable[..., str], int, int]]:
     return {
         "lea_reg_mem": (
             lambda reg, sec_reg: f"lea {reg}, [{sec_reg}]",
@@ -193,7 +193,7 @@ def _lea_gadgets(stack_depth: int) -> dict[str, tuple]:
     }
 
 
-def _bitwise_gadgets(os_flags: OSFlags) -> dict[str, tuple]:
+def _bitwise_gadgets(os_flags: OSFlags) -> dict[str, tuple[Callable[..., str], int, int]]:
     return {
         "nop": (
             lambda reg, sec_reg: "nop",

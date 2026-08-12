@@ -6,6 +6,11 @@ from typing import Any
 
 from .syntia_models import InstructionSemantics, SemanticComplexity, VMHandlerSemantics
 
+_SIMPLE_SEMANTIC_MAX_LENGTH = 50
+_SIMPLE_CONFIDENCE_THRESHOLD = 0.8
+_MEDIUM_SEMANTIC_MAX_LENGTH = 200
+_MEDIUM_CONFIDENCE_THRESHOLD = 0.5
+
 
 def fallback_semantic_analysis(disassembly: str) -> dict[str, Any]:
     """Fallback semantic analysis when Syntia is not available."""
@@ -40,9 +45,9 @@ def assess_semantic_complexity(semantics: InstructionSemantics) -> SemanticCompl
 
     semantic_str = semantics.learned_semantics.lower()
 
-    if len(semantic_str) < 50 and semantics.confidence > 0.8:
+    if len(semantic_str) < _SIMPLE_SEMANTIC_MAX_LENGTH and semantics.confidence > _SIMPLE_CONFIDENCE_THRESHOLD:
         return SemanticComplexity.SIMPLE
-    if len(semantic_str) < 200 and semantics.confidence > 0.5:
+    if len(semantic_str) < _MEDIUM_SEMANTIC_MAX_LENGTH and semantics.confidence > _MEDIUM_CONFIDENCE_THRESHOLD:
         return SemanticComplexity.MEDIUM
     return SemanticComplexity.COMPLEX
 
@@ -54,7 +59,7 @@ def synthesize_handler_semantics(instruction_semantics: list[InstructionSemantic
 
     semantic_parts = []
     for sem in instruction_semantics:
-        if sem.learned_semantics and sem.confidence > 0.5:
+        if sem.learned_semantics and sem.confidence > _MEDIUM_CONFIDENCE_THRESHOLD:
             semantic_parts.append(sem.learned_semantics)
 
     if semantic_parts:

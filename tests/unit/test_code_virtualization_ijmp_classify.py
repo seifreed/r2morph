@@ -15,7 +15,8 @@ hand-built instruction dicts - no r2, no mocks.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_region import GP_REGISTERS, _classify
+from r2morph.mutations.code_virtualization_engine import GP_REGISTERS
+from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_models import _op_key
 

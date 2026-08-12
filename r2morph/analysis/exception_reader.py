@@ -4,11 +4,24 @@ from __future__ import annotations
 
 import logging
 import struct
+from typing import Any
 
 from r2morph.analysis.exception_models import ExceptionAction, ExceptionFrame, LandingPad
 from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
+
+_BITS_32 = 32
+_BITS_64 = 64
+_POINTER_SIZE_64_BYTES = 8
+_PE_32_EXCEPTION_ENTRY_SIZE_BYTES = 8
+_PE_64_EXCEPTION_ENTRY_SIZE_BYTES = 12
+_MACHO_UNWIND_HEADER_SIZE_BYTES = 12
+
+
+def _section_int(section: dict[str, Any], primary: str, fallback: str) -> int:
+    value = section.get(primary, section.get(fallback, 0))
+    return value if isinstance(value, int) else 0
 
 
 class ExceptionInfoReader:
@@ -58,8 +71,8 @@ class ExceptionInfoReader:
                 logger.debug("No .eh_frame section found")
                 return
 
-            eh_frame_addr = eh_frame_section.get("addr", eh_frame_section.get("virtual_address", 0))
-            eh_frame_size = eh_frame_section.get("size", eh_frame_section.get("virtual_size", 0))
+            eh_frame_addr = _section_int(eh_frame_section, "addr", "virtual_address")
+            eh_frame_size = _section_int(eh_frame_section, "size", "virtual_size")
 
             if eh_frame_addr == 0 or eh_frame_size == 0:
                 return
@@ -113,16 +126,16 @@ class ExceptionInfoReader:
     def _parse_fde(self, data: bytes, offset: int, length: int, base_addr: int, cie_offset: int) -> None:
         """Parse a Frame Description Entry and extract function bounds."""
         try:
-            ptr_size = 8 if self.binary.get_arch_info().get("bits", 64) == 64 else 4
+            ptr_size = _POINTER_SIZE_64_BYTES if self.binary.get_arch_info().get("bits", _BITS_64) == _BITS_64 else 4
 
             pc_begin_offset = offset + 4 + ptr_size
             pc_begin = struct.unpack(
-                "<Q" if ptr_size == 8 else "<I",
+                "<Q" if ptr_size == _POINTER_SIZE_64_BYTES else "<I",
                 data[pc_begin_offset : pc_begin_offset + ptr_size],
             )[0]
 
             pc_range = struct.unpack(
-                "<Q" if ptr_size == 8 else "<I",
+                "<Q" if ptr_size == _POINTER_SIZE_64_BYTES else "<I",
                 data[pc_begin_offset + ptr_size : pc_begin_offset + 2 * ptr_size],
             )[0]
 
@@ -156,44 +169,27 @@ class ExceptionInfoReader:
             arch_info = self.binary.get_arch_info()
             bits = arch_info.get("bits", 64)
 
-            pdata_addr = pdata_section.get("addr", pdata_section.get("virtual_address", 0))
-            pdata_size = pdata_section.get("size", pdata_section.get("virtual_size", 0))
+            pdata_addr = _section_int(pdata_section, "addr", "virtual_address")
+            pdata_size = _section_int(pdata_section, "size", "virtual_size")
 
             if pdata_addr == 0 or pdata_size == 0:
                 return
 
-            entry_size = 8 if bits == 32 else 12
+            entry_size = _PE_32_EXCEPTION_ENTRY_SIZE_BYTES if bits == _BITS_32 else _PE_64_EXCEPTION_ENTRY_SIZE_BYTES
             num_entries = pdata_size // entry_size
+            entry_parser = self._parse_pe32_entry if bits == _BITS_32 else self._parse_pe64_entry
 
             data = self.binary.read_bytes(pdata_addr, pdata_size)
             if not data:
                 return
 
-            for i in range(num_entries):
-                entry_offset = i * entry_size
+            for index in range(num_entries):
+                entry_offset = index * entry_size
                 if entry_offset + entry_size > len(data):
                     break
-                if bits == 32:
-                    begin, second = struct.unpack("<II", data[entry_offset : entry_offset + 8])
-                    if begin == 0:
-                        continue
-                    if second & 0x3:
-                        function_length = ((second >> 2) & 0x7FF) * 2
-                        function_end = begin + function_length
-                    else:
-                        function_end = begin
-                    self._frames[begin] = ExceptionFrame(
-                        function_start=begin,
-                        function_end=function_end,
-                    )
-                else:
-                    begin_rva, end_rva, unwind_rva = struct.unpack("<III", data[entry_offset : entry_offset + 12])
-                    if begin_rva == 0:
-                        continue
-                    self._frames[begin_rva] = ExceptionFrame(
-                        function_start=begin_rva,
-                        function_end=end_rva,
-                    )
+                frame = entry_parser(data[entry_offset : entry_offset + entry_size])
+                if frame is not None:
+                    self._frames[frame.function_start] = frame
 
         except Exception as e:
             logger.debug(f"Failed to read PE exception data: {e}")
@@ -213,14 +209,14 @@ class ExceptionInfoReader:
                 logger.debug("No __unwind_info section found")
                 return
 
-            unwind_addr = unwind_section.get("addr", unwind_section.get("virtual_address", 0))
-            unwind_size = unwind_section.get("size", unwind_section.get("virtual_size", 0))
+            unwind_addr = _section_int(unwind_section, "addr", "virtual_address")
+            unwind_size = _section_int(unwind_section, "size", "virtual_size")
 
             if unwind_addr == 0 or unwind_size == 0:
                 return
 
             data = self.binary.read_bytes(unwind_addr, min(unwind_size, 4096))
-            if not data or len(data) < 12:
+            if not data or len(data) < _MACHO_UNWIND_HEADER_SIZE_BYTES:
                 return
 
             logger.debug(
@@ -232,7 +228,7 @@ class ExceptionInfoReader:
         except (OSError, struct.error) as e:
             logger.debug("Failed to read Mach-O unwind info: %s", e)
 
-    def _get_sections(self) -> list[dict]:
+    def _get_sections(self) -> list[dict[str, Any]]:
         """Get sections from the binary."""
         try:
             return self.binary.get_sections()
@@ -256,3 +252,18 @@ class ExceptionInfoReader:
         for pad in frame.landing_pads:
             edges.append((function_address, pad.address, pad.action))
         return edges
+
+    @staticmethod
+    def _parse_pe32_entry(entry: bytes) -> ExceptionFrame | None:
+        begin, second = struct.unpack("<II", entry)
+        if begin == 0:
+            return None
+        function_length = ((second >> 2) & 0x7FF) * 2 if second & 0x3 else 0
+        return ExceptionFrame(function_start=begin, function_end=begin + function_length)
+
+    @staticmethod
+    def _parse_pe64_entry(entry: bytes) -> ExceptionFrame | None:
+        begin_rva, end_rva, _unwind_rva = struct.unpack("<III", entry)
+        if begin_rva == 0:
+            return None
+        return ExceptionFrame(function_start=begin_rva, function_end=end_rva)

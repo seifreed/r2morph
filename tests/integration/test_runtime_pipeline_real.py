@@ -11,6 +11,7 @@ from pathlib import Path
 import pytest
 
 from r2morph import MorphEngine
+from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations.base import MutationPass
 from r2morph.session import MorphSession
 from r2morph.validation.validator import BinaryValidator, RuntimeComparisonConfig
@@ -71,11 +72,13 @@ def test_runtime_validation_rolls_back_failed_pass_on_real_binary(
         engine.load_binary(patchable_runtime_binary).analyze()
         engine.add_mutation(_PatchStringPass(b"value:42", b"value:99"))
         result = engine.run(
-            validation_mode="runtime",
-            runtime_validator=validator,
-            runtime_validate_per_pass=True,
-            rollback_policy="skip-invalid-pass",
-            report_path=tmp_path / "runtime-pass.report.json",
+            EngineRunOptions(
+                validation_mode="runtime",
+                runtime_validator=validator,
+                runtime_validate_per_pass=True,
+                rollback_policy="skip-invalid-pass",
+                report_path=tmp_path / "runtime-pass.report.json",
+            )
         )
         output = tmp_path / "runtime-pass.out"
         engine.save(output)

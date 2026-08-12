@@ -12,12 +12,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
-from r2morph.analysis.abi_checker import (
-    ABIChecker,
-    ABISpec,
-    ABIViolation,
-    ABIViolationType,
-)
+from r2morph.analysis.abi_checker import ABIChecker
+from r2morph.analysis.abi_models import ABISpec, ABIViolation, ABIViolationType
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +48,14 @@ class ABISnapshot:
     shadow_space_ok: bool = True
 
 
+@dataclass(frozen=True, slots=True)
+class ABICheckOptions:
+    stack_alignment: bool = True
+    callee_saved: bool = True
+    red_zone: bool = True
+    shadow_space: bool = True
+
+
 class ABIMutationHook:
     """
     Hook for enforcing ABI invariants in mutation passes.
@@ -74,10 +78,7 @@ class ABIMutationHook:
         self,
         binary: Any,
         action: ABIViolationAction = ABIViolationAction.WARN,
-        check_stack_alignment: bool = True,
-        check_callee_saved: bool = True,
-        check_red_zone: bool = True,
-        check_shadow_space: bool = True,
+        options: ABICheckOptions | None = None,
         abi_spec: ABISpec | None = None,
     ):
         """
@@ -86,18 +87,16 @@ class ABIMutationHook:
         Args:
             binary: Any being mutated
             action: Action to take on violation
-            check_stack_alignment: Enable stack alignment checks
-            check_callee_saved: Enable callee-saved register checks
-            check_red_zone: Enable red zone checks
-            check_shadow_space: Enable shadow space checks
+            options: ABI checks to enable
             abi_spec: Optional ABI specification (auto-detected if None)
         """
         self.binary = binary
         self.action = action
-        self.check_stack_alignment = check_stack_alignment
-        self.check_callee_saved = check_callee_saved
-        self.check_red_zone = check_red_zone
-        self.check_shadow_space = check_shadow_space
+        options = options or ABICheckOptions()
+        self.check_stack_alignment = options.stack_alignment
+        self.check_callee_saved = options.callee_saved
+        self.check_red_zone = options.red_zone
+        self.check_shadow_space = options.shadow_space
         self.checker = ABIChecker(binary, abi_spec)
         self._snapshots: dict[int, ABISnapshot] = {}
         self._total_violations: list[ABIViolation] = []
@@ -128,16 +127,7 @@ class ABIMutationHook:
         Returns:
             ABISnapshot with current state
         """
-        violations: list[ABIViolation] = []
-
-        if self.check_stack_alignment:
-            violations.extend(self.checker.check_stack_alignment(function_address))
-
-        if self.check_callee_saved:
-            violations.extend(self.checker.check_callee_saved(function_address))
-
-        if self.check_shadow_space:
-            violations.extend(self.checker.check_shadow_space(function_address))
+        violations = self._collect_violations(function_address)
 
         snapshot = ABISnapshot(
             function_address=function_address,
@@ -175,19 +165,7 @@ class ABIMutationHook:
         if snapshot is None:
             snapshot = self._snapshots.get(function_address)
 
-        current_violations: list[ABIViolation] = []
-
-        if self.check_stack_alignment:
-            current_violations.extend(self.checker.check_stack_alignment(function_address))
-
-        if self.check_callee_saved:
-            current_violations.extend(self.checker.check_callee_saved(function_address))
-
-        if self.check_shadow_space:
-            current_violations.extend(self.checker.check_shadow_space(function_address))
-
-        if self.check_red_zone and mutation_regions:
-            current_violations.extend(self.checker.check_red_zone(function_address, mutation_regions))
+        current_violations = self._collect_violations(function_address, mutation_regions)
 
         new_violations: list[ABIViolation] = []
         if snapshot:
@@ -200,27 +178,42 @@ class ABIMutationHook:
 
         self._total_violations.extend(new_violations)
 
-        check_types = []
-        if self.check_stack_alignment:
-            check_types.append("stack_alignment")
-        if self.check_callee_saved:
-            check_types.append("callee_saved")
-        if self.check_red_zone:
-            check_types.append("red_zone")
-        if self.check_shadow_space:
-            check_types.append("shadow_space")
-
         result = ABICheckResult(
             valid=len(new_violations) == 0,
             violations=current_violations,
             new_violations=new_violations,
-            check_types=check_types,
+            check_types=self._enabled_check_types(),
         )
 
         if not result.valid and self.action == ABIViolationAction.BLOCK:
             self._blocked_functions.add(function_address)
 
         return result
+
+    def _collect_violations(
+        self,
+        function_address: int,
+        mutation_regions: list[tuple[int, int]] | None = None,
+    ) -> list[ABIViolation]:
+        violations: list[ABIViolation] = []
+        if self.check_stack_alignment:
+            violations.extend(self.checker.check_stack_alignment(function_address))
+        if self.check_callee_saved:
+            violations.extend(self.checker.check_callee_saved(function_address))
+        if self.check_shadow_space:
+            violations.extend(self.checker.check_shadow_space(function_address))
+        if self.check_red_zone and mutation_regions:
+            violations.extend(self.checker.check_red_zone(function_address, mutation_regions))
+        return violations
+
+    def _enabled_check_types(self) -> list[str]:
+        checks = (
+            (self.check_stack_alignment, "stack_alignment"),
+            (self.check_callee_saved, "callee_saved"),
+            (self.check_red_zone, "red_zone"),
+            (self.check_shadow_space, "shadow_space"),
+        )
+        return [name for enabled, name in checks if enabled]
 
     def validate_region(
         self,
@@ -371,8 +364,10 @@ def create_abi_hook(
     return ABIMutationHook(
         binary,
         action=action,
-        check_stack_alignment="stack_alignment" in checks,
-        check_callee_saved="callee_saved" in checks,
-        check_red_zone="red_zone" in checks,
-        check_shadow_space="shadow_space" in checks,
+        options=ABICheckOptions(
+            stack_alignment="stack_alignment" in checks,
+            callee_saved="callee_saved" in checks,
+            red_zone="red_zone" in checks,
+            shadow_space="shadow_space" in checks,
+        ),
     )

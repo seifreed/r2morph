@@ -24,7 +24,7 @@ from r2morph.mutations.code_virtualization_mba import (
     _mba_add_r10_rax,
     _op_mba_compute,
 )
-from r2morph.mutations.code_virtualization_region_handlers import (
+from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _indexed_address_asm,
     _mem_address_asm,
 )

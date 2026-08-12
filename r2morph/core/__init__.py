@@ -1,130 +1,74 @@
-"""
-Core module for r2morph.
+"""Core public API, loaded lazily to keep layer imports acyclic."""
 
-Contains the fundamental classes for binary analysis and transformation.
-"""
+from __future__ import annotations
 
-from r2morph.core.analysis_cache import (
-    AnalysisCache,
-    CacheEntry,
-    CacheKey,
-    CacheStats,
-    CacheStorage,
-    compute_binary_hash,
-    compute_partial_hash,
-)
-from r2morph.core.assembly import (
-    REGISTER_ENCODING,
-    AssemblyService,
-    get_assembly_service,
-)
-from r2morph.core.binary import Binary
-from r2morph.core.config import (
-    AnalysisConfig,
-    EngineConfig,
-    InstructionSubstitutionConfig,
-    MutationConfig,
-    NopInsertionConfig,
-    RegisterSubstitutionConfig,
-)
-from r2morph.core.constants import (
-    AVG_INSTRUCTION_SIZE_BYTES,
-    BATCH_MUTATION_CHECKPOINT,
-    HIGH_ENTROPY_THRESHOLD,
-    LARGE_BINARY_THRESHOLD_MB,
-    LARGE_FUNCTION_COUNT_THRESHOLD,
-    MANY_FUNCTIONS_THRESHOLD,
-    MEDIUM_FUNCTION_COUNT_THRESHOLD,
-    MINIMUM_FUNCTION_SIZE,
-    PACKED_ENTROPY_THRESHOLD,
-    SMALL_FUNCTION_THRESHOLD,
-    VERY_LARGE_BINARY_THRESHOLD_MB,
-    VERY_MANY_FUNCTIONS_THRESHOLD,
-)
-from r2morph.core.engine import MorphEngine
-from r2morph.core.function import Function
-from r2morph.core.instruction import Instruction
-from r2morph.core.memory_manager import (
-    MemoryManager,
-    get_memory_manager,
-)
-from r2morph.core.parallel import (
-    DependencyResolver,
-    ExecutionPlan,
-    ParallelMutationEngine,
-    PassDependency,
-    PassResult,
-    PassStatus,
-    execute_parallel,
-)
-from r2morph.core.parallel_executor import (
-    MutationResult,
-    MutationTask,
-    ParallelMutator,
-    TaskStatus,
-)
-from r2morph.core.parallel_executor_models import ResolutionStrategy
-from r2morph.core.parallel_result_merger import ResultMerger
-from r2morph.core.parallel_work_queue import WorkQueue
-from r2morph.core.reader import BinaryReader
-from r2morph.core.writer import BinaryWriter
+from importlib import import_module
+from typing import Any
 
-__all__ = [
-    # Core classes
-    "Binary",
-    "MorphEngine",
-    "Function",
-    "Instruction",
-    # Services (extracted from Binary)
-    "AssemblyService",
-    "REGISTER_ENCODING",
-    "get_assembly_service",
-    "MemoryManager",
-    "get_memory_manager",
-    "BinaryReader",
-    "BinaryWriter",
-    # Config classes
-    "AnalysisConfig",
-    "EngineConfig",
-    "InstructionSubstitutionConfig",
-    "MutationConfig",
-    "NopInsertionConfig",
-    "RegisterSubstitutionConfig",
-    # Constants
-    "AVG_INSTRUCTION_SIZE_BYTES",
-    "BATCH_MUTATION_CHECKPOINT",
-    "HIGH_ENTROPY_THRESHOLD",
-    "LARGE_BINARY_THRESHOLD_MB",
-    "LARGE_FUNCTION_COUNT_THRESHOLD",
-    "MANY_FUNCTIONS_THRESHOLD",
-    "MEDIUM_FUNCTION_COUNT_THRESHOLD",
-    "MINIMUM_FUNCTION_SIZE",
-    "PACKED_ENTROPY_THRESHOLD",
-    "SMALL_FUNCTION_THRESHOLD",
-    "VERY_LARGE_BINARY_THRESHOLD_MB",
-    "VERY_MANY_FUNCTIONS_THRESHOLD",
-    # Parallel planning/execution
-    "DependencyResolver",
-    "ExecutionPlan",
-    "PassDependency",
-    "PassResult",
-    "PassStatus",
-    "ParallelMutationEngine",
-    "execute_parallel",
-    # Parallel executor
-    "MutationResult",
-    "MutationTask",
-    "ParallelMutator",
-    "ResolutionStrategy",
-    "ResultMerger",
-    "TaskStatus",
-    "WorkQueue",
-    # Analysis Cache
-    "AnalysisCache",
-    "CacheEntry",
-    "CacheKey",
-    "CacheStats",
-    "CacheStorage",
-    "compute_binary_hash",
-    "compute_partial_hash",
-]
+_LAZY_EXPORTS = {
+    "AnalysisCache": "r2morph.core.analysis_cache",
+    "CacheEntry": "r2morph.core.analysis_cache_models",
+    "CacheKey": "r2morph.core.analysis_cache_models",
+    "CacheStats": "r2morph.core.analysis_cache_models",
+    "CacheStorage": "r2morph.core.analysis_cache_storage",
+    "compute_binary_hash": "r2morph.core.analysis_cache",
+    "compute_partial_hash": "r2morph.core.analysis_cache",
+    "REGISTER_ENCODING": "r2morph.core.assembly",
+    "AssemblyService": "r2morph.core.assembly",
+    "get_assembly_service": "r2morph.core.assembly",
+    "Binary": "r2morph.core.binary",
+    "AnalysisConfig": "r2morph.core.config",
+    "EngineConfig": "r2morph.core.config",
+    "InstructionSubstitutionConfig": "r2morph.core.config",
+    "MutationConfig": "r2morph.core.config",
+    "NopInsertionConfig": "r2morph.core.config",
+    "RegisterSubstitutionConfig": "r2morph.core.config",
+    "AVG_INSTRUCTION_SIZE_BYTES": "r2morph.core.constants",
+    "BATCH_MUTATION_CHECKPOINT": "r2morph.core.constants",
+    "HIGH_ENTROPY_THRESHOLD": "r2morph.core.constants",
+    "LARGE_BINARY_THRESHOLD_MB": "r2morph.core.constants",
+    "LARGE_FUNCTION_COUNT_THRESHOLD": "r2morph.core.constants",
+    "MANY_FUNCTIONS_THRESHOLD": "r2morph.core.constants",
+    "MEDIUM_FUNCTION_COUNT_THRESHOLD": "r2morph.core.constants",
+    "MINIMUM_FUNCTION_SIZE": "r2morph.core.constants",
+    "PACKED_ENTROPY_THRESHOLD": "r2morph.core.constants",
+    "SMALL_FUNCTION_THRESHOLD": "r2morph.core.constants",
+    "VERY_LARGE_BINARY_THRESHOLD_MB": "r2morph.core.constants",
+    "VERY_MANY_FUNCTIONS_THRESHOLD": "r2morph.core.constants",
+    "MorphEngine": "r2morph.core.engine",
+    "Function": "r2morph.core.function",
+    "Instruction": "r2morph.core.instruction",
+    "MemoryManager": "r2morph.core.memory_manager",
+    "get_memory_manager": "r2morph.core.memory_manager",
+    "DependencyResolver": "r2morph.core.parallel",
+    "ExecutionPlan": "r2morph.core.parallel",
+    "ParallelMutationEngine": "r2morph.core.parallel",
+    "PassDependency": "r2morph.core.parallel",
+    "PassResult": "r2morph.core.parallel",
+    "PassStatus": "r2morph.core.parallel",
+    "execute_parallel": "r2morph.core.parallel",
+    "ParallelMutator": "r2morph.core.parallel_executor",
+    "MutationResult": "r2morph.core.parallel_executor_models",
+    "MutationTask": "r2morph.core.parallel_executor_models",
+    "ResolutionStrategy": "r2morph.core.parallel_executor_models",
+    "TaskStatus": "r2morph.core.parallel_executor_models",
+    "ResultMerger": "r2morph.core.parallel_result_merger",
+    "WorkQueue": "r2morph.core.parallel_work_queue",
+    "BinaryReader": "r2morph.core.reader",
+    "BinaryWriter": "r2morph.core.writer",
+}
+
+__all__ = list(_LAZY_EXPORTS)
+
+
+def __getattr__(name: str) -> Any:
+    if name in _LAZY_EXPORTS:
+        module = import_module(_LAZY_EXPORTS[name])
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

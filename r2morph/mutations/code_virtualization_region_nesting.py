@@ -25,10 +25,12 @@ both layers' code, so tampering with either layer diverges both.
 from __future__ import annotations
 
 import logging
-import random
 import struct
+from dataclasses import dataclass
+from importlib import import_module
 from typing import Any
 
+import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_antidebug import (
     _TRACER_ISLAND_LEN,
     patch_tracer_constants,
@@ -39,11 +41,12 @@ from r2morph.mutations.code_virtualization_antidebug import (
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
 from r2morph.mutations.code_virtualization_region import build_region_scheme
-from r2morph.mutations.code_virtualization_region_codegen import (
+from r2morph.mutations.code_virtualization_region_codegen_encode import (
     _item_size,
     encode_region,
-    handler_instances_asm,
 )
+from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
+from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FRAME_SIZE,
     _GUARD,
@@ -78,6 +81,16 @@ _RETURN_BASE = 0xB0  # first parent-bytecode-pointer return slot
 _MIN_PEEL = 2  # shortest op run worth peeling into an inner layer
 # Cap layers so the per-transition return slots stay below the red zone (0x100).
 _MAX_LAYERS = (0x100 - _RETURN_BASE) // 8
+
+
+@dataclass(frozen=True)
+class _NestedEncodingContext:
+    layers: list[Region]
+    schemes: list[RegionScheme]
+    counts: list[int]
+    offsets: list[int]
+    lengths: list[int]
+    cave_vaddr: int
 
 
 def _shuffled_anti_debug(xor_key: int) -> str:
@@ -346,6 +359,45 @@ def _build_layers(region: Region, depth: int, rng: random.Random) -> list[Region
     return layers
 
 
+def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) -> bytes | None:
+    count = len(context.layers)
+    data = bytearray(encoding)
+    bytecode_offsets = [0] * count
+    bytecode_offsets[-1] = len(data)
+    for layer in range(count - 2, -1, -1):
+        bytecode_offsets[layer] = bytecode_offsets[layer + 1] - context.lengths[layer]
+
+    island_start = bytecode_offsets[0] - _TRACER_ISLAND_LEN
+    table_start = island_start - sum(context.counts) * 4
+    checksum = compute_build_checksum(bytes(data[:table_start]), context.schemes[0].xor_key)
+    checksum_broadcast = checksum * 0x01010101
+    for layer in range(count):
+        _encrypt_table(
+            data,
+            table_start + context.offsets[layer] * 4,
+            context.counts[layer],
+            checksum_broadcast,
+        )
+    patch_tracer_constants(data, island_start, checksum)
+    try:
+        encoded_layers = [
+            encode_region(
+                context.layers[layer],
+                context.schemes[layer],
+                context.cave_vaddr + bytecode_offsets[layer],
+                checksum,
+            )
+            for layer in range(count)
+        ]
+    except struct.error:
+        logger.debug("rip-relative target out of 32-bit range; cannot nest")
+        return None
+    for layer in range(count - 1):
+        start = bytecode_offsets[layer]
+        data[start : start + context.lengths[layer]] = encoded_layers[layer]
+    return bytes(data) + encoded_layers[-1]
+
+
 def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random, depth: int = 2) -> bytes | None:
     """Assemble an N-layer nested interpreter for ``region`` at ``cave_vaddr``.
 
@@ -355,7 +407,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     fails, so the caller can fall back to the single-layer blob.
     """
     try:
-        import keystone
+        keystone = import_module("keystone")
     except ImportError:
         logger.warning("keystone unavailable; cannot nest region virtualization")
         return None
@@ -464,21 +516,23 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             cipher_register_slots(
                 handler_instances_asm(
                     _index_to_key(scheme, offset=offsets[layer]),
-                    key=key,
-                    key_qword=key_qword,
-                    key_dword=key_dword,
-                    rsp_off=rsp_off,
-                    junk_rng=junk_rng,
-                    reload_seq=reload_seq,
-                    retarget=retarget,
-                    retarget_target=retarget_target,
-                    frame_size=_FRAME_SIZE,
-                    slot=slot,
-                    bytecode_len=lens[layer],
-                    extra=extra,
-                    field_perm=scheme.field_perm,
-                    body_seed=scheme.body_seed,
-                    isa_seed=scheme.isa_seed,
+                    HandlerContext(
+                        key,
+                        key_qword,
+                        key_dword,
+                        rsp_off,
+                        reload_seq,
+                        retarget,
+                        retarget_target,
+                        _FRAME_SIZE,
+                        slot,
+                        lens[layer],
+                        scheme.field_perm,
+                        scheme.body_seed,
+                        scheme.isa_seed,
+                    ),
+                    junk_rng,
+                    extra,
                 )
             )
         )
@@ -520,37 +574,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     if not encoding:
         return None
 
-    data = bytearray(encoding)
-    bc_off = [0] * count
-    bc_off[count - 1] = len(data)
-    for layer in range(count - 2, -1, -1):
-        bc_off[layer] = bc_off[layer + 1] - lens[layer]
-    # The island sits between the last table and the reserved bytecode, so the
-    # tables occupy the sum(counts)*4 bytes ending _TRACER_ISLAND_LEN before bc_0.
-    island_start = bc_off[0] - _TRACER_ISLAND_LEN
-    table0_start = island_start - sum(counts) * 4
-    # Checksum covers only the interpreter code (up to the first table), so the table
-    # encryption below, the island patch and the appended bytecode do not perturb the
-    # expected value; the encoder folds it into every layer's stream, each layer's
-    # table key is diffused with it (broadcast to 32 bits), and the tracer constants
-    # are masked by it.
-    checksum = compute_build_checksum(bytes(data[:table0_start]), schemes[0].xor_key)
-    chk_broadcast = checksum * 0x01010101
-    for layer in range(count):
-        # Every layer's table is encrypted with the shared checksum broadcast alone
-        # (no per-layer build-constant key), so the decode carries no table-key literal.
-        _encrypt_table(data, table0_start + offsets[layer] * 4, counts[layer], chk_broadcast)
-    patch_tracer_constants(data, island_start, checksum)
-    try:
-        encoded = [
-            encode_region(layers[layer], schemes[layer], cave_vaddr + bc_off[layer], checksum) for layer in range(count)
-        ]
-    except struct.error:
-        logger.debug("rip-relative target out of 32-bit range; cannot nest")
-        return None
-    for layer in range(count - 1):
-        data[bc_off[layer] : bc_off[layer] + lens[layer]] = encoded[layer]
-    return bytes(data) + encoded[count - 1]
+    return _finalize_nested_blob(
+        encoding,
+        _NestedEncodingContext(layers, schemes, counts, offsets, lens, cave_vaddr),
+    )
 
 
 def _encrypt_table(data: bytearray, start: int, count: int, table_key: int) -> None:
