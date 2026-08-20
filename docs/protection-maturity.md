@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `f5f0b35`
+Commit: `e32ad9c`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -113,6 +113,12 @@ with the runtime checksum key at each indirect dispatch. The handler decodes the
 three registers only after control arrives, so existing handler bodies and the
 semantic contract remain unchanged. The controlled before/after evidence is in
 [`docs/protection-state-encoding.json`](protection-state-encoding.json).
+Commit `e32ad9c` extends the state protocol to region and nested handlers, with
+real regressions and same-fixture trace comparisons for both paths.
+
+Commit `e32ad9c` extends the same protocol through region and nested handler
+entries. The controlled region comparison removed `22/22` raw position matches;
+the nested in-call comparison removed `244/244` while preserving exit `45`.
 
 Commit `9d1a334` adds a second checksum traversal selected from existing per-build
 scheme fields without shifting later randomness. On seed `20260822`, IDA saw a
@@ -197,7 +203,8 @@ The controlled comparison in
 `35/35` raw position matches before and `0/35` after. The output grew from
 `70,255` to `82,183` bytes (`+17.0%`) and the bounded run from `173,610` to
 `212,586` instructions (`+22.5%`); both builds exited `42`. This protects only
-the engine VM path; region and nested control-flow VMs still expose live pointers.
+the engine, region, and nested paths in the measured contracts; raw target
+sequences remain observable.
 
 ## 11. Performance overhead
 
@@ -229,9 +236,10 @@ at or above `0.8`). The equivalent per-instance vIP advance form reduces this
 signal without adding unreachable junk. The opcode remains at record offset
 zero, although per-instance tail padding now removes the fixed record-stride
 assumption. The engine VM's raw vPC/base/position correlation was recovered at
-`35/35` dispatches before `f5f0b35` and at `0/35` after it. The target sequence
-and handler count remain visible, so handler semantics and bytecode records are
-not claimed to be hidden by this change.
+`35/35` dispatches before `f5f0b35` and at `0/35` after it. The region and nested
+comparisons in the state-encoding artifact show the same `0` raw matches. The
+target sequence and handler count remain visible, so handler semantics and
+bytecode records are not claimed to be hidden by this change.
 Immediate arithmetic now has a second generic lowering grammar for `add`, `and`,
 `or`, `sub`, and `xor`; the current IDA observation still recovered no handler
 grammar. The checksum now has two generic traversal grammars: the block mode is
@@ -275,10 +283,12 @@ fresh Hex-Rays observation. Commit `f5f0b35` encodes the engine VM's live vPC,
 bytecode base, and position between handlers; the new unit/integration regression,
 same-fixture trace comparison, and IDA recheck are recorded in
 [`docs/protection-state-encoding.json`](protection-state-encoding.json).
+Commit `e32ad9c` extends the encoded state protocol to region and nested VMs,
+with real regressions and same-fixture trace comparisons for both paths.
 
 ## 15. Remaining gaps
 
-The current layout, handler-tail, and engine-state changes reduce measured
+The current layout, handler-tail, engine-state, and region-state changes reduce measured
 signals, but the
 payload is still an appended RX chain and the abstract machine remains
 recognizable across builds. Further container camouflage would require a new
@@ -295,7 +305,7 @@ without adding lint suppression.
 
 ### Termination assessment
 
-At HEAD `f5f0b35`, the remaining protection weaknesses require architectural
+At HEAD `e32ad9c`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The bootstrap is still a
 stable, statically recoverable checksum loop; changing its register allocation,
 traversal order, or accumulator width does not remove that recovery path in
@@ -304,10 +314,10 @@ the VM entry and threaded handlers while preserving the encoder/checksum
 contract. The appended RX chain remains an ELF-container fingerprint; hiding it
 requires a new placement contract that can use multiple existing executable
 regions and preserve loader invariants. Runtime traces still recover handler
-targets, and region/nested VMs still expose their live pointers; reducing those
-exposures requires a different execution model, not more static junk or another
-checksum spelling. These are separate major redesigns, so no further local
-change is accepted as a measurable improvement in this iteration.
+targets, and the raw target sequence remains observable; reducing that exposure
+requires a different execution model, not more static junk or another checksum
+spelling. These are separate major redesigns, so no further local change is
+accepted as a measurable improvement in this iteration.
 
 ## 16. Comparison with commercial properties
 
@@ -372,4 +382,6 @@ Commit `f5f0b35` encodes engine VM state across threaded dispatch, adds the
 raw-position adversary contract, and records same-fixture semantic, runtime,
 performance, and IDA evidence in `protection-state-encoding.json`. The gate was
 rerun after this commit: 9 checks pass and the same single configuration failure
-remains.
+remains. Commit `e32ad9c` extends the encoded state protocol to region and nested
+VMs; the gate was rerun again with the same `9` passes and only the forbidden
+`per-file-ignores` failure.

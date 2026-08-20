@@ -1,5 +1,5 @@
 {
-  "commit": "f5f0b35",
+  "commit": "e32ad9c",
   "date": "2026-08-20",
   "fixture": "elf_vm_engarithimm_x86_64",
   "seed": 20260820,
@@ -42,5 +42,45 @@
     "state_encoded_raw_state_recovery": "0/35",
     "state_encoding_detected": true,
     "payload_bytes_retained": false
+  },
+  "region_comparison": {
+    "fixture": "elf_vm_arith_x86_64",
+    "seed": 20260820,
+    "baseline": {
+      "sha256": "6501f5db4bd9f3213e7919ef92b76c1952eeab2f5b166d64d17c597c2e669a0f",
+      "size_bytes": 32719,
+      "exit_code": 45,
+      "instruction_count": 81492,
+      "correlated_dispatch_count": 22,
+      "raw_position_match_count": 22
+    },
+    "state_encoded": {
+      "sha256": "d3c3c5a0fad5cece09bd1b8a9f37098e0879798d8a869663212018a77d92d968",
+      "size_bytes": 36391,
+      "exit_code": 45,
+      "instruction_count": 99984,
+      "correlated_dispatch_count": 22,
+      "raw_position_match_count": 0
+    }
+  },
+  "nested_comparison": {
+    "fixture": "elf_vm_incall_x86_64",
+    "seed": 20,
+    "baseline": {
+      "sha256": "0b14710a5eaf8eebf7d6724c803d57f5d92ba2ca2f721edae04c44e3aee00b6b",
+      "size_bytes": 68454,
+      "exit_code": 45,
+      "instruction_count": 139397,
+      "correlated_dispatch_count": 247,
+      "raw_position_match_count": 244
+    },
+    "state_encoded": {
+      "sha256": "dcc5c5000b94ca30a7615ec968e00208b122269158b4bb9fb39c1b3f913f6210",
+      "size_bytes": 73133,
+      "exit_code": 45,
+      "instruction_count": 187486,
+      "correlated_dispatch_count": 213,
+      "raw_position_match_count": 0
+    }
   }
 }
