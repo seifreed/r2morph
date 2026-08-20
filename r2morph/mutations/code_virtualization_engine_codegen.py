@@ -88,7 +88,14 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt; runs after the register spill. The
     # trailing offset table (encrypted after assembly) is excluded from the span.
-    lines.append(checksum_prologue_asm(scheme.xor_key, slot=layout.checksum_offset, end_label="vm_table"))
+    lines.append(
+        checksum_prologue_asm(
+            scheme.xor_key,
+            slot=layout.checksum_offset,
+            end_label="vm_table",
+            bytewise=scheme.checksum_bytewise,
+        )
+    )
     poly_rng = random.Random(scheme.table_key)
     # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
     # pass XORed in: a faithful interpreter cancels the checksum and a tampered one

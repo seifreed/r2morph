@@ -105,7 +105,14 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved. The trailing offset table
     # (encrypted after assembly) is excluded from the checksummed span.
-    lines.append(checksum_prologue_asm(scheme.xor_key, slot=scheme.checksum_offset, end_label="vm_table"))
+    lines.append(
+        checksum_prologue_asm(
+            scheme.xor_key,
+            slot=scheme.checksum_offset,
+            end_label="vm_table",
+            bytewise=scheme.checksum_bytewise,
+        )
+    )
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
     # block every handler jumps back to (a fan-in hub a devirtualizer flags as the
     # dispatcher by in-degree, and pattern-matches as one fixed sequence), the
@@ -298,7 +305,7 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
     # with it, and the tracer constants are masked by it. The table key is the
     # checksum broadcast alone -- no separate build-constant key -- so the decode
     # exposes no table-key literal (only the opaque runtime checksum).
-    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
+    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise)
     table_key = checksum * 0x01010101
     for entry_index in range(total):
         offset = table_start + entry_index * 4

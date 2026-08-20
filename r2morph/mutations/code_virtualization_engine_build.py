@@ -86,7 +86,7 @@ def build_vm_blob(
     island_start = len(data) - _TRACER_ISLAND_LEN
     bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
     table_start = bootstrap_start - total * 4
-    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key)
+    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise)
     table_key = checksum * 0x01010101
     for entry_index in range(total):
         offset = table_start + entry_index * 4

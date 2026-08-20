@@ -338,6 +338,7 @@ class VMScheme:
     frame_size: int = _FRAME_SIZE
     record_padding: tuple[int, ...] = ()
     immediate_split: bool = False
+    checksum_bytewise: bool = False
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -424,6 +425,9 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     frame_size = rng.choice(_FRAME_SIZES)
     record_padding = tuple(rng.randrange(3) for _ in range(total))
     immediate_split = bool(rng.randrange(2))
+    # Derive the traversal mode without consuming the caller's RNG stream: later
+    # handler/junk draws must remain stable when this field is added.
+    checksum_bytewise = bool((field_perm ^ xor_key) & 1)
     return VMScheme(
         dup,
         exit_opcode,
@@ -438,6 +442,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         frame_size,
         record_padding,
         immediate_split,
+        checksum_bytewise,
     )
 
 

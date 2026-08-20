@@ -24,9 +24,8 @@ from collections.abc import Iterator
 _CHECKSUM_OFFSET = 0x88
 
 # The accumulate step and traversal order are polymorphic so the checksum loop is
-# not a fixed linear scan an automated devirtualizer can match and strip. Each
-# build walks four-byte blocks in a seeded local permutation; the final partial
-# block uses guarded reads in that same order.
+# not a fixed linear scan an automated devirtualizer can match and strip. Builds
+# select either a seeded four-byte block permutation or a byte-at-a-time walk.
 _CHECKSUM_OPS = ("add", "xor", "sub")
 _CHECKSUM_ROTATES = ("rol", "ror")
 _CHECKSUM_PERMUTATIONS = (
@@ -47,8 +46,11 @@ def _checksum_step(variant: int) -> tuple[str, str, int]:
     return op, rotate, amount
 
 
-def _checksum_bytes(code: bytes, variant: int) -> Iterator[int]:
-    """Bytes of ``code`` in this build's block-permutation traversal order."""
+def _checksum_bytes(code: bytes, variant: int, bytewise: bool = False) -> Iterator[int]:
+    """Bytes of ``code`` in this build's checksum traversal order."""
+    if bytewise:
+        yield from code
+        return
     permutation = _CHECKSUM_PERMUTATIONS[(variant // 84) % len(_CHECKSUM_PERMUTATIONS)]
     for offset in range(0, len(code), 4):
         block = code[offset : offset + 4]
@@ -62,29 +64,47 @@ def checksum_prologue_asm(
     start_label: str = "vm_entry",
     end_label: str = "vm_table",
     slot: int = _CHECKSUM_OFFSET,
-    tag: str = "",
+    bytewise: bool = False,
 ) -> str:
     """Assembly that computes the runtime checksum over ``[start_label, end_label)``.
 
     Runs at ``vm_entry`` after every GP register is spilled to the frame, so it
     is free to clobber rcx/rdx/rdi; the result is stored to the ``slot`` byte of
     the frame, which the dispatch reads. ``variant`` selects the polymorphic mix
-    step and traversal order; ``tag`` makes the loop labels unique when several
-    interpreters share one blob.
+    step and traversal order; ``bytewise`` selects the alternate byte-at-a-time
+    traversal.
     """
     op, rotate, amount = _checksum_step(variant)
-    loop = f"chk_loop{tag}"
-    tail = f"chk_tail{tag}"
-    done = f"chk_done{tag}"
+    loop = "chk_loop"
+    tail = "chk_tail"
+    done = "chk_done"
+    if bytewise:
+        return "".join(
+            [
+                "  xor edx, edx\n",
+                f"  lea rdi, [rip+{start_label}]\n",
+                f"  lea rcx, [rip+{end_label}]\n",
+                "  cmp rdi, rcx\n",
+                f"  jae {done}\n",
+                f"{loop}:\n",
+                f"  {op} dl, byte ptr [rdi]\n",
+                f"  {rotate} dl, {amount}\n",
+                "  inc rdi\n",
+                "  cmp rdi, rcx\n",
+                f"  jb {loop}\n",
+                f"{done}:\n",
+                f"  mov byte ptr [rsp+{slot}], dl\n",
+            ]
+        )
     permutation = _CHECKSUM_PERMUTATIONS[(variant // 84) % len(_CHECKSUM_PERMUTATIONS)]
     full_mix = "".join(f"  {op} dl, byte ptr [rdi+{index}]\n  {rotate} dl, {amount}\n" for index in permutation)
     tail_mix = "".join(
         f"  lea r8, [rdi+{index}]\n"
         f"  cmp r8, rcx\n"
-        f"  jae chk_skip{tag}_{index}\n"
+        f"  jae chk_skip_{index}\n"
         f"  {op} dl, byte ptr [r8]\n"
         f"  {rotate} dl, {amount}\n"
-        f"chk_skip{tag}_{index}:\n"
+        f"chk_skip_{index}:\n"
         for index in permutation
     )
     return "".join(
@@ -111,11 +131,11 @@ def checksum_prologue_asm(
     )
 
 
-def compute_build_checksum(code: bytes, variant: int) -> int:
+def compute_build_checksum(code: bytes, variant: int, bytewise: bool = False) -> int:
     """The expected runtime checksum of ``code`` (must mirror the asm loop)."""
     op, rotate, amount = _checksum_step(variant)
     acc = 0
-    for byte in _checksum_bytes(code, variant):
+    for byte in _checksum_bytes(code, variant, bytewise):
         if op == "add":
             acc = (acc + byte) & 0xFF
         elif op == "sub":

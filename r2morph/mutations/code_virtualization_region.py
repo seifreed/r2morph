@@ -512,6 +512,9 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     # value for a given seed. Selects this build's handler-implementation personality
     # (the flag-synthesis spelling; see code_virtualization_region_isa).
     isa_seed = rng.randrange(1 << 31)
+    # Derive the traversal mode without consuming the caller's RNG stream: later
+    # handler/junk draws must remain stable when this field is added.
+    checksum_bytewise = bool((isa_seed ^ xor_key) & 1)
     return RegionScheme(
         dup,
         xor_key,
@@ -523,4 +526,5 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
         checksum_offset,
         flags_offset,
         isa_seed,
+        checksum_bytewise,
     )

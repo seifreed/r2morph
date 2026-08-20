@@ -253,6 +253,7 @@ def _relayer_sharing_frame(schemes: list[RegionScheme], slot: tuple[int, ...]) -
             s.field_perm,
             body_seed=s.body_seed,
             isa_seed=s.isa_seed,
+            checksum_bytewise=s.checksum_bytewise,
         )
         for s in schemes
     ]
@@ -359,7 +360,11 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
     island_start = bytecode_offsets[0] - _TRACER_ISLAND_LEN
     bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
     table_start = bootstrap_start - sum(context.counts) * 4
-    checksum = compute_build_checksum(bytes(data[:table_start]), context.schemes[0].xor_key)
+    checksum = compute_build_checksum(
+        bytes(data[:table_start]),
+        context.schemes[0].xor_key,
+        context.schemes[0].checksum_bytewise,
+    )
     checksum_broadcast = checksum * 0x01010101
     for layer in range(count):
         _encrypt_table(
@@ -460,7 +465,12 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         # flag-dead arith folds through it in the nested layers too.
         f"vm_entry:\n  sub rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
         f"  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
-        + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
+        + checksum_prologue_asm(
+            schemes[0].xor_key,
+            end_label="vm_table_0",
+            slot=_CHECKSUM_OFFSET,
+            bytewise=schemes[0].checksum_bytewise,
+        )
         + bootstrap
     )
 

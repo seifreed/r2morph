@@ -46,6 +46,7 @@ class RegionScheme:
     checksum_offset: int = 0x88
     flags_offset: int = 0x80
     isa_seed: int = 0
+    checksum_bytewise: bool = False
 
 
 @dataclass(eq=False, repr=False, slots=True)
