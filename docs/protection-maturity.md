@@ -258,4 +258,6 @@ regenerates the multi-seed corpus. Commit `8895156` adds per-opcode encrypted
 bytecode tail padding, its stride/grammar measurement, fresh Tier B IDA evidence,
 and the regenerated correctness corpus. Commit `dba52f7` maps the relocated
 program-header table inside the first appended RX load, removes the standalone
-metadata load, and revalidates the full corpus and loader invariants.
+metadata load, and revalidates the full corpus and loader invariants. Commit
+`99fe143` adds equivalent per-instance `add`/`lea` vIP advances, updates the
+clustering and Tier B artifacts, and revalidates the full suite.
