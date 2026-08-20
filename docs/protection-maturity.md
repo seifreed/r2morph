@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `b6159be`
+Commit: `9d1a334`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -56,7 +56,7 @@ virtualized functions for every seed and are retained as no-op coverage results.
 | Opcode and operand polymorphism | Per-seed output hashes and bytecode sizes in corpus JSON | Effective diversity; not cryptographic secrecy |
 | Handler duplication and body variation | Generated handler counts, shuffled emission, ISA/junk seeds | Raises static clustering cost |
 | Direct-threaded dispatch | IDA ends representative entries at opaque `jmp rax` | Stronger than a plain switch; dynamic recovery remains possible |
-| Checksum-keyed state | Hex-Rays recovers the checksum but not its downstream keys | Integrity and key dependency are visible |
+| Checksum-keyed state | Hex-Rays recovers either a four-byte permutation or bytewise checksum, but not downstream keys | Integrity and key dependency are visible; traversal shape varies per build |
 | Register-frame scattering | Seed-derived slot permutation and spill order | Removes fixed frame fingerprints; frame semantics remain inferable |
 | Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.838`, `1,780` of `2,232` comparisons >= `0.8` | Per-instance body variants reduce similarity slightly, but generic clustering remains effective |
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
@@ -108,6 +108,14 @@ tail handling, and `jmp rax`; no handler functions, table, or bytecode grammar
 were recovered. The dedicated observation is in
 [`docs/protection-ida-immediate-decomposition.json`](protection-ida-immediate-decomposition.json).
 
+Commit `9d1a334` adds a second checksum traversal selected from existing per-build
+scheme fields without shifting later randomness. On seed `20260822`, IDA saw a
+183-byte, three-block entry and Hex-Rays reduced the bootstrap to a bytewise
+`i += 1` loop with `v0 = ROL1(v0 - byte, 5)`. No handlers or bytecode grammar were
+recovered. The prior block-mode sample recovered an 11-block, 269-byte entry with
+four-byte permutation and guarded tail reads. The focused comparison is in
+[`docs/protection-ida-checksum-bytewise.json`](protection-ida-checksum-bytewise.json).
+
 ## 7. Devirtualization
 
 [`scripts/protection_adversary.py`](../scripts/protection_adversary.py) runs the
@@ -139,7 +147,10 @@ For the dedicated `elf_vm_engarithimm_x86_64` fixture, four of ten seeds changed
 bytecode size by `24` to `27` bytes; across the corpus, `45/1090` runs changed in
 eight fixtures. All `1090/1090` semantic checks passed. The decomposition is
 selected per build and applies only to generic associative arithmetic immediate
-micro-ops.
+micro-ops. The checksum traversal update changes `948/1090` outputs across `106`
+fixtures and changes aggregate output size by `-56,498` bytes; all semantic checks
+remain green. It selects bytewise or block traversal without consuming additional
+randomness, so unrelated handler and junk decisions remain stable.
 
 ## 9. Container fingerprintability
 
@@ -155,9 +166,9 @@ blend into an ordinary ELF. This remains a material weakness.
 
 The bounded Unicorn trace in
 [`docs/protection-runtime-trace.json`](protection-runtime-trace.json) observed a
-fresh checksum build in `0.083` seconds: `54,048` instructions, `25` indirect
-dispatches reaching `21` distinct targets, `256` register-state samples, and
-`16,027` reads from executable ranges. Read values are hashed and samples are
+fresh bytewise checksum build in `0.335` seconds: `253,680` instructions, `35`
+indirect dispatches reaching `14` distinct targets, `256` register-state samples,
+and `50,343` reads from executable ranges. Read values are hashed and samples are
 capped. This demonstrates that a tracer can recover the handler sequence and
 register state from the live process; the checksum is not an anti-tracing
 boundary. The current harness records dispatch targets and read evidence, but
@@ -169,8 +180,9 @@ decoded bytecode stream.
 The corpus artifact records transform duration, Unicorn runtime duration, and
 static-analysis duration for baseline and generated files. Across 1090 runs the
 transform duration ranged from `0.037` to `0.909` seconds, averaging `0.458`
-seconds. The checksum variant adds guarded tail handling and a four-byte block
-loop, so it increases bootstrap work and entry size. Native runtime overhead is
+seconds. The checksum variants add either a guarded four-byte permutation loop or
+a bytewise loop; the latter is shorter in the representative IDA sample. Native
+runtime overhead is
 unavailable on this host because the fixtures are synthetic ELF images rejected
 by the Darwin loader.
 
@@ -196,7 +208,9 @@ assumption. The runtime VM's
 dispatch sequence and register state were also recovered by the bounded trace.
 Immediate arithmetic now has a second generic lowering grammar for `add`, `and`,
 `or`, `sub`, and `xor`; the current IDA observation still recovered no handler
-grammar.
+grammar. The checksum now has two generic traversal grammars: the block mode is
+still visibly structured and the bytewise mode is simpler but no longer identical
+across builds.
 The own devirtualizer does not support the current encrypted indirect shape, so
 its negative result is not a complete adversarial benchmark. The interpreter outlier
 shows that a direct handler-table architecture remains easy for Hex-Rays. Coverage
@@ -210,7 +224,8 @@ The structural resistance probe now aggregates every executable segment within a
 global budget instead of measuring only the largest fragment. Symbolic analysis
 imports are lazy, avoiding optional-dependency warnings. VM register save order
 and frame allocation vary deterministically per build. The checksum traversal now
-uses seeded four-byte block permutations with guarded tails. Each change has real
+uses either seeded four-byte block permutations with guarded tails or a bytewise
+walk. Each change has real
 regression coverage and was rechecked on fresh protected files. The runtime trace
 harness and its bounded real-fixture regression make dynamic exposure measurable
 without changing production protection behavior. Engine GP handlers now also use
@@ -226,7 +241,9 @@ form per instance; the clustering artifact records the reduction in nearest
 similarity.
 Immediate `add`, `and`, `or`, `sub`, and `xor` can now lower as two sequential
 equivalent folds selected per build; the dedicated corpus and IDA artifact record
-the semantic and static results.
+the semantic and static results. Commit `9d1a334` adds the seed-derived bytewise
+checksum traversal, its unit regression, full-corpus evidence, bounded trace, and
+fresh Hex-Rays observation.
 
 ## 15. Remaining gaps
 
@@ -295,8 +312,9 @@ adversary artifact. Commit `b75ce62` adds per-build immediate arithmetic
 decomposition for `add`, `sub`, and `xor`, its regression, the regenerated
 corpus, and current IDA/adversary evidence. Commit `b6159be` extends that
 decomposition to `and` and `or`, with its regression, regenerated corpus, and
-current IDA/adversary evidence. The remaining gaps above are architectural rather than
-unmeasured local variations. The official quality wrapper was rerun at this
+current IDA/adversary evidence. Commit `9d1a334` adds the generic bytewise checksum
+traversal and its real regression/corpus/IDA evidence. The remaining gaps above are
+architectural rather than unmeasured local variations. The official quality wrapper was rerun at this
 HEAD: 9 checks pass;
 the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
 whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).

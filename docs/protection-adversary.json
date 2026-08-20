@@ -2,27 +2,27 @@
   "functions_examined": 3,
   "results": [
     {
-      "address": 16384,
-      "bytecode_address": 16384,
-      "classification": "unsupported_indirect_dispatch",
-      "function_size": 276,
-      "handler_count": 0,
-      "handler_table_address": null,
-      "vm_context_size": 0,
-      "vm_registers": [
-        "rdi"
-      ]
-    },
-    {
-      "address": 16660,
+      "address": 16567,
       "bytecode_address": null,
       "classification": "unsupported_indirect_dispatch",
-      "function_size": 99,
+      "function_size": 416,
       "handler_count": 0,
       "handler_table_address": null,
       "vm_context_size": 0,
       "vm_registers": [
         "rsp"
+      ]
+    },
+    {
+      "address": 16384,
+      "bytecode_address": 16384,
+      "classification": "unsupported_indirect_dispatch",
+      "function_size": 183,
+      "handler_count": 0,
+      "handler_table_address": null,
+      "vm_context_size": 0,
+      "vm_registers": [
+        "rdi"
       ]
     },
     {
@@ -36,5 +36,5 @@
       "vm_registers": []
     }
   ],
-  "sample": "r2morph-ida-immediate-logical-20260820"
+  "sample": "r2morph-checksum-seed-20260822"
 }

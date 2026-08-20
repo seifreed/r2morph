@@ -1,0 +1,26 @@
+{
+  "analysis": "IDA Pro and Hex-Rays observation of the seed-derived bytewise checksum mode",
+  "commit_basis": "9d1a334",
+  "ida": {
+    "basic_blocks": 3,
+    "complexity": 3,
+    "entry_address": "0x404000",
+    "entry_size": 183,
+    "frame_size": "0x2f0",
+    "segment_count": 6,
+    "sha256": "967c05be2333c92c300c71760d9771a8662d19c8bbe761843630d78335d882c5"
+  },
+  "observations": {
+    "decompiled_checksum": "Hex-Rays recovered a byte-at-a-time loop with i += 1 and v0 = ROL1(v0 - byte, 5).",
+    "dispatch_boundary": "The entry still ends in an opaque jmp rax after checksum-keyed table decoding.",
+    "handler_recovery": "No handler table, handler functions, or bytecode grammar were recovered.",
+    "prior_block_mode": "The prior representative recovered a four-byte permutation loop with guarded tail reads, 11 blocks, and a 269-byte entry.",
+    "sample": "r2morph-checksum-seed-20260822"
+  },
+  "own_adversary": {
+    "classification": "unsupported_indirect_dispatch",
+    "functions_examined": 3,
+    "handler_count": 0
+  },
+  "schema_version": 1
+}
