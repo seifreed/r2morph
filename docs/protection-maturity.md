@@ -1,7 +1,7 @@
 # Protection Maturity Report
 
-Commit: `cb41797`
-Date: `2026-08-20`
+Commit: `868dc1f`
+Date: `2026-08-21`
 
 ## 1. Current architecture
 
@@ -10,7 +10,7 @@ has two generic lowering paths: straight-line register/FP runs and reducible or
 dispatch-shaped control-flow regions. Generated VMs use per-build opcode maps,
 duplicate handlers, direct-threaded encrypted dispatch, checksum-keyed operands,
 scattered register frames, per-build state-mask slots, bounded frame-size variation, nested regions, and
-fragmented executable payload loads.
+either an existing executable-tail payload placement or a fragmented fallback.
 
 The declared support contract is narrower than the repository's broader analysis
 surface: ELF/x86-64 is the stable target; PE, Mach-O, and non-x86-64 rewriting
@@ -110,6 +110,16 @@ segments. Its 276-byte VM entry still decompiled to the checksum loop, guarded
 tail handling, and `jmp rax`; no handler functions, table, or bytecode grammar
 were recovered. The dedicated observation is in
 [`docs/protection-ida-immediate-decomposition.json`](protection-ida-immediate-decomposition.json).
+
+Commit `868dc1f` reuses the final executable `PT_LOAD` when its file tail is
+available, while retaining the fragmented fallback for images without that
+geometry. On `elf_vm_arith_x86_64`, seed `20260820`, the current protected file
+has two raw `PT_LOAD` entries and is `24,419` bytes versus `4,632` bytes for the
+input; both emulation paths exit `45`. IDA splits the executable load into
+three analysis segments and Hex-Rays still recovers the checksum loop and an
+indirect `jmp rax` in the VM entry. No handler table or bytecode grammar was
+recovered. This reduces the synthetic container signal without claiming that
+the bootstrap is hidden.
 
 Commit `f5f0b35` keeps the engine VM's vPC, bytecode base, and position encoded
 with the runtime checksum key at each indirect dispatch. The handler decodes the
@@ -214,13 +224,14 @@ randomness, so unrelated handler and junk decisions remain stable.
 
 ## 9. Container fingerprintability
 
-The payload container is still easy to identify structurally: appended adjacent
-RX `PT_LOAD` ranges, a large interpreter region, and an entry that spills many
-registers before the checksum. The injector now maps the relocated program-header
-table inside the first appended RX load, removing the standalone metadata load;
-the representative ELF load count falls from `7` to `6`. Fragmentation changes
-the shape and prevents a single-size signature, but it does not make the layout
-blend into an ordinary ELF. This remains a material weakness.
+The payload container remains identifiable through a large executable tail and a
+VM entry that spills many registers before the checksum. Commit `868dc1f` extends
+the final executable `PT_LOAD` when the file tail is usable; the representative
+raw ELF load count falls from four total loads to two, while IDA
+still presents three analysis segments because it splits the original text
+range. Images without a suitable final load retain the fragmented fallback.
+This removes one synthetic container pattern but does not make the layout blend
+into an ordinary ELF. The remaining container signal is still material.
 The cave survey over all `109` compatible ELF x86-64 fixtures found `0` executable
 caves of at least `256` bytes; the largest usable cave was `0` bytes. The broader
 directory also contains sources and a PE fixture, but those do not establish an
@@ -302,6 +313,12 @@ outside ELF x86-64 is not established. The strict repository quality gate now
 passes without Ruff `per-file-ignores`; the repository-wide lint backlog was
 resolved with explicit test assertions, named constants, and real process adapters.
 
+Commit `868dc1f` adds a real ELF regression for extending an existing executable
+tail and keeps a forced-large-gap regression for the fragmented fallback. The
+one-seed Tier A rerun passed `109/109` fixtures with `0` semantic failures and
+`109/109` successful runs. The full strict suite passed `4869` tests, skipped
+`21`, and reached `81.03%` coverage under Python 3.12.
+
 ## 14. Fixed
 
 The structural resistance probe now aggregates every executable segment within a
@@ -321,7 +338,10 @@ bytecode records now add zero-to-two checksum-encrypted tail bytes per opcode
 instance, with the generated handler stride and encoder stream kept in lockstep;
 the grammar artifact and fresh IDA observation record the result. The relocated
 program-header table now shares the first appended RX load, removing one
-synthetic metadata segment while preserving the loader invariants.
+synthetic metadata segment while preserving the loader invariants. Commit
+`868dc1f` extends a usable final executable load in place and retains the
+fragmented fallback for incompatible geometry; real ELF regressions cover both
+placement paths.
 Handler tails also select the equivalent `add` or flag-neutral `lea` vIP advance
 form per instance; the clustering artifact records the reduction in nearest
 similarity.
@@ -370,7 +390,7 @@ nearest similarity from `0.8376` to `0.8401` and threshold matches from `1780` t
 
 The current layout, handler-tail, engine-state, and region-state changes reduce measured
 signals, but the
-payload is still an appended RX chain and the abstract machine remains
+payload still has a recognizable executable tail or fallback chain and the abstract machine remains
 recognizable across builds. Further container camouflage would require a new
 multi-region placement contract, not another segment or padding tweak. Stronger
 semantic diversity would require alternate state encodings or instruction
@@ -384,19 +404,21 @@ repository-wide quality gate is green without adding lint suppression.
 
 ### Termination assessment
 
-At code HEAD `cb41797`, the remaining protection weaknesses require architectural
+At code HEAD `868dc1f`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The two-stage integrity
 contract removes one single full-span loop, but both the short bootstrap loop and
 the deferred full loop remain statically recoverable. Removing that fingerprint
 requires distributing integrity state across the VM entry and threaded handlers
-while preserving the encoder/checksum contract. The appended RX chain remains an
-ELF-container fingerprint; hiding it requires a new placement contract that can
+while preserving the encoder/checksum contract. The executable tail and fallback
+chain remain ELF-container fingerprints; hiding them requires a new placement
+contract that can
 use multiple existing executable regions and preserve loader invariants. Runtime
 traces still recover handler targets, and the raw target sequence remains
 observable; reducing that exposure requires a different execution model, not more
 static junk or another checksum spelling. The loop remains active because
-`b8e5638` produced a measured key-lifecycle change; checksum-loop recovery,
-container fingerprinting, and target-sequence exposure remain open weaknesses.
+`868dc1f` reduced the container signal without changing the bootstrap contract;
+checksum-loop recovery, residual container fingerprinting, and target-sequence
+exposure remain open weaknesses.
 
 ## 16. Comparison with commercial properties
 
@@ -485,3 +507,7 @@ handler offset tables with a build-derived index mix. Its one-seed Tier A result
 is `109/109` compatible fixtures and `109/109` successful runs with matching
 runtime observables; the full strict suite passed `4867` tests, skipped `21`, and
 reached `81.02%` coverage under Python 3.12.
+Commit `fb3a89b` keeps logging handlers on process stdout so repeated real
+validation runs do not retain closed capture streams. Commit `868dc1f` reuses
+usable executable load tails for VM payloads and records the current IDA,
+Tier A, and full-suite evidence above.
