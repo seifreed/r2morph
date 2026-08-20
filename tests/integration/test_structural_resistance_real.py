@@ -67,7 +67,7 @@ def test_virtualization_raises_structural_resistance(tmp_path: Path) -> None:
     )
 
 
-def test_structural_probe_counts_fragmented_executable_payload(tmp_path: Path) -> None:
+def test_structural_probe_counts_inline_executable_payload(tmp_path: Path) -> None:
     mutated = tmp_path / "mutated-fragmented"
     shutil.copy(FIXTURE, mutated)
     binary = Binary(str(mutated), writable=True)
@@ -92,5 +92,5 @@ def test_structural_probe_counts_fragmented_executable_payload(tmp_path: Path) -
     finally:
         binary.close()
 
-    expect(not (len(counts) <= 1))
+    expect(len(counts) == 1)
     expect(measured.total_instructions == sum(counts))

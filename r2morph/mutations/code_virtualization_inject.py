@@ -1,11 +1,12 @@
 """
 radare2-native executable-region injection for code virtualization.
 
-Places a generated VM interpreter blob into an ELF64 binary by relocating the
-program-header table into the first of several adjacent read/execute loads
-above every existing segment. The VM still sees one contiguous address range,
-while a static tool no longer receives one large executable container that
-identifies the complete payload at a glance.
+Places a generated VM interpreter blob into an ELF64 binary. When the last
+executable load reaches the end of the file, the injector extends that existing
+load; otherwise it relocates the program-header table into the first of several
+adjacent read/execute loads above every existing segment. The VM still sees one
+contiguous address range, while a static tool does not receive one large
+standalone executable container by default.
 ET_EXEC and ET_DYN images take the identical path.
 
 A typical image leaves no slack after its program-header table (``.gnu.hash``
@@ -73,6 +74,7 @@ _MAX_RX_FRAGMENTS = 8
 _PHDR_RESERVE_SIZE = ((_MAX_PHDR_ENTRIES * _PHDR_ENTRY_SIZE + _SEGMENT_ALIGN - 1) // _SEGMENT_ALIGN) * _SEGMENT_ALIGN
 _MIN_FRAGMENT_PAGES = 2
 _FRAGMENT_PAGE_VARIANTS = 4
+_MAX_INLINE_TAIL_GAP = 1 << 20
 
 # r2 truncates a single command past its line buffer (~4 KiB), so each `wx`/`p8`
 # carries at most this many bytes (2x hex chars); larger blobs are chunked. A VM
@@ -135,8 +137,10 @@ def _align_up(value: int, alignment: int) -> int:
 class _Load:
     """One ``PT_LOAD`` entry of the on-disk program-header table."""
 
+    index: int
     offset: int
     vaddr: int
+    filesz: int
     memsz: int
     flags: int
 
@@ -159,6 +163,7 @@ class _Placement:
     e_phoff: int
     e_phnum: int
     table: bytes
+    inline_load_index: int | None = None
 
 
 def _phdr_table_geometry(header: bytes) -> tuple[int, int] | None:
@@ -192,8 +197,10 @@ def _parse_loads(table: bytes, e_phnum: int) -> list[_Load]:
             continue
         loads.append(
             _Load(
+                index=index,
                 offset=struct.unpack_from("<Q", table, base + _P_OFFSET)[0],
                 vaddr=struct.unpack_from("<Q", table, base + _P_VADDR)[0],
+                filesz=struct.unpack_from("<Q", table, base + _P_FILESZ)[0],
                 memsz=struct.unpack_from("<Q", table, base + _P_MEMSZ)[0],
                 flags=p_flags,
             )
@@ -236,6 +243,36 @@ def _plan_placement(binary: Any) -> _Placement | None:
         return None
 
     exec_vaddr, exec_r2_vaddr = anchor
+    highest_load_vaddr = max(load.vaddr for load in loads)
+    inline_load = next(
+        (
+            load
+            for load in reversed(loads)
+            if load.flags & _PF_X
+            and load.vaddr == highest_load_vaddr
+            and load.filesz == load.memsz
+            and 0 <= file_size - (load.offset + load.filesz) <= _MAX_INLINE_TAIL_GAP
+        ),
+        None,
+    )
+    if inline_load is not None:
+        inline_r2_vaddr = _r2_segment_vaddr(binary, inline_load.offset)
+        if inline_r2_vaddr is None:
+            inline_load = None
+    if inline_load is not None and inline_r2_vaddr is not None:
+        return _Placement(
+            file_size=file_size,
+            append_offset=file_size,
+            segment_vaddr=inline_load.vaddr,
+            blob_offset=file_size,
+            blob_segment_vaddr=inline_load.vaddr + (file_size - inline_load.offset),
+            blob_vaddr=inline_r2_vaddr + (file_size - inline_load.offset),
+            e_phoff=e_phoff,
+            e_phnum=e_phnum,
+            table=table,
+            inline_load_index=inline_load.index,
+        )
+
     segment_vaddr = _align_up(max(load.vaddr + load.memsz for load in loads), _SEGMENT_ALIGN)
     blob_offset = _align_up(_align_up(file_size, _SEGMENT_ALIGN) + _PHDR_RESERVE_SIZE, _SEGMENT_ALIGN)
     blob_segment_vaddr = segment_vaddr + _PHDR_RESERVE_SIZE
@@ -385,9 +422,33 @@ def predict_blob_vaddr(binary: Any) -> int | None:
     return placement.blob_vaddr
 
 
+def _inject_inline_blob(binary: Any, placement: _Placement, blob: bytes) -> int | None:
+    """Extend the selected executable load and write the blob into its tail."""
+    if placement.inline_load_index is None:
+        return None
+    table = bytearray(placement.table)
+    base = placement.inline_load_index * _PHDR_ENTRY_SIZE
+    old_offset = struct.unpack_from("<Q", table, base + _P_OFFSET)[0]
+    new_size = placement.blob_offset - old_offset + len(blob)
+    struct.pack_into("<Q", table, base + _P_FILESZ, new_size)
+    struct.pack_into("<Q", table, base + _P_MEMSZ, new_size)
+    _write_physical(binary, placement.blob_offset, blob)
+    _write_physical(binary, placement.e_phoff + base, bytes(table[base : base + _PHDR_ENTRY_SIZE]))
+    if _read_physical(binary, placement.blob_offset, len(blob)) != blob:
+        logger.warning("VM blob read-back mismatch at inline offset 0x%x; injection failed", placement.blob_offset)
+        return None
+    logger.debug(
+        "Injected %d-byte VM blob at vaddr 0x%x by extending PT_LOAD %d",
+        len(blob),
+        placement.blob_vaddr,
+        placement.inline_load_index,
+    )
+    return placement.blob_vaddr
+
+
 def inject_blob(binary: Any, blob: bytes) -> int | None:
     """
-    Append ``blob`` in adjacent executable fragments mapped above the whole image.
+    Place ``blob`` in an existing executable load or adjacent new fragments.
 
     Returns the virtual address (in r2's address space) the blob is mapped
     at, or ``None`` when the binary's geometry does not admit a new segment
@@ -397,6 +458,8 @@ def inject_blob(binary: Any, blob: bytes) -> int | None:
     if placement is None:
         logger.debug("ELF64 geometry admits no fragmented payload; skipping virtualization")
         return None
+    if placement.inline_load_index is not None:
+        return _inject_inline_blob(binary, placement, blob)
     fragment_sizes = _fragment_sizes(blob)
     if not fragment_sizes:
         return None

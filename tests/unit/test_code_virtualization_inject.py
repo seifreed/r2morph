@@ -1,10 +1,12 @@
 """
-Contract: VM blobs occupy adjacent fragmented loads above the image.
+Contract: VM blobs use an existing executable tail when possible and otherwise
+occupy adjacent fragmented loads above the image.
 
-The injector relocates the program-header table into the first page-aligned
-read/execute fragment and maps each VM blob through adjacent fragments. This
-keeps the VM's address range contiguous without a standalone metadata load.
-ET_EXEC and ET_DYN take the same path.
+The injector extends the final executable ``PT_LOAD`` when it reaches the end
+of the file. Otherwise it relocates the program-header table into the first
+page-aligned read/execute fragment and maps each VM blob through adjacent
+fragments. This keeps the VM's address range contiguous without a standalone
+metadata load. ET_EXEC and ET_DYN take the same path.
 
 These tests drive the real injector against real ELF files and verify the
 result by re-parsing the produced bytes with ``struct`` - an oracle independent
@@ -243,6 +245,25 @@ def test_inject_blob_appends_a_read_execute_load_segment(tmp_path: Path) -> None
     expect((appended.p_type, appended.p_flags) == (PT_LOAD, _PF_R | _PF_X))
 
 
+def test_inject_blob_extends_final_executable_load_when_tail_is_available(tmp_path: Path) -> None:
+    target = _copy_fixture(_FIXTURE_LARGE_WRITE, tmp_path)
+    before = len(program_headers(target))
+
+    injected = _inject_into(target, _BLOB)
+
+    headers = program_headers(target)
+    raw = target.read_bytes()
+    executable = headers[-1]
+    expect(
+        injected is not None
+        and len(headers) == before
+        and raw[-_BLOB_SIZE:] == _BLOB
+        and executable.p_type == PT_LOAD
+        and executable.p_flags == _PF_R | _PF_X
+        and executable.p_filesz == len(raw) - executable.p_offset
+    )
+
+
 def test_predict_blob_vaddr_matches_the_vaddr_injection_returns(tmp_path: Path) -> None:
     """Callers hard-assert the two agree and roll the mutation back otherwise."""
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
@@ -261,16 +282,14 @@ def test_inject_blob_adds_rx_fragments_and_relocated_table(tmp_path: Path) -> No
     expect(struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + len(_fragment_sizes(_BLOB)))
 
 
-def test_second_blob_adds_its_own_table_and_fragment_headers(tmp_path: Path) -> None:
+def test_second_blob_extends_the_existing_tail_without_new_headers(tmp_path: Path) -> None:
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
     _inject_into(target, _BLOB)
     after_first = struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0]
 
     _inject_into(target, _BLOB[::-1])
 
-    expect(
-        struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first + len(_fragment_sizes(_BLOB[::-1]))
-    )
+    expect(struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first)
 
 
 def test_second_fragmented_blob_maps_each_blob_at_its_returned_address(tmp_path: Path) -> None:
@@ -326,6 +345,7 @@ def test_inject_blob_relocates_phoff_inside_the_first_rx_load(tmp_path: Path) ->
 def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) -> None:
     """Without this a dynamic loader computes the wrong load bias for a PIE."""
     target = _write_synthetic_elf(tmp_path / "synthetic")
+    target.write_bytes(target.read_bytes() + b"trailing data" * (1 << 20))
 
     _inject_into(target, _BLOB)
 
