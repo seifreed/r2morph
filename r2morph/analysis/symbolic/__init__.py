@@ -6,29 +6,51 @@ constraint solving with Z3, and integration with the Syntia framework
 for semantic learning during devirtualization.
 """
 
-# Syntia integration will be added in subsequent implementations
+from importlib import import_module
 from typing import Any as _Any
 
-from r2morph.analysis.symbolic.angr_bridge import AngrBridge
-from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver
-from r2morph.analysis.symbolic.constraint_solver_models import ConstraintType, MBAExpression, SolverResult
-from r2morph.analysis.symbolic.constraint_solver_parsing import MAX_CONSTRAINT_AST_DEPTH
-from r2morph.analysis.symbolic.path_explorer import PathExplorer
-from r2morph.analysis.symbolic.resistance_probe import ResistanceMeasurement, SymbolicResistanceProbe
-from r2morph.analysis.symbolic.state_manager import StateManager
-from r2morph.analysis.symbolic.state_manager_models import StateMetrics, StateSchedulingStrategy
-from r2morph.analysis.symbolic.structural_resistance import StructuralResistance, StructuralResistanceProbe
+_LAZY_EXPORTS: dict[str, tuple[str, str]] = {
+    "AngrBridge": ("r2morph.analysis.symbolic.angr_bridge", "AngrBridge"),
+    "ConstraintSolver": ("r2morph.analysis.symbolic.constraint_solver", "ConstraintSolver"),
+    "ConstraintType": ("r2morph.analysis.symbolic.constraint_solver_models", "ConstraintType"),
+    "MBAExpression": ("r2morph.analysis.symbolic.constraint_solver_models", "MBAExpression"),
+    "MAX_CONSTRAINT_AST_DEPTH": (
+        "r2morph.analysis.symbolic.constraint_solver_parsing",
+        "MAX_CONSTRAINT_AST_DEPTH",
+    ),
+    "PathExplorer": ("r2morph.analysis.symbolic.path_explorer", "PathExplorer"),
+    "ResistanceMeasurement": ("r2morph.analysis.symbolic.resistance_probe", "ResistanceMeasurement"),
+    "SolverResult": ("r2morph.analysis.symbolic.constraint_solver_models", "SolverResult"),
+    "StateManager": ("r2morph.analysis.symbolic.state_manager", "StateManager"),
+    "StateMetrics": ("r2morph.analysis.symbolic.state_manager_models", "StateMetrics"),
+    "StateSchedulingStrategy": ("r2morph.analysis.symbolic.state_manager_models", "StateSchedulingStrategy"),
+    "StructuralResistance": ("r2morph.analysis.symbolic.structural_resistance", "StructuralResistance"),
+    "StructuralResistanceProbe": (
+        "r2morph.analysis.symbolic.structural_resistance",
+        "StructuralResistanceProbe",
+    ),
+    "SymbolicResistanceProbe": ("r2morph.analysis.symbolic.resistance_probe", "SymbolicResistanceProbe"),
+}
 
-_SyntiaFramework: _Any = None
-try:
-    from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework as _SyntiaImport
 
-    SYNTIA_AVAILABLE = True
-    _SyntiaFramework = _SyntiaImport
-except ImportError:
-    SYNTIA_AVAILABLE = False
+def __getattr__(name: str) -> _Any:
+    if name in {"SyntiaFramework", "SYNTIA_AVAILABLE"}:
+        try:
+            value = import_module("r2morph.analysis.symbolic.syntia_integration").SyntiaFramework
+        except ImportError:
+            value = None if name == "SyntiaFramework" else False
+        else:
+            if name == "SYNTIA_AVAILABLE":
+                value = True
+        globals()[name] = value
+        return value
+    if name not in _LAZY_EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module_name, attr_name = _LAZY_EXPORTS[name]
+    value = getattr(import_module(module_name), attr_name)
+    globals()[name] = value
+    return value
 
-SyntiaFramework = _SyntiaFramework
 
 __all__ = [
     "MAX_CONSTRAINT_AST_DEPTH",
@@ -48,3 +70,7 @@ __all__ = [
     "SymbolicResistanceProbe",
     "SyntiaFramework",
 ]
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

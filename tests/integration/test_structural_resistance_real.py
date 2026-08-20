@@ -62,3 +62,32 @@ def test_virtualization_raises_structural_resistance(tmp_path: Path) -> None:
         virtualized.indirect_jumps + virtualized.distinct_branch_targets
         > original.indirect_jumps + original.distinct_branch_targets
     )
+
+
+def test_structural_probe_counts_fragmented_executable_payload(tmp_path: Path) -> None:
+    mutated = tmp_path / "mutated-fragmented"
+    shutil.copy(FIXTURE, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260820}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    assert stats["functions_virtualized"] >= 1
+
+    binary = Binary(str(mutated))
+    binary.open()
+    try:
+        executable = [segment for segment in binary.r2.cmdj("iSSj") or [] if "x" in segment.get("perm", "")]
+        counts = []
+        for segment in executable:
+            size = min(int(segment.get("vsize", 0)), 1 << 20)
+            ops = binary.r2.cmdj(f"pDj {size} @ {int(segment['vaddr'])}") or []
+            counts.append(sum(op.get("type") not in (None, "invalid") and "disasm" in op for op in ops))
+        measured = StructuralResistanceProbe(binary).measure()
+    finally:
+        binary.close()
+
+    assert len(counts) > 1
+    assert measured.total_instructions == sum(counts)

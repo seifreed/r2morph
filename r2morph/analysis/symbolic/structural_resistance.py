@@ -42,7 +42,7 @@ _MAX_DISASM_BYTES = 1 << 20
 
 @dataclass(frozen=True)
 class StructuralResistance:
-    """Static structural-complexity signal for one binary's largest code region.
+    """Static structural-complexity signal for a binary's executable regions.
 
     ``structural_score`` is unbounded and monotonic in VM complexity; a binary
     carrying no interpreter scores near zero. ``expansion_ratio`` is the region's
@@ -64,16 +64,12 @@ class StructuralResistanceProbe:
         self._binary = binary
 
     def measure(self, baseline_instructions: int | None = None) -> StructuralResistance:
-        """Measure the largest executable segment (the injected interpreter, if any).
+        """Measure bounded disassembly across all executable segments.
 
-        The virtualization pass appends its whole interpreter - handler bodies,
-        encrypted bytecode and dispatch table - into one executable segment; the
-        original carries only its small native code. Linearly disassembling that
-        segment counts the entire interpreter (function-boundary analysis stops at
-        the first computed jump and would miss every threaded handler past it), so
-        the count rises with each handler and micro-op the VM gains. Data embedded
-        in the segment decodes to noise instructions, but consistently, so the
-        signal stays monotonic and comparable across builds.
+        The virtualization pass may fragment its interpreter across adjacent
+        executable segments. Function-boundary analysis stops at the first computed
+        jump and misses threaded handlers, so bounded linear disassembly of every
+        executable segment is the useful structural signal.
         """
         r2 = self._binary.r2
         if r2 is None:
@@ -82,24 +78,28 @@ class StructuralResistanceProbe:
 
         segments = r2.cmdj("iSSj") or []
         executable = [seg for seg in segments if "x" in seg.get("perm", "")]
-        region = max(executable, key=lambda seg: int(seg.get("vsize", 0)), default=None)
-        if not region or "vaddr" not in region:
+        if not executable:
             return StructuralResistance(0, 0, 0, 0.0, 0.0)
 
-        size = min(int(region.get("vsize", 0)), _MAX_DISASM_BYTES)
-        ops = r2.cmdj(f"pDj {size} @ {int(region['vaddr'])}") or []
         total = 0
         indirect = 0
         targets: set[int] = set()
-        for op in ops:
-            if op.get("type") in (None, "invalid") or "disasm" not in op:
-                continue
-            total += 1
-            if op.get("type") in _INDIRECT_TRANSFER_TYPES:
-                indirect += 1
-            target = op.get("jump")
-            if target is not None:
-                targets.add(int(target))
+        remaining = _MAX_DISASM_BYTES
+        for segment in sorted(executable, key=lambda item: int(item.get("vaddr", 0))):
+            if remaining <= 0 or "vaddr" not in segment:
+                break
+            size = min(int(segment.get("vsize", 0)), remaining)
+            ops = r2.cmdj(f"pDj {size} @ {int(segment['vaddr'])}") or []
+            for op in ops:
+                if op.get("type") in (None, "invalid") or "disasm" not in op:
+                    continue
+                total += 1
+                if op.get("type") in _INDIRECT_TRANSFER_TYPES:
+                    indirect += 1
+                target = op.get("jump")
+                if target is not None:
+                    targets.add(int(target))
+            remaining -= size
 
         distinct_targets = len(targets)
         ratio = total / baseline_instructions if baseline_instructions else float(total)

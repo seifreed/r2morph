@@ -54,6 +54,26 @@ def test_importing_r2morph_does_not_eagerly_import_angr() -> None:
     )
 
 
+def test_importing_structural_resistance_does_not_eagerly_import_angr() -> None:
+    """A lightweight structural probe must not load the optional angr stack."""
+    probe = (
+        "import sys\n"
+        "from r2morph.analysis.symbolic.structural_resistance import StructuralResistanceProbe\n"
+        "assert StructuralResistanceProbe is not None\n"
+        "leaked = sorted(m for m in sys.modules if m == 'angr' or m.startswith('angr.'))\n"
+        "assert not leaked, f'angr imported eagerly: {leaked}'\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-W", "error", "-c", probe],
+        capture_output=True,
+        text=True,
+        timeout=120,
+    )
+    assert result.returncode == 0, (
+        f"fresh-interpreter structural import probe failed\n" f"stdout:\n{result.stdout}\n" f"stderr:\n{result.stderr}"
+    )
+
+
 def test_symbolic_names_are_part_of_the_lazy_public_api() -> None:
     """The PEP 562 boundary must still advertise the symbolic API.
 
