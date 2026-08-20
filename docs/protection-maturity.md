@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `a6ac9ed`
+Commit: `c0cc5f0`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -135,6 +135,9 @@ The separate bounded dynamic harness now supplies the missing capability
 distinction: on the same sample it correlates `32` dispatches with the live
 bytecode base, position, and handler target. Static recovery is therefore a tool
 coverage gap, while dynamic recovery is demonstrably easy for this execution.
+The own adversary now reports both results in one machine-readable output, along
+with `14` unique handler targets and observed positive position deltas
+`[1, 2, 3, 5, 10, 11]`; it does not retain decoded payload bytes.
 
 ## 8. Multi-seed
 
@@ -236,7 +239,8 @@ walk. Each change has real
 regression coverage and was rechecked on fresh protected files. The runtime trace
 harness and its bounded real-fixture regression make dynamic exposure measurable
 without changing production protection behavior. Commit `a6ac9ed` adds the
-dispatch-context correlation to that harness. Engine GP handlers now also use
+dispatch-context correlation to that harness. Commit `c0cc5f0` exposes the same
+bounded recovery in the own adversary. Engine GP handlers now also use
 two semantically equivalent field-decode/order forms selected per instance; the
 handler-clustering artifact records the small but reproducible effect. Engine
 bytecode records now add zero-to-two checksum-encrypted tail bytes per opcode
@@ -271,7 +275,7 @@ without adding lint suppression.
 
 ### Termination assessment
 
-At HEAD `a6ac9ed`, the remaining protection weaknesses require architectural
+At HEAD `c0cc5f0`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The bootstrap is still a
 stable, statically recoverable checksum loop; changing its register allocation,
 traversal order, or accumulator width does not remove that recovery path in
@@ -338,9 +342,9 @@ corpus, and current IDA/adversary evidence. Commit `b6159be` extends that
 decomposition to `and` and `or`, with its regression, regenerated corpus, and
 current IDA/adversary evidence. Commit `9d1a334` adds the generic bytewise checksum
 traversal and its real regression/corpus/IDA evidence. The remaining gaps above are
-architectural rather than unmeasured local variations. Commit `a6ac9ed` records
-the correlated runtime trace and current adversary measurement without changing
-the protected binary. The official quality wrapper was rerun at this
+architectural rather than unmeasured local variations. Commit `c0cc5f0` integrates
+the correlated runtime recovery into the own adversary without changing the
+protected binary. The official quality wrapper was rerun at this
 HEAD: 9 checks pass;
 the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
 whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).
