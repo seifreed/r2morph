@@ -1,6 +1,6 @@
 {
   "analysis": "IDA Pro and Hex-Rays",
-  "commit_basis": "working tree before bytecode grammar commit",
+  "commit_basis": "8895156",
   "seed": 20260820,
   "sample": "elf_vm_engarith_x86_64",
   "sha256": "f48375eab948ff5bcec655ff80aa38feb08d65784aae922da21da2ba4f12f95b",

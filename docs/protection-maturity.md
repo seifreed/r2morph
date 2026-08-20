@@ -245,4 +245,6 @@ fully green until the repository quality
 gate passes without the forbidden Ruff per-file exclusions; that blocker is
 recorded explicitly rather than hidden. Commit `fc9e1cc` measures cross-seed
 handler clustering, adds semantically equivalent GP handler variants, and
-regenerates the multi-seed corpus.
+regenerates the multi-seed corpus. Commit `8895156` adds per-opcode encrypted
+bytecode tail padding, its stride/grammar measurement, fresh Tier B IDA evidence,
+and the regenerated correctness corpus.
