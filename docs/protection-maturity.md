@@ -95,10 +95,9 @@ frame invariants, and control-flow semantics.
 
 ## 14. Semantic regression
 
-The full supported test suite under Python 3.12 with warnings as errors reached `4,836 passed`,
-`1 failed` stale fixed-frame assertion, and `21 skipped`; the assertion was updated and its
-focused rerun passed. Coverage reached `80.94%`. The ten-seed real-fixture campaign also
-preserved exit code `45` for every generated binary.
+The full supported test suite passed under Python 3.12 with warnings as errors: `4,837 passed`,
+`21 skipped`, total coverage `80.93%`. The ten-seed real-fixture campaign also preserved exit
+code `45` for every generated binary.
 
 ## 15. Structural regression
 
