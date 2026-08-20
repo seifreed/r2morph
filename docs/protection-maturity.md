@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `b8e5638`
+Commit: `400d427`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -330,6 +330,11 @@ The state-slot change is covered by `33` focused tests, `137` real integration
 tests, and `1090/1090` Tier A seed runs; its code commit and final gate result
 are recorded below.
 
+Commit `400d427` randomizes the region/nested runtime state-mask slot and
+records the `[rsp+220h]` IDA observation. Its full gate rerun passed `9` checks;
+the only failure remains the pre-existing forbidden Ruff `per-file-ignores`
+configuration, whose removal exposes the documented unsuppressed lint backlog.
+
 ## 15. Remaining gaps
 
 The current layout, handler-tail, engine-state, and region-state changes reduce measured
@@ -349,7 +354,7 @@ without adding lint suppression.
 
 ### Termination assessment
 
-At HEAD `b8e5638`, the remaining protection weaknesses require architectural
+At HEAD `400d427`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The two-stage integrity
 contract removes one single full-span loop, but both the short bootstrap loop and
 the deferred full loop remain statically recoverable. Removing that fingerprint
