@@ -1,0 +1,113 @@
+{
+  "all_semantic_equal": true,
+  "architecture": "x86_64",
+  "baseline_exit": 45,
+  "baseline_sha256": "9311646e6eafa4829e06e619c251bd53e8ee676edee8e7fa2cfccd671a528d00",
+  "baseline_size": 4632,
+  "fixture": "fixtures/dataset/elf_vm_arith_x86_64",
+  "format": "ELF",
+  "runs": [
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "cff07ebd57407299a49728084ac63a7036b3e53874fe40e931ed0fac4c916b05",
+      "output_size": 32737,
+      "seed": 20260820,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 16353,
+      "total_instructions": 22
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "bfba134aee833fe048ab98d327e9f037b91c829b2d7b9f43e6863205d7d83ab3",
+      "output_size": 32799,
+      "seed": 20260821,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 16415,
+      "total_instructions": 25
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "2ef287d2a828bc57904cbc6d659cc4d24a793648e0979f93cc300f25a56d1e38",
+      "output_size": 33016,
+      "seed": 20260822,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 16632,
+      "total_instructions": 25
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "2a0957ce1f0ec780d26d17e22298d195c75955be7fcd0fdb3c7a2cba32138d1b",
+      "output_size": 32889,
+      "seed": 20260823,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 16505,
+      "total_instructions": 28
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "873d1dc9fa31f326ded3c1c18525bd9743b5859cb123db3b3092b23d44fb9fee",
+      "output_size": 32736,
+      "seed": 20260824,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 16352,
+      "total_instructions": 32
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "2206a1ea6d32d6386a1b0e883aba639fddb07e9c2ab74ad7b46e106d0f67eb5a",
+      "output_size": 32596,
+      "seed": 20260825,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 16212,
+      "total_instructions": 20
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "bb51c987965349e888b576de7ded5cf1e5d6c2f53cbd2bb5bd5a6e9e72d1c70c",
+      "output_size": 32764,
+      "seed": 20260826,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 16380,
+      "total_instructions": 23
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "7007a270e75ec2ba1a8b5bb24c964df9746131a558835e3c5b27e5fbbee2e766",
+      "output_size": 33560,
+      "seed": 20260827,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 17176,
+      "total_instructions": 24
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "b04e0912be6e2b8196ec1c13b2a785c72aa45e52a99facdb609c9b764e5cf49d",
+      "output_size": 31768,
+      "seed": 20260828,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 15384,
+      "total_instructions": 24
+    },
+    {
+      "functions_virtualized": 1,
+      "output_sha256": "e4478d4e8a23aaf6b6ba6597150ed797c2fd07380f0be94fc5aab58c8d8f4d9f",
+      "output_size": 31023,
+      "seed": 20260829,
+      "semantic_exit": 45,
+      "total_bytecode_bytes": 14639,
+      "total_instructions": 22
+    }
+  ],
+  "seeds": [
+    20260820,
+    20260821,
+    20260822,
+    20260823,
+    20260824,
+    20260825,
+    20260826,
+    20260827,
+    20260828,
+    20260829
+  ]
+}
