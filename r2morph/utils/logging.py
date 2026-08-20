@@ -4,6 +4,7 @@ Logging configuration for r2morph.
 
 import logging
 import sys
+from typing import TextIO
 
 
 def setup_logging(level: str = "INFO", log_file: str | None = None) -> None:
@@ -31,7 +32,10 @@ def setup_logging(level: str = "INFO", log_file: str | None = None) -> None:
         logger.removeHandler(handler)
         handler.close()
 
-    console_handler = logging.StreamHandler(sys.stdout)
+    stable_stdout: TextIO | None = sys.__stdout__
+    if stable_stdout is None or stable_stdout.closed:
+        stable_stdout = sys.stdout
+    console_handler = logging.StreamHandler(stable_stdout)
     console_handler.setLevel(numeric_level)
 
     formatter = logging.Formatter(
