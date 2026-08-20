@@ -119,11 +119,16 @@ blend into an ordinary ELF. This remains a material weakness.
 
 ## 10. Runtime analysis exposure
 
-Runtime tracing can observe the VM entry, register spills, checksum traversal,
-decoded state, handler transitions, and final restore because the design executes
-all of them in the clear at runtime. The checksum makes patching and naive static
-neutralization harder; it is not an anti-tracing boundary. No claim of resistance
-to instrumentation or full dynamic analysis is made.
+The bounded Unicorn trace in
+[`docs/protection-runtime-trace.json`](protection-runtime-trace.json) observed a
+fresh checksum build in `0.083` seconds: `54,048` instructions, `25` indirect
+dispatches reaching `21` distinct targets, `256` register-state samples, and
+`16,027` reads from executable ranges. Read values are hashed and samples are
+capped. This demonstrates that a tracer can recover the handler sequence and
+register state from the live process; the checksum is not an anti-tracing
+boundary. The current harness records dispatch targets and read evidence, but
+does not claim that a generic tracer cannot recover more, including the full
+decoded bytecode stream.
 
 ## 11. Performance overhead
 
@@ -148,13 +153,13 @@ overhead.
 ## 13. Weaknesses discovered
 
 The adversary still sees a recognizable checksum bootstrap, a large register
-spill, an obvious appended executable chain, and a runtime VM that is fully
-observable under tracing. The own devirtualizer does not support the current
-encrypted indirect shape, so its negative result is not a complete adversarial
-benchmark. Coverage outside ELF x86-64 is not established. The strict repository
-quality gate also remains blocked by the pre-existing forbidden Ruff
-`per-file-ignores` configuration and the large lint backlog exposed when it is
-removed.
+spill, an obvious appended executable chain, and a runtime VM whose dispatch
+sequence and register state were recovered by the bounded trace. The own
+devirtualizer does not support the current encrypted indirect shape, so its
+negative result is not a complete adversarial benchmark. Coverage outside ELF
+x86-64 is not established. The strict repository quality gate also remains
+blocked by the pre-existing forbidden Ruff `per-file-ignores` configuration and
+the large lint backlog exposed when it is removed.
 
 ## 14. Fixed
 
@@ -163,14 +168,17 @@ global budget instead of measuring only the largest fragment. Symbolic analysis
 imports are lazy, avoiding optional-dependency warnings. VM register save order
 and frame allocation vary deterministically per build. The checksum traversal now
 uses seeded four-byte block permutations with guarded tails. Each change has real
-regression coverage and was rechecked on fresh protected files.
+regression coverage and was rechecked on fresh protected files. The runtime trace
+harness and its bounded real-fixture regression make dynamic exposure measurable
+without changing production protection behavior.
 
 ## 15. Remaining gaps
 
-The next material redesigns are a less fingerprintable payload container, a
-runtime-analysis threat model with trace-based measurements, and broader format
-and architecture support. Improving the current devirtualizer to understand the
-encrypted threaded contract is a separate tool-capability effort. None should be
+The next material redesigns are a less fingerprintable payload container and
+broader format and architecture support. Runtime tracing is now measured, but
+resisting it would require an architectural change rather than more bootstrap
+opacity. Improving the current devirtualizer to understand the encrypted
+threaded contract is a separate tool-capability effort. None should be
 implemented as a branch for a named sample or family. The quality-gate backlog
 must be resolved as a separate repository-wide cleanup without adding lint
 suppression.
