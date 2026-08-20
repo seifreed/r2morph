@@ -1,5 +1,8 @@
 # Protection Maturity Report
 
+Commit: `8e8b3f9`
+Date: `2026-08-20`
+
 ## 1. Current architecture
 
 The production path audited here is `CodeVirtualizationPass` for ELF x86-64. It
@@ -208,15 +211,19 @@ similarity.
 
 ## 15. Remaining gaps
 
-The next material redesigns are a less fingerprintable payload container,
-stronger semantic handler diversification, and broader format and architecture
-support. Runtime tracing is now measured, but resisting it would require an
-architectural change rather than more bootstrap opacity. Improving the current
-devirtualizer to understand the encrypted
-threaded contract is a separate tool-capability effort. None should be
-implemented as a branch for a named sample or family. The quality-gate backlog
-must be resolved as a separate repository-wide cleanup without adding lint
-suppression.
+The current layout and handler-tail changes reduce two measured signals, but the
+payload is still an appended RX chain and the abstract machine remains
+recognizable across builds. Further container camouflage would require a new
+multi-region placement contract, not another segment or padding tweak. Stronger
+semantic diversity would require alternate state encodings or instruction
+decomposition across both virtualization paths, with a substantially broader
+semantic oracle. Runtime tracing remains observable and resisting it requires an
+execution-architecture change. Improving the current devirtualizer to understand
+the encrypted threaded contract is a separate tool-capability effort. Broader
+format/architecture support is outside the declared virtualization envelope.
+None should be implemented as a branch for a named sample or family. The
+quality-gate backlog must be resolved as a separate repository-wide cleanup
+without adding lint suppression.
 
 ## 16. Comparison with commercial properties
 
@@ -262,4 +269,6 @@ metadata load, and revalidates the full corpus and loader invariants. Commit
 `99fe143` adds equivalent per-instance `add`/`lea` vIP advances, updates the
 clustering and Tier B artifacts, and revalidates the full suite. The follow-up
 evidence commit records the regenerated 109-fixture corpus hashes and timing
-metrics from that build.
+metrics from that build. Commit `8e8b3f9` is the current evidence snapshot;
+the remaining gaps above are architectural rather than unmeasured local
+variations.
