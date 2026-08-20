@@ -1,0 +1,24 @@
+{
+  "analysis": "IDA Pro and Hex-Rays",
+  "commit_basis": "b75ce62",
+  "seed": 20260820,
+  "sample": "elf_vm_engarithimm_x86_64",
+  "sha256": "84ce445518e90e006f2d1a62ca7608e670a970101c44ca68a84b3bb490726d5d",
+  "ida": {
+    "functions": 3,
+    "segments": 6,
+    "vm_entry": "0x404000",
+    "vm_entry_size": 276,
+    "vm_entry_stack_frame_size": "0x2f0",
+    "vm_entry_decompile": "checksum recovered; no handler table or bytecode grammar; indirect jmp rax remains",
+    "handler_functions_recovered": 0,
+    "handler_table_recovered": false,
+    "bytecode_grammar_recovered": false
+  },
+  "observations": [
+    "The fresh immediate-arithmetic build uses the same generic checksum bootstrap and indirect transfer as the existing VM path.",
+    "Hex-Rays recovered the checksum loop, four-byte block handling, tail handling, and final jmp rax.",
+    "Hex-Rays recovered no handler functions, handler table, or bytecode record grammar.",
+    "The dedicated correctness corpus changed bytecode size on four of ten seeds while preserving all 1090 semantic checks."
+  ]
+}

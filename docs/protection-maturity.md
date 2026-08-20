@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `cfc6c2d`
+Commit: `b75ce62`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -59,7 +59,7 @@ virtualized functions for every seed and are retained as no-op coverage results.
 | Checksum-keyed state | Hex-Rays recovers the checksum but not its downstream keys | Integrity and key dependency are visible |
 | Register-frame scattering | Seed-derived slot permutation and spill order | Removes fixed frame fingerprints; frame semantics remain inferable |
 | Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.838`, `1,780` of `2,232` comparisons >= `0.8` | Per-instance body variants reduce similarity slightly, but generic clustering remains effective |
-| Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers | Removes one fixed cross-build record-stride assumption; opcode location and semantic field families remain visible |
+| Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
 | Control-flow virtualization | 109-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
@@ -102,6 +102,12 @@ record grammar. The entry used a `0x2f0` frame and remained a 269-byte leaf endi
 in `jmp rax`; the detailed observation is in
 [`docs/protection-ida-bytecode-grammar.json`](protection-ida-bytecode-grammar.json).
 
+The current immediate-decomposition build gave IDA three functions and six
+segments. Its 276-byte VM entry still decompiled to the checksum loop, guarded
+tail handling, and `jmp rax`; no handler functions, table, or bytecode grammar
+were recovered. The dedicated observation is in
+[`docs/protection-ida-immediate-decomposition.json`](protection-ida-immediate-decomposition.json).
+
 ## 7. Devirtualization
 
 [`scripts/protection_adversary.py`](../scripts/protection_adversary.py) runs the
@@ -129,6 +135,10 @@ gate. The final counts are available in the corpus JSON summary and are not
 inferred from one representative fixture. The engine's bytecode now assigns each
 opcode instance zero, one, or two encrypted tail bytes; the handler emits the
 matching stride.
+For the dedicated `elf_vm_engarithimm_x86_64` fixture, four of ten seeds changed
+bytecode size by `33` to `40` bytes while all `1090/1090` semantic checks passed;
+the decomposition is selected per build and applies only to generic associative
+arithmetic immediate micro-ops.
 
 ## 9. Container fingerprintability
 
@@ -183,6 +193,8 @@ signal without adding unreachable junk. The opcode remains at record offset
 zero, although per-instance tail padding now removes the fixed record-stride
 assumption. The runtime VM's
 dispatch sequence and register state were also recovered by the bounded trace.
+Immediate arithmetic now has a second generic lowering grammar for `add`, `sub`,
+and `xor`; the current IDA observation still recovered no handler grammar.
 The own devirtualizer does not support the current encrypted indirect shape, so
 its negative result is not a complete adversarial benchmark. The interpreter outlier
 shows that a direct handler-table architecture remains easy for Hex-Rays. Coverage
@@ -210,6 +222,9 @@ synthetic metadata segment while preserving the loader invariants.
 Handler tails also select the equivalent `add` or flag-neutral `lea` vIP advance
 form per instance; the clustering artifact records the reduction in nearest
 similarity.
+Immediate `add`, `sub`, and `xor` can now lower as two sequential equivalent
+folds selected per build; the dedicated corpus and IDA artifact record the
+semantic and static results.
 
 ## 15. Remaining gaps
 
@@ -274,7 +289,9 @@ evidence commit records the regenerated 109-fixture corpus hashes and timing
 metrics from that build. Commit `8e8b3f9` is the handler-diversity evidence
 snapshot. Commit `cfc6c2d` fixes false VM handler-table recovery from
 non-executable bytes, adds its real-fixture regression, and refreshes the
-adversary artifact. The remaining gaps above are architectural rather than
+adversary artifact. Commit `b75ce62` adds per-build immediate arithmetic
+decomposition for `add`, `sub`, and `xor`, its regression, the regenerated
+corpus, and current IDA/adversary evidence. The remaining gaps above are architectural rather than
 unmeasured local variations. The official quality wrapper was rerun at this
 HEAD: 9 checks pass;
 the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
