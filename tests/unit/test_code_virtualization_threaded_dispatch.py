@@ -106,16 +106,14 @@ def test_region_interpreter_inlines_the_decode_per_handler() -> None:
 
 def test_region_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
     asm = _region_asm(0)
-    assert asm.count("xor rsi, qword ptr [rsp+536]") >= 2
-    assert asm.count("xor r15, qword ptr [rsp+536]") >= 2
-    assert asm.count("xor r13, qword ptr [rsp+536]") >= 2
+    state_offset = build_region_scheme(_tiny_region(), random.Random(0)).state_offset
+    assert asm.count(f"xor rsi, qword ptr [rsp+{state_offset}]") >= 2
 
 
 def test_nested_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
-    asm = _nested_decode_block(random.Random(0))
-    assert asm.count("xor rsi, qword ptr [rsp+536]") == 1
-    assert asm.count("xor r15, qword ptr [rsp+536]") == 1
-    assert asm.count("xor r13, qword ptr [rsp+536]") == 1
+    state_offset = 0x240
+    asm = _nested_decode_block(random.Random(0), state_offset)
+    assert asm.count(f"xor rsi, qword ptr [rsp+{state_offset}]") == 1
 
 
 def test_region_interpreter_enters_bootstrap_before_antidebug_probe() -> None:

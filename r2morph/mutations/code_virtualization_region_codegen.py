@@ -51,7 +51,6 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
-    _STATE_QWORD_SLOT,
     _VSP_OFFSET,
     frame_size_for_seed,
 )
@@ -138,7 +137,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  xor al, byte ptr [rsp+{scheme.checksum_offset}]\n",
     ]
     bounds = f"  cmp al, {handler_count}\n  jae vm_exit\n"
-    state_key = f"qword ptr [rsp+{_STATE_QWORD_SLOT}]"
+    state_key = f"qword ptr [rsp+{scheme.state_offset}]"
     state_decode = f"  xor rsi, {state_key}\n" f"  xor r15, {state_key}\n" f"  xor r13, {state_key}\n"
 
     def make_decode() -> str:
@@ -197,7 +196,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  lea rax, [rsp+{frame_size}]\n"
         "  ror rax, 17\n"
         f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
-        f"  mov qword ptr [rsp+{_STATE_QWORD_SLOT}], rax\n"
+        f"  mov qword ptr [rsp+{scheme.state_offset}], rax\n"
     )
     encrypt_slots = "".join(
         f"  mov rax, qword ptr [rsp+{slot[index] * 8}]\n"

@@ -91,6 +91,17 @@ def test_relayer_sharing_frame_shares_one_slot_permutation() -> None:
     assert all(s.slot_perm == shared for s in relayered)
 
 
+def test_region_scheme_varies_state_slot_across_builds() -> None:
+    offsets = {build_region_scheme(_region_with_op_run(), random.Random(seed)).state_offset for seed in range(8)}
+    assert len(offsets) > 1
+
+
+def test_relayer_sharing_frame_shares_state_slot() -> None:
+    schemes = _two_distinct_layer_schemes()
+    relayered = _relayer_sharing_frame(schemes, schemes[0].slot_perm)
+    assert all(s.state_offset == schemes[0].state_offset for s in relayered)
+
+
 def test_split_region_returns_none_without_a_peelable_run() -> None:
     # A single op between terminators is too short to peel.
     instructions = [

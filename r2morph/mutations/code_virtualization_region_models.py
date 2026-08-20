@@ -47,6 +47,7 @@ class RegionScheme:
     flags_offset: int = 0x80
     isa_seed: int = 0
     checksum_bytewise: bool = False
+    state_offset: int = 0x218
 
 
 @dataclass(eq=False, repr=False, slots=True)

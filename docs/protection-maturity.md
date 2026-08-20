@@ -9,7 +9,7 @@ The production path audited here is `CodeVirtualizationPass` for ELF x86-64. It
 has two generic lowering paths: straight-line register/FP runs and reducible or
 dispatch-shaped control-flow regions. Generated VMs use per-build opcode maps,
 duplicate handlers, direct-threaded encrypted dispatch, checksum-keyed operands,
-scattered register frames, bounded frame-size variation, nested regions, and
+scattered register frames, per-build state-mask slots, bounded frame-size variation, nested regions, and
 fragmented executable payload loads.
 
 The declared support contract is narrower than the repository's broader analysis
@@ -146,6 +146,15 @@ Hex-Rays still decompiles the entry to the first checksum loop and `jmp rax`, bu
 IDA disassembly separately exposes the second checksum loop at `0x404193` before
 key/state setup; no handler table or bytecode grammar was recovered. The exact
 artifact is recorded in [`docs/protection-state-encoding.json`](protection-state-encoding.json).
+
+The region and nested VMs now choose the runtime state-mask slot from the free
+qword window of each generated frame and share the outer slot across nested
+layers. On `elf_vm_arith_x86_64`, seed `20260820`, the protected file exits `45`,
+has `22` correlated dispatches and `0` raw position matches, and IDA shows the
+state at `[rsp+220h]` rather than the previous fixed `[rsp+218h]`. Hex-Rays still
+recovers only the checksum loop and opaque `jmp rax`; no handler table or
+bytecode grammar was recovered. The fresh artifact is recorded in
+[`docs/protection-state-encoding.json`](protection-state-encoding.json).
 
 Commit `9d1a334` adds a second checksum traversal selected from existing per-build
 scheme fields without shifting later randomness. On seed `20260822`, IDA saw a
@@ -317,6 +326,9 @@ Commit `e32ad9c` extends the encoded state protocol to region and nested VMs,
 with real regressions and same-fixture trace comparisons for both paths.
 Commit `b8e5638` defers the full integrity key until bootstrap readiness and
 records the fresh two-loop IDA observation in the state-encoding artifact.
+The state-slot change is covered by `33` focused tests, `137` real integration
+tests, and `1090/1090` Tier A seed runs; its code commit and final gate result
+are recorded below.
 
 ## 15. Remaining gaps
 

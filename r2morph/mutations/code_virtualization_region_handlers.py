@@ -74,7 +74,6 @@ _XMM_SAVE_OFFSET = 0x100
 # mask.
 _KEY_DWORD_SLOT = 0x200
 _KEY_QWORD_SLOT = 0x208
-_STATE_QWORD_SLOT = 0x218
 # The interpreter's private virtual operand stack: a pointer word (current depth in
 # bytes, starts 0) at _VSP_OFFSET and 8 cells from _VSTACK_BASE. Micro-op lowering
 # folds arithmetic through this stack (vpush/vbinop/vpop); peak depth is two cells

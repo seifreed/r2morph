@@ -51,6 +51,24 @@
     "encoder_knows_runtime_value": false,
     "static_value": "runtime-dependent"
   },
+  "region_state_slot_randomized": {
+    "fixture": "elf_vm_arith_x86_64",
+    "seed": 20260820,
+    "sha256": "a1f6e69ea480660e2e2beb959647db33fcfe51a436c676b99f532ef1558615e8",
+    "size_bytes": 36135,
+    "generated_vm_bytes": 19751,
+    "exit_code": 45,
+    "correlated_dispatch_count": 22,
+    "raw_position_match_count": 0,
+    "unique_handler_targets": 19,
+    "ida_functions": 2,
+    "ida_segments": 4,
+    "ida_vm_entry": "0x404000",
+    "ida_vm_entry_size": 177,
+    "ida_state_slot": "0x220",
+    "hexrays_handler_recovery": false,
+    "ida_note": "Fresh IDA survey: the region entry still decompiles to the checksum loop and opaque jmp rax. Disassembly shows the runtime state mask at [rsp+220h], replacing the fixed 0x218 slot; no handler table or bytecode grammar was recovered."
+  },
   "runtime_state_masked": {
     "fixture": "elf_vm_engarithimm_x86_64",
     "seed": 20260820,

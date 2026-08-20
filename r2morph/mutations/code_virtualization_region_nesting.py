@@ -55,7 +55,6 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
-    _STATE_QWORD_SLOT,
     _VSP_OFFSET,
     frame_size_for_seed,
 )
@@ -258,6 +257,7 @@ def _relayer_sharing_frame(schemes: list[RegionScheme], slot: tuple[int, ...]) -
             body_seed=s.body_seed,
             isa_seed=s.isa_seed,
             checksum_bytewise=s.checksum_bytewise,
+            state_offset=schemes[0].state_offset,
         )
         for s in schemes
     ]
@@ -302,7 +302,7 @@ def _inner_exit_asm(parent: int, parent_count: int, return_slot: int) -> str:
     )
 
 
-def _decode_block(rng: random.Random) -> str:
+def _decode_block(rng: random.Random, state_offset: int = 0x218) -> str:
     # Direct-threaded, polymorphic decode block (no label): the opcode is decoded
     # with the active layer's key (frame slot) plus the position mask and self-
     # checksum, bounds-checked against the active handler count, then dispatched
@@ -328,9 +328,9 @@ def _decode_block(rng: random.Random) -> str:
             (
                 f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n"
                 f"  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
-                f"  xor rsi, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
-                f"  xor r15, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
-                f"  xor r13, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
+                f"  xor rsi, qword ptr [rsp+{state_offset}]\n"
+                f"  xor r15, qword ptr [rsp+{state_offset}]\n"
+                f"  xor r13, qword ptr [rsp+{state_offset}]\n"
             ),
         ],
         rng=rng,
@@ -469,7 +469,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n"
         + "  ror rax, 17\n"
         + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
-        + f"  mov qword ptr [rsp+{_STATE_QWORD_SLOT}], rax\n"
+        + f"  mov qword ptr [rsp+{schemes[0].state_offset}], rax\n"
         + "".join(
             f"  mov rax, qword ptr [rsp+{slot[i] * 8}]\n"
             f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
@@ -556,9 +556,9 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                     junk_rng,
                     extra,
                     entry_prefix=(
-                        f"  xor rsi, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
-                        f"  xor r15, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
-                        f"  xor r13, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
+                        f"  xor rsi, qword ptr [rsp+{schemes[0].state_offset}]\n"
+                        f"  xor r15, qword ptr [rsp+{schemes[0].state_offset}]\n"
+                        f"  xor r13, qword ptr [rsp+{schemes[0].state_offset}]\n"
                     ),
                 ),
                 frozenset(index * 8 for index in slot),
@@ -594,7 +594,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     # handler with no hub block and no two copies sharing a byte layout. One rng
     # seeded from the outer layer's table key keeps the variant sequence
     # deterministic per build.
-    asm = thread_back_jumps(body + tables + bootstrap_table + island + reservations, lambda: _decode_block(poly_rng))
+    asm = thread_back_jumps(
+        body + tables + bootstrap_table + island + reservations,
+        lambda: _decode_block(poly_rng, schemes[0].state_offset),
+    )
 
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
