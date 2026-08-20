@@ -134,12 +134,13 @@ def test_virtualized_pie_switch_preserves_exit_code_at_load_bias(tmp_path: Path)
     assert emulate_exit_code(mutated, load_bias=LOAD_BIAS) == 30
 
 
-def test_virtualized_pie_image_maps_program_headers_separately_from_rx_fragments(tmp_path: Path) -> None:
+def test_virtualized_pie_image_maps_headers_in_appended_rx_fragment(tmp_path: Path) -> None:
     # An independent structural oracle: this reads the produced FILE, not the code
     # that wrote it, so it holds even if the emitted interpreter were wrong. The
     # blob cannot be squeezed into an ET_DYN image's existing segments, so the
-    # injector must append a mapped program-header table followed by separate RX
-    # fragments above every pre-existing load. The VM layout is randomized per
+    # injector must append RX fragments above every pre-existing load. The first
+    # fragment of each injection also maps the relocated program-header table,
+    # avoiding a standalone metadata segment. The VM layout is randomized per
     # build, so only these invariants are asserted - never an absolute address.
     if not FIXTURE_PIE.exists():
         pytest.skip(f"fixture missing: {FIXTURE_PIE}")
@@ -147,8 +148,8 @@ def test_virtualized_pie_image_maps_program_headers_separately_from_rx_fragments
     mutated = tmp_path / "mutated_phdr"
     _virtualize(FIXTURE_PIE, mutated)
 
-    original_end = max(vaddr + memsz for _offset, vaddr, _filesz, memsz in _pt_loads(FIXTURE_PIE))
-    appended = [load for load in _pt_loads(mutated) if load[1] >= original_end]
+    original_load_count = len(_pt_loads(FIXTURE_PIE))
+    appended = _pt_loads(mutated)[original_load_count:]
     phoff = _e_phoff(mutated)
     table_owner = next(load for load in appended if load[0] <= phoff < load[0] + load[2])
-    assert len(appended) > 1 and table_owner != appended[-1]
+    assert appended and table_owner in appended

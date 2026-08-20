@@ -1,10 +1,10 @@
 """
 Contract: VM blobs occupy adjacent fragmented loads above the image.
 
-The injector relocates the program-header table into a page-aligned read-only
-``PT_LOAD`` and maps each VM blob through adjacent read/execute fragments. This
-keeps the VM's address range contiguous while denying static tools one large RX
-container. ET_EXEC and ET_DYN take the same path.
+The injector relocates the program-header table into the first page-aligned
+read/execute fragment and maps each VM blob through adjacent fragments. This
+keeps the VM's address range contiguous without a standalone metadata load.
+ET_EXEC and ET_DYN take the same path.
 
 These tests drive the real injector against real ELF files and verify the
 result by re-parsing the produced bytes with ``struct`` - an oracle independent
@@ -250,13 +250,13 @@ def test_predict_blob_vaddr_matches_the_vaddr_injection_returns(tmp_path: Path) 
     assert predicted == _inject_into(target, _BLOB)
 
 
-def test_inject_blob_adds_table_load_and_rx_fragments(tmp_path: Path) -> None:
+def test_inject_blob_adds_rx_fragments_and_relocated_table(tmp_path: Path) -> None:
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
     before = struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0]
 
     _inject_into(target, _BLOB)
 
-    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + 1 + len(_fragment_sizes(_BLOB))
+    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + len(_fragment_sizes(_BLOB))
 
 
 def test_second_blob_adds_its_own_table_and_fragment_headers(tmp_path: Path) -> None:
@@ -266,9 +266,7 @@ def test_second_blob_adds_its_own_table_and_fragment_headers(tmp_path: Path) -> 
 
     _inject_into(target, _BLOB[::-1])
 
-    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first + 1 + len(
-        _fragment_sizes(_BLOB[::-1])
-    )
+    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first + len(_fragment_sizes(_BLOB[::-1]))
 
 
 def test_second_fragmented_blob_maps_each_blob_at_its_returned_address(tmp_path: Path) -> None:
@@ -306,7 +304,7 @@ def test_second_fragmented_blob_preserves_strict_loader_invariants(tmp_path: Pat
     assert_loadable(target)
 
 
-def test_inject_blob_relocates_phoff_inside_a_read_only_load(tmp_path: Path) -> None:
+def test_inject_blob_relocates_phoff_inside_the_first_rx_load(tmp_path: Path) -> None:
     """The kernel derives AT_PHDR from the PT_LOAD that contains e_phoff."""
     target = _copy_fixture(_FIXTURE_DYN, tmp_path)
 
@@ -318,7 +316,7 @@ def test_inject_blob_relocates_phoff_inside_a_read_only_load(tmp_path: Path) -> 
         for entry in program_headers(target)
         if entry.p_type == PT_LOAD and entry.p_offset <= e_phoff < entry.p_offset + entry.p_filesz
     )
-    assert owner.p_flags == _PF_R
+    assert owner.p_flags == _PF_R | _PF_X
 
 
 def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) -> None:
@@ -342,7 +340,7 @@ def test_large_blob_is_split_into_adjacent_rx_fragments(tmp_path: Path) -> None:
 
     injected = _inject_into(target, blob)
 
-    fragments = program_headers(target)[before + 1 :]
+    fragments = program_headers(target)[before:]
     assert (
         injected is not None
         and len(fragments) > 1

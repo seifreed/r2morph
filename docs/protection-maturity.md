@@ -128,8 +128,10 @@ matching stride.
 ## 9. Container fingerprintability
 
 The payload container is still easy to identify structurally: appended adjacent
-RX `PT_LOAD` ranges, a read-only metadata load, a large interpreter region, and
-an entry that spills many registers before the checksum. Fragmentation changes
+RX `PT_LOAD` ranges, a large interpreter region, and an entry that spills many
+registers before the checksum. The injector now maps the relocated program-header
+table inside the first appended RX load, removing the standalone metadata load;
+the representative ELF load count falls from `7` to `6`. Fragmentation changes
 the shape and prevents a single-size signature, but it does not make the layout
 blend into an ordinary ELF. This remains a material weakness.
 
@@ -195,7 +197,9 @@ two semantically equivalent field-decode/order forms selected per instance; the
 handler-clustering artifact records the small but reproducible effect. Engine
 bytecode records now add zero-to-two checksum-encrypted tail bytes per opcode
 instance, with the generated handler stride and encoder stream kept in lockstep;
-the grammar artifact and fresh IDA observation record the result.
+the grammar artifact and fresh IDA observation record the result. The relocated
+program-header table now shares the first appended RX load, removing one
+synthetic metadata segment while preserving the loader invariants.
 
 ## 15. Remaining gaps
 

@@ -2,10 +2,10 @@
 radare2-native executable-region injection for code virtualization.
 
 Places a generated VM interpreter blob into an ELF64 binary by relocating the
-program-header table into a read-only ``PT_LOAD`` and mapping the blob through
-several adjacent read/execute loads above every existing segment. The VM still
-sees one contiguous address range, while a static tool no longer receives one
-large executable container that identifies the complete payload at a glance.
+program-header table into the first of several adjacent read/execute loads
+above every existing segment. The VM still sees one contiguous address range,
+while a static tool no longer receives one large executable container that
+identifies the complete payload at a glance.
 ET_EXEC and ET_DYN images take the identical path.
 
 A typical image leaves no slack after its program-header table (``.gnu.hash``
@@ -64,7 +64,9 @@ _PF_R = 0x4
 # p_align)` congruence requirement trivially; a violating segment would be
 # mapped from the wrong file offset.
 _SEGMENT_ALIGN = 0x1000
-# Each injection adds a table load and up to this many executable fragments.
+# Each injection adds up to this many executable fragments. The first fragment
+# also maps the relocated program-header table, so no standalone metadata load
+# is needed.
 # Refuse before the program-header table or its reserved file window can overflow.
 _MAX_PHDR_ENTRIES = 128
 _MAX_RX_FRAGMENTS = 8
@@ -168,7 +170,7 @@ def _phdr_table_geometry(header: bytes) -> tuple[int, int] | None:
     e_phnum = struct.unpack_from("<H", header, _E_PHNUM)[0]
     if e_phoff == 0 or e_phnum == 0 or e_phentsize != _PHDR_ENTRY_SIZE:
         return None
-    growth_headroom = 1 + _MAX_RX_FRAGMENTS
+    growth_headroom = _MAX_RX_FRAGMENTS
     if e_phnum + growth_headroom > _MAX_PHDR_ENTRIES:
         logger.debug(
             "Program-header table holds %d entries without %d-entry fragmentation headroom (cap %d); skipping",
@@ -332,12 +334,12 @@ def _grow_header_segment(table: bytearray, placement: _Placement, new_phnum: int
 
 
 def _relocated_phdr_table(placement: _Placement, fragment_sizes: tuple[int, ...]) -> bytes:
-    """Original entries, a read-only table load, and adjacent RX fragments.
+    """Original entries and adjacent RX fragments with the table in the first.
 
     The final fragment goes last and has the highest virtual address: the kernel
     sizes an ET_DYN total mapping from the last ``PT_LOAD`` in table order.
     """
-    new_phnum = placement.e_phnum + 1 + len(fragment_sizes)
+    new_phnum = placement.e_phnum + len(fragment_sizes)
     table_size = new_phnum * _PHDR_ENTRY_SIZE
     table = bytearray(placement.table)
     for index in range(placement.e_phnum):
@@ -345,15 +347,22 @@ def _relocated_phdr_table(placement: _Placement, fragment_sizes: tuple[int, ...]
         if struct.unpack_from("<I", table, base + _P_TYPE)[0] == _PT_PHDR:
             _retarget_phdr_entry(table, base, placement, table_size)
     _grow_header_segment(table, placement, new_phnum)
-    table.extend(_load_entry(_PF_R, placement.append_offset, placement.segment_vaddr, table_size))
     consumed = 0
-    for size in fragment_sizes:
+    for index, size in enumerate(fragment_sizes):
+        if index == 0:
+            offset = placement.append_offset
+            vaddr = placement.segment_vaddr
+            mapped_size = placement.blob_offset + size - placement.append_offset
+        else:
+            offset = placement.blob_offset + consumed
+            vaddr = placement.blob_segment_vaddr + consumed
+            mapped_size = size
         table.extend(
             _load_entry(
                 _PF_R | _PF_X,
-                placement.blob_offset + consumed,
-                placement.blob_segment_vaddr + consumed,
-                size,
+                offset,
+                vaddr,
+                mapped_size,
             )
         )
         consumed += size
@@ -391,7 +400,7 @@ def inject_blob(binary: Any, blob: bytes) -> int | None:
     fragment_sizes = _fragment_sizes(blob)
     if not fragment_sizes:
         return None
-    new_phnum = placement.e_phnum + 1 + len(fragment_sizes)
+    new_phnum = placement.e_phnum + len(fragment_sizes)
     if new_phnum > _MAX_PHDR_ENTRIES:
         return None
     padding = bytes(placement.append_offset - placement.file_size)
