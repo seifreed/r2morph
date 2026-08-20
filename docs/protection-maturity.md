@@ -202,8 +202,8 @@ Scores are deliberately conservative on a 0–5 scale:
 ## 18. Commits
 
 The previously pushed maturity loop includes `d63efec`, `f3143ea`, `4cf6106`,
-`6724082`, `1b0b761`, and `ed409e8`. The current working advance adds the corpus
-baseline, own-adversary harness, real regression coverage, and checksum block
-permutation. It must not be described as fully green until the repository quality
+`6724082`, `1b0b761`, and `ed409e8`. Commit `c701ef3` adds the corpus baseline,
+own-adversary harness, real regression coverage, and checksum block permutation.
+It must not be described as fully green until the repository quality
 gate passes without the forbidden Ruff per-file exclusions; that blocker is
 recorded explicitly rather than hidden.
