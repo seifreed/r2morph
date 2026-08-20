@@ -66,7 +66,7 @@ def seed_sweep_builds(tmp_path_factory: pytest.TempPathFactory) -> list[Path]:
         dest = tmp_path / f"mutated_{seed}"
         if _mutate(FIXTURE, dest, seed) < 1:
             continue
-        assert vm_real._ENGINE_FP_ENTRY_SIGNATURE in dest.read_bytes(), "expected the engine VM path"
+        assert vm_real._has_engine_frame_signature(dest.read_bytes()), "expected the engine VM path"
         produced.append(dest)
     assert produced, "no seed produced a virtualized build"
     return produced

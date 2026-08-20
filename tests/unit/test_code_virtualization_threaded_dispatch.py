@@ -85,6 +85,12 @@ def _engine_spill_order(seed: int) -> tuple[str, ...]:
     return tuple(re.findall(r"mov qword ptr \[rsp \+ \d+\], (\w+)", _engine_asm(seed))[:15])
 
 
+def _frame_size(asm: str) -> str:
+    match = re.search(r"vm_entry:\n  sub rsp, (\d+)", asm)
+    assert match is not None
+    return match.group(1)
+
+
 def test_region_interpreter_has_no_central_dispatch_label() -> None:
     asm = _region_asm(0)
     assert "vm_dispatch:" not in asm
@@ -132,6 +138,14 @@ def test_engine_interpreter_save_order_varies_across_builds() -> None:
         )
         for seed in seeds
     )
+
+
+def test_engine_interpreter_frame_size_varies_across_builds() -> None:
+    assert len({_frame_size(_engine_asm(seed)) for seed in range(10)}) > 1
+
+
+def test_region_interpreter_frame_size_varies_across_builds() -> None:
+    assert len({_frame_size(_region_asm(seed)) for seed in range(10)}) > 1
 
 
 def test_engine_interpreter_never_emits_a_compare_branch_ladder() -> None:

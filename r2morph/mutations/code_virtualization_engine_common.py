@@ -310,6 +310,7 @@ def _live_junk_asm(rng: random.Random, index: int) -> str:
 # when the run contains an FP op (see ``has_fp``); a GP-only run pays the frame but
 # not the save/restore.
 _FRAME_SIZE = 0x290
+_FRAME_SIZES = (0x290, 0x2B0, 0x2D0, 0x2F0)
 
 
 @dataclass(eq=False, repr=False, slots=True)
@@ -334,6 +335,7 @@ class VMScheme:
     body_seed: int = 0
     frame_seed: int = 0
     engine_isa_seed: int = 0
+    frame_size: int = _FRAME_SIZE
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -417,6 +419,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     # Drawn last so adding the ISA personality does not shift any earlier field's
     # value for a given seed; the other fields stay byte-for-byte stable.
     engine_isa_seed = rng.randrange(1 << 31)
+    frame_size = rng.choice(_FRAME_SIZES)
     return VMScheme(
         dup,
         exit_opcode,
@@ -428,6 +431,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         body_seed,
         frame_seed,
         engine_isa_seed,
+        frame_size,
     )
 
 

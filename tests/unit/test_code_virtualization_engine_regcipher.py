@@ -11,7 +11,7 @@ from r2morph.mutations.code_virtualization_engine_frame import build_frame_layou
 
 def test_engine_register_file_uses_runtime_checksum_key() -> None:
     scheme = build_vm_scheme(random.Random(20260812))
-    layout = build_frame_layout(0x290, random.Random(scheme.frame_seed))
+    layout = build_frame_layout(scheme.frame_size, random.Random(scheme.frame_seed))
     asm = _interpreter_asm(0x401000, scheme)
     handler_key = f"qword ptr [rsp+{layout.key_qword_offset}]"
     entry_key = f"qword ptr [rsp + {layout.key_qword_offset}]"

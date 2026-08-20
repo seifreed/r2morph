@@ -152,9 +152,13 @@ def test_virtualized_multiret_function_preserves_exit_code(tmp_path: Path) -> No
 
 
 # The interpreter's first instruction is a constant-size frame allocation
-# (``sub rsp, 0x300``); the injected blob is appended at end-of-file, so this
-# byte sequence marks vm_entry, the start of the checksummed region.
-_VM_ENTRY_SIGNATURE = bytes.fromhex("4881EC00030000")
+# The injected blob is appended at end-of-file; these bounded frame encodings mark
+# vm_entry, the start of the checksummed region.
+_VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x300, 0x320, 0x340, 0x360))
+
+
+def _find_vm_entry(data: bytes) -> int:
+    return next((offset for signature in _VM_ENTRY_SIGNATURES if (offset := data.find(signature)) != -1), -1)
 
 
 def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> None:
@@ -176,7 +180,7 @@ def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> No
         binary.close()
 
     data = bytearray(mutated.read_bytes())
-    vm_entry = data.find(_VM_ENTRY_SIGNATURE)
+    vm_entry = _find_vm_entry(data)
     assert vm_entry != -1, "interpreter not found in mutated binary"
     assert _emulate_exit_code(mutated) == 45  # faithful build still runs
 
@@ -247,7 +251,7 @@ def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
         binary.close()
 
     data = mutated.read_bytes()
-    vm_entry = data.find(_VM_ENTRY_SIGNATURE)
+    vm_entry = _find_vm_entry(data)
     assert vm_entry != -1, "interpreter not found in mutated binary"
     blob = data[vm_entry:]
     assert _RDTSC_BYTES in blob or _RDTSCP_BYTES in blob, "no timing read emitted"
@@ -362,7 +366,7 @@ def test_tampering_nested_interpreter_byte_diverges(tmp_path: Path) -> None:
         binary.close()
 
     data = bytearray(mutated.read_bytes())
-    vm_entry = data.find(_VM_ENTRY_SIGNATURE)
+    vm_entry = _find_vm_entry(data)
     assert vm_entry != -1
     assert _emulate_exit_code(mutated) == 45
     data[vm_entry + 0x10] ^= 0xFF
@@ -817,10 +821,14 @@ def test_straight_line_memarith_run_fallback_preserves_exit_code(tmp_path: Path)
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
-# sub rsp, 0x290 - the engine VM's frame allocation (the xmm save area plus the
-# micro-op virtual operand stack below the red zone). Its presence in the mutated
-# binary proves the engine path (not the region's 0x280 frame) virtualized the run.
-_ENGINE_FP_ENTRY_SIGNATURE = bytes.fromhex("4881EC90020000")
+# The engine VM's bounded frame encodings (the xmm save area plus the micro-op
+# virtual operand stack below the red zone). Their presence proves the engine path
+# (not the region frame) virtualized the run.
+_ENGINE_FRAME_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x290, 0x2B0, 0x2D0, 0x2F0))
+
+
+def _has_engine_frame_signature(data: bytes) -> bool:
+    return any(signature in data for signature in _ENGINE_FRAME_SIGNATURES)
 
 
 def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -846,7 +854,7 @@ def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> No
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
@@ -872,7 +880,7 @@ def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> No
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
@@ -899,7 +907,7 @@ def test_engine_fp_convert_roundtrip_fallback_preserves_exit_code(tmp_path: Path
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
@@ -924,7 +932,7 @@ def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_pat
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0
 
 
@@ -950,7 +958,7 @@ def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_pat
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
@@ -979,7 +987,7 @@ def test_engine_fp_rip_relative_load_store_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
@@ -1007,7 +1015,7 @@ def test_engine_fp_arithmetic_rip_relative_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
@@ -1034,7 +1042,7 @@ def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
@@ -1062,7 +1070,7 @@ def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
@@ -1092,7 +1100,7 @@ def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> N
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
 
 
@@ -2621,7 +2629,7 @@ def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
 
 
@@ -2667,7 +2675,7 @@ def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(FIXTURE_ENGARITH) == _emulate_exit_code(mutated) == 42
 
 
@@ -2710,7 +2718,7 @@ def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path)
         binary.close()
 
     assert stats["functions_virtualized"] >= 1
-    assert _ENGINE_FP_ENTRY_SIGNATURE in mutated.read_bytes()
+    assert _has_engine_frame_signature(mutated.read_bytes())
     assert _emulate_exit_code(FIXTURE_ENGARITHIMM) == _emulate_exit_code(mutated) == 42
 
 

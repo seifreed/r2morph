@@ -15,7 +15,6 @@ from r2morph.mutations.code_virtualization_antidebug import (
 from r2morph.mutations.code_virtualization_bootstrap import build_bootstrap_asm
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine_common import (
-    _FRAME_SIZE,
     GP_REGISTERS,
     RSP_INDEX,
     VMScheme,
@@ -67,15 +66,16 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     junk_rng = random.Random(scheme.junk_seed)
     # This build's frame-region offsets (checksum/xmm/vsp/vstack): relocated per
     # build so no fixed frame map of the VM's state transfers across samples. The
-    # frame size stays _FRAME_SIZE, so the entry signature is unchanged.
+    # The frame size and internal regions vary per build while remaining self-consistent.
+    frame_size = scheme.frame_size
     layout = (
-        build_frame_layout(_FRAME_SIZE, random.Random(scheme.frame_seed)) if scheme.frame_seed else DEFAULT_FRAME_LAYOUT
+        build_frame_layout(frame_size, random.Random(scheme.frame_seed)) if scheme.frame_seed else DEFAULT_FRAME_LAYOUT
     )
     handlers = EngineHandlerGenerator(scheme, layout, isa)
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
     save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
-    lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n"]
+    lines = [f"vm_entry:\n  sub rsp, {frame_size}\n"]
     for index in save_order:
         lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {GP_REGISTERS[index]}\n")
     # Empty the virtual operand stack for the micro-op handlers (pointer word = 0).
@@ -117,7 +117,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
 
     # r15 holds the bytecode base; r13/r14 are free scratch between handlers.
     entry_setup = (
-        f"  lea rax, [rsp + {_FRAME_SIZE}]\n"
+        f"  lea rax, [rsp + {frame_size}]\n"
         f"  xor rax, qword ptr [rsp + {layout.key_qword_offset}]\n"
         f"  mov qword ptr [rsp + {slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip + bytecode]\n  mov r15, rsi\n"
@@ -182,7 +182,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     if has_fp:
         for xmm in range(16):
             lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}]\n")
-    lines.append(f"  add rsp, {_FRAME_SIZE}\n  jmp {hex(continuation_vaddr)}\n")
+    lines.append(f"  add rsp, {frame_size}\n  jmp {hex(continuation_vaddr)}\n")
 
     table = "".join(f"  .long h_{index} - vm_table\n" for index in range(total))
     # The bootstrap table and tracer-constant island trail the main table, outside

@@ -51,11 +51,11 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import (
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
-    _FRAME_SIZE,
     _GUARD,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
     _VSP_OFFSET,
+    frame_size_for_seed,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
@@ -450,7 +450,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
             if name != "rsp"
         )
         + _set_layer_slots(0, counts[0])
-        + f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
+        + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n  sub rax, {_GUARD}\n{floor_cell}"
         + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{rsp_off}], rax\n"
         + "  lea rsi, [rip+bc_0]\n  mov r15, rsi\n  jmp vm_dispatch\n"
     )
@@ -458,7 +458,8 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     entry = (
         # Zero the virtual operand stack pointer before any micro-op runs; peeled
         # flag-dead arith folds through it in the nested layers too.
-        f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
+        f"vm_entry:\n  sub rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
+        f"  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
         + checksum_prologue_asm(schemes[0].xor_key, end_label="vm_table_0", slot=_CHECKSUM_OFFSET)
         + bootstrap
     )
@@ -509,7 +510,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                         reload_seq,
                         retarget,
                         retarget_target,
-                        _FRAME_SIZE,
+                        frame_size_for_seed(schemes[0].junk_seed),
                         slot,
                         lens[layer],
                         scheme.field_perm,
@@ -534,7 +535,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     body = (
         entry
         + "".join(layer_bodies)
-        + f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(layers[0].exit_vaddr)}\n"
+        + (
+            f"vm_exit:\n{reload_seq}  add rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
+            f"  jmp {hex(layers[0].exit_vaddr)}\n"
+        )
     )
     poly_rng = random.Random(schemes[0].table_key)
     tables = "".join(

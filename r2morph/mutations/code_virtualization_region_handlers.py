@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_fold import arith_fold
 from r2morph.mutations.code_virtualization_layout import (
     field_offsets,
@@ -53,6 +54,14 @@ class IntegerHandlerConfig:
 # enlarges the reservation; every GP-slot offset (rsp + slot*8) is unchanged, so
 # the handler addressing is untouched.
 _FRAME_SIZE = 0x300
+_FRAME_SIZES = (0x300, 0x320, 0x340, 0x360)
+
+
+def frame_size_for_seed(seed: int) -> int:
+    """Select an aligned frame size without moving the relocated program stack."""
+    return random.Random(seed ^ 0xF1A6E).choice(_FRAME_SIZES)
+
+
 _FLAGS_OFFSET = 0x80
 # Base of the 16 XMM save slots (16 bytes each); slot i lives at
 # [rsp + _XMM_SAVE_OFFSET + i*16). Spilled/reloaded only when a region carries FP.

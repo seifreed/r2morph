@@ -48,11 +48,11 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
-    _FRAME_SIZE,
     _GUARD,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
     _VSP_OFFSET,
+    frame_size_for_seed,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     checksum_prologue_asm,
@@ -90,12 +90,13 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
     save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
+    frame_size = frame_size_for_seed(scheme.junk_seed)
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
     # Only regions that move scalar FP need the 16 XMM registers preserved in the
     # frame; for everything else the spill/reload is pure overhead and is omitted.
     has_fp = any(item[0] in ("fpload", "fpstore") for item in region.instructions)
     # Zero the virtual operand stack pointer; micro-op arithmetic folds through it.
-    lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"]
+    lines = [f"vm_entry:\n  sub rsp, {frame_size}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"]
     for index in save_order:
         lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n")
     if has_fp:
@@ -156,7 +157,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # range. rax is free scratch here (every GP register was already spilled).
     floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
     entry_setup = (
-        f"  lea rax, [rsp+{_FRAME_SIZE}]\n  sub rax, {_GUARD}\n{floor_cell}"
+        f"  lea rax, [rsp+{frame_size}]\n  sub rax, {_GUARD}\n{floor_cell}"
         f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n  mov qword ptr [rsp+{slot[RSP_INDEX] * 8}], rax\n"
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
     )
@@ -212,7 +213,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     reload_seq,
                     retarget,
                     retarget_target,
-                    _FRAME_SIZE,
+                    frame_size,
                     slot,
                     sum(_item_size(item) for item in region.instructions),
                     scheme.field_perm,
@@ -249,7 +250,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # The bootstrap table and tracer-constant island trail the main dispatch table,
     # outside the checksummed span and before the appended bytecode.
     lines.append(
-        f"vm_exit:\n{reload_seq}  add rsp, {_FRAME_SIZE}\n  jmp {hex(region.exit_vaddr)}\n"
+        f"vm_exit:\n{reload_seq}  add rsp, {frame_size}\n  jmp {hex(region.exit_vaddr)}\n"
         f"{ijmp_map}vm_table:\n{table}{bootstrap_table}{tracer_const_island_asm()}bytecode:\n"
     )
     # Thread the dispatch: every handler tail (and the retarget) ends with a back
