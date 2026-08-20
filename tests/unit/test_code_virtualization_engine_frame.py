@@ -18,7 +18,10 @@ from r2morph.mutations.code_virtualization_engine_common import GP_REGISTERS, bu
 from r2morph.mutations.code_virtualization_engine_frame import (
     _CHECKSUM_SIZE,
     _GP_REGION_END,
+    _KEY_DWORD_SIZE,
+    _KEY_QWORD_SIZE,
     _RED_ZONE_SIZE,
+    _STATE_QWORD_SIZE,
     _VSP_SIZE,
     _VSTACK_SIZE,
     _XMM_SIZE,
@@ -27,7 +30,15 @@ from r2morph.mutations.code_virtualization_engine_frame import (
 )
 
 _FRAME_SIZE = 0x290
-_SIZES = {"checksum": _CHECKSUM_SIZE, "xmm": _XMM_SIZE, "vsp": _VSP_SIZE, "vstack": _VSTACK_SIZE}
+_SIZES = {
+    "checksum": _CHECKSUM_SIZE,
+    "xmm": _XMM_SIZE,
+    "vsp": _VSP_SIZE,
+    "vstack": _VSTACK_SIZE,
+    "keydword": _KEY_DWORD_SIZE,
+    "keyqword": _KEY_QWORD_SIZE,
+    "stateqword": _STATE_QWORD_SIZE,
+}
 
 
 def _regions(layout) -> list[tuple[int, int]]:
@@ -37,6 +48,9 @@ def _regions(layout) -> list[tuple[int, int]]:
             (layout.xmm_offset, _XMM_SIZE),
             (layout.vsp_offset, _VSP_SIZE),
             (layout.vstack_base, _VSTACK_SIZE),
+            (layout.key_dword_offset, _KEY_DWORD_SIZE),
+            (layout.key_qword_offset, _KEY_QWORD_SIZE),
+            (layout.state_qword_offset, _STATE_QWORD_SIZE),
         ]
     )
 
@@ -48,7 +62,10 @@ def test_default_layout_reserves_the_scattered_gp_window() -> None:
         DEFAULT_FRAME_LAYOUT.xmm_offset,
         DEFAULT_FRAME_LAYOUT.vsp_offset,
         DEFAULT_FRAME_LAYOUT.vstack_base,
-    ) == (0x290, 0xA0, 0xB0, 0x1B0, 0x1B8)
+        DEFAULT_FRAME_LAYOUT.key_dword_offset,
+        DEFAULT_FRAME_LAYOUT.key_qword_offset,
+        DEFAULT_FRAME_LAYOUT.state_qword_offset,
+    ) == (0x290, 0xA0, 0xB0, 0x1B0, 0x1B8, 0x1D8, 0x1E0, 0x1F0)
 
 
 def test_scheme_gp_slots_leave_a_hole_in_the_contiguous_context_array() -> None:
@@ -74,7 +91,15 @@ def test_relocated_regions_never_overlap_and_stay_in_the_window() -> None:
 
 def test_layout_varies_across_builds() -> None:
     produced = {
-        (layout.checksum_offset, layout.xmm_offset, layout.vsp_offset, layout.vstack_base)
+        (
+            layout.checksum_offset,
+            layout.xmm_offset,
+            layout.vsp_offset,
+            layout.vstack_base,
+            layout.key_dword_offset,
+            layout.key_qword_offset,
+            layout.state_qword_offset,
+        )
         for layout in (build_frame_layout(_FRAME_SIZE, random.Random(seed)) for seed in range(64))
     }
     assert len(produced) > 1

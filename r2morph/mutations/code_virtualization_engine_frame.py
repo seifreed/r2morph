@@ -13,7 +13,8 @@ System V red zone pinned at the top so a leaf callee's red-zone data survives.
 The layout is self-consistent by construction: every offset the interpreter emits
 comes from one :class:`FrameLayout`, so relocating a region moves all of its
 references together and the encoder (which folds only the checksum *value*, never
-a slot offset) is untouched.
+a slot offset) is untouched. The state key is separate from the operand key so it
+can include runtime-only input without changing bytecode encoding.
 """
 
 from __future__ import annotations
@@ -40,6 +41,7 @@ _VSTACK_SIZE = 0x20
 # checksum rather than a build constant.
 _KEY_DWORD_SIZE = 0x8
 _KEY_QWORD_SIZE = 0x8
+_STATE_QWORD_SIZE = 0x8
 
 
 @dataclass(frozen=True)
@@ -53,6 +55,7 @@ class FrameLayout:
     vstack_base: int
     key_dword_offset: int
     key_qword_offset: int
+    state_qword_offset: int
 
 
 def build_frame_layout(frame_size: int, rng: random.Random) -> FrameLayout:
@@ -71,6 +74,7 @@ def build_frame_layout(frame_size: int, rng: random.Random) -> FrameLayout:
         ("vstack", _VSTACK_SIZE),
         ("keydword", _KEY_DWORD_SIZE),
         ("keyqword", _KEY_QWORD_SIZE),
+        ("stateqword", _STATE_QWORD_SIZE),
     ]
     rng.shuffle(regions)
     slack = window_end - window_start - sum(size for _, size in regions)
@@ -92,6 +96,7 @@ def build_frame_layout(frame_size: int, rng: random.Random) -> FrameLayout:
         offsets["vstack"],
         offsets["keydword"],
         offsets["keyqword"],
+        offsets["stateqword"],
     )
 
 
@@ -104,4 +109,5 @@ DEFAULT_FRAME_LAYOUT = FrameLayout(
     vstack_base=0x1B8,
     key_dword_offset=0x1D8,
     key_qword_offset=0x1E0,
+    state_qword_offset=0x1F0,
 )

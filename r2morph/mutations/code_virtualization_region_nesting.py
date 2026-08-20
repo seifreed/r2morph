@@ -8,8 +8,9 @@ that a second, independently-keyed interpreter executes, reached through an
 layers share one register frame (so the peeled run has the same effect it would
 have had inline) but have their own opcode permutation and dispatch table - so
 recovering the outer VM only reveals a second VM to peel. The opcode/operand
-cipher key and the dispatch-table key are the shared runtime self-checksum, so
-neither is a build constant a decompiler can read off either layer.
+cipher key and the dispatch-table key are the shared runtime self-checksum, while
+the live-state mask is kept in a separate stack-derived slot, so neither state nor
+operand decoding depends on a build-constant mask.
 
 One shared, slot-driven dispatcher serves both layers: the transfer handlers
 write the active layer's handler count and dispatch-table base into frame slots,
@@ -54,6 +55,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _GUARD,
     _KEY_DWORD_SLOT,
     _KEY_QWORD_SLOT,
+    _STATE_QWORD_SLOT,
     _VSP_OFFSET,
     frame_size_for_seed,
 )
@@ -324,9 +326,9 @@ def _decode_block(rng: random.Random) -> str:
             (
                 f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n"
                 f"  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
-                f"  xor rsi, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
-                f"  xor r15, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
-                f"  xor r13, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+                f"  xor rsi, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
+                f"  xor r15, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
+                f"  xor r13, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
             ),
         ],
         rng=rng,
@@ -453,6 +455,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         + f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
         + f"  movzx rax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
         + f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
+        + f"  lea rax, [rsp+{frame_size_for_seed(schemes[0].junk_seed)}]\n"
+        + "  ror rax, 17\n"
+        + f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+        + f"  mov qword ptr [rsp+{_STATE_QWORD_SLOT}], rax\n"
         + "".join(
             f"  mov rax, qword ptr [rsp+{slot[i] * 8}]\n"
             f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
@@ -536,9 +542,9 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                     junk_rng,
                     extra,
                     entry_prefix=(
-                        f"  xor rsi, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
-                        f"  xor r15, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
-                        f"  xor r13, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+                        f"  xor rsi, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
+                        f"  xor r15, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
+                        f"  xor r13, qword ptr [rsp+{_STATE_QWORD_SLOT}]\n"
                     ),
                 ),
                 frozenset(index * 8 for index in slot),

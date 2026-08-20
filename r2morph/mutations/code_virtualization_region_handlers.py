@@ -70,9 +70,11 @@ _XMM_SAVE_OFFSET = 0x100
 # once at entry into these free slots (the [0x200, 0x280) window between the XMM
 # save area and the virtual stack). Every handler decrypts its multi-byte operands
 # against these rather than a build-constant key, so no operand-cipher literal is
-# exposed; the byte-wide key is the checksum slot itself, read directly.
+# exposed; the separate state slot below is reserved for the runtime-only dispatch
+# mask.
 _KEY_DWORD_SLOT = 0x200
 _KEY_QWORD_SLOT = 0x208
+_STATE_QWORD_SLOT = 0x218
 # The interpreter's private virtual operand stack: a pointer word (current depth in
 # bytes, starts 0) at _VSP_OFFSET and 8 cells from _VSTACK_BASE. Micro-op lowering
 # folds arithmetic through this stack (vpush/vbinop/vpop); peak depth is two cells

@@ -108,7 +108,9 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     bounds = f"  cmp al, {total}\n  jae vm_exit\n"
     # Keep the live vPC, bytecode base, and position opaque at the indirect jump;
     # the handler restores the raw values before it reads or advances the record.
-    state_key = f"qword ptr [rsp + {layout.key_qword_offset}]"
+    # State masking is separate from operand masking and includes the caller's stack
+    # address, so the state mask has no build-time value an encoder could expose.
+    state_key = f"qword ptr [rsp + {layout.state_qword_offset}]"
     state_decode = f"  xor rsi, {state_key}\n" f"  xor r15, {state_key}\n" f"  xor r13, {state_key}\n"
 
     def make_decode() -> str:
@@ -147,6 +149,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         f"  movzx rax, byte ptr [rsp + {layout.checksum_offset}]\n"
         "  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
         f"  mov qword ptr [rsp + {layout.key_qword_offset}], rax\n"
+        f"  lea rax, [rsp + {frame_size}]\n"
+        "  ror rax, 17\n"
+        f"  xor rax, qword ptr [rsp + {layout.key_qword_offset}]\n"
+        f"  mov qword ptr [rsp + {layout.state_qword_offset}], rax\n"
     )
     encrypt_slots = "".join(
         f"  mov rcx, qword ptr [rsp + {slot[index] * 8}]\n"

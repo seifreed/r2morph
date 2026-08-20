@@ -26,3 +26,13 @@ def test_engine_register_file_uses_runtime_checksum_key() -> None:
             f"xor rax, {entry_key}\n  mov qword ptr [rsp + {rsp_slot * 8}], rax",
         )
     )
+
+
+def test_engine_dispatch_uses_stack_derived_state_key() -> None:
+    scheme = build_vm_scheme(random.Random(20260820))
+    layout = build_frame_layout(scheme.frame_size, random.Random(scheme.frame_seed))
+    asm = _interpreter_asm(0x401000, scheme)
+
+    assert layout.state_qword_offset != layout.key_qword_offset
+    assert f"mov qword ptr [rsp + {layout.state_qword_offset}], rax" in asm
+    assert asm.count(f"xor rsi, qword ptr [rsp + {layout.state_qword_offset}]") >= 2
