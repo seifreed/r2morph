@@ -227,4 +227,6 @@ regression. Commit `c161b22` expands the IDA/Hex-Rays Tier B evidence with
 memory, flag-live, FP, PIE, and interpreter cases. It must not be described as
 fully green until the repository quality
 gate passes without the forbidden Ruff per-file exclusions; that blocker is
-recorded explicitly rather than hidden.
+recorded explicitly rather than hidden. Commit `fc9e1cc` measures cross-seed
+handler clustering, adds semantically equivalent GP handler variants, and
+regenerates the multi-seed corpus.
