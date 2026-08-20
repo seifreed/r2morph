@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `868dc1f`
+Commit: `e50bc26`
 Date: `2026-08-21`
 
 ## 1. Current architecture
@@ -58,7 +58,7 @@ virtualized functions for every seed and are retained as no-op coverage results.
 |---|---|---|
 | Opcode and operand polymorphism | Per-seed output hashes and bytecode sizes in corpus JSON | Effective diversity; not cryptographic secrecy |
 | Handler duplication and body variation | Generated handler counts, shuffled emission, ISA/junk seeds | Raises static clustering cost |
-| Direct-threaded dispatch | IDA ends representative entries at opaque `jmp rax` | Stronger than a plain switch; dynamic recovery remains possible |
+| Direct-threaded dispatch | IDA sees per-build indirect tails as `jmp rax` or `push rax; retn` | Stronger than a plain switch; dynamic recovery remains possible |
 | Checksum-keyed state | Hex-Rays recovers either a four-byte permutation or bytewise checksum, but not downstream keys | Integrity and key dependency are visible; traversal shape varies per build |
 | Register-frame scattering | Seed-derived slot permutation and spill order | Removes fixed frame fingerprints; frame semantics remain inferable |
 | Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.838`, `1,780` of `2,232` comparisons >= `0.8` | Per-instance body variants reduce similarity slightly, but generic clustering remains effective |
@@ -120,6 +120,13 @@ three analysis segments and Hex-Rays still recovers the checksum loop and an
 indirect `jmp rax` in the VM entry. No handler table or bytecode grammar was
 recovered. This reduces the synthetic container signal without claiming that
 the bootstrap is hidden.
+
+Commit `e50bc26` selects an equivalent indirect transfer per generated decode
+copy: `jmp rax` or `push rax; retn`. Fresh IDA analysis of the current
+`elf_vm_arith_x86_64` build classified the VM entry as a leaf and Hex-Rays
+recovered the checksum loop, encrypted offset-table load, and a final `retn`
+instead of the fixed `jmp rax` tail. The table and checksum remain visible, and
+no handler grammar was recovered. The real fixture retained Unicorn exit `45`.
 
 Commit `f5f0b35` keeps the engine VM's vPC, bytecode base, and position encoded
 with the runtime checksum key at each indirect dispatch. The handler decodes the
@@ -316,8 +323,11 @@ resolved with explicit test assertions, named constants, and real process adapte
 Commit `868dc1f` adds a real ELF regression for extending an existing executable
 tail and keeps a forced-large-gap regression for the fragmented fallback. The
 one-seed Tier A rerun passed `109/109` fixtures with `0` semantic failures and
-`109/109` successful runs. The full strict suite passed `4869` tests, skipped
+`109/109` successful runs. The full strict suite passed `4870` tests, skipped
 `21`, and reached `81.03%` coverage under Python 3.12.
+Commit `e50bc26` adds the per-copy indirect-transfer variation. Its focused
+engine and region regressions passed, and the full strict suite retained the
+same `109/109` one-seed semantic result.
 
 ## 14. Fixed
 
@@ -342,6 +352,8 @@ synthetic metadata segment while preserving the loader invariants. Commit
 `868dc1f` extends a usable final executable load in place and retains the
 fragmented fallback for incompatible geometry; real ELF regressions cover both
 placement paths.
+Commit `e50bc26` adds `push rax; retn` as an equivalent per-copy dispatch tail;
+the fresh IDA survey and real exit-code regressions cover the new form.
 Handler tails also select the equivalent `add` or flag-neutral `lea` vIP advance
 form per instance; the clustering artifact records the reduction in nearest
 similarity.
@@ -404,7 +416,7 @@ repository-wide quality gate is green without adding lint suppression.
 
 ### Termination assessment
 
-At code HEAD `868dc1f`, the remaining protection weaknesses require architectural
+At code HEAD `e50bc26`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The two-stage integrity
 contract removes one single full-span loop, but both the short bootstrap loop and
 the deferred full loop remain statically recoverable. Removing that fingerprint
@@ -416,9 +428,9 @@ use multiple existing executable regions and preserve loader invariants. Runtime
 traces still recover handler targets, and the raw target sequence remains
 observable; reducing that exposure requires a different execution model, not more
 static junk or another checksum spelling. The loop remains active because
-`868dc1f` reduced the container signal without changing the bootstrap contract;
-checksum-loop recovery, residual container fingerprinting, and target-sequence
-exposure remain open weaknesses.
+`e50bc26` reduces one fixed indirect-tail signature without changing the
+bootstrap contract; checksum-loop recovery, residual container fingerprinting,
+and target-sequence exposure remain open weaknesses.
 
 ## 16. Comparison with commercial properties
 
