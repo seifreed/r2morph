@@ -171,7 +171,13 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         # a per-handler scratch-register bijection makes the body itself diverge, so
         # duplicate handlers share neither junk nor register-allocation fingerprint.
         body = rename_body(
-            handlers.handler_body(mnemonic, is_immediate, width, arith_variant),
+            handlers.handler_body(
+                mnemonic,
+                is_immediate,
+                width,
+                arith_variant,
+                body_variant=(random.Random(scheme.body_seed ^ (index << 1)).randrange(4) if scheme.body_seed else 0),
+            ),
             random.Random(scheme.body_seed ^ index),
         )
         lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng, index)}{body}")

@@ -28,6 +28,12 @@ _DWORD_WIDTH_BITS = 32
 _QWORD_WIDTH_BITS = 64
 
 
+def _byte_field_load(register: str, offset: int, variant: int) -> str:
+    if variant & 2:
+        return f"  mov {register}d, 0\n  mov {register}b, byte ptr [rsi+{offset}]\n"
+    return f"  movzx {register}d, byte ptr [rsi+{offset}]\n"
+
+
 class EngineHandlerGenerator:
     """Generate handlers against one scheme, frame layout, and ISA personality."""
 
@@ -39,7 +45,14 @@ class EngineHandlerGenerator:
         self.key_qword = f"qword ptr [rsp + {layout.key_qword_offset}]"
         self.key_dword = f"dword ptr [rsp + {layout.key_dword_offset}]"
 
-    def handler_body(self, mnemonic: str, is_immediate: bool, width: int, arith_variant: int) -> str:
+    def handler_body(
+        self,
+        mnemonic: str,
+        is_immediate: bool,
+        width: int,
+        arith_variant: int,
+        body_variant: int = 0,
+    ) -> str:
         if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
             return microop_handler_body(
                 mnemonic,
@@ -58,11 +71,11 @@ class EngineHandlerGenerator:
             return fp_body
         if mnemonic in _MEM_OP_KINDS:
             return self._mem_handler_body(mnemonic, width, arith_variant)
-        return self._gp_handler_body(mnemonic, is_immediate, width)
+        return self._gp_handler_body(mnemonic, is_immediate, width, body_variant)
 
-    def _gp_handler_body(self, mnemonic: str, is_immediate: bool, width: int) -> str:
+    def _gp_handler_body(self, mnemonic: str, is_immediate: bool, width: int, body_variant: int = 0) -> str:
         off = op_offsets(is_immediate, width, self.scheme.field_perm)
-        decrypt_dst = f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
+        decrypt_dst = _byte_field_load("r8", off["dst"], body_variant) + f"  xor r8b, {self.key}\n  xor r8b, r13b\n"
         if is_immediate and width == _QWORD_WIDTH_BITS:
             load = (
                 f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {self.key_qword}\n  xor rax, r10\n"
@@ -76,7 +89,7 @@ class EngineHandlerGenerator:
             )
             advance = "  add rsi, 6\n"
         else:
-            load = f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
+            load = _byte_field_load("r9", off["src"], body_variant) + f"  xor r9b, {self.key}\n  xor r9b, r13b\n"
             load += (
                 "  mov rax, qword ptr [rsp + r9*8]\n"
                 if width == _QWORD_WIDTH_BITS
@@ -84,7 +97,8 @@ class EngineHandlerGenerator:
             )
             advance = "  add rsi, 3\n"
         apply = self._shift_body(mnemonic, width) if mnemonic in _SHIFT_KINDS else "  mov qword ptr [rsp + r8*8], rax\n"
-        return decrypt_dst + load + apply + advance + "  jmp vm_dispatch\n"
+        ordered_prefix = load + decrypt_dst if body_variant & 1 else decrypt_dst + load
+        return ordered_prefix + apply + advance + "  jmp vm_dispatch\n"
 
     @staticmethod
     def _shift_body(mnemonic: str, width: int) -> str:
