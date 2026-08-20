@@ -13,6 +13,7 @@ import shutil
 import struct
 import tempfile
 import time
+from collections.abc import Mapping
 from pathlib import Path
 
 from r2morph.core.binary import Binary
@@ -31,16 +32,37 @@ _RUNTIME_TIMEOUT_SECONDS = 5.0
 _PREVIEW_BYTES = 32
 
 
+class _ArtifactAccumulator:
+    """Hash a process stream incrementally while retaining only its preview."""
+
+    def __init__(self) -> None:
+        self._digest = hashlib.sha256()
+        self._preview = bytearray()
+        self._size = 0
+
+    def update(self, chunk: bytes) -> None:
+        self._digest.update(chunk)
+        self._size += len(chunk)
+        remaining = _PREVIEW_BYTES - len(self._preview)
+        if remaining > 0:
+            self._preview.extend(chunk[:remaining])
+
+    def result(self) -> dict[str, object]:
+        return {
+            "sha256": self._digest.hexdigest(),
+            "size": self._size,
+            "preview_hex": bytes(self._preview).hex(),
+        }
+
+
 def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _digest_artifact(value: bytes) -> dict[str, object]:
-    return {
-        "sha256": hashlib.sha256(value).hexdigest(),
-        "size": len(value),
-        "preview_hex": value[:_PREVIEW_BYTES].hex(),
-    }
+    accumulator = _ArtifactAccumulator()
+    accumulator.update(value)
+    return accumulator.result()
 
 
 def _prepare_runtime_path(path: Path) -> tuple[Path, Path | None]:
@@ -90,7 +112,7 @@ def _runtime_artifacts(path: Path) -> dict[str, object]:
     os.close(stderr_write)
 
     streams = {stdout_read: bytearray(), stderr_read: bytearray()}
-    captured = {stdout_read: bytearray(), stderr_read: bytearray()}
+    captured = {stdout_read: _ArtifactAccumulator(), stderr_read: _ArtifactAccumulator()}
     timed_out = False
     deadline = time.perf_counter() + _RUNTIME_TIMEOUT_SECONDS
     while streams:
@@ -103,7 +125,7 @@ def _runtime_artifacts(path: Path) -> dict[str, object]:
         for descriptor in ready:
             chunk = os.read(descriptor, 4096)
             if chunk:
-                captured[descriptor].extend(chunk)
+                captured[descriptor].update(chunk)
             else:
                 os.close(descriptor)
                 del streams[descriptor]
@@ -114,8 +136,8 @@ def _runtime_artifacts(path: Path) -> dict[str, object]:
     result: dict[str, object] = {
         "status": "timeout" if timed_out else "completed",
         "duration_seconds": time.perf_counter() - started,
-        "stdout": _digest_artifact(bytes(captured[stdout_read])),
-        "stderr": _digest_artifact(bytes(captured[stderr_read])),
+        "stdout": captured[stdout_read].result(),
+        "stderr": captured[stderr_read].result(),
     }
     if not timed_out:
         result["return_code"] = os.waitstatus_to_exitcode(wait_status)
@@ -203,6 +225,41 @@ def _semantic_artifacts(path: Path) -> dict[str, object]:
     }
 
 
+def _runtime_observables_equal(expected: object, actual: object) -> bool:
+    """Compare bounded native-runtime observables without retaining raw output."""
+    if not isinstance(expected, Mapping) or not isinstance(actual, Mapping):
+        return False
+    for field in ("status", "return_code", "error_type"):
+        if expected.get(field) != actual.get(field):
+            return False
+    for stream in ("stdout", "stderr"):
+        expected_digest = expected.get(stream)
+        actual_digest = actual.get(stream)
+        if not isinstance(expected_digest, Mapping) or not isinstance(actual_digest, Mapping):
+            return False
+        if expected_digest.get("sha256") != actual_digest.get("sha256"):
+            return False
+        if expected_digest.get("size") != actual_digest.get("size"):
+            return False
+    return True
+
+
+def _semantic_run_matches(baseline: object, baseline_runtime: object, run: object) -> bool:
+    """Require valid emulator parity and identical bounded runtime observables."""
+    if not isinstance(baseline, Mapping) or not isinstance(baseline_runtime, Mapping):
+        return False
+    if not isinstance(run, Mapping) or run.get("status") != "passed":
+        return False
+    if baseline.get("status") != "completed":
+        return False
+    unicorn = run.get("unicorn")
+    if not isinstance(unicorn, Mapping) or unicorn.get("status") != "completed":
+        return False
+    if unicorn.get("exit_code") != baseline.get("exit_code"):
+        return False
+    return _runtime_observables_equal(baseline_runtime, run.get("runtime"))
+
+
 def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, object]:
     output = output_dir / f"seed-{seed}"
     shutil.copyfile(fixture, output)
@@ -252,14 +309,12 @@ def measure_fixture(fixture: Path, seeds: range, output_root: Path) -> dict[str,
     output_dir = output_root / fixture.name
     output_dir.mkdir()
     runs = [_measure_seed(fixture, seed, output_dir) for seed in seeds]
-    baseline_exit = baseline_unicorn.get("exit_code")
-    semantic_runs = [run for run in runs if run.get("status") == "passed" and isinstance(run.get("unicorn"), dict)]
-    semantic_exits = [
-        unicorn.get("exit_code")
-        for run in semantic_runs
-        for unicorn in [run.get("unicorn")]
-        if isinstance(unicorn, dict)
-    ]
+    semantic_runs = []
+    for run in runs:
+        runtime_equal = _runtime_observables_equal(baseline_runtime, run.get("runtime"))
+        run["runtime_observable_equal"] = runtime_equal
+        if _semantic_run_matches(baseline_unicorn, baseline_runtime, run):
+            semantic_runs.append(run)
     return {
         "sample": fixture.name,
         "baseline_sha256": sha256(fixture),
@@ -269,7 +324,7 @@ def measure_fixture(fixture: Path, seeds: range, output_root: Path) -> dict[str,
         "baseline_unicorn": baseline_unicorn,
         "seeds": [run["seed"] for run in runs],
         "runs": runs,
-        "all_semantic_equal": bool(semantic_runs) and all(exit_code == baseline_exit for exit_code in semantic_exits),
+        "all_semantic_equal": bool(runs) and len(semantic_runs) == len(runs),
         "successful_runs": len(semantic_runs),
         "failed_runs": len(runs) - len(semantic_runs),
     }
