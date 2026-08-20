@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `c6f206f`
+Commit: `cfc6c2d`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -58,7 +58,7 @@ virtualized functions for every seed and are retained as no-op coverage results.
 | Direct-threaded dispatch | IDA ends representative entries at opaque `jmp rax` | Stronger than a plain switch; dynamic recovery remains possible |
 | Checksum-keyed state | Hex-Rays recovers the checksum but not its downstream keys | Integrity and key dependency are visible |
 | Register-frame scattering | Seed-derived slot permutation and spill order | Removes fixed frame fingerprints; frame semantics remain inferable |
-| Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.846`, `1,903` of `2,232` comparisons >= `0.8` | Per-instance body variants reduce similarity slightly, but generic clustering remains effective |
+| Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.838`, `1,780` of `2,232` comparisons >= `0.8` | Per-instance body variants reduce similarity slightly, but generic clustering remains effective |
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers | Removes one fixed cross-build record-stride assumption; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
@@ -95,7 +95,7 @@ entries ended in `jmp rax`. The interpreter outlier decompiled directly to
 path, not protection resistance. This is a measured static result, not proof that
 the complete VM resists a determined analyst.
 
-The fresh seed `20260820` grammar build gave IDA three functions and seven
+The fresh seed `20260820` grammar build gave IDA three functions and five
 segments. Hex-Rays still decompiled the checksum bootstrap and the encrypted
 relative-table load but recovered no handler functions, handler table, or bytecode
 record grammar. The entry used a `0x2f0` frame and remained a 269-byte leaf ending
@@ -114,7 +114,9 @@ encrypted threaded build.
 This failure is classified as unsupported current architecture, not as proof of
 genuine devirtualization impossibility. The analyzer's positive generic oracle
 remains covered by its existing real-fixture tests; the current encrypted table
-and indirect dispatch are outside that analyzer's supported contract.
+and indirect dispatch are outside that analyzer's supported contract. The
+adversary also exposed and fixed a false table candidate from non-executable ELF
+header bytes; current recovery now rejects that candidate on segment metadata.
 
 ## 8. Multi-seed
 
@@ -269,8 +271,11 @@ metadata load, and revalidates the full corpus and loader invariants. Commit
 `99fe143` adds equivalent per-instance `add`/`lea` vIP advances, updates the
 clustering and Tier B artifacts, and revalidates the full suite. The follow-up
 evidence commit records the regenerated 109-fixture corpus hashes and timing
-metrics from that build. Commit `8e8b3f9` is the current evidence snapshot;
-the remaining gaps above are architectural rather than unmeasured local
-variations. The official quality wrapper was rerun at this HEAD: 9 checks pass;
+metrics from that build. Commit `8e8b3f9` is the handler-diversity evidence
+snapshot. Commit `cfc6c2d` fixes false VM handler-table recovery from
+non-executable bytes, adds its real-fixture regression, and refreshes the
+adversary artifact. The remaining gaps above are architectural rather than
+unmeasured local variations. The official quality wrapper was rerun at this
+HEAD: 9 checks pass;
 the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
 whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).
