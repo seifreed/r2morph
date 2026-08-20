@@ -51,6 +51,7 @@ class MicroopHandlerConfig:
     vsp_offset: int
     vstack_base: int
     arith_variant: int = 0
+    record_padding: int = 0
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,7 @@ def microop_handler_body(kind: str, width: int, config: MicroopHandlerConfig) ->
             f"  mov qword ptr [rsp + r9 + {vstack_base_hex}], rax\n"
             "  add r9, 8\n"
             f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
-            "  add rsi, 2\n  jmp vm_dispatch\n"
+            f"  add rsi, {2 + config.record_padding}\n  jmp vm_dispatch\n"
         )
     if kind == "vpop":
         # Pop the top cell into the dst slot, drop the pointer.
@@ -93,7 +94,7 @@ def microop_handler_body(kind: str, width: int, config: MicroopHandlerConfig) ->
             f"  mov rax, qword ptr [rsp + r9 + {vstack_base_hex}]\n"
             "  mov qword ptr [rsp + r8*8], rax\n"
             f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
-            "  add rsi, 2\n  jmp vm_dispatch\n"
+            f"  add rsi, {2 + config.record_padding}\n  jmp vm_dispatch\n"
         )
     if kind == "vpushi":
         # Push a width-sized immediate. The decode mirrors the single-handler
@@ -119,7 +120,7 @@ def microop_handler_body(kind: str, width: int, config: MicroopHandlerConfig) ->
             + f"  mov qword ptr [rsp + r9 + {vstack_base_hex}], rax\n"
             + "  add r9, 8\n"
             + f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
-            + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+            + f"  add rsi, {advance + config.record_padding}\n  jmp vm_dispatch\n"
         )
     # v<op>: pop b (top) into rax and a (below) into r10, fold r10 = a <op> b with no
     # literal native op, push the result back. The operands were pushed dst-then-src,
@@ -141,7 +142,7 @@ def microop_handler_body(kind: str, width: int, config: MicroopHandlerConfig) ->
         f"  mov qword ptr [rsp + r9 + {vstack_base_hex}], r10\n"
         "  add r9, 8\n"
         f"  mov qword ptr [rsp + {vsp_hex}], r9\n"
-        "  add rsi, 1\n  jmp vm_dispatch\n"
+        f"  add rsi, {1 + config.record_padding}\n  jmp vm_dispatch\n"
     )
     return body
 

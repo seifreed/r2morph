@@ -26,6 +26,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
     VirtualizedOp,
+    VMScheme,
     build_vm_scheme,
     decode_instruction,
     encode_bytecode,
@@ -54,6 +55,11 @@ FIXTURE_MULTIRET = _DATASET / "elf_multiret_jccdiamond_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
 UcError = unicorn.UcError
+
+
+def _selected_padding(scheme: VMScheme, keys: list[tuple[str, bool, int]]) -> int:
+    picker = random.Random(scheme.junk_seed)
+    return sum(scheme.record_padding[picker.choice(scheme.dup[key])] for key in keys)
 
 
 def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
@@ -2651,10 +2657,19 @@ def test_reg_reg_arithmetic_lowers_to_shared_microop_primitives() -> None:
     add_len = len(encode_bytecode([VirtualizedOp("add", 7, 6, False, 64)], scheme))
     xor_len = len(encode_bytecode([VirtualizedOp("xor", 7, 6, False, 64)], scheme))
     mov_len = len(encode_bytecode([VirtualizedOp("mov", 7, 6, False, 64)], scheme))
-    # add and xor expand to the identical 4-item shape (vpush+vpush+vbinop+vpop),
-    # strictly longer than the single-item mov - one native op is now several items.
-    assert add_len == xor_len
-    assert add_len > mov_len
+    # add and xor expand to the same 4-item shape (vpush+vpush+vbinop+vpop),
+    # strictly longer than the single-item mov. Per-instance encrypted padding
+    # changes raw lengths, so compare after removing only the measured padding.
+    add_padding = _selected_padding(
+        scheme,
+        [("vpush", False, 64), ("vpush", False, 64), ("vadd", False, 64), ("vpop", False, 64)],
+    )
+    xor_padding = _selected_padding(
+        scheme,
+        [("vpush", False, 64), ("vpush", False, 64), ("vxor", False, 64), ("vpop", False, 64)],
+    )
+    mov_padding = _selected_padding(scheme, [("mov", False, 64)])
+    assert add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding
 
 
 def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
@@ -2694,10 +2709,28 @@ def test_immediate_arithmetic_lowers_to_shared_microop_primitives() -> None:
     add_len = len(encode_bytecode([VirtualizedOp("add", 7, 5, True, 64)], scheme))
     xor_len = len(encode_bytecode([VirtualizedOp("xor", 7, 5, True, 64)], scheme))
     mov_len = len(encode_bytecode([VirtualizedOp("mov", 7, 5, True, 64)], scheme))
-    # Immediate add and xor expand to the identical multi-item shape, strictly
-    # longer than the single-item immediate mov.
-    assert add_len == xor_len
-    assert add_len > mov_len
+    # Immediate add and xor expand to the same multi-item shape, strictly longer
+    # than the single-item immediate mov, after removing measured padding.
+    add_padding = _selected_padding(
+        scheme,
+        [
+            ("vpush", False, 64),
+            ("vpushi", False, 64),
+            ("vadd", False, 64),
+            ("vpop", False, 64),
+        ],
+    )
+    xor_padding = _selected_padding(
+        scheme,
+        [
+            ("vpush", False, 64),
+            ("vpushi", False, 64),
+            ("vxor", False, 64),
+            ("vpop", False, 64),
+        ],
+    )
+    mov_padding = _selected_padding(scheme, [("mov", True, 64)])
+    assert add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding
 
 
 def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:

@@ -1,0 +1,23 @@
+{
+  "analysis": "IDA Pro and Hex-Rays",
+  "commit_basis": "working tree before bytecode grammar commit",
+  "seed": 20260820,
+  "sample": "elf_vm_engarith_x86_64",
+  "sha256": "f48375eab948ff5bcec655ff80aa38feb08d65784aae922da21da2ba4f12f95b",
+  "ida": {
+    "functions": 3,
+    "segments": 7,
+    "vm_entry": "0x404000",
+    "vm_entry_size": 269,
+    "vm_entry_stack_frame_size": "0x2f0",
+    "vm_entry_decompile": "checksum recovered; encrypted relative table and indirect jmp rax remain",
+    "handler_functions_recovered": 0,
+    "handler_table_recovered": false,
+    "bytecode_grammar_recovered": false
+  },
+  "observations": [
+    "Hex-Rays recovered the checksum loop and its bounds.",
+    "Hex-Rays recovered the runtime table base and indirect jmp rax, but not handler targets or bytecode records.",
+    "The per-record padding changes handler strides while remaining invisible to the static entry decompilation."
+  ]
+}

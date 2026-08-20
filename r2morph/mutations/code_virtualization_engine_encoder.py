@@ -53,6 +53,9 @@ class _BytecodeEncoder:
         self.slot_of = scheme.slot_perm
         self.field_perm = scheme.field_perm
         self.plain = bytearray()
+        self._pending_padding = 0
+        self._pending_position = 0
+        self.padding_rng = random.Random(scheme.body_seed ^ 0xBADC0DE)
         self.pick = random.Random(scheme.junk_seed).choice
         self.microops = MicroopEmitter(
             scheme,
@@ -75,17 +78,27 @@ class _BytecodeEncoder:
                     emit_arith_microops(op, self.microops)
                 continue
             self._emit_gp(op)
+        self._flush_pending_padding()
         self._emit_opcode(self.scheme.exit_opcode)
         return bytes(byte ^ (self.checksum & 0xFF) for byte in self.plain)
 
     def _emit_opcode(self, opcode: int) -> int:
+        self._flush_pending_padding()
         position = len(self.plain) & 0xFF
         self.plain.append(opcode ^ position)
+        self._pending_position = position
+        self._pending_padding = self.scheme.record_padding[opcode] if opcode < len(self.scheme.record_padding) else 0
         return position
 
     def _emit_fields(self, position: int, order: list[tuple[str, int]], fields: dict[str, bytes]) -> None:
         for name, _size in order:
             self.plain.extend(byte ^ position for byte in fields[name])
+        self._flush_pending_padding()
+
+    def _flush_pending_padding(self) -> None:
+        for _ in range(self._pending_padding):
+            self.plain.append(self.padding_rng.randrange(256) ^ self._pending_position)
+        self._pending_padding = 0
 
     def _emit_fp(self, op: object) -> bool:
         if isinstance(op, VirtualizedFpPackedOp):

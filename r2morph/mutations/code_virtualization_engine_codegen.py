@@ -170,6 +170,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         # Reachable head junk makes duplicate handlers diverge in executed code, and
         # a per-handler scratch-register bijection makes the body itself diverge, so
         # duplicate handlers share neither junk nor register-allocation fingerprint.
+        handlers.set_record_padding(scheme.record_padding[index] if scheme.record_padding else 0)
         body = rename_body(
             handlers.handler_body(
                 mnemonic,

@@ -44,6 +44,7 @@ class EngineHandlerGenerator:
         self.key = f"byte ptr [rsp + {layout.checksum_offset}]"
         self.key_qword = f"qword ptr [rsp + {layout.key_qword_offset}]"
         self.key_dword = f"dword ptr [rsp + {layout.key_dword_offset}]"
+        self.record_padding = 0
 
     def handler_body(
         self,
@@ -64,6 +65,7 @@ class EngineHandlerGenerator:
                     self.layout.vsp_offset,
                     self.layout.vstack_base,
                     arith_variant,
+                    self.record_padding,
                 ),
             )
         fp_body = self._fp_handler_body(mnemonic, width)
@@ -73,6 +75,12 @@ class EngineHandlerGenerator:
             return self._mem_handler_body(mnemonic, width, arith_variant)
         return self._gp_handler_body(mnemonic, is_immediate, width, body_variant)
 
+    def set_record_padding(self, record_padding: int) -> None:
+        self.record_padding = record_padding
+
+    def _advance(self, base: int) -> str:
+        return f"  add rsi, {base + self.record_padding}\n"
+
     def _gp_handler_body(self, mnemonic: str, is_immediate: bool, width: int, body_variant: int = 0) -> str:
         off = op_offsets(is_immediate, width, self.scheme.field_perm)
         decrypt_dst = _byte_field_load("r8", off["dst"], body_variant) + f"  xor r8b, {self.key}\n  xor r8b, r13b\n"
@@ -81,13 +89,13 @@ class EngineHandlerGenerator:
                 f"  mov rax, qword ptr [rsi+{off['imm']}]\n  mov r10, {self.key_qword}\n  xor rax, r10\n"
                 f"  movzx r10, r13b\n  mov r11, {hex(_QWORD_BROADCAST)}\n  imul r10, r11\n  xor rax, r10\n"
             )
-            advance = "  add rsi, 10\n"
+            advance = 10
         elif is_immediate:
             load = (
                 f"  mov eax, dword ptr [rsi+{off['imm']}]\n  mov r11d, {self.key_dword}\n  xor eax, r11d\n"
                 f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
             )
-            advance = "  add rsi, 6\n"
+            advance = 6
         else:
             load = _byte_field_load("r9", off["src"], body_variant) + f"  xor r9b, {self.key}\n  xor r9b, r13b\n"
             load += (
@@ -95,10 +103,10 @@ class EngineHandlerGenerator:
                 if width == _QWORD_WIDTH_BITS
                 else "  mov eax, dword ptr [rsp + r9*8]\n"
             )
-            advance = "  add rsi, 3\n"
+            advance = 3
         apply = self._shift_body(mnemonic, width) if mnemonic in _SHIFT_KINDS else "  mov qword ptr [rsp + r8*8], rax\n"
         ordered_prefix = load + decrypt_dst if body_variant & 1 else decrypt_dst + load
-        return ordered_prefix + apply + advance + "  jmp vm_dispatch\n"
+        return ordered_prefix + apply + self._advance(advance) + "  jmp vm_dispatch\n"
 
     @staticmethod
     def _shift_body(mnemonic: str, width: int) -> str:
@@ -157,7 +165,7 @@ class EngineHandlerGenerator:
         else:
             body, advance = self._mem_addr_prologue(), 7
         body += self._mem_transfer_body(kind, width, arith_variant)
-        return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+        return body + self._advance(advance) + "  jmp vm_dispatch\n"
 
     @staticmethod
     def _mem_transfer_body(kind: str, width: int, arith_variant: int) -> str:
@@ -226,7 +234,7 @@ class EngineHandlerGenerator:
             body += f"  {move} xmm0, [r10]\n  movups xmmword ptr [r11], xmm0\n"
         else:
             body += f"  movups xmm0, xmmword ptr [r11]\n  {move} [r10], xmm0\n"
-        return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+        return body + self._advance(advance) + "  jmp vm_dispatch\n"
 
     def _fp_arith_mem_handler_body(self, kind: str, width: int) -> str:
         suffix = "sd" if width == _QWORD_WIDTH_BITS else "ss"
@@ -236,15 +244,19 @@ class EngineHandlerGenerator:
             f"  movups xmm0, xmmword ptr [r11]\n  {operation}{suffix} xmm0, [r10]\n"
             "  movups xmmword ptr [r11], xmm0\n"
         )
-        return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+        return body + self._advance(advance) + "  jmp vm_dispatch\n"
 
     def _fp_arith_handler_body(self, kind: str, width: int) -> str:
         operation = kind[len("fp") :]
         suffix = "sd" if width == _QWORD_WIDTH_BITS else "ss"
-        return self._fp_pair_prologue() + (
-            "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
-            f"  {operation}{suffix} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
-            "  add rsi, 3\n  jmp vm_dispatch\n"
+        return (
+            self._fp_pair_prologue()
+            + (
+                "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
+                f"  {operation}{suffix} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
+            )
+            + self._advance(3)
+            + "  jmp vm_dispatch\n"
         )
 
     def _fp_pair_prologue(self) -> str:
@@ -273,13 +285,17 @@ class EngineHandlerGenerator:
         else:
             target = "rax" if gp_width == _QWORD_WIDTH_BITS else "eax"
             body += f"  cvtt{suffix}2si {target}, xmm0\n  mov qword ptr [rsp + r9*8], rax\n"
-        return body + "  add rsi, 3\n  jmp vm_dispatch\n"
+        return body + self._advance(3) + "  jmp vm_dispatch\n"
 
     def _fp_packed_arith_handler_body(self, mnemonic: str) -> str:
-        return self._fp_pair_prologue() + (
-            "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
-            f"  {mnemonic} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
-            "  add rsi, 3\n  jmp vm_dispatch\n"
+        return (
+            self._fp_pair_prologue()
+            + (
+                "  movups xmm0, xmmword ptr [r10]\n  movups xmm1, xmmword ptr [r11]\n"
+                f"  {mnemonic} xmm0, xmm1\n  movups xmmword ptr [r10], xmm0\n"
+            )
+            + self._advance(3)
+            + "  jmp vm_dispatch\n"
         )
 
     def _fp_packed_mem_handler_body(self, kind: str) -> str:
@@ -288,7 +304,7 @@ class EngineHandlerGenerator:
             body += "  movups xmm0, xmmword ptr [r10]\n  movups xmmword ptr [r11], xmm0\n"
         else:
             body += "  movups xmm0, xmmword ptr [r11]\n  movups xmmword ptr [r10], xmm0\n"
-        return body + "  add rsi, 7\n  jmp vm_dispatch\n"
+        return body + self._advance(7) + "  jmp vm_dispatch\n"
 
     def _fp_handler_body(self, mnemonic: str, width: int) -> str | None:
         body = None
