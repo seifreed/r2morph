@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `400d427`
+Commit: `d61024a`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -342,6 +342,9 @@ Commit `400d427` randomizes the region/nested runtime state-mask slot and
 records the `[rsp+220h]` IDA observation. Its full gate rerun passed `9` checks;
 the only failure remains the pre-existing forbidden Ruff `per-file-ignores`
 configuration, whose removal exposes the documented unsuppressed lint backlog.
+Commit `d61024a` fixes the maturity harness so semantic parity requires valid
+emulator completion, matching exit code, and matching bounded native-runtime
+observables; the full Tier A artifact records `1090/1090` passing seed runs.
 
 ## 15. Remaining gaps
 
