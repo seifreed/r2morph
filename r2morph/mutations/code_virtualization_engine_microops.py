@@ -36,7 +36,7 @@ from r2morph.mutations.code_virtualization_fold import arith_fold
 # Native reg-reg mnemonic -> its vstack fold primitive, and the inverse.
 _BINOP_OF: dict[str, str] = {"add": "vadd", "sub": "vsub", "xor": "vxor", "and": "vand", "or": "vor"}
 _MNEMONIC_OF: dict[str, str] = {binop: mnemonic for mnemonic, binop in _BINOP_OF.items()}
-_SPLIT_IMMEDIATE_MNEMONICS = frozenset({"add", "sub", "xor"})
+_SPLIT_IMMEDIATE_MNEMONICS = frozenset({"add", "and", "or", "sub", "xor"})
 # The native reg-reg mnemonics that lower to micro-ops (the encoder's trigger set).
 MICROOP_ARITH_MNEMONICS: frozenset[str] = frozenset(_BINOP_OF)
 MICROOP_STACK_KINDS: tuple[str, ...] = _MICROOP_STACK_KINDS
@@ -192,6 +192,10 @@ def emit_arith_imm_microops(op: VirtualizedOp, emitter: MicroopEmitter) -> None:
         if op.mnemonic == "xor":
             first = (1 << (op.width - 1)) - 1
             immediate_values = (first, op.value ^ first)
+        elif op.mnemonic == "and":
+            immediate_values = ((1 << op.width) - 1, op.value)
+        elif op.mnemonic == "or":
+            immediate_values = (0, op.value)
         else:
             first = op.value // 2
             immediate_values = (first, op.value - first)

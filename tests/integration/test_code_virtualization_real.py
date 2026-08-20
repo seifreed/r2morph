@@ -2750,6 +2750,44 @@ def test_immediate_arithmetic_decomposition_varies_by_build() -> None:
     assert split_size > unsplit_size
 
 
+def test_immediate_logical_decomposition_varies_by_build() -> None:
+    schemes = [build_vm_scheme(random.Random(seed)) for seed in range(1, 128)]
+    unsplit = next(scheme for scheme in schemes if not scheme.immediate_split)
+    split = next(scheme for scheme in schemes if scheme.immediate_split)
+    operations = (VirtualizedOp("and", 7, 5, True, 64), VirtualizedOp("or", 7, 5, True, 64))
+
+    unsplit_sizes = tuple(
+        len(encode_bytecode([operation], unsplit))
+        - _selected_padding(
+            unsplit,
+            [
+                ("vpush", False, 64),
+                ("vpushi", False, 64),
+                ("v" + operation.mnemonic, False, 64),
+                ("vpop", False, 64),
+            ],
+        )
+        for operation in operations
+    )
+    split_sizes = tuple(
+        len(encode_bytecode([operation], split))
+        - _selected_padding(
+            split,
+            [
+                ("vpush", False, 64),
+                ("vpushi", False, 64),
+                ("v" + operation.mnemonic, False, 64),
+                ("vpushi", False, 64),
+                ("v" + operation.mnemonic, False, 64),
+                ("vpop", False, 64),
+            ],
+        )
+        for operation in operations
+    )
+
+    assert all(split_size > unsplit_size for split_size, unsplit_size in zip(split_sizes, unsplit_sizes, strict=True))
+
+
 def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
     # Semantic parity: an engine-path run of immediate add/sub/xor/and/or (a call
     # forces the engine over the region VM) nets exit 42 after micro-op lowering,

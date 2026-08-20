@@ -13011,8 +13011,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "84ce445518e90e006f2d1a62ca7608e670a970101c44ca68a84b3bb490726d5d",
-          "output_size": 70230,
+          "output_sha256": "9e93ce6ba0f4f26f4ce3dabd02cebdcc2fd0e02a124bcac677bb723eff7569bd",
+          "output_size": 70255,
           "runtime": {
             "duration_seconds": 0.0016042079078033566,
             "error_type": "OSError",
@@ -13030,7 +13030,7 @@
           },
           "seed": 20260820,
           "status": "passed",
-          "total_bytecode_bytes": 53846,
+          "total_bytecode_bytes": 53871,
           "total_instructions": 6,
           "transform_duration_seconds": 0.7599584169220179,
           "unicorn": {
@@ -13103,8 +13103,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "1ba585a60c8cd64a486854c159ea5c0e032951a6f6d5dd7a9c50db8b8006c91e",
-          "output_size": 67934,
+          "output_sha256": "0efb42b7768041a8ea89a5194e88aebc88f2037d226485a67ebb45aad02f9ac6",
+          "output_size": 67961,
           "runtime": {
             "duration_seconds": 0.0007721669971942902,
             "error_type": "OSError",
@@ -13122,7 +13122,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 51550,
+          "total_bytecode_bytes": 51577,
           "total_instructions": 6,
           "transform_duration_seconds": 0.9033589579630643,
           "unicorn": {
@@ -13149,8 +13149,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "adf258a0b9aef003616f25f7db756f2a98d564977c618212ff44dd6b5ef7a405",
-          "output_size": 68004,
+          "output_sha256": "b9d1d586669bfbfdc630e9f9842928bbbf16db38876a79b5ddd8022606240b0a",
+          "output_size": 68030,
           "runtime": {
             "duration_seconds": 0.0009199168998748064,
             "error_type": "OSError",
@@ -13168,7 +13168,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 51620,
+          "total_bytecode_bytes": 51646,
           "total_instructions": 6,
           "transform_duration_seconds": 0.9213509170804173,
           "unicorn": {
@@ -13287,8 +13287,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "5a2307aa9b13cce92145bed02940fb7745e8f3bec1ab7f13673ced95fdeea9cd",
-          "output_size": 68561,
+          "output_sha256": "efe109b6817da6a6f2e49c360a358fa0796a011eed8043d3d6ac0e0785276d69",
+          "output_size": 68585,
           "runtime": {
             "duration_seconds": 0.000773416948504746,
             "error_type": "OSError",
@@ -13306,7 +13306,7 @@
           },
           "seed": 20260826,
           "status": "passed",
-          "total_bytecode_bytes": 52177,
+          "total_bytecode_bytes": 52201,
           "total_instructions": 6,
           "transform_duration_seconds": 0.6766739590093493,
           "unicorn": {
@@ -17765,8 +17765,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "0ab9cfc5b20c8ccdd381b74196788a4b5499a3568b7e3c4aff4735ab770a8995",
-          "output_size": 69169,
+          "output_sha256": "d70f18c4db474ce895e48d3a83efd061fd5a33b41a1d4aca84a003670560f241",
+          "output_size": 69182,
           "runtime": {
             "duration_seconds": 0.0019099580822512507,
             "error_type": "OSError",
@@ -17784,7 +17784,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 52785,
+          "total_bytecode_bytes": 52798,
           "total_instructions": 12,
           "transform_duration_seconds": 1.3181577920913696,
           "unicorn": {
@@ -17811,8 +17811,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "aa232b9c2d3aa3e20820c5934f68b30da706fd31378d5e1da1150c5ba0d33ceb",
-          "output_size": 68596,
+          "output_sha256": "a8045b8a2f1a22ce7a2ae56246f0a999c95911106d74c3756745b9a42433d3fe",
+          "output_size": 68606,
           "runtime": {
             "duration_seconds": 0.0013015830190852284,
             "error_type": "OSError",
@@ -17830,7 +17830,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 52212,
+          "total_bytecode_bytes": 52222,
           "total_instructions": 12,
           "transform_duration_seconds": 1.156275709043257,
           "unicorn": {
@@ -17857,8 +17857,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "0d55010273e463e6d1c5d70074ccc2f95882a7c2364d00dcda5e40d85e9290b0",
-          "output_size": 68317,
+          "output_sha256": "7e7ecae86fc58e81b2b51d44354c467f8cbbfd8b1cbb4f12b7813f7a3aedef70",
+          "output_size": 68327,
           "runtime": {
             "duration_seconds": 0.001904499949887395,
             "error_type": "OSError",
@@ -17876,7 +17876,7 @@
           },
           "seed": 20260824,
           "status": "passed",
-          "total_bytecode_bytes": 51933,
+          "total_bytecode_bytes": 51943,
           "total_instructions": 12,
           "transform_duration_seconds": 1.1582790000829846,
           "unicorn": {
@@ -17903,8 +17903,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "81b9501117131b71c2adda830bf8c9150f777ecb0bdce527d86397e5b5bc2a58",
-          "output_size": 69021,
+          "output_sha256": "192a65f4a71a1fa89ea8b41fdfe0d2351a286dc8b5eeef76e0a100e83ed8a9bd",
+          "output_size": 69033,
           "runtime": {
             "duration_seconds": 0.0037077079759910703,
             "error_type": "OSError",
@@ -17922,7 +17922,7 @@
           },
           "seed": 20260825,
           "status": "passed",
-          "total_bytecode_bytes": 52637,
+          "total_bytecode_bytes": 52649,
           "total_instructions": 12,
           "transform_duration_seconds": 1.152460707933642,
           "unicorn": {
@@ -18041,8 +18041,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "571b1bc1e1d35c68577f92c255fdbef7c0b229fdd997e5f15df391d4f8f4d171",
-          "output_size": 67544,
+          "output_sha256": "89c0c66e00b652c095502337a71561861f38e8edbe761a2fa43322ee25010f6a",
+          "output_size": 67558,
           "runtime": {
             "duration_seconds": 0.0011599999852478504,
             "error_type": "OSError",
@@ -18060,7 +18060,7 @@
           },
           "seed": 20260828,
           "status": "passed",
-          "total_bytecode_bytes": 51160,
+          "total_bytecode_bytes": 51174,
           "total_instructions": 12,
           "transform_duration_seconds": 0.5294056249549612,
           "unicorn": {
@@ -18283,8 +18283,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "ad5ff04da5a69898a783120dc7a98edf70f06d75e7032d004299c599dd79eeb4",
-          "output_size": 69493,
+          "output_sha256": "51174138ee6a3d614c5d53bd059286f009c7758c757572279e3061a2f1850edb",
+          "output_size": 69506,
           "runtime": {
             "duration_seconds": 0.0018746249843388796,
             "error_type": "OSError",
@@ -18302,7 +18302,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 53109,
+          "total_bytecode_bytes": 53122,
           "total_instructions": 13,
           "transform_duration_seconds": 0.6971274580573663,
           "unicorn": {
@@ -18329,8 +18329,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "91b9dec64af307ccf8833a082a67c186e26881f2bbb365d19fdb4020f93d276e",
-          "output_size": 68624,
+          "output_sha256": "e39e222db6fe317e7197526b45bd43c25b7751031ada2321ae926ffd6f990d52",
+          "output_size": 68634,
           "runtime": {
             "duration_seconds": 0.0017913749907165766,
             "error_type": "OSError",
@@ -18348,7 +18348,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 52240,
+          "total_bytecode_bytes": 52250,
           "total_instructions": 13,
           "transform_duration_seconds": 0.6897464169887826,
           "unicorn": {
@@ -18375,8 +18375,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "c029936a556490330e4bcbefa974feb076e38e559afecf1a844d277f97b57baf",
-          "output_size": 68521,
+          "output_sha256": "c4aca92e7fdfa55a0c286d203d0e769f1e057aaf73d7c5ffaef90658e50ac97e",
+          "output_size": 68530,
           "runtime": {
             "duration_seconds": 0.0008926669834181666,
             "error_type": "OSError",
@@ -18394,7 +18394,7 @@
           },
           "seed": 20260824,
           "status": "passed",
-          "total_bytecode_bytes": 52137,
+          "total_bytecode_bytes": 52146,
           "total_instructions": 13,
           "transform_duration_seconds": 0.6625007080147043,
           "unicorn": {
@@ -18421,8 +18421,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "ed6cce7614e5725cfa01070e86957acea8c5cd47ecafd772943283596189f080",
-          "output_size": 68696,
+          "output_sha256": "70acb02916aebf483b8b139617efe36950f0f42de2deae7ad61c3c413ef9d691",
+          "output_size": 68708,
           "runtime": {
             "duration_seconds": 0.0015223330119624734,
             "error_type": "OSError",
@@ -18440,7 +18440,7 @@
           },
           "seed": 20260825,
           "status": "passed",
-          "total_bytecode_bytes": 52312,
+          "total_bytecode_bytes": 52324,
           "total_instructions": 13,
           "transform_duration_seconds": 0.66041808295995,
           "unicorn": {
@@ -18467,8 +18467,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "8131fb73a6d822b2f6ab0f78428653a32f9177b98950f057624afc273308bcfb",
-          "output_size": 67227,
+          "output_sha256": "1223ed97189b5aa8647652619b4b33fcc30f85fbaf5bde97774ce7fa25fc130e",
+          "output_size": 67238,
           "runtime": {
             "duration_seconds": 0.0008413329487666488,
             "error_type": "OSError",
@@ -18486,7 +18486,7 @@
           },
           "seed": 20260826,
           "status": "passed",
-          "total_bytecode_bytes": 50843,
+          "total_bytecode_bytes": 50854,
           "total_instructions": 13,
           "transform_duration_seconds": 0.5952131249941885,
           "unicorn": {
@@ -18559,8 +18559,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "fd8f8559d71a268fa10566d91482927b9dba1bbb95d6339f9b4882e3b92211d3",
-          "output_size": 67563,
+          "output_sha256": "0d4df73a408e826828b4bff00b1250982936a5f69cd8c1515b6920201442b5af",
+          "output_size": 67578,
           "runtime": {
             "duration_seconds": 0.0011607500491663814,
             "error_type": "OSError",
@@ -18578,7 +18578,7 @@
           },
           "seed": 20260828,
           "status": "passed",
-          "total_bytecode_bytes": 51179,
+          "total_bytecode_bytes": 51194,
           "total_instructions": 13,
           "transform_duration_seconds": 0.7161719159921631,
           "unicorn": {
@@ -18709,8 +18709,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "eb5428d385f48d3b4d0df8bd11c3ddea76dc1d587251e8a6b0607693ac7bb56f",
-          "output_size": 67756,
+          "output_sha256": "f47220803936756cde33aa52657934a3f893f96d93eebecd15ee1cd4b98f03c7",
+          "output_size": 67769,
           "runtime": {
             "duration_seconds": 0.0012793330242857337,
             "error_type": "OSError",
@@ -18728,7 +18728,7 @@
           },
           "seed": 20260820,
           "status": "passed",
-          "total_bytecode_bytes": 51372,
+          "total_bytecode_bytes": 51385,
           "total_instructions": 11,
           "transform_duration_seconds": 0.8119758330285549,
           "unicorn": {
@@ -18755,8 +18755,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "af97842c6286f64fed56bc6e1a688d216f16a32ce760f691187ef081a8570e3b",
-          "output_size": 68592,
+          "output_sha256": "b19bfdb112c532e8bbd4eda526efbbebe0b64860a77eb673558dbd21af8ece28",
+          "output_size": 68604,
           "runtime": {
             "duration_seconds": 0.0008015000494197011,
             "error_type": "OSError",
@@ -18774,7 +18774,7 @@
           },
           "seed": 20260821,
           "status": "passed",
-          "total_bytecode_bytes": 52208,
+          "total_bytecode_bytes": 52220,
           "total_instructions": 11,
           "transform_duration_seconds": 0.7942594999913126,
           "unicorn": {
@@ -18801,8 +18801,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "d6ef65abb978b41ae8f3b9d9e85ed13471a55b46006c6b19fb485f777bdf17d3",
-          "output_size": 69136,
+          "output_sha256": "1e710998fe2f1dbf3c5bd2213e91404a69140b11801ae0af01d601080c28a55d",
+          "output_size": 69148,
           "runtime": {
             "duration_seconds": 0.00157512491568923,
             "error_type": "OSError",
@@ -18820,7 +18820,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 52752,
+          "total_bytecode_bytes": 52764,
           "total_instructions": 11,
           "transform_duration_seconds": 0.8081854999763891,
           "unicorn": {
@@ -18847,8 +18847,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "c1674bbd5134d889e33942a7a9b8e9831e73ff5395446e830e88ef9b15ebd94f",
-          "output_size": 68000,
+          "output_sha256": "7822af47b88e366bca738167b9ecf0a6503aaaf71ad9b7c7142ce22f25ae6281",
+          "output_size": 68009,
           "runtime": {
             "duration_seconds": 0.0009430000791326165,
             "error_type": "OSError",
@@ -18866,7 +18866,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 51616,
+          "total_bytecode_bytes": 51625,
           "total_instructions": 11,
           "transform_duration_seconds": 0.8224664999870583,
           "unicorn": {
@@ -18893,8 +18893,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "02c17c0e31bb3c72720c939031581f7b4cac38b3731dd6193cb8c42f1009c2ec",
-          "output_size": 68989,
+          "output_sha256": "66ab1e9ae7b1333bc74f8dde934cde4244819472862289c719597b032ce117cc",
+          "output_size": 69000,
           "runtime": {
             "duration_seconds": 0.001865208032540977,
             "error_type": "OSError",
@@ -18912,7 +18912,7 @@
           },
           "seed": 20260824,
           "status": "passed",
-          "total_bytecode_bytes": 52605,
+          "total_bytecode_bytes": 52616,
           "total_instructions": 11,
           "transform_duration_seconds": 0.8041346250101924,
           "unicorn": {
@@ -18939,8 +18939,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "8155465344014a564b76472c5eaeedbd713ea31466bbf487ca2a13f1defd71fb",
-          "output_size": 69051,
+          "output_sha256": "751c21f2caaf9189f2ec15a4fff94694c3710ace431a67133bdaa872773174e6",
+          "output_size": 69063,
           "runtime": {
             "duration_seconds": 0.0022556250914931297,
             "error_type": "OSError",
@@ -18958,7 +18958,7 @@
           },
           "seed": 20260825,
           "status": "passed",
-          "total_bytecode_bytes": 52667,
+          "total_bytecode_bytes": 52679,
           "total_instructions": 11,
           "transform_duration_seconds": 0.9375889160437509,
           "unicorn": {
@@ -19077,8 +19077,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "2a6e4eb91bf3868403a42d30b5755c3bb7497d502e831ebcd8817fb5dc980c64",
-          "output_size": 68377,
+          "output_sha256": "88188a53fc8742c7c68a0a02d5afee95b4153bd15fdf6e35fae6f07a22df8615",
+          "output_size": 68388,
           "runtime": {
             "duration_seconds": 0.0036617079749703407,
             "error_type": "OSError",
@@ -19096,7 +19096,7 @@
           },
           "seed": 20260828,
           "status": "passed",
-          "total_bytecode_bytes": 51993,
+          "total_bytecode_bytes": 52004,
           "total_instructions": 11,
           "transform_duration_seconds": 0.5969827919034287,
           "unicorn": {
@@ -19227,8 +19227,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "98906d5f959fcdaf275f51f3521b0780049b54530f56f96b8456f236f6efd7f7",
-          "output_size": 75986,
+          "output_sha256": "2e27761b108497986781fb39087351dcbfde99a1f1a2446fc095b0e1fb59f977",
+          "output_size": 75997,
           "runtime": {
             "duration_seconds": 0.0037281250115484,
             "error_type": "OSError",
@@ -19246,7 +19246,7 @@
           },
           "seed": 20260820,
           "status": "passed",
-          "total_bytecode_bytes": 51410,
+          "total_bytecode_bytes": 51421,
           "total_instructions": 9,
           "transform_duration_seconds": 0.57550245791208,
           "unicorn": {
@@ -19319,8 +19319,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "4fbde89f324f5064fe561a87f7106b8038adc697d8b04164aa92aa19a219f8a5",
-          "output_size": 77705,
+          "output_sha256": "5e1a9a3d5d7407817f151c8d57fb9784ce83da8be630254de423357db8b25099",
+          "output_size": 77720,
           "runtime": {
             "duration_seconds": 0.0018036660039797425,
             "error_type": "OSError",
@@ -19338,7 +19338,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 53129,
+          "total_bytecode_bytes": 53144,
           "total_instructions": 9,
           "transform_duration_seconds": 0.7595844160532579,
           "unicorn": {
@@ -19365,8 +19365,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "42c7ec0bf78397d92ccb958dbe2da39f50f3ff37a9ef6c954516788ed67c808e",
-          "output_size": 76204,
+          "output_sha256": "e2b1166de03d44de1b0a5afda228e4eb89fd7b748e77baa1f12d8a63c5d4f6fe",
+          "output_size": 76216,
           "runtime": {
             "duration_seconds": 0.001975791994482279,
             "error_type": "OSError",
@@ -19384,7 +19384,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 51628,
+          "total_bytecode_bytes": 51640,
           "total_instructions": 9,
           "transform_duration_seconds": 0.7540143330115825,
           "unicorn": {
@@ -19411,8 +19411,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "da8fb6cab62addd9897ae99e3a2036352e1c4b365a82171e5a4cbe8f99984909",
-          "output_size": 77786,
+          "output_sha256": "8df5a4d4b4340a02af139a2a75c1588f3ebe0cd5f7c8749a6b551739d1dc1b45",
+          "output_size": 77798,
           "runtime": {
             "duration_seconds": 0.0007458750624209642,
             "error_type": "OSError",
@@ -19430,7 +19430,7 @@
           },
           "seed": 20260824,
           "status": "passed",
-          "total_bytecode_bytes": 53210,
+          "total_bytecode_bytes": 53222,
           "total_instructions": 9,
           "transform_duration_seconds": 0.7379279589513317,
           "unicorn": {
@@ -19457,8 +19457,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "09e8da3350e1a0343175415cbd75a0f08cda59573b554a5c647b378bff8b21da",
-          "output_size": 76914,
+          "output_sha256": "3e5456f370da667229308f8b236edbf99d3f540ca7e8200cd0f3fd607072d711",
+          "output_size": 76926,
           "runtime": {
             "duration_seconds": 0.000844749971292913,
             "error_type": "OSError",
@@ -19476,7 +19476,7 @@
           },
           "seed": 20260825,
           "status": "passed",
-          "total_bytecode_bytes": 52338,
+          "total_bytecode_bytes": 52350,
           "total_instructions": 9,
           "transform_duration_seconds": 0.7111243329709396,
           "unicorn": {
@@ -20873,8 +20873,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "328ea2e1940027e259be83536a8cbf9034d79963ed49b351a99a146e980e6159",
-          "output_size": 68864,
+          "output_sha256": "5e2f666c794d42f1fba2e72cd517bcccbfb5086e0eb86e067b3a35698fe0f487",
+          "output_size": 68875,
           "runtime": {
             "duration_seconds": 0.00103854201734066,
             "error_type": "OSError",
@@ -20892,7 +20892,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 52480,
+          "total_bytecode_bytes": 52491,
           "total_instructions": 15,
           "transform_duration_seconds": 0.7444275420857593,
           "unicorn": {
@@ -20919,8 +20919,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "54ac17b05fecd988def93242bfb7c18a09758d82fc59539e3ff66e6d635c8c1c",
-          "output_size": 68555,
+          "output_sha256": "27890aef6ea8c3078c74b8c8aa94e92f338e011cf07ee36b994c0aa7426b6c0d",
+          "output_size": 68566,
           "runtime": {
             "duration_seconds": 0.0014360409695655107,
             "error_type": "OSError",
@@ -20938,7 +20938,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 52171,
+          "total_bytecode_bytes": 52182,
           "total_instructions": 15,
           "transform_duration_seconds": 0.7933922910597175,
           "unicorn": {
@@ -20965,8 +20965,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "57beb4a72f7a9b4707efece2a1da6554191f2a3d88d7942bd87039c2e3ca4450",
-          "output_size": 68533,
+          "output_sha256": "ed37c2cadb07963ad592d3e0ade055c11b4410378cfc1b7037c0edfd6db88a73",
+          "output_size": 68545,
           "runtime": {
             "duration_seconds": 0.0007379580056294799,
             "error_type": "OSError",
@@ -20984,7 +20984,7 @@
           },
           "seed": 20260824,
           "status": "passed",
-          "total_bytecode_bytes": 52149,
+          "total_bytecode_bytes": 52161,
           "total_instructions": 15,
           "transform_duration_seconds": 1.0485214999644086,
           "unicorn": {
@@ -21011,8 +21011,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "40e23afc04c791bb9c153ee80bc77f4a742800833064325dc0c2a14c25c745e5",
-          "output_size": 69117,
+          "output_sha256": "9f8587fcadc9a003bfa1f3fa17e57438eecf9dc6ed6c36ce84ea147e032414b1",
+          "output_size": 69127,
           "runtime": {
             "duration_seconds": 0.001077457913197577,
             "error_type": "OSError",
@@ -21030,7 +21030,7 @@
           },
           "seed": 20260825,
           "status": "passed",
-          "total_bytecode_bytes": 52733,
+          "total_bytecode_bytes": 52743,
           "total_instructions": 15,
           "transform_duration_seconds": 0.7627887079725042,
           "unicorn": {
@@ -21057,8 +21057,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "28a806138e77cae3ace4f26891ca91e8c49b4d2da1fe2b1a4db5432a4eb638eb",
-          "output_size": 67839,
+          "output_sha256": "b9059a9be31bde77653f1544cb8159d4f6cf448347e565778f0aa1a7bb89458a",
+          "output_size": 67849,
           "runtime": {
             "duration_seconds": 0.0018533749971538782,
             "error_type": "OSError",
@@ -21076,7 +21076,7 @@
           },
           "seed": 20260826,
           "status": "passed",
-          "total_bytecode_bytes": 51455,
+          "total_bytecode_bytes": 51465,
           "total_instructions": 15,
           "transform_duration_seconds": 0.7915954999625683,
           "unicorn": {
@@ -21149,8 +21149,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "553182c4776ac5078013f94ee2bc38def411b4ac6fdafb01f8b0af5652e0e171",
-          "output_size": 67840,
+          "output_sha256": "2d630a4b6d68076aa0422e3792eb92fcbbf4da71d77e7b05d03aad718eafda01",
+          "output_size": 67851,
           "runtime": {
             "duration_seconds": 0.002381416969001293,
             "error_type": "OSError",
@@ -21168,7 +21168,7 @@
           },
           "seed": 20260828,
           "status": "passed",
-          "total_bytecode_bytes": 51456,
+          "total_bytecode_bytes": 51467,
           "total_instructions": 15,
           "transform_duration_seconds": 0.8061123749939725,
           "unicorn": {
@@ -21195,8 +21195,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "2a8d624384e33875c1155814de493efba2fc441039f8fa11058b021f4d5ad99d",
-          "output_size": 68152,
+          "output_sha256": "e9e428a6658bd10feeea9cfad7d44b9b67fd25691c3f158d1e2412e6c6a65010",
+          "output_size": 68165,
           "runtime": {
             "duration_seconds": 0.0011237079743295908,
             "error_type": "OSError",
@@ -21214,7 +21214,7 @@
           },
           "seed": 20260829,
           "status": "passed",
-          "total_bytecode_bytes": 51768,
+          "total_bytecode_bytes": 51781,
           "total_instructions": 15,
           "transform_duration_seconds": 0.9134667499456555,
           "unicorn": {
@@ -21299,8 +21299,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "42274c5993bc428a8abde75508a735febb577f5732d70d719358ebf29658cdcf",
-          "output_size": 70425,
+          "output_sha256": "c8704542dc43ad361a92ef531747a17db5e81719d48047375abf2568f817251a",
+          "output_size": 70439,
           "runtime": {
             "duration_seconds": 0.0009935409761965275,
             "error_type": "OSError",
@@ -21318,7 +21318,7 @@
           },
           "seed": 20260820,
           "status": "passed",
-          "total_bytecode_bytes": 54041,
+          "total_bytecode_bytes": 54055,
           "total_instructions": 6,
           "transform_duration_seconds": 0.8177088750526309,
           "unicorn": {
@@ -21391,8 +21391,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "a32fbf9f1959409930345f36e6779af4ab8118068575e1f977af90007eeba46c",
-          "output_size": 68127,
+          "output_sha256": "06e556e9a39f6091211c739d6251e78f17b2c2490cec59e4d19f46f3cb1aa758",
+          "output_size": 68140,
           "runtime": {
             "duration_seconds": 0.001074708066880703,
             "error_type": "OSError",
@@ -21410,7 +21410,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 51743,
+          "total_bytecode_bytes": 51756,
           "total_instructions": 6,
           "transform_duration_seconds": 0.9794265830423683,
           "unicorn": {
@@ -21437,8 +21437,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "0a6fb41be025f29f972a7a7e596290147e67cf87488ce1742484be8a715b692a",
-          "output_size": 68202,
+          "output_sha256": "c1bab33c2125e2f49f0145fb43548f4e84f702f76f811007b97f95c61086e53d",
+          "output_size": 68212,
           "runtime": {
             "duration_seconds": 0.0016962080262601376,
             "error_type": "OSError",
@@ -21456,7 +21456,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 51818,
+          "total_bytecode_bytes": 51828,
           "total_instructions": 6,
           "transform_duration_seconds": 0.8798564580501989,
           "unicorn": {
@@ -21575,8 +21575,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "d0d922899a4fc44d18a342c7bff0323d556e8277e7c64600be4203266b282afd",
-          "output_size": 68760,
+          "output_sha256": "0d1519f25c9ee62e9a9511c48fb9232c5684f5404b1b921c45200f766d197bbb",
+          "output_size": 68771,
           "runtime": {
             "duration_seconds": 0.0019158339127898216,
             "error_type": "OSError",
@@ -21594,7 +21594,7 @@
           },
           "seed": 20260826,
           "status": "passed",
-          "total_bytecode_bytes": 52376,
+          "total_bytecode_bytes": 52387,
           "total_instructions": 6,
           "transform_duration_seconds": 0.9612590000033379,
           "unicorn": {
@@ -21909,8 +21909,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "5fd948db4d56a1de588b6d1cab1da9f543480e19ecacbb1bf0f643bed53e3eae",
-          "output_size": 68983,
+          "output_sha256": "1a477e772aefbcb6acec7d94db5dda6dc36e91d504f8bcbc7fc0b5de694c5ac5",
+          "output_size": 68997,
           "runtime": {
             "duration_seconds": 0.001165832974947989,
             "error_type": "OSError",
@@ -21928,7 +21928,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 52599,
+          "total_bytecode_bytes": 52613,
           "total_instructions": 16,
           "transform_duration_seconds": 0.6163796249311417,
           "unicorn": {
@@ -21955,8 +21955,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "ffdfd1fa8d98482f939f07431887ad77b1fe6fbaf9902b167bf963387613e9a5",
-          "output_size": 68225,
+          "output_sha256": "7c9d7b85b58f341339316a67cfd27f9f8a3567c9f6eeb1253f750b2cae84564c",
+          "output_size": 68238,
           "runtime": {
             "duration_seconds": 0.0016454999567940831,
             "error_type": "OSError",
@@ -21974,7 +21974,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 51841,
+          "total_bytecode_bytes": 51854,
           "total_instructions": 16,
           "transform_duration_seconds": 0.5582974160788581,
           "unicorn": {
@@ -22001,8 +22001,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "96a54adda46ae3ccb2932d84a9c2242283c02260918933369ca5750da10c84ae",
-          "output_size": 69262,
+          "output_sha256": "772ddcfe1819b16a7b87a6ec02b89f00d029118fd3421635b53a831e91f2ff01",
+          "output_size": 69277,
           "runtime": {
             "duration_seconds": 0.0019235829822719097,
             "error_type": "OSError",
@@ -22020,7 +22020,7 @@
           },
           "seed": 20260824,
           "status": "passed",
-          "total_bytecode_bytes": 52878,
+          "total_bytecode_bytes": 52893,
           "total_instructions": 16,
           "transform_duration_seconds": 0.6495491249952465,
           "unicorn": {
@@ -22047,8 +22047,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "86299aad220c4be39948451d6fc3fcb59ea17ef97a0dbc9ce2280da6d09ab3ea",
-          "output_size": 69264,
+          "output_sha256": "cae0bd4e8deea10cd47d79c3952db04714a97962ad3ceecfe9c009ebf4ad4ca1",
+          "output_size": 69277,
           "runtime": {
             "duration_seconds": 0.0022814999101683497,
             "error_type": "OSError",
@@ -22066,7 +22066,7 @@
           },
           "seed": 20260825,
           "status": "passed",
-          "total_bytecode_bytes": 52880,
+          "total_bytecode_bytes": 52893,
           "total_instructions": 16,
           "transform_duration_seconds": 0.6324651249451563,
           "unicorn": {
@@ -22093,8 +22093,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "8eeb4d2e63a4dfe19d2f2b47f399e798efb6d4667b2bb45bf53351f171bd26b3",
-          "output_size": 69027,
+          "output_sha256": "5529d2400f6d374b33f84bfb7eec3880504a0ddb2602c6ca3edf6d76c57f460b",
+          "output_size": 69039,
           "runtime": {
             "duration_seconds": 0.0019269170006737113,
             "error_type": "OSError",
@@ -22112,7 +22112,7 @@
           },
           "seed": 20260826,
           "status": "passed",
-          "total_bytecode_bytes": 52643,
+          "total_bytecode_bytes": 52655,
           "total_instructions": 16,
           "transform_duration_seconds": 0.6775934160687029,
           "unicorn": {
@@ -22185,8 +22185,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "c789186390d2f44fb7b80285183a0fff73b35f37ba88bb682267bf3675f935cf",
-          "output_size": 68540,
+          "output_sha256": "16c80b30299939193b259e3ea82a569797bc96c630c7382bb24a04e6cb4bf70a",
+          "output_size": 68554,
           "runtime": {
             "duration_seconds": 0.002210958977229893,
             "error_type": "OSError",
@@ -22204,7 +22204,7 @@
           },
           "seed": 20260828,
           "status": "passed",
-          "total_bytecode_bytes": 52156,
+          "total_bytecode_bytes": 52170,
           "total_instructions": 16,
           "transform_duration_seconds": 0.6338375420309603,
           "unicorn": {
@@ -22231,8 +22231,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "fe47758d29f7b65bcb83e860c2ecc19bc648fe57c1cc6e5954d44cc468dfd9dd",
-          "output_size": 67719,
+          "output_sha256": "711b2e7264c0ba032732c682dda2ae8a55829cf55e78d3debbc76d256527ba21",
+          "output_size": 67729,
           "runtime": {
             "duration_seconds": 0.0008396670455113053,
             "error_type": "OSError",
@@ -22250,7 +22250,7 @@
           },
           "seed": 20260829,
           "status": "passed",
-          "total_bytecode_bytes": 51335,
+          "total_bytecode_bytes": 51345,
           "total_instructions": 16,
           "transform_duration_seconds": 0.6640777079155669,
           "unicorn": {
