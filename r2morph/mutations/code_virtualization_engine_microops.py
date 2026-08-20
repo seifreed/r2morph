@@ -36,6 +36,7 @@ from r2morph.mutations.code_virtualization_fold import arith_fold
 # Native reg-reg mnemonic -> its vstack fold primitive, and the inverse.
 _BINOP_OF: dict[str, str] = {"add": "vadd", "sub": "vsub", "xor": "vxor", "and": "vand", "or": "vor"}
 _MNEMONIC_OF: dict[str, str] = {binop: mnemonic for mnemonic, binop in _BINOP_OF.items()}
+_SPLIT_IMMEDIATE_MNEMONICS = frozenset({"add", "sub", "xor"})
 # The native reg-reg mnemonics that lower to micro-ops (the encoder's trigger set).
 MICROOP_ARITH_MNEMONICS: frozenset[str] = frozenset(_BINOP_OF)
 MICROOP_STACK_KINDS: tuple[str, ...] = _MICROOP_STACK_KINDS
@@ -186,8 +187,17 @@ def emit_arith_imm_microops(op: VirtualizedOp, emitter: MicroopEmitter) -> None:
     dst = {"slot": bytes([emitter.slot_of[op.dst_index]])}
     position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpush", False, 64)]))
     emitter.emit_fields(position, [("slot", 1)], dst)
-    position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpushi", False, op.width)]))
-    emitter.emit_fields(position, [("imm", op.width // 8)], {"imm": pack_immediate(op.value, op.width)})
-    emitter.emit_opcode(emitter.pick(emitter.scheme.dup[(_BINOP_OF[op.mnemonic], False, op.width)]))
+    immediate_values: tuple[int, ...] = (op.value,)
+    if emitter.scheme.immediate_split and op.mnemonic in _SPLIT_IMMEDIATE_MNEMONICS:
+        if op.mnemonic == "xor":
+            first = (1 << (op.width - 1)) - 1
+            immediate_values = (first, op.value ^ first)
+        else:
+            first = op.value // 2
+            immediate_values = (first, op.value - first)
+    for immediate in immediate_values:
+        position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpushi", False, op.width)]))
+        emitter.emit_fields(position, [("imm", op.width // 8)], {"imm": pack_immediate(immediate, op.width)})
+        emitter.emit_opcode(emitter.pick(emitter.scheme.dup[(_BINOP_OF[op.mnemonic], False, op.width)]))
     position = emitter.emit_opcode(emitter.pick(emitter.scheme.dup[("vpop", False, 64)]))
     emitter.emit_fields(position, [("slot", 1)], dst)

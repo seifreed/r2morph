@@ -2710,27 +2710,44 @@ def test_immediate_arithmetic_lowers_to_shared_microop_primitives() -> None:
     xor_len = len(encode_bytecode([VirtualizedOp("xor", 7, 5, True, 64)], scheme))
     mov_len = len(encode_bytecode([VirtualizedOp("mov", 7, 5, True, 64)], scheme))
     # Immediate add and xor expand to the same multi-item shape, strictly longer
-    # than the single-item immediate mov, after removing measured padding.
-    add_padding = _selected_padding(
-        scheme,
+    # than the single-item immediate mov, after removing measured padding. A build
+    # may use the new two-fold decomposition, so account for that selected grammar.
+    add_keys = [("vpush", False, 64), ("vpushi", False, 64), ("vadd", False, 64)]
+    xor_keys = [("vpush", False, 64), ("vpushi", False, 64), ("vxor", False, 64)]
+    if scheme.immediate_split:
+        add_keys.extend([("vpushi", False, 64), ("vadd", False, 64)])
+        xor_keys.extend([("vpushi", False, 64), ("vxor", False, 64)])
+    add_keys.append(("vpop", False, 64))
+    xor_keys.append(("vpop", False, 64))
+    add_padding = _selected_padding(scheme, add_keys)
+    xor_padding = _selected_padding(scheme, xor_keys)
+    mov_padding = _selected_padding(scheme, [("mov", True, 64)])
+    assert add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding
+
+
+def test_immediate_arithmetic_decomposition_varies_by_build() -> None:
+    schemes = [build_vm_scheme(random.Random(seed)) for seed in range(1, 128)]
+    unsplit = next(scheme for scheme in schemes if not scheme.immediate_split)
+    split = next(scheme for scheme in schemes if scheme.immediate_split)
+    operation = VirtualizedOp("add", 7, 5, True, 64)
+
+    unsplit_size = len(encode_bytecode([operation], unsplit)) - _selected_padding(
+        unsplit,
+        [("vpush", False, 64), ("vpushi", False, 64), ("vadd", False, 64), ("vpop", False, 64)],
+    )
+    split_size = len(encode_bytecode([operation], split)) - _selected_padding(
+        split,
         [
             ("vpush", False, 64),
+            ("vpushi", False, 64),
+            ("vadd", False, 64),
             ("vpushi", False, 64),
             ("vadd", False, 64),
             ("vpop", False, 64),
         ],
     )
-    xor_padding = _selected_padding(
-        scheme,
-        [
-            ("vpush", False, 64),
-            ("vpushi", False, 64),
-            ("vxor", False, 64),
-            ("vpop", False, 64),
-        ],
-    )
-    mov_padding = _selected_padding(scheme, [("mov", True, 64)])
-    assert add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding
+
+    assert split_size > unsplit_size
 
 
 def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:

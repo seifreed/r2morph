@@ -13011,8 +13011,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "83a41e8f2fc5f1c65f71a8cbffaad671f92197639a9100306acd3efe3533d463",
-          "output_size": 70190,
+          "output_sha256": "84ce445518e90e006f2d1a62ca7608e670a970101c44ca68a84b3bb490726d5d",
+          "output_size": 70230,
           "runtime": {
             "duration_seconds": 0.0016042079078033566,
             "error_type": "OSError",
@@ -13030,7 +13030,7 @@
           },
           "seed": 20260820,
           "status": "passed",
-          "total_bytecode_bytes": 53806,
+          "total_bytecode_bytes": 53846,
           "total_instructions": 6,
           "transform_duration_seconds": 0.7599584169220179,
           "unicorn": {
@@ -13103,8 +13103,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "32b860d27a030c8a08a7cb222ccb129ef582b2ee6c221d02029b6554fbf69393",
-          "output_size": 67898,
+          "output_sha256": "1ba585a60c8cd64a486854c159ea5c0e032951a6f6d5dd7a9c50db8b8006c91e",
+          "output_size": 67934,
           "runtime": {
             "duration_seconds": 0.0007721669971942902,
             "error_type": "OSError",
@@ -13122,7 +13122,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 51514,
+          "total_bytecode_bytes": 51550,
           "total_instructions": 6,
           "transform_duration_seconds": 0.9033589579630643,
           "unicorn": {
@@ -13149,8 +13149,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "9e016142bc877c3677f1b6fe37b36b51dd83b6e61aafacae43bfb22dc70e2de7",
-          "output_size": 67969,
+          "output_sha256": "adf258a0b9aef003616f25f7db756f2a98d564977c618212ff44dd6b5ef7a405",
+          "output_size": 68004,
           "runtime": {
             "duration_seconds": 0.0009199168998748064,
             "error_type": "OSError",
@@ -13168,7 +13168,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 51585,
+          "total_bytecode_bytes": 51620,
           "total_instructions": 6,
           "transform_duration_seconds": 0.9213509170804173,
           "unicorn": {
@@ -13287,8 +13287,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "1ac3086475103fc19c4a21599f8def335ead3430f5c04d22f54dbc175ee7f5f7",
-          "output_size": 68528,
+          "output_sha256": "5a2307aa9b13cce92145bed02940fb7745e8f3bec1ab7f13673ced95fdeea9cd",
+          "output_size": 68561,
           "runtime": {
             "duration_seconds": 0.000773416948504746,
             "error_type": "OSError",
@@ -13306,7 +13306,7 @@
           },
           "seed": 20260826,
           "status": "passed",
-          "total_bytecode_bytes": 52144,
+          "total_bytecode_bytes": 52177,
           "total_instructions": 6,
           "transform_duration_seconds": 0.6766739590093493,
           "unicorn": {
@@ -48235,8 +48235,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "4b0c31d4cd41e6b3ba653a8f24d38847db4c111701e8df7142928ce17caba1f4",
-          "output_size": 68053,
+          "output_sha256": "0c66db7e093a2802ec9994e3a44df484e444e6de67868fe1895d163392e5995e",
+          "output_size": 68079,
           "runtime": {
             "duration_seconds": 0.0008876660140231252,
             "error_type": "OSError",
@@ -48254,7 +48254,7 @@
           },
           "seed": 20260820,
           "status": "passed",
-          "total_bytecode_bytes": 51669,
+          "total_bytecode_bytes": 51695,
           "total_instructions": 3,
           "transform_duration_seconds": 1.0361335000488907,
           "unicorn": {
@@ -48327,8 +48327,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "836b74445f655076334f2f53090b4b85daa21b62a2054e7c3cf6c7b6c84ab7e2",
-          "output_size": 67840,
+          "output_sha256": "9e6d9be26f08164a95e440d580177186af3e11b3cf4f81d45de003f862a5a68a",
+          "output_size": 67864,
           "runtime": {
             "duration_seconds": 0.0009742090478539467,
             "error_type": "OSError",
@@ -48346,7 +48346,7 @@
           },
           "seed": 20260822,
           "status": "passed",
-          "total_bytecode_bytes": 51456,
+          "total_bytecode_bytes": 51480,
           "total_instructions": 3,
           "transform_duration_seconds": 1.1052511669695377,
           "unicorn": {
@@ -48373,8 +48373,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "874fb0bd2c95940e45ea46c92d513887217bf518c82bf1e8a6279899f448eb72",
-          "output_size": 67159,
+          "output_sha256": "dc9e2ff4e2ac54539cae1c7e3beb56e527157a4c984080a580fc52cb31aa84f2",
+          "output_size": 67186,
           "runtime": {
             "duration_seconds": 0.0017032079631462693,
             "error_type": "OSError",
@@ -48392,7 +48392,7 @@
           },
           "seed": 20260823,
           "status": "passed",
-          "total_bytecode_bytes": 50775,
+          "total_bytecode_bytes": 50802,
           "total_instructions": 3,
           "transform_duration_seconds": 1.002004540991038,
           "unicorn": {
@@ -48511,8 +48511,8 @@
             "status": "completed"
           },
           "functions_virtualized": 1,
-          "output_sha256": "d481e802089a7d587b495b0b68cebd8fe79d14682db0c90329769d3d5bc1117f",
-          "output_size": 68779,
+          "output_sha256": "f143419f8be78948bf81b457f4f4205508f5172432769160eac5a0d90a6e6fb9",
+          "output_size": 68800,
           "runtime": {
             "duration_seconds": 0.000859249965287745,
             "error_type": "OSError",
@@ -48530,7 +48530,7 @@
           },
           "seed": 20260826,
           "status": "passed",
-          "total_bytecode_bytes": 52395,
+          "total_bytecode_bytes": 52416,
           "total_instructions": 3,
           "transform_duration_seconds": 1.1316047080326825,
           "unicorn": {

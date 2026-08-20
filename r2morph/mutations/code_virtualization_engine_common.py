@@ -337,6 +337,7 @@ class VMScheme:
     engine_isa_seed: int = 0
     frame_size: int = _FRAME_SIZE
     record_padding: tuple[int, ...] = ()
+    immediate_split: bool = False
 
 
 # The opcode is a single byte and the dispatch bounds guard compares ``al``
@@ -422,6 +423,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
     engine_isa_seed = rng.randrange(1 << 31)
     frame_size = rng.choice(_FRAME_SIZES)
     record_padding = tuple(rng.randrange(3) for _ in range(total))
+    immediate_split = bool(rng.randrange(2))
     return VMScheme(
         dup,
         exit_opcode,
@@ -435,6 +437,7 @@ def build_vm_scheme(rng: random.Random) -> VMScheme:
         engine_isa_seed,
         frame_size,
         record_padding,
+        immediate_split,
     )
 
 

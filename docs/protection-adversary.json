@@ -5,7 +5,7 @@
       "address": 16384,
       "bytecode_address": 16384,
       "classification": "unsupported_indirect_dispatch",
-      "function_size": 269,
+      "function_size": 276,
       "handler_count": 0,
       "handler_table_address": null,
       "vm_context_size": 0,
@@ -14,10 +14,10 @@
       ]
     },
     {
-      "address": 16653,
+      "address": 16660,
       "bytecode_address": null,
       "classification": "unsupported_indirect_dispatch",
-      "function_size": 96,
+      "function_size": 99,
       "handler_count": 0,
       "handler_table_address": null,
       "vm_context_size": 0,
@@ -26,7 +26,7 @@
       ]
     },
     {
-      "address": 4153,
+      "address": 4126,
       "bytecode_address": null,
       "classification": "no_vm_candidate",
       "function_size": 18,
@@ -36,5 +36,5 @@
       "vm_registers": []
     }
   ],
-  "sample": "r2morph-ida-handlers-20260820"
+  "sample": "r2morph-ida-immediate-20260820"
 }
