@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `d61024a`
+Commit: `3a9ad18`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -345,6 +345,11 @@ configuration, whose removal exposes the documented unsuppressed lint backlog.
 Commit `d61024a` fixes the maturity harness so semantic parity requires valid
 emulator completion, matching exit code, and matching bounded native-runtime
 observables; the full Tier A artifact records `1090/1090` passing seed runs.
+Commit `3a9ad18` removes raw instruction count from `StructuralResistance`'s
+resistance score. Instruction expansion remains reported separately, while the
+score uses indirect dispatches and distinct branch targets; on the real shift
+fixture the measured score is `2.0` native versus `2970.0` virtualized despite
+the VM's `17612` disassembled instructions.
 
 ## 15. Remaining gaps
 
