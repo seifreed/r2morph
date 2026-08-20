@@ -1,0 +1,46 @@
+{
+  "commit": "f5f0b35",
+  "date": "2026-08-20",
+  "fixture": "elf_vm_engarithimm_x86_64",
+  "seed": 20260820,
+  "baseline": {
+    "sha256": "9e93ce6ba0f4f26f4ce3dabd02cebdcc2fd0e02a124bcac677bb723eff7569bd",
+    "size_bytes": 70255,
+    "generated_vm_bytes": 53871,
+    "exit_code": 42,
+    "instruction_count": 173610,
+    "indirect_jump_count": 38,
+    "correlated_dispatch_count": 35,
+    "raw_position_match_count": 35,
+    "unique_handler_targets": 12,
+    "unique_bytecode_positions": 35,
+    "ida_functions": 3,
+    "ida_segments": 6,
+    "ida_vm_entry": "0x404000",
+    "ida_vm_entry_size": 276,
+    "hexrays_handler_recovery": false
+  },
+  "state_encoded": {
+    "sha256": "9d58244f0567bdc114a2b72866c5507bd8c3a83aac57affb9a4e39adcbacaec9",
+    "size_bytes": 82183,
+    "generated_vm_bytes": 65799,
+    "exit_code": 42,
+    "instruction_count": 212586,
+    "indirect_jump_count": 38,
+    "correlated_dispatch_count": 35,
+    "raw_position_match_count": 0,
+    "unique_handler_targets": 12,
+    "unique_bytecode_positions": 35,
+    "ida_functions": 3,
+    "ida_segments": 7,
+    "ida_vm_entry": "0x404000",
+    "ida_vm_entry_size": 276,
+    "hexrays_handler_recovery": false
+  },
+  "dynamic_attack": {
+    "baseline_raw_state_recovery": "35/35",
+    "state_encoded_raw_state_recovery": "0/35",
+    "state_encoding_detected": true,
+    "payload_bytes_retained": false
+  }
+}

@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `c0cc5f0`
+Commit: `f5f0b35`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -108,6 +108,12 @@ tail handling, and `jmp rax`; no handler functions, table, or bytecode grammar
 were recovered. The dedicated observation is in
 [`docs/protection-ida-immediate-decomposition.json`](protection-ida-immediate-decomposition.json).
 
+Commit `f5f0b35` keeps the engine VM's vPC, bytecode base, and position encoded
+with the runtime checksum key at each indirect dispatch. The handler decodes the
+three registers only after control arrives, so existing handler bodies and the
+semantic contract remain unchanged. The controlled before/after evidence is in
+[`docs/protection-state-encoding.json`](protection-state-encoding.json).
+
 Commit `9d1a334` adds a second checksum traversal selected from existing per-build
 scheme fields without shifting later randomness. On seed `20260822`, IDA saw a
 183-byte, three-block entry and Hex-Rays reduced the bootstrap to a bytewise
@@ -122,8 +128,10 @@ four-byte permutation and guarded tail reads. The focused comparison is in
 repository's own `VMHandlerAnalyzer` against the largest analyzed functions and
 classifies outcomes as recovered table, unsupported indirect dispatch, or no VM
 candidate. [`docs/protection-adversary.json`](protection-adversary.json) records
-the current result: the analyzer did not recover handlers or bytecode from the
-encrypted threaded build.
+the prior checksum-seed result; the current same-fixture state-encoding result is
+in [`docs/protection-state-encoding.json`](protection-state-encoding.json). In
+both cases the analyzer did not recover handlers or bytecode from the encrypted
+threaded build.
 
 This failure is classified as unsupported current architecture, not as proof of
 genuine devirtualization impossibility. The analyzer's positive generic oracle
@@ -132,12 +140,12 @@ and indirect dispatch are outside that analyzer's supported contract. The
 adversary also exposed and fixed a false table candidate from non-executable ELF
 header bytes; current recovery now rejects that candidate on segment metadata.
 The separate bounded dynamic harness now supplies the missing capability
-distinction: on the same sample it correlates `32` dispatches with the live
-bytecode base, position, and handler target. Static recovery is therefore a tool
-coverage gap, while dynamic recovery is demonstrably easy for this execution.
-The own adversary now reports both results in one machine-readable output, along
-with `14` unique handler targets and observed positive position deltas
-`[1, 2, 3, 5, 10, 11]`; it does not retain decoded payload bytes.
+distinction. Before `f5f0b35`, the same fixture/seed exposed `35/35` tuples where
+`vpc - bytecode_base == position`; after the change it exposed `0/35`, while the
+program still exited `42`. The own adversary reports this as encoded state rather
+than incorrectly claiming raw recovery; it still sees `12` handler targets and
+the target sequence, so this is a state-exposure reduction, not full dynamic
+resistance. It does not retain decoded payload bytes.
 
 ## 8. Multi-seed
 
@@ -171,7 +179,7 @@ blend into an ordinary ELF. This remains a material weakness.
 
 ## 10. Runtime analysis exposure
 
-The bounded Unicorn trace in
+The historical bounded Unicorn trace in
 [`docs/protection-runtime-trace.json`](protection-runtime-trace.json) observed a
 fresh bytewise checksum build in `0.335` seconds: `253,680` instructions, `35`
 indirect dispatches reaching `14` distinct targets, `256` register-state samples,
@@ -183,6 +191,13 @@ register state from the live process; the checksum is not an anti-tracing
 boundary. The harness now records the correlation explicitly, but does not claim
 that a generic tracer cannot recover more, including the full decoded bytecode
 stream.
+
+The controlled comparison in
+[`docs/protection-state-encoding.json`](protection-state-encoding.json) measured
+`35/35` raw position matches before and `0/35` after. The output grew from
+`70,255` to `82,183` bytes (`+17.0%`) and the bounded run from `173,610` to
+`212,586` instructions (`+22.5%`); both builds exited `42`. This protects only
+the engine VM path; region and nested control-flow VMs still expose live pointers.
 
 ## 11. Performance overhead
 
@@ -213,9 +228,10 @@ spill, an obvious appended executable chain, and handler bodies that cluster at
 at or above `0.8`). The equivalent per-instance vIP advance form reduces this
 signal without adding unreachable junk. The opcode remains at record offset
 zero, although per-instance tail padding now removes the fixed record-stride
-assumption. The runtime VM's dispatch sequence and register state were also
-recovered by the bounded trace: `32/35` indirect jumps expose correlated
-vIP/base/position/target tuples in the current artifact.
+assumption. The engine VM's raw vPC/base/position correlation was recovered at
+`35/35` dispatches before `f5f0b35` and at `0/35` after it. The target sequence
+and handler count remain visible, so handler semantics and bytecode records are
+not claimed to be hidden by this change.
 Immediate arithmetic now has a second generic lowering grammar for `add`, `and`,
 `or`, `sub`, and `xor`; the current IDA observation still recovered no handler
 grammar. The checksum now has two generic traversal grammars: the block mode is
@@ -255,11 +271,15 @@ Immediate `add`, `and`, `or`, `sub`, and `xor` can now lower as two sequential
 equivalent folds selected per build; the dedicated corpus and IDA artifact record
 the semantic and static results. Commit `9d1a334` adds the seed-derived bytewise
 checksum traversal, its unit regression, full-corpus evidence, bounded trace, and
-fresh Hex-Rays observation.
+fresh Hex-Rays observation. Commit `f5f0b35` encodes the engine VM's live vPC,
+bytecode base, and position between handlers; the new unit/integration regression,
+same-fixture trace comparison, and IDA recheck are recorded in
+[`docs/protection-state-encoding.json`](protection-state-encoding.json).
 
 ## 15. Remaining gaps
 
-The current layout and handler-tail changes reduce two measured signals, but the
+The current layout, handler-tail, and engine-state changes reduce measured
+signals, but the
 payload is still an appended RX chain and the abstract machine remains
 recognizable across builds. Further container camouflage would require a new
 multi-region placement contract, not another segment or padding tweak. Stronger
@@ -275,7 +295,7 @@ without adding lint suppression.
 
 ### Termination assessment
 
-At HEAD `c0cc5f0`, the remaining protection weaknesses require architectural
+At HEAD `f5f0b35`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The bootstrap is still a
 stable, statically recoverable checksum loop; changing its register allocation,
 traversal order, or accumulator width does not remove that recovery path in
@@ -283,11 +303,11 @@ Hex-Rays. Removing that fingerprint requires distributing integrity state across
 the VM entry and threaded handlers while preserving the encoder/checksum
 contract. The appended RX chain remains an ELF-container fingerprint; hiding it
 requires a new placement contract that can use multiple existing executable
-regions and preserve loader invariants. Runtime traces recover handler targets
-and register state; reducing that exposure requires a different execution model,
-not more static junk or another checksum spelling. These are separate major
-redesigns, so no further local change is accepted as a measurable improvement in
-this iteration.
+regions and preserve loader invariants. Runtime traces still recover handler
+targets, and region/nested VMs still expose their live pointers; reducing those
+exposures requires a different execution model, not more static junk or another
+checksum spelling. These are separate major redesigns, so no further local
+change is accepted as a measurable improvement in this iteration.
 
 ## 16. Comparison with commercial properties
 
@@ -348,3 +368,8 @@ protected binary. The official quality wrapper was rerun at this
 HEAD: 9 checks pass;
 the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
 whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).
+Commit `f5f0b35` encodes engine VM state across threaded dispatch, adds the
+raw-position adversary contract, and records same-fixture semantic, runtime,
+performance, and IDA evidence in `protection-state-encoding.json`. The gate was
+rerun after this commit: 9 checks pass and the same single configuration failure
+remains.
