@@ -9,8 +9,8 @@ fixture semantics, and remains proportionate to its implementation cost.
 ## 2. Repository state
 
 The audited baseline was `3bf7ba5`. The current pushed advances are `d63efec` (fragmented
-executable-region measurement and import isolation) and `f3143ea` (seed-derived register
-save order).
+executable-region measurement and import isolation), `f3143ea` (seed-derived register save
+order), and `4cf6106` (bounded per-build frame-size hardening).
 
 ## 3. Architecture
 
@@ -66,9 +66,10 @@ regression test pins equality with the sum of per-segment counts.
 ## 10. IDA Pro adversary
 
 IDA Pro/Hex-Rays was used through the local IDA MCP on a fresh seed-`20260820` ELF build. It
-reported a four-segment image and a 195-byte interpreter entry. Disassembly showed a randomized
-15-register spill order followed by the checksum loop and a checksum-decrypted relative table;
-Hex-Rays decompiled only the checksum loop and opaque `jmp rax`, with no recovered handler table.
+reported five segments, including two adjacent RX payload loads, and a 195-byte interpreter
+entry beginning with `sub rsp, 0x360`. Disassembly showed a randomized 15-register spill order
+followed by the checksum loop and a checksum-decrypted relative table; Hex-Rays decompiled only
+the checksum loop and opaque `jmp rax`, with no recovered handler table.
 
 ## 11. Own devirtualizer
 
@@ -79,21 +80,25 @@ adversary result, not proof of impossibility.
 
 ## 12. Static leakage found
 
-The stable bootstrap prologue exposed a fixed register-save order. The frame offsets and checksum
-algorithm remain visible, and the appended adjacent RX payload remains structurally obvious.
-The decompiler still identifies the checksum loop; no claim is made that this loop is hidden.
+The stable bootstrap prologue exposed a fixed register-save order and fixed frame-allocation
+immediate. The frame offsets and checksum algorithm remain visible, and the appended adjacent RX
+payload remains structurally obvious. The decompiler still identifies the checksum loop; no claim
+is made that this loop is hidden.
 
 ## 13. Hardening applied
 
 `gp_save_order` derives a deterministic permutation from each VM scheme. Engine, region, and
-nested interpreters reuse it for register spill, checksum ciphering, and restore. It changes no
-register values, frame offsets, or control-flow semantics.
+nested interpreters reuse it for register spill, checksum ciphering, and restore. Engine and
+region interpreters also choose a conservative aligned frame size from bounded existing slack;
+the relocated program stack address is unchanged. These changes preserve register values,
+frame invariants, and control-flow semantics.
 
 ## 14. Semantic regression
 
-The full supported test suite passed under Python 3.12 with warnings as errors: `4,834 passed,
-21 skipped`, total coverage `80.59%`. The ten-seed real-fixture campaign also preserved exit code
-`45` for every generated binary.
+The full supported test suite under Python 3.12 with warnings as errors reached `4,836 passed`,
+`1 failed` stale fixed-frame assertion, and `21 skipped`; the assertion was updated and its
+focused rerun passed. Coverage reached `80.94%`. The ten-seed real-fixture campaign also
+preserved exit code `45` for every generated binary.
 
 ## 15. Structural regression
 
@@ -118,8 +123,8 @@ reverse engineer.
 
 ## 18. Next loop and stop criteria
 
-The next measured weakness is the still-fixed frame-allocation signature and visible checksum
-traversal. Work should continue only if a generic change improves IDA/devirtualizer recovery
+The next measured weakness is the visible checksum traversal and adjacent RX payload chain.
+Work should continue only if a generic change improves IDA/devirtualizer recovery
 metrics without breaking the real fixture matrix or adding disproportionate complexity. Stop
 when repeated seed campaigns show no material adversarial improvement, or when remaining gains
 require a format-specific or sample-specific design.
