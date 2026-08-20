@@ -17,7 +17,10 @@ _DEFAULT_SEED = 20260820
 _DEFAULT_COUNT = 10
 _MAX_SEEDS = 100
 _HANDLER_PATTERN = re.compile(r"^h_(\d+):\n(.*?)(?=^h_\d+:|^vm_exit:)", re.MULTILINE | re.DOTALL)
-_STRIDE_PATTERN = re.compile(r"add rsi, (\d+)")
+_STRIDE_PATTERNS = (
+    re.compile(r"add rsi, (\d+)"),
+    re.compile(r"lea rsi, \[rsi \+ (\d+)\]"),
+)
 _TARGET_OPERATION = ("mov", False, 64)
 
 
@@ -25,10 +28,15 @@ def _handler_strides(seed: int) -> tuple[dict[int, tuple[str, bool, int]], dict[
     scheme = build_vm_scheme(randomness.Random(seed))
     index_to_key = {index: key for key, indices in scheme.dup.items() for index in indices}
     assembly = _interpreter_asm(0, scheme, has_fp=True)
-    strides = {
-        int(match.group(1)): int(_STRIDE_PATTERN.findall(match.group(2))[-1])
-        for match in _HANDLER_PATTERN.finditer(assembly)
-    }
+    strides: dict[int, int] = {}
+    for match in _HANDLER_PATTERN.finditer(assembly):
+        for pattern in _STRIDE_PATTERNS:
+            matches = pattern.findall(match.group(2))
+            if matches:
+                strides[int(match.group(1))] = int(matches[-1])
+                break
+        else:
+            raise ValueError(f"handler h_{match.group(1)} has no virtual-program-counter advance")
     padding = scheme.record_padding or (0,) * len(index_to_key)
     return index_to_key, strides, padding
 

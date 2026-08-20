@@ -19,3 +19,13 @@ def test_gp_handler_body_variant_reorders_independent_loads() -> None:
     field_variant = generator.handler_body("mov", False, 64, 0, body_variant=2)
 
     assert len({canonical, reordered, field_variant}) == 3
+
+
+def test_handler_body_variant_uses_equivalent_vip_advance_form() -> None:
+    scheme = build_vm_scheme(randomness.Random(20260820))
+    generator = EngineHandlerGenerator(scheme, DEFAULT_FRAME_LAYOUT, EngineISASpec())
+
+    add_form = generator.handler_body("mov", False, 64, 0, body_variant=0)
+    lea_form = generator.handler_body("mov", False, 64, 0, body_variant=2)
+
+    assert "add rsi" in add_form and "lea rsi" in lea_form

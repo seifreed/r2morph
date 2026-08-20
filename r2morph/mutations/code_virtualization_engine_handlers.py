@@ -45,6 +45,7 @@ class EngineHandlerGenerator:
         self.key_qword = f"qword ptr [rsp + {layout.key_qword_offset}]"
         self.key_dword = f"dword ptr [rsp + {layout.key_dword_offset}]"
         self.record_padding = 0
+        self.advance_variant = 0
 
     def handler_body(
         self,
@@ -54,6 +55,7 @@ class EngineHandlerGenerator:
         arith_variant: int,
         body_variant: int = 0,
     ) -> str:
+        self.advance_variant = body_variant & 2
         if mnemonic in _MICROOP_STACK_KINDS or mnemonic in _MICROOP_BINOP_KINDS or mnemonic in _MICROOP_IMM_KINDS:
             return microop_handler_body(
                 mnemonic,
@@ -66,6 +68,7 @@ class EngineHandlerGenerator:
                     self.layout.vstack_base,
                     arith_variant,
                     self.record_padding,
+                    self.advance_variant,
                 ),
             )
         fp_body = self._fp_handler_body(mnemonic, width)
@@ -79,7 +82,10 @@ class EngineHandlerGenerator:
         self.record_padding = record_padding
 
     def _advance(self, base: int) -> str:
-        return f"  add rsi, {base + self.record_padding}\n"
+        amount = base + self.record_padding
+        if self.advance_variant:
+            return f"  lea rsi, [rsi + {amount}]\n"
+        return f"  add rsi, {amount}\n"
 
     def _gp_handler_body(self, mnemonic: str, is_immediate: bool, width: int, body_variant: int = 0) -> str:
         off = op_offsets(is_immediate, width, self.scheme.field_perm)

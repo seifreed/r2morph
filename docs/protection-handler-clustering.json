@@ -1,24 +1,84 @@
 {
   "cross_seed_exact_normalised_match_rate": 0.0008064516129032258,
   "cross_seed_largest_normalised_cluster": 2,
-  "cross_seed_nearest_similarity_above_threshold": 1903,
+  "cross_seed_nearest_similarity_above_threshold": 1780,
   "cross_seed_nearest_similarity_max": 0.9841269841269841,
-  "cross_seed_nearest_similarity_mean": 0.8458909376750514,
+  "cross_seed_nearest_similarity_mean": 0.837582603508156,
   "cross_seed_normalised_cluster_count": 1,
   "first_seed": 20260820,
   "schema_version": 1,
   "seed_count": 10,
   "seeds": [
-    {"seed": 20260820, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260821, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260822, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260823, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260824, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260825, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260826, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260827, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260828, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1},
-    {"seed": 20260829, "handler_count": 248, "raw_unique_count": 248, "normalised_unique_count": 248, "largest_normalised_cluster": 1}
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260820
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260821
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260822
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260823
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260824
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260825
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260826
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260827
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260828
+    },
+    {
+      "handler_count": 248,
+      "largest_normalised_cluster": 1,
+      "normalised_unique_count": 248,
+      "raw_unique_count": 248,
+      "seed": 20260829
+    }
   ],
   "similarity_threshold": 0.8
 }

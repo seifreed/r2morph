@@ -172,9 +172,11 @@ overhead.
 
 The adversary still sees a recognizable checksum bootstrap, a large register
 spill, an obvious appended executable chain, and handler bodies that cluster at
-`0.846` mean normalized nearest similarity across seeds. The opcode remains at
-record offset zero, although per-instance tail padding now removes the fixed
-record-stride assumption. The runtime VM's
+`0.838` mean normalized nearest similarity across seeds (`1780` pairings remain
+at or above `0.8`). The equivalent per-instance vIP advance form reduces this
+signal without adding unreachable junk. The opcode remains at record offset
+zero, although per-instance tail padding now removes the fixed record-stride
+assumption. The runtime VM's
 dispatch sequence and register state were also recovered by the bounded trace.
 The own devirtualizer does not support the current encrypted indirect shape, so
 its negative result is not a complete adversarial benchmark. The interpreter outlier
@@ -200,6 +202,9 @@ instance, with the generated handler stride and encoder stream kept in lockstep;
 the grammar artifact and fresh IDA observation record the result. The relocated
 program-header table now shares the first appended RX load, removing one
 synthetic metadata segment while preserving the loader invariants.
+Handler tails also select the equivalent `add` or flag-neutral `lea` vIP advance
+form per instance; the clustering artifact records the reduction in nearest
+similarity.
 
 ## 15. Remaining gaps
 

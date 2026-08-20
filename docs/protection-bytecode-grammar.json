@@ -1,10 +1,4 @@
 {
-  "baseline_before_padding": {
-    "seed_count": 10,
-    "target_stride_mean": 3.0,
-    "target_stride_values": [3],
-    "total_padding_bytes": 0
-  },
   "all_handler_stride_values": [
     1,
     2,

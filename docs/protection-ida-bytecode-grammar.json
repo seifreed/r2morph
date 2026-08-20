@@ -1,12 +1,12 @@
 {
   "analysis": "IDA Pro and Hex-Rays",
-  "commit_basis": "dba52f7",
+  "commit_basis": "working tree before handler diversity commit",
   "seed": 20260820,
   "sample": "elf_vm_engarith_x86_64",
-  "sha256": "57b7a9b3df6ccc9ae6c66f7d17c12f2f1aaee3decd55f8e492052eff357da93d",
+  "sha256": "9c8a2c4e93614ddcac5cbcfe5ab1e95b924cff23b82eda0895e5872d5083f72c",
   "ida": {
     "functions": 3,
-    "segments": 7,
+    "segments": 5,
     "vm_entry": "0x404000",
     "vm_entry_size": 269,
     "vm_entry_stack_frame_size": "0x2f0",
@@ -19,6 +19,7 @@
     "Hex-Rays recovered the checksum loop and its bounds.",
     "Hex-Rays recovered the runtime table base and indirect jmp rax, but not handler targets or bytecode records.",
     "The per-record padding changes handler strides while remaining invisible to the static entry decompilation.",
-    "The relocated program-header table is mapped inside the first appended RX load; the standalone metadata load is absent from the ELF load table."
+    "The relocated program-header table is mapped inside the first appended RX load; the standalone metadata load is absent from the ELF load table.",
+    "The handler tail uses equivalent add/lea virtual-program-counter advances selected per instance; Hex-Rays still recovered only the checksum bootstrap and indirect jump."
   ]
 }
