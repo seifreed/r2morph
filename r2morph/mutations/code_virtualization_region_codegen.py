@@ -34,6 +34,7 @@ from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
     RSP_INDEX,
+    gp_save_order,
 )
 from r2morph.mutations.code_virtualization_region_codegen_encode import (
     _item_size,
@@ -88,15 +89,15 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     retarget = retarget_target + "  mov rsi, r9\n  jmp vm_dispatch\n"
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
+    save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
     # Only regions that move scalar FP need the 16 XMM registers preserved in the
     # frame; for everything else the spill/reload is pure overhead and is omitted.
     has_fp = any(item[0] in ("fpload", "fpstore") for item in region.instructions)
     # Zero the virtual operand stack pointer; micro-op arithmetic folds through it.
     lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"]
-    for index, name in enumerate(GP_REGISTERS):
-        if name != "rsp":
-            lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {name}\n")
+    for index in save_order:
+        lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n")
     if has_fp:
         lines.append(xmm_spill_asm())
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
@@ -172,8 +173,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  mov rax, qword ptr [rsp+{slot[index] * 8}]\n"
         f"  xor rax, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
         f"  mov qword ptr [rsp+{slot[index] * 8}], rax\n"
-        for index, name in enumerate(GP_REGISTERS)
-        if name != "rsp"
+        for index in save_order
     )
     bootstrap, bootstrap_table = build_bootstrap_asm(
         scheme.checksum_offset,
@@ -182,9 +182,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     )
     lines.append(bootstrap)
 
-    reload_seq = "".join(
-        f"  mov {name}, qword ptr [rsp+{slot[index] * 8}]\n" for index, name in enumerate(GP_REGISTERS) if name != "rsp"
-    )
+    reload_seq = "".join(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n" for index in save_order)
     if has_fp:
         reload_seq += xmm_reload_asm()
 

@@ -23,11 +23,18 @@ build can regress to the reconstructible shape.
 from __future__ import annotations
 
 import random
+import re
 from typing import Any
 
 from r2morph.mutations.code_virtualization_dispatch import decode_block
-from r2morph.mutations.code_virtualization_engine import _interpreter_asm as _engine_interpreter_asm
-from r2morph.mutations.code_virtualization_engine import build_vm_scheme
+from r2morph.mutations.code_virtualization_engine import (
+    GP_REGISTERS,
+    build_vm_scheme,
+    gp_save_order,
+)
+from r2morph.mutations.code_virtualization_engine import (
+    _interpreter_asm as _engine_interpreter_asm,
+)
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm as _region_interpreter_asm
 
@@ -74,6 +81,10 @@ def _engine_asm(seed: int) -> str:
     return _engine_interpreter_asm(0x1000, build_vm_scheme(random.Random(seed)))
 
 
+def _engine_spill_order(seed: int) -> tuple[str, ...]:
+    return tuple(re.findall(r"mov qword ptr \[rsp \+ \d+\], (\w+)", _engine_asm(seed))[:15])
+
+
 def test_region_interpreter_has_no_central_dispatch_label() -> None:
     asm = _region_asm(0)
     assert "vm_dispatch:" not in asm
@@ -107,6 +118,20 @@ def test_engine_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _engine_asm(0)
 
     assert asm.index("jmp rax") < min(asm.index("rdtsc"), asm.index("syscall"))
+
+
+def test_engine_interpreter_save_order_varies_across_builds() -> None:
+    seeds = range(10)
+    orders = {_engine_spill_order(seed) for seed in seeds}
+
+    assert len(orders) > 1
+    assert all(
+        _engine_spill_order(seed)
+        == tuple(
+            GP_REGISTERS[index] for index in gp_save_order(build_vm_scheme(random.Random(seed)).junk_seed ^ 0x51A7E)
+        )
+        for seed in seeds
+    )
 
 
 def test_engine_interpreter_never_emits_a_compare_branch_ladder() -> None:

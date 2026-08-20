@@ -20,6 +20,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
     RSP_INDEX,
     VMScheme,
     _live_junk_asm,
+    gp_save_order,
 )
 from r2morph.mutations.code_virtualization_engine_encoder import EngineOp
 from r2morph.mutations.code_virtualization_engine_encoder import encode_bytecode as _encode_bytecode
@@ -73,10 +74,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     handlers = EngineHandlerGenerator(scheme, layout, isa)
 
     slot = scheme.slot_perm  # logical register index -> shuffled frame slot
+    save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
     lines = [f"vm_entry:\n  sub rsp, {_FRAME_SIZE}\n"]
-    for index, name in enumerate(GP_REGISTERS):
-        if name != "rsp":
-            lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {name}\n")
+    for index in save_order:
+        lines.append(f"  mov qword ptr [rsp + {slot[index] * 8}], {GP_REGISTERS[index]}\n")
     # Empty the virtual operand stack for the micro-op handlers (pointer word = 0).
     lines.append(f"  mov qword ptr [rsp + {layout.vsp_offset}], 0\n")
     if has_fp:
@@ -137,8 +138,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         f"  mov rcx, qword ptr [rsp + {slot[index] * 8}]\n"
         "  xor rcx, rax\n"
         f"  mov qword ptr [rsp + {slot[index] * 8}], rcx\n"
-        for index, name in enumerate(GP_REGISTERS)
-        if name != "rsp"
+        for index in save_order
     )
     bootstrap, bootstrap_table = build_bootstrap_asm(
         layout.checksum_offset,
@@ -177,9 +177,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng, index)}{body}")
 
     lines.append("vm_exit:\n")
-    for index, name in enumerate(GP_REGISTERS):
-        if name != "rsp":
-            lines.append(f"  mov {name}, qword ptr [rsp + {slot[index] * 8}]\n")
+    for index in save_order:
+        lines.append(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp + {slot[index] * 8}]\n")
     if has_fp:
         for xmm in range(16):
             lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}]\n")

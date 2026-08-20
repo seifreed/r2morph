@@ -42,7 +42,7 @@ from r2morph.mutations.code_virtualization_bootstrap import (
     encrypt_bootstrap_table,
 )
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
-from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX
+from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX, gp_save_order
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen_encode import (
     _item_size,
@@ -422,12 +422,13 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     counts = [_scheme_count(s) for s in schemes]
     offsets = [sum(counts[:i]) for i in range(count)]  # global handler-index base per layer
     rsp_off = slot[RSP_INDEX] * 8
-
     spill = "".join(
-        f"  mov qword ptr [rsp+{slot[i] * 8}], {name}\n" for i, name in enumerate(GP_REGISTERS) if name != "rsp"
+        f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n"
+        for index in gp_save_order(schemes[0].junk_seed ^ 0x51A7E)
     )
     reload_seq = "".join(
-        f"  mov {name}, qword ptr [rsp+{slot[i] * 8}]\n" for i, name in enumerate(GP_REGISTERS) if name != "rsp"
+        f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n"
+        for index in gp_save_order(schemes[0].junk_seed ^ 0x51A7E)
     )
 
     # An in-function call (vcall, always in the outer layer) reserves a zeroed floor

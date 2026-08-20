@@ -47,6 +47,7 @@ from r2morph.mutations.code_virtualization_engine_common import (
     VMScheme,
     _opaque_predicate_asm,
     build_vm_scheme,
+    gp_save_order,
     immediate_fits_width,
     pack_immediate,
 )
@@ -203,6 +204,7 @@ __all__ = [
     "build_vm_scheme",
     "decode_instruction",
     "encode_bytecode",
+    "gp_save_order",
     "immediate_fits_width",
     "inject_junk_ops",
     "pack_immediate",

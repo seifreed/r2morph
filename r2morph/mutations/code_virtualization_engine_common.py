@@ -42,6 +42,14 @@ GP_REGISTERS: tuple[str, ...] = (
 REGISTER_INDEX: dict[str, int] = {name: idx for idx, name in enumerate(GP_REGISTERS)}
 RSP_INDEX = REGISTER_INDEX["rsp"]
 
+
+def gp_save_order(seed: int) -> tuple[int, ...]:
+    """Return a reproducible order for saving the non-stack GP registers."""
+    order = list(range(len(GP_REGISTERS)))
+    random.Random(seed).shuffle(order)
+    return tuple(index for index in order if index != RSP_INDEX)
+
+
 # 32-bit register spellings share a context slot with their 64-bit base; a
 # 32-bit write zero-extends into the full slot, matching x86-64 semantics.
 REGISTER32_INDEX: dict[str, int] = {
