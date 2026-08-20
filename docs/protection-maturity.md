@@ -260,4 +260,6 @@ and the regenerated correctness corpus. Commit `dba52f7` maps the relocated
 program-header table inside the first appended RX load, removes the standalone
 metadata load, and revalidates the full corpus and loader invariants. Commit
 `99fe143` adds equivalent per-instance `add`/`lea` vIP advances, updates the
-clustering and Tier B artifacts, and revalidates the full suite.
+clustering and Tier B artifacts, and revalidates the full suite. The follow-up
+evidence commit records the regenerated 109-fixture corpus hashes and timing
+metrics from that build.
