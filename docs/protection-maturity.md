@@ -122,8 +122,9 @@ reverse engineer.
 
 ## 18. Next loop and stop criteria
 
-The next measured weakness is the visible checksum traversal and adjacent RX payload chain.
-Work should continue only if a generic change improves IDA/devirtualizer recovery
-metrics without breaking the real fixture matrix or adding disproportionate complexity. Stop
-when repeated seed campaigns show no material adversarial improvement, or when remaining gains
-require a format-specific or sample-specific design.
+The remaining visible weaknesses are the checksum traversal and adjacent RX payload chain.
+The stop decision for this loop is deliberate: hiding either one requires a larger checksum
+construction or payload-container redesign, with materially higher semantic and loader risk than
+the bounded gains measured here. Reopen the loop only when a generic design is available that
+improves IDA/devirtualizer recovery metrics without breaking the real fixture matrix or becoming
+sample-specific.
