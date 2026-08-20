@@ -60,7 +60,12 @@
       "exit_code": 45,
       "instruction_count": 99984,
       "correlated_dispatch_count": 22,
-      "raw_position_match_count": 0
+      "raw_position_match_count": 0,
+      "ida_functions": 2,
+      "ida_segments": 4,
+      "ida_vm_entry": "0x404000",
+      "ida_vm_entry_size": 177,
+      "hexrays_handler_recovery": false
     }
   },
   "nested_comparison": {

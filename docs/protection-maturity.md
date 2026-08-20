@@ -119,6 +119,10 @@ real regressions and same-fixture trace comparisons for both paths.
 Commit `e32ad9c` extends the same protocol through region and nested handler
 entries. The controlled region comparison removed `22/22` raw position matches;
 the nested in-call comparison removed `244/244` while preserving exit `45`.
+IDA on the current region build recognized two functions and four segments; its
+177-byte VM entry decompiled only to the checksum loop and opaque `jmp rax`, with
+no handler recovery. This matches the engine result: state encoding changes the
+runtime correlation without claiming that the checksum bootstrap itself is hidden.
 
 Commit `9d1a334` adds a second checksum traversal selected from existing per-build
 scheme fields without shifting later randomness. On seed `20260822`, IDA saw a
