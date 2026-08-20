@@ -2,6 +2,7 @@ import hashlib
 from pathlib import Path
 
 from r2morph.validation.regression import RegressionTestFramework
+from tests.utils.assertions import expect
 
 
 def _sha256(path: Path) -> str:
@@ -27,9 +28,9 @@ def test_regression_framework_mismatch_reporting(tmp_path: Path):
     framework.baselines[baseline.test_id] = baseline
 
     result = framework.run_regression_test("det_mismatch", str(binary_path))
-    assert result.test_id == "det_mismatch"
-    assert isinstance(result.issues, list)
+    expect(result.test_id == "det_mismatch")
+    expect(isinstance(result.issues, list))
 
     framework.test_results.append(result)
     report = framework.generate_regression_report()
-    assert "REGRESSION TEST REPORT" in report
+    expect(not ("REGRESSION TEST REPORT" not in report))

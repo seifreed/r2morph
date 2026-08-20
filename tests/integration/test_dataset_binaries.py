@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -27,6 +29,12 @@ from r2morph.mutations import (
 )
 from r2morph.validation.fuzzer import MutationFuzzer
 from r2morph.validation.validator import BinaryValidator
+
+_EXPECTED_ARCH_INFO_BITS_64 = 64
+_EXPECTED_ARCH_INFO_BITS_64_2 = 64
+_EXPECTED_RESULT_PASSED_RESULT_FAILED_5 = 5
+_EXPECTED_RESULT_SIMILARITY_SCORE_100 = 100
+_EXPECTED_RESULT_TOTAL_TESTS_5 = 5
 
 
 class TestDatasetBinaries:
@@ -56,12 +64,12 @@ class TestDatasetBinaries:
             binary.analyze()
 
             functions = binary.get_functions()
-            assert len(functions) > 0
+            expect(not (len(functions) <= 0))
 
             arch_info = binary.get_arch_info()
-            assert arch_info["arch"] in ["x86", "x64", "amd64"]
-            assert arch_info["bits"] == 64
-            assert "elf" in arch_info["format"].lower()
+            expect(not (arch_info["arch"] not in ["x86", "x64", "amd64"]))
+            expect(arch_info["bits"] == _EXPECTED_ARCH_INFO_BITS_64)
+            expect(not ("elf" not in arch_info["format"].lower()))
 
     def test_analyze_macos_binary(self, ls_macos):
         """Test analyzing real macOS binary."""
@@ -72,10 +80,10 @@ class TestDatasetBinaries:
             binary.analyze()
 
             functions = binary.get_functions()
-            assert len(functions) > 0
+            expect(not (len(functions) <= 0))
 
             arch_info = binary.get_arch_info()
-            assert "mach" in arch_info["format"].lower()
+            expect(not ("mach" not in arch_info["format"].lower()))
 
     def test_analyze_pe_binary(self, pe_x86_64_exe):
         """Test analyzing real PE binary."""
@@ -86,11 +94,11 @@ class TestDatasetBinaries:
             binary.analyze()
 
             functions = binary.get_functions()
-            assert len(functions) > 0
+            expect(not (len(functions) <= 0))
 
             arch_info = binary.get_arch_info()
-            assert "pe" in arch_info["format"].lower()
-        assert arch_info["bits"] == 64
+            expect(not ("pe" not in arch_info["format"].lower()))
+        expect(arch_info["bits"] == _EXPECTED_ARCH_INFO_BITS_64_2)
 
     def test_binary_analyzer_on_elf(self, ls_elf):
         """Test BinaryAnalyzer on real ELF binary."""
@@ -102,10 +110,10 @@ class TestDatasetBinaries:
             analyzer = BinaryAnalyzer(binary)
             stats = analyzer.get_statistics()
 
-            assert stats is not None
-            assert "architecture" in stats
-            assert "total_functions" in stats
-            assert stats["total_functions"] > 0
+            expect(stats is not None)
+            expect(not ("architecture" not in stats))
+            expect(not ("total_functions" not in stats))
+            expect(not (stats["total_functions"] <= 0))
 
     def test_nop_insertion_on_elf(self, ls_elf, tmp_path):
         """Test NOP insertion on real ELF binary."""
@@ -127,9 +135,9 @@ class TestDatasetBinaries:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
-        assert output_path.stat().st_size > 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
+        expect(not (output_path.stat().st_size <= 0))
 
     def test_instruction_substitution_on_elf(self, ls_elf, tmp_path):
         """Test instruction substitution on real ELF binary."""
@@ -151,8 +159,8 @@ class TestDatasetBinaries:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
 
     def test_multiple_mutations_on_elf(self, ls_elf, tmp_path):
         """Test multiple mutations on real ELF binary."""
@@ -175,9 +183,9 @@ class TestDatasetBinaries:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
-        assert "pass_results" in result
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
+        expect(not ("pass_results" not in result))
 
     def test_register_substitution_on_elf(self, ls_elf, tmp_path):
         """Test register substitution on real ELF binary."""
@@ -198,7 +206,7 @@ class TestDatasetBinaries:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
     def test_instruction_expansion_on_elf(self, ls_elf, tmp_path):
         """Test instruction expansion on real ELF binary."""
@@ -219,7 +227,7 @@ class TestDatasetBinaries:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
     def test_block_reordering_on_elf(self, ls_elf, tmp_path):
         """Test block reordering on real ELF binary."""
@@ -240,7 +248,7 @@ class TestDatasetBinaries:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
     def test_get_functions_from_elf(self, ls_elf):
         """Test getting functions from real ELF binary."""
@@ -251,8 +259,8 @@ class TestDatasetBinaries:
             binary.analyze()
             functions = binary.get_functions()
 
-        assert len(functions) >= 1
-        assert all("name" in f or "offset" in f for f in functions)
+        expect(not (len(functions) < 1))
+        expect(all("name" in f or "offset" in f for f in functions))
 
     def test_get_disassembly_from_elf(self, ls_elf):
         """Test getting disassembly from real ELF binary."""
@@ -267,7 +275,7 @@ class TestDatasetBinaries:
                 func_addr = functions[0].get("offset") or functions[0].get("addr")
                 if func_addr:
                     disasm = binary.get_function_disasm(func_addr)
-                    assert len(disasm) >= 0
+                    expect(not (len(disasm) < 0))
 
     def test_get_basic_blocks_from_elf(self, ls_elf):
         """Test getting basic blocks from real ELF binary."""
@@ -282,7 +290,7 @@ class TestDatasetBinaries:
                 func_addr = functions[0].get("offset") or functions[0].get("addr")
                 if func_addr:
                     blocks = binary.get_basic_blocks(func_addr)
-                    assert isinstance(blocks, list)
+                    expect(isinstance(blocks, list))
 
     def test_assemble_on_elf(self, ls_elf):
         """Test assembling instructions on real ELF binary."""
@@ -293,11 +301,11 @@ class TestDatasetBinaries:
             binary.analyze()
 
             nop = binary.assemble("nop")
-            assert nop is not None
-            assert len(nop) > 0
+            expect(nop is not None)
+            expect(not (len(nop) <= 0))
 
             xor = binary.assemble("xor eax, eax")
-            assert xor is not None
+            expect(xor is not None)
 
     def test_fuzzer_on_elf(self, ls_elf, tmp_path):
         """Test fuzzer on real ELF binary."""
@@ -315,8 +323,8 @@ class TestDatasetBinaries:
         fuzzer = MutationFuzzer(num_tests=5, timeout=10)
         result = fuzzer.fuzz_with_args(ls_elf, output_path, arg_count=2)
 
-        assert result.total_tests == 5
-        assert result.passed + result.failed == 5
+        expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_5)
+        expect(result.passed + result.failed == _EXPECTED_RESULT_PASSED_RESULT_FAILED_5)
 
     def test_validator_on_elf(self, ls_elf, tmp_path):
         """Test validator on real ELF binary."""
@@ -336,6 +344,6 @@ class TestDatasetBinaries:
 
         result = validator.validate(ls_elf, output_path)
 
-        assert isinstance(result.passed, bool)
-        assert result.similarity_score >= 0
-        assert result.similarity_score <= 100
+        expect(isinstance(result.passed, bool))
+        expect(not (result.similarity_score < 0))
+        expect(not (result.similarity_score > _EXPECTED_RESULT_SIMILARITY_SCORE_100))

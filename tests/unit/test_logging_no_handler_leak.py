@@ -20,6 +20,9 @@ import logging
 from pathlib import Path
 
 from r2morph.utils.logging import setup_logging
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_LOGGER_HANDLERS_2 = 2
 
 
 def test_repeated_setup_closes_previous_file_handler(tmp_path: Path) -> None:
@@ -29,22 +32,22 @@ def test_repeated_setup_closes_previous_file_handler(tmp_path: Path) -> None:
     setup_logging(level="INFO", log_file=str(log_a))
     logger = logging.getLogger("r2morph")
     first_file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
-    assert len(first_file_handlers) == 1
+    expect(len(first_file_handlers) == 1)
     first = first_file_handlers[0]
     # Capture the stream object itself: FileHandler.close() sets
     # .stream = None, so we must check the original file object.
     first_stream = first.stream
-    assert first_stream is not None and not first_stream.closed
+    expect(first_stream is not None and not first_stream.closed)
 
     # Reconfiguring must close the old FileHandler's file, not orphan it.
     setup_logging(level="INFO", log_file=str(log_b))
 
-    assert first_stream.closed, "previous FileHandler leaked an open file"
+    expect(first_stream.closed, "previous FileHandler leaked an open file")
 
     # No handler accumulation: exactly one console + one file handler.
     file_handlers = [h for h in logger.handlers if isinstance(h, logging.FileHandler)]
-    assert len(file_handlers) == 1
-    assert len(logger.handlers) == 2
+    expect(len(file_handlers) == 1)
+    expect(len(logger.handlers) == _EXPECTED_LEN_LOGGER_HANDLERS_2)
 
 
 def test_repeated_setup_without_file_does_not_accumulate(tmp_path: Path) -> None:
@@ -52,5 +55,5 @@ def test_repeated_setup_without_file_does_not_accumulate(tmp_path: Path) -> None
     setup_logging(level="DEBUG")  # console only
     logger = logging.getLogger("r2morph")
 
-    assert len(logger.handlers) == 1
-    assert not any(isinstance(h, logging.FileHandler) for h in logger.handlers)
+    expect(len(logger.handlers) == 1)
+    expect(not (any(isinstance(h, logging.FileHandler) for h in logger.handlers)))

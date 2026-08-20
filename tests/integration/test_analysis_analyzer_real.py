@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.analysis.analyzer import BinaryAnalyzer
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_binary_analyzer_real_candidates_and_stats():
@@ -16,18 +17,18 @@ def test_binary_analyzer_real_candidates_and_stats():
         analyzer = BinaryAnalyzer(bin_obj)
 
         functions = analyzer.get_functions_list()
-        assert functions
+        expect(functions)
 
         nop_candidates = analyzer.find_nop_insertion_candidates()
         subst_candidates = analyzer.find_substitution_candidates()
 
-        assert isinstance(nop_candidates, list)
-        assert isinstance(subst_candidates, list)
+        expect(isinstance(nop_candidates, list))
+        expect(isinstance(subst_candidates, list))
 
         stats = analyzer.get_statistics()
-        assert stats["total_functions"] == len(functions)
-        assert stats["total_instructions"] >= 0
-        assert stats["total_basic_blocks"] >= 0
+        expect(stats["total_functions"] == len(functions))
+        expect(not (stats["total_instructions"] < 0))
+        expect(not (stats["total_basic_blocks"] < 0))
 
         hot = analyzer.identify_hot_functions()
-        assert isinstance(hot, list)
+        expect(isinstance(hot, list))

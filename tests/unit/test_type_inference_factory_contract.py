@@ -1,4 +1,10 @@
 from r2morph.analysis.type_inference_factory import _extract_operand_size, _get_operand_size
+from tests.utils.assertions import expect
+
+_EXPECTED_EXTRACT_OPERAND_SIZE_MOV_QWORD_PTR_RAX_RBX_8 = 8
+_EXPECTED_GET_OPERAND_SIZE_FACTORY_AX_2 = 2
+_EXPECTED_GET_OPERAND_SIZE_FACTORY_EAX_4 = 4
+_EXPECTED_GET_OPERAND_SIZE_FACTORY_RAX_8 = 8
 
 
 class _PrimitiveType:
@@ -45,8 +51,8 @@ class _Factory:
 def test_type_inference_factory_contract() -> None:
     factory = _Factory()
 
-    assert _get_operand_size(factory, "rax") == 8
-    assert _get_operand_size(factory, "eax") == 4
-    assert _get_operand_size(factory, "ax") == 2
-    assert _get_operand_size(factory, "al") == 1
-    assert _extract_operand_size("mov qword ptr [rax], rbx") == 8
+    expect(_get_operand_size(factory, "rax") == _EXPECTED_GET_OPERAND_SIZE_FACTORY_RAX_8)
+    expect(_get_operand_size(factory, "eax") == _EXPECTED_GET_OPERAND_SIZE_FACTORY_EAX_4)
+    expect(_get_operand_size(factory, "ax") == _EXPECTED_GET_OPERAND_SIZE_FACTORY_AX_2)
+    expect(_get_operand_size(factory, "al") == 1)
+    expect(_extract_operand_size("mov qword ptr [rax], rbx") == _EXPECTED_EXTRACT_OPERAND_SIZE_MOV_QWORD_PTR_RAX_RBX_8)

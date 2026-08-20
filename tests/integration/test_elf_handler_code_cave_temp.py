@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.elf_handler import ELFHandler
+from tests.utils.assertions import expect
 
 
 def test_elf_handler_find_code_cave(tmp_path: Path):
@@ -16,4 +17,4 @@ def test_elf_handler_find_code_cave(tmp_path: Path):
 
     handler = ELFHandler(temp_binary)
     cave = handler.find_code_cave(min_size=16)
-    assert cave is None or isinstance(cave, int)
+    expect(cave is None or isinstance(cave, int))

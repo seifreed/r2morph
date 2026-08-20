@@ -7,6 +7,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.cff_dispatcher import DispatcherGenerator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.control_flow_flattening_strategies import add_opaque_predicate
+from tests.utils.assertions import expect
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:
@@ -19,11 +20,11 @@ def _copy_binary(tmp_path: Path, name: str) -> Path:
 def test_control_flow_flattening_jump_and_nop_helpers():
     mutator = ControlFlowFlatteningPass()
 
-    assert mutator._is_conditional_jump("je", "x86") is True
-    assert mutator._is_conditional_jump("jmp", "x86") is False
-    assert mutator._is_conditional_jump("b.eq", "arm") is True
-    assert mutator._is_conditional_jump("b", "arm") is False
-    assert mutator._is_conditional_jump("jne", "unknown") is True
+    expect(not (mutator._is_conditional_jump("je", "x86") is not True))
+    expect(not (mutator._is_conditional_jump("jmp", "x86") is not False))
+    expect(not (mutator._is_conditional_jump("b.eq", "arm") is not True))
+    expect(not (mutator._is_conditional_jump("b", "arm") is not False))
+    expect(not (mutator._is_conditional_jump("jne", "unknown") is not True))
 
     instructions = [
         {"opcode": "nop", "offset": 0x1000, "size": 1},
@@ -32,7 +33,7 @@ def test_control_flow_flattening_jump_and_nop_helpers():
         {"opcode": "mov", "offset": 0x1003, "size": 2},
     ]
     sequences = mutator._find_nop_sequences(instructions)
-    assert sequences == [(0x1000, 3)]
+    expect(sequences == [(4096, 3)])
 
 
 def test_control_flow_flattening_dispatcher_generation(tmp_path: Path):
@@ -41,7 +42,7 @@ def test_control_flow_flattening_dispatcher_generation(tmp_path: Path):
         bin_obj.analyze("aa")
         blocks = [SimpleNamespace(address=0x1000), SimpleNamespace(address=0x2000)]
         dispatcher = DispatcherGenerator().generate(bin_obj, blocks)
-        assert dispatcher
+        expect(dispatcher)
 
 
 def test_control_flow_flattening_add_opaque_predicate(tmp_path: Path):
@@ -62,7 +63,7 @@ def test_control_flow_flattening_add_opaque_predicate(tmp_path: Path):
         available_size = 8
 
         ok = add_opaque_predicate(bin_obj, addr, available_size, arch_family, bits)
-        assert isinstance(ok, bool)
+        expect(isinstance(ok, bool))
         if ok:
             data_hex = bin_obj.r2.cmd(f"p8 {available_size} @ 0x{addr:x}")
-            assert len(bytes.fromhex(data_hex.strip())) == available_size
+            expect(len(bytes.fromhex(data_hex.strip())) == available_size)

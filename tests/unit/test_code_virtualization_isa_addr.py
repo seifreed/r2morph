@@ -18,6 +18,7 @@ from unicorn import x86_const
 
 from r2morph.mutations.code_virtualization_fold import ADDR_VARIANT_BITS, addr_fold
 from r2morph.mutations.code_virtualization_mba import _mba_add
+from tests.utils.assertions import expect
 
 _MASK64 = (1 << 64) - 1
 _CODE = 0x400000
@@ -60,16 +61,16 @@ def test_addr_fold_variants_compute_the_sum_over_edge_operands() -> None:
             for a in _OPERANDS:
                 for b in _OPERANDS:
                     r10, kept = _run(asm, a, b, addend)
-                    assert r10 == ((a + b) & _MASK64), (variant, addend, hex(a), hex(b))
-                    assert kept == (b & _MASK64), f"variant {variant} clobbered the addend {addend}"
+                    expect(r10 == a + b & _MASK64, (variant, addend, hex(a), hex(b)))
+                    expect(kept == b & _MASK64, f"variant {variant} clobbered the addend {addend}")
 
 
 def test_addr_fold_variant_zero_is_byte_identical_to_mba_add() -> None:
     for addend, temp in _REG_PAIRS:
         for key in (0, 1, 0x5A, 0xFF):
-            assert addr_fold(addend, temp, key, 0) == _mba_add(addend, temp, key)
+            expect(addr_fold(addend, temp, key, 0) == _mba_add(addend, temp, key))
 
 
 def test_addr_fold_variants_diverge() -> None:
     seen = {addr_fold("rax", "rcx", key=0x5A, variant=v) for v in range(1, 1 << ADDR_VARIANT_BITS)}
-    assert len(seen) > 1, "address folds do not diverge across variants"
+    expect(not (len(seen) <= 1), "address folds do not diverge across variants")

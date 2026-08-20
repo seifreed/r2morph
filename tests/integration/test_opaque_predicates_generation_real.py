@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
+from tests.utils.assertions import expect
 
 
 def test_opaque_predicates_generate_x86_and_arm() -> None:
@@ -19,9 +20,9 @@ def test_opaque_predicates_generate_x86_and_arm() -> None:
     with Binary(x86_path) as bin_x86:
         bin_x86.analyze()
         preds = pass_obj._generate_predicate(bin_x86, "always_true")
-        assert preds
+        expect(preds)
 
     with Binary(arm_path) as bin_arm:
         bin_arm.analyze()
         preds = pass_obj._generate_predicate(bin_arm, "always_false")
-        assert preds
+        expect(preds)

@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.instrumentation.frida_engine import FridaEngine, InstrumentationMode
+from tests.utils.assertions import expect
 
 
 def test_frida_engine_spawn_failure(tmp_path: Path):
@@ -18,8 +19,8 @@ def test_frida_engine_spawn_failure(tmp_path: Path):
     fake_binary.write_text("not executable")
 
     result = engine.instrument_binary(fake_binary, mode=InstrumentationMode.SPAWN)
-    assert result.success is False
-    assert result.error_message is not None
+    expect(not (result.success is not False))
+    expect(result.error_message is not None)
 
 
 def test_frida_engine_attach_failure():
@@ -32,5 +33,5 @@ def test_frida_engine_attach_failure():
         pytest.skip("Frida device not available")
 
     result = engine.instrument_binary(Path("/nonexistent/process"), mode=InstrumentationMode.ATTACH)
-    assert result.success is False
-    assert result.error_message is not None
+    expect(not (result.success is not False))
+    expect(result.error_message is not None)

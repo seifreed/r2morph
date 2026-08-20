@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.obfuscation_detector import ObfuscationDetector
+from tests.utils.assertions import expect
 
 
 def test_obfuscation_detector_deeper_paths():
@@ -16,15 +17,15 @@ def test_obfuscation_detector_deeper_paths():
         detector = ObfuscationDetector()
 
         layers = detector.detect_code_packing_layers(bin_obj)
-        assert isinstance(layers, dict)
+        expect(isinstance(layers, dict))
 
         custom_vm = detector.detect_custom_virtualizer(bin_obj)
-        assert isinstance(custom_vm, dict)
+        expect(isinstance(custom_vm, dict))
 
         meta = detector.detect_metamorphic_engine(bin_obj)
-        assert isinstance(meta, dict)
-        assert "polymorphic_ratio" in meta
+        expect(isinstance(meta, dict))
+        expect(not ("polymorphic_ratio" not in meta))
 
         report = detector.get_comprehensive_report(bin_obj)
-        assert isinstance(report, dict)
-        assert "obfuscation_analysis" in report
+        expect(isinstance(report, dict))
+        expect(not ("obfuscation_analysis" not in report))

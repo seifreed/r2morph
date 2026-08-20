@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.obfuscation_detector import ObfuscationAnalysisResult, ObfuscationDetector
+from tests.utils.assertions import expect
 
 
 def test_obfuscation_detector_analyze_binary_real():
@@ -16,14 +17,14 @@ def test_obfuscation_detector_analyze_binary_real():
         bin_obj.analyze("aa")
         result = detector.analyze_binary(bin_obj)
 
-    assert isinstance(result, ObfuscationAnalysisResult)
-    assert result.confidence_score >= 0.0
-    assert result.vm_handler_count >= 0
-    assert result.mba_expressions_found >= 0
-    assert result.opaque_predicates_found >= 0
-    assert isinstance(result.obfuscation_techniques, list)
-    assert isinstance(result.confidence_scores, dict)
-    assert isinstance(result.analysis_details, dict)
+    expect(isinstance(result, ObfuscationAnalysisResult))
+    expect(not (result.confidence_score < 0.0))
+    expect(not (result.vm_handler_count < 0))
+    expect(not (result.mba_expressions_found < 0))
+    expect(not (result.opaque_predicates_found < 0))
+    expect(isinstance(result.obfuscation_techniques, list))
+    expect(isinstance(result.confidence_scores, dict))
+    expect(isinstance(result.analysis_details, dict))
 
 
 def test_obfuscation_detector_report_real():
@@ -36,11 +37,11 @@ def test_obfuscation_detector_report_real():
         bin_obj.analyze("aa")
         report = detector.get_comprehensive_report(bin_obj)
 
-    assert "timestamp" in report
-    assert "binary_info" in report
-    assert "obfuscation_analysis" in report
-    assert "virtualization_analysis" in report
-    assert "layer_analysis" in report
-    assert "metamorphic_analysis" in report
-    assert "recommendations" in report
-    assert isinstance(report["recommendations"], list)
+    expect(not ("timestamp" not in report))
+    expect(not ("binary_info" not in report))
+    expect(not ("obfuscation_analysis" not in report))
+    expect(not ("virtualization_analysis" not in report))
+    expect(not ("layer_analysis" not in report))
+    expect(not ("metamorphic_analysis" not in report))
+    expect(not ("recommendations" not in report))
+    expect(isinstance(report["recommendations"], list))

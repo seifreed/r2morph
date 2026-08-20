@@ -19,8 +19,10 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
+
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 _PROBE = """
 import json
@@ -40,15 +42,16 @@ print(json.dumps(pass_obj._find_substitution_candidates(instructions, "x64")))
 
 
 def _run_with_hash_seed(hash_seed: str) -> str:
-    result = subprocess.run(
+    result = run_command(
         [sys.executable, "-c", _PROBE],
         capture_output=True,
         text=True,
         timeout=60,
         env={**os.environ, "PYTHONHASHSEED": hash_seed},
     )
-    assert result.returncode == 0, (
-        f"probe failed (PYTHONHASHSEED={hash_seed})\n" f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    expect(
+        result.returncode == 0,
+        f"probe failed (PYTHONHASHSEED={hash_seed})\n" f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
     )
     return result.stdout.strip()
 
@@ -59,9 +62,10 @@ def test_candidate_selection_is_reproducible_across_hash_seeds() -> None:
     # Must be non-trivial (the inputs do yield candidates) so the test
     # actually exercises the ordering path rather than passing vacuously.
     first = next(iter(outputs.values()))
-    assert json.loads(first), f"probe produced no candidates: {first!r}"
+    expect(json.loads(first), f"probe produced no candidates: {first!r}")
 
     distinct = set(outputs.values())
-    assert len(distinct) == 1, (
-        "RegisterSubstitution candidate selection is not reproducible " f"across PYTHONHASHSEED values: {outputs}"
+    expect(
+        len(distinct) == 1,
+        "RegisterSubstitution candidate selection is not reproducible " f"across PYTHONHASHSEED values: {outputs}",
     )

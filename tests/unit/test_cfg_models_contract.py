@@ -6,14 +6,15 @@ from r2morph.analysis.cfg_models import (
     ExceptionEdge,
     TailCall,
 )
+from tests.utils.assertions import expect
 
 
 def test_cfg_models_contract() -> None:
     block = BasicBlock(address=0x1000, size=0x20)
     block.add_successor(0x1010)
     block.add_predecessor(0x0FF0)
-    assert block.is_conditional() is False
-    assert block.get_terminal_instruction() is None
+    expect(not (block.is_conditional() is not False))
+    expect(not (block.get_terminal_instruction() is not None))
 
     cfg = ControlFlowGraph(function_address=0x1000, function_name="main")
     cfg.add_block(block)
@@ -29,10 +30,10 @@ def test_cfg_models_contract() -> None:
         )
     )
 
-    assert cfg.get_block(0x1000) is block
-    assert cfg.entry_block is block
-    assert cfg.blocks[0x1000].block_type == BlockType.NORMAL
-    assert cfg.edges == [(0x1000, 0x1010)]
-    assert cfg.exception_edges[0].exception_type == "seh"
-    assert cfg.tail_calls[0].target_name == "callee"
-    assert "digraph CFG" in cfg.to_dot()
+    expect(not (cfg.get_block(0x1000) is not block))
+    expect(not (cfg.entry_block is not block))
+    expect(cfg.blocks[4096].block_type == BlockType.NORMAL)
+    expect(cfg.edges == [(4096, 4112)])
+    expect(cfg.exception_edges[0].exception_type == "seh")
+    expect(cfg.tail_calls[0].target_name == "callee")
+    expect(not ("digraph CFG" not in cfg.to_dot()))

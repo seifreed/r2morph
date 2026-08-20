@@ -4,6 +4,9 @@ from pathlib import Path
 import pytest
 
 from r2morph.analysis.diff_analyzer import DiffAnalyzer
+from tests.utils.assertions import expect
+
+_EXPECTED_0_0_100_0 = 100.0
 
 
 def _flip_first_byte(path: Path) -> None:
@@ -27,18 +30,18 @@ def test_diff_analyzer_real_compare_and_report(tmp_path: Path):
 
     analyzer = DiffAnalyzer()
     stats = analyzer.compare(original, morphed)
-    assert stats.total_bytes > 0
-    assert stats.changed_bytes >= 1
+    expect(not (stats.total_bytes <= 0))
+    expect(not (stats.changed_bytes < 1))
 
     similarity = analyzer.get_similarity_score()
-    assert 0.0 <= similarity <= 100.0
+    expect(0.0 <= similarity <= _EXPECTED_0_0_100_0)
 
     viz_path = tmp_path / "diff_viz.txt"
     viz = analyzer.visualize_changes(viz_path)
-    assert "BINARY DIFF VISUALIZATION" in viz
-    assert viz_path.exists()
+    expect(not ("BINARY DIFF VISUALIZATION" not in viz))
+    expect(viz_path.exists())
 
     report_path = tmp_path / "diff_report.md"
     analyzer.generate_report(report_path)
-    assert report_path.exists()
-    assert "Binary Diff Analysis Report" in report_path.read_text()
+    expect(report_path.exists())
+    expect(not ("Binary Diff Analysis Report" not in report_path.read_text()))

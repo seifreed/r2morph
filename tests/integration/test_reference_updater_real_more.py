@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceUpdater
+from tests.utils.assertions import expect
 
 
 def test_reference_updater_jump_and_pointer(tmp_path: Path) -> None:
@@ -19,10 +20,10 @@ def test_reference_updater_jump_and_pointer(tmp_path: Path) -> None:
     with Binary(work_path, writable=True) as binary:
         binary.analyze()
         sections = binary.get_sections()
-        assert sections
+        expect(sections)
         section = next((s for s in sections if s.get("vaddr")), sections[0])
         vaddr = int(section.get("vaddr", 0) or 0)
-        assert vaddr > 0
+        expect(not (vaddr <= 0))
 
         old_target = vaddr + 0x200
         new_target = vaddr + 0x210
@@ -32,27 +33,27 @@ def test_reference_updater_jump_and_pointer(tmp_path: Path) -> None:
         binary.write_bytes(vaddr, jump_bytes + b"\x90" * 16)
 
         updater = ReferenceUpdater(binary)
-        assert updater.update_jump_target(vaddr, old_target, new_target) is True
+        expect(not (updater.update_jump_target(vaddr, old_target, new_target) is not True))
 
         arch_info = binary.get_arch_info()
         ptr_size = arch_info["bits"] // 8
         data_section = next((s for s in sections if s.get("vaddr") and s.get("paddr")), None)
-        assert data_section is not None
+        expect(data_section is not None)
         section_vaddr = int(data_section.get("vaddr", 0) or 0)
         section_paddr = int(data_section.get("paddr", 0) or 0)
         section_size = int(data_section.get("size") or data_section.get("vsize") or 0)
-        assert section_vaddr > 0
-        assert section_size > ptr_size
+        expect(not (section_vaddr <= 0))
+        expect(not (section_size <= ptr_size))
 
         ptr_addr = section_vaddr + min(0x40, section_size - ptr_size)
         current_hex = binary.r2.cmd(f"p8 {ptr_size} @ 0x{ptr_addr:x}")
         current_value = int.from_bytes(bytes.fromhex(current_hex.strip()), byteorder="little")
         new_ptr = (current_value + 0x10) & ((1 << (ptr_size * 8)) - 1)
-        assert updater.update_data_pointer(ptr_addr, current_value, new_ptr) is True
+        expect(not (updater.update_data_pointer(ptr_addr, current_value, new_ptr) is not True))
 
         physical_offset = section_paddr + (ptr_addr - section_vaddr)
         with open(work_path, "rb") as handle:
             handle.seek(physical_offset)
             updated_bytes = handle.read(ptr_size)
         updated_value = int.from_bytes(updated_bytes, byteorder="little")
-        assert updated_value == new_ptr
+        expect(updated_value == new_ptr)

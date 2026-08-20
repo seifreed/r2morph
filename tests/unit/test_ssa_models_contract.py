@@ -1,4 +1,5 @@
 from r2morph.analysis.ssa_models import PhiFunction, SSABlock, SSAVariable
+from tests.utils.assertions import expect
 
 
 def test_ssa_models_contract() -> None:
@@ -6,7 +7,7 @@ def test_ssa_models_contract() -> None:
     phi = PhiFunction(result=variable, operands=[SSAVariable(base_name="eax", version=0)], block_address=0x1000)
     block = SSABlock(address=0x1000, phi_functions=[phi], definitions={"eax": variable})
 
-    assert repr(variable) == "eax_2"
-    assert variable == SSAVariable(base_name="eax", version=2)
-    assert block.to_dict()["address"] == "0x1000"
-    assert block.to_dict()["phi_functions"][0]["result"] == "eax_2"
+    expect(repr(variable) == "eax_2")
+    expect(variable == SSAVariable(base_name="eax", version=2))
+    expect(block.to_dict()["address"] == "0x1000")
+    expect(block.to_dict()["phi_functions"][0]["result"] == "eax_2")

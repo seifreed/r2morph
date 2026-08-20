@@ -11,6 +11,7 @@ from r2morph.analysis.enhanced_analyzer_reporting import (
     generate_report,
     save_report,
 )
+from tests.utils.assertions import expect
 
 
 class _Detector:
@@ -51,15 +52,15 @@ def test_enhanced_analyzer_reporting_helpers_expose_expected_contract(tmp_path: 
     display_analysis_results(console, results)
     display_recommendations(console, detection_result, {"layers_detected": 2})
     output = console.export_text()
-    assert "Enhanced Analysis: binary.bin" in output
-    assert "Obfuscation Techniques" in output
-    assert "Advanced Analysis Results" in output
-    assert "Recommendations" in output
+    expect(not ("Enhanced Analysis: binary.bin" not in output))
+    expect(not ("Obfuscation Techniques" not in output))
+    expect(not ("Advanced Analysis Results" not in output))
+    expect(not ("Recommendations" not in output))
 
     report = generate_report(_Detector(), "binary.bin", results, console)
-    assert report == {"binary": "binary.bin"}
-    assert results.report == report
+    expect(report == {"binary": "binary.bin"})
+    expect(results.report == report)
 
     report_path = save_report(tmp_path, report, console)
-    assert report_path.exists()
-    assert report_path.name == "analysis_report.json"
+    expect(report_path.exists())
+    expect(report_path.name == "analysis_report.json")

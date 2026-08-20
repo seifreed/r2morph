@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -32,8 +34,8 @@ class TestBinaryValidator:
         validator = BinaryValidator(timeout=5)
         result = validator.validate(simple_binary, temp_copy)
 
-        assert result is not None
-        assert hasattr(result, "passed")
+        expect(result is not None)
+        expect(hasattr(result, "passed"))
 
     def test_validator_with_args(self, simple_binary, tmp_path):
         if not simple_binary.exists():
@@ -46,5 +48,5 @@ class TestBinaryValidator:
         validator.add_test_case(args=["--help"], description="help")
         result = validator.validate(simple_binary, temp_copy)
 
-        assert result is not None
-        assert hasattr(result, "similarity_score")
+        expect(result is not None)
+        expect(hasattr(result, "similarity_score"))

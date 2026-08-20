@@ -11,10 +11,11 @@ from r2morph.detection.anti_analysis_bypass_models import BypassResult as Models
 from r2morph.detection.anti_analysis_bypass_models import (
     BypassTechnique as ModelsBypassTechnique,
 )
+from tests.utils.assertions import expect
 
 
 def test_anti_analysis_bypass_models_are_reexported_from_detection_package():
-    assert PublicAntiAnalysisType is ModelsAntiAnalysisType
-    assert PublicBypassTechnique is ModelsBypassTechnique
-    assert PublicBypassResult is ModelsBypassResult
-    assert AntiAnalysisBypass is not None
+    expect(not (PublicAntiAnalysisType is not ModelsAntiAnalysisType))
+    expect(not (PublicBypassTechnique is not ModelsBypassTechnique))
+    expect(not (PublicBypassResult is not ModelsBypassResult))
+    expect(AntiAnalysisBypass is not None)

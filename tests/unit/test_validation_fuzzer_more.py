@@ -1,9 +1,14 @@
-import random
 from pathlib import Path
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.validation.fuzzer import FuzzResult, MutationFuzzer
+from tests.utils.assertions import expect
+
+_EXPECTED_ARGS_RESULT_TOTAL_TESTS_2 = 2
+_EXPECTED_RESULT_SUCCESS_RATE_75_0 = 75.0
+_EXPECTED_RESULT_TOTAL_TESTS_2 = 2
 
 
 def test_fuzz_result_string_and_success_rate():
@@ -15,21 +20,21 @@ def test_fuzz_result_string_and_success_rate():
         timeouts=0,
         validation_results=[],
     )
-    assert result.success_rate == 75.0
+    expect(result.success_rate == _EXPECTED_RESULT_SUCCESS_RATE_75_0)
     text = str(result)
-    assert "Fuzz Results" in text
-    assert "Passed" in text
+    expect(not ("Fuzz Results" not in text))
+    expect(not ("Passed" not in text))
 
 
 def test_fuzzer_generate_inputs_types():
     fuzzer = MutationFuzzer(num_tests=1, timeout=1)
-    random.seed(0)
+    randomness.seed(0)
 
-    assert isinstance(fuzzer._generate_input("random"), str)
-    assert isinstance(fuzzer._generate_input("ascii"), str)
-    assert isinstance(fuzzer._generate_input("binary"), str)
-    assert isinstance(fuzzer._generate_input("structured"), str)
-    assert fuzzer._generate_input("unknown") == ""
+    expect(isinstance(fuzzer._generate_input("random"), str))
+    expect(isinstance(fuzzer._generate_input("ascii"), str))
+    expect(isinstance(fuzzer._generate_input("binary"), str))
+    expect(isinstance(fuzzer._generate_input("structured"), str))
+    expect(fuzzer._generate_input("unknown") == "")
 
 
 def test_fuzzer_runs_on_real_binary(tmp_path: Path):
@@ -44,11 +49,11 @@ def test_fuzzer_runs_on_real_binary(tmp_path: Path):
     mut.write_bytes(data)
 
     fuzzer = MutationFuzzer(num_tests=2, timeout=2)
-    random.seed(1)
+    randomness.seed(1)
     result = fuzzer.fuzz(orig, mut, input_type="ascii")
-    assert isinstance(result, FuzzResult)
-    assert result.total_tests == 2
+    expect(isinstance(result, FuzzResult))
+    expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_2)
 
-    random.seed(2)
+    randomness.seed(2)
     args_result = fuzzer.fuzz_with_args(orig, mut, arg_count=2)
-    assert args_result.total_tests == 2
+    expect(args_result.total_tests == _EXPECTED_ARGS_RESULT_TOTAL_TESTS_2)

@@ -2,6 +2,10 @@
 
 from r2morph.validation.validator_results import build_validation_result, calculate_similarity
 from r2morph.validation.validator_runtime import RuntimeComparisonConfig, ValidationObservations, ValidationTestCase
+from tests.utils.assertions import expect
+
+_EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
+_EXPECTED_SIMILARITY_50_0 = 50.0
 
 
 def test_calculate_similarity_respects_enabled_signals() -> None:
@@ -24,7 +28,7 @@ def test_calculate_similarity_respects_enabled_signals() -> None:
         comparison,
     )
 
-    assert similarity == 50.0
+    expect(similarity == _EXPECTED_SIMILARITY_50_0)
 
 
 def test_build_validation_result_serializes_runtime_details() -> None:
@@ -41,7 +45,7 @@ def test_build_validation_result_serializes_runtime_details() -> None:
         env={"A": "1"},
         expected_exitcode=0,
         description="help",
-        working_dir="/tmp",
+        working_dir="test-data",
         monitored_files=["out.txt"],
     )
 
@@ -56,7 +60,7 @@ def test_build_validation_result_serializes_runtime_details() -> None:
                 {
                     "description": "help",
                     "args": ["--help"],
-                    "working_dir": "/tmp",
+                    "working_dir": "test-data",
                     "original_exitcode": 0,
                     "mutated_exitcode": 0,
                     "stdout_match": True,
@@ -69,9 +73,9 @@ def test_build_validation_result_serializes_runtime_details() -> None:
         comparison=comparison,
     )
 
-    assert result.passed is True
-    assert result.similarity_score == 100.0
-    assert result.compared_signals["files"] is True
-    assert result.runtime_details[0]["description"] == "help"
-    assert result.test_cases[0]["description"] == "help"
-    assert "original_stdout_sha256" in result.output_hashes
+    expect(not (result.passed is not True))
+    expect(result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0)
+    expect(not (result.compared_signals["files"] is not True))
+    expect(result.runtime_details[0]["description"] == "help")
+    expect(result.test_cases[0]["description"] == "help")
+    expect(not ("original_stdout_sha256" not in result.output_hashes))

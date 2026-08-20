@@ -6,6 +6,7 @@ from r2morph.validation.benchmark_models import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
 
 
 def test_benchmark_models_round_trip() -> None:
@@ -25,7 +26,7 @@ def test_benchmark_models_round_trip() -> None:
     accuracy = AccuracyMetrics(1, 0, 1, 0, 1.0, 1.0, 1.0, 1.0)
     result = BenchmarkResult(sample, BenchmarkCategory.DETECTION, performance, accuracy, {}, "now", "dev")
 
-    assert sample.severity == TestSeverity.LOW
-    assert BenchmarkCategory.BYPASS.value == "bypass"
-    assert performance.success is True
-    assert result.category == BenchmarkCategory.DETECTION
+    expect(sample.severity == TestSeverity.LOW)
+    expect(BenchmarkCategory.BYPASS.value == "bypass")
+    expect(not (performance.success is not True))
+    expect(result.category == BenchmarkCategory.DETECTION)

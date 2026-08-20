@@ -10,6 +10,7 @@ from r2morph.mutations.control_flow_flattening_strategies import (
     add_opaque_predicate,
     insert_dead_code_with_predicate,
 )
+from tests.utils.assertions import expect
 
 
 def _section_vaddr_and_paddr(binary: Binary) -> tuple[int, int]:
@@ -36,13 +37,13 @@ def test_control_flow_flattening_add_opaque_predicate_x86(tmp_path: Path) -> Non
         binary.write_bytes(vaddr, b"\x90" * size)
 
         arch, bits = binary.get_arch_family()
-        assert arch == "x86"
+        expect(arch == "x86")
 
         ok = add_opaque_predicate(binary, vaddr, size, arch, bits)
-        assert ok is True
+        expect(not (ok is not True))
 
     data = work_path.read_bytes()
-    assert data[paddr : paddr + size] != b"\x90" * size
+    expect(data[paddr : paddr + size] != b"\x90" * size)
 
 
 def test_control_flow_flattening_insert_dead_code_x86(tmp_path: Path) -> None:
@@ -65,7 +66,7 @@ def test_control_flow_flattening_insert_dead_code_x86(tmp_path: Path) -> None:
             pytest.skip("Dead code insertion not supported by assembler on this binary")
 
     data = work_path.read_bytes()
-    assert data[paddr : paddr + size] != b"\x90" * size
+    expect(data[paddr : paddr + size] != b"\x90" * size)
 
 
 def test_control_flow_flattening_dispatcher_arm() -> None:
@@ -79,8 +80,8 @@ def test_control_flow_flattening_dispatcher_arm() -> None:
             binary, [type("B", (), {"address": 0x1000})(), type("B", (), {"address": 0x2000})()]
         )
 
-    assert dispatcher
-    assert any(".dispatcher_loop" in line for line in dispatcher)
+    expect(dispatcher)
+    expect(any(".dispatcher_loop" in line for line in dispatcher))
 
 
 def test_control_flow_flattening_dispatcher_x86() -> None:
@@ -94,6 +95,6 @@ def test_control_flow_flattening_dispatcher_x86() -> None:
             binary, [type("B", (), {"address": 0x1000})(), type("B", (), {"address": 0x2000})()]
         )
 
-    assert dispatcher
-    assert any(".dispatcher_loop" in line for line in dispatcher)
-    assert any(".block_0" in line for line in dispatcher)
+    expect(dispatcher)
+    expect(any(".dispatcher_loop" in line for line in dispatcher))
+    expect(any(".block_0" in line for line in dispatcher))

@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from r2morph.core.parallel_executor_models import MutationResult, ResolutionStrategy
 from r2morph.core.parallel_result_merger import ResultMerger
+from tests.utils.assertions import expect
+
+_EXPECTED_MERGED_SUCCESSFUL_2 = 2
+_EXPECTED_MERGED_TOTAL_BYTES_MODIFIED_8 = 8
+_EXPECTED_MERGED_TOTAL_FUNCTIONS_2 = 2
 
 
 def test_result_merger_aggregates_and_detects_conflicts() -> None:
@@ -32,12 +37,12 @@ def test_result_merger_aggregates_and_detects_conflicts() -> None:
     merger.add_result(right)
 
     conflicts = merger.detect_conflicts([left, right])
-    assert conflicts
+    expect(conflicts)
 
     merged = merger.merge(None)
-    assert merged["total_functions"] == 2
-    assert merged["successful"] == 2
-    assert merged["total_bytes_modified"] == 8
+    expect(merged["total_functions"] == _EXPECTED_MERGED_TOTAL_FUNCTIONS_2)
+    expect(merged["successful"] == _EXPECTED_MERGED_SUCCESSFUL_2)
+    expect(merged["total_bytes_modified"] == _EXPECTED_MERGED_TOTAL_BYTES_MODIFIED_8)
 
     resolutions = merger.resolve_conflicts(conflicts, ResolutionStrategy.SKIP)
-    assert resolutions[0]["action"] == "skip_second"
+    expect(resolutions[0]["action"] == "skip_second")

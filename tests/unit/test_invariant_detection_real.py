@@ -2,6 +2,7 @@ from pathlib import Path
 
 from r2morph.analysis.invariants import InvariantDetector, SemanticValidator
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_invariant_detection_on_real_function():
@@ -10,14 +11,14 @@ def test_invariant_detection_on_real_function():
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
         functions = bin_obj.get_functions()
-        assert functions
+        expect(functions)
 
         detector = InvariantDetector(bin_obj)
         invariants = detector.detect_all_invariants(functions[0].get("offset", 0))
-        assert isinstance(invariants, list)
+        expect(isinstance(invariants, list))
 
         validated = detector.verify_invariants(functions[0].get("offset", 0), invariants)
-        assert isinstance(validated, list)
+        expect(isinstance(validated, list))
 
 
 def test_semantic_validator_batch():
@@ -26,12 +27,12 @@ def test_semantic_validator_batch():
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
         functions = bin_obj.get_functions()
-        assert functions
+        expect(functions)
 
         addresses = [func.get("offset", 0) for func in functions[:2]]
         validator = SemanticValidator(bin_obj)
         invariants_map = {addr: validator.detector.detect_all_invariants(addr) for addr in addresses}
 
         result = validator.batch_validate(addresses, invariants_map)
-        assert result["functions_validated"] == len(addresses)
-        assert "all_valid" in result
+        expect(result["functions_validated"] == len(addresses))
+        expect(not ("all_valid" not in result))

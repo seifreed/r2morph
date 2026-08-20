@@ -1,4 +1,6 @@
 from r2morph.core import report_helpers_discarded as discarded_mod
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 def test_discarded_mutation_summaries_and_priority() -> None:
@@ -11,8 +13,61 @@ def test_discarded_mutation_summaries_and_priority() -> None:
         ]
     )
 
-    assert summary == {
-        "by_pass": [
+    expect(
+        summary
+        == {
+            "by_pass": [
+                {
+                    "pass_name": "expand",
+                    "discarded_count": 2,
+                    "impact_severity": "high",
+                    "reasons": {"rollback": 1, "validation_failed": 1},
+                },
+                {
+                    "pass_name": "nop",
+                    "discarded_count": 2,
+                    "impact_severity": "medium",
+                    "reasons": {"rollback": 1, "skip_invalid_pass": 1},
+                },
+            ],
+            "by_reason": {"rollback": 2, "skip_invalid_pass": 1, "validation_failed": 1},
+            "by_impact": {
+                "high": [
+                    {
+                        "pass_name": "expand",
+                        "discarded_count": 2,
+                        "impact_severity": "high",
+                        "reasons": {"rollback": 1, "validation_failed": 1},
+                    }
+                ],
+                "medium": [
+                    {
+                        "pass_name": "nop",
+                        "discarded_count": 2,
+                        "impact_severity": "medium",
+                        "reasons": {"rollback": 1, "skip_invalid_pass": 1},
+                    }
+                ],
+                "low": [],
+            },
+            "by_pass_map": {
+                "expand": {
+                    "discarded_count": 2,
+                    "impact_severity": "high",
+                    "reasons": {"rollback": 1, "validation_failed": 1},
+                },
+                "nop": {
+                    "discarded_count": 2,
+                    "impact_severity": "medium",
+                    "reasons": {"rollback": 1, "skip_invalid_pass": 1},
+                },
+            },
+        }
+    )
+
+    expect(
+        discarded_mod._build_discarded_mutation_priority(summary)
+        == [
             {
                 "pass_name": "expand",
                 "discarded_count": 2,
@@ -25,55 +80,8 @@ def test_discarded_mutation_summaries_and_priority() -> None:
                 "impact_severity": "medium",
                 "reasons": {"rollback": 1, "skip_invalid_pass": 1},
             },
-        ],
-        "by_reason": {"rollback": 2, "skip_invalid_pass": 1, "validation_failed": 1},
-        "by_impact": {
-            "high": [
-                {
-                    "pass_name": "expand",
-                    "discarded_count": 2,
-                    "impact_severity": "high",
-                    "reasons": {"rollback": 1, "validation_failed": 1},
-                }
-            ],
-            "medium": [
-                {
-                    "pass_name": "nop",
-                    "discarded_count": 2,
-                    "impact_severity": "medium",
-                    "reasons": {"rollback": 1, "skip_invalid_pass": 1},
-                }
-            ],
-            "low": [],
-        },
-        "by_pass_map": {
-            "expand": {
-                "discarded_count": 2,
-                "impact_severity": "high",
-                "reasons": {"rollback": 1, "validation_failed": 1},
-            },
-            "nop": {
-                "discarded_count": 2,
-                "impact_severity": "medium",
-                "reasons": {"rollback": 1, "skip_invalid_pass": 1},
-            },
-        },
-    }
-
-    assert discarded_mod._build_discarded_mutation_priority(summary) == [
-        {
-            "pass_name": "expand",
-            "discarded_count": 2,
-            "impact_severity": "high",
-            "reasons": {"rollback": 1, "validation_failed": 1},
-        },
-        {
-            "pass_name": "nop",
-            "discarded_count": 2,
-            "impact_severity": "medium",
-            "reasons": {"rollback": 1, "skip_invalid_pass": 1},
-        },
-    ]
+        ]
+    )
 
 
 def test_impact_severity_selects_highest_regardless_of_reason_insertion_order() -> None:
@@ -88,7 +96,7 @@ def test_impact_severity_selects_highest_regardless_of_reason_insertion_order() 
         ]
     )
 
-    assert summary["by_pass"][0]["impact_severity"] == "high"
+    expect(summary["by_pass"][0]["impact_severity"] == "high")
 
 
 def test_discarded_rows_sort_high_impact_before_low_impact() -> None:
@@ -104,4 +112,4 @@ def test_discarded_rows_sort_high_impact_before_low_impact() -> None:
         ]
     )
 
-    assert [row["pass_name"] for row in summary["by_pass"]] == ["high_pass", "low_pass"]
+    expect([row[MUTATION_NAME_KEY] for row in summary["by_pass"]] == ["high_pass", "low_pass"])

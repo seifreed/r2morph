@@ -7,6 +7,7 @@ import pytest
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.session import MorphSession
 from r2morph.session_mutation_flow import apply_mutation
+from tests.utils.assertions import expect
 
 
 def test_session_mutation_flow_applies_and_tracks_mutations(tmp_path: Path) -> None:
@@ -19,7 +20,7 @@ def test_session_mutation_flow_applies_and_tracks_mutations(tmp_path: Path) -> N
 
     result = apply_mutation(session, NopInsertionPass(), "nop insertion")
 
-    assert "mutations_applied" in result
-    assert session.mutations_count == result["mutations_applied"]
-    assert session.current_binary is not None
-    assert any(cp.name == "pre_mutation" for cp in session.checkpoints)
+    expect(not ("mutations_applied" not in result))
+    expect(session.mutations_count == result["mutations_applied"])
+    expect(session.current_binary is not None)
+    expect(any(cp.name == "pre_mutation" for cp in session.checkpoints))

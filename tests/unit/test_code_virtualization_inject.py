@@ -37,6 +37,7 @@ from r2morph.mutations.code_virtualization_inject import (
     inject_blob,
     predict_blob_vaddr,
 )
+from tests.utils.assertions import expect
 from tests.utils.elf_load_invariants import (
     ELF64_HEADER_SIZE,
     HEADER_SEGMENT_SPAN,
@@ -128,7 +129,8 @@ def _predict_for(path: Path) -> int | None:
         binary.close()
 
 
-def _phdr_entry(p_type: int, p_flags: int, p_offset: int, p_vaddr: int, p_size: int, p_align: int) -> bytes:
+def _phdr_entry(*values: int) -> bytes:
+    p_type, p_flags, p_offset, p_vaddr, p_size, p_align = values
     return struct.pack(PHDR_FORMAT, p_type, p_flags, p_offset, p_vaddr, p_vaddr, p_size, p_size, p_align)
 
 
@@ -192,7 +194,7 @@ def test_write_physical_round_trips_blob_larger_than_r2_command_buffer(tmp_path:
     finally:
         binary.close()
 
-    assert readback == blob
+    expect(readback == blob)
 
 
 def test_inject_blob_non_pie_binary_maps_blob_at_returned_vaddr(tmp_path: Path) -> None:
@@ -200,7 +202,7 @@ def test_inject_blob_non_pie_binary_maps_blob_at_returned_vaddr(tmp_path: Path) 
 
     injected = _inject_into(target, _BLOB)
 
-    assert injected is not None and _blob_at(target, injected, _BLOB_SIZE) == _BLOB
+    expect(injected is not None and _blob_at(target, injected, _BLOB_SIZE) == _BLOB)
 
 
 def test_inject_blob_position_independent_binary_maps_blob_at_returned_vaddr(tmp_path: Path) -> None:
@@ -209,7 +211,7 @@ def test_inject_blob_position_independent_binary_maps_blob_at_returned_vaddr(tmp
 
     injected = _inject_into(target, _BLOB)
 
-    assert injected is not None and _blob_at(target, injected, _BLOB_SIZE) == _BLOB
+    expect(injected is not None and _blob_at(target, injected, _BLOB_SIZE) == _BLOB)
 
 
 def test_inject_blob_appended_segment_offset_is_congruent_with_its_vaddr(tmp_path: Path) -> None:
@@ -219,7 +221,7 @@ def test_inject_blob_appended_segment_offset_is_congruent_with_its_vaddr(tmp_pat
     _inject_into(target, _BLOB)
 
     appended = program_headers(target)[-1]
-    assert appended.p_offset % _SEGMENT_ALIGN == appended.p_vaddr % _SEGMENT_ALIGN
+    expect(appended.p_offset % _SEGMENT_ALIGN == appended.p_vaddr % _SEGMENT_ALIGN)
 
 
 def test_inject_blob_appended_segment_starts_above_every_existing_load(tmp_path: Path) -> None:
@@ -229,7 +231,7 @@ def test_inject_blob_appended_segment_starts_above_every_existing_load(tmp_path:
     _inject_into(target, _BLOB)
 
     appended = program_headers(target)[-1]
-    assert all(appended.p_vaddr >= entry.p_vaddr + entry.p_memsz for entry in existing)
+    expect(all(appended.p_vaddr >= entry.p_vaddr + entry.p_memsz for entry in existing))
 
 
 def test_inject_blob_appends_a_read_execute_load_segment(tmp_path: Path) -> None:
@@ -238,7 +240,7 @@ def test_inject_blob_appends_a_read_execute_load_segment(tmp_path: Path) -> None
     _inject_into(target, _BLOB)
 
     appended = program_headers(target)[-1]
-    assert (appended.p_type, appended.p_flags) == (PT_LOAD, _PF_R | _PF_X)
+    expect((appended.p_type, appended.p_flags) == (PT_LOAD, _PF_R | _PF_X))
 
 
 def test_predict_blob_vaddr_matches_the_vaddr_injection_returns(tmp_path: Path) -> None:
@@ -247,7 +249,7 @@ def test_predict_blob_vaddr_matches_the_vaddr_injection_returns(tmp_path: Path) 
 
     predicted = _predict_for(target)
 
-    assert predicted == _inject_into(target, _BLOB)
+    expect(predicted == _inject_into(target, _BLOB))
 
 
 def test_inject_blob_adds_rx_fragments_and_relocated_table(tmp_path: Path) -> None:
@@ -256,7 +258,7 @@ def test_inject_blob_adds_rx_fragments_and_relocated_table(tmp_path: Path) -> No
 
     _inject_into(target, _BLOB)
 
-    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + len(_fragment_sizes(_BLOB))
+    expect(struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == before + len(_fragment_sizes(_BLOB)))
 
 
 def test_second_blob_adds_its_own_table_and_fragment_headers(tmp_path: Path) -> None:
@@ -266,7 +268,9 @@ def test_second_blob_adds_its_own_table_and_fragment_headers(tmp_path: Path) -> 
 
     _inject_into(target, _BLOB[::-1])
 
-    assert struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first + len(_fragment_sizes(_BLOB[::-1]))
+    expect(
+        struct.unpack_from("<H", target.read_bytes(), _E_PHNUM)[0] == after_first + len(_fragment_sizes(_BLOB[::-1]))
+    )
 
 
 def test_second_fragmented_blob_maps_each_blob_at_its_returned_address(tmp_path: Path) -> None:
@@ -275,7 +279,7 @@ def test_second_fragmented_blob_maps_each_blob_at_its_returned_address(tmp_path:
     first = _inject_into(target, _BLOB)
     second = _inject_into(target, _BLOB[::-1])
 
-    assert (
+    expect(
         first is not None
         and second is not None
         and (
@@ -292,7 +296,7 @@ def test_predict_second_blob_address_matches_fragmented_injection(tmp_path: Path
 
     predicted = _predict_for(target)
 
-    assert predicted == _inject_into(target, _BLOB[::-1])
+    expect(predicted == _inject_into(target, _BLOB[::-1]))
 
 
 def test_second_fragmented_blob_preserves_strict_loader_invariants(tmp_path: Path) -> None:
@@ -316,7 +320,7 @@ def test_inject_blob_relocates_phoff_inside_the_first_rx_load(tmp_path: Path) ->
         for entry in program_headers(target)
         if entry.p_type == PT_LOAD and entry.p_offset <= e_phoff < entry.p_offset + entry.p_filesz
     )
-    assert owner.p_flags == _PF_R | _PF_X
+    expect(owner.p_flags == _PF_R | _PF_X)
 
 
 def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) -> None:
@@ -330,7 +334,7 @@ def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) ->
     e_phoff = struct.unpack_from("<Q", target.read_bytes(), _E_PHOFF)[0]
     table_load = next(entry for entry in headers if entry.p_type == PT_LOAD and entry.p_offset == e_phoff)
     expected = (table_load.p_offset, table_load.p_vaddr, len(headers) * _PHDR_ENTRY_SIZE)
-    assert (pt_phdr.p_offset, pt_phdr.p_vaddr, pt_phdr.p_filesz) == expected
+    expect((pt_phdr.p_offset, pt_phdr.p_vaddr, pt_phdr.p_filesz) == expected)
 
 
 def test_large_blob_is_split_into_adjacent_rx_fragments(tmp_path: Path) -> None:
@@ -341,7 +345,7 @@ def test_large_blob_is_split_into_adjacent_rx_fragments(tmp_path: Path) -> None:
     injected = _inject_into(target, blob)
 
     fragments = program_headers(target)[before:]
-    assert (
+    expect(
         injected is not None
         and len(fragments) > 1
         and all((entry.p_type, entry.p_flags) == (PT_LOAD, _PF_R | _PF_X) for entry in fragments)
@@ -366,7 +370,7 @@ def test_inject_blob_keeps_the_header_segment_spanning_the_program_header_table(
 
     headers = program_headers(target)
     header_segment = next(e for e in headers if e.p_type == PT_LOAD and e.p_offset == 0)
-    assert header_segment.p_filesz >= ELF64_HEADER_SIZE + len(headers) * _PHDR_ENTRY_SIZE
+    expect(not (header_segment.p_filesz < ELF64_HEADER_SIZE + len(headers) * _PHDR_ENTRY_SIZE))
 
 
 @pytest.mark.parametrize("fixture", [_FIXTURE_EXEC, _FIXTURE_DYN])
@@ -379,19 +383,19 @@ def test_inject_blob_keeps_the_header_segment_clear_of_the_next_segment(fixture:
     loads = [entry for entry in program_headers(target) if entry.p_type == PT_LOAD]
     header_segment = next(entry for entry in loads if entry.p_offset == 0)
     above = [entry.p_vaddr for entry in loads if entry.p_vaddr > header_segment.p_vaddr]
-    assert header_segment.p_vaddr + header_segment.p_memsz <= min(above)
+    expect(not (header_segment.p_vaddr + header_segment.p_memsz > min(above)))
 
 
 def test_inject_blob_refuses_unexpected_program_header_entry_size(tmp_path: Path) -> None:
     target = _write_synthetic_elf(tmp_path / "wide_entries", e_phentsize=_PHDR_ENTRY_SIZE + 8)
 
-    assert _inject_into(target, _BLOB) is None
+    expect(not (_inject_into(target, _BLOB) is not None))
 
 
 def test_inject_blob_refuses_program_header_count_at_the_growth_cap(tmp_path: Path) -> None:
     target = _write_synthetic_elf(tmp_path / "capped", e_phnum=_MAX_PHDR_ENTRIES)
 
-    assert _inject_into(target, _BLOB) is None
+    expect(not (_inject_into(target, _BLOB) is not None))
 
 
 def test_inject_blob_refusal_leaves_the_binary_untouched(tmp_path: Path) -> None:
@@ -400,7 +404,7 @@ def test_inject_blob_refusal_leaves_the_binary_untouched(tmp_path: Path) -> None
 
     _inject_into(target, _BLOB)
 
-    assert target.read_bytes() == before
+    expect(target.read_bytes() == before)
 
 
 @pytest.mark.parametrize("fixture", [_FIXTURE_EXEC, _FIXTURE_DYN])
@@ -429,7 +433,7 @@ def test_loader_invariants_reject_a_header_segment_shorter_than_the_program_head
 
     violations = load_invariant_violations(target)
 
-    assert any(violation.startswith(HEADER_SEGMENT_SPAN) for violation in violations)
+    expect(any(violation.startswith(HEADER_SEGMENT_SPAN) for violation in violations))
 
 
 def test_loader_invariants_reject_a_load_segment_covering_another_segments_addresses(tmp_path: Path) -> None:
@@ -446,4 +450,4 @@ def test_loader_invariants_reject_a_load_segment_covering_another_segments_addre
 
     violations = load_invariant_violations(target)
 
-    assert any(violation.startswith(LOAD_VADDR_OVERLAP) for violation in violations)
+    expect(any(violation.startswith(LOAD_VADDR_OVERLAP) for violation in violations))

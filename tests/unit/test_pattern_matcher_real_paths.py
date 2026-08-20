@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.pattern_matcher import PatternMatcher
+from tests.utils.assertions import expect
 
 
 def test_pattern_matcher_search_strings_and_patterns():
@@ -21,9 +22,8 @@ def test_pattern_matcher_search_strings_and_patterns():
         search_terms = [sample_term] if sample_term else []
         search_terms.append("unlikely_string_token_12345")
         results = matcher.search_strings(search_terms, case_sensitive=False)
-        assert results["unlikely_string_token_12345"] is False
-        if sample_term:
-            assert results[sample_term] is True
+        expect(not (results["unlikely_string_token_12345"] is not False))
+        expect(not (sample_term and results[sample_term] is not True))
 
         entry = bin_obj.r2.cmdj("iej") or []
         entry_addr = entry[0].get("vaddr", 0) if entry else 0
@@ -31,7 +31,7 @@ def test_pattern_matcher_search_strings_and_patterns():
         pattern = bytes.fromhex(bytes_hex) if bytes_hex else b""
         if pattern:
             matches = matcher.find_patterns([pattern])
-            assert isinstance(matches, dict)
+            expect(isinstance(matches, dict))
 
 
 def test_pattern_matcher_import_hiding_and_string_encryption():
@@ -39,10 +39,10 @@ def test_pattern_matcher_import_hiding_and_string_encryption():
     with Binary(binary_path) as bin_obj:
         matcher = PatternMatcher(bin_obj)
         import_hiding = matcher._detect_import_hiding()
-        assert isinstance(import_hiding, bool)
+        expect(isinstance(import_hiding, bool))
 
         string_encryption = matcher._detect_string_encryption()
-        assert string_encryption in (True, False)
+        expect(not (string_encryption not in (True, False)))
 
 
 def test_pattern_matcher_closed_binary_raises_runtime_error(tmp_path):

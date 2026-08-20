@@ -13,6 +13,7 @@ from shutil import copyfile
 from typing import Any
 
 from r2morph.validation.integrity import BinaryIntegrityValidator, validate_binary_integrity
+from tests.utils.assertions import expect
 
 
 class _Handler:
@@ -66,7 +67,7 @@ class TestBinaryIntegrityValidatorFormatDetection:
         elf_path.write_bytes(b"\x7fELF" + b"\x00" * 100)
 
         validator = BinaryIntegrityValidator(elf_path)
-        assert validator._format == "elf"
+        expect(validator._format == "elf")
 
     def test_detect_macho_64(self, tmp_path):
         """Detect Mach-O 64-bit format."""
@@ -74,7 +75,7 @@ class TestBinaryIntegrityValidatorFormatDetection:
         macho_path.write_bytes(b"\xcf\xfa\xed\xfe" + b"\x00" * 100)
 
         validator = BinaryIntegrityValidator(macho_path)
-        assert validator._format == "macho"
+        expect(validator._format == "macho")
 
     def test_detect_macho_32(self, tmp_path):
         """Detect Mach-O 32-bit format."""
@@ -82,7 +83,7 @@ class TestBinaryIntegrityValidatorFormatDetection:
         macho_path.write_bytes(b"\xfe\xed\xfa\xce" + b"\x00" * 100)
 
         validator = BinaryIntegrityValidator(macho_path)
-        assert validator._format == "macho"
+        expect(validator._format == "macho")
 
     def test_detect_pe(self, tmp_path):
         """Detect PE format."""
@@ -91,7 +92,7 @@ class TestBinaryIntegrityValidatorFormatDetection:
         pe_path.write_bytes(pe_data)
 
         validator = BinaryIntegrityValidator(pe_path)
-        assert validator._format == "pe"
+        expect(validator._format == "pe")
 
     def test_detect_unknown(self, tmp_path):
         """Detect unknown format."""
@@ -99,7 +100,7 @@ class TestBinaryIntegrityValidatorFormatDetection:
         unknown_path.write_bytes(b"UNKNOWN" + b"\x00" * 100)
 
         validator = BinaryIntegrityValidator(unknown_path)
-        assert validator._format == "unknown"
+        expect(validator._format == "unknown")
 
 
 class TestELFIntegrity:
@@ -126,8 +127,8 @@ class TestELFIntegrity:
         validator._handler = handler
 
         is_valid, issues = validator.validate()
-        assert is_valid
-        assert len(issues) == 0
+        expect(is_valid)
+        expect(len(issues) == 0)
 
     def test_elf_missing_sections(self, tmp_path):
         """Validate ELF with missing sections."""
@@ -147,8 +148,8 @@ class TestELFIntegrity:
         validator._handler = handler
 
         is_valid, issues = validator.validate()
-        assert not is_valid
-        assert any("No sections" in i for i in issues)
+        expect(not (is_valid))
+        expect(any("No sections" in i for i in issues))
 
     def test_elf_missing_required_sections(self, tmp_path):
         """Validate ELF missing required sections."""
@@ -170,8 +171,8 @@ class TestELFIntegrity:
         validator._handler = handler
 
         is_valid, issues = validator.validate()
-        assert not is_valid
-        assert any(".text" in i for i in issues)
+        expect(not (is_valid))
+        expect(any(".text" in i for i in issues))
 
     def test_elf_wx_segment(self, tmp_path):
         """Validate ELF with writable and executable segment."""
@@ -194,7 +195,7 @@ class TestELFIntegrity:
         validator._handler = handler
 
         _is_valid, issues = validator.validate()
-        assert any("writable and executable" in i.lower() for i in issues)
+        expect(any("writable and executable" in i.lower() for i in issues))
 
 
 class TestMachOIntegrity:
@@ -219,7 +220,7 @@ class TestMachOIntegrity:
         validator._handler = handler
 
         is_valid, _issues = validator.validate()
-        assert is_valid
+        expect(is_valid)
 
     def test_macho_missing_text_segment(self, tmp_path):
         """Validate Mach-O missing __TEXT segment."""
@@ -239,7 +240,7 @@ class TestMachOIntegrity:
         validator._handler = handler
 
         _is_valid, issues = validator.validate()
-        assert any("__TEXT" in i for i in issues)
+        expect(any("__TEXT" in i for i in issues))
 
     def test_macho_repair(self, tmp_path):
         """Test Mach-O repair."""
@@ -254,8 +255,8 @@ class TestMachOIntegrity:
         validator._handler = handler
 
         success, repairs = validator.repair()
-        assert success
-        assert "Repaired Mach-O signature" in repairs
+        expect(success)
+        expect(not ("Repaired Mach-O signature" not in repairs))
 
 
 class TestPEIntegrity:
@@ -275,7 +276,7 @@ class TestPEIntegrity:
         validator._handler = handler
 
         is_valid, _issues = validator.validate()
-        assert is_valid
+        expect(is_valid)
 
     def test_pe_checksum_mismatch(self, tmp_path):
         """Validate PE with checksum mismatch."""
@@ -291,8 +292,8 @@ class TestPEIntegrity:
         validator._handler = handler
 
         is_valid, issues = validator.validate()
-        assert not is_valid
-        assert any("Checksum" in i for i in issues)
+        expect(not (is_valid))
+        expect(any("Checksum" in i for i in issues))
 
     def test_pe_repair(self, tmp_path):
         """Test PE repair."""
@@ -308,8 +309,8 @@ class TestPEIntegrity:
         validator._handler = handler
 
         success, repairs = validator.repair()
-        assert success
-        assert "Checksum updated" in repairs
+        expect(success)
+        expect(not ("Checksum updated" not in repairs))
 
 
 class TestValidateBinaryIntegrity:
@@ -321,13 +322,9 @@ class TestValidateBinaryIntegrity:
 
         result = validate_binary_integrity(elf_path, repair=False)
 
-        assert result == (
-            False,
-            [
-                "Missing required section: .data",
-                "Entry point 0x201120 not in any executable segment",
-            ],
-            [],
+        expect(
+            result
+            == (False, ["Missing required section: .data", "Entry point 0x201120 not in any executable segment"], [])
         )
 
     def test_validate_with_repair_revalidates_binary(self, tmp_path):
@@ -336,11 +333,7 @@ class TestValidateBinaryIntegrity:
 
         result = validate_binary_integrity(elf_path, repair=True)
 
-        assert result == (
-            False,
-            [
-                "Missing required section: .data",
-                "Entry point 0x201120 not in any executable segment",
-            ],
-            [],
+        expect(
+            result
+            == (False, ["Missing required section: .data", "Entry point 0x201120 not in any executable segment"], [])
         )

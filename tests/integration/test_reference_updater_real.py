@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -16,6 +18,8 @@ if importlib.util.find_spec("yaml") is None:
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceType, ReferenceUpdater
+
+_EXPECTED_LEN_FUNCTIONS_5 = 5
 
 
 class TestReferenceUpdaterReal:
@@ -40,9 +44,9 @@ class TestReferenceUpdaterReal:
             binary.analyze()
             updater = ReferenceUpdater(binary)
 
-            assert updater.binary == binary
-            assert isinstance(updater.updated_refs, set)
-            assert len(updater.updated_refs) == 0
+            expect(updater.binary == binary)
+            expect(isinstance(updater.updated_refs, set))
+            expect(len(updater.updated_refs) == 0)
 
     def test_find_references_to_function(self, ls_elf):
         """Test finding references to a function."""
@@ -59,7 +63,7 @@ class TestReferenceUpdaterReal:
                 target_addr = functions[1].get("offset", functions[1].get("addr", 0))
                 if target_addr:
                     refs = updater.find_references_to(target_addr)
-                    assert isinstance(refs, list)
+                    expect(isinstance(refs, list))
 
     def test_find_references_to_main(self, ls_elf):
         """Test finding references to main function."""
@@ -80,7 +84,7 @@ class TestReferenceUpdaterReal:
 
             if main_addr:
                 refs = updater.find_references_to(main_addr)
-                assert isinstance(refs, list)
+                expect(isinstance(refs, list))
 
     def test_update_jump_target_real(self, ls_elf, tmp_path):
         """Test updating jump target with real binary."""
@@ -112,7 +116,7 @@ class TestReferenceUpdaterReal:
                             # Try to update (may fail if instruction can't be modified)
                             result = updater.update_jump_target(jump_addr, jump_target, jump_target + 10)
                             # Just check it doesn't crash
-                            assert isinstance(result, bool)
+                            expect(isinstance(result, bool))
                             return  # Test one jump and exit
 
     def test_update_call_target_real(self, ls_elf, tmp_path):
@@ -145,7 +149,7 @@ class TestReferenceUpdaterReal:
                             # Try to update (may fail if instruction can't be modified)
                             result = updater.update_call_target(call_addr, call_target, call_target + 10)
                             # Just check it doesn't crash
-                            assert isinstance(result, bool)
+                            expect(isinstance(result, bool))
                             return  # Test one call and exit
 
     def test_update_data_pointer_with_arch_detection(self, ls_elf, tmp_path):
@@ -169,7 +173,7 @@ class TestReferenceUpdaterReal:
             # Using an address in the binary
             test_addr = 0x1000
             result = updater.update_data_pointer(test_addr, 0x0, 0x1000)
-            assert isinstance(result, bool)
+            expect(isinstance(result, bool))
 
     def test_update_data_pointer_with_size(self, ls_elf, tmp_path):
         """Test updating data pointer with explicit size."""
@@ -187,7 +191,7 @@ class TestReferenceUpdaterReal:
             # Try with explicit pointer size
             test_addr = 0x1000
             result = updater.update_data_pointer(test_addr, 0x0, 0x1000, ptr_size=8)
-            assert isinstance(result, bool)
+            expect(isinstance(result, bool))
 
     def test_update_all_references_to(self, ls_elf, tmp_path):
         """Test updating all references to an address."""
@@ -204,21 +208,21 @@ class TestReferenceUpdaterReal:
 
             # Find a function that's called
             functions = binary.get_functions()
-            if len(functions) > 5:
+            if len(functions) > _EXPECTED_LEN_FUNCTIONS_5:
                 target_addr = functions[5].get("offset", functions[5].get("addr", 0))
                 if target_addr:
                     # Try to update all references
                     updated_count = updater.update_all_references_to(target_addr, target_addr + 0x100)
-                    assert isinstance(updated_count, int)
-                    assert updated_count >= 0
+                    expect(isinstance(updated_count, int))
+                    expect(not (updated_count < 0))
 
     def test_reference_type_enum(self):
         """Test ReferenceType enum."""
-        assert ReferenceType.CALL.value == "call"
-        assert ReferenceType.JUMP.value == "jump"
-        assert ReferenceType.DATA_PTR.value == "data_ptr"
-        assert ReferenceType.RELATIVE.value == "relative"
-        assert ReferenceType.ABSOLUTE.value == "absolute"
+        expect(ReferenceType.CALL.value == "call")
+        expect(ReferenceType.JUMP.value == "jump")
+        expect(ReferenceType.DATA_PTR.value == "data_ptr")
+        expect(ReferenceType.RELATIVE.value == "relative")
+        expect(ReferenceType.ABSOLUTE.value == "absolute")
 
     def test_updated_refs_tracking(self, ls_elf, tmp_path):
         """Test that updated_refs set tracks updates."""
@@ -234,7 +238,7 @@ class TestReferenceUpdaterReal:
             updater = ReferenceUpdater(binary)
 
             initial_count = len(updater.updated_refs)
-            assert initial_count == 0
+            expect(initial_count == 0)
 
             # Try some updates (they may fail, but that's okay)
             test_addr = 0x1000
@@ -243,7 +247,7 @@ class TestReferenceUpdaterReal:
             updater.update_data_pointer(test_addr + 0x20, 0x0, 0x1000)
 
             # Check that updated_refs is still a set
-            assert isinstance(updater.updated_refs, set)
+            expect(isinstance(updater.updated_refs, set))
 
     def test_macos_binary_references(self, ls_macos, tmp_path):
         """Test reference updates with macOS binary."""
@@ -268,7 +272,7 @@ class TestReferenceUpdaterReal:
 
             if main_addr:
                 refs = updater.find_references_to(main_addr)
-                assert isinstance(refs, list)
+                expect(isinstance(refs, list))
 
     def test_find_references_empty(self, ls_elf):
         """Test finding references to non-existent address."""
@@ -281,7 +285,7 @@ class TestReferenceUpdaterReal:
 
             # Try to find references to a likely non-existent address
             refs = updater.find_references_to(0xDEADBEEF)
-            assert isinstance(refs, list)
+            expect(isinstance(refs, list))
 
     def test_update_jump_invalid_address(self, ls_elf, tmp_path):
         """Test updating jump at invalid address."""
@@ -297,7 +301,7 @@ class TestReferenceUpdaterReal:
 
             # Try to update jump at invalid address
             result = updater.update_jump_target(0xDEADBEEF, 0x1000, 0x2000)
-            assert result is False
+            expect(not (result is not False))
 
     def test_update_call_invalid_address(self, ls_elf, tmp_path):
         """Test updating call at invalid address."""
@@ -313,7 +317,7 @@ class TestReferenceUpdaterReal:
 
             # Try to update call at invalid address
             result = updater.update_call_target(0xDEADBEEF, 0x1000, 0x2000)
-            assert result is False
+            expect(not (result is not False))
 
     def test_update_pointer_invalid_address(self, ls_elf, tmp_path):
         """Test updating pointer at invalid address."""
@@ -329,4 +333,4 @@ class TestReferenceUpdaterReal:
 
             # Try to update pointer at invalid address
             result = updater.update_data_pointer(0xDEADBEEF, 0x0, 0x1000)
-            assert result is False
+            expect(not (result is not False))

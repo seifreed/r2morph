@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from r2morph.mutations.code_mobility import CodeMobilityPass
 from tests._doubles.in_memory_mobility_binary import InMemoryMobilityBinary
+from tests.utils.assertions import expect
 
 CONFIG = {"probability": 1.0, "preserve_order": True}
 FUNCS = [{"addr": 0x1000, "size": 64}]
@@ -33,8 +34,8 @@ def test_far_cave_offset_is_skipped_not_overflowerror() -> None:
 
     result = p.apply(binary)  # pre-fix: raises OverflowError
 
-    assert result["blocks_moved"] == 0
-    assert p.get_records() == []
+    expect(result["blocks_moved"] == 0)
+    expect(p.get_records() == [])
 
 
 def test_in_range_cave_still_moves_block() -> None:
@@ -50,5 +51,5 @@ def test_in_range_cave_still_moves_block() -> None:
 
     result = p.apply(binary)
 
-    assert result["blocks_moved"] == 1
-    assert len(p.get_records()) == 1
+    expect(result["blocks_moved"] == 1)
+    expect(len(p.get_records()) == 1)

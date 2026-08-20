@@ -5,8 +5,9 @@ from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
 from r2morph.detection.control_flow_detector_models import (
     ControlFlowAnalysisResult as ModelsControlFlowAnalysisResult,
 )
+from tests.utils.assertions import expect
 
 
 def test_control_flow_result_is_reexported_from_detection_package():
-    assert PublicControlFlowAnalysisResult is ModelsControlFlowAnalysisResult
-    assert ControlFlowAnalyzer is not None
+    expect(not (PublicControlFlowAnalysisResult is not ModelsControlFlowAnalysisResult))
+    expect(ControlFlowAnalyzer is not None)

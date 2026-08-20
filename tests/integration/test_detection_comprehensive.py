@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -18,6 +20,11 @@ from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 from r2morph.detection.evasion_scorer import EvasionScorer
 from r2morph.detection.similarity_hasher import SimilarityHasher
 from r2morph.mutations import NopInsertionPass
+
+_EXPECTED_0_0_100_0 = 100.0
+_EXPECTED_0_0_100_0_2 = 100.0
+_EXPECTED_0_0_8_0 = 8.0
+_EXPECTED_RESULT_BYTE_SIMILARITY_100_0 = 100.0
 
 
 class TestSimilarityHasherComprehensive:
@@ -32,9 +39,9 @@ class TestSimilarityHasherComprehensive:
         """Test SimilarityHasher initialization."""
         hasher = SimilarityHasher()
 
-        assert hasher is not None
-        assert isinstance(hasher.has_ssdeep, bool)
-        assert isinstance(hasher.has_tlsh, bool)
+        expect(hasher is not None)
+        expect(isinstance(hasher.has_ssdeep, bool))
+        expect(isinstance(hasher.has_tlsh, bool))
 
     def test_hash_file(self, ls_elf):
         """Test hashing a file."""
@@ -44,9 +51,9 @@ class TestSimilarityHasherComprehensive:
         hasher = SimilarityHasher()
         result = hasher.hash_file(ls_elf)
 
-        assert isinstance(result, dict)
-        assert "ssdeep" in result
-        assert "tlsh" in result
+        expect(isinstance(result, dict))
+        expect(not ("ssdeep" not in result))
+        expect(not ("tlsh" not in result))
 
     def test_compare_files_same(self, ls_elf):
         """Test comparing a file with itself."""
@@ -56,9 +63,9 @@ class TestSimilarityHasherComprehensive:
         hasher = SimilarityHasher()
         result = hasher.compare_files(ls_elf, ls_elf)
 
-        assert isinstance(result, dict)
-        assert "byte_similarity" in result
-        assert result["byte_similarity"] == 100.0
+        expect(isinstance(result, dict))
+        expect(not ("byte_similarity" not in result))
+        expect(result["byte_similarity"] == _EXPECTED_RESULT_BYTE_SIMILARITY_100_0)
 
     def test_compare_files_different(self, ls_elf, tmp_path):
         """Test comparing different files."""
@@ -77,11 +84,11 @@ class TestSimilarityHasherComprehensive:
         hasher = SimilarityHasher()
         result = hasher.compare_files(ls_elf, output_path)
 
-        assert isinstance(result, dict)
-        assert "byte_similarity" in result
+        expect(isinstance(result, dict))
+        expect(not ("byte_similarity" not in result))
         # Mutated binary may be different or same depending on whether mutations were applied
-        assert isinstance(result["byte_similarity"], float)
-        assert 0.0 <= result["byte_similarity"] <= 100.0
+        expect(isinstance(result["byte_similarity"], float))
+        expect(0.0 <= result["byte_similarity"] <= _EXPECTED_0_0_100_0)
 
 
 class TestEntropyAnalyzerComprehensive:
@@ -96,7 +103,7 @@ class TestEntropyAnalyzerComprehensive:
         """Test EntropyAnalyzer initialization."""
         analyzer = EntropyAnalyzer()
 
-        assert analyzer is not None
+        expect(analyzer is not None)
 
     def test_analyze_file(self, ls_elf):
         """Test analyzing a file."""
@@ -106,10 +113,10 @@ class TestEntropyAnalyzerComprehensive:
         analyzer = EntropyAnalyzer()
         result = analyzer.analyze_file(ls_elf)
 
-        assert result is not None
-        assert hasattr(result, "overall_entropy")
-        assert isinstance(result.overall_entropy, float)
-        assert 0.0 <= result.overall_entropy <= 8.0
+        expect(result is not None)
+        expect(hasattr(result, "overall_entropy"))
+        expect(isinstance(result.overall_entropy, float))
+        expect(0.0 <= result.overall_entropy <= _EXPECTED_0_0_8_0)
 
     def test_is_packed(self, ls_elf):
         """Test checking if binary is packed."""
@@ -119,7 +126,7 @@ class TestEntropyAnalyzerComprehensive:
         analyzer = EntropyAnalyzer()
         result = analyzer.analyze_file(ls_elf)
 
-        assert isinstance(result.is_packed, bool)
+        expect(isinstance(result.is_packed, bool))
 
     def test_suspicious_sections(self, ls_elf):
         """Test getting suspicious sections."""
@@ -129,7 +136,7 @@ class TestEntropyAnalyzerComprehensive:
         analyzer = EntropyAnalyzer()
         result = analyzer.analyze_file(ls_elf)
 
-        assert isinstance(result.suspicious_sections, list)
+        expect(isinstance(result.suspicious_sections, list))
 
 
 class TestEvasionScorerComprehensive:
@@ -144,8 +151,8 @@ class TestEvasionScorerComprehensive:
         """Test EvasionScorer initialization."""
         scorer = EvasionScorer()
 
-        assert scorer is not None
-        assert hasattr(scorer, "weights")
+        expect(scorer is not None)
+        expect(hasattr(scorer, "weights"))
 
     def test_score_binaries(self, ls_elf, tmp_path):
         """Test scoring original and mutated binaries."""
@@ -164,10 +171,10 @@ class TestEvasionScorerComprehensive:
         scorer = EvasionScorer()
         score = scorer.score(ls_elf, output_path)
 
-        assert score is not None
-        assert hasattr(score, "overall_score")
-        assert isinstance(score.overall_score, float)
-        assert 0.0 <= score.overall_score <= 100.0
+        expect(score is not None)
+        expect(hasattr(score, "overall_score"))
+        expect(isinstance(score.overall_score, float))
+        expect(0.0 <= score.overall_score <= _EXPECTED_0_0_100_0_2)
 
     def test_score_components(self, ls_elf, tmp_path):
         """Test score components."""
@@ -186,7 +193,7 @@ class TestEvasionScorerComprehensive:
         scorer = EvasionScorer()
         score = scorer.score(ls_elf, output_path)
 
-        assert hasattr(score, "hash_change_score")
-        assert hasattr(score, "entropy_score")
-        assert hasattr(score, "structure_score")
-        assert hasattr(score, "signature_score")
+        expect(hasattr(score, "hash_change_score"))
+        expect(hasattr(score, "entropy_score"))
+        expect(hasattr(score, "structure_score"))
+        expect(hasattr(score, "signature_score"))

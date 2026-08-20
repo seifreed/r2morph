@@ -8,6 +8,9 @@ from r2morph.analysis.symbolic.state_manager_policies import (
     prune_states,
     select_next_state,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_SELECT_NEXT_STATE_MANAGER_0_2 = 2
 
 
 def test_state_manager_policies_contract() -> None:
@@ -25,18 +28,21 @@ def test_state_manager_policies_contract() -> None:
     manager.states_pruned = 0
     manager.states_merged = 0
 
-    assert select_next_state(manager)[0] == 2
+    expect(select_next_state(manager)[0] == _EXPECTED_SELECT_NEXT_STATE_MANAGER_0_2)
 
     manager.scheduling_strategy = StateSchedulingStrategy.COVERAGE_GUIDED
-    assert get_best_coverage_state(manager)[0] == 1
+    expect(get_best_coverage_state(manager)[0] == 1)
 
-    assert calculate_pruning_score(manager, manager.state_metrics[1]) > calculate_pruning_score(
-        manager, manager.state_metrics[2]
+    expect(
+        not (
+            calculate_pruning_score(manager, manager.state_metrics[1])
+            <= calculate_pruning_score(manager, manager.state_metrics[2])
+        )
     )
 
     prune_states(manager)
-    assert len(manager.active_states) == 1
-    assert manager.states_pruned == 1
+    expect(len(manager.active_states) == 1)
+    expect(manager.states_pruned == 1)
 
     manager.active_states = {10: SimpleNamespace(addr=0x1000), 11: SimpleNamespace(addr=0x1000)}
     manager.state_metrics = {
@@ -46,6 +52,6 @@ def test_state_manager_policies_contract() -> None:
     manager.state_coverage = {10: set(), 11: set()}
     manager.states_merged = 0
 
-    assert merge_equivalent_states(manager) == 1
-    assert len(manager.active_states) == 1
-    assert manager.states_merged == 1
+    expect(merge_equivalent_states(manager) == 1)
+    expect(len(manager.active_states) == 1)
+    expect(manager.states_merged == 1)

@@ -15,11 +15,11 @@ suite.
 
 from __future__ import annotations
 
-import random
-
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_engine import VirtualizedOp
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import build_nested_region_blob
+from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
 _RET_ADDR = 0x2000
@@ -39,12 +39,12 @@ def _region(items: list[tuple[object, ...]]) -> Region:
 def test_nested_builder_accepts_an_in_function_call_region() -> None:
     """A region with a peelable run, a vcall and a vret nests to real bytes."""
     items = [*_op_run(), ("vcall", 0), ("vret", _RET_ADDR)]
-    blob = build_nested_region_blob(_region(items), _CAVE_VADDR, random.Random(7), depth=2)
-    assert blob is not None and len(blob) > 0
+    blob = build_nested_region_blob(_region(items), _CAVE_VADDR, randomness.Random(7), depth=2)
+    expect(blob is not None and len(blob) > 0)
 
 
 def test_nested_builder_accepts_a_direct_call_region() -> None:
     """A region with a peelable run and an out-of-function direct call nests."""
     items = [*_op_run(), ("call", 0x9000), ("exit", _RET_ADDR)]
-    blob = build_nested_region_blob(_region(items), _CAVE_VADDR, random.Random(7), depth=2)
-    assert blob is not None and len(blob) > 0
+    blob = build_nested_region_blob(_region(items), _CAVE_VADDR, randomness.Random(7), depth=2)
+    expect(blob is not None and len(blob) > 0)

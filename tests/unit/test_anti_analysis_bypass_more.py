@@ -4,19 +4,20 @@ from r2morph.detection.anti_analysis_bypass import (
     AntiAnalysisType,
     BypassTechnique,
 )
+from tests.utils.assertions import expect
 
 
 def test_bypass_methods_and_status():
     bypass = AntiAnalysisBypass()
 
     methods = bypass._get_bypass_methods(AntiAnalysisType.DEBUGGER_DETECTION)
-    assert BypassTechnique.API_REDIRECTION in methods
+    expect(not (BypassTechnique.API_REDIRECTION not in methods))
 
     empty_methods = bypass._get_bypass_methods(AntiAnalysisType.HARDWARE_FINGERPRINTING)
-    assert empty_methods == []
+    expect(empty_methods == [])
 
     status = bypass.get_bypass_status()
-    assert status["bypass_count"] == 0
+    expect(status["bypass_count"] == 0)
 
 
 def test_check_pattern_match_empty_pattern():
@@ -28,4 +29,4 @@ def test_check_pattern_match_empty_pattern():
         string_patterns=[],
     )
     confidence = bypass._check_pattern_match(pattern, binary=None)
-    assert confidence == 0.0
+    expect(confidence == 0.0)

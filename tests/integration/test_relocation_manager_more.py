@@ -4,6 +4,10 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import RelocationManager
+from tests.utils.assertions import expect
+
+_EXPECTED_MANAGER_GET_NEW_ADDRESS_0X1000_8192 = 0x2000
+_EXPECTED_MANAGER_GET_NEW_ADDRESS_0X100F_8207 = 0x200F
 
 
 def test_relocation_manager_address_mapping_real(tmp_path: Path):
@@ -19,9 +23,9 @@ def test_relocation_manager_address_mapping_real(tmp_path: Path):
         manager = RelocationManager(bin_obj)
 
         manager.add_relocation(0x1000, 0x2000, 0x20)
-        assert manager.get_new_address(0x1000) == 0x2000
-        assert manager.get_new_address(0x100F) == 0x200F
-        assert manager.get_new_address(0x3000) is None
+        expect(manager.get_new_address(4096) == _EXPECTED_MANAGER_GET_NEW_ADDRESS_0X1000_8192)
+        expect(manager.get_new_address(4111) == _EXPECTED_MANAGER_GET_NEW_ADDRESS_0X100F_8207)
+        expect(not (manager.get_new_address(0x3000) is not None))
 
 
 def test_relocation_manager_calculate_space_needed_real(tmp_path: Path):
@@ -50,8 +54,8 @@ def test_relocation_manager_calculate_space_needed_real(tmp_path: Path):
             if exec_sections:
                 func_addr = exec_sections[0].get("vaddr", 0) or 0
 
-        assert func_addr, "Expected a valid address for space calculation"
+        expect(func_addr, "Expected a valid address for space calculation")
 
         # Just ensure this path executes without errors
         result = manager.calculate_space_needed(func_addr, 4)
-        assert result is True or result is False
+        expect(result is True or result is False)

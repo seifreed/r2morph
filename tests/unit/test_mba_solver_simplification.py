@@ -1,4 +1,5 @@
 from r2morph.devirtualization.mba_solver import MBASolver
+from tests.utils.assertions import expect
 
 
 def test_mba_pattern_based_simplification():
@@ -6,13 +7,13 @@ def test_mba_pattern_based_simplification():
     expr = "x + y - (x & y)"
     analysis = solver.analyze_mba_expression(expr)
 
-    assert "x" in analysis.variables
-    assert analysis.is_linear is True
+    expect(not ("x" not in analysis.variables))
+    expect(not (analysis.is_linear is not True))
 
     result = solver.simplify_mba(expr, method="patterns")
-    assert result.success is True
-    assert result.simplified_expression is not None
-    assert result.original_expression == expr
+    expect(not (result.success is not True))
+    expect(result.simplified_expression is not None)
+    expect(result.original_expression == expr)
 
 
 def test_mba_z3_simplification():
@@ -20,8 +21,8 @@ def test_mba_z3_simplification():
     expr = "x + 0"
     result = solver.simplify_mba(expr, method="z3")
 
-    assert result.success is True
-    assert result.simplified_expression in {"x", "x + 0"} or result.simplified_expression is not None
+    expect(not (result.success is not True))
+    expect(result.simplified_expression in {"x", "x + 0"} or result.simplified_expression is not None)
 
 
 def test_mba_truth_table_simplification():
@@ -29,5 +30,5 @@ def test_mba_truth_table_simplification():
     expr = "x & x"
     result = solver.simplify_mba(expr, method="truth_table")
 
-    assert result.success is True
-    assert result.simplified_expression == "x"
+    expect(not (result.success is not True))
+    expect(result.simplified_expression == "x")

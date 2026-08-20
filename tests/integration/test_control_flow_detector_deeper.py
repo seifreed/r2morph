@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
+from tests.utils.assertions import expect
 
 
 def test_control_flow_detector_custom_vm_and_metamorphic():
@@ -16,11 +17,11 @@ def test_control_flow_detector_custom_vm_and_metamorphic():
         analyzer = ControlFlowAnalyzer(bin_obj)
 
         custom = analyzer.detect_custom_virtualizer()
-        assert isinstance(custom, dict)
-        assert "detected" in custom
-        assert "confidence" in custom
-        assert "indicators" in custom
+        expect(isinstance(custom, dict))
+        expect(not ("detected" not in custom))
+        expect(not ("confidence" not in custom))
+        expect(not ("indicators" not in custom))
 
         meta = analyzer._detect_metamorphic_engine()
-        assert isinstance(meta, dict)
-        assert "polymorphic_ratio" in meta
+        expect(isinstance(meta, dict))
+        expect(not ("polymorphic_ratio" not in meta))

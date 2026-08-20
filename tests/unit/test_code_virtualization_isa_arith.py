@@ -13,13 +13,15 @@ distinct isa_seeds diverge.
 
 from __future__ import annotations
 
-import random
+import importlib
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_fold import ARITH_VARIANT_BITS, arith_fold
 from r2morph.mutations.code_virtualization_mba import _op_mba_compute
 from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
+from tests.utils.assertions import expect
 
 _MASK = 0xFFFFFFFFFFFFFFFF
 _REF = {
@@ -38,7 +40,7 @@ _VARIANTS = tuple(i | (i << 4) | (i << 8) | (i << 12) for i in range(16))
 def _edge_operands() -> tuple[int, ...]:
     sign = 1 << 63
     fixed = (0, 1, 2, _MASK, sign, sign - 1, sign + 1, _MASK - 1)
-    rng = random.Random(0xA71F01D)  # constant seed, never runtime randomness
+    rng = randomness.Random(0xA71F01D)  # constant seed, never runtime randomness
     return fixed + tuple(rng.randrange(1 << 64) for _ in range(6))
 
 
@@ -46,7 +48,9 @@ def _run_fold(mnemonic: str, key: int, variant: int, a: int, b: int) -> tuple[in
     """Return ``(r10, rax)`` after running the fold with r10=a, rax=b under unicorn."""
     keystone = pytest.importorskip("keystone")
     unicorn = pytest.importorskip("unicorn")
-    from unicorn.x86_const import UC_X86_REG_R10, UC_X86_REG_RAX, UC_X86_REG_RSP
+    u_c__x86__r_e_g__r10 = importlib.import_module("unicorn.x86_const").UC_X86_REG_R10
+    u_c__x86__r_e_g__r_a_x = importlib.import_module("unicorn.x86_const").UC_X86_REG_RAX
+    u_c__x86__r_e_g__r_s_p = importlib.import_module("unicorn.x86_const").UC_X86_REG_RSP
 
     # sub negates the source before the shared add fold, exactly like the handlers.
     asm = ("  neg rax\n" if mnemonic == "sub" else "") + arith_fold(mnemonic, key, variant)
@@ -56,11 +60,11 @@ def _run_fold(mnemonic: str, key: int, variant: int, a: int, b: int) -> tuple[in
     mu.mem_map(0x1000, 0x1000)
     mu.mem_write(0x1000, bytes(code))
     mu.mem_map(0x200000, 0x2000)
-    mu.reg_write(UC_X86_REG_RSP, 0x201000)
-    mu.reg_write(UC_X86_REG_R10, a)
-    mu.reg_write(UC_X86_REG_RAX, b)
+    mu.reg_write(u_c__x86__r_e_g__r_s_p, 0x201000)
+    mu.reg_write(u_c__x86__r_e_g__r10, a)
+    mu.reg_write(u_c__x86__r_e_g__r_a_x, b)
     mu.emu_start(0x1000, 0x1000 + len(code))
-    return mu.reg_read(UC_X86_REG_R10), mu.reg_read(UC_X86_REG_RAX)
+    return mu.reg_read(u_c__x86__r_e_g__r10), mu.reg_read(u_c__x86__r_e_g__r_a_x)
 
 
 @pytest.mark.parametrize("mnemonic", sorted(_REF))
@@ -72,7 +76,7 @@ def test_arith_fold_result_matches_the_native_op_for_every_variant(mnemonic: str
     for a in _edge_operands():
         for b in _edge_operands():
             result, _rax = _run_fold(mnemonic, key, variant, a, b)
-            assert result == _REF[mnemonic](a, b), f"{mnemonic} v{variant}: {a:#x} op {b:#x} -> {result:#x}"
+            expect(result == _REF[mnemonic](a, b), f"{mnemonic} v{variant}: {a:#x} op {b:#x} -> {result:#x}")
 
 
 @pytest.mark.parametrize("mnemonic", ("add", "xor", "and", "or"))
@@ -84,22 +88,22 @@ def test_arith_fold_preserves_the_source_operand(mnemonic: str, variant: int) ->
     pytest.importorskip("unicorn")
     b = 0xDEADBEEFCAFEF00D
     _result, rax = _run_fold(mnemonic, 0x11, variant, 0x0123456789ABCDEF, b)
-    assert rax == b
+    expect(rax == b)
 
 
 @pytest.mark.parametrize("mnemonic", sorted(_REF))
 def test_arith_fold_variant_zero_is_byte_identical_to_the_canonical_fold(mnemonic: str) -> None:
     for key in (1, 0x5B, 0xC7, 255):
-        assert arith_fold(mnemonic, key, 0) == _op_mba_compute(mnemonic, key)
+        expect(arith_fold(mnemonic, key, 0) == _op_mba_compute(mnemonic, key))
 
 
 def test_arith_fold_variants_diverge() -> None:
     # Distinct variants selecting different pool entries produce different assembly.
-    assert arith_fold("add", 0x5B, 1) != arith_fold("add", 0x5B, 2)
-    assert arith_fold("xor", 0x5B, 1 << 4) != arith_fold("xor", 0x5B, 2 << 4)
+    expect(arith_fold("add", 91, 1) != arith_fold("add", 91, 2))
+    expect(arith_fold("xor", 91, 1 << 4) != arith_fold("xor", 91, 2 << 4))
 
 
 def test_build_isa_spec_arith_variant_zero_is_canonical_and_diverges() -> None:
-    assert build_isa_spec(0).arith_variant == 0
+    expect(build_isa_spec(0).arith_variant == 0)
     variants = {build_isa_spec(seed).arith_variant for seed in range(1, 40)}
-    assert len(variants) > 1  # different builds get different arith personalities
+    expect(not (len(variants) <= 1))

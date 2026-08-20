@@ -19,6 +19,23 @@ from r2morph.relocations.cave_injector import (
     CodeCaveInjector,
     SectionPermissions,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ALLOCATION_ADDRESS_4096 = 0x1000
+_EXPECTED_ALLOCATION_ADDRESS_4112 = 0x1010
+_EXPECTED_ALLOCATION_ALIGNMENT_16 = 16
+_EXPECTED_ALLOCATION_SIZE_50 = 50
+_EXPECTED_ALLOC_ADDRESS_4096 = 0x1000
+_EXPECTED_ALLOC_SIZE_100 = 100
+_EXPECTED_CAVE_SIZE_50 = 50
+_EXPECTED_INJECTOR_ALIGN_ADDRESS_0X1000_0X1000_4096 = 0x1000
+_EXPECTED_INJECTOR_ALIGN_ADDRESS_0X1000_16_4096 = 0x1000
+_EXPECTED_INJECTOR_ALIGN_ADDRESS_0X1001_16_4112 = 0x1010
+_EXPECTED_INJECTOR_ALIGN_ADDRESS_0X100F_16_4112 = 0x1010
+_EXPECTED_OPTS_ALIGNMENT_256 = 0x100
+_EXPECTED_OPTS_SIZE_4096 = 0x1000
+_EXPECTED_OPTS_SIZE_8192 = 0x2000
+_EXPECTED_TOTAL_300 = 300
 
 
 class _Disassembler:
@@ -57,9 +74,9 @@ class TestCodeCaveAllocation:
             cave_type=CaveType.EXISTING,
             section_name=".text",
         )
-        assert alloc.address == 0x1000
-        assert alloc.size == 100
-        assert alloc.cave_type == CaveType.EXISTING
+        expect(alloc.address == _EXPECTED_ALLOC_ADDRESS_4096)
+        expect(alloc.size == _EXPECTED_ALLOC_SIZE_100)
+        expect(alloc.cave_type == CaveType.EXISTING)
 
     def test_allocation_with_code(self):
         """Create allocation with injected code."""
@@ -71,8 +88,8 @@ class TestCodeCaveAllocation:
             section_name=".text",
             allocated_bytes=code,
         )
-        assert alloc.allocated_bytes == code
-        assert len(alloc.allocated_bytes) == alloc.size
+        expect(alloc.allocated_bytes == code)
+        expect(len(alloc.allocated_bytes) == alloc.size)
 
 
 class TestCaveCreationOptions:
@@ -81,9 +98,9 @@ class TestCaveCreationOptions:
     def test_default_options(self):
         """Create with defaults."""
         opts = CaveCreationOptions()
-        assert opts.name == ".cave"
-        assert opts.size == 0x1000
-        assert opts.permissions == SectionPermissions.READ_EXECUTE
+        expect(opts.name == ".cave")
+        expect(opts.size == _EXPECTED_OPTS_SIZE_4096)
+        expect(opts.permissions == SectionPermissions.READ_EXECUTE)
 
     def test_custom_options(self):
         """Create with custom values."""
@@ -93,9 +110,9 @@ class TestCaveCreationOptions:
             permissions=SectionPermissions.READ_WRITE_EXECUTE,
             alignment=0x100,
         )
-        assert opts.name == ".custom"
-        assert opts.size == 0x2000
-        assert opts.alignment == 0x100
+        expect(opts.name == ".custom")
+        expect(opts.size == _EXPECTED_OPTS_SIZE_8192)
+        expect(opts.alignment == _EXPECTED_OPTS_ALIGNMENT_256)
 
 
 class TestCodeCaveInjector:
@@ -113,7 +130,7 @@ class TestCodeCaveInjector:
         injector = CodeCaveInjector(mock_binary)
         caves = injector.find_executable_caves()
 
-        assert len(caves) >= 0
+        expect(not (len(caves) < 0))
 
     def test_find_cave_for_code(self):
         """Test finding cave for specific code size."""
@@ -126,18 +143,18 @@ class TestCodeCaveInjector:
         injector = CodeCaveInjector(mock_binary)
 
         cave = injector.find_cave_for_code(50)
-        assert cave is not None
-        assert cave.size >= 50
+        expect(cave is not None)
+        expect(not (cave.size < _EXPECTED_CAVE_SIZE_50))
 
     def test_align_address(self):
         """Test address alignment."""
         mock_binary = _Binary()
         injector = CodeCaveInjector(mock_binary)
 
-        assert injector._align_address(0x1001, 16) == 0x1010
-        assert injector._align_address(0x1000, 16) == 0x1000
-        assert injector._align_address(0x100F, 16) == 0x1010
-        assert injector._align_address(0x1000, 0x1000) == 0x1000
+        expect(injector._align_address(4097, 16) == _EXPECTED_INJECTOR_ALIGN_ADDRESS_0X1001_16_4112)
+        expect(injector._align_address(4096, 16) == _EXPECTED_INJECTOR_ALIGN_ADDRESS_0X1000_16_4096)
+        expect(injector._align_address(4111, 16) == _EXPECTED_INJECTOR_ALIGN_ADDRESS_0X100F_16_4112)
+        expect(injector._align_address(4096, 4096) == _EXPECTED_INJECTOR_ALIGN_ADDRESS_0X1000_0X1000_4096)
 
     def test_allocate_from_cave(self):
         """Test allocation from cave."""
@@ -153,10 +170,10 @@ class TestCodeCaveInjector:
 
         allocation = injector.allocate_from_cave(cave, 50)
 
-        assert allocation.address == 0x1000
-        assert allocation.size == 50
-        assert allocation.cave_type == CaveType.EXISTING
-        assert len(injector.get_allocations()) == 1
+        expect(allocation.address == _EXPECTED_ALLOCATION_ADDRESS_4096)
+        expect(allocation.size == _EXPECTED_ALLOCATION_SIZE_50)
+        expect(allocation.cave_type == CaveType.EXISTING)
+        expect(len(injector.get_allocations()) == 1)
 
     def test_allocate_from_cave_with_alignment(self):
         """Test allocation with alignment."""
@@ -172,8 +189,8 @@ class TestCodeCaveInjector:
 
         allocation = injector.allocate_from_cave(cave, 32, alignment=16)
 
-        assert allocation.address == 0x1010
-        assert allocation.alignment == 16
+        expect(allocation.address == _EXPECTED_ALLOCATION_ADDRESS_4112)
+        expect(allocation.alignment == _EXPECTED_ALLOCATION_ALIGNMENT_16)
 
     def test_create_cave_section_elf(self):
         """Test creating ELF section."""
@@ -188,9 +205,9 @@ class TestCodeCaveInjector:
 
         allocation = injector.create_cave_section(opts)
 
-        assert allocation is not None
-        assert allocation.cave_type == CaveType.NEW_SECTION
-        assert allocation.section_name == ".testcave"
+        expect(allocation is not None)
+        expect(allocation.cave_type == CaveType.NEW_SECTION)
+        expect(allocation.section_name == ".testcave")
 
     def test_create_cave_section_pe(self):
         """Test creating PE section."""
@@ -205,8 +222,8 @@ class TestCodeCaveInjector:
 
         allocation = injector.create_cave_section(opts)
 
-        assert allocation is not None
-        assert allocation.cave_type == CaveType.NEW_SECTION
+        expect(allocation is not None)
+        expect(allocation.cave_type == CaveType.NEW_SECTION)
 
     def test_create_cave_section_macho(self):
         """Test creating Mach-O section."""
@@ -221,8 +238,8 @@ class TestCodeCaveInjector:
 
         allocation = injector.create_cave_section(opts)
 
-        assert allocation is not None
-        assert allocation.cave_type == CaveType.NEW_SECTION
+        expect(allocation is not None)
+        expect(allocation.cave_type == CaveType.NEW_SECTION)
 
     def test_insert_code_existing_cave(self):
         """Test inserting code into existing cave."""
@@ -237,8 +254,8 @@ class TestCodeCaveInjector:
         code = b"\x90" * 50
         allocation = injector.insert_code(code)
 
-        assert allocation is not None
-        assert allocation.cave_type == CaveType.EXISTING
+        expect(allocation is not None)
+        expect(allocation.cave_type == CaveType.EXISTING)
 
     def test_extend_section(self):
         """Test extending existing section."""
@@ -250,9 +267,9 @@ class TestCodeCaveInjector:
         injector = CodeCaveInjector(mock_binary)
         allocation = injector.extend_section(".text", 0x100)
 
-        assert allocation is not None
-        assert allocation.cave_type == CaveType.EXTENDED_SECTION
-        assert allocation.section_name == ".text"
+        expect(allocation is not None)
+        expect(allocation.cave_type == CaveType.EXTENDED_SECTION)
+        expect(allocation.section_name == ".text")
 
     def test_get_total_injected_size(self):
         """Test total injected size calculation."""
@@ -265,7 +282,7 @@ class TestCodeCaveInjector:
         ]
 
         total = injector.get_total_injected_size()
-        assert total == 300
+        expect(total == _EXPECTED_TOTAL_300)
 
     def test_clear_allocations(self):
         """Test clearing allocations."""
@@ -279,8 +296,8 @@ class TestCodeCaveInjector:
 
         injector.clear_allocations()
 
-        assert len(injector._allocations) == 0
-        assert len(injector._created_sections) == 0
+        expect(len(injector._allocations) == 0)
+        expect(len(injector._created_sections) == 0)
 
 
 class TestCaveType:
@@ -288,10 +305,10 @@ class TestCaveType:
 
     def test_cave_types(self):
         """Test all cave types exist."""
-        assert CaveType.EXISTING.value == "existing"
-        assert CaveType.NEW_SECTION.value == "new_section"
-        assert CaveType.EXTENDED_SECTION.value == "extended_section"
-        assert CaveType.OVERLAY.value == "overlay"
+        expect(CaveType.EXISTING.value == "existing")
+        expect(CaveType.NEW_SECTION.value == "new_section")
+        expect(CaveType.EXTENDED_SECTION.value == "extended_section")
+        expect(CaveType.OVERLAY.value == "overlay")
 
 
 class TestSectionPermissions:
@@ -299,6 +316,6 @@ class TestSectionPermissions:
 
     def test_permissions(self):
         """Test permission combinations."""
-        assert SectionPermissions.READ.value == "r"
-        assert SectionPermissions.READ_EXECUTE.value == "rx"
-        assert SectionPermissions.READ_WRITE_EXECUTE.value == "rwx"
+        expect(SectionPermissions.READ.value == "r")
+        expect(SectionPermissions.READ_EXECUTE.value == "rx")
+        expect(SectionPermissions.READ_WRITE_EXECUTE.value == "rwx")

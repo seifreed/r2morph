@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any
 
 from r2morph.validation.symbolic_validator import SymbolicValidator
+from tests.utils.assertions import expect
 
 
 class _ArchBinary:
@@ -43,14 +44,17 @@ def test_supported_elf64_x86_64_instruction_substitution() -> None:
     supported, reason, metadata = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
-    assert supported is True
-    assert reason == "supported"
-    assert metadata == {
-        "symbolic_backend": "angr",
-        "symbolic_pass_name": "InstructionSubstitution",
-        "covered_functions": [0x401000],
-        "covered_address_ranges": [[0x401000, 0x401003]],
-    }
+    expect(not (supported is not True))
+    expect(reason == "supported")
+    expect(
+        metadata
+        == {
+            "symbolic_backend": "angr",
+            "symbolic_pass_name": "InstructionSubstitution",
+            "covered_functions": [4198400],
+            "covered_address_ranges": [[4198400, 4198403]],
+        }
+    )
 
 
 def test_unsupported_target_non_elf_format() -> None:
@@ -58,8 +62,8 @@ def test_unsupported_target_non_elf_format() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
-    assert supported is False
-    assert reason == "unsupported-target"
+    expect(not (supported is not False))
+    expect(reason == "unsupported-target")
 
 
 def test_unsupported_target_elf_but_32_bit() -> None:
@@ -67,8 +71,8 @@ def test_unsupported_target_elf_but_32_bit() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
-    assert supported is False
-    assert reason == "unsupported-target"
+    expect(not (supported is not False))
+    expect(reason == "unsupported-target")
 
 
 def test_unsupported_target_elf64_wrong_arch() -> None:
@@ -76,8 +80,8 @@ def test_unsupported_target_elf64_wrong_arch() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("InstructionSubstitution", [_mutation(0x401000, 0x401003)])
     )
-    assert supported is False
-    assert reason == "unsupported-target"
+    expect(not (supported is not False))
+    expect(reason == "unsupported-target")
 
 
 def test_unsupported_pass_name() -> None:
@@ -85,8 +89,8 @@ def test_unsupported_pass_name() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("ControlFlowFlattening", [_mutation(0x401000, 0x401003)])
     )
-    assert supported is False
-    assert reason == "unsupported-pass"
+    expect(not (supported is not False))
+    expect(reason == "unsupported-pass")
 
 
 def test_no_mutations_returns_no_mutations() -> None:
@@ -94,10 +98,10 @@ def test_no_mutations_returns_no_mutations() -> None:
     supported, reason, metadata = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", [])
     )
-    assert supported is False
-    assert reason == "no-mutations"
-    assert metadata["covered_functions"] == []
-    assert metadata["covered_address_ranges"] == []
+    expect(not (supported is not False))
+    expect(reason == "no-mutations")
+    expect(metadata["covered_functions"] == [])
+    expect(metadata["covered_address_ranges"] == [])
 
 
 def test_more_than_eight_mutations_is_unsupported_scope() -> None:
@@ -106,8 +110,8 @@ def test_more_than_eight_mutations_is_unsupported_scope() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", mutations)
     )
-    assert supported is False
-    assert reason == "unsupported-scope"
+    expect(not (supported is not False))
+    expect(reason == "unsupported-scope")
 
 
 def test_region_wider_than_sixteen_bytes_is_unsupported_scope() -> None:
@@ -116,8 +120,8 @@ def test_region_wider_than_sixteen_bytes_is_unsupported_scope() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", [_mutation(0x401000, 0x401010)])
     )
-    assert supported is False
-    assert reason == "unsupported-scope"
+    expect(not (supported is not False))
+    expect(reason == "unsupported-scope")
 
 
 def test_exactly_sixteen_byte_region_is_supported() -> None:
@@ -126,8 +130,8 @@ def test_exactly_sixteen_byte_region_is_supported() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", [_mutation(0x401000, 0x40100F)])
     )
-    assert supported is True
-    assert reason == "supported"
+    expect(not (supported is not True))
+    expect(reason == "supported")
 
 
 def test_missing_function_address_is_unsupported_scope() -> None:
@@ -135,8 +139,8 @@ def test_missing_function_address_is_unsupported_scope() -> None:
     supported, reason, _ = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("NopInsertion", [_mutation(0x401000, 0x401003, function_address=0)])
     )
-    assert supported is False
-    assert reason == "unsupported-scope"
+    expect(not (supported is not False))
+    expect(reason == "unsupported-scope")
 
 
 def test_metadata_covered_functions_sorted_unique_and_ranges_parse_hex() -> None:
@@ -149,11 +153,7 @@ def test_metadata_covered_functions_sorted_unique_and_ranges_parse_hex() -> None
     supported, reason, metadata = SymbolicValidator()._scope_gate._supports_symbolic_scope(
         binary, _pass("RegisterSubstitution", mutations)
     )
-    assert supported is True
-    assert reason == "supported"
-    assert metadata["covered_functions"] == [0x401000, 0x402000]
-    assert metadata["covered_address_ranges"] == [
-        [0x401010, 0x401013],
-        [0x401000, 0x401003],
-        [0x401020, 0x401023],
-    ]
+    expect(not (supported is not True))
+    expect(reason == "supported")
+    expect(metadata["covered_functions"] == [4198400, 4202496])
+    expect(metadata["covered_address_ranges"] == [[4198416, 4198419], [4198400, 4198403], [4198432, 4198435]])

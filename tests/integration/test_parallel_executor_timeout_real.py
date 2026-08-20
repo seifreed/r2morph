@@ -18,6 +18,7 @@ from pathlib import Path
 from r2morph.core.binary import Binary
 from r2morph.mutations.parallel_executor import ParallelMutator, ParallelStats
 from tests._doubles.slow_mutation_pass import SlowMutationPass
+from tests.utils.assertions import expect
 
 
 def test_execute_parallel_returns_partial_results_on_timeout() -> None:
@@ -27,10 +28,10 @@ def test_execute_parallel_returns_partial_results_on_timeout() -> None:
         binary.analyze()
         records, stats = executor.execute_parallel([SlowMutationPass(sleep_seconds=1.0)], binary)
 
-    assert isinstance(stats, ParallelStats)
-    assert isinstance(records, list)
+    expect(isinstance(stats, ParallelStats))
+    expect(isinstance(records, list))
     # The single slow task could not finish within 0.01s, so it must be
     # accounted as failed and no records produced -- without raising.
-    assert stats.tasks_failed >= 1
-    assert stats.tasks_completed == 0
-    assert records == []
+    expect(not (stats.tasks_failed < 1))
+    expect(stats.tasks_completed == 0)
+    expect(records == [])

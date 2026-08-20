@@ -6,6 +6,7 @@ from r2morph.reporting.sarif_schema_core import (
     SARIFPhysicalLocation,
     SARIFRegion,
 )
+from tests.utils.assertions import expect
 
 
 def test_sarif_schema_core_round_trip() -> None:
@@ -18,6 +19,6 @@ def test_sarif_schema_core_round_trip() -> None:
         message=message,
     )
 
-    assert SARIFLevel.WARNING.value == "warning"
-    assert message.to_dict()["markdown"] == "**hello**"
-    assert location.to_dict()["physicalLocation"]["artifactLocation"]["uri"] == "file:///bin"
+    expect(SARIFLevel.WARNING.value == "warning")
+    expect(message.to_dict()["markdown"] == "**hello**")
+    expect(location.to_dict()["physicalLocation"]["artifactLocation"]["uri"] == "file:///bin")

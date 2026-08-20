@@ -4,6 +4,9 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_DEAD_CODE_5 = 5
 
 
 def test_dead_code_injection_point_detection():
@@ -17,11 +20,11 @@ def test_dead_code_injection_point_detection():
     ]
 
     points = pass_obj._find_injection_points(instructions)
-    assert points
-    assert any(p["type"] == "padding" for p in points)
+    expect(points)
+    expect(any(p["type"] == "padding" for p in points))
 
-    assert pass_obj._is_safe_injection_point(instructions[0], instructions, 0) is True
-    assert pass_obj._is_safe_injection_point(instructions[2], instructions, 2) is False
+    expect(not (pass_obj._is_safe_injection_point(instructions[0], instructions, 0) is not True))
+    expect(not (pass_obj._is_safe_injection_point(instructions[2], instructions, 2) is not False))
 
 
 def test_dead_code_generation_for_size(tmp_path: Path):
@@ -34,5 +37,5 @@ def test_dead_code_generation_for_size(tmp_path: Path):
         pass_obj = DeadCodeInjectionPass(config={"code_complexity": "simple"})
         dead_code = pass_obj._generate_dead_code_for_size(bin_obj, 5, 0)
 
-    assert dead_code is not None
-    assert len(dead_code) == 5
+    expect(dead_code is not None)
+    expect(len(dead_code) == _EXPECTED_LEN_DEAD_CODE_5)

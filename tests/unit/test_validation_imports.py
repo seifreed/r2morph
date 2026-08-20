@@ -4,6 +4,8 @@ import importlib
 
 import pytest
 
+from tests.utils.assertions import expect
+
 VALIDATION_MODULES = [
     "r2morph.validation.constraint_cache",
     "r2morph.validation.binary_region_memory",
@@ -77,4 +79,4 @@ VALIDATION_MODULES = [
 @pytest.mark.parametrize("module_name", VALIDATION_MODULES)
 def test_validation_module_imports_cleanly(module_name: str) -> None:
     mod = importlib.import_module(module_name)
-    assert mod is not None
+    expect(mod is not None)

@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from r2morph.reporting.report_gate_filters import _filter_failed_gates_view
 from r2morph.reporting.report_severity_parsing import _expected_severity_rank_from_failure
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY, RESOLVED_FAILED_MUTATION_KEY
 
 
 def test_filter_failed_gates_view_applies_expected_severity_and_pass_filters() -> None:
@@ -25,14 +27,14 @@ def test_filter_failed_gates_view_applies_expected_severity_and_pass_filters() -
             {"severity": "mismatch", "failure_count": 1},
         ],
         only_expected_severity="mismatch",
-        resolved_only_pass_failure="PassA",
+        **{RESOLVED_FAILED_MUTATION_KEY: "PassA"},
     )
 
-    assert summary["require_pass_severity_failure_count"] == 1
-    assert priority[0]["pass_name"] == "PassA"
-    assert severity_priority[0]["severity"] == "mismatch"
-    assert failed is True
+    expect(summary["require_pass_severity_failure_count"] == 1)
+    expect(priority[0][MUTATION_NAME_KEY] == "PassA")
+    expect(severity_priority[0]["severity"] == "mismatch")
+    expect(not (failed is not True))
 
 
 def test_expected_severity_rank_from_failure_parses_failure_text() -> None:
-    assert _expected_severity_rank_from_failure("PassA=clean(expected <= mismatch)") == 0
+    expect(_expected_severity_rank_from_failure("PassA=clean(expected <= mismatch)") == 0)

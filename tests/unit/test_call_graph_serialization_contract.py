@@ -7,6 +7,7 @@ from r2morph.analysis.call_graph_serialization import (
     call_graph_to_dot,
     call_graph_to_json,
 )
+from tests.utils.assertions import expect
 
 
 def test_call_graph_serialization_helpers_expose_expected_contract() -> None:
@@ -16,16 +17,16 @@ def test_call_graph_serialization_helpers_expose_expected_contract() -> None:
     cg.add_edge(CallEdge(caller=0x1000, callee=0x2000, call_type=CallType.DIRECT, call_site=0x1004))
 
     payload = call_graph_to_dict(cg)
-    assert payload["entry_points"] == ["0x1000"]
-    assert payload["leaf_functions"] == ["0x2000"]
+    expect(payload["entry_points"] == ["0x1000"])
+    expect(payload["leaf_functions"] == ["0x2000"])
 
     dot = call_graph_to_dot(cg)
-    assert '"0x1000"' in dot
-    assert '"0x1000" -> "0x2000"' in dot
+    expect(not ('"0x1000"' not in dot))
+    expect(not ('"0x1000" -> "0x2000"' not in dot))
 
     json_str = call_graph_to_json(cg)
     restored = call_graph_from_json(json_str)
-    assert restored.to_dict()["entry_points"] == ["0x1000"]
+    expect(restored.to_dict()["entry_points"] == ["0x1000"])
 
     from_dict = call_graph_from_dict(payload)
-    assert from_dict.to_dict()["leaf_functions"] == ["0x2000"]
+    expect(from_dict.to_dict()["leaf_functions"] == ["0x2000"])

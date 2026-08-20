@@ -35,14 +35,14 @@ from .cfo_simplifier_transforms import (
     simplify_dispatcher_flattening,
 )
 
-nx: Any
+nx: Any = None
 try:
-    import networkx as nx
+    import networkx as networkx_module
 
+    nx = networkx_module
     NETWORKX_AVAILABLE = True
 except ImportError:
     NETWORKX_AVAILABLE = False
-    nx = None
 
 logger = logging.getLogger(__name__)
 

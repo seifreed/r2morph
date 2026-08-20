@@ -19,9 +19,13 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from r2morph import Binary
 
+_EXPECTED_LEN_DISASM_10 = 10
+_EXPECTED_LEN_FUNCTIONS_20 = 20
+_EXPECTED_LEN_SYS_ARGV_2 = 2
+
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print("Usage: python basic_analysis.py <binary_path>")
         sys.exit(1)
 
@@ -49,7 +53,7 @@ def main():
             size = func.get("size", 0)
             print(f"  {i + 1:3d}. 0x{addr:08x} | {size:5d} bytes | {name}")
 
-        if len(functions) > 20:
+        if len(functions) > _EXPECTED_LEN_FUNCTIONS_20:
             print(f"  ... and {len(functions) - 20} more functions")
 
         if functions:
@@ -66,7 +70,7 @@ def main():
                 insn_bytes = insn.get("bytes", "")
                 print(f"  0x{insn_addr:08x}  {insn_bytes:16s}  {insn_disasm}")
 
-            if len(disasm) > 10:
+            if len(disasm) > _EXPECTED_LEN_DISASM_10:
                 print(f"  ... and {len(disasm) - 10} more instructions")
 
         print("\n[+] Analysis complete!")

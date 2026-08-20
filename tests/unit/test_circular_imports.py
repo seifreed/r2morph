@@ -5,6 +5,8 @@ import sys
 
 import pytest
 
+from tests.utils.assertions import expect
+
 REPORTING_MODULES = [
     "r2morph.reporting",
     "r2morph.reporting.gate_evaluator",
@@ -321,7 +323,7 @@ REPORTING_MODULES = [
 @pytest.mark.parametrize("module_name", REPORTING_MODULES)
 def test_reporting_module_imports_cleanly(module_name):
     mod = importlib.import_module(module_name)
-    assert mod is not None
+    expect(mod is not None)
 
 
 def test_package_root_defers_heavy_exports():
@@ -334,17 +336,17 @@ def test_package_root_defers_heavy_exports():
     sys.modules.pop("r2morph.core.engine", None)
     sys.modules.pop("r2morph.pipeline.pipeline", None)
 
-    assert "r2morph.core.binary" not in sys.modules
-    assert "r2morph.core.engine" not in sys.modules
-    assert "r2morph.pipeline.pipeline" not in sys.modules
+    expect("r2morph.core.binary" not in sys.modules)
+    expect("r2morph.core.engine" not in sys.modules)
+    expect("r2morph.pipeline.pipeline" not in sys.modules)
 
-    assert module.Binary.__name__ == "Binary"
-    assert module.MorphEngine.__name__ == "MorphEngine"
-    assert module.Pipeline.__name__ == "Pipeline"
+    expect(module.Binary.__name__ == "Binary")
+    expect(module.MorphEngine.__name__ == "MorphEngine")
+    expect(module.Pipeline.__name__ == "Pipeline")
 
-    assert "r2morph.core.binary" in sys.modules
-    assert "r2morph.core.engine" in sys.modules
-    assert "r2morph.pipeline.pipeline" in sys.modules
+    expect(not ("r2morph.core.binary" not in sys.modules))
+    expect(not ("r2morph.core.engine" not in sys.modules))
+    expect(not ("r2morph.pipeline.pipeline" not in sys.modules))
 
 
 def test_reporting_package_defers_heavy_exports():
@@ -355,11 +357,11 @@ def test_reporting_package_defers_heavy_exports():
     sys.modules.pop("r2morph.reporting.report_builder_models", None)
     sys.modules.pop("r2morph.reporting.sarif_formatter", None)
 
-    assert "r2morph.reporting.report_builder_models" not in sys.modules
-    assert "r2morph.reporting.sarif_formatter" not in sys.modules
+    expect("r2morph.reporting.report_builder_models" not in sys.modules)
+    expect("r2morph.reporting.sarif_formatter" not in sys.modules)
 
-    assert module.ReportContext.__name__ == "ReportContext"
-    assert module.SARIFFormatter.__name__ == "SARIFFormatter"
+    expect(module.ReportContext.__name__ == "ReportContext")
+    expect(module.SARIFFormatter.__name__ == "SARIFFormatter")
 
-    assert "r2morph.reporting.report_builder_models" in sys.modules
-    assert "r2morph.reporting.sarif_formatter" in sys.modules
+    expect(not ("r2morph.reporting.report_builder_models" not in sys.modules))
+    expect(not ("r2morph.reporting.sarif_formatter" not in sys.modules))

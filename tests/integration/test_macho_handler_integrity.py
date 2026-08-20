@@ -5,6 +5,7 @@ import pytest
 
 from r2morph.platform.codesign import CodeSigner
 from r2morph.platform.macho_handler import MachOHandler
+from tests.utils.assertions import expect
 
 
 def test_macho_handler_basic_integrity(tmp_path: Path):
@@ -15,24 +16,23 @@ def test_macho_handler_basic_integrity(tmp_path: Path):
         pytest.skip("Mach-O binary not available")
 
     handler = MachOHandler(macho_path)
-    assert handler.is_macho() is True
+    expect(not (handler.is_macho() is not True))
 
     commands = handler.get_load_commands()
     segments = handler.get_segments()
-    assert isinstance(commands, list)
-    assert isinstance(segments, list)
+    expect(isinstance(commands, list))
+    expect(isinstance(segments, list))
 
     ok, msg = handler.validate_integrity()
-    assert isinstance(ok, bool)
-    assert isinstance(msg, str)
+    expect(isinstance(ok, bool))
+    expect(isinstance(msg, str))
 
-    assert handler.is_fat_binary() is False
+    expect(not (handler.is_fat_binary() is not False))
 
     thin_out = tmp_path / "thin_macho"
     extract_result = handler.extract_architecture("arm64", thin_out)
-    assert isinstance(extract_result, bool)
-    if extract_result:
-        assert thin_out.exists()
+    expect(isinstance(extract_result, bool))
+    expect(not (extract_result and not (thin_out.exists())))
 
 
 def test_codesigner_adhoc_missing_identity():
@@ -44,6 +44,6 @@ def test_codesigner_adhoc_missing_identity():
     result = signer.sign(dummy_path, identity=None, adhoc=False)
 
     if platform.system() == "Darwin" or platform.system() == "Windows":
-        assert result is False
+        expect(not (result is not False))
     else:
-        assert result is True
+        expect(not (result is not True))

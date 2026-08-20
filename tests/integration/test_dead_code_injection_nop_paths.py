@@ -5,6 +5,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
+from tests.utils.assertions import expect
 
 
 def test_dead_code_injection_with_padding(tmp_path: Path):
@@ -38,4 +39,4 @@ def test_dead_code_injection_with_padding(tmp_path: Path):
         bin_obj.nop_fill(addr, 12)
 
         result = pass_obj.apply(bin_obj)
-        assert "mutations_applied" in result
+        expect(not ("mutations_applied" not in result))

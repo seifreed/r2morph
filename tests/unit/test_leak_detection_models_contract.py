@@ -30,11 +30,12 @@ from r2morph.validation.leak_detection_models import (
 from r2morph.validation.leak_detection_models import (
     ResourceLeakTestResult as ModelsResourceLeakTestResult,
 )
+from tests.utils.assertions import expect
 
 
 def test_leak_detection_models_are_reexported_from_validation_package() -> None:
-    assert PublicMemorySnapshot is ModelsMemorySnapshot
-    assert PublicMemoryLeak is ModelsMemoryLeak
-    assert PublicLeakDetectionResult is ModelsLeakDetectionResult
-    assert PublicResourceLeak is ModelsResourceLeak
-    assert PublicResourceLeakTestResult is ModelsResourceLeakTestResult
+    expect(not (PublicMemorySnapshot is not ModelsMemorySnapshot))
+    expect(not (PublicMemoryLeak is not ModelsMemoryLeak))
+    expect(not (PublicLeakDetectionResult is not ModelsLeakDetectionResult))
+    expect(not (PublicResourceLeak is not ModelsResourceLeak))
+    expect(not (PublicResourceLeakTestResult is not ModelsResourceLeakTestResult))

@@ -10,6 +10,9 @@ from r2morph.analysis.switch_table_resolution import (
     resolve_jump_table,
 )
 from tests._doubles.in_memory_jump_table_binary import InMemoryJumpTableBinary
+from tests.utils.assertions import expect
+
+_EXPECTED_NORMALIZE_ADDRESS_0X7FFFFFFFFFFF_64_140737488355327 = 0x7FFFFFFFFFFF
 
 
 class _BasicBlockBinary(InMemoryJumpTableBinary):
@@ -42,20 +45,20 @@ def _jump(**overrides: object) -> IndirectJump:
 
 
 def test_switch_table_resolution_contract() -> None:
-    assert normalize_address(0x7FFFFFFFFFFF, 64) == 0x7FFFFFFFFFFF
+    expect(normalize_address(140737488355327, 64) == _EXPECTED_NORMALIZE_ADDRESS_0X7FFFFFFFFFFF_64_140737488355327)
 
     binary = InMemoryJumpTableBinary(bits=64, table_address=0x9000, blob=_blob([0x5000, 0x5010]))
     jump = _jump()
 
     table = resolve_jump_table(binary, jump)
-    assert table is not None
-    assert table.table_type == JumpTableType.INDIRECT
+    expect(table is not None)
+    expect(table.table_type == JumpTableType.INDIRECT)
 
     targets = get_jump_table_targets(table)
-    assert targets == {0: [0x5000], 1: [0x5010]}
+    expect(targets == {0: [20480], 1: [20496]})
 
     cases = reconstruct_switch_cases(
         _BasicBlockBinary(bits=64, table_address=0x9000, blob=_blob([0x5000, 0x5010])), table, 0x400000
     )
-    assert cases[0]["is_block_start"] is True
-    assert cases[1]["is_block_start"] is True
+    expect(not (cases[0]["is_block_start"] is not True))
+    expect(not (cases[1]["is_block_start"] is not True))

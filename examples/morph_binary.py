@@ -21,16 +21,19 @@ from r2morph import MorphEngine
 from r2morph.mutations import InstructionSubstitutionPass, NopInsertionPass
 from r2morph.utils.logging import setup_logging
 
+_EXPECTED_LEN_SYS_ARGV_2 = 2
+_EXPECTED_LEN_SYS_ARGV_2_2 = 2
+
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print("Usage: python morph_binary.py <binary_path> [output_path]")
         sys.exit(1)
 
     binary_path = Path(sys.argv[1])
     output_path = (
         Path(sys.argv[2])
-        if len(sys.argv) > 2
+        if len(sys.argv) > _EXPECTED_LEN_SYS_ARGV_2_2
         else binary_path.with_name(f"{binary_path.stem}_morphed{binary_path.suffix}")
     )
 

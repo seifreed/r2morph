@@ -1,12 +1,13 @@
 import platform
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 
 def _clang_available() -> bool:
@@ -110,7 +111,7 @@ def _build_pattern_binary(tmp_dir: Path) -> Path:
     )
 
     output = tmp_dir / "control_flow_patterns"
-    subprocess.run(
+    run_command(
         [
             "/usr/bin/clang",
             "-arch",
@@ -152,8 +153,8 @@ def test_control_flow_detector_finds_opaque_and_mba(pattern_binary_path: Path):
         bin_obj.analyze("aaa")
         analyzer = ControlFlowAnalyzer(bin_obj)
 
-        assert analyzer._detect_opaque_predicates() >= 1
-        assert analyzer._detect_mba_patterns() >= 1
+        expect(not (analyzer._detect_opaque_predicates() < 1))
+        expect(not (analyzer._detect_mba_patterns() < 1))
 
 
 def test_control_flow_detector_dispatcher_pattern(pattern_binary_path: Path):
@@ -162,10 +163,10 @@ def test_control_flow_detector_dispatcher_pattern(pattern_binary_path: Path):
         analyzer = ControlFlowAnalyzer(bin_obj)
 
         dispatcher_addr = _find_function_offset(bin_obj, "dispatcher_jump")
-        assert dispatcher_addr != 0
+        expect(dispatcher_addr != 0)
 
         blocks = bin_obj.get_basic_blocks(dispatcher_addr)
-        assert analyzer._check_dispatcher_pattern(blocks) is True
+        expect(not (analyzer._check_dispatcher_pattern(blocks) is not True))
 
 
 def test_control_flow_detector_virtualization_and_metamorphic(pattern_binary_path: Path):
@@ -174,14 +175,14 @@ def test_control_flow_detector_virtualization_and_metamorphic(pattern_binary_pat
         analyzer = ControlFlowAnalyzer(bin_obj)
 
         vm_result = analyzer._detect_virtualization()
-        assert vm_result["handler_count"] >= 1
-        assert vm_result["confidence"] > 0.0
+        expect(not (vm_result["handler_count"] < 1))
+        expect(not (vm_result["confidence"] <= 0.0))
 
         meta_result = analyzer._detect_metamorphic_engine()
-        assert meta_result["polymorphic_ratio"] >= 0.0
-        assert meta_result["confidence"] >= 0.0
+        expect(not (meta_result["polymorphic_ratio"] < 0.0))
+        expect(not (meta_result["confidence"] < 0.0))
 
         custom_vm = analyzer.detect_custom_virtualizer()
-        assert "detected" in custom_vm
-        assert "confidence" in custom_vm
-        assert "vm_type" in custom_vm
+        expect(not ("detected" not in custom_vm))
+        expect(not ("confidence" not in custom_vm))
+        expect(not ("vm_type" not in custom_vm))

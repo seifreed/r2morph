@@ -4,6 +4,9 @@ from pathlib import Path
 import pytest
 
 from r2morph.validation.validator import BinaryValidator, RuntimeComparisonConfig
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_VALIDATOR_TEST_CASES_2 = 2
 
 
 def test_binary_validator_validate_with_inputs(tmp_path: Path):
@@ -20,8 +23,8 @@ def test_binary_validator_validate_with_inputs(tmp_path: Path):
     validator = BinaryValidator(timeout=5)
     result = validator.validate_with_inputs(orig, mut, ["", "test"])
 
-    assert result.passed is True or result.passed is False
-    assert len(validator.test_cases) == 2
+    expect(result.passed is True or result.passed is False)
+    expect(len(validator.test_cases) == _EXPECTED_LEN_VALIDATOR_TEST_CASES_2)
 
 
 def test_binary_validator_similarity_mismatch():
@@ -30,7 +33,7 @@ def test_binary_validator_similarity_mismatch():
         [{"stdout": "", "stderr": "", "exitcode": 0}],
         [],
     )
-    assert similarity == 0.0
+    expect(similarity == 0.0)
 
 
 def test_binary_validator_loads_runtime_corpus():
@@ -47,9 +50,9 @@ def test_binary_validator_loads_runtime_corpus():
         ]
     )
 
-    assert len(validator.test_cases) == 1
-    assert validator.test_cases[0].args == ["--help"]
-    assert validator.test_cases[0].monitored_files == ["out.txt"]
+    expect(len(validator.test_cases) == 1)
+    expect(validator.test_cases[0].args == ["--help"])
+    expect(validator.test_cases[0].monitored_files == ["out.txt"])
 
 
 def test_binary_validator_detects_monitored_file_difference(tmp_path: Path):
@@ -72,6 +75,6 @@ def test_binary_validator_detects_monitored_file_difference(tmp_path: Path):
 
     result = validator.validate(original, mutated)
 
-    assert result.passed is False
-    assert "side_effect.txt" in result.file_differences
-    assert result.compared_signals["files"] is True
+    expect(not (result.passed is not False))
+    expect(not ("side_effect.txt" not in result.file_differences))
+    expect(not (result.compared_signals["files"] is not True))

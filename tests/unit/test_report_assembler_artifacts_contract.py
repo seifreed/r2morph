@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from r2morph.reporting.report_assembler_artifacts import ArtifactBuildRequest, build_report_artifacts
 from tests._doubles.recording_report_view_builder import RecordingReportViewBuilder
+from tests.utils.assertions import expect
 
 
 def test_report_artifacts_builder_routes_through_view_builder() -> None:
@@ -39,5 +40,5 @@ def test_report_artifacts_builder_routes_through_view_builder() -> None:
         )
     )
 
-    assert views.calls
-    assert artifacts["report_views"] == {"sentinel": "report_views"}
+    expect(views.calls)
+    expect(artifacts["report_views"] == {"sentinel": "report_views"})

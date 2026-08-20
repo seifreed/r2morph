@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -17,6 +19,16 @@ from r2morph import MorphEngine
 from r2morph.mutations import NopInsertionPass
 from r2morph.validation.fuzzer import FuzzResult, MutationFuzzer
 from r2morph.validation.validator import BinaryValidator, ValidationResult
+
+_EXPECTED_FUZZER_NUM_TESTS_10 = 10
+_EXPECTED_FUZZER_TIMEOUT_5 = 5
+_EXPECTED_RESULT_PASSED_8 = 8
+_EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
+_EXPECTED_RESULT_SUCCESS_RATE_80_0 = 80.0
+_EXPECTED_RESULT_TOTAL_TESTS_10 = 10
+_EXPECTED_RESULT_TOTAL_TESTS_3 = 3
+_EXPECTED_RESULT_TOTAL_TESTS_5 = 5
+_EXPECTED_VALIDATOR_TIMEOUT_10 = 10
 
 
 class TestBinaryValidatorComprehensive:
@@ -31,9 +43,9 @@ class TestBinaryValidatorComprehensive:
         """Test BinaryValidator initialization."""
         validator = BinaryValidator(timeout=10)
 
-        assert validator is not None
-        assert validator.timeout == 10
-        assert isinstance(validator.test_cases, list)
+        expect(validator is not None)
+        expect(validator.timeout == _EXPECTED_VALIDATOR_TIMEOUT_10)
+        expect(isinstance(validator.test_cases, list))
 
     def test_add_test_case(self):
         """Test adding test case."""
@@ -41,7 +53,7 @@ class TestBinaryValidatorComprehensive:
 
         validator.add_test_case(args=["--version"], stdin="", expected_exitcode=0, description="Version test")
 
-        assert len(validator.test_cases) == 1
+        expect(len(validator.test_cases) == 1)
 
     def test_validate_binaries(self, ls_elf, tmp_path):
         """Test validating binaries."""
@@ -61,9 +73,9 @@ class TestBinaryValidatorComprehensive:
 
         result = validator.validate(ls_elf, morphed_path)
 
-        assert isinstance(result, ValidationResult)
-        assert hasattr(result, "passed")
-        assert hasattr(result, "similarity_score")
+        expect(isinstance(result, ValidationResult))
+        expect(hasattr(result, "passed"))
+        expect(hasattr(result, "similarity_score"))
 
     def test_validation_result(self):
         """Test ValidationResult dataclass."""
@@ -77,8 +89,8 @@ class TestBinaryValidatorComprehensive:
             similarity_score=100.0,
         )
 
-        assert result.passed is True
-        assert result.similarity_score == 100.0
+        expect(not (result.passed is not True))
+        expect(result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0)
 
 
 class TestMutationFuzzerComprehensive:
@@ -93,9 +105,9 @@ class TestMutationFuzzerComprehensive:
         """Test MutationFuzzer initialization."""
         fuzzer = MutationFuzzer(num_tests=10, timeout=5)
 
-        assert fuzzer is not None
-        assert fuzzer.num_tests == 10
-        assert fuzzer.timeout == 5
+        expect(fuzzer is not None)
+        expect(fuzzer.num_tests == _EXPECTED_FUZZER_NUM_TESTS_10)
+        expect(fuzzer.timeout == _EXPECTED_FUZZER_TIMEOUT_5)
 
     def test_fuzz_binaries(self, ls_elf, tmp_path):
         """Test fuzzing binaries."""
@@ -113,8 +125,8 @@ class TestMutationFuzzerComprehensive:
         fuzzer = MutationFuzzer(num_tests=5, timeout=3)
         result = fuzzer.fuzz(ls_elf, morphed_path, input_type="ascii")
 
-        assert isinstance(result, FuzzResult)
-        assert result.total_tests == 5
+        expect(isinstance(result, FuzzResult))
+        expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_5)
 
     def test_fuzz_with_args(self, ls_elf, tmp_path):
         """Test fuzzing with arguments."""
@@ -132,13 +144,13 @@ class TestMutationFuzzerComprehensive:
         fuzzer = MutationFuzzer(num_tests=3, timeout=3)
         result = fuzzer.fuzz_with_args(ls_elf, morphed_path, arg_count=2)
 
-        assert isinstance(result, FuzzResult)
-        assert result.total_tests == 3
+        expect(isinstance(result, FuzzResult))
+        expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_3)
 
     def test_fuzz_result(self):
         """Test FuzzResult dataclass."""
         result = FuzzResult(total_tests=10, passed=8, failed=2, crashes=0, timeouts=0, validation_results=[])
 
-        assert result.total_tests == 10
-        assert result.passed == 8
-        assert result.success_rate == 80.0
+        expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_10)
+        expect(result.passed == _EXPECTED_RESULT_PASSED_8)
+        expect(result.success_rate == _EXPECTED_RESULT_SUCCESS_RATE_80_0)

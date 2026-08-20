@@ -6,6 +6,7 @@ from r2morph.devirtualization.vm_handler_analyzer import (
     VMHandlerAnalyzer,
     VMHandlerType,
 )
+from tests.utils.assertions import expect
 
 
 def test_vm_handler_classification_and_semantics():
@@ -18,7 +19,7 @@ def test_vm_handler_classification_and_semantics():
         functions = bin_obj.get_functions()
         if functions:
             instrs = analyzer._get_handler_instructions(functions[0].get("offset", 0))
-            assert isinstance(instrs, list)
+            expect(isinstance(instrs, list))
 
         instructions = [
             {"disasm": "add eax, ebx"},
@@ -26,10 +27,10 @@ def test_vm_handler_classification_and_semantics():
         ]
 
         handler_type = analyzer._classify_handler_type(instructions)
-        assert handler_type in {VMHandlerType.ARITHMETIC, VMHandlerType.UNKNOWN}
+        expect(not (handler_type not in {VMHandlerType.ARITHMETIC, VMHandlerType.UNKNOWN}))
 
         signature = analyzer._generate_semantic_signature(instructions)
-        assert "add" in signature
+        expect(not ("add" not in signature))
 
         handler = VMHandler(
             handler_id=1,
@@ -42,7 +43,7 @@ def test_vm_handler_classification_and_semantics():
 
         handler.equivalent_x86 = analyzer._generate_equivalent_x86(handler)
         confidence = analyzer._calculate_handler_confidence(handler)
-        assert 0.0 <= confidence <= 1.0
+        expect(0.0 <= confidence <= 1.0)
 
 
 def test_vm_handler_table_rejects_bytes_outside_executable_segments():
@@ -52,4 +53,4 @@ def test_vm_handler_table_rejects_bytes_outside_executable_segments():
         bin_obj.analyze()
         analyzer = VMHandlerAnalyzer(bin_obj)
 
-        assert analyzer._validate_handler_table(0x50) is False
+        expect(not (analyzer._validate_handler_table(0x50) is not False))

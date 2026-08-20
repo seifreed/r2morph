@@ -6,6 +6,9 @@ import struct
 from pathlib import Path
 
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
+
+_EXPECTED_CHECKSUM_3735928559 = 0xDEADBEEF
 
 
 class TestPEHandlerInit:
@@ -13,15 +16,15 @@ class TestPEHandlerInit:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        assert handler.binary_path == binary_path
+        expect(handler.binary_path == binary_path)
 
     def test_init_resets_caches(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        assert handler._binary is None
-        assert handler._pe_offset is None
-        assert handler._sections_cache is None
+        expect(not (handler._binary is not None))
+        expect(not (handler._pe_offset is not None))
+        expect(not (handler._sections_cache is not None))
 
 
 class TestIsPe:
@@ -31,29 +34,29 @@ class TestIsPe:
         mz_header = b"MZ" + b"\x00" * 58 + struct.pack("<I", 0x40)
         binary_path.write_bytes(mz_header + pe_sig + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        assert handler.is_pe() is True
+        expect(not (handler.is_pe() is not True))
 
     def test_is_pe_invalid_mz(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"ELF" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        assert handler.is_pe() is False
+        expect(not (handler.is_pe() is not False))
 
     def test_is_pe_missing_pe_sig(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
-        assert handler.is_pe() is False
+        expect(not (handler.is_pe() is not False))
 
     def test_is_pe_short_file(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ")
         handler = PEHandler(binary_path)
-        assert handler.is_pe() is False
+        expect(not (handler.is_pe() is not False))
 
     def test_is_pe_nonexistent_file(self, tmp_path):
         handler = PEHandler(tmp_path / "nonexistent.exe")
-        assert handler.is_pe() is False
+        expect(not (handler.is_pe() is not False))
 
 
 class TestGetChecksumOffset:
@@ -64,14 +67,14 @@ class TestGetChecksumOffset:
         binary_path.write_bytes(mz_header + pe_sig + b"\x00" * 100)
         handler = PEHandler(binary_path)
         offset = handler.get_checksum_offset()
-        assert offset is not None
-        assert offset == 0x40 + 24 + 64
+        expect(offset is not None)
+        expect(offset == 64 + 24 + 64)
 
     def test_get_checksum_offset_invalid_file(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"invalid")
         handler = PEHandler(binary_path)
-        assert handler.get_checksum_offset() is None
+        expect(not (handler.get_checksum_offset() is not None))
 
 
 class TestCalculateChecksum:
@@ -80,8 +83,8 @@ class TestCalculateChecksum:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         checksum = handler._calculate_checksum()
-        assert isinstance(checksum, int)
-        assert checksum >= 0
+        expect(isinstance(checksum, int))
+        expect(not (checksum < 0))
 
 
 class TestFixChecksum:
@@ -90,7 +93,7 @@ class TestFixChecksum:
         binary_path.write_bytes(b"not a pe")
         handler = PEHandler(binary_path)
         result = handler.fix_checksum()
-        assert result is False
+        expect(not (result is not False))
 
 
 class TestGetSections:
@@ -99,7 +102,7 @@ class TestGetSections:
         binary_path.write_bytes(b"not a pe")
         handler = PEHandler(binary_path)
         sections = handler.get_sections()
-        assert sections == []
+        expect(sections == [])
 
     def test_get_sections_uses_cache(self, tmp_path):
         binary_path = tmp_path / "test.exe"
@@ -125,7 +128,7 @@ class TestGetSections:
         handler = PEHandler(binary_path)
         sections1 = handler.get_sections()
         sections2 = handler.get_sections()
-        assert sections1 == sections2
+        expect(sections1 == sections2)
 
 
 class TestGetImports:
@@ -134,7 +137,7 @@ class TestGetImports:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         imports = handler.get_imports()
-        assert imports == []
+        expect(imports == [])
 
 
 class TestGetExports:
@@ -143,7 +146,7 @@ class TestGetExports:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         exports = handler.get_exports()
-        assert exports == []
+        expect(exports == [])
 
 
 class TestGetRelocations:
@@ -152,7 +155,7 @@ class TestGetRelocations:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         relocations = handler.get_relocations()
-        assert relocations == []
+        expect(relocations == [])
 
 
 class TestValidateIntegrity:
@@ -161,8 +164,8 @@ class TestValidateIntegrity:
         binary_path.write_bytes(b"not a pe")
         handler = PEHandler(binary_path)
         is_valid, issues = handler.validate_integrity()
-        assert is_valid is False
-        assert "Not a PE binary" in issues
+        expect(not (is_valid is not False))
+        expect(not ("Not a PE binary" not in issues))
 
     def test_validate_integrity_valid_pe(self, tmp_path):
         binary_path = tmp_path / "test.exe"
@@ -187,8 +190,8 @@ class TestValidateIntegrity:
         binary_path.write_bytes(mz_header + pe_sig + coff_header + b"\x00" * 500)
         handler = PEHandler(binary_path)
         is_valid, issues = handler.validate_integrity()
-        assert isinstance(is_valid, bool)
-        assert isinstance(issues, list)
+        expect(isinstance(is_valid, bool))
+        expect(isinstance(issues, list))
 
 
 class TestRepairIntegrity:
@@ -197,8 +200,8 @@ class TestRepairIntegrity:
         binary_path.write_bytes(b"not a pe")
         handler = PEHandler(binary_path)
         success, repairs = handler.repair_integrity()
-        assert success is False
-        assert "Not a PE binary" in repairs
+        expect(not (success is not False))
+        expect(not ("Not a PE binary" not in repairs))
 
 
 class TestValidate:
@@ -206,13 +209,13 @@ class TestValidate:
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"not a pe")
         handler = PEHandler(binary_path)
-        assert handler.validate() is False
+        expect(not (handler.validate() is not False))
 
     def test_validate_valid_pe(self):
         binary_path = Path(__file__).parents[2] / "fixtures" / "dataset" / "pe_x86_64.exe"
         handler = PEHandler(binary_path)
         result = handler.validate()
-        assert result is True
+        expect(not (result is not True))
 
 
 class TestAddSection:
@@ -221,7 +224,7 @@ class TestAddSection:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         result = handler.add_section(".test", 1024)
-        assert result is None
+        expect(not (result is not None))
 
 
 class TestRefreshHeaders:
@@ -230,7 +233,7 @@ class TestRefreshHeaders:
         binary_path.write_bytes(b"not a pe")
         handler = PEHandler(binary_path)
         result = handler.refresh_headers()
-        assert result is False
+        expect(not (result is not False))
 
 
 class TestFixImports:
@@ -239,8 +242,8 @@ class TestFixImports:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         success, fixes = handler.fix_imports()
-        assert success is True
-        assert fixes == []
+        expect(not (success is not True))
+        expect(fixes == [])
 
 
 class TestFixExports:
@@ -249,8 +252,8 @@ class TestFixExports:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         success, fixes = handler.fix_exports()
-        assert success is True
-        assert fixes == []
+        expect(not (success is not True))
+        expect(fixes == [])
 
 
 class TestFixResources:
@@ -259,8 +262,8 @@ class TestFixResources:
         binary_path.write_bytes(b"MZ" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         success, fixes = handler.fix_resources()
-        assert success is True
-        assert fixes == []
+        expect(not (success is not True))
+        expect(fixes == [])
 
 
 class TestFullRepair:
@@ -269,8 +272,8 @@ class TestFullRepair:
         binary_path.write_bytes(b"not a pe")
         handler = PEHandler(binary_path)
         is_valid, issues = handler.validate_integrity()
-        assert is_valid is False
-        assert "Not a PE binary" in issues
+        expect(not (is_valid is not False))
+        expect(not ("Not a PE binary" not in issues))
 
 
 class TestReadPEHeader:
@@ -279,14 +282,14 @@ class TestReadPEHeader:
         binary_path.write_bytes(b"ELF" + b"\x00" * 100)
         handler = PEHandler(binary_path)
         header = handler._read_pe_header()
-        assert header is None
+        expect(not (header is not None))
 
     def test_read_pe_header_short_file(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ")
         handler = PEHandler(binary_path)
         header = handler._read_pe_header()
-        assert header is None
+        expect(not (header is not None))
 
 
 class TestPE32Header:
@@ -300,7 +303,7 @@ class TestPE32Header:
         binary_data = mz_header + pe_sig + coff_header + optional_header + b"\x00" * 500
         binary_path.write_bytes(binary_data)
         handler = PEHandler(binary_path)
-        assert handler.is_pe() is True
+        expect(not (handler.is_pe() is not True))
 
 
 class TestSectionsParsing:
@@ -309,14 +312,14 @@ class TestSectionsParsing:
         binary_path.write_bytes(b"not a pe file at all")
         handler = PEHandler(binary_path)
         sections = handler.get_sections()
-        assert sections == []
+        expect(sections == [])
 
     def test_parse_sections_short_file(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"MZ" + b"\x00" * 10)
         handler = PEHandler(binary_path)
         sections = handler.get_sections()
-        assert sections == []
+        expect(sections == [])
 
     def test_parse_sections_uses_cache(self, tmp_path):
         binary_path = tmp_path / "test.exe"
@@ -327,7 +330,7 @@ class TestSectionsParsing:
         handler = PEHandler(binary_path)
         sections1 = handler.get_sections()
         sections2 = handler.get_sections()
-        assert sections1 == sections2
+        expect(sections1 == sections2)
 
 
 class TestGetStoredChecksum:
@@ -344,14 +347,14 @@ class TestGetStoredChecksum:
         binary_path.write_bytes(mz_header + pe_sig + coff_header + optional_header + b"\x00" * 500)
         handler = PEHandler(binary_path)
         checksum = handler._get_stored_checksum()
-        assert checksum == 0xDEADBEEF
+        expect(checksum == _EXPECTED_CHECKSUM_3735928559)
 
     def test_get_stored_checksum_invalid(self, tmp_path):
         binary_path = tmp_path / "test.exe"
         binary_path.write_bytes(b"invalid")
         handler = PEHandler(binary_path)
         checksum = handler._get_stored_checksum()
-        assert checksum == 0
+        expect(checksum == 0)
 
 
 class TestCalculatePeChecksum:
@@ -365,5 +368,5 @@ class TestCalculatePeChecksum:
         binary_path.write_bytes(mz_header + pe_sig + coff_header + optional_header + b"\x00" * 100)
         handler = PEHandler(binary_path)
         checksum = handler._calculate_pe_checksum()
-        assert isinstance(checksum, int)
-        assert checksum >= 0
+        expect(isinstance(checksum, int))
+        expect(not (checksum < 0))

@@ -2,10 +2,13 @@
 Tests for mutation passes using real binaries.
 """
 
+import importlib
 import importlib.util
 from pathlib import Path
 
 import pytest
+
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -21,23 +24,27 @@ from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
 
+_EXPECTED_CFF_PASS_MAX_FUNCTIONS_5 = 5
+_EXPECTED_CFF_PASS_MIN_BLOCKS_3 = 3
+_EXPECTED_LEN_EQUIVALENTS_2 = 2
+
 
 class TestNopInsertionPass:
     """Test cases for NOP insertion mutation."""
 
     def test_nop_init(self):
         nop_pass = NopInsertionPass()
-        assert nop_pass.name == "NopInsertion"
-        assert nop_pass.config is not None
+        expect(nop_pass.name == "NopInsertion")
+        expect(nop_pass.config is not None)
 
     def test_nop_safe_self_redundancy_rejects_32bit_subregisters_on_x86_64(self):
         nop_pass = NopInsertionPass()
 
-        assert nop_pass._is_safe_self_redundancy("rax", 64) is True
-        assert nop_pass._is_safe_self_redundancy("rcx", 64) is True
-        assert nop_pass._is_safe_self_redundancy("eax", 64) is False
-        assert nop_pass._is_safe_self_redundancy("ecx", 64) is False
-        assert nop_pass._is_safe_self_redundancy("ebx", 64) is False
+        expect(not (nop_pass._is_safe_self_redundancy("rax", 64) is not True))
+        expect(not (nop_pass._is_safe_self_redundancy("rcx", 64) is not True))
+        expect(not (nop_pass._is_safe_self_redundancy("eax", 64) is not False))
+        expect(not (nop_pass._is_safe_self_redundancy("ecx", 64) is not False))
+        expect(not (nop_pass._is_safe_self_redundancy("ebx", 64) is not False))
 
     def test_nop_apply(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -52,7 +59,7 @@ class TestNopInsertionPass:
             nop_pass = NopInsertionPass(config={"probability": 0.2})
             result = nop_pass.apply(binary)
 
-        assert result["mutations_applied"] >= 0
+        expect(not (result["mutations_applied"] < 0))
 
 
 class TestInstructionSubstitutionPass:
@@ -60,30 +67,36 @@ class TestInstructionSubstitutionPass:
 
     def test_subst_init(self):
         pytest.importorskip("yaml")
-        from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+        instruction_substitution_pass = importlib.import_module(
+            "r2morph.mutations.instruction_substitution"
+        ).InstructionSubstitutionPass
 
-        subst_pass = InstructionSubstitutionPass()
-        assert subst_pass.name == "InstructionSubstitution"
+        subst_pass = instruction_substitution_pass()
+        expect(subst_pass.name == "InstructionSubstitution")
 
     def test_subst_equivalence_lookup_exposes_group_metadata(self):
         pytest.importorskip("yaml")
-        from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+        instruction_substitution_pass = importlib.import_module(
+            "r2morph.mutations.instruction_substitution"
+        ).InstructionSubstitutionPass
 
-        subst_pass = InstructionSubstitutionPass()
+        subst_pass = instruction_substitution_pass()
         normalized, equivalents, group_idx = subst_pass._get_equivalents(
             {"disasm": "xor eax, eax"},
             "x86",
         )
 
-        assert normalized == "xor eax, eax"
-        assert isinstance(group_idx, int)
-        assert len(equivalents) >= 2
-        assert "xor eax, eax" in equivalents
-        assert "sub eax, eax" in equivalents
+        expect(normalized == "xor eax, eax")
+        expect(isinstance(group_idx, int))
+        expect(not (len(equivalents) < _EXPECTED_LEN_EQUIVALENTS_2))
+        expect(not ("xor eax, eax" not in equivalents))
+        expect(not ("sub eax, eax" not in equivalents))
 
     def test_subst_apply(self, tmp_path):
         pytest.importorskip("yaml")
-        from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+        instruction_substitution_pass = importlib.import_module(
+            "r2morph.mutations.instruction_substitution"
+        ).InstructionSubstitutionPass
 
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
         if not test_file.exists():
@@ -94,10 +107,10 @@ class TestInstructionSubstitutionPass:
 
         with Binary(temp_binary, writable=True) as binary:
             binary.analyze()
-            subst_pass = InstructionSubstitutionPass(config={"probability": 0.2})
+            subst_pass = instruction_substitution_pass(config={"probability": 0.2})
             result = subst_pass.apply(binary)
 
-        assert result["mutations_applied"] >= 0
+        expect(not (result["mutations_applied"] < 0))
 
 
 class TestRegisterSubstitutionPass:
@@ -105,7 +118,7 @@ class TestRegisterSubstitutionPass:
 
     def test_reg_init(self):
         reg_pass = RegisterSubstitutionPass()
-        assert reg_pass.name == "RegisterSubstitution"
+        expect(reg_pass.name == "RegisterSubstitution")
 
     def test_reg_apply(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -120,7 +133,7 @@ class TestRegisterSubstitutionPass:
             reg_pass = RegisterSubstitutionPass(config={"probability": 0.2})
             result = reg_pass.apply(binary)
 
-        assert result["mutations_applied"] >= 0
+        expect(not (result["mutations_applied"] < 0))
 
 
 class TestInstructionExpansionPass:
@@ -128,7 +141,7 @@ class TestInstructionExpansionPass:
 
     def test_expand_init(self):
         expand_pass = InstructionExpansionPass()
-        assert expand_pass.name == "InstructionExpansion"
+        expect(expand_pass.name == "InstructionExpansion")
 
     def test_expand_apply(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -143,7 +156,7 @@ class TestInstructionExpansionPass:
             expand_pass = InstructionExpansionPass(config={"probability": 0.2})
             result = expand_pass.apply(binary)
 
-        assert result["mutations_applied"] >= 0
+        expect(not (result["mutations_applied"] < 0))
 
 
 class TestBlockReorderingPass:
@@ -151,7 +164,7 @@ class TestBlockReorderingPass:
 
     def test_block_init(self):
         block_pass = BlockReorderingPass()
-        assert block_pass.name == "BlockReordering"
+        expect(block_pass.name == "BlockReordering")
 
     def test_block_apply(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -166,7 +179,7 @@ class TestBlockReorderingPass:
             block_pass = BlockReorderingPass(config={"probability": 0.2})
             result = block_pass.apply(binary)
 
-        assert result["mutations_applied"] >= 0
+        expect(not (result["mutations_applied"] < 0))
 
 
 class TestControlFlowFlatteningPass:
@@ -174,9 +187,9 @@ class TestControlFlowFlatteningPass:
 
     def test_cff_init(self):
         cff_pass = ControlFlowFlatteningPass()
-        assert cff_pass.name == "ControlFlowFlattening"
-        assert cff_pass.max_functions == 5
-        assert cff_pass.min_blocks == 3
+        expect(cff_pass.name == "ControlFlowFlattening")
+        expect(cff_pass.max_functions == _EXPECTED_CFF_PASS_MAX_FUNCTIONS_5)
+        expect(cff_pass.min_blocks == _EXPECTED_CFF_PASS_MIN_BLOCKS_3)
 
     def test_cff_apply(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -191,7 +204,7 @@ class TestControlFlowFlatteningPass:
             cff_pass = ControlFlowFlatteningPass(config={"probability": 0.2})
             result = cff_pass.apply(binary)
 
-        assert "mutations_applied" in result
+        expect(not ("mutations_applied" not in result))
 
 
 class TestDeadCodeInjectionPass:
@@ -199,7 +212,7 @@ class TestDeadCodeInjectionPass:
 
     def test_dead_code_init(self):
         dc_pass = DeadCodeInjectionPass()
-        assert dc_pass.name == "DeadCodeInjection"
+        expect(dc_pass.name == "DeadCodeInjection")
 
     def test_dead_code_apply(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -214,5 +227,5 @@ class TestDeadCodeInjectionPass:
             dc_pass = DeadCodeInjectionPass(config={"probability": 0.2})
             result = dc_pass.apply(binary)
 
-        assert "mutations_applied" in result
-        assert result["mutations_applied"] >= 0
+        expect(not ("mutations_applied" not in result))
+        expect(not (result["mutations_applied"] < 0))

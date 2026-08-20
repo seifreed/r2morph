@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_pass_triage_rows import _pass_names_from_triage_rows
+from tests.utils.assertions import expect
 
 
 def test_pass_names_from_triage_rows_classifies_structural_and_risky_rows() -> None:
@@ -13,8 +14,8 @@ def test_pass_names_from_triage_rows_classifies_structural_and_risky_rows() -> N
         },
     ]
 
-    assert _pass_names_from_triage_rows(triage_rows, kind="structural") == {"structural-pass"}
-    assert _pass_names_from_triage_rows(triage_rows, kind="risky") == {"structural-pass", "symbolic-pass"}
+    expect(_pass_names_from_triage_rows(triage_rows, kind="structural") == {"structural-pass"})
+    expect(_pass_names_from_triage_rows(triage_rows, kind="risky") == {"structural-pass", "symbolic-pass"})
 
 
 def test_pass_names_from_triage_rows_classifies_clean_coverage_variants() -> None:
@@ -33,6 +34,6 @@ def test_pass_names_from_triage_rows_classifies_clean_coverage_variants() -> Non
         },
     ]
 
-    assert _pass_names_from_triage_rows(triage_rows, kind="clean") == {"clean-pass", "uncovered-pass"}
-    assert _pass_names_from_triage_rows(triage_rows, kind="covered") == {"clean-pass"}
-    assert _pass_names_from_triage_rows(triage_rows, kind="uncovered") == {"uncovered-pass"}
+    expect(_pass_names_from_triage_rows(triage_rows, kind="clean") == {"clean-pass", "uncovered-pass"})
+    expect(_pass_names_from_triage_rows(triage_rows, kind="covered") == {"clean-pass"})
+    expect(_pass_names_from_triage_rows(triage_rows, kind="uncovered") == {"uncovered-pass"})

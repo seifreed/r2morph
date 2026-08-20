@@ -7,6 +7,7 @@ import pytest
 from r2morph.analysis.analyzer import BinaryAnalyzer
 from r2morph.analysis.cfg import CFGBuilder
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_binary_analyzer_candidates_and_stats() -> None:
@@ -19,19 +20,19 @@ def test_binary_analyzer_candidates_and_stats() -> None:
         analyzer = BinaryAnalyzer(binary)
 
         functions = analyzer.get_functions_list()
-        assert functions
+        expect(functions)
 
         stats = analyzer.get_statistics()
-        assert stats["total_functions"] >= 1
-        assert stats["total_instructions"] >= 0
+        expect(not (stats["total_functions"] < 1))
+        expect(not (stats["total_instructions"] < 0))
 
         nop_candidates = analyzer.find_nop_insertion_candidates()
         sub_candidates = analyzer.find_substitution_candidates()
-        assert isinstance(nop_candidates, list)
-        assert isinstance(sub_candidates, list)
+        expect(isinstance(nop_candidates, list))
+        expect(isinstance(sub_candidates, list))
 
         hot = analyzer.identify_hot_functions()
-        assert isinstance(hot, list)
+        expect(isinstance(hot, list))
 
 
 def test_cfg_builder_real_function() -> None:
@@ -47,15 +48,15 @@ def test_cfg_builder_real_function() -> None:
 
         func = funcs[0]
         addr = func.get("offset", 0) or func.get("addr", 0)
-        assert addr
+        expect(addr)
 
         builder = CFGBuilder(binary)
         cfg = builder.build_cfg(addr, func.get("name", "func"))
 
-        assert cfg.blocks
-        assert cfg.get_complexity() >= 1
-        assert cfg.entry_block is not None
-        assert isinstance(cfg.to_dot(), str)
+        expect(cfg.blocks)
+        expect(not (cfg.get_complexity() < 1))
+        expect(cfg.entry_block is not None)
+        expect(isinstance(cfg.to_dot(), str))
 
         dominators = cfg.compute_dominators()
-        assert cfg.entry_block.address in dominators
+        expect(not (cfg.entry_block.address not in dominators))

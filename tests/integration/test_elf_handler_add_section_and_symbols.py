@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.elf_handler import ELFHandler
+from tests.utils.assertions import expect
 
 
 def test_elf_handler_add_section_and_preserve_symbols(tmp_path: Path):
@@ -18,7 +19,7 @@ def test_elf_handler_add_section_and_preserve_symbols(tmp_path: Path):
 
     # Try adding a new section (requires lief). If lief missing, expect None.
     vaddr = handler.add_section(".r2morph_test", 0x100)
-    assert vaddr is None or isinstance(vaddr, int)
+    expect(vaddr is None or isinstance(vaddr, int))
 
     preserved = handler.preserve_symbols()
-    assert isinstance(preserved, bool)
+    expect(isinstance(preserved, bool))

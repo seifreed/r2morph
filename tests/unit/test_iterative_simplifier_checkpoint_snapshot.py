@@ -13,6 +13,10 @@ for the checkpoint/rollback path.
 """
 
 from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier
+from tests.utils.assertions import expect
+
+_EXPECTED_SIMPLIFIER_METRICS_ITERATION_5 = 5
+_EXPECTED_SIMPLIFIER_METRICS_SIMPLIFIED_EXPRESSIONS_2 = 2
 
 
 def test_rollback_to_checkpoint_restores_metric_snapshot() -> None:
@@ -29,6 +33,6 @@ def test_rollback_to_checkpoint_restores_metric_snapshot() -> None:
     simplifier.metrics.iteration = 99
     simplifier.metrics.simplified_expressions = 77
 
-    assert simplifier.rollback_to_checkpoint() is True
-    assert simplifier.metrics.iteration == 5
-    assert simplifier.metrics.simplified_expressions == 2
+    expect(not (simplifier.rollback_to_checkpoint() is not True))
+    expect(simplifier.metrics.iteration == _EXPECTED_SIMPLIFIER_METRICS_ITERATION_5)
+    expect(simplifier.metrics.simplified_expressions == _EXPECTED_SIMPLIFIER_METRICS_SIMPLIFIED_EXPRESSIONS_2)

@@ -9,16 +9,17 @@ real lifter value objects - no mocks, no binary.
 
 from __future__ import annotations
 
-import random
 import struct
 from typing import Any
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen_encode import encode_region
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
 from r2morph.mutations.code_virtualization_region_nesting import _peel_op_run, split_region
+from tests.utils.assertions import expect
 
 _EXIT_VADDR = 0x1010
 _ENTRY_VADDR = 0x1000
@@ -45,16 +46,16 @@ def _region(items: list[tuple[Any, ...]], target_map: dict[int, int] | None = No
 
 def test_peel_op_run_with_vcall_target_inside_the_run_excludes_it_from_the_interior() -> None:
     run = _peel_op_run(_items_with_vcall_target_inside_the_op_run())
-    assert run is not None and _CALL_TARGET not in range(run[0] + 1, run[1])
+    expect(run is not None and _CALL_TARGET not in range(run[0] + 1, run[1]))
 
 
 def test_split_region_with_a_populated_target_map_returns_none() -> None:
     region = _region(_items_with_vcall_target_inside_the_op_run(), {_ENTRY_VADDR: 0})
-    assert split_region(region, random.Random(0)) is None
+    expect(not (split_region(region, randomness.Random(0)) is not None))
 
 
 def test_encode_region_with_a_negative_branch_target_raises_struct_error() -> None:
     region = _region([("jmp", -1), ("exit", _EXIT_VADDR)])
-    scheme = build_region_scheme(region, random.Random(0))
+    scheme = build_region_scheme(region, randomness.Random(0))
     with pytest.raises(struct.error):
         encode_region(region, scheme, _BYTECODE_BASE)

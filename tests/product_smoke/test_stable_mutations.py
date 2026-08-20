@@ -7,11 +7,14 @@ These tests verify the core product flow:
 Tests are marked with @pytest.mark.stable for CI filtering.
 """
 
-import subprocess
+import importlib
 import sys
 from pathlib import Path
 
 import pytest
+
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 STABLE_MUTATIONS = ["nop", "substitute", "register"]
 EXPERIMENTAL_MUTATIONS = ["expand", "block"]
@@ -36,7 +39,7 @@ class TestStableMutations:
         output_path = tmp_path / "output_nop.bin"
         report_path = tmp_path / "report_nop.json"
 
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -57,17 +60,17 @@ class TestStableMutations:
             timeout=120,
         )
 
-        assert result.returncode == 0, f"Mutate failed: {result.stderr}"
-        assert output_path.exists(), "Output binary not created"
-        assert output_path.stat().st_size > 0, "Output binary is empty"
-        assert report_path.exists(), "Report not created"
+        expect(result.returncode == 0, f"Mutate failed: {result.stderr}")
+        expect(output_path.exists(), "Output binary not created")
+        expect(not (output_path.stat().st_size <= 0), "Output binary is empty")
+        expect(report_path.exists(), "Report not created")
 
     def test_substitute_mutation_produces_output(self, test_binary, tmp_path):
         """Instruction substitution should produce a modified binary."""
         output_path = tmp_path / "output_substitute.bin"
         report_path = tmp_path / "report_substitute.json"
 
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -88,15 +91,15 @@ class TestStableMutations:
             timeout=120,
         )
 
-        assert result.returncode == 0, f"Mutate failed: {result.stderr}"
-        assert output_path.exists(), "Output binary not created"
+        expect(result.returncode == 0, f"Mutate failed: {result.stderr}")
+        expect(output_path.exists(), "Output binary not created")
 
     def test_register_mutation_produces_output(self, test_binary, tmp_path):
         """Register substitution should produce a modified binary."""
         output_path = tmp_path / "output_register.bin"
         report_path = tmp_path / "report_register.json"
 
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -117,15 +120,15 @@ class TestStableMutations:
             timeout=120,
         )
 
-        assert result.returncode == 0, f"Mutate failed: {result.stderr}"
-        assert output_path.exists(), "Output binary not created"
+        expect(result.returncode == 0, f"Mutate failed: {result.stderr}")
+        expect(output_path.exists(), "Output binary not created")
 
     def test_all_stable_mutations_together(self, test_binary, tmp_path):
         """All stable mutations should run together."""
         output_path = tmp_path / "output_all.bin"
         report_path = tmp_path / "report_all.json"
 
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -150,8 +153,8 @@ class TestStableMutations:
             timeout=180,
         )
 
-        assert result.returncode == 0, f"Mutate failed: {result.stderr}"
-        assert output_path.exists(), "Output binary not created"
+        expect(result.returncode == 0, f"Mutate failed: {result.stderr}")
+        expect(output_path.exists(), "Output binary not created")
 
     @pytest.mark.parametrize("mutation", STABLE_MUTATIONS)
     def test_stable_mutation_with_validation(self, test_binary, tmp_path, mutation):
@@ -159,7 +162,7 @@ class TestStableMutations:
         output_path = tmp_path / f"output_{mutation}.bin"
         report_path = tmp_path / f"report_{mutation}.json"
 
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -182,14 +185,14 @@ class TestStableMutations:
             timeout=120,
         )
 
-        assert result.returncode == 0, f"{mutation} mutation failed: {result.stderr}"
+        expect(result.returncode == 0, f"{mutation} mutation failed: {result.stderr}")
 
     def test_report_contains_passes(self, test_binary, tmp_path):
         """Report should contain all applied passes."""
         output_path = tmp_path / "output.bin"
         report_path = tmp_path / "report.json"
 
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -212,14 +215,14 @@ class TestStableMutations:
             timeout=120,
         )
 
-        assert result.returncode == 0
+        expect(result.returncode == 0)
 
-        import json
+        json = importlib.import_module("json")
 
         report = json.loads(report_path.read_text())
         passes = list(report.get("passes", {}).keys())
-        assert "NopInsertion" in passes or "nop" in str(passes)
-        assert "InstructionSubstitution" in passes or "substitute" in str(passes)
+        expect("NopInsertion" in passes or "nop" in str(passes))
+        expect("InstructionSubstitution" in passes or "substitute" in str(passes))
 
 
 @pytest.mark.experimental
@@ -232,7 +235,7 @@ class TestExperimentalMutations:
         """Experimental mutations should warn but still run."""
         output_path = tmp_path / f"output_{mutation}.bin"
 
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -252,4 +255,4 @@ class TestExperimentalMutations:
         )
 
         # Experimental mutations should warn
-        assert "experimental" in result.stdout.lower() or "Experimental" in result.stdout
+        expect("experimental" in result.stdout.lower() or "Experimental" in result.stdout)

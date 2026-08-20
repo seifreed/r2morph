@@ -1,3 +1,4 @@
+import importlib
 import importlib.util
 from pathlib import Path
 
@@ -5,6 +6,7 @@ import pytest
 import typer
 
 from r2morph.cli import analyze, analyze_enhanced, app, functions, version
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -15,12 +17,12 @@ def _dataset_path(name: str) -> Path:
 
 
 def test_cli_no_args_shows_usage():
-    from typer.testing import CliRunner
+    cli_runner = importlib.import_module("typer.testing").CliRunner
 
-    runner = CliRunner()
+    runner = cli_runner()
     result = runner.invoke(app, [])
-    assert result.exit_code == 0
-    assert "No input file provided" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("No input file provided" not in result.output))
 
 
 def test_cli_analyze_inprocess():
@@ -31,7 +33,7 @@ def test_cli_analyze_inprocess():
     try:
         analyze(binary=binary_path, verbose=False)
     except typer.Exit as exc:
-        assert exc.exit_code in {0, 1}
+        expect(not (exc.exit_code not in {0, 1}))
 
 
 def test_cli_functions_inprocess():
@@ -42,7 +44,7 @@ def test_cli_functions_inprocess():
     try:
         functions(binary=binary_path, limit=1, verbose=False)
     except typer.Exit as exc:
-        assert exc.exit_code in {0, 1, 2}
+        expect(not (exc.exit_code not in {0, 1, 2}))
 
 
 @pytest.mark.experimental
@@ -65,7 +67,7 @@ def test_cli_analyze_enhanced_detect_only(tmp_path: Path):
             output=tmp_path,
         )
     except typer.Exit as exc:
-        assert exc.exit_code in {0, 1}
+        expect(not (exc.exit_code not in {0, 1}))
 
 
 def test_cli_morph_inprocess(tmp_path: Path):
@@ -73,9 +75,9 @@ def test_cli_morph_inprocess(tmp_path: Path):
     if not binary_path.exists():
         pytest.skip("ELF binary not available")
 
-    from typer.testing import CliRunner
+    cli_runner = importlib.import_module("typer.testing").CliRunner
 
-    runner = CliRunner()
+    runner = cli_runner()
     output_path = tmp_path / "morphed_cli_output"
     result = runner.invoke(
         app,
@@ -94,7 +96,7 @@ def test_cli_morph_inprocess(tmp_path: Path):
             "--force",
         ],
     )
-    assert result.exit_code in {0, 1}, f"morph failed with exit code {result.exit_code}: {result.output}"
+    expect(not (result.exit_code not in {0, 1}), f"morph failed with exit code {result.exit_code}: {result.output}")
 
 
 def test_cli_version_inprocess():

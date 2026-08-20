@@ -6,6 +6,9 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.control_flow_flattening_strategies import insert_dead_code_with_predicate
+from tests.utils.assertions import expect
+
+_EXPECTED_INSN_GET_SIZE_0_5 = 5
 
 
 def _find_jump_instruction(binary: Binary) -> dict | None:
@@ -16,7 +19,11 @@ def _find_jump_instruction(binary: Binary) -> dict | None:
             continue
         insns = binary.get_function_disasm(addr)
         for insn in insns:
-            if insn.get("mnemonic") == "jmp" and "0x" in insn.get("disasm", "") and insn.get("size", 0) >= 5:
+            if (
+                insn.get("mnemonic") == "jmp"
+                and "0x" in insn.get("disasm", "")
+                and insn.get("size", 0) >= _EXPECTED_INSN_GET_SIZE_0_5
+            ):
                 return insn
     return None
 
@@ -36,7 +43,7 @@ def test_control_flow_flattening_obfuscate_jump_and_dead_code(tmp_path: Path):
         jump_insn = _find_jump_instruction(bin_obj)
         if jump_insn:
             obfuscated = JumpObfuscator().obfuscate_jump(bin_obj, jump_insn, {}, arch, bits)
-            assert isinstance(obfuscated, bool)
+            expect(isinstance(obfuscated, bool))
 
         # Create a NOP sled and attempt dead-code insert
         functions = bin_obj.get_functions()
@@ -48,4 +55,4 @@ def test_control_flow_flattening_obfuscate_jump_and_dead_code(tmp_path: Path):
 
         bin_obj.nop_fill(addr, 8)
         inserted = insert_dead_code_with_predicate(bin_obj, addr, 8, arch, bits)
-        assert isinstance(inserted, bool)
+        expect(isinstance(inserted, bool))

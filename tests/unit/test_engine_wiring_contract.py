@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from r2morph.core.engine_wiring import build_engine_wiring
+from tests.utils.assertions import expect
 
 
 class _FakeSigner:
@@ -21,9 +22,9 @@ class _FakeReportBuilder:
 def test_engine_wiring_builds_default_dependencies() -> None:
     wiring = build_engine_wiring()
 
-    assert hasattr(wiring.pipeline, "passes")
-    assert hasattr(wiring.binary_signer, "sign_output")
-    assert hasattr(wiring.report_builder, "assemble_report")
+    expect(hasattr(wiring.pipeline, "passes"))
+    expect(hasattr(wiring.binary_signer, "sign_output"))
+    expect(hasattr(wiring.report_builder, "assemble_report"))
 
 
 def test_engine_wiring_honors_injected_dependencies() -> None:
@@ -39,6 +40,6 @@ def test_engine_wiring_honors_injected_dependencies() -> None:
         report_builder=report_builder,
     )
 
-    assert wiring.binary_signer is signer
-    assert wiring.report_builder is report_builder
-    assert hasattr(wiring.pipeline, "passes")
+    expect(not (wiring.binary_signer is not signer))
+    expect(not (wiring.report_builder is not report_builder))
+    expect(hasattr(wiring.pipeline, "passes"))

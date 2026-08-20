@@ -14,6 +14,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
+from tests.utils.assertions import expect
 
 _FIXTURE = Path("fixtures/dataset/elf_flag_live_x86_64")
 _CANDIDATE_ADDR = 0x1008  # `mov rsi, 0`
@@ -38,7 +39,7 @@ def test_flag_live_zeroing_is_marked_live(tmp_path: Path):
     shutil.copy(_FIXTURE, temp)
     with Binary(temp, writable=True) as binary:
         binary.analyze()
-        assert _candidate_is_flag_live(binary) is True
+        expect(not (_candidate_is_flag_live(binary) is not True))
 
 
 def test_flag_live_zeroing_is_never_substituted_to_a_flag_setter(tmp_path: Path):
@@ -53,4 +54,4 @@ def test_flag_live_zeroing_is_never_substituted_to_a_flag_setter(tmp_path: Path)
             pass_obj.force_different = True
             pass_obj.apply(binary)
             second_byte = binary.read_bytes(_CANDIDATE_ADDR + 1, 1)[0]
-        assert second_byte not in _FLAG_SETTING_SECOND_BYTES, f"flag-setting substitution applied at seed {seed}"
+        expect(second_byte not in _FLAG_SETTING_SECOND_BYTES, f"flag-setting substitution applied at seed {seed}")

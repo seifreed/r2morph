@@ -4,7 +4,11 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import RelocationManager
+from tests.utils.assertions import expect
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
+
+_EXPECTED_MANAGER_GET_NEW_ADDRESS_0X1000_8192 = 0x2000
+_EXPECTED_MANAGER_GET_NEW_ADDRESS_0X1008_8200 = 0x2008
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:
@@ -30,11 +34,11 @@ def test_relocation_manager_basic_paths(tmp_path: Path):
         manager = RelocationManager(bin_obj)
 
         manager.add_relocation(0x1000, 0x2000, 16, "move")
-        assert manager.get_new_address(0x1000) == 0x2000
-        assert manager.get_new_address(0x1008) == 0x2008
+        expect(manager.get_new_address(4096) == _EXPECTED_MANAGER_GET_NEW_ADDRESS_0X1000_8192)
+        expect(manager.get_new_address(4104) == _EXPECTED_MANAGER_GET_NEW_ADDRESS_0X1008_8200)
 
         updated = manager.update_all_references()
-        assert isinstance(updated, int)
+        expect(isinstance(updated, int))
 
 
 def test_relocation_manager_update_control_flow(tmp_path: Path):
@@ -55,7 +59,7 @@ def test_relocation_manager_update_control_flow(tmp_path: Path):
             return
         base_addr = int(section.get("vaddr", section.get("paddr", 0)) or 0)
         insns = bin_obj.r2.cmdj(f"aoj 1 @ 0x{base_addr:x}") or []
-        assert insns
+        expect(insns)
 
         insn = insns[0]
         from_addr = insn.get("addr", 0)
@@ -67,4 +71,4 @@ def test_relocation_manager_update_control_flow(tmp_path: Path):
             new_target,
             insn.get("mnemonic", "jmp"),
         )
-        assert isinstance(updated, bool)
+        expect(isinstance(updated, bool))

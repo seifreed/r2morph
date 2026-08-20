@@ -12,6 +12,7 @@ from r2morph.analysis.symbolic.constraint_solver import (
     Z3_AVAILABLE,
     ConstraintSolver,
 )
+from tests.utils.assertions import expect
 
 if not Z3_AVAILABLE:
     pytest.skip("z3 not available", allow_module_level=True)
@@ -20,9 +21,9 @@ if not Z3_AVAILABLE:
 def test_deep_expression_rejected_by_depth_guard():
     solver = ConstraintSolver(timeout=1)
     deep = "~" * (MAX_CONSTRAINT_AST_DEPTH + 50) + "0"
-    assert solver._parse_expression_to_z3(deep, {}) is None
+    expect(not (solver._parse_expression_to_z3(deep, {}) is not None))
 
 
 def test_shallow_expression_still_translates():
     solver = ConstraintSolver(timeout=1)
-    assert solver._parse_expression_to_z3("a + b", {}) is not None
+    expect(solver._parse_expression_to_z3("a + b", {}) is not None)

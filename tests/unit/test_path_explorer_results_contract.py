@@ -8,6 +8,11 @@ from r2morph.analysis.symbolic.path_explorer_techniques import (
     OpaquePredicateDetectionTechnique,
     VMHandlerDetectionTechnique,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_BUILD_OPAQUE_PREDICATES_OPAQUE_TECHNIQUE_0_SA_2 = 2
+_EXPECTED_BUILD_VM_HANDLERS_VM_TECHNIQUE_0_ADDRESS_4096 = 0x1000
+_EXPECTED_RESULT_EXECUTION_TIME_1_5 = 1.5
 
 
 class _State:
@@ -32,9 +37,12 @@ def test_path_explorer_results_contract() -> None:
         },
     )
 
-    assert result.execution_time == 1.5
-    assert result.opaque_predicates_found == 1
-    assert result.constraints_collected == ["a", "b"]
+    expect(result.execution_time == _EXPECTED_RESULT_EXECUTION_TIME_1_5)
+    expect(result.opaque_predicates_found == 1)
+    expect(result.constraints_collected == ["a", "b"])
 
-    assert build_vm_handlers(vm_technique)[0]["address"] == 0x1000
-    assert build_opaque_predicates(opaque_technique)[0]["sample_count"] == 2
+    expect(build_vm_handlers(vm_technique)[0]["address"] == _EXPECTED_BUILD_VM_HANDLERS_VM_TECHNIQUE_0_ADDRESS_4096)
+    expect(
+        build_opaque_predicates(opaque_technique)[0]["sample_count"]
+        == _EXPECTED_BUILD_OPAQUE_PREDICATES_OPAQUE_TECHNIQUE_0_SA_2
+    )

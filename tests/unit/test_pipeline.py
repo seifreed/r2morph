@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -16,6 +18,8 @@ if importlib.util.find_spec("yaml") is None:
 from r2morph.core.binary import Binary
 from r2morph.mutations import NopInsertionPass, RegisterSubstitutionPass
 from r2morph.pipeline import Pipeline
+
+_EXPECTED_LEN_PIPELINE_2 = 2
 
 
 class TestPipeline:
@@ -30,12 +34,12 @@ class TestPipeline:
         pipeline.add_pass(nop_pass)
         pipeline.add_pass(reg_pass)
 
-        assert len(pipeline) == 2
-        assert "NopInsertion" in pipeline.get_pass_names()
+        expect(len(pipeline) == _EXPECTED_LEN_PIPELINE_2)
+        expect(not ("NopInsertion" not in pipeline.get_pass_names()))
 
         removed = pipeline.remove_pass("NopInsertion")
-        assert removed is True
-        assert "NopInsertion" not in pipeline.get_pass_names()
+        expect(not (removed is not True))
+        expect("NopInsertion" not in pipeline.get_pass_names())
 
     def test_pipeline_run(self, tmp_path):
         """Test running pipeline on a real binary."""
@@ -54,6 +58,6 @@ class TestPipeline:
             binary.analyze()
             result = pipeline.run(binary)
 
-        assert isinstance(result, dict)
-        assert "passes_run" in result
-        assert "total_mutations" in result
+        expect(isinstance(result, dict))
+        expect(not ("passes_run" not in result))
+        expect(not ("total_mutations" not in result))

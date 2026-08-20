@@ -6,6 +6,7 @@ from r2morph.validation.binary_region_comparator_observables import (
     compare_register_states,
     compare_stack_and_memory,
 )
+from tests.utils.assertions import expect
 
 
 class _ComparableValue:
@@ -21,15 +22,13 @@ class _FakeSolver:
         return bool(extra_constraints and extra_constraints[0])
 
 
-def _make_state(
-    *,
-    rax: int = 1,
-    rbx: int = 2,
-    eflags: int = 3,
-    sp: int = 0x1000,
-    addr: int = 0x5000,
-    writes: list[tuple[int, int]] | None = None,
-) -> SimpleNamespace:
+def _make_state(**values: object) -> SimpleNamespace:
+    rax = int(values.get("rax", 1))
+    rbx = int(values.get("rbx", 2))
+    eflags = int(values.get("eflags", 3))
+    sp = int(values.get("sp", 0x1000))
+    addr = int(values.get("addr", 0x5000))
+    writes = values.get("writes") or []
     regs = SimpleNamespace(
         rax=_ComparableValue(rax),
         rbx=_ComparableValue(rbx),
@@ -37,7 +36,7 @@ def _make_state(
         sp=_ComparableValue(sp),
     )
     history = SimpleNamespace(
-        actions=[SimpleNamespace(type="mem", action="write", addr=addr, size=size) for addr, size in (writes or [])]
+        actions=[SimpleNamespace(type="mem", action="write", addr=write_addr, size=size) for write_addr, size in writes]
     )
     return SimpleNamespace(regs=regs, solver=_FakeSolver(), history=history, addr=addr)
 
@@ -49,7 +48,7 @@ def test_compare_register_states_records_differences() -> None:
 
     compare_register_states(original, mutated, ["rax", "rbx"], seen.append)
 
-    assert seen == ["rax", "eflags"]
+    expect(seen == ["rax", "eflags"])
 
 
 def test_compare_stack_and_memory_records_stack_and_write_changes() -> None:
@@ -60,13 +59,16 @@ def test_compare_stack_and_memory_records_stack_and_write_changes() -> None:
 
     compare_stack_and_memory(original, mutated, "sp", region_report, seen.append)
 
-    assert seen == ["stack_delta", "memory_writes"]
-    assert region_report == {
-        "original_memory_writes": ["0x2000:4"],
-        "mutated_memory_writes": ["0x3000:8"],
-        "original_memory_write_count": 1,
-        "mutated_memory_write_count": 1,
-    }
+    expect(seen == ["stack_delta", "memory_writes"])
+    expect(
+        region_report
+        == {
+            "original_memory_writes": ["0x2000:4"],
+            "mutated_memory_writes": ["0x3000:8"],
+            "original_memory_write_count": 1,
+            "mutated_memory_write_count": 1,
+        }
+    )
 
 
 def test_check_observables_populates_report_and_mismatches() -> None:
@@ -87,9 +89,12 @@ def test_check_observables_populates_report_and_mismatches() -> None:
         )
     )
 
-    assert region_report["mismatches"] == ["successor_address", "rax", "memory_writes"]
-    assert mismatches == [
-        {"start_address": 0x1000, "end_address": 0x1004, "observable": "successor_address"},
-        {"start_address": 0x1000, "end_address": 0x1004, "observable": "rax"},
-        {"start_address": 0x1000, "end_address": 0x1004, "observable": "memory_writes"},
-    ]
+    expect(region_report["mismatches"] == ["successor_address", "rax", "memory_writes"])
+    expect(
+        mismatches
+        == [
+            {"start_address": 4096, "end_address": 4100, "observable": "successor_address"},
+            {"start_address": 4096, "end_address": 4100, "observable": "rax"},
+            {"start_address": 4096, "end_address": 4100, "observable": "memory_writes"},
+        ]
+    )

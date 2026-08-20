@@ -1,34 +1,42 @@
 from __future__ import annotations
 
 from r2morph.devirtualization.cfo_simplifier import CFOSimplifier, ControlFlowBlock
+from tests.utils.assertions import expect
+
+_EXPECTED_SETTERS_4096 = 0x1000
+_EXPECTED_SIMPLIFIER_EXTRACT_STATE_VALUE_BLOCK_32 = 0x20
+_EXPECTED_SIMPLIFIER_RESOLVE_JUMP_TARGET_OPCODE_JMP_16_16 = 16
 
 
 def test_cfo_simplifier_constant_and_opaque_checks() -> None:
     simplifier = CFOSimplifier()
 
-    assert simplifier._is_constant_expression("1", "2") is True
-    assert simplifier._is_constant_expression("eax", "eax") is True
-    assert simplifier._is_constant_expression("eax", "ebx") is False
+    expect(not (simplifier._is_constant_expression("1", "2") is not True))
+    expect(not (simplifier._is_constant_expression("eax", "eax") is not True))
+    expect(not (simplifier._is_constant_expression("eax", "ebx") is not False))
 
     instr = {"opcode": "cmp eax, eax", "operands": [{"value": "eax"}, {"value": "eax"}]}
-    assert simplifier._is_opaque_comparison(instr) is True
+    expect(not (simplifier._is_opaque_comparison(instr) is not True))
 
     instr_bad = {"opcode": "mov eax, ebx", "operands": [{"value": "eax"}, {"value": "ebx"}]}
-    assert simplifier._is_opaque_comparison(instr_bad) is False
+    expect(not (simplifier._is_opaque_comparison(instr_bad) is not False))
 
 
 def test_cfo_simplifier_resolve_jump_target_and_state_extract() -> None:
     simplifier = CFOSimplifier()
 
-    assert simplifier._resolve_jump_target({"opcode": "jmp [0x10]"}) is None
-    assert simplifier._resolve_jump_target({"opcode": "jmp [16]"}) == 16
-    assert simplifier._resolve_jump_target({"opcode": "jmp [eax]"}) is None
+    expect(not (simplifier._resolve_jump_target({"opcode": "jmp [0x10]"}) is not None))
+    expect(
+        simplifier._resolve_jump_target({"opcode": "jmp [16]"})
+        == _EXPECTED_SIMPLIFIER_RESOLVE_JUMP_TARGET_OPCODE_JMP_16_16
+    )
+    expect(not (simplifier._resolve_jump_target({"opcode": "jmp [eax]"}) is not None))
 
     block = ControlFlowBlock(
         address=0x1000,
         instructions=[{"operands": [{"value": "0x20"}]}],
     )
-    assert simplifier._extract_state_value(block) == 0x20
+    expect(simplifier._extract_state_value(block) == _EXPECTED_SIMPLIFIER_EXTRACT_STATE_VALUE_BLOCK_32)
 
 
 def test_cfo_simplifier_find_state_setters_and_complexity() -> None:
@@ -47,7 +55,7 @@ def test_cfo_simplifier_find_state_setters_and_complexity() -> None:
     simplifier.blocks = {0x1000: block_a, 0x2000: block_b}
 
     setters = simplifier._find_state_setters(3, "eax")
-    assert 0x1000 in setters
+    expect(not (_EXPECTED_SETTERS_4096 not in setters))
 
     # Complexity fallback: edge count
-    assert simplifier._calculate_complexity() == 1
+    expect(simplifier._calculate_complexity() == 1)

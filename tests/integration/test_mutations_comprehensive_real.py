@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -51,8 +53,8 @@ class TestMutationsComprehensiveReal:
             pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 3, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_dead_code_injection_patterns(self, ls_elf, tmp_path):
         """Test dead code injection with different patterns."""
@@ -68,7 +70,7 @@ class TestMutationsComprehensiveReal:
             pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 5, "probability": 0.8})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_opaque_predicate_basic(self, ls_elf, tmp_path):
         """Test opaque predicate insertion."""
@@ -84,8 +86,8 @@ class TestMutationsComprehensiveReal:
             pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 2, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_opaque_predicate_types(self, ls_elf, tmp_path):
         """Test different types of opaque predicates."""
@@ -101,7 +103,7 @@ class TestMutationsComprehensiveReal:
             pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 3, "probability": 0.8})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_control_flow_flattening_basic(self, ls_elf, tmp_path):
         """Test control flow flattening."""
@@ -117,8 +119,8 @@ class TestMutationsComprehensiveReal:
             pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 2, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_control_flow_flattening_dispatcher(self, ls_elf, tmp_path):
         """Test control flow flattening with dispatcher."""
@@ -134,7 +136,7 @@ class TestMutationsComprehensiveReal:
             pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 1, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_register_substitution_comprehensive(self, ls_elf, tmp_path):
         """Test comprehensive register substitution."""
@@ -150,8 +152,8 @@ class TestMutationsComprehensiveReal:
             pass_obj = RegisterSubstitutionPass(config={"max_substitutions_per_function": 5, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_instruction_expansion_comprehensive(self, ls_elf, tmp_path):
         """Test comprehensive instruction expansion."""
@@ -167,8 +169,8 @@ class TestMutationsComprehensiveReal:
             pass_obj = InstructionExpansionPass(config={"max_expansions_per_function": 5, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_block_reordering_comprehensive(self, ls_elf, tmp_path):
         """Test comprehensive block reordering."""
@@ -184,8 +186,8 @@ class TestMutationsComprehensiveReal:
             pass_obj = BlockReorderingPass(config={"max_reorderings_per_function": 3, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_combined_mutations(self, ls_elf, tmp_path):
         """Test applying multiple mutations together."""
@@ -206,7 +208,7 @@ class TestMutationsComprehensiveReal:
 
             for mutation in mutations:
                 result = mutation.apply(binary)
-                assert isinstance(result, dict)
+                expect(isinstance(result, dict))
 
     def test_mutations_with_low_probability(self, ls_elf, tmp_path):
         """Test mutations with low probability."""
@@ -227,7 +229,7 @@ class TestMutationsComprehensiveReal:
 
             for mutation in mutations:
                 result = mutation.apply(binary)
-                assert isinstance(result, dict)
+                expect(isinstance(result, dict))
 
     def test_mutations_error_handling(self, ls_elf, tmp_path):
         """Test mutation error handling."""
@@ -243,6 +245,6 @@ class TestMutationsComprehensiveReal:
             pass_obj = NopInsertionPass(config={"max_nops_per_function": 100, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
             # Just check the result is valid
-            assert "mutations_applied" in result
+            expect(not ("mutations_applied" not in result))

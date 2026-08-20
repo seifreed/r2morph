@@ -13,6 +13,37 @@ from r2morph.mutations.parallel_executor import (
     create_parallel_executor,
 )
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_EXECUTOR_CHUNK_SIZE_10 = 10
+_EXPECTED_EXECUTOR_CHUNK_SIZE_5 = 5
+_EXPECTED_EXECUTOR_MAX_WORKERS_2 = 2
+_EXPECTED_EXECUTOR_MAX_WORKERS_4 = 4
+_EXPECTED_EXECUTOR_TIMEOUT_300 = 300
+_EXPECTED_EXECUTOR_TIMEOUT_60 = 60
+_EXPECTED_LEN_INSTRUCTIONS_2 = 2
+_EXPECTED_LEN_INSTRUCTIONS_3 = 3
+_EXPECTED_LEN_TASK_FUNCTION_ADDRESSES_2 = 2
+_EXPECTED_LIVE_IN_4096 = 0x1000
+_EXPECTED_P_MAX_IMPORTS_50 = 50
+_EXPECTED_P_MAX_MUTATIONS_10 = 10
+_EXPECTED_P_MAX_MUTATIONS_5 = 5
+_EXPECTED_P_MAX_SEQUENCE_10 = 10
+_EXPECTED_P_MAX_STRINGS_10 = 10
+_EXPECTED_P_MAX_UNFOLDS_5 = 5
+_EXPECTED_P_MIN_LENGTH_4 = 4
+_EXPECTED_P_PROBABILITY_0_3 = 0.3
+_EXPECTED_P_PROBABILITY_0_3_2 = 0.3
+_EXPECTED_P_PROBABILITY_0_5 = 0.5
+_EXPECTED_P_PROBABILITY_0_5_2 = 0.5
+_EXPECTED_P_PROBABILITY_0_5_3 = 0.5
+_EXPECTED_P_SIZE_LIMIT_3_0 = 3.0
+_EXPECTED_STATS_SPEEDUP_FACTOR_2_5 = 2.5
+_EXPECTED_STATS_TASKS_COMPLETED_10 = 10
+_EXPECTED_STATS_TOTAL_TIME_1_5 = 1.5
+_EXPECTED_STATS_WORKER_COUNT_4 = 4
+_EXPECTED_TASK_CONFIG_SEED_42 = 42
 
 
 class _Binary:
@@ -32,11 +63,11 @@ class TestDataFlowMutationPass:
         """Test DataFlowMutationPass initialization."""
         p = DataFlowMutationPass()
 
-        assert p.name == "DataFlowMutation"
-        assert p.probability == 0.3
-        assert p.max_mutations == 5
-        assert p.use_liveness is True
-        assert p.use_reaching_defs is True
+        expect(p.name == "DataFlowMutation")
+        expect(p.probability == _EXPECTED_P_PROBABILITY_0_3)
+        expect(p.max_mutations == _EXPECTED_P_MAX_MUTATIONS_5)
+        expect(not (p.use_liveness is not True))
+        expect(not (p.use_reaching_defs is not True))
 
     def test_initialization_with_config(self):
         """Test DataFlowMutationPass with custom config."""
@@ -48,10 +79,10 @@ class TestDataFlowMutationPass:
         }
         p = DataFlowMutationPass(config=config)
 
-        assert p.probability == 0.5
-        assert p.max_mutations == 10
-        assert p.use_liveness is False
-        assert p.use_reaching_defs is False
+        expect(p.probability == _EXPECTED_P_PROBABILITY_0_5)
+        expect(p.max_mutations == _EXPECTED_P_MAX_MUTATIONS_10)
+        expect(not (p.use_liveness is not False))
+        expect(not (p.use_reaching_defs is not False))
 
     def test_support_declaration(self):
         """Test support declaration for data flow pass."""
@@ -59,9 +90,9 @@ class TestDataFlowMutationPass:
 
         support = p.get_support()
 
-        assert "x86_64" in support.architectures
-        assert "ELF" in support.formats
-        assert support.stability == "experimental"
+        expect(not ("x86_64" not in support.architectures))
+        expect(not ("ELF" not in support.formats))
+        expect(support.stability == "experimental")
 
     def test_analyze_function_liveness(self):
         """Test liveness analysis."""
@@ -76,8 +107,8 @@ class TestDataFlowMutationPass:
 
         live_in = p._analyze_function_liveness(instructions)
 
-        assert isinstance(live_in, dict)
-        assert 0x1000 in live_in
+        expect(isinstance(live_in, dict))
+        expect(not (_EXPECTED_LIVE_IN_4096 not in live_in))
 
     def test_is_register_safe_to_use(self):
         """Test register safety check."""
@@ -86,9 +117,9 @@ class TestDataFlowMutationPass:
         live_in = {0x1000: {"rax", "rcx"}}
         caller_saved = {"rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10", "r11"}
 
-        assert p._is_register_safe_to_use("rdx", 0x1000, live_in, caller_saved)
-        assert not p._is_register_safe_to_use("rax", 0x1000, live_in, caller_saved)
-        assert not p._is_register_safe_to_use("rbx", 0x1000, live_in, caller_saved)
+        expect(p._is_register_safe_to_use("rdx", 0x1000, live_in, caller_saved))
+        expect(not (p._is_register_safe_to_use("rax", 0x1000, live_in, caller_saved)))
+        expect(not (p._is_register_safe_to_use("rbx", 0x1000, live_in, caller_saved)))
 
 
 class TestStringObfuscationPass:
@@ -98,19 +129,19 @@ class TestStringObfuscationPass:
         """Test StringObfuscationPass initialization."""
         p = StringObfuscationPass()
 
-        assert p.name == "StringObfuscation"
-        assert p.probability == 0.5
-        assert p.max_strings == 10
-        assert p.encoding == "random"
-        assert p.min_length == 4
+        expect(p.name == "StringObfuscation")
+        expect(p.probability == _EXPECTED_P_PROBABILITY_0_5_2)
+        expect(p.max_strings == _EXPECTED_P_MAX_STRINGS_10)
+        expect(p.encoding == "random")
+        expect(p.min_length == _EXPECTED_P_MIN_LENGTH_4)
 
     def test_encodings_list(self):
         """Test available encodings."""
         p = StringObfuscationPass()
 
-        assert "xor" in p.ENCODINGS
-        assert "rot13" in p.ENCODINGS
-        assert "swap" in p.ENCODINGS
+        expect(not ("xor" not in p.ENCODINGS))
+        expect(not ("rot13" not in p.ENCODINGS))
+        expect(not ("swap" not in p.ENCODINGS))
 
     def test_xor_encode(self):
         """Test XOR encoding."""
@@ -121,11 +152,11 @@ class TestStringObfuscationPass:
 
         encoded = p._xor_encode(data, key)
 
-        assert len(encoded) == len(data)
-        assert encoded != data
+        expect(len(encoded) == len(data))
+        expect(encoded != data)
 
         decoded = bytes(b ^ key for b in encoded)
-        assert decoded == data
+        expect(decoded == data)
 
     def test_rot13_encode(self):
         """Test ROT13 encoding."""
@@ -134,13 +165,13 @@ class TestStringObfuscationPass:
         data = b"Hello"
         encoded = p._rot13_encode(data)
 
-        assert len(encoded) == len(data)
+        expect(len(encoded) == len(data))
 
-        assert encoded[0] == ord("U")  # H + 13 = U
-        assert encoded[1] == ord("r")  # e + 13 = r
+        expect(encoded[0] == ord("U"))
+        expect(encoded[1] == ord("r"))
 
         decoded = p._rot13_encode(encoded)
-        assert decoded == data
+        expect(decoded == data)
 
     def test_swap_encode(self):
         """Test byte swap encoding."""
@@ -149,10 +180,10 @@ class TestStringObfuscationPass:
         data = b"ABCD"
         encoded = p._swap_encode(data)
 
-        assert encoded[0] == data[1]
-        assert encoded[1] == data[0]
-        assert encoded[2] == data[3]
-        assert encoded[3] == data[2]
+        expect(encoded[0] == data[1])
+        expect(encoded[1] == data[0])
+        expect(encoded[2] == data[3])
+        expect(encoded[3] == data[2])
 
     def test_support_declaration(self):
         """Test support declaration for string obfuscation."""
@@ -160,9 +191,9 @@ class TestStringObfuscationPass:
 
         support = p.get_support()
 
-        assert "x86_64" in support.architectures
-        assert "ELF" in support.formats
-        assert support.stability == "experimental"
+        expect(not ("x86_64" not in support.architectures))
+        expect(not ("ELF" not in support.formats))
+        expect(support.stability == "experimental")
 
 
 class TestImportTableObfuscationPass:
@@ -172,9 +203,9 @@ class TestImportTableObfuscationPass:
         """Test ImportTableObfuscationPass initialization."""
         p = ImportTableObfuscationPass()
 
-        assert p.name == "ImportTableObfuscation"
-        assert p.probability == 0.5
-        assert p.max_imports == 50
+        expect(p.name == "ImportTableObfuscation")
+        expect(p.probability == _EXPECTED_P_PROBABILITY_0_5_3)
+        expect(p.max_imports == _EXPECTED_P_MAX_IMPORTS_50)
 
     def test_support_declaration(self):
         """Test support declaration for import obfuscation."""
@@ -182,10 +213,10 @@ class TestImportTableObfuscationPass:
 
         support = p.get_support()
 
-        assert "x86_64" in support.architectures
-        assert "ELF" in support.formats
-        assert "PE" in support.formats
-        assert support.stability == "experimental"
+        expect(not ("x86_64" not in support.architectures))
+        expect(not ("ELF" not in support.formats))
+        expect(not ("PE" not in support.formats))
+        expect(support.stability == "experimental")
 
     def test_get_imports_elf_empty(self):
         """Test ELF import extraction with empty result."""
@@ -193,7 +224,7 @@ class TestImportTableObfuscationPass:
 
         imports = p._get_imports_elf(_Binary())
 
-        assert imports == []
+        expect(imports == [])
 
 
 class TestConstantUnfoldingPass:
@@ -203,11 +234,11 @@ class TestConstantUnfoldingPass:
         """Test ConstantUnfoldingPass initialization."""
         p = ConstantUnfoldingPass()
 
-        assert p.name == "ConstantUnfolding"
-        assert p.probability == 0.3
-        assert p.max_unfolds == 5
-        assert p.max_sequence == 10
-        assert p.size_limit == 3.0
+        expect(p.name == "ConstantUnfolding")
+        expect(p.probability == _EXPECTED_P_PROBABILITY_0_3_2)
+        expect(p.max_unfolds == _EXPECTED_P_MAX_UNFOLDS_5)
+        expect(p.max_sequence == _EXPECTED_P_MAX_SEQUENCE_10)
+        expect(p.size_limit == _EXPECTED_P_SIZE_LIMIT_3_0)
 
     def test_support_declaration(self):
         """Test support declaration for constant unfolding."""
@@ -215,9 +246,9 @@ class TestConstantUnfoldingPass:
 
         support = p.get_support()
 
-        assert "x86_64" in support.architectures
-        assert "ELF" in support.formats
-        assert support.stability == "experimental"
+        expect(not ("x86_64" not in support.architectures))
+        expect(not ("ELF" not in support.formats))
+        expect(support.stability == "experimental")
 
     def test_unfold_zero(self):
         """Test zero constant unfolding."""
@@ -225,9 +256,9 @@ class TestConstantUnfoldingPass:
 
         instructions = p._unfold_zero("eax", 32, _Binary(b"\x31\xc0"), 0x1000)
 
-        assert instructions is not None
-        assert len(instructions) == 1
-        assert "xor" in instructions[0] or "sub" in instructions[0] or "and" in instructions[0]
+        expect(instructions is not None)
+        expect(len(instructions) == 1)
+        expect("xor" in instructions[0] or "sub" in instructions[0] or "and" in instructions[0])
 
     def test_unfold_one(self):
         """Test one constant unfolding."""
@@ -235,8 +266,8 @@ class TestConstantUnfoldingPass:
 
         instructions = p._unfold_one("eax", 32, _Binary(b"\x40"), 0x1000)
 
-        assert instructions is not None
-        assert len(instructions) >= 1
+        expect(instructions is not None)
+        expect(not (len(instructions) < 1))
 
     def test_unfold_constant_add(self):
         """Test add constant unfolding."""
@@ -244,9 +275,9 @@ class TestConstantUnfoldingPass:
 
         instructions = p._unfold_constant_add("eax", 3, 32)
 
-        assert instructions is not None
-        assert len(instructions) == 3
-        assert all("inc" in i for i in instructions)
+        expect(instructions is not None)
+        expect(len(instructions) == _EXPECTED_LEN_INSTRUCTIONS_3)
+        expect(all("inc" in i for i in instructions))
 
     def test_unfold_constant_add_large(self):
         """Test large add constant unfolding."""
@@ -254,7 +285,7 @@ class TestConstantUnfoldingPass:
 
         instructions = p._unfold_constant_add("eax", 10, 32)
 
-        assert instructions is not None
+        expect(instructions is not None)
 
     def test_unfold_constant_add_too_large(self):
         """Test that large constants don't unfold."""
@@ -262,7 +293,7 @@ class TestConstantUnfoldingPass:
 
         instructions = p._unfold_constant_add("eax", 100, 32)
 
-        assert instructions is None
+        expect(not (instructions is not None))
 
     def test_unfold_constant_sub(self):
         """Test sub constant unfolding."""
@@ -270,9 +301,9 @@ class TestConstantUnfoldingPass:
 
         instructions = p._unfold_constant_sub("eax", 2, 32)
 
-        assert instructions is not None
-        assert len(instructions) == 2
-        assert all("dec" in i for i in instructions)
+        expect(instructions is not None)
+        expect(len(instructions) == _EXPECTED_LEN_INSTRUCTIONS_2)
+        expect(all("dec" in i for i in instructions))
 
     def test_unfold_constant_sub_too_large(self):
         """Test that large subtraction constants don't unfold."""
@@ -280,7 +311,7 @@ class TestConstantUnfoldingPass:
 
         instructions = p._unfold_constant_sub("eax", 100, 32)
 
-        assert instructions is None
+        expect(not (instructions is not None))
 
 
 class TestParallelExecutor:
@@ -290,9 +321,9 @@ class TestParallelExecutor:
         """Test ParallelMutator initialization."""
         executor = ParallelMutator()
 
-        assert executor.max_workers > 0
-        assert executor.chunk_size == 10
-        assert executor.timeout == 300
+        expect(not (executor.max_workers <= 0))
+        expect(executor.chunk_size == _EXPECTED_EXECUTOR_CHUNK_SIZE_10)
+        expect(executor.timeout == _EXPECTED_EXECUTOR_TIMEOUT_300)
 
     def test_initialization_with_config(self):
         """Test ParallelMutator with custom config."""
@@ -303,22 +334,22 @@ class TestParallelExecutor:
         }
         executor = ParallelMutator(config)
 
-        assert executor.max_workers == 4
-        assert executor.chunk_size == 5
-        assert executor.timeout == 60
+        expect(executor.max_workers == _EXPECTED_EXECUTOR_MAX_WORKERS_4)
+        expect(executor.chunk_size == _EXPECTED_EXECUTOR_CHUNK_SIZE_5)
+        expect(executor.timeout == _EXPECTED_EXECUTOR_TIMEOUT_60)
 
     def test_mutation_task_creation(self):
         """Test MutationTask dataclass."""
         task = MutationTask(
-            pass_name="NopInsertion",
+            **{MUTATION_NAME_KEY: "NopInsertion"},
             pass_instance=DataFlowMutationPass(),
             function_addresses=[0x1000, 0x2000],
             config={"seed": 42},
         )
 
-        assert task.pass_name == "NopInsertion"
-        assert len(task.function_addresses) == 2
-        assert task.config["seed"] == 42
+        expect(getattr(task, MUTATION_NAME_KEY) == "NopInsertion")
+        expect(len(task.function_addresses) == _EXPECTED_LEN_TASK_FUNCTION_ADDRESSES_2)
+        expect(task.config["seed"] == _EXPECTED_TASK_CONFIG_SEED_42)
 
     def test_parallel_stats(self):
         """Test ParallelStats dataclass."""
@@ -331,10 +362,10 @@ class TestParallelExecutor:
             speedup_factor=2.5,
         )
 
-        assert stats.total_time == 1.5
-        assert stats.worker_count == 4
-        assert stats.tasks_completed == 10
-        assert stats.speedup_factor == 2.5
+        expect(stats.total_time == _EXPECTED_STATS_TOTAL_TIME_1_5)
+        expect(stats.worker_count == _EXPECTED_STATS_WORKER_COUNT_4)
+        expect(stats.tasks_completed == _EXPECTED_STATS_TASKS_COMPLETED_10)
+        expect(stats.speedup_factor == _EXPECTED_STATS_SPEEDUP_FACTOR_2_5)
 
     def test_estimate_speedup_single_task(self):
         """Test speedup estimation with single task."""
@@ -342,7 +373,7 @@ class TestParallelExecutor:
 
         speedup = executor.estimate_speedup([DataFlowMutationPass()], 5)
 
-        assert speedup == 1.0
+        expect(speedup == 1.0)
 
     def test_estimate_speedup_multiple_tasks(self):
         """Test speedup estimation with multiple tasks."""
@@ -350,14 +381,14 @@ class TestParallelExecutor:
 
         speedup = executor.estimate_speedup([DataFlowMutationPass()], 100)
 
-        assert speedup > 1.0
+        expect(not (speedup <= 1.0))
 
     def test_create_parallel_executor_factory(self):
         """Test factory function."""
         executor = create_parallel_executor({"max_workers": 2})
 
-        assert isinstance(executor, ParallelMutator)
-        assert executor.max_workers == 2
+        expect(isinstance(executor, ParallelMutator))
+        expect(executor.max_workers == _EXPECTED_EXECUTOR_MAX_WORKERS_2)
 
 
 class TestNewMutationsIntegration:
@@ -368,28 +399,28 @@ class TestNewMutationsIntegration:
         p = DataFlowMutationPass()
         p.disable()
 
-        assert p.enabled is False
+        expect(not (p.enabled is not False))
 
     def test_string_obfuscation_pass_disabled(self):
         """Test that disabled string obfuscation returns empty result."""
         p = StringObfuscationPass()
         p.disable()
 
-        assert p.enabled is False
+        expect(not (p.enabled is not False))
 
     def test_import_obfuscation_pass_disabled(self):
         """Test that disabled import obfuscation returns empty result."""
         p = ImportTableObfuscationPass()
         p.disable()
 
-        assert p.enabled is False
+        expect(not (p.enabled is not False))
 
     def test_constant_unfolding_pass_disabled(self):
         """Test that disabled constant unfolding returns empty result."""
         p = ConstantUnfoldingPass()
         p.disable()
 
-        assert p.enabled is False
+        expect(not (p.enabled is not False))
 
     def test_all_passes_have_required_methods(self):
         """Test that all passes implement required methods."""
@@ -401,10 +432,10 @@ class TestNewMutationsIntegration:
         ]
 
         for p in passes:
-            assert hasattr(p, "apply")
-            assert hasattr(p, "run")
-            assert hasattr(p, "get_support")
-            assert hasattr(p, "get_stats")
-            assert hasattr(p, "get_records")
-            assert hasattr(p, "enable")
-            assert hasattr(p, "disable")
+            expect(hasattr(p, "apply"))
+            expect(hasattr(p, "run"))
+            expect(hasattr(p, "get_support"))
+            expect(hasattr(p, "get_stats"))
+            expect(hasattr(p, "get_records"))
+            expect(hasattr(p, "enable"))
+            expect(hasattr(p, "disable"))

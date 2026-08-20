@@ -1,4 +1,5 @@
 from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RewriteOperation
+from tests.utils.assertions import expect
 
 
 def test_binary_rewriter_validate_patches_overlap_and_warnings():
@@ -24,7 +25,7 @@ def test_binary_rewriter_validate_patches_overlap_and_warnings():
     ]
 
     result = rewriter._validate_patches()
-    assert result["valid"] is False
-    assert any("Overlapping" in err for err in result["errors"])
-    assert any("Invalid address" in warning for warning in result["warnings"])
-    assert any("Large size change" in warning for warning in result["warnings"])
+    expect(not (result["valid"] is not False))
+    expect(any("Overlapping" in err for err in result["errors"]))
+    expect(any("Invalid address" in warning for warning in result["warnings"]))
+    expect(any("Large size change" in warning for warning in result["warnings"]))

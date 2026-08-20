@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_view_mismatch_views import build_mismatch_views
+from tests.utils.assertions import expect
 
 
 def test_build_mismatch_views_merges_region_context() -> None:
@@ -21,6 +22,6 @@ def test_build_mismatch_views_merges_region_context() -> None:
         },
     )
 
-    assert views["mismatch_rows"][0]["region_count"] == 1
-    assert views["mismatch_rows"][0]["compact_region"]["region_exit_match_count"] == 1
-    assert views["mismatch_by_pass"]["alpha"]["severity"] == "low"
+    expect(views["mismatch_rows"][0]["region_count"] == 1)
+    expect(views["mismatch_rows"][0]["compact_region"]["region_exit_match_count"] == 1)
+    expect(views["mismatch_by_pass"]["alpha"]["severity"] == "low")

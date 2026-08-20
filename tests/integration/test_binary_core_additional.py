@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_binary_write_instruction_and_nop_fill(tmp_path: Path):
@@ -21,14 +22,14 @@ def test_binary_write_instruction_and_nop_fill(tmp_path: Path):
             pytest.skip("No functions found")
 
         addr = functions[0].get("offset", functions[0].get("addr", 0))
-        assert addr
+        expect(addr)
 
-        assert bin_obj.write_instruction(addr, "nop") is True
-        assert bin_obj.nop_fill(addr, 3) is True
+        expect(not (bin_obj.write_instruction(addr, "nop") is not True))
+        expect(not (bin_obj.nop_fill(addr, 3) is not True))
 
         saved_path = tmp_path / "binary_saved"
         bin_obj.save(saved_path)
-        assert saved_path.exists()
+        expect(saved_path.exists())
 
 
 def test_binary_resolve_symbolic_vars_fallback():
@@ -39,7 +40,7 @@ def test_binary_resolve_symbolic_vars_fallback():
     with Binary(binary_path) as bin_obj:
         resolved = bin_obj._resolve_symbolic_vars("mov eax, [var_10h]")
 
-    assert "rsp" in resolved.lower()
+    expect(not ("rsp" not in resolved.lower()))
 
 
 def test_binary_movzx_fallback_encoding():
@@ -50,5 +51,5 @@ def test_binary_movzx_fallback_encoding():
     with Binary(binary_path) as bin_obj:
         encoded = bin_obj._assemble_movzx_movsx_fallback("movzx eax, bl")
 
-    assert encoded is not None
-    assert isinstance(encoded, (bytes, bytearray))
+    expect(encoded is not None)
+    expect(isinstance(encoded, (bytes, bytearray)))

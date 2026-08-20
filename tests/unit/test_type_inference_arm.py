@@ -1,6 +1,7 @@
 from enum import Enum
 
 from r2morph.analysis.type_inference_arm import infer_arm64_register_types
+from tests.utils.assertions import expect
 
 
 class _Primitive(Enum):
@@ -22,4 +23,4 @@ def test_infer_arm64_register_types_fmov_records_float64() -> None:
 
     infer_arm64_register_types(_TypeFactory(), "fmov d0, x0", register_types, _Primitive)
 
-    assert register_types == {"d0": "float64"}
+    expect(register_types == {"d0": "float64"})

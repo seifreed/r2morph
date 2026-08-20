@@ -18,6 +18,9 @@ import struct
 
 from r2morph.analysis.exception import ExceptionInfoReader
 from tests._doubles.in_memory_pe_pdata_binary import InMemoryPEPdataBinary
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_PDATA_16 = 16
 
 
 def _packed_entry(begin: int, function_length_units: int) -> bytes:
@@ -30,7 +33,7 @@ def test_pe_pdata_32bit_packed_entries_parsed_with_correct_extent() -> None:
     # Two 8-byte ARM entries (16 bytes total). Pre-fix: entry 0 gets a
     # bogus function_end and entry 1 is lost to a struct.error.
     pdata = _packed_entry(0x1000, 0x10) + _packed_entry(0x2000, 0x08)
-    assert len(pdata) == 16
+    expect(len(pdata) == _EXPECTED_LEN_PDATA_16)
 
     binary = InMemoryPEPdataBinary(
         bits=32,
@@ -40,11 +43,11 @@ def test_pe_pdata_32bit_packed_entries_parsed_with_correct_extent() -> None:
     )
     frames = ExceptionInfoReader(binary).read_exception_frames()
 
-    assert set(frames) == {0x1000, 0x2000}
+    expect(set(frames) == {4096, 8192})
     # FunctionLength is in 2-byte units: 0x10 -> 32 bytes, 0x08 -> 16.
-    assert frames[0x1000].function_end == 0x1000 + 0x10 * 2
-    assert frames[0x2000].function_end == 0x2000 + 0x08 * 2
-    assert frames[0x1000].function_end > frames[0x1000].function_start
+    expect(frames[4096].function_end == 4096 + 16 * 2)
+    expect(frames[8192].function_end == 8192 + 8 * 2)
+    expect(not (frames[0x1000].function_end <= frames[0x1000].function_start))
 
 
 def test_pe_pdata_32bit_truncated_section_does_not_crash() -> None:
@@ -60,4 +63,4 @@ def test_pe_pdata_32bit_truncated_section_does_not_crash() -> None:
     )
     frames = ExceptionInfoReader(binary).read_exception_frames()
 
-    assert set(frames) == {0x1000, 0x2000}
+    expect(set(frames) == {4096, 8192})

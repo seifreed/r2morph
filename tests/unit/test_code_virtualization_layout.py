@@ -25,75 +25,86 @@ from r2morph.mutations.code_virtualization_layout import (
     permuted_fields,
     shift_offsets,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_LAYOUTS_2 = 2
+_EXPECTED_LEN_LAYOUTS_5 = 5
+_EXPECTED_LEN_ORDERS_2 = 2
+_EXPECTED_LEN_TUPLE_SORTED_IMUL3_OFFSETS_S_ITEMS_FOR_S__2 = 2
 
 
 def test_pair_layout_identity_and_polymorphism() -> None:
     # The two-field FP register handlers (arith/compare/move/packed, and the
     # xmm<->GP conversions) share the two-byte pair layout: perm 0 is the legacy
     # first@1, second@2; a non-zero seed may swap them, and at least one does.
-    assert pair_offsets("dst", "src", 0) == {"dst": 1, "src": 2}
-    assert pair_offsets("xmm", "gp", 0) == {"xmm": 1, "gp": 2}
+    expect(pair_offsets("dst", "src", 0) == {"dst": 1, "src": 2})
+    expect(pair_offsets("xmm", "gp", 0) == {"xmm": 1, "gp": 2})
     orders = {tuple(sorted(pair_offsets("dst", "src", seed).items())) for seed in range(40)}
-    assert len(orders) == 2  # both orderings occur across builds
+    expect(len(orders) == _EXPECTED_LEN_ORDERS_2)
     # The two fields always pack contiguously at offsets 1 and 2, whatever the order.
     for seed in (0, 1, 5, 99):
-        assert sorted(pair_offsets("left", "right", seed).values()) == [1, 2]
+        expect(sorted(pair_offsets("left", "right", seed).values()) == [1, 2])
 
 
 def test_identity_layout_matches_legacy_fixed_offsets() -> None:
     # perm 0 must reproduce the historical hardcoded offsets: dst slot right after
     # the opcode, then the source slot / immediate.
-    assert field_offsets("op_add_i_32", 0) == {"dst": 1, "imm": 2}
-    assert field_offsets("op_add_i_64", 0) == {"dst": 1, "imm": 2}
-    assert field_offsets("op_add_r_64", 0) == {"dst": 1, "src": 2}
-    assert field_offsets("opmba_add_i_32", 0) == {"dst": 1, "imm": 2}
+    expect(field_offsets("op_add_i_32", 0) == {"dst": 1, "imm": 2})
+    expect(field_offsets("op_add_i_64", 0) == {"dst": 1, "imm": 2})
+    expect(field_offsets("op_add_r_64", 0) == {"dst": 1, "src": 2})
+    expect(field_offsets("opmba_add_i_32", 0) == {"dst": 1, "imm": 2})
 
 
 def test_memory_layout_identity_and_polymorphism() -> None:
     # The base+disp memory family (load/store/lea/cmp/op/movx) shares one layout:
     # perm 0 is the legacy reg@1, base@2, disp@3; rip-relative drops the base.
-    assert mem_offsets(False, 0) == {"reg": 1, "base": 2, "disp": 3}
-    assert mem_offsets(True, 0) == {"reg": 1, "disp": 2}
+    expect(mem_offsets(False, 0) == {"reg": 1, "base": 2, "disp": 3})
+    expect(mem_offsets(True, 0) == {"reg": 1, "disp": 2})
     # Three operand fields give up to six orders, so memory is the kind where the
     # per-build distinctness actually scales.
     layouts = {tuple(sorted(mem_offsets(False, seed).items())) for seed in range(1, 60)}
-    assert len(layouts) > 2
+    expect(not (len(layouts) <= _EXPECTED_LEN_LAYOUTS_2))
 
 
 def test_op_offsets_by_immediate_width_matches_the_string_key_path() -> None:
     # The engine keys arith handlers by (is_immediate, width); op_offsets must
     # agree with the region's string-key field_offsets so both VMs share one
     # layout core, and identity (perm 0) must be the legacy packing.
-    assert op_offsets(True, 32, 0) == {"dst": 1, "imm": 2}
-    assert op_offsets(False, 64, 0) == {"dst": 1, "src": 2}
-    assert op_offsets(True, 32, 7) == field_offsets("op_add_i_32", 7)
-    assert op_offsets(False, 64, 7) == field_offsets("op_add_r_64", 7)
+    expect(op_offsets(True, 32, 0) == {"dst": 1, "imm": 2})
+    expect(op_offsets(False, 64, 0) == {"dst": 1, "src": 2})
+    expect(op_offsets(True, 32, 7) == field_offsets("op_add_i_32", 7))
+    expect(op_offsets(False, 64, 7) == field_offsets("op_add_r_64", 7))
 
 
 def test_shift_and_imul3_layouts_identity_and_polymorphism() -> None:
     # The remaining low-arity region kinds: shift (slot, count) and three-operand
     # imul (dst, src, immediate). perm 0 is the legacy packing; both permute.
-    assert shift_offsets(0) == {"slot": 1, "count": 2}
-    assert imul3_offsets(0) == {"dst": 1, "src": 2, "imm": 3}
-    assert len({tuple(sorted(shift_offsets(s).items())) for s in range(1, 20)}) > 1
-    assert len({tuple(sorted(imul3_offsets(s).items())) for s in range(1, 40)}) > 2
+    expect(shift_offsets(0) == {"slot": 1, "count": 2})
+    expect(imul3_offsets(0) == {"dst": 1, "src": 2, "imm": 3})
+    expect(not (len({tuple(sorted(shift_offsets(s).items())) for s in range(1, 20)}) <= 1))
+    expect(
+        not (
+            len({tuple(sorted(imul3_offsets(s).items())) for s in range(1, 40)})
+            <= _EXPECTED_LEN_TUPLE_SORTED_IMUL3_OFFSETS_S_ITEMS_FOR_S__2
+        )
+    )
 
 
 def test_indexed_layout_identity_and_polymorphism() -> None:
     # Scaled-index items have five fields (reg/base/index/shift/disp), so the
     # layout has up to 120 orders - the richest per-build distinctness. The
     # no-base form drops the base field. perm 0 is the legacy packing.
-    assert idx_offsets(False, 0) == {"reg": 1, "base": 2, "index": 3, "shift": 4, "disp": 5}
-    assert idx_offsets(True, 0) == {"reg": 1, "index": 2, "shift": 3, "disp": 4}
+    expect(idx_offsets(False, 0) == {"reg": 1, "base": 2, "index": 3, "shift": 4, "disp": 5})
+    expect(idx_offsets(True, 0) == {"reg": 1, "index": 2, "shift": 3, "disp": 4})
     layouts = {tuple(sorted(idx_offsets(False, seed).items())) for seed in range(1, 80)}
-    assert len(layouts) > 5
+    expect(not (len(layouts) <= _EXPECTED_LEN_LAYOUTS_5))
 
 
 def test_some_seed_reorders_the_operand_fields() -> None:
     # The layout is genuinely polymorphic: at least one build order differs from
     # the identity order, so the field offsets are not fixed across samples.
     layouts = {tuple(sorted(field_offsets("op_add_i_32", seed).items())) for seed in range(1, 40)}
-    assert len(layouts) > 1
+    expect(not (len(layouts) <= 1))
 
 
 def test_opcode_stays_first_and_fields_pack_contiguously() -> None:
@@ -104,9 +115,9 @@ def test_opcode_stays_first_and_fields_pack_contiguously() -> None:
         for seed in (0, 1, 5, 99):
             fields = permuted_fields(key, seed)
             offsets = field_offsets(key, seed)
-            assert min(offsets.values()) == 1
+            expect(min(offsets.values()) == 1)
             spans = sorted((offsets[name], offsets[name] + size) for name, size in fields)
             # Contiguous, non-overlapping packing immediately after the opcode.
-            assert spans[0][0] == 1
+            expect(spans[0][0] == 1)
             for (_, end), (start, _) in itertools.pairwise(spans):
-                assert start == end
+                expect(start == end)

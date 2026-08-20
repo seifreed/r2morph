@@ -5,6 +5,7 @@ Real integration tests for runtime validation inside the mutation pipeline.
 from __future__ import annotations
 
 import importlib.util
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations.base import MutationPass
 from r2morph.session import MorphSession
 from r2morph.validation.validator import BinaryValidator, RuntimeComparisonConfig
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -35,6 +37,7 @@ class _PatchStringPass(MutationPass):
             try:
                 blob = binary.read_bytes(vaddr, size)
             except Exception:
+                logging.getLogger(__name__).debug("ignored optional runtime error", exc_info=True)
                 continue
             index = blob.find(self.original)
             if index < 0:
@@ -83,19 +86,19 @@ def test_runtime_validation_rolls_back_failed_pass_on_real_binary(
         output = tmp_path / "runtime-pass.out"
         engine.save(output)
 
-    assert result["total_mutations"] == 0
-    assert result["rolled_back_passes"] == 1
-    assert result["discarded_mutations"] == 1
-    assert result["validation"]["runtime_passes"]
-    assert result["validation"]["runtime_passes"][0]["passed"] is False
-    assert result["pass_results"]["PatchString"]["rollback_reason"] == "runtime_validation_failed"
-    assert (
+    expect(result["total_mutations"] == 0)
+    expect(result["rolled_back_passes"] == 1)
+    expect(result["discarded_mutations"] == 1)
+    expect(result["validation"]["runtime_passes"])
+    expect(not (result["validation"]["runtime_passes"][0]["passed"] is not False))
+    expect(result["pass_results"]["PatchString"]["rollback_reason"] == "runtime_validation_failed")
+    expect(
         result["pass_results"]["PatchString"]["discarded_mutations_detail"][0]["metadata"]["discard_reason"]
         == "runtime_validation_failed"
     )
 
     final_result = validator.validate(patchable_runtime_binary, output)
-    assert final_result.passed is True
+    expect(not (final_result.passed is not True))
 
 
 def test_morph_session_parallel_creation_is_unique_and_stable(
@@ -119,8 +122,8 @@ def test_morph_session_parallel_creation_is_unique_and_stable(
 
     ids = [item[0] for item in results]
     dirs = [str(item[1]) for item in results]
-    assert len(ids) == len(set(ids))
-    assert len(dirs) == len(set(dirs))
-    assert all(item[2] for item in results)
-    assert all(item[3] for item in results)
-    assert all(item[4] for item in results)
+    expect(len(ids) == len(set(ids)))
+    expect(len(dirs) == len(set(dirs)))
+    expect(all(item[2] for item in results))
+    expect(all(item[3] for item in results))
+    expect(all(item[4] for item in results))

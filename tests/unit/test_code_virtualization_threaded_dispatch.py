@@ -22,10 +22,10 @@ build can regress to the reconstructible shape.
 
 from __future__ import annotations
 
-import random
 import re
 from typing import Any
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_dispatch import decode_block
 from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
@@ -38,6 +38,13 @@ from r2morph.mutations.code_virtualization_engine import (
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm as _region_interpreter_asm
 from r2morph.mutations.code_virtualization_region_nesting import _decode_block as _nested_decode_block
+from tests.utils.assertions import expect
+
+_EXPECTED_ASM_COUNT_F_XOR_RSI_QWORD_PTR_RSP_STATE_OFFSE_2 = 2
+_EXPECTED_ASM_COUNT_XOR_R13_QWORD_PTR_RSP_2 = 2
+_EXPECTED_ASM_COUNT_XOR_R15_QWORD_PTR_RSP_2 = 2
+_EXPECTED_ASM_COUNT_XOR_RSI_QWORD_PTR_RSP_2 = 2
+
 
 # The decode block's first instruction; one copy per handler tail plus the entry,
 # so a threaded interpreter has at least two and a central one has exactly one.
@@ -58,7 +65,7 @@ def _decode(seed: int) -> str:
         bounds="  cmp al, 0xd\n  jae vm_exit\n",
         table_load="  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n",
         table_xors=_TABLE_XORS,
-        rng=random.Random(seed),
+        rng=randomness.Random(seed),
     )
 
 
@@ -69,17 +76,17 @@ def _tiny_region() -> Any:
         {"addr": 0x100A, "type": "swi", "opcode": "syscall", "size": 2, "jump": -1},
     ]
     region = extract_region(instructions)
-    assert region is not None
+    expect(region is not None)
     return region
 
 
 def _region_asm(seed: int) -> str:
     region = _tiny_region()
-    return _region_interpreter_asm(region, build_region_scheme(region, random.Random(seed)))
+    return _region_interpreter_asm(region, build_region_scheme(region, randomness.Random(seed)))
 
 
 def _engine_asm(seed: int) -> str:
-    return _engine_interpreter_asm(0x1000, build_vm_scheme(random.Random(seed)))
+    return _engine_interpreter_asm(0x1000, build_vm_scheme(randomness.Random(seed)))
 
 
 def _engine_spill_order(seed: int) -> tuple[str, ...]:
@@ -88,114 +95,122 @@ def _engine_spill_order(seed: int) -> tuple[str, ...]:
 
 def _frame_size(asm: str) -> str:
     match = re.search(r"vm_entry:\n  sub rsp, (\d+)", asm)
-    assert match is not None
+    expect(match is not None)
     return match.group(1)
 
 
 def test_region_interpreter_has_no_central_dispatch_label() -> None:
     asm = _region_asm(0)
-    assert "vm_dispatch:" not in asm
-    assert "jmp vm_dispatch" not in asm
+    expect("vm_dispatch:" not in asm)
+    expect("jmp vm_dispatch" not in asm)
 
 
 def test_region_interpreter_inlines_the_decode_per_handler() -> None:
     # Threaded: the decode head appears at the entry and at every handler tail, so
     # there is more than one copy - a central dispatcher would have exactly one.
-    assert _region_asm(0).count(_DECODE_HEAD) > 1
+    expect(not (_region_asm(0).count(_DECODE_HEAD) <= 1))
 
 
 def test_region_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
     asm = _region_asm(0)
-    state_offset = build_region_scheme(_tiny_region(), random.Random(0)).state_offset
-    assert asm.count(f"xor rsi, qword ptr [rsp+{state_offset}]") >= 2
+    state_offset = build_region_scheme(_tiny_region(), randomness.Random(0)).state_offset
+    expect(
+        not (
+            asm.count(f"xor rsi, qword ptr [rsp+{state_offset}]")
+            < _EXPECTED_ASM_COUNT_F_XOR_RSI_QWORD_PTR_RSP_STATE_OFFSE_2
+        )
+    )
 
 
 def test_nested_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
     state_offset = 0x240
-    asm = _nested_decode_block(random.Random(0), state_offset)
-    assert asm.count(f"xor rsi, qword ptr [rsp+{state_offset}]") == 1
+    asm = _nested_decode_block(randomness.Random(0), state_offset)
+    expect(asm.count(f"xor rsi, qword ptr [rsp+{state_offset}]") == 1)
 
 
 def test_region_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _region_asm(0)
 
-    assert asm.index("jmp rax") < min(asm.index("rdtsc"), asm.index("syscall"))
+    expect(not (asm.index("jmp rax") >= min(asm.index("rdtsc"), asm.index("syscall"))))
 
 
 def test_engine_interpreter_has_no_central_dispatch_label() -> None:
     # The threaded shape inlines the decode, so no handler jumps to a shared block.
     asm = _engine_asm(0)
-    assert "vm_dispatch:" not in asm
-    assert "jmp vm_dispatch" not in asm
+    expect("vm_dispatch:" not in asm)
+    expect("jmp vm_dispatch" not in asm)
 
 
 def test_engine_interpreter_inlines_the_decode_per_handler() -> None:
-    assert _engine_asm(0).count(_DECODE_HEAD) > 1
+    expect(not (_engine_asm(0).count(_DECODE_HEAD) <= 1))
 
 
 def test_engine_integrity_defers_full_checksum_until_bootstrap_ready() -> None:
     asm = _engine_asm(0)
 
-    assert "entry_chk_loop:" in asm
-    assert "ready_chk_loop:" in asm
-    assert asm.index("entry_chk_loop:") < asm.index("vm_bootstrap:")
-    assert asm.index("ready_chk_loop:") > asm.index("vm_bootstrap:")
+    expect(not ("entry_chk_loop:" not in asm))
+    expect(not ("ready_chk_loop:" not in asm))
+    expect(not (asm.index("entry_chk_loop:") >= asm.index("vm_bootstrap:")))
+    expect(not (asm.index("ready_chk_loop:") <= asm.index("vm_bootstrap:")))
 
 
 def test_engine_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
     asm = _engine_asm(0)
-    assert asm.count("xor rsi, qword ptr [rsp +") >= 2
-    assert asm.count("xor r15, qword ptr [rsp +") >= 2
-    assert asm.count("xor r13, qword ptr [rsp +") >= 2
+    expect(not (asm.count("xor rsi, qword ptr [rsp +") < _EXPECTED_ASM_COUNT_XOR_RSI_QWORD_PTR_RSP_2))
+    expect(not (asm.count("xor r15, qword ptr [rsp +") < _EXPECTED_ASM_COUNT_XOR_R15_QWORD_PTR_RSP_2))
+    expect(not (asm.count("xor r13, qword ptr [rsp +") < _EXPECTED_ASM_COUNT_XOR_R13_QWORD_PTR_RSP_2))
 
 
 def test_engine_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _engine_asm(0)
 
-    assert asm.index("jmp rax") < min(asm.index("rdtsc"), asm.index("syscall"))
+    expect(not (asm.index("jmp rax") >= min(asm.index("rdtsc"), asm.index("syscall"))))
 
 
 def test_engine_interpreter_save_order_varies_across_builds() -> None:
     seeds = range(10)
     orders = {_engine_spill_order(seed) for seed in seeds}
 
-    assert len(orders) > 1
-    assert all(
-        _engine_spill_order(seed)
-        == tuple(
-            GP_REGISTERS[index] for index in gp_save_order(build_vm_scheme(random.Random(seed)).junk_seed ^ 0x51A7E)
+    expect(not (len(orders) <= 1))
+    expect(
+        all(
+            _engine_spill_order(seed)
+            == tuple(
+                GP_REGISTERS[index]
+                for index in gp_save_order(build_vm_scheme(randomness.Random(seed)).junk_seed ^ 0x51A7E)
+            )
+            for seed in seeds
         )
-        for seed in seeds
     )
 
 
 def test_engine_interpreter_frame_size_varies_across_builds() -> None:
-    assert len({_frame_size(_engine_asm(seed)) for seed in range(10)}) > 1
+    expect(not (len({_frame_size(_engine_asm(seed)) for seed in range(10)}) <= 1))
 
 
 def test_region_interpreter_frame_size_varies_across_builds() -> None:
-    assert len({_frame_size(_region_asm(seed)) for seed in range(10)}) > 1
+    expect(not (len({_frame_size(_region_asm(seed)) for seed in range(10)}) <= 1))
 
 
 def test_engine_interpreter_never_emits_a_compare_branch_ladder() -> None:
     # No seed may produce the removed switch shape: its tell is a direct
     # ``je h_<index>`` leaf per opcode, which a decompiler rebuilds into a switch.
-    assert not [seed for seed in _SEED_SWEEP if "je h_" in _engine_asm(seed)]
+    expect(not ([seed for seed in _SEED_SWEEP if "je h_" in _engine_asm(seed)]))
 
 
 def test_region_interpreter_never_emits_a_compare_branch_ladder() -> None:
     # Same floor for the region VM, whose handler labels are capital ``H_<index>``.
-    assert not [seed for seed in _SEED_SWEEP if "je H_" in _region_asm(seed)]
+    expect(not ([seed for seed in _SEED_SWEEP if "je H_" in _region_asm(seed)]))
 
 
 def test_engine_interpreter_always_dispatches_through_the_offset_table() -> None:
     # Every build routes through the XOR-encrypted offset table and its computed
     # goto, so no build ships a statically resolvable handler mapping.
-    assert all("vm_table" in _engine_asm(seed) and "jmp rax" in _engine_asm(seed) for seed in _SEED_SWEEP)
+    expect(all("vm_table" in _engine_asm(seed) and "jmp rax" in _engine_asm(seed) for seed in _SEED_SWEEP))
 
 
 def test_region_interpreter_always_dispatches_through_the_offset_table() -> None:
-    assert all("vm_table" in _region_asm(seed) and "jmp rax" in _region_asm(seed) for seed in _SEED_SWEEP)
+    expect(all("vm_table" in _region_asm(seed) and "jmp rax" in _region_asm(seed) for seed in _SEED_SWEEP))
 
 
 def test_decode_block_is_polymorphic_across_seeds() -> None:
@@ -204,7 +219,7 @@ def test_decode_block_is_polymorphic_across_seeds() -> None:
     # seeds over 6*2 orderings, all-identical is effectively impossible, so this is
     # deterministic in practice. Exit-code tests pass with or without the shuffle,
     # so the polymorphism property needs its own assertion.
-    assert len({_decode(seed) for seed in range(20)}) > 1
+    expect(not (len({_decode(seed) for seed in range(20)}) <= 1))
 
 
 def test_decode_block_shuffle_preserves_length_and_instructions() -> None:
@@ -212,5 +227,5 @@ def test_decode_block_shuffle_preserves_length_and_instructions() -> None:
     # length (keeping assembled size and the size-vs-depth invariants stable) and
     # carries exactly the same instruction lines - only their order varies.
     variants = [_decode(seed) for seed in range(20)]
-    assert len({len(v) for v in variants}) == 1
-    assert len({frozenset(v.splitlines()) for v in variants}) == 1
+    expect(len({len(v) for v in variants}) == 1)
+    expect(len({frozenset(v.splitlines()) for v in variants}) == 1)

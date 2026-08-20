@@ -8,6 +8,7 @@ from r2morph.validation.performance_regression_storage import (
     load_baseline_snapshot,
     save_baseline_snapshot,
 )
+from tests.utils.assertions import expect
 
 
 def _make_snapshot() -> PerformanceSnapshot:
@@ -32,20 +33,20 @@ def test_storage_round_trip(tmp_path: Path) -> None:
         baseline_name="baseline",
     )
 
-    assert baseline_file == tmp_path / "baseline.json"
-    assert baseline_file.exists()
+    expect(baseline_file == tmp_path / "baseline.json")
+    expect(baseline_file.exists())
 
     loaded = load_baseline_snapshot(
         baseline_dir=tmp_path,
         baseline_name="baseline",
     )
 
-    assert loaded is not None
-    assert loaded.commit_hash == snapshot.commit_hash
-    assert loaded.timestamp == snapshot.timestamp
-    assert loaded.metrics == snapshot.metrics
-    assert loaded.environment == snapshot.environment
-    assert loaded.metadata == snapshot.metadata
+    expect(loaded is not None)
+    expect(loaded.commit_hash == snapshot.commit_hash)
+    expect(loaded.timestamp == snapshot.timestamp)
+    expect(loaded.metrics == snapshot.metrics)
+    expect(loaded.environment == snapshot.environment)
+    expect(loaded.metadata == snapshot.metadata)
 
 
 def test_benchmark_delegates_baseline_storage(tmp_path: Path) -> None:
@@ -56,7 +57,7 @@ def test_benchmark_delegates_baseline_storage(tmp_path: Path) -> None:
     saved = benchmark.save_baseline(snapshot, "delegated")
     loaded = benchmark.load_baseline("delegated")
 
-    assert saved == tmp_path / "delegated.json"
-    assert loaded is not None
-    assert loaded.commit_hash == snapshot.commit_hash
-    assert loaded.metrics == snapshot.metrics
+    expect(saved == tmp_path / "delegated.json")
+    expect(loaded is not None)
+    expect(loaded.commit_hash == snapshot.commit_hash)
+    expect(loaded.metrics == snapshot.metrics)

@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.pattern_matcher import PatternMatcher
+from tests.utils.assertions import expect
 
 
 def test_pattern_matcher_scan_and_searches() -> None:
@@ -18,17 +19,16 @@ def test_pattern_matcher_scan_and_searches() -> None:
         matcher = PatternMatcher(bin_obj)
 
         result = matcher.scan()
-        assert isinstance(result.anti_debug_detected, bool)
-        assert isinstance(result.anti_vm_detected, bool)
-        assert isinstance(result.string_encryption_detected, bool)
-        assert isinstance(result.import_hiding_detected, bool)
+        expect(isinstance(result.anti_debug_detected, bool))
+        expect(isinstance(result.anti_vm_detected, bool))
+        expect(isinstance(result.string_encryption_detected, bool))
+        expect(isinstance(result.import_hiding_detected, bool))
 
         found = matcher.search_strings(["ELF", "libc", "definitely_not_here"])
-        assert set(found.keys()) == {"ELF", "libc", "definitely_not_here"}
+        expect(set(found.keys()) == {"ELF", "libc", "definitely_not_here"})
 
         data = binary_path.read_bytes()
         pattern = data[:4]
         matches = matcher.find_patterns([pattern])
-        assert isinstance(matches, dict)
-        if pattern in matches:
-            assert all(isinstance(addr, int) for addr in matches[pattern])
+        expect(isinstance(matches, dict))
+        expect(not (pattern in matches and not (all(isinstance(addr, int) for addr in matches[pattern]))))

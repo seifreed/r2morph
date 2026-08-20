@@ -18,6 +18,14 @@ valid topological order.
 import itertools
 
 from r2morph.analysis.call_graph import CallEdge, CallGraph, CallNode, CallType
+from tests.utils.assertions import expect
+
+_EXPECTED_CG_GET_DEPTH_ADDRESSES_0_3 = 3
+_EXPECTED_CG_GET_DEPTH_ADDRESSES_1_2 = 2
+_EXPECTED_CG_GET_DEPTH_A_2 = 2
+_EXPECTED_CG_GET_DEPTH_A_2_2 = 2
+_EXPECTED_LEN_ORDER_4 = 4
+
 
 # Chain length comfortably beyond CPython's default recursion limit so the
 # recursive implementation is guaranteed to overflow the interpreter stack.
@@ -42,12 +50,12 @@ def test_topological_sort_deep_chain_no_recursion_error() -> None:
 
     order = cg.topological_sort()
 
-    assert len(order) == CHAIN_LENGTH
-    assert set(order) == set(addresses)
+    expect(len(order) == CHAIN_LENGTH)
+    expect(set(order) == set(addresses))
     # Every callee must precede its caller in a valid topological order.
     position = {addr: idx for idx, addr in enumerate(order)}
     for caller, callee in itertools.pairwise(addresses):
-        assert position[callee] < position[caller]
+        expect(not (position[callee] >= position[caller]))
 
 
 def test_topological_sort_small_chain_orders_callees_first() -> None:
@@ -57,7 +65,7 @@ def test_topological_sort_small_chain_orders_callees_first() -> None:
 
     order = cg.topological_sort()
 
-    assert order == list(reversed(addresses))
+    expect(order == list(reversed(addresses)))
 
 
 def test_topological_sort_diamond_is_valid() -> None:
@@ -73,18 +81,18 @@ def test_topological_sort_diamond_is_valid() -> None:
 
     order = cg.topological_sort()
 
-    assert len(order) == 4
+    expect(len(order) == _EXPECTED_LEN_ORDER_4)
     position = {addr: idx for idx, addr in enumerate(order)}
     for caller, callee in ((a, b), (a, c), (b, d), (c, d)):
-        assert position[callee] < position[caller]
+        expect(not (position[callee] >= position[caller]))
 
 
 def test_get_depth_deep_chain_no_recursion_error() -> None:
     cg, addresses = _build_linear_chain(CHAIN_LENGTH)
 
     # Depth of the root of an N-node linear chain is N - 1.
-    assert cg.get_depth(addresses[0]) == CHAIN_LENGTH - 1
-    assert cg.get_depth(addresses[-1]) == 0
+    expect(cg.get_depth(addresses[0]) == CHAIN_LENGTH - 1)
+    expect(cg.get_depth(addresses[-1]) == 0)
 
 
 def test_get_depth_small_chain_values() -> None:
@@ -92,10 +100,10 @@ def test_get_depth_small_chain_values() -> None:
     test_get_depth (callee-distance values), mock-free."""
     cg, addresses = _build_linear_chain(4)
 
-    assert cg.get_depth(addresses[0]) == 3
-    assert cg.get_depth(addresses[1]) == 2
-    assert cg.get_depth(addresses[2]) == 1
-    assert cg.get_depth(addresses[3]) == 0
+    expect(cg.get_depth(addresses[0]) == _EXPECTED_CG_GET_DEPTH_ADDRESSES_0_3)
+    expect(cg.get_depth(addresses[1]) == _EXPECTED_CG_GET_DEPTH_ADDRESSES_1_2)
+    expect(cg.get_depth(addresses[2]) == 1)
+    expect(cg.get_depth(addresses[3]) == 0)
 
 
 def test_get_depth_diamond_preserves_shared_visited_semantics() -> None:
@@ -112,9 +120,9 @@ def test_get_depth_diamond_preserves_shared_visited_semantics() -> None:
     cg.add_edge(CallEdge(b, d, CallType.DIRECT))
     cg.add_edge(CallEdge(c, d, CallType.DIRECT))
 
-    assert cg.get_depth(a) == 2
-    assert cg.get_depth(b) == 1
-    assert cg.get_depth(d) == 0
+    expect(cg.get_depth(a) == _EXPECTED_CG_GET_DEPTH_A_2)
+    expect(cg.get_depth(b) == 1)
+    expect(cg.get_depth(d) == 0)
 
 
 def test_get_depth_handles_cycles() -> None:
@@ -127,7 +135,7 @@ def test_get_depth_handles_cycles() -> None:
     cg.add_edge(CallEdge(a, b, CallType.DIRECT))
     cg.add_edge(CallEdge(b, a, CallType.DIRECT))
 
-    assert cg.get_depth(a) == 2
+    expect(cg.get_depth(a) == _EXPECTED_CG_GET_DEPTH_A_2_2)
 
 
 def test_find_call_path_deep_chain_no_recursion_error() -> None:
@@ -135,7 +143,7 @@ def test_find_call_path_deep_chain_no_recursion_error() -> None:
 
     path = cg.find_call_path(addresses[0], addresses[-1])
 
-    assert path == addresses
+    expect(path == addresses)
 
 
 def test_find_call_path_deep_chain_unreachable_returns_none() -> None:
@@ -146,7 +154,7 @@ def test_find_call_path_deep_chain_unreachable_returns_none() -> None:
     isolated = addresses[-1] + 0x10
     cg.add_node(CallNode(address=isolated, name="isolated"))
 
-    assert cg.find_call_path(addresses[0], isolated) is None
+    expect(not (cg.find_call_path(addresses[0], isolated) is not None))
 
 
 def test_find_call_path_src_equals_dst() -> None:
@@ -155,7 +163,7 @@ def test_find_call_path_src_equals_dst() -> None:
     cg = CallGraph()
     cg.add_node(CallNode(address=a, name="a"))
 
-    assert cg.find_call_path(a, a) == [a]
+    expect(cg.find_call_path(a, a) == [a])
 
 
 def test_find_call_path_leftmost_dfs_order_preserved() -> None:
@@ -170,7 +178,7 @@ def test_find_call_path_leftmost_dfs_order_preserved() -> None:
     cg.add_edge(CallEdge(a, c, CallType.DIRECT))
     cg.add_edge(CallEdge(c, d, CallType.DIRECT))
 
-    assert cg.find_call_path(a, d) == [a, c, d]
+    expect(cg.find_call_path(a, d) == [a, c, d])
 
 
 def test_find_call_path_no_path_small() -> None:
@@ -181,7 +189,7 @@ def test_find_call_path_no_path_small() -> None:
     cg.add_node(CallNode(address=a, name="a"))
     cg.add_node(CallNode(address=b, name="b"))
 
-    assert cg.find_call_path(a, b) is None
+    expect(not (cg.find_call_path(a, b) is not None))
 
 
 def _build_cycle(addresses: list[int]) -> CallGraph:
@@ -200,7 +208,7 @@ def test_scc_deep_acyclic_chain_no_recursion_error() -> None:
     sccs = cg.find_strongly_connected_components()
 
     # An acyclic chain has no multi-node strongly connected component.
-    assert sccs == []
+    expect(sccs == [])
 
 
 def test_scc_deep_cycle_single_component_no_recursion_error() -> None:
@@ -209,8 +217,8 @@ def test_scc_deep_cycle_single_component_no_recursion_error() -> None:
 
     sccs = cg.find_strongly_connected_components()
 
-    assert len(sccs) == 1
-    assert sccs[0] == set(addresses)
+    expect(len(sccs) == 1)
+    expect(sccs[0] == set(addresses))
 
 
 def test_scc_two_disjoint_cycles_membership_and_order() -> None:
@@ -227,7 +235,7 @@ def test_scc_two_disjoint_cycles_membership_and_order() -> None:
 
     sccs = cg.find_strongly_connected_components()
 
-    assert [set(s) for s in sccs] == [{a, b}, {c, d}]
+    expect([set(s) for s in sccs] == [{a, b}, {c, d}])
 
 
 def test_scc_self_loop_excluded_by_size_filter() -> None:
@@ -238,7 +246,7 @@ def test_scc_self_loop_excluded_by_size_filter() -> None:
     cg.add_node(CallNode(address=a, name="a"))
     cg.add_edge(CallEdge(a, a, CallType.DIRECT))
 
-    assert cg.find_strongly_connected_components() == []
+    expect(cg.find_strongly_connected_components() == [])
 
 
 def test_scc_edge_to_absent_callee_node() -> None:
@@ -258,14 +266,14 @@ def test_scc_edge_to_absent_callee_node() -> None:
 
     sccs = cg.find_strongly_connected_components()
 
-    assert [set(s) for s in sccs] == [{a, b, absent}]
+    expect([set(s) for s in sccs] == [{a, b, absent}])
 
 
 def test_detect_recursion_deep_acyclic_chain_no_recursion_error() -> None:
     cg, _addresses = _build_linear_chain(CHAIN_LENGTH)
 
-    assert cg.find_recursive_chains() == []
-    assert cg.find_recursive_functions() == []
+    expect(cg.find_recursive_chains() == [])
+    expect(cg.find_recursive_functions() == [])
 
 
 def test_detect_recursion_deep_cycle_chain_reconstructed() -> None:
@@ -274,14 +282,14 @@ def test_detect_recursion_deep_cycle_chain_reconstructed() -> None:
 
     chains = cg.find_recursive_chains()
 
-    assert len(chains) == 1
+    expect(len(chains) == 1)
     # The recursive implementation reconstructs the cycle as the full
     # path from the entry node back to it (closing node repeated).
-    assert chains[0] == [*addresses, addresses[0]]
-    assert sorted(cg.find_recursive_functions()) == sorted(addresses)
+    expect(chains[0] == [*addresses, addresses[0]])
+    expect(sorted(cg.find_recursive_functions()) == sorted(addresses))
     depth_node = cg.get_node(addresses[0])
-    assert depth_node is not None
-    assert depth_node.recursion_depth == CHAIN_LENGTH
+    expect(depth_node is not None)
+    expect(depth_node.recursion_depth == CHAIN_LENGTH)
 
 
 def test_detect_recursion_self_loop_pins_behavior() -> None:
@@ -292,11 +300,11 @@ def test_detect_recursion_self_loop_pins_behavior() -> None:
     cg.add_node(CallNode(address=a, name="a"))
     cg.add_edge(CallEdge(a, a, CallType.DIRECT))
 
-    assert cg.find_recursive_chains() == [[a, a]]
-    assert cg.find_recursive_functions() == [a]
+    expect(cg.find_recursive_chains() == [[a, a]])
+    expect(cg.find_recursive_functions() == [a])
     node = cg.get_node(a)
-    assert node is not None
-    assert node.recursion_depth == 1
+    expect(node is not None)
+    expect(node.recursion_depth == 1)
 
 
 def test_detect_recursion_mutual_pins_chain_shape() -> None:
@@ -308,8 +316,8 @@ def test_detect_recursion_mutual_pins_chain_shape() -> None:
     cg.add_edge(CallEdge(a, b, CallType.DIRECT))
     cg.add_edge(CallEdge(b, a, CallType.DIRECT))
 
-    assert cg.find_recursive_chains() == [[a, b, a]]
-    assert sorted(cg.find_recursive_functions()) == [a, b]
+    expect(cg.find_recursive_chains() == [[a, b, a]])
+    expect(sorted(cg.find_recursive_functions()) == [a, b])
 
 
 def test_detect_recursion_multiple_chains_append_order() -> None:
@@ -322,7 +330,7 @@ def test_detect_recursion_multiple_chains_append_order() -> None:
     cg.add_edge(CallEdge(a, a, CallType.DIRECT))
     cg.add_edge(CallEdge(b, b, CallType.DIRECT))
 
-    assert cg.find_recursive_chains() == [[a, a], [b, b]]
+    expect(cg.find_recursive_chains() == [[a, a], [b, b]])
 
 
 def test_detect_recursion_acyclic_branch_reports_nothing() -> None:
@@ -334,5 +342,5 @@ def test_detect_recursion_acyclic_branch_reports_nothing() -> None:
     cg.add_edge(CallEdge(a, b, CallType.DIRECT))
     cg.add_edge(CallEdge(a, c, CallType.DIRECT))
 
-    assert cg.find_recursive_chains() == []
-    assert cg.find_recursive_functions() == []
+    expect(cg.find_recursive_chains() == [])
+    expect(cg.find_recursive_functions() == [])

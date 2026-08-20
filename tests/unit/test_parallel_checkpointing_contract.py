@@ -6,6 +6,8 @@ from pathlib import Path
 
 from r2morph.core.parallel_checkpointing import has_failures, rollback_checkpoint, save_checkpoint
 from r2morph.core.parallel_planner import PassResult, PassStatus
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 class _Logger:
@@ -33,14 +35,14 @@ def test_checkpoint_helpers_round_trip(tmp_path: Path) -> None:
     logger = _Logger()
 
     checkpoint = save_checkpoint(binary, checkpoint_dir, "phase1", logger)
-    assert checkpoint.exists()
+    expect(checkpoint.exists())
 
     binary.write_bytes(b"mutated")
-    assert rollback_checkpoint(binary, checkpoint, logger) is True
-    assert binary.read_bytes() == b"abc"
+    expect(not (rollback_checkpoint(binary, checkpoint, logger) is not True))
+    expect(binary.read_bytes() == b"abc")
 
     results = {
-        "ok": PassResult(pass_name="ok", status=PassStatus.COMPLETED),
-        "fail": PassResult(pass_name="fail", status=PassStatus.FAILED),
+        "ok": PassResult(**{MUTATION_NAME_KEY: "ok"}, status=PassStatus.COMPLETED),
+        "fail": PassResult(**{MUTATION_NAME_KEY: "fail"}, status=PassStatus.FAILED),
     }
-    assert has_failures(results) is True
+    expect(not (has_failures(results) is not True))

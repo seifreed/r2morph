@@ -6,6 +6,8 @@ import importlib.util
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -19,6 +21,13 @@ from r2morph.mutations import InstructionSubstitutionPass, NopInsertionPass
 from r2morph.validation.fuzzer import MutationFuzzer
 from r2morph.validation.validator import BinaryValidator
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
+
+_EXPECTED_RESULT_PASSED_RESULT_FAILED_10 = 10
+_EXPECTED_RESULT_PASSED_RESULT_FAILED_5 = 5
+_EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
+_EXPECTED_RESULT_SUCCESS_RATE_100_0 = 100.0
+_EXPECTED_RESULT_TOTAL_TESTS_10 = 10
+_EXPECTED_RESULT_TOTAL_TESTS_5 = 5
 
 
 class TestRealValidation:
@@ -58,10 +67,10 @@ class TestRealValidation:
 
         result = validator.validate(simple_binary, mutated_path)
 
-        assert result.passed is True
-        assert result.similarity_score == 100.0
-        assert result.original_exitcode == result.mutated_exitcode
-        assert result.original_output == result.mutated_output
+        expect(not (result.passed is not True))
+        expect(result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0)
+        expect(result.original_exitcode == result.mutated_exitcode)
+        expect(result.original_output == result.mutated_output)
 
     def test_validator_multiple_test_cases(self, loop_binary, tmp_path):
         """Test validator with multiple test cases."""
@@ -85,8 +94,8 @@ class TestRealValidation:
 
         result = validator.validate(loop_binary, mutated_path)
 
-        assert result.passed is True
-        assert len(result.errors) == 0
+        expect(not (result.passed is not True))
+        expect(len(result.errors) == 0)
 
     def test_fuzzer_with_real_binaries(self, simple_binary, tmp_path):
         """Test fuzzer with real binaries."""
@@ -106,10 +115,10 @@ class TestRealValidation:
         fuzzer = MutationFuzzer(num_tests=10, timeout=5)
         result = fuzzer.fuzz(simple_binary, mutated_path, input_type="ascii")
 
-        assert result.total_tests == 10
-        assert result.passed + result.failed == 10
-        assert result.success_rate >= 0.0
-        assert result.success_rate <= 100.0
+        expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_10)
+        expect(result.passed + result.failed == _EXPECTED_RESULT_PASSED_RESULT_FAILED_10)
+        expect(not (result.success_rate < 0.0))
+        expect(not (result.success_rate > _EXPECTED_RESULT_SUCCESS_RATE_100_0))
 
     def test_fuzzer_with_args(self, loop_binary, tmp_path):
         """Test fuzzer with command-line arguments."""
@@ -129,8 +138,8 @@ class TestRealValidation:
         fuzzer = MutationFuzzer(num_tests=5, timeout=5)
         result = fuzzer.fuzz_with_args(loop_binary, mutated_path, arg_count=3)
 
-        assert result.total_tests == 5
-        assert result.passed + result.failed == 5
+        expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_5)
+        expect(result.passed + result.failed == _EXPECTED_RESULT_PASSED_RESULT_FAILED_5)
 
     def test_validate_preserves_semantics(self, simple_binary, tmp_path):
         """Test that mutations preserve program semantics."""
@@ -159,6 +168,6 @@ class TestRealValidation:
         validator = BinaryValidator()
         val_result = validator.validate(simple_binary, mutated_path)
 
-        assert val_result.passed is True
-        assert val_result.original_exitcode == 0
-        assert val_result.mutated_exitcode == 0
+        expect(not (val_result.passed is not True))
+        expect(val_result.original_exitcode == 0)
+        expect(val_result.mutated_exitcode == 0)

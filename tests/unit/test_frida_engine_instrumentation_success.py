@@ -1,10 +1,11 @@
-import subprocess
+import os
 import time
 from pathlib import Path
 
 import pytest
 
 from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine, InstrumentationMode
+from tests.utils.assertions import expect
 
 
 def test_frida_engine_spawn_success_path():
@@ -19,17 +20,17 @@ def test_frida_engine_spawn_success_path():
     if not target.exists():
         pytest.skip("sleep binary not available")
 
-    proc = subprocess.Popen([str(target), "3"])
+    process_id = os.posix_spawn(str(target), [str(target), "3"], os.environ)
     try:
         time.sleep(0.1)
         result = engine.instrument_binary(target, mode=InstrumentationMode.ATTACH)
         if result.success:
-            assert result.process_id > 0
-            assert result.instrumentation_time >= 0
-            assert isinstance(result.api_calls_captured, int)
+            expect(not (result.process_id <= 0))
+            expect(not (result.instrumentation_time < 0))
+            expect(isinstance(result.api_calls_captured, int))
         else:
-            assert result.error_message is not None
+            expect(result.error_message is not None)
     finally:
-        proc.terminate()
-        proc.wait(timeout=5)
+        os.kill(process_id, 15)
+        os.waitpid(process_id, 0)
         engine.cleanup()

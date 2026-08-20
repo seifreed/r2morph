@@ -5,11 +5,13 @@ Targets all CLI commands and their code paths.
 
 import importlib.util
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -30,13 +32,13 @@ class TestCLIMainCallback:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_morphed"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "-i", str(ls_elf), "-o", str(output)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_main_callback_auto_output(self, ls_elf, tmp_path):
         """Test main callback with auto-generated output filename."""
@@ -47,13 +49,13 @@ class TestCLIMainCallback:
         temp_binary = tmp_path / "ls"
         shutil.copy(ls_elf, temp_binary)
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "-i", str(temp_binary)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_main_callback_aggressive(self, ls_elf, tmp_path):
         """Test main callback with aggressive mode."""
@@ -61,7 +63,7 @@ class TestCLIMainCallback:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_aggressive"
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -76,7 +78,7 @@ class TestCLIMainCallback:
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_main_callback_force(self, ls_elf, tmp_path):
         """Test main callback with force mode."""
@@ -84,7 +86,7 @@ class TestCLIMainCallback:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_force"
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -99,7 +101,7 @@ class TestCLIMainCallback:
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_main_callback_aggressive_and_force(self, ls_elf, tmp_path):
         """Test main callback with both aggressive and force."""
@@ -107,7 +109,7 @@ class TestCLIMainCallback:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_aggr_force"
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -123,7 +125,7 @@ class TestCLIMainCallback:
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_main_callback_verbose(self, ls_elf, tmp_path):
         """Test main callback with verbose mode."""
@@ -131,7 +133,7 @@ class TestCLIMainCallback:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_verbose"
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -146,7 +148,7 @@ class TestCLIMainCallback:
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_main_callback_debug(self, ls_elf, tmp_path):
         """Test main callback with debug mode."""
@@ -154,7 +156,7 @@ class TestCLIMainCallback:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_debug"
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -169,18 +171,18 @@ class TestCLIMainCallback:
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_main_callback_no_args(self):
         """Test main callback with no arguments."""
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli"],
             capture_output=True,
             text=True,
             timeout=10,
         )
         # Should show help or usage
-        assert "Usage" in result.stdout or "usage" in result.stdout.lower() or "Commands" in result.stdout
+        expect("Usage" in result.stdout or "usage" in result.stdout.lower() or "Commands" in result.stdout)
 
 
 class TestCLIAnalyzeCommand:
@@ -195,26 +197,26 @@ class TestCLIAnalyzeCommand:
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "analyze", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_analyze_command_verbose(self, ls_elf):
         """Test analyze command with verbose flag."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "analyze", str(ls_elf), "--verbose"],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
 
 class TestCLIFunctionsCommand:
@@ -229,39 +231,39 @@ class TestCLIFunctionsCommand:
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_functions_command_with_limit(self, ls_elf):
         """Test functions command with custom limit."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf), "--limit", "10"],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_functions_command_verbose(self, ls_elf):
         """Test functions command with verbose flag."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf), "--verbose"],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_functions_command_show_more_message(self, ls_elf):
         """Test functions command shows 'use --limit' message."""
@@ -269,13 +271,13 @@ class TestCLIFunctionsCommand:
             pytest.skip("ELF binary not available")
 
         # Use a very low limit to trigger the "showing N of M" message
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf), "--limit", "1"],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
 
 # Morph command tests removed due to CLI structural issues with invoke_without_command=True

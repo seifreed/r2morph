@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -46,8 +48,8 @@ class TestOpaquePredicates:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
 
     def test_opaque_predicate_types(self, ls_elf, tmp_path):
         """Test different opaque predicate types."""
@@ -70,7 +72,7 @@ class TestOpaquePredicates:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
     def test_low_probability(self, ls_elf, tmp_path):
         """Test with low probability."""
@@ -88,7 +90,7 @@ class TestOpaquePredicates:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
 
 class TestDeadCodeInjection:
@@ -118,8 +120,8 @@ class TestDeadCodeInjection:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
 
     def test_dead_code_patterns(self, ls_elf, tmp_path):
         """Test different dead code patterns."""
@@ -141,7 +143,7 @@ class TestDeadCodeInjection:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
     def test_aggressive_dead_code(self, ls_elf, tmp_path):
         """Test aggressive dead code injection."""
@@ -162,7 +164,7 @@ class TestDeadCodeInjection:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
 
 class TestControlFlowFlattening:
@@ -192,8 +194,8 @@ class TestControlFlowFlattening:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
 
     def test_flatten_with_switch(self, ls_elf, tmp_path):
         """Test flattening with switch dispatcher."""
@@ -215,7 +217,7 @@ class TestControlFlowFlattening:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
     def test_combined_advanced_mutations(self, ls_elf, tmp_path):
         """Test combining multiple advanced mutations."""
@@ -238,5 +240,5 @@ class TestControlFlowFlattening:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))

@@ -16,16 +16,20 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from r2morph.validation.symbolic_validator import SymbolicValidator
+from tests.utils.assertions import expect
 
 
 def test_missing_previous_binary_path_returns_no_checkpoint() -> None:
     result = SymbolicValidator()._binary_comparator._compare_real_binary_regions(
         SimpleNamespace(path="/whatever"), {}, SimpleNamespace()
     )
-    assert result == {
-        "symbolic_binary_check_performed": False,
-        "symbolic_binary_reason": "no previous binary checkpoint available",
-    }
+    expect(
+        result
+        == {
+            "symbolic_binary_check_performed": False,
+            "symbolic_binary_reason": "no previous binary checkpoint available",
+        }
+    )
 
 
 def test_missing_current_binary_path_returns_path_not_available(tmp_path: Path) -> None:
@@ -36,10 +40,10 @@ def test_missing_current_binary_path_returns_path_not_available(tmp_path: Path) 
         {"previous_binary_path": str(prev)},
         SimpleNamespace(),
     )
-    assert result == {
-        "symbolic_binary_check_performed": False,
-        "symbolic_binary_reason": "current binary path not available",
-    }
+    expect(
+        result
+        == {"symbolic_binary_check_performed": False, "symbolic_binary_reason": "current binary path not available"}
+    )
 
 
 def test_artifacts_absent_on_disk_returns_not_available(tmp_path: Path) -> None:
@@ -50,10 +54,13 @@ def test_artifacts_absent_on_disk_returns_not_available(tmp_path: Path) -> None:
         {"previous_binary_path": str(missing_prev)},
         SimpleNamespace(),
     )
-    assert result == {
-        "symbolic_binary_check_performed": False,
-        "symbolic_binary_reason": "real binary artifacts not available on disk",
-    }
+    expect(
+        result
+        == {
+            "symbolic_binary_check_performed": False,
+            "symbolic_binary_reason": "real binary artifacts not available on disk",
+        }
+    )
 
 
 def test_only_previous_missing_on_disk_still_not_available(tmp_path: Path) -> None:
@@ -65,7 +72,10 @@ def test_only_previous_missing_on_disk_still_not_available(tmp_path: Path) -> No
         {"previous_binary_path": str(missing_prev)},
         SimpleNamespace(),
     )
-    assert result == {
-        "symbolic_binary_check_performed": False,
-        "symbolic_binary_reason": "real binary artifacts not available on disk",
-    }
+    expect(
+        result
+        == {
+            "symbolic_binary_check_performed": False,
+            "symbolic_binary_reason": "real binary artifacts not available on disk",
+        }
+    )

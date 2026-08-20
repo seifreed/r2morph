@@ -10,6 +10,11 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ACCURACY_TRUE_POSITIVES_2 = 2
+_EXPECTED_RESULT_5 = 5
+_EXPECTED_SUMMARY_EXECUTION_TIME_PERCENTILES_P95_1_25 = 1.25
 
 
 def _make_sample(file_path: str, sample_hash: str) -> TestSample:
@@ -34,25 +39,25 @@ def test_testsample_hash_verification_and_existence(tmp_path):
 
     sha = hashlib.sha256(payload).hexdigest()
     sample = _make_sample(str(sample_path), sha)
-    assert sample.file_exists is True
-    assert sample.verify_hash() is True
+    expect(not (sample.file_exists is not True))
+    expect(not (sample.verify_hash() is not True))
 
     bad_sample = _make_sample(str(sample_path), "0" * 64)
-    assert bad_sample.verify_hash() is False
+    expect(not (bad_sample.verify_hash() is not False))
 
 
 def test_measure_performance_success_and_failure(tmp_path):
     framework = ValidationFramework(test_data_dir=str(tmp_path))
 
     metrics, result = framework._measure_performance(lambda x: x + 1, 4)
-    assert metrics.success is True
-    assert result == 5
-    assert metrics.execution_time >= 0.0
+    expect(not (metrics.success is not True))
+    expect(result == _EXPECTED_RESULT_5)
+    expect(not (metrics.execution_time < 0.0))
 
     metrics_fail, result_fail = framework._measure_performance(lambda: 1 / 0)
-    assert metrics_fail.success is False
-    assert result_fail is None
-    assert metrics_fail.error_message
+    expect(not (metrics_fail.success is not False))
+    expect(not (result_fail is not None))
+    expect(metrics_fail.error_message)
 
 
 def test_accuracy_metrics_and_summary_generation(tmp_path):
@@ -77,10 +82,10 @@ def test_accuracy_metrics_and_summary_generation(tmp_path):
         "mba_detected": False,
     }
     accuracy = framework._calculate_accuracy_metrics(expected, actual)
-    assert isinstance(accuracy, AccuracyMetrics)
-    assert accuracy.true_positives == 2
-    assert accuracy.false_positives == 1
-    assert accuracy.false_negatives == 0
+    expect(isinstance(accuracy, AccuracyMetrics))
+    expect(accuracy.true_positives == _EXPECTED_ACCURACY_TRUE_POSITIVES_2)
+    expect(accuracy.false_positives == 1)
+    expect(accuracy.false_negatives == 0)
 
     sample = _make_sample(str(sample_path), sha)
     performance = PerformanceMetrics(
@@ -102,10 +107,10 @@ def test_accuracy_metrics_and_summary_generation(tmp_path):
     )
 
     summary = framework._generate_validation_summary([result])
-    assert summary["total_tests"] == 1
-    assert summary["successful_tests"] == 1
-    assert summary["avg_accuracy"] >= 0.0
-    assert summary["execution_time_percentiles"]["p95"] >= 1.25
+    expect(summary["total_tests"] == 1)
+    expect(summary["successful_tests"] == 1)
+    expect(not (summary["avg_accuracy"] < 0.0))
+    expect(not (summary["execution_time_percentiles"]["p95"] < _EXPECTED_SUMMARY_EXECUTION_TIME_PERCENTILES_P95_1_25))
 
 
 def test_export_and_report_outputs(tmp_path):
@@ -152,12 +157,12 @@ def test_export_and_report_outputs(tmp_path):
     framework.export_results(str(csv_path), "csv")
 
     export_data = json.loads(json_path.read_text())
-    assert export_data["metadata"]["total_results"] == 1
-    assert export_data["summary"]["total_tests"] == 1
-    assert "results" in export_data
+    expect(export_data["metadata"]["total_results"] == 1)
+    expect(export_data["summary"]["total_tests"] == 1)
+    expect(not ("results" not in export_data))
 
     csv_text = csv_path.read_text()
-    assert "sample_path" in csv_text
+    expect(not ("sample_path" not in csv_text))
 
     report = framework.generate_report()
-    assert "R2MORPH VALIDATION REPORT" in report
+    expect(not ("R2MORPH VALIDATION REPORT" not in report))

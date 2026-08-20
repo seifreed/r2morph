@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import random as _stdlib_random
 from collections.abc import MutableSequence, Sequence
+from typing import Any
 
 _Seed = int | float | str | bytes | bytearray | None
+_RandomState = tuple[Any, ...]
 
 
 class Random(_stdlib_random.Random):
@@ -21,6 +23,21 @@ def seed(a: _Seed = None, version: int = 2) -> None:
     """Select a reproducible stream, or system entropy when ``a`` is None."""
     del version
     _source[0] = _stdlib_random.SystemRandom() if a is None else Random(a)
+
+
+def getstate() -> _RandomState | None:
+    """Return the current deterministic stream state when one is selected."""
+    if isinstance(_source[0], _stdlib_random.SystemRandom):
+        return None
+    return _source[0].getstate()
+
+
+def setstate(state: _RandomState | None) -> None:
+    """Restore a state returned by :func:`getstate`."""
+    if state is None:
+        _source[0] = _stdlib_random.SystemRandom()
+        return
+    _source[0].setstate(state)
 
 
 def choice[T](seq: Sequence[T]) -> T:

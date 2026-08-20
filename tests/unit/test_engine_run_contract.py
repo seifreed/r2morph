@@ -7,6 +7,9 @@ from types import SimpleNamespace
 
 from r2morph.core.engine_run import EngineRunOptions, run
 from r2morph.protocols import PipelineRunOptions
+from tests.utils.assertions import expect
+
+_EXPECTED_FAKE_ENGINE_CONFIG_SEED_7 = 7
 
 
 class _FakeBinary:
@@ -100,15 +103,15 @@ def test_engine_run_helper_applies_seed_validation_and_report(tmp_path: Path) ->
         ),
     )
 
-    assert fake_engine.analyze_calls == 1
-    assert fake_engine.config["seed"] == 7
-    assert [mutation.config["_pass_seed"] for mutation in pipeline.passes] == [7, 8]
-    assert [mutation.config["_use_derived_seed"] for mutation in pipeline.passes] == [True, True]
-    assert pipeline.calls[0]["runtime_validate_per_pass"] is False
-    assert runtime_validator.calls == [(binary_path, binary_path)]
-    assert result["requested_validation_mode"] == "structural"
-    assert result["validation_mode"] == "structural"
-    assert result["input_path"] == str(binary_path)
-    assert result["working_path"] == str(binary_path)
-    assert result["config"] == {"seed": 7}
-    assert fake_engine.saved_reports and fake_engine.saved_reports[0][0] == report_path
+    expect(fake_engine.analyze_calls == 1)
+    expect(fake_engine.config["seed"] == _EXPECTED_FAKE_ENGINE_CONFIG_SEED_7)
+    expect([mutation.config["_pass_seed"] for mutation in pipeline.passes] == [7, 8])
+    expect([mutation.config["_use_derived_seed"] for mutation in pipeline.passes] == [True, True])
+    expect(not (pipeline.calls[0]["runtime_validate_per_pass"] is not False))
+    expect(runtime_validator.calls == [(binary_path, binary_path)])
+    expect(result["requested_validation_mode"] == "structural")
+    expect(result["validation_mode"] == "structural")
+    expect(result["input_path"] == str(binary_path))
+    expect(result["working_path"] == str(binary_path))
+    expect(result["config"] == {"seed": 7})
+    expect(fake_engine.saved_reports and fake_engine.saved_reports[0][0] == report_path)

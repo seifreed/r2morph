@@ -4,6 +4,8 @@ from pathlib import Path
 import claripy
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("angr") is None:
     pytest.skip("angr not available", allow_module_level=True)
 
@@ -16,6 +18,10 @@ from r2morph.analysis.symbolic.path_explorer import ExplorationStrategy, PathExp
 from r2morph.analysis.symbolic.state_manager import StateManager, StateSchedulingStrategy
 from r2morph.analysis.symbolic.syntia_integration import SyntiaFramework
 from r2morph.core.binary import Binary
+
+_EXPECTED_LEN_RESULT_2 = 2
+_EXPECTED_X_2 = 2
+
 
 pytestmark = [pytest.mark.experimental]
 
@@ -32,12 +38,12 @@ def test_angr_bridge_project_and_state():
     bin_obj = _load_binary()
     try:
         bridge = AngrBridge(bin_obj)
-        assert bridge._should_exclude_simprocedure("malloc") is True
-        assert bridge._should_exclude_simprocedure("custom_func") is False
+        expect(not (bridge._should_exclude_simprocedure("malloc") is not True))
+        expect(not (bridge._should_exclude_simprocedure("custom_func") is not False))
 
         project = bridge.angr_project
         state = bridge.create_symbolic_state(project.entry, {"rax": 1})
-        assert state is not None
+        expect(state is not None)
 
         cfg = ControlFlowGraph(function_address=project.entry, function_name="entry")
         cfg.add_block(BasicBlock(address=project.entry, size=1))
@@ -58,11 +64,11 @@ def test_state_manager_prune_and_merge():
         manager = StateManager(max_states=1, scheduling_strategy=StateSchedulingStrategy.PRIORITY_BASED)
         id_a = manager.add_state(state_a, priority=1.0)
         manager.add_state(state_b, priority=0.5)
-        assert len(manager.active_states) <= 1
+        expect(not (len(manager.active_states) > 1))
 
         manager.update_state_coverage(id_a, {0x1000, 0x2000})
         manager.update_state_priority(id_a, 2.0)
-        assert manager.get_next_state() is not None
+        expect(manager.get_next_state() is not None)
 
         merge_manager = StateManager(max_states=10)
         merge_manager.add_state(state_a, priority=1.0)
@@ -70,7 +76,7 @@ def test_state_manager_prune_and_merge():
         merge_manager.add_state(state_c, priority=0.7)
 
         merged = merge_manager.merge_equivalent_states()
-        assert merged >= 1
+        expect(not (merged < 1))
     finally:
         bin_obj.__exit__(None, None, None)
 
@@ -81,24 +87,24 @@ def test_constraint_solver_path_and_mba():
     x = claripy.BVS("x", 8)
     constraints = [x == 1]
     result = solver.solve_path_constraints(constraints)
-    assert result.satisfiable is True
-    assert result.model is not None
+    expect(not (result.satisfiable is not True))
+    expect(result.model is not None)
 
-    unsat = solver.solve_path_constraints([x == 1, x == 2])
-    assert unsat.solver_used == "z3"
+    unsat = solver.solve_path_constraints([x == 1, x == _EXPECTED_X_2])
+    expect(unsat.solver_used == "z3")
 
     mba = MBAExpression(expression="x", variables={"x"}, bit_width=8)
     mba_result = solver.simplify_mba_expression(mba)
-    assert mba_result.satisfiable is True
+    expect(not (mba_result.satisfiable is not True))
 
     equiv = solver.check_semantic_equivalence("x", "x", {"x"})
-    assert equiv.solver_used == "z3"
+    expect(equiv.solver_used == "z3")
 
     stats = solver.get_solver_statistics()
-    assert "queries_solved" in stats
+    expect(not ("queries_solved" not in stats))
 
     opaque = solver.detect_opaque_predicates([x == 1])
-    assert isinstance(opaque, list)
+    expect(isinstance(opaque, list))
 
 
 def test_path_explorer_basic_run():
@@ -112,10 +118,10 @@ def test_path_explorer_basic_run():
             max_paths=1,
             timeout=1,
         )
-        assert result.execution_time >= 0.0
+        expect(not (result.execution_time < 0.0))
 
         handlers = explorer.find_vm_handlers(bridge.angr_project.entry, max_handlers=1)
-        assert isinstance(handlers, list)
+        expect(isinstance(handlers, list))
     finally:
         bin_obj.__exit__(None, None, None)
 
@@ -127,8 +133,8 @@ def test_syntia_framework_fallback_semantics():
         {"bytes": b"\x90", "disasm": "nop", "size": 1},
     ]
     result = framework.synthesize_semantics(instructions, address=0x1000)
-    assert result is not None
-    assert len(result) == 2
+    expect(result is not None)
+    expect(len(result) == _EXPECTED_LEN_RESULT_2)
 
     single = framework.learn_instruction_semantics(b"\x90", 0x2000, "nop", None)
-    assert single is not None
+    expect(single is not None)

@@ -5,6 +5,7 @@ from r2morph.devirtualization.binary_rewriter_models import (
     RewriteOperation,
     RewriteResult,
 )
+from tests.utils.assertions import expect
 
 
 def test_binary_rewriter_models_expose_expected_contract() -> None:
@@ -17,7 +18,7 @@ def test_binary_rewriter_models_expose_expected_contract() -> None:
     reloc = RelocationEntry(address=0x2000, target=0x3000, reloc_type="ABS")
     result = RewriteResult(success=True, output_path="out.bin")
 
-    assert BinaryFormat.PE.value == "pe"
-    assert patch.size_change == 0
-    assert reloc.addend == 0
-    assert result.patches_applied == 0
+    expect(BinaryFormat.PE.value == "pe")
+    expect(patch.size_change == 0)
+    expect(reloc.addend == 0)
+    expect(result.patches_applied == 0)

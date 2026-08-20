@@ -8,6 +8,7 @@ from r2morph.cli_cache_output import (
     build_cache_usage_hint,
 )
 from r2morph.core.analysis_cache_models import CacheStats
+from tests.utils.assertions import expect
 
 
 def test_cli_cache_output_builds_stats_lines() -> None:
@@ -20,18 +21,21 @@ def test_cli_cache_output_builds_stats_lines() -> None:
         newest_entry=datetime(2024, 1, 2, tzinfo=UTC),
     )
 
-    assert build_cache_statistics_lines(stats) == [
-        "Cache Statistics:",
-        "  Hits: 3",
-        "  Misses: 1",
-        "  Hit Rate: 75.00%",
-        "  Entries: 4",
-        "  Size: 2.00 MB",
-        "  Oldest Entry: 2024-01-01T00:00:00+00:00",
-        "  Newest Entry: 2024-01-02T00:00:00+00:00",
-    ]
+    expect(
+        build_cache_statistics_lines(stats)
+        == [
+            "Cache Statistics:",
+            "  Hits: 3",
+            "  Misses: 1",
+            "  Hit Rate: 75.00%",
+            "  Entries: 4",
+            "  Size: 2.00 MB",
+            "  Oldest Entry: 2024-01-01T00:00:00+00:00",
+            "  Newest Entry: 2024-01-02T00:00:00+00:00",
+        ]
+    )
 
 
 def test_cli_cache_output_messages_are_stable() -> None:
-    assert build_cache_cleared_message(7) == "Cleared 7 cache entries"
-    assert build_cache_usage_hint() == "Specify --clear or --stats"
+    expect(build_cache_cleared_message(7) == "Cleared 7 cache entries")
+    expect(build_cache_usage_hint() == "Specify --clear or --stats")

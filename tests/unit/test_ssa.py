@@ -5,17 +5,40 @@ Unit tests for SSA (Static Single Assignment) form generation.
 import pytest
 
 from r2morph.analysis.ssa import PhiFunction, SSABlock, SSAConverter, SSAVariable
+from tests.utils.assertions import expect
+
+_EXPECTED_BLOCK_ADDRESS_4096 = 0x1000
+_EXPECTED_CURRENT_2 = 2
+_EXPECTED_LEN_BLOCK_INSTRUCTIONS_2 = 2
+_EXPECTED_LEN_BLOCK_SUCCESSORS_2 = 2
+_EXPECTED_LEN_D_OPERANDS_2 = 2
+_EXPECTED_LEN_EAX_PHI_OPERANDS_2 = 2
+_EXPECTED_LEN_LIVE_INFO_2 = 2
+_EXPECTED_LEN_PHI_OPERANDS_2 = 2
+_EXPECTED_LEN_RESULT_2 = 2
+_EXPECTED_LEN_RESULT_2_2 = 2
+_EXPECTED_LEN_RESULT_4 = 4
+_EXPECTED_LEN_VERSIONS_2 = 2
+_EXPECTED_LIVE_INFO_4096 = 0x1000
+_EXPECTED_PHI_BLOCK_ADDRESS_4096 = 0x1000
+_EXPECTED_RESULT_4096 = 0x1000
+_EXPECTED_RESULT_4096_2 = 0x1000
+_EXPECTED_RESULT_4096_3 = 0x1000
+_EXPECTED_RESULT_4101 = 0x1005
+_EXPECTED_RESULT_4104 = 0x1008
+_EXPECTED_V2_2 = 2
+_EXPECTED_VAR_DEFINITION_ADDRESS_4096 = 0x1000
 
 
 class TestSSAVariable:
     def test_ssa_variable_creation(self):
         var = SSAVariable(base_name="eax", version=0)
-        assert var.base_name == "eax"
-        assert var.version == 0
+        expect(var.base_name == "eax")
+        expect(var.version == 0)
 
     def test_ssa_variable_repr(self):
         var = SSAVariable(base_name="eax", version=1)
-        assert repr(var) == "eax_1"
+        expect(repr(var) == "eax_1")
 
     def test_ssa_variable_equality(self):
         var1 = SSAVariable(base_name="eax", version=1)
@@ -23,9 +46,9 @@ class TestSSAVariable:
         var3 = SSAVariable(base_name="eax", version=2)
         var4 = SSAVariable(base_name="ebx", version=1)
 
-        assert var1 == var2
-        assert var1 != var3
-        assert var1 != var4
+        expect(var1 == var2)
+        expect(var1 != var3)
+        expect(var1 != var4)
 
     def test_ssa_variable_hash(self):
         var1 = SSAVariable(base_name="eax", version=1)
@@ -33,16 +56,16 @@ class TestSSAVariable:
         var3 = SSAVariable(base_name="eax", version=2)
 
         d = {var1: "first"}
-        assert d[var2] == "first"
-        assert var3 not in d
+        expect(d[var2] == "first")
+        expect(var3 not in d)
 
     def test_ssa_variable_with_definition_address(self):
         var = SSAVariable(base_name="eax", version=1, definition_address=0x1000)
-        assert var.definition_address == 0x1000
+        expect(var.definition_address == _EXPECTED_VAR_DEFINITION_ADDRESS_4096)
 
     def test_ssa_variable_with_original_register(self):
         var = SSAVariable(base_name="r0", version=1, original_register="x0")
-        assert var.original_register == "x0"
+        expect(var.original_register == "x0")
 
 
 class TestPhiFunction:
@@ -53,9 +76,9 @@ class TestPhiFunction:
             SSAVariable(base_name="eax", version=1),
         ]
         phi = PhiFunction(result=result, operands=operands, block_address=0x1000)
-        assert phi.result == result
-        assert len(phi.operands) == 2
-        assert phi.block_address == 0x1000
+        expect(phi.result == result)
+        expect(len(phi.operands) == _EXPECTED_LEN_PHI_OPERANDS_2)
+        expect(phi.block_address == _EXPECTED_PHI_BLOCK_ADDRESS_4096)
 
     def test_phi_function_repr(self):
         result = SSAVariable(base_name="eax", version=2)
@@ -64,9 +87,9 @@ class TestPhiFunction:
             SSAVariable(base_name="eax", version=1),
         ]
         phi = PhiFunction(result=result, operands=operands, block_address=0x1000)
-        assert "eax_2" in repr(phi)
-        assert "eax_0" in repr(phi)
-        assert "eax_1" in repr(phi)
+        expect(not ("eax_2" not in repr(phi)))
+        expect(not ("eax_0" not in repr(phi)))
+        expect(not ("eax_1" not in repr(phi)))
 
     def test_phi_function_to_dict(self):
         result = SSAVariable(base_name="eax", version=2)
@@ -76,18 +99,18 @@ class TestPhiFunction:
         ]
         phi = PhiFunction(result=result, operands=operands, block_address=0x1000)
         d = phi.to_dict()
-        assert d["result"] == "eax_2"
-        assert len(d["operands"]) == 2
-        assert "0x1000" in d["block_address"]
+        expect(d["result"] == "eax_2")
+        expect(len(d["operands"]) == _EXPECTED_LEN_D_OPERANDS_2)
+        expect(not ("0x1000" not in d["block_address"]))
 
 
 class TestSSABlock:
     def test_ssa_block_creation(self):
         block = SSABlock(address=0x1000)
-        assert block.address == 0x1000
-        assert len(block.instructions) == 0
-        assert len(block.phi_functions) == 0
-        assert len(block.definitions) == 0
+        expect(block.address == _EXPECTED_BLOCK_ADDRESS_4096)
+        expect(len(block.instructions) == 0)
+        expect(len(block.phi_functions) == 0)
+        expect(len(block.definitions) == 0)
 
     def test_ssa_block_with_instructions(self):
         instructions = [
@@ -95,7 +118,7 @@ class TestSSABlock:
             {"offset": 0x1002, "disasm": "mov ebx, 2"},
         ]
         block = SSABlock(address=0x1000, instructions=instructions)
-        assert len(block.instructions) == 2
+        expect(len(block.instructions) == _EXPECTED_LEN_BLOCK_INSTRUCTIONS_2)
 
     def test_ssa_block_with_phi_functions(self):
         phi = PhiFunction(
@@ -104,7 +127,7 @@ class TestSSABlock:
             block_address=0x1000,
         )
         block = SSABlock(address=0x1000, phi_functions=[phi])
-        assert len(block.phi_functions) == 1
+        expect(len(block.phi_functions) == 1)
 
     def test_ssa_block_with_edges(self):
         block = SSABlock(
@@ -112,13 +135,13 @@ class TestSSABlock:
             predecessors=[0x900],
             successors=[0x1100, 0x1200],
         )
-        assert len(block.predecessors) == 1
-        assert len(block.successors) == 2
+        expect(len(block.predecessors) == 1)
+        expect(len(block.successors) == _EXPECTED_LEN_BLOCK_SUCCESSORS_2)
 
     def test_ssa_block_to_dict(self):
         block = SSABlock(address=0x1000)
         d = block.to_dict()
-        assert "0x1000" in d["address"]
+        expect(not ("0x1000" not in d["address"]))
 
 
 class TestSSAConverter:
@@ -127,9 +150,9 @@ class TestSSAConverter:
         return SSAConverter()
 
     def test_converter_initialization(self, converter):
-        assert converter._version_counter == {}
-        assert converter._current_def == {}
-        assert len(converter._sealed_blocks) == 0
+        expect(converter._version_counter == {})
+        expect(converter._current_def == {})
+        expect(len(converter._sealed_blocks) == 0)
 
     def test_convert_simple_cfg(self, converter):
         blocks = {
@@ -142,7 +165,7 @@ class TestSSAConverter:
 
         result = converter.convert_to_ssa(blocks)
 
-        assert 0x1000 in result
+        expect(not (_EXPECTED_RESULT_4096 not in result))
 
     def test_convert_linear_cfg(self, converter):
         blocks = {
@@ -160,9 +183,9 @@ class TestSSAConverter:
 
         result = converter.convert_to_ssa(blocks)
 
-        assert len(result) == 2
-        assert 0x1000 in result
-        assert 0x1005 in result
+        expect(len(result) == _EXPECTED_LEN_RESULT_2)
+        expect(not (_EXPECTED_RESULT_4096_2 not in result))
+        expect(not (_EXPECTED_RESULT_4101 not in result))
 
     def test_convert_with_branch(self, converter):
         blocks = {
@@ -190,17 +213,17 @@ class TestSSAConverter:
 
         result = converter.convert_to_ssa(blocks)
 
-        assert len(result) == 4
+        expect(len(result) == _EXPECTED_LEN_RESULT_4)
 
     def test_get_new_version(self, converter):
         v0 = converter._get_new_version("eax")
-        assert v0 == 0
+        expect(v0 == 0)
 
         v1 = converter._get_new_version("eax")
-        assert v1 == 1
+        expect(v1 == 1)
 
         v2 = converter._get_new_version("eax")
-        assert v2 == 2
+        expect(v2 == _EXPECTED_V2_2)
 
     def test_get_current_version(self, converter):
         converter._get_new_version("eax")
@@ -208,35 +231,35 @@ class TestSSAConverter:
         converter._get_new_version("eax")
 
         current = converter._get_current_version("eax")
-        assert current == 2
+        expect(current == _EXPECTED_CURRENT_2)
 
         new_reg = converter._get_current_version("ebx")
-        assert new_reg == 0
+        expect(new_reg == 0)
 
     def test_extract_defined_registers_mov(self, converter):
         defined = converter._extract_defined_registers("mov eax, 1")
-        assert "eax" in defined
+        expect(not ("eax" not in defined))
 
     def test_extract_defined_registers_lea(self, converter):
         defined = converter._extract_defined_registers("lea eax, [ebx]")
-        assert "eax" in defined
+        expect(not ("eax" not in defined))
 
     def test_extract_defined_registers_pop(self, converter):
         defined = converter._extract_defined_registers("pop eax")
-        assert "eax" in defined
+        expect(not ("eax" not in defined))
 
     def test_extract_used_registers(self, converter):
         used = converter._extract_used_registers("mov eax, ebx")
-        assert "ebx" in used
+        expect(not ("ebx" not in used))
 
     def test_extract_used_registers_multiple(self, converter):
         used = converter._extract_used_registers("mov eax, ebx, ecx")
-        assert "ebx" in used
-        assert "ecx" in used
+        expect(not ("ebx" not in used))
+        expect(not ("ecx" not in used))
 
     def test_extract_used_registers_64bit(self, converter):
         used = converter._extract_used_registers("mov rax, rbx")
-        assert "rbx" in used
+        expect(not ("rbx" not in used))
 
     def test_get_ssa_variable_at(self, converter):
         blocks = {
@@ -247,14 +270,14 @@ class TestSSAConverter:
         }
 
         var = converter.get_ssa_variable_at("eax", 0x1000, blocks)
-        assert var is not None
-        assert var.base_name == "eax"
+        expect(var is not None)
+        expect(var.base_name == "eax")
 
     def test_get_ssa_variable_at_not_found(self, converter):
         blocks = {0x1000: SSABlock(address=0x1000)}
 
         var = converter.get_ssa_variable_at("nonexistent", 0x1000, blocks)
-        assert var is None
+        expect(not (var is not None))
 
     def test_get_all_versions(self, converter):
         blocks = {
@@ -269,9 +292,9 @@ class TestSSAConverter:
         }
 
         versions = converter.get_all_versions("eax", blocks)
-        assert len(versions) == 2
-        assert versions[0].version == 0
-        assert versions[1].version == 1
+        expect(len(versions) == _EXPECTED_LEN_VERSIONS_2)
+        expect(versions[0].version == 0)
+        expect(versions[1].version == 1)
 
     def test_compute_live_variables_ssa_single_block(self, converter):
         blocks = {
@@ -283,10 +306,10 @@ class TestSSAConverter:
 
         live_info = converter.compute_live_variables_ssa(blocks)
 
-        assert 0x1000 in live_info
+        expect(not (_EXPECTED_LIVE_INFO_4096 not in live_info))
         live_in, live_out = live_info[0x1000]
-        assert isinstance(live_in, set)
-        assert isinstance(live_out, set)
+        expect(isinstance(live_in, set))
+        expect(isinstance(live_out, set))
 
     def test_compute_live_variables_ssa_multiple_blocks(self, converter):
         blocks = {
@@ -304,7 +327,7 @@ class TestSSAConverter:
 
         live_info = converter.compute_live_variables_ssa(blocks)
 
-        assert len(live_info) == 2
+        expect(len(live_info) == _EXPECTED_LEN_LIVE_INFO_2)
 
 
 class TestSSAIntegration:
@@ -334,16 +357,16 @@ class TestSSAIntegration:
 
         result = converter.convert_to_ssa(blocks)
 
-        assert len(result) == 2
-        assert 0x1000 in result
-        assert 0x1008 in result
+        expect(len(result) == _EXPECTED_LEN_RESULT_2_2)
+        expect(not (_EXPECTED_RESULT_4096_3 not in result))
+        expect(not (_EXPECTED_RESULT_4104 not in result))
 
     def test_convert_empty_cfg(self, converter):
         blocks = {}
 
         result = converter.convert_to_ssa(blocks)
 
-        assert result == {}
+        expect(result == {})
 
 
 class TestPhiPlacement:
@@ -378,7 +401,7 @@ class TestPhiPlacement:
         result = converter.convert_to_ssa(blocks)
 
         phi_targets = {phi.result.base_name for phi in result[0x1030].phi_functions}
-        assert "eax" in phi_targets
+        expect(not ("eax" not in phi_targets))
 
     def test_convert_phi_has_one_operand_per_predecessor(self, converter):
         blocks = {
@@ -407,4 +430,4 @@ class TestPhiPlacement:
         result = converter.convert_to_ssa(blocks)
 
         eax_phi = next(phi for phi in result[0x1030].phi_functions if phi.result.base_name == "eax")
-        assert len(eax_phi.operands) == 2
+        expect(len(eax_phi.operands) == _EXPECTED_LEN_EAX_PHI_OPERANDS_2)

@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter import BinaryFormat, BinaryRewriter
+from tests.utils.assertions import expect
 
 
 @pytest.mark.parametrize(
@@ -19,11 +20,11 @@ def test_binary_rewriter_analyze_binary_formats(binary_path: Path, expected_form
         bin_obj.analyze("aa")
 
         rewriter = BinaryRewriter(bin_obj)
-        assert rewriter._analyze_binary() is True
-        assert rewriter.binary_format == expected_format
-        assert rewriter.sections
+        expect(not (rewriter._analyze_binary() is not True))
+        expect(rewriter.binary_format == expected_format)
+        expect(rewriter.sections)
 
-        assert rewriter._initialize_codegen() is True
+        expect(not (rewriter._initialize_codegen() is not True))
 
 
 def test_binary_rewriter_rewrite_no_patches(tmp_path: Path):
@@ -37,7 +38,7 @@ def test_binary_rewriter_rewrite_no_patches(tmp_path: Path):
         rewriter = BinaryRewriter(bin_obj)
         result = rewriter.rewrite_binary(str(output_path), patches=[], preserve_original=False)
 
-    assert result.success is True
-    assert output_path.exists()
-    assert result.integrity_checks.get("file_exists") is True
-    assert result.integrity_checks.get("valid_pe_header") is True
+    expect(not (result.success is not True))
+    expect(output_path.exists())
+    expect(not (result.integrity_checks.get("file_exists") is not True))
+    expect(not (result.integrity_checks.get("valid_pe_header") is not True))

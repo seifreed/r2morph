@@ -4,10 +4,11 @@ Real integration tests for mutations using compiled binaries.
 
 import importlib.util
 import platform
-import subprocess
 from pathlib import Path
 
 import pytest
+
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -24,6 +25,7 @@ from r2morph.mutations import (
     RegisterSubstitutionPass,
 )
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
+from tests.utils.process import run_command
 
 
 class TestRealMutations:
@@ -51,7 +53,7 @@ class TestRealMutations:
     def get_output(self, binary_path):
         """Get output from executing a binary."""
         try:
-            result = subprocess.run(
+            result = run_command(
                 [str(binary_path)],
                 capture_output=True,
                 timeout=5,
@@ -84,14 +86,14 @@ class TestRealMutations:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
 
         orig_output, orig_code = self.get_output(simple_binary)
         mut_output, mut_code = self.get_output(output_path)
 
-        assert orig_code == mut_code
-        assert orig_output == mut_output
+        expect(orig_code == mut_code)
+        expect(orig_output == mut_output)
 
     def test_instruction_substitution_real(self, loop_binary, tmp_path):
         """Test instruction substitution with real binary."""
@@ -116,13 +118,13 @@ class TestRealMutations:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
         orig_output, orig_code = self.get_output(loop_binary)
         mut_output, mut_code = self.get_output(output_path)
 
-        assert orig_code == mut_code
-        assert orig_output == mut_output
+        expect(orig_code == mut_code)
+        expect(orig_output == mut_output)
 
     def test_multiple_mutations_real(self, conditional_binary, tmp_path):
         """Test multiple mutations on real binary."""
@@ -148,14 +150,14 @@ class TestRealMutations:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
-        assert result["total_mutations"] >= 0
+        expect(output_path.exists())
+        expect(not (result["total_mutations"] < 0))
 
         orig_output, orig_code = self.get_output(conditional_binary)
         mut_output, mut_code = self.get_output(output_path)
 
-        assert orig_code == mut_code
-        assert orig_output == mut_output
+        expect(orig_code == mut_code)
+        expect(orig_output == mut_output)
 
     def test_aggressive_mode_real(self, simple_binary, tmp_path):
         """Test aggressive mode with real binary."""
@@ -186,15 +188,15 @@ class TestRealMutations:
             result = engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
         if result["total_mutations"] == 0:
             pytest.skip("No mutation candidates found in test binary")
 
         orig_output, orig_code = self.get_output(simple_binary)
         mut_output, mut_code = self.get_output(output_path)
 
-        assert orig_code == mut_code
-        assert orig_output == mut_output
+        expect(orig_code == mut_code)
+        expect(orig_output == mut_output)
 
     def test_binary_still_executable(self, loop_binary, tmp_path):
         """Test that mutated binary is still executable."""
@@ -212,13 +214,13 @@ class TestRealMutations:
             engine.run()
             engine.save(output_path)
 
-        assert output_path.exists()
+        expect(output_path.exists())
 
         if platform.system() != "Windows":
             output_path.chmod(0o755)
 
-        result = subprocess.run([str(output_path)], capture_output=True, timeout=5, check=False)
+        result = run_command([str(output_path)], capture_output=True, timeout=5, check=False)
 
         if platform.system() == "Windows" and result.returncode != 0:
             pytest.skip("Mutated PE binary did not execute cleanly on Windows")
-        assert result.returncode == 0
+        expect(result.returncode == 0)

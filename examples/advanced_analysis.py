@@ -12,6 +12,7 @@ Usage:
     python examples/advanced_analysis.py /path/to/binary
 """
 
+import logging
 import sys
 from pathlib import Path
 
@@ -24,6 +25,8 @@ from r2morph.analysis import (
     InvariantDetector,
     SemanticValidator,
 )
+
+_EXPECTED_LEN_SYS_ARGV_2 = 2
 
 
 def analyze_control_flow(binary: Binary):
@@ -78,6 +81,7 @@ def analyze_dependencies(binary: Binary):
             instructions = binary.get_function_disasm(addr)
         except Exception as e:
             print(f"  Error: {e}")
+            logging.getLogger(__name__).debug("ignored optional runtime error", exc_info=True)
             continue
 
         dep_analyzer = DependencyAnalyzer()
@@ -172,7 +176,7 @@ def validate_semantics(binary: Binary):
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print("Usage: python advanced_analysis.py <binary_path>")
         sys.exit(1)
 

@@ -3,61 +3,62 @@ from pathlib import Path
 from r2morph.platform.elf_handler import ELFHandler
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
 
 
 def test_elf_handler_real_binary():
     binary_path = Path("fixtures/dataset/elf_x86_64")
     handler = ELFHandler(binary_path)
 
-    assert handler.is_elf()
-    assert handler.validate() in {True, False}
+    expect(handler.is_elf())
+    expect(not (handler.validate() not in {True, False}))
 
     sections = handler.get_sections()
-    assert isinstance(sections, list)
+    expect(isinstance(sections, list))
 
     segments = handler.get_segments()
-    assert isinstance(segments, list)
+    expect(isinstance(segments, list))
 
     entry = handler.get_entry_point()
-    assert entry is None or isinstance(entry, int)
+    expect(entry is None or isinstance(entry, int))
 
     arch = handler.get_architecture()
-    assert isinstance(arch, dict)
+    expect(isinstance(arch, dict))
 
     cave = handler.find_code_cave(min_size=16)
-    assert cave is None or isinstance(cave, int)
+    expect(cave is None or isinstance(cave, int))
 
 
 def test_macho_handler_real_binary():
     binary_path = Path("fixtures/dataset/macho_arm64")
     handler = MachOHandler(binary_path)
 
-    assert handler.is_macho()
-    assert handler.validate() in {True, False}
+    expect(handler.is_macho())
+    expect(not (handler.validate() not in {True, False}))
 
     commands = handler.get_load_commands()
-    assert isinstance(commands, list)
+    expect(isinstance(commands, list))
 
     segments = handler.get_segments()
-    assert isinstance(segments, list)
+    expect(isinstance(segments, list))
 
     integrity_ok, reason = handler.validate_integrity()
-    assert isinstance(integrity_ok, bool)
-    assert isinstance(reason, str)
+    expect(isinstance(integrity_ok, bool))
+    expect(isinstance(reason, str))
 
     is_fat = handler.is_fat_binary()
-    assert isinstance(is_fat, bool)
+    expect(isinstance(is_fat, bool))
 
 
 def test_pe_handler_real_binary():
     binary_path = Path("fixtures/dataset/pe_x86_64.exe")
     handler = PEHandler(binary_path)
 
-    assert handler.is_pe()
-    assert handler.validate() in {True, False}
+    expect(handler.is_pe())
+    expect(not (handler.validate() not in {True, False}))
 
     sections = handler.get_sections()
-    assert isinstance(sections, list)
+    expect(isinstance(sections, list))
 
     imports = handler.get_imports()
-    assert isinstance(imports, list)
+    expect(isinstance(imports, list))

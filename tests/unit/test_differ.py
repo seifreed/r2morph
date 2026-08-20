@@ -24,6 +24,22 @@ from r2morph.validation.differ import (
     SectionDiff,
     compare_binaries,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_DIFF_ADDRESS_4096 = 0x1000
+_EXPECTED_DIFF_MUTATED_SIZE_4608 = 0x1200
+_EXPECTED_DIFF_OFFSET_4096 = 0x1000
+_EXPECTED_DIFF_ORIGINAL_SIZE_4096 = 0x1000
+_EXPECTED_DIFF_ORIGINAL_SIZE_80 = 0x50
+_EXPECTED_D_BYTE_DIFF_COUNT_5 = 5
+_EXPECTED_LAST_DIFF_OFFSET_4096 = 0x1000
+_EXPECTED_LEN_BYTE_DIFF_CONTEXT_BEFORE_3 = 3
+_EXPECTED_LEN_DIFF_BYTE_DIFFS_2 = 2
+_EXPECTED_LEN_DIFF_MUTATED_BYTES_14 = 14
+_EXPECTED_LEN_DIFF_ORIGINAL_BYTES_13 = 13
+_EXPECTED_LEN_FUNC_DIFF_BYTE_DIFFS_10 = 10
+_EXPECTED_REPORT_SUMMARY_TOTAL_BYTE_DIFFS_15 = 15
+_EXPECTED_REPORT_SUMMARY_TOTAL_CHANGES_2 = 2
 
 
 class _Binary:
@@ -64,9 +80,9 @@ class TestByteDiff:
             original=b"\x90",
             mutated=b"\xcc",
         )
-        assert diff.offset == 0x1000
-        assert diff.original == b"\x90"
-        assert diff.mutated == b"\xcc"
+        expect(diff.offset == _EXPECTED_DIFF_OFFSET_4096)
+        expect(diff.original == b"\x90")
+        expect(diff.mutated == b"\xcc")
 
     def test_bytediff_with_context(self):
         """Test byte difference with context."""
@@ -77,8 +93,8 @@ class TestByteDiff:
             context_before=b"\x48\x89\xe5",
             context_after=b"\x48\x83\xc4",
         )
-        assert diff.context_before == b"\x48\x89\xe5"
-        assert diff.context_after == b"\x48\x83\xc4"
+        expect(diff.context_before == b"H\x89\xe5")
+        expect(diff.context_after == b"H\x83\xc4")
 
     def test_bytediff_to_dict(self):
         """Test byte difference serialization."""
@@ -89,10 +105,10 @@ class TestByteDiff:
             context_before=b"\x48\x89",
         )
         d = diff.to_dict()
-        assert d["offset"] == "0x1000"
-        assert d["original"] == "90"
-        assert d["mutated"] == "cc"
-        assert d["context_before"] == "4889"
+        expect(d["offset"] == "0x1000")
+        expect(d["original"] == "90")
+        expect(d["mutated"] == "cc")
+        expect(d["context_before"] == "4889")
 
 
 class TestSectionDiff:
@@ -107,9 +123,9 @@ class TestSectionDiff:
             original_size=0x1000,
             mutated_size=0x1200,
         )
-        assert diff.name == ".text"
-        assert diff.original_size == 0x1000
-        assert diff.mutated_size == 0x1200
+        expect(diff.name == ".text")
+        expect(diff.original_size == _EXPECTED_DIFF_ORIGINAL_SIZE_4096)
+        expect(diff.mutated_size == _EXPECTED_DIFF_MUTATED_SIZE_4608)
 
     def test_sectiondiff_with_byte_diffs(self):
         """Test section difference with byte diffs."""
@@ -121,7 +137,7 @@ class TestSectionDiff:
             name=".text",
             byte_diffs=byte_diffs,
         )
-        assert len(diff.byte_diffs) == 2
+        expect(len(diff.byte_diffs) == _EXPECTED_LEN_DIFF_BYTE_DIFFS_2)
 
     def test_sectiondiff_to_dict(self):
         """Test section difference serialization."""
@@ -133,9 +149,9 @@ class TestSectionDiff:
             mutated_permissions="rwx",
         )
         d = diff.to_dict()
-        assert d["name"] == ".text"
-        assert d["original_address"] == "0x1000"
-        assert d["mutated_address"] == "0x1100"
+        expect(d["name"] == ".text")
+        expect(d["original_address"] == "0x1000")
+        expect(d["mutated_address"] == "0x1100")
 
 
 class TestFunctionDiff:
@@ -149,9 +165,9 @@ class TestFunctionDiff:
             original_size=0x50,
             mutated_size=0x60,
         )
-        assert diff.name == "main"
-        assert diff.address == 0x1000
-        assert diff.original_size == 0x50
+        expect(diff.name == "main")
+        expect(diff.address == _EXPECTED_DIFF_ADDRESS_4096)
+        expect(diff.original_size == _EXPECTED_DIFF_ORIGINAL_SIZE_80)
 
     def test_functiondiff_with_bytes(self):
         """Test function difference with bytes."""
@@ -161,8 +177,8 @@ class TestFunctionDiff:
             original_bytes=b"\x48\x89\xe5" + b"\x90" * 10,
             mutated_bytes=b"\x55\x48\x89\xe5" + b"\x90" * 10,
         )
-        assert len(diff.original_bytes) == 13
-        assert len(diff.mutated_bytes) == 14
+        expect(len(diff.original_bytes) == _EXPECTED_LEN_DIFF_ORIGINAL_BYTES_13)
+        expect(len(diff.mutated_bytes) == _EXPECTED_LEN_DIFF_MUTATED_BYTES_14)
 
     def test_functiondiff_to_dict(self):
         """Test function difference serialization."""
@@ -175,10 +191,10 @@ class TestFunctionDiff:
             disassembly_diff=[(0x1000, "nop", "int3")],
         )
         d = diff.to_dict()
-        assert d["name"] == "main"
-        assert d["address"] == "0x1000"
-        assert d["byte_diff_count"] == 1
-        assert d["disassembly_diff_count"] == 1
+        expect(d["name"] == "main")
+        expect(d["address"] == "0x1000")
+        expect(d["byte_diff_count"] == 1)
+        expect(d["disassembly_diff_count"] == 1)
 
 
 class TestBinaryDiff:
@@ -193,8 +209,8 @@ class TestBinaryDiff:
             severity=ChangeSeverity.MEDIUM,
             description="Section .text modified",
         )
-        assert diff.diff_type == DiffType.SECTION_MODIFIED
-        assert diff.severity == ChangeSeverity.MEDIUM
+        expect(diff.diff_type == DiffType.SECTION_MODIFIED)
+        expect(diff.severity == ChangeSeverity.MEDIUM)
 
     def test_binary_diff_to_dict(self):
         """Test binary diff serialization."""
@@ -207,9 +223,9 @@ class TestBinaryDiff:
             byte_diff_count=5,
         )
         d = diff.to_dict()
-        assert d["diff_type"] == "function_modified"
-        assert d["severity"] == "low"
-        assert d["byte_diff_count"] == 5
+        expect(d["diff_type"] == "function_modified")
+        expect(d["severity"] == "low")
+        expect(d["byte_diff_count"] == _EXPECTED_D_BYTE_DIFF_COUNT_5)
 
 
 class TestDiffReport:
@@ -221,7 +237,7 @@ class TestDiffReport:
             original_binary="/bin/original",
             mutated_binary="/bin/mutated",
         )
-        assert len(report.diffs) == 0
+        expect(len(report.diffs) == 0)
 
     def test_report_with_diffs(self):
         """Test report with diffs."""
@@ -238,7 +254,7 @@ class TestDiffReport:
                 ),
             ],
         )
-        assert len(report.diffs) == 1
+        expect(len(report.diffs) == 1)
 
     def test_to_json(self):
         """Test JSON serialization."""
@@ -248,8 +264,8 @@ class TestDiffReport:
             diffs=[],
         )
         json_str = report.to_json()
-        assert '"original_binary"' in json_str
-        assert '"diffs": []' in json_str
+        expect(not ('"original_binary"' not in json_str))
+        expect(not ('"diffs": []' not in json_str))
 
     def test_write_report(self, tmp_path):
         """Test writing report to file."""
@@ -260,7 +276,7 @@ class TestDiffReport:
         )
         report_path = tmp_path / "report.json"
         report.write_report(report_path)
-        assert report_path.exists()
+        expect(report_path.exists())
 
     def test_get_changes_by_severity(self):
         """Test grouping changes by severity."""
@@ -285,8 +301,8 @@ class TestDiffReport:
             ],
         )
         by_severity = report.get_changes_by_severity()
-        assert len(by_severity[ChangeSeverity.LOW]) == 1
-        assert len(by_severity[ChangeSeverity.CRITICAL]) == 1
+        expect(len(by_severity[ChangeSeverity.LOW]) == 1)
+        expect(len(by_severity[ChangeSeverity.CRITICAL]) == 1)
 
     def test_compute_summary(self):
         """Test summary computation."""
@@ -313,10 +329,10 @@ class TestDiffReport:
             ],
         )
         report._compute_summary()
-        assert report.summary["total_changes"] == 2
-        assert report.summary["total_byte_diffs"] == 15
-        assert report.summary["by_severity"]["medium"] == 1
-        assert report.summary["by_severity"]["low"] == 1
+        expect(report.summary["total_changes"] == _EXPECTED_REPORT_SUMMARY_TOTAL_CHANGES_2)
+        expect(report.summary["total_byte_diffs"] == _EXPECTED_REPORT_SUMMARY_TOTAL_BYTE_DIFFS_15)
+        expect(report.summary["by_severity"]["medium"] == 1)
+        expect(report.summary["by_severity"]["low"] == 1)
 
 
 class TestBinaryDiffer:
@@ -341,7 +357,7 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         # Should have header check but no section diffs
-        assert isinstance(report, DiffReport)
+        expect(isinstance(report, DiffReport))
 
     def test_compare_sections_added(self):
         """Test section added detection."""
@@ -360,8 +376,8 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         section_added = [d for d in report.diffs if d.diff_type == DiffType.SECTION_ADDED]
-        assert len(section_added) == 1
-        assert ".added" in section_added[0].description
+        expect(len(section_added) == 1)
+        expect(not (".added" not in section_added[0].description))
 
     def test_compare_sections_removed(self):
         """Test section removed detection."""
@@ -380,8 +396,8 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         section_removed = [d for d in report.diffs if d.diff_type == DiffType.SECTION_REMOVED]
-        assert len(section_removed) == 1
-        assert ".removed" in section_removed[0].description
+        expect(len(section_removed) == 1)
+        expect(not (".removed" not in section_removed[0].description))
 
     def test_compare_sections_modified(self):
         """Test section modified detection."""
@@ -399,7 +415,7 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         section_modified = [d for d in report.diffs if d.diff_type == DiffType.SECTION_MODIFIED]
-        assert len(section_modified) == 1
+        expect(len(section_modified) == 1)
 
     def test_compare_functions_added(self):
         """Test function added detection."""
@@ -418,7 +434,7 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         func_added = [d for d in report.diffs if d.diff_type == DiffType.FUNCTION_ADDED]
-        assert len(func_added) == 1
+        expect(len(func_added) == 1)
 
     def test_compare_functions_removed(self):
         """Test function removed detection."""
@@ -437,7 +453,7 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         func_removed = [d for d in report.diffs if d.diff_type == DiffType.FUNCTION_REMOVED]
-        assert len(func_removed) == 1
+        expect(len(func_removed) == 1)
 
     def test_compare_functions_modified(self):
         """Test function modified detection."""
@@ -455,7 +471,7 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         func_modified = [d for d in report.diffs if d.diff_type == DiffType.FUNCTION_MODIFIED]
-        assert len(func_modified) == 1
+        expect(len(func_modified) == 1)
 
     def test_compare_architecture_change(self):
         """Test architecture change detection."""
@@ -469,8 +485,8 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         arch_changed = [d for d in report.diffs if d.diff_type == DiffType.HEADER_MODIFIED]
-        assert len(arch_changed) >= 1
-        assert any("Architecture" in d.description for d in arch_changed)
+        expect(not (len(arch_changed) < 1))
+        expect(any("Architecture" in d.description for d in arch_changed))
 
     def test_compare_bits_change(self):
         """Test bits change detection."""
@@ -484,7 +500,7 @@ class TestBinaryDiffer:
         report = differ.compare()
 
         bits_changed = [d for d in report.diffs if d.diff_type == DiffType.HEADER_MODIFIED]
-        assert any("Bits" in d.description for d in bits_changed)
+        expect(any("Bits" in d.description for d in bits_changed))
 
     def test_compare_section_bytes(self):
         """Test section byte comparison."""
@@ -506,7 +522,7 @@ class TestBinaryDiffer:
 
         # Should detect section modified due to size change
         section_modified = [d for d in report.diffs if d.diff_type == DiffType.SECTION_MODIFIED]
-        assert len(section_modified) >= 1
+        expect(not (len(section_modified) < 1))
 
     def test_context_bytes(self):
         """Test context bytes in diff."""
@@ -528,7 +544,7 @@ class TestBinaryDiffer:
         for diff in report.diffs:
             for section_diff in diff.section_diffs:
                 for byte_diff in section_diff.byte_diffs:
-                    assert len(byte_diff.context_before) <= 3
+                    expect(not (len(byte_diff.context_before) > _EXPECTED_LEN_BYTE_DIFF_CONTEXT_BEFORE_3))
 
     def test_get_function_diff(self):
         """Test getting function-specific diff."""
@@ -553,9 +569,9 @@ class TestBinaryDiffer:
         differ = BinaryDiffer(original, mutated)
         func_diff = differ.get_function_diff(0x1000)
 
-        assert func_diff is not None
-        assert func_diff.name == "test_func"
-        assert len(func_diff.byte_diffs) == 10
+        expect(func_diff is not None)
+        expect(func_diff.name == "test_func")
+        expect(len(func_diff.byte_diffs) == _EXPECTED_LEN_FUNC_DIFF_BYTE_DIFFS_10)
 
     def test_get_function_diff_none(self):
         """Test getting function diff when not available."""
@@ -569,7 +585,7 @@ class TestBinaryDiffer:
         differ = BinaryDiffer(original, mutated)
         func_diff = differ.get_function_diff(0x1000)
 
-        assert func_diff is None
+        expect(not (func_diff is not None))
 
     def test_compute_byte_diffs_size_diff(self):
         """Test byte diffs with size difference."""
@@ -579,9 +595,9 @@ class TestBinaryDiffer:
         differ = BinaryDiffer(original, mutated)
         diffs = differ._compute_byte_diffs(b"\x90\x90\x90", b"\x90\x90\x90\x90", 0x1000)
 
-        assert len(diffs) >= 1
+        expect(not (len(diffs) < 1))
         last_diff = diffs[-1]
-        assert last_diff.offset >= 0x1000
+        expect(not (last_diff.offset < _EXPECTED_LAST_DIFF_OFFSET_4096))
 
 
 class TestCompareBinaries:
@@ -594,9 +610,9 @@ class TestCompareBinaries:
 
         report = compare_binaries(original, mutated)
 
-        assert isinstance(report, DiffReport)
-        assert report.original_binary == "/bin/original"
-        assert report.mutated_binary == "/bin/mutated"
+        expect(isinstance(report, DiffReport))
+        expect(report.original_binary == "/bin/original")
+        expect(report.mutated_binary == "/bin/mutated")
 
 
 class TestDiffTypes:
@@ -604,26 +620,26 @@ class TestDiffTypes:
 
     def test_all_diff_types_exist(self):
         """Test all diff types are defined."""
-        assert DiffType.SECTION_ADDED.value == "section_added"
-        assert DiffType.SECTION_REMOVED.value == "section_removed"
-        assert DiffType.SECTION_MODIFIED.value == "section_modified"
-        assert DiffType.FUNCTION_ADDED.value == "function_added"
-        assert DiffType.FUNCTION_REMOVED.value == "function_removed"
-        assert DiffType.FUNCTION_MODIFIED.value == "function_modified"
-        assert DiffType.BYTES_CHANGED.value == "bytes_changed"
-        assert DiffType.SYMBOL_ADDED.value == "symbol_added"
-        assert DiffType.SYMBOL_REMOVED.value == "symbol_removed"
-        assert DiffType.SYMBOL_MODIFIED.value == "symbol_modified"
-        assert DiffType.IMPORT_ADDED.value == "import_added"
-        assert DiffType.IMPORT_REMOVED.value == "import_removed"
-        assert DiffType.EXPORT_ADDED.value == "export_added"
-        assert DiffType.EXPORT_REMOVED.value == "export_removed"
-        assert DiffType.HEADER_MODIFIED.value == "header_modified"
+        expect(DiffType.SECTION_ADDED.value == "section_added")
+        expect(DiffType.SECTION_REMOVED.value == "section_removed")
+        expect(DiffType.SECTION_MODIFIED.value == "section_modified")
+        expect(DiffType.FUNCTION_ADDED.value == "function_added")
+        expect(DiffType.FUNCTION_REMOVED.value == "function_removed")
+        expect(DiffType.FUNCTION_MODIFIED.value == "function_modified")
+        expect(DiffType.BYTES_CHANGED.value == "bytes_changed")
+        expect(DiffType.SYMBOL_ADDED.value == "symbol_added")
+        expect(DiffType.SYMBOL_REMOVED.value == "symbol_removed")
+        expect(DiffType.SYMBOL_MODIFIED.value == "symbol_modified")
+        expect(DiffType.IMPORT_ADDED.value == "import_added")
+        expect(DiffType.IMPORT_REMOVED.value == "import_removed")
+        expect(DiffType.EXPORT_ADDED.value == "export_added")
+        expect(DiffType.EXPORT_REMOVED.value == "export_removed")
+        expect(DiffType.HEADER_MODIFIED.value == "header_modified")
 
     def test_all_severity_levels(self):
         """Test all severity levels."""
-        assert ChangeSeverity.INFORMATIONAL.value == "informational"
-        assert ChangeSeverity.LOW.value == "low"
-        assert ChangeSeverity.MEDIUM.value == "medium"
-        assert ChangeSeverity.HIGH.value == "high"
-        assert ChangeSeverity.CRITICAL.value == "critical"
+        expect(ChangeSeverity.INFORMATIONAL.value == "informational")
+        expect(ChangeSeverity.LOW.value == "low")
+        expect(ChangeSeverity.MEDIUM.value == "medium")
+        expect(ChangeSeverity.HIGH.value == "high")
+        expect(ChangeSeverity.CRITICAL.value == "critical")

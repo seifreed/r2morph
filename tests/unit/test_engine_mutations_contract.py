@@ -8,6 +8,7 @@ import pytest
 
 from r2morph.core.engine_mutations import add_mutation, mutations, remove_mutation, resolve_mutation_pass
 from r2morph.mutations import NopInsertionPass
+from tests.utils.assertions import expect
 
 
 class _FakePipeline:
@@ -39,21 +40,21 @@ def test_engine_mutations_manage_pipeline_and_memory_mode() -> None:
 
     returned = add_mutation(engine, mutation)
 
-    assert returned is engine
-    assert mutations(engine) == [mutation]
-    assert mutation.constraints == [0.4]
+    expect(not (returned is not engine))
+    expect(mutations(engine) == [mutation])
+    expect(mutation.constraints == [0.4])
 
     removed = remove_mutation(engine, "MemoryAware")
 
-    assert removed is engine
-    assert pipeline.removed == ["MemoryAware"]
-    assert mutations(engine) == []
+    expect(not (removed is not engine))
+    expect(pipeline.removed == ["MemoryAware"])
+    expect(mutations(engine) == [])
 
 
 def test_engine_mutations_resolve_named_passes() -> None:
     resolved = resolve_mutation_pass("nop")
 
-    assert isinstance(resolved, NopInsertionPass)
+    expect(isinstance(resolved, NopInsertionPass))
 
     with pytest.raises(ValueError):
         resolve_mutation_pass("unknown-pass")

@@ -14,6 +14,7 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     _JCC_CONDITION_BASE,
     _jcc_handler_asm,
 )
+from tests.utils.assertions import expect
 
 # Every x86 conditional-jump mnemonic (and synonym). ``jmp`` is unconditional and
 # intentionally excluded; jcxz/jecxz/jrcxz are register-count branches the lifter
@@ -73,14 +74,14 @@ def _mnemonics(asm: str) -> list[str]:
 def test_every_lifted_condition_has_a_branchless_handler() -> None:
     # A jcc condition the lifter can produce but the handler does not map would
     # KeyError at build time; guard the coverage explicitly.
-    assert set(_CONDITION.values()) == set(_JCC_CONDITION_BASE)
+    expect(set(_CONDITION.values()) == set(_JCC_CONDITION_BASE))
 
 
 def test_jcc_handler_emits_no_native_conditional_jump() -> None:
     for condition in _JCC_CONDITION_BASE:
         asm = _jcc_handler_asm(condition, _RETARGET_TARGET_STUB)
         offending = _NATIVE_CONDITIONAL_JUMPS.intersection(_mnemonics(asm))
-        assert not offending, f"{condition}: native conditional jump(s) {offending}"
+        expect(not (offending), f"{condition}: native conditional jump(s) {offending}")
 
 
 def test_jcc_handler_selects_branch_free_from_captured_flags() -> None:
@@ -88,6 +89,6 @@ def test_jcc_handler_selects_branch_free_from_captured_flags() -> None:
     # markers that prove it is the arithmetic path, not a native compare-and-jump.
     asm = _jcc_handler_asm("jg", _RETARGET_TARGET_STUB)
     mnemonics = _mnemonics(asm)
-    assert "neg" in mnemonics  # 0/-1 mask
-    assert "cmov" not in "".join(mnemonics)  # no conditional move either
-    assert "vm_dispatch" in asm  # tail-dispatches like every handler
+    expect(not ("neg" not in mnemonics))
+    expect("cmov" not in "".join(mnemonics))
+    expect(not ("vm_dispatch" not in asm))

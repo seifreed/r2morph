@@ -11,6 +11,7 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
 
 
 def test_validation_benchmark_detection_real(tmp_path: Path) -> None:
@@ -39,12 +40,12 @@ def test_validation_benchmark_detection_real(tmp_path: Path) -> None:
     framework.test_samples = [sample]
 
     result = framework.benchmark_detection(sample)
-    assert result.performance.success is True
-    assert result.accuracy is not None
+    expect(not (result.performance.success is not True))
+    expect(result.accuracy is not None)
 
     summary = framework.run_validation_suite([BenchmarkCategory.DETECTION])
-    assert summary["total_tests"] == 1
-    assert summary["success_rate"] == 1.0
+    expect(summary["total_tests"] == 1)
+    expect(summary["success_rate"] == 1.0)
 
     report = framework.generate_report()
-    assert "R2MORPH VALIDATION REPORT" in report
+    expect(not ("R2MORPH VALIDATION REPORT" not in report))

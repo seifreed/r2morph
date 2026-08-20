@@ -10,10 +10,11 @@ Test Markers:
 
 import json
 import os
-import subprocess
 from pathlib import Path
 
 import pytest
+
+from tests.utils.process import run_command
 
 
 def pytest_configure(config):
@@ -84,7 +85,7 @@ def _compile_c_binary(tmp_path: Path, name: str, source: str) -> Path:
     output = tmp_path / name
     source_path = tmp_path / f"{name}.c"
     source_path.write_text(source, encoding="utf-8")
-    subprocess.run(
+    run_command(
         ["gcc", "-O0", "-g", str(source_path), "-o", str(output)],
         check=True,
         capture_output=True,
@@ -111,8 +112,7 @@ def _find_cross_elf_toolchain() -> tuple[str, str] | None:
         for candidate in clang_candidates:
             if (
                 candidate
-                and subprocess.run(["/usr/bin/env", "sh", "-c", f"command -v {candidate} >/dev/null 2>&1"]).returncode
-                == 0
+                and run_command(["/usr/bin/env", "sh", "-c", f"command -v {candidate} >/dev/null 2>&1"]).returncode == 0
             ):
                 clang = candidate
                 break
@@ -120,7 +120,7 @@ def _find_cross_elf_toolchain() -> tuple[str, str] | None:
     lld = next((candidate for candidate in lld_candidates if Path(candidate).exists()), None)
     if lld is None:
         for candidate in lld_candidates:
-            if subprocess.run(["/usr/bin/env", "sh", "-c", f"command -v {candidate} >/dev/null 2>&1"]).returncode == 0:
+            if run_command(["/usr/bin/env", "sh", "-c", f"command -v {candidate} >/dev/null 2>&1"]).returncode == 0:
                 lld = candidate
                 break
 
@@ -139,13 +139,13 @@ def _compile_elf_x86_64_binary(tmp_path: Path, name: str, source: str) -> Path:
     obj_path = tmp_path / f"{name}.o"
     output = tmp_path / name
     asm_path.write_text(source, encoding="utf-8")
-    subprocess.run(
+    run_command(
         [clang, "-target", "x86_64-unknown-linux-gnu", "-c", str(asm_path), "-o", str(obj_path)],
         check=True,
         capture_output=True,
         text=True,
     )
-    subprocess.run(
+    run_command(
         [lld, "-o", str(output), str(obj_path)],
         check=True,
         capture_output=True,

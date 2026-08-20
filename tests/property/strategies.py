@@ -5,12 +5,14 @@ This module provides strategies for generating test cases
 for mutation passes and semantic validation.
 """
 
-import random
+import importlib
 from typing import Any
 
+from r2morph.core import randomness
+
 try:
-    from hypothesis import strategies as st
-    from hypothesis.strategies import SearchStrategy
+    st = importlib.import_module("hypothesis").strategies
+    SearchStrategy = importlib.import_module("hypothesis.strategies").SearchStrategy
 
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
@@ -18,6 +20,8 @@ except ImportError:
     st = None
 
 from dataclasses import dataclass, field
+
+_EXPECTED_BITS_64 = 64
 
 
 @dataclass
@@ -149,7 +153,7 @@ def create_x86_register_strategy(bits: int = 64) -> "SearchStrategy[str]":
     if not HYPOTHESIS_AVAILABLE:
         raise ImportError("Hypothesis not installed")
 
-    registers = X86_REGISTERS_64[:8] if bits == 64 else X86_REGISTERS_32[:8]
+    registers = X86_REGISTERS_64[:8] if bits == _EXPECTED_BITS_64 else X86_REGISTERS_32[:8]
 
     return st.sampled_from(registers)
 
@@ -513,13 +517,13 @@ def get_simple_instruction() -> str:
     instructions.extend(X86_INSTRUCTIONS_SIMPLE)
 
     for mnemonic in X86_INSTRUCTIONS_ONE_REG:
-        instructions.append(f"{mnemonic} {random.choice(registers)}")
+        instructions.append(f"{mnemonic} {randomness.choice(registers)}")
 
     for mnemonic in X86_INSTRUCTIONS_TWO_REGS:
-        reg1, reg2 = random.sample(registers, 2)
+        reg1, reg2 = randomness.sample(registers, 2)
         instructions.append(f"{mnemonic} {reg1}, {reg2}")
 
-    return random.choice(instructions)
+    return randomness.choice(instructions)
 
 
 def get_simple_function(address: int = 0x1000, num_instructions: int = 5) -> Function:

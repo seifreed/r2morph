@@ -14,16 +14,17 @@ No mocks: a real Binary, the real injection, and a Unicorn run of the file.
 
 from __future__ import annotations
 
-import random
 import shutil
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration.elf_emulator import emulate_exit_code
+from tests.utils.assertions import expect
 
 # Self-recursive fixture: recurse(9) sums 9+8+...+0 = 45.
 FIXTURE_INCALL = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_incall_x86_64"
@@ -39,18 +40,18 @@ def preserved_global_random_state() -> Iterator[None]:
     # The pass derives its rng from the global random state, so a test that seeds it
     # must hand the stream back untouched instead of stealing entropy from its
     # neighbours.
-    state = random.getstate()
+    state = randomness.getstate()
     try:
         yield
     finally:
-        random.setstate(state)
+        randomness.setstate(state)
 
 
 def _virtualize(seed: int, destination: Path) -> tuple[int, int | None]:
     """Build the fixture under ``seed`` and return (functions virtualized, exit code)."""
     if not FIXTURE_INCALL.exists():
         pytest.skip(f"fixture missing: {FIXTURE_INCALL}")
-    random.seed(seed)
+    randomness.seed(seed)
     shutil.copy(FIXTURE_INCALL, destination)
     binary = Binary(str(destination), writable=True)
     binary.open()
@@ -66,7 +67,7 @@ def _virtualize(seed: int, destination: Path) -> tuple[int, int | None]:
 def test_virtualized_incall_fixture_under_broken_layout_seed_preserves_exit_code(
     seed: int, tmp_path: Path, preserved_global_random_state: None
 ) -> None:
-    assert _virtualize(seed, tmp_path / "mutated")[1] == EXPECTED_EXIT_CODE
+    expect(_virtualize(seed, tmp_path / "mutated")[1] == EXPECTED_EXIT_CODE)
 
 
 @pytest.mark.parametrize("seed", BROKEN_LAYOUT_SEEDS)
@@ -75,4 +76,4 @@ def test_virtualized_incall_fixture_under_broken_layout_seed_still_virtualizes(
 ) -> None:
     # Without this the exit-code assertion above would also pass on a build that
     # quietly virtualized nothing.
-    assert _virtualize(seed, tmp_path / "mutated")[0] >= 1
+    expect(not (_virtualize(seed, tmp_path / "mutated")[0] < 1))

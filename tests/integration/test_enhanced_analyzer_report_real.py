@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.analysis.enhanced_analyzer import EnhancedAnalysisOrchestrator
+from tests.utils.assertions import expect
 
 pytestmark = [pytest.mark.experimental]
 
@@ -19,13 +20,13 @@ def test_enhanced_analyzer_generate_and_save_report(tmp_path: Path):
     try:
         orchestrator.run_detection()
         report = orchestrator.generate_report()
-        assert isinstance(report, dict)
-        assert "obfuscation_analysis" in report
+        expect(isinstance(report, dict))
+        expect(not ("obfuscation_analysis" not in report))
 
         report_path = orchestrator.save_report(report)
-        assert report_path is not None
-        assert report_path.exists()
-        assert report_path.name == "analysis_report.json"
+        expect(report_path is not None)
+        expect(report_path.exists())
+        expect(report_path.name == "analysis_report.json")
     finally:
         orchestrator._cleanup()
         if bin_obj is not None:

@@ -21,6 +21,8 @@ import pytest
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.engine_run import EngineRunOptions
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 pytestmark = pytest.mark.skipif(os.environ.get("SKIP_REAL_BINARY_TESTS") == "1", reason="Real binary tests disabled")
 
@@ -64,7 +66,7 @@ def get_system_binaries():
 def binary_runs_successfully(binary_path: Path) -> bool:
     """Test if binary runs without crashing."""
     try:
-        result = subprocess.run(
+        result = run_command(
             [str(binary_path), "--help"],
             capture_output=True,
             timeout=5,
@@ -111,16 +113,16 @@ class TestRealBinaryMutation:
 
             result = engine.run(EngineRunOptions(validation_mode="structural"))
 
-            assert result.get("passes_run", 0) >= 0, f"Mutation failed: {result.get('error')}"
+            expect(not (result.get("passes_run", 0) < 0), f"Mutation failed: {result.get('error')}")
 
             engine.save(output_path)
 
         # Verify output is valid binary
-        assert output_path.exists()
-        assert output_path.stat().st_size > 0
+        expect(output_path.exists())
+        expect(not (output_path.stat().st_size <= 0))
 
         # Verify mutated binary runs
-        assert binary_runs_successfully(output_path), "Mutated binary doesn't run"
+        expect(binary_runs_successfully(output_path), "Mutated binary doesn't run")
 
     def test_cat_mutation_preserves_behavior(self, temp_dir):
         """Test /bin/cat mutation preserves basic behavior."""
@@ -136,7 +138,7 @@ class TestRealBinaryMutation:
             engine.add_mutation("nop")
 
             result = engine.run(EngineRunOptions(validation_mode="structural"))
-            assert result.get("passes_run", 0) >= 0
+            expect(not (result.get("passes_run", 0) < 0))
 
             engine.save(output_path)
 
@@ -144,7 +146,7 @@ class TestRealBinaryMutation:
         test_input = b"Hello, mutation test!\n"
 
         # Original behavior
-        orig_result = subprocess.run(
+        orig_result = run_command(
             [str(cat_path)],
             input=test_input,
             capture_output=True,
@@ -152,14 +154,14 @@ class TestRealBinaryMutation:
         )
 
         # Mutated behavior
-        mut_result = subprocess.run(
+        mut_result = run_command(
             [str(output_path)],
             input=test_input,
             capture_output=True,
             timeout=5,
         )
 
-        assert orig_result.stdout == mut_result.stdout, "Cat output changed"
+        expect(orig_result.stdout == mut_result.stdout, "Cat output changed")
 
     def test_whoami_mutation(self, temp_dir):
         """Test /usr/bin/whoami mutation produces a runnable binary."""
@@ -175,14 +177,14 @@ class TestRealBinaryMutation:
             engine.add_mutation("nop")
 
             result = engine.run(EngineRunOptions(validation_mode="structural"))
-            assert result.get("passes_run", 0) >= 0
+            expect(not (result.get("passes_run", 0) < 0))
 
             engine.save(output_path)
 
         # Verify the mutated binary runs without crashing
-        mut_result = subprocess.run([str(output_path)], capture_output=True, timeout=5)
-        assert mut_result.returncode == 0, "Mutated whoami should exit cleanly"
-        assert len(mut_result.stdout) > 0, "Mutated whoami should produce output"
+        mut_result = run_command([str(output_path)], capture_output=True, timeout=5)
+        expect(mut_result.returncode == 0, "Mutated whoami should exit cleanly")
+        expect(not (len(mut_result.stdout) <= 0), "Mutated whoami should produce output")
 
     @pytest.mark.parametrize("binary_path", get_system_binaries()[:3])
     def test_multiple_binaries_mutation(self, binary_path, temp_dir):
@@ -197,12 +199,12 @@ class TestRealBinaryMutation:
             engine.add_mutation("nop")
 
             result = engine.run(EngineRunOptions(validation_mode="structural"))
-            assert result.get("passes_run", 0) >= 0, f"Failed for {binary_path}"
+            expect(not (result.get("passes_run", 0) < 0), f"Failed for {binary_path}")
 
             engine.save(output_path)
 
-        assert output_path.exists(), f"Output not created for {binary_path}"
-        assert binary_runs_successfully(output_path), f"Mutated {binary_path.name} doesn't run"
+        expect(output_path.exists(), f"Output not created for {binary_path}")
+        expect(binary_runs_successfully(output_path), f"Mutated {binary_path.name} doesn't run")
 
     def test_mutation_with_multiple_passes(self, temp_dir):
         """Test mutation with multiple passes on real binary."""
@@ -230,12 +232,12 @@ class TestRealBinaryMutation:
             )
 
             # Should succeed with at least some mutations
-            assert result.get("total_mutations", 0) >= 0
+            expect(not (result.get("total_mutations", 0) < 0))
 
             engine.save(output_path)
 
         # Verify output runs
-        assert binary_runs_successfully(output_path)
+        expect(binary_runs_successfully(output_path))
 
 
 class TestBinaryPreservation:
@@ -270,8 +272,8 @@ class TestBinaryPreservation:
                     engine2.load_binary(output_path).analyze()
                     mutated_format = engine2.binary.info.get("core", {}).get("format", "")
                     # Both should be valid binary formats
-                    assert mutated_format, "Mutated binary should have a valid format"
-                    assert original_format, "Original binary should have a valid format"
+                    expect(mutated_format, "Mutated binary should have a valid format")
+                    expect(original_format, "Original binary should have a valid format")
 
     def test_sections_preserved(self, temp_dir):
         """Test that binary sections exist after mutation."""
@@ -296,7 +298,7 @@ class TestBinaryPreservation:
                     mutated_sections = list(engine2.binary.get_sections())
 
                     # Mutated binary should have sections
-                    assert len(mutated_sections) > 0, "Mutated binary should have sections"
+                    expect(not (len(mutated_sections) <= 0), "Mutated binary should have sections")
 
 
 class TestBehavioralEquivalence:
@@ -326,10 +328,10 @@ class TestBehavioralEquivalence:
 
         # Test exit codes
         for _ in range(5):  # Multiple runs
-            orig_result = subprocess.run([str(true_path)], capture_output=True)
-            mut_result = subprocess.run([str(output_path)], capture_output=True)
+            orig_result = run_command([str(true_path)], capture_output=True)
+            mut_result = run_command([str(output_path)], capture_output=True)
 
-            assert orig_result.returncode == mut_result.returncode
+            expect(orig_result.returncode == mut_result.returncode)
 
     def test_output_preservation_simple(self, temp_dir):
         """Test that simple output is preserved after mutation."""
@@ -350,17 +352,17 @@ class TestBehavioralEquivalence:
 
         test_args = ["test", "message", "123"]
 
-        orig_result = subprocess.run(
+        orig_result = run_command(
             [str(echo_path), *test_args],
             capture_output=True,
         )
-        mut_result = subprocess.run(
+        mut_result = run_command(
             [str(output_path), *test_args],
             capture_output=True,
         )
 
-        assert orig_result.stdout == mut_result.stdout
-        assert orig_result.returncode == mut_result.returncode
+        expect(orig_result.stdout == mut_result.stdout)
+        expect(orig_result.returncode == mut_result.returncode)
 
 
 class TestRecoveryAndRollback:
@@ -399,5 +401,5 @@ class TestRecoveryAndRollback:
             engine.save(output_path)
 
         # Verify output is valid
-        assert output_path.exists()
-        assert binary_runs_successfully(output_path)
+        expect(output_path.exists())
+        expect(binary_runs_successfully(output_path))

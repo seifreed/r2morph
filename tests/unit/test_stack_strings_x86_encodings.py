@@ -30,6 +30,7 @@ from r2morph.mutations.stack_strings import (
     generate_stack_string_x64,
     generate_stack_string_x86,
 )
+from tests.utils.assertions import expect
 
 _DATA = b"HELLO"
 
@@ -51,15 +52,18 @@ def test_x86_xor_rolling_emits_byte_writes_and_decode_loop() -> None:
         StackStringOptions(encoding=EncodingScheme.XOR_ROLLING, xor_key=0x55),
     )
 
-    assert _emits_string_bytes(asm, count=len(_DATA), address_register="esp"), (
-        "generate_stack_string_x86 must emit one mov-byte per data byte; " f"got asm:\n{asm}"
+    expect(
+        _emits_string_bytes(asm, count=len(_DATA), address_register="esp"),
+        "generate_stack_string_x86 must emit one mov-byte per data byte; " f"got asm:\n{asm}",
     )
-    assert "decode_loop_" in asm, (
-        "generate_stack_string_x86 must emit a decode loop for XOR_ROLLING; " f"got asm:\n{asm}"
+    expect(
+        not ("decode_loop_" not in asm),
+        "generate_stack_string_x86 must emit a decode loop for XOR_ROLLING; " f"got asm:\n{asm}",
     )
     # Decode loop must reference the rolling XOR's key state machine:
-    assert "imul dl, 7" in asm, (
-        "XOR_ROLLING decode must contain the rolling key update " f"`imul dl, 7`; got asm:\n{asm}"
+    expect(
+        not ("imul dl, 7" not in asm),
+        "XOR_ROLLING decode must contain the rolling key update " f"`imul dl, 7`; got asm:\n{asm}",
     )
 
 
@@ -71,14 +75,19 @@ def test_x86_add_shift_emits_byte_writes_and_decode_loop() -> None:
         StackStringOptions(encoding=EncodingScheme.ADD_SHIFT, add_shift=7),
     )
 
-    assert _emits_string_bytes(asm, count=len(_DATA), address_register="esp"), (
-        "generate_stack_string_x86 must emit one mov-byte per data byte; " f"got asm:\n{asm}"
+    expect(
+        _emits_string_bytes(asm, count=len(_DATA), address_register="esp"),
+        "generate_stack_string_x86 must emit one mov-byte per data byte; " f"got asm:\n{asm}",
     )
-    assert "decode_loop_" in asm, "generate_stack_string_x86 must emit a decode loop for ADD_SHIFT; " f"got asm:\n{asm}"
+    expect(
+        not ("decode_loop_" not in asm),
+        "generate_stack_string_x86 must emit a decode loop for ADD_SHIFT; " f"got asm:\n{asm}",
+    )
     # Decode loop must subtract the shift back out:
-    assert (
-        "sub byte [edi], 7" in asm or "sub byte [edi], 0x07" in asm
-    ), f"ADD_SHIFT decode must subtract the shift back; got asm:\n{asm}"
+    expect(
+        "sub byte [edi], 7" in asm or "sub byte [edi], 0x07" in asm,
+        f"ADD_SHIFT decode must subtract the shift back; got asm:\n{asm}",
+    )
 
 
 def test_x86_and_x64_emit_equivalent_byte_count_for_xor_rolling() -> None:
@@ -91,7 +100,8 @@ def test_x86_and_x64_emit_equivalent_byte_count_for_xor_rolling() -> None:
 
     rsp_writes = asm64.count("mov byte [rsp+")
     esp_writes = asm86.count("mov byte [esp+")
-    assert rsp_writes == esp_writes, (
+    expect(
+        rsp_writes == esp_writes,
         "x86 must emit the same number of stack byte-writes as x64; "
-        f"x64={rsp_writes}, x86={esp_writes}; x86 asm:\n{asm86}"
+        f"x64={rsp_writes}, x86={esp_writes}; x86 asm:\n{asm86}",
     )

@@ -17,6 +17,7 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
 
 
 def _make_result(tmp_path):
@@ -50,12 +51,12 @@ def _make_result(tmp_path):
 def test_validation_summary_and_report(tmp_path) -> None:
     result = _make_result(tmp_path)
     summary = generate_validation_summary([result])
-    assert summary["total_tests"] == 1
-    assert summary["categories"]["detection"]["total"] == 1
+    expect(summary["total_tests"] == 1)
+    expect(summary["categories"]["detection"]["total"] == 1)
 
     report = generate_report([result])
-    assert "R2MORPH VALIDATION REPORT" in report
-    assert "SUCCESS RATE" in report.upper()
+    expect(not ("R2MORPH VALIDATION REPORT" not in report))
+    expect(not ("SUCCESS RATE" not in report.upper()))
 
 
 def test_export_results_json_and_csv(tmp_path) -> None:
@@ -68,9 +69,9 @@ def test_export_results_json_and_csv(tmp_path) -> None:
 
     with json_path.open() as f:
         data = json.load(f)
-    assert data["summary"]["total_tests"] == 1
+    expect(data["summary"]["total_tests"] == 1)
 
     with csv_path.open(newline="") as f:
         rows = list(csv.reader(f))
-    assert rows[0][0] == "sample_path"
-    assert rows[1][0].endswith("sample.bin")
+    expect(rows[0][0] == "sample_path")
+    expect(rows[1][0].endswith("sample.bin"))

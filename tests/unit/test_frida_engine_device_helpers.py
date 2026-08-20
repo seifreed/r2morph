@@ -1,6 +1,7 @@
 import pytest
 
 from r2morph.instrumentation.frida_engine import FridaEngine
+from tests.utils.assertions import expect
 
 
 def test_frida_engine_find_attach_process():
@@ -13,4 +14,4 @@ def test_frida_engine_find_attach_process():
         pytest.skip("Frida device not available")
 
     pid = engine._find_and_attach_process("definitely_not_running_process")
-    assert pid is None
+    expect(not (pid is not None))

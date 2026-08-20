@@ -6,6 +6,7 @@ from r2morph.devirtualization.binary_rewriter_io import (
     perform_integrity_checks,
     write_output_binary,
 )
+from tests.utils.assertions import expect
 
 
 def test_binary_rewriter_io_helpers_expose_expected_contract(tmp_path: Path) -> None:
@@ -14,19 +15,19 @@ def test_binary_rewriter_io_helpers_expose_expected_contract(tmp_path: Path) -> 
     output = tmp_path / "output.bin"
 
     create_backup(source)
-    assert source.with_suffix(source.suffix + ".backup").exists()
+    expect(source.with_suffix(source.suffix + ".backup").exists())
 
-    assert write_output_binary(source, str(output)) is True
-    assert output.exists()
-    assert output.read_bytes().endswith(b"R2MORPH_REWRITTEN\x00\x00")
+    expect(not (write_output_binary(source, str(output)) is not True))
+    expect(output.exists())
+    expect(output.read_bytes().endswith(b"R2MORPH_REWRITTEN\x00\x00"))
 
     checks = perform_integrity_checks(BinaryFormat.ELF, str(output))
-    assert checks["file_exists"] is True
-    assert checks["valid_pe_header"] is True
-    assert checks["imports_intact"] is False
-    assert checks["exports_intact"] is False
-    assert checks["entry_point_valid"] is False
+    expect(not (checks["file_exists"] is not True))
+    expect(not (checks["valid_pe_header"] is not True))
+    expect(not (checks["imports_intact"] is not False))
+    expect(not (checks["exports_intact"] is not False))
+    expect(not (checks["entry_point_valid"] is not False))
 
     rewriter = BinaryRewriter()
     rewriter.binary = type("BinaryStub", (), {"filepath": source})()
-    assert rewriter._write_output_binary(str(tmp_path / "writer.bin")) is True
+    expect(not (rewriter._write_output_binary(str(tmp_path / "writer.bin")) is not True))

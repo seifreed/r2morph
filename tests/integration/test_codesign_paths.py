@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.codesign import CodeSigner
+from tests.utils.assertions import expect
 
 
 def _has_codesign():
@@ -28,10 +29,9 @@ def test_codesign_verify_and_needs_signing(tmp_path: Path):
     verify_before = signer.verify(temp_binary)
     needs = signer.needs_signing(temp_binary)
 
-    assert isinstance(verify_before, bool)
-    assert isinstance(needs, bool)
+    expect(isinstance(verify_before, bool))
+    expect(isinstance(needs, bool))
 
     # Attempt ad-hoc sign; if it succeeds, verify should pass
     sign_ok = signer.sign(temp_binary, adhoc=True)
-    if sign_ok:
-        assert signer.verify(temp_binary) is True
+    expect(not (sign_ok and signer.verify(temp_binary) is not True))

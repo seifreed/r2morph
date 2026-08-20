@@ -4,6 +4,10 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.cave_finder import CaveFinder, CodeCave
+from tests.utils.assertions import expect
+
+_EXPECTED_FINDER_CAVES_0_SIZE_8 = 8
+_EXPECTED_SIZE_8 = 8
 
 
 def test_cave_finder_manual_insert_and_allocate(tmp_path: Path):
@@ -40,14 +44,13 @@ def test_cave_finder_manual_insert_and_allocate(tmp_path: Path):
         finder.caves = [cave]
 
         addr, size = finder.allocate_cave(cave, 8)
-        assert size == 8
-        assert addr == section_addr + 0x10
+        expect(size == _EXPECTED_SIZE_8)
+        expect(addr == section_addr + 16)
         # allocate_cave replaces the original cave with a smaller remainder
-        assert len(finder.caves) == 1
-        assert finder.caves[0].size == 8
+        expect(len(finder.caves) == 1)
+        expect(finder.caves[0].size == _EXPECTED_FINDER_CAVES_0_SIZE_8)
 
         inserted_addr = finder.insert_code_in_cave(b"\x90" * 4, preferred_section=section_name)
         # insert_code_in_cave may return None when the binary's r2 session
         # cannot resolve the physical offset for the cave address
-        if inserted_addr is not None:
-            assert inserted_addr >= section_addr
+        expect(not (inserted_addr is not None and inserted_addr < section_addr))

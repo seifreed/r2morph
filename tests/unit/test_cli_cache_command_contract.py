@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.cli_cache_command import handle_cache_command
 from r2morph.core.analysis_cache_models import CacheStats
+from tests.utils.assertions import expect
 
 
 class _FakeCache:
@@ -32,16 +33,16 @@ class _FakeConsole:
 def test_cli_cache_command_contract_stats_clear_and_usage_hint() -> None:
     console = _FakeConsole()
 
-    handle_cache_command(clear=False, stats=True, path=Path("/tmp/cache"), console=console, cache_cls=_FakeCache)
-    assert any("Cache Statistics:" in line for line in console.lines)
-    assert any("Hits: 3" in line for line in console.lines)
+    handle_cache_command(clear=False, stats=True, path=Path("test-data/cache"), console=console, cache_cls=_FakeCache)
+    expect(any("Cache Statistics:" in line for line in console.lines))
+    expect(any("Hits: 3" in line for line in console.lines))
 
     console = _FakeConsole()
     handle_cache_command(clear=True, stats=False, path=None, console=console, cache_cls=_FakeCache)
-    assert console.lines == ["[green]Cleared 7 cache entries[/green]"]
+    expect(console.lines == ["[green]Cleared 7 cache entries[/green]"])
 
     console = _FakeConsole()
     with pytest.raises(SystemExit) as excinfo:
         handle_cache_command(clear=False, stats=False, path=None, console=console, cache_cls=_FakeCache)
-    assert excinfo.value.code == 1
-    assert console.lines == ["[yellow]Specify --clear or --stats[/yellow]"]
+    expect(excinfo.value.code == 1)
+    expect(console.lines == ["[yellow]Specify --clear or --stats[/yellow]"])

@@ -2,10 +2,11 @@
 Tests for NASM export functionality.
 """
 
+import importlib
 import os
-import random
 import tempfile
 
+from r2morph.core import randomness
 from r2morph.export.nasm_export import (
     BasicBlock,
     Instruction,
@@ -19,6 +20,23 @@ from r2morph.export.nasm_export import (
     remove_redundant_fallthrough,
     shuffle_blocks,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_BLOCK_ADDRESS_4096 = 0x1000
+_EXPECTED_BLOCK_ADDRESS_4096_2 = 0x1000
+_EXPECTED_EXPORTER_BASE_ADDRESS_4096 = 0x1000
+_EXPECTED_EXPORTER_BITS_64 = 64
+_EXPECTED_EXPORTER_LABELS_4096 = 0x1000
+_EXPECTED_EXPORTER_LABELS_4096_2 = 0x1000
+_EXPECTED_EXPORTER_LABELS_8192 = 0x2000
+_EXPECTED_INS_ADDRESS_4096 = 0x1000
+_EXPECTED_INS_ADDRESS_4096_2 = 0x1000
+_EXPECTED_INS_ADDRESS_8192 = 0x2000
+_EXPECTED_LEN_BLOCK_INSTRUCTIONS_2 = 2
+_EXPECTED_LEN_EXPORTER_BLOCKS_2 = 2
+_EXPECTED_LEN_RESULT_4 = 4
+_EXPECTED_RESULT_0_ADDRESS_4096 = 0x1000
+_EXPECTED_RESULT_0_ADDRESS_4096_2 = 0x1000
 
 
 class TestInstruction:
@@ -32,9 +50,9 @@ class TestInstruction:
             operand_2="rbx",
             opcode="mov rax, rbx",
         )
-        assert ins.address == 0x1000
-        assert ins.mnemonic == "mov"
-        assert ins.operand_1 == "rax"
+        expect(ins.address == _EXPECTED_INS_ADDRESS_4096)
+        expect(ins.mnemonic == "mov")
+        expect(ins.operand_1 == "rax")
 
     def test_instruction_from_dict(self):
         data = {
@@ -46,9 +64,9 @@ class TestInstruction:
             "bytes": "4831c9",
         }
         ins = Instruction.from_dict(data)
-        assert ins.address == 0x1000
-        assert ins.mnemonic == "xor"
-        assert ins.bytes_hex == "4831c9"
+        expect(ins.address == _EXPECTED_INS_ADDRESS_4096_2)
+        expect(ins.mnemonic == "xor")
+        expect(ins.bytes_hex == "4831c9")
 
     def test_instruction_from_dict_alternate_keys(self):
         data = {
@@ -58,9 +76,9 @@ class TestInstruction:
             "disasm": "mov rdx, 0",
         }
         ins = Instruction.from_dict(data)
-        assert ins.address == 0x2000
-        assert ins.operand_1 == "rdx"
-        assert ins.opcode == "mov rdx, 0"
+        expect(ins.address == _EXPECTED_INS_ADDRESS_8192)
+        expect(ins.operand_1 == "rdx")
+        expect(ins.opcode == "mov rdx, 0")
 
 
 class TestBasicBlock:
@@ -72,8 +90,8 @@ class TestBasicBlock:
             label="entry",
             instructions=[],
         )
-        assert block.address == 0x1000
-        assert block.label == "entry"
+        expect(block.address == _EXPECTED_BLOCK_ADDRESS_4096)
+        expect(block.label == "entry")
 
     def test_block_from_dict(self):
         data = {
@@ -84,14 +102,14 @@ class TestBasicBlock:
             ],
         }
         block = BasicBlock.from_dict(data)
-        assert block.address == 0x1000
-        assert len(block.instructions) == 2
-        assert block.instructions[0].mnemonic == "push"
+        expect(block.address == _EXPECTED_BLOCK_ADDRESS_4096_2)
+        expect(len(block.instructions) == _EXPECTED_LEN_BLOCK_INSTRUCTIONS_2)
+        expect(block.instructions[0].mnemonic == "push")
 
     def test_block_auto_label(self):
         data = {"addr": 0x1000}
         block = BasicBlock.from_dict(data)
-        assert block.label == "block_0x1000"
+        expect(block.label == "block_0x1000")
 
 
 class TestGenerateBlockAsm:
@@ -118,9 +136,9 @@ class TestGenerateBlockAsm:
         labels = {0x1000: "entry"}
 
         result = generate_block_asm(block, labels)
-        assert "entry:" in result
-        assert "    mov rax, rbx" in result
-        assert "    ret" in result
+        expect(not ("entry:" not in result))
+        expect(not ("    mov rax, rbx" not in result))
+        expect(not ("    ret" not in result))
 
     def test_non_mutated_instruction(self):
         ins = Instruction(
@@ -138,8 +156,8 @@ class TestGenerateBlockAsm:
         labels = {}
 
         result = generate_block_asm(block, labels)
-        assert "db 0x90" in result
-        assert "; nop" in result
+        expect(not ("db 0x90" not in result))
+        expect(not ("; nop" not in result))
 
     def test_instruction_with_jump_target(self):
         ins = Instruction(
@@ -157,7 +175,7 @@ class TestGenerateBlockAsm:
         labels = {0x2000: "target_block"}
 
         result = generate_block_asm(block, labels)
-        assert "jmp target_block" in result
+        expect(not ("jmp target_block" not in result))
 
     def test_instruction_with_comment(self):
         ins = Instruction(
@@ -175,7 +193,7 @@ class TestGenerateBlockAsm:
         labels = {}
 
         result = generate_block_asm(block, labels)
-        assert "; zero register" in result
+        expect(not ("; zero register" not in result))
 
 
 class TestShuffleBlocks:
@@ -183,13 +201,13 @@ class TestShuffleBlocks:
 
     def test_empty_blocks(self):
         result = shuffle_blocks([])
-        assert result == []
+        expect(result == [])
 
     def test_single_block(self):
         blocks = [BasicBlock(address=0x1000, label="single")]
         result = shuffle_blocks(blocks)
-        assert len(result) == 1
-        assert result[0].address == 0x1000
+        expect(len(result) == 1)
+        expect(result[0].address == _EXPECTED_RESULT_0_ADDRESS_4096)
 
     def test_first_block_stays_first(self):
         blocks = [
@@ -198,11 +216,11 @@ class TestShuffleBlocks:
             BasicBlock(address=0x3000, label="block3"),
             BasicBlock(address=0x4000, label="block4"),
         ]
-        random.seed(42)
+        randomness.seed(42)
         result = shuffle_blocks(blocks)
-        assert result[0].address == 0x1000
-        assert result[0].label == "entry"
-        assert len(result) == 4
+        expect(result[0].address == _EXPECTED_RESULT_0_ADDRESS_4096_2)
+        expect(result[0].label == "entry")
+        expect(len(result) == _EXPECTED_LEN_RESULT_4)
 
     def test_all_blocks_preserved(self):
         blocks = [
@@ -212,7 +230,7 @@ class TestShuffleBlocks:
         ]
         result = shuffle_blocks(blocks)
         addresses = {b.address for b in result}
-        assert addresses == {0x1000, 0x2000, 0x3000}
+        expect(addresses == {4096, 8192, 12288})
 
 
 class TestReplaceTargetWithLabel:
@@ -220,15 +238,15 @@ class TestReplaceTargetWithLabel:
 
     def test_replace_hex_target(self):
         result = _replace_target_with_label("jmp 0x2000", 0x2000, "target")
-        assert result == "jmp target"
+        expect(result == "jmp target")
 
     def test_replace_uppercase_hex(self):
         result = _replace_target_with_label("jmp 0X2000", 0x2000, "target")
-        assert result == "jmp target"
+        expect(result == "jmp target")
 
     def test_replace_decimal_target(self):
         result = _replace_target_with_label("jmp 8192", 8192, "target")
-        assert result == "jmp target"
+        expect(result == "jmp target")
 
 
 class TestGenerateFinalAsm:
@@ -245,24 +263,24 @@ class TestGenerateFinalAsm:
         )
         labels = {0x1000: "entry"}
         result = generate_final_asm([block], labels)
-        assert "BITS 64" in result
-        assert "default rel" in result
-        assert "section .text" in result
-        assert "_start:" in result
-        assert "entry:" in result
+        expect(not ("BITS 64" not in result))
+        expect(not ("default rel" not in result))
+        expect(not ("section .text" not in result))
+        expect(not ("_start:" not in result))
+        expect(not ("entry:" not in result))
 
     def test_32bit_mode(self):
         block = BasicBlock(address=0x1000, label="entry", instructions=[])
         labels = {}
         result = generate_final_asm([block], labels, NASMOutputOptions(bits=32))
-        assert "BITS 32" in result
+        expect(not ("BITS 32" not in result))
 
     def test_custom_entry_label(self):
         block = BasicBlock(address=0x1000, label="entry", instructions=[])
         labels = {}
         result = generate_final_asm([block], labels, NASMOutputOptions(entry_label="start_here"))
-        assert "global start_here" in result
-        assert "start_here:" in result
+        expect(not ("global start_here" not in result))
+        expect(not ("start_here:" not in result))
 
     def test_no_comments(self):
         block = BasicBlock(
@@ -274,7 +292,7 @@ class TestGenerateFinalAsm:
         )
         labels = {}
         result = generate_final_asm([block], labels, NASMOutputOptions(include_comments=False))
-        assert "; Block at original address:" not in result
+        expect("; Block at original address:" not in result)
 
 
 class TestRemoveRedundantFallthrough:
@@ -299,8 +317,8 @@ class TestRemoveRedundantFallthrough:
         ]
         labels = {0x1000: "entry", 0x1007: "next"}
         result = remove_redundant_fallthrough(blocks, labels)
-        assert len(result[0].instructions) == 1
-        assert result[0].instructions[0].mnemonic == "mov"
+        expect(len(result[0].instructions) == 1)
+        expect(result[0].instructions[0].mnemonic == "mov")
 
     def test_remove_redundant_jump(self):
         ins_jmp = Instruction(
@@ -326,7 +344,7 @@ class TestRemoveRedundantFallthrough:
         ]
         labels = {0x1000: "entry", 0x1007: "next"}
         result = remove_redundant_fallthrough(blocks, labels)
-        assert len(result[0].instructions) == 0
+        expect(len(result[0].instructions) == 0)
 
     def test_keep_non_redundant_jump(self):
         ins_jmp = Instruction(
@@ -352,7 +370,7 @@ class TestRemoveRedundantFallthrough:
         ]
         labels = {0x1000: "entry", 0x2000: "far_label"}
         result = remove_redundant_fallthrough(blocks, labels)
-        assert len(result[0].instructions) == 1
+        expect(len(result[0].instructions) == 1)
 
 
 class TestNASMExporter:
@@ -360,16 +378,16 @@ class TestNASMExporter:
 
     def test_create_exporter(self):
         exporter = NASMExporter(base_address=0x1000)
-        assert exporter.base_address == 0x1000
-        assert exporter.architecture == "x86"
-        assert exporter.bits == 64
+        expect(exporter.base_address == _EXPECTED_EXPORTER_BASE_ADDRESS_4096)
+        expect(exporter.architecture == "x86")
+        expect(exporter.bits == _EXPECTED_EXPORTER_BITS_64)
 
     def test_add_block(self):
         exporter = NASMExporter()
         block = BasicBlock(address=0x1000, label="entry", instructions=[])
         exporter.add_block(block)
-        assert len(exporter.blocks) == 1
-        assert 0x1000 in exporter.labels
+        expect(len(exporter.blocks) == 1)
+        expect(not (_EXPECTED_EXPORTER_LABELS_4096 not in exporter.labels))
 
     def test_add_block_from_dict(self):
         exporter = NASMExporter()
@@ -378,7 +396,7 @@ class TestNASMExporter:
             "ops": [{"mnemonic": "push", "operand_1": "rbp"}],
         }
         exporter.add_block_from_dict(block_dict)
-        assert len(exporter.blocks) == 1
+        expect(len(exporter.blocks) == 1)
 
     def test_set_blocks(self):
         exporter = NASMExporter()
@@ -387,9 +405,9 @@ class TestNASMExporter:
             BasicBlock(address=0x2000, label="next", instructions=[]),
         ]
         exporter.set_blocks(blocks)
-        assert len(exporter.blocks) == 2
-        assert 0x1000 in exporter.labels
-        assert 0x2000 in exporter.labels
+        expect(len(exporter.blocks) == _EXPECTED_LEN_EXPORTER_BLOCKS_2)
+        expect(not (_EXPECTED_EXPORTER_LABELS_4096_2 not in exporter.labels))
+        expect(not (_EXPECTED_EXPORTER_LABELS_8192 not in exporter.labels))
 
     def test_patch_control_flow(self):
         exporter = NASMExporter()
@@ -406,8 +424,8 @@ class TestNASMExporter:
         exporter.set_labels({0x2000: "target_block"})
 
         exporter.patch_control_flow()
-        assert exporter.blocks[0].instructions[0].mutated is True
-        assert "jmp target_block" in exporter.blocks[0].instructions[0].opcode
+        expect(not (exporter.blocks[0].instructions[0].mutated is not True))
+        expect(not ("jmp target_block" not in exporter.blocks[0].instructions[0].opcode))
 
     def test_generate_asm(self):
         exporter = NASMExporter()
@@ -420,9 +438,9 @@ class TestNASMExporter:
         )
         exporter.add_block(block)
         asm = exporter.generate_asm()
-        assert "BITS 64" in asm
-        assert "entry:" in asm
-        assert "mov rax, 0" in asm
+        expect(not ("BITS 64" not in asm))
+        expect(not ("entry:" not in asm))
+        expect(not ("mov rax, 0" not in asm))
 
 
 class TestAssembleNasm:
@@ -443,10 +461,10 @@ _start:
         try:
             success, _message, _asm_path = assemble_nasm(asm_code, output_path)
             if success:
-                assert os.path.exists(output_path)
+                expect(os.path.exists(output_path))
                 with open(output_path, "rb") as f:
                     content = f.read()
-                assert len(content) > 0
+                expect(not (len(content) <= 0))
             else:
                 pass
         finally:
@@ -460,8 +478,8 @@ _start:
 
         try:
             success, message, _ = assemble_nasm(asm_code, output_path, nasm_path="/nonexistent/nasm")
-            assert success is False
-            assert "not found" in message.lower() or "No such file" in message
+            expect(not (success is not False))
+            expect("not found" in message.lower() or "No such file" in message)
         finally:
             if os.path.exists(output_path):
                 os.unlink(output_path)
@@ -490,11 +508,11 @@ class TestExportShellcode:
             output_path = f.name
 
         try:
-            from r2morph.export.nasm_export import export_shellcode
+            export_shellcode = importlib.import_module("r2morph.export.nasm_export").export_shellcode
 
             _success, _message, asm_code = export_shellcode(blocks, output_path, ShellcodeExportOptions())
-            assert asm_code is not None
-            assert "BITS 64" in asm_code
+            expect(asm_code is not None)
+            expect(not ("BITS 64" not in asm_code))
         finally:
             if os.path.exists(output_path):
                 os.unlink(output_path)
@@ -559,8 +577,8 @@ class TestIntegration:
 
         asm_code = exporter.generate_asm()
 
-        assert "BITS 64" in asm_code
-        assert "entry:" in asm_code
-        assert "loop_start:" in asm_code
-        assert "push rbx" in asm_code
-        assert "jnz loop_start" in asm_code
+        expect(not ("BITS 64" not in asm_code))
+        expect(not ("entry:" not in asm_code))
+        expect(not ("loop_start:" not in asm_code))
+        expect(not ("push rbx" not in asm_code))
+        expect(not ("jnz loop_start" not in asm_code))

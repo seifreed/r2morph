@@ -3,6 +3,9 @@ from r2morph.analysis.type_inference_interprocedural_params import (
     infer_function_params,
     propagate_interprocedural_params,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ADDR_4096 = 0x1000
 
 
 class _PrimitiveType:
@@ -41,7 +44,7 @@ class _Binary:
         return self._fns
 
     def get_function_disasm(self, addr):
-        return [{"disasm": "mov rdi, rax"}] if addr == 0x1000 else []
+        return [{"disasm": "mov rdi, rax"}] if addr == _EXPECTED_ADDR_4096 else []
 
 
 def test_type_inference_interprocedural_params_contract() -> None:
@@ -50,11 +53,11 @@ def test_type_inference_interprocedural_params_contract() -> None:
     calling_conv = {"param_registers": ["rdi"], "return_register": "rax"}
 
     params = infer_function_params(factory, binary, 0x1000, [{"disasm": "mov rdi, rax"}], calling_conv)
-    assert "param_0" in params
+    expect(not ("param_0" not in params))
 
     all_params = infer_all_function_param_types(factory, binary, calling_conv)
-    assert set(all_params) == {0x1000}
+    expect(set(all_params) == {4096})
 
     function_types = {0x1000: {"param_0": ("primitive", "int64")}}
     propagate_interprocedural_params(factory, binary, {0x1000: [0x1000]}, function_types, calling_conv)
-    assert factory._address_types
+    expect(factory._address_types)

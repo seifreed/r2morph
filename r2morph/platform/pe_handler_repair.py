@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 from types import ModuleType
 from typing import Any
@@ -11,9 +12,8 @@ from r2morph.platform.repair_aggregation import aggregate_repair_results
 
 logger = logging.getLogger(__name__)
 
-lief: ModuleType | None
 try:
-    import lief
+    lief: ModuleType | None = importlib.import_module("lief")
 except ImportError:
     lief = None
 

@@ -1,10 +1,11 @@
 from types import SimpleNamespace
 
 from r2morph.validation.binary_region_memory import collect_memory_write_signatures
+from tests.utils.assertions import expect
 
 
 def test_collect_memory_write_signatures_handles_missing_history() -> None:
-    assert collect_memory_write_signatures(SimpleNamespace(history=None)) == []
+    expect(collect_memory_write_signatures(SimpleNamespace(history=None)) == [])
 
 
 def test_collect_memory_write_signatures_dedupes_and_formats_signatures() -> None:
@@ -14,4 +15,4 @@ def test_collect_memory_write_signatures_dedupes_and_formats_signatures() -> Non
         SimpleNamespace(type="mem", action="write", addr=SimpleNamespace(concrete_value=0x2000), size=None),
     ]
     state = SimpleNamespace(history=SimpleNamespace(actions=actions))
-    assert collect_memory_write_signatures(state) == ["0x1000:4", "0x2000"]
+    expect(collect_memory_write_signatures(state) == ["0x1000:4", "0x2000"])

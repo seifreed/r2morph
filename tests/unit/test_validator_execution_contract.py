@@ -3,12 +3,13 @@ import sys
 from r2morph.validation.validator_execution import run_binary
 from r2morph.validation.validator_execution_text import hash_text, normalize_output
 from r2morph.validation.validator_runtime import ValidationTestCase
+from tests.utils.assertions import expect
 
 
 def test_normalize_output_and_hash_text() -> None:
-    assert normalize_output("foo  \nbar\n", True) == "foo\nbar"
-    assert normalize_output("foo  \nbar\n", False) == "foo  \nbar\n"
-    assert hash_text("abc") == hash_text("abc")
+    expect(normalize_output("foo  \nbar\n", True) == "foo\nbar")
+    expect(normalize_output("foo  \nbar\n", False) == "foo  \nbar\n")
+    expect(hash_text("abc") == hash_text("abc"))
 
 
 def test_run_binary_with_runtime_context_returns_observed_result(tmp_path) -> None:
@@ -36,9 +37,4 @@ def test_run_binary_with_runtime_context_returns_observed_result(tmp_path) -> No
 
     result = run_binary(binary_path, case, timeout=3)
 
-    assert result == {
-        "stdout": "ok\n",
-        "stderr": "",
-        "exitcode": 7,
-        "files": {"artifact.txt": b"payload".hex()},
-    }
+    expect(result == {"stdout": "ok\n", "stderr": "", "exitcode": 7, "files": {"artifact.txt": b"payload".hex()}})

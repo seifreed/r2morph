@@ -1,6 +1,10 @@
 from types import SimpleNamespace
 
 from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier, SimplificationStrategy
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_OPTIMIZED_GET_CHECKPOINTS_5 = 5
+_EXPECTED_SIMPLIFIER_METRICS_DEVIRTUALIZED_HANDLERS_2 = 2
 
 
 def test_iterative_simplifier_internal_helpers():
@@ -19,29 +23,29 @@ def test_iterative_simplifier_internal_helpers():
     }
 
     complexity = simplifier._calculate_complexity(context)
-    assert complexity >= 0.0
+    expect(not (complexity < 0.0))
 
     simplifier.strategy = SimplificationStrategy.ADAPTIVE
     initial_threshold = simplifier.convergence_threshold
     simplifier._adjust_strategy(0.04, 1)
-    assert simplifier.convergence_threshold >= initial_threshold
+    expect(not (simplifier.convergence_threshold < initial_threshold))
 
     simplifier.metrics.iteration = 1
     checkpoint = simplifier._create_checkpoint(context)
-    assert checkpoint["iteration"] == 1
-    assert "context" in checkpoint
+    expect(checkpoint["iteration"] == 1)
+    expect(not ("context" not in checkpoint))
 
     simplifier._update_metrics(context)
-    assert simplifier.metrics.simplified_expressions >= 1
-    assert simplifier.metrics.devirtualized_handlers >= 2
+    expect(not (simplifier.metrics.simplified_expressions < 1))
+    expect(not (simplifier.metrics.devirtualized_handlers < _EXPECTED_SIMPLIFIER_METRICS_DEVIRTUALIZED_HANDLERS_2))
 
     optimized = simplifier._optimize_result(context)
-    assert optimized.get("optimization_applied") is True
-    assert len(optimized.get("checkpoints", [])) <= 5
+    expect(not (optimized.get("optimization_applied") is not True))
+    expect(not (len(optimized.get("checkpoints", [])) > _EXPECTED_LEN_OPTIMIZED_GET_CHECKPOINTS_5))
 
     validation = simplifier._validate_result(context)
-    assert validation["valid"] is True
-    assert validation["warnings"]
+    expect(not (validation["valid"] is not True))
+    expect(validation["warnings"])
 
     mba_exprs = simplifier._extract_mba_expressions()
-    assert isinstance(mba_exprs, list)
+    expect(isinstance(mba_exprs, list))

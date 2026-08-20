@@ -2,11 +2,14 @@
 Real integration tests for platform modules.
 """
 
+import importlib
 import importlib.util
 import platform
 from pathlib import Path
 
 import pytest
+
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -33,7 +36,7 @@ class TestCodeSigner:
     def test_manager_initialization(self):
         """Test CodeSigner initialization."""
         manager = CodeSigner()
-        assert manager is not None
+        expect(manager is not None)
 
     def test_check_signature(self, ls_macos):
         """Test checking code signature."""
@@ -44,7 +47,7 @@ class TestCodeSigner:
 
         manager = CodeSigner()
         result = manager.check_signature(ls_macos)
-        assert result is not None
+        expect(result is not None)
 
     def test_is_signed(self, ls_macos):
         """Test checking if binary is signed."""
@@ -55,7 +58,7 @@ class TestCodeSigner:
 
         manager = CodeSigner()
         result = manager.is_signed(ls_macos)
-        assert isinstance(result, bool)
+        expect(isinstance(result, bool))
 
     def test_needs_signing(self, ls_macos, tmp_path):
         """Test checking if morphed binary needs signing."""
@@ -74,7 +77,7 @@ class TestCodeSigner:
             engine.save(morphed_path)
 
         result = manager.needs_signing(morphed_path)
-        assert isinstance(result, bool)
+        expect(isinstance(result, bool))
 
     def test_sign_binary_with_platform_defaults(self, ls_macos, tmp_path):
         """Test signing a binary."""
@@ -84,13 +87,13 @@ class TestCodeSigner:
             pytest.skip("macOS binary not available")
 
         manager = CodeSigner()
-        import shutil
+        shutil = importlib.import_module("shutil")
 
         test_binary = tmp_path / "test_sign"
         shutil.copy(ls_macos, test_binary)
 
         result = manager.sign(test_binary)
-        assert result is not None
+        expect(result is not None)
 
 
 class TestELFHandler:
@@ -107,7 +110,7 @@ class TestELFHandler:
             pytest.skip("ELF binary not available")
 
         handler = ELFHandler(ls_elf)
-        assert handler is not None
+        expect(handler is not None)
 
     def test_is_elf(self, ls_elf):
         """Test ELF detection."""
@@ -116,8 +119,8 @@ class TestELFHandler:
 
         handler = ELFHandler(ls_elf)
         result = handler.is_elf()
-        assert isinstance(result, bool)
-        assert result is True
+        expect(isinstance(result, bool))
+        expect(not (result is not True))
 
     def test_get_sections(self, ls_elf):
         """Test getting ELF sections."""
@@ -126,8 +129,8 @@ class TestELFHandler:
 
         handler = ELFHandler(ls_elf)
         sections = handler.get_sections()
-        assert isinstance(sections, list)
-        assert len(sections) > 0
+        expect(isinstance(sections, list))
+        expect(not (len(sections) <= 0))
 
     def test_get_segments(self, ls_elf):
         """Test getting ELF segments."""
@@ -136,8 +139,8 @@ class TestELFHandler:
 
         handler = ELFHandler(ls_elf)
         segments = handler.get_segments()
-        assert isinstance(segments, list)
-        assert len(segments) > 0
+        expect(isinstance(segments, list))
+        expect(not (len(segments) <= 0))
 
     def test_validate_elf(self, ls_elf):
         """Test ELF validation."""
@@ -146,8 +149,8 @@ class TestELFHandler:
 
         handler = ELFHandler(ls_elf)
         result = handler.validate()
-        assert isinstance(result, bool)
-        assert result is True
+        expect(isinstance(result, bool))
+        expect(not (result is not True))
 
 
 class TestMachOHandler:
@@ -164,7 +167,7 @@ class TestMachOHandler:
             pytest.skip("macOS binary not available")
 
         handler = MachOHandler(ls_macos)
-        assert handler is not None
+        expect(handler is not None)
 
     def test_is_macho(self, ls_macos):
         """Test Mach-O detection."""
@@ -173,8 +176,8 @@ class TestMachOHandler:
 
         handler = MachOHandler(ls_macos)
         result = handler.is_macho()
-        assert isinstance(result, bool)
-        assert result is True
+        expect(isinstance(result, bool))
+        expect(not (result is not True))
 
     def test_get_load_commands(self, ls_macos):
         """Test getting Mach-O load commands."""
@@ -183,8 +186,8 @@ class TestMachOHandler:
 
         handler = MachOHandler(ls_macos)
         commands = handler.get_load_commands()
-        assert isinstance(commands, list)
-        assert len(commands) > 0
+        expect(isinstance(commands, list))
+        expect(not (len(commands) <= 0))
 
     def test_get_segments(self, ls_macos):
         """Test getting Mach-O segments."""
@@ -193,8 +196,8 @@ class TestMachOHandler:
 
         handler = MachOHandler(ls_macos)
         segments = handler.get_segments()
-        assert isinstance(segments, list)
-        assert len(segments) > 0
+        expect(isinstance(segments, list))
+        expect(not (len(segments) <= 0))
 
     def test_validate_macho(self, ls_macos):
         """Test Mach-O validation."""
@@ -203,8 +206,8 @@ class TestMachOHandler:
 
         handler = MachOHandler(ls_macos)
         result = handler.validate()
-        assert isinstance(result, bool)
-        assert result is True
+        expect(isinstance(result, bool))
+        expect(not (result is not True))
 
 
 class TestPEHandler:
@@ -221,7 +224,7 @@ class TestPEHandler:
             pytest.skip("PE binary not available")
 
         handler = PEHandler(pe_x86_64_exe)
-        assert handler is not None
+        expect(handler is not None)
 
     def test_is_pe(self, pe_x86_64_exe):
         """Test PE detection."""
@@ -231,8 +234,8 @@ class TestPEHandler:
         handler = PEHandler(pe_x86_64_exe)
         result = handler.is_pe()
 
-        assert isinstance(result, bool)
-        assert result is True
+        expect(isinstance(result, bool))
+        expect(not (result is not True))
 
     def test_get_sections(self, pe_x86_64_exe):
         """Test getting PE sections."""
@@ -242,8 +245,8 @@ class TestPEHandler:
         handler = PEHandler(pe_x86_64_exe)
         sections = handler.get_sections()
 
-        assert isinstance(sections, list)
-        assert len(sections) > 0
+        expect(isinstance(sections, list))
+        expect(not (len(sections) <= 0))
 
     def test_get_imports(self, pe_x86_64_exe):
         """Test getting PE imports."""
@@ -253,7 +256,7 @@ class TestPEHandler:
         handler = PEHandler(pe_x86_64_exe)
         imports = handler.get_imports()
 
-        assert isinstance(imports, list)
+        expect(isinstance(imports, list))
 
     def test_validate_pe(self, pe_x86_64_exe):
         """Test PE validation."""
@@ -263,5 +266,5 @@ class TestPEHandler:
         handler = PEHandler(pe_x86_64_exe)
         result = handler.validate()
 
-        assert isinstance(result, bool)
-        assert result is True
+        expect(isinstance(result, bool))
+        expect(not (result is not True))

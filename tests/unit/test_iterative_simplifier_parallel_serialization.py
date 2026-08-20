@@ -18,6 +18,9 @@ from tests._doubles.concurrency_probe_binary import (
     ConcurrencyProbeBinary,
     ProbeSimplificationPass,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_BINARY_R2_CALL_COUNT_3 = 3
 
 
 def test_parallel_passes_never_drive_shared_r2_concurrently() -> None:
@@ -33,5 +36,5 @@ def test_parallel_passes_never_drive_shared_r2_concurrently() -> None:
 
     simplifier._apply_passes_parallel({})
 
-    assert binary.r2.call_count == 3
-    assert binary.r2.max_concurrency == 1
+    expect(binary.r2.call_count == _EXPECTED_BINARY_R2_CALL_COUNT_3)
+    expect(binary.r2.max_concurrency == 1)

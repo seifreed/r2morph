@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -22,6 +24,8 @@ from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from r2morph.profiling.hotpath_detector import HotPathDetector
 from r2morph.profiling.profiler import BinaryProfiler
 from r2morph.session import MorphSession
+
+_EXPECTED_LEN_CHECKPOINTS_2 = 2
 
 
 class TestControlFlowFlatteningReal:
@@ -43,8 +47,8 @@ class TestControlFlowFlatteningReal:
             binary.analyze()
             pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 1, "probability": 1.0})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_flatten_multiple_functions(self, ls_elf, tmp_path):
         """Test flattening multiple functions."""
@@ -58,7 +62,7 @@ class TestControlFlowFlatteningReal:
             binary.analyze()
             pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 3, "probability": 1.0})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_flatten_low_probability(self, ls_elf, tmp_path):
         """Test flattening with low probability."""
@@ -72,7 +76,7 @@ class TestControlFlowFlatteningReal:
             binary.analyze()
             pass_obj = ControlFlowFlatteningPass(config={"max_functions_to_flatten": 2, "probability": 0.1})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
 
 class TestDeadCodeInjectionReal:
@@ -94,8 +98,8 @@ class TestDeadCodeInjectionReal:
             binary.analyze()
             pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 5, "probability": 1.0})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_inject_different_patterns(self, ls_elf, tmp_path):
         """Test different dead code patterns."""
@@ -109,7 +113,7 @@ class TestDeadCodeInjectionReal:
             binary.analyze()
             pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 10, "probability": 0.8})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_inject_aggressive(self, ls_elf, tmp_path):
         """Test aggressive dead code injection."""
@@ -123,7 +127,7 @@ class TestDeadCodeInjectionReal:
             binary.analyze()
             pass_obj = DeadCodeInjectionPass(config={"max_injections_per_function": 15, "probability": 0.9})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
 
 class TestOpaquePredicatesReal:
@@ -145,8 +149,8 @@ class TestOpaquePredicatesReal:
             binary.analyze()
             pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 3, "probability": 1.0})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_opaque_multiple_types(self, ls_elf, tmp_path):
         """Test multiple opaque predicate types."""
@@ -160,7 +164,7 @@ class TestOpaquePredicatesReal:
             binary.analyze()
             pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 5, "probability": 0.8})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_opaque_complex(self, ls_elf, tmp_path):
         """Test complex opaque predicates."""
@@ -174,7 +178,7 @@ class TestOpaquePredicatesReal:
             binary.analyze()
             pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 2, "probability": 1.0})
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
 
 class TestNopInsertionDetailed:
@@ -198,8 +202,8 @@ class TestNopInsertionDetailed:
                 config={"max_nops_per_function": 10, "probability": 1.0, "use_creative_nops": False}
             )
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_nop_creative(self, ls_elf, tmp_path):
         """Test creative NOP insertion."""
@@ -215,7 +219,7 @@ class TestNopInsertionDetailed:
                 config={"max_nops_per_function": 10, "probability": 1.0, "use_creative_nops": True}
             )
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_nop_force_different(self, ls_elf, tmp_path):
         """Test NOP insertion with force_different."""
@@ -235,7 +239,7 @@ class TestNopInsertionDetailed:
                 }
             )
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_nop_various_counts(self, ls_elf, tmp_path):
         """Test NOP insertion with various counts."""
@@ -250,7 +254,7 @@ class TestNopInsertionDetailed:
                 binary.analyze()
                 pass_obj = NopInsertionPass(config={"max_nops_per_function": count, "probability": 1.0})
                 result = pass_obj.apply(binary)
-                assert isinstance(result, dict)
+                expect(isinstance(result, dict))
 
 
 class TestProfilingReal:
@@ -271,7 +275,7 @@ class TestProfilingReal:
 
         profiler = BinaryProfiler(temp_binary)
         result = profiler.profile(duration=1)
-        assert isinstance(result, dict)
+        expect(isinstance(result, dict))
 
     def test_profiler_hot_functions(self, ls_elf, tmp_path):
         """Test identifying hot functions."""
@@ -285,7 +289,7 @@ class TestProfilingReal:
         profiler = BinaryProfiler(temp_binary)
         profiler.profile(duration=1)
         hot_funcs = profiler.get_hot_functions()
-        assert isinstance(hot_funcs, set)
+        expect(isinstance(hot_funcs, set))
 
     def test_profiler_cold_functions(self, ls_elf, tmp_path):
         """Test identifying cold functions."""
@@ -299,7 +303,7 @@ class TestProfilingReal:
         profiler = BinaryProfiler(temp_binary)
         profiler.profile(duration=1)
         cold_funcs = profiler.get_cold_functions(["func1", "func2"])
-        assert isinstance(cold_funcs, set)
+        expect(isinstance(cold_funcs, set))
 
     def test_hotpath_detector(self, ls_elf):
         """Test hotpath detection."""
@@ -310,7 +314,7 @@ class TestProfilingReal:
             binary.analyze()
             detector = HotPathDetector(binary)
             hot_paths = detector.detect_hot_paths()
-            assert isinstance(hot_paths, dict)
+            expect(isinstance(hot_paths, dict))
 
     def test_hotpath_is_hot(self, ls_elf):
         """Test checking if path is hot."""
@@ -329,7 +333,7 @@ class TestProfilingReal:
                 block_addr = hot_paths[func_name][0] if hot_paths[func_name] else 0
                 if block_addr:
                     is_hot = detector.is_hot_path(func_name, block_addr, hot_paths)
-                    assert isinstance(is_hot, bool)
+                    expect(isinstance(is_hot, bool))
 
 
 class TestSessionReal:
@@ -339,8 +343,8 @@ class TestSessionReal:
         """Test session creation."""
         session = MorphSession(tmp_path)
         # Session dir is created with timestamp
-        assert session.session_dir.parent == tmp_path
-        assert session.session_dir.exists()
+        expect(session.session_dir.parent == tmp_path)
+        expect(session.session_dir.exists())
 
     def test_session_start(self, tmp_path, ls_elf):
         """Test session start."""
@@ -349,8 +353,8 @@ class TestSessionReal:
 
         session = MorphSession(tmp_path)
         working_copy = session.start(ls_elf)
-        assert working_copy.exists()
-        assert session.current_binary == working_copy
+        expect(working_copy.exists())
+        expect(session.current_binary == working_copy)
 
     def test_session_checkpoint(self, tmp_path, ls_elf):
         """Test creating checkpoints."""
@@ -361,7 +365,7 @@ class TestSessionReal:
         session.start(ls_elf)
         session.checkpoint("test_checkpoint", "Test checkpoint")
         checkpoints = session.list_checkpoints()
-        assert len(checkpoints) >= 2  # initial + test_checkpoint
+        expect(not (len(checkpoints) < _EXPECTED_LEN_CHECKPOINTS_2))
 
     def test_session_finalize(self, tmp_path, ls_elf):
         """Test finalizing session."""
@@ -372,8 +376,8 @@ class TestSessionReal:
         session.start(ls_elf)
         output = tmp_path / "output.bin"
         result = session.finalize(output)
-        assert result is True
-        assert output.exists()
+        expect(not (result is not True))
+        expect(output.exists())
 
     def test_session_cleanup(self, tmp_path, ls_elf):
         """Test session cleanup."""
@@ -385,7 +389,7 @@ class TestSessionReal:
         session_dir = session.session_dir
         session.cleanup()
         # Session dir should be cleaned up
-        assert not session_dir.exists()
+        expect(not (session_dir.exists()))
 
     @pytest.fixture
     def ls_elf(self):

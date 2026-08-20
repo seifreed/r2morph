@@ -4,21 +4,22 @@ from r2morph.mutations.instruction_expansion_helpers import (
     is_safe_to_expand,
     match_expansion_pattern,
 )
+from tests.utils.assertions import expect
 
 
 def test_instruction_expansion_helpers_cover_core_paths() -> None:
     expansions = match_expansion_pattern({"disasm": "imul eax, 2"}, "x86")
-    assert expansions
+    expect(expansions)
 
     built = build_instruction_from_pattern(("shl", "reg", "1"), ["shl", "eax", "1"])
-    assert built == "shl eax, 1"
+    expect(built == "shl eax, 1")
 
     invalid = build_instruction_from_pattern(("inc", "reg"), ["mov", "dword", "[rsp]", ",", "eax"])
-    assert invalid is None
+    expect(not (invalid is not None))
 
     size_increase = get_expansion_size_increase([("mov", "reg", "reg"), ("xor", "reg", "reg")])
-    assert size_increase >= 0
+    expect(not (size_increase < 0))
 
-    assert is_safe_to_expand({"type": "jmp"}, 100) is False
-    assert is_safe_to_expand({"type": "mov"}, 2000) is False
-    assert is_safe_to_expand({"type": "mov"}, 100) is True
+    expect(not (is_safe_to_expand({"type": "jmp"}, 100) is not False))
+    expect(not (is_safe_to_expand({"type": "mov"}, 2000) is not False))
+    expect(not (is_safe_to_expand({"type": "mov"}, 100) is not True))

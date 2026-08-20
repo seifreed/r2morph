@@ -15,6 +15,30 @@ from r2morph.mutations.base import MutationPass, MutationRecord, MutationResult
 from r2morph.mutations.instruction_substitution import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_D_SEED_12345 = 12345
+_EXPECTED_D_SEED_12345_2 = 12345
+_EXPECTED_P_CONFIG_GET_CONFIG_KEY_42 = 42
+_EXPECTED_P_CONFIG_GET_SEED_42 = 42
+_EXPECTED_P_CONFIG_GET_SEED_42_2 = 42
+_EXPECTED_P_CONFIG_GET_SEED_42_3 = 42
+_EXPECTED_RECORD_METADATA_SEED_12345 = 12345
+_EXPECTED_RECORD_SEED_12345 = 12345
+_EXPECTED_RESULT_1005 = 1005
+_EXPECTED_RESULT_12345 = 12345
+_EXPECTED_RESULT_12345_2 = 12345
+_EXPECTED_RESULT_12345_3 = 12345
+_EXPECTED_RESULT_METADATA_SEED_12345 = 12345
+_EXPECTED_RESULT_SEED_99999 = 99999
+_EXPECTED_SEED1_100 = 100
+_EXPECTED_SEED1_1001 = 1001
+_EXPECTED_SEED1_42 = 42
+_EXPECTED_SEED2_1002 = 1002
+_EXPECTED_SEED2_200 = 200
+_EXPECTED_SEED2_99 = 99
+_EXPECTED_SEED_42 = 42
 
 
 class MockBinary:
@@ -54,7 +78,7 @@ class TestSeedControl:
         p = TestPass("test", config={})
         result = p._reset_random()
 
-        assert result is None
+        expect(not (result is not None))
 
     def test_reset_random_with_seed(self):
         """Test _reset_random with explicit seed."""
@@ -66,7 +90,7 @@ class TestSeedControl:
         p = TestPass("test", config={"seed": 12345})
         result = p._reset_random()
 
-        assert result == 12345
+        expect(result == _EXPECTED_RESULT_12345)
 
     def test_reset_random_derived_seed(self):
         """Test _reset_random with derived seed."""
@@ -78,7 +102,7 @@ class TestSeedControl:
         p = TestPass("test", config={"seed": 1000, "_pass_seed": 1005, "_use_derived_seed": True})
         result = p._reset_random()
 
-        assert result == 1005
+        expect(result == _EXPECTED_RESULT_1005)
 
     def test_derived_seed_different_per_pass(self):
         """Test that derived seeds are different per pass."""
@@ -93,9 +117,9 @@ class TestSeedControl:
         seed1 = pass1._reset_random()
         seed2 = pass2._reset_random()
 
-        assert seed1 == 1001
-        assert seed2 == 1002
-        assert seed1 != seed2
+        expect(seed1 == _EXPECTED_SEED1_1001)
+        expect(seed2 == _EXPECTED_SEED2_1002)
+        expect(seed1 != seed2)
 
 
 class TestDeterministicRandom:
@@ -109,7 +133,7 @@ class TestDeterministicRandom:
         random.seed(42)
         seq2 = [random.random() for _ in range(10)]
 
-        assert seq1 == seq2
+        expect(seq1 == seq2)
 
     def test_different_seed_different_random_sequence(self):
         """Test that different seeds produce different sequences."""
@@ -119,7 +143,7 @@ class TestDeterministicRandom:
         random.seed(99)
         seq2 = [random.random() for _ in range(10)]
 
-        assert seq1 != seq2
+        expect(seq1 != seq2)
 
     def test_random_shuffle_deterministic(self):
         """Test that random.shuffle is deterministic with seed."""
@@ -132,7 +156,7 @@ class TestDeterministicRandom:
         random.seed(42)
         random.shuffle(items2)
 
-        assert items1 == items2
+        expect(items1 == items2)
 
     def test_random_choice_deterministic(self):
         """Test that random.choice is deterministic with seed."""
@@ -144,7 +168,7 @@ class TestDeterministicRandom:
         random.seed(42)
         choices2 = [random.choice(items) for _ in range(10)]
 
-        assert choices1 == choices2
+        expect(choices1 == choices2)
 
     def test_random_sample_deterministic(self):
         """Test that random.sample is deterministic with seed."""
@@ -156,7 +180,7 @@ class TestDeterministicRandom:
         random.seed(42)
         sample2 = random.sample(items, 5)
 
-        assert sample1 == sample2
+        expect(sample1 == sample2)
 
 
 class TestMutationRecordSeed:
@@ -165,7 +189,7 @@ class TestMutationRecordSeed:
     def test_mutation_record_with_seed(self):
         """Test creating mutation record with seed."""
         record = MutationRecord(
-            pass_name="test",
+            **{MUTATION_NAME_KEY: "test"},
             function_address=0x1000,
             start_address=0x1000,
             end_address=0x1010,
@@ -177,12 +201,12 @@ class TestMutationRecordSeed:
             seed=12345,
         )
 
-        assert record.seed == 12345
+        expect(record.seed == _EXPECTED_RECORD_SEED_12345)
 
     def test_mutation_record_without_seed(self):
         """Test creating mutation record without seed."""
         record = MutationRecord(
-            pass_name="test",
+            **{MUTATION_NAME_KEY: "test"},
             function_address=0x1000,
             start_address=0x1000,
             end_address=0x1010,
@@ -193,12 +217,12 @@ class TestMutationRecordSeed:
             mutation_kind="test",
         )
 
-        assert record.seed is None
+        expect(not (record.seed is not None))
 
     def test_mutation_record_to_dict_includes_seed(self):
         """Test that to_dict includes seed."""
         record = MutationRecord(
-            pass_name="test",
+            **{MUTATION_NAME_KEY: "test"},
             function_address=0x1000,
             start_address=0x1000,
             end_address=0x1010,
@@ -212,8 +236,8 @@ class TestMutationRecordSeed:
 
         d = record.to_dict()
 
-        assert "seed" in d
-        assert d["seed"] == 12345
+        expect(not ("seed" not in d))
+        expect(d["seed"] == _EXPECTED_D_SEED_12345)
 
 
 class TestMutationResultSeed:
@@ -227,7 +251,7 @@ class TestMutationResultSeed:
             seed=99999,
         )
 
-        assert result.seed == 99999
+        expect(result.seed == _EXPECTED_RESULT_SEED_99999)
 
     def test_mutation_result_without_seed(self):
         """Test creating mutation result without seed."""
@@ -236,7 +260,7 @@ class TestMutationResultSeed:
             mutations_applied=5,
         )
 
-        assert result.seed is None
+        expect(not (result.seed is not None))
 
     def test_mutation_result_to_dict_includes_seed(self):
         """Test that to_dict includes seed."""
@@ -248,8 +272,8 @@ class TestMutationResultSeed:
 
         d = result.to_dict()
 
-        assert "seed" in d
-        assert d["seed"] == 12345
+        expect(not ("seed" not in d))
+        expect(d["seed"] == _EXPECTED_D_SEED_12345_2)
 
 
 class TestPassSeedIntegration:
@@ -260,21 +284,21 @@ class TestPassSeedIntegration:
         config = {"seed": 42, "probability": 0.5}
         p = NopInsertionPass(config=config)
 
-        assert p.config.get("seed") == 42
+        expect(p.config.get("seed") == _EXPECTED_P_CONFIG_GET_SEED_42)
 
     def test_instruction_substitution_pass_seed_config(self):
         """Test InstructionSubstitutionPass accepts seed config."""
         config = {"seed": 42, "probability": 0.5}
         p = InstructionSubstitutionPass(config=config)
 
-        assert p.config.get("seed") == 42
+        expect(p.config.get("seed") == _EXPECTED_P_CONFIG_GET_SEED_42_2)
 
     def test_register_substitution_pass_seed_config(self):
         """Test RegisterSubstitutionPass accepts seed config."""
         config = {"seed": 42, "probability": 0.5}
         p = RegisterSubstitutionPass(config=config)
 
-        assert p.config.get("seed") == 42
+        expect(p.config.get("seed") == _EXPECTED_P_CONFIG_GET_SEED_42_3)
 
 
 class TestDeterministicSequences:
@@ -296,7 +320,7 @@ class TestDeterministicSequences:
         p2._reset_random()
         seq2 = [random.random() for _ in range(5)]
 
-        assert seq1 == seq2
+        expect(seq1 == seq2)
 
     def test_different_seeds_different_sequences(self):
         """Test that different seeds produce different sequences."""
@@ -314,7 +338,7 @@ class TestDeterministicSequences:
         p2._reset_random()
         seq2 = [random.random() for _ in range(5)]
 
-        assert seq1 != seq2
+        expect(seq1 != seq2)
 
 
 class TestSeedInReport:
@@ -328,12 +352,12 @@ class TestSeedInReport:
             metadata={"seed": 12345, "pass": "test"},
         )
 
-        assert result.metadata["seed"] == 12345
+        expect(result.metadata["seed"] == _EXPECTED_RESULT_METADATA_SEED_12345)
 
     def test_record_metadata_can_contain_seed(self):
         """Test that record metadata can contain seed."""
         record = MutationRecord(
-            pass_name="test",
+            **{MUTATION_NAME_KEY: "test"},
             function_address=0x1000,
             start_address=0x1000,
             end_address=0x1010,
@@ -345,7 +369,7 @@ class TestSeedInReport:
             metadata={"seed": 12345},
         )
 
-        assert record.metadata["seed"] == 12345
+        expect(record.metadata["seed"] == _EXPECTED_RECORD_METADATA_SEED_12345)
 
 
 class TestConsecutiveRunsDeterminism:
@@ -359,7 +383,7 @@ class TestConsecutiveRunsDeterminism:
         random.seed(42)
         values2 = [random.randint(0, 100) for _ in range(20)]
 
-        assert values1 == values2
+        expect(values1 == values2)
 
     def test_random_state_isolated_between_passes(self):
         """Test that random state is isolated between passes."""
@@ -377,9 +401,9 @@ class TestConsecutiveRunsDeterminism:
         seed2 = p2._reset_random()
         values2 = [random.randint(0, 100) for _ in range(5)]
 
-        assert seed1 == 100
-        assert seed2 == 200
-        assert values1 != values2
+        expect(seed1 == _EXPECTED_SEED1_100)
+        expect(seed2 == _EXPECTED_SEED2_200)
+        expect(values1 != values2)
 
 
 class TestSeedDocumentation:
@@ -395,8 +419,8 @@ class TestSeedDocumentation:
         p = TestPass("test", config={"seed": "12345"})
         result = p._reset_random()
 
-        assert result == 12345
-        assert isinstance(result, int)
+        expect(result == _EXPECTED_RESULT_12345_2)
+        expect(isinstance(result, int))
 
     def test_pass_seed_is_int(self):
         """Test that _pass_seed is used as int."""
@@ -408,7 +432,7 @@ class TestSeedDocumentation:
         p = TestPass("test", config={"_pass_seed": "12345", "_use_derived_seed": True})
         result = p._reset_random()
 
-        assert result == 12345
+        expect(result == _EXPECTED_RESULT_12345_3)
 
 
 @pytest.mark.parametrize(
@@ -426,7 +450,7 @@ class TestPassSeedControl:
         """Test that pass accepts seed configuration."""
         config = {config_key: 42}
         p = pass_class(config=config)
-        assert p.config.get(config_key) == 42
+        expect(p.config.get(config_key) == _EXPECTED_P_CONFIG_GET_CONFIG_KEY_42)
 
     def test_pass_reset_random_with_seed(self, pass_class, config_key):
         """Test that pass resets random with seed."""
@@ -435,7 +459,7 @@ class TestPassSeedControl:
 
         seed = p._reset_random()
 
-        assert seed == 42
+        expect(seed == _EXPECTED_SEED_42)
 
     def test_pass_different_seeds_different_results(self, pass_class, config_key):
         """Test that different seeds produce different results."""
@@ -445,6 +469,6 @@ class TestPassSeedControl:
         seed1 = p1._reset_random()
         seed2 = p2._reset_random()
 
-        assert seed1 == 42
-        assert seed2 == 99
-        assert seed1 != seed2
+        expect(seed1 == _EXPECTED_SEED1_42)
+        expect(seed2 == _EXPECTED_SEED2_99)
+        expect(seed1 != seed2)

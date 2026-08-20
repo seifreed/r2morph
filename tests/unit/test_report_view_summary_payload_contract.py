@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from r2morph.reporting.report_context import ReportViewInputs
 from r2morph.reporting.report_view_summary_payload import build_summary_payload
+from tests.utils.assertions import expect
 
 
 def test_build_summary_payload_summarizes_report_sections() -> None:
@@ -43,6 +44,6 @@ def test_build_summary_payload_summarizes_report_sections() -> None:
         {},
     )
 
-    assert payload["general_summary_payload"]["pass_count"] == 1
-    assert payload["general_gates"]["compact_summary"]["pass_count"] == 1
-    assert payload["general_renderer_state"]["general_summary_rows"][0]["section"] == "passes"
+    expect(payload["general_summary_payload"]["pass_count"] == 1)
+    expect(payload["general_gates"]["compact_summary"]["pass_count"] == 1)
+    expect(payload["general_renderer_state"]["general_summary_rows"][0]["section"] == "passes")

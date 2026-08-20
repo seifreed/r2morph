@@ -6,6 +6,9 @@ from pathlib import Path
 import pytest
 
 from r2morph.validation.validator import BinaryValidator
+from tests.utils.assertions import expect
+
+_EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
 
 
 def test_binary_validator_with_macho(tmp_path: Path) -> None:
@@ -25,9 +28,9 @@ def test_binary_validator_with_macho(tmp_path: Path) -> None:
     validator.add_test_case(args=[], stdin="", description="default")
     result = validator.validate(original, mutated)
 
-    assert result.original_exitcode == result.mutated_exitcode
-    assert result.similarity_score >= 100.0 or result.similarity_score >= 0.0
-    assert result.errors == []
+    expect(result.original_exitcode == result.mutated_exitcode)
+    expect(result.similarity_score >= _EXPECTED_RESULT_SIMILARITY_SCORE_100_0 or result.similarity_score >= 0.0)
+    expect(result.errors == [])
 
 
 def test_binary_validator_with_inputs(tmp_path: Path) -> None:
@@ -45,4 +48,4 @@ def test_binary_validator_with_inputs(tmp_path: Path) -> None:
 
     validator = BinaryValidator(timeout=5)
     result = validator.validate_with_inputs(original, mutated, ["", "ping"])
-    assert result.original_exitcode == result.mutated_exitcode
+    expect(result.original_exitcode == result.mutated_exitcode)

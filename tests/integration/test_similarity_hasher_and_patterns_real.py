@@ -5,6 +5,10 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.detection.pattern_matcher import PatternMatcher, PatternMatchResult
 from r2morph.detection.similarity_hasher import SimilarityHasher
+from tests.utils.assertions import expect
+
+_EXPECTED_0_0_100_0 = 100.0
+_EXPECTED_RESULT_BYTE_SIMILARITY_100_0 = 100.0
 
 
 def test_similarity_hasher_compare_files_real(tmp_path: Path):
@@ -26,9 +30,9 @@ def test_similarity_hasher_compare_files_real(tmp_path: Path):
     hasher = SimilarityHasher()
     result = hasher.compare_files(original, modified)
 
-    assert "byte_similarity" in result
-    assert 0.0 <= result["byte_similarity"] <= 100.0
-    assert result["byte_similarity"] < 100.0
+    expect(not ("byte_similarity" not in result))
+    expect(0.0 <= result["byte_similarity"] <= _EXPECTED_0_0_100_0)
+    expect(not (result["byte_similarity"] >= _EXPECTED_RESULT_BYTE_SIMILARITY_100_0))
 
 
 def test_pattern_matcher_scan_and_search_real():
@@ -41,21 +45,21 @@ def test_pattern_matcher_scan_and_search_real():
         matcher = PatternMatcher(bin_obj)
         result = matcher.scan()
 
-        assert isinstance(result, PatternMatchResult)
-        assert 0.0 <= result.anti_debug_confidence <= 1.0
-        assert 0.0 <= result.anti_vm_confidence <= 1.0
-        assert isinstance(result.anti_debug_apis, list)
-        assert isinstance(result.anti_vm_artifacts, list)
+        expect(isinstance(result, PatternMatchResult))
+        expect(0.0 <= result.anti_debug_confidence <= 1.0)
+        expect(0.0 <= result.anti_vm_confidence <= 1.0)
+        expect(isinstance(result.anti_debug_apis, list))
+        expect(isinstance(result.anti_vm_artifacts, list))
 
         # String search returns booleans per term
         terms = ["this_string_should_not_exist", "ELF"]
         found = matcher.search_strings(terms, case_sensitive=False)
-        assert set(found.keys()) == set(terms)
-        assert all(isinstance(val, bool) for val in found.values())
+        expect(set(found.keys()) == set(terms))
+        expect(all(isinstance(val, bool) for val in found.values()))
 
         # Byte pattern search for ELF magic
         patterns = [b"\x7fELF"]
         matches = matcher.find_patterns(patterns)
         if matches:
-            assert patterns[0] in matches
-            assert matches[patterns[0]]
+            expect(not (patterns[0] not in matches))
+            expect(matches[patterns[0]])

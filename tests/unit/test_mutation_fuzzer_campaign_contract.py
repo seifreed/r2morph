@@ -9,6 +9,9 @@ from r2morph.validation.mutation_fuzzer_campaign import (
     save_failing_case,
 )
 from r2morph.validation.mutation_fuzzer_types import FuzzResult, FuzzTestCase
+from tests.utils.assertions import expect
+
+_EXPECTED_TIMEOUT_RESULT_EXECUTION_TIME_MS_3000 = 3000
 
 
 class _ValidationResult:
@@ -42,20 +45,23 @@ def test_build_success_fuzz_result_maps_validator_output() -> None:
         mutation_names=["nop", "register"],
     )
 
-    assert result == FuzzResult(
-        test_id="case-1",
-        passed=True,
-        original_exit_code=0,
-        mutated_exit_code=1,
-        original_output_hash="2689367b205c16ce",
-        mutated_output_hash="1d44ad7979d972df",
-        original_error="",
-        mutated_error="boom",
-        execution_time_ms=12.5,
-        crash=False,
-        timeout=True,
-        mutation_count=2,
-        mutation_names=["nop", "register"],
+    expect(
+        result
+        == FuzzResult(
+            test_id="case-1",
+            passed=True,
+            original_exit_code=0,
+            mutated_exit_code=1,
+            original_output_hash="2689367b205c16ce",
+            mutated_output_hash="1d44ad7979d972df",
+            original_error="",
+            mutated_error="boom",
+            execution_time_ms=12.5,
+            crash=False,
+            timeout=True,
+            mutation_count=2,
+            mutation_names=["nop", "register"],
+        )
     )
 
 
@@ -71,10 +77,10 @@ def test_build_timeout_and_exception_results() -> None:
         mutation_names=["nop"],
     )
 
-    assert timeout_result.execution_time_ms == 3000
-    assert timeout_result.timeout is True
-    assert exception_result.crash is True
-    assert exception_result.original_error == "boom"
+    expect(timeout_result.execution_time_ms == _EXPECTED_TIMEOUT_RESULT_EXECUTION_TIME_MS_3000)
+    expect(not (timeout_result.timeout is not True))
+    expect(not (exception_result.crash is not True))
+    expect(exception_result.original_error == "boom")
 
 
 def test_save_failing_case_writes_json(tmp_path: Path) -> None:
@@ -88,5 +94,5 @@ def test_save_failing_case_writes_json(tmp_path: Path) -> None:
     save_failing_case(test_case, result, tmp_path)
 
     saved = (tmp_path / "case-1_failure.json").read_text()
-    assert '"test_case"' in saved
-    assert '"result"' in saved
+    expect(not ('"test_case"' not in saved))
+    expect(not ('"result"' not in saved))

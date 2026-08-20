@@ -5,6 +5,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_DISASSEMBLER_OPEN_CALLS_2 = 2
 
 
 class _FakeDisassembler:
@@ -41,14 +44,14 @@ def test_binary_lifecycle_open_and_close_with_injected_disassembler(tmp_path: Pa
     binary = Binary(binary_path, writable=True, disassembler=disassembler)
     binary.open()
 
-    assert binary.r2 is disassembler
-    assert disassembler.open_calls[0][0] == binary.path
-    assert "-w" in disassembler.open_calls[0][1]
+    expect(not (binary.r2 is not disassembler))
+    expect(disassembler.open_calls[0][0] == binary.path)
+    expect(not ("-w" not in disassembler.open_calls[0][1]))
 
     binary.close()
 
-    assert disassembler.quit_calls == 1
-    assert binary.r2 is None
+    expect(disassembler.quit_calls == 1)
+    expect(not (binary.r2 is not None))
 
 
 def test_binary_lifecycle_reload_reopens_and_reanalyzes(tmp_path: Path) -> None:
@@ -59,12 +62,12 @@ def test_binary_lifecycle_reload_reopens_and_reanalyzes(tmp_path: Path) -> None:
     binary = Binary(binary_path, disassembler=disassembler)
     binary.open()
     binary.analyze("aaa")
-    assert binary.is_analyzed() is True
+    expect(not (binary.is_analyzed() is not True))
 
     binary.reload()
 
-    assert len(disassembler.open_calls) == 2
-    assert disassembler.cmd_calls == ["aaa", "aaa"]
-    assert binary.is_analyzed() is True
-    assert binary.get_functions() == [{"name": "main"}]
+    expect(len(disassembler.open_calls) == _EXPECTED_LEN_DISASSEMBLER_OPEN_CALLS_2)
+    expect(disassembler.cmd_calls == ["aaa", "aaa"])
+    expect(not (binary.is_analyzed() is not True))
+    expect(binary.get_functions() == [{"name": "main"}])
     binary.close()

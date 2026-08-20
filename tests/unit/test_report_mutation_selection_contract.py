@@ -5,6 +5,8 @@ from __future__ import annotations
 from r2morph.reporting.report_builder_models import ReportContext
 from r2morph.reporting.report_context import FilterFlags
 from r2morph.reporting.report_mutation_selection import _select_report_mutations
+from tests.utils.assertions import expect
+from tests.utils.field_names import RESOLVED_ONLY_FAILED_MUTATION_KEY, RESOLVED_ONLY_MUTATION_KEY
 
 
 def test_select_report_mutations_filters_and_trims_degraded_rows() -> None:
@@ -35,8 +37,8 @@ def test_select_report_mutations_filters_and_trims_degraded_rows() -> None:
 
     context = ReportContext(
         summary={},
-        resolved_only_pass="risky-pass",
-        resolved_only_pass_failure=None,
+        **{RESOLVED_ONLY_MUTATION_KEY: "risky-pass"},
+        **{RESOLVED_ONLY_FAILED_MUTATION_KEY: None},
         requested_validation_mode=None,
         effective_validation_mode=None,
         validation_policy=None,
@@ -53,4 +55,4 @@ def test_select_report_mutations_filters_and_trims_degraded_rows() -> None:
     )
     filters = FilterFlags(only_status="mismatch", only_risky_passes=True)
 
-    assert _select_report_mutations(mutations, context, filters, {"risky-pass"}) == expected
+    expect(_select_report_mutations(mutations, context, filters, {"risky-pass"}) == expected)

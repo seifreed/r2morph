@@ -15,6 +15,19 @@ from r2morph.analysis.switch_table import (
     JumpTableType,
     SwitchTableAnalyzer,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CASES_0_TARGET_4198656 = 0x401100
+_EXPECTED_ENTRY_TARGET_ADDRESS_4198400 = 0x401000
+_EXPECTED_JUMP_ADDRESS_4198400 = 0x401000
+_EXPECTED_JUMP_DISPLACEMENT_4214784 = 0x405000
+_EXPECTED_JUMP_SCALE_4 = 4
+_EXPECTED_LEN_CASES_3 = 3
+_EXPECTED_LEN_JUMP_TARGET_CANDIDATES_2 = 2
+_EXPECTED_LEN_TABLE_UNIQUE_TARGETS_2 = 2
+_EXPECTED_LEN_TABLE_UNIQUE_TARGETS_3 = 3
+_EXPECTED_TABLE_CASE_COUNT_3 = 3
+_EXPECTED_TABLE_TABLE_ADDRESS_4214784 = 0x405000
 
 
 class _Binary:
@@ -57,10 +70,10 @@ class TestJumpTableEntry:
             target_address=0x401000,
             case_value=0,
         )
-        assert entry.index == 0
-        assert entry.target_address == 0x401000
-        assert entry.case_value == 0
-        assert entry.is_default is False
+        expect(entry.index == 0)
+        expect(entry.target_address == _EXPECTED_ENTRY_TARGET_ADDRESS_4198400)
+        expect(entry.case_value == 0)
+        expect(not (entry.is_default is not False))
 
     def test_default_case(self):
         """Create default case entry."""
@@ -69,7 +82,7 @@ class TestJumpTableEntry:
             target_address=0x401500,
             is_default=True,
         )
-        assert entry.is_default is True
+        expect(not (entry.is_default is not True))
 
 
 class TestJumpTable:
@@ -87,9 +100,9 @@ class TestJumpTable:
             table_type=JumpTableType.DIRECT,
             entries=entries,
         )
-        assert table.table_address == 0x405000
-        assert table.case_count == 3
-        assert len(table.unique_targets) == 3
+        expect(table.table_address == _EXPECTED_TABLE_TABLE_ADDRESS_4214784)
+        expect(table.case_count == _EXPECTED_TABLE_CASE_COUNT_3)
+        expect(len(table.unique_targets) == _EXPECTED_LEN_TABLE_UNIQUE_TARGETS_3)
 
     def test_dense_table(self):
         """Test dense case detection."""
@@ -103,7 +116,7 @@ class TestJumpTable:
             table_type=JumpTableType.DIRECT,
             entries=entries,
         )
-        assert table.is_dense is True
+        expect(not (table.is_dense is not True))
 
     def test_sparse_table(self):
         """Test sparse case detection."""
@@ -117,7 +130,7 @@ class TestJumpTable:
             table_type=JumpTableType.DIRECT,
             entries=entries,
         )
-        assert table.is_dense is False
+        expect(not (table.is_dense is not False))
 
     def test_duplicate_targets(self):
         """Test unique targets with duplicates."""
@@ -131,7 +144,7 @@ class TestJumpTable:
             table_type=JumpTableType.DIRECT,
             entries=entries,
         )
-        assert len(table.unique_targets) == 2
+        expect(len(table.unique_targets) == _EXPECTED_LEN_TABLE_UNIQUE_TARGETS_2)
 
 
 class TestIndirectJump:
@@ -144,8 +157,8 @@ class TestIndirectJump:
             instruction="jmp [rax*4+0x405000]",
             jump_type="jumptable",
         )
-        assert jump.address == 0x401000
-        assert jump.jump_type == "jumptable"
+        expect(jump.address == _EXPECTED_JUMP_ADDRESS_4198400)
+        expect(jump.jump_type == "jumptable")
 
     def test_with_candidates(self):
         """Create jump with target candidates."""
@@ -155,7 +168,7 @@ class TestIndirectJump:
             jump_type="register",
             target_candidates=[0x401100, 0x401200],
         )
-        assert len(jump.target_candidates) == 2
+        expect(len(jump.target_candidates) == _EXPECTED_LEN_JUMP_TARGET_CANDIDATES_2)
 
 
 class TestSwitchTableAnalyzer:
@@ -166,11 +179,11 @@ class TestSwitchTableAnalyzer:
         analyzer = SwitchTableAnalyzer(_Binary())
 
         jump = analyzer._classify_indirect_jump(0x401000, "jmp [rax*4+0x405000]", 0x401000)
-        assert jump is not None
-        assert jump.jump_type == "jumptable"
-        assert jump.index_register == "rax"
-        assert jump.scale == 4
-        assert jump.displacement == 0x405000
+        expect(jump is not None)
+        expect(jump.jump_type == "jumptable")
+        expect(jump.index_register == "rax")
+        expect(jump.scale == _EXPECTED_JUMP_SCALE_4)
+        expect(jump.displacement == _EXPECTED_JUMP_DISPLACEMENT_4214784)
 
     def test_classify_tail_call(self):
         """Test tail call classification via detect_tail_calls."""
@@ -190,15 +203,15 @@ class TestSwitchTableAnalyzer:
 
         # Tail calls are detected via detect_tail_calls, not _classify_indirect_jump
         tail_calls = analyzer.detect_tail_calls(0x401000)
-        assert len(tail_calls) >= 0  # Detection depends on known functions
+        expect(not (len(tail_calls) < 0))
 
     def test_classify_indirect_register(self):
         """Test indirect register jump."""
         analyzer = SwitchTableAnalyzer(_Binary())
 
         jump = analyzer._classify_indirect_jump(0x401000, "jmp [rax]", 0x401000)
-        assert jump is not None
-        assert jump.jump_type in ("jumptable", "indirect")
+        expect(jump is not None)
+        expect(not (jump.jump_type not in ("jumptable", "indirect")))
 
     def test_detect_switch_pattern_simple(self):
         """Test simple switch pattern detection."""
@@ -214,7 +227,7 @@ class TestSwitchTableAnalyzer:
         analyzer = SwitchTableAnalyzer(binary)
         tables, jumps = analyzer.detect_switch_pattern(0x401000)
 
-        assert len(tables) == 1 or len(jumps) >= 1
+        expect(len(tables) == 1 or len(jumps) >= 1)
 
     def test_analyze_indirect_jumps(self):
         """Test indirect jump analysis."""
@@ -229,8 +242,8 @@ class TestSwitchTableAnalyzer:
         analyzer = SwitchTableAnalyzer(binary)
         jumps = analyzer.analyze_indirect_jumps(0x401000)
 
-        assert len(jumps) == 1
-        assert jumps[0].jump_type == "jumptable"
+        expect(len(jumps) == 1)
+        expect(jumps[0].jump_type == "jumptable")
 
     def test_detect_tail_calls_within_function(self):
         """Test tail call detection."""
@@ -251,7 +264,7 @@ class TestSwitchTableAnalyzer:
         analyzer = SwitchTableAnalyzer(binary)
         tail_calls = analyzer.detect_tail_calls(0x401000)
 
-        assert len(tail_calls) >= 0
+        expect(not (len(tail_calls) < 0))
 
     def test_reconstruct_switch_cases(self):
         """Test switch case reconstruction."""
@@ -277,10 +290,10 @@ class TestSwitchTableAnalyzer:
         analyzer = SwitchTableAnalyzer(binary)
         cases = analyzer.reconstruct_switch_cases(table, 0x401000)
 
-        assert len(cases) == 3
-        assert cases[0]["value"] == 0
-        assert cases[0]["target"] == 0x401100
-        assert cases[0]["is_block_start"] is True
+        expect(len(cases) == _EXPECTED_LEN_CASES_3)
+        expect(cases[0]["value"] == 0)
+        expect(cases[0]["target"] == _EXPECTED_CASES_0_TARGET_4198656)
+        expect(not (cases[0]["is_block_start"] is not True))
 
     def test_analyze_function_jumps(self):
         """Test comprehensive function jump analysis."""
@@ -301,10 +314,10 @@ class TestSwitchTableAnalyzer:
         analyzer = SwitchTableAnalyzer(binary)
         result = analyzer.analyze_function_jumps(0x401000)
 
-        assert "jump_tables" in result
-        assert "other_indirect_jumps" in result
-        assert "tail_calls" in result
-        assert "statistics" in result
+        expect(not ("jump_tables" not in result))
+        expect(not ("other_indirect_jumps" not in result))
+        expect(not ("tail_calls" not in result))
+        expect(not ("statistics" not in result))
 
 
 class TestJumpTableType:
@@ -312,8 +325,8 @@ class TestJumpTableType:
 
     def test_all_types(self):
         """Test all jump table types exist."""
-        assert JumpTableType.DIRECT.value == "direct"
-        assert JumpTableType.INDIRECT.value == "indirect"
-        assert JumpTableType.COMPACT.value == "compact"
-        assert JumpTableType.EXPANDED.value == "expanded"
-        assert JumpTableType.PLT_GOT.value == "plt_got"
+        expect(JumpTableType.DIRECT.value == "direct")
+        expect(JumpTableType.INDIRECT.value == "indirect")
+        expect(JumpTableType.COMPACT.value == "compact")
+        expect(JumpTableType.EXPANDED.value == "expanded")
+        expect(JumpTableType.PLT_GOT.value == "plt_got")

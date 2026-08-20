@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.analysis.invariants import InvariantDetector, SemanticValidator
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_invariant_detection_and_validation() -> None:
@@ -20,12 +21,12 @@ def test_invariant_detection_and_validation() -> None:
             pytest.skip("No functions found")
 
         func_addr = funcs[0].get("offset", 0) or funcs[0].get("addr", 0)
-        assert func_addr
+        expect(func_addr)
 
         detector = InvariantDetector(binary)
         invs = detector.detect_all_invariants(func_addr)
-        assert isinstance(invs, list)
+        expect(isinstance(invs, list))
 
         validator = SemanticValidator(binary)
         result = validator.validate_mutation(func_addr, invs)
-        assert result["valid"] is True
+        expect(not (result["valid"] is not True))

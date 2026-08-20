@@ -1,5 +1,10 @@
 from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier, SimplificationStrategy
 from r2morph.devirtualization.vm_handler_analyzer import VMArchitecture, VMHandler
+from tests.utils.assertions import expect
+
+_EXPECTED_0_01_0_02 = 0.02
+_EXPECTED_SIMPLIFIER_CONVERGENCE_THRESHOLD_0_01 = 0.01
+_EXPECTED_SIMPLIFIER_METRICS_DEVIRTUALIZED_HANDLERS_2 = 2
 
 
 def test_iterative_complexity_and_strategy_adjustment():
@@ -12,12 +17,12 @@ def test_iterative_complexity_and_strategy_adjustment():
     }
 
     complexity = simplifier._calculate_complexity(context)
-    assert complexity == 3 + 1 + 1 + 10
+    expect(complexity == 3 + 1 + 1 + 10)
 
     simplifier.strategy = SimplificationStrategy.ADAPTIVE
     simplifier.convergence_threshold = 0.01
     simplifier._adjust_strategy(improvement=0.04, iteration=1)
-    assert 0.01 < simplifier.convergence_threshold <= 0.02
+    expect(_EXPECTED_SIMPLIFIER_CONVERGENCE_THRESHOLD_0_01 < simplifier.convergence_threshold <= _EXPECTED_0_01_0_02)
 
 
 def test_iterative_checkpoint_rollback_and_progress_report():
@@ -29,12 +34,12 @@ def test_iterative_checkpoint_rollback_and_progress_report():
     simplifier.checkpoints.append(checkpoint)
 
     simplifier.metrics.iteration = 7
-    assert simplifier.rollback_to_checkpoint() is True
-    assert simplifier.metrics is checkpoint["metrics"]
+    expect(not (simplifier.rollback_to_checkpoint() is not True))
+    expect(not (simplifier.metrics is not checkpoint["metrics"]))
 
     report = simplifier.get_progress_report()
-    assert report["iteration"] == simplifier.metrics.iteration
-    assert report["checkpoints"] == 1
+    expect(report["iteration"] == simplifier.metrics.iteration)
+    expect(report["checkpoints"] == 1)
 
 
 def test_iterative_update_metrics_and_reduction():
@@ -59,6 +64,6 @@ def test_iterative_update_metrics_and_reduction():
     }
 
     simplifier._update_metrics(context)
-    assert simplifier.metrics.simplified_expressions == 1
-    assert simplifier.metrics.devirtualized_handlers == 2
-    assert simplifier.metrics.complexity_reduction > 0
+    expect(simplifier.metrics.simplified_expressions == 1)
+    expect(simplifier.metrics.devirtualized_handlers == _EXPECTED_SIMPLIFIER_METRICS_DEVIRTUALIZED_HANDLERS_2)
+    expect(not (simplifier.metrics.complexity_reduction <= 0))

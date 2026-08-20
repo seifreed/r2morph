@@ -9,6 +9,9 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_SUMMARY_TOTAL_TESTS_2 = 2
 
 
 def _make_sample(path: Path, severity: TestSeverity) -> TestSample:
@@ -64,10 +67,10 @@ def test_benchmark_summary_and_report_generation(tmp_path: Path):
     ]
 
     summary = framework._generate_validation_summary(framework.benchmark_results)
-    assert summary["total_tests"] == 2
-    assert summary["successful_tests"] == 1
-    assert "detection" in summary["categories"]
+    expect(summary["total_tests"] == _EXPECTED_SUMMARY_TOTAL_TESTS_2)
+    expect(summary["successful_tests"] == 1)
+    expect(not ("detection" not in summary["categories"]))
 
     report = framework.generate_report()
-    assert "R2MORPH VALIDATION REPORT" in report
-    assert "OVERALL SUMMARY" in report
+    expect(not ("R2MORPH VALIDATION REPORT" not in report))
+    expect(not ("OVERALL SUMMARY" not in report))

@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
+from tests.utils.assertions import expect
 
 
 def test_opaque_predicates_apply_real(tmp_path: Path) -> None:
@@ -21,6 +22,6 @@ def test_opaque_predicates_apply_real(tmp_path: Path) -> None:
         pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 1, "probability": 1.0})
         result = pass_obj.apply(binary)
 
-    assert "mutations_applied" in result
-    assert "functions_mutated" in result
-    assert result["mutations_applied"] >= 0
+    expect(not ("mutations_applied" not in result))
+    expect(not ("functions_mutated" not in result))
+    expect(not (result["mutations_applied"] < 0))

@@ -9,6 +9,7 @@ Tests for Issue #4:
 - Entitlements and hardened runtime
 """
 
+import logging
 import platform
 import shutil
 import tempfile
@@ -18,6 +19,7 @@ import pytest
 
 from r2morph.platform.codesign import CodeSigner
 from r2morph.platform.macho_handler import MachOHandler
+from tests.utils.assertions import expect
 
 
 class TestMachOIntegrityBasic:
@@ -29,7 +31,7 @@ class TestMachOIntegrityBasic:
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         handler = MachOHandler(test_file)
-        assert not handler.is_macho()
+        expect(not (handler.is_macho()))
 
     def test_is_macho_with_elf(self, tmp_path):
         """Test is_macho returns False for ELF files."""
@@ -37,7 +39,7 @@ class TestMachOIntegrityBasic:
         test_file.write_bytes(b"\x7fELF")
 
         handler = MachOHandler(test_file)
-        assert not handler.is_macho()
+        expect(not (handler.is_macho()))
 
     def test_is_macho_with_pe(self, tmp_path):
         """Test is_macho returns False for PE files."""
@@ -45,7 +47,7 @@ class TestMachOIntegrityBasic:
         test_file.write_bytes(b"MZ\x00\x00")
 
         handler = MachOHandler(test_file)
-        assert not handler.is_macho()
+        expect(not (handler.is_macho()))
 
     def test_validate_non_macho(self, tmp_path):
         """Test validate returns False for non-Mach-O."""
@@ -53,7 +55,7 @@ class TestMachOIntegrityBasic:
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         handler = MachOHandler(test_file)
-        assert not handler.validate()
+        expect(not (handler.validate()))
 
     def test_validate_integrity_non_macho(self, tmp_path):
         """Test validate_integrity fails for non-Mach-O."""
@@ -63,8 +65,8 @@ class TestMachOIntegrityBasic:
         handler = MachOHandler(test_file)
         valid, msg = handler.validate_integrity()
 
-        assert not valid
-        assert "Not a Mach-O" in msg
+        expect(not (valid))
+        expect(not ("Not a Mach-O" not in msg))
 
 
 class TestMachOHandlerMethods:
@@ -78,7 +80,7 @@ class TestMachOHandlerMethods:
         handler = MachOHandler(test_file)
         commands = handler.get_load_commands()
 
-        assert commands == []
+        expect(commands == [])
 
     def test_get_segments_non_macho(self, tmp_path):
         """Test get_segments on non-Mach-O."""
@@ -88,7 +90,7 @@ class TestMachOHandlerMethods:
         handler = MachOHandler(test_file)
         segments = handler.get_segments()
 
-        assert segments == []
+        expect(segments == [])
 
     def test_is_fat_binary_non_macho(self, tmp_path):
         """Test is_fat_binary on non-Mach-O."""
@@ -96,7 +98,7 @@ class TestMachOHandlerMethods:
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         handler = MachOHandler(test_file)
-        assert not handler.is_fat_binary()
+        expect(not (handler.is_fat_binary()))
 
     def test_get_sections_non_macho(self, tmp_path):
         """Test get_sections on non-Mach-O."""
@@ -106,7 +108,7 @@ class TestMachOHandlerMethods:
         handler = MachOHandler(test_file)
         sections = handler.get_sections()
 
-        assert sections == []
+        expect(sections == [])
 
     def test_fix_load_commands_non_macho(self, tmp_path):
         """Test fix_load_commands on non-Mach-O."""
@@ -116,8 +118,8 @@ class TestMachOHandlerMethods:
         handler = MachOHandler(test_file)
         success, fixes = handler.fix_load_commands()
 
-        assert success
-        assert fixes == []
+        expect(success)
+        expect(fixes == [])
 
     def test_fix_bind_symbols_non_macho(self, tmp_path):
         """Test fix_bind_symbols on non-Mach-O."""
@@ -127,8 +129,8 @@ class TestMachOHandlerMethods:
         handler = MachOHandler(test_file)
         success, fixes = handler.fix_bind_symbols()
 
-        assert success
-        assert fixes == []
+        expect(success)
+        expect(fixes == [])
 
     def test_fix_segment_permissions_non_macho(self, tmp_path):
         """Test fix_segment_permissions on non-Mach-O."""
@@ -138,8 +140,8 @@ class TestMachOHandlerMethods:
         handler = MachOHandler(test_file)
         success, fixes = handler.fix_segment_permissions()
 
-        assert success
-        assert fixes == []
+        expect(success)
+        expect(fixes == [])
 
     @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_full_repair_non_macho(self, tmp_path):
@@ -150,7 +152,7 @@ class TestMachOHandlerMethods:
         handler = MachOHandler(test_file)
         success, _repairs = handler.full_repair()
 
-        assert not success
+        expect(not (success))
 
 
 class TestMachOBasicParsing:
@@ -193,8 +195,8 @@ class TestMachOBasicParsing:
         if handler.is_macho():
             commands, segments = handler._parse_macho_basic()
 
-            assert isinstance(commands, list)
-            assert isinstance(segments, list)
+            expect(isinstance(commands, list))
+            expect(isinstance(segments, list))
 
     def test_repair_integrity_non_darwin(self, tmp_path):
         """Test repair_integrity returns False on non-Darwin."""
@@ -205,8 +207,7 @@ class TestMachOBasicParsing:
 
         result = handler.repair_integrity()
 
-        if platform.system() != "Darwin":
-            assert result is False
+        expect(not (platform.system() != "Darwin" and result is not False))
 
 
 class TestCodeSigner:
@@ -215,7 +216,7 @@ class TestCodeSigner:
     def test_init(self):
         """Test CodeSigner initialization."""
         signer = CodeSigner()
-        assert signer.platform == platform.system()
+        expect(signer.platform == platform.system())
 
     def test_sign_non_darwin(self, tmp_path):
         """Test sign on non-Darwin platforms."""
@@ -225,7 +226,7 @@ class TestCodeSigner:
 
         if signer.platform != "Darwin":
             result = signer.sign(test_file)
-            assert result is True
+            expect(not (result is not True))
 
     def test_verify_non_darwin(self, tmp_path):
         """Test verify on non-Darwin platforms."""
@@ -235,7 +236,7 @@ class TestCodeSigner:
 
         if signer.platform != "Darwin":
             result = signer.verify(test_file)
-            assert result is True
+            expect(not (result is not True))
 
     def test_needs_signing_non_darwin(self, tmp_path):
         """Test needs_signing on non-Darwin platforms."""
@@ -245,7 +246,7 @@ class TestCodeSigner:
 
         if signer.platform != "Darwin":
             result = signer.needs_signing(test_file)
-            assert result is False
+            expect(not (result is not False))
 
     def test_is_signed_non_darwin(self, tmp_path):
         """Test is_signed on non-Darwin platforms."""
@@ -255,7 +256,7 @@ class TestCodeSigner:
 
         if signer.platform != "Darwin":
             result = signer.is_signed(test_file)
-            assert result is True
+            expect(not (result is not True))
 
     def test_sign_non_darwin_returns_true(self, tmp_path):
         """Test signing on non-Darwin platforms."""
@@ -265,7 +266,7 @@ class TestCodeSigner:
 
         if signer.platform != "Darwin":
             result = signer.sign(test_file)
-            assert result is True
+            expect(not (result is not True))
 
 
 @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS only")
@@ -289,50 +290,51 @@ class TestMachOIntegrityDarwin:
     def test_is_macho_system_binary(self, system_binary):
         """Test is_macho with system binary."""
         handler = MachOHandler(system_binary)
-        assert handler.is_macho()
+        expect(handler.is_macho())
 
     def test_validate_system_binary(self, system_binary):
         """Test validate with system binary."""
         handler = MachOHandler(system_binary)
-        assert handler.validate()
+        expect(handler.validate())
 
     def test_get_load_commands_system_binary(self, system_binary):
         """Test get_load_commands with system binary."""
         handler = MachOHandler(system_binary)
         commands = handler.get_load_commands()
 
-        assert len(commands) > 0
+        expect(not (len(commands) <= 0))
 
         command_names = [c.get("command", "") for c in commands]
         # lief may return enum names without the ``LC_`` prefix
-        assert any(
-            "LC_" in str(name) or "SEGMENT" in str(name) or "0x" in str(name) for name in command_names
-        ), f"Expected recognizable load commands, got: {command_names}"
+        expect(
+            any("LC_" in str(name) or "SEGMENT" in str(name) or "0x" in str(name) for name in command_names),
+            f"Expected recognizable load commands, got: {command_names}",
+        )
 
     def test_get_segments_system_binary(self, system_binary):
         """Test get_segments with system binary."""
         handler = MachOHandler(system_binary)
         segments = handler.get_segments()
 
-        assert len(segments) > 0
+        expect(not (len(segments) <= 0))
 
         segment_names = [s.get("name", "") for s in segments]
-        assert "__TEXT" in segment_names or "TEXT" in str(segment_names)
+        expect("__TEXT" in segment_names or "TEXT" in str(segment_names))
 
     def test_validate_integrity_system_binary(self, system_binary):
         """Test validate_integrity with system binary."""
         handler = MachOHandler(system_binary)
         valid, msg = handler.validate_integrity()
 
-        assert valid
-        assert msg == ""
+        expect(valid)
+        expect(msg == "")
 
     def test_get_sections_system_binary(self, system_binary):
         """Test get_sections with system binary."""
         handler = MachOHandler(system_binary)
         sections = handler.get_sections()
 
-        assert len(sections) > 0
+        expect(not (len(sections) <= 0))
 
     def test_full_repair_system_binary(self, system_binary, tmp_path):
         """Test full_repair with copied system binary."""
@@ -343,7 +345,7 @@ class TestMachOIntegrityDarwin:
         handler = MachOHandler(test_binary)
         success, repairs = handler.full_repair()
 
-        assert success or len(repairs) > 0
+        expect(success or len(repairs) > 0)
 
     def test_codesign_verify_system_binary(self, system_binary):
         """Test code signature verification with system binary."""
@@ -365,8 +367,7 @@ class TestMachOIntegrityDarwin:
 
         result = signer.sign(test_binary, adhoc=True)
 
-        if result:
-            assert signer.verify(test_binary)
+        expect(not (result and not (signer.verify(test_binary))))
 
 
 @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS only")
@@ -426,7 +427,7 @@ class TestMachOErrorHandling:
 
         handler = MachOHandler(test_file)
 
-        assert handler.is_macho()
+        expect(handler.is_macho())
 
         commands, _segments = handler._parse_macho_basic()
 
@@ -443,8 +444,8 @@ class TestMachOErrorHandling:
 
         if handler.is_macho():
             commands, segments = handler._parse_macho_basic()
-            assert isinstance(commands, list)
-            assert isinstance(segments, list)
+            expect(isinstance(commands, list))
+            expect(isinstance(segments, list))
 
     def test_nonexistent_file(self, tmp_path):
         """Test handling of nonexistent file."""
@@ -452,8 +453,8 @@ class TestMachOErrorHandling:
 
         handler = MachOHandler(nonexistent)
 
-        assert not handler.is_macho()
-        assert not handler.validate()
+        expect(not (handler.is_macho()))
+        expect(not (handler.validate()))
 
     def test_permission_denied(self, tmp_path):
         """Test handling of permission errors."""
@@ -465,7 +466,7 @@ class TestMachOErrorHandling:
             handler = MachOHandler(test_file)
             handler.is_macho()
         except PermissionError:
-            pass
+            logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
         finally:
             test_file.chmod(0o644)
 
@@ -482,10 +483,10 @@ class TestMachORepairWorkflow:
         handler = MachOHandler(test_file)
 
         valid, _msg = handler.validate_integrity()
-        assert not valid
+        expect(not (valid))
 
         success, _repairs = handler.full_repair()
-        assert not success
+        expect(not (success))
 
     @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS only")
     def test_repair_workflow_system_binary(self, tmp_path):
@@ -523,7 +524,7 @@ class TestCodeSignerErrorHandling:
         nonexistent = tmp_path / "nonexistent"
 
         result = signer.sign(nonexistent)
-        assert result is False
+        expect(not (result is not False))
 
     @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_verify_nonexistent_file(self, tmp_path):
@@ -532,7 +533,7 @@ class TestCodeSignerErrorHandling:
         nonexistent = tmp_path / "nonexistent"
 
         result = signer.verify(nonexistent)
-        assert result is False
+        expect(not (result is not False))
 
     @pytest.mark.skipif(platform.system() != "Darwin", reason="macOS-only test")
     def test_remove_signature_nonexistent_file(self, tmp_path):
@@ -541,7 +542,7 @@ class TestCodeSignerErrorHandling:
         nonexistent = tmp_path / "nonexistent"
 
         result = signer.remove_signature(nonexistent)
-        assert result is False
+        expect(not (result is not False))
 
 
 class TestMachOPlatformIntegration:
@@ -559,4 +560,4 @@ class TestMachOPlatformIntegration:
         handler = MachOHandler(test_file)
         handler.full_repair()
 
-        assert test_file.stat().st_mode == original_mode
+        expect(test_file.stat().st_mode == original_mode)

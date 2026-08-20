@@ -19,6 +19,13 @@ from typing import Any
 
 import pytest
 
+_EXPECTED_LEN_OPCODE_2 = 2
+_EXPECTED_OPCODE_0_255 = 0xFF
+_EXPECTED_OPCODE_1_0XC0_192 = 0xC0
+_EXPECTED_OPCODE_1_3_7_4 = 4
+_EXPECTED_REGISTER_INDEX_8 = 8
+
+
 # Imported through importorskip so a machine without Unicorn skips the importing
 # test module instead of failing collection.
 _unicorn = pytest.importorskip("unicorn")
@@ -144,12 +151,16 @@ def _code_hook(state: _TraceState, register_ids: dict[str, int]) -> Any:
         if len(state.register_samples) < _TRACE_EVENT_CAP:
             state.register_samples.append({name: uc.reg_read(identifier) for name, identifier in register_ids.items()})
         opcode = bytes(uc.mem_read(address, 2))
-        if len(opcode) == 2 and opcode[0] == 0xFF and (opcode[1] >> 3) & 7 == 4:
+        if (
+            len(opcode) == _EXPECTED_LEN_OPCODE_2
+            and opcode[0] == _EXPECTED_OPCODE_0_255
+            and (opcode[1] >> 3) & 7 == _EXPECTED_OPCODE_1_3_7_4
+        ):
             state.indirect_jump_count += 1
             if len(state.indirect_jumps) < _TRACE_EVENT_CAP:
                 register_index = opcode[1] & 7
                 jump: dict[str, object] = {"address": address, "opcode": opcode[0] << 8 | opcode[1]}
-                if opcode[1] & 0xC0 == 0xC0 and register_index < 8:
+                if opcode[1] & 0xC0 == _EXPECTED_OPCODE_1_0XC0_192 and register_index < _EXPECTED_REGISTER_INDEX_8:
                     jump["target"] = uc.reg_read(register_ids[_REGISTER_NAMES[register_index]])
                     jump["vpc"] = uc.reg_read(register_ids["rsi"])
                     jump["bytecode_base"] = uc.reg_read(register_ids["r15"])

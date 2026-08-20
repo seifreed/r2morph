@@ -1,6 +1,12 @@
+import importlib
+
 import pytest
 
 from r2morph.devirtualization.cfo_simplifier import NETWORKX_AVAILABLE, CFOSimplifier, ControlFlowBlock
+from tests.utils.assertions import expect
+
+_EXPECTED_SIMPLIFIER_BLOCKS_768 = 0x300
+_EXPECTED_SIMPLIFIER_EXTRACT_STATE_VALUE_BLOCK_16 = 16
 
 
 @pytest.mark.skipif(not NETWORKX_AVAILABLE, reason="NetworkX not available")
@@ -17,15 +23,15 @@ def test_cfo_fake_control_flow_detection_and_removal():
         unreachable.address: unreachable,
     }
 
-    import networkx as nx
+    nx = importlib.import_module("networkx")
 
     simplifier.cfg = nx.DiGraph()
     simplifier.cfg.add_edge(entry.address, reachable.address)
     simplifier.cfg.add_node(unreachable.address)
 
-    assert simplifier._detect_fake_control_flow() is True
-    assert simplifier._remove_fake_control_flow() is True
-    assert 0x300 not in simplifier.blocks
+    expect(not (simplifier._detect_fake_control_flow() is not True))
+    expect(not (simplifier._remove_fake_control_flow() is not True))
+    expect(_EXPECTED_SIMPLIFIER_BLOCKS_768 not in simplifier.blocks)
 
 
 def test_cfo_extract_state_and_setters():
@@ -45,17 +51,17 @@ def test_cfo_extract_state_and_setters():
 
     simplifier.blocks = {block.address: block, setter.address: setter}
 
-    assert simplifier._extract_state_value(block) == 16
+    expect(simplifier._extract_state_value(block) == _EXPECTED_SIMPLIFIER_EXTRACT_STATE_VALUE_BLOCK_16)
     setters = simplifier._find_state_setters(3, "state")
-    assert setter.address in setters
+    expect(not (setter.address not in setters))
 
 
 def test_cfo_constant_expression_and_opaque_comparison():
     simplifier = CFOSimplifier()
 
-    assert simplifier._is_constant_expression("4", "4") is True
-    assert simplifier._is_constant_expression("4", "5") is True
-    assert simplifier._is_constant_expression("eax", "ebx") is False
+    expect(not (simplifier._is_constant_expression("4", "4") is not True))
+    expect(not (simplifier._is_constant_expression("4", "5") is not True))
+    expect(not (simplifier._is_constant_expression("eax", "ebx") is not False))
 
     instr = {"opcode": "cmp", "operands": [{"value": "1"}, {"value": "1"}]}
-    assert simplifier._is_opaque_comparison(instr) is True
+    expect(not (simplifier._is_opaque_comparison(instr) is not True))

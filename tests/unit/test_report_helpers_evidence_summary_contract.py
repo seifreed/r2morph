@@ -2,6 +2,7 @@ from r2morph.core.report_helpers_evidence_summary import _summarize_pass_evidenc
 from r2morph.core.report_helpers_region_evidence import (
     _build_pass_region_evidence_map,
 )
+from tests.utils.assertions import expect
 
 
 def test_summarize_pass_evidence_orders_by_mismatch_then_issues() -> None:
@@ -40,35 +41,38 @@ def test_summarize_pass_evidence_orders_by_mismatch_then_issues() -> None:
         }
     )
 
-    assert rows == [
-        {
-            "pass_name": "expand",
-            "changed_region_count": 2,
-            "structural_issue_count": 3,
-            "symbolic_binary_regions_checked": 4,
-            "symbolic_binary_mismatched_regions": 1,
-            "rolled_back": True,
-            "status": "warn",
-        },
-        {
-            "pass_name": "nop",
-            "changed_region_count": 1,
-            "structural_issue_count": 0,
-            "symbolic_binary_regions_checked": 2,
-            "symbolic_binary_mismatched_regions": 1,
-            "rolled_back": False,
-            "status": "ok",
-        },
-        {
-            "pass_name": "register",
-            "changed_region_count": 3,
-            "structural_issue_count": 1,
-            "symbolic_binary_regions_checked": 0,
-            "symbolic_binary_mismatched_regions": 0,
-            "rolled_back": False,
-            "status": "ok",
-        },
-    ]
+    expect(
+        rows
+        == [
+            {
+                "pass_name": "expand",
+                "changed_region_count": 2,
+                "structural_issue_count": 3,
+                "symbolic_binary_regions_checked": 4,
+                "symbolic_binary_mismatched_regions": 1,
+                "rolled_back": True,
+                "status": "warn",
+            },
+            {
+                "pass_name": "nop",
+                "changed_region_count": 1,
+                "structural_issue_count": 0,
+                "symbolic_binary_regions_checked": 2,
+                "symbolic_binary_mismatched_regions": 1,
+                "rolled_back": False,
+                "status": "ok",
+            },
+            {
+                "pass_name": "register",
+                "changed_region_count": 3,
+                "structural_issue_count": 1,
+                "symbolic_binary_regions_checked": 0,
+                "symbolic_binary_mismatched_regions": 0,
+                "rolled_back": False,
+                "status": "ok",
+            },
+        ]
+    )
 
 
 def test_build_pass_region_evidence_map_compacts_symbolic_rows() -> None:
@@ -97,22 +101,25 @@ def test_build_pass_region_evidence_map_compacts_symbolic_rows() -> None:
         }
     )
 
-    assert region_map == {
-        "nop": [
-            {
-                "start_address": 0x1000,
-                "end_address": 0x1004,
-                "equivalent": False,
-                "mismatch_count": 2,
-                "mismatches": ["rax", "stack_delta"],
-                "step_strategy": "bounded",
-                "region_exit_equivalent": False,
-                "original_region_exit_address": 0x2000,
-                "mutated_region_exit_address": 0x3000,
-                "original_trace_length": 3,
-                "mutated_trace_length": 4,
-                "original_region_exit_steps": 5,
-                "mutated_region_exit_steps": 6,
-            }
-        ]
-    }
+    expect(
+        region_map
+        == {
+            "nop": [
+                {
+                    "start_address": 4096,
+                    "end_address": 4100,
+                    "equivalent": False,
+                    "mismatch_count": 2,
+                    "mismatches": ["rax", "stack_delta"],
+                    "step_strategy": "bounded",
+                    "region_exit_equivalent": False,
+                    "original_region_exit_address": 8192,
+                    "mutated_region_exit_address": 12288,
+                    "original_trace_length": 3,
+                    "mutated_trace_length": 4,
+                    "original_region_exit_steps": 5,
+                    "mutated_region_exit_steps": 6,
+                }
+            ]
+        }
+    )

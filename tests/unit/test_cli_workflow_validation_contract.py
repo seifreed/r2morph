@@ -1,7 +1,8 @@
 from r2morph.cli_workflow_validation import resolve_min_severity, resolve_pass_severity_requirements
+from tests.utils.assertions import expect
 
 
 def test_cli_workflow_validation_contract() -> None:
-    assert resolve_min_severity("mismatch") == ("mismatch", 0)
+    expect(resolve_min_severity("mismatch") == ("mismatch", 0))
     resolved = resolve_pass_severity_requirements(["nop=clean"], alias_map={"nop": "nop"})
-    assert resolved == [("nop", "clean", 3)]
+    expect(resolved == [("nop", "clean", 3)])

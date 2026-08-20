@@ -11,27 +11,28 @@ from __future__ import annotations
 
 from r2morph.mutations.code_virtualization_region import _stack_balanced
 from r2morph.mutations.code_virtualization_region_handlers import _GUARD
+from tests.utils.assertions import expect
 
 
 def test_guard_is_sixteen_byte_aligned() -> None:
     # The relocation must preserve the program's 16-byte stack alignment.
-    assert _GUARD % 16 == 0
+    expect(_GUARD % 16 == 0)
 
 
 def test_stack_balanced_accepts_matched_push_pop() -> None:
     items = [["push", 0, 64], ["pop", 0, 64], ["exit", 0x1000]]
-    assert _stack_balanced(items) is True
+    expect(not (_stack_balanced(items) is not True))
 
 
 def test_stack_balanced_rejects_push_without_pop() -> None:
     # Reaches the terminator at depth 1 — the VM would force-restore rsp wrongly.
     items = [["push", 0, 64], ["exit", 0x1000]]
-    assert _stack_balanced(items) is False
+    expect(not (_stack_balanced(items) is not False))
 
 
 def test_stack_balanced_rejects_pop_underflow() -> None:
     items = [["pop", 0, 64], ["exit", 0x1000]]
-    assert _stack_balanced(items) is False
+    expect(not (_stack_balanced(items) is not False))
 
 
 def test_stack_balanced_accepts_branch_with_equal_depth_on_both_paths() -> None:
@@ -42,7 +43,7 @@ def test_stack_balanced_accepts_branch_with_equal_depth_on_both_paths() -> None:
         ["pop", 0, 64],  # 3: depth 1 -> 0
         ["exit", 0x1000],  # 4: depth 0
     ]
-    assert _stack_balanced(items) is True
+    expect(not (_stack_balanced(items) is not True))
 
 
 def test_stack_balanced_rejects_paths_that_disagree_on_depth() -> None:
@@ -51,4 +52,4 @@ def test_stack_balanced_rejects_paths_that_disagree_on_depth() -> None:
         ["push", 0, 64],  # 1: depth 0 -> 1, then falls to 2
         ["exit", 0x1000],  # 2: reached at depth 0 and depth 1 -> conflict
     ]
-    assert _stack_balanced(items) is False
+    expect(not (_stack_balanced(items) is not False))

@@ -13,10 +13,11 @@ from r2morph.analysis.switch_table_models import (
 from r2morph.analysis.switch_table_models import (
     JumpTableType as ModelsJumpTableType,
 )
+from tests.utils.assertions import expect
 
 
 def test_switch_table_models_are_reexported_from_analyzer_module():
-    assert JumpTableType is ModelsJumpTableType
-    assert JumpTableEntry is ModelsJumpTableEntry
-    assert JumpTable is ModelsJumpTable
-    assert IndirectJump is ModelsIndirectJump
+    expect(not (JumpTableType is not ModelsJumpTableType))
+    expect(not (JumpTableEntry is not ModelsJumpTableEntry))
+    expect(not (JumpTable is not ModelsJumpTable))
+    expect(not (IndirectJump is not ModelsIndirectJump))

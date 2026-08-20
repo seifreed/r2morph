@@ -1,4 +1,7 @@
 from r2morph.mutations.conflict_semantic import SemanticConflictDetector
+from tests.utils.assertions import expect
+
+_EXPECTED_RESULT_TOTAL_CONFLICTS_2 = 2
 
 
 def test_semantic_detector_reports_register_and_stack_conflicts() -> None:
@@ -12,5 +15,5 @@ def test_semantic_detector_reports_register_and_stack_conflicts() -> None:
         ]
     )
 
-    assert result["total_conflicts"] >= 2
-    assert result["has_critical"] is True
+    expect(not (result["total_conflicts"] < _EXPECTED_RESULT_TOTAL_CONFLICTS_2))
+    expect(not (result["has_critical"] is not True))

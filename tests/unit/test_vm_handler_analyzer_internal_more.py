@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.vm_handler_analyzer import VMHandler, VMHandlerAnalyzer, VMHandlerType
+from tests.utils.assertions import expect
 
 
 def test_vm_handler_analyzer_internal_helpers():
@@ -17,10 +18,10 @@ def test_vm_handler_analyzer_internal_helpers():
 
         arithmetic_instructions = [{"disasm": "add eax, ebx"}, {"disasm": "sub eax, ecx"}]
         handler_type = analyzer._classify_handler_type(arithmetic_instructions)
-        assert handler_type == VMHandlerType.ARITHMETIC
+        expect(handler_type == VMHandlerType.ARITHMETIC)
 
         signature = analyzer._generate_semantic_signature(arithmetic_instructions)
-        assert "add" in signature
+        expect(not ("add" not in signature))
 
         handler = VMHandler(
             handler_id=1,
@@ -32,11 +33,11 @@ def test_vm_handler_analyzer_internal_helpers():
         handler.semantic_signature = signature
 
         handler.equivalent_x86 = analyzer._generate_equivalent_x86(handler)
-        assert handler.equivalent_x86 == "add eax, ebx"
+        expect(handler.equivalent_x86 == "add eax, ebx")
 
         confidence = analyzer._calculate_handler_confidence(handler)
-        assert 0.0 <= confidence <= 1.0
+        expect(0.0 <= confidence <= 1.0)
 
         stack_instructions = [{"disasm": "push eax"}, {"disasm": "pop ebx"}]
         stack_type = analyzer._classify_handler_type(stack_instructions)
-        assert stack_type == VMHandlerType.STACK
+        expect(stack_type == VMHandlerType.STACK)

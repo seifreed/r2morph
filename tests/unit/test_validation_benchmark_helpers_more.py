@@ -14,6 +14,12 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CALCULATE_PERCENTILE_1_0_2_0_3_0_95_3_0 = 3.0
+_EXPECTED_METRICS_TRUE_POSITIVES_2 = 2
+_EXPECTED_SUMMARY_SUCCESS_RATE_0_5 = 0.5
+_EXPECTED_SUMMARY_TOTAL_TESTS_2 = 2
 
 
 def _make_sample(tmp_path: Path) -> TestSample:
@@ -36,8 +42,8 @@ def _make_sample(tmp_path: Path) -> TestSample:
 
 def test_test_sample_hash_and_existence(tmp_path: Path) -> None:
     sample = _make_sample(tmp_path)
-    assert sample.file_exists is True
-    assert sample.verify_hash() is True
+    expect(not (sample.file_exists is not True))
+    expect(not (sample.verify_hash() is not True))
 
     bad_sample = TestSample(
         file_path=sample.file_path,
@@ -51,7 +57,7 @@ def test_test_sample_hash_and_existence(tmp_path: Path) -> None:
         description="bad hash",
         source="unit",
     )
-    assert bad_sample.verify_hash() is False
+    expect(not (bad_sample.verify_hash() is not False))
 
 
 def test_benchmark_accuracy_metrics_calculation() -> None:
@@ -71,18 +77,18 @@ def test_benchmark_accuracy_metrics_calculation() -> None:
         "mba_detected": True,
     }
     metrics = framework._calculate_accuracy_metrics(expected, actual)
-    assert metrics.true_positives == 2
-    assert metrics.false_positives == 1
-    assert metrics.true_negatives == 1
-    assert metrics.false_negatives == 1
-    assert 0.0 <= metrics.accuracy <= 1.0
+    expect(metrics.true_positives == _EXPECTED_METRICS_TRUE_POSITIVES_2)
+    expect(metrics.false_positives == 1)
+    expect(metrics.true_negatives == 1)
+    expect(metrics.false_negatives == 1)
+    expect(0.0 <= metrics.accuracy <= 1.0)
 
 
 def test_benchmark_percentile_and_summary(tmp_path: Path) -> None:
     framework = ValidationFramework(test_data_dir="fixtures/dataset")
-    assert calculate_percentile([], 95) == 0.0
-    assert calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0
-    assert calculate_percentile(list(range(1, 101)), 99) >= 1.0
+    expect(calculate_percentile([], 95) == 0.0)
+    expect(calculate_percentile([1.0, 2.0, 3.0], 95) == _EXPECTED_CALCULATE_PERCENTILE_1_0_2_0_3_0_95_3_0)
+    expect(not (calculate_percentile(list(range(1, 101)), 99) < 1.0))
 
     sample = _make_sample(tmp_path)
     perf_ok = PerformanceMetrics(0.5, 10.0, 0.0, 0.0, True, None)
@@ -93,9 +99,9 @@ def test_benchmark_percentile_and_summary(tmp_path: Path) -> None:
         BenchmarkResult(sample, BenchmarkCategory.FULL_PIPELINE, perf_fail, None, {}, "now", "dev"),
     ]
     summary = framework._generate_validation_summary(results)
-    assert summary["total_tests"] == 2
-    assert summary["success_rate"] == 0.5
-    assert summary["categories"]
+    expect(summary["total_tests"] == _EXPECTED_SUMMARY_TOTAL_TESTS_2)
+    expect(summary["success_rate"] == _EXPECTED_SUMMARY_SUCCESS_RATE_0_5)
+    expect(summary["categories"])
 
 
 def test_benchmark_export_formats(tmp_path: Path) -> None:
@@ -110,7 +116,7 @@ def test_benchmark_export_formats(tmp_path: Path) -> None:
     framework.export_results(str(json_path), format="json")
     framework.export_results(str(csv_path), format="csv")
 
-    assert json_path.exists()
-    assert csv_path.exists()
+    expect(json_path.exists())
+    expect(csv_path.exists())
     data = json.loads(json_path.read_text())
-    assert data["metadata"]["total_results"] == 1
+    expect(data["metadata"]["total_results"] == 1)

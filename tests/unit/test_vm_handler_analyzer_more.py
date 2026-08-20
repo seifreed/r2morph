@@ -4,6 +4,9 @@ from r2morph.devirtualization.vm_handler_analyzer import (
     VMHandlerAnalyzer,
     VMHandlerType,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_STATS_DISPATCHER_ADDRESS_4660 = 0x1234
 
 
 def test_vm_handler_equivalent_x86_for_memory_and_stack():
@@ -26,8 +29,8 @@ def test_vm_handler_equivalent_x86_for_memory_and_stack():
         semantic_signature="push",
     )
 
-    assert analyzer._generate_equivalent_x86(memory_handler) == "mov eax, [ebx]"
-    assert analyzer._generate_equivalent_x86(stack_handler) == "push eax"
+    expect(analyzer._generate_equivalent_x86(memory_handler) == "mov eax, [ebx]")
+    expect(analyzer._generate_equivalent_x86(stack_handler) == "push eax")
 
 
 def test_vm_handler_confidence_bounds():
@@ -51,15 +54,15 @@ def test_vm_handler_confidence_bounds():
         semantic_signature="add",
     )
 
-    assert analyzer._calculate_handler_confidence(short_handler) >= 0.0
-    assert analyzer._calculate_handler_confidence(long_handler) <= 1.0
+    expect(not (analyzer._calculate_handler_confidence(short_handler) < 0.0))
+    expect(not (analyzer._calculate_handler_confidence(long_handler) > 1.0))
 
 
 def test_vm_handler_statistics_empty_architecture():
     analyzer = VMHandlerAnalyzer(binary=None)
-    assert analyzer.get_handler_statistics() == {}
+    expect(analyzer.get_handler_statistics() == {})
 
     analyzer.vm_architecture = VMArchitecture(dispatcher_address=0x1234)
     stats = analyzer.get_handler_statistics()
-    assert stats["total_handlers"] == 0
-    assert stats["dispatcher_address"] == 0x1234
+    expect(stats["total_handlers"] == 0)
+    expect(stats["dispatcher_address"] == _EXPECTED_STATS_DISPATCHER_ADDRESS_4660)

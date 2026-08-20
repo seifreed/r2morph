@@ -9,6 +9,7 @@ from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
 from r2morph.detection.pattern_matcher import PatternMatcher
+from tests.utils.assertions import expect
 
 
 def test_pattern_matcher_scans_strings_and_imports(tmp_path: Path) -> None:
@@ -24,11 +25,11 @@ def test_pattern_matcher_scans_strings_and_imports(tmp_path: Path) -> None:
         matcher = PatternMatcher(binary)
         result = matcher.scan()
 
-    assert isinstance(result.anti_debug_detected, bool)
-    assert isinstance(result.anti_vm_detected, bool)
-    assert isinstance(result.import_hiding_detected, bool)
-    assert "IsDebuggerPresent" in result.anti_debug_apis
-    assert any("vmware" in item.lower() for item in result.anti_vm_artifacts)
+    expect(isinstance(result.anti_debug_detected, bool))
+    expect(isinstance(result.anti_vm_detected, bool))
+    expect(isinstance(result.import_hiding_detected, bool))
+    expect(not ("IsDebuggerPresent" not in result.anti_debug_apis))
+    expect(any("vmware" in item.lower() for item in result.anti_vm_artifacts))
 
 
 def test_pattern_matcher_find_patterns_and_search_strings(tmp_path: Path) -> None:
@@ -45,27 +46,26 @@ def test_pattern_matcher_find_patterns_and_search_strings(tmp_path: Path) -> Non
     with Binary(work_path, writable=True) as binary:
         binary.analyze()
         sections = binary.get_sections()
-        assert sections
+        expect(sections)
         candidates = [
             section
             for section in sections
             if int(section.get("vaddr", 0) or 0) > 0 and int(section.get("size", 0) or 0) >= len(marker)
         ]
-        assert candidates
+        expect(candidates)
         section = candidates[0]
         vaddr = int(section.get("vaddr", 0) or 0)
         paddr = int(section.get("paddr", 0) or 0)
-        assert binary.write_bytes(vaddr, marker) is True
+        expect(not (binary.write_bytes(vaddr, marker) is not True))
         binary.r2.cmd("e search.in=io.maps")
         matcher = PatternMatcher(binary)
         results = matcher.find_patterns([marker])
         string_hits = matcher.search_strings([marker.decode(), "not_there"])
 
-    if paddr > 0:
-        assert work_path.read_bytes()[paddr : paddr + len(marker)] == marker
-    assert marker in results
-    assert string_hits[marker.decode()] is True
-    assert string_hits["not_there"] is False
+    expect(not (paddr > 0 and work_path.read_bytes()[paddr : paddr + len(marker)] != marker))
+    expect(not (marker not in results))
+    expect(not (string_hits[marker.decode()] is not True))
+    expect(not (string_hits["not_there"] is not False))
 
 
 def test_control_flow_analyzer_real_basic(tmp_path: Path) -> None:
@@ -81,11 +81,11 @@ def test_control_flow_analyzer_real_basic(tmp_path: Path) -> None:
         analyzer = ControlFlowAnalyzer(binary)
         result = analyzer.analyze()
 
-    assert result.cff_confidence >= 0.0
-    assert result.opaque_predicates_count >= 0
-    assert result.mba_expressions_count >= 0
-    assert result.vm_handler_count >= 0
-    assert result.polymorphic_ratio >= 0.0
+    expect(not (result.cff_confidence < 0.0))
+    expect(not (result.opaque_predicates_count < 0))
+    expect(not (result.mba_expressions_count < 0))
+    expect(not (result.vm_handler_count < 0))
+    expect(not (result.polymorphic_ratio < 0.0))
 
 
 def test_packer_signature_detection_paths(tmp_path: Path) -> None:
@@ -103,6 +103,6 @@ def test_packer_signature_detection_paths(tmp_path: Path) -> None:
         detected = db.detect(binary, entropy)
         layers = db.detect_packing_layers(binary, entropy)
 
-    assert isinstance(detected, PackerType)
-    assert isinstance(layers, dict)
-    assert "layers_detected" in layers
+    expect(isinstance(detected, PackerType))
+    expect(isinstance(layers, dict))
+    expect(not ("layers_detected" not in layers))

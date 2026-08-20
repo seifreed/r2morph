@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.obfuscation_detector import ObfuscationDetector
+from tests.utils.assertions import expect
 
 
 def test_obfuscation_detector_report_real_binary() -> None:
@@ -17,10 +18,10 @@ def test_obfuscation_detector_report_real_binary() -> None:
         binary.analyze()
         detector = ObfuscationDetector()
         result = detector.analyze_binary(binary)
-        assert result is not None
-        assert isinstance(result.confidence_score, float)
+        expect(result is not None)
+        expect(isinstance(result.confidence_score, float))
 
         report = detector.get_comprehensive_report(binary)
-        assert "obfuscation_analysis" in report
-        assert "recommendations" in report
-        assert isinstance(report["recommendations"], list)
+        expect(not ("obfuscation_analysis" not in report))
+        expect(not ("recommendations" not in report))
+        expect(isinstance(report["recommendations"], list))

@@ -11,10 +11,12 @@ fixtures; these pin the remap contract on the pure injector.
 
 from __future__ import annotations
 
-import random
-
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_engine import VirtualizedOp
 from r2morph.mutations.code_virtualization_region import _inject_junk_movs
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_INJECTED_3 = 3
 
 
 def _items_with_back_branch() -> list[list]:
@@ -29,31 +31,30 @@ def _items_with_back_branch() -> list[list]:
 def test_injection_adds_identity_mov_items() -> None:
     # A seed that fires the probability adds at least one item, and every added
     # op is an identity mov (dst == src), which is semantics-preserving.
-    injected = _inject_junk_movs(_items_with_back_branch(), random.Random(1))
-    assert len(injected) > 3
+    injected = _inject_junk_movs(_items_with_back_branch(), randomness.Random(1))
+    expect(not (len(injected) <= _EXPECTED_LEN_INJECTED_3))
     added = [it for it in injected if it[0] == "op" and it[1].dst_index == it[1].value]
-    assert added  # at least one identity-mov junk item
+    expect(added)
 
 
 def test_injection_remaps_branch_target_to_the_same_real_item() -> None:
     # After injection the jcc must still target the original first mov (dst=0,
     # src=1), not a shifted or junk position.
-    injected = _inject_junk_movs(_items_with_back_branch(), random.Random(1))
+    injected = _inject_junk_movs(_items_with_back_branch(), randomness.Random(1))
     jcc = next(it for it in injected if it[0] == "jcc")
     target = injected[jcc[2]]
-    assert target[0] == "op" and target[1].dst_index == 0 and target[1].value == 1
+    expect(target[0] == "op" and target[1].dst_index == 0 and target[1].value == 1)
 
 
 def test_injection_keeps_all_branch_targets_in_range() -> None:
-    injected = _inject_junk_movs(_items_with_back_branch(), random.Random(7))
+    injected = _inject_junk_movs(_items_with_back_branch(), randomness.Random(7))
     for item in injected:
         if item[0] == "jmp":
-            assert 0 <= item[1] < len(injected)
-        elif item[0] == "jcc":
-            assert 0 <= item[2] < len(injected)
+            expect(0 <= item[1] < len(injected))
+        expect(not (item[0] == "jcc" and not (0 <= item[2] < len(injected))))
 
 
 def test_injection_is_deterministic_for_a_seed() -> None:
-    first = _inject_junk_movs(_items_with_back_branch(), random.Random(3))
-    second = _inject_junk_movs(_items_with_back_branch(), random.Random(3))
-    assert len(first) == len(second)
+    first = _inject_junk_movs(_items_with_back_branch(), randomness.Random(3))
+    second = _inject_junk_movs(_items_with_back_branch(), randomness.Random(3))
+    expect(len(first) == len(second))

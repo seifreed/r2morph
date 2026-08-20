@@ -4,6 +4,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from r2morph.reporting.report_view_projections import _build_category_views, _project_rows
+from tests.utils.assertions import expect
 
 
 @given(st.lists(st.dictionaries(st.text(min_size=1, max_size=10), st.text(max_size=20)), max_size=5))
@@ -12,7 +13,7 @@ def test_project_rows_preserves_length(rows):
         return
     fields = list(rows[0].keys())[:3] if rows[0] else []
     result = _project_rows(rows, fields)
-    assert len(result) == len(rows)
+    expect(len(result) == len(rows))
 
 
 @given(st.lists(st.dictionaries(st.text(min_size=1, max_size=10), st.text(max_size=20)), max_size=5))
@@ -22,7 +23,7 @@ def test_project_rows_idempotent(rows):
     fields = list(rows[0].keys())[:3] if rows[0] else []
     first = _project_rows(rows, fields)
     second = _project_rows(first, fields)
-    assert first == second
+    expect(first == second)
 
 
 @given(
@@ -33,7 +34,7 @@ def test_project_rows_idempotent(rows):
 )
 def test_build_category_views_has_required_keys(rows):
     result = _build_category_views(rows, ["pass_name", "count"])
-    assert "compact_by_pass" in result
-    assert "compact_rows" in result
-    assert "final_rows" in result
-    assert "final_by_pass" in result
+    expect(not ("compact_by_pass" not in result))
+    expect(not ("compact_rows" not in result))
+    expect(not ("final_rows" not in result))
+    expect(not ("final_by_pass" not in result))

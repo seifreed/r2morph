@@ -2,6 +2,7 @@ from pathlib import Path
 
 from r2morph.analysis.cfg import BasicBlock, CFGBuilder, ControlFlowGraph
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_cfg_basic_operations():
@@ -19,17 +20,17 @@ def test_cfg_basic_operations():
     cfg.add_edge(block_b.address, block_c.address)
     cfg.add_edge(block_c.address, block_b.address)
 
-    assert cfg.get_block(block_a.address) is block_a
-    assert cfg.get_complexity() >= 1
+    expect(not (cfg.get_block(block_a.address) is not block_a))
+    expect(not (cfg.get_complexity() < 1))
 
     dominators = cfg.compute_dominators()
-    assert block_a.address in dominators
+    expect(not (block_a.address not in dominators))
 
     loops = cfg.find_loops()
-    assert loops
+    expect(loops)
 
     dot = cfg.to_dot()
-    assert "digraph CFG" in dot
+    expect(not ("digraph CFG" not in dot))
 
 
 def test_cfg_builder_with_real_binary():
@@ -38,13 +39,13 @@ def test_cfg_builder_with_real_binary():
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
         functions = bin_obj.get_functions()
-        assert functions
+        expect(functions)
 
         func = functions[0]
         builder = CFGBuilder(bin_obj)
         cfg = builder.build_cfg(func.get("offset", 0), func.get("name", "func"))
-        assert cfg.function_address == func.get("offset", 0)
-        assert cfg.function_name
+        expect(cfg.function_address == func.get("offset", 0))
+        expect(cfg.function_name)
 
         all_cfgs = builder.build_all_cfgs()
-        assert isinstance(all_cfgs, dict)
+        expect(isinstance(all_cfgs, dict))

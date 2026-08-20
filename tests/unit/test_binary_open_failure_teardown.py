@@ -18,6 +18,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from tests._doubles.failing_post_spawn_disassembler import FailingPostSpawnDisassembler
+from tests.utils.assertions import expect
 
 
 def test_failed_open_tears_down_spawned_connection(tmp_path: Path) -> None:
@@ -31,5 +32,5 @@ def test_failed_open_tears_down_spawned_connection(tmp_path: Path) -> None:
         binary.open()
 
     # The spawned connection must be released, not leaked onto self.
-    assert binary.r2 is None
-    assert disassembler.quit_called is True
+    expect(not (binary.r2 is not None))
+    expect(not (disassembler.quit_called is not True))

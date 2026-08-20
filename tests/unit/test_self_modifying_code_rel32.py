@@ -22,6 +22,10 @@ arguments, so no binary is needed to reproduce the bug deterministically.
 import struct
 
 from r2morph.mutations.self_modifying_code import SelfModifyingCodePass
+from tests.utils.assertions import expect
+
+_EXPECTED_STUB_5_233 = 0xE9
+
 
 _PROLOGUE = b"\x90\x90\x90\x90\x90"
 _INT32_MAX = 2147483647
@@ -37,7 +41,7 @@ def test_build_xor_decrypt_stub_far_target_returns_none() -> None:
         key_byte=0xAB,
         saved_prologue=_PROLOGUE,
     )
-    assert result is None
+    expect(not (result is not None))
 
 
 def test_build_xor_decrypt_stub_near_target_builds_valid_jmp() -> None:
@@ -50,9 +54,9 @@ def test_build_xor_decrypt_stub_near_target_builds_valid_jmp() -> None:
         key_byte=0xAB,
         saved_prologue=_PROLOGUE,
     )
-    assert stub is not None
-    assert stub[-5] == 0xE9  # jmp rel32 opcode
+    expect(stub is not None)
+    expect(stub[-5] == _EXPECTED_STUB_5_233)
     rel = struct.unpack("<i", stub[-4:])[0]
-    assert -_INT32_MAX - 1 <= rel <= _INT32_MAX
+    expect(-_INT32_MAX - 1 <= rel <= _INT32_MAX)
     # rel32 is relative to the address after the 5-byte jmp.
-    assert rel == func_addr - (cave_addr + len(stub))
+    expect(rel == func_addr - (cave_addr + len(stub)))

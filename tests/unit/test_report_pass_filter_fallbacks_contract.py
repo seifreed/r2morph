@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_pass_filter_fallbacks import _resolve_pass_filter_fallbacks
+from tests.utils.assertions import expect
 
 
 def test_resolve_pass_filter_fallbacks_uses_triage_rows_before_predicate_fallbacks() -> None:
@@ -25,12 +26,12 @@ def test_resolve_pass_filter_fallbacks_uses_triage_rows_before_predicate_fallbac
         triage_rows=[{"pass_name": "triage-pass", "structural_issue_count": 1}],
     )
 
-    assert result["structural"] == {"triage-pass"}
-    assert result["risky"] == {"triage-pass"}
-    assert result["symbolic"] == set()
-    assert result["clean"] == {"triage-pass"}
-    assert result["covered"] == set()
-    assert result["uncovered"] == {"triage-pass"}
+    expect(result["structural"] == {"triage-pass"})
+    expect(result["risky"] == {"triage-pass"})
+    expect(result["symbolic"] == set())
+    expect(result["clean"] == {"triage-pass"})
+    expect(result["covered"] == set())
+    expect(result["uncovered"] == {"triage-pass"})
 
 
 def test_resolve_pass_filter_fallbacks_uses_summary_evidence_when_needed() -> None:
@@ -57,4 +58,4 @@ def test_resolve_pass_filter_fallbacks_uses_summary_evidence_when_needed() -> No
         triage_rows=[],
     )
 
-    assert result["structural"] == {"fallback-pass"}
+    expect(result["structural"] == {"fallback-pass"})

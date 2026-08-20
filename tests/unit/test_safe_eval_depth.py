@@ -10,6 +10,9 @@ import ast
 import pytest
 
 from r2morph.core.safe_eval import MAX_AST_DEPTH, safe_eval_arithmetic_node
+from tests.utils.assertions import expect
+
+_EXPECTED_SAFE_EVAL_ARITHMETIC_NODE_TREE_BODY_7 = 7
 
 
 def _nest_unary(depth: int) -> ast.AST:
@@ -28,9 +31,9 @@ def test_depth_over_limit_raises_value_error():
 def test_depth_at_limit_still_evaluates():
     # MAX_AST_DEPTH nested negations of 0 collapse to 0 without tripping the guard
     node = _nest_unary(MAX_AST_DEPTH)
-    assert safe_eval_arithmetic_node(node) == 0
+    expect(safe_eval_arithmetic_node(node) == 0)
 
 
 def test_shallow_expression_unaffected():
     tree = ast.parse("1 + 2 * 3", mode="eval")
-    assert safe_eval_arithmetic_node(tree.body) == 7
+    expect(safe_eval_arithmetic_node(tree.body) == _EXPECTED_SAFE_EVAL_ARITHMETIC_NODE_TREE_BODY_7)

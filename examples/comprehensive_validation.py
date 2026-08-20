@@ -9,10 +9,23 @@ This example shows how to use the complete validation framework including:
 """
 
 import argparse
+import importlib
 import logging
 import sys
 import time
 from pathlib import Path
+
+_EXPECTED_ACCURACY_RESULTS_AVERAGE_ACCURACY_0_8 = 0.8
+_EXPECTED_CONFIDENCE_0_3 = 0.3
+_EXPECTED_OVERALL_SCORE_0_6 = 0.6
+_EXPECTED_OVERALL_SCORE_0_6_2 = 0.6
+_EXPECTED_OVERALL_SCORE_0_8 = 0.8
+_EXPECTED_OVERALL_SCORE_0_8_2 = 0.8
+_EXPECTED_PERFORMANCE_RESULTS_SUCCESS_RATE_0_8 = 0.8
+_EXPECTED_REALWORLD_RESULTS_SUCCESS_RATE_0_7 = 0.7
+_EXPECTED_REGRESSION_RESULTS_SUCCESS_RATE_0_9 = 0.9
+_EXPECTED_SCENARIO_TIME_60 = 60
+
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -44,18 +57,19 @@ def run_performance_benchmarks():
     print("=" * 80)
 
     try:
-        from r2morph.validation import BenchmarkCategory, ValidationFramework
+        benchmark_category = importlib.import_module("r2morph.validation").BenchmarkCategory
+        validation_framework = importlib.import_module("r2morph.validation").ValidationFramework
 
         # Initialize validation framework
-        framework = ValidationFramework("dataset")
+        framework = validation_framework("dataset")
 
         print(f"Loaded {len(framework.test_samples)} test samples")
 
         # Run performance-focused benchmarks
         benchmark_categories = [
-            BenchmarkCategory.DETECTION,
-            BenchmarkCategory.DEVIRTUALIZATION,
-            BenchmarkCategory.FULL_PIPELINE,
+            benchmark_category.DETECTION,
+            benchmark_category.DEVIRTUALIZATION,
+            benchmark_category.FULL_PIPELINE,
         ]
 
         print("Running performance benchmarks...")
@@ -92,7 +106,7 @@ def run_performance_benchmarks():
         return None
     except Exception as e:
         print(f"Benchmarking failed: {e}")
-        import traceback
+        traceback = importlib.import_module("traceback")
 
         traceback.print_exc()
         return None
@@ -105,9 +119,9 @@ def run_accuracy_validation():
     print("=" * 80)
 
     try:
-        from r2morph.validation import ValidationFramework
+        validation_framework = importlib.import_module("r2morph.validation").ValidationFramework
 
-        framework = ValidationFramework("dataset")
+        framework = validation_framework("dataset")
 
         # Focus on detection accuracy
         print("Running detection accuracy validation...")
@@ -165,7 +179,7 @@ def run_accuracy_validation():
 
     except Exception as e:
         print(f"Accuracy validation failed: {e}")
-        import traceback
+        traceback = importlib.import_module("traceback")
 
         traceback.print_exc()
         return None
@@ -173,15 +187,13 @@ def run_accuracy_validation():
 
 def run_regression_tests():
     """Run regression tests to ensure backward compatibility."""
-    print("\n" + "=" * 80)
-    print("REGRESSION TESTING")
-    print("=" * 80)
+    print("\n" + "=" * 80 + "\nREGRESSION TESTING\n" + "=" * 80)
 
     try:
-        from r2morph.validation import RegressionTestFramework
+        regression_test_framework = importlib.import_module("r2morph.validation").RegressionTestFramework
 
         # Initialize regression framework
-        framework = RegressionTestFramework("regression_baselines")
+        framework = regression_test_framework("regression_baselines")
 
         print("Setting up regression test baselines...")
 
@@ -250,11 +262,15 @@ def run_regression_tests():
         total_tests = len(framework.test_results)
         passed_tests = sum(1 for r in framework.test_results if r.passed)
 
-        print("\nRegression Testing Summary:")
-        print(f"  Total Tests: {total_tests}")
-        print(f"  Passed: {passed_tests}")
-        print(f"  Failed: {total_tests - passed_tests}")
-        print(f"  Success Rate: {passed_tests/total_tests:.1%}" if total_tests > 0 else "  Success Rate: N/A")
+        print(
+            "\nRegression Testing Summary:\n"
+            f"  Total Tests: {total_tests}\n"
+            f"  Passed: {passed_tests}\n"
+            f"  Failed: {total_tests - passed_tests}\n"
+            f"  Success Rate: {passed_tests/total_tests:.1%}"
+            if total_tests > 0
+            else "  Success Rate: N/A"
+        )
 
         return {
             "total_tests": total_tests,
@@ -264,170 +280,149 @@ def run_regression_tests():
 
     except Exception as e:
         print(f"Regression testing failed: {e}")
-        import traceback
+        traceback = importlib.import_module("traceback")
 
         traceback.print_exc()
         return None
+
+
+def _run_devirtualization(binary_object, detection_result, cfo_class, iterative_class, strategy):
+    if not (detection_result.vm_detected or detection_result.control_flow_flattened):
+        print("  2. Skipping devirtualization (not needed)")
+        return False, 0.0
+    print("  2. Running devirtualization...")
+    try:
+        simplifier = cfo_class(binary_object)
+        reduction = 0.0
+        for function in binary_object.get_functions()[:2]:
+            result = simplifier.simplify_control_flow(function.get("offset", 0))
+            if result.success:
+                reduction += result.original_complexity - result.simplified_complexity
+        if reduction <= 0:
+            print("     No complexity reduction achieved")
+            return False, reduction
+        result = iterative_class(binary_object).simplify(strategy=strategy.FAST, max_iterations=2, timeout=15)
+        if not result.success:
+            print("     Iterative simplification failed")
+            return False, reduction
+        print(f"     Devirtualization successful: {reduction:.1f} complexity reduced")
+        return True, reduction
+    except Exception as error:
+        print(f"     Devirtualization error: {error}")
+        return False, 0.0
+
+
+def _validate_real_world_file(test_file, *components):
+    binary_class, detector_class, cfo_class, iterative_class, strategy = components
+    print(f"\nValidating real-world scenario: {test_file.name}")
+    started = time.time()
+    try:
+        with binary_class(str(test_file)) as binary_object:
+            binary_object.analyze()
+            print("  1. Running detection analysis...")
+            detection_result = detector_class().analyze_binary(binary_object)
+            technique_count = len(detection_result.obfuscation_techniques)
+            confidence = detection_result.confidence_score
+            print(f"     Detected {technique_count} techniques (confidence: {confidence:.2f})")
+            devirt_success, reduction = _run_devirtualization(
+                binary_object, detection_result, cfo_class, iterative_class, strategy
+            )
+            print("  3. Validating results...")
+            elapsed = time.time() - started
+            issues = []
+            if confidence < _EXPECTED_CONFIDENCE_0_3:
+                issues.append("Low confidence score")
+            if elapsed > _EXPECTED_SCENARIO_TIME_60:
+                issues.append("Execution time too long")
+            if detection_result.vm_detected and not devirt_success and reduction == 0:
+                issues.append("VM detected but no devirtualization performed")
+            passed = confidence >= _EXPECTED_CONFIDENCE_0_3 and elapsed <= _EXPECTED_SCENARIO_TIME_60
+            status = "PASS" if passed else "FAIL"
+            print(f"     Validation: {status} ({elapsed:.2f}s)")
+            for issue in issues:
+                print(f"     Issue: {issue}")
+            return {
+                "file": test_file.name,
+                "passed": passed,
+                "execution_time": elapsed,
+                "techniques_detected": technique_count,
+                "confidence": confidence,
+                "devirt_success": devirt_success,
+                "complexity_reduction": reduction,
+                "issues": issues,
+            }
+    except Exception as error:
+        print(f"  Error during validation: {error}")
+        return {"file": test_file.name, "passed": False, "execution_time": time.time() - started, "error": str(error)}
 
 
 def run_real_world_validation():
     """Run validation against real-world scenarios."""
-    print("\n" + "=" * 80)
-    print("REAL-WORLD VALIDATION")
-    print("=" * 80)
-
+    print("\n" + "=" * 80 + "\nREAL-WORLD VALIDATION\n" + "=" * 80)
     try:
-        from r2morph import Binary
-        from r2morph.detection import ObfuscationDetector
-        from r2morph.devirtualization import CFOSimplifier, IterativeSimplifier, SimplificationStrategy
-
+        binary_class = importlib.import_module("r2morph").Binary
+        detection_module = importlib.import_module("r2morph.detection")
+        devirt_module = importlib.import_module("r2morph.devirtualization")
         test_files = setup_test_environment()
-
         if not test_files:
             print("No test files available for real-world validation")
             return None
-
-        validation_results = []
-
-        for test_file in test_files[:2]:  # Test first 2 files
-            print(f"\nValidating real-world scenario: {test_file.name}")
-
-            scenario_start = time.time()
-
-            try:
-                with Binary(str(test_file)) as bin_obj:
-                    bin_obj.analyze()
-
-                    # Step 1: Detection
-                    print("  1. Running detection analysis...")
-                    detector = ObfuscationDetector()
-                    detection_result = detector.analyze_binary(bin_obj)
-
-                    detected_techniques = len(detection_result.obfuscation_techniques)
-                    confidence = detection_result.confidence_score
-
-                    print(f"     Detected {detected_techniques} techniques (confidence: {confidence:.2f})")
-
-                    # Step 2: Devirtualization (if applicable)
-                    devirt_success = False
-                    complexity_reduction = 0.0
-
-                    if detection_result.vm_detected or detection_result.control_flow_flattened:
-                        print("  2. Running devirtualization...")
-
-                        try:
-                            # CFO Simplification
-                            cfo_simplifier = CFOSimplifier(bin_obj)
-                            functions = bin_obj.get_functions()[:2]  # Test 2 functions
-
-                            for func in functions:
-                                func_addr = func.get("offset", 0)
-                                result = cfo_simplifier.simplify_control_flow(func_addr)
-                                if result.success:
-                                    complexity_reduction += result.original_complexity - result.simplified_complexity
-
-                            # Iterative Simplification
-                            if complexity_reduction > 0:
-                                iterative_simplifier = IterativeSimplifier(bin_obj)
-                                iter_result = iterative_simplifier.simplify(
-                                    strategy=SimplificationStrategy.FAST, max_iterations=2, timeout=15
-                                )
-
-                                if iter_result.success:
-                                    devirt_success = True
-                                    result_message = f"     Devirtualization successful: {complexity_reduction:.1f}"
-                                    print(f"{result_message} complexity reduced")
-                                else:
-                                    print("     Iterative simplification failed")
-                            else:
-                                print("     No complexity reduction achieved")
-
-                        except Exception as e:
-                            print(f"     Devirtualization error: {e}")
-                    else:
-                        print("  2. Skipping devirtualization (not needed)")
-
-                    # Step 3: Validation
-                    print("  3. Validating results...")
-
-                    scenario_time = time.time() - scenario_start
-
-                    # Simple validation criteria
-                    validation_passed = True
-                    issues = []
-
-                    if confidence < 0.3:
-                        issues.append("Low confidence score")
-                        validation_passed = False
-
-                    if scenario_time > 60:  # 1 minute timeout
-                        issues.append("Execution time too long")
-                        validation_passed = False
-
-                    if detection_result.vm_detected and not devirt_success and complexity_reduction == 0:
-                        issues.append("VM detected but no devirtualization performed")
-                        # This is a warning, not a failure
-
-                    status = "PASS" if validation_passed else "FAIL"
-                    print(f"     Validation: {status} ({scenario_time:.2f}s)")
-
-                    if issues:
-                        for issue in issues:
-                            print(f"     Issue: {issue}")
-
-                    validation_results.append(
-                        {
-                            "file": test_file.name,
-                            "passed": validation_passed,
-                            "execution_time": scenario_time,
-                            "techniques_detected": detected_techniques,
-                            "confidence": confidence,
-                            "devirt_success": devirt_success,
-                            "complexity_reduction": complexity_reduction,
-                            "issues": issues,
-                        }
-                    )
-
-            except Exception as e:
-                print(f"  Error during validation: {e}")
-                validation_results.append(
-                    {
-                        "file": test_file.name,
-                        "passed": False,
-                        "execution_time": time.time() - scenario_start,
-                        "error": str(e),
-                    }
-                )
-
-        # Summary
-        print("\nReal-World Validation Summary:")
-        total_scenarios = len(validation_results)
-        passed_scenarios = sum(1 for r in validation_results if r.get("passed", False))
-
-        print(f"  Total Scenarios: {total_scenarios}")
-        print(f"  Passed: {passed_scenarios}")
-        print(f"  Failed: {total_scenarios - passed_scenarios}")
+        results = [
+            _validate_real_world_file(
+                test_file,
+                binary_class,
+                detection_module.ObfuscationDetector,
+                devirt_module.CFOSimplifier,
+                devirt_module.IterativeSimplifier,
+                devirt_module.SimplificationStrategy,
+            )
+            for test_file in test_files[:2]
+        ]
+        total = len(results)
+        passed = sum(result.get("passed", False) for result in results)
+        average_time = sum(result.get("execution_time", 0) for result in results) / total if total else 0
         print(
-            f"  Success Rate: {passed_scenarios/total_scenarios:.1%}" if total_scenarios > 0 else "  Success Rate: N/A"
+            "\nReal-World Validation Summary:\n"
+            f"  Total Scenarios: {total}\n"
+            f"  Passed: {passed}\n"
+            f"  Failed: {total - passed}\n"
+            f"  Success Rate: {passed / total:.1%}\n"
+            f"  Average Execution Time: {average_time:.2f}s"
+            if total
+            else "  Success Rate: N/A"
         )
-
-        if validation_results:
-            avg_time = sum(r.get("execution_time", 0) for r in validation_results) / len(validation_results)
-            print(f"  Average Execution Time: {avg_time:.2f}s")
-
         return {
-            "total_scenarios": total_scenarios,
-            "passed_scenarios": passed_scenarios,
-            "success_rate": passed_scenarios / total_scenarios if total_scenarios > 0 else 0.0,
-            "results": validation_results,
+            "total_scenarios": total,
+            "passed_scenarios": passed,
+            "success_rate": passed / total if total else 0.0,
+            "results": results,
         }
-
-    except Exception as e:
-        print(f"Real-world validation failed: {e}")
-        import traceback
-
-        traceback.print_exc()
+    except Exception as error:
+        print(f"Real-world validation failed: {error}")
+        importlib.import_module("traceback").print_exc()
         return None
+
+
+def _append_summary(report, title, result, fields, fallback):
+    report.extend([title, "-" * 30])
+    if result:
+        for key, label, format_spec in fields:
+            report.append(f"{label}: {format(result[key], format_spec)}")
+    else:
+        report.append(fallback)
+    report.append("")
+
+
+def _append_assessment(report, results):
+    report.extend(["OVERALL ASSESSMENT", "-" * 30])
+    successful = 0
+    for result, key, threshold, label in results:
+        if result and result[key] > threshold:
+            successful += 1
+            report.append(f"✓ {label}: GOOD")
+        else:
+            report.append(f"✗ {label}: NEEDS IMPROVEMENT")
+    return successful / len(results)
 
 
 def generate_comprehensive_report(performance_results, accuracy_results, regression_results, realworld_results):
@@ -435,128 +430,145 @@ def generate_comprehensive_report(performance_results, accuracy_results, regress
     print("\n" + "=" * 80)
     print("COMPREHENSIVE VALIDATION REPORT")
     print("=" * 80)
-
-    report = []
-    report.append("R2MORPH PHASE 2 VALIDATION REPORT")
-    report.append("=" * 50)
-    report.append(f"Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}")
-    report.append("")
-
-    # Performance Summary
-    report.append("PERFORMANCE BENCHMARKING")
-    report.append("-" * 30)
-    if performance_results:
-        report.append(f"Total Tests: {performance_results['total_tests']}")
-        report.append(f"Success Rate: {performance_results['success_rate']:.1%}")
-        report.append(f"Average Execution Time: {performance_results['avg_execution_time']:.2f}s")
-        report.append(f"Average Memory Usage: {performance_results['avg_memory_usage']:.1f}MB")
-    else:
-        report.append("Performance benchmarking not completed")
-    report.append("")
-
-    # Accuracy Summary
-    report.append("ACCURACY VALIDATION")
-    report.append("-" * 30)
-    if accuracy_results:
-        report.append(f"Average Accuracy: {accuracy_results['average_accuracy']:.1%}")
-        report.append(f"Average Precision: {accuracy_results['average_precision']:.1%}")
-        report.append(f"Average Recall: {accuracy_results['average_recall']:.1%}")
-        report.append(f"Average F1-Score: {accuracy_results['average_f1']:.3f}")
-        report.append(f"Samples Tested: {accuracy_results['samples_tested']}")
-    else:
-        report.append("Accuracy validation not completed")
-    report.append("")
-
-    # Regression Summary
-    report.append("REGRESSION TESTING")
-    report.append("-" * 30)
-    if regression_results:
-        report.append(f"Total Tests: {regression_results['total_tests']}")
-        report.append(f"Passed Tests: {regression_results['passed_tests']}")
-        report.append(f"Success Rate: {regression_results['success_rate']:.1%}")
-    else:
-        report.append("Regression testing not completed")
-    report.append("")
-
-    # Real-World Summary
-    report.append("REAL-WORLD VALIDATION")
-    report.append("-" * 30)
-    if realworld_results:
-        report.append(f"Total Scenarios: {realworld_results['total_scenarios']}")
-        report.append(f"Passed Scenarios: {realworld_results['passed_scenarios']}")
-        report.append(f"Success Rate: {realworld_results['success_rate']:.1%}")
-    else:
-        report.append("Real-world validation not completed")
-    report.append("")
-
-    # Overall Assessment
-    report.append("OVERALL ASSESSMENT")
-    report.append("-" * 30)
-
-    total_categories = 4
-    successful_categories = 0
-
-    if performance_results and performance_results["success_rate"] > 0.8:
-        successful_categories += 1
-        report.append("✓ Performance benchmarking: GOOD")
-    else:
-        report.append("✗ Performance benchmarking: NEEDS IMPROVEMENT")
-
-    if accuracy_results and accuracy_results["average_accuracy"] > 0.8:
-        successful_categories += 1
-        report.append("✓ Accuracy validation: GOOD")
-    else:
-        report.append("✗ Accuracy validation: NEEDS IMPROVEMENT")
-
-    if regression_results and regression_results["success_rate"] > 0.9:
-        successful_categories += 1
-        report.append("✓ Regression testing: GOOD")
-    else:
-        report.append("✗ Regression testing: NEEDS IMPROVEMENT")
-
-    if realworld_results and realworld_results["success_rate"] > 0.7:
-        successful_categories += 1
-        report.append("✓ Real-world validation: GOOD")
-    else:
-        report.append("✗ Real-world validation: NEEDS IMPROVEMENT")
-
-    overall_score = successful_categories / total_categories
-    report.append("")
-    report.append(f"Overall Validation Score: {overall_score:.1%}")
-
-    if overall_score >= 0.8:
-        report.append("STATUS: READY FOR PRODUCTION")
-    elif overall_score >= 0.6:
-        report.append("STATUS: GOOD - MINOR IMPROVEMENTS NEEDED")
-    else:
-        report.append("STATUS: NEEDS SIGNIFICANT IMPROVEMENT")
-
-    report.append("")
-    report.append("=" * 50)
-
-    # Save and display report
+    report = [
+        "R2MORPH PHASE 2 VALIDATION REPORT",
+        "=" * 50,
+        f"Generated: {time.strftime('%Y-%m-%d %H:%M:%S')}",
+        "",
+    ]
+    _append_summary(
+        report,
+        "PERFORMANCE BENCHMARKING",
+        performance_results,
+        (
+            ("total_tests", "Total Tests", ""),
+            ("success_rate", "Success Rate", ".1%"),
+            ("avg_execution_time", "Average Execution Time", ".2f"),
+            ("avg_memory_usage", "Average Memory Usage", ".1f"),
+        ),
+        "Performance benchmarking not completed",
+    )
+    _append_summary(
+        report,
+        "ACCURACY VALIDATION",
+        accuracy_results,
+        (
+            ("average_accuracy", "Average Accuracy", ".1%"),
+            ("average_precision", "Average Precision", ".1%"),
+            ("average_recall", "Average Recall", ".1%"),
+            ("average_f1", "Average F1-Score", ".3f"),
+            ("samples_tested", "Samples Tested", ""),
+        ),
+        "Accuracy validation not completed",
+    )
+    _append_summary(
+        report,
+        "REGRESSION TESTING",
+        regression_results,
+        (
+            ("total_tests", "Total Tests", ""),
+            ("passed_tests", "Passed Tests", ""),
+            ("success_rate", "Success Rate", ".1%"),
+        ),
+        "Regression testing not completed",
+    )
+    _append_summary(
+        report,
+        "REAL-WORLD VALIDATION",
+        realworld_results,
+        (
+            ("total_scenarios", "Total Scenarios", ""),
+            ("passed_scenarios", "Passed Scenarios", ""),
+            ("success_rate", "Success Rate", ".1%"),
+        ),
+        "Real-world validation not completed",
+    )
+    overall_score = _append_assessment(
+        report,
+        (
+            (
+                performance_results,
+                "success_rate",
+                _EXPECTED_PERFORMANCE_RESULTS_SUCCESS_RATE_0_8,
+                "Performance benchmarking",
+            ),
+            (
+                accuracy_results,
+                "average_accuracy",
+                _EXPECTED_ACCURACY_RESULTS_AVERAGE_ACCURACY_0_8,
+                "Accuracy validation",
+            ),
+            (regression_results, "success_rate", _EXPECTED_REGRESSION_RESULTS_SUCCESS_RATE_0_9, "Regression testing"),
+            (realworld_results, "success_rate", _EXPECTED_REALWORLD_RESULTS_SUCCESS_RATE_0_7, "Real-world validation"),
+        ),
+    )
+    report.extend(["", f"Overall Validation Score: {overall_score:.1%}"])
+    report.append(
+        "STATUS: READY FOR PRODUCTION"
+        if overall_score >= _EXPECTED_OVERALL_SCORE_0_8
+        else (
+            "STATUS: GOOD - MINOR IMPROVEMENTS NEEDED"
+            if overall_score >= _EXPECTED_OVERALL_SCORE_0_6
+            else "STATUS: NEEDS SIGNIFICANT IMPROVEMENT"
+        )
+    )
+    report.extend(["", "=" * 50])
     report_text = "\n".join(report)
-
-    with open("comprehensive_validation_report.txt", "w") as f:
-        f.write(report_text)
-
+    with open("comprehensive_validation_report.txt", "w") as report_file:
+        report_file.write(report_text)
     print(report_text)
     print("\nComprehensive report saved to comprehensive_validation_report.txt")
-
     return overall_score
+
+
+def _parse_validation_args():
+    parser = argparse.ArgumentParser(description="R2MORPH Comprehensive Validation Suite")
+    for name, help_text in (
+        ("performance", "Run performance benchmarks"),
+        ("accuracy", "Run accuracy validation"),
+        ("regression", "Run regression tests"),
+        ("realworld", "Run real-world validation"),
+        ("all", "Run all validation tests"),
+        ("quick", "Run quick validation (subset)"),
+    ):
+        parser.add_argument(f"--{name}", action="store_true", help=help_text)
+    return parser.parse_args()
+
+
+def _run_quick_validation(test_files):
+    print("\nRunning quick validation...")
+    framework_class = importlib.import_module("r2morph.validation").RegressionTestFramework
+    framework = framework_class()
+    framework.create_api_compatibility_baseline("quick_api_test")
+    api_result = framework.run_regression_test("quick_api_test")
+    print(f"Quick API Test: {'PASS' if api_result.passed else 'FAIL'}")
+    if test_files:
+        started = time.time()
+        binary = importlib.import_module("r2morph").Binary
+        detector_class = importlib.import_module("r2morph.detection").ObfuscationDetector
+        with binary(str(test_files[0])) as binary_object:
+            binary_object.analyze()
+            detector_class().analyze_binary(binary_object)
+        print(f"Quick Performance Test: {time.time() - started:.2f}s")
+    print("Quick validation completed!")
+
+
+def _run_selected_validations(args):
+    results = [None, None, None, None]
+    if args.all or args.performance:
+        results[0] = run_performance_benchmarks()
+    if args.all or args.accuracy:
+        results[1] = run_accuracy_validation()
+    if args.all or args.regression:
+        results[2] = run_regression_tests()
+    if args.all or args.realworld:
+        results[3] = run_real_world_validation()
+    return results
 
 
 def main():
     """Main validation suite execution."""
-    parser = argparse.ArgumentParser(description="R2MORPH Comprehensive Validation Suite")
-    parser.add_argument("--performance", action="store_true", help="Run performance benchmarks")
-    parser.add_argument("--accuracy", action="store_true", help="Run accuracy validation")
-    parser.add_argument("--regression", action="store_true", help="Run regression tests")
-    parser.add_argument("--realworld", action="store_true", help="Run real-world validation")
-    parser.add_argument("--all", action="store_true", help="Run all validation tests")
-    parser.add_argument("--quick", action="store_true", help="Run quick validation (subset)")
-
-    args = parser.parse_args()
+    args = _parse_validation_args()
 
     # Default to all tests if no specific test selected
     if not any([args.performance, args.accuracy, args.regression, args.realworld, args.quick]):
@@ -566,56 +578,17 @@ def main():
     print("=" * 60)
     print(f"Starting validation at {time.strftime('%Y-%m-%d %H:%M:%S')}")
 
-    # Initialize results
-    performance_results = None
-    accuracy_results = None
-    regression_results = None
-    realworld_results = None
-
     # Set up test environment
     test_files = setup_test_environment()
     print(f"Found {len(test_files)} test files in fixtures/dataset/")
 
     # Run tests based on arguments
     try:
-        if args.all or args.performance:
-            performance_results = run_performance_benchmarks()
-
-        if args.all or args.accuracy:
-            accuracy_results = run_accuracy_validation()
-
-        if args.all or args.regression:
-            regression_results = run_regression_tests()
-
-        if args.all or args.realworld:
-            realworld_results = run_real_world_validation()
-
         if args.quick:
-            # Quick validation - just API compatibility and one performance test
-            print("\nRunning quick validation...")
-            from r2morph.validation import RegressionTestFramework
-
-            framework = RegressionTestFramework()
-            framework.create_api_compatibility_baseline("quick_api_test")
-            api_result = framework.run_regression_test("quick_api_test")
-
-            print(f"Quick API Test: {'PASS' if api_result.passed else 'FAIL'}")
-
-            if test_files:
-                performance_start = time.time()
-                from r2morph import Binary
-                from r2morph.detection import ObfuscationDetector
-
-                with Binary(str(test_files[0])) as bin_obj:
-                    bin_obj.analyze()
-                    detector = ObfuscationDetector()
-                    detector.analyze_binary(bin_obj)
-
-                performance_time = time.time() - performance_start
-                print(f"Quick Performance Test: {performance_time:.2f}s")
-
-            print("Quick validation completed!")
+            _run_quick_validation(test_files)
             return
+
+        performance_results, accuracy_results, regression_results, realworld_results = _run_selected_validations(args)
 
         # Generate comprehensive report
         overall_score = generate_comprehensive_report(
@@ -625,10 +598,10 @@ def main():
         print(f"\nValidation completed with overall score: {overall_score:.1%}")
 
         # Exit with appropriate code
-        if overall_score >= 0.8:
+        if overall_score >= _EXPECTED_OVERALL_SCORE_0_8_2:
             print("✓ All validation tests passed successfully!")
             sys.exit(0)
-        elif overall_score >= 0.6:
+        elif overall_score >= _EXPECTED_OVERALL_SCORE_0_6_2:
             print("⚠ Validation completed with minor issues")
             sys.exit(0)
         else:
@@ -640,7 +613,7 @@ def main():
         sys.exit(1)
     except Exception as e:
         print(f"\nValidation failed with error: {e}")
-        import traceback
+        traceback = importlib.import_module("traceback")
 
         traceback.print_exc()
         sys.exit(1)

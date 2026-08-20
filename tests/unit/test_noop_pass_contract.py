@@ -23,6 +23,7 @@ from pathlib import Path
 from r2morph.core.binary import Binary
 from r2morph.mutations.polymorphic_engine import NoOp
 from r2morph.pipeline.pipeline import Pipeline
+from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "optimized_binaries" / "exception_test"
 
@@ -38,8 +39,8 @@ def test_noop_apply_returns_list_mutations(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert isinstance(result["mutations"], list)
-    assert result["mutations"] == []
+    expect(isinstance(result["mutations"], list))
+    expect(result["mutations"] == [])
 
 
 def test_noop_pass_runs_in_pipeline_without_typeerror(tmp_path: Path) -> None:
@@ -56,8 +57,8 @@ def test_noop_pass_runs_in_pipeline_without_typeerror(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert result["failed_passes"] == 0, f"NoOp failed: {result.get('pass_results')}"
+    expect(result["failed_passes"] == 0, f"NoOp failed: {result.get('pass_results')}")
     for entry in result.get("pass_results", []):
         if isinstance(entry, dict):
             err = str(entry.get("error") or "")
-            assert "has no len()" not in err, f"NoOp mutations-contract regressed: {err}"
+            expect("has no len()" not in err, f"NoOp mutations-contract regressed: {err}")

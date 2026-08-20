@@ -2,6 +2,7 @@ from pathlib import Path
 
 from r2morph.analysis.dependencies import DependencyAnalyzer
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_dependency_analysis_on_real_function():
@@ -10,20 +11,20 @@ def test_dependency_analysis_on_real_function():
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
         functions = bin_obj.get_functions()
-        assert functions
+        expect(functions)
 
         instructions = bin_obj.get_function_disasm(functions[0].get("offset", 0))
         analyzer = DependencyAnalyzer()
         deps = analyzer.analyze_dependencies(instructions)
-        assert isinstance(deps, list)
+        expect(isinstance(deps, list))
 
         if instructions:
             addr = instructions[0].get("offset", 0)
             deps_for = analyzer.get_dependencies_for_instruction(addr)
-            assert isinstance(deps_for, list)
+            expect(isinstance(deps_for, list))
 
             chain = analyzer.get_dependency_chain(addr)
-            assert chain
+            expect(chain)
 
         dot = analyzer.to_dot()
-        assert "digraph Dependencies" in dot
+        expect(not ("digraph Dependencies" not in dot))

@@ -1,4 +1,5 @@
 from r2morph.analysis.type_inference_value_analysis import get_value_range, is_safe_to_mutate
+from tests.utils.assertions import expect
 
 
 class _TypeInfo:
@@ -15,7 +16,7 @@ class _TypeInfo:
 
 
 def test_type_inference_value_analysis_contract() -> None:
-    assert get_value_range(_TypeInfo(4, integer=True)) == (0, 2**32 - 1)
-    assert get_value_range(_TypeInfo(8, integer=False)) is None
-    assert is_safe_to_mutate(_TypeInfo(8, pointer=True), "register_substitution")[0] is False
-    assert is_safe_to_mutate(_TypeInfo(4, pointer=False), "instruction_expansion") == (True, "Safe to mutate")
+    expect(get_value_range(_TypeInfo(4, integer=True)) == (0, 2**32 - 1))
+    expect(not (get_value_range(_TypeInfo(8, integer=False)) is not None))
+    expect(not (is_safe_to_mutate(_TypeInfo(8, pointer=True), "register_substitution")[0] is not False))
+    expect(is_safe_to_mutate(_TypeInfo(4, pointer=False), "instruction_expansion") == (True, "Safe to mutate"))

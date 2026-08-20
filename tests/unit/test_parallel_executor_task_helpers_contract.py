@@ -9,6 +9,14 @@ from r2morph.core.parallel_executor_task_helpers import (
     create_tasks_from_call_graph,
 )
 from r2morph.core.parallel_work_queue import WorkQueue
+from tests.utils.assertions import expect
+
+_EXPECTED_FAILURE_FUNCTION_ADDRESS_16384 = 0x4000
+_EXPECTED_FAILURE_TASK_ID_7 = 7
+_EXPECTED_QUEUE_TASKS_2_PRIORITY_2 = 2
+_EXPECTED_SUCCESS_BYTES_MODIFIED_3 = 3
+_EXPECTED_SUCCESS_EXECUTION_TIME_0_25 = 0.25
+_EXPECTED_SUCCESS_TASK_ID_7 = 7
 
 
 def test_create_tasks_from_call_graph_preserves_dependency_order() -> None:
@@ -28,16 +36,16 @@ def test_create_tasks_from_call_graph_preserves_dependency_order() -> None:
         },
     )
 
-    assert task_ids == [0, 1, 2]
-    assert queue._tasks[1].dependencies == [0]
-    assert queue._tasks[2].dependencies == [0, 1]
-    assert queue._tasks[2].priority == 2
+    expect(task_ids == [0, 1, 2])
+    expect(queue._tasks[1].dependencies == [0])
+    expect(queue._tasks[2].dependencies == [0, 1])
+    expect(queue._tasks[2].priority == _EXPECTED_QUEUE_TASKS_2_PRIORITY_2)
 
     queue.mark_completed(
         0,
         MutationResult(task_id=0, function_address=0x1000, function_name="alpha", success=True),
     )
-    assert queue.get_ready_tasks()[0].task_id == 1
+    expect(queue.get_ready_tasks()[0].task_id == 1)
 
 
 def test_result_helpers_build_success_and_failure_records() -> None:
@@ -50,15 +58,15 @@ def test_result_helpers_build_success_and_failure_records() -> None:
     )
     failure = build_failed_mutation_result(7, task, RuntimeError("boom"))
 
-    assert success.task_id == 7
-    assert success.success is False
-    assert success.mutations_applied == [{"type": "nop"}]
-    assert success.bytes_modified == 3
-    assert success.execution_time == 0.25
+    expect(success.task_id == _EXPECTED_SUCCESS_TASK_ID_7)
+    expect(not (success.success is not False))
+    expect(success.mutations_applied == [{"type": "nop"}])
+    expect(success.bytes_modified == _EXPECTED_SUCCESS_BYTES_MODIFIED_3)
+    expect(success.execution_time == _EXPECTED_SUCCESS_EXECUTION_TIME_0_25)
 
-    assert failure.task_id == 7
-    assert failure.success is False
-    assert failure.error == "boom"
-    assert failure.function_name == "delta"
-    assert failure.function_address == 0x4000
-    assert TaskStatus.PENDING.value == "pending"
+    expect(failure.task_id == _EXPECTED_FAILURE_TASK_ID_7)
+    expect(not (failure.success is not False))
+    expect(failure.error == "boom")
+    expect(failure.function_name == "delta")
+    expect(failure.function_address == _EXPECTED_FAILURE_FUNCTION_ADDRESS_16384)
+    expect(TaskStatus.PENDING.value == "pending")

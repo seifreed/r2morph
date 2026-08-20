@@ -2,6 +2,7 @@
 Tests for parallel mutation execution.
 """
 
+import importlib
 from pathlib import Path
 
 from r2morph.core.parallel import (
@@ -14,10 +15,21 @@ from r2morph.core.parallel import (
     execute_parallel,
 )
 from r2morph.mutations.base import MutationPass
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_D_MUTATIONS_APPLIED_3 = 3
+_EXPECTED_LEN_PLAN_STAGES_2 = 2
+_EXPECTED_LEN_RESULTS_3 = 3
+_EXPECTED_RESULT_MUTATIONS_APPLIED_5 = 5
+_EXPECTED_SUMMARY_COMPLETED_2 = 2
+_EXPECTED_SUMMARY_TOTAL_MUTATIONS_5 = 5
+_EXPECTED_SUMMARY_TOTAL_PASSES_2 = 2
+_EXPECTED_TOTAL_PASSES_2 = 2
 
 
 class _Binary:
-    path = Path("/tmp/test")
+    path = Path("fixtures/dataset/elf_x86_64")
 
 
 class FakePass(MutationPass):
@@ -42,14 +54,14 @@ class TestPassDependency:
     def test_basic_dependency(self):
         """Create basic dependency."""
         dep = PassDependency("test", requires=["dep1"], conflicts=["conflict1"])
-        assert dep.pass_name == "test"
-        assert "dep1" in dep.requires
-        assert "conflict1" in dep.conflicts
+        expect(getattr(dep, MUTATION_NAME_KEY) == "test")
+        expect(not ("dep1" not in dep.requires))
+        expect(not ("conflict1" not in dep.conflicts))
 
     def test_optional_dependency(self):
         """Create optional dependency."""
         dep = PassDependency("test", optional=True)
-        assert dep.optional is True
+        expect(not (dep.optional is not True))
 
 
 class TestPassResult:
@@ -58,38 +70,38 @@ class TestPassResult:
     def test_completed_result(self):
         """Create completed result."""
         result = PassResult(
-            pass_name="test",
+            **{MUTATION_NAME_KEY: "test"},
             status=PassStatus.COMPLETED,
             result={"key": "value"},
             duration_seconds=1.5,
             mutations_applied=5,
         )
-        assert result.pass_name == "test"
-        assert result.status == PassStatus.COMPLETED
-        assert result.mutations_applied == 5
+        expect(getattr(result, MUTATION_NAME_KEY) == "test")
+        expect(result.status == PassStatus.COMPLETED)
+        expect(result.mutations_applied == _EXPECTED_RESULT_MUTATIONS_APPLIED_5)
 
     def test_failed_result(self):
         """Create failed result."""
         result = PassResult(
-            pass_name="test",
+            **{MUTATION_NAME_KEY: "test"},
             status=PassStatus.FAILED,
             error="Something went wrong",
         )
-        assert result.status == PassStatus.FAILED
-        assert "wrong" in result.error
+        expect(result.status == PassStatus.FAILED)
+        expect(not ("wrong" not in result.error))
 
     def test_to_dict(self):
         """Convert result to dictionary."""
         result = PassResult(
-            pass_name="test",
+            **{MUTATION_NAME_KEY: "test"},
             status=PassStatus.COMPLETED,
             result={"key": "value"},
             mutations_applied=3,
         )
         d = result.to_dict()
-        assert d["pass_name"] == "test"
-        assert d["status"] == "completed"
-        assert d["mutations_applied"] == 3
+        expect(d[MUTATION_NAME_KEY] == "test")
+        expect(d["status"] == "completed")
+        expect(d["mutations_applied"] == _EXPECTED_D_MUTATIONS_APPLIED_3)
 
 
 class TestDependencyResolver:
@@ -104,9 +116,9 @@ class TestDependencyResolver:
         ]
         plan = resolver.resolve(passes)
 
-        assert len(plan.stages) >= 1
+        expect(not (len(plan.stages) < 1))
         total_passes = sum(len(stage) for stage in plan.stages)
-        assert total_passes == 2
+        expect(total_passes == _EXPECTED_TOTAL_PASSES_2)
 
     def test_sequential_dependencies(self):
         """Resolve passes with sequential dependencies."""
@@ -120,10 +132,10 @@ class TestDependencyResolver:
         ]
         plan = resolver.resolve(passes)
 
-        assert len(plan.stages) >= 2
+        expect(not (len(plan.stages) < _EXPECTED_LEN_PLAN_STAGES_2))
         pass1_stage = plan.get_stage("pass1")
         pass2_stage = plan.get_stage("pass2")
-        assert pass1_stage < pass2_stage
+        expect(not (pass1_stage >= pass2_stage))
 
     def test_conflict_detection(self):
         """Detect conflicting passes."""
@@ -138,8 +150,8 @@ class TestDependencyResolver:
 
         conflicts = resolver.check_conflicts(passes)
 
-        assert len(conflicts) == 1
-        assert ("pass1", "pass2") in conflicts or ("pass2", "pass1") in conflicts
+        expect(len(conflicts) == 1)
+        expect(("pass1", "pass2") in conflicts or ("pass2", "pass1") in conflicts)
 
     def test_independent_passes_same_stage(self):
         """Independent passes can run in same stage."""
@@ -153,7 +165,7 @@ class TestDependencyResolver:
         pass1_stage = plan.get_stage("nop")
         pass2_stage = plan.get_stage("dead-code")
 
-        assert pass1_stage == pass2_stage
+        expect(pass1_stage == pass2_stage)
 
 
 class TestParallelMutationEngine:
@@ -166,8 +178,8 @@ class TestParallelMutationEngine:
 
         results = engine.execute(passes)
 
-        assert "test" in results
-        assert results["test"].status == PassStatus.COMPLETED
+        expect(not ("test" not in results))
+        expect(results["test"].status == PassStatus.COMPLETED)
 
     def test_multiple_independent_passes(self):
         """Execute multiple independent passes."""
@@ -179,8 +191,8 @@ class TestParallelMutationEngine:
 
         results = engine.execute(passes)
 
-        assert results["pass1"].status == PassStatus.COMPLETED
-        assert results["pass2"].status == PassStatus.COMPLETED
+        expect(results["pass1"].status == PassStatus.COMPLETED)
+        expect(results["pass2"].status == PassStatus.COMPLETED)
 
     def test_failed_pass_with_stop_on_error(self):
         """Stop on pass failure when configured."""
@@ -192,7 +204,7 @@ class TestParallelMutationEngine:
 
         results = engine.execute(passes, stop_on_error=True)
 
-        assert results["pass1"].status == PassStatus.FAILED
+        expect(results["pass1"].status == PassStatus.FAILED)
 
     def test_continue_on_error(self):
         """Continue after pass failure when configured."""
@@ -209,8 +221,8 @@ class TestParallelMutationEngine:
 
         results = engine.execute(passes, stop_on_error=False)
 
-        assert results["pass1"].status == PassStatus.FAILED
-        assert results["pass2"].status == PassStatus.COMPLETED
+        expect(results["pass1"].status == PassStatus.FAILED)
+        expect(results["pass2"].status == PassStatus.COMPLETED)
 
     def test_get_results_summary(self):
         """Get results summary."""
@@ -223,9 +235,9 @@ class TestParallelMutationEngine:
         engine.execute(passes)
         summary = engine.get_results_summary()
 
-        assert summary["total_passes"] == 2
-        assert summary["completed"] == 2
-        assert summary["total_mutations"] == 5
+        expect(summary["total_passes"] == _EXPECTED_SUMMARY_TOTAL_PASSES_2)
+        expect(summary["completed"] == _EXPECTED_SUMMARY_COMPLETED_2)
+        expect(summary["total_mutations"] == _EXPECTED_SUMMARY_TOTAL_MUTATIONS_5)
 
 
 class TestExecuteParallel:
@@ -240,8 +252,8 @@ class TestExecuteParallel:
 
         results = execute_parallel(_Binary(), passes)
 
-        assert "pass1" in results
-        assert "pass2" in results
+        expect(not ("pass1" not in results))
+        expect(not ("pass2" not in results))
 
     def test_execute_parallel_with_workers(self):
         """Test parallel execution with worker count."""
@@ -253,7 +265,7 @@ class TestExecuteParallel:
 
         results = execute_parallel(_Binary(), passes, max_workers=2)
 
-        assert len(results) == 3
+        expect(len(results) == _EXPECTED_LEN_RESULTS_3)
 
 
 class TestPassStatus:
@@ -261,12 +273,12 @@ class TestPassStatus:
 
     def test_status_values(self):
         """Test all status values."""
-        assert PassStatus.PENDING.value == "pending"
-        assert PassStatus.RUNNING.value == "running"
-        assert PassStatus.COMPLETED.value == "completed"
-        assert PassStatus.FAILED.value == "failed"
-        assert PassStatus.SKIPPED.value == "skipped"
-        assert PassStatus.ROLLED_BACK.value == "rolled_back"
+        expect(PassStatus.PENDING.value == "pending")
+        expect(PassStatus.RUNNING.value == "running")
+        expect(PassStatus.COMPLETED.value == "completed")
+        expect(PassStatus.FAILED.value == "failed")
+        expect(PassStatus.SKIPPED.value == "skipped")
+        expect(PassStatus.ROLLED_BACK.value == "rolled_back")
 
 
 class TestExecutionPlan:
@@ -279,10 +291,10 @@ class TestExecutionPlan:
             stages=[["pass1", "pass2"], ["pass3"]],
         )
 
-        assert plan.get_stage("pass1") == 0
-        assert plan.get_stage("pass2") == 0
-        assert plan.get_stage("pass3") == 1
-        assert plan.get_stage("unknown") == -1
+        expect(plan.get_stage("pass1") == 0)
+        expect(plan.get_stage("pass2") == 0)
+        expect(plan.get_stage("pass3") == 1)
+        expect(plan.get_stage("unknown") == -1)
 
 
 class TestBinaryFileLock:
@@ -290,84 +302,84 @@ class TestBinaryFileLock:
 
     def test_basic_lock_acquire_release(self, tmp_path: Path):
         """Test basic lock acquisition and release."""
-        from r2morph.core.parallel import BinaryFileLock
+        binary_file_lock = importlib.import_module("r2morph.core.parallel").BinaryFileLock
 
         binary_path = tmp_path / "test.bin"
         binary_path.write_bytes(b"\x00" * 100)
 
-        lock = BinaryFileLock(binary_path)
+        lock = binary_file_lock(binary_path)
 
-        assert not lock.is_locked()
-        assert lock.acquire()
-        assert lock.is_locked()
+        expect(not (lock.is_locked()))
+        expect(lock.acquire())
+        expect(lock.is_locked())
         lock.release()
-        assert not lock.is_locked()
+        expect(not (lock.is_locked()))
 
     def test_lock_context_manager(self, tmp_path: Path):
         """Test lock as context manager."""
-        from r2morph.core.parallel import BinaryFileLock
+        binary_file_lock = importlib.import_module("r2morph.core.parallel").BinaryFileLock
 
         binary_path = tmp_path / "test.bin"
         binary_path.write_bytes(b"\x00" * 100)
 
-        lock = BinaryFileLock(binary_path)
+        lock = binary_file_lock(binary_path)
 
-        assert not lock.is_locked()
+        expect(not (lock.is_locked()))
         with lock:
-            assert lock.is_locked()
-        assert not lock.is_locked()
+            expect(lock.is_locked())
+        expect(not (lock.is_locked()))
 
     def test_non_blocking_acquire(self, tmp_path: Path):
         """Test non-blocking lock acquisition."""
-        from r2morph.core.parallel import BinaryFileLock
+        binary_file_lock = importlib.import_module("r2morph.core.parallel").BinaryFileLock
 
         binary_path = tmp_path / "test.bin"
         binary_path.write_bytes(b"\x00" * 100)
 
-        lock1 = BinaryFileLock(binary_path)
-        lock2 = BinaryFileLock(binary_path)
+        lock1 = binary_file_lock(binary_path)
+        lock2 = binary_file_lock(binary_path)
 
-        assert lock1.acquire()
-        assert lock1.is_locked()
+        expect(lock1.acquire())
+        expect(lock1.is_locked())
 
         # Non-blocking should return False if already locked
-        assert not lock2.acquire(blocking=False)
-        assert not lock2.is_locked()
+        expect(not (lock2.acquire(blocking=False)))
+        expect(not (lock2.is_locked()))
 
         lock1.release()
-        assert not lock1.is_locked()
+        expect(not (lock1.is_locked()))
 
     def test_reentrant_lock(self, tmp_path: Path):
         """Test that acquiring already-held lock returns True."""
-        from r2morph.core.parallel import BinaryFileLock
+        binary_file_lock = importlib.import_module("r2morph.core.parallel").BinaryFileLock
 
         binary_path = tmp_path / "test.bin"
         binary_path.write_bytes(b"\x00" * 100)
 
-        lock = BinaryFileLock(binary_path)
+        lock = binary_file_lock(binary_path)
 
-        assert lock.acquire()
-        assert lock.is_locked()
+        expect(lock.acquire())
+        expect(lock.is_locked())
 
         # Re-acquiring should return True since we already hold it
-        assert lock.acquire()
+        expect(lock.acquire())
 
         lock.release()
-        assert not lock.is_locked()
+        expect(not (lock.is_locked()))
 
     def test_lock_cleanup(self, tmp_path: Path):
         """Test that lock file is properly cleaned up."""
-        from r2morph.core.parallel import BinaryFileLock
+        binary_file_lock = importlib.import_module("r2morph.core.parallel").BinaryFileLock
 
         binary_path = tmp_path / "test.bin"
         binary_path.write_bytes(b"\x00" * 100)
 
-        lock = BinaryFileLock(binary_path)
+        lock = binary_file_lock(binary_path)
 
         with lock:
             pass
 
-        assert not lock.is_locked()
+        expect(not (lock.is_locked()))
         # Lock file should still exist (that's normal for file locks)
         lock_path = binary_path.with_suffix(binary_path.suffix + ".lock")
-        assert lock_path.exists()
+        expect(lock_path.exists())

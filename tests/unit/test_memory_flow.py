@@ -2,6 +2,8 @@
 Unit tests for memory flow analysis.
 """
 
+import importlib
+
 import pytest
 
 from r2morph.analysis.memory_flow import (
@@ -12,49 +14,65 @@ from r2morph.analysis.memory_flow import (
     MemoryFlowAnalyzer,
     MemoryLocation,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ACCESS_ADDRESS_1280 = 0x500
+_EXPECTED_ACCESS_LOCATION_SIZE_4 = 4
+_EXPECTED_ANALYZER_ACCESSES_1792 = 0x700
+_EXPECTED_ANALYZER_ACCESSES_2048 = 0x800
+_EXPECTED_D_SIZE_8 = 8
+_EXPECTED_LEN_RESULT_FUNCTION_SUMMARIES_2 = 2
+_EXPECTED_LOC_ADDRESS_4096 = 0x1000
+_EXPECTED_LOC_SIZE_8 = 8
+_EXPECTED_SIZE_16 = 16
+_EXPECTED_SIZE_2 = 2
+_EXPECTED_SIZE_2_2 = 2
+_EXPECTED_SIZE_4 = 4
+_EXPECTED_SIZE_4_2 = 4
+_EXPECTED_SIZE_8 = 8
 
 
 class TestMemoryLocation:
     def test_memory_location_creation(self):
         loc = MemoryLocation(address=0x1000, size=8)
-        assert loc.address == 0x1000
-        assert loc.size == 8
-        assert loc.name == ""
-        assert loc.location_type == "unknown"
+        expect(loc.address == _EXPECTED_LOC_ADDRESS_4096)
+        expect(loc.size == _EXPECTED_LOC_SIZE_8)
+        expect(loc.name == "")
+        expect(loc.location_type == "unknown")
 
     def test_memory_location_with_name(self):
         loc = MemoryLocation(address=0x1000, size=4, name="buffer")
-        assert loc.name == "buffer"
+        expect(loc.name == "buffer")
 
     def test_memory_location_repr(self):
         loc = MemoryLocation(address=0x1000, size=4, name="var_x")
-        assert "0x1000" in repr(loc)
-        assert "var_x" in repr(loc)
+        expect(not ("0x1000" not in repr(loc)))
+        expect(not ("var_x" not in repr(loc)))
 
     def test_memory_location_hash(self):
         loc1 = MemoryLocation(address=0x1000, size=8)
         loc2 = MemoryLocation(address=0x1000, size=8)
         loc3 = MemoryLocation(address=0x1000, size=4)
 
-        assert hash(loc1) == hash(loc2)
-        assert hash(loc1) != hash(loc3)
+        expect(hash(loc1) == hash(loc2))
+        expect(hash(loc1) != hash(loc3))
 
     def test_memory_location_overlaps(self):
         loc1 = MemoryLocation(address=0x1000, size=8)
         loc2 = MemoryLocation(address=0x1004, size=8)
         loc3 = MemoryLocation(address=0x1010, size=4)
 
-        assert loc1.overlaps(loc2)
-        assert loc2.overlaps(loc1)
-        assert not loc1.overlaps(loc3)
+        expect(loc1.overlaps(loc2))
+        expect(loc2.overlaps(loc1))
+        expect(not (loc1.overlaps(loc3)))
 
     def test_memory_location_to_dict(self):
         loc = MemoryLocation(address=0x1000, size=8, name="test", location_type="stack")
         d = loc.to_dict()
-        assert d["address"] == "0x1000"
-        assert d["size"] == 8
-        assert d["name"] == "test"
-        assert d["type"] == "stack"
+        expect(d["address"] == "0x1000")
+        expect(d["size"] == _EXPECTED_D_SIZE_8)
+        expect(d["name"] == "test")
+        expect(d["type"] == "stack")
 
 
 class TestMemoryAccess:
@@ -65,8 +83,8 @@ class TestMemoryAccess:
             location=loc,
             access_type=MemoryAccessType.READ,
         )
-        assert access.address == 0x500
-        assert access.access_type == MemoryAccessType.READ
+        expect(access.address == _EXPECTED_ACCESS_ADDRESS_1280)
+        expect(access.access_type == MemoryAccessType.READ)
 
     def test_memory_access_write(self):
         loc = MemoryLocation(address=0x2000, size=8)
@@ -76,8 +94,8 @@ class TestMemoryAccess:
             access_type=MemoryAccessType.WRITE,
             instruction="mov [rax], rbx",
         )
-        assert access.access_type == MemoryAccessType.WRITE
-        assert "mov" in access.instruction
+        expect(access.access_type == MemoryAccessType.WRITE)
+        expect(not ("mov" not in access.instruction))
 
     def test_memory_access_to_dict(self):
         loc = MemoryLocation(address=0x1000, size=4)
@@ -89,9 +107,9 @@ class TestMemoryAccess:
             registers_involved=["eax", "rbx"],
         )
         d = access.to_dict()
-        assert "0x500" in d["instruction_address"]
-        assert d["access_type"] == "read"
-        assert "eax" in d["registers"]
+        expect(not ("0x500" not in d["instruction_address"]))
+        expect(d["access_type"] == "read")
+        expect(not ("eax" not in d["registers"]))
 
 
 class TestMemoryDependency:
@@ -107,8 +125,8 @@ class TestMemoryDependency:
             target=access2,
             dependency_type="flow",
         )
-        assert dep.dependency_type == "flow"
-        assert not dep.is_alias
+        expect(dep.dependency_type == "flow")
+        expect(not (dep.is_alias))
 
     def test_memory_dependency_alias(self):
         loc1 = MemoryLocation(address=0x1000, size=4)
@@ -123,7 +141,7 @@ class TestMemoryDependency:
             dependency_type="flow",
             is_alias=True,
         )
-        assert dep.is_alias
+        expect(dep.is_alias)
 
     def test_memory_dependency_to_dict(self):
         loc = MemoryLocation(address=0x1000, size=4)
@@ -132,7 +150,7 @@ class TestMemoryDependency:
 
         dep = MemoryDependency(source=access1, target=access2, dependency_type="anti")
         d = dep.to_dict()
-        assert d["type"] == "anti"
+        expect(d["type"] == "anti")
 
 
 class TestMemoryFlowAnalyzer:
@@ -141,16 +159,16 @@ class TestMemoryFlowAnalyzer:
         return MemoryFlowAnalyzer()
 
     def test_analyzer_initialization(self, analyzer):
-        assert len(analyzer._accesses) == 0
-        assert len(analyzer._locations) == 0
+        expect(len(analyzer._accesses) == 0)
+        expect(len(analyzer._locations) == 0)
 
     def test_analyze_function_empty(self, analyzer):
         instructions = []
         result = analyzer.analyze_function(instructions, 0x1000)
 
-        assert "memory_accesses" in result
-        assert "locations" in result
-        assert "dependencies" in result
+        expect(not ("memory_accesses" not in result))
+        expect(not ("locations" not in result))
+        expect(not ("dependencies" not in result))
 
     def test_analyze_function_simple_mov(self, analyzer):
         instructions = [
@@ -160,8 +178,8 @@ class TestMemoryFlowAnalyzer:
 
         result = analyzer.analyze_function(instructions, 0x1000)
 
-        assert "memory_accesses" in result
-        assert "stack_frame" in result
+        expect(not ("memory_accesses" not in result))
+        expect(not ("stack_frame" not in result))
 
     def test_analyze_function_push_pop(self, analyzer):
         instructions = [
@@ -171,9 +189,9 @@ class TestMemoryFlowAnalyzer:
 
         result = analyzer.analyze_function(instructions, 0x1000)
 
-        assert "memory_accesses" in result
-        assert "stack_frame" in result
-        assert len(result["stack_frame"]["saved_regs"]) > 0
+        expect(not ("memory_accesses" not in result))
+        expect(not ("stack_frame" not in result))
+        expect(not (len(result["stack_frame"]["saved_regs"]) <= 0))
 
     def test_analyze_stack_frame(self, analyzer):
         instructions = [
@@ -185,9 +203,9 @@ class TestMemoryFlowAnalyzer:
 
         frame = analyzer._analyze_stack_frame(instructions, 0x1000)
 
-        assert "local_vars" in frame
-        assert "frame_size" in frame
-        assert frame["frame_size"] > 0
+        expect(not ("local_vars" not in frame))
+        expect(not ("frame_size" not in frame))
+        expect(not (frame["frame_size"] <= 0))
 
     def test_analyze_stack_frame_exact_output(self, analyzer):
         """Characterize the exact stack-frame dict (§5 oracle for refactors).
@@ -204,21 +222,16 @@ class TestMemoryFlowAnalyzer:
 
         frame = analyzer._analyze_stack_frame(instructions, 0x1000)
 
-        assert frame == {
-            "saved_regs": [{"register": "rbp", "offset": 0, "address": "0x1000"}],
-            "local_vars": [
-                {
-                    "name": "var_8",
-                    "offset": -8,
-                    "size": 4,
-                    "access_type": "write",
-                    "address": "0x1004",
-                }
-            ],
-            "arguments": [],
-            "frame_size": 8,
-            "allocations": [],
-        }
+        expect(
+            frame
+            == {
+                "saved_regs": [{"register": "rbp", "offset": 0, "address": "0x1000"}],
+                "local_vars": [{"name": "var_8", "offset": -8, "size": 4, "access_type": "write", "address": "0x1004"}],
+                "arguments": [],
+                "frame_size": 8,
+                "allocations": [],
+            }
+        )
 
     def test_analyze_stack_frame_all_branches_exact(self, analyzer):
         """§5 oracle covering all three decode branches of _analyze_stack_frame:
@@ -232,21 +245,16 @@ class TestMemoryFlowAnalyzer:
 
         frame = analyzer._analyze_stack_frame(instructions, 0x1000)
 
-        assert frame == {
-            "saved_regs": [{"register": "rbp", "offset": 0, "address": "0x1000"}],
-            "allocations": [{"size": 32, "address": "0x1004"}],
-            "local_vars": [
-                {
-                    "name": "var_4",
-                    "offset": -4,
-                    "size": 4,
-                    "access_type": "write",
-                    "address": "0x1008",
-                }
-            ],
-            "arguments": [],
-            "frame_size": 40,
-        }
+        expect(
+            frame
+            == {
+                "saved_regs": [{"register": "rbp", "offset": 0, "address": "0x1000"}],
+                "allocations": [{"size": 32, "address": "0x1004"}],
+                "local_vars": [{"name": "var_4", "offset": -4, "size": 4, "access_type": "write", "address": "0x1008"}],
+                "arguments": [],
+                "frame_size": 40,
+            }
+        )
 
     def test_analyze_instruction_records_exact_accesses(self, analyzer):
         """Characterize _analyze_instruction's effect on _accesses/_locations.
@@ -269,8 +277,8 @@ class TestMemoryFlowAnalyzer:
         for addr, disasm in cases:
             analyzer._analyze_instruction(addr, disasm, stack_frame)
 
-        assert 0x700 not in analyzer._accesses
-        assert 0x800 not in analyzer._accesses
+        expect(_EXPECTED_ANALYZER_ACCESSES_1792 not in analyzer._accesses)
+        expect(_EXPECTED_ANALYZER_ACCESSES_2048 not in analyzer._accesses)
 
         def summarize(addr):
             (access,) = analyzer._accesses[addr]
@@ -285,60 +293,17 @@ class TestMemoryFlowAnalyzer:
                 loc.location_type,
             )
 
-        assert summarize(0x100) == (
-            MemoryAccessType.READ,
-            "mov eax, [0x2000]",
-            ["eax"],
-            0x2000,
-            4,
-            "unknown_8192",
-            "unknown",
+        expect(
+            summarize(256) == (MemoryAccessType.READ, "mov eax, [0x2000]", ["eax"], 8192, 4, "unknown_8192", "unknown")
         )
-        assert summarize(0x200) == (
-            MemoryAccessType.WRITE,
-            "mov [0x3000], ebx",
-            ["ebx"],
-            0x3000,
-            4,
-            "unknown_12288",
-            "unknown",
+        expect(
+            summarize(512)
+            == (MemoryAccessType.WRITE, "mov [0x3000], ebx", ["ebx"], 12288, 4, "unknown_12288", "unknown")
         )
-        assert summarize(0x300) == (
-            MemoryAccessType.READ,
-            "ldr x0, [sp, #8]",
-            ["x0"],
-            8,
-            8,
-            "stack_8",
-            "stack",
-        )
-        assert summarize(0x400) == (
-            MemoryAccessType.WRITE,
-            "str w1, [sp, #16]",
-            ["w1"],
-            16,
-            4,
-            "stack_16",
-            "stack",
-        )
-        assert summarize(0x500) == (
-            MemoryAccessType.WRITE,
-            "push rbp",
-            ["rbp"],
-            -8,
-            8,
-            "stack",
-            "stack",
-        )
-        assert summarize(0x600) == (
-            MemoryAccessType.READ,
-            "pop rbp",
-            ["rbp"],
-            0,
-            8,
-            "stack",
-            "stack",
-        )
+        expect(summarize(768) == (MemoryAccessType.READ, "ldr x0, [sp, #8]", ["x0"], 8, 8, "stack_8", "stack"))
+        expect(summarize(1024) == (MemoryAccessType.WRITE, "str w1, [sp, #16]", ["w1"], 16, 4, "stack_16", "stack"))
+        expect(summarize(1280) == (MemoryAccessType.WRITE, "push rbp", ["rbp"], -8, 8, "stack", "stack"))
+        expect(summarize(1536) == (MemoryAccessType.READ, "pop rbp", ["rbp"], 0, 8, "stack", "stack"))
 
     def test_analyze_instruction_unmatched_ldr_records_degenerate_access(self, analyzer):
         """Pin the subtle ARM ldr/str default: access_type is set before the
@@ -347,52 +312,52 @@ class TestMemoryFlowAnalyzer:
         analyzer._analyze_instruction(0xA00, "ldr x0, x1", {"local_vars": []})
 
         (access,) = analyzer._accesses[0xA00]
-        assert access.access_type == MemoryAccessType.READ
-        assert access.registers_involved == []
-        assert access.location.address == 0
-        assert access.location.size == 4
-        assert access.location.name == ""
-        assert access.location.location_type == "unknown"
+        expect(access.access_type == MemoryAccessType.READ)
+        expect(access.registers_involved == [])
+        expect(access.location.address == 0)
+        expect(access.location.size == _EXPECTED_ACCESS_LOCATION_SIZE_4)
+        expect(access.location.name == "")
+        expect(access.location.location_type == "unknown")
 
     def test_extract_access_size_byte(self, analyzer):
         size = analyzer._extract_access_size("movzx eax, byte ptr [ebx]")
-        assert size == 1
+        expect(size == 1)
 
     def test_extract_access_size_word(self, analyzer):
         size = analyzer._extract_access_size("movzx eax, word ptr [ebx]")
-        assert size == 2
+        expect(size == _EXPECTED_SIZE_2)
 
     def test_extract_access_size_dword(self, analyzer):
         size = analyzer._extract_access_size("mov eax, [ebx]")
-        assert size == 4
+        expect(size == _EXPECTED_SIZE_4)
 
     def test_extract_access_size_qword(self, analyzer):
         size = analyzer._extract_access_size("mov rax, [rbx]")
-        assert size == 8
+        expect(size == _EXPECTED_SIZE_8)
 
     def test_extract_access_size_xmm(self, analyzer):
         size = analyzer._extract_access_size("movdqu xmm0, [rbx]")
-        assert size == 16
+        expect(size == _EXPECTED_SIZE_16)
 
     def test_extract_arm_access_size_byte(self, analyzer):
         size = analyzer._extract_arm_access_size("ldrb w0, [x1]")
-        assert size == 1
+        expect(size == 1)
 
     def test_extract_arm_access_size_word(self, analyzer):
         size = analyzer._extract_arm_access_size("ldrh w0, [x1]")
-        assert size == 2
+        expect(size == _EXPECTED_SIZE_2_2)
 
     def test_extract_arm_access_size_dword(self, analyzer):
         size = analyzer._extract_arm_access_size("ldr w0, [x1]")
-        assert size == 4
+        expect(size == _EXPECTED_SIZE_4_2)
 
     def test_compute_dependencies_empty(self, analyzer):
         deps = analyzer._compute_dependencies()
-        assert deps == []
+        expect(deps == [])
 
     def test_detect_aliases_empty(self, analyzer):
         aliases = analyzer._detect_aliases()
-        assert aliases == {}
+        expect(aliases == {})
 
     def test_analyze_function_arm_str(self, analyzer):
         instructions = [
@@ -401,7 +366,7 @@ class TestMemoryFlowAnalyzer:
 
         result = analyzer.analyze_function(instructions, 0x1000)
 
-        assert "memory_accesses" in result
+        expect(not ("memory_accesses" not in result))
 
 
 class TestInterproceduralDataFlowAnalyzer:
@@ -410,8 +375,8 @@ class TestInterproceduralDataFlowAnalyzer:
         return InterproceduralDataFlowAnalyzer()
 
     def test_analyzer_initialization(self, analyzer):
-        assert len(analyzer._function_summaries) == 0
-        assert len(analyzer._call_graph) == 0
+        expect(len(analyzer._function_summaries) == 0)
+        expect(len(analyzer._call_graph) == 0)
 
     def test_analyze_program_basic(self, analyzer):
         functions = [
@@ -421,8 +386,8 @@ class TestInterproceduralDataFlowAnalyzer:
 
         result = analyzer.analyze_program(functions, call_graph)
 
-        assert "function_summaries" in result
-        assert "call_graph" in result
+        expect(not ("function_summaries" not in result))
+        expect(not ("call_graph" not in result))
 
     def test_analyze_program_with_calls(self, analyzer):
         functions = [
@@ -433,7 +398,7 @@ class TestInterproceduralDataFlowAnalyzer:
 
         result = analyzer.analyze_program(functions, call_graph)
 
-        assert len(result["function_summaries"]) == 2
+        expect(len(result["function_summaries"]) == _EXPECTED_LEN_RESULT_FUNCTION_SUMMARIES_2)
 
     def test_analyze_function_summary_exact_output(self, analyzer):
         """§5 oracle: pin _analyze_function_summary's effect classification.
@@ -450,21 +415,21 @@ class TestInterproceduralDataFlowAnalyzer:
 
         summary = analyzer._analyze_function_summary(0x1000, instructions)
 
-        assert summary["address"] == "0x1000"
-        assert set(summary["modified_registers"]) == {"eax", "rbx"}
-        assert summary["side_effects"] == [{"type": "call", "address": "0x1008", "instruction": "call 0x2000"}]
-        assert summary["return_values"] == []
-        assert summary["parameters"] == []
-        assert summary["read_globals"] == []
-        assert summary["written_globals"] == []
+        expect(summary["address"] == "0x1000")
+        expect(set(summary["modified_registers"]) == {"eax", "rbx"})
+        expect(summary["side_effects"] == [{"type": "call", "address": "0x1008", "instruction": "call 0x2000"}])
+        expect(summary["return_values"] == [])
+        expect(summary["parameters"] == [])
+        expect(summary["read_globals"] == [])
+        expect(summary["written_globals"] == [])
 
     def test_analyze_function_summary_ret_branch_records_return_value(self, analyzer):
         """Pin the ret-branch: when a 'ret' instruction also matches `mov X,`
         it records both a modified register and a return value."""
         summary = analyzer._analyze_function_summary(0x2000, [{"offset": 0x2000, "disasm": "mov r0, ret"}])
 
-        assert set(summary["modified_registers"]) == {"r0"}
-        assert summary["return_values"] == [{"register": "r0", "type": "return"}]
+        expect(set(summary["modified_registers"]) == {"r0"})
+        expect(summary["return_values"] == [{"register": "r0", "type": "return"}])
 
 
 class TestMemoryFlowIntegration:
@@ -486,29 +451,29 @@ class TestMemoryFlowIntegration:
 
         result = analyzer.analyze_function(instructions, 0x1000)
 
-        assert "memory_accesses" in result
-        assert "stack_frame" in result
-        assert "dependencies" in result
-        assert "aliases" in result
+        expect(not ("memory_accesses" not in result))
+        expect(not ("stack_frame" not in result))
+        expect(not ("dependencies" not in result))
+        expect(not ("aliases" not in result))
 
 
 class TestMemoryAccessType:
     def test_access_types(self):
-        assert MemoryAccessType.READ.value == "read"
-        assert MemoryAccessType.WRITE.value == "write"
-        assert MemoryAccessType.READ_WRITE.value == "read_write"
-        assert MemoryAccessType.ALLOC.value == "alloc"
-        assert MemoryAccessType.FREE.value == "free"
+        expect(MemoryAccessType.READ.value == "read")
+        expect(MemoryAccessType.WRITE.value == "write")
+        expect(MemoryAccessType.READ_WRITE.value == "read_write")
+        expect(MemoryAccessType.ALLOC.value == "alloc")
+        expect(MemoryAccessType.FREE.value == "free")
 
 
 class TestMemoryFlowWiring:
     """MemoryFlowAnalyzer wired onto BinaryAnalyzer and the public API."""
 
     def test_binary_analyzer_analyze_memory_flow_records_stack_access(self):
-        from r2morph.analysis.analyzer import BinaryAnalyzer
-        from tests._doubles.in_memory_typed_binary import InMemoryTypedBinary
+        binary_analyzer = importlib.import_module("r2morph.analysis.analyzer").BinaryAnalyzer
+        in_memory_typed_binary = importlib.import_module("tests._doubles.in_memory_typed_binary").InMemoryTypedBinary
 
-        binary = InMemoryTypedBinary(
+        binary = in_memory_typed_binary(
             disasm_by_addr={
                 0x1000: [
                     {"offset": 0x1000, "disasm": "push rbp"},
@@ -518,12 +483,12 @@ class TestMemoryFlowWiring:
             }
         )
 
-        result = BinaryAnalyzer(binary).analyze_memory_flow(0x1000)
+        result = binary_analyzer(binary).analyze_memory_flow(0x1000)
 
-        assert "0x1004" in result["memory_accesses"]
+        expect(not ("0x1004" not in result["memory_accesses"]))
 
     def test_memory_flow_analyzer_is_public_analysis_export(self):
-        from r2morph.analysis import MemoryFlowAnalyzer as ExportedMemoryFlowAnalyzer
-        from r2morph.analysis.memory_flow import MemoryFlowAnalyzer
+        exported_memory_flow_analyzer = importlib.import_module("r2morph.analysis").MemoryFlowAnalyzer
+        memory_flow_analyzer = importlib.import_module("r2morph.analysis.memory_flow").MemoryFlowAnalyzer
 
-        assert ExportedMemoryFlowAnalyzer is MemoryFlowAnalyzer
+        expect(not (exported_memory_flow_analyzer is not memory_flow_analyzer))

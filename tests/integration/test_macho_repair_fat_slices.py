@@ -11,12 +11,13 @@ from __future__ import annotations
 
 import platform
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 
 from r2morph.platform.macho_handler_repair import _iter_macho_binaries
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 lief = pytest.importorskip("lief")
 
@@ -36,15 +37,15 @@ def _fat_binary(tmp_path: Path) -> Path:
     thin = tmp_path / "thin"
     thin.write_bytes(_THIN_FIXTURE.read_bytes())
     fat = tmp_path / "fat"
-    subprocess.run(["lipo", "-create", str(thin), "-output", str(fat)], check=True, timeout=60)
+    run_command(["lipo", "-create", str(thin), "-output", str(fat)], check=True, timeout=60)
     return fat
 
 
 def test_iter_macho_binaries_yields_the_slices_of_a_fat_binary(tmp_path: Path) -> None:
     parsed = lief.MachO.parse(str(_fat_binary(tmp_path)))
-    assert isinstance(parsed, lief.MachO.FatBinary), "lipo did not produce a fat container"
+    expect(isinstance(parsed, lief.MachO.FatBinary), "lipo did not produce a fat container")
 
-    assert len(_iter_macho_binaries(None, parsed)) == len(parsed)
+    expect(len(_iter_macho_binaries(None, parsed)) == len(parsed))
 
 
 def test_iter_macho_binaries_yields_a_thin_binary_unchanged(tmp_path: Path) -> None:
@@ -55,4 +56,4 @@ def test_iter_macho_binaries_yields_a_thin_binary_unchanged(tmp_path: Path) -> N
     parsed = lief.MachO.parse(str(thin))
     binary = parsed if isinstance(parsed, lief.MachO.Binary) else parsed.at(0)
 
-    assert _iter_macho_binaries(None, binary) == [binary]
+    expect(_iter_macho_binaries(None, binary) == [binary])

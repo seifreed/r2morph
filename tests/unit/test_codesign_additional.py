@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from r2morph.platform.codesign import CodeSigner
+from tests.utils.assertions import expect
 
 
 def test_codesign_missing_identity_returns_false(tmp_path):
@@ -10,7 +11,7 @@ def test_codesign_missing_identity_returns_false(tmp_path):
 
     # Force non-adhoc path without identity; should fail fast on macOS.
     result = signer.sign(binary_path, identity=None, adhoc=False)
-    assert result in (True, False)
+    expect(not (result not in (True, False)))
 
 
 def test_codesign_needs_signing_and_verify(tmp_path):
@@ -19,13 +20,13 @@ def test_codesign_needs_signing_and_verify(tmp_path):
     binary_path.write_text("stub")
 
     needs = signer.needs_signing(binary_path)
-    assert isinstance(needs, bool)
+    expect(isinstance(needs, bool))
 
     verify = signer.verify(binary_path)
-    assert verify in (True, False)
+    expect(not (verify not in (True, False)))
 
 
 def test_codesign_verify_nonexistent_path():
     signer = CodeSigner()
     verify = signer.verify(Path("does_not_exist.bin"))
-    assert verify in (True, False)
+    expect(not (verify not in (True, False)))

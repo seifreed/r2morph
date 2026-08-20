@@ -15,12 +15,12 @@ dispatch with pushfq/popfq keeps its exit code) is covered by the integration su
 
 from __future__ import annotations
 
-import random
-
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
 from r2morph.mutations.code_virtualization_region_microops import _frestore_handler_asm, _fsave_handler_asm
 from r2morph.mutations.code_virtualization_region_models import Region
+from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
 
@@ -28,17 +28,17 @@ _CAVE_VADDR = 0x500000
 def test_fsave_handler_reads_the_flags_slot_and_returns_to_dispatch() -> None:
     """fsave copies the flags slot onto the vstack and advances one opcode byte."""
     asm = _fsave_handler_asm()
-    assert "mov rax, qword ptr [rsp+128]" in asm  # read the (pre-relocation) flags slot
-    assert "add rsi, 1" in asm  # opcode-only item: advance the vIP by one
-    assert asm.rstrip().endswith("jmp vm_dispatch")
+    expect(not ("mov rax, qword ptr [rsp+128]" not in asm))
+    expect(not ("add rsi, 1" not in asm))
+    expect(asm.rstrip().endswith("jmp vm_dispatch"))
 
 
 def test_frestore_handler_writes_the_flags_slot_and_returns_to_dispatch() -> None:
     """frestore pops the vstack top back into the flags slot and advances one byte."""
     asm = _frestore_handler_asm()
-    assert "mov qword ptr [rsp+128], rax" in asm  # write the (pre-relocation) flags slot
-    assert "add rsi, 1" in asm
-    assert asm.rstrip().endswith("jmp vm_dispatch")
+    expect(not ("mov qword ptr [rsp+128], rax" not in asm))
+    expect(not ("add rsi, 1" not in asm))
+    expect(asm.rstrip().endswith("jmp vm_dispatch"))
 
 
 def test_region_with_flag_transfer_items_assembles() -> None:
@@ -50,5 +50,5 @@ def test_region_with_flag_transfer_items_assembles() -> None:
         op_keys={"fsave", "frestore", "exit_8192"},
         body_ranges=[(0x1000, 1), (0x1001, 1)],
     )
-    scheme = build_region_scheme(region, random.Random(1234))
-    assert build_region_blob(region, _CAVE_VADDR, scheme) is not None
+    scheme = build_region_scheme(region, randomness.Random(1234))
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)

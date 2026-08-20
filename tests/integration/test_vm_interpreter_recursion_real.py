@@ -17,15 +17,16 @@ function is left untouched.
 
 from __future__ import annotations
 
-import random
 import shutil
 from pathlib import Path
 
+from r2morph.core import randomness
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.mutations.code_virtualization_region import extract_region
 from r2morph.mutations.code_virtualization_region_models import Region
 from tests.integration import test_code_virtualization_real as vm_real
+from tests.utils.assertions import expect
 
 FIXTURE = vm_real._DATASET / "elf_vm_interp_reg_x86_64"
 
@@ -39,7 +40,7 @@ def _dispatch_region(binary: Binary) -> Region | None:
 
     r2's function analysis stops at the computed jump, so gather linearly to the
     first terminator (the same window the pass uses)."""
-    assert binary.r2 is not None
+    expect(binary.r2 is not None)
     binary.analyze("aa")
     ops: list[dict[str, object]] = []
     for insn in binary.r2.cmdj("pdj 40 @ entry0") or []:
@@ -48,7 +49,7 @@ def _dispatch_region(binary: Binary) -> Region | None:
         ops.append(insn)
         if insn.get("type") in ("swi", "syscall", "ret"):
             break
-    return extract_region(ops, random.Random(1), allow_computed_jump=True)
+    return extract_region(ops, randomness.Random(1), allow_computed_jump=True)
 
 
 def _run_pass(dest: Path, *, virtualize_dispatch: bool) -> dict[str, object]:
@@ -65,7 +66,7 @@ def _run_pass(dest: Path, *, virtualize_dispatch: bool) -> dict[str, object]:
 
 def test_interpreter_fixture_emulates_to_expected_exit_code() -> None:
     """The register-dispatch interpreter is valid: its bytecode program exits 45."""
-    assert vm_real._emulate_exit_code(FIXTURE) == _EXPECTED_EXIT_CODE
+    expect(vm_real._emulate_exit_code(FIXTURE) == _EXPECTED_EXIT_CODE)
 
 
 def test_interpreter_dispatch_lowers_to_a_computed_jump_region() -> None:
@@ -74,7 +75,7 @@ def test_interpreter_dispatch_lowers_to_a_computed_jump_region() -> None:
     binary.open()
     try:
         region = _dispatch_region(binary)
-        assert region is not None and any(item[0] == "ijmp" for item in region.instructions)
+        expect(region is not None and any(item[0] == "ijmp" for item in region.instructions))
     finally:
         binary.close()
 
@@ -85,7 +86,7 @@ def test_dispatch_target_map_covers_the_handler_addresses() -> None:
     binary.open()
     try:
         region = _dispatch_region(binary)
-        assert region is not None and set(region.target_map) >= _HANDLER_ADDRESSES
+        expect(region is not None and set(region.target_map) >= _HANDLER_ADDRESSES)
     finally:
         binary.close()
 
@@ -100,8 +101,8 @@ def test_recursively_virtualized_interpreter_preserves_exit_code(tmp_path: Path)
     mutated = tmp_path / "recursively_virtualized"
     shutil.copy(FIXTURE, mutated)
     stats = _run_pass(mutated, virtualize_dispatch=True)
-    assert stats["functions_virtualized"] >= 1
-    assert vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
 
 
 def test_dispatch_function_left_untouched_without_opt_in(tmp_path: Path) -> None:
@@ -109,5 +110,5 @@ def test_dispatch_function_left_untouched_without_opt_in(tmp_path: Path) -> None
     mutated = tmp_path / "default"
     shutil.copy(FIXTURE, mutated)
     stats = _run_pass(mutated, virtualize_dispatch=False)
-    assert stats["functions_virtualized"] == 0
-    assert vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE
+    expect(stats["functions_virtualized"] == 0)
+    expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)

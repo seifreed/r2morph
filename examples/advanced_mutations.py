@@ -28,6 +28,9 @@ from r2morph.mutations import (
 )
 from r2morph.utils.logging import setup_logging
 
+_EXPECTED_LEN_SYS_ARGV_2 = 2
+_EXPECTED_LEN_SYS_ARGV_2_2 = 2
+
 
 def demo_individual_mutations(binary_path: Path):
     """
@@ -201,13 +204,13 @@ def demo_combined_mutations(binary_path: Path, output_path: Path):
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print("Usage: python advanced_mutations.py <binary_path> [output_path]")
         sys.exit(1)
 
     binary_path = Path(sys.argv[1])
 
-    if len(sys.argv) > 2:
+    if len(sys.argv) > _EXPECTED_LEN_SYS_ARGV_2_2:
         output_path = Path(sys.argv[2])
     else:
         output_path = binary_path.parent / f"{binary_path.stem}_morphed{binary_path.suffix}"

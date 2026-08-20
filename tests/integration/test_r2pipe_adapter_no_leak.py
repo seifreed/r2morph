@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.adapters.r2pipe_adapter import R2PipeAdapter
+from tests.utils.assertions import expect
 
 
 def test_abandoned_adapter_terminates_radare2_subprocess(stable_elf_binary: Path) -> None:
@@ -28,12 +29,13 @@ def test_abandoned_adapter_terminates_radare2_subprocess(stable_elf_binary: Path
     adapter.open(stable_elf_binary, flags=["-2"])
 
     process = adapter._r2.process  # subprocess.Popen spawned by r2pipe
-    assert process.poll() is None, "radare2 subprocess should be running"
+    expect(not (process.poll() is not None), "radare2 subprocess should be running")
 
     # Abandon the adapter without close()/__exit__.
     del adapter
     gc.collect()
 
-    assert process.poll() is not None, (
-        "abandoned R2PipeAdapter leaked the radare2 subprocess " "(__del__ safety net did not quit it)"
+    expect(
+        process.poll() is not None,
+        "abandoned R2PipeAdapter leaked the radare2 subprocess " "(__del__ safety net did not quit it)",
     )

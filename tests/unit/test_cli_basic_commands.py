@@ -1,13 +1,24 @@
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
 from r2morph import cli
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY, ONLY_FAILED_MUTATION_KEY
+from tests.utils.process import run_command
+
+_EXPECTED_PAYLOAD_FILTERED_SUMMARY_GATE_FAILURE_COMPACT_2 = 2
+_EXPECTED_PAYLOAD_FILTERED_SUMMARY_MISMATCH_COMPACT_BY__2 = 2
+_EXPECTED_PAYLOAD_FILTERED_SUMMARY_MISMATCH_COUNTS_BY_P_2 = 2
+_EXPECTED_PAYLOAD_FILTERED_SUMMARY_MISMATCH_COUNTS_BY_P_2_2 = 2
+_EXPECTED_PAYLOAD_FILTERED_SUMMARY_PASS_SYMBOLIC_SUMMAR_2 = 2
+_EXPECTED_PAYLOAD_FILTERED_SUMMARY_SYMBOLIC_COVERAGE_BY_2 = 2
+_EXPECTED_PRIORITY_0_FAILURE_COUNT_2 = 2
+
 
 typer_testing = pytest.importorskip("typer.testing")
 CliRunner = typer_testing.CliRunner
@@ -22,26 +33,26 @@ def test_cli_simple_mode(tmp_path: Path) -> None:
     output_path = tmp_path / "output.bin"
     input_path.write_bytes(source.read_bytes())
 
-    result = subprocess.run(
+    result = run_command(
         [sys.executable, "-m", "r2morph.cli", str(input_path), str(output_path)],
         capture_output=True,
         text=True,
         timeout=60,
     )
-    assert result.returncode == 0
-    assert output_path.exists()
+    expect(result.returncode == 0)
+    expect(output_path.exists())
 
 
 def test_cli_no_input_shows_help() -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, [])
-    assert result.exit_code == 0
-    assert "No input file provided" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("No input file provided" not in result.output))
 
 
 def test_cli_version_function() -> None:
     result = cli.version()
-    assert result is None
+    expect(not (result is not None))
 
 
 def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
@@ -66,9 +77,9 @@ def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Experimental mutations selected" in result.output
-    assert "best-effort" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Experimental mutations selected" not in result.output))
+    expect(not ("best-effort" not in result.output))
 
 
 def test_cli_warns_for_symbolic_validation_mode(
@@ -97,9 +108,9 @@ def test_cli_warns_for_symbolic_validation_mode(
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Experimental validation mode selected" in result.output
-    assert "semantic equivalence" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Experimental validation mode selected" not in result.output))
+    expect(not ("semantic equivalence" not in result.output))
 
 
 def test_cli_report_prints_symbolic_mutation_summary(tmp_path: Path) -> None:
@@ -152,24 +163,24 @@ def test_cli_report_prints_symbolic_mutation_summary(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path)])
 
-    assert result.exit_code == 0
-    assert "Symbolic Mutation Summary" in result.output
-    assert "1 observable match" in result.output
-    assert "1 observable mismatch" in result.output
-    assert "bounded-step only" in result.output
-    assert "without symbolic coverage" in result.output
-    assert "InstructionSubstitution" in result.output
-    assert "1 match, 1 mismatch" in result.output
-    assert "NopInsertion" in result.output
-    assert "1 bounded-only" in result.output
-    assert "BlockReordering" in result.output
-    assert "1 without coverage" in result.output
-    assert "Passes With Symbolic Issues" in result.output
-    assert "severity=mismatch" in result.output
-    assert "severity=without-coverage" in result.output
-    assert "Symbolic Mismatches" in result.output
-    assert "0x401010-0x401011" in result.output
-    assert "eax, eflags" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Symbolic Mutation Summary" not in result.output))
+    expect(not ("1 observable match" not in result.output))
+    expect(not ("1 observable mismatch" not in result.output))
+    expect(not ("bounded-step only" not in result.output))
+    expect(not ("without symbolic coverage" not in result.output))
+    expect(not ("InstructionSubstitution" not in result.output))
+    expect(not ("1 match, 1 mismatch" not in result.output))
+    expect(not ("NopInsertion" not in result.output))
+    expect(not ("1 bounded-only" not in result.output))
+    expect(not ("BlockReordering" not in result.output))
+    expect(not ("1 without coverage" not in result.output))
+    expect(not ("Passes With Symbolic Issues" not in result.output))
+    expect(not ("severity=mismatch" not in result.output))
+    expect(not ("severity=without-coverage" not in result.output))
+    expect(not ("Symbolic Mismatches" not in result.output))
+    expect(not ("0x401010-0x401011" not in result.output))
+    expect(not ("eax, eflags" not in result.output))
 
 
 def test_cli_report_surfaces_degraded_validation_mode(tmp_path: Path) -> None:
@@ -223,19 +234,19 @@ def test_cli_report_surfaces_degraded_validation_mode(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path), "--summary-only"])
 
-    assert result.exit_code == 0
-    assert "Validation Mode Adjustment" in result.output
-    assert "requested=symbolic, effective=runtime" in result.output
-    assert "policy=degrade-runtime, reason=limited-symbolic-support" in result.output
-    assert "Degraded Passes" in result.output
-    assert "RegisterSubstitution" in result.output
-    assert "symbolic confidence=limited" in result.output
-    assert "Degradation Roles" in result.output
-    assert "degradation-trigger: 1" in result.output
-    assert "executed-under-degraded-mode: 2" in result.output
-    assert "Pass Validation Context" in result.output
-    assert "requested=symbolic, effective=runtime, degraded=yes" in result.output
-    assert "trigger=yes" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Validation Mode Adjustment" not in result.output))
+    expect(not ("requested=symbolic, effective=runtime" not in result.output))
+    expect(not ("policy=degrade-runtime, reason=limited-symbolic-support" not in result.output))
+    expect(not ("Degraded Passes" not in result.output))
+    expect(not ("RegisterSubstitution" not in result.output))
+    expect(not ("symbolic confidence=limited" not in result.output))
+    expect(not ("Degradation Roles" not in result.output))
+    expect(not ("degradation-trigger: 1" not in result.output))
+    expect(not ("executed-under-degraded-mode: 2" not in result.output))
+    expect(not ("Pass Validation Context" not in result.output))
+    expect(not ("requested=symbolic, effective=runtime, degraded=yes" not in result.output))
+    expect(not ("trigger=yes" not in result.output))
 
 
 def test_cli_report_only_degraded_filters_json(tmp_path: Path) -> None:
@@ -261,9 +272,9 @@ def test_cli_report_only_degraded_filters_json(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path), "--only-degraded"])
 
-    assert result.exit_code == 0
-    assert '"mutations": []' in result.output
-    assert '"only_degraded": true' in result.output
+    expect(result.exit_code == 0)
+    expect(not ('"mutations": []' not in result.output))
+    expect(not ('"only_degraded": true' not in result.output))
 
 
 def test_cli_report_only_pass_accepts_mutation_alias(tmp_path: Path) -> None:
@@ -323,11 +334,11 @@ def test_cli_report_only_pass_accepts_mutation_alias(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", "--only-pass", "nop", str(report_path)])
 
-    assert result.exit_code == 0
-    assert "Pass Filter Resolution" in result.output
-    assert "nop -> NopInsertion" in result.output
-    assert '"only_pass": "NopInsertion"' in result.output
-    assert '"pass_name": "NopInsertion"' in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Pass Filter Resolution" not in result.output))
+    expect(not ("nop -> NopInsertion" not in result.output))
+    expect(not ('"only_pass": "NopInsertion"' not in result.output))
+    expect(not ('"pass_name": "NopInsertion"' not in result.output))
 
 
 def test_cli_report_only_degraded_keeps_degraded_pass_details(tmp_path: Path) -> None:
@@ -367,12 +378,12 @@ def test_cli_report_only_degraded_keeps_degraded_pass_details(tmp_path: Path) ->
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path), "--only-degraded"])
 
-    assert result.exit_code == 0
-    assert "Degraded Severity Priority" in result.output
-    assert '"degraded_passes": [' in result.output
-    assert '"pass_name": "RegisterSubstitution"' in result.output
-    assert '"degradation_roles": {' in result.output
-    assert '"degradation-trigger": 1' in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Degraded Severity Priority" not in result.output))
+    expect(not ('"degraded_passes": [' not in result.output))
+    expect(not ('"pass_name": "RegisterSubstitution"' not in result.output))
+    expect(not ('"degradation_roles": {' not in result.output))
+    expect(not ('"degradation-trigger": 1' not in result.output))
 
 
 def test_cli_report_only_failed_gates_filters_json(tmp_path: Path) -> None:
@@ -407,14 +418,14 @@ def test_cli_report_only_failed_gates_filters_json(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path), "--only-failed-gates"])
 
-    assert result.exit_code == 0
-    assert "Gate Evaluation" in result.output
-    assert "Gate Failure Summary" in result.output
-    assert "min_severity_failed=yes, require_pass_failures=0" in result.output
-    assert "all_passed=no" in result.output
-    assert '"only_failed_gates": true' in result.output
-    assert '"failed_gates": true' in result.output
-    assert '"gate_failures": {' in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Gate Evaluation" not in result.output))
+    expect(not ("Gate Failure Summary" not in result.output))
+    expect(not ("min_severity_failed=yes, require_pass_failures=0" not in result.output))
+    expect(not ("all_passed=no" not in result.output))
+    expect(not ('"only_failed_gates": true' not in result.output))
+    expect(not ('"failed_gates": true' not in result.output))
+    expect(not ('"gate_failures": {' not in result.output))
 
 
 def test_cli_report_gate_failure_summary_groups_failures_by_pass(tmp_path: Path) -> None:
@@ -457,19 +468,19 @@ def test_cli_report_gate_failure_summary_groups_failures_by_pass(tmp_path: Path)
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path), "--summary-only"])
 
-    assert result.exit_code == 0
-    assert "Gate Failure Summary" in result.output
-    assert "require_pass_failures=2" in result.output
-    assert "expected_severity_counts=bounded-only:1, clean:1" in result.output
-    assert "Gate Failure By Pass" in result.output
-    assert "NopInsertion" in result.output
-    assert "InstructionSubstitution" in result.output
-    assert "count=1, strictest_expected=bounded-only" in result.output
-    assert "count=1, strictest_expected=clean" in result.output
-    assert "NopInsertion=not-requested(expected <= clean)" in result.output
-    assert "InstructionSubstitution=without-coverage(expected <= bounded-only)" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Gate Failure Summary" not in result.output))
+    expect(not ("require_pass_failures=2" not in result.output))
+    expect(not ("expected_severity_counts=bounded-only:1, clean:1" not in result.output))
+    expect(not ("Gate Failure By Pass" not in result.output))
+    expect(not ("NopInsertion" not in result.output))
+    expect(not ("InstructionSubstitution" not in result.output))
+    expect(not ("count=1, strictest_expected=bounded-only" not in result.output))
+    expect(not ("count=1, strictest_expected=clean" not in result.output))
+    expect(not ("NopInsertion=not-requested(expected <= clean)" not in result.output))
+    expect(not ("InstructionSubstitution=without-coverage(expected <= bounded-only)" not in result.output))
     gate_section = result.output.split("Gate Failure By Pass", 1)[1]
-    assert gate_section.index("InstructionSubstitution") < gate_section.index("NopInsertion")
+    expect(not (gate_section.index("InstructionSubstitution") >= gate_section.index("NopInsertion")))
 
 
 def test_cli_report_gate_failure_summary_breaks_same_severity_ties_by_failure_count(
@@ -516,11 +527,11 @@ def test_cli_report_gate_failure_summary_breaks_same_severity_ties_by_failure_co
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path), "--summary-only"])
 
-    assert result.exit_code == 0
-    assert "expected_severity_counts=clean:3" in result.output
-    assert "count=2, strictest_expected=clean" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("expected_severity_counts=clean:3" not in result.output))
+    expect(not ("count=2, strictest_expected=clean" not in result.output))
     gate_section = result.output.split("Gate Failure By Pass", 1)[1]
-    assert gate_section.index("NopInsertion") < gate_section.index("InstructionSubstitution")
+    expect(not (gate_section.index("NopInsertion") >= gate_section.index("InstructionSubstitution")))
 
 
 def test_cli_report_exports_gate_failure_priority_in_filtered_summary(tmp_path: Path) -> None:
@@ -571,19 +582,16 @@ def test_cli_report_exports_gate_failure_priority_in_filtered_summary(tmp_path: 
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(filtered_path.read_text(encoding="utf-8"))
     priority = payload["filtered_summary"]["gate_failure_priority"]
     severity_counts = payload["filtered_summary"]["gate_failures"][
         "require_pass_severity_failures_by_expected_severity"
     ]
-    assert [row["pass_name"] for row in priority] == [
-        "NopInsertion",
-        "InstructionSubstitution",
-    ]
-    assert priority[0]["failure_count"] == 2
-    assert priority[0]["strictest_expected_severity"] == "clean"
-    assert severity_counts == {"clean": 3}
+    expect([row[MUTATION_NAME_KEY] for row in priority] == ["NopInsertion", "InstructionSubstitution"])
+    expect(priority[0]["failure_count"] == _EXPECTED_PRIORITY_0_FAILURE_COUNT_2)
+    expect(priority[0]["strictest_expected_severity"] == "clean")
+    expect(severity_counts == {"clean": 3})
 
 
 def test_cli_report_only_expected_severity_filters_gate_summary(tmp_path: Path) -> None:
@@ -655,21 +663,25 @@ def test_cli_report_only_expected_severity_filters_gate_summary(tmp_path: Path) 
         ],
     )
 
-    assert result.exit_code == 0
-    assert "expected_severity_counts=clean:1" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("expected_severity_counts=clean:1" not in result.output))
     payload = json.loads(filtered_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_expected_severity"] == "clean"
-    assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_expected_severity"] == {
-        "clean": 1
-    }
-    assert payload["filtered_summary"]["gate_failure_priority"] == [
-        {
-            "pass_name": "NopInsertion",
-            "failure_count": 1,
-            "strictest_expected_severity": "clean",
-            "failures": ["NopInsertion=not-requested(expected <= clean)"],
-        }
-    ]
+    expect(payload["report_filters"]["only_expected_severity"] == "clean")
+    expect(
+        payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_expected_severity"]
+        == {"clean": 1}
+    )
+    expect(
+        payload["filtered_summary"]["gate_failure_priority"]
+        == [
+            {
+                "pass_name": "NopInsertion",
+                "failure_count": 1,
+                "strictest_expected_severity": "clean",
+                "failures": ["NopInsertion=not-requested(expected <= clean)"],
+            }
+        ]
+    )
 
 
 def test_cli_report_only_expected_severity_require_results_respects_filtered_gates(
@@ -729,8 +741,8 @@ def test_cli_report_only_expected_severity_require_results_respects_filtered_gat
         ],
     )
 
-    assert success.exit_code == 0
-    assert failure.exit_code == 1
+    expect(success.exit_code == 0)
+    expect(failure.exit_code == 1)
 
 
 def test_cli_report_only_pass_failure_filters_gate_summary(tmp_path: Path) -> None:
@@ -800,21 +812,25 @@ def test_cli_report_only_pass_failure_filters_gate_summary(tmp_path: Path) -> No
         ],
     )
 
-    assert result.exit_code == 0
-    assert "expected_severity_counts=clean:1" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("expected_severity_counts=clean:1" not in result.output))
     payload = json.loads(filtered_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_pass_failure"] == "NopInsertion"
-    assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_pass"] == {
-        "NopInsertion": ["NopInsertion=not-requested(expected <= clean)"]
-    }
-    assert payload["filtered_summary"]["gate_failure_priority"] == [
-        {
-            "pass_name": "NopInsertion",
-            "failure_count": 1,
-            "strictest_expected_severity": "clean",
-            "failures": ["NopInsertion=not-requested(expected <= clean)"],
-        }
-    ]
+    expect(payload["report_filters"][ONLY_FAILED_MUTATION_KEY] == "NopInsertion")
+    expect(
+        payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_pass"]
+        == {"NopInsertion": ["NopInsertion=not-requested(expected <= clean)"]}
+    )
+    expect(
+        payload["filtered_summary"]["gate_failure_priority"]
+        == [
+            {
+                "pass_name": "NopInsertion",
+                "failure_count": 1,
+                "strictest_expected_severity": "clean",
+                "failures": ["NopInsertion=not-requested(expected <= clean)"],
+            }
+        ]
+    )
 
 
 def test_cli_report_only_pass_failure_require_results_respects_filtered_gates(
@@ -873,8 +889,8 @@ def test_cli_report_only_pass_failure_require_results_respects_filtered_gates(
         ],
     )
 
-    assert success.exit_code == 0
-    assert failure.exit_code == 1
+    expect(success.exit_code == 0)
+    expect(failure.exit_code == 1)
 
 
 def test_cli_report_only_pass_failure_accepts_mutation_alias(tmp_path: Path) -> None:
@@ -923,12 +939,12 @@ def test_cli_report_only_pass_failure_accepts_mutation_alias(tmp_path: Path) -> 
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Pass Failure Filter Resolution" in result.output
-    assert "nop -> NopInsertion" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Pass Failure Filter Resolution" not in result.output))
+    expect(not ("nop -> NopInsertion" not in result.output))
     payload = json.loads(filtered_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_pass_failure"] == "NopInsertion"
-    assert payload["filtered_summary"]["only_pass_failure"] == "NopInsertion"
+    expect(payload["report_filters"][ONLY_FAILED_MUTATION_KEY] == "NopInsertion")
+    expect(payload["filtered_summary"][ONLY_FAILED_MUTATION_KEY] == "NopInsertion")
 
 
 def test_cli_report_require_results_respects_only_failed_gates_without_mutations(
@@ -967,8 +983,8 @@ def test_cli_report_require_results_respects_only_failed_gates_without_mutations
         ["report", str(report_path), "--only-failed-gates", "--require-results", "--min-severity", "clean"],
     )
 
-    assert success.exit_code == 0
-    assert failure.exit_code == 1
+    expect(success.exit_code == 0)
+    expect(failure.exit_code == 1)
 
 
 def test_cli_report_require_results_respects_min_severity(tmp_path: Path) -> None:
@@ -1007,8 +1023,8 @@ def test_cli_report_require_results_respects_min_severity(tmp_path: Path) -> Non
         ["report", str(report_path), "--require-results", "--min-severity", "bounded-only"],
     )
 
-    assert success.exit_code == 0
-    assert failure.exit_code == 1
+    expect(success.exit_code == 0)
+    expect(failure.exit_code == 1)
 
 
 def test_cli_report_distinguishes_triggering_vs_degraded_pass_roles(tmp_path: Path) -> None:
@@ -1067,14 +1083,14 @@ def test_cli_report_distinguishes_triggering_vs_degraded_pass_roles(tmp_path: Pa
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path), "--summary-only"])
 
-    assert result.exit_code == 0
-    assert "role=degradation-trigger" in result.output
-    assert "role=executed-under-degraded-mode" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("role=degradation-trigger" not in result.output))
+    expect(not ("role=executed-under-degraded-mode" not in result.output))
 
     json_result = runner.invoke(cli.app, ["report", str(report_path)])
-    assert json_result.exit_code == 0
-    assert '"role": "degradation-trigger"' in json_result.output
-    assert '"role": "executed-under-degraded-mode"' in json_result.output
+    expect(json_result.exit_code == 0)
+    expect(not ('"role": "degradation-trigger"' not in json_result.output))
+    expect(not ('"role": "executed-under-degraded-mode"' not in json_result.output))
 
 
 def test_cli_report_skips_symbolic_summary_when_not_present(tmp_path: Path) -> None:
@@ -1084,9 +1100,9 @@ def test_cli_report_skips_symbolic_summary_when_not_present(tmp_path: Path) -> N
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", str(report_path)])
 
-    assert result.exit_code == 0
-    assert "Symbolic Mutation Summary" not in result.output
-    assert "Symbolic Mismatches" not in result.output
+    expect(result.exit_code == 0)
+    expect("Symbolic Mutation Summary" not in result.output)
+    expect("Symbolic Mismatches" not in result.output)
 
 
 def test_cli_report_only_mismatches_filters_json(tmp_path: Path) -> None:
@@ -1125,10 +1141,10 @@ def test_cli_report_only_mismatches_filters_json(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", "--only-mismatches", str(report_path)])
 
-    assert result.exit_code == 0
-    assert "Filtered Mismatch Mutations: 1" in result.output
-    assert "0x401010" in result.output
-    assert "0x401000" not in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Filtered Mismatch Mutations: 1" not in result.output))
+    expect(not ("0x401010" not in result.output))
+    expect("0x401000" not in result.output)
 
 
 def test_cli_report_only_mismatches_preserves_degraded_context(tmp_path: Path) -> None:
@@ -1191,20 +1207,20 @@ def test_cli_report_only_mismatches_preserves_degraded_context(tmp_path: Path) -
         ["report", "--only-mismatches", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
-    assert "Mismatch Degradation Context" in result.output
-    assert "Mismatch Severity Priority" in result.output
-    assert "requested=symbolic, effective=runtime" in result.output
-    assert "trigger_passes=RegisterSubstitution" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Mismatch Degradation Context" not in result.output))
+    expect(not ("Mismatch Severity Priority" not in result.output))
+    expect(not ("requested=symbolic, effective=runtime" not in result.output))
+    expect(not ("trigger_passes=RegisterSubstitution" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["requested_validation_mode"] == "symbolic"
-    assert payload["filtered_summary"]["validation_mode"] == "runtime"
-    assert payload["filtered_summary"]["degraded_validation"] is True
-    assert payload["filtered_summary"]["degraded_passes"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["degradation_roles"]["degradation-trigger"] == 1
-    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["severity"] == "mismatch"
-    assert (
+    expect(payload["filtered_summary"]["requested_validation_mode"] == "symbolic")
+    expect(payload["filtered_summary"]["validation_mode"] == "runtime")
+    expect(not (payload["filtered_summary"]["degraded_validation"] is not True))
+    expect(payload["filtered_summary"]["degraded_passes"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["degradation_roles"]["degradation-trigger"] == 1)
+    expect(payload["filtered_summary"]["symbolic_severity_by_pass"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["symbolic_severity_by_pass"][0]["severity"] == "mismatch")
+    expect(
         payload["filtered_summary"]["pass_validation_context"]["RegisterSubstitution"]["role"] == "degradation-trigger"
     )
 
@@ -1232,8 +1248,8 @@ def test_cli_report_only_mismatches_handles_empty_set(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", "--only-mismatches", str(report_path)])
 
-    assert result.exit_code == 0
-    assert "Filtered Mismatch Mutations: 0" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Filtered Mismatch Mutations: 0" not in result.output))
 
 
 def test_cli_report_only_pass_filters_json(tmp_path: Path) -> None:
@@ -1264,11 +1280,11 @@ def test_cli_report_only_pass_filters_json(tmp_path: Path) -> None:
         ["report", "--only-pass", "InstructionSubstitution", str(report_path)],
     )
 
-    assert result.exit_code == 0
-    assert "InstructionSubstitution" in result.output
-    assert '"pass_name": "InstructionSubstitution"' in result.output
-    assert '"pass_name": "NopInsertion"' not in result.output
-    assert '"only_pass": "InstructionSubstitution"' in result.output
+    expect(result.exit_code == 0)
+    expect(not ("InstructionSubstitution" not in result.output))
+    expect(not ('"pass_name": "InstructionSubstitution"' not in result.output))
+    expect('"pass_name": "NopInsertion"' not in result.output)
+    expect(not ('"only_pass": "InstructionSubstitution"' not in result.output))
 
 
 def test_cli_report_only_pass_shows_local_symbolic_summary(tmp_path: Path) -> None:
@@ -1344,27 +1360,30 @@ def test_cli_report_only_pass_shows_local_symbolic_summary(tmp_path: Path) -> No
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Pass Symbolic Summary" in result.output
-    assert "InstructionSubstitution: 1 match, 1 mismatch" in result.output
-    assert "0 bounded-only, 0 without" in result.output
-    assert "coverage" in result.output
-    assert "severity=mismatch" in result.output
-    assert "issue_count=1" in result.output
-    assert "issues: mismatch(mismatch=1, without_coverage=0, bounded_only=0)" in result.output
-    assert "Pass Evidence Summary" in result.output
-    assert "changed_regions=1" in result.output
-    assert "changed_bytes=2" in result.output
-    assert "symbolic_mismatch=1" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Pass Symbolic Summary" not in result.output))
+    expect(not ("InstructionSubstitution: 1 match, 1 mismatch" not in result.output))
+    expect(not ("0 bounded-only, 0 without" not in result.output))
+    expect(not ("coverage" not in result.output))
+    expect(not ("severity=mismatch" not in result.output))
+    expect(not ("issue_count=1" not in result.output))
+    expect(not ("issues: mismatch(mismatch=1, without_coverage=0, bounded_only=0)" not in result.output))
+    expect(not ("Pass Evidence Summary" not in result.output))
+    expect(not ("changed_regions=1" not in result.output))
+    expect(not ("changed_bytes=2" not in result.output))
+    expect(not ("symbolic_mismatch=1" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["symbolic_requested"] == 2
-    assert (
+    expect(
+        payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["symbolic_requested"]
+        == _EXPECTED_PAYLOAD_FILTERED_SUMMARY_PASS_SYMBOLIC_SUMMAR_2
+    )
+    expect(
         payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["issues"][0]["severity"]
         == "mismatch"
     )
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "mismatch"
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "InstructionSubstitution"
-    assert payload["filtered_summary"]["pass_evidence"][0]["changed_region_count"] == 1
+    expect(payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "mismatch")
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(payload["filtered_summary"]["pass_evidence"][0]["changed_region_count"] == 1)
 
 
 def test_cli_report_orders_pass_evidence_by_risk(tmp_path: Path) -> None:
@@ -1408,11 +1427,11 @@ def test_cli_report_orders_pass_evidence_by_risk(tmp_path: Path) -> None:
         ["report", "--summary-only", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
-    assert "Pass Evidence" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Pass Evidence" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["pass_evidence"][1]["pass_name"] == "NopInsertion"
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["pass_evidence"][1][MUTATION_NAME_KEY] == "NopInsertion")
 
 
 def test_cli_report_prefers_persisted_pass_evidence_priority(tmp_path: Path) -> None:
@@ -1474,10 +1493,10 @@ def test_cli_report_prefers_persisted_pass_evidence_priority(tmp_path: Path) -> 
         ["report", "--summary-only", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["pass_evidence"][1]["pass_name"] == "NopInsertion"
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["pass_evidence"][1][MUTATION_NAME_KEY] == "NopInsertion")
 
 
 def test_cli_report_only_risky_passes_filters_to_risky_passes(tmp_path: Path) -> None:
@@ -1580,16 +1599,16 @@ def test_cli_report_only_risky_passes_filters_to_risky_passes(tmp_path: Path) ->
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Risky Pass Filter" in result.output
-    assert "RegisterSubstitution" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Risky Pass Filter" not in result.output))
+    expect(not ("RegisterSubstitution" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_risky_passes"] is True
-    assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == ("RegisterSubstitution")
+    expect(not (payload["report_filters"]["only_risky_passes"] is not True))
+    expect(payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["symbolic_severity_by_pass"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
 
 
 def test_cli_report_only_risky_passes_require_results_uses_pass_evidence(tmp_path: Path) -> None:
@@ -1649,7 +1668,7 @@ def test_cli_report_only_risky_passes_require_results_uses_pass_evidence(tmp_pat
         ],
     )
 
-    assert result.exit_code == 1
+    expect(result.exit_code == 1)
 
 
 def test_cli_report_prefers_persisted_pass_buckets_without_pass_results(tmp_path: Path) -> None:
@@ -1703,11 +1722,11 @@ def test_cli_report_prefers_persisted_pass_buckets_without_pass_results(tmp_path
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == ["InstructionSubstitution"]
+    expect(payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["symbolic"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == ["InstructionSubstitution"])
 
 
 def test_cli_report_prefers_persisted_pass_summary_maps_without_pass_results(
@@ -1783,10 +1802,12 @@ def test_cli_report_prefers_persisted_pass_summary_maps_without_pass_results(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean"
-    assert payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"]["role"] == "requested-mode"
+    expect(payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean")
+    expect(
+        payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"]["role"] == "requested-mode"
+    )
 
 
 def test_cli_report_prefers_persisted_capability_and_evidence_maps_without_pass_results(
@@ -1833,12 +1854,15 @@ def test_cli_report_prefers_persisted_capability_and_evidence_maps_without_pass_
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert (
-        payload["filtered_summary"]["pass_capabilities"]["InstructionSubstitution"]["symbolic"]["recommended"] is True
+    expect(
+        not (
+            payload["filtered_summary"]["pass_capabilities"]["InstructionSubstitution"]["symbolic"]["recommended"]
+            is not True
+        )
     )
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "InstructionSubstitution"
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
 
 
 def test_cli_report_prefers_persisted_triage_and_discard_summaries_without_pass_results(
@@ -1960,20 +1984,24 @@ def test_cli_report_prefers_persisted_triage_and_discard_summaries_without_pass_
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["symbolic_statuses"] == {"real-binary-observable-mismatch": 1}
-    assert payload["filtered_summary"]["pass_triage_rows"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["pass_capability_summary"][0]["symbolic_confidence"] == "limited"
-    assert payload["filtered_summary"]["validation_role_rows"][0]["role"] == "requested-mode"
-    assert payload["filtered_summary"]["validation_adjustments"]["degraded_validation"] is False
-    assert payload["filtered_summary"]["validation_adjustment_compact_summary"]["degraded_validation"] is False
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["discarded_mutation_summary"]["by_reason"] == {"runtime_validation_failed": 1}
-    assert payload["filtered_summary"]["discarded_mutation_compact_rows"][0]["pass_name"] == ("RegisterSubstitution")
-    assert payload["filtered_summary"]["discarded_mutation_final_rows"][0]["pass_name"] == ("RegisterSubstitution")
-    assert payload["filtered_summary"]["discarded_mutation_final_rows"][0]["reasons"] == ["runtime_validation_failed"]
-    assert payload["filtered_summary"]["discarded_mutation_compact_by_reason"] == {"runtime_validation_failed": 1}
+    expect(payload["filtered_summary"]["symbolic_statuses"] == {"real-binary-observable-mismatch": 1})
+    expect(payload["filtered_summary"]["pass_triage_rows"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["pass_capability_summary"][0]["symbolic_confidence"] == "limited")
+    expect(payload["filtered_summary"]["validation_role_rows"][0]["role"] == "requested-mode")
+    expect(not (payload["filtered_summary"]["validation_adjustments"]["degraded_validation"] is not False))
+    expect(
+        not (payload["filtered_summary"]["validation_adjustment_compact_summary"]["degraded_validation"] is not False)
+    )
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["discarded_mutation_summary"]["by_reason"] == {"runtime_validation_failed": 1})
+    expect(
+        payload["filtered_summary"]["discarded_mutation_compact_rows"][0][MUTATION_NAME_KEY] == "RegisterSubstitution"
+    )
+    expect(payload["filtered_summary"]["discarded_mutation_final_rows"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["discarded_mutation_final_rows"][0]["reasons"] == ["runtime_validation_failed"])
+    expect(payload["filtered_summary"]["discarded_mutation_compact_by_reason"] == {"runtime_validation_failed": 1})
 
 
 def test_cli_report_prefers_report_views_and_normalized_pass_results_without_pass_results(
@@ -2074,13 +2102,13 @@ def test_cli_report_prefers_report_views_and_normalized_pass_results_without_pas
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_triage_rows"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("RegisterSubstitution")
-    assert payload["filtered_summary"]["pass_validation_context"]["RegisterSubstitution"]["role"] == "requested-mode"
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["RegisterSubstitution"]["severity"] == "mismatch"
+    expect(payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_triage_rows"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["normalized_pass_results"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["pass_validation_context"]["RegisterSubstitution"]["role"] == "requested-mode")
+    expect(payload["filtered_summary"]["pass_symbolic_summary"]["RegisterSubstitution"]["severity"] == "mismatch")
 
 
 def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: Path) -> None:
@@ -2183,13 +2211,14 @@ def test_cli_report_handles_summary_report_views_only_minimal_report(tmp_path: P
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["failed_gates"] is True
-    assert payload["filtered_summary"]["gate_failure_priority"][0]["pass_name"] == ("RegisterSubstitution")
-    assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_expected_severity"] == {
-        "clean": 1
-    }
+    expect(not (payload["filtered_summary"]["failed_gates"] is not True))
+    expect(payload["filtered_summary"]["gate_failure_priority"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(
+        payload["filtered_summary"]["gate_failures"]["require_pass_severity_failures_by_expected_severity"]
+        == {"clean": 1}
+    )
 
 
 def test_cli_report_handles_summary_normalized_pass_results_only_minimal_report(
@@ -2243,11 +2272,11 @@ def test_cli_report_handles_summary_normalized_pass_results_only_minimal_report(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean"
+    expect(payload["filtered_summary"]["passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["normalized_pass_results"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean")
 
 
 def test_cli_report_handles_summary_general_passes_only_minimal_report(
@@ -2312,11 +2341,11 @@ def test_cli_report_handles_summary_general_passes_only_minimal_report(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
-    assert payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean"
+    expect(payload["filtered_summary"]["passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["normalized_pass_results"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(payload["filtered_summary"]["pass_symbolic_summary"]["InstructionSubstitution"]["severity"] == "clean")
 
 
 def test_cli_report_handles_summary_general_pass_rows_only_minimal_report(
@@ -2387,14 +2416,14 @@ def test_cli_report_handles_summary_general_pass_rows_only_minimal_report(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
-    assert (
+    expect(payload["filtered_summary"]["passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["normalized_pass_results"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(
         payload["filtered_summary"]["pass_capability_summary"][0]["symbolic_confidence"] == "best among stable passes"
     )
-    assert payload["filtered_summary"]["pass_evidence"][0]["changed_region_count"] == 1
+    expect(payload["filtered_summary"]["pass_evidence"][0]["changed_region_count"] == 1)
 
 
 def test_cli_report_handles_summary_general_filter_views_without_schema_version(
@@ -2482,9 +2511,9 @@ def test_cli_report_handles_summary_general_filter_views_without_schema_version(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"])
 
 
 def test_cli_report_handles_summary_general_filter_views_with_old_schema_version(
@@ -2573,9 +2602,9 @@ def test_cli_report_handles_summary_general_filter_views_with_old_schema_version
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_risk_buckets"]["clean"] == ["NopInsertion"]
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["clean"] == ["NopInsertion"])
 
 
 def test_cli_report_handles_summary_general_views_only_minimal_report(
@@ -2683,17 +2712,17 @@ def test_cli_report_handles_summary_general_views_only_minimal_report(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["symbolic_requested"] == 1
-    assert payload["filtered_summary"]["observable_mismatch"] == 1
-    assert payload["filtered_summary"]["general_summary"]["pass_count"] == 1
-    assert payload["filtered_summary"]["general_symbolic"]["overview"]["observable_mismatch"] == 1
-    assert payload["filtered_summary"]["general_gates"]["summary"]["require_pass_severity_failed"] is False
-    assert payload["filtered_summary"]["general_degradation"]["summary"]["degraded_validation"] is False
-    assert payload["filtered_summary"]["general_discards"]["summary"]["count"] == 0
-    assert payload["filtered_summary"]["validation_adjustments"]["degraded_validation"] is False
-    assert payload["filtered_summary"]["discarded_mutation_compact_summary"]["count"] == 0
+    expect(payload["filtered_summary"]["symbolic_requested"] == 1)
+    expect(payload["filtered_summary"]["observable_mismatch"] == 1)
+    expect(payload["filtered_summary"]["general_summary"]["pass_count"] == 1)
+    expect(payload["filtered_summary"]["general_symbolic"]["overview"]["observable_mismatch"] == 1)
+    expect(not (payload["filtered_summary"]["general_gates"]["summary"]["require_pass_severity_failed"] is not False))
+    expect(not (payload["filtered_summary"]["general_degradation"]["summary"]["degraded_validation"] is not False))
+    expect(payload["filtered_summary"]["general_discards"]["summary"]["count"] == 0)
+    expect(not (payload["filtered_summary"]["validation_adjustments"]["degraded_validation"] is not False))
+    expect(payload["filtered_summary"]["discarded_mutation_compact_summary"]["count"] == 0)
 
 
 def test_cli_report_handles_summary_general_renderer_state_only_minimal_report(
@@ -2804,11 +2833,11 @@ def test_cli_report_handles_summary_general_renderer_state_only_minimal_report(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["general_renderer_state"]["summary"]["pass_count"] == 1
-    assert payload["filtered_summary"]["symbolic_requested"] == 1
-    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
+    expect(payload["filtered_summary"]["general_renderer_state"]["summary"]["pass_count"] == 1)
+    expect(payload["filtered_summary"]["symbolic_requested"] == 1)
+    expect(payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"])
 
 
 def test_cli_report_handles_summary_general_renderer_state_general_sections_only_minimal_report(
@@ -2919,11 +2948,11 @@ def test_cli_report_handles_summary_general_renderer_state_general_sections_only
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["general_symbolic"]["overview"]["symbolic_requested"] == 1
-    assert payload["filtered_summary"]["general_degradation"]["summary"]["effective_validation_mode"] == "symbolic"
+    expect(payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["general_symbolic"]["overview"]["symbolic_requested"] == 1)
+    expect(payload["filtered_summary"]["general_degradation"]["summary"]["effective_validation_mode"] == "symbolic")
 
 
 def test_cli_report_uses_general_renderer_sections_for_gate_and_degradation_payloads(
@@ -3016,12 +3045,15 @@ def test_cli_report_uses_general_renderer_sections_for_gate_and_degradation_payl
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is True
-    assert payload["filtered_summary"]["gate_failure_compact_summary"]["failure_count"] == 2
-    assert payload["filtered_summary"]["validation_adjustment_summary"]["effective_validation_mode"] == "runtime"
-    assert payload["filtered_summary"]["discarded_mutation_compact_summary"]["count"] == 1
+    expect(not (payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is not True))
+    expect(
+        payload["filtered_summary"]["gate_failure_compact_summary"]["failure_count"]
+        == _EXPECTED_PAYLOAD_FILTERED_SUMMARY_GATE_FAILURE_COMPACT_2
+    )
+    expect(payload["filtered_summary"]["validation_adjustment_summary"]["effective_validation_mode"] == "runtime")
+    expect(payload["filtered_summary"]["discarded_mutation_compact_summary"]["count"] == 1)
 
 
 def test_cli_report_handles_summary_general_renderer_state_general_passes_only_minimal_report(
@@ -3094,10 +3126,10 @@ def test_cli_report_handles_summary_general_renderer_state_general_passes_only_m
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
+    expect(payload["filtered_summary"]["passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"])
 
 
 def test_cli_report_handles_summary_general_renderer_state_summary_rows_only_minimal_report(
@@ -3215,11 +3247,11 @@ def test_cli_report_handles_summary_general_renderer_state_summary_rows_only_min
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["general_summary_rows"][0]["section"] == "passes"
-    assert payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["symbolic_requested"] == 1
+    expect(payload["filtered_summary"]["general_summary_rows"][0]["section"] == "passes")
+    expect(payload["filtered_summary"]["general_summary"]["passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["symbolic_requested"] == 1)
 
 
 def test_cli_report_handles_summary_general_renderer_state_filter_views_only_minimal_report(
@@ -3339,10 +3371,10 @@ def test_cli_report_handles_summary_general_renderer_state_filter_views_only_min
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
+    expect(payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"])
 
 
 def test_cli_report_handles_summary_general_renderer_state_general_filter_views_only_minimal_report(
@@ -3462,11 +3494,11 @@ def test_cli_report_handles_summary_general_renderer_state_general_filter_views_
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"]
+    expect(payload["filtered_summary"]["risky_passes"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["passes"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["risky"] == ["RegisterSubstitution"])
 
 
 def test_cli_report_handles_summary_general_renderer_state_general_pass_rows_only_minimal_report(
@@ -3539,10 +3571,10 @@ def test_cli_report_handles_summary_general_renderer_state_general_pass_rows_onl
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["normalized_pass_results"][0]["pass_name"] == ("InstructionSubstitution")
+    expect(payload["filtered_summary"]["passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["normalized_pass_results"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
 
 
 def test_cli_report_handles_summary_general_summary_rows_only_minimal_report(
@@ -3647,13 +3679,13 @@ def test_cli_report_handles_summary_general_summary_rows_only_minimal_report(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["general_summary"]["pass_count"] == 1
-    assert payload["filtered_summary"]["general_symbolic"]["overview"]["symbolic_requested"] == 1
-    assert payload["filtered_summary"]["general_gates"]["compact_summary"]["failed"] is False
-    assert payload["filtered_summary"]["general_degradation"]["summary"]["degraded_validation"] is False
-    assert payload["filtered_summary"]["general_discards"]["summary"]["count"] == 0
+    expect(payload["filtered_summary"]["general_summary"]["pass_count"] == 1)
+    expect(payload["filtered_summary"]["general_symbolic"]["overview"]["symbolic_requested"] == 1)
+    expect(not (payload["filtered_summary"]["general_gates"]["compact_summary"]["failed"] is not False))
+    expect(not (payload["filtered_summary"]["general_degradation"]["summary"]["degraded_validation"] is not False))
+    expect(payload["filtered_summary"]["general_discards"]["summary"]["count"] == 0)
 
 
 def test_cli_report_handles_summary_pass_region_evidence_only_minimal_report(
@@ -3709,11 +3741,11 @@ def test_cli_report_handles_summary_pass_region_evidence_only_minimal_report(
         ["report", str(report_path), "--only-pass", "InstructionSubstitution"],
     )
 
-    assert result.exit_code == 0
-    assert "Pass Region Evidence" in result.output
-    assert "InstructionSubstitution" in result.output
-    assert "equivalent=false" in result.output
-    assert "mismatch_count=1" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Pass Region Evidence" not in result.output))
+    expect(not ("InstructionSubstitution" not in result.output))
+    expect(not ("equivalent=false" not in result.output))
+    expect(not ("mismatch_count=1" not in result.output))
 
 
 def test_cli_report_handles_summary_only_failed_gates_minimal_report_without_passes(
@@ -3772,11 +3804,11 @@ def test_cli_report_handles_summary_only_failed_gates_minimal_report_without_pas
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["failed_gates"] is True
-    assert payload["filtered_summary"]["gate_failures"]["min_severity_failed"] is True
-    assert payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is True
+    expect(not (payload["filtered_summary"]["failed_gates"] is not True))
+    expect(not (payload["filtered_summary"]["gate_failures"]["min_severity_failed"] is not True))
+    expect(not (payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is not True))
 
 
 def test_cli_report_only_pass_prefers_report_view_without_pass_results(
@@ -3892,12 +3924,12 @@ def test_cli_report_only_pass_prefers_report_view_without_pass_results(
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Pass Symbolic Summary" in result.output
-    assert "Pass Evidence Summary" in result.output
-    assert "Pass Region Evidence" in result.output
-    assert "Pass Validation Context" in result.output
-    assert "Pass Capabilities" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Pass Symbolic Summary" not in result.output))
+    expect(not ("Pass Evidence Summary" not in result.output))
+    expect(not ("Pass Region Evidence" not in result.output))
+    expect(not ("Pass Validation Context" not in result.output))
+    expect(not ("Pass Capabilities" not in result.output))
 
 
 def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
@@ -3994,23 +4026,26 @@ def test_cli_report_only_failed_gates_prefers_report_view_without_pass_results(
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Gate Failure Summary" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Gate Failure Summary" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["gate_failures"]["require_pass_severity_failure_count"] == 1
-    assert payload["filtered_summary"]["gate_failure_priority"][0]["pass_name"] == "NopInsertion"
-    assert payload["filtered_summary"]["gate_failure_severity_priority"] == [{"severity": "clean", "failure_count": 1}]
-    assert payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is True
-    assert payload["filtered_summary"]["gate_failure_compact_summary"]["severity_priority"] == [
-        {"severity": "clean", "failure_count": 1}
-    ]
-    assert payload["filtered_summary"]["gate_failure_final_by_pass"]["NopInsertion"]["failures"] == [
-        "NopInsertion=not-requested(expected <= clean)"
-    ]
-    assert payload["filtered_summary"]["gate_failure_final_rows"][0]["pass_name"] == "NopInsertion"
-    assert payload["filtered_summary"]["gate_failure_final_rows"][0]["failures"] == [
-        "NopInsertion=not-requested(expected <= clean)"
-    ]
+    expect(payload["filtered_summary"]["gate_failures"]["require_pass_severity_failure_count"] == 1)
+    expect(payload["filtered_summary"]["gate_failure_priority"][0][MUTATION_NAME_KEY] == "NopInsertion")
+    expect(payload["filtered_summary"]["gate_failure_severity_priority"] == [{"severity": "clean", "failure_count": 1}])
+    expect(not (payload["filtered_summary"]["gate_failure_compact_summary"]["failed"] is not True))
+    expect(
+        payload["filtered_summary"]["gate_failure_compact_summary"]["severity_priority"]
+        == [{"severity": "clean", "failure_count": 1}]
+    )
+    expect(
+        payload["filtered_summary"]["gate_failure_final_by_pass"]["NopInsertion"]["failures"]
+        == ["NopInsertion=not-requested(expected <= clean)"]
+    )
+    expect(payload["filtered_summary"]["gate_failure_final_rows"][0][MUTATION_NAME_KEY] == "NopInsertion")
+    expect(
+        payload["filtered_summary"]["gate_failure_final_rows"][0]["failures"]
+        == ["NopInsertion=not-requested(expected <= clean)"]
+    )
 
 
 def test_cli_report_only_mismatches_prefers_persisted_report_view(
@@ -4180,24 +4215,28 @@ def test_cli_report_only_mismatches_prefers_persisted_report_view(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["mismatch_counts_by_pass"]["RegisterSubstitution"] == 2
-    assert payload["filtered_summary"]["mismatch_observables_by_pass"]["RegisterSubstitution"] == ["rax", "rflags"]
-    assert payload["filtered_summary"]["observable_mismatch_priority"][0]["pass_name"] == ("RegisterSubstitution")
-    assert payload["filtered_summary"]["mismatch_compact_summary"]["pass_count"] == 1
-    assert payload["filtered_summary"]["mismatch_final_by_pass"]["RegisterSubstitution"]["compact_region"] == {
-        "region_count": 0,
-        "region_mismatch_count": 0,
-        "region_exit_match_count": 0,
-    }
-    assert payload["filtered_summary"]["mismatch_final_rows"][0]["pass_name"] == ("RegisterSubstitution")
-    assert payload["filtered_summary"]["mismatch_final_rows"][0]["compact_region"] == {
-        "region_count": 0,
-        "region_mismatch_count": 0,
-        "region_exit_match_count": 0,
-    }
-    assert payload["filtered_summary"]["mismatch_compact_by_pass"]["RegisterSubstitution"]["mismatch_count"] == 2
+    expect(
+        payload["filtered_summary"]["mismatch_counts_by_pass"]["RegisterSubstitution"]
+        == _EXPECTED_PAYLOAD_FILTERED_SUMMARY_MISMATCH_COUNTS_BY_P_2
+    )
+    expect(payload["filtered_summary"]["mismatch_observables_by_pass"]["RegisterSubstitution"] == ["rax", "rflags"])
+    expect(payload["filtered_summary"]["observable_mismatch_priority"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["mismatch_compact_summary"]["pass_count"] == 1)
+    expect(
+        payload["filtered_summary"]["mismatch_final_by_pass"]["RegisterSubstitution"]["compact_region"]
+        == {"region_count": 0, "region_mismatch_count": 0, "region_exit_match_count": 0}
+    )
+    expect(payload["filtered_summary"]["mismatch_final_rows"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(
+        payload["filtered_summary"]["mismatch_final_rows"][0]["compact_region"]
+        == {"region_count": 0, "region_mismatch_count": 0, "region_exit_match_count": 0}
+    )
+    expect(
+        payload["filtered_summary"]["mismatch_compact_by_pass"]["RegisterSubstitution"]["mismatch_count"]
+        == _EXPECTED_PAYLOAD_FILTERED_SUMMARY_MISMATCH_COMPACT_BY__2
+    )
 
 
 def test_cli_report_prefers_discarded_final_by_pass_without_pass_results(
@@ -4251,11 +4290,12 @@ def test_cli_report_prefers_discarded_final_by_pass_without_pass_results(
         ["report", str(report_path), "--summary-only", "--output", str(output_path)],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["discarded_mutation_final_by_pass"]["RegisterSubstitution"]["reasons"] == [
-        "runtime_validation_failed"
-    ]
+    expect(
+        payload["filtered_summary"]["discarded_mutation_final_by_pass"]["RegisterSubstitution"]["reasons"]
+        == ["runtime_validation_failed"]
+    )
 
 
 def test_cli_report_handles_summary_only_mismatches_minimal_report_without_passes(
@@ -4323,9 +4363,9 @@ def test_cli_report_handles_summary_only_mismatches_minimal_report_without_passe
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["mismatch_counts_by_pass"] == {"RegisterSubstitution": 1}
+    expect(payload["filtered_summary"]["mismatch_counts_by_pass"] == {"RegisterSubstitution": 1})
 
 
 def test_cli_report_handles_summary_only_failed_gates_compact_rows_minimal_report(
@@ -4392,11 +4432,11 @@ def test_cli_report_handles_summary_only_failed_gates_compact_rows_minimal_repor
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["gate_failure_compact_rows"][0]["pass_name"] == "NopInsertion"
-    assert payload["filtered_summary"]["gate_failure_compact_rows"][0]["role"] == ("requested-mode")
-    assert payload["filtered_summary"]["gate_failure_compact_rows"][0]["failed"] is True
+    expect(payload["filtered_summary"]["gate_failure_compact_rows"][0][MUTATION_NAME_KEY] == "NopInsertion")
+    expect(payload["filtered_summary"]["gate_failure_compact_rows"][0]["role"] == "requested-mode")
+    expect(not (payload["filtered_summary"]["gate_failure_compact_rows"][0]["failed"] is not True))
 
 
 def test_cli_report_prefers_persisted_symbolic_maps_without_pass_results(
@@ -4454,11 +4494,11 @@ def test_cli_report_prefers_persisted_symbolic_maps_without_pass_results(
         ],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["symbolic_issue_passes"][0]["pass_name"] == "RegisterSubstitution"
-    assert payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["pass_name"] == "InstructionSubstitution"
-    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "InstructionSubstitution"
+    expect(payload["filtered_summary"]["symbolic_issue_passes"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
+    expect(payload["filtered_summary"]["symbolic_coverage_by_pass"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(payload["filtered_summary"]["symbolic_severity_by_pass"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
 
 
 def test_cli_report_only_structural_risk_filters_to_structural_passes(tmp_path: Path) -> None:
@@ -4553,12 +4593,12 @@ def test_cli_report_only_structural_risk_filters_to_structural_passes(tmp_path: 
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Structural Risk Filter" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Structural Risk Filter" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_structural_risk"] is True
-    assert payload["filtered_summary"]["structural_risk_passes"] == ["BlockReordering"]
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "BlockReordering"
+    expect(not (payload["report_filters"]["only_structural_risk"] is not True))
+    expect(payload["filtered_summary"]["structural_risk_passes"] == ["BlockReordering"])
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "BlockReordering")
 
 
 def test_cli_report_only_symbolic_risk_filters_to_symbolic_passes(tmp_path: Path) -> None:
@@ -4661,12 +4701,12 @@ def test_cli_report_only_symbolic_risk_filters_to_symbolic_passes(tmp_path: Path
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Symbolic Risk Filter" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Symbolic Risk Filter" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_symbolic_risk"] is True
-    assert payload["filtered_summary"]["symbolic_risk_passes"] == ["RegisterSubstitution"]
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "RegisterSubstitution"
+    expect(not (payload["report_filters"]["only_symbolic_risk"] is not True))
+    expect(payload["filtered_summary"]["symbolic_risk_passes"] == ["RegisterSubstitution"])
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "RegisterSubstitution")
 
 
 def test_cli_report_only_clean_passes_filters_to_clean_passes(tmp_path: Path) -> None:
@@ -4769,13 +4809,13 @@ def test_cli_report_only_clean_passes_filters_to_clean_passes(tmp_path: Path) ->
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Clean Pass Filter" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Clean Pass Filter" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_clean_passes"] is True
-    assert payload["filtered_summary"]["clean_passes"] == ["NopInsertion"]
-    assert payload["filtered_summary"]["pass_risk_buckets"]["clean"] == ["NopInsertion"]
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "NopInsertion"
+    expect(not (payload["report_filters"]["only_clean_passes"] is not True))
+    expect(payload["filtered_summary"]["clean_passes"] == ["NopInsertion"])
+    expect(payload["filtered_summary"]["pass_risk_buckets"]["clean"] == ["NopInsertion"])
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "NopInsertion")
 
 
 def test_cli_report_only_covered_passes_filters_to_covered_passes(tmp_path: Path) -> None:
@@ -4882,13 +4922,13 @@ def test_cli_report_only_covered_passes_filters_to_covered_passes(tmp_path: Path
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Covered Pass Filter" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Covered Pass Filter" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_covered_passes"] is True
-    assert payload["filtered_summary"]["covered_passes"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == ["InstructionSubstitution"]
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == ("InstructionSubstitution")
+    expect(not (payload["report_filters"]["only_covered_passes"] is not True))
+    expect(payload["filtered_summary"]["covered_passes"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["pass_coverage_buckets"]["covered"] == ["InstructionSubstitution"])
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
 
 
 def test_cli_report_only_uncovered_passes_filters_to_uncovered_passes(tmp_path: Path) -> None:
@@ -4987,13 +5027,13 @@ def test_cli_report_only_uncovered_passes_filters_to_uncovered_passes(tmp_path: 
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Uncovered Pass Filter" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Uncovered Pass Filter" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["report_filters"]["only_uncovered_passes"] is True
-    assert payload["filtered_summary"]["uncovered_passes"] == ["ReportFixture"]
-    assert payload["filtered_summary"]["pass_coverage_buckets"]["uncovered"] == ["ReportFixture"]
-    assert payload["filtered_summary"]["pass_evidence"][0]["pass_name"] == "ReportFixture"
+    expect(not (payload["report_filters"]["only_uncovered_passes"] is not True))
+    expect(payload["filtered_summary"]["uncovered_passes"] == ["ReportFixture"])
+    expect(payload["filtered_summary"]["pass_coverage_buckets"]["uncovered"] == ["ReportFixture"])
+    expect(payload["filtered_summary"]["pass_evidence"][0][MUTATION_NAME_KEY] == "ReportFixture")
 
 
 def test_cli_report_only_pass_combines_with_only_mismatches(tmp_path: Path) -> None:
@@ -5040,12 +5080,12 @@ def test_cli_report_only_pass_combines_with_only_mismatches(tmp_path: Path) -> N
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Filtered Mismatch Mutations: 1" in result.output
-    assert '"pass_name": "InstructionSubstitution"' in result.output
-    assert '"pass_name": "NopInsertion"' not in result.output
-    assert '"only_pass": "InstructionSubstitution"' in result.output
-    assert '"only_mismatches": true' in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Filtered Mismatch Mutations: 1" not in result.output))
+    expect(not ('"pass_name": "InstructionSubstitution"' not in result.output))
+    expect('"pass_name": "NopInsertion"' not in result.output)
+    expect(not ('"only_pass": "InstructionSubstitution"' not in result.output))
+    expect(not ('"only_mismatches": true' not in result.output))
 
 
 def test_cli_report_only_status_filters_json(tmp_path: Path) -> None:
@@ -5080,10 +5120,10 @@ def test_cli_report_only_status_filters_json(tmp_path: Path) -> None:
         ["report", "--only-status", "bounded-step-observable-mismatch", str(report_path)],
     )
 
-    assert result.exit_code == 0
-    assert '"symbolic_status": "bounded-step-observable-mismatch"' in result.output
-    assert '"symbolic_status": "bounded-step-observables-match"' not in result.output
-    assert '"only_status": "bounded-step-observable-mismatch"' in result.output
+    expect(result.exit_code == 0)
+    expect(not ('"symbolic_status": "bounded-step-observable-mismatch"' not in result.output))
+    expect('"symbolic_status": "bounded-step-observables-match"' not in result.output)
+    expect(not ('"only_status": "bounded-step-observable-mismatch"' not in result.output))
 
 
 def test_cli_report_only_status_combines_with_other_filters(tmp_path: Path) -> None:
@@ -5130,13 +5170,13 @@ def test_cli_report_only_status_combines_with_other_filters(tmp_path: Path) -> N
         ],
     )
 
-    assert result.exit_code == 0
-    assert "Filtered Mismatch Mutations: 1" in result.output
-    assert '"pass_name": "InstructionSubstitution"' in result.output
-    assert '"pass_name": "NopInsertion"' not in result.output
-    assert '"only_status": "bounded-step-observable-mismatch"' in result.output
-    assert '"only_pass": "InstructionSubstitution"' in result.output
-    assert '"only_mismatches": true' in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Filtered Mismatch Mutations: 1" not in result.output))
+    expect(not ('"pass_name": "InstructionSubstitution"' not in result.output))
+    expect('"pass_name": "NopInsertion"' not in result.output)
+    expect(not ('"only_status": "bounded-step-observable-mismatch"' not in result.output))
+    expect(not ('"only_pass": "InstructionSubstitution"' not in result.output))
+    expect(not ('"only_mismatches": true' not in result.output))
 
 
 def test_cli_report_summary_only_skips_json(tmp_path: Path) -> None:
@@ -5177,15 +5217,15 @@ def test_cli_report_summary_only_skips_json(tmp_path: Path) -> None:
     runner = CliRunner()
     result = runner.invoke(cli.app, ["report", "--summary-only", str(report_path)])
 
-    assert result.exit_code == 0
-    assert "Symbolic Mutation Summary" in result.output
-    assert "Passes With Symbolic Issues" in result.output
-    assert "Pass Capabilities" in result.output
-    assert "runtime recommended=yes" in result.output
-    assert "symbolic confidence=best" in result.output
-    assert "among stable passes" in result.output
-    assert "Symbolic Mismatches" in result.output
-    assert '"mutations"' not in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Symbolic Mutation Summary" not in result.output))
+    expect(not ("Passes With Symbolic Issues" not in result.output))
+    expect(not ("Pass Capabilities" not in result.output))
+    expect(not ("runtime recommended=yes" not in result.output))
+    expect(not ("symbolic confidence=best" not in result.output))
+    expect(not ("among stable passes" not in result.output))
+    expect(not ("Symbolic Mismatches" not in result.output))
+    expect('"mutations"' not in result.output)
 
 
 def test_cli_report_summary_only_combines_with_only_mismatches(tmp_path: Path) -> None:
@@ -5215,12 +5255,12 @@ def test_cli_report_summary_only_combines_with_only_mismatches(tmp_path: Path) -
         ["report", "--only-mismatches", "--summary-only", str(report_path)],
     )
 
-    assert result.exit_code == 0
-    assert "Filtered Mismatch Mutations: 1" in result.output
-    assert "Mismatch Pass Summary" in result.output
-    assert "InstructionSubstitution" in result.output
-    assert "mismatch_count=1" in result.output
-    assert '"mutations"' not in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Filtered Mismatch Mutations: 1" not in result.output))
+    expect(not ("Mismatch Pass Summary" not in result.output))
+    expect(not ("InstructionSubstitution" not in result.output))
+    expect(not ("mismatch_count=1" not in result.output))
+    expect('"mutations"' not in result.output)
 
 
 def test_cli_report_only_mismatches_prefers_persisted_mismatch_summary(tmp_path: Path) -> None:
@@ -5256,12 +5296,12 @@ def test_cli_report_only_mismatches_prefers_persisted_mismatch_summary(tmp_path:
         ["report", "--only-mismatches", "--summary-only", str(report_path)],
     )
 
-    assert result.exit_code == 0
-    assert "Filtered Mismatch Mutations: 0" in result.output
-    assert "Mismatch Pass Summary" in result.output
-    assert "InstructionSubstitution" in result.output
-    assert "mismatch_count=2" in result.output
-    assert "observables=eax,eflags" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Filtered Mismatch Mutations: 0" not in result.output))
+    expect(not ("Mismatch Pass Summary" not in result.output))
+    expect(not ("InstructionSubstitution" not in result.output))
+    expect(not ("mismatch_count=2" not in result.output))
+    expect(not ("observables=eax,eflags" not in result.output))
 
 
 def test_cli_report_exports_filtered_pass_capabilities(tmp_path: Path) -> None:
@@ -5298,9 +5338,14 @@ def test_cli_report_exports_filtered_pass_capabilities(tmp_path: Path) -> None:
         ["report", "--summary-only", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["pass_capabilities"]["RegisterSubstitution"]["runtime"]["recommended"] is True
+    expect(
+        not (
+            payload["filtered_summary"]["pass_capabilities"]["RegisterSubstitution"]["runtime"]["recommended"]
+            is not True
+        )
+    )
 
 
 def test_cli_report_exports_symbolic_issue_passes_summary(tmp_path: Path) -> None:
@@ -5337,12 +5382,12 @@ def test_cli_report_exports_symbolic_issue_passes_summary(tmp_path: Path) -> Non
         ["report", "--summary-only", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["symbolic_issue_passes"][0]["pass_name"] == "InstructionSubstitution"
-    assert payload["filtered_summary"]["symbolic_issue_passes"][0]["severity"] == "mismatch"
-    assert payload["filtered_summary"]["symbolic_issue_passes"][1]["pass_name"] == "BlockReordering"
-    assert payload["filtered_summary"]["symbolic_issue_passes"][1]["severity"] == "without-coverage"
+    expect(payload["filtered_summary"]["symbolic_issue_passes"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(payload["filtered_summary"]["symbolic_issue_passes"][0]["severity"] == "mismatch")
+    expect(payload["filtered_summary"]["symbolic_issue_passes"][1][MUTATION_NAME_KEY] == "BlockReordering")
+    expect(payload["filtered_summary"]["symbolic_issue_passes"][1]["severity"] == "without-coverage")
 
 
 def test_cli_report_exports_symbolic_coverage_by_pass_summary(tmp_path: Path) -> None:
@@ -5392,12 +5437,15 @@ def test_cli_report_exports_symbolic_coverage_by_pass_summary(tmp_path: Path) ->
         ["report", "--summary-only", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["pass_name"] == "InstructionSubstitution"
-    assert payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["symbolic_requested"] == 2
-    assert payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["observable_match"] == 1
-    assert payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["observable_mismatch"] == 1
+    expect(payload["filtered_summary"]["symbolic_coverage_by_pass"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(
+        payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["symbolic_requested"]
+        == _EXPECTED_PAYLOAD_FILTERED_SUMMARY_SYMBOLIC_COVERAGE_BY_2
+    )
+    expect(payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["observable_match"] == 1)
+    expect(payload["filtered_summary"]["symbolic_coverage_by_pass"][0]["observable_mismatch"] == 1)
 
 
 def test_cli_report_exports_symbolic_severity_by_pass_summary(tmp_path: Path) -> None:
@@ -5437,14 +5485,14 @@ def test_cli_report_exports_symbolic_severity_by_pass_summary(tmp_path: Path) ->
         ["report", "--summary-only", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
-    assert "Severity Priority" in result.output
-    assert "severity=mismatch" in result.output
-    assert "issue_count=1" in result.output
-    assert "severity=mismatch" in result.output
+    expect(result.exit_code == 0)
+    expect(not ("Severity Priority" not in result.output))
+    expect(not ("severity=mismatch" not in result.output))
+    expect(not ("issue_count=1" not in result.output))
+    expect(not ("severity=mismatch" not in result.output))
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["pass_name"] == "InstructionSubstitution"
-    assert payload["filtered_summary"]["symbolic_severity_by_pass"][0]["severity"] == "mismatch"
+    expect(payload["filtered_summary"]["symbolic_severity_by_pass"][0][MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(payload["filtered_summary"]["symbolic_severity_by_pass"][0]["severity"] == "mismatch")
 
 
 def test_cli_report_only_mismatches_exports_pass_mismatch_counts(tmp_path: Path) -> None:
@@ -5495,11 +5543,13 @@ def test_cli_report_only_mismatches_exports_pass_mismatch_counts(tmp_path: Path)
         ["report", "--only-mismatches", "--output", str(output_path), str(report_path)],
     )
 
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
     payload = json.loads(output_path.read_text(encoding="utf-8"))
-    assert payload["filtered_summary"]["mismatch_counts_by_pass"]["InstructionSubstitution"] == 2
-    assert payload["filtered_summary"]["mismatch_observables_by_pass"]["InstructionSubstitution"] == [
-        "eax",
-        "eflags",
-    ]
-    assert payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"]["role"] == "requested-mode"
+    expect(
+        payload["filtered_summary"]["mismatch_counts_by_pass"]["InstructionSubstitution"]
+        == _EXPECTED_PAYLOAD_FILTERED_SUMMARY_MISMATCH_COUNTS_BY_P_2_2
+    )
+    expect(payload["filtered_summary"]["mismatch_observables_by_pass"]["InstructionSubstitution"] == ["eax", "eflags"])
+    expect(
+        payload["filtered_summary"]["pass_validation_context"]["InstructionSubstitution"]["role"] == "requested-mode"
+    )

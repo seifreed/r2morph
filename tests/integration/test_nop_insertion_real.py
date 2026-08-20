@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -40,8 +42,8 @@ class TestNopInsertionPassReal:
             pass_obj = NopInsertionPass(config={"max_nops_per_function": 5, "probability": 1.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_nop_insertion_creative_nops(self, ls_elf, tmp_path):
         """Test NOP insertion with creative NOPs."""
@@ -59,8 +61,8 @@ class TestNopInsertionPassReal:
             )
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_nop_insertion_low_probability(self, ls_elf, tmp_path):
         """Test NOP insertion with low probability."""
@@ -76,8 +78,8 @@ class TestNopInsertionPassReal:
             pass_obj = NopInsertionPass(config={"max_nops_per_function": 5, "probability": 0.1})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_nop_insertion_max_nops(self, ls_elf, tmp_path):
         """Test NOP insertion with different max NOPs."""
@@ -94,7 +96,7 @@ class TestNopInsertionPassReal:
                 pass_obj = NopInsertionPass(config={"max_nops_per_function": max_nops, "probability": 1.0})
 
                 result = pass_obj.apply(binary)
-                assert isinstance(result, dict)
+                expect(isinstance(result, dict))
 
     def test_nop_insertion_force_different(self, ls_elf, tmp_path):
         """Test NOP insertion with force_different flag."""
@@ -116,7 +118,7 @@ class TestNopInsertionPassReal:
             )
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
+            expect(isinstance(result, dict))
 
     def test_nop_insertion_single_function(self, ls_elf, tmp_path):
         """Test NOP insertion on single function."""
@@ -139,7 +141,7 @@ class TestNopInsertionPassReal:
 
                 if func_addr:
                     result = pass_obj.apply(binary)
-                    assert isinstance(result, dict)
+                    expect(isinstance(result, dict))
 
     def test_nop_insertion_zero_probability(self, ls_elf, tmp_path):
         """Test NOP insertion with zero probability."""
@@ -155,8 +157,8 @@ class TestNopInsertionPassReal:
             pass_obj = NopInsertionPass(config={"max_nops_per_function": 5, "probability": 0.0})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert result.get("mutations_applied", 0) == 0
+            expect(isinstance(result, dict))
+            expect(result.get("mutations_applied", 0) == 0)
 
     def test_nop_insertion_with_analysis(self, ls_elf, tmp_path):
         """Test NOP insertion with full analysis."""
@@ -172,8 +174,8 @@ class TestNopInsertionPassReal:
             pass_obj = NopInsertionPass(config={"max_nops_per_function": 5, "probability": 0.5})
 
             result = pass_obj.apply(binary)
-            assert isinstance(result, dict)
-            assert "mutations_applied" in result
+            expect(isinstance(result, dict))
+            expect(not ("mutations_applied" not in result))
 
     def test_nop_insertion_multiple_runs(self, ls_elf, tmp_path):
         """Test NOP insertion multiple times."""
@@ -191,4 +193,4 @@ class TestNopInsertionPassReal:
             # Run multiple times
             for _i in range(3):
                 result = pass_obj.apply(binary)
-                assert isinstance(result, dict)
+                expect(isinstance(result, dict))

@@ -26,6 +26,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration import test_code_virtualization_real as vm_real
+from tests.utils.assertions import expect
 
 # A whole-function region-path fixture (no call), so the region VM virtualizes it
 # and the produced interpreter is a region dispatcher, not the engine fallback.
@@ -67,7 +68,7 @@ def seed_sweep_builds(tmp_path_factory: pytest.TempPathFactory) -> list[Path]:
         if _mutate(FIXTURE, dest, seed) < 1:
             continue
         produced.append(dest)
-    assert produced, "no seed produced a virtualized build"
+    expect(produced, "no seed produced a virtualized build")
     return produced
 
 
@@ -75,12 +76,12 @@ def test_every_region_build_dispatches_through_the_encrypted_table(seed_sweep_bu
     # No build may fall back to the removed compare/branch ladder: every one must
     # carry the offset-table computed goto, the shape a decompiler cannot resolve.
     missing = [b.name for b in seed_sweep_builds if _THREADED_COMPUTED_GOTO not in b.read_bytes()]
-    assert not missing, f"builds without the threaded computed goto: {missing}"
+    expect(not (missing), f"builds without the threaded computed goto: {missing}")
 
 
 def test_every_region_build_preserves_the_exit_code(seed_sweep_builds: list[Path]) -> None:
     # The single remaining dispatch shape must run the program faithfully for every
     # seed - the per-build randomization is polymorphism, not a behaviour change.
-    assert vm_real._emulate_exit_code(FIXTURE) == _EXPECTED_EXIT
+    expect(vm_real._emulate_exit_code(FIXTURE) == _EXPECTED_EXIT)
     diverged = [b.name for b in seed_sweep_builds if vm_real._emulate_exit_code(b) != _EXPECTED_EXIT]
-    assert not diverged, f"builds that changed the exit code: {diverged}"
+    expect(not (diverged), f"builds that changed the exit code: {diverged}")

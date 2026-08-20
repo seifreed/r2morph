@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from r2morph.platform.elf_handler_validation import validate_elf_file_structure
+from tests.utils.assertions import expect
 
 
 def test_validate_elf_file_structure_contract(tmp_path: Path) -> None:
@@ -16,7 +17,7 @@ def test_validate_elf_file_structure_contract(tmp_path: Path) -> None:
         "e_phoff": 64,
     }
 
-    assert validate_elf_file_structure(binary, header) is True
+    expect(not (validate_elf_file_structure(binary, header) is not True))
 
 
 def test_validate_elf_file_structure_rejects_out_of_bounds(tmp_path: Path) -> None:
@@ -32,4 +33,4 @@ def test_validate_elf_file_structure_rejects_out_of_bounds(tmp_path: Path) -> No
         "e_phoff": 8,
     }
 
-    assert validate_elf_file_structure(binary, header) is False
+    expect(not (validate_elf_file_structure(binary, header) is not False))

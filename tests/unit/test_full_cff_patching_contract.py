@@ -6,6 +6,10 @@ from types import SimpleNamespace
 
 from r2morph.mutations.full_cff import DispatcherBlock
 from r2morph.mutations.full_cff_patching import PatchFunctionRequest, patch_function_blocks
+from tests.utils.assertions import expect
+
+_EXPECTED_BINARY_WRITES_0_0_4106 = 0x100A
+_EXPECTED_RECORDS_0_TO_DICT_METADATA_DISPATCHER_ADDR_12288 = 0x3000
 
 
 class _Binary:
@@ -96,12 +100,15 @@ def test_full_cff_patching_applies_jump_and_records_mutation() -> None:
         )
     )
 
-    assert patched == 1
-    assert binary.writes and binary.writes[0][0] == 0x100A
-    assert validation_manager.captured == [(binary, 0x1000)]
-    assert validation_manager.validated
-    assert records
-    assert records[0].to_dict()["metadata"]["dispatcher_addr"] == 0x3000
+    expect(patched == 1)
+    expect(binary.writes and binary.writes[0][0] == _EXPECTED_BINARY_WRITES_0_0_4106)
+    expect(validation_manager.captured == [(binary, 4096)])
+    expect(validation_manager.validated)
+    expect(records)
+    expect(
+        records[0].to_dict()["metadata"]["dispatcher_addr"]
+        == _EXPECTED_RECORDS_0_TO_DICT_METADATA_DISPATCHER_ADDR_12288
+    )
 
 
 def test_full_cff_patching_rolls_back_failed_validation() -> None:
@@ -125,7 +132,7 @@ def test_full_cff_patching_rolls_back_failed_validation() -> None:
         )
     )
 
-    assert patched == 0
-    assert session.rollbacks == ["checkpoint:full_cff"]
-    assert binary.reload_called is True
-    assert records == []
+    expect(patched == 0)
+    expect(session.rollbacks == ["checkpoint:full_cff"])
+    expect(not (binary.reload_called is not True))
+    expect(records == [])

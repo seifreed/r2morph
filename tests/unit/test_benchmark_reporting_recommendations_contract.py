@@ -1,4 +1,5 @@
 from r2morph.validation.benchmark_reporting_recommendations import build_recommendation_lines
+from tests.utils.assertions import expect
 
 
 def test_benchmark_reporting_recommendations_contract() -> None:
@@ -10,7 +11,7 @@ def test_benchmark_reporting_recommendations_contract() -> None:
         }
     )
 
-    assert report[0] == "RECOMMENDATIONS"
-    assert "⚠️  Success rate below 80% - review failed tests" in report
-    assert "⚠️  Average execution time > 30s - consider optimization" in report
-    assert "⚠️  Average accuracy below 80% - review detection algorithms" in report
+    expect(report[0] == "RECOMMENDATIONS")
+    expect(not ("⚠️  Success rate below 80% - review failed tests" not in report))
+    expect(not ("⚠️  Average execution time > 30s - consider optimization" not in report))
+    expect(not ("⚠️  Average accuracy below 80% - review detection algorithms" not in report))

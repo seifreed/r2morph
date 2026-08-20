@@ -5,6 +5,7 @@ from r2morph.devirtualization.cfo_simplifier import (
     CFOSimplifier,
     ControlFlowBlock,
 )
+from tests.utils.assertions import expect
 
 
 def _make_block(address, instructions, predecessors=None, successors=None):
@@ -90,12 +91,12 @@ def test_cfo_pattern_detection_and_simplification():
     simplifier.cfg = cfg
 
     patterns = simplifier._detect_obfuscation_patterns()
-    assert CFOPattern.DISPATCHER_FLATTENING in patterns
-    assert CFOPattern.INDIRECT_JUMPS in patterns
-    assert CFOPattern.OPAQUE_PREDICATES in patterns
-    assert CFOPattern.FAKE_CONTROL_FLOW in patterns
+    expect(not (CFOPattern.DISPATCHER_FLATTENING not in patterns))
+    expect(not (CFOPattern.INDIRECT_JUMPS not in patterns))
+    expect(not (CFOPattern.OPAQUE_PREDICATES not in patterns))
+    expect(not (CFOPattern.FAKE_CONTROL_FLOW not in patterns))
 
-    assert simplifier._simplify_dispatcher_flattening() is True
-    assert simplifier._eliminate_opaque_predicates() is True
-    assert simplifier._resolve_indirect_jumps() is True
-    assert simplifier._remove_fake_control_flow() is True
+    expect(not (simplifier._simplify_dispatcher_flattening() is not True))
+    expect(not (simplifier._eliminate_opaque_predicates() is not True))
+    expect(not (simplifier._resolve_indirect_jumps() is not True))
+    expect(not (simplifier._remove_fake_control_flow() is not True))

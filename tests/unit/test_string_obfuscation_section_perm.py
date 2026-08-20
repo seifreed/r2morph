@@ -23,12 +23,13 @@ from pathlib import Path
 from r2morph.core.binary import Binary
 from r2morph.mutations.string_obfuscation import StringObfuscationPass
 from r2morph.pipeline.pipeline import Pipeline
+from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "optimized_binaries" / "exception_test"
 
 
 def test_string_obfuscation_handles_string_section_perm(tmp_path: Path) -> None:
-    assert _FIXTURE.is_file(), f"missing fixture {_FIXTURE}"
+    expect(_FIXTURE.is_file(), f"missing fixture {_FIXTURE}")
     sample = tmp_path / "sample"
     shutil.copy(_FIXTURE, sample)
 
@@ -42,12 +43,12 @@ def test_string_obfuscation_handles_string_section_perm(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert result["failed_passes"] == 0, f"StringObfuscation failed: {result.get('pass_results')}"
+    expect(result["failed_passes"] == 0, f"StringObfuscation failed: {result.get('pass_results')}")
 
     for entry in result.get("pass_results", []):
         if isinstance(entry, dict):
             err = str(entry.get("error") or "")
-            assert "unsupported operand type" not in err, f"section-perm TypeError regressed: {err}"
+            expect("unsupported operand type" not in err, f"section-perm TypeError regressed: {err}")
 
 
 def test_string_obfuscation_section_perm_string_is_not_anded_with_int() -> None:
@@ -57,4 +58,4 @@ def test_string_obfuscation_section_perm_string_is_not_anded_with_int() -> None:
     # Post-fix behaviour: writability is membership of 'w' in the perm
     # string; this must never raise and must classify correctly.
     writable = [p for p in string_perms if "w" in str(p)]
-    assert writable == ["-rw-", "-rwx", "m-rw-"]
+    expect(writable == ["-rw-", "-rwx", "m-rw-"])

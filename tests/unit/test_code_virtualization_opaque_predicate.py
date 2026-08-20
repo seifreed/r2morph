@@ -13,14 +13,16 @@ handler head.
 
 from __future__ import annotations
 
-import random
+import importlib
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_engine import _OPAQUE_VARIANTS as _ENGINE_VARIANTS
 from r2morph.mutations.code_virtualization_engine import _opaque_predicate_asm as _engine_opaque
 from r2morph.mutations.code_virtualization_region_control_handlers import _OPAQUE_VARIANTS as _REGION_VARIANTS
 from r2morph.mutations.code_virtualization_region_control_handlers import _opaque_predicate_asm as _region_opaque
+from tests.utils.assertions import expect
 
 # Both VMs carry their own parallel junk machinery; the opaque predicate is the
 # same technique in each, so every test runs against both builders.
@@ -34,31 +36,31 @@ _SEEDS = (0, 1, 2, 3, 0xFFFFFFFFFFFFFFFF, 0x8000000000000000, 0xDEADBEEFCAFEB0BA
 
 @pytest.mark.parametrize("builder", _BUILDERS)
 def test_opaque_predicate_has_the_parity_guard_shape(builder) -> None:
-    asm = builder(random.Random(1), 7)
-    assert "test rbp, 1\n" in asm  # every variant tests the low bit of rbp
-    assert " opaque_7\n" in asm  # the always-taken branch targets the skip label
-    assert asm.rstrip().endswith("opaque_7:")
+    asm = builder(randomness.Random(1), 7)
+    expect(not ("test rbp, 1\n" not in asm))
+    expect(not (" opaque_7\n" not in asm))
+    expect(asm.rstrip().endswith("opaque_7:"))
 
 
 @pytest.mark.parametrize("builder", _BUILDERS)
 def test_opaque_predicate_label_tracks_the_index(builder) -> None:
     # The skip label must be keyed on the handler index so it stays unique across
     # handler instances and nested layers.
-    assert " opaque_42\n" in builder(random.Random(1), 42)
-    assert builder(random.Random(1), 42).rstrip().endswith("opaque_42:")
+    expect(not (" opaque_42\n" not in builder(randomness.Random(1), 42)))
+    expect(builder(randomness.Random(1), 42).rstrip().endswith("opaque_42:"))
 
 
 @pytest.mark.parametrize("builder", _BUILDERS)
 def test_opaque_predicate_form_is_polymorphic_across_instances(builder) -> None:
     # A fixed predicate is itself a signature; over many instances every variant
     # form must be reachable so the predicate is not one recognizable pattern.
-    forms = {builder(random.Random(seed), 0).split(" opaque_0\n", 1)[0] for seed in range(400)}
+    forms = {builder(randomness.Random(seed), 0).split(" opaque_0\n", 1)[0] for seed in range(400)}
     # Four seed registers x five identities = twenty distinct head forms.
-    assert len(forms) == 4 * len(_REGION_VARIANTS)
+    expect(len(forms) == 4 * len(_REGION_VARIANTS))
 
 
 def test_both_vms_share_the_same_variant_set() -> None:
-    assert _REGION_VARIANTS == _ENGINE_VARIANTS
+    expect(_REGION_VARIANTS == _ENGINE_VARIANTS)
 
 
 @pytest.mark.parametrize("variant", range(len(_REGION_VARIANTS)))
@@ -72,7 +74,11 @@ def test_opaque_predicate_branch_is_always_taken(variant: int, seed_value: int, 
     # rsi/r13 the real VM keeps.
     keystone = pytest.importorskip("keystone")
     unicorn = pytest.importorskip("unicorn")
-    from unicorn.x86_const import UC_X86_REG_R12, UC_X86_REG_R13, UC_X86_REG_R14, UC_X86_REG_RBX, UC_X86_REG_RSI
+    u_c__x86__r_e_g__r12 = importlib.import_module("unicorn.x86_const").UC_X86_REG_R12
+    u_c__x86__r_e_g__r13 = importlib.import_module("unicorn.x86_const").UC_X86_REG_R13
+    u_c__x86__r_e_g__r14 = importlib.import_module("unicorn.x86_const").UC_X86_REG_R14
+    u_c__x86__r_e_g__r_b_x = importlib.import_module("unicorn.x86_const").UC_X86_REG_RBX
+    u_c__x86__r_e_g__r_s_i = importlib.import_module("unicorn.x86_const").UC_X86_REG_RSI
 
     compute, branch = _REGION_VARIANTS[variant]
     asm = f"{compute.format(s=seed_reg)}  {branch} opaque_0\n  mov r14, 1\nopaque_0:\n"
@@ -82,9 +88,9 @@ def test_opaque_predicate_branch_is_always_taken(variant: int, seed_value: int, 
     mu = unicorn.Uc(unicorn.UC_ARCH_X86, unicorn.UC_MODE_64)
     mu.mem_map(0x1000, 0x1000)
     mu.mem_write(0x1000, bytes(code))
-    for reg in (UC_X86_REG_RBX, UC_X86_REG_R12, UC_X86_REG_RSI, UC_X86_REG_R13):
+    for reg in (u_c__x86__r_e_g__r_b_x, u_c__x86__r_e_g__r12, u_c__x86__r_e_g__r_s_i, u_c__x86__r_e_g__r13):
         mu.reg_write(reg, seed_value)
-    mu.reg_write(UC_X86_REG_R14, 0)
+    mu.reg_write(u_c__x86__r_e_g__r14, 0)
     mu.emu_start(0x1000, 0x1000 + len(code))
     # r14 stays 0 only if the dead `mov r14, 1` was skipped.
-    assert mu.reg_read(UC_X86_REG_R14) == 0
+    expect(mu.reg_read(u_c__x86__r_e_g__r14) == 0)

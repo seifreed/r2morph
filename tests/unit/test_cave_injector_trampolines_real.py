@@ -13,6 +13,12 @@ previously-untested API real coverage.
 
 from r2morph.relocations.cave_injector import CodeCaveInjector
 from tests._doubles.in_memory_cave_binary import InMemoryCaveBinary
+from tests.utils.assertions import expect
+
+_EXPECTED_ALLOCATION_ADDRESS_4096 = 0x1000
+_EXPECTED_ALLOCATION_METADATA_TRAMPOLINES_WRITTEN_2 = 2
+_EXPECTED_JMP_0_233 = 0xE9
+_EXPECTED_LEN_JMP_5 = 5
 
 
 def test_inject_with_trampolines_writes_direct_site_to_destination_jumps() -> None:
@@ -25,20 +31,20 @@ def test_inject_with_trampolines_writes_direct_site_to_destination_jumps() -> No
 
     allocation = injector.inject_with_trampolines(code, sites, destinations)
 
-    assert allocation is not None
-    assert allocation.address == 0x1000
-    assert allocation.size == len(code)
-    assert allocation.metadata["trampolines_written"] == 2
+    expect(allocation is not None)
+    expect(allocation.address == _EXPECTED_ALLOCATION_ADDRESS_4096)
+    expect(allocation.size == len(code))
+    expect(allocation.metadata["trampolines_written"] == _EXPECTED_ALLOCATION_METADATA_TRAMPOLINES_WRITTEN_2)
 
     # The injected code is written into the cave.
-    assert (0x1000, code) in binary.writes
+    expect(not ((0x1000, code) not in binary.writes))
 
     # Each site receives a 5-byte E9 rel32 near jump to its destination.
     trampolines = {addr: data for addr, data in binary.writes if addr in sites}
-    assert set(trampolines) == set(sites)
+    expect(set(trampolines) == set(sites))
     for site, dest in zip(sites, destinations, strict=False):
         jmp = trampolines[site]
-        assert len(jmp) == 5
-        assert jmp[0] == 0xE9
+        expect(len(jmp) == _EXPECTED_LEN_JMP_5)
+        expect(jmp[0] == _EXPECTED_JMP_0_233)
         rel = int.from_bytes(jmp[1:5], "little", signed=True)
-        assert site + 5 + rel == dest
+        expect(site + 5 + rel == dest)

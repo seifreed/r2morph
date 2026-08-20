@@ -15,6 +15,7 @@ tmp_path.
 from pathlib import Path
 
 from r2morph.session import MorphSession
+from tests.utils.assertions import expect
 
 
 def _new_session(tmp_path: Path) -> tuple[MorphSession, Path]:
@@ -22,7 +23,7 @@ def _new_session(tmp_path: Path) -> tuple[MorphSession, Path]:
     orig.write_bytes(b"ORIG" + b"\x00" * 60)
     session = MorphSession(working_dir=tmp_path / "sessions")
     session.start(orig)
-    assert session.current_binary is not None
+    expect(session.current_binary is not None)
     return session, session.current_binary
 
 
@@ -35,14 +36,14 @@ def test_same_named_checkpoints_retain_distinct_snapshots(tmp_path: Path) -> Non
     current.write_bytes(b"STATE_B" + b"\x00" * 57)
     cp_b = session.checkpoint("dup")
 
-    assert cp_a.binary_path != cp_b.binary_path
-    assert cp_a.binary_path.read_bytes().startswith(b"STATE_A")
-    assert cp_b.binary_path.read_bytes().startswith(b"STATE_B")
+    expect(cp_a.binary_path != cp_b.binary_path)
+    expect(cp_a.binary_path.read_bytes().startswith(b"STATE_A"))
+    expect(cp_b.binary_path.read_bytes().startswith(b"STATE_B"))
 
     current.write_bytes(b"STATE_C" + b"\x00" * 57)
-    assert session.rollback_to("dup") is True
-    assert session.current_binary is not None
-    assert session.current_binary.read_bytes().startswith(b"STATE_B")
+    expect(not (session.rollback_to("dup") is not True))
+    expect(session.current_binary is not None)
+    expect(session.current_binary.read_bytes().startswith(b"STATE_B"))
 
 
 def test_remove_checkpoint_is_identity_scoped(tmp_path: Path) -> None:
@@ -55,7 +56,7 @@ def test_remove_checkpoint_is_identity_scoped(tmp_path: Path) -> None:
 
     session._remove_checkpoint(cp_b)
 
-    assert cp_b not in session.checkpoints
-    assert cp_a in session.checkpoints
-    assert cp_a.binary_path.exists()
-    assert cp_a.binary_path.read_bytes().startswith(b"A")
+    expect(cp_b not in session.checkpoints)
+    expect(not (cp_a not in session.checkpoints))
+    expect(cp_a.binary_path.exists())
+    expect(cp_a.binary_path.read_bytes().startswith(b"A"))

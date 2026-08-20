@@ -7,6 +7,7 @@ import pytest
 
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
 
 
 def test_macho_handler_basic_operations() -> None:
@@ -15,17 +16,17 @@ def test_macho_handler_basic_operations() -> None:
         pytest.skip("Mach-O test binary not available")
 
     handler = MachOHandler(macho_path)
-    assert handler.is_macho() is True
-    assert handler.is_fat_binary() is False
-    assert handler.validate() is True
+    expect(not (handler.is_macho() is not True))
+    expect(not (handler.is_fat_binary() is not False))
+    expect(not (handler.validate() is not True))
 
     commands = handler.get_load_commands()
     segments = handler.get_segments()
-    assert isinstance(commands, list)
-    assert isinstance(segments, list)
+    expect(isinstance(commands, list))
+    expect(isinstance(segments, list))
 
     ok, _ = handler.validate_integrity()
-    assert ok is True
+    expect(not (ok is not True))
 
 
 def test_pe_handler_checksum_and_validation(tmp_path: Path) -> None:
@@ -37,18 +38,18 @@ def test_pe_handler_checksum_and_validation(tmp_path: Path) -> None:
     shutil.copyfile(pe_path, work_path)
 
     handler = PEHandler(work_path)
-    assert handler.is_pe() is True
-    assert handler.validate() is True
+    expect(not (handler.is_pe() is not True))
+    expect(not (handler.validate() is not True))
 
     checksum = handler._calculate_checksum()
-    assert isinstance(checksum, int)
+    expect(isinstance(checksum, int))
 
-    assert handler.fix_checksum() is True
+    expect(not (handler.fix_checksum() is not True))
     new_section_vaddr = handler.add_section("test", 128)
-    assert isinstance(new_section_vaddr, int)
-    assert new_section_vaddr > 0
+    expect(isinstance(new_section_vaddr, int))
+    expect(not (new_section_vaddr <= 0))
 
     sections = handler.get_sections()
     imports = handler.get_imports()
-    assert isinstance(sections, list)
-    assert isinstance(imports, list)
+    expect(isinstance(sections, list))
+    expect(isinstance(imports, list))

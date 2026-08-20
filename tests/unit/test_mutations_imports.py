@@ -4,6 +4,8 @@ import importlib
 
 import pytest
 
+from tests.utils.assertions import expect
+
 MUTATION_MODULES = [
     "r2morph.mutations.code_virtualization",
     "r2morph.mutations.code_virtualization_engine",
@@ -48,4 +50,4 @@ MUTATION_MODULES = [
 @pytest.mark.parametrize("module_name", MUTATION_MODULES)
 def test_mutation_module_imports_cleanly(module_name: str) -> None:
     mod = importlib.import_module(module_name)
-    assert mod is not None
+    expect(mod is not None)

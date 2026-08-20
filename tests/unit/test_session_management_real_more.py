@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.session import MorphSession
+from tests.utils.assertions import expect
 
 
 def test_session_checkpoint_and_finalize(tmp_path: Path) -> None:
@@ -15,21 +16,21 @@ def test_session_checkpoint_and_finalize(tmp_path: Path) -> None:
 
     session = MorphSession(working_dir=tmp_path)
     working_copy = session.start(source)
-    assert working_copy.exists()
+    expect(working_copy.exists())
 
     cp = session.checkpoint("before_mutation", "pre-mutation")
-    assert cp.name == "before_mutation"
+    expect(cp.name == "before_mutation")
 
     mutation = NopInsertionPass()
     result = session.apply_mutation(mutation, "nop insertion")
-    assert "mutations_applied" in result
+    expect(not ("mutations_applied" not in result))
 
     out_path = tmp_path / "final.bin"
-    assert session.finalize(out_path) is True
-    assert out_path.exists()
+    expect(not (session.finalize(out_path) is not True))
+    expect(out_path.exists())
 
-    assert session.rollback_to("before_mutation") is True
+    expect(not (session.rollback_to("before_mutation") is not True))
 
     session.cleanup(keep_checkpoints=True)
     # After cleanup, current_binary is None so get_current_path() raises
-    assert session.current_binary is None
+    expect(not (session.current_binary is not None))

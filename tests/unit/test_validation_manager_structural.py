@@ -20,6 +20,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.validation.manager import ValidationManager
+from tests.utils.assertions import expect
 
 _FIXTURE = Path("fixtures/dataset/elf_x86_64")
 
@@ -72,11 +73,11 @@ def test_structural_mutation_happy_path_contract(tmp_path: Path) -> None:
             binary, mutation, validator_type="structural"
         )
 
-    assert outcome.passed is True
-    assert outcome.validator_type == "structural"
-    assert outcome.scope == "mutation"
-    assert outcome.issues == []
-    assert outcome.metadata == {"pass_name": None}
+    expect(not (outcome.passed is not True))
+    expect(outcome.validator_type == "structural")
+    expect(outcome.scope == "mutation")
+    expect(outcome.issues == [])
+    expect(outcome.metadata == {"pass_name": None})
 
 
 def test_structural_mutation_patch_integrity_mismatch(tmp_path: Path) -> None:
@@ -95,12 +96,12 @@ def test_structural_mutation_patch_integrity_mismatch(tmp_path: Path) -> None:
             binary, mutation, validator_type="structural"
         )
 
-    assert outcome.passed is False
-    assert len(outcome.issues) == 1
+    expect(not (outcome.passed is not False))
+    expect(len(outcome.issues) == 1)
     issue = outcome.issues[0]
-    assert issue.validator == "patch_integrity"
-    assert issue.evidence["expected"] == flipped.hex()
-    assert issue.evidence["actual"] == original.hex()
+    expect(issue.validator == "patch_integrity")
+    expect(issue.evidence["expected"] == flipped.hex())
+    expect(issue.evidence["actual"] == original.hex())
 
 
 def test_structural_mutation_control_flow_failure(tmp_path: Path) -> None:
@@ -119,8 +120,8 @@ def test_structural_mutation_control_flow_failure(tmp_path: Path) -> None:
             binary, mutation, validator_type="structural"
         )
 
-    assert outcome.passed is False
-    assert "control_flow" in {issue.validator for issue in outcome.issues}
+    expect(not (outcome.passed is not False))
+    expect(not ("control_flow" not in {issue.validator for issue in outcome.issues}))
 
 
 def test_capture_baseline_mode_off_returns_empty(tmp_path: Path) -> None:
@@ -129,21 +130,21 @@ def test_capture_baseline_mode_off_returns_empty(tmp_path: Path) -> None:
         binary.analyze()
         addr = _first_function_address(binary)
         result = ValidationManager(mode="off").capture_structural_baseline(binary, addr)
-    assert result == {}
+    expect(result == {})
 
 
 def test_capture_baseline_none_address_returns_empty(tmp_path: Path) -> None:
     work = _work_copy(tmp_path)
     with Binary(work) as binary:
         result = ValidationManager(mode="structural").capture_structural_baseline(binary, None)
-    assert result == {}
+    expect(result == {})
 
 
 def test_capture_baseline_zero_address_returns_empty(tmp_path: Path) -> None:
     work = _work_copy(tmp_path)
     with Binary(work) as binary:
         result = ValidationManager(mode="structural").capture_structural_baseline(binary, 0)
-    assert result == {}
+    expect(result == {})
 
 
 def test_capture_baseline_shape_contract(tmp_path: Path) -> None:
@@ -153,11 +154,11 @@ def test_capture_baseline_shape_contract(tmp_path: Path) -> None:
         addr = _first_function_address(binary)
         result = ValidationManager(mode="structural").capture_structural_baseline(binary, addr)
 
-    assert set(result.keys()) == {"function_address", "invariant_count", "invariants"}
-    assert result["function_address"] == addr
-    assert result["invariant_count"] == len(result["invariants"])
+    expect(set(result.keys()) == {"function_address", "invariant_count", "invariants"})
+    expect(result["function_address"] == addr)
+    expect(result["invariant_count"] == len(result["invariants"]))
     for inv in result["invariants"]:
-        assert set(inv.keys()) == {"type", "location", "description", "details"}
+        expect(set(inv.keys()) == {"type", "location", "description", "details"})
 
 
 def test_capture_baseline_invariant_failure_yields_empty_invariants(tmp_path: Path) -> None:
@@ -167,8 +168,4 @@ def test_capture_baseline_invariant_failure_yields_empty_invariants(tmp_path: Pa
         addr = _first_function_address(binary)
         result = ValidationManager(mode="structural").capture_structural_baseline(binary, addr)
 
-    assert result == {
-        "function_address": addr,
-        "invariant_count": 0,
-        "invariants": [],
-    }
+    expect(result == {"function_address": addr, "invariant_count": 0, "invariants": []})

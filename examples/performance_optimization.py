@@ -9,6 +9,7 @@ This example shows the performance improvements achieved through:
 """
 
 import argparse
+import importlib
 import logging
 import time
 from pathlib import Path
@@ -50,10 +51,11 @@ def benchmark_parallel_analysis(file_paths, analysis_func):
     """Benchmark parallel analysis with optimizations."""
     print("Running parallel analysis (optimized)...")
 
-    from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
+    optimized_analysis_framework = importlib.import_module("r2morph.performance").OptimizedAnalysisFramework
+    performance_config = importlib.import_module("r2morph.performance").PerformanceConfig
 
     # Configure for performance
-    config = PerformanceConfig(
+    config = performance_config(
         max_workers=4,
         memory_limit_mb=1024,
         enable_parallel=True,
@@ -62,7 +64,7 @@ def benchmark_parallel_analysis(file_paths, analysis_func):
         chunk_size=10,
     )
 
-    framework = OptimizedAnalysisFramework(config)
+    framework = optimized_analysis_framework(config)
 
     start_time = time.time()
     results = framework.analyze_files(file_paths, analysis_func, "parallel_benchmark")
@@ -84,10 +86,11 @@ def benchmark_incremental_analysis(file_paths, analysis_func):
     """Benchmark incremental analysis (second run)."""
     print("Running incremental analysis (cached results)...")
 
-    from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
+    optimized_analysis_framework = importlib.import_module("r2morph.performance").OptimizedAnalysisFramework
+    performance_config = importlib.import_module("r2morph.performance").PerformanceConfig
 
     # Configure for incremental analysis
-    config = PerformanceConfig(
+    config = performance_config(
         max_workers=4,
         memory_limit_mb=1024,
         enable_parallel=True,
@@ -96,7 +99,7 @@ def benchmark_incremental_analysis(file_paths, analysis_func):
         chunk_size=10,
     )
 
-    framework = OptimizedAnalysisFramework(config, "incremental_benchmark_state.json")
+    framework = optimized_analysis_framework(config, "incremental_benchmark_state.json")
 
     # First run to populate cache
     print("  First run (populating cache)...")
@@ -131,13 +134,13 @@ def create_test_detection_func():
         time.sleep(0.1)  # 100ms per file
 
         try:
-            from r2morph import Binary
-            from r2morph.detection import ObfuscationDetector
+            binary = importlib.import_module("r2morph").Binary
+            obfuscation_detector = importlib.import_module("r2morph.detection").ObfuscationDetector
 
-            with Binary(binary_path) as bin_obj:
+            with binary(binary_path) as bin_obj:
                 bin_obj.analyze()
 
-                detector = ObfuscationDetector()
+                detector = obfuscation_detector()
                 result = detector.analyze_binary(bin_obj)
 
                 return {
@@ -165,15 +168,15 @@ def create_memory_intensive_func():
 
     def memory_intensive_analysis(binary_path):
         # Simulate memory-intensive operation
-        import random
+        randomness = importlib.import_module("r2morph.core").randomness
 
         # Create some memory load
-        data = [random.random() for _ in range(100000)]  # ~800KB of data
+        data = [randomness.random() for _ in range(100000)]  # ~800KB of data
 
         try:
-            from r2morph import Binary
+            binary = importlib.import_module("r2morph").Binary
 
-            with Binary(binary_path) as bin_obj:
+            with binary(binary_path) as bin_obj:
                 bin_obj.analyze()
 
                 # Simulate complex analysis
@@ -187,9 +190,9 @@ def create_memory_intensive_func():
 
         except Exception:
             return {
-                "functions_found": random.randint(10, 100),
+                "functions_found": randomness.randint(10, 100),
                 "memory_usage_simulated": len(data),
-                "file_size": random.randint(1000, 100000),
+                "file_size": randomness.randint(1000, 100000),
                 "simulated": True,
             }
 
@@ -222,9 +225,7 @@ def prepare_test_files(count=10):
 
 def run_performance_comparison():
     """Run comprehensive performance comparison."""
-    print("=" * 80)
-    print("R2MORPH PERFORMANCE OPTIMIZATION BENCHMARK")
-    print("=" * 80)
+    print("=" * 80 + "\nR2MORPH PERFORMANCE OPTIMIZATION BENCHMARK\n" + "=" * 80)
 
     # Prepare test files
     file_count = 12  # Good number for demonstrating parallelization
@@ -237,16 +238,11 @@ def run_performance_comparison():
     analysis_func = create_test_detection_func()
 
     # Benchmark 1: Sequential Analysis
-    print(f"\n{'-' * 40}")
-    print("BENCHMARK 1: SEQUENTIAL ANALYSIS")
-    print(f"{'-' * 40}")
+    print(f"\n{'-' * 40}\nBENCHMARK 1: SEQUENTIAL ANALYSIS\n{'-' * 40}")
 
     sequential_result = benchmark_sequential_analysis(test_files, analysis_func)
 
-    print("Results:")
-    print(f"  Total Time: {sequential_result['total_time']:.2f}s")
-    print(f"  Average per File: {sequential_result['average_time_per_file']:.3f}s")
-    print(f"  Successful Analyses: {sequential_result['successful_analyses']}/{len(test_files)}")
+    _print_benchmark_result(sequential_result, len(test_files))
 
     # Benchmark 2: Parallel Analysis
     print(f"\n{'-' * 40}")
@@ -256,16 +252,16 @@ def run_performance_comparison():
     try:
         parallel_result = benchmark_parallel_analysis(test_files, analysis_func)
 
-        print("Results:")
-        print(f"  Total Time: {parallel_result['total_time']:.2f}s")
-        print(f"  Average per File: {parallel_result['average_time_per_file']:.3f}s")
-        print(f"  Successful Analyses: {parallel_result['successful_analyses']}/{len(test_files)}")
-        print(f"  Speedup: {sequential_result['total_time'] / parallel_result['total_time']:.1f}x")
-
-        # Performance stats
         stats = parallel_result["performance_stats"]
-        print(f"  Memory Usage: {stats.get('memory_usage_mb', 0):.1f}MB")
-        print(f"  Cache Hit Ratio: {stats.get('cache_hit_ratio', 0):.1%}")
+        _print_benchmark_result(
+            parallel_result,
+            len(test_files),
+            [
+                f"  Speedup: {sequential_result['total_time'] / parallel_result['total_time']:.1f}x",
+                f"  Memory Usage: {stats.get('memory_usage_mb', 0):.1f}MB",
+                f"  Cache Hit Ratio: {stats.get('cache_hit_ratio', 0):.1%}",
+            ],
+        )
 
     except ImportError:
         print("  Skipped - performance module not available")
@@ -279,16 +275,19 @@ def run_performance_comparison():
     try:
         incremental_result = benchmark_incremental_analysis(test_files, analysis_func)
 
-        print("Results:")
-        print(f"  First Run Time: {incremental_result['first_run_time']:.2f}s")
-        print(f"  Incremental Time: {incremental_result['total_time']:.2f}s")
-        print(f"  Incremental Speedup: {incremental_result['first_run_time'] / incremental_result['total_time']:.1f}x")
-        print(f"  vs Sequential Speedup: {sequential_result['total_time'] / incremental_result['total_time']:.1f}x")
-
-        # Performance stats
         stats = incremental_result["performance_stats"]
-        print(f"  Cache Hit Ratio: {stats.get('cache_hit_ratio', 0):.1%}")
-        print(f"  Files Tracked: {stats.get('incremental_files_tracked', 0)}")
+        _print_benchmark_result(
+            incremental_result,
+            len(test_files),
+            [
+                f"  First Run Time: {incremental_result['first_run_time']:.2f}s",
+                "  Incremental Speedup: "
+                f"{incremental_result['first_run_time'] / incremental_result['total_time']:.1f}x",
+                f"  vs Sequential Speedup: {sequential_result['total_time'] / incremental_result['total_time']:.1f}x",
+                f"  Cache Hit Ratio: {stats.get('cache_hit_ratio', 0):.1%}",
+                f"  Files Tracked: {stats.get('incremental_files_tracked', 0)}",
+            ],
+        )
 
     except ImportError:
         print("  Skipped - performance module not available")
@@ -300,34 +299,8 @@ def run_performance_comparison():
     print(f"{'-' * 40}")
 
     try:
-        from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
-
-        # Test with smaller memory limit
-        memory_config = PerformanceConfig(
-            max_workers=2,
-            memory_limit_mb=512,  # Small limit
-            enable_parallel=True,
-            enable_caching=False,  # Disable caching to test memory management
-            chunk_size=3,  # Small chunks
-        )
-
-        memory_framework = OptimizedAnalysisFramework(memory_config)
-        memory_func = create_memory_intensive_func()
-
-        start_time = time.time()
-        memory_results = memory_framework.analyze_files(test_files, memory_func, "memory_test")
-        memory_time = time.time() - start_time
-
-        successful_memory = sum(1 for r in memory_results if r.get("success", False))
-
-        print("Results:")
-        print(f"  Total Time: {memory_time:.2f}s")
-        print(f"  Successful Analyses: {successful_memory}/{len(test_files)}")
-        print(f"  Memory Limit: {memory_config.memory_limit_mb}MB")
-
-        stats = memory_framework.get_comprehensive_stats()
-        print(f"  Peak Memory Usage: {stats.get('memory_usage_mb', 0):.1f}MB")
-
+        memory_result = _run_memory_benchmark(test_files)
+        _print_benchmark_result(memory_result[0], len(test_files), memory_result[1])
     except ImportError:
         print("  Skipped - performance module not available")
 
@@ -351,6 +324,40 @@ def run_performance_comparison():
     return {"sequential": sequential_result, "parallel": parallel_result, "incremental": incremental_result}
 
 
+def _print_benchmark_result(result, file_count, extra_lines=()):
+    lines = [
+        "Results:",
+        f"  Total Time: {result['total_time']:.2f}s",
+        f"  Average per File: {result['average_time_per_file']:.3f}s",
+        f"  Successful Analyses: {result['successful_analyses']}/{file_count}",
+    ]
+    print("\n".join(lines + list(extra_lines)))
+
+
+def _run_memory_benchmark(test_files):
+    performance = importlib.import_module("r2morph.performance")
+    memory_config = performance.PerformanceConfig(
+        max_workers=2,
+        memory_limit_mb=512,
+        enable_parallel=True,
+        enable_caching=False,
+        chunk_size=3,
+    )
+    framework = performance.OptimizedAnalysisFramework(memory_config)
+    started = time.time()
+    results = framework.analyze_files(test_files, create_memory_intensive_func(), "memory_test")
+    elapsed = time.time() - started
+    successful = sum(result.get("success", False) for result in results)
+    stats = framework.get_comprehensive_stats()
+    return (
+        {"total_time": elapsed, "average_time_per_file": 0, "successful_analyses": successful},
+        (
+            f"  Memory Limit: {memory_config.memory_limit_mb}MB",
+            f"  Peak Memory Usage: {stats.get('memory_usage_mb', 0):.1f}MB",
+        ),
+    )
+
+
 def run_scalability_test():
     """Test scalability with different file counts."""
     print(f"\n{'=' * 80}")
@@ -358,13 +365,14 @@ def run_scalability_test():
     print(f"{'=' * 80}")
 
     try:
-        from r2morph.performance import OptimizedAnalysisFramework, PerformanceConfig
+        optimized_analysis_framework = importlib.import_module("r2morph.performance").OptimizedAnalysisFramework
+        performance_config = importlib.import_module("r2morph.performance").PerformanceConfig
 
-        config = PerformanceConfig(
+        config = performance_config(
             max_workers=4, memory_limit_mb=1024, enable_parallel=True, enable_caching=True, chunk_size=20
         )
 
-        framework = OptimizedAnalysisFramework(config)
+        framework = optimized_analysis_framework(config)
         analysis_func = create_test_detection_func()
 
         file_counts = [5, 10, 20, 50]

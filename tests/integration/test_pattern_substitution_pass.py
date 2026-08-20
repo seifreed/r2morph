@@ -10,6 +10,9 @@ import importlib.util
 
 import pytest
 
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -30,11 +33,11 @@ def test_enumerate_substitutions_reports_per_match_edits_without_mutating():
 
     edits = integration.enumerate_substitutions(instructions)
 
-    assert edits, "expected at least one pattern match on the sample instructions"
-    assert all(set(e) == {"pool", "index", "length", "replacement"} for e in edits)
-    assert all(0 <= e["index"] < len(instructions) for e in edits)
+    expect(edits, "expected at least one pattern match on the sample instructions")
+    expect(all(set(e) == {"pool", "index", "length", "replacement"} for e in edits))
+    expect(all(0 <= e["index"] < len(instructions) for e in edits))
     # The input list must be untouched (enumerate is non-mutating).
-    assert instructions[0]["disasm"] == "mov eax, 0"
+    expect(instructions[0]["disasm"] == "mov eax, 0")
 
 
 def test_pattern_substitution_produces_valid_size_reducing_mutations(
@@ -46,11 +49,11 @@ def test_pattern_substitution_produces_valid_size_reducing_mutations(
         result = engine.run(EngineRunOptions(validation_mode="structural", seed=1337))
         report = engine.build_report(result)
 
-    assert result["total_mutations"] > 0
-    assert report["discarded_mutations"] == []
-    assert all(m["pass_name"] == "PatternSubstitution" for m in report["mutations"])
-    assert all(m["metadata"]["validation_passed"] is True for m in report["mutations"])
-    assert report["pass_support"]["PatternSubstitution"]["stability"] == "experimental"
+    expect(not (result["total_mutations"] <= 0))
+    expect(report["discarded_mutations"] == [])
+    expect(all(m[MUTATION_NAME_KEY] == "PatternSubstitution" for m in report["mutations"]))
+    expect(all(m["metadata"]["validation_passed"] is True for m in report["mutations"]))
+    expect(report["pass_support"]["PatternSubstitution"]["stability"] == "experimental")
 
 
 def test_pattern_substitution_preserves_instruction_region_size(
@@ -66,5 +69,5 @@ def test_pattern_substitution_preserves_instruction_region_size(
     # the original span (NOP-padded), never grow or shrink the binary.
     for mutation in report["mutations"]:
         span = mutation["end_address"] - mutation["start_address"] + 1
-        assert len(mutation["original_bytes"]) == span
-        assert len(mutation["mutated_bytes"]) == span
+        expect(len(mutation["original_bytes"]) == span)
+        expect(len(mutation["mutated_bytes"]) == span)

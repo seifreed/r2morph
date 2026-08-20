@@ -13,6 +13,7 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
 
 
 def _make_result(tmp_path):
@@ -47,7 +48,7 @@ def test_generate_report_renders_summary_sections(tmp_path) -> None:
     result = _make_result(tmp_path)
     report = generate_report([result])
 
-    assert "R2MORPH VALIDATION REPORT" in report
-    assert "OVERALL SUMMARY" in report
-    assert "CATEGORY BREAKDOWN" in report
-    assert "RECOMMENDATIONS" in report
+    expect(not ("R2MORPH VALIDATION REPORT" not in report))
+    expect(not ("OVERALL SUMMARY" not in report))
+    expect(not ("CATEGORY BREAKDOWN" not in report))
+    expect(not ("RECOMMENDATIONS" not in report))

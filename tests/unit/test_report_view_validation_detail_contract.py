@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_view_validation_detail import build_validation_adjustments_detail
+from tests.utils.assertions import expect
 
 
 def test_build_validation_adjustments_detail_summarizes_rows() -> None:
@@ -20,7 +21,7 @@ def test_build_validation_adjustments_detail_summarizes_rows() -> None:
         ]
     )
 
-    assert detail["summary"]["requested_validation_mode"] == "structural"
-    assert detail["summary"]["effective_validation_mode"] == "degraded"
-    assert detail["compact_summary"]["row_count"] == 1
-    assert detail["compact_summary"]["trigger_count"] == 1
+    expect(detail["summary"]["requested_validation_mode"] == "structural")
+    expect(detail["summary"]["effective_validation_mode"] == "degraded")
+    expect(detail["compact_summary"]["row_count"] == 1)
+    expect(detail["compact_summary"]["trigger_count"] == 1)

@@ -17,6 +17,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
+from tests.utils.assertions import expect
 
 _FLAG_LIVE = Path("fixtures/dataset/elf_cff_flaglive_x86_64")
 _FLAG_DEAD = Path("fixtures/dataset/elf_cff_flagdead_x86_64")
@@ -43,7 +44,7 @@ def _find_nop_sled(data: bytes) -> tuple[int, int]:
             if run_len > best_len:
                 best_off, best_len = run_start, run_len
             run_start = None
-    assert best_len >= _MIN_SLED, "fixture must contain a NOP sled"
+    expect(not (best_len < _MIN_SLED), "fixture must contain a NOP sled")
     return best_off, best_len
 
 
@@ -76,7 +77,7 @@ def test_flag_live_nop_sled_is_never_overwritten(tmp_path: Path) -> None:
     for seed in range(0, 25):
         _, mutated = _region_after_cff(_FLAG_LIVE, tmp_path, seed)
         sled = mutated[sled_off : sled_off + sled_len]
-        assert sled == bytes([_NOP]) * sled_len, f"flag-live sled overwritten at seed {seed}: {sled.hex()}"
+        expect(sled == bytes([_NOP]) * sled_len, f"flag-live sled overwritten at seed {seed}: {sled.hex()}")
 
 
 def test_flag_dead_nop_sled_insertion_leaves_real_instructions_intact(tmp_path: Path) -> None:
@@ -90,11 +91,12 @@ def test_flag_dead_nop_sled_insertion_leaves_real_instructions_intact(tmp_path: 
     inserted = False
     for seed in range(0, 25):
         _, mutated = _region_after_cff(_FLAG_DEAD, tmp_path, seed)
-        assert len(mutated) == len(original), "CFF changed the function byte budget"
-        assert mutated[:sled_off] == original[:sled_off], f"bytes before sled changed at seed {seed}"
-        assert (
-            mutated[sled_off + sled_len :] == original[sled_off + sled_len :]
-        ), f"bytes after sled changed at seed {seed}"
+        expect(len(mutated) == len(original), "CFF changed the function byte budget")
+        expect(mutated[:sled_off] == original[:sled_off], f"bytes before sled changed at seed {seed}")
+        expect(
+            mutated[sled_off + sled_len :] == original[sled_off + sled_len :],
+            f"bytes after sled changed at seed {seed}",
+        )
         if mutated[sled_off : sled_off + sled_len] != original[sled_off : sled_off + sled_len]:
             inserted = True
-    assert inserted, "no seed inserted dead code into the flag-dead sled; test is vacuous"
+    expect(inserted, "no seed inserted dead code into the flag-dead sled; test is vacuous")

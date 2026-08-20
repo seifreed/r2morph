@@ -5,6 +5,10 @@ from r2morph.mutations.control_flow_flattening_helpers import (
     is_conditional_jump,
     select_candidates,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CANDIDATE_BLOCK_COUNT_BINARY_FUNCTIONS_0_2_3 = 3
+_EXPECTED_SELECT_CANDIDATES_BINARY_FUNCTIONS_2_0_BLOCK__3 = 3
 
 
 class _Binary:
@@ -29,17 +33,23 @@ def test_control_flow_flattening_leaf_helpers_cover_the_core_paths() -> None:
         {"name": "sym.imp.memcpy", "offset": 0x2000, "size": 64},
     ]
 
-    assert is_conditional_jump("je", "x86") is True
-    assert is_conditional_jump("jmp", "x86") is False
-    assert candidate_block_count(binary, functions[0], 2) == 3
-    assert candidate_block_count(binary, functions[1], 2) is None
-    assert select_candidates(binary, functions, 2)[0]["_block_count"] == 3
-    assert find_nop_sequences(
-        [
-            {"opcode": "nop", "offset": 0x10, "size": 1},
-            {"opcode": "nop", "offset": 0x11, "size": 2},
-            {"opcode": "ret", "offset": 0x13, "size": 1},
-        ]
-    ) == [(0x10, 3)]
-    assert assemble_bounded(binary, ["nop", "ret"], 2) == b"\x90\xc3"
-    assert assemble_bounded(binary, ["nop", "ret"], 1) is None
+    expect(not (is_conditional_jump("je", "x86") is not True))
+    expect(not (is_conditional_jump("jmp", "x86") is not False))
+    expect(candidate_block_count(binary, functions[0], 2) == _EXPECTED_CANDIDATE_BLOCK_COUNT_BINARY_FUNCTIONS_0_2_3)
+    expect(not (candidate_block_count(binary, functions[1], 2) is not None))
+    expect(
+        select_candidates(binary, functions, 2)[0]["_block_count"]
+        == _EXPECTED_SELECT_CANDIDATES_BINARY_FUNCTIONS_2_0_BLOCK__3
+    )
+    expect(
+        find_nop_sequences(
+            [
+                {"opcode": "nop", "offset": 16, "size": 1},
+                {"opcode": "nop", "offset": 17, "size": 2},
+                {"opcode": "ret", "offset": 19, "size": 1},
+            ]
+        )
+        == [(16, 3)]
+    )
+    expect(assemble_bounded(binary, ["nop", "ret"], 2) == b"\x90\xc3")
+    expect(not (assemble_bounded(binary, ["nop", "ret"], 1) is not None))

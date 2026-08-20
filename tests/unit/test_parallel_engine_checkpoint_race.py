@@ -22,6 +22,7 @@ from tests._doubles.checkpoint_race_doubles import (
     CriticalSectionPass,
     ProbeBinary,
 )
+from tests.utils.assertions import expect
 
 
 def test_checkpoint_and_apply_are_mutually_exclusive(tmp_path: Path) -> None:
@@ -41,9 +42,9 @@ def test_checkpoint_and_apply_are_mutually_exclusive(tmp_path: Path) -> None:
     )
     results = engine.execute(passes, stop_on_error=False)
 
-    assert set(results) == {f"pass_{i}" for i in range(4)}
-    assert all(r.status == PassStatus.COMPLETED for r in results.values())
+    expect(set(results) == {f"pass_{i}" for i in range(4)})
+    expect(all(r.status == PassStatus.COMPLETED for r in results.values()))
     # Pre-fix: _save_checkpoint windows run outside the lock and overlap
     # each other / apply windows -> max_active >= 2. Post-fix: snapshot
     # and apply are one locked critical section -> max_active == 1.
-    assert recorder.max_active == 1
+    expect(recorder.max_active == 1)

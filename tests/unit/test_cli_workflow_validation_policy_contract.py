@@ -1,5 +1,6 @@
 from r2morph.cli_workflow_validation_policy import ValidationModeRequest, build_validation_mode_policy
 from r2morph.core.config import EngineConfig
+from tests.utils.assertions import expect
 
 
 def test_build_validation_mode_policy_bypasses_non_symbolic_modes() -> None:
@@ -14,12 +15,7 @@ def test_build_validation_mode_policy_bypasses_non_symbolic_modes() -> None:
         )
     )
 
-    assert result == {
-        "effective_mode": "runtime",
-        "policy": None,
-        "reason": None,
-        "limited_passes": [],
-    }
+    expect(result == {"effective_mode": "runtime", "policy": None, "reason": None, "limited_passes": []})
 
 
 def test_build_validation_mode_policy_degrades_limited_symbolic_passes() -> None:
@@ -34,12 +30,15 @@ def test_build_validation_mode_policy_degrades_limited_symbolic_passes() -> None
         )
     )
 
-    assert result == {
-        "effective_mode": "runtime",
-        "policy": "degrade-runtime",
-        "reason": "limited-symbolic-support",
-        "limited_passes": [{"mutation": "register", "pass_name": "RegisterSubstitution", "confidence": "limited"}],
-    }
+    expect(
+        result
+        == {
+            "effective_mode": "runtime",
+            "policy": "degrade-runtime",
+            "reason": "limited-symbolic-support",
+            "limited_passes": [{"mutation": "register", "pass_name": "RegisterSubstitution", "confidence": "limited"}],
+        }
+    )
 
 
 def test_build_validation_mode_policy_allows_explicit_override() -> None:
@@ -54,9 +53,12 @@ def test_build_validation_mode_policy_allows_explicit_override() -> None:
         )
     )
 
-    assert result == {
-        "effective_mode": "symbolic",
-        "policy": "allow",
-        "reason": "explicit-override",
-        "limited_passes": [{"mutation": "register", "pass_name": "RegisterSubstitution", "confidence": "limited"}],
-    }
+    expect(
+        result
+        == {
+            "effective_mode": "symbolic",
+            "policy": "allow",
+            "reason": "explicit-override",
+            "limited_passes": [{"mutation": "register", "pass_name": "RegisterSubstitution", "confidence": "limited"}],
+        }
+    )

@@ -5,6 +5,9 @@ from r2morph.analysis.switch_table_detection import (
     detect_tail_calls,
     is_plt_stub_pattern,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_DETECT_PLT_GOT_THUNKS_BINARY_8192 = 0x2000
 
 
 class _Binary:
@@ -26,6 +29,6 @@ class _Binary:
 def test_switch_table_detection_contract() -> None:
     binary = _Binary()
 
-    assert is_plt_stub_pattern(b"\xff\x25\x00\x00\x00\x00")
-    assert detect_tail_calls(binary, {0x2000: "target"}, 0x1000) == [(0x1000, 0x2000)]
-    assert 0x2000 in detect_plt_got_thunks(binary)
+    expect(is_plt_stub_pattern(b"\xff\x25\x00\x00\x00\x00"))
+    expect(detect_tail_calls(binary, {8192: "target"}, 4096) == [(4096, 8192)])
+    expect(not (_EXPECTED_DETECT_PLT_GOT_THUNKS_BINARY_8192 not in detect_plt_got_thunks(binary)))

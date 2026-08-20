@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -16,17 +18,20 @@ if importlib.util.find_spec("yaml") is None:
 from r2morph.core.binary import Binary
 from r2morph.core.memory_manager import MemoryManager
 
+_EXPECTED_MANAGER_BATCH_SIZE_3 = 3
+_EXPECTED_MANAGER_BATCH_SIZE_5 = 5
+
 
 class TestMemoryManager:
     """Tests for MemoryManager."""
 
     def test_counter_and_batch_size(self):
         manager = MemoryManager(batch_size=3)
-        assert manager.mutation_count == 0
-        assert manager.batch_size == 3
+        expect(manager.mutation_count == 0)
+        expect(manager.batch_size == _EXPECTED_MANAGER_BATCH_SIZE_3)
 
         manager.batch_size = 5
-        assert manager.batch_size == 5
+        expect(manager.batch_size == _EXPECTED_MANAGER_BATCH_SIZE_5)
 
     def test_track_mutation_no_low_memory(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -41,7 +46,7 @@ class TestMemoryManager:
             binary._low_memory = False
             manager.track_mutation(binary)
 
-        assert manager.mutation_count == 0
+        expect(manager.mutation_count == 0)
 
     def test_track_mutation_with_low_memory(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -56,7 +61,7 @@ class TestMemoryManager:
             binary._low_memory = True
             manager.track_mutation(binary)
 
-        assert manager.mutation_count == 1
+        expect(manager.mutation_count == 1)
 
     def test_force_reload(self, tmp_path):
         test_file = Path(__file__).parents[2] / "fixtures" / "synthetic" / "simple"
@@ -71,4 +76,4 @@ class TestMemoryManager:
             binary._low_memory = True
             manager.force_reload(binary)
 
-        assert manager.mutation_count == 0
+        expect(manager.mutation_count == 0)

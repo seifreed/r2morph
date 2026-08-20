@@ -25,6 +25,7 @@ from r2morph.analysis.symbolic.structural_resistance import StructuralResistance
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer
 from tests.integration import test_vm_interpreter_recursion_real as recursion
+from tests.utils.assertions import expect
 
 # The interpreter has four real handlers (loadi, addi, subi, halt); the oracle would
 # need to reconstruct them all to devirtualize the recursed layer.
@@ -47,7 +48,7 @@ def recursively_virtualized(tmp_path_factory: pytest.TempPathFactory) -> Path:
     dest = tmp_path_factory.mktemp("recursion_resistance") / "recursively_virtualized"
     shutil.copy(recursion.FIXTURE, dest)
     stats = recursion._run_pass(dest, virtualize_dispatch=True)
-    assert stats["functions_virtualized"] >= 1
+    expect(not (stats["functions_virtualized"] < 1))
     return dest
 
 
@@ -55,8 +56,8 @@ def test_recursed_layer_raises_structural_devirtualization_resistance(recursivel
     """The region VM lifts the interpreter's structural resistance well above the original."""
     original = _measure(recursion.FIXTURE)
     recursed = _measure(recursively_virtualized)
-    assert recursed.structural_score > original.structural_score
-    assert recursed.indirect_jumps > original.indirect_jumps
+    expect(not (recursed.structural_score <= original.structural_score))
+    expect(not (recursed.indirect_jumps <= original.indirect_jumps))
 
 
 def test_devirt_oracle_cannot_reconstruct_the_recursed_layer(recursively_virtualized: Path) -> None:
@@ -65,9 +66,9 @@ def test_devirt_oracle_cannot_reconstruct_the_recursed_layer(recursively_virtual
     binary.open()
     try:
         binary.analyze("aa")
-        assert binary.r2 is not None
+        expect(binary.r2 is not None)
         dispatcher = int(binary.r2.cmd("?v entry0").strip(), 16)
         arch = VMHandlerAnalyzer(binary).analyze_vm_architecture(dispatcher)
     finally:
         binary.close()
-    assert len(arch.handlers) < _REAL_HANDLER_COUNT
+    expect(not (len(arch.handlers) >= _REAL_HANDLER_COUNT))

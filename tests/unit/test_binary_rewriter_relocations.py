@@ -1,4 +1,9 @@
 from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RelocationEntry, RewriteOperation
+from tests.utils.assertions import expect
+
+_EXPECTED_REWRITER_RELOCATIONS_0_TARGET_12288 = 0x3000
+_EXPECTED_REWRITER_RELOCATIONS_1_TARGET_16388 = 0x4004
+_EXPECTED_STATS_UPDATED_2 = 2
 
 
 def test_binary_rewriter_updates_relocations_with_shifts():
@@ -26,6 +31,6 @@ def test_binary_rewriter_updates_relocations_with_shifts():
     ]
 
     stats = rewriter._update_relocations()
-    assert stats["updated"] == 2
-    assert rewriter.relocations[0].target == 0x3000
-    assert rewriter.relocations[1].target == 0x4004
+    expect(stats["updated"] == _EXPECTED_STATS_UPDATED_2)
+    expect(rewriter.relocations[0].target == _EXPECTED_REWRITER_RELOCATIONS_0_TARGET_12288)
+    expect(rewriter.relocations[1].target == _EXPECTED_REWRITER_RELOCATIONS_1_TARGET_16388)

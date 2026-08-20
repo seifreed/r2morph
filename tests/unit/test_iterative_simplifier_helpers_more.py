@@ -6,6 +6,12 @@ from r2morph.devirtualization.iterative_simplifier import (
     IterativeSimplifier,
     SimplificationStrategy,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CHECKPOINT_ITERATION_3 = 3
+_EXPECTED_LEN_OPTIMIZED_CHECKPOINTS_5 = 5
+_EXPECTED_SIMPLIFIER_CALCULATE_COMPLEXITY_CONTEXT_25_0 = 25.0
+_EXPECTED_SIMPLIFIER_METRICS_DEVIRTUALIZED_HANDLERS_3 = 3
 
 
 class DummyVM:
@@ -22,15 +28,15 @@ def test_iterative_simplifier_complexity_and_strategy_adjustment() -> None:
         "vm_dispatchers": [0x100, 0x200],
     }
 
-    assert simplifier._calculate_complexity(context) == 25.0
+    expect(simplifier._calculate_complexity(context) == _EXPECTED_SIMPLIFIER_CALCULATE_COMPLEXITY_CONTEXT_25_0)
 
-    assert simplifier.strategy == SimplificationStrategy.ADAPTIVE
+    expect(simplifier.strategy == SimplificationStrategy.ADAPTIVE)
     initial_threshold = simplifier.convergence_threshold
     simplifier._adjust_strategy(0.06, 1)
-    assert simplifier.convergence_threshold == pytest.approx(initial_threshold * 0.8)
+    expect(simplifier.convergence_threshold == pytest.approx(initial_threshold * 0.8))
 
     simplifier._adjust_strategy(0.0, 2)
-    assert simplifier.convergence_threshold == pytest.approx(initial_threshold * 0.8 * 1.2)
+    expect(simplifier.convergence_threshold == pytest.approx(initial_threshold * 0.8 * 1.2))
 
 
 def test_iterative_simplifier_checkpoint_metrics_and_validation() -> None:
@@ -46,21 +52,21 @@ def test_iterative_simplifier_checkpoint_metrics_and_validation() -> None:
     }
 
     checkpoint = simplifier._create_checkpoint(context)
-    assert checkpoint["iteration"] == 3
-    assert checkpoint["context"] == context
-    assert checkpoint["context"] is not context
+    expect(checkpoint["iteration"] == _EXPECTED_CHECKPOINT_ITERATION_3)
+    expect(checkpoint["context"] == context)
+    expect(checkpoint["context"] is not context)
 
     simplifier._update_metrics(context)
-    assert simplifier.metrics.simplified_expressions >= 1
-    assert simplifier.metrics.devirtualized_handlers == 3
+    expect(not (simplifier.metrics.simplified_expressions < 1))
+    expect(simplifier.metrics.devirtualized_handlers == _EXPECTED_SIMPLIFIER_METRICS_DEVIRTUALIZED_HANDLERS_3)
     expected_reduction = (10 - simplifier._calculate_complexity(context)) / 10
-    assert simplifier.metrics.complexity_reduction == pytest.approx(expected_reduction)
+    expect(simplifier.metrics.complexity_reduction == pytest.approx(expected_reduction))
 
     optimized = simplifier._optimize_result(context)
-    assert optimized["optimization_applied"] is True
-    assert len(optimized["checkpoints"]) == 5
+    expect(not (optimized["optimization_applied"] is not True))
+    expect(len(optimized["checkpoints"]) == _EXPECTED_LEN_OPTIMIZED_CHECKPOINTS_5)
 
     simplifier.metrics.complexity_reduction = 0.0
     validation = simplifier._validate_result({"errors": ["oops"]})
-    assert validation["valid"] is True
-    assert validation["warnings"]
+    expect(not (validation["valid"] is not True))
+    expect(validation["warnings"])

@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.assembly import AssemblyService
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 @pytest.mark.parametrize(
@@ -19,7 +20,7 @@ def test_assembly_service_basic_encoding(instruction):
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         encoded = assembler.assemble(bin_obj, instruction)
-        assert encoded is None or isinstance(encoded, bytes)
+        expect(encoded is None or isinstance(encoded, bytes))
 
 
 def test_assembly_service_movzx_fallback():
@@ -27,7 +28,7 @@ def test_assembly_service_movzx_fallback():
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         encoded = assembler.assemble(bin_obj, "movzx eax, bl")
-        assert encoded is None or isinstance(encoded, bytes)
+        expect(encoded is None or isinstance(encoded, bytes))
 
 
 def test_assembly_service_segment_prefix_fallback():
@@ -35,7 +36,7 @@ def test_assembly_service_segment_prefix_fallback():
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         encoded = assembler.assemble(bin_obj, "mov dword fs:[rax], ecx")
-        assert encoded is None or isinstance(encoded, bytes)
+        expect(encoded is None or isinstance(encoded, bytes))
 
 
 def test_assembly_service_symbolic_resolution():
@@ -43,4 +44,4 @@ def test_assembly_service_symbolic_resolution():
     with Binary(binary_path) as bin_obj:
         assembler = AssemblyService()
         resolved = assembler._resolve_symbolic_vars(bin_obj, "mov eax, [var_10h]")
-        assert "[rsp + 0x10]" in resolved
+        expect(not ("[rsp + 0x10]" not in resolved))

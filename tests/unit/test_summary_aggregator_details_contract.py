@@ -2,6 +2,7 @@ from r2morph.reporting.summary_aggregator_details import (
     summarize_diff_digest,
     summarize_discarded_mutations,
 )
+from tests.utils.assertions import expect
 
 
 def test_summarize_diff_digest_orders_passes_by_change_weight() -> None:
@@ -13,15 +14,18 @@ def test_summarize_diff_digest_orders_passes_by_change_weight() -> None:
         }
     )
 
-    assert result == {
-        "changed_region_count": 3,
-        "changed_bytes": 6,
-        "mutation_kinds": ["expand", "nop", "register"],
-        "passes_with_changes": [
-            {"pass_name": "nop", "changed_region_count": 1, "changed_bytes": 4},
-            {"pass_name": "expand", "changed_region_count": 2, "changed_bytes": 2},
-        ],
-    }
+    expect(
+        result
+        == {
+            "changed_region_count": 3,
+            "changed_bytes": 6,
+            "mutation_kinds": ["expand", "nop", "register"],
+            "passes_with_changes": [
+                {"pass_name": "nop", "changed_region_count": 1, "changed_bytes": 4},
+                {"pass_name": "expand", "changed_region_count": 2, "changed_bytes": 2},
+            ],
+        }
+    )
 
 
 def test_summarize_discarded_mutations_groups_by_pass_and_reason() -> None:
@@ -34,51 +38,54 @@ def test_summarize_discarded_mutations_groups_by_pass_and_reason() -> None:
         ]
     )
 
-    assert result == {
-        "by_pass": [
-            {
-                "pass_name": "expand",
-                "discarded_count": 2,
-                "impact_severity": "high",
-                "reasons": {"rollback": 1, "validation_failed": 1},
-            },
-            {
-                "pass_name": "nop",
-                "discarded_count": 2,
-                "impact_severity": "medium",
-                "reasons": {"rollback": 1, "skip_invalid_pass": 1},
-            },
-        ],
-        "by_reason": {"rollback": 2, "skip_invalid_pass": 1, "validation_failed": 1},
-        "by_impact": {
-            "high": [
+    expect(
+        result
+        == {
+            "by_pass": [
                 {
                     "pass_name": "expand",
                     "discarded_count": 2,
                     "impact_severity": "high",
                     "reasons": {"rollback": 1, "validation_failed": 1},
-                }
-            ],
-            "medium": [
+                },
                 {
                     "pass_name": "nop",
                     "discarded_count": 2,
                     "impact_severity": "medium",
                     "reasons": {"rollback": 1, "skip_invalid_pass": 1},
-                }
+                },
             ],
-            "low": [],
-        },
-        "by_pass_map": {
-            "expand": {
-                "discarded_count": 2,
-                "impact_severity": "high",
-                "reasons": {"rollback": 1, "validation_failed": 1},
+            "by_reason": {"rollback": 2, "skip_invalid_pass": 1, "validation_failed": 1},
+            "by_impact": {
+                "high": [
+                    {
+                        "pass_name": "expand",
+                        "discarded_count": 2,
+                        "impact_severity": "high",
+                        "reasons": {"rollback": 1, "validation_failed": 1},
+                    }
+                ],
+                "medium": [
+                    {
+                        "pass_name": "nop",
+                        "discarded_count": 2,
+                        "impact_severity": "medium",
+                        "reasons": {"rollback": 1, "skip_invalid_pass": 1},
+                    }
+                ],
+                "low": [],
             },
-            "nop": {
-                "discarded_count": 2,
-                "impact_severity": "medium",
-                "reasons": {"rollback": 1, "skip_invalid_pass": 1},
+            "by_pass_map": {
+                "expand": {
+                    "discarded_count": 2,
+                    "impact_severity": "high",
+                    "reasons": {"rollback": 1, "validation_failed": 1},
+                },
+                "nop": {
+                    "discarded_count": 2,
+                    "impact_severity": "medium",
+                    "reasons": {"rollback": 1, "skip_invalid_pass": 1},
+                },
             },
-        },
-    }
+        }
+    )

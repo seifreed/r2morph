@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.validation.regression import RegressionTestFramework, RegressionTestType
+from tests.utils.assertions import expect
 
 
 def test_regression_detection_baseline_and_run(tmp_path: Path) -> None:
@@ -17,12 +18,12 @@ def test_regression_detection_baseline_and_run(tmp_path: Path) -> None:
 
     test_id = "detect_elf"
     baseline = framework.create_detection_baseline(test_id, str(source))
-    assert baseline.test_type == RegressionTestType.DETECTION_ACCURACY
-    assert (baseline_dir / f"{test_id}.json").exists()
+    expect(baseline.test_type == RegressionTestType.DETECTION_ACCURACY)
+    expect((baseline_dir / f"{test_id}.json").exists())
 
     result = framework.run_regression_test(test_id, str(source))
-    assert result.passed is True
-    assert result.issues == []
+    expect(not (result.passed is not True))
+    expect(result.issues == [])
 
 
 def test_regression_api_baseline_and_run(tmp_path: Path) -> None:
@@ -31,7 +32,7 @@ def test_regression_api_baseline_and_run(tmp_path: Path) -> None:
 
     test_id = "api_check"
     baseline = framework.create_api_compatibility_baseline(test_id)
-    assert baseline.test_type == RegressionTestType.API_COMPATIBILITY
+    expect(baseline.test_type == RegressionTestType.API_COMPATIBILITY)
 
     result = framework.run_regression_test(test_id)
-    assert result.passed is True
+    expect(not (result.passed is not True))

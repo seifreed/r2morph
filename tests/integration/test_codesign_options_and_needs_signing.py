@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.codesign import CodeSigner
+from tests.utils.assertions import expect
 
 
 def _has_codesign() -> bool:
@@ -31,7 +32,7 @@ def test_codesign_non_adhoc_requires_identity(tmp_path: Path):
     binary_path = tmp_path / "unsigned_target"
     binary_path.write_text("placeholder")
 
-    assert signer.sign(binary_path, adhoc=False, identity=None) is False
+    expect(not (signer.sign(binary_path, adhoc=False, identity=None) is not False))
 
 
 def test_codesign_adhoc_entitlements_hardened(tmp_path: Path):
@@ -59,6 +60,5 @@ def test_codesign_adhoc_entitlements_hardened(tmp_path: Path):
         timestamp=False,
     )
 
-    assert isinstance(sign_ok, bool)
-    if sign_ok:
-        assert signer.verify(temp_binary) is True
+    expect(isinstance(sign_ok, bool))
+    expect(not (sign_ok and signer.verify(temp_binary) is not True))

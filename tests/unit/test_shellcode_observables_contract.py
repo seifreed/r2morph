@@ -1,6 +1,7 @@
 from importlib import import_module
 
 from r2morph.validation.shellcode_observables import compare_instruction_substitution_observables
+from tests.utils.assertions import expect
 
 
 class _ObservableCheckBinary:
@@ -32,7 +33,7 @@ def test_shellcode_observables_match_for_known_zeroing_pair() -> None:
         bridge_module,
     )
 
-    assert result["symbolic_observable_check_performed"] is True
-    assert result["symbolic_observable_equivalent"] is True
-    assert result["symbolic_observable_mismatches"] == []
-    assert result["symbolic_observable_regions"][0]["mismatches"] == []
+    expect(not (result["symbolic_observable_check_performed"] is not True))
+    expect(not (result["symbolic_observable_equivalent"] is not True))
+    expect(result["symbolic_observable_mismatches"] == [])
+    expect(result["symbolic_observable_regions"][0]["mismatches"] == [])

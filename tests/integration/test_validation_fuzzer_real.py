@@ -6,6 +6,10 @@ from pathlib import Path
 import pytest
 
 from r2morph.validation.fuzzer import MutationFuzzer
+from tests.utils.assertions import expect
+
+_EXPECTED_ARGS_RESULT_TOTAL_TESTS_3 = 3
+_EXPECTED_RESULT_TOTAL_TESTS_3 = 3
 
 
 def test_mutation_fuzzer_with_random_inputs(tmp_path: Path) -> None:
@@ -23,9 +27,9 @@ def test_mutation_fuzzer_with_random_inputs(tmp_path: Path) -> None:
 
     fuzzer = MutationFuzzer(num_tests=3, timeout=3)
     result = fuzzer.fuzz(original, mutated, input_type="ascii")
-    assert result.total_tests == 3
-    assert result.passed + result.failed == result.total_tests
-    assert result.success_rate >= 0.0
+    expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_3)
+    expect(result.passed + result.failed == result.total_tests)
+    expect(not (result.success_rate < 0.0))
 
     args_result = fuzzer.fuzz_with_args(original, mutated, arg_count=2)
-    assert args_result.total_tests == 3
+    expect(args_result.total_tests == _EXPECTED_ARGS_RESULT_TOTAL_TESTS_3)

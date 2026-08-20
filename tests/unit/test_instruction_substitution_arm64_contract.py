@@ -1,6 +1,13 @@
 from __future__ import annotations
 
 from r2morph.mutations.instruction_substitution_arm64 import apply_arm64_mov_substitution
+from tests.utils.assertions import expect
+
+_EXPECTED_ADDR_4096 = 0x1000
+_EXPECTED_ADDR_8192 = 0x2000
+_EXPECTED_BINARY_WRITES_0_0_4096 = 0x1000
+_EXPECTED_RESULT_MUTATIONS_APPLIED_2 = 2
+_EXPECTED_RESULT_TOTAL_FUNCTIONS_2 = 2
 
 
 class _Binary:
@@ -14,12 +21,12 @@ class _Binary:
         ]
 
     def get_function_disasm(self, addr: int):
-        if addr == 0x1000:
+        if addr == _EXPECTED_ADDR_4096:
             return [
                 {"disasm": "mov x0, 0x1", "addr": 0x1000, "size": 4},
                 {"disasm": "mov x1, 0x2", "addr": 0x1004, "size": 4},
             ]
-        if addr == 0x2000:
+        if addr == _EXPECTED_ADDR_8192:
             return [{"disasm": "mov x0, 0x3", "addr": 0x2000, "size": 4}]
         raise ValueError(addr)
 
@@ -40,7 +47,7 @@ def test_arm64_mov_substitution_helper_applies_matching_movz_writes() -> None:
     binary = _Binary()
     result = apply_arm64_mov_substitution(binary, max_substitutions=4)
 
-    assert result["mutations_applied"] == 2
-    assert result["functions_mutated"] == 1
-    assert result["total_functions"] == 2
-    assert binary.writes[0][0] == 0x1000
+    expect(result["mutations_applied"] == _EXPECTED_RESULT_MUTATIONS_APPLIED_2)
+    expect(result["functions_mutated"] == 1)
+    expect(result["total_functions"] == _EXPECTED_RESULT_TOTAL_FUNCTIONS_2)
+    expect(binary.writes[0][0] == _EXPECTED_BINARY_WRITES_0_0_4096)

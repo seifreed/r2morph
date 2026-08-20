@@ -34,6 +34,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _PE_BINARY = _REPO_ROOT / "fixtures" / "dataset" / "pe_x86_64.exe"
@@ -47,16 +48,17 @@ def test_read_pe_header_returns_dict_for_real_pe32_plus() -> None:
 
     header = handler._read_pe_header()
 
-    assert header is not None, "_read_pe_header must succeed on a real PE binary"
-    assert header["is_pe32_plus"] is True, "fixtures/dataset/pe_x86_64.exe is PE32+"
-    assert header["num_sections"] >= 1, f"got num_sections={header['num_sections']!r}"
-    assert header["entry_point"] > 0, f"got entry_point={header['entry_point']!r}"
+    expect(header is not None, "_read_pe_header must succeed on a real PE binary")
+    expect(not (header["is_pe32_plus"] is not True), "fixtures/dataset/pe_x86_64.exe is PE32+")
+    expect(not (header["num_sections"] < 1), f"got num_sections={header['num_sections']!r}")
+    expect(not (header["entry_point"] <= 0), f"got entry_point={header['entry_point']!r}")
     # Microsoft's PE spec puts CheckSum at offset 64 from the start of
     # the optional header. The handler exposes that as an absolute file
     # offset; sanity-check the relative-offset invariant.
-    assert (
-        header["checksum_offset"] == header["optional_header_offset"] + 64
-    ), f"checksum_offset must equal optional_header_offset+64; got {header!r}"
+    expect(
+        header["checksum_offset"] == header["optional_header_offset"] + 64,
+        f"checksum_offset must equal optional_header_offset+64; got {header!r}",
+    )
 
 
 def test_get_sections_fallback_parses_real_pe_without_lief() -> None:
@@ -75,11 +77,11 @@ def test_get_sections_fallback_parses_real_pe_without_lief() -> None:
     handler = _LiefLessHandler(_PE_BINARY)
     sections = handler.get_sections()
 
-    assert isinstance(sections, list)
-    assert len(sections) >= 1, f"expected at least one section, got {sections!r}"
+    expect(isinstance(sections, list))
+    expect(not (len(sections) < 1), f"expected at least one section, got {sections!r}")
     first = sections[0]
     # Every section dict must carry the keys the rest of r2morph uses.
     for required_key in ("name", "virtual_address", "size", "offset", "characteristics"):
-        assert required_key in first, f"missing {required_key!r} in section dict {first!r}"
+        expect(not (required_key not in first), f"missing {required_key!r} in section dict {first!r}")
     # And at least one section must be non-empty (size > 0).
-    assert any(s["size"] > 0 for s in sections), f"all sections have size 0: {sections!r}"
+    expect(any(s["size"] > 0 for s in sections), f"all sections have size 0: {sections!r}")

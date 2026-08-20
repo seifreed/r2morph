@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.platform.elf_handler import ELFHandler
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
 
 
 def test_elf_handler_header_and_validation():
@@ -12,17 +13,17 @@ def test_elf_handler_header_and_validation():
         pytest.skip("ELF binary not available")
 
     handler = ELFHandler(elf_path)
-    assert handler.is_elf() is True
-    assert handler.validate() is True
+    expect(not (handler.is_elf() is not True))
+    expect(not (handler.validate() is not True))
 
     header = handler._parse_elf_header()
-    assert header is not None
-    assert handler._is_64bit in {True, False}
-    assert handler._is_little_endian in {True, False}
+    expect(header is not None)
+    expect(not (handler._is_64bit not in {True, False}))
+    expect(not (handler._is_little_endian not in {True, False}))
 
     # Ensure cached header is reused
     cached = handler._parse_elf_header()
-    assert cached is header
+    expect(not (cached is not header))
 
 
 def test_pe_handler_checksum_and_validation(tmp_path: Path):
@@ -34,12 +35,12 @@ def test_pe_handler_checksum_and_validation(tmp_path: Path):
     pe_copy.write_bytes(pe_path.read_bytes())
 
     handler = PEHandler(pe_copy)
-    assert handler.is_pe() is True
-    assert handler.validate() is True
+    expect(not (handler.is_pe() is not True))
+    expect(not (handler.validate() is not True))
 
     checksum_before = handler._calculate_checksum()
-    assert isinstance(checksum_before, int)
+    expect(isinstance(checksum_before, int))
 
-    assert handler.fix_checksum() is True
+    expect(not (handler.fix_checksum() is not True))
     checksum_after = handler._calculate_checksum()
-    assert isinstance(checksum_after, int)
+    expect(isinstance(checksum_after, int))

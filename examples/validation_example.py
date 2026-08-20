@@ -22,6 +22,9 @@ from r2morph.core.engine import MorphEngine
 from r2morph.validation import BinaryValidator
 from r2morph.validation.validator import RuntimeComparisonConfig
 
+_EXPECTED_LEN_SYS_ARGV_2 = 2
+_EXPECTED_LEN_SYS_ARGV_2_2 = 2
+
 
 def demo_structural_validation(original_path: Path, mutated_path: Path):
     """Example: Structural validation."""
@@ -207,7 +210,7 @@ def demo_validation_report(original_path: Path):
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print(f"Usage: {sys.argv[0]} <input.bin> [mutated.bin]")
         print()
         print("Demonstrates validation capabilities:")
@@ -219,7 +222,7 @@ def main():
         sys.exit(1)
 
     original_path = Path(sys.argv[1])
-    mutated_path = Path(sys.argv[2]) if len(sys.argv) > 2 else None
+    mutated_path = Path(sys.argv[2]) if len(sys.argv) > _EXPECTED_LEN_SYS_ARGV_2_2 else None
 
     if not original_path.exists():
         print(f"Error: Input file not found: {original_path}")

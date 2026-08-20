@@ -2,11 +2,14 @@
 Tests for detection and validation modules to increase coverage.
 """
 
+import importlib
 import importlib.util
 import shutil
 from pathlib import Path
 
 import pytest
+
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -20,6 +23,14 @@ from r2morph.detection.similarity_hasher import SimilarityHasher
 from r2morph.validation.fuzzer import MutationFuzzer
 from r2morph.validation.validator import BinaryValidator, ValidationResult
 
+_EXPECTED_0_8 = 8
+_EXPECTED_ANALYZER_HIGH_ENTROPY_THRESHOLD_7_0 = 7.0
+_EXPECTED_ANALYZER_SUSPICIOUS_ENTROPY_THRESHOLD_6_5 = 6.5
+_EXPECTED_LEN_VALIDATOR_TEST_CASES_3 = 3
+_EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
+_EXPECTED_VALIDATOR_TIMEOUT_10 = 10
+_EXPECTED_VALIDATOR_TIMEOUT_30 = 30
+
 
 class TestEntropyAnalyzerDetailed:
     """Detailed tests for EntropyAnalyzer."""
@@ -31,9 +42,9 @@ class TestEntropyAnalyzerDetailed:
     def test_entropy_analyzer_init(self):
         """Test EntropyAnalyzer initialization."""
         analyzer = EntropyAnalyzer()
-        assert analyzer is not None
-        assert analyzer.HIGH_ENTROPY_THRESHOLD == 7.0
-        assert analyzer.SUSPICIOUS_ENTROPY_THRESHOLD == 6.5
+        expect(analyzer is not None)
+        expect(analyzer.HIGH_ENTROPY_THRESHOLD == _EXPECTED_ANALYZER_HIGH_ENTROPY_THRESHOLD_7_0)
+        expect(analyzer.SUSPICIOUS_ENTROPY_THRESHOLD == _EXPECTED_ANALYZER_SUSPICIOUS_ENTROPY_THRESHOLD_6_5)
 
     def test_analyze_file(self, ls_elf):
         """Test analyzing file entropy."""
@@ -43,12 +54,12 @@ class TestEntropyAnalyzerDetailed:
         analyzer = EntropyAnalyzer()
         result = analyzer.analyze_file(ls_elf)
 
-        assert isinstance(result, EntropyResult)
-        assert isinstance(result.overall_entropy, float)
-        assert 0 <= result.overall_entropy <= 8
-        assert isinstance(result.section_entropies, dict)
-        assert isinstance(result.suspicious_sections, list)
-        assert isinstance(result.is_packed, bool)
+        expect(isinstance(result, EntropyResult))
+        expect(isinstance(result.overall_entropy, float))
+        expect(0 <= result.overall_entropy <= _EXPECTED_0_8)
+        expect(isinstance(result.section_entropies, dict))
+        expect(isinstance(result.suspicious_sections, list))
+        expect(isinstance(result.is_packed, bool))
 
     def test_entropy_result_str(self):
         """Test EntropyResult string representation."""
@@ -60,8 +71,8 @@ class TestEntropyAnalyzerDetailed:
             analysis="Normal entropy",
         )
         str_repr = str(result)
-        assert "Entropy Analysis" in str_repr
-        assert "5.5" in str_repr
+        expect(not ("Entropy Analysis" not in str_repr))
+        expect(not ("5.5" not in str_repr))
 
     def test_high_entropy_detection(self):
         """Test high entropy detection logic."""
@@ -73,13 +84,13 @@ class TestEntropyAnalyzerDetailed:
             is_packed=False,
             analysis="Normal",
         )
-        assert result_normal.overall_entropy < analyzer.HIGH_ENTROPY_THRESHOLD
+        expect(not (result_normal.overall_entropy >= analyzer.HIGH_ENTROPY_THRESHOLD))
 
     def test_suspicious_entropy_detection(self):
         """Test suspicious entropy detection."""
         analyzer = EntropyAnalyzer()
         suspicious_entropy = 6.8
-        assert analyzer.SUSPICIOUS_ENTROPY_THRESHOLD < suspicious_entropy < analyzer.HIGH_ENTROPY_THRESHOLD
+        expect(analyzer.SUSPICIOUS_ENTROPY_THRESHOLD < suspicious_entropy < analyzer.HIGH_ENTROPY_THRESHOLD)
 
 
 class TestSimilarityHasherDetailed:
@@ -92,9 +103,9 @@ class TestSimilarityHasherDetailed:
     def test_similarity_hasher_init(self):
         """Test SimilarityHasher initialization."""
         hasher = SimilarityHasher()
-        assert hasher is not None
-        assert hasattr(hasher, "has_ssdeep")
-        assert hasattr(hasher, "has_tlsh")
+        expect(hasher is not None)
+        expect(hasattr(hasher, "has_ssdeep"))
+        expect(hasattr(hasher, "has_tlsh"))
 
     def test_hash_file(self, ls_elf):
         """Test hashing a file."""
@@ -103,9 +114,9 @@ class TestSimilarityHasherDetailed:
 
         hasher = SimilarityHasher()
         hash_result = hasher.hash_file(ls_elf)
-        assert isinstance(hash_result, dict)
-        assert "ssdeep" in hash_result
-        assert "tlsh" in hash_result
+        expect(isinstance(hash_result, dict))
+        expect(not ("ssdeep" not in hash_result))
+        expect(not ("tlsh" not in hash_result))
 
     def test_compare_files(self, ls_elf, tmp_path):
         """Test comparing two files."""
@@ -117,8 +128,8 @@ class TestSimilarityHasherDetailed:
 
         hasher = SimilarityHasher()
         similarity = hasher.compare_files(ls_elf, ls_copy)
-        assert isinstance(similarity, dict)
-        assert "byte_similarity" in similarity
+        expect(isinstance(similarity, dict))
+        expect(not ("byte_similarity" not in similarity))
 
     def test_hash_file_consistency(self, ls_elf):
         """Test that hashing same file gives consistent result."""
@@ -128,8 +139,8 @@ class TestSimilarityHasherDetailed:
         hasher = SimilarityHasher()
         hash1 = hasher.hash_file(ls_elf)
         hash2 = hasher.hash_file(ls_elf)
-        assert isinstance(hash1, dict)
-        assert isinstance(hash2, dict)
+        expect(isinstance(hash1, dict))
+        expect(isinstance(hash2, dict))
 
 
 class TestEvasionScorerDetailed:
@@ -143,25 +154,25 @@ class TestEvasionScorerDetailed:
         """Test EvasionScorer initialization."""
 
         scorer = EvasionScorer()
-        assert scorer is not None
-        assert hasattr(scorer, "weights")
-        assert isinstance(scorer.weights, dict)
+        expect(scorer is not None)
+        expect(hasattr(scorer, "weights"))
+        expect(isinstance(scorer.weights, dict))
 
     def test_score_mutations(self, ls_elf, tmp_path):
         """Test scoring mutations."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        from r2morph.detection.evasion_scorer import EvasionScore
+        evasion_score = importlib.import_module("r2morph.detection.evasion_scorer").EvasionScore
 
         ls_copy = tmp_path / "ls_mutated"
         shutil.copy(ls_elf, ls_copy)
 
         scorer = EvasionScorer()
         score = scorer.score(ls_elf, ls_copy)
-        assert isinstance(score, EvasionScore)
-        assert hasattr(score, "overall_score")
-        assert score.overall_score >= 0
+        expect(isinstance(score, evasion_score))
+        expect(hasattr(score, "overall_score"))
+        expect(not (score.overall_score < 0))
 
 
 class TestBinaryValidatorDetailed:
@@ -174,21 +185,21 @@ class TestBinaryValidatorDetailed:
     def test_validator_init(self):
         """Test BinaryValidator initialization."""
         validator = BinaryValidator(timeout=10)
-        assert validator.timeout == 10
-        assert len(validator.test_cases) == 0
+        expect(validator.timeout == _EXPECTED_VALIDATOR_TIMEOUT_10)
+        expect(len(validator.test_cases) == 0)
 
     def test_validator_custom_timeout(self):
         """Test validator with custom timeout."""
         validator = BinaryValidator(timeout=30)
-        assert validator.timeout == 30
+        expect(validator.timeout == _EXPECTED_VALIDATOR_TIMEOUT_30)
 
     def test_add_test_case(self):
         """Test adding test cases."""
         validator = BinaryValidator()
         validator.add_test_case(args=["--help"], stdin="", expected_exitcode=0, description="Help test")
-        assert len(validator.test_cases) == 1
-        assert validator.test_cases[0].args == ["--help"]
-        assert validator.test_cases[0].description == "Help test"
+        expect(len(validator.test_cases) == 1)
+        expect(validator.test_cases[0].args == ["--help"])
+        expect(validator.test_cases[0].description == "Help test")
 
     def test_add_multiple_test_cases(self):
         """Test adding multiple test cases."""
@@ -196,7 +207,7 @@ class TestBinaryValidatorDetailed:
         validator.add_test_case(args=["--version"])
         validator.add_test_case(args=["--help"])
         validator.add_test_case(args=["-l"])
-        assert len(validator.test_cases) == 3
+        expect(len(validator.test_cases) == _EXPECTED_LEN_VALIDATOR_TEST_CASES_3)
 
     def test_validation_result_creation(self):
         """Test ValidationResult creation."""
@@ -209,9 +220,9 @@ class TestBinaryValidatorDetailed:
             errors=[],
             similarity_score=100.0,
         )
-        assert result.passed is True
-        assert result.similarity_score == 100.0
-        assert len(result.errors) == 0
+        expect(not (result.passed is not True))
+        expect(result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0)
+        expect(len(result.errors) == 0)
 
     def test_validation_result_str(self):
         """Test ValidationResult string representation."""
@@ -225,8 +236,8 @@ class TestBinaryValidatorDetailed:
             similarity_score=100.0,
         )
         str_repr = str(result)
-        assert "PASSED" in str_repr
-        assert "100.0" in str_repr
+        expect(not ("PASSED" not in str_repr))
+        expect(not ("100.0" not in str_repr))
 
     def test_validation_result_failed(self):
         """Test failed validation result."""
@@ -239,10 +250,10 @@ class TestBinaryValidatorDetailed:
             errors=["Exit code mismatch"],
             similarity_score=50.0,
         )
-        assert result.passed is False
-        assert len(result.errors) > 0
+        expect(not (result.passed is not False))
+        expect(not (len(result.errors) <= 0))
         str_repr = str(result)
-        assert "FAILED" in str_repr
+        expect(not ("FAILED" not in str_repr))
 
 
 class TestMutationFuzzerDetailed:
@@ -251,4 +262,4 @@ class TestMutationFuzzerDetailed:
     def test_fuzzer_init(self):
         """Test MutationFuzzer initialization."""
         fuzzer = MutationFuzzer()
-        assert fuzzer is not None
+        expect(fuzzer is not None)

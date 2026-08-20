@@ -15,6 +15,10 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CALCULATE_PERCENTILE_1_0_2_0_3_0_95_3_0 = 3.0
+_EXPECTED_METRICS_TRUE_NEGATIVES_2 = 2
 
 
 def _sha256(path: Path) -> str:
@@ -72,22 +76,22 @@ def test_benchmark_summary_report_and_export(tmp_path: Path) -> None:
     framework.benchmark_results = [result]
 
     summary = framework._generate_validation_summary([result])
-    assert summary["total_tests"] == 1
-    assert summary["successful_tests"] == 1
-    assert summary["avg_accuracy"] == pytest.approx(0.8)
-    assert summary["execution_time_percentiles"]["p50"] == pytest.approx(0.123)
+    expect(summary["total_tests"] == 1)
+    expect(summary["successful_tests"] == 1)
+    expect(summary["avg_accuracy"] == pytest.approx(0.8))
+    expect(summary["execution_time_percentiles"]["p50"] == pytest.approx(0.123))
 
     report = framework.generate_report()
-    assert "R2MORPH VALIDATION REPORT" in report
-    assert "OVERALL SUMMARY" in report
+    expect(not ("R2MORPH VALIDATION REPORT" not in report))
+    expect(not ("OVERALL SUMMARY" not in report))
 
     json_path = tmp_path / "benchmark_results.json"
     framework.export_results(str(json_path), "json")
-    assert json_path.exists()
+    expect(json_path.exists())
 
     csv_path = tmp_path / "benchmark_results.csv"
     framework.export_results(str(csv_path), "csv")
-    assert "sample_path" in csv_path.read_text()
+    expect(not ("sample_path" not in csv_path.read_text()))
 
 
 def test_benchmark_accuracy_and_percentiles() -> None:
@@ -109,10 +113,10 @@ def test_benchmark_accuracy_and_percentiles() -> None:
     }
 
     metrics = framework._calculate_accuracy_metrics(expected, actual)
-    assert metrics.true_positives == 1
-    assert metrics.false_positives == 1
-    assert metrics.true_negatives == 2
-    assert metrics.false_negatives == 1
+    expect(metrics.true_positives == 1)
+    expect(metrics.false_positives == 1)
+    expect(metrics.true_negatives == _EXPECTED_METRICS_TRUE_NEGATIVES_2)
+    expect(metrics.false_negatives == 1)
 
-    assert calculate_percentile([], 95) == 0.0
-    assert calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0
+    expect(calculate_percentile([], 95) == 0.0)
+    expect(calculate_percentile([1.0, 2.0, 3.0], 95) == _EXPECTED_CALCULATE_PERCENTILE_1_0_2_0_3_0_95_3_0)

@@ -6,6 +6,7 @@ from typing import Any
 
 from r2morph.mutations.cff_opaque_predicates import OpaquePredicateGenerator
 from r2morph.mutations.control_flow_flattening_strategies import BlockStrategyContext, apply_block_strategies
+from tests.utils.assertions import expect
 
 
 class _FakeBinary:
@@ -84,14 +85,7 @@ def test_apply_block_strategies_mutates_counts_and_writes() -> None:
         2,
     )
 
-    assert (
-        added,
-        mutations,
-        bool(binary.writes),
-        jump_obfuscator.calls,
-    ) == (
-        1,
-        {"opaque_predicates": 1, "jump_obfuscations": 1, "total": 2},
-        True,
-        [("x86", 64)],
+    expect(
+        (added, mutations, bool(binary.writes), jump_obfuscator.calls)
+        == (1, {"opaque_predicates": 1, "jump_obfuscations": 1, "total": 2}, True, [("x86", 64)])
     )

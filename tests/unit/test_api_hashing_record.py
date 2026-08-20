@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from r2morph.mutations.api_hashing import APIHashingPass
 from tests._doubles.in_memory_api_hashing_binary import InMemoryAPIHashingBinary
+from tests.utils.assertions import expect
 
 BASE = 0x1000
 STUB_SIZE = 10
@@ -50,16 +51,16 @@ def _run() -> APIHashingPass:
 
 def test_records_real_cave_bytes_not_fabricated_zeros() -> None:
     recs = _run().get_records()
-    assert len(recs) == 1
+    expect(len(recs) == 1)
     rec = recs[0]
-    assert rec.original_bytes == ("90" * STUB_SIZE)
-    assert rec.original_bytes != ("00" * STUB_SIZE)
+    expect(rec.original_bytes == "90" * STUB_SIZE)
+    expect(rec.original_bytes != "00" * STUB_SIZE)
 
 
 def test_records_patched_call_sites_in_metadata() -> None:
     rec = _run().get_records()[0]
     sites = rec.metadata.get("patched_call_sites")
-    assert sites and len(sites) == 1
-    assert sites[0]["address"] == hex(CALL_SITE)
-    assert sites[0]["original_bytes"] == "e800000000"
-    assert sites[0]["patched_bytes"].startswith("e8")
+    expect(sites and len(sites) == 1)
+    expect(sites[0]["address"] == hex(CALL_SITE))
+    expect(sites[0]["original_bytes"] == "e800000000")
+    expect(sites[0]["patched_bytes"].startswith("e8"))

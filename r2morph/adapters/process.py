@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import shlex
 import shutil
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -52,7 +53,7 @@ def _resolve_executable(value: str | Path) -> str:
     executable = os.fspath(value)
     has_separator = os.sep in executable or bool(os.altsep and os.altsep in executable)
     if has_separator:
-        path = Path(executable).expanduser().resolve()
+        path = Path(executable).expanduser()
         if not path.is_file():
             raise FileNotFoundError(f"Executable not found: {path.name}")
         return str(path)
@@ -60,6 +61,20 @@ def _resolve_executable(value: str | Path) -> str:
     if resolved is None:
         raise FileNotFoundError(f"Executable not found: {executable}")
     return resolved
+
+
+def _build_arguments(command: Sequence[str | Path]) -> list[str]:
+    executable = _resolve_executable(command[0])
+    arguments = [executable, *(os.fspath(value) for value in command[1:])]
+    try:
+        with Path(executable).open("rb") as script_file:
+            first_line = script_file.readline(4096)
+    except OSError:
+        return arguments
+    if not first_line.startswith(b"#!"):
+        return arguments
+    interpreter = shlex.split(first_line[2:].decode("utf-8", errors="replace"))
+    return [*interpreter, executable, *arguments[1:]] if interpreter else arguments
 
 
 async def _run_process(
@@ -70,8 +85,7 @@ async def _run_process(
 ) -> ProcessResult:
     if not command:
         raise ValueError("Process command cannot be empty")
-    executable = _resolve_executable(command[0])
-    arguments = [executable, *(os.fspath(value) for value in command[1:])]
+    arguments = _build_arguments(command)
     process = await asyncio.create_subprocess_exec(
         *arguments,
         stdin=asyncio.subprocess.PIPE if context.input_bytes is not None else None,

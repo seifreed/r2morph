@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from r2morph.validation import regression_storage
 from r2morph.validation.regression_models import BaselineResult, RegressionTestType
+from tests.utils.assertions import expect
 
 
 def test_regression_storage_round_trip(tmp_path) -> None:
@@ -18,5 +19,5 @@ def test_regression_storage_round_trip(tmp_path) -> None:
     regression_storage.save_baseline(tmp_path, baseline)
     loaded = regression_storage.load_baselines(tmp_path)
 
-    assert "baseline-1" in loaded
-    assert loaded["baseline-1"].test_type is RegressionTestType.API_COMPATIBILITY
+    expect(not ("baseline-1" not in loaded))
+    expect(not (loaded["baseline-1"].test_type is not RegressionTestType.API_COMPATIBILITY))

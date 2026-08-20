@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from r2morph.validation import performance_regression_comparison
 from r2morph.validation.performance_regression_models import PerformanceSnapshot
+from tests.utils.assertions import expect
 
 
 def test_performance_regression_comparison_detects_regression() -> None:
@@ -27,6 +28,6 @@ def test_performance_regression_comparison_detects_regression() -> None:
         critical_threshold_percent=25.0,
     )
 
-    assert len(regressions) == 1
-    assert regressions[0].metric_name == "execution_time_ms_mean"
-    assert regressions[0].severity == "minor"
+    expect(len(regressions) == 1)
+    expect(regressions[0].metric_name == "execution_time_ms_mean")
+    expect(regressions[0].severity == "minor")

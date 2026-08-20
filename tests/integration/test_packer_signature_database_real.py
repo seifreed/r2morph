@@ -7,6 +7,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
+from tests.utils.assertions import expect
 
 
 def test_packer_signature_detection_real_binary() -> None:
@@ -20,8 +21,8 @@ def test_packer_signature_detection_real_binary() -> None:
         db = PackerSignatureDatabase()
 
         packer = db.detect(bin_obj, entropy)
-        assert isinstance(packer, PackerType)
+        expect(isinstance(packer, PackerType))
 
         layers = db.detect_packing_layers(bin_obj, entropy)
-        assert "layers_detected" in layers
-        assert "packers" in layers
+        expect(not ("layers_detected" not in layers))
+        expect(not ("packers" not in layers))

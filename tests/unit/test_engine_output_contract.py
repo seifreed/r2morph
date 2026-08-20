@@ -7,6 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from r2morph.core.engine_output import build_report, save_binary, save_report
+from tests.utils.assertions import expect
 
 
 class _FakeBinary:
@@ -56,8 +57,8 @@ def test_engine_output_saves_binary_and_signs_without_session(tmp_path: Path) ->
 
     save_binary(engine, output)
 
-    assert output.read_bytes() == b"abc"
-    assert signer.calls == [(output, {"mode": "test"})]
+    expect(output.read_bytes() == b"abc")
+    expect(signer.calls == [(output, {"mode": "test"})])
 
 
 def test_engine_output_saves_binary_through_session_and_builds_report(tmp_path: Path) -> None:
@@ -82,10 +83,10 @@ def test_engine_output_saves_binary_through_session_and_builds_report(tmp_path: 
     report = build_report(engine, {"marker": 1})
     saved_report = save_report(engine, report_path, {"marker": 2})
 
-    assert session.finalized == [output]
-    assert output.read_bytes() == b"payload"
-    assert signer.calls == [(output, {})]
-    assert report["result"] == {"marker": 1}
-    assert builder.calls[0]["result"] == {"marker": 1}
-    assert saved_report == report_path
-    assert json.loads(report_path.read_text())["result"] == {"marker": 2}
+    expect(session.finalized == [output])
+    expect(output.read_bytes() == b"payload")
+    expect(signer.calls == [(output, {})])
+    expect(report["result"] == {"marker": 1})
+    expect(builder.calls[0]["result"] == {"marker": 1})
+    expect(saved_report == report_path)
+    expect(json.loads(report_path.read_text())["result"] == {"marker": 2})

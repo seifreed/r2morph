@@ -1,27 +1,32 @@
 from r2morph.devirtualization.cfo_simplifier import CFOSimplifier, ControlFlowBlock
+from tests.utils.assertions import expect
+
+_EXPECTED_RESOLVED_32 = 32
+_EXPECTED_SIMPLIFIER_CALCULATE_COMPLEXITY_3 = 3
+_EXPECTED_SIMPLIFIER_EXTRACT_STATE_VALUE_BLOCK_16 = 0x10
 
 
 def test_cfo_constant_and_opaque_checks():
     simplifier = CFOSimplifier()
-    assert simplifier._is_constant_expression("1", "2") is True
-    assert simplifier._is_constant_expression("eax", "eax") is True
-    assert simplifier._is_constant_expression("eax", "ebx") is False
+    expect(not (simplifier._is_constant_expression("1", "2") is not True))
+    expect(not (simplifier._is_constant_expression("eax", "eax") is not True))
+    expect(not (simplifier._is_constant_expression("eax", "ebx") is not False))
 
     cmp_instr = {
         "opcode": "cmp eax, 0x1",
         "operands": [{"value": "1"}, {"value": "1"}],
     }
     non_cmp = {"opcode": "mov eax, ebx", "operands": []}
-    assert simplifier._is_opaque_comparison(cmp_instr) is True
-    assert simplifier._is_opaque_comparison(non_cmp) is False
+    expect(not (simplifier._is_opaque_comparison(cmp_instr) is not True))
+    expect(not (simplifier._is_opaque_comparison(non_cmp) is not False))
 
 
 def test_cfo_jump_resolution_and_state_extraction():
     simplifier = CFOSimplifier()
     resolved = simplifier._resolve_jump_target({"opcode": "jmp [32]"})
-    assert resolved == 32
+    expect(resolved == _EXPECTED_RESOLVED_32)
     unresolved = simplifier._resolve_jump_target({"opcode": "jmp [eax]"})
-    assert unresolved is None
+    expect(not (unresolved is not None))
 
     block = ControlFlowBlock(
         address=0x1000,
@@ -30,7 +35,7 @@ def test_cfo_jump_resolution_and_state_extraction():
             {"operands": [{"value": "8"}]},
         ],
     )
-    assert simplifier._extract_state_value(block) == 0x10
+    expect(simplifier._extract_state_value(block) == _EXPECTED_SIMPLIFIER_EXTRACT_STATE_VALUE_BLOCK_16)
 
 
 def test_cfo_state_setters_and_complexity_fallback():
@@ -52,6 +57,6 @@ def test_cfo_state_setters_and_complexity_fallback():
     simplifier.cfg = None
 
     setters = simplifier._find_state_setters(3, "state")
-    assert block_a.address in setters
+    expect(not (block_a.address not in setters))
 
-    assert simplifier._calculate_complexity() == 3
+    expect(simplifier._calculate_complexity() == _EXPECTED_SIMPLIFIER_CALCULATE_COMPLEXITY_3)

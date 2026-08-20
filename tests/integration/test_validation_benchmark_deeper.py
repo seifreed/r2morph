@@ -7,6 +7,7 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
 
 
 def _sha256(path: Path) -> str:
@@ -43,19 +44,19 @@ def test_validation_benchmark_deeper_paths(tmp_path: Path):
     framework.add_test_sample(sample)
 
     detection_result = framework.benchmark_detection(sample)
-    assert detection_result.category == BenchmarkCategory.DETECTION
-    assert isinstance(detection_result.analysis_result, dict)
+    expect(detection_result.category == BenchmarkCategory.DETECTION)
+    expect(isinstance(detection_result.analysis_result, dict))
 
     devirt_result = framework.benchmark_devirtualization(sample)
-    assert devirt_result.category == BenchmarkCategory.DEVIRTUALIZATION
+    expect(devirt_result.category == BenchmarkCategory.DEVIRTUALIZATION)
 
     pipeline_result = framework.benchmark_full_pipeline(sample)
-    assert pipeline_result.category == BenchmarkCategory.FULL_PIPELINE
+    expect(pipeline_result.category == BenchmarkCategory.FULL_PIPELINE)
 
     framework.benchmark_results.extend([detection_result, devirt_result, pipeline_result])
 
     summary = framework.run_validation_suite([BenchmarkCategory.DETECTION])
-    assert summary["total_tests"] >= 1
+    expect(not (summary["total_tests"] < 1))
 
     json_path = tmp_path / "benchmark_results.json"
     csv_path = tmp_path / "benchmark_results.csv"
@@ -63,8 +64,8 @@ def test_validation_benchmark_deeper_paths(tmp_path: Path):
     framework.export_results(str(json_path), format="json")
     framework.export_results(str(csv_path), format="csv")
 
-    assert json_path.exists()
-    assert csv_path.exists()
+    expect(json_path.exists())
+    expect(csv_path.exists())
 
     report = framework.generate_report()
-    assert "VALIDATION REPORT" in report
+    expect(not ("VALIDATION REPORT" not in report))

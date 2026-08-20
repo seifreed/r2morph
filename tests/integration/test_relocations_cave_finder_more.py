@@ -4,6 +4,9 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.cave_finder import CaveFinder
+from tests.utils.assertions import expect
+
+_EXPECTED_SIZE_4 = 4
 
 
 def test_cave_finder_allocate_and_insert_real(tmp_path: Path):
@@ -33,13 +36,13 @@ def test_cave_finder_allocate_and_insert_real(tmp_path: Path):
                     bin_obj.write_bytes(vaddr + vsize - finder.min_size, b"\x00" * finder.min_size)
                     caves = finder.find_caves(max_caves=10)
 
-        assert caves, "Expected to find or create at least one cave"
+        expect(caves, "Expected to find or create at least one cave")
 
         cave = finder.find_cave_for_size(4)
-        assert cave is not None
+        expect(cave is not None)
 
         _addr, size = finder.allocate_cave(cave, 4)
-        assert size == 4
+        expect(size == _EXPECTED_SIZE_4)
 
         inserted = finder.insert_code_in_cave(b"\x90\x90\x90\x90")
-        assert inserted is not None
+        expect(inserted is not None)

@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
+from tests.utils.assertions import expect
 
 
 def test_control_flow_flattening_obfuscate_unconditional_jump(tmp_path: Path) -> None:
@@ -19,10 +20,10 @@ def test_control_flow_flattening_obfuscate_unconditional_jump(tmp_path: Path) ->
     with Binary(work_path, writable=True) as binary:
         binary.analyze()
         sections = binary.get_sections()
-        assert sections
+        expect(sections)
         section = next((s for s in sections if s.get("vaddr")), sections[0])
         vaddr = int(section.get("vaddr", 0) or 0)
-        assert vaddr > 0
+        expect(not (vaddr <= 0))
 
         # Reserve space for jump obfuscation
         binary.write_bytes(vaddr, b"\x90" * 8)
@@ -34,7 +35,7 @@ def test_control_flow_flattening_obfuscate_unconditional_jump(tmp_path: Path) ->
             "x86",
             64,
         )
-        assert ok is True
+        expect(not (ok is not True))
 
     data = work_path.read_bytes()
-    assert data != source.read_bytes()
+    expect(data != source.read_bytes())

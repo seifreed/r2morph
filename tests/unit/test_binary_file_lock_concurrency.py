@@ -24,6 +24,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 from r2morph.core.parallel import BinaryFileLock
+from tests.utils.assertions import expect
 
 
 def _open_files_for(path: str) -> list[io.IOBase]:
@@ -49,6 +50,6 @@ def test_shared_lock_under_thread_contention_does_not_orphan_fds(tmp_path: Path)
     gc.collect()
 
     leaked = _open_files_for(str(lock.lock_path))
-    assert leaked == [], f"orphaned open lock-file objects after contention: {leaked}"
-    assert lock._lock_file is None
-    assert not lock._locked
+    expect(leaked == [], f"orphaned open lock-file objects after contention: {leaked}")
+    expect(not (lock._lock_file is not None))
+    expect(not (lock._locked))

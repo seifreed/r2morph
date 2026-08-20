@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_mismatch_state import resolve_only_mismatches_state
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY, RESOLVED_MUTATION_KEY
 
 
 def test_resolve_only_mismatches_state_filters_runtime_mismatches_and_uses_persisted_fallback() -> None:
@@ -44,11 +46,11 @@ def test_resolve_only_mismatches_state_filters_runtime_mismatches_and_uses_persi
         summary=summary,
         mutations=mutations,
         filtered_summary=filtered_summary,
-        resolved_only_pass=None,
+        **{RESOLVED_MUTATION_KEY: None},
         degraded_passes=[{"pass_name": "persisted-pass", "mutation": "persisted-pass"}],
     )
 
-    assert len(result["filtered_mutations"]) == 1
-    assert result["filtered_passes"] == ["persisted-pass"]
-    assert result["mismatch_pass_context"] == {"persisted-pass": {"severity": "mismatch"}}
-    assert result["mismatch_severity_rows"][0]["pass_name"] == "persisted-pass"
+    expect(len(result["filtered_mutations"]) == 1)
+    expect(result["filtered_passes"] == ["persisted-pass"])
+    expect(result["mismatch_pass_context"] == {"persisted-pass": {"severity": "mismatch"}})
+    expect(result["mismatch_severity_rows"][0][MUTATION_NAME_KEY] == "persisted-pass")

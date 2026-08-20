@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier, SimplificationStrategy
+from tests.utils.assertions import expect
 
 
 def test_iterative_simplifier_sequential_real():
@@ -19,8 +20,8 @@ def test_iterative_simplifier_sequential_real():
         simplifier.parallel_execution = False
         result = simplifier.simplify(strategy=SimplificationStrategy.ADAPTIVE)
 
-    assert result.success is True
-    assert result.phases_completed
+    expect(not (result.success is not True))
+    expect(result.phases_completed)
 
 
 def test_iterative_simplifier_parallel_real():
@@ -36,5 +37,5 @@ def test_iterative_simplifier_parallel_real():
         simplifier.parallel_execution = True
         result = simplifier.simplify(strategy=SimplificationStrategy.CONSERVATIVE)
 
-    assert result.success is True
-    assert result.metrics.execution_time >= 0
+    expect(not (result.success is not True))
+    expect(not (result.metrics.execution_time < 0))

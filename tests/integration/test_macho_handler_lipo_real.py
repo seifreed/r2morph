@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.macho_handler import MachOHandler
+from tests.utils.assertions import expect
 
 
 def _dataset_path(name: str) -> Path:
@@ -30,9 +31,8 @@ def test_macho_handler_extract_architecture_lipo(tmp_path: Path) -> None:
     output_path = tmp_path / "macho_thin"
 
     ok = handler.extract_architecture("arm64", output_path)
-    assert ok is True or ok is False
-    if ok:
-        assert output_path.exists()
+    expect(ok is True or ok is False)
+    expect(not (ok and not (output_path.exists())))
 
 
 def test_macho_handler_create_fat_binary_lipo(tmp_path: Path) -> None:
@@ -51,6 +51,5 @@ def test_macho_handler_create_fat_binary_lipo(tmp_path: Path) -> None:
     fat_out = tmp_path / "macho_fat"
     handler = MachOHandler(thin1)
     ok = handler.create_fat_binary([thin1], fat_out)
-    assert ok is True or ok is False
-    if ok:
-        assert fat_out.exists()
+    expect(ok is True or ok is False)
+    expect(not (ok and not (fat_out.exists())))

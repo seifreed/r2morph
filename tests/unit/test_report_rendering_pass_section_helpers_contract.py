@@ -4,6 +4,7 @@ from r2morph.reporting.report_rendering_pass_section_helpers import (
     build_pass_validation_context_fragments,
     group_issues_by_severity,
 )
+from tests.utils.assertions import expect
 
 
 def test_build_pass_capability_fragments_formats_flags_in_order() -> None:
@@ -14,11 +15,7 @@ def test_build_pass_capability_fragments_formats_flags_in_order() -> None:
         }
     )
 
-    assert fragments == [
-        "runtime recommended=yes",
-        "symbolic confidence=high",
-        "symbolic recommended=no",
-    ]
+    expect(fragments == ["runtime recommended=yes", "symbolic confidence=high", "symbolic recommended=no"])
 
 
 def test_build_pass_validation_context_fragments_handles_degraded_role() -> None:
@@ -32,18 +29,15 @@ def test_build_pass_validation_context_fragments_handles_degraded_role() -> None
         }
     )
 
-    assert fragments == [
-        "requested=symbolic",
-        "effective=runtime",
-        "degraded=yes",
-        "role=executed-under-degraded-mode",
-    ]
+    expect(
+        fragments == ["requested=symbolic", "effective=runtime", "degraded=yes", "role=executed-under-degraded-mode"]
+    )
 
 
 def test_build_pass_region_label_formats_ranges() -> None:
-    assert build_pass_region_label(None, 0x2000) == "unknown"
-    assert build_pass_region_label(0x1000, 0x1000) == "0x1000"
-    assert build_pass_region_label(0x1000, 0x2000) == "0x1000-0x2000"
+    expect(build_pass_region_label(None, 8192) == "unknown")
+    expect(build_pass_region_label(4096, 4096) == "0x1000")
+    expect(build_pass_region_label(4096, 8192) == "0x1000-0x2000")
 
 
 def test_group_issues_by_severity_accumulates_counts() -> None:
@@ -55,7 +49,10 @@ def test_group_issues_by_severity_accumulates_counts() -> None:
         ]
     )
 
-    assert grouped == {
-        "high": {"mismatch": 3, "without_coverage": 1, "bounded_only": 3},
-        "low": {"mismatch": 0, "without_coverage": 4, "bounded_only": 1},
-    }
+    expect(
+        grouped
+        == {
+            "high": {"mismatch": 3, "without_coverage": 1, "bounded_only": 3},
+            "low": {"mismatch": 0, "without_coverage": 4, "bounded_only": 1},
+        }
+    )

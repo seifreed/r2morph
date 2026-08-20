@@ -2,6 +2,8 @@
 Unit tests for def-use chain analysis module.
 """
 
+import importlib
+
 from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.analysis.defuse import (
     Definition,
@@ -11,6 +13,13 @@ from r2morph.analysis.defuse import (
     Use,
     UseWeb,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_DEFN_ADDRESS_4096 = 0x1000
+_EXPECTED_LEN_WEB_USES_2 = 2
+_EXPECTED_LIVE_RANGE_0_4096 = 0x1000
+_EXPECTED_LIVE_RANGE_1_4176 = 0x1050
+_EXPECTED_USE_ADDRESS_4112 = 0x1010
 
 
 def create_simple_cfg() -> ControlFlowGraph:
@@ -122,9 +131,9 @@ class TestDefWeb:
 
         web = DefWeb(definition=defn, uses=[use1, use2], register=reg)
 
-        assert web.definition == defn
-        assert len(web.uses) == 2
-        assert web.register == reg
+        expect(web.definition == defn)
+        expect(len(web.uses) == _EXPECTED_LEN_WEB_USES_2)
+        expect(web.register == reg)
 
     def test_def_web_get_live_range(self):
         """Test get_live_range method."""
@@ -135,8 +144,8 @@ class TestDefWeb:
         web = DefWeb(definition=defn, uses=[use], register=reg)
         live_range = web.get_live_range()
 
-        assert live_range[0] == 0x1000
-        assert live_range[1] == 0x1050
+        expect(live_range[0] == _EXPECTED_LIVE_RANGE_0_4096)
+        expect(live_range[1] == _EXPECTED_LIVE_RANGE_1_4176)
 
     def test_def_web_contains_address(self):
         """Test contains_address method."""
@@ -146,11 +155,11 @@ class TestDefWeb:
 
         web = DefWeb(definition=defn, uses=[use], register=reg)
 
-        assert web.contains_address(0x1000) is True
-        assert web.contains_address(0x1010) is True
-        assert web.contains_address(0x1020) is True
-        assert web.contains_address(0x0999) is False
-        assert web.contains_address(0x1021) is False
+        expect(not (web.contains_address(0x1000) is not True))
+        expect(not (web.contains_address(0x1010) is not True))
+        expect(not (web.contains_address(0x1020) is not True))
+        expect(not (web.contains_address(0x0999) is not False))
+        expect(not (web.contains_address(0x1021) is not False))
 
     def test_def_web_to_dict(self):
         """Test to_dict method."""
@@ -161,10 +170,10 @@ class TestDefWeb:
         web = DefWeb(definition=defn, uses=[use], register=reg)
         d = web.to_dict()
 
-        assert "definition" in d
-        assert "register" in d
-        assert "uses" in d
-        assert "live_range" in d
+        expect(not ("definition" not in d))
+        expect(not ("register" not in d))
+        expect(not ("uses" not in d))
+        expect(not ("live_range" not in d))
 
 
 class TestUseWeb:
@@ -178,9 +187,9 @@ class TestUseWeb:
 
         web = UseWeb(use=use, definitions=[defn], register=reg)
 
-        assert web.use == use
-        assert len(web.definitions) == 1
-        assert web.register == reg
+        expect(web.use == use)
+        expect(len(web.definitions) == 1)
+        expect(web.register == reg)
 
     def test_use_web_is_unique(self):
         """Test is_unique method."""
@@ -189,11 +198,11 @@ class TestUseWeb:
         defn1 = Definition(address=0x1000, register=reg)
 
         web_unique = UseWeb(use=use, definitions=[defn1], register=reg)
-        assert web_unique.is_unique() is True
+        expect(not (web_unique.is_unique() is not True))
 
         defn2 = Definition(address=0x1005, register=reg)
         web_multiple = UseWeb(use=use, definitions=[defn1, defn2], register=reg)
-        assert web_multiple.is_unique() is False
+        expect(not (web_multiple.is_unique() is not False))
 
     def test_use_web_has_phi_needed(self):
         """Test has_phi_needed method."""
@@ -202,12 +211,12 @@ class TestUseWeb:
         defn1 = Definition(address=0x1000, register=reg)
 
         web_single = UseWeb(use=use, definitions=[defn1], register=reg)
-        assert web_single.has_phi_needed() is False
+        expect(not (web_single.has_phi_needed() is not False))
 
         defn2 = Definition(address=0x1005, register=reg)
         defn3 = Definition(address=0x100A, register=reg)
         web_multiple = UseWeb(use=use, definitions=[defn1, defn2, defn3], register=reg)
-        assert web_multiple.has_phi_needed() is True
+        expect(not (web_multiple.has_phi_needed() is not True))
 
     def test_use_web_to_dict(self):
         """Test to_dict method."""
@@ -218,9 +227,9 @@ class TestUseWeb:
         web = UseWeb(use=use, definitions=[defn], register=reg)
         d = web.to_dict()
 
-        assert "use" in d
-        assert "register" in d
-        assert "definitions" in d
+        expect(not ("use" not in d))
+        expect(not ("register" not in d))
+        expect(not ("definitions" not in d))
 
 
 class TestDefUseAnalyzer:
@@ -231,9 +240,9 @@ class TestDefUseAnalyzer:
         cfg = create_simple_cfg()
         analyzer = DefUseAnalyzer(cfg)
 
-        assert analyzer.cfg is cfg
-        assert analyzer._def_webs == {}
-        assert analyzer._use_webs == {}
+        expect(not (analyzer.cfg is not cfg))
+        expect(analyzer._def_webs == {})
+        expect(analyzer._use_webs == {})
 
     def test_analyze_simple(self):
         """Test analyze on simple CFG."""
@@ -241,8 +250,8 @@ class TestDefUseAnalyzer:
         analyzer = DefUseAnalyzer(cfg)
         analyzer.analyze()
 
-        assert len(analyzer._def_webs) >= 0
-        assert len(analyzer._use_webs) >= 0
+        expect(not (len(analyzer._def_webs) < 0))
+        expect(not (len(analyzer._use_webs) < 0))
 
     def test_get_def_web(self):
         """Test get_def_web method."""
@@ -251,7 +260,7 @@ class TestDefUseAnalyzer:
         analyzer.analyze()
 
         web = analyzer.get_def_web(0x1000)
-        assert web is None or isinstance(web, DefWeb)
+        expect(web is None or isinstance(web, DefWeb))
 
     def test_get_use_web(self):
         """Test get_use_web method."""
@@ -260,7 +269,7 @@ class TestDefUseAnalyzer:
         analyzer.analyze()
 
         web = analyzer.get_use_web(0x100A)
-        assert web is None or isinstance(web, UseWeb)
+        expect(web is None or isinstance(web, UseWeb))
 
     def test_get_all_def_webs(self):
         """Test get_all_def_webs method."""
@@ -269,7 +278,7 @@ class TestDefUseAnalyzer:
         analyzer.analyze()
 
         all_webs = analyzer.get_all_def_webs()
-        assert isinstance(all_webs, list)
+        expect(isinstance(all_webs, list))
 
     def test_get_all_use_webs(self):
         """Test get_all_use_webs method."""
@@ -278,7 +287,7 @@ class TestDefUseAnalyzer:
         analyzer.analyze()
 
         all_webs = analyzer.get_all_use_webs()
-        assert isinstance(all_webs, list)
+        expect(isinstance(all_webs, list))
 
     def test_get_webs_for_register(self):
         """Test get_webs_for_register method."""
@@ -289,8 +298,8 @@ class TestDefUseAnalyzer:
         reg = Register("eax", 32)
         def_webs, use_webs = analyzer.get_webs_for_register(reg)
 
-        assert isinstance(def_webs, list)
-        assert isinstance(use_webs, list)
+        expect(isinstance(def_webs, list))
+        expect(isinstance(use_webs, list))
 
     def test_find_uninitialized_uses(self):
         """Test find_uninitialized_uses method."""
@@ -299,7 +308,7 @@ class TestDefUseAnalyzer:
         analyzer.analyze()
 
         uninitialized = analyzer.find_uninitialized_uses()
-        assert isinstance(uninitialized, list)
+        expect(isinstance(uninitialized, list))
 
     def test_find_unused_definitions(self):
         """Test find_unused_definitions method."""
@@ -308,7 +317,7 @@ class TestDefUseAnalyzer:
         analyzer.analyze()
 
         unused = analyzer.find_unused_definitions()
-        assert isinstance(unused, list)
+        expect(isinstance(unused, list))
 
     def test_branching_cfg(self):
         """Test analysis on branching CFG."""
@@ -319,8 +328,8 @@ class TestDefUseAnalyzer:
         all_def_webs = analyzer.get_all_def_webs()
         all_use_webs = analyzer.get_all_use_webs()
 
-        assert isinstance(all_def_webs, list)
-        assert isinstance(all_use_webs, list)
+        expect(isinstance(all_def_webs, list))
+        expect(isinstance(all_use_webs, list))
 
     def test_to_dict(self):
         """Test to_dict method."""
@@ -330,10 +339,10 @@ class TestDefUseAnalyzer:
 
         d = analyzer.to_dict()
 
-        assert "def_webs" in d
-        assert "use_webs" in d
-        assert "unused_definitions" in d
-        assert "uninitialized_uses" in d
+        expect(not ("def_webs" not in d))
+        expect(not ("use_webs" not in d))
+        expect(not ("unused_definitions" not in d))
+        expect(not ("uninitialized_uses" not in d))
 
 
 class TestDefinitionAndUse:
@@ -344,18 +353,18 @@ class TestDefinitionAndUse:
         reg = Register("eax", 32)
         defn = Definition(address=0x1000, register=reg, instruction="mov eax, 1")
 
-        assert defn.address == 0x1000
-        assert defn.register == reg
-        assert defn.instruction == "mov eax, 1"
+        expect(defn.address == _EXPECTED_DEFN_ADDRESS_4096)
+        expect(defn.register == reg)
+        expect(defn.instruction == "mov eax, 1")
 
     def test_use_creation(self):
         """Test use creation."""
         reg = Register("ebx", 32)
         use = Use(address=0x1010, register=reg, instruction="add ecx, ebx")
 
-        assert use.address == 0x1010
-        assert use.register == reg
-        assert use.instruction == "add ecx, ebx"
+        expect(use.address == _EXPECTED_USE_ADDRESS_4112)
+        expect(use.register == reg)
+        expect(use.instruction == "add ecx, ebx")
 
     def test_definition_hash_equality(self):
         """Test definition hashing and equality."""
@@ -364,9 +373,9 @@ class TestDefinitionAndUse:
         defn2 = Definition(address=0x1000, register=reg)
         defn3 = Definition(address=0x2000, register=reg)
 
-        assert hash(defn1) == hash(defn2)
-        assert defn1 == defn2
-        assert defn1 != defn3
+        expect(hash(defn1) == hash(defn2))
+        expect(defn1 == defn2)
+        expect(defn1 != defn3)
 
     def test_use_hash_equality(self):
         """Test use hashing and equality."""
@@ -375,9 +384,9 @@ class TestDefinitionAndUse:
         use2 = Use(address=0x1010, register=reg)
         use3 = Use(address=0x1020, register=reg)
 
-        assert hash(use1) == hash(use2)
-        assert use1 == use2
-        assert use1 != use3
+        expect(hash(use1) == hash(use2))
+        expect(use1 == use2)
+        expect(use1 != use3)
 
 
 class TestBuildSSAForm:
@@ -389,7 +398,7 @@ class TestBuildSSAForm:
 
         ssa = analyzer.build_ssa_form()
 
-        assert set(ssa) == set(cfg.blocks)
+        expect(set(ssa) == set(cfg.blocks))
 
     def test_build_ssa_form_places_phi_at_merge_block(self):
         cfg = create_branching_cfg()
@@ -397,10 +406,10 @@ class TestBuildSSAForm:
 
         ssa = analyzer.build_ssa_form()
 
-        assert ssa[0x2030].phi_functions
+        expect(ssa[0x2030].phi_functions)
 
     def test_ssa_converter_is_public_analysis_export(self):
-        from r2morph.analysis import SSAConverter as ExportedSSAConverter
-        from r2morph.analysis.ssa import SSAConverter
+        exported_s_s_a_converter = importlib.import_module("r2morph.analysis").SSAConverter
+        s_s_a_converter = importlib.import_module("r2morph.analysis.ssa").SSAConverter
 
-        assert ExportedSSAConverter is SSAConverter
+        expect(not (exported_s_s_a_converter is not s_s_a_converter))

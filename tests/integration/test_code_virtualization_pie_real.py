@@ -20,12 +20,19 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration.elf_emulator import emulate_exit_code
+
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_PIE_LOAD_BIAS_LOAD__73 = 73
+_EXPECTED_EMULATE_EXIT_CODE_MUTATED_LOAD_BIAS_LOAD_BIAS_30 = 30
+_EXPECTED_EMULATE_EXIT_CODE_MUTATED_LOAD_BIAS_LOAD_BIAS_73 = 73
+
 
 _DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 # Plain straight-line PIE: arithmetic plus one rip-relative .rodata load. No
@@ -87,7 +94,10 @@ def test_plain_pie_fixture_emulates_reference_exit_code_at_load_bias() -> None:
     if not FIXTURE_PIE.exists():
         pytest.skip(f"fixture missing: {FIXTURE_PIE}")
 
-    assert emulate_exit_code(FIXTURE_PIE, load_bias=LOAD_BIAS) == 73
+    expect(
+        emulate_exit_code(FIXTURE_PIE, load_bias=LOAD_BIAS)
+        == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_PIE_LOAD_BIAS_LOAD__73
+    )
 
 
 def test_virtualized_plain_pie_preserves_exit_code_at_load_bias(tmp_path: Path) -> None:
@@ -101,8 +111,10 @@ def test_virtualized_plain_pie_preserves_exit_code_at_load_bias(tmp_path: Path) 
         pytest.skip(f"fixture missing: {FIXTURE_PIE}")
 
     mutated = tmp_path / "mutated_pie"
-    assert _virtualize(FIXTURE_PIE, mutated) >= 1
-    assert emulate_exit_code(mutated, load_bias=LOAD_BIAS) == 73
+    expect(not (_virtualize(FIXTURE_PIE, mutated) < 1))
+    expect(
+        emulate_exit_code(mutated, load_bias=LOAD_BIAS) == _EXPECTED_EMULATE_EXIT_CODE_MUTATED_LOAD_BIAS_LOAD_BIAS_73
+    )
 
 
 def test_virtualized_pie_switch_preserves_exit_code_at_load_bias(tmp_path: Path) -> None:
@@ -126,12 +138,14 @@ def test_virtualized_pie_switch_preserves_exit_code_at_load_bias(tmp_path: Path)
         # Driving the switch function directly keeps the parity assertion honest: it
         # cannot be satisfied by leaving the dispatch native and virtualizing only
         # the caller.
-        assert pass_._virtualize_dispatch_function(binary, dispatch) is not None
+        expect(pass_._virtualize_dispatch_function(binary, dispatch) is not None)
         binary.save()
     finally:
         binary.close()
 
-    assert emulate_exit_code(mutated, load_bias=LOAD_BIAS) == 30
+    expect(
+        emulate_exit_code(mutated, load_bias=LOAD_BIAS) == _EXPECTED_EMULATE_EXIT_CODE_MUTATED_LOAD_BIAS_LOAD_BIAS_30
+    )
 
 
 def test_virtualized_pie_image_maps_headers_in_appended_rx_fragment(tmp_path: Path) -> None:
@@ -152,4 +166,4 @@ def test_virtualized_pie_image_maps_headers_in_appended_rx_fragment(tmp_path: Pa
     appended = _pt_loads(mutated)[original_load_count:]
     phoff = _e_phoff(mutated)
     table_owner = next(load for load in appended if load[0] <= phoff < load[0] + load[2])
-    assert appended and table_owner in appended
+    expect(appended and table_owner in appended)

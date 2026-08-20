@@ -8,6 +8,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -16,6 +18,23 @@ if importlib.util.find_spec("yaml") is None:
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import Relocation, RelocationManager
+
+_EXPECTED_LEN_MANAGER_ADDRESS_MAP_3 = 3
+_EXPECTED_LEN_MANAGER_RELOCATIONS_3 = 3
+_EXPECTED_MANAGER_ADDRESS_MAP_0X1000_8192 = 0x2000
+_EXPECTED_MANAGER_ADDRESS_MAP_0X3000_16384 = 0x4000
+_EXPECTED_MANAGER_ADDRESS_MAP_12288 = 0x3000
+_EXPECTED_MANAGER_ADDRESS_MAP_4096 = 0x1000
+_EXPECTED_MANAGER_RELOCATIONS_0_NEW_ADDRESS_8192 = 0x2000
+_EXPECTED_MANAGER_RELOCATIONS_0_OLD_ADDRESS_4096 = 0x1000
+_EXPECTED_MANAGER_RELOCATIONS_0_SIZE_64 = 64
+_EXPECTED_NEW_ADDR_8192 = 0x2000
+_EXPECTED_NEW_ADDR_8224 = 0x2020
+_EXPECTED_RELOC_NEW_ADDRESS_8192 = 0x2000
+_EXPECTED_RELOC_OFFSET_4096 = 0x1000
+_EXPECTED_RELOC_OFFSET_NEG__4096 = -0x1000
+_EXPECTED_RELOC_OLD_ADDRESS_4096 = 0x1000
+_EXPECTED_RELOC_SIZE_128 = 128
 
 
 class TestRelocationManagerReal:
@@ -35,11 +54,11 @@ class TestRelocationManagerReal:
             binary.analyze()
             manager = RelocationManager(binary)
 
-            assert manager.binary == binary
-            assert isinstance(manager.relocations, list)
-            assert len(manager.relocations) == 0
-            assert isinstance(manager.address_map, dict)
-            assert len(manager.address_map) == 0
+            expect(manager.binary == binary)
+            expect(isinstance(manager.relocations, list))
+            expect(len(manager.relocations) == 0)
+            expect(isinstance(manager.address_map, dict))
+            expect(len(manager.address_map) == 0)
 
     def test_add_relocation(self, ls_elf):
         """Test adding a relocation."""
@@ -52,27 +71,27 @@ class TestRelocationManagerReal:
 
             manager.add_relocation(0x1000, 0x2000, 64, "move")
 
-            assert len(manager.relocations) == 1
-            assert manager.relocations[0].old_address == 0x1000
-            assert manager.relocations[0].new_address == 0x2000
-            assert manager.relocations[0].size == 64
-            assert manager.relocations[0].relocation_type == "move"
+            expect(len(manager.relocations) == 1)
+            expect(manager.relocations[0].old_address == _EXPECTED_MANAGER_RELOCATIONS_0_OLD_ADDRESS_4096)
+            expect(manager.relocations[0].new_address == _EXPECTED_MANAGER_RELOCATIONS_0_NEW_ADDRESS_8192)
+            expect(manager.relocations[0].size == _EXPECTED_MANAGER_RELOCATIONS_0_SIZE_64)
+            expect(manager.relocations[0].relocation_type == "move")
 
     def test_relocation_dataclass(self):
         """Test Relocation dataclass."""
         reloc = Relocation(0x1000, 0x2000, 128, "move")
 
-        assert reloc.old_address == 0x1000
-        assert reloc.new_address == 0x2000
-        assert reloc.size == 128
-        assert reloc.relocation_type == "move"
-        assert reloc.offset() == 0x1000
+        expect(reloc.old_address == _EXPECTED_RELOC_OLD_ADDRESS_4096)
+        expect(reloc.new_address == _EXPECTED_RELOC_NEW_ADDRESS_8192)
+        expect(reloc.size == _EXPECTED_RELOC_SIZE_128)
+        expect(reloc.relocation_type == "move")
+        expect(reloc.offset() == _EXPECTED_RELOC_OFFSET_4096)
 
     def test_relocation_negative_offset(self):
         """Test Relocation with negative offset."""
         reloc = Relocation(0x2000, 0x1000, 64, "move")
 
-        assert reloc.offset() == -0x1000
+        expect(reloc.offset() == _EXPECTED_RELOC_OFFSET_NEG__4096)
 
     def test_get_new_address_exact_match(self, ls_elf):
         """Test getting new address with exact match."""
@@ -86,7 +105,7 @@ class TestRelocationManagerReal:
             manager.add_relocation(0x1000, 0x2000, 64, "move")
 
             new_addr = manager.get_new_address(0x1000)
-            assert new_addr == 0x2000
+            expect(new_addr == _EXPECTED_NEW_ADDR_8192)
 
     def test_get_new_address_within_range(self, ls_elf):
         """Test getting new address within relocated range."""
@@ -101,7 +120,7 @@ class TestRelocationManagerReal:
 
             # Address within relocated range
             new_addr = manager.get_new_address(0x1020)
-            assert new_addr == 0x2020
+            expect(new_addr == _EXPECTED_NEW_ADDR_8224)
 
     def test_get_new_address_not_relocated(self, ls_elf):
         """Test getting new address for non-relocated address."""
@@ -115,7 +134,7 @@ class TestRelocationManagerReal:
             manager.add_relocation(0x1000, 0x2000, 64, "move")
 
             new_addr = manager.get_new_address(0x3000)
-            assert new_addr is None
+            expect(not (new_addr is not None))
 
     def test_multiple_relocations(self, ls_elf):
         """Test adding multiple relocations."""
@@ -130,8 +149,8 @@ class TestRelocationManagerReal:
             manager.add_relocation(0x2000, 0x6000, 128, "move")
             manager.add_relocation(0x3000, 0x7000, 256, "copy")
 
-            assert len(manager.relocations) == 3
-            assert len(manager.address_map) == 3
+            expect(len(manager.relocations) == _EXPECTED_LEN_MANAGER_RELOCATIONS_3)
+            expect(len(manager.address_map) == _EXPECTED_LEN_MANAGER_ADDRESS_MAP_3)
 
     def test_find_all_xrefs(self, ls_elf, tmp_path):
         """Test finding all cross-references."""
@@ -146,7 +165,7 @@ class TestRelocationManagerReal:
             manager = RelocationManager(binary)
 
             xrefs = manager._find_all_xrefs()
-            assert isinstance(xrefs, list)
+            expect(isinstance(xrefs, list))
 
     def test_update_all_references(self, ls_elf, tmp_path):
         """Test updating all references."""
@@ -169,8 +188,8 @@ class TestRelocationManagerReal:
 
             # Try to update references (may or may not find any)
             updated = manager.update_all_references()
-            assert isinstance(updated, int)
-            assert updated >= 0
+            expect(isinstance(updated, int))
+            expect(not (updated < 0))
 
     def test_address_map_consistency(self, ls_elf):
         """Test that address_map stays consistent with relocations."""
@@ -184,10 +203,10 @@ class TestRelocationManagerReal:
             manager.add_relocation(0x1000, 0x2000, 64, "move")
             manager.add_relocation(0x3000, 0x4000, 128, "move")
 
-            assert 0x1000 in manager.address_map
-            assert 0x3000 in manager.address_map
-            assert manager.address_map[0x1000] == 0x2000
-            assert manager.address_map[0x3000] == 0x4000
+            expect(not (_EXPECTED_MANAGER_ADDRESS_MAP_4096 not in manager.address_map))
+            expect(not (_EXPECTED_MANAGER_ADDRESS_MAP_12288 not in manager.address_map))
+            expect(manager.address_map[4096] == _EXPECTED_MANAGER_ADDRESS_MAP_0X1000_8192)
+            expect(manager.address_map[12288] == _EXPECTED_MANAGER_ADDRESS_MAP_0X3000_16384)
 
     def test_relocation_types(self, ls_elf):
         """Test different relocation types."""
@@ -202,9 +221,9 @@ class TestRelocationManagerReal:
             manager.add_relocation(0x3000, 0x4000, 128, "copy")
             manager.add_relocation(0x5000, 0x6000, 256, "expand")
 
-            assert manager.relocations[0].relocation_type == "move"
-            assert manager.relocations[1].relocation_type == "copy"
-            assert manager.relocations[2].relocation_type == "expand"
+            expect(manager.relocations[0].relocation_type == "move")
+            expect(manager.relocations[1].relocation_type == "copy")
+            expect(manager.relocations[2].relocation_type == "expand")
 
     def test_has_relocation(self, ls_elf):
         """Test checking if address has relocation."""
@@ -218,5 +237,5 @@ class TestRelocationManagerReal:
             manager.add_relocation(0x1000, 0x2000, 64, "move")
 
             # Check if has relocation using get_new_address
-            assert manager.get_new_address(0x1000) is not None
-            assert manager.get_new_address(0x9000) is None
+            expect(manager.get_new_address(0x1000) is not None)
+            expect(not (manager.get_new_address(0x9000) is not None))

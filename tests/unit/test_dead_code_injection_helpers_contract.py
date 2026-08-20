@@ -4,6 +4,9 @@ from r2morph.mutations.dead_code_injection_helpers import (
     generate_dead_code_for_size,
     is_safe_injection_point,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_GENERATED_4 = 4
 
 
 class _Binary:
@@ -29,9 +32,9 @@ def test_dead_code_injection_helpers_cover_the_core_paths() -> None:
     binary = _Binary()
 
     points = find_injection_points(instructions, 2)
-    assert points and points[0]["type"] == "padding"
-    assert is_safe_injection_point(instructions[0], instructions, 0) is True
-    assert is_safe_injection_point(instructions[2], instructions, 2) is False
-    assert generate_dead_code(binary, "simple")
+    expect(points and points[0]["type"] == "padding")
+    expect(not (is_safe_injection_point(instructions[0], instructions, 0) is not True))
+    expect(not (is_safe_injection_point(instructions[2], instructions, 2) is not False))
+    expect(generate_dead_code(binary, "simple"))
     generated = generate_dead_code_for_size(binary, 4, 0x1000, "simple")
-    assert generated is not None and len(generated) == 4
+    expect(generated is not None and len(generated) == _EXPECTED_LEN_GENERATED_4)

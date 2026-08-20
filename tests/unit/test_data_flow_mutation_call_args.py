@@ -20,6 +20,7 @@ gets from radare2's ``pdj``.
 from __future__ import annotations
 
 from r2morph.mutations.data_flow_mutation import DataFlowMutationPass
+from tests.utils.assertions import expect
 
 
 def _arg_load_call_stream() -> list[dict[str, object]]:
@@ -42,8 +43,9 @@ def test_call_marks_sysv_argument_registers_as_used() -> None:
 
     call_live = live_in[0x100A]
     for arg_reg in ("rdi", "rsi", "rdx", "rcx", "r8", "r9"):
-        assert arg_reg in call_live, (
-            f"SysV arg register {arg_reg!r} must be live at the call site; " f"got {sorted(call_live)!r}"
+        expect(
+            not (arg_reg not in call_live),
+            f"SysV arg register {arg_reg!r} must be live at the call site; " f"got {sorted(call_live)!r}",
         )
 
 
@@ -56,8 +58,9 @@ def test_loaded_argument_register_stays_live_until_call() -> None:
     live_in = pass_obj._analyze_function_liveness(_arg_load_call_stream())
 
     xor_live = live_in[0x1007]
-    assert "rdi" in xor_live, (
-        "rdi was loaded for the upcoming call argument and must remain live " f"at 0x1007; got {sorted(xor_live)!r}"
+    expect(
+        not ("rdi" not in xor_live),
+        "rdi was loaded for the upcoming call argument and must remain live " f"at 0x1007; got {sorted(xor_live)!r}",
     )
 
 
@@ -73,7 +76,8 @@ def test_call_argument_register_never_used_as_substitute_target() -> None:
     candidates = pass_obj._find_safe_substitution_candidates(instructions, live_in, "x86_64")
 
     rdi_targets = [(orig, subst) for _insn, orig, subst in candidates if subst == "rdi"]
-    assert not rdi_targets, (
+    expect(
+        not (rdi_targets),
         "rdi holds the upcoming call argument; the candidate search must not "
-        f"propose it as a substitute: {rdi_targets!r}"
+        f"propose it as a substitute: {rdi_targets!r}",
     )

@@ -1,4 +1,5 @@
 from r2morph.analysis.dataflow_models import DataFlowDirection, DataFlowResult, Definition, DefUseChain, Register, Use
+from tests.utils.assertions import expect
 
 
 def test_dataflow_models_contract() -> None:
@@ -11,6 +12,6 @@ def test_dataflow_models_contract() -> None:
     result = DataFlowResult()
     result.def_use_chains.append(chain)
 
-    assert DataFlowDirection.FORWARD.value == "forward"
-    assert reg.aliases()
-    assert result.get_def_use_chain(reg) == chain
+    expect(DataFlowDirection.FORWARD.value == "forward")
+    expect(reg.aliases())
+    expect(result.get_def_use_chain(reg) == chain)

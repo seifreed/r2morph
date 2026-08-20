@@ -10,6 +10,24 @@ from r2morph.analysis.liveness import (
     LiveRange,
     Register,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_IL_ADDRESS_4096 = 0x1000
+_EXPECTED_LEN_ANALYZER_BLOCK_LIVE_IN_2 = 2
+_EXPECTED_LEN_ANALYZER_BLOCK_LIVE_IN_4 = 4
+_EXPECTED_LEN_ANALYZER_BLOCK_LIVE_OUT_2 = 2
+_EXPECTED_LEN_ANALYZER_BLOCK_LIVE_OUT_4 = 4
+_EXPECTED_LEN_D_USES_2 = 2
+_EXPECTED_LEN_IL_LIVE_BEFORE_2 = 2
+_EXPECTED_LEN_IL_USED_2 = 2
+_EXPECTED_LEN_NEIGHBORS_2 = 2
+_EXPECTED_LEN_NODES_3 = 3
+_EXPECTED_LR_END_ADDRESS_4128 = 0x1020
+_EXPECTED_LR_START_ADDRESS_4096 = 0x1000
+_EXPECTED_R_SIZE_16 = 16
+_EXPECTED_R_SIZE_32 = 32
+_EXPECTED_R_SIZE_64 = 64
+_EXPECTED_R_SIZE_8 = 8
 
 
 def create_simple_cfg() -> ControlFlowGraph:
@@ -142,9 +160,9 @@ class TestLiveRange:
             end_address=0x1020,
         )
 
-        assert lr.register == reg
-        assert lr.start_address == 0x1000
-        assert lr.end_address == 0x1020
+        expect(lr.register == reg)
+        expect(lr.start_address == _EXPECTED_LR_START_ADDRESS_4096)
+        expect(lr.end_address == _EXPECTED_LR_END_ADDRESS_4128)
 
     def test_live_range_contains(self):
         """Test contains method."""
@@ -155,11 +173,11 @@ class TestLiveRange:
             end_address=0x1050,
         )
 
-        assert lr.contains(0x1000) is True
-        assert lr.contains(0x1025) is True
-        assert lr.contains(0x1050) is True
-        assert lr.contains(0x0999) is False
-        assert lr.contains(0x1051) is False
+        expect(not (lr.contains(0x1000) is not True))
+        expect(not (lr.contains(0x1025) is not True))
+        expect(not (lr.contains(0x1050) is not True))
+        expect(not (lr.contains(0x0999) is not False))
+        expect(not (lr.contains(0x1051) is not False))
 
     def test_live_range_overlaps(self):
         """Test overlaps method."""
@@ -170,12 +188,12 @@ class TestLiveRange:
         lr2 = LiveRange(register=reg1, start_address=0x1010, end_address=0x1030)
         lr3 = LiveRange(register=reg1, start_address=0x1025, end_address=0x1050)
 
-        assert lr1.overlaps(lr2) is True
-        assert lr2.overlaps(lr1) is True
-        assert lr1.overlaps(lr3) is False
+        expect(not (lr1.overlaps(lr2) is not True))
+        expect(not (lr2.overlaps(lr1) is not True))
+        expect(not (lr1.overlaps(lr3) is not False))
 
         lr4 = LiveRange(register=reg2, start_address=0x1000, end_address=0x1020)
-        assert lr1.overlaps(lr4) is False
+        expect(not (lr1.overlaps(lr4) is not False))
 
     def test_live_range_to_dict(self):
         """Test to_dict method."""
@@ -190,11 +208,11 @@ class TestLiveRange:
 
         d = lr.to_dict()
 
-        assert d["register"] == "ecx"
-        assert "start" in d
-        assert "end" in d
-        assert "definition" in d
-        assert len(d["uses"]) == 2
+        expect(d["register"] == "ecx")
+        expect(not ("start" not in d))
+        expect(not ("end" not in d))
+        expect(not ("definition" not in d))
+        expect(len(d["uses"]) == _EXPECTED_LEN_D_USES_2)
 
 
 class TestInstructionLiveness:
@@ -207,10 +225,10 @@ class TestInstructionLiveness:
             instruction="mov eax, 1",
         )
 
-        assert il.address == 0x1000
-        assert il.instruction == "mov eax, 1"
-        assert len(il.live_before) == 0
-        assert len(il.live_after) == 0
+        expect(il.address == _EXPECTED_IL_ADDRESS_4096)
+        expect(il.instruction == "mov eax, 1")
+        expect(len(il.live_before) == 0)
+        expect(len(il.live_after) == 0)
 
     def test_instruction_liveness_sets(self):
         """Test liveness sets."""
@@ -226,10 +244,10 @@ class TestInstructionLiveness:
             used={eax, ebx},
         )
 
-        assert len(il.live_before) == 2
-        assert len(il.live_after) == 1
-        assert len(il.defined) == 1
-        assert len(il.used) == 2
+        expect(len(il.live_before) == _EXPECTED_LEN_IL_LIVE_BEFORE_2)
+        expect(len(il.live_after) == 1)
+        expect(len(il.defined) == 1)
+        expect(len(il.used) == _EXPECTED_LEN_IL_USED_2)
 
     def test_instruction_liveness_to_dict(self):
         """Test to_dict method."""
@@ -243,8 +261,8 @@ class TestInstructionLiveness:
 
         d = il.to_dict()
 
-        assert "eax" in d["live_before"]
-        assert d["instruction"] == "mov eax, ebx"
+        expect(not ("eax" not in d["live_before"]))
+        expect(d["instruction"] == "mov eax, ebx")
 
 
 class TestInterferenceGraph:
@@ -254,17 +272,17 @@ class TestInterferenceGraph:
         """Test graph creation."""
         graph = InterferenceGraph()
 
-        assert len(graph.edges) == 0
+        expect(len(graph.edges) == 0)
 
     def test_add_node(self):
         """Test adding nodes."""
         graph = InterferenceGraph()
 
         graph.add_node("eax")
-        assert "eax" in graph.edges
+        expect(not ("eax" not in graph.edges))
 
         graph.add_node("ebx")
-        assert "ebx" in graph.edges
+        expect(not ("ebx" not in graph.edges))
 
     def test_add_edge(self):
         """Test adding edges."""
@@ -272,10 +290,10 @@ class TestInterferenceGraph:
 
         graph.add_edge("eax", "ebx")
 
-        assert "eax" in graph.edges
-        assert "ebx" in graph.edges
-        assert "ebx" in graph.edges["eax"]
-        assert "eax" in graph.edges["ebx"]
+        expect(not ("eax" not in graph.edges))
+        expect(not ("ebx" not in graph.edges))
+        expect(not ("ebx" not in graph.edges["eax"]))
+        expect(not ("eax" not in graph.edges["ebx"]))
 
     def test_interfere(self):
         """Test interfere method."""
@@ -283,9 +301,9 @@ class TestInterferenceGraph:
 
         graph.add_edge("eax", "ebx")
 
-        assert graph.interfere("eax", "ebx") is True
-        assert graph.interfere("ebx", "eax") is True
-        assert graph.interfere("eax", "ecx") is False
+        expect(not (graph.interfere("eax", "ebx") is not True))
+        expect(not (graph.interfere("ebx", "eax") is not True))
+        expect(not (graph.interfere("eax", "ecx") is not False))
 
     def test_get_neighbors(self):
         """Test get_neighbors method."""
@@ -295,9 +313,9 @@ class TestInterferenceGraph:
         graph.add_edge("eax", "ecx")
 
         neighbors = graph.get_neighbors("eax")
-        assert "ebx" in neighbors
-        assert "ecx" in neighbors
-        assert len(neighbors) == 2
+        expect(not ("ebx" not in neighbors))
+        expect(not ("ecx" not in neighbors))
+        expect(len(neighbors) == _EXPECTED_LEN_NEIGHBORS_2)
 
     def test_get_nodes(self):
         """Test get_nodes method."""
@@ -308,10 +326,10 @@ class TestInterferenceGraph:
         graph.add_node("ecx")
 
         nodes = graph.get_nodes()
-        assert len(nodes) == 3
-        assert "eax" in nodes
-        assert "ebx" in nodes
-        assert "ecx" in nodes
+        expect(len(nodes) == _EXPECTED_LEN_NODES_3)
+        expect(not ("eax" not in nodes))
+        expect(not ("ebx" not in nodes))
+        expect(not ("ecx" not in nodes))
 
     def test_to_dict(self):
         """Test to_dict method."""
@@ -322,9 +340,9 @@ class TestInterferenceGraph:
 
         d = graph.to_dict()
 
-        assert "eax" in d
-        assert "ebx" in d["eax"]
-        assert "ecx" in d["eax"]
+        expect(not ("eax" not in d))
+        expect(not ("ebx" not in d["eax"]))
+        expect(not ("ecx" not in d["eax"]))
 
 
 class TestLivenessAnalysis:
@@ -335,8 +353,8 @@ class TestLivenessAnalysis:
         cfg = create_simple_cfg()
         analyzer = LivenessAnalysis(cfg)
 
-        assert analyzer.cfg is cfg
-        assert len(analyzer._instruction_liveness) == 0
+        expect(not (analyzer.cfg is not cfg))
+        expect(len(analyzer._instruction_liveness) == 0)
 
     def test_compute_simple(self):
         """Test compute on simple CFG."""
@@ -344,8 +362,8 @@ class TestLivenessAnalysis:
         analyzer = LivenessAnalysis(cfg)
         analyzer.compute()
 
-        assert len(analyzer._instruction_liveness) > 0
-        assert len(analyzer._live_ranges) > 0
+        expect(not (len(analyzer._instruction_liveness) <= 0))
+        expect(not (len(analyzer._live_ranges) <= 0))
 
     def test_compute_block_liveness(self):
         """Test block-level liveness computation."""
@@ -353,8 +371,8 @@ class TestLivenessAnalysis:
         analyzer = LivenessAnalysis(cfg)
         analyzer._compute_block_liveness()
 
-        assert len(analyzer._block_live_in) == 2
-        assert len(analyzer._block_live_out) == 2
+        expect(len(analyzer._block_live_in) == _EXPECTED_LEN_ANALYZER_BLOCK_LIVE_IN_2)
+        expect(len(analyzer._block_live_out) == _EXPECTED_LEN_ANALYZER_BLOCK_LIVE_OUT_2)
 
     def test_compute_instruction_liveness(self):
         """Test instruction-level liveness computation."""
@@ -363,11 +381,11 @@ class TestLivenessAnalysis:
         analyzer._compute_block_liveness()
         analyzer._compute_instruction_liveness()
 
-        assert len(analyzer._instruction_liveness) > 0
+        expect(not (len(analyzer._instruction_liveness) <= 0))
 
         for addr, il in analyzer._instruction_liveness.items():
-            assert isinstance(il, InstructionLiveness)
-            assert il.address == addr
+            expect(isinstance(il, InstructionLiveness))
+            expect(il.address == addr)
 
     def test_is_live_at(self):
         """Test is_live_at method."""
@@ -378,7 +396,7 @@ class TestLivenessAnalysis:
         eax = Register("eax", 32)
 
         result = analyzer.is_live_at(eax, 0x2000)
-        assert isinstance(result, bool)
+        expect(isinstance(result, bool))
 
     def test_get_live_registers(self):
         """Test get_live_registers method."""
@@ -388,7 +406,7 @@ class TestLivenessAnalysis:
 
         live = analyzer.get_live_registers(0x2000)
 
-        assert isinstance(live, set)
+        expect(isinstance(live, set))
 
     def test_get_live_ranges(self):
         """Test get_live_ranges method."""
@@ -397,11 +415,11 @@ class TestLivenessAnalysis:
         analyzer.compute()
 
         all_ranges = analyzer.get_live_ranges()
-        assert isinstance(all_ranges, list)
+        expect(isinstance(all_ranges, list))
 
         eax = Register("eax", 32)
         eax_ranges = analyzer.get_live_ranges(eax)
-        assert isinstance(eax_ranges, list)
+        expect(isinstance(eax_ranges, list))
 
     def test_get_instruction_liveness(self):
         """Test get_instruction_liveness method."""
@@ -410,7 +428,7 @@ class TestLivenessAnalysis:
         analyzer.compute()
 
         il = analyzer.get_instruction_liveness(0x2000)
-        assert il is None or isinstance(il, InstructionLiveness)
+        expect(il is None or isinstance(il, InstructionLiveness))
 
     def test_get_interference_graph(self):
         """Test get_interference_graph method."""
@@ -419,7 +437,7 @@ class TestLivenessAnalysis:
         analyzer.compute()
 
         graph = analyzer.get_interference_graph()
-        assert isinstance(graph, InterferenceGraph)
+        expect(isinstance(graph, InterferenceGraph))
 
     def test_conditional_cfg(self):
         """Test analysis on conditional CFG."""
@@ -427,8 +445,8 @@ class TestLivenessAnalysis:
         analyzer = LivenessAnalysis(cfg)
         analyzer.compute()
 
-        assert len(analyzer._block_live_in) == 4
-        assert len(analyzer._block_live_out) == 4
+        expect(len(analyzer._block_live_in) == _EXPECTED_LEN_ANALYZER_BLOCK_LIVE_IN_4)
+        expect(len(analyzer._block_live_out) == _EXPECTED_LEN_ANALYZER_BLOCK_LIVE_OUT_4)
 
     def test_register_extraction(self):
         """Test register extraction from instruction."""
@@ -437,13 +455,13 @@ class TestLivenessAnalysis:
 
         regs = analyzer._parse_registers_from_string("mov eax, ebx")
         reg_names = {r.name for r in regs}
-        assert "eax" in reg_names
-        assert "ebx" in reg_names
+        expect(not ("eax" not in reg_names))
+        expect(not ("ebx" not in reg_names))
 
         regs = analyzer._parse_registers_from_string("add rax, r8")
         reg_names = {r.name for r in regs}
-        assert "rax" in reg_names
-        assert "r8" in reg_names
+        expect(not ("rax" not in reg_names))
+        expect(not ("r8" not in reg_names))
 
     def test_to_dict(self):
         """Test to_dict method."""
@@ -453,9 +471,9 @@ class TestLivenessAnalysis:
 
         d = analyzer.to_dict()
 
-        assert "instruction_liveness" in d
-        assert "live_ranges" in d
-        assert "interference_graph" in d
+        expect(not ("instruction_liveness" not in d))
+        expect(not ("live_ranges" not in d))
+        expect(not ("interference_graph" not in d))
 
 
 class TestLivenessWithRealInstructions:
@@ -469,9 +487,8 @@ class TestLivenessWithRealInstructions:
         regs = analyzer._parse_registers_from_string("mov eax, [rax]")
         for r in regs:
             if r.name == "eax":
-                assert r.size == 32
-            elif r.name == "rax":
-                assert r.size == 64
+                expect(r.size == _EXPECTED_R_SIZE_32)
+            expect(not (r.name == "rax" and r.size != _EXPECTED_R_SIZE_64))
 
     def test_8bit_registers(self):
         """Test handling of 8-bit registers."""
@@ -481,11 +498,11 @@ class TestLivenessWithRealInstructions:
         regs = analyzer._parse_registers_from_string("mov al, bl")
         reg_names = {r.name for r in regs}
 
-        assert "al" in reg_names
-        assert "bl" in reg_names
+        expect(not ("al" not in reg_names))
+        expect(not ("bl" not in reg_names))
 
         for r in regs:
-            assert r.size == 8
+            expect(r.size == _EXPECTED_R_SIZE_8)
 
     def test_16bit_registers(self):
         """Test handling of 16-bit registers."""
@@ -495,8 +512,8 @@ class TestLivenessWithRealInstructions:
         regs = analyzer._parse_registers_from_string("mov ax, bx")
         reg_names = {r.name for r in regs}
 
-        assert "ax" in reg_names
-        assert "bx" in reg_names
+        expect(not ("ax" not in reg_names))
+        expect(not ("bx" not in reg_names))
 
         for r in regs:
-            assert r.size == 16
+            expect(r.size == _EXPECTED_R_SIZE_16)

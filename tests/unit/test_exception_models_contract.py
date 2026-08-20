@@ -4,6 +4,10 @@ from r2morph.analysis.exception_models import (
     ExceptionTableEntry,
     LandingPad,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ENTRY_LANDING_PAD_4198416 = 0x401010
+_EXPECTED_FRAME_LANDING_PADS_0_ADDRESS_4198416 = 0x401010
 
 
 def test_exception_models_contract() -> None:
@@ -16,6 +20,6 @@ def test_exception_models_contract() -> None:
     )
     frame = ExceptionFrame(function_start=0x401000, function_end=0x401050, landing_pads=[pad])
 
-    assert pad.action is ExceptionAction.CATCH
-    assert entry.landing_pad == 0x401010
-    assert frame.landing_pads[0].address == 0x401010
+    expect(not (pad.action is not ExceptionAction.CATCH))
+    expect(entry.landing_pad == _EXPECTED_ENTRY_LANDING_PAD_4198416)
+    expect(frame.landing_pads[0].address == _EXPECTED_FRAME_LANDING_PADS_0_ADDRESS_4198416)

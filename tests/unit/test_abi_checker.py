@@ -9,6 +9,8 @@ These tests verify:
 - Platform/arch-specific ABI rules
 """
 
+import importlib
+
 from r2morph.analysis.abi_checker import (
     ABI_SPECS,
     ABIChecker,
@@ -16,6 +18,17 @@ from r2morph.analysis.abi_checker import (
     ABIViolationType,
     detect_abi,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ABI_RED_ZONE_SIZE_128 = 128
+_EXPECTED_ABI_SHADOW_SPACE_SIZE_32 = 32
+_EXPECTED_ABI_STACK_ALIGNMENT_16 = 16
+_EXPECTED_CHECKER_ABI_SHADOW_SPACE_SIZE_32 = 32
+_EXPECTED_SPEC_RED_ZONE_SIZE_128 = 128
+_EXPECTED_SPEC_SHADOW_SPACE_SIZE_32 = 32
+_EXPECTED_SPEC_STACK_ALIGNMENT_16 = 16
+_EXPECTED_SPEC_STACK_ALIGNMENT_16_2 = 16
+_EXPECTED_SPEC_STACK_ALIGNMENT_16_3 = 16
 
 
 class MockBinary:
@@ -38,33 +51,33 @@ class TestABISpecs:
     def test_x86_64_sysv_spec(self):
         """x86_64 System V ABI has correct values."""
         spec = ABI_SPECS["x86_64_sysv"]
-        assert spec.abi_type == ABIType.X86_64_SYSTEM_V
-        assert spec.stack_alignment == 16
-        assert spec.red_zone_size == 128
-        assert spec.shadow_space_size == 0
-        assert "rbx" in spec.callee_saved_regs
-        assert "r12" in spec.callee_saved_regs
-        assert "rdi" in spec.param_regs
+        expect(spec.abi_type == ABIType.X86_64_SYSTEM_V)
+        expect(spec.stack_alignment == _EXPECTED_SPEC_STACK_ALIGNMENT_16)
+        expect(spec.red_zone_size == _EXPECTED_SPEC_RED_ZONE_SIZE_128)
+        expect(spec.shadow_space_size == 0)
+        expect(not ("rbx" not in spec.callee_saved_regs))
+        expect(not ("r12" not in spec.callee_saved_regs))
+        expect(not ("rdi" not in spec.param_regs))
 
     def test_x86_64_windows_spec(self):
         """x86_64 Windows ABI has correct values."""
         spec = ABI_SPECS["x86_64_windows"]
-        assert spec.abi_type == ABIType.X86_64_WINDOWS
-        assert spec.stack_alignment == 16
-        assert spec.red_zone_size == 0
-        assert spec.shadow_space_size == 32
-        assert "rbx" in spec.callee_saved_regs
-        assert "rdi" in spec.callee_saved_regs
-        assert "rcx" in spec.param_regs
+        expect(spec.abi_type == ABIType.X86_64_WINDOWS)
+        expect(spec.stack_alignment == _EXPECTED_SPEC_STACK_ALIGNMENT_16_2)
+        expect(spec.red_zone_size == 0)
+        expect(spec.shadow_space_size == _EXPECTED_SPEC_SHADOW_SPACE_SIZE_32)
+        expect(not ("rbx" not in spec.callee_saved_regs))
+        expect(not ("rdi" not in spec.callee_saved_regs))
+        expect(not ("rcx" not in spec.param_regs))
 
     def test_arm64_aapcs_spec(self):
         """ARM64 AAPCS has correct values."""
         spec = ABI_SPECS["arm64_aapcs"]
-        assert spec.abi_type == ABIType.ARM64_AAPCS
-        assert spec.stack_alignment == 16
-        assert spec.red_zone_size == 0
-        assert "x19" in spec.callee_saved_regs
-        assert "x0" in spec.param_regs
+        expect(spec.abi_type == ABIType.ARM64_AAPCS)
+        expect(spec.stack_alignment == _EXPECTED_SPEC_STACK_ALIGNMENT_16_3)
+        expect(spec.red_zone_size == 0)
+        expect(not ("x19" not in spec.callee_saved_regs))
+        expect(not ("x0" not in spec.param_regs))
 
 
 class TestDetectABI:
@@ -75,31 +88,31 @@ class TestDetectABI:
         mock_binary = MockBinary({"arch": "x86", "bits": 64, "platform": "linux"})
 
         abi = detect_abi(mock_binary)
-        assert abi.abi_type == ABIType.X86_64_SYSTEM_V
-        assert abi.stack_alignment == 16
-        assert abi.red_zone_size == 128
+        expect(abi.abi_type == ABIType.X86_64_SYSTEM_V)
+        expect(abi.stack_alignment == _EXPECTED_ABI_STACK_ALIGNMENT_16)
+        expect(abi.red_zone_size == _EXPECTED_ABI_RED_ZONE_SIZE_128)
 
     def test_detect_x86_64_windows(self):
         """Detect x86_64 Windows ABI from PE binary."""
         mock_binary = MockBinary({"arch": "x86", "bits": 64, "platform": "windows"})
 
         abi = detect_abi(mock_binary)
-        assert abi.abi_type == ABIType.X86_64_WINDOWS
-        assert abi.shadow_space_size == 32
+        expect(abi.abi_type == ABIType.X86_64_WINDOWS)
+        expect(abi.shadow_space_size == _EXPECTED_ABI_SHADOW_SPACE_SIZE_32)
 
     def test_detect_arm64(self):
         """Detect ARM64 AAPCS."""
         mock_binary = MockBinary({"arch": "aarch64", "bits": 64, "platform": "linux"})
 
         abi = detect_abi(mock_binary)
-        assert abi.abi_type == ABIType.ARM64_AAPCS
+        expect(abi.abi_type == ABIType.ARM64_AAPCS)
 
     def test_detect_arm32(self):
         """Detect ARM32 AAPCS."""
         mock_binary = MockBinary({"arch": "arm", "bits": 32, "platform": "linux"})
 
         abi = detect_abi(mock_binary)
-        assert abi.abi_type == ABIType.ARM32_AAPCS
+        expect(abi.abi_type == ABIType.ARM32_AAPCS)
 
 
 class TestStackAlignment:
@@ -122,7 +135,7 @@ class TestStackAlignment:
 
         checker = ABIChecker(mock_binary)
         violations = checker.check_stack_alignment(0x1000)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_misaligned_stack_at_call(self):
         """Violation when stack is misaligned at call."""
@@ -137,8 +150,8 @@ class TestStackAlignment:
 
         checker = ABIChecker(mock_binary)
         violations = checker.check_stack_alignment(0x1000)
-        assert len(violations) == 1
-        assert violations[0].violation_type == ABIViolationType.STACK_ALIGNMENT
+        expect(len(violations) == 1)
+        expect(violations[0].violation_type == ABIViolationType.STACK_ALIGNMENT)
 
     def test_stack_alignment_windows(self):
         """Windows x64 ABI also requires 16-byte alignment."""
@@ -151,9 +164,9 @@ class TestStackAlignment:
         )
 
         checker = ABIChecker(mock_binary)
-        assert checker.abi.abi_type == ABIType.X86_64_WINDOWS
+        expect(checker.abi.abi_type == ABIType.X86_64_WINDOWS)
         violations = checker.check_stack_alignment(0x1000)
-        assert len(violations) == 1
+        expect(len(violations) == 1)
 
 
 class TestRedZone:
@@ -173,7 +186,7 @@ class TestRedZone:
         checker = ABIChecker(mock_binary)
         mutations = [(0x1000, 0x1003)]
         violations = checker.check_red_zone(0x1000, mutations)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_red_zone_exceeded_in_leaf(self):
         """Violation when mutation exceeds red zone in leaf function."""
@@ -188,8 +201,8 @@ class TestRedZone:
         checker = ABIChecker(mock_binary)
         mutations = [(0x1000, 0x1000 + 200)]
         violations = checker.check_red_zone(0x1000, mutations)
-        assert len(violations) == 1
-        assert violations[0].violation_type == ABIViolationType.RED_ZONE_CLOBBER
+        expect(len(violations) == 1)
+        expect(violations[0].violation_type == ABIViolationType.RED_ZONE_CLOBBER)
 
     def test_red_zone_not_applicable_to_windows(self):
         """No red zone checking for Windows ABI."""
@@ -204,7 +217,7 @@ class TestRedZone:
         checker = ABIChecker(mock_binary)
         mutations = [(0x1000, 0x1000 + 200)]
         violations = checker.check_red_zone(0x1000, mutations)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_red_zone_not_applicable_to_non_leaf(self):
         """No red zone violation for non-leaf functions (those with calls)."""
@@ -219,7 +232,7 @@ class TestRedZone:
         checker = ABIChecker(mock_binary)
         mutations = [(0x1000, 0x1000 + 200)]
         violations = checker.check_red_zone(0x1000, mutations)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
 
 class TestShadowSpace:
@@ -238,9 +251,9 @@ class TestShadowSpace:
         )
 
         checker = ABIChecker(mock_binary)
-        assert checker.abi.shadow_space_size == 32
+        expect(checker.abi.shadow_space_size == _EXPECTED_CHECKER_ABI_SHADOW_SPACE_SIZE_32)
         violations = checker.check_shadow_space(0x1000)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_shadow_space_missing_no_push(self):
         """Violation when shadow space not allocated before call."""
@@ -255,8 +268,8 @@ class TestShadowSpace:
 
         checker = ABIChecker(mock_binary)
         violations = checker.check_shadow_space(0x1000)
-        assert len(violations) == 1
-        assert violations[0].violation_type == ABIViolationType.SHADOW_SPACE_VIOLATION
+        expect(len(violations) == 1)
+        expect(violations[0].violation_type == ABIViolationType.SHADOW_SPACE_VIOLATION)
 
     def test_shadow_space_not_applicable_to_linux(self):
         """No shadow space checking for Linux ABI."""
@@ -270,7 +283,7 @@ class TestShadowSpace:
 
         checker = ABIChecker(mock_binary)
         violations = checker.check_shadow_space(0x1000)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
 
 class TestCalleeSaved:
@@ -293,7 +306,7 @@ class TestCalleeSaved:
 
         checker = ABIChecker(mock_binary)
         violations = checker.check_callee_saved(0x1000)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_callee_saved_clobbered(self):
         """Violation when callee-saved register modified without save."""
@@ -307,8 +320,8 @@ class TestCalleeSaved:
 
         checker = ABIChecker(mock_binary)
         violations = checker.check_callee_saved(0x1000)
-        assert len(violations) >= 1
-        assert any(v.violation_type == ABIViolationType.CALLEE_SAVED_CLOBBER for v in violations)
+        expect(not (len(violations) < 1))
+        expect(any(v.violation_type == ABIViolationType.CALLEE_SAVED_CLOBBER for v in violations))
 
     def test_callee_saved_arm64(self):
         """ARM64 callee-saved register preservation."""
@@ -324,7 +337,7 @@ class TestCalleeSaved:
 
         checker = ABIChecker(mock_binary)
         violations = checker.check_callee_saved(0x1000)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
 
 class TestABICheckerIntegration:
@@ -352,7 +365,7 @@ class TestABICheckerIntegration:
         checker = ABIChecker(mock_binary)
         violations = checker.check_all(0x1000)
         stack_violations = [v for v in violations if v.violation_type == ABIViolationType.STACK_ALIGNMENT]
-        assert len(stack_violations) == 0
+        expect(len(stack_violations) == 0)
 
     def test_validate_mutation_introduces_violation(self):
         """Validation detects new violations introduced by mutation."""
@@ -370,9 +383,9 @@ class TestABICheckerIntegration:
 
         result = checker.validate_mutation(0x1000, original_violations)
 
-        assert "valid" in result
-        assert "violations" in result
-        assert "new_violations" in result
+        expect(not ("valid" not in result))
+        expect(not ("violations" not in result))
+        expect(not ("new_violations" not in result))
 
     def test_validate_mutation_preserves_existing(self):
         """Validation preserves existing violations as expected."""
@@ -387,9 +400,9 @@ class TestABICheckerIntegration:
 
         checker = ABIChecker(mock_binary)
 
-        from r2morph.analysis.abi_checker import ABIViolation
+        a_b_i_violation = importlib.import_module("r2morph.analysis.abi_checker").ABIViolation
 
-        existing_violation = ABIViolation(
+        existing_violation = a_b_i_violation(
             violation_type=ABIViolationType.STACK_ALIGNMENT,
             description="Pre-existing issue",
             location=0x1000,
@@ -397,7 +410,7 @@ class TestABICheckerIntegration:
 
         result = checker.validate_mutation(0x1000, [existing_violation])
 
-        assert len(result["new_violations"]) == 0
+        expect(len(result["new_violations"]) == 0)
 
 
 class TestABIViolationTypes:
@@ -405,8 +418,8 @@ class TestABIViolationTypes:
 
     def test_violation_types_exist(self):
         """All violation types should have string values."""
-        assert ABIViolationType.STACK_ALIGNMENT.value == "stack_alignment"
-        assert ABIViolationType.RED_ZONE_CLOBBER.value == "red_zone_clobber"
-        assert ABIViolationType.SHADOW_SPACE_VIOLATION.value == "shadow_space_violation"
-        assert ABIViolationType.CALLEE_SAVED_CLOBBER.value == "callee_saved_clobber"
-        assert ABIViolationType.CALLING_CONVENTION.value == "calling_convention"
+        expect(ABIViolationType.STACK_ALIGNMENT.value == "stack_alignment")
+        expect(ABIViolationType.RED_ZONE_CLOBBER.value == "red_zone_clobber")
+        expect(ABIViolationType.SHADOW_SPACE_VIOLATION.value == "shadow_space_violation")
+        expect(ABIViolationType.CALLEE_SAVED_CLOBBER.value == "callee_saved_clobber")
+        expect(ABIViolationType.CALLING_CONVENTION.value == "calling_convention")

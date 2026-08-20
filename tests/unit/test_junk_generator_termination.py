@@ -17,6 +17,7 @@ post-fix the call returns quickly.
 import threading
 
 from r2morph.mutations.junk_generator import JunkGenerator
+from tests.utils.assertions import expect
 
 # Generous: post-fix generate_junk_code(<=64) returns in well under a
 # second; only a genuine infinite loop reaches this bound.
@@ -33,8 +34,8 @@ def _run_with_timeout(size: int) -> bytes:
     thread.start()
     thread.join(timeout=_TIMEOUT_SECONDS)
 
-    assert not thread.is_alive(), f"generate_junk_code({size}) did not terminate (infinite loop)"
-    assert "result" in box
+    expect(not (thread.is_alive()), f"generate_junk_code({size}) did not terminate (infinite loop)")
+    expect(not ("result" not in box))
     return box["result"]
 
 
@@ -42,16 +43,16 @@ def test_generate_junk_code_small_size_terminates() -> None:
     # 0 < size <= 16: every register is unstored at entry, so pre-fix this
     # hit `if available <= 16: continue` forever.
     result = _run_with_timeout(8)
-    assert isinstance(result, bytes)
+    expect(isinstance(result, bytes))
 
 
 def test_generate_junk_code_boundary_sizes_terminate() -> None:
     for size in (1, 15, 16, 17):
         result = _run_with_timeout(size)
-        assert isinstance(result, bytes)
+        expect(isinstance(result, bytes))
 
 
 def test_generate_junk_code_normal_size_terminates_and_emits() -> None:
     result = _run_with_timeout(64)
-    assert isinstance(result, bytes)
-    assert len(result) > 0
+    expect(isinstance(result, bytes))
+    expect(not (len(result) <= 0))

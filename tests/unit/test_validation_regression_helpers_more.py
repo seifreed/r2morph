@@ -10,6 +10,7 @@ from r2morph.validation.regression import (
     RegressionTestType,
 )
 from r2morph.validation.validator import ValidationResult
+from tests.utils.assertions import expect
 
 
 def test_regression_hash_and_serialization(tmp_path: Path) -> None:
@@ -18,8 +19,8 @@ def test_regression_hash_and_serialization(tmp_path: Path) -> None:
     expected_hash = hashlib.sha256(sample_path.read_bytes()).hexdigest()
 
     framework = RegressionTestFramework(baseline_dir=str(tmp_path))
-    assert framework._compute_input_hash(sample_path) == expected_hash
-    assert framework._compute_input_hash({"key": "value"})
+    expect(framework._compute_input_hash(sample_path) == expected_hash)
+    expect(framework._compute_input_hash({"key": "value"}))
 
     test = RegressionTest(
         name="t1",
@@ -29,8 +30,8 @@ def test_regression_hash_and_serialization(tmp_path: Path) -> None:
         expected_mutations=1,
     )
     test_dict = test.to_dict()
-    assert test_dict["name"] == "t1"
-    assert test_dict["expected_mutations"] == 1
+    expect(test_dict["name"] == "t1")
+    expect(test_dict["expected_mutations"] == 1)
 
     validation = ValidationResult(
         passed=True,
@@ -51,7 +52,7 @@ def test_regression_hash_and_serialization(tmp_path: Path) -> None:
         errors=[],
     )
     result_dict = result.to_dict()
-    assert result_dict["passed"] is True
+    expect(not (result_dict["passed"] is not True))
 
 
 def test_regression_output_comparison_and_values() -> None:
@@ -60,13 +61,13 @@ def test_regression_output_comparison_and_values() -> None:
     actual = {"score": 0.55, "techniques": ["b", "a"], "flag": False, "extra": 1}
 
     issues = framework._compare_outputs(expected, actual, RegressionTestType.DETECTION_ACCURACY)
-    assert any("Missing output keys" in issue for issue in issues) is False
-    assert any("Extra output keys" in issue for issue in issues) is True
-    assert any("Value mismatch" in issue for issue in issues) is True
+    expect(not (any("Missing output keys" in issue for issue in issues) is not False))
+    expect(not (any("Extra output keys" in issue for issue in issues) is not True))
+    expect(not (any("Value mismatch" in issue for issue in issues) is not True))
 
-    assert framework._values_differ(0.5, 0.55, "score") is False
-    assert framework._values_differ(0.5, 0.502, "other") is True
-    assert framework._values_differ(["a", "b"], ["b", "a"], "techniques") is False
+    expect(not (framework._values_differ(0.5, 0.55, "score") is not False))
+    expect(not (framework._values_differ(0.5, 0.502, "other") is not True))
+    expect(not (framework._values_differ(["a", "b"], ["b", "a"], "techniques") is not False))
 
 
 def test_regression_performance_comparison() -> None:
@@ -74,4 +75,4 @@ def test_regression_performance_comparison() -> None:
     baseline = {"runtime_max": 1.0}
     actual = {"runtime": 1.5}
     issues = framework._compare_performance(baseline, actual)
-    assert issues
+    expect(issues)

@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier
+from tests.utils.assertions import expect
 
 
 def test_iterative_simplifier_preprocess_real():
@@ -16,6 +17,6 @@ def test_iterative_simplifier_preprocess_real():
         simplifier = IterativeSimplifier(binary=bin_obj)
         context = simplifier._analyze_binary()
         processed = simplifier._preprocess_binary(context)
-        assert "obfuscation_patterns" in processed
-        assert "vm_dispatchers" in processed
-        assert "mba_expressions" in processed
+        expect(not ("obfuscation_patterns" not in processed))
+        expect(not ("vm_dispatchers" not in processed))
+        expect(not ("mba_expressions" not in processed))

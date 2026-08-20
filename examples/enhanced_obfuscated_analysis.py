@@ -14,6 +14,8 @@ Usage:
     python examples/enhanced_obfuscated_analysis.py /path/to/obfuscated_binary
 """
 
+import importlib
+import logging
 import sys
 import time
 from pathlib import Path
@@ -26,6 +28,10 @@ from r2morph.analysis.symbolic import AngrBridge, PathExplorer, SyntiaFramework
 from r2morph.detection import ObfuscationDetector
 from r2morph.devirtualization import MBASolver, VMHandlerAnalyzer
 from r2morph.instrumentation import FRIDA_AVAILABLE, FridaEngine
+
+_EXPECTED_FUNC_SIZE_1000 = 1000
+_EXPECTED_LEN_BLOCKS_20 = 20
+_EXPECTED_LEN_SYS_ARGV_2 = 2
 
 
 def analyze_obfuscation_techniques(binary: Binary):
@@ -180,12 +186,13 @@ def demonstrate_vm_handler_analysis(binary: Binary, obfuscation_result):
             func_size = func.get("size", 0)
 
             # Large functions with many basic blocks might be dispatchers
-            if func_size > 1000:  # Large function
+            if func_size > _EXPECTED_FUNC_SIZE_1000:  # Large function
                 try:
                     blocks = binary.get_basic_blocks(func_addr)
-                    if len(blocks) > 20:  # Many basic blocks
+                    if len(blocks) > _EXPECTED_LEN_BLOCKS_20:  # Many basic blocks
                         potential_dispatchers.append(func_addr)
                 except Exception:
+                    logging.getLogger(__name__).debug("ignored optional runtime error", exc_info=True)
                     continue
 
         if potential_dispatchers:
@@ -312,7 +319,7 @@ def demonstrate_syntia_integration():
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print("Usage: python enhanced_obfuscated_analysis.py <binary_path>")
         print("\nThis example demonstrates enhanced analysis of obfuscated binaries including:")
         print("  • Advanced packer detection (VMProtect, Themida, etc.)")
@@ -369,7 +376,7 @@ def main():
 
     except Exception as e:
         print(f"\n❌ Analysis failed: {e}")
-        import traceback
+        traceback = importlib.import_module("traceback")
 
         traceback.print_exc()
 

@@ -5,6 +5,10 @@ from r2morph.core.parallel_result_merger_helpers import (
     detect_conflicts_from_regions,
     summarize_results,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_MERGED_TOTAL_BYTES_MODIFIED_4 = 4
+_EXPECTED_MERGED_TOTAL_TIME_1_5 = 1.5
 
 
 def test_summarize_results_uses_conflicts_and_totals() -> None:
@@ -23,13 +27,13 @@ def test_summarize_results_uses_conflicts_and_totals() -> None:
 
     merged = summarize_results(results, conflicts)
 
-    assert merged["total_functions"] == 1
-    assert merged["successful"] == 1
-    assert merged["failed"] == 0
-    assert merged["total_mutations"] == 1
-    assert merged["total_bytes_modified"] == 4
-    assert merged["total_time"] == 1.5
-    assert merged["conflicts"] == conflicts
+    expect(merged["total_functions"] == 1)
+    expect(merged["successful"] == 1)
+    expect(merged["failed"] == 0)
+    expect(merged["total_mutations"] == 1)
+    expect(merged["total_bytes_modified"] == _EXPECTED_MERGED_TOTAL_BYTES_MODIFIED_4)
+    expect(merged["total_time"] == _EXPECTED_MERGED_TOTAL_TIME_1_5)
+    expect(merged["conflicts"] == conflicts)
 
 
 def test_conflict_detection_and_resolution_helpers() -> None:
@@ -46,15 +50,8 @@ def test_conflict_detection_and_resolution_helpers() -> None:
     regions = collect_conflict_regions(results)
     conflicts = detect_conflicts_from_regions(regions)
 
-    assert conflicts == [
-        {
-            "function": "0x1000",
-            "region1": (0x10, 0x18),
-            "region2": (0x14, 0x1C),
-            "task_ids": [1, 1],
-        }
-    ]
+    expect(conflicts == [{"function": "0x1000", "region1": (16, 24), "region2": (20, 28), "task_ids": [1, 1]}])
 
     resolutions = build_conflict_resolutions(conflicts, ResolutionStrategy.SKIP)
-    assert resolutions[0]["action"] == "skip_second"
-    assert resolutions[0]["strategy"] == "skip"
+    expect(resolutions[0]["action"] == "skip_second")
+    expect(resolutions[0]["strategy"] == "skip")

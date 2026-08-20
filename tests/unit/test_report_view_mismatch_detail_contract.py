@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_view_mismatch_detail import build_mismatch_detail
+from tests.utils.assertions import expect
+
+_EXPECTED_DETAIL_BY_PASS_ALPHA_MISMATCH_COUNT_2 = 2
 
 
 def test_build_mismatch_detail_summarizes_regions() -> None:
@@ -22,6 +25,6 @@ def test_build_mismatch_detail_summarizes_regions() -> None:
         mismatch_by_pass={"alpha": {"mismatch_count": 2}},
     )
 
-    assert detail["by_pass"]["alpha"]["mismatch_count"] == 2
-    assert detail["compact_summary"]["degraded_pass_count"] == 1
-    assert detail["summary"]["trigger_pass_count"] == 1
+    expect(detail["by_pass"]["alpha"]["mismatch_count"] == _EXPECTED_DETAIL_BY_PASS_ALPHA_MISMATCH_COUNT_2)
+    expect(detail["compact_summary"]["degraded_pass_count"] == 1)
+    expect(detail["summary"]["trigger_pass_count"] == 1)

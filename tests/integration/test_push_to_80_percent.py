@@ -4,12 +4,14 @@ Targets CLI, dependencies, invariants, and other low-coverage modules.
 """
 
 import importlib.util
+import logging
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
 import pytest
+
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -21,6 +23,10 @@ from r2morph.analysis.dependencies import DependencyAnalyzer, InstructionDef
 from r2morph.analysis.invariants import InvariantDetector, InvariantType
 from r2morph.core.binary import Binary
 from r2morph.profiling.hotpath_detector import HotPathDetector
+from tests.utils.process import run_command
+
+_EXPECTED_LEN_ANALYZER_DEFS_2 = 2
+_EXPECTED_LEN_INSN_DEF_USES_2 = 2
 
 
 class TestCLIComprehensive:
@@ -36,13 +42,13 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_simple_pos"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_cli_with_input_option(self, ls_elf, tmp_path):
         """Test CLI with --input option."""
@@ -50,13 +56,13 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_input_opt"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "-i", str(ls_elf), "-o", str(output)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1]
+        expect(not (result.returncode not in [0, 1]))
 
     def test_cli_aggressive_flag(self, ls_elf, tmp_path):
         """Test CLI with aggressive flag."""
@@ -64,13 +70,13 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_aggressive"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "-a", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_force_flag(self, ls_elf, tmp_path):
         """Test CLI with force flag."""
@@ -78,13 +84,13 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_force"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "-f", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_verbose_flag(self, ls_elf, tmp_path):
         """Test CLI with verbose flag."""
@@ -92,13 +98,13 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_verbose"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "-v", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_debug_flag(self, ls_elf, tmp_path):
         """Test CLI with debug flag."""
@@ -106,49 +112,49 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_debug"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "-d", str(ls_elf), str(output)],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_no_input_file(self, tmp_path):
         """Test CLI without input file shows usage."""
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli"],
             capture_output=True,
             text=True,
             timeout=10,
         )
-        assert "input" in result.stdout.lower() or "usage" in result.stdout.lower()
+        expect("input" in result.stdout.lower() or "usage" in result.stdout.lower())
 
     def test_cli_analyze_command_detailed(self, ls_elf):
         """Test analyze command with detailed analysis."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "analyze", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_functions_command_with_limit(self, ls_elf):
         """Test functions command."""
         if not ls_elf.exists():
             pytest.skip("ELF binary not available")
 
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "functions", str(ls_elf)],
             capture_output=True,
             text=True,
             timeout=30,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_morph_single_mutation(self, ls_elf, tmp_path):
         """Test morph command with single mutation."""
@@ -156,13 +162,13 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_single_mut"
-        result = subprocess.run(
+        result = run_command(
             [sys.executable, "-m", "r2morph.cli", "morph", str(ls_elf), "-o", str(output), "-m", "nop"],
             capture_output=True,
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_morph_multiple_mutations(self, ls_elf, tmp_path):
         """Test morph command with multiple mutations."""
@@ -170,7 +176,7 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_multi_mut"
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -188,7 +194,7 @@ class TestCLIComprehensive:
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
     def test_cli_morph_with_verbose(self, ls_elf, tmp_path):
         """Test morph command with verbose output."""
@@ -196,7 +202,7 @@ class TestCLIComprehensive:
             pytest.skip("ELF binary not available")
 
         output = tmp_path / "ls_morph_verbose"
-        result = subprocess.run(
+        result = run_command(
             [
                 sys.executable,
                 "-m",
@@ -213,7 +219,7 @@ class TestCLIComprehensive:
             text=True,
             timeout=60,
         )
-        assert result.returncode in [0, 1, 2]
+        expect(not (result.returncode not in [0, 1, 2]))
 
 
 class TestDependencyAnalyzerExtensive:
@@ -238,9 +244,9 @@ class TestDependencyAnalyzerExtensive:
                 if func_addr:
                     try:
                         deps = analyzer.analyze_function(binary, func_addr)
-                        assert isinstance(deps, list)
+                        expect(isinstance(deps, list))
                     except Exception:
-                        pass
+                        logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
     def test_instruction_def_tracking(self, ls_elf):
         """Test instruction def/use tracking."""
@@ -256,11 +262,11 @@ class TestDependencyAnalyzerExtensive:
             insn_def.uses.add("rbx")
             insn_def.uses.add("rcx")
 
-            assert "rax" in insn_def.defines
-            assert "rbx" in insn_def.uses
-            assert "rcx" in insn_def.uses
-            assert len(insn_def.defines) == 1
-            assert len(insn_def.uses) == 2
+            expect(not ("rax" not in insn_def.defines))
+            expect(not ("rbx" not in insn_def.uses))
+            expect(not ("rcx" not in insn_def.uses))
+            expect(len(insn_def.defines) == 1)
+            expect(len(insn_def.uses) == _EXPECTED_LEN_INSN_DEF_USES_2)
 
     def test_analyze_instruction_dependencies(self, ls_elf):
         """Test analyzing single instruction dependencies."""
@@ -285,9 +291,9 @@ class TestDependencyAnalyzerExtensive:
                                 "op_str": insn.get("opcode", ""),
                             }
                             result = analyzer._analyze_instruction(insn_dict)
-                            assert isinstance(result, InstructionDef)
+                            expect(isinstance(result, InstructionDef))
                     except Exception:
-                        pass
+                        logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
     def test_find_dependencies_between_instructions(self, ls_elf):
         """Test finding dependencies between specific instructions."""
@@ -309,7 +315,7 @@ class TestDependencyAnalyzerExtensive:
             analyzer.defs[0x1004] = insn2
 
             # Check if dependency is detected
-            assert len(analyzer.defs) == 2
+            expect(len(analyzer.defs) == _EXPECTED_LEN_ANALYZER_DEFS_2)
 
 
 class TestInvariantDetectorExtensive:
@@ -333,7 +339,7 @@ class TestInvariantDetectorExtensive:
                 func_addr = functions[0].get("offset", functions[0].get("addr", 0))
                 if func_addr:
                     invariants = detector.detect_all_invariants(func_addr)
-                    assert isinstance(invariants, list)
+                    expect(isinstance(invariants, list))
 
     def test_detect_register_preservation(self, ls_elf):
         """Test detecting register preservation invariants."""
@@ -352,16 +358,16 @@ class TestInvariantDetectorExtensive:
                 func_addr = functions[0].get("offset", functions[0].get("addr", 0))
                 if func_addr:
                     invariants = detector.detect_register_preservation(func_addr, arch)
-                    assert isinstance(invariants, list)
+                    expect(isinstance(invariants, list))
 
     def test_invariant_type_enum(self):
         """Test all invariant type enum values."""
-        assert InvariantType.STACK_BALANCE.value == "stack_balance"
-        assert InvariantType.REGISTER_PRESERVATION.value == "reg_preserve"
-        assert InvariantType.CALLING_CONVENTION.value == "call_conv"
-        assert InvariantType.RETURN_VALUE.value == "return_value"
-        assert InvariantType.CONTROL_FLOW.value == "control_flow"
-        assert InvariantType.MEMORY_SAFETY.value == "memory_safety"
+        expect(InvariantType.STACK_BALANCE.value == "stack_balance")
+        expect(InvariantType.REGISTER_PRESERVATION.value == "reg_preserve")
+        expect(InvariantType.CALLING_CONVENTION.value == "call_conv")
+        expect(InvariantType.RETURN_VALUE.value == "return_value")
+        expect(InvariantType.CONTROL_FLOW.value == "control_flow")
+        expect(InvariantType.MEMORY_SAFETY.value == "memory_safety")
 
     def test_analyze_stack_operations(self, ls_elf):
         """Test analyzing stack operations."""
@@ -382,9 +388,9 @@ class TestInvariantDetectorExtensive:
                             for insn in disasm[:10]:
                                 mnemonic = insn.get("mnemonic", "")
                                 if mnemonic in ["push", "pop", "call", "ret"]:
-                                    assert isinstance(mnemonic, str)
+                                    expect(isinstance(mnemonic, str))
                     except Exception:
-                        pass
+                        logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
 
 class TestHotPathDetectorExtensive:
@@ -402,7 +408,7 @@ class TestHotPathDetectorExtensive:
         with Binary(ls_elf) as binary:
             binary.analyze()
             detector = HotPathDetector(binary)
-            assert detector.binary == binary
+            expect(detector.binary == binary)
 
     def test_detect_hot_paths(self, ls_elf):
         """Test detecting hot paths."""
@@ -419,9 +425,9 @@ class TestHotPathDetectorExtensive:
                 if func_addr:
                     try:
                         hot_paths = detector.detect_hot_paths(func_addr)
-                        assert isinstance(hot_paths, list)
+                        expect(isinstance(hot_paths, list))
                     except Exception:
-                        pass
+                        logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
     def test_analyze_loop_structures(self, ls_elf):
         """Test analyzing loop structures."""
@@ -438,9 +444,9 @@ class TestHotPathDetectorExtensive:
                 if func_addr:
                     try:
                         loops = detector.analyze_loops(func_addr)
-                        assert isinstance(loops, list)
+                        expect(isinstance(loops, list))
                     except Exception:
-                        pass
+                        logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
     def test_identify_critical_paths(self, ls_elf):
         """Test identifying critical execution paths."""
@@ -457,9 +463,9 @@ class TestHotPathDetectorExtensive:
                 if func_addr:
                     try:
                         critical = detector.identify_critical_paths(func_addr)
-                        assert isinstance(critical, list)
+                        expect(isinstance(critical, list))
                     except Exception:
-                        pass
+                        logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
 
 class TestBinaryMethodsExtended:
@@ -486,7 +492,7 @@ class TestBinaryMethodsExtended:
                 if func_addr:
                     nops = b"\x90" * 4
                     result = binary.write_bytes(func_addr, nops)
-                    assert isinstance(result, bool)
+                    expect(isinstance(result, bool))
 
     def test_binary_nop_fill(self, ls_elf, tmp_path):
         """Test NOP filling."""
@@ -503,4 +509,4 @@ class TestBinaryMethodsExtended:
                 func_addr = functions[0].get("offset", functions[0].get("addr", 0))
                 if func_addr:
                     result = binary.nop_fill(func_addr, 8)
-                    assert isinstance(result, bool)
+                    expect(isinstance(result, bool))

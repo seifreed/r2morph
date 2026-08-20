@@ -11,6 +11,8 @@ import subprocess
 
 import pytest
 
+from tests.utils.process import run_command
+
 
 def pytest_configure(config):
     """Configure custom markers."""
@@ -62,7 +64,7 @@ def system_binaries_available():
 def has_gcc():
     """Check if gcc is available."""
     try:
-        result = subprocess.run(["gcc", "--version"], capture_output=True, timeout=5)
+        result = run_command(["gcc", "--version"], capture_output=True, timeout=5)
         return result.returncode == 0
     except (subprocess.SubprocessError, FileNotFoundError):
         return False
@@ -72,7 +74,7 @@ def has_gcc():
 def has_r2():
     """Check if radare2 is available."""
     try:
-        result = subprocess.run(["r2", "-v"], capture_output=True, timeout=5)
+        result = run_command(["r2", "-v"], capture_output=True, timeout=5)
         return result.returncode == 0
     except (subprocess.SubprocessError, FileNotFoundError):
         return False
@@ -105,7 +107,7 @@ int main() {
     binary_file = tmp_path / "test"
 
     try:
-        subprocess.run(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
+        run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
         return binary_file
     except (subprocess.CalledProcessError, FileNotFoundError):
         pytest.skip("gcc not available")
@@ -142,7 +144,7 @@ int main() {
     binary_file = tmp_path / "functions"
 
     try:
-        subprocess.run(
+        run_command(
             ["gcc", "-o", str(binary_file), str(source_file), "-no-pie", "-O0"], check=True, capture_output=True
         )
         return binary_file
@@ -170,7 +172,7 @@ int main() {
     binary_file = tmp_path / "loops"
 
     try:
-        subprocess.run(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
+        run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
         return binary_file
     except (subprocess.CalledProcessError, FileNotFoundError):
         pytest.skip("gcc not available")
@@ -179,7 +181,7 @@ int main() {
 def _check_gcc_available():
     """Check if gcc is available."""
     try:
-        result = subprocess.run(["gcc", "--version"], capture_output=True, timeout=5)
+        result = run_command(["gcc", "--version"], capture_output=True, timeout=5)
         return result.returncode == 0
     except (subprocess.SubprocessError, FileNotFoundError):
         return False
@@ -188,7 +190,7 @@ def _check_gcc_available():
 def _check_r2_available():
     """Check if radare2 is available."""
     try:
-        result = subprocess.run(["r2", "-v"], capture_output=True, timeout=5)
+        result = run_command(["r2", "-v"], capture_output=True, timeout=5)
         return result.returncode == 0
     except (subprocess.SubprocessError, FileNotFoundError):
         return False

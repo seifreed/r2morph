@@ -11,6 +11,7 @@ from r2morph.analysis.pattern_preservation_detection import (
     detect_tail_call_patterns,
 )
 from r2morph.analysis.pattern_preservation_models import PatternType
+from tests.utils.assertions import expect
 
 
 @dataclass
@@ -84,22 +85,22 @@ def test_pattern_preservation_detection_contract() -> None:
     manager = _Manager()
     manager._exception_reader = _ExceptionReader()
     detect_exception_patterns(manager)
-    assert manager._patterns[0].type == PatternType.EXCEPTION_HANDLER
-    assert manager._patterns[1].type == PatternType.LANDING_PAD
+    expect(manager._patterns[0].type == PatternType.EXCEPTION_HANDLER)
+    expect(manager._patterns[1].type == PatternType.LANDING_PAD)
 
     manager = _Manager()
     manager._switch_analyzer = _SwitchAnalyzer()
     detect_jump_table_patterns(manager)
-    assert any(pattern.type == PatternType.JUMP_TABLE for pattern in manager._patterns)
-    assert any(pattern.type == PatternType.JUMP_TABLE_ENTRY for pattern in manager._patterns)
-    assert any(pattern.type == PatternType.INDIRECT_JUMP for pattern in manager._patterns)
+    expect(any(pattern.type == PatternType.JUMP_TABLE for pattern in manager._patterns))
+    expect(any(pattern.type == PatternType.JUMP_TABLE_ENTRY for pattern in manager._patterns))
+    expect(any(pattern.type == PatternType.INDIRECT_JUMP for pattern in manager._patterns))
 
     manager = _Manager()
     manager._switch_analyzer = _SwitchAnalyzer()
     detect_plt_got_patterns(manager)
-    assert any(pattern.type == PatternType.PLT_THUNK for pattern in manager._patterns)
+    expect(any(pattern.type == PatternType.PLT_THUNK for pattern in manager._patterns))
 
     manager = _Manager()
     manager._switch_analyzer = _SwitchAnalyzer()
     detect_tail_call_patterns(manager)
-    assert any(pattern.type == PatternType.TAIL_CALL for pattern in manager._patterns)
+    expect(any(pattern.type == PatternType.TAIL_CALL for pattern in manager._patterns))

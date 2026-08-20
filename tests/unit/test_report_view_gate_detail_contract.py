@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_view_gate_detail import build_gate_detail
+from tests.utils.assertions import expect
 
 
 def test_build_gate_detail_summarizes_failures() -> None:
@@ -20,7 +21,7 @@ def test_build_gate_detail_summarizes_failures() -> None:
         },
     )
 
-    assert detail["failed"] is True
-    assert detail["failure_count"] == 1
-    assert detail["compact_summary"]["pass_count"] == 1
-    assert detail["passes"] == ["alpha"]
+    expect(not (detail["failed"] is not True))
+    expect(detail["failure_count"] == 1)
+    expect(detail["compact_summary"]["pass_count"] == 1)
+    expect(detail["passes"] == ["alpha"])

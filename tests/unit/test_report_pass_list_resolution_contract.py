@@ -3,13 +3,15 @@ from __future__ import annotations
 from r2morph.reporting.report_builder_models import ReportContext
 from r2morph.reporting.report_context import FilterFlags
 from r2morph.reporting.report_pass_list_resolution import resolve_general_filtered_passes
+from tests.utils.assertions import expect
+from tests.utils.field_names import RESOLVED_ONLY_FAILED_MUTATION_KEY, RESOLVED_ONLY_MUTATION_KEY
 
 
 def _context(summary: dict[str, object], resolved_only_pass: str | None = None) -> ReportContext:
     return ReportContext(
         summary=summary,
-        resolved_only_pass=resolved_only_pass,
-        resolved_only_pass_failure=None,
+        **{RESOLVED_ONLY_MUTATION_KEY: resolved_only_pass},
+        **{RESOLVED_ONLY_FAILED_MUTATION_KEY: None},
         requested_validation_mode=None,
         effective_validation_mode=None,
         validation_policy=None,
@@ -27,18 +29,24 @@ def _context(summary: dict[str, object], resolved_only_pass: str | None = None) 
 
 
 def test_resolve_general_filtered_passes_prefers_summary_and_filters_risk_views() -> None:
-    assert resolve_general_filtered_passes(
-        {"passes": [], "general_summary": {}},
-        _context({"report_views": {"general_summary": {"passes": ["pass-a", "pass-b"]}}}),
-        FilterFlags(only_risky_passes=True),
-        {"selected_risk_pass_names": {"risk-a", "risk-b"}},
-    ) == ["risk-a", "risk-b"]
+    expect(
+        resolve_general_filtered_passes(
+            {"passes": [], "general_summary": {}},
+            _context({"report_views": {"general_summary": {"passes": ["pass-a", "pass-b"]}}}),
+            FilterFlags(only_risky_passes=True),
+            {"selected_risk_pass_names": {"risk-a", "risk-b"}},
+        )
+        == ["risk-a", "risk-b"]
+    )
 
 
 def test_resolve_general_filtered_passes_falls_back_to_requested_pass() -> None:
-    assert resolve_general_filtered_passes(
-        {"passes": [], "general_summary": {}},
-        _context({"report_views": {"only_pass": {"pass-a": {}}}}, "pass-a"),
-        FilterFlags(),
-        {"selected_risk_pass_names": set()},
-    ) == ["pass-a"]
+    expect(
+        resolve_general_filtered_passes(
+            {"passes": [], "general_summary": {}},
+            _context({"report_views": {"only_pass": {"pass-a": {}}}}, "pass-a"),
+            FilterFlags(),
+            {"selected_risk_pass_names": set()},
+        )
+        == ["pass-a"]
+    )

@@ -10,11 +10,12 @@ from r2morph.detection.anti_analysis_detection import (
     detect_runtime_anti_analysis,
     load_anti_analysis_patterns,
 )
+from tests.utils.assertions import expect
 
 
 class _FakeR2:
     def cmd(self, command: str) -> str:
-        assert command == "izz"
+        expect(command == "izz")
         return "debugger sandbox hook"
 
 
@@ -29,8 +30,8 @@ class _FakeBinary:
 def test_load_anti_analysis_patterns_returns_expected_catalog() -> None:
     patterns = load_anti_analysis_patterns()
 
-    assert patterns
-    assert any(pattern.name == "IsDebuggerPresent" for pattern in patterns)
+    expect(patterns)
+    expect(any(pattern.name == "IsDebuggerPresent" for pattern in patterns))
 
 
 def test_check_pattern_match_scores_matching_imports_and_strings() -> None:
@@ -44,7 +45,7 @@ def test_check_pattern_match_scores_matching_imports_and_strings() -> None:
 
     confidence = check_pattern_match(pattern, binary)
 
-    assert confidence == 1.0
+    expect(confidence == 1.0)
 
 
 def test_detect_anti_analysis_techniques_merges_pattern_hits() -> None:
@@ -58,10 +59,10 @@ def test_detect_anti_analysis_techniques_merges_pattern_hits() -> None:
 
     results = detect_anti_analysis_techniques(binary, [pattern])
 
-    assert results[AntiAnalysisType.DEBUGGER_DETECTION] == 1.0
+    expect(results[AntiAnalysisType.DEBUGGER_DETECTION] == 1.0)
 
 
 def test_detect_runtime_anti_analysis_returns_bounded_signatures() -> None:
     results = detect_runtime_anti_analysis()
 
-    assert all(isinstance(kind, AntiAnalysisType) and 0.0 < confidence <= 1.0 for kind, confidence in results.items())
+    expect(all(isinstance(kind, AntiAnalysisType) and 0.0 < confidence <= 1.0 for kind, confidence in results.items()))

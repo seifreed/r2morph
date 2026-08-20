@@ -5,6 +5,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from tests.utils.assertions import expect
 
 
 def test_register_substitution_arm64_skip(tmp_path: Path):
@@ -21,4 +22,4 @@ def test_register_substitution_arm64_skip(tmp_path: Path):
         result = pass_obj.apply(bin_obj)
 
     # arm64 register substitution may produce zero mutations or report an error
-    assert result.get("mutations_applied", 0) == 0
+    expect(result.get("mutations_applied", 0) == 0)

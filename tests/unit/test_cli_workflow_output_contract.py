@@ -4,6 +4,7 @@ import pytest
 import typer
 
 from r2morph.cli_workflow_output import GateOutputOptions, evaluate_and_write_gates, print_mutation_summary
+from tests.utils.assertions import expect
 
 
 def test_print_mutation_summary_handles_basic_result(tmp_path, capsys) -> None:
@@ -19,8 +20,8 @@ def test_print_mutation_summary_handles_basic_result(tmp_path, capsys) -> None:
         tmp_path / "out.bin",
     )
     captured = capsys.readouterr()
-    assert "Mutation Engine Results" in captured.out
-    assert "Binary saved to:" in captured.out
+    expect(not ("Mutation Engine Results" not in captured.out))
+    expect(not ("Binary saved to:" not in captured.out))
 
 
 def test_evaluate_and_write_gates_writes_json(tmp_path) -> None:
@@ -34,7 +35,7 @@ def test_evaluate_and_write_gates_writes_json(tmp_path) -> None:
         },
         GateOutputOptions(report_path, None, None, None),
     )
-    assert report_path.exists()
+    expect(report_path.exists())
 
 
 def test_evaluate_and_write_gates_rejects_min_severity(tmp_path) -> None:

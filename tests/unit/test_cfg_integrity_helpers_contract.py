@@ -2,6 +2,10 @@ from types import SimpleNamespace
 
 from r2morph.validation.cfg_integrity_helpers import create_cfg_snapshot, validate_cfg_snapshot
 from r2morph.validation.cfg_integrity_models import CFGSnapshot, IntegrityStatus
+from tests.utils.assertions import expect
+
+_EXPECTED_SNAPSHOT_ENTRY_BLOCK_4096 = 0x1000
+_EXPECTED_SNAPSHOT_PRESERVED_PATTERNS_0_START_ADDRESS_4096 = 0x1000
 
 
 class _FakeBlock:
@@ -40,11 +44,11 @@ def test_create_cfg_snapshot_collects_edges_and_patterns() -> None:
 
     snapshot = create_cfg_snapshot(_Builder(), _Manager(), 0x1000)
 
-    assert snapshot is not None
-    assert snapshot.entry_block == 0x1000
-    assert snapshot.exit_blocks == [0x2000]
-    assert snapshot.edges == [(0x1000, 0x2000, "normal"), (0x2000, 0x3000, "exception")]
-    assert snapshot.preserved_patterns[0].start_address == 0x1000
+    expect(snapshot is not None)
+    expect(snapshot.entry_block == _EXPECTED_SNAPSHOT_ENTRY_BLOCK_4096)
+    expect(snapshot.exit_blocks == [8192])
+    expect(snapshot.edges == [(4096, 8192, "normal"), (8192, 12288, "exception")])
+    expect(snapshot.preserved_patterns[0].start_address == _EXPECTED_SNAPSHOT_PRESERVED_PATTERNS_0_START_ADDRESS_4096)
 
 
 def test_validate_cfg_snapshot_reports_broken_edges_and_targets() -> None:
@@ -69,6 +73,6 @@ def test_validate_cfg_snapshot_reports_broken_edges_and_targets() -> None:
 
     report = validate_cfg_snapshot(snapshot)
 
-    assert report.valid is False
-    assert any(v.status == IntegrityStatus.BROKEN_EDGE for v in report.violations)
-    assert any(v.status == IntegrityStatus.INVALID_TARGET for v in report.violations)
+    expect(not (report.valid is not False))
+    expect(any(v.status == IntegrityStatus.BROKEN_EDGE for v in report.violations))
+    expect(any(v.status == IntegrityStatus.INVALID_TARGET for v in report.violations))

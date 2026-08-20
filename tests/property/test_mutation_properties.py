@@ -4,11 +4,26 @@ Property-based tests for mutation passes.
 Tests that mutations preserve semantic properties using Hypothesis.
 """
 
+import importlib
+
 import pytest
 
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_LEN_MUTATIONS_2 = 2
+_EXPECTED_RESULT_1000 = 1000
+_EXPECTED_RESULT_NEG__1000 = -1000
+_EXPECTED_SHIFT_24 = 24
+_EXPECTED_STARTS_I_1_STARTS_I_512 = 0x200
+_EXPECTED_STARTS_SORTED_I_1_STARTS_SORTED_I_512 = 0x200
+
+
 try:
-    from hypothesis import assume, given, settings
-    from hypothesis import strategies as st
+    assume = importlib.import_module("hypothesis").assume
+    given = importlib.import_module("hypothesis").given
+    settings = importlib.import_module("hypothesis").settings
+    st = importlib.import_module("hypothesis").strategies
 
     HYPOTHESIS_AVAILABLE = True
 except ImportError:
@@ -16,20 +31,22 @@ except ImportError:
     pytestmark = pytest.mark.skip(reason="Hypothesis not installed")
 
 if HYPOTHESIS_AVAILABLE:
-    from r2morph.mutations.conflict_detector import (
-        ConflictDetector,
-        ConflictType,
-        MutationRegion,
-        analyze_mutations_for_conflicts,
-    )
-    from tests.property.strategies import (
-        Function,
-        create_function_strategy,
-        create_function_with_branches_strategy,
-        create_function_with_loops_strategy,
-        create_mutation_seed_strategy,
-        create_x86_register_strategy,
-    )
+    ConflictDetector = importlib.import_module("r2morph.mutations.conflict_detector").ConflictDetector
+    ConflictType = importlib.import_module("r2morph.mutations.conflict_detector").ConflictType
+    MutationRegion = importlib.import_module("r2morph.mutations.conflict_detector").MutationRegion
+    analyze_mutations_for_conflicts = importlib.import_module(
+        "r2morph.mutations.conflict_detector"
+    ).analyze_mutations_for_conflicts
+    Function = importlib.import_module("tests.property.strategies").Function
+    create_function_strategy = importlib.import_module("tests.property.strategies").create_function_strategy
+    create_function_with_branches_strategy = importlib.import_module(
+        "tests.property.strategies"
+    ).create_function_with_branches_strategy
+    create_function_with_loops_strategy = importlib.import_module(
+        "tests.property.strategies"
+    ).create_function_with_loops_strategy
+    create_mutation_seed_strategy = importlib.import_module("tests.property.strategies").create_mutation_seed_strategy
+    create_x86_register_strategy = importlib.import_module("tests.property.strategies").create_x86_register_strategy
 
     @pytest.mark.property
     class TestMutationRegionProperties:
@@ -43,7 +60,7 @@ if HYPOTHESIS_AVAILABLE:
             """Region end should always be greater than start."""
             end = start + size
             region = MutationRegion(start=start, end=end)
-            assert region.end > region.start
+            expect(not (region.end <= region.start))
 
         @given(
             start1=st.integers(min_value=0x1000, max_value=0x2000),
@@ -54,8 +71,8 @@ if HYPOTHESIS_AVAILABLE:
             """Two regions far apart should not overlap."""
             region1 = MutationRegion(start=start1, end=start1 + size)
             region2 = MutationRegion(start=start2, end=start2 + size)
-            assert not region1.overlaps(region2)
-            assert not region2.overlaps(region1)
+            expect(not (region1.overlaps(region2)))
+            expect(not (region2.overlaps(region1)))
 
         @given(
             start=st.integers(min_value=0x1000, max_value=0x8000),
@@ -64,7 +81,7 @@ if HYPOTHESIS_AVAILABLE:
         def test_region_overlaps_itself(self, start: int, size: int):
             """A region should overlap with itself."""
             region = MutationRegion(start=start, end=start + size)
-            assert region.overlaps(region)
+            expect(region.overlaps(region))
 
         @given(
             start=st.integers(min_value=0x1000, max_value=0x8000),
@@ -78,7 +95,7 @@ if HYPOTHESIS_AVAILABLE:
             region2 = MutationRegion(start=start + offset, end=end + offset)
 
             if region1.overlaps(region2):
-                assert start < (start + offset) < end or start < (end + offset) < end or offset == 0
+                expect(start < (start + offset) < end or start < (end + offset) < end or offset == 0)
 
         @given(
             start=st.integers(min_value=0x1000, max_value=0x8000),
@@ -86,9 +103,9 @@ if HYPOTHESIS_AVAILABLE:
         )
         def test_region_hash_consistency(self, start: int, size: int):
             """Hash should be consistent for same region."""
-            region1 = MutationRegion(start=start, end=start + size, pass_name="test")
-            region2 = MutationRegion(start=start, end=start + size, pass_name="test")
-            assert hash(region1) == hash(region2)
+            region1 = MutationRegion(start=start, end=start + size, **{MUTATION_NAME_KEY: "test"})
+            region2 = MutationRegion(start=start, end=start + size, **{MUTATION_NAME_KEY: "test"})
+            expect(hash(region1) == hash(region2))
 
     @pytest.mark.property
     class TestConflictDetectorProperties:
@@ -108,14 +125,14 @@ if HYPOTHESIS_AVAILABLE:
             """detect_overlaps should be idempotent for same regions."""
             detector = ConflictDetector()
             regions = [
-                MutationRegion(start=start, end=start + size, pass_name=f"pass_{i}")
+                MutationRegion(start=start, end=start + size, **{MUTATION_NAME_KEY: f"pass_{i}"})
                 for i, (start, size) in enumerate(regions_data)
             ]
 
             conflicts1 = detector.detect_overlaps(regions)
             conflicts2 = detector.detect_overlaps(regions)
 
-            assert len(conflicts1) == len(conflicts2)
+            expect(len(conflicts1) == len(conflicts2))
 
         @given(
             st.lists(
@@ -132,13 +149,13 @@ if HYPOTHESIS_AVAILABLE:
                 MutationRegion(
                     start=addr,
                     end=addr + 0x100,
-                    pass_name=f"pass_{i}",
+                    **{MUTATION_NAME_KEY: f"pass_{i}"},
                 )
                 for i, addr in enumerate(starts)
             ]
 
             for i in range(len(starts) - 1):
-                assume(starts[i + 1] - starts[i] >= 0x200 or i == len(starts) - 1)
+                assume(starts[i + 1] - starts[i] >= _EXPECTED_STARTS_I_1_STARTS_I_512 or i == len(starts) - 1)
 
             detector = ConflictDetector()
             overlaps = detector.detect_overlaps(regions)
@@ -148,8 +165,9 @@ if HYPOTHESIS_AVAILABLE:
                     if other_start < start + 0x100:
                         assume(False)
 
-            assert len(overlaps) == 0 or any(
-                regions[i].overlaps(regions[j]) for i in range(len(regions)) for j in range(i + 1, len(regions))
+            expect(
+                len(overlaps) == 0
+                or any(regions[i].overlaps(regions[j]) for i in range(len(regions)) for j in range(i + 1, len(regions)))
             )
 
         @given(
@@ -163,13 +181,13 @@ if HYPOTHESIS_AVAILABLE:
             start2 = start1 + offset
             end2 = start2 + size
 
-            region1 = MutationRegion(start=start1, end=end1, pass_name="pass1")
-            region2 = MutationRegion(start=start2, end=end2, pass_name="pass2")
+            region1 = MutationRegion(start=start1, end=end1, **{MUTATION_NAME_KEY: "pass1"})
+            region2 = MutationRegion(start=start2, end=end2, **{MUTATION_NAME_KEY: "pass2"})
 
             if region1.overlaps(region2) and start1 != start2:
                 detector = ConflictDetector()
                 conflicts = detector.detect_overlaps([region1, region2])
-                assert len(conflicts) >= 1
+                expect(not (len(conflicts) < 1))
 
     @pytest.mark.property
     class TestAnalyzeMutationsProperties:
@@ -179,15 +197,15 @@ if HYPOTHESIS_AVAILABLE:
         def test_analyze_empty_mutations(self, seeds: list):
             """Empty mutation list should return no conflicts."""
             result = analyze_mutations_for_conflicts([])
-            assert result["total_mutations"] == 0
-            assert result["conflicts_found"] == 0
+            expect(result["total_mutations"] == 0)
+            expect(result["conflicts_found"] == 0)
 
         @given(create_mutation_seed_strategy())
         def test_single_mutation_no_conflicts(self, seed: int):
             """Single mutation should never have conflicts."""
             result = analyze_mutations_for_conflicts([{"start": seed, "size": 0x100, "pass_name": "test"}])
-            assert result["total_mutations"] == 1
-            assert result["conflicts_found"] == 0
+            expect(result["total_mutations"] == 1)
+            expect(result["conflicts_found"] == 0)
 
         @given(st.data())
         def test_identical_regions_conflict(self, data):
@@ -201,7 +219,7 @@ if HYPOTHESIS_AVAILABLE:
                     {"start": addr, "size": size, "pass_name": "pass2"},
                 ]
             )
-            assert result["conflicts_found"] >= 1
+            expect(not (result["conflicts_found"] < 1))
 
         @given(
             starts=st.lists(
@@ -225,13 +243,14 @@ if HYPOTHESIS_AVAILABLE:
                 )
 
             well_separated = all(
-                starts_sorted[i + 1] - starts_sorted[i] >= 0x200 for i in range(len(starts_sorted) - 1)
+                starts_sorted[i + 1] - starts_sorted[i] >= _EXPECTED_STARTS_SORTED_I_1_STARTS_SORTED_I_512
+                for i in range(len(starts_sorted) - 1)
             )
 
             assume(well_separated)
 
             result = analyze_mutations_for_conflicts(mutations)
-            assert result["conflicts_found"] == 0
+            expect(result["conflicts_found"] == 0)
 
     @pytest.mark.property
     class TestFunctionProperties:
@@ -240,35 +259,34 @@ if HYPOTHESIS_AVAILABLE:
         @given(create_function_strategy())
         def test_function_size_positive(self, func: Function):
             """Function size should be positive."""
-            assert func.size > 0
+            expect(not (func.size <= 0))
 
         @given(create_function_strategy())
         def test_function_instructions_count(self, func: Function):
             """Function should have at least one instruction."""
-            assert len(func.instructions) >= 1
+            expect(not (len(func.instructions) < 1))
 
         @given(create_function_strategy())
         def test_function_addresses_sequential(self, func: Function):
             """Instruction addresses should be sequential with 4-byte spacing."""
             for i in range(len(func.instructions) - 1):
                 addr_diff = func.instructions[i + 1].address - func.instructions[i].address
-                assert addr_diff == func.instructions[i].size
+                expect(addr_diff == func.instructions[i].size)
 
         @given(create_function_strategy())
         def test_function_first_instruction_at_base(self, func: Function):
             """First instruction should be at function base address."""
-            if func.instructions:
-                assert func.instructions[0].address == func.address
+            expect(not (func.instructions and func.instructions[0].address != func.address))
 
         @given(create_function_with_loops_strategy())
         def test_loopy_function_has_loop(self, func: Function):
             """Loopy function should have loop metadata."""
-            assert "has_loop" in func.metadata
+            expect(not ("has_loop" not in func.metadata))
 
         @given(create_function_with_branches_strategy())
         def test_branched_function_has_branches(self, func: Function):
             """Branched function should have branch metadata."""
-            assert "has_branches" in func.metadata
+            expect(not ("has_branches" not in func.metadata))
 
     @pytest.mark.property
     class TestRegisterConflictProperties:
@@ -294,9 +312,9 @@ if HYPOTHESIS_AVAILABLE:
             conflict = region1.conflicts_with(region2)
 
             if regs1 & regs2:
-                assert conflict == ConflictType.REGISTER_INTERFERENCE
+                expect(conflict == ConflictType.REGISTER_INTERFERENCE)
             else:
-                assert conflict is None or conflict != ConflictType.REGISTER_INTERFERENCE
+                expect(conflict is None or conflict != ConflictType.REGISTER_INTERFERENCE)
 
     @pytest.mark.property
     class TestMemoryConflictProperties:
@@ -322,9 +340,9 @@ if HYPOTHESIS_AVAILABLE:
             conflict = region1.conflicts_with(region2)
 
             if addrs1 & addrs2:
-                assert conflict == ConflictType.MEMORY_INTERFERENCE
+                expect(conflict == ConflictType.MEMORY_INTERFERENCE)
             else:
-                assert conflict is None or conflict != ConflictType.MEMORY_INTERFERENCE
+                expect(conflict is None or conflict != ConflictType.MEMORY_INTERFERENCE)
 
     @pytest.mark.property
     class TestSemanticPreservationProperties:
@@ -351,20 +369,20 @@ if HYPOTHESIS_AVAILABLE:
             for val, count in subs:
                 result -= val * count
 
-            assert isinstance(result, int)
-            assert result >= -1000 and result <= 1000
+            expect(isinstance(result, int))
+            expect(result >= _EXPECTED_RESULT_NEG__1000 and result <= _EXPECTED_RESULT_1000)
 
         @given(st.integers(min_value=0, max_value=0xFFFFFFFF))
         def test_xor_zero_preserves_value(self, value: int):
             """XOR with zero preserves value."""
             result = value ^ 0
-            assert result == value
+            expect(result == value)
 
         @given(st.integers(min_value=0, max_value=0xFFFFFFFF))
         def test_xor_self_is_zero(self, value: int):
             """XOR of value with itself is zero."""
             result = value ^ value
-            assert result == 0
+            expect(result == 0)
 
         @given(st.integers(min_value=0, max_value=0xFFFFFFFF))
         @settings(max_examples=100)
@@ -377,7 +395,7 @@ if HYPOTHESIS_AVAILABLE:
             reg_a, reg_b = reg_b, reg_a
             new_sum = reg_a + reg_b
 
-            assert original_sum == new_sum
+            expect(original_sum == new_sum)
 
         @given(
             st.integers(min_value=0, max_value=0xFFFFFF),
@@ -389,10 +407,10 @@ if HYPOTHESIS_AVAILABLE:
             shifted_left = value << shift
             shifted_back = shifted_left >> shift
 
-            upper_bits_mask = (1 << (24 - shift + 8)) - 1 if shift < 24 else 0xFFFFFFFF
+            upper_bits_mask = (1 << (24 - shift + 8)) - 1 if shift < _EXPECTED_SHIFT_24 else 0xFFFFFFFF
             preserved_value = value & upper_bits_mask
 
-            assert shifted_back >= preserved_value
+            expect(not (shifted_back < preserved_value))
 
     @pytest.mark.property
     class TestSemanticConflictDetectorProperties:
@@ -417,16 +435,18 @@ if HYPOTHESIS_AVAILABLE:
         @settings(max_examples=50)
         def test_semantic_analysis_completeness(self, mutations: list):
             """Semantic conflict analysis should always return a result."""
-            from r2morph.mutations.conflict_detector import SemanticConflictDetector
+            semantic_conflict_detector = importlib.import_module(
+                "r2morph.mutations.conflict_detector"
+            ).SemanticConflictDetector
 
-            detector = SemanticConflictDetector(arch="x86")
+            detector = semantic_conflict_detector(arch="x86")
             result = detector.detect_semantic_conflicts(mutations)
 
-            assert "total_conflicts" in result
-            assert "conflicts" in result
-            assert "has_critical" in result
-            assert "has_high" in result
-            assert isinstance(result["conflicts"], list)
+            expect(not ("total_conflicts" not in result))
+            expect(not ("conflicts" not in result))
+            expect(not ("has_critical" not in result))
+            expect(not ("has_high" not in result))
+            expect(isinstance(result["conflicts"], list))
 
         @given(
             st.lists(
@@ -445,12 +465,14 @@ if HYPOTHESIS_AVAILABLE:
         )
         def test_minimal_mutations_no_semantic_conflicts(self, mutations: list):
             """Minimal mutations with no effects should have no semantic conflicts."""
-            from r2morph.mutations.conflict_detector import SemanticConflictDetector
+            semantic_conflict_detector = importlib.import_module(
+                "r2morph.mutations.conflict_detector"
+            ).SemanticConflictDetector
 
-            detector = SemanticConflictDetector(arch="x86")
+            detector = semantic_conflict_detector(arch="x86")
             result = detector.detect_semantic_conflicts(mutations)
 
-            assert result["total_conflicts"] == 0
+            expect(result["total_conflicts"] == 0)
 
         @given(
             st.lists(
@@ -469,22 +491,26 @@ if HYPOTHESIS_AVAILABLE:
         @settings(max_examples=30)
         def test_multiple_cf_mutations_have_conflicts(self, mutations: list):
             """Multiple control flow mutations should have semantic conflicts."""
-            from r2morph.mutations.conflict_detector import SemanticConflictDetector
+            semantic_conflict_detector = importlib.import_module(
+                "r2morph.mutations.conflict_detector"
+            ).SemanticConflictDetector
 
-            detector = SemanticConflictDetector(arch="x86")
+            detector = semantic_conflict_detector(arch="x86")
             result = detector.detect_semantic_conflicts(mutations)
 
-            if len(mutations) >= 2:
+            if len(mutations) >= _EXPECTED_LEN_MUTATIONS_2:
                 cf_conflicts = [c for c in result["conflicts"] if c.get("type") == "semantic_control_flow"]
-                assert len(cf_conflicts) >= 1
+                expect(not (len(cf_conflicts) < 1))
 
         @given(st.sampled_from(["x86", "arm", "arm64"]))
         def test_arch_specific_invariant_patterns(self, arch: str):
             """Each architecture should have invariant patterns defined."""
-            from r2morph.mutations.conflict_detector import SemanticConflictDetector
+            semantic_conflict_detector = importlib.import_module(
+                "r2morph.mutations.conflict_detector"
+            ).SemanticConflictDetector
 
-            detector = SemanticConflictDetector(arch=arch)
+            detector = semantic_conflict_detector(arch=arch)
 
-            assert "calling_convention" in detector._invariant_patterns
-            assert "callee_saved" in detector._invariant_patterns
-            assert "stack_pointer" in detector._invariant_patterns
+            expect(not ("calling_convention" not in detector._invariant_patterns))
+            expect(not ("callee_saved" not in detector._invariant_patterns))
+            expect(not ("stack_pointer" not in detector._invariant_patterns))

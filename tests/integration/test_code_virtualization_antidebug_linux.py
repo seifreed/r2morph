@@ -28,7 +28,6 @@ import ctypes
 import os
 import shutil
 import signal
-import subprocess
 import sys
 from pathlib import Path
 
@@ -36,6 +35,12 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
+
+_EXPECTED_UNTRACED_45 = 45
+_EXPECTED_UNTRACED_45_2 = 45
+
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
 FIXTURE = _DATASET / "elf_vm_arith_x86_64"
@@ -62,6 +67,16 @@ def _ptrace(request: int, pid: int, addr: int, data: int) -> int:
     return int(libc.ptrace(request, pid, ctypes.c_void_p(addr), ctypes.c_void_p(data)))
 
 
+def _exec_target(path: Path) -> None:
+    libc = ctypes.CDLL("libc.so.6", use_errno=True)
+    libc.execv.argtypes = (ctypes.c_char_p, ctypes.POINTER(ctypes.c_char_p))
+    libc.execv.restype = ctypes.c_int
+    encoded_path = os.fsencode(path)
+    arguments = (ctypes.c_char_p * 2)(encoded_path, None)
+    libc.execv(encoded_path, arguments)
+    os._exit(127)
+
+
 def _reap(pid: int) -> None:
     _ptrace(_PTRACE_KILL, pid, 0, 0)
     with contextlib.suppress(ChildProcessError):
@@ -78,7 +93,7 @@ def _run_single_stepped(path: Path) -> int | None:
     if pid == 0:  # child: request tracing, then become the target
         _ptrace(_PTRACE_TRACEME, 0, 0, 0)
         try:
-            os.execv(str(path), [str(path)])
+            _exec_target(path)
         finally:
             os._exit(127)
 
@@ -113,7 +128,7 @@ def _run_attached(path: Path) -> int | None:
     if pid == 0:  # child: request tracing, then become the target
         _ptrace(_PTRACE_TRACEME, 0, 0, 0)
         try:
-            os.execv(str(path), [str(path)])
+            _exec_target(path)
         finally:
             os._exit(127)
 
@@ -157,11 +172,11 @@ def test_single_stepping_tracer_diverges_from_untraced_exit(tmp_path: Path) -> N
     mutated = tmp_path / "mutated"
     _virtualize(FIXTURE, mutated)
 
-    untraced = subprocess.run([str(mutated)], check=False).returncode
-    assert untraced == 45, "benign native run must preserve the fixture's exit code"
+    untraced = run_command([str(mutated)], check=False).returncode
+    expect(untraced == _EXPECTED_UNTRACED_45, "benign native run must preserve the fixture's exit code")
 
     traced = _run_single_stepped(mutated)
-    assert traced != untraced, "single-stepping did not trip the timing fold"
+    expect(traced != untraced, "single-stepping did not trip the timing fold")
 
 
 @pytest.mark.skipif(
@@ -175,9 +190,9 @@ def test_attached_tracer_diverges_from_untraced_exit(tmp_path: Path) -> None:
     mutated = tmp_path / "mutated"
     _virtualize(FIXTURE, mutated)
 
-    untraced = subprocess.run([str(mutated)], check=False).returncode
-    assert untraced == 45, "benign native run must preserve the fixture's exit code"
+    untraced = run_command([str(mutated)], check=False).returncode
+    expect(untraced == _EXPECTED_UNTRACED_45_2, "benign native run must preserve the fixture's exit code")
 
     # Free-running (not single-stepped), so only the /proc TracerPid fold can trip.
     traced = _run_attached(mutated)
-    assert traced != untraced, "an attached tracer did not trip the /proc TracerPid fold"
+    expect(traced != untraced, "an attached tracer did not trip the /proc TracerPid fold")

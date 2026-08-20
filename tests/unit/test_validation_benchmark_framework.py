@@ -8,6 +8,7 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
 
 
 def test_test_sample_hash_verification(tmp_path):
@@ -28,16 +29,16 @@ def test_test_sample_hash_verification(tmp_path):
         source="unit_test",
     )
 
-    assert sample.file_exists is True
-    assert sample.verify_hash() is True
+    expect(not (sample.file_exists is not True))
+    expect(not (sample.verify_hash() is not True))
 
 
 def test_validation_framework_metrics_and_exports(tmp_path):
     framework = ValidationFramework(test_data_dir=str(tmp_path))
 
     performance, result = framework._measure_performance(lambda: {"ok": True})
-    assert performance.success is True
-    assert result["ok"] is True
+    expect(not (performance.success is not True))
+    expect(not (result["ok"] is not True))
 
     expected = {
         "packer_detected": None,
@@ -85,7 +86,7 @@ def test_validation_framework_metrics_and_exports(tmp_path):
     framework.benchmark_results.append(benchmark)
 
     summary = framework._generate_validation_summary(framework.benchmark_results)
-    assert summary["total_tests"] == 1
+    expect(summary["total_tests"] == 1)
 
     json_path = tmp_path / "results.json"
     csv_path = tmp_path / "results.csv"
@@ -93,8 +94,8 @@ def test_validation_framework_metrics_and_exports(tmp_path):
     framework.export_results(str(json_path), format="json")
     framework.export_results(str(csv_path), format="csv")
 
-    assert json_path.exists()
-    assert csv_path.exists()
+    expect(json_path.exists())
+    expect(csv_path.exists())
 
 
 def test_benchmark_detection_and_pipeline(tmp_path):
@@ -117,7 +118,7 @@ def test_benchmark_detection_and_pipeline(tmp_path):
     framework = ValidationFramework(test_data_dir=str(tmp_path))
 
     detection_result = framework.benchmark_detection(sample)
-    assert detection_result.performance is not None
+    expect(detection_result.performance is not None)
 
     full_result = framework.benchmark_full_pipeline(sample)
-    assert full_result.performance is not None
+    expect(full_result.performance is not None)

@@ -10,6 +10,7 @@ from r2morph.validation.benchmark_runners import (
     benchmark_full_pipeline,
 )
 from r2morph.validation.benchmark_types import BenchmarkCategory, PerformanceMetrics, TestSample, TestSeverity
+from tests.utils.assertions import expect
 
 
 def _performance() -> PerformanceMetrics:
@@ -47,8 +48,8 @@ def test_detection_runner_builds_result(tmp_path) -> None:
         calculate_accuracy_metrics=lambda expected, actual: SimpleNamespace(accuracy=1.0),
     )
 
-    assert result.category == BenchmarkCategory.DETECTION
-    assert result.performance.success is True
+    expect(result.category == BenchmarkCategory.DETECTION)
+    expect(not (result.performance.success is not True))
 
 
 def test_full_pipeline_runner_builds_result(tmp_path) -> None:
@@ -76,8 +77,8 @@ def test_full_pipeline_runner_builds_result(tmp_path) -> None:
         calculate_accuracy_metrics=lambda expected, actual: SimpleNamespace(accuracy=1.0),
     )
 
-    assert result.category == BenchmarkCategory.FULL_PIPELINE
-    assert result.performance.success is True
+    expect(result.category == BenchmarkCategory.FULL_PIPELINE)
+    expect(not (result.performance.success is not True))
 
 
 def test_devirtualization_runner_builds_result(tmp_path) -> None:
@@ -101,5 +102,5 @@ def test_devirtualization_runner_builds_result(tmp_path) -> None:
 
     result = benchmark_devirtualization(sample, measure_performance=measure_performance)
 
-    assert result.category == BenchmarkCategory.DEVIRTUALIZATION
-    assert result.performance.success is True
+    expect(result.category == BenchmarkCategory.DEVIRTUALIZATION)
+    expect(not (result.performance.success is not True))

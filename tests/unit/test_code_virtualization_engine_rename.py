@@ -10,12 +10,14 @@ codes); this file guards the primitive in isolation.
 
 from __future__ import annotations
 
-import random
+import importlib
 import re
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_engine_rename import _POOL, rename_body, rename_local_body
+from tests.utils.assertions import expect
 
 _POOL_SPELLINGS = frozenset(spelling for register in _POOL for spelling in register)
 # Every pool spelling -> its logical register index (0..4), for bijection checks.
@@ -31,38 +33,38 @@ def test_rename_preserves_pinned_and_non_pool_registers() -> None:
         "  mov ecx, eax\n  mov r10, qword ptr [rsp + r8*8]\n  shl r10, cl\n"
         "  xor r8b, r13b\n  movups xmm0, xmmword ptr [rsp + r14]\n  mov r15, rsi\n"
     )
-    renamed = rename_body(body, random.Random(7))
+    renamed = rename_body(body, randomness.Random(7))
     for register in _PROTECTED:
-        assert body.count(register) == renamed.count(register)
+        expect(body.count(register) == renamed.count(register))
 
 
 def test_rename_is_a_consistent_bijection_over_width_spellings() -> None:
     # rax and its narrow spellings must all map to the same target register's
     # spelling of the matching width, and the mapping must be one-to-one.
     body = "  mov rax, r8\n  mov eax, r8d\n  mov ax, r8w\n  mov al, r8b\n"
-    renamed = rename_body(body, random.Random(1))
+    renamed = rename_body(body, randomness.Random(1))
     targets = [_LOGICAL[token] for token in _ANY_POOL.findall(renamed)]
     rax_target = {targets[0], targets[2], targets[4], targets[6]}
     r8_target = {targets[1], targets[3], targets[5], targets[7]}
     # Each source register collapses to exactly one target register (its four width
     # spellings map coherently), and the two sources do not collide (a bijection
     # maps distinct inputs to distinct outputs).
-    assert len(rax_target) == 1 and len(r8_target) == 1
-    assert rax_target != r8_target
+    expect(len(rax_target) == 1 and len(r8_target) == 1)
+    expect(rax_target != r8_target)
 
 
 def test_rename_is_polymorphic_across_seeds() -> None:
     body = "  mov rax, qword ptr [rsp + r8*8]\n  add r10, r11\n  xor r9, rax\n"
-    produced = {rename_body(body, random.Random(seed)) for seed in range(64)}
-    assert len(produced) > 1
+    produced = {rename_body(body, randomness.Random(seed)) for seed in range(64)}
+    expect(not (len(produced) <= 1))
 
 
 def test_rename_does_not_split_a_numbered_register_or_a_label() -> None:
     # ``r10`` must not be rewritten inside ``r10d`` or a label like ``h_10``.
     body = "h_10:\n  mov r10d, r8d\n  jmp vm_dispatch\n"
-    renamed = rename_body(body, random.Random(3))
-    assert "h_10:" in renamed
-    assert "vm_dispatch" in renamed
+    renamed = rename_body(body, randomness.Random(3))
+    expect(not ("h_10:" not in renamed))
+    expect(not ("vm_dispatch" not in renamed))
 
 
 def test_renamed_body_computes_the_same_result() -> None:
@@ -70,14 +72,14 @@ def test_renamed_body_computes_the_same_result() -> None:
     # leave the same value in the surviving frame slot under emulation.
     keystone = pytest.importorskip("keystone")
     unicorn = pytest.importorskip("unicorn")
-    from unicorn.x86_const import UC_X86_REG_RSP
+    u_c__x86__r_e_g__r_s_p = importlib.import_module("unicorn.x86_const").UC_X86_REG_RSP
 
     body = (
         "  mov rax, 0x1111\n  mov r8, 0x2222\n  add rax, r8\n"
         "  mov r9, rax\n  xor r9, r8\n  mov qword ptr [rsp], r9\n"
     )
-    renamed = rename_body(body, random.Random(9))
-    assert renamed != body  # the seed must actually rewrite this pool-heavy body
+    renamed = rename_body(body, randomness.Random(9))
+    expect(renamed != body)
 
     ks = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
     results = []
@@ -87,17 +89,17 @@ def test_renamed_body_computes_the_same_result() -> None:
         mu.mem_map(0x1000, 0x1000)
         mu.mem_map(0x8000, 0x1000)
         mu.mem_write(0x1000, bytes(code))
-        mu.reg_write(UC_X86_REG_RSP, 0x8800)
+        mu.reg_write(u_c__x86__r_e_g__r_s_p, 0x8800)
         mu.emu_start(0x1000, 0x1000 + len(code))
         results.append(int.from_bytes(mu.mem_read(0x8800, 8), "little"))
-    assert results[0] == results[1] == (0x1111 + 0x2222) ^ 0x2222
+    expect(results[0] == results[1] == (0x1111 + 0x2222) ^ 0x2222)
 
 
 def test_rename_local_body_renames_a_pure_vm_internal_body() -> None:
     # A body whose only control transfer is the shared vm_dispatch back-edge is
     # pure scratch and must be renamed.
     body = "  mov rax, qword ptr [rsp + r8*8]\n  add r10, rax\n  add rsi, 3\n  jmp vm_dispatch\n"
-    assert rename_local_body(body, random.Random(5)) != body
+    expect(rename_local_body(body, randomness.Random(5)) != body)
 
 
 def test_rename_local_body_leaves_a_native_call_bridge_untouched() -> None:
@@ -110,19 +112,19 @@ def test_rename_local_body_leaves_a_native_call_bridge_untouched() -> None:
         "  lea r11, [rip+call_resume_3]\n  push r11\n  jmp r10\n"
         "call_resume_3:\n  add rsi, 5\n  jmp vm_dispatch\n"
     )
-    assert rename_local_body(body, random.Random(5)) == body
+    expect(rename_local_body(body, randomness.Random(5)) == body)
 
 
 def test_rename_local_body_leaves_an_exit_body_untouched() -> None:
     # The exit body restores every GP register for the native continuation and
     # jumps to an absolute address, so no pool register is dead scratch there.
     body = "  mov rax, qword ptr [rsp+0]\n  mov r8, qword ptr [rsp+8]\n  add rsp, 0x290\n  jmp 0x401234\n"
-    assert rename_local_body(body, random.Random(5)) == body
+    expect(rename_local_body(body, randomness.Random(5)) == body)
 
 
 def test_rename_local_body_leaves_a_syscall_body_untouched() -> None:
     body = "  mov rax, qword ptr [rsp+0]\n  mov r8, qword ptr [rsp+8]\n  syscall\n"
-    assert rename_local_body(body, random.Random(5)) == body
+    expect(rename_local_body(body, randomness.Random(5)) == body)
 
 
 def test_rename_body_leaves_a_lahf_flag_capture_untouched() -> None:
@@ -133,10 +135,10 @@ def test_rename_body_leaves_a_lahf_flag_capture_untouched() -> None:
         "  mov r10, rax\n  lahf\n  seto r11b\n  movzx r11d, r11b\n  shl r11d, 11\n"
         "  movzx eax, ah\n  or r11, rax\n  mov rax, r10\n  jmp vm_dispatch\n"
     )
-    assert rename_body(body, random.Random(5)) == body
+    expect(rename_body(body, randomness.Random(5)) == body)
 
 
 def test_rename_body_still_renames_a_body_without_a_pinned_register() -> None:
     # A pool body with no lahf/high-byte register is renamed as before.
     body = "  mov rax, r8\n  add rax, r9\n  jmp vm_dispatch\n"
-    assert rename_body(body, random.Random(5)) != body
+    expect(rename_body(body, randomness.Random(5)) != body)

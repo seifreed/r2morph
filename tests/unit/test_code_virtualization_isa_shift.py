@@ -19,6 +19,11 @@ from unicorn import x86_const
 
 from r2morph.mutations.code_virtualization_region_isa import build_isa_spec
 from r2morph.mutations.code_virtualization_region_shift import SHIFT_VARIANT_BITS, shift_flag_capture_asm
+from tests.utils.assertions import expect
+
+_EXPECTED_WIDTH_64 = 64
+_EXPECTED_WIDTH_64_2 = 64
+
 
 _FLAGS_OFF = 0x40
 _STACK_BASE = 0x300000
@@ -44,8 +49,8 @@ _VALUES = (
 def _run(mnemonic: str, width: int, count: int, value: int, variant: int) -> tuple[int, int]:
     """Assemble ``{mnemonic} <reg>, cl`` + the capture idiom, run it, and return the
     (reader-masked flag image, shifted result) the capture leaves behind."""
-    reg = "rax" if width == 64 else "eax"
-    masked_value = value & (0xFFFFFFFFFFFFFFFF if width == 64 else 0xFFFFFFFF)
+    reg = "rax" if width == _EXPECTED_WIDTH_64 else "eax"
+    masked_value = value & (0xFFFFFFFFFFFFFFFF if width == _EXPECTED_WIDTH_64_2 else 0xFFFFFFFF)
     asm = (
         f"  mov rax, {hex(masked_value)}\n"
         f"  mov ecx, {count}\n"
@@ -74,24 +79,24 @@ def test_shift_capture_variant_matches_pushfq_reader_bits() -> None:
                     for value in _VALUES:
                         base_flags, base_result = _run(mnemonic, width, count, value, 0)
                         alt_flags, alt_result = _run(mnemonic, width, count, value, variant)
-                        assert alt_flags == base_flags, (mnemonic, width, count, hex(value), variant)
-                        assert alt_result == base_result, (mnemonic, width, count, hex(value), variant)
+                        expect(alt_flags == base_flags, (mnemonic, width, count, hex(value), variant))
+                        expect(alt_result == base_result, (mnemonic, width, count, hex(value), variant))
 
 
 def test_shift_variant_zero_is_the_canonical_pushfq_spelling() -> None:
-    assert shift_flag_capture_asm(0, _FLAGS_OFF) == f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFF}]\n"
+    expect(shift_flag_capture_asm(0, _FLAGS_OFF) == f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFF}]\n")
 
 
 def test_shift_variant_alternate_differs_from_canonical() -> None:
-    assert shift_flag_capture_asm(1, _FLAGS_OFF) != shift_flag_capture_asm(0, _FLAGS_OFF)
-    assert "lahf" in shift_flag_capture_asm(1, _FLAGS_OFF)
-    assert "pushfq" not in shift_flag_capture_asm(1, _FLAGS_OFF)
+    expect(shift_flag_capture_asm(1, _FLAGS_OFF) != shift_flag_capture_asm(0, _FLAGS_OFF))
+    expect(not ("lahf" not in shift_flag_capture_asm(1, _FLAGS_OFF)))
+    expect("pushfq" not in shift_flag_capture_asm(1, _FLAGS_OFF))
 
 
 def test_build_isa_spec_canonical_shift_variant_is_zero() -> None:
-    assert build_isa_spec(0).shift_variant == 0
+    expect(build_isa_spec(0).shift_variant == 0)
 
 
 def test_build_isa_spec_selects_the_alternate_shift_variant_for_some_seed() -> None:
     variants = {build_isa_spec(seed).shift_variant for seed in range(1, 400)}
-    assert variants == set(range(1 << SHIFT_VARIANT_BITS))
+    expect(variants == set(range(1 << SHIFT_VARIANT_BITS)))

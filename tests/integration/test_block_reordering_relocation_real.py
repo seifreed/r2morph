@@ -16,6 +16,10 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.block_reordering import BlockReorderingPass
+from tests.utils.assertions import expect
+
+_EXPECTED_REGS_EAX_60 = 60
+
 
 _JUMPCHAIN = Path("fixtures/dataset/elf_jumpchain_x86_64")
 _BLOCKSWAP = Path("fixtures/dataset/elf_blockswap_x86_64")
@@ -53,7 +57,7 @@ def _interpret(binary: Binary, entry: int, edi_in: int) -> int:
             addr = insn["jump"] if taken else addr + insn["size"]
             continue
         if itype == "swi":  # syscall
-            assert regs["eax"] == 60, "fixture must exit via sys_exit (eax=60)"
+            expect(regs["eax"] == _EXPECTED_REGS_EAX_60, "fixture must exit via sys_exit (eax=60)")
             return regs["edi"] & 0xFF
         if itype == "ret":
             return regs["edi"] & 0xFF
@@ -107,7 +111,7 @@ def _assert_semantics_preserved(fixture: Path, tmp_path: Path, edi_in: int) -> i
         finally:
             binary.close()
         reordered_count += int(reordered)
-        assert got == expected, f"exit code changed after reorder (seed {seed}): {got} != {expected}"
+        expect(got == expected, f"exit code changed after reorder (seed {seed}): {got} != {expected}")
     return reordered_count
 
 
@@ -115,7 +119,7 @@ def test_jumpchain_reorder_preserves_exit_code(tmp_path: Path) -> None:
     if not _JUMPCHAIN.exists():
         pytest.skip("jump-chain fixture not available")
     reordered = _assert_semantics_preserved(_JUMPCHAIN, tmp_path, edi_in=0)
-    assert reordered > 0, "no seed reordered the jump-chain fixture; test is vacuous"
+    expect(not (reordered <= 0), "no seed reordered the jump-chain fixture; test is vacuous")
 
 
 def test_conditional_fixture_reorder_preserves_exit_code(tmp_path: Path) -> None:
@@ -123,7 +127,7 @@ def test_conditional_fixture_reorder_preserves_exit_code(tmp_path: Path) -> None
         pytest.skip("block-swap fixture not available")
     # edi starts 0 -> `cmp edi,0; je equal` is taken -> eax=2 -> exit(2).
     reordered = _assert_semantics_preserved(_BLOCKSWAP, tmp_path, edi_in=0)
-    assert reordered > 0, "no seed reordered the conditional fixture; test is vacuous"
+    expect(not (reordered <= 0), "no seed reordered the conditional fixture; test is vacuous")
 
 
 def test_reorder_preserves_function_byte_budget(tmp_path: Path) -> None:
@@ -131,11 +135,11 @@ def test_reorder_preserves_function_byte_budget(tmp_path: Path) -> None:
         pytest.skip("jump-chain fixture not available")
     binary, reordered = _reorder(_JUMPCHAIN, tmp_path, seed=0)
     try:
-        assert reordered, "seed 0 was expected to reorder the jump-chain fixture"
+        expect(reordered, "seed 0 was expected to reorder the jump-chain fixture")
         func = binary.get_functions()[0]
         blocks = binary.get_basic_blocks(func["addr"])
         start = min(b["addr"] for b in blocks)
         end = max(b["addr"] + b["size"] for b in blocks)
-        assert end - start == func["size"], "reordering changed the function byte budget"
+        expect(end - start == func["size"], "reordering changed the function byte budget")
     finally:
         binary.close()

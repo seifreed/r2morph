@@ -9,6 +9,10 @@ from r2morph.analysis.cfg_builder_helpers import (
     populate_cfg_edges,
 )
 from r2morph.analysis.cfg_models import BasicBlock, BlockType, ControlFlowGraph, EdgeType
+from tests.utils.assertions import expect
+
+_EXPECTED_BINARY_DISASM_CALLS_2 = 2
+_EXPECTED_CFG_FUNCTION_ADDRESS_4096 = 0x1000
 
 
 class _Binary:
@@ -35,23 +39,23 @@ def test_cfg_builder_helpers_contract() -> None:
     populate_cfg_blocks(cfg, binary, 0x1000, r2_blocks)
     populate_cfg_edges(cfg, r2_blocks)
 
-    assert binary.disasm_calls == 2
-    assert cfg.get_block(0x1000).block_type == BlockType.CONDITIONAL
-    assert cfg.get_block(0x1010).block_type == BlockType.CALL
-    assert (0x1000, 0x1008) in cfg.edges
-    assert (0x1010, 0x4000) in cfg.edges
+    expect(binary.disasm_calls == _EXPECTED_BINARY_DISASM_CALLS_2)
+    expect(cfg.get_block(4096).block_type == BlockType.CONDITIONAL)
+    expect(cfg.get_block(4112).block_type == BlockType.CALL)
+    expect(not ((0x1000, 0x1008) not in cfg.edges))
+    expect(not ((0x1010, 0x4000) not in cfg.edges))
 
-    assert classify_block_type({"fail": 1}) == BlockType.CONDITIONAL
-    assert classify_block_type({"type": "call"}) == BlockType.CALL
-    assert classify_block_type({}) == BlockType.NORMAL
+    expect(classify_block_type({"fail": 1}) == BlockType.CONDITIONAL)
+    expect(classify_block_type({"type": "call"}) == BlockType.CALL)
+    expect(classify_block_type({}) == BlockType.NORMAL)
 
     block = BasicBlock(address=0x2000, size=8, instructions=[{"type": "cjmp"}])
-    assert classify_edge_type(block, "cjmp") == EdgeType.CONDITIONAL_TRUE
-    assert classify_edge_type(block, "cjmp", is_fail_edge=True) == EdgeType.CONDITIONAL_FALSE
-    assert classify_edge_type(block, "ujmp") == EdgeType.INDIRECT
-    assert classify_edge_type(block, "jmp") == EdgeType.NORMAL
+    expect(classify_edge_type(block, "cjmp") == EdgeType.CONDITIONAL_TRUE)
+    expect(classify_edge_type(block, "cjmp", is_fail_edge=True) == EdgeType.CONDITIONAL_FALSE)
+    expect(classify_edge_type(block, "ujmp") == EdgeType.INDIRECT)
+    expect(classify_edge_type(block, "jmp") == EdgeType.NORMAL)
 
-    assert collect_block_instructions(binary, 0x1000, 0x1000, 0x10)
+    expect(collect_block_instructions(binary, 0x1000, 0x1000, 0x10))
 
 
 def test_cfg_builder_still_builds_cfgs_with_helpers() -> None:
@@ -64,5 +68,5 @@ def test_cfg_builder_still_builds_cfgs_with_helpers() -> None:
         r2=None,
     )
     cfg = CFGBuilder(binary).build_cfg(0x1000, "main")
-    assert cfg.function_address == 0x1000
-    assert cfg.get_block(0x1000) is not None
+    expect(cfg.function_address == _EXPECTED_CFG_FUNCTION_ADDRESS_4096)
+    expect(cfg.get_block(0x1000) is not None)

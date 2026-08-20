@@ -3,6 +3,14 @@ from pathlib import Path
 import pytest
 
 from r2morph.detection.entropy_analyzer import EntropyAnalyzer, EntropyResult
+from tests.utils.assertions import expect
+
+_EXPECTED_0_0_8_0 = 8.0
+_EXPECTED_0_0_8_0_2 = 8.0
+_EXPECTED_0_0_8_0_3 = 8.0
+_EXPECTED_0_0_8_0_4 = 8.0
+_EXPECTED_ABS_DELTA_MORPH_ENTROPY_ORIG_ENTROPY_1e_06 = 1e-6
+_EXPECTED_LEN_BLOCKS_4 = 4
 
 
 def test_entropy_analyzer_analyze_file_low_entropy(tmp_path: Path):
@@ -12,12 +20,12 @@ def test_entropy_analyzer_analyze_file_low_entropy(tmp_path: Path):
     analyzer = EntropyAnalyzer()
     result = analyzer.analyze_file(sample)
 
-    assert isinstance(result, EntropyResult)
-    assert 0.0 <= result.overall_entropy <= 8.0
-    assert result.is_packed is False
-    assert isinstance(result.section_entropies, dict)
-    assert isinstance(result.suspicious_sections, list)
-    assert "Normal entropy" in result.analysis
+    expect(isinstance(result, EntropyResult))
+    expect(0.0 <= result.overall_entropy <= _EXPECTED_0_0_8_0)
+    expect(not (result.is_packed is not False))
+    expect(isinstance(result.section_entropies, dict))
+    expect(isinstance(result.suspicious_sections, list))
+    expect(not ("Normal entropy" not in result.analysis))
 
 
 def test_entropy_analyzer_compare_entropy_delta(tmp_path: Path):
@@ -29,9 +37,9 @@ def test_entropy_analyzer_compare_entropy_delta(tmp_path: Path):
     analyzer = EntropyAnalyzer()
     orig_entropy, morph_entropy, delta = analyzer.compare_entropy(orig, morph)
 
-    assert 0.0 <= orig_entropy <= 8.0
-    assert 0.0 <= morph_entropy <= 8.0
-    assert abs(delta - (morph_entropy - orig_entropy)) < 1e-6
+    expect(0.0 <= orig_entropy <= _EXPECTED_0_0_8_0_2)
+    expect(0.0 <= morph_entropy <= _EXPECTED_0_0_8_0_3)
+    expect(not (abs(delta - (morph_entropy - orig_entropy)) >= _EXPECTED_ABS_DELTA_MORPH_ENTROPY_ORIG_ENTROPY_1e_06))
 
 
 def test_entropy_analyzer_visualize_blocks(tmp_path: Path):
@@ -41,8 +49,8 @@ def test_entropy_analyzer_visualize_blocks(tmp_path: Path):
     analyzer = EntropyAnalyzer()
     blocks = analyzer.visualize_entropy(sample, block_size=256)
 
-    assert len(blocks) == 4
-    assert all(0.0 <= value <= 8.0 for value in blocks)
+    expect(len(blocks) == _EXPECTED_LEN_BLOCKS_4)
+    expect(all(0.0 <= value <= _EXPECTED_0_0_8_0_4 for value in blocks))
 
 
 def test_entropy_analyzer_sections_real():
@@ -53,5 +61,5 @@ def test_entropy_analyzer_sections_real():
     analyzer = EntropyAnalyzer()
     result = analyzer.analyze_file(binary_path)
 
-    assert isinstance(result.section_entropies, dict)
-    assert isinstance(result.suspicious_sections, list)
+    expect(isinstance(result.section_entropies, dict))
+    expect(isinstance(result.suspicious_sections, list))

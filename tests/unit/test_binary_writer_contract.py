@@ -2,6 +2,9 @@ from pathlib import Path
 
 from r2morph.core.writer import BinaryWriter
 from tests._doubles.scripted_r2_binary import ScriptedR2Binary
+from tests.utils.assertions import expect
+
+_EXPECTED_BINARY_PATH_READ_BYTES_3_144 = 0x90
 
 
 def test_binary_writer_verified_disassembler_write_increments_counter(tmp_path: Path) -> None:
@@ -10,8 +13,8 @@ def test_binary_writer_verified_disassembler_write_increments_counter(tmp_path: 
     scripted = ScriptedR2Binary({"p8": "90"})
     writer = BinaryWriter(scripted.r2, binary_path, writable=True)
 
-    assert writer.write_bytes(0x1000, b"\x90") is True
-    assert writer.get_mutation_counter() == 1
+    expect(not (writer.write_bytes(0x1000, b"\x90") is not True))
+    expect(writer.get_mutation_counter() == 1)
 
 
 def test_binary_writer_failed_disassembler_write_uses_resolved_file_offset(tmp_path: Path) -> None:
@@ -20,8 +23,8 @@ def test_binary_writer_failed_disassembler_write_uses_resolved_file_offset(tmp_p
     scripted = ScriptedR2Binary({"p8": "00"})
     writer = BinaryWriter(scripted.r2, binary_path, writable=True)
 
-    assert writer.write_bytes(0x1000, b"\x90", lambda _address: 3) is True
-    assert binary_path.read_bytes()[3] == 0x90
+    expect(not (writer.write_bytes(0x1000, b"\x90", lambda _address: 3) is not True))
+    expect(binary_path.read_bytes()[3] == _EXPECTED_BINARY_PATH_READ_BYTES_3_144)
 
 
 def test_binary_writer_rejects_write_outside_known_sections(tmp_path: Path) -> None:
@@ -30,5 +33,5 @@ def test_binary_writer_rejects_write_outside_known_sections(tmp_path: Path) -> N
     scripted = ScriptedR2Binary({"p8": "90"})
     writer = BinaryWriter(scripted.r2, binary_path, writable=True)
 
-    assert writer.write_bytes(0x2000, b"\x90", sections=[{"vaddr": 0x1000, "vsize": 8}]) is False
-    assert writer.get_mutation_counter() == 0
+    expect(not (writer.write_bytes(0x2000, b"\x90", sections=[{"vaddr": 0x1000, "vsize": 8}]) is not False))
+    expect(writer.get_mutation_counter() == 0)

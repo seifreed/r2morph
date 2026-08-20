@@ -1,11 +1,10 @@
 import platform
-import random
 import shutil
-import subprocess
 from pathlib import Path
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.core.binary import Binary
 from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
 from r2morph.mutations.block_reordering import BlockReorderingPass
@@ -14,6 +13,8 @@ from r2morph.mutations.instruction_substitution import InstructionSubstitutionPa
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 
 def _clang_available() -> bool:
@@ -54,7 +55,7 @@ def _build_x86_binary(tmp_dir: Path) -> Path:
         "int main(void) { return asm_ops(3) + branchy(2); }\n"
     )
     output = tmp_dir / "x86_mutations"
-    subprocess.run(
+    run_command(
         ["/usr/bin/clang", "-arch", "x86_64", "-O0", "-fno-inline", "-o", str(output), str(source)],
         check=True,
         capture_output=True,
@@ -81,7 +82,7 @@ def _copy_writable(tmp_path: Path, src: Path) -> Path:
 
 
 def test_x86_nop_insertion_and_substitution_real(x86_binary_path: Path, tmp_path: Path):
-    random.seed(0)
+    randomness.seed(0)
     writable_path = _copy_writable(tmp_path, x86_binary_path)
 
     with Binary(writable_path, writable=True) as bin_obj:
@@ -95,12 +96,12 @@ def test_x86_nop_insertion_and_substitution_real(x86_binary_path: Path, tmp_path
         )
         sub_result = sub_pass.apply(bin_obj)
 
-    assert "mutations_applied" in nop_result
-    assert "mutations_applied" in sub_result
+    expect(not ("mutations_applied" not in nop_result))
+    expect(not ("mutations_applied" not in sub_result))
 
 
 def test_x86_instruction_expansion_and_register_substitution_real(x86_binary_path: Path, tmp_path: Path):
-    random.seed(1)
+    randomness.seed(1)
     writable_path = _copy_writable(tmp_path, x86_binary_path)
 
     with Binary(writable_path, writable=True) as bin_obj:
@@ -114,12 +115,12 @@ def test_x86_instruction_expansion_and_register_substitution_real(x86_binary_pat
         reg_pass = RegisterSubstitutionPass(config={"probability": 1.0, "max_substitutions_per_function": 2})
         reg_result = reg_pass.apply(bin_obj)
 
-    assert "mutations_applied" in exp_result
-    assert "mutations_applied" in reg_result
+    expect(not ("mutations_applied" not in exp_result))
+    expect(not ("mutations_applied" not in reg_result))
 
 
 def test_x86_block_reordering_real(x86_binary_path: Path, tmp_path: Path):
-    random.seed(2)
+    randomness.seed(2)
     writable_path = _copy_writable(tmp_path, x86_binary_path)
 
     with Binary(writable_path, writable=True) as bin_obj:
@@ -127,11 +128,11 @@ def test_x86_block_reordering_real(x86_binary_path: Path, tmp_path: Path):
         pass_obj = BlockReorderingPass(config={"probability": 1.0, "max_functions": 5})
         result = pass_obj.apply(bin_obj)
 
-    assert "functions_processed" in result
+    expect(not ("functions_processed" not in result))
 
 
 def test_x86_opaque_predicates_and_control_flow_detection(x86_binary_path: Path, tmp_path: Path):
-    random.seed(3)
+    randomness.seed(3)
     writable_path = _copy_writable(tmp_path, x86_binary_path)
 
     with Binary(writable_path, writable=True) as bin_obj:
@@ -145,7 +146,7 @@ def test_x86_opaque_predicates_and_control_flow_detection(x86_binary_path: Path,
         custom = analyzer.detect_custom_virtualizer()
         meta = analyzer._detect_metamorphic_engine()
 
-    assert "mutations_applied" in op_result
-    assert isinstance(result.cff_detected, bool)
-    assert isinstance(custom, dict)
-    assert isinstance(meta, dict)
+    expect(not ("mutations_applied" not in op_result))
+    expect(isinstance(result.cff_detected, bool))
+    expect(isinstance(custom, dict))
+    expect(isinstance(meta, dict))

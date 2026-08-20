@@ -15,6 +15,7 @@ import struct
 import pytest
 
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
 
 
 class TestPEIntegrityBasic:
@@ -26,7 +27,7 @@ class TestPEIntegrityBasic:
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         handler = PEHandler(test_file)
-        assert not handler.is_pe()
+        expect(not (handler.is_pe()))
 
     def test_is_pe_with_elf(self, tmp_path):
         """Test is_pe returns False for ELF files."""
@@ -34,7 +35,7 @@ class TestPEIntegrityBasic:
         test_file.write_bytes(b"\x7fELF")
 
         handler = PEHandler(test_file)
-        assert not handler.is_pe()
+        expect(not (handler.is_pe()))
 
     def test_is_pe_with_macho(self, tmp_path):
         """Test is_pe returns False for Mach-O files."""
@@ -42,7 +43,7 @@ class TestPEIntegrityBasic:
         test_file.write_bytes(b"\xfe\xed\xfa\xce")
 
         handler = PEHandler(test_file)
-        assert not handler.is_pe()
+        expect(not (handler.is_pe()))
 
     def test_validate_non_pe(self, tmp_path):
         """Test validate returns False for non-PE."""
@@ -50,7 +51,7 @@ class TestPEIntegrityBasic:
         test_file.write_bytes(b"\x00\x00\x00\x00")
 
         handler = PEHandler(test_file)
-        assert not handler.validate()
+        expect(not (handler.validate()))
 
     def test_validate_integrity_non_pe(self, tmp_path):
         """Test validate_integrity fails for non-PE."""
@@ -60,8 +61,8 @@ class TestPEIntegrityBasic:
         handler = PEHandler(test_file)
         valid, issues = handler.validate_integrity()
 
-        assert not valid
-        assert "Not a PE" in " ".join(issues)
+        expect(not (valid))
+        expect(not ("Not a PE" not in " ".join(issues)))
 
     def test_get_sections_non_pe(self, tmp_path):
         """Test get_sections on non-PE."""
@@ -71,7 +72,7 @@ class TestPEIntegrityBasic:
         handler = PEHandler(test_file)
         sections = handler.get_sections()
 
-        assert sections == []
+        expect(sections == [])
 
     def test_get_imports_non_pe(self, tmp_path):
         """Test get_imports on non-PE."""
@@ -81,7 +82,7 @@ class TestPEIntegrityBasic:
         handler = PEHandler(test_file)
         imports = handler.get_imports()
 
-        assert imports == []
+        expect(imports == [])
 
     def test_get_exports_non_pe(self, tmp_path):
         """Test get_exports on non-PE."""
@@ -91,7 +92,7 @@ class TestPEIntegrityBasic:
         handler = PEHandler(test_file)
         exports = handler.get_exports()
 
-        assert exports == []
+        expect(exports == [])
 
     def test_get_relocations_non_pe(self, tmp_path):
         """Test get_relocations on non-PE."""
@@ -101,7 +102,7 @@ class TestPEIntegrityBasic:
         handler = PEHandler(test_file)
         relocs = handler.get_relocations()
 
-        assert relocs == []
+        expect(relocs == [])
 
     def test_fix_checksum_non_pe(self, tmp_path):
         """Test fix_checksum on non-PE."""
@@ -111,7 +112,7 @@ class TestPEIntegrityBasic:
         handler = PEHandler(test_file)
         result = handler.fix_checksum()
 
-        assert not result
+        expect(not (result))
 
     def test_full_repair_non_pe(self, tmp_path):
         """Test full_repair on non-PE."""
@@ -121,7 +122,7 @@ class TestPEIntegrityBasic:
         handler = PEHandler(test_file)
         success, _repairs = handler.full_repair()
 
-        assert not success
+        expect(not (success))
 
 
 class TestPEBasicParsing:
@@ -185,7 +186,7 @@ class TestPEBasicParsing:
 
         handler = PEHandler(test_file)
 
-        assert handler.is_pe()
+        expect(handler.is_pe())
 
     def test_pe_header_parsing_64bit(self, tmp_path):
         """Test parsing a 64-bit PE header."""
@@ -250,7 +251,7 @@ class TestPEBasicParsing:
 
         handler = PEHandler(test_file)
 
-        assert handler.is_pe()
+        expect(handler.is_pe())
 
     def test_get_checksum_offset(self, tmp_path):
         """Test get_checksum_offset."""
@@ -282,8 +283,8 @@ class TestPEBasicParsing:
         handler = PEHandler(test_file)
         checksum = handler._calculate_pe_checksum()
 
-        assert isinstance(checksum, int)
-        assert checksum >= 0
+        expect(isinstance(checksum, int))
+        expect(not (checksum < 0))
 
     def test_get_pe_header_info(self, tmp_path):
         """Test _read_pe_header."""
@@ -321,7 +322,7 @@ class TestPEChecksumCalculation:
 
         if handler.is_pe():
             checksum = handler._calculate_pe_checksum()
-            assert isinstance(checksum, int)
+            expect(isinstance(checksum, int))
 
     def test_checksum_file_size_included(self, tmp_path):
         """Test that file size is included in checksum."""
@@ -467,10 +468,10 @@ class TestPERepairWorkflow:
         handler = PEHandler(test_file)
 
         valid, _issues = handler.validate_integrity()
-        assert not valid
+        expect(not (valid))
 
         success, _repairs = handler.full_repair()
-        assert not success
+        expect(not (success))
 
     def test_refresh_headers_non_pe(self, tmp_path):
         """Test refresh_headers on non-PE."""
@@ -481,7 +482,7 @@ class TestPERepairWorkflow:
 
         result = handler.refresh_headers()
 
-        assert result is False
+        expect(not (result is not False))
 
     def test_fix_imports_non_pe(self, tmp_path):
         """Test fix_imports on non-PE."""
@@ -492,7 +493,7 @@ class TestPERepairWorkflow:
 
         success, _fixes = handler.fix_imports()
 
-        assert success
+        expect(success)
 
     def test_fix_exports_non_pe(self, tmp_path):
         """Test fix_exports on non-PE."""
@@ -503,7 +504,7 @@ class TestPERepairWorkflow:
 
         success, _fixes = handler.fix_exports()
 
-        assert success
+        expect(success)
 
     def test_fix_resources_non_pe(self, tmp_path):
         """Test fix_resources on non-PE."""
@@ -514,7 +515,7 @@ class TestPERepairWorkflow:
 
         success, _fixes = handler.fix_resources()
 
-        assert success
+        expect(success)
 
 
 class TestPEErrorHandling:
@@ -539,7 +540,7 @@ class TestPEErrorHandling:
 
         handler = PEHandler(test_file)
 
-        assert not handler.is_pe()
+        expect(not (handler.is_pe()))
 
     def test_nonexistent_file(self, tmp_path):
         """Test handling of nonexistent file."""
@@ -547,8 +548,8 @@ class TestPEErrorHandling:
 
         handler = PEHandler(nonexistent)
 
-        assert not handler.is_pe()
-        assert not handler.validate()
+        expect(not (handler.is_pe()))
+        expect(not (handler.validate()))
 
     def test_invalid_pe_signature(self, tmp_path):
         """Test handling of invalid PE signature."""
@@ -558,7 +559,7 @@ class TestPEErrorHandling:
 
         handler = PEHandler(test_file)
 
-        assert not handler.is_pe()
+        expect(not (handler.is_pe()))
 
 
 class TestPEPlatformIntegration:
@@ -573,7 +574,7 @@ class TestPEPlatformIntegration:
         handler = PEHandler(test_file)
         result = handler.add_section(".test", 0x1000)
 
-        assert result is None
+        expect(not (result is not None))
 
 
 class TestPEHandlerCaching:
@@ -605,10 +606,10 @@ class TestPEHandlerCaching:
         handler = PEHandler(test_file)
 
         if hasattr(handler, "_sections_cache"):
-            assert handler._sections_cache is None
+            expect(not (handler._sections_cache is not None))
 
             handler.get_sections()
-            assert handler._sections_cache is not None
+            expect(handler._sections_cache is not None)
 
             handler.get_sections()
             pass

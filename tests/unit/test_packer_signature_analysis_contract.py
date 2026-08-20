@@ -8,6 +8,9 @@ from r2morph.detection.packer_signature_analysis import (
     get_entry_bytes,
 )
 from r2morph.detection.packer_signature_models import PackerSignature, PackerType
+from tests.utils.assertions import expect
+
+_EXPECTED_RESULT_LAYERS_DETECTED_2 = 2
 
 
 class _FakeR2:
@@ -57,7 +60,7 @@ class _FakeBinary:
 def test_get_entry_bytes_reads_hex_bytes() -> None:
     binary = _FakeBinary(r2=_FakeR2(entry_hex="414243"))
 
-    assert get_entry_bytes(binary, 0x401000) == b"ABC"
+    expect(get_entry_bytes(binary, 4198400) == b"ABC")
 
 
 def test_signature_confidence_accounts_for_matching_signals() -> None:
@@ -83,7 +86,7 @@ def test_signature_confidence_accounts_for_matching_signals() -> None:
         _FakeEntropyAnalyzer(7.5),
     )
 
-    assert confidence == 1.0
+    expect(confidence == 1.0)
 
 
 def test_detect_packing_layers_reports_multiple_high_entropy_sections() -> None:
@@ -102,5 +105,5 @@ def test_detect_packing_layers_reports_multiple_high_entropy_sections() -> None:
 
     result = detect_packing_layers(signatures, binary, _FakeEntropyAnalyzer(0.0))
 
-    assert result["requires_unpacking"] is True
-    assert result["layers_detected"] >= 2
+    expect(not (result["requires_unpacking"] is not True))
+    expect(not (result["layers_detected"] < _EXPECTED_RESULT_LAYERS_DETECTED_2))

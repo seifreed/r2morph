@@ -5,6 +5,7 @@ Tests the ability of r2morph to mutate itself - a key test
 of mutation correctness and safety.
 """
 
+import importlib
 import os
 import shutil
 import subprocess
@@ -17,6 +18,11 @@ from r2morph import __version__
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.engine_run import EngineRunOptions
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
+
+_EXPECTED_LEN_PARTS_2 = 2
+
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("SKIP_SELF_MUTATION_TESTS") == "1", reason="Self-mutation tests disabled"
@@ -25,7 +31,7 @@ pytestmark = pytest.mark.skipif(
 
 def get_r2morph_install_path():
     """Get the path to the installed r2morph module."""
-    import r2morph
+    r2morph = importlib.import_module("r2morph")
 
     return Path(r2morph.__file__).parent.parent  # Go up from __init__.py
 
@@ -61,8 +67,8 @@ class TestSelfMutation:
 
     def test_package_location_exists(self, r2morph_package_path):
         """Verify r2morph package exists."""
-        assert r2morph_package_path.exists()
-        assert (r2morph_package_path / "r2morph" / "__init__.py").exists()
+        expect(r2morph_package_path.exists())
+        expect((r2morph_package_path / "r2morph" / "__init__.py").exists())
 
     @pytest.mark.slow
     def test_mute_r2morph_package(self, temp_dir, r2morph_package_path):
@@ -82,8 +88,7 @@ class TestSelfMutation:
 
         # For now, verify we can analyze the package structure
         cli_file = r2morph_src / "cli.py"
-        if cli_file.exists():
-            assert cli_file.stat().st_size > 0, "CLI file should have content"
+        expect(not (cli_file.exists() and cli_file.stat().st_size <= 0), "CLI file should have content")
 
     @pytest.mark.slow
     def test_r2morph_cli_remains_functional(self, temp_dir):
@@ -94,11 +99,11 @@ class TestSelfMutation:
         # Verify module can be imported
 
         # Verify version is accessible
-        assert __version__
+        expect(__version__)
 
         # Verify basic functionality still works
         config = EngineConfig.create_default()
-        assert config is not None
+        expect(config is not None)
 
     def test_mutation_engine_can_analyze_itself(self, temp_dir):
         """Test that the mutation engine can analyze its own code."""
@@ -121,22 +126,22 @@ class TestSelfMutation:
             engine.load_binary(test_binary).analyze()
 
             # Verify basic analysis works
-            assert engine.binary is not None
+            expect(engine.binary is not None)
 
             # Verify functions were found
             functions = list(engine.binary.get_functions())
-            assert len(functions) >= 0, "Should find at least some functions"
+            expect(not (len(functions) < 0), "Should find at least some functions")
 
     def test_version_consistency_after_potential_mutation(self):
         """Test that version remains consistent."""
-        from r2morph import __version__
+        __version__ = importlib.import_module("r2morph").__version__
 
         # Version should be a valid semver string
         parts = __version__.split(".")
-        assert len(parts) >= 2, f"Invalid version format: {__version__}"
+        expect(not (len(parts) < _EXPECTED_LEN_PARTS_2), f"Invalid version format: {__version__}")
 
         # Major version should be numeric
-        assert parts[0].isdigit(), f"Invalid major version: {parts[0]}"
+        expect(parts[0].isdigit(), f"Invalid major version: {parts[0]}")
 
 
 class TestSelfMutationWithRealBinary:
@@ -168,9 +173,7 @@ int main() {
         binary_file = temp_dir / "test_binary"
 
         try:
-            subprocess.run(
-                ["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True
-            )
+            run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
             return binary_file
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("gcc not available")
@@ -188,7 +191,7 @@ int main() {
 
             # Count functions
             functions = list(engine.binary.get_functions())
-            assert len(functions) > 0, "Should find functions"
+            expect(not (len(functions) <= 0), "Should find functions")
 
             # Apply mutations
             engine.add_mutation("nop")
@@ -198,8 +201,8 @@ int main() {
                 engine.save(output)
 
                 # Verify mutated binary still runs
-                run_result = subprocess.run([str(output)], capture_output=True, timeout=5)
-                assert run_result.returncode in {0, 1}
+                run_result = run_command([str(output)], capture_output=True, timeout=5)
+                expect(not (run_result.returncode not in {0, 1}))
 
     def test_self_referential_consistency(self, simple_binary, temp_dir):
         """Test that mutation engine maintains self-consistency."""
@@ -217,7 +220,7 @@ int main() {
                 results.append(func_count)
 
         # Should get consistent results
-        assert results[0] == results[1], "Analysis should be deterministic"
+        expect(results[0] == results[1], "Analysis should be deterministic")
 
 
 class TestMutationIdempotency:
@@ -246,9 +249,7 @@ int main() {
         binary_file = temp_dir / "idempotent"
 
         try:
-            subprocess.run(
-                ["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True
-            )
+            run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
             return binary_file
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("gcc not available")
@@ -288,6 +289,6 @@ int main() {
         # Verify all outputs run successfully
         for output in outputs:
             if output.exists():
-                result = subprocess.run([str(output)], capture_output=True, timeout=5)
+                result = run_command([str(output)], capture_output=True, timeout=5)
                 # Should not crash
-                assert result.returncode in (0, 1), f"Binary {output} crashed"
+                expect(not (result.returncode not in (0, 1)), f"Binary {output} crashed")

@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import z3
 
 from r2morph.analysis.symbolic.constraint_solver import ConstraintSolver, MBAExpression
+from tests.utils.assertions import expect
 
 
 @dataclass
@@ -22,11 +23,11 @@ def test_solve_path_constraints_satisfiable() -> None:
 
     result = solver.solve_path_constraints([wrapper])
 
-    assert result.satisfiable is True
-    assert result.solver_used == "z3"
-    assert result.model is not None
-    assert "x" in result.model
-    assert result.model["x"] > 1
+    expect(not (result.satisfiable is not True))
+    expect(result.solver_used == "z3")
+    expect(result.model is not None)
+    expect(not ("x" not in result.model))
+    expect(not (result.model["x"] <= 1))
 
 
 def test_detect_opaque_predicates_true_false() -> None:
@@ -36,8 +37,8 @@ def test_detect_opaque_predicates_true_false() -> None:
 
     predicates = solver.detect_opaque_predicates(constraints)
 
-    assert any(item["always_true"] for item in predicates)
-    assert any(item["always_false"] for item in predicates)
+    expect(any(item["always_true"] for item in predicates))
+    expect(any(item["always_false"] for item in predicates))
 
 
 def test_simplify_mba_expression_xor_self() -> None:
@@ -46,9 +47,9 @@ def test_simplify_mba_expression_xor_self() -> None:
 
     result = solver.simplify_mba_expression(mba)
 
-    assert result.satisfiable is True
-    assert result.simplified_expression is not None
-    assert "0" in result.simplified_expression
+    expect(not (result.satisfiable is not True))
+    expect(result.simplified_expression is not None)
+    expect(not ("0" not in result.simplified_expression))
 
 
 def test_check_semantic_equivalence_basic() -> None:
@@ -56,5 +57,5 @@ def test_check_semantic_equivalence_basic() -> None:
     equivalent = solver.check_semantic_equivalence("x + 1", "1 + x", {"x"})
     not_equivalent = solver.check_semantic_equivalence("x + 1", "x + 2", {"x"})
 
-    assert equivalent.satisfiable is True
-    assert not_equivalent.satisfiable is False
+    expect(not (equivalent.satisfiable is not True))
+    expect(not (not_equivalent.satisfiable is not False))

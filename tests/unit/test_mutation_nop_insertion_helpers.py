@@ -4,13 +4,16 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.nop_insertion import NopInsertionPass
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_DATA_3 = 3
 
 
 def test_nop_insertion_helpers():
     pass_obj = NopInsertionPass()
     pass_obj._init_nop_equivalents()
-    assert "x86" in pass_obj.NOP_EQUIVALENTS
-    assert pass_obj.NOP_EQUIVALENTS["x86"]
+    expect(not ("x86" not in pass_obj.NOP_EQUIVALENTS))
+    expect(pass_obj.NOP_EQUIVALENTS["x86"])
 
 
 def test_nop_generate_jmp_dead_code():
@@ -27,6 +30,5 @@ def test_nop_generate_jmp_dead_code():
         data = pass_obj._generate_jmp_dead_code(3, 32, bin_obj, 0)
         unsupported = pass_obj._generate_jmp_dead_code(2, 32, bin_obj, 0)
 
-    assert unsupported is None
-    if data is not None:
-        assert len(data) == 3
+    expect(not (unsupported is not None))
+    expect(not (data is not None and len(data) != _EXPECTED_LEN_DATA_3))

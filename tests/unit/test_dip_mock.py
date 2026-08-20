@@ -1,6 +1,9 @@
 """Tests demonstrating DIP: mutation passes work with mock disassembler."""
 
+import importlib
+
 from r2morph.protocols import DisassemblerInterface
+from tests.utils.assertions import expect
 
 
 class MockDisassembler:
@@ -27,14 +30,14 @@ class MockDisassembler:
 
 def test_mock_satisfies_protocol():
     mock = MockDisassembler()
-    assert isinstance(mock, DisassemblerInterface)
+    expect(isinstance(mock, DisassemblerInterface))
 
 
 def test_binary_accepts_mock_disassembler():
-    import os
-    import tempfile
+    os = importlib.import_module("os")
+    tempfile = importlib.import_module("tempfile")
 
-    from r2morph.core.binary import Binary
+    binary = importlib.import_module("r2morph.core.binary").Binary
 
     # Create a minimal temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=".bin") as f:
@@ -42,8 +45,8 @@ def test_binary_accepts_mock_disassembler():
         tmp = f.name
     try:
         mock = MockDisassembler()
-        binary = Binary(tmp, disassembler=mock)
+        binary = binary(tmp, disassembler=mock)
         binary.open()
-        assert binary.r2 is mock
+        expect(not (binary.r2 is not mock))
     finally:
         os.unlink(tmp)

@@ -11,6 +11,31 @@ from r2morph.analysis.critical_nodes import (
     create_exclusion_zones,
     get_safe_mutation_addresses,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CALL_SITES_4112 = 0x1010
+_EXPECTED_CRITICAL_12304 = 0x3010
+_EXPECTED_DETECTOR_DEFAULT_EXCLUSION_RADIUS_3 = 3
+_EXPECTED_ENTRY_EXITS_4096 = 0x1000
+_EXPECTED_ENTRY_EXITS_4128 = 0x1020
+_EXPECTED_LEN_SAFEST_3 = 3
+_EXPECTED_LEN_SAFE_5 = 5
+_EXPECTED_LOOP_HEADERS_12304 = 0x3010
+_EXPECTED_MERGED_END_4144 = 0x1030
+_EXPECTED_MERGED_START_4096 = 0x1000
+_EXPECTED_NODE_ADDRESS_4096 = 0x1000
+_EXPECTED_NODE_EXCLUSION_RADIUS_3 = 3
+_EXPECTED_R_2457 = 0x0999
+_EXPECTED_R_4096 = 0x1000
+_EXPECTED_R_4112 = 0x1010
+_EXPECTED_R_4128 = 0x1020
+_EXPECTED_R_4129 = 0x1021
+_EXPECTED_R_END_4128 = 0x1020
+_EXPECTED_R_SIZE_33 = 0x21
+_EXPECTED_R_START_4096 = 0x1000
+_EXPECTED_TARGETS_8208 = 0x2010
+_EXPECTED_TARGETS_8224 = 0x2020
+_EXPECTED_TARGETS_8240 = 0x2030
 
 
 def create_simple_cfg() -> ControlFlowGraph:
@@ -209,18 +234,18 @@ class TestAddressRange:
         """Test address range creation."""
         r = AddressRange(start=0x1000, end=0x1020)
 
-        assert r.start == 0x1000
-        assert r.end == 0x1020
+        expect(r.start == _EXPECTED_R_START_4096)
+        expect(r.end == _EXPECTED_R_END_4128)
 
     def test_range_contains(self):
         """Test contains method."""
         r = AddressRange(start=0x1000, end=0x1020)
 
-        assert 0x1000 in r
-        assert 0x1010 in r
-        assert 0x1020 in r
-        assert 0x0999 not in r
-        assert 0x1021 not in r
+        expect(not (_EXPECTED_R_4096 not in r))
+        expect(not (_EXPECTED_R_4112 not in r))
+        expect(not (_EXPECTED_R_4128 not in r))
+        expect(_EXPECTED_R_2457 not in r)
+        expect(_EXPECTED_R_4129 not in r)
 
     def test_range_overlaps(self):
         """Test overlaps method."""
@@ -228,9 +253,9 @@ class TestAddressRange:
         r2 = AddressRange(start=0x1010, end=0x1030)
         r3 = AddressRange(start=0x1030, end=0x1050)
 
-        assert r1.overlaps(r2) is True
-        assert r2.overlaps(r1) is True
-        assert r1.overlaps(r3) is False
+        expect(not (r1.overlaps(r2) is not True))
+        expect(not (r2.overlaps(r1) is not True))
+        expect(not (r1.overlaps(r3) is not False))
 
     def test_range_merge(self):
         """Test merge method."""
@@ -239,23 +264,23 @@ class TestAddressRange:
 
         merged = r1.merge(r2)
 
-        assert merged.start == 0x1000
-        assert merged.end == 0x1030
+        expect(merged.start == _EXPECTED_MERGED_START_4096)
+        expect(merged.end == _EXPECTED_MERGED_END_4144)
 
     def test_range_size(self):
         """Test size method."""
         r = AddressRange(start=0x1000, end=0x1020)
 
-        assert r.size() == 0x21
+        expect(r.size() == _EXPECTED_R_SIZE_33)
 
     def test_range_to_dict(self):
         """Test to_dict method."""
         r = AddressRange(start=0x1000, end=0x1020)
         d = r.to_dict()
 
-        assert "start" in d
-        assert "end" in d
-        assert "size" in d
+        expect(not ("start" not in d))
+        expect(not ("end" not in d))
+        expect(not ("size" not in d))
 
 
 class TestCriticalNode:
@@ -270,9 +295,9 @@ class TestCriticalNode:
             exclusion_radius=3,
         )
 
-        assert node.address == 0x1000
-        assert node.node_type == "branch_target"
-        assert node.exclusion_radius == 3
+        expect(node.address == _EXPECTED_NODE_ADDRESS_4096)
+        expect(node.node_type == "branch_target")
+        expect(node.exclusion_radius == _EXPECTED_NODE_EXCLUSION_RADIUS_3)
 
     def test_node_to_dict(self):
         """Test to_dict method."""
@@ -283,9 +308,9 @@ class TestCriticalNode:
         )
         d = node.to_dict()
 
-        assert "address" in d
-        assert "type" in d
-        assert "reason" in d
+        expect(not ("address" not in d))
+        expect(not ("type" not in d))
+        expect(not ("reason" not in d))
 
 
 class TestCriticalNodeDetector:
@@ -296,8 +321,8 @@ class TestCriticalNodeDetector:
         cfg = create_simple_cfg()
         detector = CriticalNodeDetector(cfg)
 
-        assert detector.cfg is cfg
-        assert detector.default_exclusion_radius == 3
+        expect(not (detector.cfg is not cfg))
+        expect(detector.default_exclusion_radius == _EXPECTED_DETECTOR_DEFAULT_EXCLUSION_RADIUS_3)
 
     def test_find_branch_targets(self):
         """Test finding branch targets."""
@@ -306,9 +331,9 @@ class TestCriticalNodeDetector:
 
         targets = detector.find_branch_targets()
 
-        assert 0x2010 in targets
-        assert 0x2020 in targets
-        assert 0x2030 in targets
+        expect(not (_EXPECTED_TARGETS_8208 not in targets))
+        expect(not (_EXPECTED_TARGETS_8224 not in targets))
+        expect(not (_EXPECTED_TARGETS_8240 not in targets))
 
     def test_find_call_sites(self):
         """Test finding call sites."""
@@ -317,7 +342,7 @@ class TestCriticalNodeDetector:
 
         call_sites = detector.find_call_sites()
 
-        assert 0x1010 in call_sites
+        expect(not (_EXPECTED_CALL_SITES_4112 not in call_sites))
 
     def test_find_entry_exits(self):
         """Test finding entry and exit points."""
@@ -326,8 +351,8 @@ class TestCriticalNodeDetector:
 
         entry_exits = detector.find_entry_exits()
 
-        assert 0x1000 in entry_exits
-        assert 0x1020 in entry_exits
+        expect(not (_EXPECTED_ENTRY_EXITS_4096 not in entry_exits))
+        expect(not (_EXPECTED_ENTRY_EXITS_4128 not in entry_exits))
 
     def test_find_loop_headers(self):
         """Test finding loop headers."""
@@ -336,7 +361,7 @@ class TestCriticalNodeDetector:
 
         loop_headers = detector.find_loop_headers()
 
-        assert 0x3010 in loop_headers
+        expect(not (_EXPECTED_LOOP_HEADERS_12304 not in loop_headers))
 
     def test_find_all_critical_nodes(self):
         """Test finding all critical nodes."""
@@ -345,8 +370,8 @@ class TestCriticalNodeDetector:
 
         critical = detector.find_all_critical_nodes()
 
-        assert len(critical) > 0
-        assert all(isinstance(node, CriticalNode) for node in critical.values())
+        expect(not (len(critical) <= 0))
+        expect(all(isinstance(node, CriticalNode) for node in critical.values()))
 
     def test_get_exclusion_zones(self):
         """Test getting exclusion zones."""
@@ -356,8 +381,8 @@ class TestCriticalNodeDetector:
         detector.find_all_critical_nodes()
         zones = detector.get_exclusion_zones()
 
-        assert isinstance(zones, list)
-        assert all(isinstance(z, AddressRange) for z in zones)
+        expect(isinstance(zones, list))
+        expect(all(isinstance(z, AddressRange) for z in zones))
 
     def test_get_safe_regions(self):
         """Test getting safe regions."""
@@ -367,8 +392,8 @@ class TestCriticalNodeDetector:
         detector.find_all_critical_nodes()
         safe = detector.get_safe_regions()
 
-        assert isinstance(safe, list)
-        assert all(isinstance(r, AddressRange) for r in safe)
+        expect(isinstance(safe, list))
+        expect(all(isinstance(r, AddressRange) for r in safe))
 
     def test_is_critical(self):
         """Test is_critical method."""
@@ -377,8 +402,8 @@ class TestCriticalNodeDetector:
 
         detector.find_all_critical_nodes()
 
-        assert detector.is_critical(0x1000)
-        assert detector.is_critical(0x1020)
+        expect(detector.is_critical(0x1000))
+        expect(detector.is_critical(0x1020))
 
     def test_is_in_exclusion_zone(self):
         """Test is_in_exclusion_zone method."""
@@ -389,8 +414,8 @@ class TestCriticalNodeDetector:
         zones = detector.get_exclusion_zones()
 
         for zone in zones:
-            assert detector.is_in_exclusion_zone(zone.start)
-            assert detector.is_in_exclusion_zone(zone.end)
+            expect(detector.is_in_exclusion_zone(zone.start))
+            expect(detector.is_in_exclusion_zone(zone.end))
 
     def test_get_critical_type(self):
         """Test get_critical_type method."""
@@ -399,8 +424,8 @@ class TestCriticalNodeDetector:
 
         detector.find_all_critical_nodes()
 
-        assert detector.get_critical_type(0x1000) == "entry_exit"
-        assert detector.get_critical_type(0x1020) == "entry_exit"
+        expect(detector.get_critical_type(4096) == "entry_exit")
+        expect(detector.get_critical_type(4128) == "entry_exit")
 
     def test_loop_cfg_detection(self):
         """Test detection with loop CFG."""
@@ -409,8 +434,8 @@ class TestCriticalNodeDetector:
 
         critical = detector.find_all_critical_nodes()
 
-        assert 0x3010 in critical
-        assert critical[0x3010].node_type == "loop_header"
+        expect(not (_EXPECTED_CRITICAL_12304 not in critical))
+        expect(critical[12304].node_type == "loop_header")
 
 
 class TestMutationSafetyScorer:
@@ -420,7 +445,7 @@ class TestMutationSafetyScorer:
         """Test scorer creation."""
         scorer = MutationSafetyScorer()
 
-        assert scorer._detector is None
+        expect(not (scorer._detector is not None))
 
     def test_score_address(self):
         """Test score_address method."""
@@ -428,7 +453,7 @@ class TestMutationSafetyScorer:
         scorer = MutationSafetyScorer()
 
         score = scorer.score_address(0x1000, cfg)
-        assert 0.0 <= score <= 1.0
+        expect(0.0 <= score <= 1.0)
 
     def test_score_critical_address(self):
         """Test scoring a critical address."""
@@ -439,7 +464,7 @@ class TestMutationSafetyScorer:
 
         for addr in critical_nodes:
             score = scorer.score_address(addr, cfg, critical_nodes)
-            assert score == 0.0
+            expect(score == 0.0)
 
     def test_get_safest_addresses(self):
         """Test get_safest_addresses method."""
@@ -448,12 +473,12 @@ class TestMutationSafetyScorer:
 
         safest = scorer.get_safest_addresses(cfg, count=3)
 
-        assert len(safest) <= 3
-        assert all(isinstance(addr, int) for addr, _ in safest)
-        assert all(0.0 <= score <= 1.0 for _, score in safest)
+        expect(not (len(safest) > _EXPECTED_LEN_SAFEST_3))
+        expect(all(isinstance(addr, int) for addr, _ in safest))
+        expect(all(0.0 <= score <= 1.0 for _, score in safest))
 
         scores = [score for _, score in safest]
-        assert scores == sorted(scores, reverse=True)
+        expect(scores == sorted(scores, reverse=True))
 
     def test_get_all_scores(self):
         """Test get_all_scores method."""
@@ -462,8 +487,8 @@ class TestMutationSafetyScorer:
 
         scores = scorer.get_all_scores(cfg)
 
-        assert isinstance(scores, dict)
-        assert all(0.0 <= score <= 1.0 for score in scores.values())
+        expect(isinstance(scores, dict))
+        expect(all(0.0 <= score <= 1.0 for score in scores.values()))
 
 
 class TestConvenienceFunctions:
@@ -475,8 +500,8 @@ class TestConvenienceFunctions:
 
         zones = create_exclusion_zones(cfg, radius=3)
 
-        assert isinstance(zones, list)
-        assert all(isinstance(z, AddressRange) for z in zones)
+        expect(isinstance(zones, list))
+        expect(all(isinstance(z, AddressRange) for z in zones))
 
     def test_get_safe_mutation_addresses(self):
         """Test get_safe_mutation_addresses function."""
@@ -484,9 +509,9 @@ class TestConvenienceFunctions:
 
         safe = get_safe_mutation_addresses(cfg, count=5)
 
-        assert isinstance(safe, list)
-        assert len(safe) <= 5
-        assert all(isinstance(addr, int) for addr in safe)
+        expect(isinstance(safe, list))
+        expect(not (len(safe) > _EXPECTED_LEN_SAFE_5))
+        expect(all(isinstance(addr, int) for addr in safe))
 
 
 class TestComplexScenarios:
@@ -500,7 +525,7 @@ class TestComplexScenarios:
         critical = detector.find_all_critical_nodes()
 
         types_found = set(node.node_type for node in critical.values())
-        assert len(types_found) >= 1
+        expect(not (len(types_found) < 1))
 
     def test_exclusion_zone_merging(self):
         """Test that overlapping exclusion zones are merged."""
@@ -511,7 +536,7 @@ class TestComplexScenarios:
         zones = detector.get_exclusion_zones()
 
         for i in range(len(zones) - 1):
-            assert not zones[i].overlaps(zones[i + 1]) or zones[i].end < zones[i + 1].start
+            expect(not zones[i].overlaps(zones[i + 1]) or zones[i].end < zones[i + 1].start)
 
     def test_safe_region_boundaries(self):
         """Test that safe regions don't overlap with exclusion zones."""
@@ -528,7 +553,7 @@ class TestComplexScenarios:
                     f"Safe region 0x{safe_region.start:x}-0x{safe_region.end:x} overlaps with "
                     f"exclusion zone 0x{exclusion_zone.start:x}-0x{exclusion_zone.end:x}"
                 )
-                assert not safe_region.overlaps(exclusion_zone), message
+                expect(not (safe_region.overlaps(exclusion_zone)), message)
 
     def test_nearby_critical_nodes(self):
         """Test get_nearby_critical_nodes method."""
@@ -539,5 +564,5 @@ class TestComplexScenarios:
 
         nearby = detector.get_nearby_critical_nodes(0x2000, radius=32)
 
-        assert isinstance(nearby, list)
-        assert all(isinstance(node, CriticalNode) for node in nearby)
+        expect(isinstance(nearby, list))
+        expect(all(isinstance(node, CriticalNode) for node in nearby))

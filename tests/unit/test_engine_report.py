@@ -16,6 +16,10 @@ from datetime import datetime
 from r2morph.core.engine import MorphEngine
 from tests._doubles.recording_gate_failure_reporter import RecordingGateFailureReporter
 from tests._doubles.recording_report_view_builder import RecordingReportViewBuilder
+from tests.utils.assertions import expect
+
+_EXPECTED_REPORT_SUMMARY_CHANGED_BYTES_4 = 4
+
 
 # Frozen contract captured from the pre-refactor implementation.
 EXPECTED_TOP_LEVEL_KEYS = {
@@ -80,7 +84,7 @@ REPRESENTATIVE_PAYLOAD = {
     "bits": 64,
     "format": "elf",
     "functions": 12,
-    "working_path": "/tmp/out",
+    "working_path": "test-data/out",
     "pass_results": {
         "nop": {
             "diff_summary": {
@@ -101,31 +105,25 @@ REPRESENTATIVE_PAYLOAD = {
 class TestBuildReportContract:
     def test_top_level_key_set_is_frozen(self) -> None:
         report = MorphEngine().build_report({})
-        assert set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS
+        expect(set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS)
 
     def test_schema_version_is_one(self) -> None:
-        assert MorphEngine().build_report({})["schema_version"] == 1
+        expect(MorphEngine().build_report({})["schema_version"] == 1)
 
     def test_empty_payload_defaults(self) -> None:
         report = MorphEngine().build_report({})
-        assert report["input"] == {
-            "path": None,
-            "arch": None,
-            "bits": None,
-            "format": None,
-            "functions": None,
-        }
-        assert report["output"] == {"working_path": None}
-        assert report["passes"] == {}
-        assert report["mutations"] == []
+        expect(report["input"] == {"path": None, "arch": None, "bits": None, "format": None, "functions": None})
+        expect(report["output"] == {"working_path": None})
+        expect(report["passes"] == {})
+        expect(report["mutations"] == [])
         summary = report["summary"]
-        assert summary["passes_run"] == 0
-        assert summary["total_mutations"] == 0
-        assert summary["rolled_back_passes"] == 0
-        assert summary["failed_passes"] == 0
-        assert summary["discarded_mutations"] == 0
-        assert summary["changed_bytes"] == 0
-        assert summary["validation_mode"] == "off"
+        expect(summary["passes_run"] == 0)
+        expect(summary["total_mutations"] == 0)
+        expect(summary["rolled_back_passes"] == 0)
+        expect(summary["failed_passes"] == 0)
+        expect(summary["discarded_mutations"] == 0)
+        expect(summary["changed_bytes"] == 0)
+        expect(summary["validation_mode"] == "off")
 
     def test_summary_key_set_is_frozen(self) -> None:
         report = MorphEngine().build_report({})
@@ -133,37 +131,36 @@ class TestBuildReportContract:
         # it from the report itself and assert it is non-empty and a
         # superset of the documented scalar fields.
         summary_keys = set(report["summary"].keys())
-        assert {
-            "passes_run",
-            "total_mutations",
-            "rolled_back_passes",
-            "failed_passes",
-            "discarded_mutations",
-            "changed_bytes",
-            "validation_mode",
-            "schema_version",
-        } <= summary_keys
+        expect(
+            not (
+                {
+                    "passes_run",
+                    "total_mutations",
+                    "rolled_back_passes",
+                    "failed_passes",
+                    "discarded_mutations",
+                    "changed_bytes",
+                    "validation_mode",
+                    "schema_version",
+                }
+                > summary_keys
+            )
+        )
 
     def test_representative_payload_propagates_fields(self) -> None:
         report = MorphEngine().build_report(REPRESENTATIVE_PAYLOAD)
-        assert report["input"] == {
-            "path": "/bin/ls",
-            "arch": "x86",
-            "bits": 64,
-            "format": "elf",
-            "functions": 12,
-        }
-        assert report["output"] == {"working_path": "/tmp/out"}
-        assert set(report["passes"].keys()) == {"nop"}
-        assert report["mutations"] == [{"kind": "nop"}]
-        assert report["summary"]["passes_run"] == 1
-        assert report["summary"]["total_mutations"] == 1
-        assert report["summary"]["changed_bytes"] == 4
-        assert report["summary"]["validation_mode"] == "static"
+        expect(report["input"] == {"path": "/bin/ls", "arch": "x86", "bits": 64, "format": "elf", "functions": 12})
+        expect(report["output"] == {"working_path": "test-data/out"})
+        expect(set(report["passes"].keys()) == {"nop"})
+        expect(report["mutations"] == [{"kind": "nop"}])
+        expect(report["summary"]["passes_run"] == 1)
+        expect(report["summary"]["total_mutations"] == 1)
+        expect(report["summary"]["changed_bytes"] == _EXPECTED_REPORT_SUMMARY_CHANGED_BYTES_4)
+        expect(report["summary"]["validation_mode"] == "static")
 
     def test_representative_payload_has_same_top_level_keys(self) -> None:
         report = MorphEngine().build_report(REPRESENTATIVE_PAYLOAD)
-        assert set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS
+        expect(set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS)
 
     def test_metadata_timestamp_is_iso_and_only_nondeterministic_field(self) -> None:
         engine = MorphEngine()
@@ -177,7 +174,7 @@ class TestBuildReportContract:
 
         first["metadata"].pop("timestamp")
         second["metadata"].pop("timestamp")
-        assert first == second
+        expect(first == second)
 
     def test_build_report_routes_gate_failures_through_injected_reporter(self) -> None:
         reporter = RecordingGateFailureReporter()
@@ -185,14 +182,14 @@ class TestBuildReportContract:
 
         report = engine.build_report({"gate_evaluation": {"requested": {}, "results": {}}})
 
-        assert reporter.summarize_calls
-        assert reporter.summarize_calls[0] == {"requested": {}, "results": {}}
-        assert reporter.priority_calls
-        assert reporter.severity_priority_calls
-        assert report["gate_failures"] == {"sentinel": "summary"}
-        assert report["gate_failure_priority"] == [{"sentinel": "priority"}]
-        assert report["gate_failure_severity_priority"] == [{"sentinel": "severity"}]
-        assert set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS
+        expect(reporter.summarize_calls)
+        expect(reporter.summarize_calls[0] == {"requested": {}, "results": {}})
+        expect(reporter.priority_calls)
+        expect(reporter.severity_priority_calls)
+        expect(report["gate_failures"] == {"sentinel": "summary"})
+        expect(report["gate_failure_priority"] == [{"sentinel": "priority"}])
+        expect(report["gate_failure_severity_priority"] == [{"sentinel": "severity"}])
+        expect(set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS)
 
     def test_build_report_routes_views_through_injected_builder(self) -> None:
         builder = RecordingReportViewBuilder()
@@ -200,6 +197,6 @@ class TestBuildReportContract:
 
         report = engine.build_report({})
 
-        assert builder.calls
-        assert report["report_views"] == {"sentinel": "report_views"}
-        assert set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS
+        expect(builder.calls)
+        expect(report["report_views"] == {"sentinel": "report_views"})
+        expect(set(report.keys()) == EXPECTED_TOP_LEVEL_KEYS)

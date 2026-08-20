@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_pass_filters import resolve_pass_filter_sets
+from tests.utils.assertions import expect
 
 
 def test_resolve_pass_filter_sets_uses_persisted_views_and_fallbacks() -> None:
@@ -27,6 +28,6 @@ def test_resolve_pass_filter_sets_uses_persisted_views_and_fallbacks() -> None:
 
     result = resolve_pass_filter_sets(summary=summary, pass_results=pass_results)
 
-    assert result["risky"] == {"risky-pass"}
-    assert result["clean"] == {"clean-pass"}
-    assert result["structural"] == {"fallback-pass"}
+    expect(result["risky"] == {"risky-pass"})
+    expect(result["clean"] == {"clean-pass"})
+    expect(result["structural"] == {"fallback-pass"})

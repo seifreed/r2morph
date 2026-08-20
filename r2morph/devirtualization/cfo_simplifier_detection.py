@@ -9,14 +9,14 @@ from typing import Any
 
 from .cfo_simplifier_models import CFOPattern, DispatcherInfo
 
-nx: Any
+nx: Any = None
 try:
-    import networkx as nx
+    import networkx as networkx_module
 
+    nx = networkx_module
     NETWORKX_AVAILABLE = True
 except ImportError:
     NETWORKX_AVAILABLE = False
-    nx = None
 
 logger = logging.getLogger(__name__)
 

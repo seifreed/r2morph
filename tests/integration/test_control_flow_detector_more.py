@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
+from tests.utils.assertions import expect
 
 
 def test_control_flow_detector_internal_paths_real():
@@ -25,20 +26,20 @@ def test_control_flow_detector_internal_paths_real():
 
         # Exercise individual detection methods (return types only)
         cff_conf = analyzer._detect_control_flow_flattening()
-        assert 0.0 <= cff_conf <= 1.0
+        expect(0.0 <= cff_conf <= 1.0)
 
         opaque_count = analyzer._detect_opaque_predicates()
-        assert opaque_count >= 0
+        expect(not (opaque_count < 0))
 
         mba_count = analyzer._detect_mba_patterns()
-        assert mba_count >= 0
+        expect(not (mba_count < 0))
 
         vm_result = analyzer._detect_virtualization()
-        assert isinstance(vm_result, dict)
-        assert "confidence" in vm_result
+        expect(isinstance(vm_result, dict))
+        expect(not ("confidence" not in vm_result))
 
         # Dispatcher pattern on actual blocks (if available)
         blocks = bin_obj.get_basic_blocks(func_addr)
         if blocks:
             dispatcher = analyzer._check_dispatcher_pattern(blocks)
-            assert dispatcher is True or dispatcher is False
+            expect(dispatcher is True or dispatcher is False)

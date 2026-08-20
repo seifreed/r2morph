@@ -1,4 +1,5 @@
 from r2morph.devirtualization.mba_solver import MBAExpression, MBASolver
+from tests.utils.assertions import expect
 
 
 def test_mba_solver_truth_table_simplification():
@@ -7,9 +8,9 @@ def test_mba_solver_truth_table_simplification():
     mba.variables = {"x", "y"}
 
     simplified = solver._simplify_with_truth_table(mba)
-    assert simplified in {"x ^ y", "y ^ x", "x | y", "x & y", "0", "1", "x", "y"}
+    expect(not (simplified not in {"x ^ y", "y ^ x", "x | y", "x & y", "0", "1", "x", "y"}))
 
     mba_const = MBAExpression(expression="x & 0")
     mba_const.variables = {"x"}
     simplified_const = solver._simplify_with_truth_table(mba_const)
-    assert simplified_const in {"0", "x", "1"}
+    expect(not (simplified_const not in {"0", "x", "1"}))

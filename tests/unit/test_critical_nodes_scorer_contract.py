@@ -1,4 +1,7 @@
 from r2morph.analysis.critical_nodes_scorer import get_all_scores, get_safest_addresses, score_address
+from tests.utils.assertions import expect
+
+_EXPECTED_SCORE_ADDRESS_0X1000_CFG_CRITICAL_NODES_0_8 = 0.8
 
 
 def test_critical_nodes_scorer_contract() -> None:
@@ -17,6 +20,6 @@ def test_critical_nodes_scorer_contract() -> None:
     cfg = _Cfg()
     critical_nodes: dict[int, object] = {}
 
-    assert score_address(0x1000, cfg, critical_nodes) == 0.8
-    assert get_safest_addresses(cfg, count=1, critical_nodes=critical_nodes)
-    assert get_all_scores(cfg, critical_nodes)
+    expect(score_address(4096, cfg, critical_nodes) == _EXPECTED_SCORE_ADDRESS_0X1000_CFG_CRITICAL_NODES_0_8)
+    expect(get_safest_addresses(cfg, count=1, critical_nodes=critical_nodes))
+    expect(get_all_scores(cfg, critical_nodes))

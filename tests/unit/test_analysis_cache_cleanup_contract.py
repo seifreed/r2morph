@@ -24,6 +24,7 @@ from r2morph.core.analysis_cache_cleanup import (
 )
 from r2morph.core.analysis_cache_models import CacheStats
 from r2morph.core.analysis_cache_storage import CacheStorage
+from tests.utils.assertions import expect
 
 
 def _write_foreign_cache_file(cache_dir: Path, key: str) -> Path:
@@ -36,13 +37,13 @@ def _write_foreign_cache_file(cache_dir: Path, key: str) -> Path:
 def test_cleanup_expired_entries_ignores_a_file_it_cannot_read(tmp_path: Path) -> None:
     _write_foreign_cache_file(tmp_path, "zz/yy/foreign")
 
-    assert cleanup_expired_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1) == 0
+    expect(cleanup_expired_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1) == 0)
 
 
 def test_cleanup_low_access_entries_ignores_a_file_it_cannot_read(tmp_path: Path) -> None:
     _write_foreign_cache_file(tmp_path, "zz/yy/foreign")
 
-    assert cleanup_low_access_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1) == 0
+    expect(cleanup_low_access_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1) == 0)
 
 
 def test_enforce_size_limit_ignores_a_file_it_cannot_read(tmp_path: Path) -> None:
@@ -52,7 +53,7 @@ def test_enforce_size_limit_ignores_a_file_it_cannot_read(tmp_path: Path) -> Non
 
     enforce_size_limit(tmp_path, stats, threading.Lock(), max_size_bytes=0)
 
-    assert stats.evictions == 0
+    expect(stats.evictions == 0)
 
 
 def test_cleanup_expired_entries_leaves_an_unreadable_file_on_disk(tmp_path: Path) -> None:
@@ -62,7 +63,7 @@ def test_cleanup_expired_entries_leaves_an_unreadable_file_on_disk(tmp_path: Pat
 
     cleanup_expired_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1)
 
-    assert foreign.exists()
+    expect(foreign.exists())
 
 
 def test_cleanup_expired_entries_keeps_a_fresh_entry_written_alongside(tmp_path: Path) -> None:
@@ -73,4 +74,4 @@ def test_cleanup_expired_entries_keeps_a_fresh_entry_written_alongside(tmp_path:
 
     cleanup_expired_entries(tmp_path, CacheStats(), threading.Lock(), max_age_days=1)
 
-    assert cache.get(binary, "cfg") == {"persistent": "data"}
+    expect(cache.get(binary, "cfg") == {"persistent": "data"})

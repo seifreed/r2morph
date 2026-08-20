@@ -11,6 +11,9 @@ from r2morph.mutations.full_cff_helpers import (
     generate_x86_dispatcher,
     select_candidates,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CANDIDATES_0_BLOCK_COUNT_3 = 3
 
 
 class _Binary:
@@ -38,7 +41,7 @@ def test_full_cff_helpers_cover_selection_and_generation() -> None:
     ]
 
     candidates = select_candidates(binary, functions, min_blocks=2)
-    assert candidates[0]["_block_count"] == 3
+    expect(candidates[0]["_block_count"] == _EXPECTED_CANDIDATES_0_BLOCK_COUNT_3)
 
     dispatcher_blocks = [
         DispatcherBlock(state_value=0, block_address=0x1000, block_size=32, successor_states=[1, 2]),
@@ -48,11 +51,11 @@ def test_full_cff_helpers_cover_selection_and_generation() -> None:
     ]
 
     state_table = generate_state_table(dispatcher_blocks)
-    assert state_table[0] == (1, 2)
-    assert state_table[3] == (-1, None)
+    expect(state_table[0] == (1, 2))
+    expect(state_table[3] == (-1, None))
 
-    assert generate_dispatcher_code(state_table, "mips", 64) is None
-    assert generate_x86_dispatcher(state_table, 64)[0] == "mov rax, 0"
-    assert generate_arm_dispatcher(state_table, 64)[0] == "mov x0, #0"
-    assert assemble_dispatcher(binary, ["mov rax, 0", "ret"]) is not None
-    assert assemble_dispatcher(binary, ["nop"]) is not None
+    expect(not (generate_dispatcher_code(state_table, "mips", 64) is not None))
+    expect(generate_x86_dispatcher(state_table, 64)[0] == "mov rax, 0")
+    expect(generate_arm_dispatcher(state_table, 64)[0] == "mov x0, #0")
+    expect(assemble_dispatcher(binary, ["mov rax, 0", "ret"]) is not None)
+    expect(assemble_dispatcher(binary, ["nop"]) is not None)

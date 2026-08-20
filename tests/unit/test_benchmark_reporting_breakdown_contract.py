@@ -11,6 +11,10 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CATEGORIES_DETECTION_TOTAL_2 = 2
+_EXPECTED_SEVERITIES_LOW_TOTAL_2 = 2
 
 
 def _make_result(category: BenchmarkCategory, severity: TestSeverity) -> BenchmarkResult:
@@ -41,6 +45,6 @@ def test_breakdown_helpers_group_results() -> None:
     categories = build_category_breakdown(results)
     severities = build_severity_breakdown(results)
 
-    assert categories["detection"]["total"] == 2
-    assert severities["low"]["total"] == 2
-    assert severities["high"]["total"] == 1
+    expect(categories["detection"]["total"] == _EXPECTED_CATEGORIES_DETECTION_TOTAL_2)
+    expect(severities["low"]["total"] == _EXPECTED_SEVERITIES_LOW_TOTAL_2)
+    expect(severities["high"]["total"] == 1)

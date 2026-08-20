@@ -3,6 +3,7 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer
+from tests.utils.assertions import expect
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 
@@ -72,5 +73,5 @@ def test_vm_handler_table_validation_and_extraction(tmp_path):
             return
 
         extracted = analyzer._extract_handler_addresses(table_addr)
-        assert extracted
-        assert extracted[0] in handler_addrs
+        expect(extracted)
+        expect(not (extracted[0] not in handler_addrs))

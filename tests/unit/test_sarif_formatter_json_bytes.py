@@ -37,11 +37,15 @@ import json
 
 from r2morph.mutations.base import MutationRecord
 from r2morph.reporting.sarif_formatter import format_as_sarif
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_REGION_BYTE_LENGTH_4 = 4
 
 
 def _make_record() -> MutationRecord:
     return MutationRecord(
-        pass_name="NopInsertion",
+        **{MUTATION_NAME_KEY: "NopInsertion"},
         function_address=0x1000,
         start_address=0x1000,
         end_address=0x1003,
@@ -65,9 +69,10 @@ def test_format_as_sarif_accepts_hex_string_original_bytes() -> None:
     # Mimic the same round-trip to make sure we're feeding the formatter
     # what production actually feeds it.
     round_tripped = json.loads(json.dumps(payload))
-    assert isinstance(round_tripped["original_bytes"], str), (
+    expect(
+        isinstance(round_tripped["original_bytes"], str),
         "MutationRecord.to_dict must keep original_bytes as a hex string -- "
-        f"got {type(round_tripped['original_bytes']).__name__}"
+        f"got {type(round_tripped['original_bytes']).__name__}",
     )
 
     report = format_as_sarif(
@@ -76,7 +81,7 @@ def test_format_as_sarif_accepts_hex_string_original_bytes() -> None:
         binary_path="binary.elf",
     )
 
-    assert len(report.runs[0].results) == 1, f"expected 1 mutation result; got {len(report.runs[0].results)}"
+    expect(len(report.runs[0].results) == 1, f"expected 1 mutation result; got {len(report.runs[0].results)}")
 
 
 def test_format_as_sarif_byte_length_matches_real_byte_count() -> None:
@@ -94,7 +99,10 @@ def test_format_as_sarif_byte_length_matches_real_byte_count() -> None:
     result = report.runs[0].results[0]
     region = result.locations[0].physical_location.region
 
-    assert region.byte_length == 4, f"original_bytes='deadbeef' is 4 bytes, not 8; got byte_length={region.byte_length}"
+    expect(
+        region.byte_length == _EXPECTED_REGION_BYTE_LENGTH_4,
+        f"original_bytes='deadbeef' is 4 bytes, not 8; got byte_length={region.byte_length}",
+    )
 
 
 def test_format_as_sarif_round_trips_bytes_input_too() -> None:
@@ -108,4 +116,4 @@ def test_format_as_sarif_round_trips_bytes_input_too() -> None:
     }
 
     report = format_as_sarif([payload], [], "binary.elf")
-    assert len(report.runs[0].results) == 1
+    expect(len(report.runs[0].results) == 1)

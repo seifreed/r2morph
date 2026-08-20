@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.pattern_matcher import PatternMatcher
+from tests.utils.assertions import expect
 
 
 def test_pattern_matcher_find_patterns_and_strings(tmp_path: Path) -> None:
@@ -21,10 +22,10 @@ def test_pattern_matcher_find_patterns_and_strings(tmp_path: Path) -> None:
         binary.r2.cmd("e search.in=io.maps")
 
         sections = binary.get_sections()
-        assert sections
+        expect(sections)
         section = next((s for s in sections if s.get("vaddr")), sections[0])
         vaddr = int(section.get("vaddr", 0) or 0)
-        assert vaddr > 0
+        expect(not (vaddr <= 0))
 
         marker = b"R2MORPH"
         marker_string = b"R2MORPH_TEST_STRING"
@@ -32,14 +33,14 @@ def test_pattern_matcher_find_patterns_and_strings(tmp_path: Path) -> None:
 
         matcher = PatternMatcher(binary)
         found = matcher.find_patterns([marker])
-        assert marker in found
-        assert vaddr in found[marker]
+        expect(not (marker not in found))
+        expect(not (vaddr not in found[marker]))
 
         string_results = matcher.search_strings([marker_string.decode()], case_sensitive=False)
-        assert string_results[marker_string.decode()] is True
+        expect(not (string_results[marker_string.decode()] is not True))
 
         scan = matcher.scan()
-        assert isinstance(scan.anti_debug_detected, bool)
-        assert 0.0 <= scan.anti_debug_confidence <= 1.0
-        assert isinstance(scan.anti_vm_detected, bool)
-        assert 0.0 <= scan.anti_vm_confidence <= 1.0
+        expect(isinstance(scan.anti_debug_detected, bool))
+        expect(0.0 <= scan.anti_debug_confidence <= 1.0)
+        expect(isinstance(scan.anti_vm_detected, bool))
+        expect(0.0 <= scan.anti_vm_confidence <= 1.0)

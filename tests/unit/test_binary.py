@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -31,7 +33,7 @@ class TestBinary:
             pytest.skip("Test binary not available")
 
         with Binary(test_file) as binary:
-            assert binary.r2 is not None
+            expect(binary.r2 is not None)
 
     def test_binary_analyze(self):
         """Test binary analysis."""
@@ -41,7 +43,7 @@ class TestBinary:
 
         with Binary(test_file) as binary:
             binary.analyze()
-            assert binary.is_analyzed()
+            expect(binary.is_analyzed())
 
     def test_get_functions(self):
         """Test getting functions from binary."""
@@ -52,8 +54,8 @@ class TestBinary:
         with Binary(test_file) as binary:
             binary.analyze()
             functions = binary.get_functions()
-            assert isinstance(functions, list)
-            assert len(functions) >= 0
+            expect(isinstance(functions, list))
+            expect(not (len(functions) < 0))
 
     def test_get_arch_info(self):
         """Test getting architecture information."""
@@ -64,5 +66,5 @@ class TestBinary:
         with Binary(test_file) as binary:
             binary.analyze()
             arch_info = binary.get_arch_info()
-            assert "arch" in arch_info
-            assert "bits" in arch_info
+            expect(not ("arch" not in arch_info))
+            expect(not ("bits" not in arch_info))

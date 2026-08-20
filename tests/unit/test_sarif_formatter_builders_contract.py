@@ -9,6 +9,9 @@ from r2morph.reporting.sarif_formatter_builders import (
     build_mitre_taxonomy,
     build_rules,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_INVOCATIONS_0_EXIT_CODE_7 = 7
 
 
 def test_sarif_formatter_builders_round_trip() -> None:
@@ -36,12 +39,12 @@ def test_sarif_formatter_builders_round_trip() -> None:
     artifacts = build_artifacts(report_data)
     invocations = build_invocations(report_data)
 
-    assert driver.driver.version == "1.2.3"
-    assert driver.driver.information_uri == "https://example.invalid"
-    assert rules[0].default_level.value == "note"
-    assert taxonomy.name == "MITRE ATT&CK"
-    assert len(taxonomy.taxa) == len({entry["id"] for entry in MITRE_ATTACK.values()})
-    assert [artifact.location.uri for artifact in artifacts] == ["input.exe", "output.exe"]
-    assert invocations[0].exit_code == 7
-    assert invocations[0].start_time_utc == "2026-06-14T12:00:00+00:00"
-    assert invocations[0].end_time_utc == "2026-06-14T12:05:00+00:00"
+    expect(driver.driver.version == "1.2.3")
+    expect(driver.driver.information_uri == "https://example.invalid")
+    expect(rules[0].default_level.value == "note")
+    expect(taxonomy.name == "MITRE ATT&CK")
+    expect(len(taxonomy.taxa) == len({entry["id"] for entry in MITRE_ATTACK.values()}))
+    expect([artifact.location.uri for artifact in artifacts] == ["input.exe", "output.exe"])
+    expect(invocations[0].exit_code == _EXPECTED_INVOCATIONS_0_EXIT_CODE_7)
+    expect(invocations[0].start_time_utc == "2026-06-14T12:00:00+00:00")
+    expect(invocations[0].end_time_utc == "2026-06-14T12:05:00+00:00")

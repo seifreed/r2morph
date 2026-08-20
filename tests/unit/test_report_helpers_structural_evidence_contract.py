@@ -1,4 +1,5 @@
 from r2morph.core.report_helpers_structural_evidence import _summarize_structural_evidence
+from tests.utils.assertions import expect
 
 
 def test_summarize_structural_evidence_compacts_regions() -> None:
@@ -19,13 +20,12 @@ def test_summarize_structural_evidence_compacts_regions() -> None:
         ]
     )
 
-    assert digest == {
-        "region_count": 2,
-        "validators": ["patch_integrity", "structural"],
-        "severity_counts": {"error": 2, "info": 1},
-        "sample_messages": [
-            "invalid mutation",
-            "patched bytes differ",
-            "stack balanced",
-        ],
-    }
+    expect(
+        digest
+        == {
+            "region_count": 2,
+            "validators": ["patch_integrity", "structural"],
+            "severity_counts": {"error": 2, "info": 1},
+            "sample_messages": ["invalid mutation", "patched bytes differ", "stack balanced"],
+        }
+    )

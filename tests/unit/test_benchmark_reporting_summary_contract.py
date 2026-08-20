@@ -16,6 +16,9 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CALCULATE_PERCENTILE_1_0_2_0_3_0_95_3_0 = 3.0
 
 
 def _make_result(tmp_path):
@@ -47,14 +50,14 @@ def _make_result(tmp_path):
 
 
 def test_percentile_helper_handles_empty_and_populated_inputs() -> None:
-    assert calculate_percentile([], 95) == 0.0
-    assert calculate_percentile([1.0, 2.0, 3.0], 95) == 3.0
+    expect(calculate_percentile([], 95) == 0.0)
+    expect(calculate_percentile([1.0, 2.0, 3.0], 95) == _EXPECTED_CALCULATE_PERCENTILE_1_0_2_0_3_0_95_3_0)
 
 
 def test_generate_validation_summary_shapes_results(tmp_path) -> None:
     result = _make_result(tmp_path)
     summary = generate_validation_summary([result])
 
-    assert summary["total_tests"] == 1
-    assert summary["categories"]["detection"]["total"] == 1
-    assert summary["severity_breakdown"]["low"]["total"] == 1
+    expect(summary["total_tests"] == 1)
+    expect(summary["categories"]["detection"]["total"] == 1)
+    expect(summary["severity_breakdown"]["low"]["total"] == 1)

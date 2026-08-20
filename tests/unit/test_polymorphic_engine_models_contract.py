@@ -4,6 +4,7 @@ from r2morph.mutations.polymorphic_engine_models import (
     MutationResult,
     StateTransition,
 )
+from tests.utils.assertions import expect
 
 
 def test_polymorphic_engine_models_round_trip():
@@ -25,5 +26,5 @@ def test_polymorphic_engine_models_round_trip():
         mutations_applied=[result],
     )
 
-    assert transition.to_state == EngineState.SUBSTITUTED
-    assert run_result.mutations_applied[0].name == "TestMutation"
+    expect(transition.to_state == EngineState.SUBSTITUTED)
+    expect(run_result.mutations_applied[0].name == "TestMutation")

@@ -9,13 +9,14 @@ from r2morph.core.analysis_cache import AnalysisCache
 from r2morph.core.analysis_cache_entries import evict_cache_entry, iter_cache_entries, load_cache_entry
 from r2morph.core.analysis_cache_models import CacheStats
 from r2morph.core.analysis_cache_storage import CacheStorage
+from tests.utils.assertions import expect
 
 
 def test_load_cache_entry_rejects_corrupt_data(tmp_path: Path) -> None:
     corrupt = tmp_path / "corrupt.cache"
     corrupt.write_bytes(b"not-a-pickle")
 
-    assert load_cache_entry(corrupt) is None
+    expect(not (load_cache_entry(corrupt) is not None))
 
 
 def _write_foreign_cache_file(cache_dir: Path, key: str) -> Path:
@@ -29,13 +30,13 @@ def _write_foreign_cache_file(cache_dir: Path, key: str) -> Path:
 def test_load_cache_entry_rejects_a_decodable_non_entry_object(tmp_path: Path) -> None:
     foreign = _write_foreign_cache_file(tmp_path, "foreign")
 
-    assert load_cache_entry(foreign) is None
+    expect(not (load_cache_entry(foreign) is not None))
 
 
 def test_iter_cache_entries_skips_a_decodable_non_entry_object(tmp_path: Path) -> None:
     _write_foreign_cache_file(tmp_path, "zz/yy/foreign")
 
-    assert list(iter_cache_entries(tmp_path)) == []
+    expect(list(iter_cache_entries(tmp_path)) == [])
 
 
 def test_iter_cache_entries_deletes_a_decodable_non_entry_object(tmp_path: Path) -> None:
@@ -43,7 +44,7 @@ def test_iter_cache_entries_deletes_a_decodable_non_entry_object(tmp_path: Path)
 
     list(iter_cache_entries(tmp_path))
 
-    assert not foreign.exists()
+    expect(not (foreign.exists()))
 
 
 def test_iter_cache_entries_skips_corrupt_and_yields_valid_entries(tmp_path: Path) -> None:
@@ -56,10 +57,10 @@ def test_iter_cache_entries_skips_corrupt_and_yields_valid_entries(tmp_path: Pat
     corrupt.write_bytes(b"not-a-pickle")
 
     entries = list(iter_cache_entries(tmp_path))
-    assert len(entries) == 1
+    expect(len(entries) == 1)
     entry_path, entry = entries[0]
-    assert entry_path.suffix == ".cache"
-    assert entry.key.analysis_type == "cfg"
+    expect(entry_path.suffix == ".cache")
+    expect(entry.key.analysis_type == "cfg")
 
 
 def test_evict_cache_entry_deletes_the_entry_file(tmp_path: Path) -> None:
@@ -69,7 +70,7 @@ def test_evict_cache_entry_deletes_the_entry_file(tmp_path: Path) -> None:
 
     evict_cache_entry(entry_path, entry, CacheStats(), threading.Lock())
 
-    assert not entry_path.exists()
+    expect(not (entry_path.exists()))
 
 
 def test_evict_cache_entry_accounts_removal_in_stats(tmp_path: Path) -> None:
@@ -82,4 +83,4 @@ def test_evict_cache_entry_accounts_removal_in_stats(tmp_path: Path) -> None:
 
     evict_cache_entry(entry_path, entry, stats, threading.Lock())
 
-    assert (stats.total_size_bytes, stats.entry_count, stats.evictions) == (100, 2, 1)
+    expect((stats.total_size_bytes, stats.entry_count, stats.evictions) == (100, 2, 1))

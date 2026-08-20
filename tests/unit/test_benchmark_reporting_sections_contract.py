@@ -1,4 +1,5 @@
 from r2morph.validation.benchmark_reporting_sections import build_benchmark_report_lines
+from tests.utils.assertions import expect
 
 
 def test_benchmark_reporting_sections_contract() -> None:
@@ -16,9 +17,9 @@ def test_benchmark_reporting_sections_contract() -> None:
 
     report = build_benchmark_report_lines(summary)
 
-    assert report[0] == "=" * 80
-    assert "OVERALL SUMMARY" in report
-    assert "P50 (Median):         1.00s" in report
-    assert "DETECTION:" in report
-    assert "SEVERITY BREAKDOWN" in report
-    assert "⚠️  Success rate below 80% - review failed tests" in report
+    expect(report[0] == "=" * 80)
+    expect(not ("OVERALL SUMMARY" not in report))
+    expect(not ("P50 (Median):         1.00s" not in report))
+    expect(not ("DETECTION:" not in report))
+    expect(not ("SEVERITY BREAKDOWN" not in report))
+    expect(not ("⚠️  Success rate below 80% - review failed tests" not in report))

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from r2morph.mutations.function_outlining import FunctionOutliningPass
 from tests._doubles.in_memory_outlining_binary import InMemoryOutliningBinary
+from tests.utils.assertions import expect
 
 CONFIG = {"probability": 1.0, "min_chunks": 2, "max_chunks": 2}
 FUNCS = [{"addr": 0x1000, "size": 64}]
@@ -41,8 +42,8 @@ def test_far_cave_offset_is_skipped_not_overflowerror() -> None:
 
     result = p.apply(binary)  # pre-fix: raises OverflowError
 
-    assert result["chunks_relocated"] == 0
-    assert p.get_records() == []
+    expect(result["chunks_relocated"] == 0)
+    expect(p.get_records() == [])
 
 
 def test_in_range_cave_still_outlines_chunk() -> None:
@@ -57,5 +58,5 @@ def test_in_range_cave_still_outlines_chunk() -> None:
 
     result = p.apply(binary)
 
-    assert result["chunks_relocated"] == 1
-    assert len(p.get_records()) == 1
+    expect(result["chunks_relocated"] == 1)
+    expect(len(p.get_records()) == 1)

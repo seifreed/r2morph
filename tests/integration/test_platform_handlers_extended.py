@@ -5,6 +5,7 @@ import pytest
 from r2morph.platform.elf_handler import ELFHandler
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
 
 
 def test_elf_handler_extended():
@@ -13,27 +14,27 @@ def test_elf_handler_extended():
         pytest.skip("ELF binary not available")
 
     handler = ELFHandler(binary_path)
-    assert handler.is_elf() is True
-    assert handler.validate() is True
+    expect(not (handler.is_elf() is not True))
+    expect(not (handler.validate() is not True))
 
     sections = handler.get_sections()
-    assert isinstance(sections, list)
-    assert sections
+    expect(isinstance(sections, list))
+    expect(sections)
 
     segments = handler.get_segments()
-    assert isinstance(segments, list)
+    expect(isinstance(segments, list))
 
     symbols = handler.get_symbol_tables()
-    assert isinstance(symbols, dict)
+    expect(isinstance(symbols, dict))
 
     entry = handler.get_entry_point()
-    assert entry is None or isinstance(entry, int)
+    expect(entry is None or isinstance(entry, int))
 
     arch = handler.get_architecture()
-    assert "bits" in arch
+    expect(not ("bits" not in arch))
 
     cave = handler.find_code_cave(min_size=32)
-    assert cave is None or isinstance(cave, int)
+    expect(cave is None or isinstance(cave, int))
 
 
 def test_pe_handler_extended():
@@ -42,19 +43,19 @@ def test_pe_handler_extended():
         pytest.skip("PE binary not available")
 
     handler = PEHandler(binary_path)
-    assert handler.is_pe() is True
+    expect(not (handler.is_pe() is not True))
 
     sections = handler.get_sections()
-    assert isinstance(sections, list)
+    expect(isinstance(sections, list))
 
     imports = handler.get_imports()
-    assert isinstance(imports, list)
+    expect(isinstance(imports, list))
 
     checksum = handler._calculate_checksum()
-    assert isinstance(checksum, int)
+    expect(isinstance(checksum, int))
 
-    assert handler.fix_checksum() in {True, False}
-    assert handler.validate() in {True, False}
+    expect(not (handler.fix_checksum() not in {True, False}))
+    expect(not (handler.validate() not in {True, False}))
 
 
 def test_macho_handler_extended():
@@ -63,17 +64,17 @@ def test_macho_handler_extended():
         pytest.skip("Mach-O binary not available")
 
     handler = MachOHandler(binary_path)
-    assert handler.is_macho() is True
+    expect(not (handler.is_macho() is not True))
 
     commands = handler.get_load_commands()
-    assert isinstance(commands, list)
+    expect(isinstance(commands, list))
 
     segments = handler.get_segments()
-    assert isinstance(segments, list)
+    expect(isinstance(segments, list))
 
-    assert handler.validate() in {True, False}
+    expect(not (handler.validate() not in {True, False}))
     valid, reason = handler.validate_integrity()
-    assert isinstance(valid, bool)
-    assert isinstance(reason, str)
+    expect(isinstance(valid, bool))
+    expect(isinstance(reason, str))
 
-    assert handler.is_fat_binary() in {True, False}
+    expect(not (handler.is_fat_binary() not in {True, False}))

@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.detection.control_flow_detector import ControlFlowAnalyzer
+from tests.utils.assertions import expect
 
 
 def test_control_flow_analyzer_real_binary():
@@ -16,7 +17,7 @@ def test_control_flow_analyzer_real_binary():
         analyzer = ControlFlowAnalyzer(bin_obj)
         result = analyzer.analyze()
 
-    assert isinstance(result.cff_confidence, float)
-    assert isinstance(result.opaque_predicates_count, int)
-    assert isinstance(result.mba_expressions_count, int)
-    assert isinstance(result.vm_detected, bool)
+    expect(isinstance(result.cff_confidence, float))
+    expect(isinstance(result.opaque_predicates_count, int))
+    expect(isinstance(result.mba_expressions_count, int))
+    expect(isinstance(result.vm_detected, bool))

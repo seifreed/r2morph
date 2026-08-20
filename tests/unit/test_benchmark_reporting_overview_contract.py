@@ -2,6 +2,7 @@ from r2morph.validation.benchmark_reporting_overview import (
     build_overall_summary_lines,
     build_percentile_lines,
 )
+from tests.utils.assertions import expect
 
 
 def test_benchmark_reporting_overview_contract() -> None:
@@ -18,7 +19,7 @@ def test_benchmark_reporting_overview_contract() -> None:
     overview = build_overall_summary_lines(summary)
     percentiles = build_percentile_lines(summary)
 
-    assert overview[0] == "OVERALL SUMMARY"
-    assert "Average Memory:       4.0MB" in overview
-    assert percentiles[0] == "PERFORMANCE PERCENTILES"
-    assert "P99:                  3.00s" in percentiles
+    expect(overview[0] == "OVERALL SUMMARY")
+    expect(not ("Average Memory:       4.0MB" not in overview))
+    expect(percentiles[0] == "PERFORMANCE PERCENTILES")
+    expect(not ("P99:                  3.00s" not in percentiles))

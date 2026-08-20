@@ -1,13 +1,14 @@
 from pathlib import Path
 
 from r2morph.analysis.enhanced_analyzer_lifecycle import cleanup_binary, load_binary
+from tests.utils.assertions import expect
 
 
 def test_enhanced_analyzer_lifecycle_helpers_cover_basic_flow():
     binary = load_binary(Path("fixtures/dataset/elf_x86_64"))
     try:
-        assert binary is not None
-        assert hasattr(binary, "analyze")
+        expect(binary is not None)
+        expect(hasattr(binary, "analyze"))
     finally:
         cleanup_binary(binary)
 

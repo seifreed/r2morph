@@ -5,6 +5,7 @@ from r2morph.core.parallel_work_queue_helpers import (
     is_queue_empty,
     select_ready_tasks,
 )
+from tests.utils.assertions import expect
 
 
 def test_select_ready_tasks_orders_by_priority() -> None:
@@ -15,7 +16,7 @@ def test_select_ready_tasks_orders_by_priority() -> None:
 
     ready = select_ready_tasks(tasks, completed=set())
 
-    assert [task.task_id for task in ready] == [2, 1]
+    expect([task.task_id for task in ready] == [2, 1])
 
 
 def test_queue_helpers_count_and_dependency_queries() -> None:
@@ -24,8 +25,8 @@ def test_queue_helpers_count_and_dependency_queries() -> None:
         2: MutationTask(task_id=2, function_address=0x2000, status=TaskStatus.PENDING),
     }
 
-    assert count_tasks_with_status(tasks, TaskStatus.COMPLETED) == 1
-    assert count_tasks_with_status(tasks, TaskStatus.PENDING) == 1
-    assert get_dependencies(tasks, 1) == [3]
-    assert get_dependencies(tasks, 99) == []
-    assert not is_queue_empty(tasks, running={2})
+    expect(count_tasks_with_status(tasks, TaskStatus.COMPLETED) == 1)
+    expect(count_tasks_with_status(tasks, TaskStatus.PENDING) == 1)
+    expect(get_dependencies(tasks, 1) == [3])
+    expect(get_dependencies(tasks, 99) == [])
+    expect(not (is_queue_empty(tasks, running={2})))

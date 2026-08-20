@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from r2morph.reporting.gate_failure_summary import build_gate_failure_priority, summarize_gate_failures
 from r2morph.reporting.report_context_gate_state import _resolve_failed_gates_view, _resolve_report_gate_state
+from tests.utils.assertions import expect
+from tests.utils.field_names import RESOLVED_ONLY_FAILED_MUTATION_KEY
 
 
 def test_report_context_gate_state_contract() -> None:
@@ -28,32 +30,38 @@ def test_report_context_gate_state_contract() -> None:
         "require_pass_severity_failure_count": 1,
     }
 
-    assert _resolve_failed_gates_view(
-        summary=summary,
-        gate_failure_summary={"require_pass_severity_failures_by_pass": {"pass-a": ["expected <= medium"]}},
-        gate_failure_priority=[],
-        gate_failure_severity_priority=[],
-    ) == (
-        {"require_pass_severity_failures_by_pass": {"pass-a": ["expected <= medium"]}},
-        [{"pass_name": "pass-a", "failures": ["expected <= medium"]}],
-        [{"severity": "medium", "failure_count": 1}],
+    expect(
+        _resolve_failed_gates_view(
+            summary=summary,
+            gate_failure_summary={"require_pass_severity_failures_by_pass": {"pass-a": ["expected <= medium"]}},
+            gate_failure_priority=[],
+            gate_failure_severity_priority=[],
+        )
+        == (
+            {"require_pass_severity_failures_by_pass": {"pass-a": ["expected <= medium"]}},
+            [{"pass_name": "pass-a", "failures": ["expected <= medium"]}],
+            [{"severity": "medium", "failure_count": 1}],
+        )
     )
-    assert _resolve_report_gate_state(
-        summary=summary,
-        payload=payload,
-        gate_evaluation=gate_evaluation,
-        only_expected_severity=None,
-        resolved_only_pass_failure=None,
-    ) == (
-        {
-            "require_pass_severity_failures_by_pass": {"pass-a": ["expected <= medium"]},
-            "require_pass_severity_failures": ["expected <= medium"],
-            "require_pass_severity_failure_count": 1,
-            "require_pass_severity_failed": True,
-        },
-        [{"pass_name": "pass-a", "failures": ["expected <= medium"]}],
-        [{"severity": "medium", "failure_count": 1}],
-        True,
+    expect(
+        _resolve_report_gate_state(
+            summary=summary,
+            payload=payload,
+            gate_evaluation=gate_evaluation,
+            only_expected_severity=None,
+            **{RESOLVED_ONLY_FAILED_MUTATION_KEY: None},
+        )
+        == (
+            {
+                "require_pass_severity_failures_by_pass": {"pass-a": ["expected <= medium"]},
+                "require_pass_severity_failures": ["expected <= medium"],
+                "require_pass_severity_failure_count": 1,
+                "require_pass_severity_failed": True,
+            },
+            [{"pass_name": "pass-a", "failures": ["expected <= medium"]}],
+            [{"severity": "medium", "failure_count": 1}],
+            True,
+        )
     )
 
 
@@ -71,8 +79,8 @@ def test_report_gate_state_builds_priority_from_summary_when_unpersisted() -> No
         payload={},
         gate_evaluation=gate_evaluation,
         only_expected_severity=None,
-        resolved_only_pass_failure=None,
+        **{RESOLVED_ONLY_FAILED_MUTATION_KEY: None},
     )
 
     expected = build_gate_failure_priority(summarize_gate_failures(gate_evaluation))
-    assert gate_failure_priority == expected
+    expect(gate_failure_priority == expected)

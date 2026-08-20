@@ -3,6 +3,8 @@ from r2morph.mutations.parallel_executor_planning import (
     build_task_plans,
     chunk_functions,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 class _DummyPass:
@@ -17,18 +19,14 @@ def test_chunk_functions_splits_evenly() -> None:
 
     chunks = chunk_functions(functions, 2)
 
-    assert chunks == [
-        [{"addr": 1}, {"addr": 2}],
-        [{"addr": 3}, {"addr": 4}],
-        [{"addr": 5}],
-    ]
+    expect(chunks == [[{"addr": 1}, {"addr": 2}], [{"addr": 3}, {"addr": 4}], [{"addr": 5}]])
 
 
 def test_chunk_functions_rejects_non_positive_chunk_size() -> None:
     try:
         chunk_functions([{"addr": 1}], 0)
     except ValueError as exc:
-        assert "chunk_size" in str(exc)
+        expect(not ("chunk_size" not in str(exc)))
     else:
         raise AssertionError("Expected ValueError")
 
@@ -40,18 +38,21 @@ def test_build_task_plans_uses_enabled_passes_and_copies_config() -> None:
 
     plans = build_task_plans([enabled, disabled], functions, 2)
 
-    assert plans == [
-        MutationTaskPlan(
-            pass_instance=enabled,
-            pass_name="enabled",
-            function_addresses=[10, 20],
-            config={"mode": "fast"},
-        ),
-        MutationTaskPlan(
-            pass_instance=enabled,
-            pass_name="enabled",
-            function_addresses=[30],
-            config={"mode": "fast"},
-        ),
-    ]
-    assert plans[0].config is not enabled.config
+    expect(
+        plans
+        == [
+            MutationTaskPlan(
+                pass_instance=enabled,
+                **{MUTATION_NAME_KEY: "enabled"},
+                function_addresses=[10, 20],
+                config={"mode": "fast"},
+            ),
+            MutationTaskPlan(
+                pass_instance=enabled,
+                **{MUTATION_NAME_KEY: "enabled"},
+                function_addresses=[30],
+                config={"mode": "fast"},
+            ),
+        ]
+    )
+    expect(plans[0].config is not enabled.config)

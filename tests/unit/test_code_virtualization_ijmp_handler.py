@@ -17,12 +17,12 @@ suite.
 
 from __future__ import annotations
 
-import random
-
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_codegen_encode import build_ijmp_targets
 from r2morph.mutations.code_virtualization_region_models import Region
+from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
 
@@ -42,33 +42,33 @@ def _ijmp_region() -> Region:
 def test_build_ijmp_targets_pairs_native_address_with_encoder_offset() -> None:
     """A target address maps to the bytecode offset of its item (ijmp size 2)."""
     # Item 0 (ijmp) occupies offset 0..1, so item 1 (the target) starts at offset 2.
-    assert build_ijmp_targets(_ijmp_region()) == [(0x1017, 2)]
+    expect(build_ijmp_targets(_ijmp_region()) == [(4119, 2)])
 
 
 def test_build_ijmp_targets_empty_without_target_map() -> None:
     """A region with no computed jumps produces no map (its blob is unchanged)."""
     plain = Region([("exit", 0x2000)], 0x2000, 0x1000, {"exit_8192"}, [])
-    assert build_ijmp_targets(plain) == []
+    expect(build_ijmp_targets(plain) == [])
 
 
 def test_ijmp_interpreter_assembles_with_handler_and_map() -> None:
     """The interpreter with an ijmp handler and target map assembles to real bytes."""
     region = _ijmp_region()
-    scheme = build_region_scheme(region, random.Random(1234))
-    assert build_region_blob(region, _CAVE_VADDR, scheme) is not None
+    scheme = build_region_scheme(region, randomness.Random(1234))
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)
 
 
 def test_ijmp_interpreter_emits_target_map_section() -> None:
     """The assembled interpreter carries the runtime map keyed by the target's delta
     from the map label (base-independent; see the dedicated regression module)."""
     region = _ijmp_region()
-    scheme = build_region_scheme(region, random.Random(1234))
+    scheme = build_region_scheme(region, randomness.Random(1234))
     asm = _interpreter_asm(region, scheme)
-    assert "ijmp_map:" in asm and f"  .quad ijmp_map - {0x1017}\n" in asm
+    expect("ijmp_map:" in asm and f"  .quad ijmp_map - {0x1017}\n" in asm)
 
 
 def test_ordinary_region_emits_no_target_map_section() -> None:
     """Without a computed jump the interpreter emits no map label at all."""
     plain = Region([("exit", 0x2000)], 0x2000, 0x1000, {"exit_8192"}, [])
-    scheme = build_region_scheme(plain, random.Random(1234))
-    assert "ijmp_map:" not in _interpreter_asm(plain, scheme)
+    scheme = build_region_scheme(plain, randomness.Random(1234))
+    expect("ijmp_map:" not in _interpreter_asm(plain, scheme))

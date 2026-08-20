@@ -5,6 +5,10 @@ from r2morph.validation.semantic_report_parsing import (
     build_semantic_validation_report,
     build_semantic_validation_result,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_PARSED_EXECUTION_TIME_SECONDS_1_25 = 1.25
 
 
 def test_build_semantic_validation_result_parses_nested_payload() -> None:
@@ -52,13 +56,13 @@ def test_build_semantic_validation_result_parses_nested_payload() -> None:
 
     parsed = build_semantic_validation_result(payload)
 
-    assert parsed["region"].pass_name == "nop"
-    assert parsed["status"] == ValidationResultStatus.PASS
-    assert parsed["checks"][0].category == InvariantCategory.STACK
-    assert parsed["violations"][0].severity == InvariantSeverity.WARNING
-    assert parsed["symbolic_status"] == "checked"
-    assert parsed["symbolic_details"] == {"mode": "real"}
-    assert parsed["execution_time_seconds"] == 1.25
+    expect(getattr(parsed["region"], MUTATION_NAME_KEY) == "nop")
+    expect(parsed["status"] == ValidationResultStatus.PASS)
+    expect(parsed["checks"][0].category == InvariantCategory.STACK)
+    expect(parsed["violations"][0].severity == InvariantSeverity.WARNING)
+    expect(parsed["symbolic_status"] == "checked")
+    expect(parsed["symbolic_details"] == {"mode": "real"})
+    expect(parsed["execution_time_seconds"] == _EXPECTED_PARSED_EXECUTION_TIME_SECONDS_1_25)
 
 
 def test_build_semantic_validation_report_parses_results_and_modes() -> None:
@@ -83,23 +87,29 @@ def test_build_semantic_validation_report_parses_results_and_modes() -> None:
         }
     )
 
-    assert observables.to_dict() == {
-        "register_matches": {"rax": True},
-        "register_values": {"rax": {"original": "1", "mutated": "2"}},
-        "flag_matches": {"zf": False},
-        "memory_matches": {"0x1000": True},
-        "stack_delta_match": False,
-        "successor_match": True,
-        "successor_addresses": {"original": ["0x1000"], "mutated": ["0x2000"]},
-    }
+    expect(
+        observables.to_dict()
+        == {
+            "register_matches": {"rax": True},
+            "register_values": {"rax": {"original": "1", "mutated": "2"}},
+            "flag_matches": {"zf": False},
+            "memory_matches": {"0x1000": True},
+            "stack_delta_match": False,
+            "successor_match": True,
+            "successor_addresses": {"original": ["0x1000"], "mutated": ["0x2000"]},
+        }
+    )
 
     parsed = build_semantic_validation_report(data)
 
-    assert parsed == {
-        "binary_path": "sample.bin",
-        "timestamp": "2026-06-14T00:00:00Z",
-        "mode": ValidationMode.STANDARD,
-        "results": [],
-        "summary": {"total_mutations": 0},
-        "metadata": {"source": "unit"},
-    }
+    expect(
+        parsed
+        == {
+            "binary_path": "sample.bin",
+            "timestamp": "2026-06-14T00:00:00Z",
+            "mode": ValidationMode.STANDARD,
+            "results": [],
+            "summary": {"total_mutations": 0},
+            "metadata": {"source": "unit"},
+        }
+    )

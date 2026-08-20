@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from r2morph.reporting.report_context import ReportViewInputs
 from r2morph.reporting.report_view_pass_views import build_pass_views
+from tests.utils.assertions import expect
+from tests.utils.field_names import ONLY_MUTATION_KEY
+
+_EXPECTED_VIEWS_GENERAL_PASS_ROWS_0_GATE_FAILURE_COUNT_3 = 3
 
 
 def test_build_pass_views_merges_pass_context() -> None:
@@ -41,6 +45,8 @@ def test_build_pass_views_merges_pass_context() -> None:
         {"failed_gates_by_pass": {"alpha": {"failure_count": 3, "strictest_expected_severity": "high"}}},
     )
 
-    assert views["general_pass_rows"][0]["gate_failure_count"] == 3
-    assert views["general_pass_rows"][0]["discarded_count"] == 1
-    assert views["only_pass"]["alpha"]["region_evidence"][0]["region"] == "r1"
+    expect(
+        views["general_pass_rows"][0]["gate_failure_count"] == _EXPECTED_VIEWS_GENERAL_PASS_ROWS_0_GATE_FAILURE_COUNT_3
+    )
+    expect(views["general_pass_rows"][0]["discarded_count"] == 1)
+    expect(views[ONLY_MUTATION_KEY]["alpha"]["region_evidence"][0]["region"] == "r1")

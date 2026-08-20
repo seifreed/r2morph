@@ -1,6 +1,7 @@
 from r2morph.mutations.polymorphic_engine import PolymorphicEngine
 from r2morph.mutations.polymorphic_engine_models import EngineState
 from r2morph.mutations.polymorphic_engine_setup import EngineSetupConfig, setup_default_engine
+from tests.utils.assertions import expect
 
 
 def test_setup_default_engine_returns_final_state_and_registers_noop():
@@ -20,6 +21,6 @@ def test_setup_default_engine_returns_final_state_and_registers_noop():
         ),
     )
 
-    assert final_state == EngineState.INIT
-    assert "NoOp" in engine.mutations
-    assert EngineState.INIT in engine.transitions
+    expect(final_state == EngineState.INIT)
+    expect(not ("NoOp" not in engine.mutations))
+    expect(not (EngineState.INIT not in engine.transitions))

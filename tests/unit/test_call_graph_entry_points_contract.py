@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from r2morph.analysis.call_graph_entry_points import find_entry_points
+from tests.utils.assertions import expect
 
 
 @dataclass
@@ -29,11 +30,11 @@ def test_call_graph_entry_point_detection_prefers_symbol_order() -> None:
     )
     cg = DummyGraph(nodes={0x1000, 0x2000, 0x3000, 0x4000})
 
-    assert find_entry_points(binary, cg) == [0x1000, 0x2000, 0x3000, 0x4000]
+    expect(find_entry_points(binary, cg) == [4096, 8192, 12288, 16384])
 
 
 def test_call_graph_entry_point_detection_falls_back_to_graph_entries() -> None:
     binary = DummyBinary(_symbols={})
     cg = DummyGraph(nodes=set())
 
-    assert find_entry_points(binary, cg) == [0x5000]
+    expect(find_entry_points(binary, cg) == [20480])

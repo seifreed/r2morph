@@ -24,10 +24,11 @@ from r2morph.validation.performance_regression_models import (
 from r2morph.validation.performance_regression_models import (
     PerformanceSnapshot as ModelsPerformanceSnapshot,
 )
+from tests.utils.assertions import expect
 
 
 def test_performance_regression_models_are_reexported_from_validation_package() -> None:
-    assert PublicPerformanceMetric is ModelsPerformanceMetric
-    assert PublicPerformanceSnapshot is ModelsPerformanceSnapshot
-    assert PublicPerformanceRegression is ModelsPerformanceRegression
-    assert PublicBenchmarkConfig is ModelsBenchmarkConfig
+    expect(not (PublicPerformanceMetric is not ModelsPerformanceMetric))
+    expect(not (PublicPerformanceSnapshot is not ModelsPerformanceSnapshot))
+    expect(not (PublicPerformanceRegression is not ModelsPerformanceRegression))
+    expect(not (PublicBenchmarkConfig is not ModelsBenchmarkConfig))

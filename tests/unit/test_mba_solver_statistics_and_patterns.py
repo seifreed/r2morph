@@ -1,4 +1,5 @@
 from r2morph.devirtualization.mba_solver import MBASolver
+from tests.utils.assertions import expect
 
 
 def test_mba_solver_pattern_optimize_complex_skips():
@@ -6,7 +7,7 @@ def test_mba_solver_pattern_optimize_complex_skips():
     expr = "x + y * z - w"
 
     simplified = solver._simplify_with_patterns(expr)
-    assert simplified is None
+    expect(not (simplified is not None))
 
 
 def test_mba_solver_statistics_after_simplification():
@@ -14,14 +15,14 @@ def test_mba_solver_statistics_after_simplification():
     expr = "x + y - (x & y)"
 
     stats_before = solver.get_solver_statistics()
-    assert stats_before["success_rate"] == 0.0
-    assert stats_before["pattern_success_rate"] == 0.0
+    expect(stats_before["success_rate"] == 0.0)
+    expect(stats_before["pattern_success_rate"] == 0.0)
 
     result = solver.simplify_mba(expr, method="patterns")
-    assert result.success is True
+    expect(not (result.success is not True))
 
     stats_after = solver.get_solver_statistics()
-    assert stats_after["expressions_analyzed"] >= 1
-    assert stats_after["expressions_simplified"] >= 1
-    assert stats_after["pattern_matches"] >= 1
-    assert stats_after["success_rate"] > 0.0
+    expect(not (stats_after["expressions_analyzed"] < 1))
+    expect(not (stats_after["expressions_simplified"] < 1))
+    expect(not (stats_after["pattern_matches"] < 1))
+    expect(not (stats_after["success_rate"] <= 0.0))

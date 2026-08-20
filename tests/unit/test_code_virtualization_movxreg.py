@@ -14,6 +14,9 @@ from r2morph.mutations.code_virtualization_engine import decode_instruction
 from r2morph.mutations.code_virtualization_region import _flag_dead_op_indices
 from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
+from tests.utils.assertions import expect
+
+_EXPECTED_ITEM_SIZE_MOVXREG_Z_8_32_0_1_3 = 3
 
 
 def _insn(opcode: str) -> dict[str, Any]:
@@ -22,38 +25,38 @@ def _insn(opcode: str) -> dict[str, Any]:
 
 
 def test_classify_movzx_byte_register_lowers_to_movxreg_zero_extend() -> None:
-    assert _classify(_insn("movzx esi, al")) == ["movxreg", "z", 8, 32, 6, 0]
+    expect(_classify(_insn("movzx esi, al")) == ["movxreg", "z", 8, 32, 6, 0])
 
 
 def test_classify_movsx_byte_register_records_sign_and_64bit_destination() -> None:
-    assert _classify(_insn("movsx rdi, al")) == ["movxreg", "s", 8, 64, 7, 0]
+    expect(_classify(_insn("movsx rdi, al")) == ["movxreg", "s", 8, 64, 7, 0])
 
 
 def test_classify_movzx_word_register_records_16bit_source() -> None:
-    assert _classify(_insn("movzx edx, cx")) == ["movxreg", "z", 16, 32, 2, 1]
+    expect(_classify(_insn("movzx edx, cx")) == ["movxreg", "z", 16, 32, 2, 1])
 
 
 def test_classify_movsx_extended_word_register_source() -> None:
-    assert _classify(_insn("movsx rax, r8w")) == ["movxreg", "s", 16, 64, 0, 8]
+    expect(_classify(_insn("movsx rax, r8w")) == ["movxreg", "s", 16, 64, 0, 8])
 
 
 def test_classify_movzx_high_byte_source_stays_native() -> None:
     # ah addresses bits 8-15, not the low byte the handler reads.
-    assert _classify(_insn("movzx eax, ah")) is None
+    expect(not (_classify(_insn("movzx eax, ah")) is not None))
 
 
 def test_classify_movzx_stack_pointer_source_stays_native() -> None:
-    assert _classify(_insn("movzx eax, spl")) is None
+    expect(not (_classify(_insn("movzx eax, spl")) is not None))
 
 
 def test_classify_movzx_memory_source_stays_on_the_memory_path() -> None:
     # A memory source is the existing movx (not movxreg) lowering.
     item = _classify(_insn("movzx eax, byte ptr [rbx]"))
-    assert item is not None and item[0] == "movx"
+    expect(item is not None and item[0] == "movx")
 
 
 def test_item_size_movxreg_is_opcode_plus_two_slots() -> None:
-    assert _item_size(("movxreg", "z", 8, 32, 0, 1)) == 3
+    expect(_item_size(("movxreg", "z", 8, 32, 0, 1)) == _EXPECTED_ITEM_SIZE_MOVXREG_Z_8_32_0_1_3)
 
 
 def test_flag_setting_op_survives_a_movxreg_before_a_jcc() -> None:
@@ -66,4 +69,4 @@ def test_flag_setting_op_survives_a_movxreg_before_a_jcc() -> None:
         ["jcc", "je", 0x2000],
         ["exit", 0x2000],
     ]
-    assert 0 not in _flag_dead_op_indices(items)
+    expect(0 not in _flag_dead_op_indices(items))

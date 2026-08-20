@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from r2morph.platform.elf_handler_tables import collect_sections, collect_segments
+from tests.utils.assertions import expect
 
 
 def test_elf_handler_tables_contract(tmp_path: Path) -> None:
@@ -20,6 +21,6 @@ def test_elf_handler_tables_contract(tmp_path: Path) -> None:
     }
 
     with binary_path.open("rb") as f:
-        assert collect_sections(binary_path, header, f) == []
+        expect(collect_sections(binary_path, header, f) == [])
         f.seek(0)
-        assert collect_segments(binary_path, header, f) == []
+        expect(collect_segments(binary_path, header, f) == [])

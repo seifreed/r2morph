@@ -2,6 +2,7 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.iterative_simplifier import IterativeSimplifier, SimplificationStrategy
+from tests.utils.assertions import expect
 
 
 def _load_binary(binary_path: Path) -> Binary:
@@ -25,9 +26,9 @@ def test_iterative_simplifier_sequential_real(tmp_path: Path):
             timeout=30,
         )
 
-    assert result.success is True
-    assert result.phases_completed
-    assert result.metrics.execution_time >= 0
+    expect(not (result.success is not True))
+    expect(result.phases_completed)
+    expect(not (result.metrics.execution_time < 0))
 
 
 def test_iterative_simplifier_parallel_real():
@@ -44,10 +45,15 @@ def test_iterative_simplifier_parallel_real():
             timeout=30,
         )
 
-    assert result.success is True
-    assert result.strategy_used in {
-        SimplificationStrategy.ADAPTIVE,
-        SimplificationStrategy.CONSERVATIVE,
-        SimplificationStrategy.AGGRESSIVE,
-        SimplificationStrategy.TARGETED,
-    }
+    expect(not (result.success is not True))
+    expect(
+        not (
+            result.strategy_used
+            not in {
+                SimplificationStrategy.ADAPTIVE,
+                SimplificationStrategy.CONSERVATIVE,
+                SimplificationStrategy.AGGRESSIVE,
+                SimplificationStrategy.TARGETED,
+            }
+        )
+    )

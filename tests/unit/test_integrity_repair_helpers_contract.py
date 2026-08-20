@@ -7,6 +7,7 @@ from r2morph.validation.integrity_repair_helpers import (
     repair_macho_integrity,
     repair_pe_integrity,
 )
+from tests.utils.assertions import expect
 
 
 class _ElfHandler:
@@ -34,6 +35,6 @@ class _PeHandler:
 
 
 def test_integrity_repair_helpers_contract() -> None:
-    assert repair_elf_integrity(_ElfHandler()) == (True, ["Fixed section headers", "Fixed program headers"])
-    assert repair_macho_integrity(_MachoHandler()) == (True, ["Repaired Mach-O signature", "Marked executable"])
-    assert repair_pe_integrity(_PeHandler()) == (True, ["Repaired PE checksum", "Refreshed PE headers"])
+    expect(repair_elf_integrity(_ElfHandler()) == (True, ["Fixed section headers", "Fixed program headers"]))
+    expect(repair_macho_integrity(_MachoHandler()) == (True, ["Repaired Mach-O signature", "Marked executable"]))
+    expect(repair_pe_integrity(_PeHandler()) == (True, ["Repaired PE checksum", "Refreshed PE headers"]))

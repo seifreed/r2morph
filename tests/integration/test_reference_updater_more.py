@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceUpdater
+from tests.utils.assertions import expect
 
 
 def test_reference_updater_find_and_update_paths_real(tmp_path: Path):
@@ -27,8 +28,8 @@ def test_reference_updater_find_and_update_paths_real(tmp_path: Path):
             pytest.skip("Invalid function address")
 
         refs = updater.find_references_to(target_addr)
-        assert isinstance(refs, list)
+        expect(isinstance(refs, list))
 
         # Updating to the same address should be a no-op or False, but should not crash
         updated = updater.update_all_references_to(target_addr, target_addr)
-        assert isinstance(updated, int)
+        expect(isinstance(updated, int))

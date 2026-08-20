@@ -32,6 +32,50 @@ from r2morph.validation.performance_regression import (
     PerformanceSnapshot,
     create_benchmark,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_BENCHMARK_CONFIG_MEASURED_RUNS_10 = 10
+_EXPECTED_BENCHMARK_CONFIG_MEASURED_RUNS_5 = 5
+_EXPECTED_BENCHMARK_CONFIG_MEASURED_RUNS_5_2 = 5
+_EXPECTED_BENCHMARK_CONFIG_REGRESSION_THRESHOLD_PERCENT_15_0 = 15.0
+_EXPECTED_BENCHMARK_CONFIG_WARMUP_RUNS_2 = 2
+_EXPECTED_BENCHMARK_CONFIG_WARMUP_RUNS_2_2 = 2
+_EXPECTED_BENCHMARK_CONFIG_WARMUP_RUNS_3 = 3
+_EXPECTED_CONFIG_NUM_TESTS_100 = 100
+_EXPECTED_CONFIG_NUM_TESTS_50 = 50
+_EXPECTED_CONFIG_SEED_42 = 42
+_EXPECTED_CONFIG_TIMEOUT_10 = 10
+_EXPECTED_CONFIG_TIMEOUT_5 = 5
+_EXPECTED_DATA_PASSED_9 = 9
+_EXPECTED_DATA_SEED_123 = 123
+_EXPECTED_DATA_TOTAL_TESTS_10 = 10
+_EXPECTED_DETECTOR_OBJECT_GROWTH_THRESHOLD_1000 = 1000
+_EXPECTED_DETECTOR_OBJECT_GROWTH_THRESHOLD_500 = 500
+_EXPECTED_DETECTOR_OBJECT_GROWTH_THRESHOLD_500_2 = 500
+_EXPECTED_DETECTOR_THRESHOLD_MB_10_0 = 10.0
+_EXPECTED_DETECTOR_THRESHOLD_MB_20_0 = 20.0
+_EXPECTED_DETECTOR_THRESHOLD_MB_50_0 = 50.0
+_EXPECTED_FUZZER_CONFIG_NUM_TESTS_100 = 100
+_EXPECTED_FUZZER_CONFIG_NUM_TESTS_100_2 = 100
+_EXPECTED_FUZZER_CONFIG_NUM_TESTS_50 = 50
+_EXPECTED_FUZZER_CONFIG_NUM_TESTS_50_2 = 50
+_EXPECTED_FUZZER_CONFIG_NUM_TESTS_50_3 = 50
+_EXPECTED_FUZZER_CONFIG_SEED_42 = 42
+_EXPECTED_FUZZER_CONFIG_SEED_42_2 = 42
+_EXPECTED_FUZZER_CONFIG_TIMEOUT_10 = 10
+_EXPECTED_FUZZER_CONFIG_TIMEOUT_10_2 = 10
+_EXPECTED_FUZZER_CONFIG_TIMEOUT_10_3 = 10
+_EXPECTED_FUZZER_CONFIG_TIMEOUT_5 = 5
+_EXPECTED_LEAK_LEAKED_COUNT_10 = 10
+_EXPECTED_LEAK_LEAKED_COUNT_5 = 5
+_EXPECTED_LEAK_MEMORY_GROWTH_MB_40_0 = 40.0
+_EXPECTED_LEN_CONFIG_INPUT_TYPES_2 = 2
+_EXPECTED_LEN_INPUT_DATA_100 = 100
+_EXPECTED_LEN_INPUT_DATA_100_2 = 100
+_EXPECTED_LEN_TEST_CASE_ARGS_2 = 2
+_EXPECTED_METRIC_VALUE_100_5 = 100.5
+_EXPECTED_RESULT_SUCCESS_RATE_95_0 = 95.0
+_EXPECTED_RESULT_TOTAL_TESTS_100 = 100
 
 
 class TestFuzzConfig:
@@ -41,11 +85,11 @@ class TestFuzzConfig:
         """Test default configuration."""
         config = FuzzConfig()
 
-        assert config.num_tests == 100
-        assert config.timeout == 5
-        assert config.seed is None
-        assert "random" in config.input_types
-        assert "ascii" in config.input_types
+        expect(config.num_tests == _EXPECTED_CONFIG_NUM_TESTS_100)
+        expect(config.timeout == _EXPECTED_CONFIG_TIMEOUT_5)
+        expect(not (config.seed is not None))
+        expect(not ("random" not in config.input_types))
+        expect(not ("ascii" not in config.input_types))
 
     def test_custom_config(self):
         """Test custom configuration."""
@@ -56,10 +100,10 @@ class TestFuzzConfig:
             input_types=["random", "binary"],
         )
 
-        assert config.num_tests == 50
-        assert config.timeout == 10
-        assert config.seed == 42
-        assert len(config.input_types) == 2
+        expect(config.num_tests == _EXPECTED_CONFIG_NUM_TESTS_50)
+        expect(config.timeout == _EXPECTED_CONFIG_TIMEOUT_10)
+        expect(config.seed == _EXPECTED_CONFIG_SEED_42)
+        expect(len(config.input_types) == _EXPECTED_LEN_CONFIG_INPUT_TYPES_2)
 
 
 class TestFuzzTestCase:
@@ -76,11 +120,11 @@ class TestFuzzTestCase:
             description="Test case description",
         )
 
-        assert test_case.test_id == "test_001"
-        assert test_case.input_data == b"test input"
-        assert test_case.input_type == "ascii"
-        assert len(test_case.args) == 2
-        assert test_case.env["TEST"] == "value"
+        expect(test_case.test_id == "test_001")
+        expect(test_case.input_data == b"test input")
+        expect(test_case.input_type == "ascii")
+        expect(len(test_case.args) == _EXPECTED_LEN_TEST_CASE_ARGS_2)
+        expect(test_case.env["TEST"] == "value")
 
 
 class TestFuzzResult:
@@ -104,9 +148,9 @@ class TestFuzzResult:
             mutation_names=["nop", "substitute"],
         )
 
-        assert result.passed is True
-        assert result.crash is False
-        assert result.timeout is False
+        expect(not (result.passed is not True))
+        expect(not (result.crash is not False))
+        expect(not (result.timeout is not False))
 
     def test_crash_result(self):
         """Test a crash result."""
@@ -126,8 +170,8 @@ class TestFuzzResult:
             mutation_names=["nop", "substitute"],
         )
 
-        assert result.passed is False
-        assert result.crash is True
+        expect(not (result.passed is not False))
+        expect(not (result.crash is not True))
 
 
 class TestFuzzCampaignResult:
@@ -149,8 +193,8 @@ class TestFuzzCampaignResult:
             duration_seconds=300.0,
         )
 
-        assert result.total_tests == 100
-        assert result.success_rate == 95.0
+        expect(result.total_tests == _EXPECTED_RESULT_TOTAL_TESTS_100)
+        expect(result.success_rate == _EXPECTED_RESULT_SUCCESS_RATE_95_0)
 
     def test_to_dict(self):
         """Test converting to dictionary."""
@@ -170,9 +214,9 @@ class TestFuzzCampaignResult:
 
         data = result.to_dict()
 
-        assert data["total_tests"] == 10
-        assert data["passed"] == 9
-        assert data["seed"] == 123
+        expect(data["total_tests"] == _EXPECTED_DATA_TOTAL_TESTS_10)
+        expect(data["passed"] == _EXPECTED_DATA_PASSED_9)
+        expect(data["seed"] == _EXPECTED_DATA_SEED_123)
 
 
 class TestMutationPassFuzzer:
@@ -182,17 +226,17 @@ class TestMutationPassFuzzer:
         """Test fuzzer initialization."""
         fuzzer = MutationPassFuzzer()
 
-        assert fuzzer.config.num_tests == 100
-        assert fuzzer.config.timeout == 5
+        expect(fuzzer.config.num_tests == _EXPECTED_FUZZER_CONFIG_NUM_TESTS_100)
+        expect(fuzzer.config.timeout == _EXPECTED_FUZZER_CONFIG_TIMEOUT_5)
 
     def test_initialization_with_config(self):
         """Test fuzzer with custom config."""
         config = FuzzConfig(num_tests=50, timeout=10, seed=42)
         fuzzer = MutationPassFuzzer(config)
 
-        assert fuzzer.config.num_tests == 50
-        assert fuzzer.config.timeout == 10
-        assert fuzzer.config.seed == 42
+        expect(fuzzer.config.num_tests == _EXPECTED_FUZZER_CONFIG_NUM_TESTS_50)
+        expect(fuzzer.config.timeout == _EXPECTED_FUZZER_CONFIG_TIMEOUT_10)
+        expect(fuzzer.config.seed == _EXPECTED_FUZZER_CONFIG_SEED_42)
 
     def test_generate_random_input(self):
         """Test random input generation."""
@@ -201,8 +245,8 @@ class TestMutationPassFuzzer:
 
         input_data = fuzzer._generate_random_input(100)
 
-        assert len(input_data) <= 100
-        assert isinstance(input_data, bytes)
+        expect(not (len(input_data) > _EXPECTED_LEN_INPUT_DATA_100))
+        expect(isinstance(input_data, bytes))
 
     def test_generate_ascii_input(self):
         """Test ASCII input generation."""
@@ -212,7 +256,7 @@ class TestMutationPassFuzzer:
         input_data = fuzzer._generate_ascii_input(100)
         decoded = input_data.decode("ascii", errors="replace")
 
-        assert all(c.isprintable() or c in "\n\r\t\x0b\x0c" for c in decoded)
+        expect(all(c.isprintable() or c in "\n\r\t\x0b\x0c" for c in decoded))
 
     def test_generate_binary_input(self):
         """Test binary input generation."""
@@ -221,8 +265,8 @@ class TestMutationPassFuzzer:
 
         input_data = fuzzer._generate_binary_input(100)
 
-        assert isinstance(input_data, bytes)
-        assert len(input_data) == 100
+        expect(isinstance(input_data, bytes))
+        expect(len(input_data) == _EXPECTED_LEN_INPUT_DATA_100_2)
 
     def test_generate_structured_input(self):
         """Test structured input generation."""
@@ -231,8 +275,8 @@ class TestMutationPassFuzzer:
 
         input_data = fuzzer._generate_structured_input(100)
 
-        assert isinstance(input_data, bytes)
-        assert len(input_data) > 0
+        expect(isinstance(input_data, bytes))
+        expect(not (len(input_data) <= 0))
 
     def test_generate_edge_case_input(self):
         """Test edge case input generation."""
@@ -241,7 +285,7 @@ class TestMutationPassFuzzer:
 
         input_data = fuzzer._generate_edge_case_input(100)
 
-        assert isinstance(input_data, bytes)
+        expect(isinstance(input_data, bytes))
 
     def test_generate_test_case(self):
         """Test test case generation."""
@@ -250,9 +294,9 @@ class TestMutationPassFuzzer:
 
         test_case = fuzzer.generate_test_case(0)
 
-        assert test_case.test_id == "fuzz_0000"
-        assert isinstance(test_case.input_data, bytes)
-        assert isinstance(test_case.args, list)
+        expect(test_case.test_id == "fuzz_0000")
+        expect(isinstance(test_case.input_data, bytes))
+        expect(isinstance(test_case.args, list))
 
 
 class TestContinuousFuzzer:
@@ -262,8 +306,8 @@ class TestContinuousFuzzer:
         """Test continuous fuzzer initialization."""
         fuzzer = ContinuousFuzzer()
 
-        assert fuzzer.config.num_tests == 100
-        assert len(fuzzer.campaign_history) == 0
+        expect(fuzzer.config.num_tests == _EXPECTED_FUZZER_CONFIG_NUM_TESTS_100_2)
+        expect(len(fuzzer.campaign_history) == 0)
 
     def test_get_statistics(self):
         """Test getting statistics."""
@@ -271,8 +315,8 @@ class TestContinuousFuzzer:
 
         stats = fuzzer.get_statistics()
 
-        assert stats["campaigns"] == 0
-        assert "avg_success_rate" not in stats or stats.get("avg_success_rate", 0) == 0
+        expect(stats["campaigns"] == 0)
+        expect("avg_success_rate" not in stats or stats.get("avg_success_rate", 0) == 0)
 
 
 class TestPerformanceBenchmark:
@@ -282,9 +326,9 @@ class TestPerformanceBenchmark:
         """Test benchmark initialization."""
         benchmark = PerformanceBenchmark()
 
-        assert benchmark.config.warmup_runs == 3
-        assert benchmark.config.measured_runs == 10
-        assert benchmark.baseline_dir.exists()
+        expect(benchmark.config.warmup_runs == _EXPECTED_BENCHMARK_CONFIG_WARMUP_RUNS_3)
+        expect(benchmark.config.measured_runs == _EXPECTED_BENCHMARK_CONFIG_MEASURED_RUNS_10)
+        expect(benchmark.baseline_dir.exists())
 
     def test_custom_config(self):
         """Test benchmark with custom config."""
@@ -295,8 +339,8 @@ class TestPerformanceBenchmark:
         )
         benchmark = PerformanceBenchmark(config)
 
-        assert benchmark.config.warmup_runs == 2
-        assert benchmark.config.measured_runs == 5
+        expect(benchmark.config.warmup_runs == _EXPECTED_BENCHMARK_CONFIG_WARMUP_RUNS_2)
+        expect(benchmark.config.measured_runs == _EXPECTED_BENCHMARK_CONFIG_MEASURED_RUNS_5)
 
     def test_get_environment_info(self):
         """Test environment info extraction."""
@@ -304,9 +348,9 @@ class TestPerformanceBenchmark:
 
         env = benchmark._get_environment_info()
 
-        assert "python_version" in env
-        assert "platform" in env
-        assert "cpu_count" in env
+        expect(not ("python_version" not in env))
+        expect(not ("platform" not in env))
+        expect(not ("cpu_count" not in env))
 
 
 class TestPerformanceSnapshot:
@@ -325,9 +369,9 @@ class TestPerformanceSnapshot:
             metadata={"test": "value"},
         )
 
-        assert snapshot.commit_hash == "abc123"
-        assert "execution_time_ms_mean" in snapshot.metrics
-        assert snapshot.metadata["test"] == "value"
+        expect(snapshot.commit_hash == "abc123")
+        expect(not ("execution_time_ms_mean" not in snapshot.metrics))
+        expect(snapshot.metadata["test"] == "value")
 
     def test_to_dict(self):
         """Test converting to dictionary."""
@@ -340,8 +384,8 @@ class TestPerformanceSnapshot:
 
         data = snapshot.to_dict()
 
-        assert data["commit_hash"] == "abc123"
-        assert "metrics" in data
+        expect(data["commit_hash"] == "abc123")
+        expect(not ("metrics" not in data))
 
 
 class TestMemoryLeakDetector:
@@ -351,8 +395,8 @@ class TestMemoryLeakDetector:
         """Test detector initialization."""
         detector = MemoryLeakDetector()
 
-        assert detector.threshold_mb == 10.0
-        assert detector.object_growth_threshold == 1000
+        expect(detector.threshold_mb == _EXPECTED_DETECTOR_THRESHOLD_MB_10_0)
+        expect(detector.object_growth_threshold == _EXPECTED_DETECTOR_OBJECT_GROWTH_THRESHOLD_1000)
 
     def test_custom_thresholds(self):
         """Test detector with custom thresholds."""
@@ -361,8 +405,8 @@ class TestMemoryLeakDetector:
             object_growth_threshold=500,
         )
 
-        assert detector.threshold_mb == 50.0
-        assert detector.object_growth_threshold == 500
+        expect(detector.threshold_mb == _EXPECTED_DETECTOR_THRESHOLD_MB_50_0)
+        expect(detector.object_growth_threshold == _EXPECTED_DETECTOR_OBJECT_GROWTH_THRESHOLD_500)
 
     def test_take_snapshot(self):
         """Test taking a memory snapshot."""
@@ -370,9 +414,9 @@ class TestMemoryLeakDetector:
 
         snapshot = detector._take_snapshot()
 
-        assert snapshot.timestamp > 0
-        assert isinstance(snapshot.object_count, int)
-        assert isinstance(snapshot.gc_gen0, int)
+        expect(not (snapshot.timestamp <= 0))
+        expect(isinstance(snapshot.object_count, int))
+        expect(isinstance(snapshot.gc_gen0, int))
 
     def test_detect_no_leaks(self):
         """Test detecting no leaks."""
@@ -403,8 +447,8 @@ class TestMemoryLeakDetector:
 
         result = detector.detect_leaks(snapshots, "test_func")
 
-        assert result.passed is True
-        assert result.leaks_detected == 0
+        expect(not (result.passed is not True))
+        expect(result.leaks_detected == 0)
 
     def test_detect_memory_leak(self):
         """Test detecting memory leak."""
@@ -435,8 +479,8 @@ class TestMemoryLeakDetector:
 
         result = detector.detect_leaks(snapshots, "test_func")
 
-        assert result.passed is False
-        assert result.leaks_detected > 0
+        expect(not (result.passed is not False))
+        expect(not (result.leaks_detected <= 0))
 
 
 class TestObjectTracker:
@@ -457,7 +501,7 @@ class TestObjectTracker:
 
         tracker.stop_tracking()
 
-        assert count >= 0
+        expect(not (count < 0))
 
 
 class TestResourceLeakDetector:
@@ -467,8 +511,8 @@ class TestResourceLeakDetector:
         """Test resource leak detector initialization."""
         detector = ResourceLeakDetector()
 
-        assert detector._initial_resources == {}
-        assert detector._final_resources == {}
+        expect(detector._initial_resources == {})
+        expect(detector._final_resources == {})
 
     def test_no_resource_leaks(self):
         """Test when there are no resource leaks."""
@@ -486,7 +530,10 @@ class TestResourceLeakDetector:
             for leak in result.resource_leaks
             if leak.resource_type in ("file_descriptors", "open_files", "open_connections")
         ]
-        assert len(critical_leaks) == 0 or all(leak.leaked_count <= 10 for leak in critical_leaks)
+        expect(
+            len(critical_leaks) == 0
+            or all(leak.leaked_count <= _EXPECTED_LEAK_LEAKED_COUNT_10 for leak in critical_leaks)
+        )
 
     def test_start_monitoring_dead_weak_proxy_records_resources(self):
         class WeakTarget:
@@ -499,7 +546,7 @@ class TestResourceLeakDetector:
         detector = ResourceLeakDetector()
         detector.start_monitoring()
 
-        assert id(dead_proxy) > 0
+        expect(not (id(dead_proxy) <= 0))
 
 
 class TestDataclasses:
@@ -515,9 +562,9 @@ class TestDataclasses:
             sample_size=10,
         )
 
-        assert metric.name == "execution_time"
-        assert metric.value == 100.5
-        assert metric.unit == "ms"
+        expect(metric.name == "execution_time")
+        expect(metric.value == _EXPECTED_METRIC_VALUE_100_5)
+        expect(metric.unit == "ms")
 
     def test_performance_regression(self):
         """Test PerformanceRegression dataclass."""
@@ -530,8 +577,8 @@ class TestDataclasses:
             severity="major",
         )
 
-        assert regression.metric_name == "execution_time"
-        assert regression.severity == "major"
+        expect(regression.metric_name == "execution_time")
+        expect(regression.severity == "major")
 
     def test_memory_leak(self):
         """Test MemoryLeak dataclass."""
@@ -546,8 +593,8 @@ class TestDataclasses:
             object_growth=4000,
         )
 
-        assert leak.leak_type == "memory_growth"
-        assert leak.memory_growth_mb == 40.0
+        expect(leak.leak_type == "memory_growth")
+        expect(leak.memory_growth_mb == _EXPECTED_LEAK_MEMORY_GROWTH_MB_40_0)
 
     def test_resource_leak(self):
         """Test ResourceLeak dataclass."""
@@ -559,8 +606,8 @@ class TestDataclasses:
             leaked_count=5,
         )
 
-        assert leak.resource_type == "file_descriptors"
-        assert leak.leaked_count == 5
+        expect(leak.resource_type == "file_descriptors")
+        expect(leak.leaked_count == _EXPECTED_LEAK_LEAKED_COUNT_5)
 
 
 class TestFactoryFunctions:
@@ -570,16 +617,16 @@ class TestFactoryFunctions:
         """Test fuzzer factory function."""
         fuzzer = create_fuzzer(num_tests=50, timeout=10, seed=42)
 
-        assert fuzzer.config.num_tests == 50
-        assert fuzzer.config.timeout == 10
-        assert fuzzer.config.seed == 42
+        expect(fuzzer.config.num_tests == _EXPECTED_FUZZER_CONFIG_NUM_TESTS_50_2)
+        expect(fuzzer.config.timeout == _EXPECTED_FUZZER_CONFIG_TIMEOUT_10_2)
+        expect(fuzzer.config.seed == _EXPECTED_FUZZER_CONFIG_SEED_42_2)
 
     def test_create_continuous_fuzzer(self):
         """Test continuous fuzzer factory function."""
         fuzzer = create_continuous_fuzzer(num_tests=50, timeout=10)
 
-        assert fuzzer.config.num_tests == 50
-        assert fuzzer.config.timeout == 10
+        expect(fuzzer.config.num_tests == _EXPECTED_FUZZER_CONFIG_NUM_TESTS_50_3)
+        expect(fuzzer.config.timeout == _EXPECTED_FUZZER_CONFIG_TIMEOUT_10_3)
 
     def test_create_benchmark(self):
         """Test benchmark factory function."""
@@ -589,13 +636,16 @@ class TestFactoryFunctions:
             regression_threshold=15.0,
         )
 
-        assert benchmark.config.warmup_runs == 2
-        assert benchmark.config.measured_runs == 5
-        assert benchmark.config.regression_threshold_percent == 15.0
+        expect(benchmark.config.warmup_runs == _EXPECTED_BENCHMARK_CONFIG_WARMUP_RUNS_2_2)
+        expect(benchmark.config.measured_runs == _EXPECTED_BENCHMARK_CONFIG_MEASURED_RUNS_5_2)
+        expect(
+            benchmark.config.regression_threshold_percent
+            == _EXPECTED_BENCHMARK_CONFIG_REGRESSION_THRESHOLD_PERCENT_15_0
+        )
 
     def test_create_memory_detector(self):
         """Test memory detector factory function."""
         detector = create_memory_detector(threshold_mb=20.0, object_threshold=500)
 
-        assert detector.threshold_mb == 20.0
-        assert detector.object_growth_threshold == 500
+        expect(detector.threshold_mb == _EXPECTED_DETECTOR_THRESHOLD_MB_20_0)
+        expect(detector.object_growth_threshold == _EXPECTED_DETECTOR_OBJECT_GROWTH_THRESHOLD_500_2)

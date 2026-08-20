@@ -1,5 +1,6 @@
 from r2morph.analysis.dataflow_models import Register
 from r2morph.analysis.liveness_models import InstructionLiveness, InterferenceGraph, LiveRange
+from tests.utils.assertions import expect
 
 
 def test_liveness_models_contract() -> None:
@@ -9,6 +10,6 @@ def test_liveness_models_contract() -> None:
     graph = InterferenceGraph()
     graph.add_edge("eax", "ebx")
 
-    assert live_range.contains(0x1008)
-    assert liveness.to_dict()["instruction"] == "mov eax, 1"
-    assert graph.interfere("eax", "ebx")
+    expect(live_range.contains(0x1008))
+    expect(liveness.to_dict()["instruction"] == "mov eax, 1")
+    expect(graph.interfere("eax", "ebx"))

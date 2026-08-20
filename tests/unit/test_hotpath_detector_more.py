@@ -4,6 +4,11 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.profiling.hotpath_detector import HotPathDetector
+from tests.utils.assertions import expect
+
+_EXPECTED_HOT_BLOCKS_12288 = 0x3000
+_EXPECTED_HOT_BLOCKS_4096 = 0x1000
+_EXPECTED_HOT_BLOCKS_8192 = 0x2000
 
 
 def test_hotpath_detector_identify_hot_blocks():
@@ -15,17 +20,17 @@ def test_hotpath_detector_identify_hot_blocks():
     ]
 
     hot_blocks = detector._identify_hot_blocks(blocks)
-    assert 0x1000 in hot_blocks
-    assert 0x2000 in hot_blocks
-    assert 0x3000 not in hot_blocks
+    expect(not (_EXPECTED_HOT_BLOCKS_4096 not in hot_blocks))
+    expect(not (_EXPECTED_HOT_BLOCKS_8192 not in hot_blocks))
+    expect(_EXPECTED_HOT_BLOCKS_12288 not in hot_blocks)
 
 
 def test_hotpath_detector_is_hot_path():
     detector = HotPathDetector(binary=None)
     hot_paths = {"sym.main": [0x1000, 0x2000]}
 
-    assert detector.is_hot_path("sym.main", 0x1000, hot_paths) is True
-    assert detector.is_hot_path("sym.main", 0x3000, hot_paths) is False
+    expect(not (detector.is_hot_path("sym.main", 0x1000, hot_paths) is not True))
+    expect(not (detector.is_hot_path("sym.main", 0x3000, hot_paths) is not False))
 
 
 def test_hotpath_detector_detect_hot_paths_real():
@@ -38,4 +43,4 @@ def test_hotpath_detector_detect_hot_paths_real():
         detector = HotPathDetector(bin_obj)
         hot_paths = detector.detect_hot_paths()
 
-    assert isinstance(hot_paths, dict)
+    expect(isinstance(hot_paths, dict))

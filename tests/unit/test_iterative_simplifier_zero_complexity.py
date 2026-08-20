@@ -19,6 +19,7 @@ from r2morph.devirtualization.iterative_simplifier import (
     SimplificationStrategy,
 )
 from tests._doubles.zero_complexity_binary import ZeroComplexityBinary
+from tests.utils.assertions import expect
 
 
 def test_zero_complexity_binary_converges_without_division_error() -> None:
@@ -28,7 +29,7 @@ def test_zero_complexity_binary_converges_without_division_error() -> None:
 
     result = simplifier.simplify(strategy=SimplificationStrategy.CONSERVATIVE)
 
-    assert result.success is True
-    assert not any("division by zero" in e for e in result.errors)
-    assert SimplificationPhase.ANALYSIS in result.phases_completed
-    assert SimplificationPhase.VALIDATION in result.phases_completed
+    expect(not (result.success is not True))
+    expect(not (any("division by zero" in e for e in result.errors)))
+    expect(not (SimplificationPhase.ANALYSIS not in result.phases_completed))
+    expect(not (SimplificationPhase.VALIDATION not in result.phases_completed))

@@ -6,6 +6,9 @@ from r2morph.mutations.data_flow_mutation_helpers import (
     get_dead_registers,
     is_register_safe_to_use,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_DEAD_CODE_4 = 4
 
 
 def test_data_flow_mutation_helpers_cover_core_paths() -> None:
@@ -18,13 +21,13 @@ def test_data_flow_mutation_helpers_cover_core_paths() -> None:
     ]
 
     live_in = analyze_function_liveness(instructions)
-    assert isinstance(live_in, dict)
-    assert get_dead_registers(0x1000, live_in, {"rax", "rbx"}) <= {"rax", "rbx"}
-    assert is_register_safe_to_use("rax", 0x1000, live_in, {"rax", "rbx"}) in {True, False}
+    expect(isinstance(live_in, dict))
+    expect(not (get_dead_registers(0x1000, live_in, {"rax", "rbx"}) > {"rax", "rbx"}))
+    expect(not (is_register_safe_to_use("rax", 0x1000, live_in, {"rax", "rbx"}) not in {True, False}))
 
     candidates = find_safe_substitution_candidates(instructions, live_in, "x86_64")
-    assert isinstance(candidates, list)
+    expect(isinstance(candidates, list))
 
     dead_code = generate_dead_code_with_liveness({"rax", "rbx"}, 64, 4)
-    assert dead_code is not None
-    assert len(dead_code) <= 4
+    expect(dead_code is not None)
+    expect(not (len(dead_code) > _EXPECTED_LEN_DEAD_CODE_4))

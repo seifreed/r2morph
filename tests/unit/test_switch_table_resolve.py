@@ -10,6 +10,7 @@ import struct
 
 from r2morph.analysis.switch_table import IndirectJump, JumpTableType, SwitchTableAnalyzer
 from tests._doubles.in_memory_jump_table_binary import InMemoryJumpTableBinary
+from tests.utils.assertions import expect
 
 _TABLE_ADDRESS = 0x405000
 _TARGETS = [0x401000, 0x401100, 0x401200]
@@ -40,12 +41,12 @@ def test_resolve_jump_table_reads_entries() -> None:
 
     table = analyzer.resolve_jump_table(_jump())
 
-    assert table is not None
-    assert table.table_address == _TABLE_ADDRESS
-    assert table.table_type == JumpTableType.DIRECT
-    assert [entry.target_address for entry in table.entries] == _TARGETS
-    assert [entry.case_value for entry in table.entries] == [0, 1, 2]
-    assert [entry.index for entry in table.entries] == [0, 1, 2]
+    expect(table is not None)
+    expect(table.table_address == _TABLE_ADDRESS)
+    expect(table.table_type == JumpTableType.DIRECT)
+    expect([entry.target_address for entry in table.entries] == _TARGETS)
+    expect([entry.case_value for entry in table.entries] == [0, 1, 2])
+    expect([entry.index for entry in table.entries] == [0, 1, 2])
 
 
 def test_resolve_jump_table_stops_on_duplicate_target() -> None:
@@ -59,8 +60,8 @@ def test_resolve_jump_table_stops_on_duplicate_target() -> None:
     table = analyzer.resolve_jump_table(_jump())
 
     # The loop breaks at the repeated target, so only the first entry survives.
-    assert table is not None
-    assert [entry.target_address for entry in table.entries] == [0x401000]
+    expect(table is not None)
+    expect([entry.target_address for entry in table.entries] == [4198400])
 
 
 def test_resolve_jump_table_classifies_type() -> None:
@@ -69,13 +70,13 @@ def test_resolve_jump_table_classifies_type() -> None:
 
     # base + index registers -> INDIRECT
     indirect = analyzer.resolve_jump_table(_jump(base_register="rbx", index_register="rax"))
-    assert indirect is not None
-    assert indirect.table_type == JumpTableType.INDIRECT
+    expect(indirect is not None)
+    expect(indirect.table_type == JumpTableType.INDIRECT)
 
     # scale != pointer size -> COMPACT
     compact = analyzer.resolve_jump_table(_jump(base_register=None, scale=4))
-    assert compact is not None
-    assert compact.table_type == JumpTableType.COMPACT
+    expect(compact is not None)
+    expect(compact.table_type == JumpTableType.COMPACT)
 
 
 def test_resolve_jump_table_without_address_returns_none() -> None:
@@ -83,4 +84,4 @@ def test_resolve_jump_table_without_address_returns_none() -> None:
     analyzer = SwitchTableAnalyzer(binary)
 
     no_address = _jump(displacement=0, table_address=None)
-    assert analyzer.resolve_jump_table(no_address, table_address=None) is None
+    expect(not (analyzer.resolve_jump_table(no_address, table_address=None) is not None))

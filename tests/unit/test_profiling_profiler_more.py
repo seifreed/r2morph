@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from r2morph.profiling.profiler import BinaryProfiler
+from tests.utils.assertions import expect
 
 
 def test_profiler_parse_perf_output_extracts_symbols():
@@ -12,8 +13,8 @@ def test_profiler_parse_perf_output_extracts_symbols():
     profiler = BinaryProfiler(Path("fake"))
     hot = profiler._parse_perf_output(output)
 
-    assert hot[:2] == ["sym._start", "sym.main"]
-    assert "sym.helper" in hot
+    expect(hot[:2] == ["sym._start", "sym.main"])
+    expect(not ("sym.helper" not in hot))
 
 
 def test_profiler_hot_and_cold_functions():
@@ -21,15 +22,15 @@ def test_profiler_hot_and_cold_functions():
     profiler.profile_data = {"hot_functions": ["sym.main", "sym.loop"]}
 
     hot = profiler.get_hot_functions()
-    assert hot == {"sym.main", "sym.loop"}
+    expect(hot == {"sym.main", "sym.loop"})
 
     cold = profiler.get_cold_functions(["sym.main", "sym.loop", "sym.cold"])
-    assert cold == {"sym.cold"}
+    expect(cold == {"sym.cold"})
 
 
 def test_profiler_should_mutate_aggressively():
     profiler = BinaryProfiler(Path("fake"))
     profiler.profile_data = {"hot_functions": ["sym.main"]}
 
-    assert profiler.should_mutate_aggressively("sym.helper") is True
-    assert profiler.should_mutate_aggressively("sym.main") is False
+    expect(not (profiler.should_mutate_aggressively("sym.helper") is not True))
+    expect(not (profiler.should_mutate_aggressively("sym.main") is not False))

@@ -7,6 +7,9 @@ from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
 from r2morph.mutations.code_virtualization_engine_frame import DEFAULT_FRAME_LAYOUT
 from r2morph.mutations.code_virtualization_engine_handlers import EngineHandlerGenerator
 from r2morph.mutations.code_virtualization_engine_isa import EngineISASpec
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_CANONICAL_REORDERED_FIELD_VARIANT_3 = 3
 
 
 def test_gp_handler_body_variant_reorders_independent_loads() -> None:
@@ -18,7 +21,7 @@ def test_gp_handler_body_variant_reorders_independent_loads() -> None:
 
     field_variant = generator.handler_body("mov", False, 64, 0, body_variant=2)
 
-    assert len({canonical, reordered, field_variant}) == 3
+    expect(len({canonical, reordered, field_variant}) == _EXPECTED_LEN_CANONICAL_REORDERED_FIELD_VARIANT_3)
 
 
 def test_handler_body_variant_uses_equivalent_vip_advance_form() -> None:
@@ -28,4 +31,4 @@ def test_handler_body_variant_uses_equivalent_vip_advance_form() -> None:
     add_form = generator.handler_body("mov", False, 64, 0, body_variant=0)
     lea_form = generator.handler_body("mov", False, 64, 0, body_variant=2)
 
-    assert "add rsi" in add_form and "lea rsi" in lea_form
+    expect("add rsi" in add_form and "lea rsi" in lea_form)

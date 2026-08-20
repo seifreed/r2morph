@@ -6,6 +6,10 @@ from pathlib import Path
 import pytest
 
 from r2morph.detection.similarity_hasher import SimilarityHasher
+from tests.utils.assertions import expect
+
+_EXPECTED_DIFF_BYTE_SIMILARITY_100_0 = 100.0
+_EXPECTED_SAME_BYTE_SIMILARITY_100_0 = 100.0
 
 
 def test_similarity_hasher_byte_similarity(tmp_path: Path) -> None:
@@ -27,8 +31,8 @@ def test_similarity_hasher_byte_similarity(tmp_path: Path) -> None:
     same = hasher.compare_files(original, original)
     diff = hasher.compare_files(original, modified)
 
-    assert same["byte_similarity"] == 100.0
-    assert diff["byte_similarity"] < 100.0
+    expect(same["byte_similarity"] == _EXPECTED_SAME_BYTE_SIMILARITY_100_0)
+    expect(not (diff["byte_similarity"] >= _EXPECTED_DIFF_BYTE_SIMILARITY_100_0))
 
 
 def test_similarity_hasher_hashes(tmp_path: Path) -> None:
@@ -42,6 +46,6 @@ def test_similarity_hasher_hashes(tmp_path: Path) -> None:
     hasher = SimilarityHasher()
     hashes = hasher.hash_file(copy_path)
 
-    assert set(hashes.keys()) == {"ssdeep", "tlsh"}
-    assert hashes["ssdeep"] is None or isinstance(hashes["ssdeep"], str)
-    assert hashes["tlsh"] is None or isinstance(hashes["tlsh"], str)
+    expect(set(hashes.keys()) == {"ssdeep", "tlsh"})
+    expect(hashes["ssdeep"] is None or isinstance(hashes["ssdeep"], str))
+    expect(hashes["tlsh"] is None or isinstance(hashes["tlsh"], str))

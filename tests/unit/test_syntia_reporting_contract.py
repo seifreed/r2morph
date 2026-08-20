@@ -5,6 +5,9 @@ from r2morph.analysis.symbolic.syntia_reporting import (
     build_learned_semantics_export,
     write_learned_semantics_export,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_EXPORT_DATA_SEMANTICS_90_ADDRESS_4096 = 0x1000
 
 
 def test_syntia_reporting_contract(tmp_path: Path) -> None:
@@ -26,8 +29,8 @@ def test_syntia_reporting_contract(tmp_path: Path) -> None:
             "cache_size": 5,
         },
     )
-    assert export_data["semantics"]["90"]["address"] == 0x1000
+    expect(export_data["semantics"]["90"]["address"] == _EXPECTED_EXPORT_DATA_SEMANTICS_90_ADDRESS_4096)
 
     output_path = tmp_path / "syntia.json"
     write_learned_semantics_export(output_path, export_data)
-    assert output_path.exists()
+    expect(output_path.exists())

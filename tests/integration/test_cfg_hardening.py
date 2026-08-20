@@ -9,7 +9,8 @@ Tests for Issue #3 acceptance criteria:
 - CFG integrity validation
 """
 
-import subprocess
+import importlib
+import logging
 from pathlib import Path
 
 import pytest
@@ -26,6 +27,8 @@ from r2morph.validation.cfg_integrity import (
     CFGIntegrityChecker,
     HardenedMutationValidator,
 )
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 
 class TestBinaryFixture:
@@ -74,7 +77,7 @@ int main(int argc, char **argv) {
 
         try:
             source_path.write_text(source_content)
-            result = subprocess.run(
+            result = run_command(
                 ["gcc", "-O2", "-o", str(binary_path), str(source_path)],
                 capture_output=True,
                 timeout=30,
@@ -82,7 +85,7 @@ int main(int argc, char **argv) {
             if result.returncode == 0:
                 return binary_path
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
         return None
 
@@ -120,7 +123,7 @@ int main(int argc, char **argv) {
 
         try:
             source_path.write_text(source_content)
-            result = subprocess.run(
+            result = run_command(
                 ["g++", "-O2", "-o", str(binary_path), str(source_path)],
                 capture_output=True,
                 timeout=30,
@@ -128,7 +131,7 @@ int main(int argc, char **argv) {
             if result.returncode == 0:
                 return binary_path
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
         return None
 
@@ -158,7 +161,7 @@ int main(int argc, char **argv) {
 
         try:
             source_path.write_text(source_content)
-            result = subprocess.run(
+            result = run_command(
                 ["gcc", "-O2", "-o", str(binary_path), str(source_path)],
                 capture_output=True,
                 timeout=30,
@@ -166,7 +169,7 @@ int main(int argc, char **argv) {
             if result.returncode == 0:
                 return binary_path
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
         return None
 
@@ -198,7 +201,7 @@ int main(int argc, char **argv) {
 
         try:
             source_path.write_text(source_content)
-            result = subprocess.run(
+            result = run_command(
                 ["gcc", "-O2", "-o", str(binary_path), str(source_path)],
                 capture_output=True,
                 timeout=30,
@@ -206,7 +209,7 @@ int main(int argc, char **argv) {
             if result.returncode == 0:
                 return binary_path
         except Exception:
-            pass
+            logging.getLogger(__name__).debug("ignored optional test-path exception", exc_info=True)
 
         return None
 
@@ -266,12 +269,12 @@ class TestJumpTablePreservation:
                 jt_patterns = manager.get_patterns_by_type(PatternType.JUMP_TABLE)
                 jt_entries = manager.get_patterns_by_type(PatternType.JUMP_TABLE_ENTRY)
 
-                assert len(jt_patterns) > 0 or len(jt_entries) > 0, "Expected jump table patterns"
+                expect(len(jt_patterns) > 0 or len(jt_entries) > 0, "Expected jump table patterns")
 
                 zones = manager.get_exclusion_zones()
                 jt_zones = [z for z in zones if z.pattern_type == PatternType.JUMP_TABLE]
 
-                assert len(jt_zones) > 0, "Expected exclusion zones for jump tables"
+                expect(not (len(jt_zones) <= 0), "Expected exclusion zones for jump tables")
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -289,9 +292,9 @@ class TestJumpTablePreservation:
                 manager = PatternPreservationManager(binary)
                 manager.analyze()
 
-                from r2morph.analysis.switch_table import SwitchTableAnalyzer
+                switch_table_analyzer = importlib.import_module("r2morph.analysis.switch_table").SwitchTableAnalyzer
 
-                analyzer = SwitchTableAnalyzer(binary)
+                analyzer = switch_table_analyzer(binary)
 
                 functions = binary.get_functions()
                 for func in functions[:5]:
@@ -299,17 +302,24 @@ class TestJumpTablePreservation:
                     jump_tables, _ = analyzer.detect_switch_pattern(func_addr)
 
                     for table in jump_tables:
-                        assert manager.should_avoid(
-                            table.table_address
-                        ), f"Jump table at 0x{table.table_address:x} should be in exclusion zone"
+                        expect(
+                            manager.should_avoid(table.table_address),
+                            f"Jump table at 0x{table.table_address:x} should be in exclusion zone",
+                        )
 
                         for target in table.unique_targets:
                             pattern = manager.get_pattern_at(target)
-                            if pattern:
-                                assert pattern.type in (
-                                    PatternType.JUMP_TABLE_ENTRY,
-                                    PatternType.JUMP_TABLE,
-                                ), f"Target 0x{target:x} should have jump table pattern"
+                            expect(
+                                not (
+                                    pattern
+                                    and pattern.type
+                                    not in (
+                                        PatternType.JUMP_TABLE_ENTRY,
+                                        PatternType.JUMP_TABLE,
+                                    )
+                                ),
+                                f"Target 0x{target:x} should have jump table pattern",
+                            )
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -339,7 +349,7 @@ class TestExceptionEdgePreservation:
                 lp_zones = [z for z in zones if z.pattern_type == PatternType.LANDING_PAD]
 
                 if len(exc_patterns) > 0 or len(lp_patterns) > 0:
-                    assert len(exc_zones) + len(lp_zones) > 0, "Expected exclusion zones for exception handling"
+                    expect(not (len(exc_zones) + len(lp_zones) <= 0), "Expected exclusion zones for exception handling")
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -357,17 +367,17 @@ class TestExceptionEdgePreservation:
                 manager = PatternPreservationManager(binary)
                 manager.analyze()
 
-                from r2morph.analysis.exception import ExceptionInfoReader
+                exception_info_reader = importlib.import_module("r2morph.analysis.exception").ExceptionInfoReader
 
-                reader = ExceptionInfoReader(binary)
+                reader = exception_info_reader(binary)
 
                 frames = reader.read_exception_frames()
 
                 for _func_addr, frame in frames.items():
                     for lp in frame.landing_pads:
-                        assert manager.should_preserve(
-                            lp.address
-                        ), f"Landing pad at 0x{lp.address:x} should be preserved"
+                        expect(
+                            manager.should_preserve(lp.address), f"Landing pad at 0x{lp.address:x} should be preserved"
+                        )
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -392,12 +402,13 @@ class TestPltGotPreservation:
                 plt_patterns = manager.get_patterns_by_type(PatternType.PLT_THUNK)
                 manager.get_patterns_by_type(PatternType.GOT_ENTRY)
 
-                assert len(plt_patterns) > 0, "Expected PLT entries"
+                expect(not (len(plt_patterns) <= 0), "Expected PLT entries")
 
                 for pattern in plt_patterns:
-                    assert (
-                        pattern.criticality == Criticality.PRESERVE
-                    ), f"PLT at 0x{pattern.start_address:x} should be preserved"
+                    expect(
+                        pattern.criticality == Criticality.PRESERVE,
+                        f"PLT at 0x{pattern.start_address:x} should be preserved",
+                    )
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -418,12 +429,14 @@ class TestPltGotPreservation:
                 plt_patterns = manager.get_patterns_by_type(PatternType.PLT_THUNK)
 
                 for pattern in plt_patterns:
-                    assert manager.should_preserve(
-                        pattern.start_address
-                    ), f"PLT at 0x{pattern.start_address:x} should be preserved"
-                    assert manager.should_avoid(
-                        pattern.start_address
-                    ), f"PLT at 0x{pattern.start_address:x} should be in exclusion zone"
+                    expect(
+                        manager.should_preserve(pattern.start_address),
+                        f"PLT at 0x{pattern.start_address:x} should be preserved",
+                    )
+                    expect(
+                        manager.should_avoid(pattern.start_address),
+                        f"PLT at 0x{pattern.start_address:x} should be in exclusion zone",
+                    )
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -466,9 +479,10 @@ class TestTailCallPreservation:
                 tc_patterns = manager.get_patterns_by_type(PatternType.TAIL_CALL)
 
                 for pattern in tc_patterns:
-                    assert manager.should_avoid(
-                        pattern.start_address
-                    ), f"Tail call at 0x{pattern.start_address:x} should be avoided"
+                    expect(
+                        manager.should_avoid(pattern.start_address),
+                        f"Tail call at 0x{pattern.start_address:x} should be avoided",
+                    )
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -488,7 +502,7 @@ class TestCFGIntegrityValidation:
                 binary.analyze()
 
                 checker = CFGIntegrityChecker(binary)
-                assert checker.binary is binary
+                expect(not (checker.binary is not binary))
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -506,13 +520,13 @@ class TestCFGIntegrityValidation:
                 validator = HardenedMutationValidator(binary)
                 pre_result = validator.pre_mutation_analysis(0x1000)
 
-                assert "function_address" in pre_result
-                assert "snapshot_created" in pre_result
+                expect(not ("function_address" not in pre_result))
+                expect(not ("snapshot_created" not in pre_result))
 
                 post_result = validator.post_mutation_validation(0x1000)
 
-                assert "valid" in post_result
-                assert "violations" in post_result
+                expect(not ("valid" not in post_result))
+                expect(not ("violations" not in post_result))
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -529,8 +543,8 @@ class TestHardenedMutations:
             validate_integrity=True,
         )
 
-        assert cff.preserve_patterns
-        assert cff.validate_integrity
+        expect(cff.preserve_patterns)
+        expect(cff.validate_integrity)
 
     @pytest.mark.integration
     def test_hardened_opaque_init(self):
@@ -540,8 +554,8 @@ class TestHardenedMutations:
             validate_integrity=True,
         )
 
-        assert opaque.preserve_patterns
-        assert opaque.validate_integrity
+        expect(opaque.preserve_patterns)
+        expect(opaque.validate_integrity)
 
 
 class TestRegressionNoBreakage:
@@ -558,12 +572,12 @@ class TestRegressionNoBreakage:
                 binary.analyze()
 
                 functions = binary.get_functions()
-                assert len(functions) > 0
+                expect(not (len(functions) <= 0))
 
                 manager = PatternPreservationManager(binary)
                 summary = manager.analyze()
 
-                assert "total_patterns" in summary
+                expect(not ("total_patterns" not in summary))
 
         except Exception as e:
             pytest.skip(f"Binary analysis failed: {e}")
@@ -575,13 +589,13 @@ class TestRegressionNoBreakage:
             pytest.skip("Could not compile switch test binary")
 
         try:
-            result = subprocess.run(
+            result = run_command(
                 [str(switch_binary), "5"],
                 capture_output=True,
                 timeout=5,
             )
 
-            assert result.returncode in (0, 5), "Binary should remain executable"
+            expect(not (result.returncode not in (0, 5)), "Binary should remain executable")
 
             with Binary(str(switch_binary)) as binary:
                 binary.analyze()
@@ -589,13 +603,13 @@ class TestRegressionNoBreakage:
                 manager = PatternPreservationManager(binary)
                 manager.analyze()
 
-            result2 = subprocess.run(
+            result2 = run_command(
                 [str(switch_binary), "5"],
                 capture_output=True,
                 timeout=5,
             )
 
-            assert result2.returncode == result.returncode, "Binary execution should match before and after analysis"
+            expect(result2.returncode == result.returncode, "Binary execution should match before and after analysis")
 
         except Exception as e:
             pytest.skip(f"Binary execution failed: {e}")

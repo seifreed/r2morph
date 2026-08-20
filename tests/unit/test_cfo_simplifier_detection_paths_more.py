@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from r2morph.devirtualization.cfo_simplifier import CFOSimplifier, ControlFlowBlock
+from tests.utils.assertions import expect
 
 
 def test_cfo_simplifier_detects_dispatcher_and_patterns() -> None:
@@ -33,12 +34,12 @@ def test_cfo_simplifier_detects_dispatcher_and_patterns() -> None:
         0x3000: target_two,
     }
 
-    assert simplifier._detect_dispatcher_flattening() is True
-    assert simplifier.dispatchers
-    assert simplifier.blocks[0x1000].is_dispatcher is True
+    expect(not (simplifier._detect_dispatcher_flattening() is not True))
+    expect(simplifier.dispatchers)
+    expect(not (simplifier.blocks[0x1000].is_dispatcher is not True))
 
     patterns = simplifier._detect_obfuscation_patterns()
-    assert patterns
+    expect(patterns)
 
 
 def test_cfo_simplifier_opaque_indirect_and_switch_detection() -> None:
@@ -70,9 +71,9 @@ def test_cfo_simplifier_opaque_indirect_and_switch_detection() -> None:
         0x6000: switch_block,
     }
 
-    assert simplifier._detect_opaque_predicates() is True
-    assert simplifier._detect_indirect_jumps() is True
-    assert simplifier._detect_switch_case_obfuscation() is True
+    expect(not (simplifier._detect_opaque_predicates() is not True))
+    expect(not (simplifier._detect_indirect_jumps() is not True))
+    expect(not (simplifier._detect_switch_case_obfuscation() is not True))
 
 
 def test_cfo_simplifier_eliminate_and_resolve_jumps() -> None:
@@ -99,9 +100,9 @@ def test_cfo_simplifier_eliminate_and_resolve_jumps() -> None:
         0x9000: indirect_jump_block,
     }
 
-    assert simplifier._eliminate_opaque_predicates() is True
-    assert opaque_jump_block.instructions[0]["opcode"] == "nop"
-    assert opaque_jump_block.instructions[1]["opcode"] == "jmp"
+    expect(not (simplifier._eliminate_opaque_predicates() is not True))
+    expect(opaque_jump_block.instructions[0]["opcode"] == "nop")
+    expect(opaque_jump_block.instructions[1]["opcode"] == "jmp")
 
-    assert simplifier._resolve_indirect_jumps() is True
-    assert indirect_jump_block.instructions[0]["opcode"] == "jmp 0x10"
+    expect(not (simplifier._resolve_indirect_jumps() is not True))
+    expect(indirect_jump_block.instructions[0]["opcode"] == "jmp 0x10")

@@ -7,14 +7,15 @@ from r2morph.validation import (
     regression_models,
 )
 from r2morph.validation.validator import ValidationResult
+from tests.utils.assertions import expect
 
 
 def test_regression_models_are_reexported_from_validation_package() -> None:
-    assert BaselineResult is regression_models.BaselineResult
-    assert NewRegressionResult is regression_models.NewRegressionResult
-    assert RegressionResult is regression_models.RegressionResult
-    assert RegressionTest is regression_models.RegressionTest
-    assert RegressionTestType is regression_models.RegressionTestType
+    expect(not (BaselineResult is not regression_models.BaselineResult))
+    expect(not (NewRegressionResult is not regression_models.NewRegressionResult))
+    expect(not (RegressionResult is not regression_models.RegressionResult))
+    expect(not (RegressionTest is not regression_models.RegressionTest))
+    expect(not (RegressionTestType is not regression_models.RegressionTestType))
 
 
 def test_regression_models_round_trip() -> None:
@@ -27,7 +28,7 @@ def test_regression_models_round_trip() -> None:
         timestamp="now",
         version="1.0",
     )
-    assert baseline.test_type.value == "api_compatibility"
+    expect(baseline.test_type.value == "api_compatibility")
 
     result = RegressionResult(
         test_name="t1",
@@ -46,4 +47,4 @@ def test_regression_models_round_trip() -> None:
         timestamp="now",
         errors=[],
     )
-    assert result.to_dict()["passed"] is True
+    expect(not (result.to_dict()["passed"] is not True))

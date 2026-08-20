@@ -23,10 +23,12 @@ a realistic nonzero load base - is covered in
 from __future__ import annotations
 
 import importlib.util
-import random
 from pathlib import Path
 
 import pytest
+
+from r2morph.core import randomness
+from tests.utils.assertions import expect
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -48,8 +50,8 @@ def _pie_switch_region() -> object:
         binary.analyze()
         dispatch = next(f for f in binary.get_functions() if "dispatch" in (f.get("name") or ""))
         ops = CodeVirtualizationPass(config={"virtualize_dispatch": True})._gather_cfg_ops(binary, dispatch)
-        assert ops is not None
-        return extract_region(ops, random.Random(1), allow_computed_jump=True)
+        expect(ops is not None)
+        return extract_region(ops, randomness.Random(1), allow_computed_jump=True)
     finally:
         binary.close()
 
@@ -57,8 +59,8 @@ def _pie_switch_region() -> object:
 def test_pie_switch_cfg_gather_reaches_every_case_block() -> None:
     """The CFG closure follows the resolved switch_op edges to a register ijmp."""
     region = _pie_switch_region()
-    assert region is not None
-    assert any(item[0] == "ijmp" for item in region.instructions)
+    expect(region is not None)
+    expect(any(item[0] == "ijmp" for item in region.instructions))
 
 
 def test_pie_switch_decomposes_into_existing_handlers() -> None:
@@ -66,11 +68,11 @@ def test_pie_switch_decomposes_into_existing_handlers() -> None:
     existing vlearip and vmovxidx micro-ops - no switch-specific opcode."""
     region = _pie_switch_region()
     kinds = {item[0] for item in region.instructions}
-    assert {"vlearip", "vmovxidx", "ijmp"} <= kinds
+    expect(not ({"vlearip", "vmovxidx", "ijmp"} > kinds))
 
 
 def test_pie_switch_region_assembles_to_real_bytes() -> None:
     """The lowered PIE switch region builds a full interpreter blob."""
     region = _pie_switch_region()
-    scheme = build_region_scheme(region, random.Random(1))
-    assert build_region_blob(region, 0x500000, scheme) is not None
+    scheme = build_region_scheme(region, randomness.Random(1))
+    expect(build_region_blob(region, 0x500000, scheme) is not None)

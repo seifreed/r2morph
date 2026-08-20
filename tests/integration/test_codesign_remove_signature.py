@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.codesign import CodeSigner
+from tests.utils.assertions import expect
 
 
 def test_codesign_remove_signature(tmp_path: Path):
@@ -20,4 +21,4 @@ def test_codesign_remove_signature(tmp_path: Path):
 
     signer = CodeSigner()
     removed = signer.remove_signature(temp_binary)
-    assert isinstance(removed, bool)
+    expect(isinstance(removed, bool))

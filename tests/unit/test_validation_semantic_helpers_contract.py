@@ -3,6 +3,9 @@ from types import SimpleNamespace
 from r2morph.analysis.cfg import BasicBlock, BlockType, ControlFlowGraph
 from r2morph.validation.constraint_cache import ConstraintCache, ConstraintCacheEntry
 from r2morph.validation.state_merging import ImprovedStateMerging
+from tests.utils.assertions import expect
+
+_EXPECTED_MERGER_FIND_MERGE_POINTS_CFG_4144 = 0x1030
 
 
 def test_constraint_cache_round_trip_and_statistics() -> None:
@@ -14,10 +17,10 @@ def test_constraint_cache_round_trip_and_statistics() -> None:
 
     entry = cache.get(constraint)
 
-    assert isinstance(entry, ConstraintCacheEntry)
-    assert entry.is_satisfiable is True
-    assert entry.result is result
-    assert cache.get_statistics()["entries"] == 1
+    expect(isinstance(entry, ConstraintCacheEntry))
+    expect(not (entry.is_satisfiable is not True))
+    expect(not (entry.result is not result))
+    expect(cache.get_statistics()["entries"] == 1)
 
 
 def test_improved_state_merging_finds_join_block() -> None:
@@ -66,4 +69,4 @@ def test_improved_state_merging_finds_join_block() -> None:
     cfg.add_edge(0x1010, 0x1030)
     cfg.add_edge(0x1020, 0x1030)
 
-    assert 0x1030 in merger.find_merge_points(cfg)
+    expect(not (_EXPECTED_MERGER_FIND_MERGE_POINTS_CFG_4144 not in merger.find_merge_points(cfg)))

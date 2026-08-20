@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.analysis.enhanced_analyzer import AnalysisOptions, EnhancedAnalysisOrchestrator
+from tests.utils.assertions import expect
 
 pytestmark = [pytest.mark.experimental]
 
@@ -35,7 +36,7 @@ def test_enhanced_analysis_orchestrator_paths(tmp_path):
 
         orchestrator.display_analysis_results()
         report = orchestrator.generate_report()
-        assert isinstance(report, dict)
+        expect(isinstance(report, dict))
 
         orchestrator.save_report(report)
         orchestrator.display_recommendations()

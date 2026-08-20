@@ -5,6 +5,7 @@ a malformed f-string format spec that raised ``ValueError`` whenever
 ``verbose=True``. It now emits a single DEBUG log record instead.
 """
 
+import importlib
 import logging
 
 from r2morph.mutations.pattern_integration import PatternMatchIntegration
@@ -15,10 +16,11 @@ from r2morph.mutations.pattern_pool import (
 )
 from r2morph.mutations.pattern_rules import match_mov_reg_0_all
 from r2morph.mutations.pattern_types import Instruction
+from tests.utils.assertions import expect
 
 
 def _mov_zero_generator(operands, os_type):
-    from r2morph.mutations.pattern_generators import _create_instruction
+    _create_instruction = importlib.import_module("r2morph.mutations.pattern_generators")._create_instruction
 
     return [_create_instruction("xor", [operands[0], operands[0]], "xor")]
 
@@ -43,8 +45,8 @@ def test_apply_patterns_verbose_logs_at_debug(caplog):
         with caplog.at_level(logging.DEBUG, logger="r2morph.mutations.pattern_integration"):
             mutated, mutation_log = integration.apply_patterns_to_block(instructions, "linux", verbose=True)
 
-        assert mutation_log, "expected at least one recorded mutation"
-        assert any("Mutation at 0x1000" in record.message for record in caplog.records)
-        assert mutated[0].mnemonic == "xor"
+        expect(mutation_log, "expected at least one recorded mutation")
+        expect(any("Mutation at 0x1000" in record.message for record in caplog.records))
+        expect(mutated[0].mnemonic == "xor")
     finally:
         clear_pattern_pools()

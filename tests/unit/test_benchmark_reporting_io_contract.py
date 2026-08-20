@@ -19,6 +19,7 @@ from r2morph.validation.benchmark_types import (
     TestSample,
     TestSeverity,
 )
+from tests.utils.assertions import expect
 
 
 def _make_result(tmp_path):
@@ -53,9 +54,9 @@ def test_build_json_export_payload_shape(tmp_path) -> None:
     result = _make_result(tmp_path)
     payload = build_json_export_payload([result])
 
-    assert payload["metadata"]["total_results"] == 1
-    assert payload["summary"]["total_tests"] == 1
-    assert payload["results"][0]["category"] == BenchmarkCategory.DETECTION
+    expect(payload["metadata"]["total_results"] == 1)
+    expect(payload["summary"]["total_tests"] == 1)
+    expect(payload["results"][0]["category"] == BenchmarkCategory.DETECTION)
 
 
 def test_write_json_and_csv_exports(tmp_path) -> None:
@@ -68,9 +69,9 @@ def test_write_json_and_csv_exports(tmp_path) -> None:
 
     with json_path.open() as f:
         data = json.load(f)
-    assert data["summary"]["total_tests"] == 1
+    expect(data["summary"]["total_tests"] == 1)
 
     with csv_path.open(newline="") as f:
         rows = list(csv.reader(f))
-    assert rows[0][0] == "sample_path"
-    assert rows[1][0].endswith("sample.bin")
+    expect(rows[0][0] == "sample_path")
+    expect(rows[1][0].endswith("sample.bin"))

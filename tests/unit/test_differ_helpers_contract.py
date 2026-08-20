@@ -3,6 +3,12 @@
 from __future__ import annotations
 
 from r2morph.validation.differ_helpers import compare_section_bytes, compute_byte_diffs
+from tests.utils.assertions import expect
+
+_EXPECTED_DIFFS_0_OFFSET_4098 = 0x1002
+_EXPECTED_DIFFS_0_OFFSET_4098_2 = 0x1002
+_EXPECTED_DIFFS_1_OFFSET_4100 = 0x1004
+_EXPECTED_LEN_DIFFS_2 = 2
 
 
 class _FakeBinary:
@@ -16,13 +22,13 @@ class _FakeBinary:
 def test_compute_byte_diffs_tracks_context_and_tail() -> None:
     diffs = compute_byte_diffs(b"ABCD", b"ABXDZ", 0x1000, 1)
 
-    assert len(diffs) == 2
-    assert diffs[0].offset == 0x1002
-    assert diffs[0].context_before == b"B"
-    assert diffs[0].context_after == b"D"
-    assert diffs[1].offset == 0x1004
-    assert diffs[1].original == b""
-    assert diffs[1].mutated == b"Z"
+    expect(len(diffs) == _EXPECTED_LEN_DIFFS_2)
+    expect(diffs[0].offset == _EXPECTED_DIFFS_0_OFFSET_4098)
+    expect(diffs[0].context_before == b"B")
+    expect(diffs[0].context_after == b"D")
+    expect(diffs[1].offset == _EXPECTED_DIFFS_1_OFFSET_4100)
+    expect(diffs[1].original == b"")
+    expect(diffs[1].mutated == b"Z")
 
 
 def test_compare_section_bytes_uses_binary_readers() -> None:
@@ -37,5 +43,5 @@ def test_compare_section_bytes_uses_binary_readers() -> None:
         1,
     )
 
-    assert len(diffs) == 1
-    assert diffs[0].offset == 0x1002
+    expect(len(diffs) == 1)
+    expect(diffs[0].offset == _EXPECTED_DIFFS_0_OFFSET_4098_2)

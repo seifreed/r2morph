@@ -8,6 +8,7 @@ from r2morph.mutations.control_flow_flattening_strategies import (
     add_opaque_predicate,
     insert_dead_code_with_predicate,
 )
+from tests.utils.assertions import expect
 
 
 def test_control_flow_flattening_insertion_paths(tmp_path: Path):
@@ -33,8 +34,8 @@ def test_control_flow_flattening_insertion_paths(tmp_path: Path):
         # Create slack space and try opaque predicate insertion
         bin_obj.nop_fill(addr, 24)
         inserted = add_opaque_predicate(bin_obj, addr, 24, arch, bits)
-        assert isinstance(inserted, bool)
+        expect(isinstance(inserted, bool))
 
         # Try dead-code insertion on NOPs
         dead_inserted = insert_dead_code_with_predicate(bin_obj, addr, 16, arch, bits)
-        assert isinstance(dead_inserted, bool)
+        expect(isinstance(dead_inserted, bool))

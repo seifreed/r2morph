@@ -1,6 +1,7 @@
 import pytest
 
 from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine
+from tests.utils.assertions import expect
 
 if not FRIDA_AVAILABLE:
     pytest.skip("Frida not available", allow_module_level=True)
@@ -16,6 +17,6 @@ def test_frida_engine_on_script_message_types():
     engine._on_script_message({"type": "send", "payload": {"type": "memory_operation"}}, None)
 
     stats = engine.get_runtime_statistics()
-    assert stats["api_calls_collected"] >= 1
-    assert stats["anti_analysis_events"] >= 1
-    assert stats["memory_accesses_tracked"] >= 1
+    expect(not (stats["api_calls_collected"] < 1))
+    expect(not (stats["anti_analysis_events"] < 1))
+    expect(not (stats["memory_accesses_tracked"] < 1))

@@ -1,6 +1,7 @@
 import pytest
 
 from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine
+from tests.utils.assertions import expect
 
 
 def test_frida_engine_availability_behavior():
@@ -10,10 +11,10 @@ def test_frida_engine_availability_behavior():
         return
 
     engine = FridaEngine(timeout=1)
-    assert engine.timeout == 1
-    assert engine.stats["processes_instrumented"] == 0
+    expect(engine.timeout == 1)
+    expect(engine.stats["processes_instrumented"] == 0)
     # api_calls is a bounded deque (see MAX_RUNTIME_EVENTS), empty at init
-    assert len(engine.api_calls) == 0
+    expect(len(engine.api_calls) == 0)
 
     script = engine._create_api_monitor_script()
-    assert "API Call Monitoring Script" in script
+    expect(not ("API Call Monitoring Script" not in script))

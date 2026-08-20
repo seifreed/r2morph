@@ -5,6 +5,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import RelocationManager
+from tests.utils.assertions import expect
 
 
 def test_relocation_manager_update_data_ref(tmp_path: Path):
@@ -36,4 +37,4 @@ def test_relocation_manager_update_data_ref(tmp_path: Path):
         bin_obj.write_bytes(addr, old_target.to_bytes(ptr_size, byteorder="little"))
 
         updated = manager._update_data_ref(addr, old_target, new_target)
-        assert isinstance(updated, bool)
+        expect(isinstance(updated, bool))

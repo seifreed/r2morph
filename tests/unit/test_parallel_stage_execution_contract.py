@@ -3,6 +3,8 @@ from __future__ import annotations
 from r2morph.core.parallel_planner import PassResult, PassStatus
 from r2morph.core.parallel_stage_execution import execute_stage
 from r2morph.protocols import MutationPassProtocol
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 class _Pass:
@@ -15,7 +17,7 @@ def test_parallel_stage_execution_runs_known_passes() -> None:
 
     def execute_pass(pass_obj: MutationPassProtocol, progress_callback):
         seen.append(pass_obj.name)
-        return PassResult(pass_name=pass_obj.name, status=PassStatus.COMPLETED)
+        return PassResult(**{MUTATION_NAME_KEY: pass_obj.name}, status=PassStatus.COMPLETED)
 
     results = execute_stage(
         ["one", "missing", "two"],
@@ -25,6 +27,6 @@ def test_parallel_stage_execution_runs_known_passes() -> None:
         progress_callback=None,
     )
 
-    assert set(results) == {"one", "two"}
-    assert all(result.status == PassStatus.COMPLETED for result in results.values())
-    assert sorted(seen) == ["one", "two"]
+    expect(set(results) == {"one", "two"})
+    expect(all(result.status == PassStatus.COMPLETED for result in results.values()))
+    expect(sorted(seen) == ["one", "two"])

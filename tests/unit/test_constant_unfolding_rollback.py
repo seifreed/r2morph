@@ -20,6 +20,7 @@ from __future__ import annotations
 from r2morph.mutations.constant_unfolding import ConstantUnfoldingPass
 from r2morph.mutations.constant_unfolding_helpers import UnfoldMutation
 from tests._doubles.in_memory_unfold_binary import InMemoryUnfoldBinary
+from tests.utils.assertions import expect
 
 BASE_ADDR = 0x1000
 # 5-byte "mov eax, 42" (b8 2a 00 00 00) replaced by 2-byte "xor eax, eax".
@@ -56,11 +57,11 @@ def test_recorded_original_is_pre_write_bytes_not_mutated_copy() -> None:
 
     applied, pass_ = _apply(binary)
 
-    assert applied is True
+    expect(not (applied is not True))
     record = pass_.get_records()[-1]
-    assert record.original_bytes == ORIGINAL.hex()
-    assert record.mutated_bytes == (ASSEMBLED + b"\x90\x90\x90").hex()
-    assert record.original_bytes != record.mutated_bytes
+    expect(record.original_bytes == ORIGINAL.hex())
+    expect(record.mutated_bytes == (ASSEMBLED + b"\x90\x90\x90").hex())
+    expect(record.original_bytes != record.mutated_bytes)
 
 
 def test_failed_nop_fill_rolls_back_and_is_not_recorded() -> None:
@@ -74,6 +75,6 @@ def test_failed_nop_fill_rolls_back_and_is_not_recorded() -> None:
 
     applied, pass_ = _apply(binary)
 
-    assert applied is False
-    assert pass_.get_records() == []
-    assert binary.reload_called is True
+    expect(not (applied is not False))
+    expect(pass_.get_records() == [])
+    expect(not (binary.reload_called is not True))

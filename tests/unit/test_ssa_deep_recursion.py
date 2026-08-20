@@ -17,6 +17,10 @@ multiple acyclic paths) is unchanged.
 """
 
 from r2morph.analysis.ssa import SSAConverter
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_RESULT_3 = 3
+
 
 DEEP = 6000
 BASE = 0x1000
@@ -42,8 +46,8 @@ def test_ssa_deep_linear_cfg_no_recursion_error() -> None:
 
     result = SSAConverter().convert_to_ssa(blocks)
 
-    assert len(result) == DEEP
-    assert set(result) == set(blocks)
+    expect(len(result) == DEEP)
+    expect(set(result) == set(blocks))
 
 
 def test_ssa_deep_cyclic_cfg_no_recursion_error() -> None:
@@ -60,7 +64,7 @@ def test_ssa_deep_cyclic_cfg_no_recursion_error() -> None:
 
     result = SSAConverter().convert_to_ssa(blocks)
 
-    assert len(result) == DEEP
+    expect(len(result) == DEEP)
 
 
 def test_ssa_linear_small_preserved() -> None:
@@ -70,8 +74,8 @@ def test_ssa_linear_small_preserved() -> None:
 
     result = SSAConverter().convert_to_ssa(blocks)
 
-    assert set(result) == set(blocks)
-    assert len(result) == 3
+    expect(set(result) == set(blocks))
+    expect(len(result) == _EXPECTED_LEN_RESULT_3)
 
 
 def test_ssa_diamond_shared_block_reachable() -> None:
@@ -88,4 +92,4 @@ def test_ssa_diamond_shared_block_reachable() -> None:
     }
     result = SSAConverter().convert_to_ssa(blocks)
 
-    assert set(result) == {entry, b, c, d}
+    expect(set(result) == {entry, b, c, d})

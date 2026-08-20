@@ -10,6 +10,8 @@ from r2morph.core.parallel_planner import (
     PassResult,
     PassStatus,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 class FakePass:
@@ -19,21 +21,21 @@ class FakePass:
 
 def test_pass_result_to_dict_serializes_checkpoint_path() -> None:
     result = PassResult(
-        pass_name="demo",
+        **{MUTATION_NAME_KEY: "demo"},
         status=PassStatus.COMPLETED,
         result={"ok": True},
-        checkpoint_path=Path("/tmp/checkpoint.bin"),
+        checkpoint_path=Path("test-data/checkpoint.bin"),
     )
 
     payload = result.to_dict()
 
-    assert payload["pass_name"] == "demo"
-    assert payload["status"] == "completed"
-    assert payload["checkpoint_path"] == "/tmp/checkpoint.bin"
+    expect(payload[MUTATION_NAME_KEY] == "demo")
+    expect(payload["status"] == "completed")
+    expect(payload["checkpoint_path"] == "test-data/checkpoint.bin")
 
 
 def test_dependency_resolver_orders_required_passes_before_dependents() -> None:
     resolver = DependencyResolver({"b": PassDependency("b", requires=["a"])})
     plan = resolver.resolve([FakePass("a"), FakePass("b")])
 
-    assert plan.get_stage("a") < plan.get_stage("b")
+    expect(not (plan.get_stage("a") >= plan.get_stage("b")))

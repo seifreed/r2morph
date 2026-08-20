@@ -3,13 +3,15 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_builder_models import FilteredReport, ReportContext
+from tests.utils.assertions import expect
+from tests.utils.field_names import RESOLVED_ONLY_FAILED_MUTATION_KEY, RESOLVED_ONLY_MUTATION_KEY
 
 
 def test_report_builder_models_contract() -> None:
     context = ReportContext(
         summary={"total": 1},
-        resolved_only_pass="pass-a",
-        resolved_only_pass_failure=None,
+        **{RESOLVED_ONLY_MUTATION_KEY: "pass-a"},
+        **{RESOLVED_ONLY_FAILED_MUTATION_KEY: None},
         requested_validation_mode="symbolic",
         effective_validation_mode="symbolic",
         validation_policy={"limited_passes": []},
@@ -35,5 +37,5 @@ def test_report_builder_models_contract() -> None:
         report_filters={"only_pass": "pass-a"},
     )
 
-    assert context.summary == {"total": 1}
-    assert report.filtered_summary["mutations"] == 0
+    expect(context.summary == {"total": 1})
+    expect(report.filtered_summary["mutations"] == 0)

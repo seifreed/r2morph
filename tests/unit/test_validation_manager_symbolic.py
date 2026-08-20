@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from r2morph.validation.manager import ValidationManager
+from tests.utils.assertions import expect
 
 
 def _instr_sub_pass(mutation: dict[str, object]) -> dict[str, object]:
@@ -29,18 +30,18 @@ def test_annotate_instruction_substitution_observable_transition_match() -> None
     )
 
     md = mutation["metadata"]
-    assert md["symbolic_requested"] is True
-    assert md["symbolic_status"] == "checked"
-    assert md["symbolic_reason"] == "ok"
-    assert md["symbolic_semantic_hint"] == "reg-swap"
-    assert md["symbolic_semantic_hint_supported"] is True
-    assert md["symbolic_observable_check_performed"] is True
-    assert md["symbolic_observable_equivalent"] is True
-    assert md["symbolic_observable_mismatches"] == []
-    assert md["symbolic_observables_checked"] == ["rax"]
-    assert md["symbolic_transition_check_performed"] is True
-    assert md["symbolic_transition_equivalent"] is True
-    assert md["symbolic_transition_mismatches"] == []
+    expect(not (md["symbolic_requested"] is not True))
+    expect(md["symbolic_status"] == "checked")
+    expect(md["symbolic_reason"] == "ok")
+    expect(md["symbolic_semantic_hint"] == "reg-swap")
+    expect(not (md["symbolic_semantic_hint_supported"] is not True))
+    expect(not (md["symbolic_observable_check_performed"] is not True))
+    expect(not (md["symbolic_observable_equivalent"] is not True))
+    expect(md["symbolic_observable_mismatches"] == [])
+    expect(md["symbolic_observables_checked"] == ["rax"])
+    expect(not (md["symbolic_transition_check_performed"] is not True))
+    expect(not (md["symbolic_transition_equivalent"] is not True))
+    expect(md["symbolic_transition_mismatches"] == [])
 
 
 def test_annotate_instruction_substitution_observable_key_miss() -> None:
@@ -56,6 +57,6 @@ def test_annotate_instruction_substitution_observable_key_miss() -> None:
     )
 
     md = mutation["metadata"]
-    assert md["symbolic_observable_check_performed"] is False
-    assert md["symbolic_observable_equivalent"] is False
-    assert md["symbolic_observable_mismatches"] == []
+    expect(not (md["symbolic_observable_check_performed"] is not False))
+    expect(not (md["symbolic_observable_equivalent"] is not False))
+    expect(md["symbolic_observable_mismatches"] == [])

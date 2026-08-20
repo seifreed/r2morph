@@ -2,6 +2,10 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceUpdater
+from tests.utils.assertions import expect
+
+_EXPECTED_SIZE_16 = 16
+_EXPECTED_SIZE_16_2 = 16
 
 
 def _find_rw_section(binary: Binary) -> int:
@@ -11,12 +15,12 @@ def _find_rw_section(binary: Binary) -> int:
         vaddr = section.get("vaddr", 0)
         size = section.get("vsize", 0)
         name = (section.get("name", "") or "").lower()
-        if ("w" in perm or "data" in name or "got" in name) and vaddr and size >= 16:
+        if ("w" in perm or "data" in name or "got" in name) and vaddr and size >= _EXPECTED_SIZE_16:
             return vaddr
     for section in sections:
         vaddr = section.get("vaddr", 0)
         size = section.get("vsize", 0)
-        if vaddr and size >= 16:
+        if vaddr and size >= _EXPECTED_SIZE_16_2:
             return vaddr
     return 0
 
@@ -31,17 +35,17 @@ def test_reference_updater_data_pointer_updates(tmp_path: Path):
         updater = ReferenceUpdater(bin_obj)
 
         ptr_addr = _find_rw_section(bin_obj)
-        assert ptr_addr != 0
+        expect(ptr_addr != 0)
 
         old_value = 0x1122334455667788
         new_value = 0x8877665544332211
 
         bin_obj.write_bytes(ptr_addr, old_value.to_bytes(8, byteorder="little"))
 
-        assert updater.update_data_pointer(ptr_addr, old_value, new_value) is True
+        expect(not (updater.update_data_pointer(ptr_addr, old_value, new_value) is not True))
 
         updated_hex = bin_obj.r2.cmd(f"p8 8 @ 0x{ptr_addr:x}")
         updated_value = int.from_bytes(bytes.fromhex(updated_hex.strip()), byteorder="little")
-        assert updated_value == new_value
+        expect(updated_value == new_value)
 
-        assert updater.update_data_pointer(ptr_addr, old_value, new_value) is False
+        expect(not (updater.update_data_pointer(ptr_addr, old_value, new_value) is not False))

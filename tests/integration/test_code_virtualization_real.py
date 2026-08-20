@@ -9,13 +9,14 @@ Binary, the real radare2-native injection, and the real generated interpreter.
 
 from __future__ import annotations
 
-import random
+import importlib
 import shutil
 import struct
 from pathlib import Path
 
 import pytest
 
+from r2morph.core import randomness
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass, _decode_run_item
 from r2morph.mutations.code_virtualization_engine import (
@@ -35,6 +36,113 @@ from r2morph.mutations.code_virtualization_engine import (
 # Kept under its established private name: sibling test modules import this module
 # and call ``vm_real._emulate_exit_code``.
 from tests.integration.elf_emulator import emulate_exit_code as _emulate_exit_code
+from tests.utils.assertions import expect
+
+_EXPECTED_DECODE_INSTRUCTION_MOV_EAX_1_WIDTH_32 = 32
+_EXPECTED_DECODE_INSTRUCTION_MOV_RAX_1_WIDTH_64 = 64
+_EXPECTED_DECODE_INSTRUCTION_SHR_EDI_3_WIDTH_32 = 32
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE32_45 = 45
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_171 = 171
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_22 = 22
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_35 = 35
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_10 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_11 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_12 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_13 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_14 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_15 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_16 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_17 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_18 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_19 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_2 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_20 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_21 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_22 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_23 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_24 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_25 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_26 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_27 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_28 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_29 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_3 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_30 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_31 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_32 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_33 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_34 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_35 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_36 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_37 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_38 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_39 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_4 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_40 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_41 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_42 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_43 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_44 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_45 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_46 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_47 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_48 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_49 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_5 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_50 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_51 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_52 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_53 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_54 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_55 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_56 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_57 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_58 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_59 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_6 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_60 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_61 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_62 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_63 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_64 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_65 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_66 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_67 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_68 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_69 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_7 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_70 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_71 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_72 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_73 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_74 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_75 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_76 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_8 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_9 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45 = 45
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45_2 = 45
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45_3 = 45
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69 = 69
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_2 = 69
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_3 = 69
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_4 = 69
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_5 = 69
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_6 = 69
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_7 = 69
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_ENGARITHIMM_42 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_ENGARITH_42 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_INCALL_45 = 45
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_MULTIRET_17 = 17
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_SWITCH_ABS_30 = 30
+_EXPECTED_EMULATE_EXIT_CODE_MUTATED_45 = 45
+_EXPECTED_EMULATE_EXIT_CODE_MUTATED_45_2 = 45
+_EXPECTED_EMULATE_EXIT_CODE_MUTATED_45_3 = 45
+_EXPECTED_EMULATE_EXIT_CODE_TMP_PATH_FIRST_45 = 45
+_EXPECTED_TAMPERED_CODE_45 = 45
+_EXPECTED_TAMPERED_CODE_45_2 = 45
+
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
 FIXTURE = _DATASET / "elf_vm_arith_x86_64"
@@ -58,7 +166,7 @@ UcError = unicorn.UcError
 
 
 def _selected_padding(scheme: VMScheme, keys: list[tuple[str, bool, int]]) -> int:
-    picker = random.Random(scheme.junk_seed)
+    picker = randomness.Random(scheme.junk_seed)
     return sum(scheme.record_padding[picker.choice(scheme.dup[key])] for key in keys)
 
 
@@ -77,8 +185,8 @@ def test_virtualized_fixture_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(FIXTURE) == _emulate_exit_code(mutated) == 45
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(FIXTURE) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45)
 
 
 def test_virtualized_in_function_call_preserves_exit_code(tmp_path: Path) -> None:
@@ -101,8 +209,12 @@ def test_virtualized_in_function_call_preserves_exit_code(tmp_path: Path) -> Non
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(FIXTURE_INCALL) == _emulate_exit_code(mutated) == 45
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(
+        _emulate_exit_code(FIXTURE_INCALL)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_INCALL_45
+    )
 
 
 def test_virtualized_absolute_switch_preserves_exit_code(tmp_path: Path) -> None:
@@ -129,8 +241,12 @@ def test_virtualized_absolute_switch_preserves_exit_code(tmp_path: Path) -> None
 
     # The switch function itself must virtualize - otherwise exit-code parity would be
     # trivially satisfied by leaving the binary unchanged.
-    assert result is not None
-    assert _emulate_exit_code(FIXTURE_SWITCH_ABS) == _emulate_exit_code(mutated) == 30
+    expect(result is not None)
+    expect(
+        _emulate_exit_code(FIXTURE_SWITCH_ABS)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_SWITCH_ABS_30
+    )
 
 
 def test_virtualized_multiret_function_preserves_exit_code(tmp_path: Path) -> None:
@@ -153,8 +269,12 @@ def test_virtualized_multiret_function_preserves_exit_code(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert result is not None
-    assert _emulate_exit_code(FIXTURE_MULTIRET) == _emulate_exit_code(mutated) == 17
+    expect(result is not None)
+    expect(
+        _emulate_exit_code(FIXTURE_MULTIRET)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_MULTIRET_17
+    )
 
 
 # The interpreter's first instruction is a constant-size frame allocation
@@ -187,8 +307,8 @@ def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> No
 
     data = bytearray(mutated.read_bytes())
     vm_entry = _find_vm_entry(data)
-    assert vm_entry != -1, "interpreter not found in mutated binary"
-    assert _emulate_exit_code(mutated) == 45  # faithful build still runs
+    expect(vm_entry != -1, "interpreter not found in mutated binary")
+    expect(_emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45)
 
     # Flip one byte inside the interpreter body (past the frame allocation, in
     # the spill/dispatch region the checksum covers) and re-emulate.
@@ -199,7 +319,7 @@ def test_tampering_interpreter_byte_diverges_from_original(tmp_path: Path) -> No
         tampered_code = _emulate_exit_code(tampered)
     except UcError:
         tampered_code = None  # a trap is also a divergence from exit 45
-    assert tampered_code != 45
+    expect(tampered_code != _EXPECTED_TAMPERED_CODE_45)
 
 
 # The timing anti-debug fold's final instruction: xor byte ptr [rsp+SLOT], al
@@ -235,7 +355,7 @@ def test_timing_probe_keeps_emulated_exit_code_inert(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert _emulate_exit_code(mutated) == reference == 45
+    expect(_emulate_exit_code(mutated) == reference == _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45_2)
 
 
 def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
@@ -258,10 +378,10 @@ def test_timing_probe_is_emitted_into_the_interpreter(tmp_path: Path) -> None:
 
     data = mutated.read_bytes()
     vm_entry = _find_vm_entry(data)
-    assert vm_entry != -1, "interpreter not found in mutated binary"
+    expect(vm_entry != -1, "interpreter not found in mutated binary")
     blob = data[vm_entry:]
-    assert _RDTSC_BYTES in blob or _RDTSCP_BYTES in blob, "no timing read emitted"
-    assert _TIMING_FOLD_STORE in blob, "checksum-slot fold tail not emitted"
+    expect(_RDTSC_BYTES in blob or _RDTSCP_BYTES in blob, "no timing read emitted")
+    expect(not (_TIMING_FOLD_STORE not in blob), "checksum-slot fold tail not emitted")
 
 
 # Fixtures with at least one register-op run to peel into a nested inner VM. The
@@ -297,11 +417,10 @@ def test_nested_virtualization_preserves_exit_code(
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
+    expect(not (stats["functions_virtualized"] < 1))
     baseline = _emulate_exit_code(fixture)
-    assert _emulate_exit_code(mutated) == baseline
-    if expected is not None:
-        assert baseline == expected
+    expect(_emulate_exit_code(mutated) == baseline)
+    expect(not (expected is not None and baseline != expected))
 
 
 def test_nested_virtualization_grows_with_depth(tmp_path: Path) -> None:
@@ -325,7 +444,7 @@ def test_nested_virtualization_grows_with_depth(tmp_path: Path) -> None:
             binary.close()
         return len(mutated.read_bytes())
 
-    assert _blob_size(1) < _blob_size(2) <= _blob_size(3)
+    expect(_blob_size(1) < _blob_size(2) <= _blob_size(3))
 
 
 def test_default_config_nests_when_a_peelable_run_exists(tmp_path: Path) -> None:
@@ -351,8 +470,8 @@ def test_default_config_nests_when_a_peelable_run_exists(tmp_path: Path) -> None
 
     single = _mutated_size("single_layer", {"probability": 1.0, "vm_nesting_depth": 1, "seed": 1234})
     default = _mutated_size("default_layer", {"probability": 1.0, "seed": 1234})
-    assert default > single
-    assert _emulate_exit_code(tmp_path / "default_layer") == _emulate_exit_code(FIXTURE)
+    expect(not (default <= single))
+    expect(_emulate_exit_code(tmp_path / "default_layer") == _emulate_exit_code(FIXTURE))
 
 
 def test_tampering_nested_interpreter_byte_diverges(tmp_path: Path) -> None:
@@ -373,8 +492,8 @@ def test_tampering_nested_interpreter_byte_diverges(tmp_path: Path) -> None:
 
     data = bytearray(mutated.read_bytes())
     vm_entry = _find_vm_entry(data)
-    assert vm_entry != -1
-    assert _emulate_exit_code(mutated) == 45
+    expect(vm_entry != -1)
+    expect(_emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45_3)
     data[vm_entry + 0x10] ^= 0xFF
     tampered = tmp_path / "tampered"
     tampered.write_bytes(bytes(data))
@@ -382,7 +501,7 @@ def test_tampering_nested_interpreter_byte_diverges(tmp_path: Path) -> None:
         tampered_code = _emulate_exit_code(tampered)
     except UcError:
         tampered_code = None
-    assert tampered_code != 45
+    expect(tampered_code != _EXPECTED_TAMPERED_CODE_45_2)
 
 
 # Branch-heavy fixtures (comparisons, conditional/unconditional jumps, loops):
@@ -413,8 +532,8 @@ def test_control_flow_virtualization_preserves_exit_code(fixture_name: str, tmp_
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated)
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated))
 
 
 def test_virtualized_isa_fixture_preserves_exit_code(tmp_path: Path) -> None:
@@ -434,8 +553,8 @@ def test_virtualized_isa_fixture_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 45
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45_2)
 
 
 def test_virtualized_multiexit_fixture_preserves_exit_code(tmp_path: Path) -> None:
@@ -455,8 +574,8 @@ def test_virtualized_multiexit_fixture_preserves_exit_code(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42)
 
 
 def _region_lowers_kind(fixture: Path, kind: str) -> bool:
@@ -466,17 +585,17 @@ def _region_lowers_kind(fixture: Path, kind: str) -> bool:
     still emulate to the expected exit code, so the exit-code assertion alone does
     not prove the new lowering ran.
     """
-    from r2morph.mutations.code_virtualization_region import extract_region
+    extract_region = importlib.import_module("r2morph.mutations.code_virtualization_region").extract_region
 
     binary = Binary(str(fixture), writable=False)
     binary.open()
     try:
         binary.analyze("aa")
-        assert binary.r2 is not None
+        expect(binary.r2 is not None)
         ops = (binary.r2.cmdj("pdfj @ entry0") or {}).get("ops", [])
     finally:
         binary.close()
-    region = extract_region(ops, random.Random(1))
+    region = extract_region(ops, randomness.Random(1))
     return region is not None and any(item[0] == kind for item in region.instructions)
 
 
@@ -486,7 +605,7 @@ def test_setcc_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     fixture = _DATASET / "elf_vm_setcc_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
-    assert _region_lowers_kind(fixture, "setcc")
+    expect(_region_lowers_kind(fixture, "setcc"))
 
     mutated = tmp_path / "mutated_setcc"
     shutil.copy(fixture, mutated)
@@ -498,8 +617,8 @@ def test_setcc_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 171
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_171)
 
 
 def test_cmov_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -509,7 +628,7 @@ def test_cmov_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     fixture = _DATASET / "elf_vm_cmov_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
-    assert _region_lowers_kind(fixture, "cmov")
+    expect(_region_lowers_kind(fixture, "cmov"))
 
     mutated = tmp_path / "mutated_cmov"
     shutil.copy(fixture, mutated)
@@ -521,8 +640,8 @@ def test_cmov_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 22
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_22)
 
 
 def test_movxreg_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -532,7 +651,7 @@ def test_movxreg_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     fixture = _DATASET / "elf_vm_movxreg_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
-    assert _region_lowers_kind(fixture, "movxreg")
+    expect(_region_lowers_kind(fixture, "movxreg"))
 
     mutated = tmp_path / "mutated_movxreg"
     shutil.copy(fixture, mutated)
@@ -544,8 +663,8 @@ def test_movxreg_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_2)
 
 
 def test_straight_line_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -567,8 +686,8 @@ def test_straight_line_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 45
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45_3)
 
 
 def test_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -593,8 +712,8 @@ def test_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_3)
 
 
 def test_indirect_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -616,8 +735,8 @@ def test_indirect_call_virtualization_preserves_exit_code(tmp_path: Path) -> Non
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_4)
 
 
 def test_memory_indirect_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -640,8 +759,8 @@ def test_memory_indirect_call_virtualization_preserves_exit_code(tmp_path: Path)
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_5)
 
 
 def test_indexed_memory_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -663,8 +782,8 @@ def test_indexed_memory_call_virtualization_preserves_exit_code(tmp_path: Path) 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_6)
 
 
 def test_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> None:
@@ -687,8 +806,8 @@ def test_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_7)
 
 
 def test_compare_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> None:
@@ -710,8 +829,8 @@ def test_compare_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_8)
 
 
 def test_boolean_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> None:
@@ -732,8 +851,8 @@ def test_boolean_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_9)
 
 
 def test_memory_arith_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> None:
@@ -755,8 +874,8 @@ def test_memory_arith_flag_synthesis_preserves_branch_decisions(tmp_path: Path) 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_10)
 
 
 def test_incdec_flag_synthesis_preserves_carry_and_branch(tmp_path: Path) -> None:
@@ -778,8 +897,8 @@ def test_incdec_flag_synthesis_preserves_carry_and_branch(tmp_path: Path) -> Non
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_11)
 
 
 def test_straight_line_memory_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -801,8 +920,8 @@ def test_straight_line_memory_run_fallback_preserves_exit_code(tmp_path: Path) -
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_12)
 
 
 def test_straight_line_memarith_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -823,8 +942,8 @@ def test_straight_line_memarith_run_fallback_preserves_exit_code(tmp_path: Path)
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_13)
 
 
 # The engine VM's bounded frame encodings (the xmm save area plus the micro-op
@@ -844,7 +963,7 @@ def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> No
     # and scalar-FP memory handlers. The decode check first proves the movsd ops
     # lower to FP items - were they silently left native, the run would still exit
     # 42 (a native movsd works), so the exit code alone would be a false green.
-    assert isinstance(_decode_run_item("movsd xmm3, qword ptr [rsp - 8]"), VirtualizedFpMemOp)
+    expect(isinstance(_decode_run_item("movsd xmm3, qword ptr [rsp - 8]"), VirtualizedFpMemOp))
     fixture = _DATASET / "elf_vm_fpenginemove_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -859,9 +978,9 @@ def test_engine_fp_load_store_fallback_preserves_exit_code(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_14)
 
 
 def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -870,7 +989,7 @@ def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> No
     # scalar FP arithmetic handler. The decode check proves addsd lowers to an FP
     # arith item (else, left native, it would still exit 69 - a false green). The
     # exit code is the IEEE high byte of 42.0 (0x45 == 69); sub/mul/div would differ.
-    assert isinstance(_decode_run_item("addsd xmm0, xmm1"), VirtualizedFpArithOp)
+    expect(isinstance(_decode_run_item("addsd xmm0, xmm1"), VirtualizedFpArithOp))
     fixture = _DATASET / "elf_vm_fpenginearith_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -885,9 +1004,9 @@ def test_engine_fp_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69)
 
 
 def test_engine_fp_convert_roundtrip_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -896,8 +1015,8 @@ def test_engine_fp_convert_roundtrip_fallback_preserves_exit_code(tmp_path: Path
     # convert handlers. The decode check proves the conversions lower to FP convert
     # items (else left native, the value would still round-trip to 42 - a false
     # green). The 64-bit value round-trips to exit 42.
-    assert isinstance(_decode_run_item("cvtsi2sd xmm0, rax"), VirtualizedFpConvertOp)
-    assert isinstance(_decode_run_item("cvttsd2si rdi, xmm0"), VirtualizedFpConvertOp)
+    expect(isinstance(_decode_run_item("cvtsi2sd xmm0, rax"), VirtualizedFpConvertOp))
+    expect(isinstance(_decode_run_item("cvttsd2si rdi, xmm0"), VirtualizedFpConvertOp))
     fixture = _DATASET / "elf_vm_fpengineconvert_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -912,9 +1031,9 @@ def test_engine_fp_convert_roundtrip_fallback_preserves_exit_code(tmp_path: Path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_15)
 
 
 def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -922,7 +1041,7 @@ def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_pat
     # of int32 range) into edi with a 32-bit cvttsd2si. x86 saturates to 0x80000000,
     # so the exit code (low byte) is 0. A width-blind handler using rax would give
     # 2147483690 (low byte 0x2A = 42), so this discriminates the 32-bit convert path.
-    assert isinstance(_decode_run_item("cvttsd2si edi, xmm0"), VirtualizedFpConvertOp)
+    expect(isinstance(_decode_run_item("cvttsd2si edi, xmm0"), VirtualizedFpConvertOp))
     fixture = _DATASET / "elf_vm_fpengineconvert32_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -937,9 +1056,9 @@ def test_engine_fp_convert_32bit_saturation_fallback_preserves_exit_code(tmp_pat
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0)
 
 
 def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -948,7 +1067,7 @@ def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_pat
     # memory-source FP arithmetic handler. The decode check proves addsd-with-memory
     # lowers to an FP arith-mem item (else left native, still exit 69 - a false
     # green). The IEEE high byte of 42.0 is 0x45 == 69; sub/mul/div would differ.
-    assert isinstance(_decode_run_item("addsd xmm0, qword ptr [rsp - 16]"), VirtualizedFpArithMemOp)
+    expect(isinstance(_decode_run_item("addsd xmm0, qword ptr [rsp - 16]"), VirtualizedFpArithMemOp))
     fixture = _DATASET / "elf_vm_fpenginearithmem_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -963,9 +1082,9 @@ def test_engine_fp_arithmetic_memory_source_fallback_preserves_exit_code(tmp_pat
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_2)
 
 
 def test_engine_fp_rip_relative_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -977,7 +1096,7 @@ def test_engine_fp_rip_relative_load_store_fallback_preserves_exit_code(tmp_path
     # injected past it. The decode check proves the rip movsd lowers to a *rip FP
     # item (else left native, still exit 42 - a false green). Round-trips to exit 42.
     rip_item = _decode_run_item("movsd xmm0, qword ptr [rip + 0x100]", 0x1000, 8)
-    assert isinstance(rip_item, VirtualizedFpMemOp) and rip_item.kind.endswith("rip")
+    expect(isinstance(rip_item, VirtualizedFpMemOp) and rip_item.kind.endswith("rip"))
     fixture = _DATASET / "elf_vm_fpenginerip_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -992,9 +1111,9 @@ def test_engine_fp_rip_relative_load_store_fallback_preserves_exit_code(tmp_path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_16)
 
 
 def test_engine_fp_arithmetic_rip_relative_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1005,7 +1124,7 @@ def test_engine_fp_arithmetic_rip_relative_fallback_preserves_exit_code(tmp_path
     # lowers to a rip-form FP arith-mem item (base_index < 0); else left native, it
     # would still exit 69 (the IEEE high byte of 42.0). sub/mul/div would differ.
     rip_arith = _decode_run_item("addsd xmm0, qword ptr [rip + 0x40]", 0x500000, 8)
-    assert isinstance(rip_arith, VirtualizedFpArithMemOp) and rip_arith.base_index < 0
+    expect(isinstance(rip_arith, VirtualizedFpArithMemOp) and rip_arith.base_index < 0)
     fixture = _DATASET / "elf_vm_fpenginearithrip_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -1020,9 +1139,9 @@ def test_engine_fp_arithmetic_rip_relative_fallback_preserves_exit_code(tmp_path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_3)
 
 
 def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1032,7 +1151,7 @@ def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path
     # proves the indexed movsd lowers to an *idx FP item (else left native, still
     # exit 69 - a false green). The IEEE high byte of 42.0 is 0x45 == 69.
     idx_item = _decode_run_item("movsd xmm0, qword ptr [rsp + rcx*8 - 16]")
-    assert isinstance(idx_item, VirtualizedFpMemOp) and idx_item.kind.endswith("idx")
+    expect(isinstance(idx_item, VirtualizedFpMemOp) and idx_item.kind.endswith("idx"))
     fixture = _DATASET / "elf_vm_fpengineidx_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -1047,9 +1166,9 @@ def test_engine_fp_scaled_index_load_store_fallback_preserves_exit_code(tmp_path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_4)
 
 
 def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1060,7 +1179,7 @@ def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path
     # lowers to an indexed FP arith-mem item (index_index >= 0); else left native, it
     # would still exit 69 (the IEEE high byte of 42.0). sub/mul/div would differ.
     idx_arith = _decode_run_item("addsd xmm0, qword ptr [rsp + rcx*8 - 16]")
-    assert isinstance(idx_arith, VirtualizedFpArithMemOp) and idx_arith.index_index >= 0
+    expect(isinstance(idx_arith, VirtualizedFpArithMemOp) and idx_arith.index_index >= 0)
     fixture = _DATASET / "elf_vm_fpenginearithidx_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -1075,9 +1194,9 @@ def test_engine_fp_scaled_index_arithmetic_fallback_preserves_exit_code(tmp_path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_5)
 
 
 def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1088,9 +1207,9 @@ def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> N
     # correct packed add gives 42.0 -> exit 69, while a scalar low-lane-only add
     # would leave 5.0 -> 20, so the exit code discriminates packed from scalar. The
     # decode checks prove addpd/movups lower to packed FP items (not left native).
-    assert isinstance(_decode_run_item("addpd xmm0, xmm1"), VirtualizedFpPackedOp)
+    expect(isinstance(_decode_run_item("addpd xmm0, xmm1"), VirtualizedFpPackedOp))
     packed_mem = _decode_run_item("movups xmm0, xmmword ptr [rsp - 32]")
-    assert isinstance(packed_mem, VirtualizedFpPackedMemOp) and packed_mem.kind == "fppload"
+    expect(isinstance(packed_mem, VirtualizedFpPackedMemOp) and packed_mem.kind == "fppload")
     fixture = _DATASET / "elf_vm_fpenginepacked_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -1105,9 +1224,9 @@ def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> N
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_6)
 
 
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1128,8 +1247,8 @@ def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> N
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_17)
 
 
 def test_straight_line_riprel_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1150,8 +1269,8 @@ def test_straight_line_riprel_run_fallback_preserves_exit_code(tmp_path: Path) -
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_18)
 
 
 def test_straight_line_riprel_arith_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1172,8 +1291,8 @@ def test_straight_line_riprel_arith_run_fallback_preserves_exit_code(tmp_path: P
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_19)
 
 
 def test_straight_line_movx_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1194,8 +1313,8 @@ def test_straight_line_movx_run_fallback_preserves_exit_code(tmp_path: Path) -> 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_20)
 
 
 def test_straight_line_indexed_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1216,8 +1335,8 @@ def test_straight_line_indexed_run_fallback_preserves_exit_code(tmp_path: Path) 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_21)
 
 
 def test_straight_line_movxidx_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -1237,8 +1356,8 @@ def test_straight_line_movxidx_run_fallback_preserves_exit_code(tmp_path: Path) 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_22)
 
 
 def test_memory_operand_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1259,8 +1378,8 @@ def test_memory_operand_virtualization_preserves_exit_code(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_23)
 
 
 def test_fp_move_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1282,8 +1401,8 @@ def test_fp_move_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_24)
 
 
 def test_fp_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1305,8 +1424,8 @@ def test_fp_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> Non
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 69
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_7)
 
 
 def test_fp_conversion_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1328,8 +1447,8 @@ def test_fp_conversion_virtualization_preserves_exit_code(tmp_path: Path) -> Non
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_25)
 
 
 def test_fp_compare_branch_virtualization_preserves_decision(tmp_path: Path) -> None:
@@ -1351,8 +1470,8 @@ def test_fp_compare_branch_virtualization_preserves_decision(tmp_path: Path) -> 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_26)
 
 
 def test_fp_register_move_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1374,8 +1493,8 @@ def test_fp_register_move_virtualization_preserves_exit_code(tmp_path: Path) -> 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_27)
 
 
 def test_fp_memory_source_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1396,8 +1515,8 @@ def test_fp_memory_source_arithmetic_virtualization_preserves_exit_code(tmp_path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_28)
 
 
 def test_fp_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1419,8 +1538,8 @@ def test_fp_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_29)
 
 
 def test_fp_riprel_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1442,8 +1561,8 @@ def test_fp_riprel_arithmetic_virtualization_preserves_exit_code(tmp_path: Path)
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_30)
 
 
 def test_fp_conversion_32bit_gp_width_saturation_preserved(tmp_path: Path) -> None:
@@ -1465,8 +1584,8 @@ def test_fp_conversion_32bit_gp_width_saturation_preserved(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 0)
 
 
 def test_fp_indexed_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1487,8 +1606,8 @@ def test_fp_indexed_memory_virtualization_preserves_exit_code(tmp_path: Path) ->
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_31)
 
 
 def test_fp_indexed_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1509,8 +1628,8 @@ def test_fp_indexed_arithmetic_virtualization_preserves_exit_code(tmp_path: Path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_32)
 
 
 def test_fp_packed_simd_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1532,8 +1651,8 @@ def test_fp_packed_simd_virtualization_preserves_exit_code(tmp_path: Path) -> No
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_33)
 
 
 def test_fp_packed_memory_source_arith_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1555,8 +1674,8 @@ def test_fp_packed_memory_source_arith_virtualization_preserves_exit_code(tmp_pa
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_34)
 
 
 def test_fp_packed_riprel_move_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1578,8 +1697,8 @@ def test_fp_packed_riprel_move_virtualization_preserves_exit_code(tmp_path: Path
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_35)
 
 
 def test_fp_packed_riprel_arith_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1601,8 +1720,8 @@ def test_fp_packed_riprel_arith_virtualization_preserves_exit_code(tmp_path: Pat
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_36)
 
 
 def test_fp_packed_indexed_move_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1624,8 +1743,8 @@ def test_fp_packed_indexed_move_virtualization_preserves_exit_code(tmp_path: Pat
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_37)
 
 
 def test_fp_packed_indexed_arith_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1647,8 +1766,8 @@ def test_fp_packed_indexed_arith_virtualization_preserves_exit_code(tmp_path: Pa
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_38)
 
 
 def test_fp_no_base_indexed_load_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1670,8 +1789,8 @@ def test_fp_no_base_indexed_load_virtualization_preserves_exit_code(tmp_path: Pa
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_39)
 
 
 def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1692,8 +1811,8 @@ def test_riprel_memory_virtualization_preserves_exit_code(tmp_path: Path) -> Non
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_40)
 
 
 def test_compare_with_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1714,8 +1833,8 @@ def test_compare_with_memory_virtualization_preserves_exit_code(tmp_path: Path) 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_41)
 
 
 def test_arithmetic_with_memory_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1736,8 +1855,8 @@ def test_arithmetic_with_memory_virtualization_preserves_exit_code(tmp_path: Pat
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_42)
 
 
 def test_lea_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1758,8 +1877,8 @@ def test_lea_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_43)
 
 
 def test_memory_destination_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1780,8 +1899,8 @@ def test_memory_destination_arithmetic_virtualization_preserves_exit_code(tmp_pa
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_44)
 
 
 def test_large_unsigned_immediate_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1802,8 +1921,8 @@ def test_large_unsigned_immediate_virtualization_preserves_exit_code(tmp_path: P
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_45)
 
 
 def test_indexed_lea_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1824,8 +1943,8 @@ def test_indexed_lea_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_46)
 
 
 def test_indexed_memory_arithmetic_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1846,8 +1965,8 @@ def test_indexed_memory_arithmetic_virtualization_preserves_exit_code(tmp_path: 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_47)
 
 
 def test_indexed_mov_load_lowers_to_a_microop() -> None:
@@ -1856,7 +1975,7 @@ def test_indexed_mov_load_lowers_to_a_microop() -> None:
     fixture = _DATASET / "elf_vm_movidx_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
-    assert _region_lowers_kind(fixture, "vloadidx")
+    expect(_region_lowers_kind(fixture, "vloadidx"))
 
 
 def test_indexed_mov_store_lowers_to_a_microop() -> None:
@@ -1864,7 +1983,7 @@ def test_indexed_mov_store_lowers_to_a_microop() -> None:
     fixture = _DATASET / "elf_vm_movidx_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
-    assert _region_lowers_kind(fixture, "vstoreidx")
+    expect(_region_lowers_kind(fixture, "vstoreidx"))
 
 
 def test_indexed_mov_load_store_virtualization_preserves_exit_code(tmp_path: Path) -> None:
@@ -1885,8 +2004,8 @@ def test_indexed_mov_load_store_virtualization_preserves_exit_code(tmp_path: Pat
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 35
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_35)
 
 
 def test_incdec_virtualization_preserves_carry_flag(tmp_path: Path) -> None:
@@ -1907,8 +2026,8 @@ def test_incdec_virtualization_preserves_carry_flag(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_48)
 
 
 def test_three_operand_imul_virtualization_preserves_product(tmp_path: Path) -> None:
@@ -1929,8 +2048,8 @@ def test_three_operand_imul_virtualization_preserves_product(tmp_path: Path) -> 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_49)
 
 
 def test_leave_epilogue_virtualization_preserves_frame(tmp_path: Path) -> None:
@@ -1951,8 +2070,8 @@ def test_leave_epilogue_virtualization_preserves_frame(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_50)
 
 
 def test_mov_rsp_epilogue_virtualization_preserves_frame(tmp_path: Path) -> None:
@@ -1972,8 +2091,8 @@ def test_mov_rsp_epilogue_virtualization_preserves_frame(tmp_path: Path) -> None
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_51)
 
 
 def test_flag_dead_add_is_mba_folded_and_preserves_value(tmp_path: Path) -> None:
@@ -1991,8 +2110,8 @@ def test_flag_dead_add_is_mba_folded_and_preserves_value(tmp_path: Path) -> None
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_52)
 
 
 def test_flag_dead_boolean_ops_are_mba_folded_and_preserve_value(tmp_path: Path) -> None:
@@ -2010,8 +2129,8 @@ def test_flag_dead_boolean_ops_are_mba_folded_and_preserve_value(tmp_path: Path)
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_53)
 
 
 def test_flag_dead_sub_is_mba_folded_and_preserves_value(tmp_path: Path) -> None:
@@ -2029,8 +2148,8 @@ def test_flag_dead_sub_is_mba_folded_and_preserves_value(tmp_path: Path) -> None
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_54)
 
 
 def test_flag_live_add_keeps_flags_for_the_branch(tmp_path: Path) -> None:
@@ -2048,8 +2167,8 @@ def test_flag_live_add_keeps_flags_for_the_branch(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_55)
 
 
 def test_shift_micro_op_captures_the_carry_flag_for_the_branch(tmp_path: Path) -> None:
@@ -2069,8 +2188,8 @@ def test_shift_micro_op_captures_the_carry_flag_for_the_branch(tmp_path: Path) -
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_56)
 
 
 def test_rotate_micro_op_merges_program_flags_with_the_rotate_carry(tmp_path: Path) -> None:
@@ -2091,8 +2210,8 @@ def test_rotate_micro_op_merges_program_flags_with_the_rotate_carry(tmp_path: Pa
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_57)
 
 
 def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> None:
@@ -2114,8 +2233,8 @@ def test_byte_register_compare_and_test_preserve_exit_code(tmp_path: Path) -> No
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_58)
 
 
 def test_variable_count_shift_preserves_exit_code(tmp_path: Path) -> None:
@@ -2135,8 +2254,8 @@ def test_variable_count_shift_preserves_exit_code(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_59)
 
 
 def test_bit_test_preserves_exit_code(tmp_path: Path) -> None:
@@ -2156,8 +2275,8 @@ def test_bit_test_preserves_exit_code(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_60)
 
 
 def test_division_preserves_exit_code(tmp_path: Path) -> None:
@@ -2178,8 +2297,8 @@ def test_division_preserves_exit_code(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_61)
 
 
 def test_byte_swap_preserves_exit_code(tmp_path: Path) -> None:
@@ -2198,8 +2317,8 @@ def test_byte_swap_preserves_exit_code(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_62)
 
 
 def test_bitwise_not_preserves_exit_code(tmp_path: Path) -> None:
@@ -2218,8 +2337,8 @@ def test_bitwise_not_preserves_exit_code(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_63)
 
 
 def test_word_compare_and_inc_merge_preserve_exit_code(tmp_path: Path) -> None:
@@ -2239,8 +2358,8 @@ def test_word_compare_and_inc_merge_preserve_exit_code(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_64)
 
 
 def test_byte_inc_dec_merge_and_flags_preserve_exit_code(tmp_path: Path) -> None:
@@ -2260,8 +2379,8 @@ def test_byte_inc_dec_merge_and_flags_preserve_exit_code(tmp_path: Path) -> None
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_65)
 
 
 def test_byte_immediate_compare_preserves_exit_code(tmp_path: Path) -> None:
@@ -2281,8 +2400,8 @@ def test_byte_immediate_compare_preserves_exit_code(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_66)
 
 
 def test_rip_relative_memory_micro_ops_preserve_exit_code(tmp_path: Path) -> None:
@@ -2303,8 +2422,8 @@ def test_rip_relative_memory_micro_ops_preserve_exit_code(tmp_path: Path) -> Non
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_67)
 
 
 def test_frame_prologue_virtualization_preserves_local(tmp_path: Path) -> None:
@@ -2325,8 +2444,8 @@ def test_frame_prologue_virtualization_preserves_local(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_68)
 
 
 def test_balanced_push_pop_virtualization_preserves_saved_registers(tmp_path: Path) -> None:
@@ -2347,8 +2466,8 @@ def test_balanced_push_pop_virtualization_preserves_saved_registers(tmp_path: Pa
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_69)
 
 
 def test_push_immediate_virtualization_preserves_sign_extension(tmp_path: Path) -> None:
@@ -2368,8 +2487,8 @@ def test_push_immediate_virtualization_preserves_sign_extension(tmp_path: Path) 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_70)
 
 
 def test_no_base_indexed_lea_virtualization_preserves_address(tmp_path: Path) -> None:
@@ -2390,8 +2509,8 @@ def test_no_base_indexed_lea_virtualization_preserves_address(tmp_path: Path) ->
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_71)
 
 
 def test_thirty_two_bit_lea_virtualization_truncates_address(tmp_path: Path) -> None:
@@ -2412,8 +2531,8 @@ def test_thirty_two_bit_lea_virtualization_truncates_address(tmp_path: Path) -> 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_72)
 
 
 def test_movabs_immediate_virtualization_preserves_high_word(tmp_path: Path) -> None:
@@ -2434,8 +2553,8 @@ def test_movabs_immediate_virtualization_preserves_high_word(tmp_path: Path) -> 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_73)
 
 
 def test_movzx_movsx_virtualization_preserves_extension(tmp_path: Path) -> None:
@@ -2456,8 +2575,8 @@ def test_movzx_movsx_virtualization_preserves_extension(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_74)
 
 
 def test_indexed_movzx_movsx_virtualization_preserves_extension(tmp_path: Path) -> None:
@@ -2478,8 +2597,8 @@ def test_indexed_movzx_movsx_virtualization_preserves_extension(tmp_path: Path) 
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_75)
 
 
 def _text_range(path: Path) -> tuple[int, int, int]:
@@ -2509,7 +2628,7 @@ def test_dead_body_is_overwritten_so_logic_is_unrecoverable(tmp_path: Path) -> N
 
     entry_off, syscall_off, _ = _text_range(fixture)
     original_body = fixture.read_bytes()[entry_off + 5 : syscall_off]
-    assert b"\xb8\x01\x00\x00\x00" in original_body  # 'mov eax, 1' is present originally
+    expect(not (b"\xb8\x01\x00\x00\x00" not in original_body))
 
     mutated = tmp_path / "mutated"
     shutil.copy(fixture, mutated)
@@ -2522,9 +2641,9 @@ def test_dead_body_is_overwritten_so_logic_is_unrecoverable(tmp_path: Path) -> N
         binary.close()
 
     mutated_body = mutated.read_bytes()[entry_off + 5 : syscall_off]
-    assert mutated_body != original_body
-    assert b"\xb8\x01\x00\x00\x00" not in mutated_body  # original logic destroyed
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated)  # ...yet still correct
+    expect(mutated_body != original_body)
+    expect(b"\xb8\x01\x00\x00\x00" not in mutated_body)
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated))
 
 
 def _virtualize(src: Path, dst: Path) -> bytes:
@@ -2538,7 +2657,7 @@ def _virtualize(src: Path, dst: Path) -> bytes:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
+    expect(not (stats["functions_virtualized"] < 1))
     return dst.read_bytes()[original_size:]
 
 
@@ -2551,9 +2670,13 @@ def test_virtualization_is_polymorphic_yet_semantically_stable(tmp_path: Path) -
 
     # Two builds of the same input share no static VM signature (randomized
     # opcodes + encrypted bytecode) yet both preserve the exit code.
-    assert first_region and second_region
-    assert first_region != second_region
-    assert _emulate_exit_code(tmp_path / "first") == _emulate_exit_code(tmp_path / "second") == 45
+    expect(first_region and second_region)
+    expect(first_region != second_region)
+    expect(
+        _emulate_exit_code(tmp_path / "first")
+        == _emulate_exit_code(tmp_path / "second")
+        == _EXPECTED_EMULATE_EXIT_CODE_TMP_PATH_FIRST_45
+    )
 
 
 def test_virtualized_32bit_fixture_preserves_exit_code(tmp_path: Path) -> None:
@@ -2571,8 +2694,8 @@ def test_virtualized_32bit_fixture_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _emulate_exit_code(FIXTURE32) == _emulate_exit_code(mutated) == 45
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(FIXTURE32) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE32_45)
 
 
 def test_virtualizing_multiblock_binary_preserves_exit_code(tmp_path: Path) -> None:
@@ -2593,22 +2716,22 @@ def test_virtualizing_multiblock_binary_preserves_exit_code(tmp_path: Path) -> N
     finally:
         binary.close()
 
-    assert _emulate_exit_code(FIXTURE_MULTIBLOCK) == _emulate_exit_code(mutated)
+    expect(_emulate_exit_code(FIXTURE_MULTIBLOCK) == _emulate_exit_code(mutated))
 
 
 def test_decode_instruction_widths_and_rejections() -> None:
-    assert decode_instruction("mov eax, 1").width == 32  # 32-bit now supported
-    assert decode_instruction("mov rax, 1").width == 64
-    assert decode_instruction("add eax, rbx") is None  # mismatched operand widths
-    assert decode_instruction("mov rsp, rax") is None  # interpreter owns rsp
-    assert decode_instruction("mov esp, eax") is None  # ...in either width
-    assert decode_instruction("mov rax, qword ptr [rbx]") is None  # memory operand
-    assert decode_instruction("jmp 0x400000") is None  # control flow
-    assert decode_instruction("add rbx, rcx") is not None  # plain 64-bit GP op
-    assert decode_instruction("shl rax, 4") is not None  # immediate-count shift
-    assert decode_instruction("shr edi, 3").width == 32  # 32-bit shift path
-    assert decode_instruction("shl rax, cl") is None  # register-count form rejected
-    assert decode_instruction("shl rax") is None  # implicit shift-by-1 has no imm
+    expect(decode_instruction("mov eax, 1").width == _EXPECTED_DECODE_INSTRUCTION_MOV_EAX_1_WIDTH_32)
+    expect(decode_instruction("mov rax, 1").width == _EXPECTED_DECODE_INSTRUCTION_MOV_RAX_1_WIDTH_64)
+    expect(not (decode_instruction("add eax, rbx") is not None))
+    expect(not (decode_instruction("mov rsp, rax") is not None))
+    expect(not (decode_instruction("mov esp, eax") is not None))
+    expect(not (decode_instruction("mov rax, qword ptr [rbx]") is not None))
+    expect(not (decode_instruction("jmp 0x400000") is not None))
+    expect(decode_instruction("add rbx, rcx") is not None)
+    expect(decode_instruction("shl rax, 4") is not None)
+    expect(decode_instruction("shr edi, 3").width == _EXPECTED_DECODE_INSTRUCTION_SHR_EDI_3_WIDTH_32)
+    expect(not (decode_instruction("shl rax, cl") is not None))
+    expect(not (decode_instruction("shl rax") is not None))
 
 
 def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
@@ -2617,9 +2740,9 @@ def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     # exercising the engine's shift handlers. The decode checks prove the shifts
     # lower to VM ops - were they left native, the run would still exit 42 (a false
     # green), so the isinstance guards rule that out.
-    assert isinstance(decode_instruction("shl rdi, 3"), VirtualizedOp)
-    assert isinstance(decode_instruction("sar rdi, 1"), VirtualizedOp)
-    assert isinstance(decode_instruction("shr rsi, 2"), VirtualizedOp)
+    expect(isinstance(decode_instruction("shl rdi, 3"), VirtualizedOp))
+    expect(isinstance(decode_instruction("sar rdi, 1"), VirtualizedOp))
+    expect(isinstance(decode_instruction("shr rsi, 2"), VirtualizedOp))
     fixture = _DATASET / "elf_vm_shift_x86_64"
     if not fixture.exists():
         pytest.skip(f"fixture missing: {fixture}")
@@ -2634,9 +2757,9 @@ def test_engine_shift_run_fallback_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(fixture) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_76)
 
 
 FIXTURE_ENGARITH = _DATASET / "elf_vm_engarith_x86_64"
@@ -2648,11 +2771,11 @@ def test_reg_reg_arithmetic_lowers_to_shared_microop_primitives() -> None:
     # sequence, and distinct native ops (add vs xor) expand identically through the
     # SHARED vpush/vpop primitive opcodes - so identifying a handler no longer
     # identifies a native instruction.
-    scheme = build_vm_scheme(random.Random(20260801))
+    scheme = build_vm_scheme(randomness.Random(20260801))
     # The shared stack primitives and the per-op folds are real handler keys.
-    assert ("vpush", False, 64) in scheme.dup
-    assert ("vpop", False, 64) in scheme.dup
-    assert ("vadd", False, 64) in scheme.dup and ("vxor", False, 64) in scheme.dup
+    expect(not (("vpush", False, 64) not in scheme.dup))
+    expect(not (("vpop", False, 64) not in scheme.dup))
+    expect(("vadd", False, 64) in scheme.dup and ("vxor", False, 64) in scheme.dup)
 
     add_len = len(encode_bytecode([VirtualizedOp("add", 7, 6, False, 64)], scheme))
     xor_len = len(encode_bytecode([VirtualizedOp("xor", 7, 6, False, 64)], scheme))
@@ -2669,7 +2792,7 @@ def test_reg_reg_arithmetic_lowers_to_shared_microop_primitives() -> None:
         [("vpush", False, 64), ("vpush", False, 64), ("vxor", False, 64), ("vpop", False, 64)],
     )
     mov_padding = _selected_padding(scheme, [("mov", False, 64)])
-    assert add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding
+    expect(add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding)
 
 
 def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
@@ -2689,9 +2812,13 @@ def test_engine_reg_reg_arithmetic_microops_preserve_exit_code(tmp_path: Path) -
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(FIXTURE_ENGARITH) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(
+        _emulate_exit_code(FIXTURE_ENGARITH)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_ENGARITH_42
+    )
 
 
 FIXTURE_ENGARITHIMM = _DATASET / "elf_vm_engarithimm_x86_64"
@@ -2701,10 +2828,10 @@ def test_immediate_arithmetic_lowers_to_shared_microop_primitives() -> None:
     # Structural proof the immediate form also breaks the 1:1 map: an immediate
     # arithmetic op encodes as vpush_slot/vpush_imm/vbinop/vpop, sharing the
     # vpush/vpop stack primitives with the reg-reg form, not a single handler.
-    scheme = build_vm_scheme(random.Random(20260802))
-    assert ("vpushi", False, 64) in scheme.dup
+    scheme = build_vm_scheme(randomness.Random(20260802))
+    expect(not (("vpushi", False, 64) not in scheme.dup))
     # Shared with the reg-reg lowering (same stack primitive opcodes).
-    assert ("vpush", False, 64) in scheme.dup and ("vpop", False, 64) in scheme.dup
+    expect(("vpush", False, 64) in scheme.dup and ("vpop", False, 64) in scheme.dup)
 
     add_len = len(encode_bytecode([VirtualizedOp("add", 7, 5, True, 64)], scheme))
     xor_len = len(encode_bytecode([VirtualizedOp("xor", 7, 5, True, 64)], scheme))
@@ -2722,11 +2849,11 @@ def test_immediate_arithmetic_lowers_to_shared_microop_primitives() -> None:
     add_padding = _selected_padding(scheme, add_keys)
     xor_padding = _selected_padding(scheme, xor_keys)
     mov_padding = _selected_padding(scheme, [("mov", True, 64)])
-    assert add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding
+    expect(add_len - add_padding == xor_len - xor_padding > mov_len - mov_padding)
 
 
 def test_immediate_arithmetic_decomposition_varies_by_build() -> None:
-    schemes = [build_vm_scheme(random.Random(seed)) for seed in range(1, 128)]
+    schemes = [build_vm_scheme(randomness.Random(seed)) for seed in range(1, 128)]
     unsplit = next(scheme for scheme in schemes if not scheme.immediate_split)
     split = next(scheme for scheme in schemes if scheme.immediate_split)
     operation = VirtualizedOp("add", 7, 5, True, 64)
@@ -2747,11 +2874,11 @@ def test_immediate_arithmetic_decomposition_varies_by_build() -> None:
         ],
     )
 
-    assert split_size > unsplit_size
+    expect(not (split_size <= unsplit_size))
 
 
 def test_immediate_logical_decomposition_varies_by_build() -> None:
-    schemes = [build_vm_scheme(random.Random(seed)) for seed in range(1, 128)]
+    schemes = [build_vm_scheme(randomness.Random(seed)) for seed in range(1, 128)]
     unsplit = next(scheme for scheme in schemes if not scheme.immediate_split)
     split = next(scheme for scheme in schemes if scheme.immediate_split)
     operations = (VirtualizedOp("and", 7, 5, True, 64), VirtualizedOp("or", 7, 5, True, 64))
@@ -2785,7 +2912,7 @@ def test_immediate_logical_decomposition_varies_by_build() -> None:
         for operation in operations
     )
 
-    assert all(split_size > unsplit_size for split_size, unsplit_size in zip(split_sizes, unsplit_sizes, strict=True))
+    expect(all(split_size > unsplit_size for split_size, unsplit_size in zip(split_sizes, unsplit_sizes, strict=True)))
 
 
 def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path) -> None:
@@ -2805,9 +2932,13 @@ def test_engine_immediate_arithmetic_microops_preserve_exit_code(tmp_path: Path)
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
-    assert _has_engine_frame_signature(mutated.read_bytes())
-    assert _emulate_exit_code(FIXTURE_ENGARITHIMM) == _emulate_exit_code(mutated) == 42
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_has_engine_frame_signature(mutated.read_bytes()))
+    expect(
+        _emulate_exit_code(FIXTURE_ENGARITHIMM)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_ENGARITHIMM_42
+    )
 
 
 def test_region_conditional_branch_preserves_exit_code(tmp_path: Path) -> None:
@@ -2829,7 +2960,7 @@ def test_region_conditional_branch_preserves_exit_code(tmp_path: Path) -> None:
     finally:
         binary.close()
 
-    assert stats["functions_virtualized"] >= 1
+    expect(not (stats["functions_virtualized"] < 1))
     baseline = _emulate_exit_code(fixture)
-    assert baseline is not None
-    assert _emulate_exit_code(mutated) == baseline
+    expect(baseline is not None)
+    expect(_emulate_exit_code(mutated) == baseline)

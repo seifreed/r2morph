@@ -3,7 +3,11 @@ import shutil
 from pathlib import Path
 
 from r2morph.validation.validator import BinaryValidator
+from tests.utils.assertions import expect
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
+
+_EXPECTED_RESULT_SIMILARITY_SCORE_100_0 = 100.0
+_EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2 = 100.0
 
 
 def test_validator_round_trip_same_binary(tmp_path):
@@ -18,8 +22,8 @@ def test_validator_round_trip_same_binary(tmp_path):
     validator = BinaryValidator(timeout=5)
     validator.add_test_case(description="default run")
     result = validator.validate(original, mutated)
-    assert result.passed is True
-    assert result.similarity_score == 100.0
+    expect(not (result.passed is not True))
+    expect(result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0)
 
 
 def test_validator_timeout_path(tmp_path):
@@ -38,5 +42,5 @@ def test_validator_timeout_path(tmp_path):
     validator = BinaryValidator(timeout=1)
     validator.add_test_case(args=["2"], description="timeout test")
     result = validator.validate(original, mutated)
-    assert result.passed is True
-    assert result.similarity_score == 100.0
+    expect(not (result.passed is not True))
+    expect(result.similarity_score == _EXPECTED_RESULT_SIMILARITY_SCORE_100_0_2)

@@ -10,6 +10,7 @@ from r2morph.mutations.code_virtualization_bootstrap import (
     build_bootstrap_asm,
     encrypt_bootstrap_table,
 )
+from tests.utils.assertions import expect
 
 _CHECKSUM_OFFSET = 0x88
 
@@ -22,25 +23,25 @@ def test_bootstrap_entry_jumps_indirectly_before_antidebug_probes() -> None:
     code, _table = _bootstrap()
     first_jump = code.index("jmp rax")
 
-    assert first_jump < min(code.index("rdtsc"), code.index("syscall"))
+    expect(not (first_jump >= min(code.index("rdtsc"), code.index("syscall"))))
 
 
 def test_bootstrap_table_maps_exactly_three_states() -> None:
     _code, table = _bootstrap()
 
-    assert table.count(".long bootstrap_") == BOOTSTRAP_STAGE_COUNT
+    expect(table.count(".long bootstrap_") == BOOTSTRAP_STAGE_COUNT)
 
 
 def test_bootstrap_state_edges_have_no_direct_targets() -> None:
     code, _table = _bootstrap()
 
-    assert re.search(r"\bj(?:mp|e) bootstrap_", code) is None
+    expect(not (re.search(r"\bj(?:mp|e) bootstrap_", code) is not None))
 
 
 def test_bootstrap_state_mapping_varies_by_seed() -> None:
     tables = {_bootstrap(seed)[1] for seed in range(16)}
 
-    assert len(tables) > 1
+    expect(not (len(tables) <= 1))
 
 
 def test_encrypt_bootstrap_table_xors_every_offset_with_checksum() -> None:
@@ -55,4 +56,4 @@ def test_encrypt_bootstrap_table_xors_every_offset_with_checksum() -> None:
         (int.from_bytes(original[offset : offset + 4], "little") ^ key).to_bytes(4, "little")
         for offset in range(0, BOOTSTRAP_TABLE_SIZE, 4)
     )
-    assert bytes(encrypted) == expected
+    expect(bytes(encrypted) == expected)

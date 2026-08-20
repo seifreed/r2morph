@@ -1,6 +1,8 @@
 from r2morph.reporting.report_rendering_symbolic_table_fallbacks import (
     build_symbolic_severity_fallback_rows,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 def test_symbolic_table_fallback_rows_only_include_risky_passes() -> None:
@@ -25,5 +27,5 @@ def test_symbolic_table_fallback_rows_only_include_risky_passes() -> None:
 
     rows = build_symbolic_severity_fallback_rows(summary)
 
-    assert [row["pass_name"] for row in rows] == ["mismatch-pass"]
-    assert rows[0]["severity"] == "mismatch"
+    expect([row[MUTATION_NAME_KEY] for row in rows] == ["mismatch-pass"])
+    expect(rows[0]["severity"] == "mismatch")

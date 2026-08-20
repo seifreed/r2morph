@@ -21,6 +21,22 @@ from r2morph.detection.packer_signature_catalogs import (
 from r2morph.detection.packer_signatures import PackerSignatureDatabase, PackerType
 from r2morph.detection.pattern_catalogs import ANTI_DEBUG_APIS, VM_ARTIFACTS
 from r2morph.detection.pattern_matcher import PatternMatcher, PatternMatchResult
+from tests.utils.assertions import expect
+
+_EXPECTED_0_100 = 100
+_EXPECTED_0_100_2 = 100
+_EXPECTED_ANALYZER_HIGH_ENTROPY_THRESHOLD_7_0 = 7.0
+_EXPECTED_ANALYZER_SUSPICIOUS_ENTROPY_THRESHOLD_6_5 = 6.5
+_EXPECTED_LEN_RESULT_OBFUSCATION_TECHNIQUES_2 = 2
+_EXPECTED_RESULT_ANTI_DEBUG_CONFIDENCE_0_9 = 0.9
+_EXPECTED_RESULT_CFF_CONFIDENCE_0_8 = 0.8
+_EXPECTED_RESULT_CONFIDENCE_SCORE_0_85 = 0.85
+_EXPECTED_RESULT_MBA_EXPRESSIONS_COUNT_3 = 3
+_EXPECTED_RESULT_OPAQUE_PREDICATES_COUNT_5 = 5
+_EXPECTED_RESULT_OVERALL_ENTROPY_7_5 = 7.5
+_EXPECTED_RESULT_VM_HANDLER_COUNT_42 = 42
+_EXPECTED_SCORE_HASH_CHANGE_SCORE_100_0 = 100.0
+_EXPECTED_SCORE_OVERALL_SCORE_75_0 = 75.0
 
 
 class _PatternBinary:
@@ -30,9 +46,9 @@ class _PatternBinary:
 class TestControlFlowAnalysisResult:
     def test_result_creation(self):
         result = ControlFlowAnalysisResult()
-        assert result.cff_detected is False
-        assert result.cff_confidence == 0.0
-        assert result.opaque_predicates_count == 0
+        expect(not (result.cff_detected is not False))
+        expect(result.cff_confidence == 0.0)
+        expect(result.opaque_predicates_count == 0)
 
     def test_result_with_values(self):
         result = ControlFlowAnalysisResult(
@@ -41,10 +57,10 @@ class TestControlFlowAnalysisResult:
             opaque_predicates_count=5,
             mba_expressions_count=3,
         )
-        assert result.cff_detected is True
-        assert result.cff_confidence == 0.8
-        assert result.opaque_predicates_count == 5
-        assert result.mba_expressions_count == 3
+        expect(not (result.cff_detected is not True))
+        expect(result.cff_confidence == _EXPECTED_RESULT_CFF_CONFIDENCE_0_8)
+        expect(result.opaque_predicates_count == _EXPECTED_RESULT_OPAQUE_PREDICATES_COUNT_5)
+        expect(result.mba_expressions_count == _EXPECTED_RESULT_MBA_EXPRESSIONS_COUNT_3)
 
     def test_result_vm_detection(self):
         result = ControlFlowAnalysisResult(
@@ -53,38 +69,39 @@ class TestControlFlowAnalysisResult:
             vm_handler_count=42,
             vm_indicators=["indirect_jumps", "dispatcher_pattern"],
         )
-        assert result.vm_detected is True
-        assert result.vm_handler_count == 42
-        assert "indirect_jumps" in result.vm_indicators
+        expect(not (result.vm_detected is not True))
+        expect(result.vm_handler_count == _EXPECTED_RESULT_VM_HANDLER_COUNT_42)
+        expect(not ("indirect_jumps" not in result.vm_indicators))
 
 
 class TestPackerType:
     def test_packer_types(self):
-        assert PackerType.NONE.value == "none"
-        assert PackerType.UPX.value == "upx"
-        assert PackerType.VMPROTECT.value == "vmprotect"
-        assert PackerType.THEMIDA.value == "themida"
+        expect(PackerType.NONE.value == "none")
+        expect(PackerType.UPX.value == "upx")
+        expect(PackerType.VMPROTECT.value == "vmprotect")
+        expect(PackerType.THEMIDA.value == "themida")
 
 
 class TestPackerSignatureDatabase:
     def test_database_initialization(self):
         db = PackerSignatureDatabase()
-        assert db is not None
-        assert hasattr(db, "signatures")
+        expect(db is not None)
+        expect(hasattr(db, "signatures"))
 
     def test_database_signature_count_matches_catalogs(self):
         db = PackerSignatureDatabase()
-        assert len(db.signatures) == len(
-            vm_protector_signatures() + compressor_signatures() + protector_signatures() + other_signatures()
+        expect(
+            len(db.signatures)
+            == len(vm_protector_signatures() + compressor_signatures() + protector_signatures() + other_signatures())
         )
 
 
 class TestPatternMatchResult:
     def test_result_creation(self):
         result = PatternMatchResult()
-        assert result.anti_debug_detected is False
-        assert result.anti_debug_confidence == 0.0
-        assert result.anti_debug_apis == []
+        expect(not (result.anti_debug_detected is not False))
+        expect(result.anti_debug_confidence == 0.0)
+        expect(result.anti_debug_apis == [])
 
     def test_result_with_values(self):
         result = PatternMatchResult(
@@ -95,43 +112,43 @@ class TestPatternMatchResult:
             anti_vm_confidence=0.7,
             anti_vm_artifacts=["vmware", "virtualbox"],
         )
-        assert result.anti_debug_detected is True
-        assert result.anti_debug_confidence == 0.9
-        assert "IsDebuggerPresent" in result.anti_debug_apis
-        assert result.anti_vm_detected is True
-        assert "vmware" in result.anti_vm_artifacts
+        expect(not (result.anti_debug_detected is not True))
+        expect(result.anti_debug_confidence == _EXPECTED_RESULT_ANTI_DEBUG_CONFIDENCE_0_9)
+        expect(not ("IsDebuggerPresent" not in result.anti_debug_apis))
+        expect(not (result.anti_vm_detected is not True))
+        expect(not ("vmware" not in result.anti_vm_artifacts))
 
 
 class TestPatternMatcher:
     def test_matcher_initialization(self):
         binary = _PatternBinary()
         matcher = PatternMatcher(binary)
-        assert matcher is not None
+        expect(matcher is not None)
 
     def test_matcher_has_anti_debug_apis(self):
         binary = _PatternBinary()
         matcher = PatternMatcher(binary)
-        assert hasattr(matcher, "ANTI_DEBUG_APIS")
-        assert "IsDebuggerPresent" in matcher.ANTI_DEBUG_APIS
-        assert matcher.ANTI_DEBUG_APIS is ANTI_DEBUG_APIS
+        expect(hasattr(matcher, "ANTI_DEBUG_APIS"))
+        expect(not ("IsDebuggerPresent" not in matcher.ANTI_DEBUG_APIS))
+        expect(not (matcher.ANTI_DEBUG_APIS is not ANTI_DEBUG_APIS))
 
     def test_matcher_has_vm_artifacts(self):
         binary = _PatternBinary()
         matcher = PatternMatcher(binary)
-        assert hasattr(matcher, "VM_ARTIFACTS")
-        assert "vmware" in matcher.VM_ARTIFACTS
-        assert matcher.VM_ARTIFACTS is VM_ARTIFACTS
+        expect(hasattr(matcher, "VM_ARTIFACTS"))
+        expect(not ("vmware" not in matcher.VM_ARTIFACTS))
+        expect(not (matcher.VM_ARTIFACTS is not VM_ARTIFACTS))
 
 
 class TestEntropyAnalyzer:
     def test_analyzer_initialization(self):
         analyzer = EntropyAnalyzer()
-        assert analyzer is not None
+        expect(analyzer is not None)
 
     def test_analyzer_has_methods(self):
         analyzer = EntropyAnalyzer()
-        assert hasattr(analyzer, "analyze_file")
-        assert hasattr(analyzer, "_calculate_entropy")
+        expect(hasattr(analyzer, "analyze_file"))
+        expect(hasattr(analyzer, "_calculate_entropy"))
 
 
 class TestEntropyResult:
@@ -143,7 +160,7 @@ class TestEntropyResult:
             is_packed=False,
             analysis="Test",
         )
-        assert result.overall_entropy == 7.5
+        expect(result.overall_entropy == _EXPECTED_RESULT_OVERALL_ENTROPY_7_5)
 
     def test_result_str(self):
         result = EntropyResult(
@@ -154,7 +171,7 @@ class TestEntropyResult:
             analysis="Normal entropy",
         )
         s = str(result)
-        assert "7.5" in s or "7.50" in s
+        expect("7.5" in s or "7.50" in s)
 
 
 class TestEvasionScore:
@@ -167,8 +184,8 @@ class TestEvasionScore:
             signature_score=60.0,
             details={},
         )
-        assert score.overall_score == 75.0
-        assert score.hash_change_score == 100.0
+        expect(score.overall_score == _EXPECTED_SCORE_OVERALL_SCORE_75_0)
+        expect(score.hash_change_score == _EXPECTED_SCORE_HASH_CHANGE_SCORE_100_0)
 
     def test_score_str(self):
         score = EvasionScore(
@@ -180,35 +197,35 @@ class TestEvasionScore:
             details={},
         )
         s = str(score)
-        assert "75" in s
+        expect(not ("75" not in s))
 
 
 class TestEvasionScorer:
     def test_scorer_initialization(self):
         scorer = EvasionScorer()
-        assert scorer is not None
+        expect(scorer is not None)
 
     def test_scorer_weights(self):
         scorer = EvasionScorer()
-        assert "hash_change" in scorer.weights
-        assert "entropy" in scorer.weights
-        assert "structure" in scorer.weights
-        assert "signature" in scorer.weights
+        expect(not ("hash_change" not in scorer.weights))
+        expect(not ("entropy" not in scorer.weights))
+        expect(not ("structure" not in scorer.weights))
+        expect(not ("signature" not in scorer.weights))
 
 
 class TestObfuscationType:
     def test_obfuscation_types(self):
-        assert ObfuscationType.CONTROL_FLOW_FLATTENING.value == "cff"
-        assert ObfuscationType.OPAQUE_PREDICATES.value == "opaque_predicates"
-        assert ObfuscationType.VIRTUALIZATION.value == "virtualization"
-        assert ObfuscationType.PACKING.value == "packing"
+        expect(ObfuscationType.CONTROL_FLOW_FLATTENING.value == "cff")
+        expect(ObfuscationType.OPAQUE_PREDICATES.value == "opaque_predicates")
+        expect(ObfuscationType.VIRTUALIZATION.value == "virtualization")
+        expect(ObfuscationType.PACKING.value == "packing")
 
 
 class TestObfuscationAnalysisResult:
     def test_result_creation(self):
         result = ObfuscationAnalysisResult()
-        assert result.packer_detected == PackerType.NONE
-        assert len(result.obfuscation_techniques) == 0
+        expect(result.packer_detected == PackerType.NONE)
+        expect(len(result.obfuscation_techniques) == 0)
 
     def test_result_with_techniques(self):
         result = ObfuscationAnalysisResult(
@@ -219,27 +236,27 @@ class TestObfuscationAnalysisResult:
             ],
             confidence_score=0.85,
         )
-        assert result.packer_detected == PackerType.UPX
-        assert len(result.obfuscation_techniques) == 2
-        assert result.confidence_score == 0.85
+        expect(result.packer_detected == PackerType.UPX)
+        expect(len(result.obfuscation_techniques) == _EXPECTED_LEN_RESULT_OBFUSCATION_TECHNIQUES_2)
+        expect(result.confidence_score == _EXPECTED_RESULT_CONFIDENCE_SCORE_0_85)
 
 
 class TestObfuscationDetector:
     def test_detector_initialization(self):
         detector = ObfuscationDetector()
-        assert detector is not None
-        assert detector.packer_db is not None
-        assert detector.entropy_analyzer is not None
+        expect(detector is not None)
+        expect(detector.packer_db is not None)
+        expect(detector.entropy_analyzer is not None)
 
 
 class TestEntropyAnalysis:
     def test_entropy_constants(self):
         analyzer = EntropyAnalyzer()
-        assert analyzer.HIGH_ENTROPY_THRESHOLD == 7.0
-        assert analyzer.SUSPICIOUS_ENTROPY_THRESHOLD == 6.5
+        expect(analyzer.HIGH_ENTROPY_THRESHOLD == _EXPECTED_ANALYZER_HIGH_ENTROPY_THRESHOLD_7_0)
+        expect(analyzer.SUSPICIOUS_ENTROPY_THRESHOLD == _EXPECTED_ANALYZER_SUSPICIOUS_ENTROPY_THRESHOLD_6_5)
 
     def test_entropy_score_range(self):
         high_score = 100.0
         low_score = 0.0
-        assert 0 <= high_score <= 100
-        assert 0 <= low_score <= 100
+        expect(0 <= high_score <= _EXPECTED_0_100)
+        expect(0 <= low_score <= _EXPECTED_0_100_2)

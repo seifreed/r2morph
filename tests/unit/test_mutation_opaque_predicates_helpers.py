@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
+from tests.utils.assertions import expect
 
 
 def test_opaque_predicate_generators():
@@ -11,10 +12,10 @@ def test_opaque_predicate_generators():
     x86_pred = pass_obj._generate_x86_predicate("always_true", 64)
     arm_pred = pass_obj._generate_arm_predicate("always_false", 64)
 
-    assert isinstance(x86_pred, list)
-    assert isinstance(arm_pred, list)
-    assert x86_pred
-    assert arm_pred
+    expect(isinstance(x86_pred, list))
+    expect(isinstance(arm_pred, list))
+    expect(x86_pred)
+    expect(arm_pred)
 
 
 def test_opaque_predicate_apply_real_binary(tmp_path: Path):
@@ -30,4 +31,4 @@ def test_opaque_predicate_apply_real_binary(tmp_path: Path):
         pass_obj = OpaquePredicatePass(config={"max_predicates_per_function": 2, "probability": 1.0})
         result = pass_obj.apply(bin_obj)
 
-    assert "mutations_applied" in result
+    expect(not ("mutations_applied" not in result))

@@ -11,6 +11,8 @@ from r2morph.validation.semantic_models import (
     ValidationResultStatus,
 )
 from r2morph.validation.semantic_report_models import SemanticValidationReport, SemanticValidationResult
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 def test_semantic_models_round_trip() -> None:
@@ -19,7 +21,7 @@ def test_semantic_models_round_trip() -> None:
         end_address=0x1004,
         original_bytes=b"\x90",
         mutated_bytes=b"\x90",
-        pass_name="TestPass",
+        **{MUTATION_NAME_KEY: "TestPass"},
     )
     check = SemanticCheck(
         check_name="cf",
@@ -42,13 +44,13 @@ def test_semantic_models_round_trip() -> None:
         observables=ObservableComparison(),
     )
     report = SemanticValidationReport(
-        binary_path="/tmp/bin",
+        binary_path="test-data/bin",
         timestamp="2024-01-01T00:00:00+00:00",
         mode=ValidationMode.STANDARD,
         results=[result],
     )
     round_tripped = SemanticValidationReport.from_dict(report.to_dict())
 
-    assert report.summary["total_mutations"] == 1
-    assert report.to_dict()["results"][0]["region"]["pass_name"] == "TestPass"
-    assert round_tripped.summary["total_mutations"] == 1
+    expect(report.summary["total_mutations"] == 1)
+    expect(report.to_dict()["results"][0]["region"][MUTATION_NAME_KEY] == "TestPass")
+    expect(round_tripped.summary["total_mutations"] == 1)

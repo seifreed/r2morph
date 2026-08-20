@@ -6,6 +6,7 @@ from r2morph.devirtualization.binary_rewriter import (
     CodePatch,
     RewriteOperation,
 )
+from tests.utils.assertions import expect
 
 
 def test_binary_rewriter_strategy_and_address_shifts():
@@ -28,13 +29,13 @@ def test_binary_rewriter_strategy_and_address_shifts():
     ]
 
     strategy = rewriter._plan_rewrite_strategy()
-    assert strategy["use_code_caves"] is True
-    assert strategy["requires_relocation_update"] is True
-    assert [p.address for p in strategy["patch_order"]] == [0x1000, 0x2000]
+    expect(not (strategy["use_code_caves"] is not True))
+    expect(not (strategy["requires_relocation_update"] is not True))
+    expect([p.address for p in strategy["patch_order"]] == [4096, 8192])
 
     shifts = rewriter._calculate_address_shifts()
-    assert shifts[0x1000] == 0
-    assert shifts[0x2000] == 1
+    expect(shifts[4096] == 0)
+    expect(shifts[8192] == 1)
 
 
 def test_binary_rewriter_integrity_checks_for_elf(tmp_path: Path):
@@ -45,14 +46,14 @@ def test_binary_rewriter_integrity_checks_for_elf(tmp_path: Path):
     rewriter.binary_format = BinaryFormat.ELF
 
     checks = rewriter._perform_integrity_checks(str(output_path))
-    assert checks["file_exists"] is True
-    assert checks["valid_pe_header"] is True
+    expect(not (checks["file_exists"] is not True))
+    expect(not (checks["valid_pe_header"] is not True))
     # The three checks below are not yet implemented and must stay False
     # until real parsers populate them. Asserting True here would
     # re-enshrine a placeholder that lied about binary integrity.
-    assert checks["imports_intact"] is False
-    assert checks["exports_intact"] is False
-    assert checks["entry_point_valid"] is False
+    expect(not (checks["imports_intact"] is not False))
+    expect(not (checks["exports_intact"] is not False))
+    expect(not (checks["entry_point_valid"] is not False))
 
 
 def test_binary_rewriter_address_validation_and_stats():
@@ -62,8 +63,8 @@ def test_binary_rewriter_address_validation_and_stats():
         ".data": {"vaddr": 0x3000, "vsize": 0x100},
     }
 
-    assert rewriter._is_valid_address(0x1100) is True
-    assert rewriter._is_valid_address(0x2200) is False
+    expect(not (rewriter._is_valid_address(0x1100) is not True))
+    expect(not (rewriter._is_valid_address(0x2200) is not False))
 
     rewriter.binary_format = BinaryFormat.ELF
     rewriter.arch = "x86"
@@ -79,11 +80,11 @@ def test_binary_rewriter_address_validation_and_stats():
     ]
 
     stats = rewriter.get_rewrite_statistics()
-    assert stats["total_patches"] == 1
-    assert stats["binary_format"] == "elf"
-    assert "x86" in stats["architecture"]
+    expect(stats["total_patches"] == 1)
+    expect(stats["binary_format"] == "elf")
+    expect(not ("x86" not in stats["architecture"]))
 
 
 def test_binary_rewriter_instruction_validation_accepts_basic_asm():
     rewriter = BinaryRewriter()
-    assert rewriter._validate_instructions(["nop", "ret"]) is True
+    expect(not (rewriter._validate_instructions(["nop", "ret"]) is not True))

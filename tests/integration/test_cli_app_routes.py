@@ -6,6 +6,7 @@ from typer.main import get_command
 from r2morph.cli import analyze as analyze_cmd
 from r2morph.cli import app
 from r2morph.cli import functions as functions_cmd
+from tests.utils.assertions import expect
 
 runner = CliRunner()
 app_cmd = get_command(app)
@@ -13,14 +14,14 @@ app_cmd = get_command(app)
 
 def test_cli_help_and_simple_mode(tmp_path):
     result = runner.invoke(app_cmd, ["--help"])
-    assert result.exit_code == 0
+    expect(result.exit_code == 0)
 
     binary_path = Path("fixtures/dataset/elf_x86_64")
     output_path = tmp_path / "elf_simple"
 
     result = runner.invoke(app_cmd, ["morph", str(binary_path), "-o", str(output_path), "-m", "nop"])
-    assert result.exit_code == 0, f"morph failed: {result.output}"
-    assert output_path.exists()
+    expect(result.exit_code == 0, f"morph failed: {result.output}")
+    expect(output_path.exists())
 
 
 def test_cli_direct_analyze_and_functions():
@@ -37,5 +38,5 @@ def test_cli_direct_morph(tmp_path):
         app_cmd,
         ["morph", str(binary_path), "-o", str(output_path), "-m", "nop"],
     )
-    assert result.exit_code == 0, f"morph failed: {result.output}"
-    assert output_path.exists()
+    expect(result.exit_code == 0, f"morph failed: {result.output}")
+    expect(output_path.exists())

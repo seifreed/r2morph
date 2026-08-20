@@ -5,6 +5,7 @@ from r2morph.cli_output_helpers import (
     build_function_limit_notice,
     build_function_rows,
 )
+from tests.utils.assertions import expect
 
 
 def test_build_binary_analysis_rows_formats_numeric_fields() -> None:
@@ -20,8 +21,8 @@ def test_build_binary_analysis_rows_formats_numeric_fields() -> None:
         }
     )
 
-    assert rows[0] == ("Architecture", "x86 (64-bit)")
-    assert rows[-1] == ("Avg Instructions/Function", "14.00")
+    expect(rows[0] == ("Architecture", "x86 (64-bit)"))
+    expect(rows[-1] == ("Avg Instructions/Function", "14.00"))
 
 
 def test_build_function_rows_preserves_display_order() -> None:
@@ -33,9 +34,9 @@ def test_build_function_rows_preserves_display_order() -> None:
         limit=1,
     )
 
-    assert rows == [("0x1000", "main", "256", "12")]
+    expect(rows == [("0x1000", "main", "256", "12")])
 
 
 def test_build_function_limit_notice_only_shows_when_truncated() -> None:
-    assert build_function_limit_notice(10, 5) is None
-    assert build_function_limit_notice(10, 11) == "Showing 10 of 11 functions. Use --limit to show more."
+    expect(not (build_function_limit_notice(10, 5) is not None))
+    expect(build_function_limit_notice(10, 11) == "Showing 10 of 11 functions. Use --limit to show more.")

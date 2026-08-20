@@ -52,6 +52,9 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
+
 if os.environ.get("R2MORPH_NATIVE_TESTS") != "1":
     pytest.skip(
         "native execution is opt-in: set R2MORPH_NATIVE_TESTS=1 to run it",
@@ -59,7 +62,7 @@ if os.environ.get("R2MORPH_NATIVE_TESTS") != "1":
     )
 else:
     try:
-        _daemon = subprocess.run(
+        _daemon = run_command(
             ["docker", "version", "--format", "{{.Server.Version}}"],
             capture_output=True,
             text=True,
@@ -103,7 +106,7 @@ def _native_exit_code(executable: Path) -> int:
     refused before its entry point runs, so the status also reports loadability.
     """
     executable.chmod(_EXECUTABLE_MODE)
-    run = subprocess.run(
+    run = run_command(
         [
             "docker",
             "run",
@@ -153,19 +156,19 @@ def _virtualized_copy(fixture: Path, destination: Path) -> Path:
 
 def test_pie_arith_fixture_native_reference_exit_status_is_the_documented_code(tmp_path: Path) -> None:
     """Reference: the unmutated PIE arithmetic fixture runs natively as documented."""
-    assert _native_exit_code(_staged_copy(_ARITH_FIXTURE, tmp_path)) == _ARITH_EXIT_CODE
+    expect(_native_exit_code(_staged_copy(_ARITH_FIXTURE, tmp_path)) == _ARITH_EXIT_CODE)
 
 
 def test_pie_arith_fixture_virtualized_native_exit_status_is_unchanged(tmp_path: Path) -> None:
     """A strict loader accepts the virtualized PIE arithmetic image and it exits as before."""
-    assert _native_exit_code(_virtualized_copy(_ARITH_FIXTURE, tmp_path)) == _ARITH_EXIT_CODE
+    expect(_native_exit_code(_virtualized_copy(_ARITH_FIXTURE, tmp_path)) == _ARITH_EXIT_CODE)
 
 
 def test_pie_switch_fixture_native_reference_exit_status_is_the_documented_code(tmp_path: Path) -> None:
     """Reference: the unmutated PIE offset-table switch fixture runs natively as documented."""
-    assert _native_exit_code(_staged_copy(_SWITCH_FIXTURE, tmp_path)) == _SWITCH_EXIT_CODE
+    expect(_native_exit_code(_staged_copy(_SWITCH_FIXTURE, tmp_path)) == _SWITCH_EXIT_CODE)
 
 
 def test_pie_switch_fixture_virtualized_native_exit_status_is_unchanged(tmp_path: Path) -> None:
     """A strict loader accepts the virtualized PIE switch image and it exits as before."""
-    assert _native_exit_code(_virtualized_copy(_SWITCH_FIXTURE, tmp_path)) == _SWITCH_EXIT_CODE
+    expect(_native_exit_code(_virtualized_copy(_SWITCH_FIXTURE, tmp_path)) == _SWITCH_EXIT_CODE)

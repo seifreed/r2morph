@@ -18,63 +18,65 @@ specification (FIPS-197).
 """
 
 from r2morph.crypto.aes import INV_SBOX, RCON, SBOX
+from tests.utils.assertions import expect
+
+_EXPECTED_0_255 = 0xFF
+_EXPECTED_INV_SBOX_0X00_82 = 0x52
+_EXPECTED_INV_SBOX_0X16_255 = 0xFF
+_EXPECTED_LEN_INV_SBOX_256 = 256
+_EXPECTED_LEN_SBOX_256 = 256
+_EXPECTED_SBOX_0X00_99 = 0x63
+_EXPECTED_SBOX_0X01_124 = 0x7C
+_EXPECTED_SBOX_0X10_202 = 0xCA
+_EXPECTED_SBOX_0X53_237 = 0xED
+_EXPECTED_SBOX_0X7F_210 = 0xD2
+_EXPECTED_SBOX_0XFF_22 = 0x16
 
 
 class TestSBox:
     def test_sbox_length_is_256(self) -> None:
-        assert len(SBOX) == 256
+        expect(len(SBOX) == _EXPECTED_LEN_SBOX_256)
 
     def test_sbox_is_a_permutation_of_0_255(self) -> None:
         # A correct AES S-box is a bijection over the byte range.
-        assert sorted(SBOX) == list(range(256))
+        expect(sorted(SBOX) == list(range(256)))
 
     def test_sbox_values_are_byte_sized(self) -> None:
-        assert all(0 <= value <= 0xFF for value in SBOX)
+        expect(all(0 <= value <= _EXPECTED_0_255 for value in SBOX))
 
     def test_sbox_anchor_values_match_fips_197(self) -> None:
         # Official AES S-box reference values (FIPS-197, Figure 7).
-        assert SBOX[0x00] == 0x63
-        assert SBOX[0x01] == 0x7C
-        assert SBOX[0x10] == 0xCA
-        assert SBOX[0x53] == 0xED
-        assert SBOX[0x7F] == 0xD2
-        assert SBOX[0xFF] == 0x16
+        expect(SBOX[0] == _EXPECTED_SBOX_0X00_99)
+        expect(SBOX[1] == _EXPECTED_SBOX_0X01_124)
+        expect(SBOX[16] == _EXPECTED_SBOX_0X10_202)
+        expect(SBOX[83] == _EXPECTED_SBOX_0X53_237)
+        expect(SBOX[127] == _EXPECTED_SBOX_0X7F_210)
+        expect(SBOX[255] == _EXPECTED_SBOX_0XFF_22)
 
 
 class TestInvSBox:
     def test_inv_sbox_length_is_256(self) -> None:
-        assert len(INV_SBOX) == 256
+        expect(len(INV_SBOX) == _EXPECTED_LEN_INV_SBOX_256)
 
     def test_inv_sbox_is_a_permutation_of_0_255(self) -> None:
-        assert sorted(INV_SBOX) == list(range(256))
+        expect(sorted(INV_SBOX) == list(range(256)))
 
     def test_inv_sbox_anchor_values_match_fips_197(self) -> None:
         # Official inverse AES S-box reference values (FIPS-197, Figure 14).
-        assert INV_SBOX[0x00] == 0x52
-        assert INV_SBOX[0x63] == 0x00
-        assert INV_SBOX[0x16] == 0xFF
+        expect(INV_SBOX[0] == _EXPECTED_INV_SBOX_0X00_82)
+        expect(INV_SBOX[99] == 0)
+        expect(INV_SBOX[22] == _EXPECTED_INV_SBOX_0X16_255)
 
 
 class TestSBoxInverseRelationship:
     def test_inv_sbox_is_left_inverse_of_sbox(self) -> None:
-        assert all(INV_SBOX[SBOX[i]] == i for i in range(256))
+        expect(all(INV_SBOX[SBOX[i]] == i for i in range(256)))
 
     def test_inv_sbox_is_right_inverse_of_sbox(self) -> None:
-        assert all(SBOX[INV_SBOX[i]] == i for i in range(256))
+        expect(all(SBOX[INV_SBOX[i]] == i for i in range(256)))
 
 
 class TestRcon:
     def test_rcon_exact_values(self) -> None:
         # AES round constants: powers of x (0x02) in GF(2^8), 10 entries.
-        assert RCON == [
-            0x01,
-            0x02,
-            0x04,
-            0x08,
-            0x10,
-            0x20,
-            0x40,
-            0x80,
-            0x1B,
-            0x36,
-        ]
+        expect(RCON == [1, 2, 4, 8, 16, 32, 64, 128, 27, 54])

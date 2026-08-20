@@ -17,6 +17,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.pipeline.pipeline import Pipeline
+from tests.utils.assertions import expect
 
 EXPECTED_RUN_KEYS = {
     "passes_run",
@@ -60,7 +61,7 @@ def test_empty_pipeline_result_is_exactly_frozen(tmp_path: Path) -> None:
     work_path = _fixture_binary(tmp_path)
     with Binary(work_path) as binary:
         results = Pipeline().run(binary)
-    assert results == {"passes_run": 0, "total_mutations": 0}
+    expect(results == {"passes_run": 0, "total_mutations": 0})
 
 
 def test_single_pass_run_result_contract(tmp_path: Path) -> None:
@@ -73,14 +74,14 @@ def test_single_pass_run_result_contract(tmp_path: Path) -> None:
         binary.analyze()
         results = pipeline.run(binary)
 
-    assert set(results.keys()) == EXPECTED_RUN_KEYS
-    assert set(results["validation"].keys()) == EXPECTED_VALIDATION_KEYS
-    assert set(results["validation"]["symbolic"].keys()) == EXPECTED_SYMBOLIC_KEYS
-    assert results["rollback_policy"] == "skip-invalid-pass"
-    assert results["passes_run"] == 1
-    assert results["total_mutations"] == 0
-    assert results["failed_passes"] == 0
-    assert results["rolled_back_passes"] == 0
-    assert results["mutations"] == []
-    assert nop_pass.name in results["pass_results"]
-    assert results["validation"]["all_passed"] is True
+    expect(set(results.keys()) == EXPECTED_RUN_KEYS)
+    expect(set(results["validation"].keys()) == EXPECTED_VALIDATION_KEYS)
+    expect(set(results["validation"]["symbolic"].keys()) == EXPECTED_SYMBOLIC_KEYS)
+    expect(results["rollback_policy"] == "skip-invalid-pass")
+    expect(results["passes_run"] == 1)
+    expect(results["total_mutations"] == 0)
+    expect(results["failed_passes"] == 0)
+    expect(results["rolled_back_passes"] == 0)
+    expect(results["mutations"] == [])
+    expect(not (nop_pass.name not in results["pass_results"]))
+    expect(not (results["validation"]["all_passed"] is not True))

@@ -1,4 +1,8 @@
 from r2morph.analysis.dependencies import DependencyAnalyzer, DependencyType
+from tests.utils.assertions import expect
+
+_EXPECTED_CHAIN_0_4096 = 0x1000
+_EXPECTED_CHAIN_4100 = 0x1004
 
 
 def test_dependency_parser_and_dependency_types():
@@ -13,46 +17,46 @@ def test_dependency_parser_and_dependency_types():
     ]
 
     deps = analyzer.analyze_dependencies(instructions)
-    assert deps
+    expect(deps)
 
     dep_types = {dep.dep_type for dep in deps}
-    assert DependencyType.READ_AFTER_WRITE in dep_types
-    assert DependencyType.READ_AFTER_READ in dep_types
-    assert DependencyType.WRITE_AFTER_READ in dep_types
-    assert DependencyType.WRITE_AFTER_WRITE in dep_types
+    expect(not (DependencyType.READ_AFTER_WRITE not in dep_types))
+    expect(not (DependencyType.READ_AFTER_READ not in dep_types))
+    expect(not (DependencyType.WRITE_AFTER_READ not in dep_types))
+    expect(not (DependencyType.WRITE_AFTER_WRITE not in dep_types))
 
     chain = analyzer.get_dependency_chain(0x1000)
-    assert chain[0] == 0x1000
-    assert 0x1004 in chain
+    expect(chain[0] == _EXPECTED_CHAIN_0_4096)
+    expect(not (_EXPECTED_CHAIN_4100 not in chain))
 
     dot = analyzer.to_dot()
-    assert "color=red" in dot
-    assert "color=blue" in dot
-    assert "color=green" in dot
-    assert "color=gray" in dot
+    expect(not ("color=red" not in dot))
+    expect(not ("color=blue" not in dot))
+    expect(not ("color=green" not in dot))
+    expect(not ("color=gray" not in dot))
 
 
 def test_dependency_operand_parsing_variants():
     analyzer = DependencyAnalyzer()
 
     defines, uses = analyzer._parse_operands({"disasm": "push rax"})
-    assert "rsp" in defines
-    assert "rsp" in uses
-    assert "rax" in uses
+    expect(not ("rsp" not in defines))
+    expect(not ("rsp" not in uses))
+    expect(not ("rax" not in uses))
 
     defines, uses = analyzer._parse_operands({"disasm": "pop rbx"})
-    assert "rbx" in defines
-    assert "rsp" in defines
-    assert "rsp" in uses
+    expect(not ("rbx" not in defines))
+    expect(not ("rsp" not in defines))
+    expect(not ("rsp" not in uses))
 
     defines, uses = analyzer._parse_operands({"disasm": "call rax"})
-    assert "rax" in defines
-    assert "rdi" in uses
+    expect(not ("rax" not in defines))
+    expect(not ("rdi" not in uses))
 
     defines, uses = analyzer._parse_operands({"disasm": "cmp rax, rbx"})
-    assert "rax" in uses
-    assert "rbx" in uses
+    expect(not ("rax" not in uses))
+    expect(not ("rbx" not in uses))
 
     defines, uses = analyzer._parse_operands({"disasm": "mov rax, [rbp-0x8]"})
-    assert "rax" in defines
-    assert "rbp" not in uses
+    expect(not ("rax" not in defines))
+    expect("rbp" not in uses)

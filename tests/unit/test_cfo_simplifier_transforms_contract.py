@@ -13,6 +13,10 @@ from r2morph.devirtualization.cfo_simplifier_transforms import (
     resolve_indirect_jumps,
     simplify_dispatcher_flattening,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CALCULATE_COMPLEXITY_SIMPLIFIER_4 = 4
+_EXPECTED_SIMPLIFIER_BLOCKS_12288 = 0x3000
 
 
 def _block(
@@ -66,18 +70,18 @@ def test_cfo_simplifier_transform_helpers_apply_expected_changes() -> None:
     dispatcher = simplifier.dispatchers[0]
     analyze_dispatch_targets(simplifier, dispatcher)
     edges = reconstruct_control_flow(simplifier, dispatcher)
-    assert (0x1000, 0x2000) not in edges
-    assert (0x2000, 0x2000) in edges
-    assert (0x3000, 0x3000) in edges
+    expect((0x1000, 0x2000) not in edges)
+    expect(not ((0x2000, 0x2000) not in edges))
+    expect(not ((0x3000, 0x3000) not in edges))
 
-    assert simplify_dispatcher_flattening(simplifier) is True
-    assert eliminate_opaque_predicates(simplifier) is True
-    assert resolve_indirect_jumps(simplifier) is True
-    assert calculate_complexity(simplifier) == 4
+    expect(not (simplify_dispatcher_flattening(simplifier) is not True))
+    expect(not (eliminate_opaque_predicates(simplifier) is not True))
+    expect(not (resolve_indirect_jumps(simplifier) is not True))
+    expect(calculate_complexity(simplifier) == _EXPECTED_CALCULATE_COMPLEXITY_SIMPLIFIER_4)
 
-    assert simplifier.blocks[0x1000].instructions[0]["opcode"] == "nop"
-    assert simplifier.blocks[0x1000].instructions[1]["opcode"] == "jmp"
-    assert simplifier.blocks[0x1000].instructions[2]["opcode"] == "jmp 0x3000"
+    expect(simplifier.blocks[4096].instructions[0]["opcode"] == "nop")
+    expect(simplifier.blocks[4096].instructions[1]["opcode"] == "jmp")
+    expect(simplifier.blocks[4096].instructions[2]["opcode"] == "jmp 0x3000")
 
 
 def test_cfo_simplifier_transform_helpers_remove_unreachable_blocks() -> None:
@@ -92,5 +96,5 @@ def test_cfo_simplifier_transform_helpers_remove_unreachable_blocks() -> None:
     simplifier.cfg = nx.DiGraph()
     simplifier.cfg.add_edges_from([(0x1000, 0x2000)])
 
-    assert remove_fake_control_flow(simplifier) is True
-    assert 0x3000 not in simplifier.blocks
+    expect(not (remove_fake_control_flow(simplifier) is not True))
+    expect(_EXPECTED_SIMPLIFIER_BLOCKS_12288 not in simplifier.blocks)

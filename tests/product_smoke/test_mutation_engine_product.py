@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import importlib
 import importlib.util
 import json
-import subprocess
 import sys
 from pathlib import Path
 
@@ -13,6 +13,14 @@ from r2morph.core.engine_run import EngineRunOptions
 from r2morph.mutations import NopInsertionPass
 from r2morph.mutations.base import MutationPass
 from r2morph.validation import BinaryValidator
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+from tests.utils.process import run_command
+
+_EXPECTED_LEN_RESULT_TEST_CASES_2 = 2
+_EXPECTED_PAYLOAD_A_CONFIG_SEED_2026 = 2026
+_EXPECTED_PAYLOAD_CONFIG_SEED_1337 = 1337
+
 
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
@@ -29,15 +37,15 @@ class _ForcedRollbackPass(MutationPass):
 
     def apply(self, binary):
         functions = binary.get_functions()
-        assert functions
+        expect(functions)
         func_addr = functions[0].get("offset", functions[0].get("addr", 0))
         instructions = binary.get_function_disasm(func_addr)
-        assert instructions
+        expect(instructions)
         insn = instructions[0]
         addr = insn.get("addr", 0)
         size = insn.get("size", 1)
         original = binary.read_bytes(addr, size)
-        assert binary.write_bytes(addr, original)
+        expect(binary.write_bytes(addr, original))
         self._record_mutation(
             function_address=func_addr,
             start_address=addr,
@@ -66,22 +74,27 @@ def test_product_mutate_generates_stable_report(stable_elf_binary: Path, tmp_pat
         result = engine.run(EngineRunOptions(validation_mode="structural", report_path=report))
         engine.save(output)
 
-    assert output.exists()
-    assert report.exists()
-    assert result["validation"]["all_passed"] in {True, False}
+    expect(output.exists())
+    expect(report.exists())
+    expect(not (result["validation"]["all_passed"] not in {True, False}))
 
     payload = json.loads(report.read_text(encoding="utf-8"))
-    assert set(payload.keys()) >= {
-        "input",
-        "output",
-        "passes",
-        "mutations",
-        "validation",
-        "summary",
-        "config",
-        "support_matrix",
-    }
-    assert payload["support_matrix"]["stable_mutations"] == ["nop", "substitute", "register"]
+    expect(
+        not (
+            set(payload.keys())
+            < {
+                "input",
+                "output",
+                "passes",
+                "mutations",
+                "validation",
+                "summary",
+                "config",
+                "support_matrix",
+            }
+        )
+    )
+    expect(payload["support_matrix"]["stable_mutations"] == ["nop", "substitute", "register"])
 
 
 @pytest.mark.slow
@@ -101,15 +114,15 @@ def test_product_symbolic_validation_report_is_explicit(
         result = engine.run(EngineRunOptions(validation_mode="symbolic", report_path=report))
         engine.save(output)
 
-    assert report.exists()
-    assert result["validation_mode"] == "symbolic"
+    expect(report.exists())
+    expect(result["validation_mode"] == "symbolic")
 
     payload = json.loads(report.read_text(encoding="utf-8"))
     symbolic = payload["validation"]["symbolic"]
-    assert symbolic["requested"] is True
-    assert isinstance(symbolic["statuses"], list)
-    assert symbolic["statuses"]
-    assert symbolic["statuses"][0]["pass_name"] == "ForcedRollback"
+    expect(not (symbolic["requested"] is not True))
+    expect(isinstance(symbolic["statuses"], list))
+    expect(symbolic["statuses"])
+    expect(symbolic["statuses"][0][MUTATION_NAME_KEY] == "ForcedRollback")
 
 
 @pytest.mark.slow
@@ -127,12 +140,12 @@ def test_product_symbolic_report_keeps_mutation_level_metadata(
         engine.add_mutation(_ForcedRollbackPass())
         result = engine.run(EngineRunOptions(validation_mode="symbolic", report_path=report))
 
-    assert result["validation_mode"] == "symbolic"
+    expect(result["validation_mode"] == "symbolic")
     payload = json.loads(report.read_text(encoding="utf-8"))
-    assert payload["mutations"]
+    expect(payload["mutations"])
     mutation = payload["mutations"][0]
-    assert mutation["metadata"]["symbolic_requested"] is True
-    assert "symbolic_status" in mutation["metadata"]
+    expect(not (mutation["metadata"]["symbolic_requested"] is not True))
+    expect(not ("symbolic_status" not in mutation["metadata"]))
 
 
 @pytest.mark.slow
@@ -156,7 +169,7 @@ def test_product_cli_accepts_each_stable_pass(
     output = tmp_path / f"{mutation}.bin"
     report = tmp_path / f"{mutation}.report.json"
 
-    result = subprocess.run(
+    result = run_command(
         [
             sys.executable,
             "-m",
@@ -177,14 +190,14 @@ def test_product_cli_accepts_each_stable_pass(
         timeout=60,
     )
 
-    assert result.returncode == 0
-    assert output.exists()
-    assert report.exists()
+    expect(result.returncode == 0)
+    expect(output.exists())
+    expect(report.exists())
 
     payload = json.loads(report.read_text(encoding="utf-8"))
-    assert payload["config"]["seed"] == 1337
-    assert payload["summary"]["passes_run"] == 1
-    assert expected_pass in payload["passes"]
+    expect(payload["config"]["seed"] == _EXPECTED_PAYLOAD_CONFIG_SEED_1337)
+    expect(payload["summary"]["passes_run"] == 1)
+    expect(not (expected_pass not in payload["passes"]))
 
 
 def _normalize_passes_for_comparison(passes: dict) -> dict:
@@ -241,36 +254,37 @@ def test_product_seed_is_reproducible_for_stable_pass(
         "nop",
     ]
 
-    first = subprocess.run(
+    first = run_command(
         [*base_cmd, "-o", str(out_a), "--report", str(report_a)],
         capture_output=True,
         text=True,
         timeout=60,
     )
-    second = subprocess.run(
+    second = run_command(
         [*base_cmd, "-o", str(out_b), "--report", str(report_b)],
         capture_output=True,
         text=True,
         timeout=60,
     )
 
-    assert first.returncode == 0
-    assert second.returncode == 0
+    expect(first.returncode == 0)
+    expect(second.returncode == 0)
 
     payload_a = json.loads(report_a.read_text(encoding="utf-8"))
     payload_b = json.loads(report_b.read_text(encoding="utf-8"))
 
-    assert payload_a["config"]["seed"] == 2026
-    assert _normalize_mutations_for_comparison(payload_a["mutations"]) == _normalize_mutations_for_comparison(
-        payload_b["mutations"]
+    expect(payload_a["config"]["seed"] == _EXPECTED_PAYLOAD_A_CONFIG_SEED_2026)
+    expect(
+        _normalize_mutations_for_comparison(payload_a["mutations"])
+        == _normalize_mutations_for_comparison(payload_b["mutations"])
     )
-    assert _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(
-        payload_b["passes"]
+    expect(
+        _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(payload_b["passes"])
     )
 
     out_a_bytes = out_a.read_bytes()
     out_b_bytes = out_b.read_bytes()
-    assert out_a_bytes == out_b_bytes, "Binary output should be byte-identical for same seed"
+    expect(out_a_bytes == out_b_bytes, "Binary output should be byte-identical for same seed")
 
 
 @pytest.mark.slow
@@ -303,36 +317,39 @@ def test_product_seed_is_reproducible_for_all_stable_passes(
         mutation,
     ]
 
-    first = subprocess.run(
+    first = run_command(
         [*base_cmd, "-o", str(out_a), "--report", str(report_a)],
         capture_output=True,
         text=True,
         timeout=60,
     )
-    second = subprocess.run(
+    second = run_command(
         [*base_cmd, "-o", str(out_b), "--report", str(report_b)],
         capture_output=True,
         text=True,
         timeout=60,
     )
 
-    assert first.returncode == 0, f"First run failed: {first.stderr}"
-    assert second.returncode == 0, f"Second run failed: {second.stderr}"
+    expect(first.returncode == 0, f"First run failed: {first.stderr}")
+    expect(second.returncode == 0, f"Second run failed: {second.stderr}")
 
     payload_a = json.loads(report_a.read_text(encoding="utf-8"))
     payload_b = json.loads(report_b.read_text(encoding="utf-8"))
 
-    assert payload_a["config"]["seed"] == seed
-    assert _normalize_mutations_for_comparison(payload_a["mutations"]) == _normalize_mutations_for_comparison(
-        payload_b["mutations"]
-    ), f"Mutations differ for {mutation}"
-    assert _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(
-        payload_b["passes"]
-    ), f"Passes differ for {mutation}"
+    expect(payload_a["config"]["seed"] == seed)
+    expect(
+        _normalize_mutations_for_comparison(payload_a["mutations"])
+        == _normalize_mutations_for_comparison(payload_b["mutations"]),
+        f"Mutations differ for {mutation}",
+    )
+    expect(
+        _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(payload_b["passes"]),
+        f"Passes differ for {mutation}",
+    )
 
     out_a_bytes = out_a.read_bytes()
     out_b_bytes = out_b.read_bytes()
-    assert out_a_bytes == out_b_bytes, f"Binary output should be byte-identical for {mutation} with same seed"
+    expect(out_a_bytes == out_b_bytes, f"Binary output should be byte-identical for {mutation} with same seed")
 
 
 @pytest.mark.slow
@@ -366,36 +383,39 @@ def test_product_seed_is_reproducible_for_combined_stable_passes(
         "register",
     ]
 
-    first = subprocess.run(
+    first = run_command(
         [*base_cmd, "-o", str(out_a), "--report", str(report_a)],
         capture_output=True,
         text=True,
         timeout=120,
     )
-    second = subprocess.run(
+    second = run_command(
         [*base_cmd, "-o", str(out_b), "--report", str(report_b)],
         capture_output=True,
         text=True,
         timeout=120,
     )
 
-    assert first.returncode == 0, f"First run failed: {first.stderr}"
-    assert second.returncode == 0, f"Second run failed: {second.stderr}"
+    expect(first.returncode == 0, f"First run failed: {first.stderr}")
+    expect(second.returncode == 0, f"Second run failed: {second.stderr}")
 
     payload_a = json.loads(report_a.read_text(encoding="utf-8"))
     payload_b = json.loads(report_b.read_text(encoding="utf-8"))
 
-    assert payload_a["config"]["seed"] == seed
-    assert _normalize_mutations_for_comparison(payload_a["mutations"]) == _normalize_mutations_for_comparison(
-        payload_b["mutations"]
-    ), "Mutations differ for combined passes"
-    assert _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(
-        payload_b["passes"]
-    ), "Passes differ for combined passes"
+    expect(payload_a["config"]["seed"] == seed)
+    expect(
+        _normalize_mutations_for_comparison(payload_a["mutations"])
+        == _normalize_mutations_for_comparison(payload_b["mutations"]),
+        "Mutations differ for combined passes",
+    )
+    expect(
+        _normalize_passes_for_comparison(payload_a["passes"]) == _normalize_passes_for_comparison(payload_b["passes"]),
+        "Passes differ for combined passes",
+    )
 
     out_a_bytes = out_a.read_bytes()
     out_b_bytes = out_b.read_bytes()
-    assert out_a_bytes == out_b_bytes, "Binary output should be byte-identical for combined passes with same seed"
+    expect(out_a_bytes == out_b_bytes, "Binary output should be byte-identical for combined passes with same seed")
 
 
 @pytest.mark.slow
@@ -419,9 +439,9 @@ def test_product_runtime_validation_with_corpus(
     validator.load_test_cases(stable_runtime_corpus)
     result = validator.validate(stable_elf_binary, output)
 
-    assert len(result.test_cases) == 2
-    assert result.compared_signals["stdout"] is True
-    assert result.similarity_score >= 0.0
+    expect(len(result.test_cases) == _EXPECTED_LEN_RESULT_TEST_CASES_2)
+    expect(not (result.compared_signals["stdout"] is not True))
+    expect(not (result.similarity_score < 0.0))
 
 
 @pytest.mark.slow
@@ -441,7 +461,7 @@ def test_product_cli_validate_with_canonical_corpus(
         engine.run(EngineRunOptions(validation_mode="structural"))
         engine.save(output)
 
-    validate_result = subprocess.run(
+    validate_result = run_command(
         [
             sys.executable,
             "-m",
@@ -457,9 +477,9 @@ def test_product_cli_validate_with_canonical_corpus(
         timeout=60,
     )
 
-    assert validate_result.returncode in {0, 1}
-    assert '"test_cases"' in validate_result.stdout
-    assert '"description": "default-exec"' in validate_result.stdout
+    expect(not (validate_result.returncode not in {0, 1}))
+    expect(not ('"test_cases"' not in validate_result.stdout))
+    expect(not ('"description": "default-exec"' not in validate_result.stdout))
 
 
 @pytest.mark.slow
@@ -470,7 +490,9 @@ def test_product_fail_fast_rolls_back_invalid_pass(
     if not stable_elf_binary.exists():
         pytest.skip("Stable ELF fixture not available")
 
-    from tests._doubles.failing_validation_manager import FailingValidationManager
+    failing_validation_manager = importlib.import_module(
+        "tests._doubles.failing_validation_manager"
+    ).FailingValidationManager
 
     output = tmp_path / "rolled_back.bin"
 
@@ -482,13 +504,13 @@ def test_product_fail_fast_rolls_back_invalid_pass(
                 EngineRunOptions(
                     validation_mode="structural",
                     rollback_policy="fail-fast",
-                    validation_manager=FailingValidationManager(),
+                    validation_manager=failing_validation_manager(),
                 )
             )
         engine.save(output)
 
-    assert output.exists()
-    assert output.read_bytes() == stable_elf_binary.read_bytes()
+    expect(output.exists())
+    expect(output.read_bytes() == stable_elf_binary.read_bytes())
 
 
 @pytest.mark.slow
@@ -499,7 +521,9 @@ def test_product_skip_invalid_pass_reports_discarded_mutations(
     if not stable_elf_binary.exists():
         pytest.skip("Stable ELF fixture not available")
 
-    from tests._doubles.failing_validation_manager import FailingValidationManager
+    failing_validation_manager = importlib.import_module(
+        "tests._doubles.failing_validation_manager"
+    ).FailingValidationManager
 
     report = tmp_path / "rollback.report.json"
 
@@ -510,18 +534,18 @@ def test_product_skip_invalid_pass_reports_discarded_mutations(
             EngineRunOptions(
                 validation_mode="structural",
                 rollback_policy="skip-invalid-pass",
-                validation_manager=FailingValidationManager(),
+                validation_manager=failing_validation_manager(),
                 report_path=report,
             )
         )
 
-    assert result["rolled_back_passes"] == 1
-    assert result["discarded_mutations"] == 1
-    assert result["pass_results"]["ForcedRollback"]["rollback_reason"] == "validation_failed"
+    expect(result["rolled_back_passes"] == 1)
+    expect(result["discarded_mutations"] == 1)
+    expect(result["pass_results"]["ForcedRollback"]["rollback_reason"] == "validation_failed")
 
     payload = json.loads(report.read_text(encoding="utf-8"))
-    assert payload["summary"]["rolled_back_passes"] == 1
-    assert payload["summary"]["discarded_mutations"] == 1
+    expect(payload["summary"]["rolled_back_passes"] == 1)
+    expect(payload["summary"]["discarded_mutations"] == 1)
 
 
 @pytest.mark.slow
@@ -532,7 +556,7 @@ def test_cli_mutate_validate_report_flow(stable_elf_binary: Path, tmp_path: Path
     output = tmp_path / "cli_mutated.bin"
     report = tmp_path / "cli_mutated.report.json"
 
-    mutate_result = subprocess.run(
+    mutate_result = run_command(
         [
             sys.executable,
             "-m",
@@ -550,11 +574,11 @@ def test_cli_mutate_validate_report_flow(stable_elf_binary: Path, tmp_path: Path
         text=True,
         timeout=60,
     )
-    assert mutate_result.returncode == 0
-    assert output.exists()
-    assert report.exists()
+    expect(mutate_result.returncode == 0)
+    expect(output.exists())
+    expect(report.exists())
 
-    validate_result = subprocess.run(
+    validate_result = run_command(
         [
             sys.executable,
             "-m",
@@ -567,10 +591,10 @@ def test_cli_mutate_validate_report_flow(stable_elf_binary: Path, tmp_path: Path
         text=True,
         timeout=60,
     )
-    assert validate_result.returncode in {0, 1}
-    assert '"similarity_score"' in validate_result.stdout
+    expect(not (validate_result.returncode not in {0, 1}))
+    expect(not ('"similarity_score"' not in validate_result.stdout))
 
-    report_result = subprocess.run(
+    report_result = run_command(
         [
             sys.executable,
             "-m",
@@ -582,5 +606,5 @@ def test_cli_mutate_validate_report_flow(stable_elf_binary: Path, tmp_path: Path
         text=True,
         timeout=30,
     )
-    assert report_result.returncode == 0
-    assert '"support_matrix"' in report_result.stdout
+    expect(report_result.returncode == 0)
+    expect(not ('"support_matrix"' not in report_result.stdout))

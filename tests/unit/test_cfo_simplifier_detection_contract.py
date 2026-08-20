@@ -12,6 +12,7 @@ from r2morph.devirtualization.cfo_simplifier_detection import (
     detect_switch_case_obfuscation,
 )
 from r2morph.devirtualization.cfo_simplifier_models import CFOPattern, ControlFlowBlock
+from tests.utils.assertions import expect
 
 
 def _block(
@@ -47,16 +48,16 @@ def test_detection_helpers_identify_expected_patterns() -> None:
         0x5000: _block(address=0x5000, instructions=[{"opcode": "call [rbx]", "operands": []}]),
     }
 
-    assert detect_dispatcher_flattening(simplifier) is True
-    assert detect_opaque_predicates(simplifier) is True
-    assert detect_indirect_jumps(simplifier) is True
-    assert detect_switch_case_obfuscation(simplifier) is True
+    expect(not (detect_dispatcher_flattening(simplifier) is not True))
+    expect(not (detect_opaque_predicates(simplifier) is not True))
+    expect(not (detect_indirect_jumps(simplifier) is not True))
+    expect(not (detect_switch_case_obfuscation(simplifier) is not True))
 
     patterns = detect_obfuscation_patterns(simplifier)
-    assert CFOPattern.DISPATCHER_FLATTENING in patterns
-    assert CFOPattern.OPAQUE_PREDICATES in patterns
-    assert CFOPattern.INDIRECT_JUMPS in patterns
-    assert CFOPattern.SWITCH_CASE_OBFUSCATION in patterns
+    expect(not (CFOPattern.DISPATCHER_FLATTENING not in patterns))
+    expect(not (CFOPattern.OPAQUE_PREDICATES not in patterns))
+    expect(not (CFOPattern.INDIRECT_JUMPS not in patterns))
+    expect(not (CFOPattern.SWITCH_CASE_OBFUSCATION not in patterns))
 
 
 def test_detection_helpers_detect_fake_control_flow_when_cfg_has_unreachable_nodes() -> None:
@@ -71,4 +72,4 @@ def test_detection_helpers_detect_fake_control_flow_when_cfg_has_unreachable_nod
     simplifier.cfg = nx.DiGraph()
     simplifier.cfg.add_edges_from([(0x1000, 0x2000)])
 
-    assert detect_fake_control_flow(simplifier) is True
+    expect(not (detect_fake_control_flow(simplifier) is not True))

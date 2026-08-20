@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import RelocationManager
+from tests.utils.assertions import expect
 
 
 def test_relocation_manager_shift_code_block_zero(tmp_path: Path):
@@ -27,7 +28,7 @@ def test_relocation_manager_shift_code_block_zero(tmp_path: Path):
 
         # Shift by 0 to exercise path without moving content
         ok = manager.shift_code_block(func_addr, 8, 0)
-        assert ok is True or ok is False
+        expect(ok is True or ok is False)
 
         space = manager.calculate_space_needed(func_addr, 4)
-        assert space is True or space is False
+        expect(space is True or space is False)

@@ -19,8 +19,10 @@ from __future__ import annotations
 
 import json
 import os
-import subprocess
 import sys
+
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
 
 _PROBE = """
 import json
@@ -43,15 +45,16 @@ print(json.dumps([(orig, subst) for _insn, orig, subst in candidates]))
 
 
 def _run_with_hash_seed(hash_seed: str) -> str:
-    result = subprocess.run(
+    result = run_command(
         [sys.executable, "-c", _PROBE],
         capture_output=True,
         text=True,
         timeout=60,
         env={**os.environ, "PYTHONHASHSEED": hash_seed},
     )
-    assert result.returncode == 0, (
-        f"probe failed (PYTHONHASHSEED={hash_seed})\n" f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}"
+    expect(
+        result.returncode == 0,
+        f"probe failed (PYTHONHASHSEED={hash_seed})\n" f"stdout:\n{result.stdout}\nstderr:\n{result.stderr}",
     )
     return result.stdout.strip()
 
@@ -60,9 +63,10 @@ def test_candidate_selection_is_reproducible_across_hash_seeds() -> None:
     outputs = {hs: _run_with_hash_seed(hs) for hs in ("0", "1", "42", "12345")}
 
     first = next(iter(outputs.values()))
-    assert json.loads(first), f"probe produced no candidates: {first!r}"
+    expect(json.loads(first), f"probe produced no candidates: {first!r}")
 
     distinct = set(outputs.values())
-    assert len(distinct) == 1, (
-        "DataFlowMutation candidate selection is not reproducible across " f"PYTHONHASHSEED values: {outputs}"
+    expect(
+        len(distinct) == 1,
+        "DataFlowMutation candidate selection is not reproducible across " f"PYTHONHASHSEED values: {outputs}",
     )

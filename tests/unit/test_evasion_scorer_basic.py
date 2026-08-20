@@ -3,6 +3,12 @@ from pathlib import Path
 import pytest
 
 from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
+from tests.utils.assertions import expect
+
+_EXPECTED_0_0_100_0 = 100.0
+_EXPECTED_0_0_100_0_2 = 100.0
+_EXPECTED_SCORER_SCORE_HASH_CHANGE_ORIGINAL_MORPHED_100_0 = 100.0
+_EXPECTED_SIGNATURE_SCORE_100_0 = 100.0
 
 
 def test_evasion_score_string_formatting():
@@ -15,11 +21,11 @@ def test_evasion_score_string_formatting():
         details={"hash_changed": True},
     )
     text = str(score)
-    assert "Evasion Score" in text
-    assert "Hash Change" in text
-    assert "Entropy" in text
-    assert "Structure" in text
-    assert "Signature" in text
+    expect(not ("Evasion Score" not in text))
+    expect(not ("Hash Change" not in text))
+    expect(not ("Entropy" not in text))
+    expect(not ("Structure" not in text))
+    expect(not ("Signature" not in text))
 
 
 def test_evasion_scorer_hash_entropy_signature_scores(tmp_path: Path):
@@ -31,14 +37,14 @@ def test_evasion_scorer_hash_entropy_signature_scores(tmp_path: Path):
     original.write_bytes(b"\x00" * 128)
     morphed.write_bytes(b"\x01" * 128)
 
-    assert scorer._score_hash_change(original, morphed) == 100.0
+    expect(scorer._score_hash_change(original, morphed) == _EXPECTED_SCORER_SCORE_HASH_CHANGE_ORIGINAL_MORPHED_100_0)
 
     entropy_score = scorer._score_entropy(original, morphed)
-    assert 0.0 <= entropy_score <= 100.0
+    expect(0.0 <= entropy_score <= _EXPECTED_0_0_100_0)
 
     signature_score = scorer._score_signatures(original, morphed)
-    assert signature_score >= 0.0
-    assert signature_score <= 100.0
+    expect(not (signature_score < 0.0))
+    expect(not (signature_score > _EXPECTED_SIGNATURE_SCORE_100_0))
 
 
 def test_evasion_scorer_structure_score_with_real_binary(tmp_path: Path):
@@ -53,7 +59,7 @@ def test_evasion_scorer_structure_score_with_real_binary(tmp_path: Path):
 
     scorer = EvasionScorer()
     structure_score = scorer._score_structure(original, morphed)
-    assert 0.0 <= structure_score <= 100.0
+    expect(0.0 <= structure_score <= _EXPECTED_0_0_100_0_2)
 
 
 def test_evasion_scorer_recommendations_thresholds():
@@ -67,4 +73,4 @@ def test_evasion_scorer_recommendations_thresholds():
         details={},
     )
     recommendations = scorer.recommend_improvements(score)
-    assert any("Low evasion score" in rec or "Low evasion" in rec for rec in recommendations)
+    expect(any("Low evasion score" in rec or "Low evasion" in rec for rec in recommendations))

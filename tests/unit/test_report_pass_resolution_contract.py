@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_pass_resolution import resolve_only_pass_view
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 def test_resolve_only_pass_view_uses_summary_fallbacks() -> None:
@@ -17,12 +19,12 @@ def test_resolve_only_pass_view_uses_summary_fallbacks() -> None:
         summary=summary,
         filtered_summary=filtered_summary,
         pass_results={"alpha": {}},
-        pass_name="alpha",
+        **{MUTATION_NAME_KEY: "alpha"},
     )
 
-    assert symbolic is not None
-    assert symbolic["severity"] == "high"
-    assert evidence is not None
-    assert context is not None
-    assert context["role"] == "requested-mode"
-    assert region is None
+    expect(symbolic is not None)
+    expect(symbolic["severity"] == "high")
+    expect(evidence is not None)
+    expect(context is not None)
+    expect(context["role"] == "requested-mode")
+    expect(not (region is not None))

@@ -10,6 +10,12 @@ from r2morph.platform.pe_handler_parsing import (
     parse_pe_section_entry,
     read_pe_header,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_COFF_NUM_SECTIONS_3 = 3
+_EXPECTED_OPT_ENTRY_POINT_4096 = 0x1000
+_EXPECTED_SEC_SIZE_4096 = 0x1000
+
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 _PE_BINARY = _REPO_ROOT / "fixtures" / "dataset" / "pe_x86_64.exe"
@@ -75,12 +81,12 @@ def test_pe_handler_parsing_round_trip() -> None:
     sec = parse_pe_section_entry(section)
     header = read_pe_header(_PE_BINARY)
 
-    assert coff["num_sections"] == 3
-    assert opt["entry_point"] == 0x1000
-    assert sec["name"] == ".text"
-    assert sec["size"] == 0x1000
-    assert header is not None
-    assert header["checksum_offset"] == header["optional_header_offset"] + 64
-    assert get_checksum_offset(_PE_BINARY) == header["checksum_offset"]
-    assert calculate_pe_checksum(_PE_BINARY) >= 0
-    assert len(get_sections_fallback(_PE_BINARY)) >= 1
+    expect(coff["num_sections"] == _EXPECTED_COFF_NUM_SECTIONS_3)
+    expect(opt["entry_point"] == _EXPECTED_OPT_ENTRY_POINT_4096)
+    expect(sec["name"] == ".text")
+    expect(sec["size"] == _EXPECTED_SEC_SIZE_4096)
+    expect(header is not None)
+    expect(header["checksum_offset"] == header["optional_header_offset"] + 64)
+    expect(get_checksum_offset(_PE_BINARY) == header["checksum_offset"])
+    expect(not (calculate_pe_checksum(_PE_BINARY) < 0))
+    expect(not (len(get_sections_fallback(_PE_BINARY)) < 1))

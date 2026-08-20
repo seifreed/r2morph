@@ -19,6 +19,7 @@ Usage:
 """
 
 import argparse
+import importlib
 import json
 import sys
 import time
@@ -30,6 +31,8 @@ from r2morph import Binary
 from r2morph.analysis.symbolic import AngrBridge, ConstraintSolver, PathExplorer
 from r2morph.detection import AntiAnalysisBypass, ObfuscationDetector
 from r2morph.devirtualization import BinaryRewriter, CFOSimplifier, IterativeSimplifier, SimplificationStrategy
+
+_EXPECTED_LEN_RESULT_OBFUSCATION_TECHNIQUES_5 = 5
 
 
 def print_banner():
@@ -71,7 +74,7 @@ def analyze_basic_obfuscation(binary: Binary, detector: ObfuscationDetector) -> 
         print(f"\n🎯 Techniques Detected ({len(result.obfuscation_techniques)}):")
         for i, technique in enumerate(result.obfuscation_techniques[:5], 1):
             print(f"   {i}. {technique}")
-        if len(result.obfuscation_techniques) > 5:
+        if len(result.obfuscation_techniques) > _EXPECTED_LEN_RESULT_OBFUSCATION_TECHNIQUES_5:
             print(f"   ... and {len(result.obfuscation_techniques) - 5} more")
 
     return {
@@ -419,6 +422,45 @@ def save_results(results: dict[str, Any], output_dir: Path):
         return False
 
 
+def _execute_analysis(binary_path: Path, output_binary: Path, args: argparse.Namespace) -> dict[str, Any]:
+    results: dict[str, Any] = {}
+    print("\n🚀 Loading binary...")
+    with Binary(str(binary_path)) as binary:
+        binary.analyze()
+        detector = ObfuscationDetector()
+        print("\n" + "=" * 70 + "\n                    PHASE 2 ANALYSIS PIPELINE\n" + "=" * 70)
+        results["basic"] = analyze_basic_obfuscation(binary, detector)
+        results["extended"] = analyze_extended_packers(binary, detector)
+        results["bypass"] = apply_anti_analysis_bypass(binary)
+        if not args.skip_symbolic:
+            has_vm = results["basic"]["basic_result"].get("vm_detected", False)
+            results["symbolic"] = perform_symbolic_analysis(binary, has_vm)
+        results["cfo"] = apply_cfo_simplification(binary)
+        results["iterative"] = perform_iterative_simplification(binary)
+        if not args.skip_rewriting:
+            results["rewriting"] = perform_binary_rewriting(binary, str(output_binary))
+        results["report"] = generate_comprehensive_report(binary, detector, results)
+    return results
+
+
+def _complete_analysis(results: dict[str, Any], output_dir: Path, elapsed: float) -> None:
+    successful = sum(
+        isinstance(result, dict) and result.get("success") and "error" not in result for result in results.values()
+    )
+    print(
+        "\n" + "=" * 70 + "\n                      ANALYSIS COMPLETE\n" + "=" * 70 + "\n"
+        f"⏱️  Total Analysis Time: {elapsed:.1f}s\n"
+        f"✅ Successful Phases: {successful}/{len(results)}"
+    )
+    if save_results(results, output_dir):
+        print(f"📊 Analysis complete! Results saved to {output_dir}")
+    bypass_framework = results.get("bypass", {}).get("bypass_framework")
+    if bypass_framework:
+        print("\n🔧 Restoring environment...")
+        bypass_framework.restore_environment()
+        print("✅ Environment restored")
+
+
 def main():
     """Main analysis function."""
     parser = argparse.ArgumentParser(
@@ -450,79 +492,9 @@ def main():
     print(f"⏱️  Timeout: {args.timeout}s")
 
     start_time = time.time()
-    analysis_results = {}
-
     try:
-        # Load and analyze binary
-        print("\n🚀 Loading binary...")
-        with Binary(str(binary_path)) as binary:
-            binary.analyze()
-
-            # Initialize detector
-            detector = ObfuscationDetector()
-
-            # Phase 2 Analysis Pipeline
-            print("\n" + "=" * 70)
-            print("                    PHASE 2 ANALYSIS PIPELINE")
-            print("=" * 70)
-
-            # 1. Basic obfuscation analysis
-            analysis_results["basic"] = analyze_basic_obfuscation(binary, detector)
-
-            # 2. Extended packer detection
-            analysis_results["extended"] = analyze_extended_packers(binary, detector)
-
-            # 3. Anti-analysis bypass
-            analysis_results["bypass"] = apply_anti_analysis_bypass(binary)
-
-            # 4. Symbolic execution (optional)
-            if not args.skip_symbolic:
-                has_vm = analysis_results["basic"]["basic_result"].get("vm_detected", False)
-                analysis_results["symbolic"] = perform_symbolic_analysis(binary, has_vm)
-
-            # 5. CFO simplification
-            analysis_results["cfo"] = apply_cfo_simplification(binary)
-
-            # 6. Iterative simplification
-            analysis_results["iterative"] = perform_iterative_simplification(binary)
-
-            # 7. Binary rewriting (optional)
-            if not args.skip_rewriting:
-                analysis_results["rewriting"] = perform_binary_rewriting(binary, str(output_binary))
-
-            # 8. Comprehensive report
-            analysis_results["report"] = generate_comprehensive_report(binary, detector, analysis_results)
-
-        # Calculate final statistics
-        end_time = time.time()
-        total_time = end_time - start_time
-
-        print("\n" + "=" * 70)
-        print("                      ANALYSIS COMPLETE")
-        print("=" * 70)
-        print(f"⏱️  Total Analysis Time: {total_time:.1f}s")
-
-        # Success metrics
-        successful_phases = sum(
-            1
-            for phase, result in analysis_results.items()
-            if isinstance(result, dict) and result.get("success") and "error" not in result
-        )
-        total_phases = len(analysis_results)
-
-        print(f"✅ Successful Phases: {successful_phases}/{total_phases}")
-
-        # Save results
-        if save_results(analysis_results, output_dir):
-            print(f"📊 Analysis complete! Results saved to {output_dir}")
-
-        # Cleanup environment if bypass was applied
-        bypass_framework = analysis_results.get("bypass", {}).get("bypass_framework")
-        if bypass_framework:
-            print("\n🔧 Restoring environment...")
-            bypass_framework.restore_environment()
-            print("✅ Environment restored")
-
+        analysis_results = _execute_analysis(binary_path, output_binary, args)
+        _complete_analysis(analysis_results, output_dir, time.time() - start_time)
         return 0
 
     except KeyboardInterrupt:
@@ -531,7 +503,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Analysis failed: {e}")
         if args.verbose:
-            import traceback
+            traceback = importlib.import_module("traceback")
 
             traceback.print_exc()
         return 1

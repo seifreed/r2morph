@@ -5,6 +5,9 @@ from types import SimpleNamespace
 from r2morph.validation import benchmark_suite
 from r2morph.validation.benchmark import ValidationFramework
 from r2morph.validation.benchmark_types import BenchmarkCategory
+from tests.utils.assertions import expect
+
+_EXPECTED_SUMMARY_TOTAL_TESTS_3 = 3
 
 
 class _FakeSample:
@@ -57,8 +60,8 @@ def test_benchmark_suite_execution_helper_runs_all_categories() -> None:
         ),
     )
 
-    assert [result.name for result in results] == ["d:sample", "v:sample", "p:sample"]
-    assert summary["total_tests"] == 3
+    expect([result.name for result in results] == ["d:sample", "v:sample", "p:sample"])
+    expect(summary["total_tests"] == _EXPECTED_SUMMARY_TOTAL_TESTS_3)
 
 
 def test_validation_framework_delegates_suite_execution(tmp_path) -> None:
@@ -67,5 +70,5 @@ def test_validation_framework_delegates_suite_execution(tmp_path) -> None:
 
     summary = framework.run_validation_suite([BenchmarkCategory.DETECTION])
 
-    assert summary["total_tests"] == 1
-    assert len(framework.benchmark_results) == 1
+    expect(summary["total_tests"] == 1)
+    expect(len(framework.benchmark_results) == 1)

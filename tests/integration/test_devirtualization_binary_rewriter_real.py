@@ -5,6 +5,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter import BinaryRewriter, RewriteOperation
+from tests.utils.assertions import expect
 
 
 def test_binary_rewriter_real_rewrite(tmp_path: Path):
@@ -34,16 +35,16 @@ def test_binary_rewriter_real_rewrite(tmp_path: Path):
 
         rewriter = BinaryRewriter(bin_obj)
         added = rewriter.add_patch(patch_addr, ["nop"], RewriteOperation.INSTRUCTION_REPLACE)
-        assert added is True
+        expect(not (added is not True))
 
         output_path = tmp_path / "rewritten.bin"
         result = rewriter.rewrite_binary(str(output_path), preserve_original=False)
 
-    assert result.success is True
-    assert output_path.exists()
+    expect(not (result.success is not True))
+    expect(output_path.exists())
 
 
 def test_binary_rewriter_no_binary_error():
     rewriter = BinaryRewriter(binary=None)
     result = rewriter.rewrite_binary("out.bin", preserve_original=False)
-    assert result.success is False
+    expect(not (result.success is not False))

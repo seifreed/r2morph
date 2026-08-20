@@ -12,6 +12,7 @@ Usage:
     python custom_pass.py input.bin output.bin
 """
 
+import importlib
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,6 +23,9 @@ from r2morph.core.binary import Binary
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.mutations.base import MutationPass, MutationRecord, MutationResult
+
+_EXPECTED_LEN_SYS_ARGV_2 = 2
+_EXPECTED_LEN_SYS_ARGV_2_2 = 2
 
 
 @dataclass
@@ -73,10 +77,10 @@ class CustomNopPass(MutationPass):
         Returns:
             MutationResult with mutation count and records
         """
-        import random
+        randomness = importlib.import_module("r2morph.core").randomness
 
         if self.config.seed is not None:
-            random.seed(self.config.seed)
+            randomness.seed(self.config.seed)
 
         self._records = []
         mutations_applied = 0
@@ -87,7 +91,7 @@ class CustomNopPass(MutationPass):
                 break
 
             # Check if we should insert
-            if random.random() > self.config.probability:
+            if randomness.random() > self.config.probability:
                 continue
 
             # Find safe insertion points
@@ -220,7 +224,7 @@ Pass execution order matters:
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print(f"Usage: {sys.argv[0]} <input.bin> [output.bin]")
         print()
         print("Demonstrates custom mutation passes:")
@@ -231,7 +235,7 @@ def main():
         sys.exit(1)
 
     input_path = Path(sys.argv[1])
-    output_path = Path(sys.argv[2]) if len(sys.argv) > 2 else input_path.with_suffix(".out")
+    output_path = Path(sys.argv[2]) if len(sys.argv) > _EXPECTED_LEN_SYS_ARGV_2_2 else input_path.with_suffix(".out")
 
     if not input_path.exists():
         print(f"Error: Input file not found: {input_path}")

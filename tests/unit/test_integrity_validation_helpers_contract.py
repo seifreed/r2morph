@@ -8,6 +8,7 @@ from r2morph.validation.integrity_validation_helpers import (
     validate_macho_integrity,
     validate_pe_integrity,
 )
+from tests.utils.assertions import expect
 
 
 class _ELFHandler:
@@ -54,15 +55,15 @@ def test_detect_binary_format(tmp_path: Path) -> None:
     macho = tmp_path / "macho.bin"
     macho.write_bytes(b"\xfe\xed\xfa\xce")
 
-    assert detect_binary_format(pe) == "pe"
-    assert detect_binary_format(elf) == "elf"
-    assert detect_binary_format(macho) == "macho"
+    expect(detect_binary_format(pe) == "pe")
+    expect(detect_binary_format(elf) == "elf")
+    expect(detect_binary_format(macho) == "macho")
 
 
 def test_validate_elf_integrity_and_macho_integrity() -> None:
-    assert validate_elf_integrity(_ELFHandler()) == (True, [])
-    assert validate_macho_integrity(_MachOHandler()) == (True, [])
+    expect(validate_elf_integrity(_ELFHandler()) == (True, []))
+    expect(validate_macho_integrity(_MachOHandler()) == (True, []))
 
 
 def test_validate_pe_integrity_delegates() -> None:
-    assert validate_pe_integrity(_PEHandler()) == (True, [])
+    expect(validate_pe_integrity(_PEHandler()) == (True, []))

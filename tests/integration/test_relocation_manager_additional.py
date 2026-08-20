@@ -5,6 +5,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.manager import RelocationManager
+from tests.utils.assertions import expect
 
 
 def test_relocation_manager_space_and_shift(tmp_path: Path):
@@ -30,9 +31,9 @@ def test_relocation_manager_space_and_shift(tmp_path: Path):
 
         manager = RelocationManager(bin_obj)
         has_space = manager.calculate_space_needed(addr, 4)
-        assert isinstance(has_space, bool)
+        expect(isinstance(has_space, bool))
 
         # Shift a small block and verify relocation registered
         shifted = manager.shift_code_block(addr, 4, 4)
-        assert shifted is True
-        assert manager.get_new_address(addr) == addr + 4
+        expect(not (shifted is not True))
+        expect(manager.get_new_address(addr) == addr + 4)

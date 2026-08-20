@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from r2morph.core.parallel_planner import PassDependency
 from r2morph.core.parallel_planner_helpers import build_conflict_pairs, build_execution_stages
+from tests.utils.assertions import expect
 
 
 def test_build_execution_stages_respects_dependencies() -> None:
@@ -10,7 +11,7 @@ def test_build_execution_stages_respects_dependencies() -> None:
 
     stages = build_execution_stages(passes, dependencies)
 
-    assert stages == [["a"], ["b"]]
+    expect(stages == [["a"], ["b"]])
 
 
 def test_build_conflict_pairs_detects_either_side_conflict() -> None:
@@ -19,4 +20,4 @@ def test_build_conflict_pairs_detects_either_side_conflict() -> None:
 
     conflicts = build_conflict_pairs(passes, dependencies)
 
-    assert conflicts == [("a", "b")]
+    expect(conflicts == [("a", "b")])

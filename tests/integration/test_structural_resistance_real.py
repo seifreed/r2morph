@@ -17,6 +17,7 @@ import pytest
 from r2morph.analysis.symbolic.structural_resistance import StructuralResistance, StructuralResistanceProbe
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from tests.utils.assertions import expect
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
 FIXTURE = _DATASET / "elf_vm_shift_x86_64"
@@ -44,7 +45,7 @@ def test_virtualization_raises_structural_resistance(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
+    expect(not (stats["functions_virtualized"] < 1))
 
     original = _measure(FIXTURE)
     if original.total_instructions == 0:
@@ -56,11 +57,13 @@ def test_virtualization_raises_structural_resistance(tmp_path: Path) -> None:
     # dispatch adds an indirect computed goto per handler tail plus the handler
     # labels themselves, so the added branching is counted across both indirect
     # jumps and distinct branch targets.
-    assert virtualized.structural_score > original.structural_score
-    assert virtualized.expansion_ratio > 1.0
-    assert (
-        virtualized.indirect_jumps + virtualized.distinct_branch_targets
-        > original.indirect_jumps + original.distinct_branch_targets
+    expect(not (virtualized.structural_score <= original.structural_score))
+    expect(not (virtualized.expansion_ratio <= 1.0))
+    expect(
+        not (
+            virtualized.indirect_jumps + virtualized.distinct_branch_targets
+            <= original.indirect_jumps + original.distinct_branch_targets
+        )
     )
 
 
@@ -74,7 +77,7 @@ def test_structural_probe_counts_fragmented_executable_payload(tmp_path: Path) -
         binary.save()
     finally:
         binary.close()
-    assert stats["functions_virtualized"] >= 1
+    expect(not (stats["functions_virtualized"] < 1))
 
     binary = Binary(str(mutated))
     binary.open()
@@ -89,5 +92,5 @@ def test_structural_probe_counts_fragmented_executable_payload(tmp_path: Path) -
     finally:
         binary.close()
 
-    assert len(counts) > 1
-    assert measured.total_instructions == sum(counts)
+    expect(not (len(counts) <= 1))
+    expect(measured.total_instructions == sum(counts))

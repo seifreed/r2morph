@@ -6,6 +6,7 @@ from r2morph.devirtualization.iterative_simplifier import (
     SimplificationPhase,
     SimplificationStrategy,
 )
+from tests.utils.assertions import expect
 
 
 def test_iterative_simplifier_sequential():
@@ -19,10 +20,10 @@ def test_iterative_simplifier_sequential():
 
         result = simplifier.simplify(strategy=SimplificationStrategy.CONSERVATIVE)
 
-        assert result.success is True
-        assert SimplificationPhase.ANALYSIS in result.phases_completed
-        assert SimplificationPhase.OPTIMIZATION in result.phases_completed
-        assert SimplificationPhase.VALIDATION in result.phases_completed
+        expect(not (result.success is not True))
+        expect(not (SimplificationPhase.ANALYSIS not in result.phases_completed))
+        expect(not (SimplificationPhase.OPTIMIZATION not in result.phases_completed))
+        expect(not (SimplificationPhase.VALIDATION not in result.phases_completed))
 
 
 def test_iterative_simplifier_parallel_execution():
@@ -36,4 +37,4 @@ def test_iterative_simplifier_parallel_execution():
         simplifier.parallel_execution = True
 
         result = simplifier.simplify(strategy=SimplificationStrategy.ADAPTIVE)
-        assert result.success is True
+        expect(not (result.success is not True))

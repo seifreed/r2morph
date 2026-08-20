@@ -4,6 +4,10 @@ from r2morph.core.parallel_executor_task_policies import (
     resolve_function_address,
     resolve_function_name,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ADDR_4660 = 0x1234
+_EXPECTED_PRIORITY_3 = 3
 
 
 def test_task_policies_resolve_address_name_and_priority() -> None:
@@ -13,9 +17,9 @@ def test_task_policies_resolve_address_name_and_priority() -> None:
     name = resolve_function_name(func, addr)
     priority = build_task_priority([1, 2, 3])
 
-    assert addr == 0x1234
-    assert name == "demo"
-    assert priority == 3
+    expect(addr == _EXPECTED_ADDR_4660)
+    expect(name == "demo")
+    expect(priority == _EXPECTED_PRIORITY_3)
 
 
 def test_task_policy_dependency_inference_uses_known_callers() -> None:
@@ -24,4 +28,4 @@ def test_task_policy_dependency_inference_uses_known_callers() -> None:
 
     deps = infer_task_dependencies(0x3000, call_graph, func_to_task)
 
-    assert deps == [2]
+    expect(deps == [2])

@@ -6,6 +6,9 @@ from pathlib import Path
 import pytest
 
 from r2morph.detection.evasion_scorer import EvasionScore, EvasionScorer
+from tests.utils.assertions import expect
+
+_EXPECTED_0_0_100_0 = 100.0
 
 
 def test_evasion_scorer_on_real_files(tmp_path: Path) -> None:
@@ -25,11 +28,11 @@ def test_evasion_scorer_on_real_files(tmp_path: Path) -> None:
     scorer = EvasionScorer()
     score = scorer.score(original, mutated)
 
-    assert isinstance(score, EvasionScore)
-    assert 0.0 <= score.overall_score <= 100.0
+    expect(isinstance(score, EvasionScore))
+    expect(0.0 <= score.overall_score <= _EXPECTED_0_0_100_0)
 
     recommendations = scorer.recommend_improvements(score)
-    assert recommendations
+    expect(recommendations)
 
 
 def test_evasion_scorer_recommendations_edges() -> None:
@@ -51,5 +54,5 @@ def test_evasion_scorer_recommendations_edges() -> None:
         details={},
     )
 
-    assert any("Excellent" in msg or "✅" in msg for msg in scorer.recommend_improvements(high))
-    assert any("Low evasion" in msg or "🔴" in msg for msg in scorer.recommend_improvements(low))
+    expect(any("Excellent" in msg or "✅" in msg for msg in scorer.recommend_improvements(high)))
+    expect(any("Low evasion" in msg or "🔴" in msg for msg in scorer.recommend_improvements(low)))

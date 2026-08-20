@@ -6,18 +6,21 @@ from r2morph.analysis.call_graph_parsing import (
     extract_call_target,
     is_tail_call,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_EXTRACT_CALL_TARGET_CALL_0X401000_4198400 = 0x401000
 
 
 def test_call_graph_parsing_helpers_classify_and_parse_targets() -> None:
-    assert determine_call_type("sym.imp.printf") == CallType.PLT
-    assert determine_call_type("sub.main") == CallType.DIRECT
-    assert determine_call_type("foo.bar") == CallType.LIBRARY
-    assert determine_call_type("main") == CallType.DIRECT
+    expect(determine_call_type("sym.imp.printf") == CallType.PLT)
+    expect(determine_call_type("sub.main") == CallType.DIRECT)
+    expect(determine_call_type("foo.bar") == CallType.LIBRARY)
+    expect(determine_call_type("main") == CallType.DIRECT)
 
-    assert extract_call_target("call 0x401000") == 0x401000
-    assert extract_call_target("call [rax]") == "indirect:[rax]"
-    assert extract_call_target("call rax") == "indirect:rax"
-    assert extract_call_target("call label") == "label"
-    assert is_tail_call("jmp 0x401000") is True
-    assert is_tail_call("jmp rax") is True
-    assert is_tail_call("call 0x401000") is False
+    expect(extract_call_target("call 0x401000") == _EXPECTED_EXTRACT_CALL_TARGET_CALL_0X401000_4198400)
+    expect(extract_call_target("call [rax]") == "indirect:[rax]")
+    expect(extract_call_target("call rax") == "indirect:rax")
+    expect(extract_call_target("call label") == "label")
+    expect(not (is_tail_call("jmp 0x401000") is not True))
+    expect(not (is_tail_call("jmp rax") is not True))
+    expect(not (is_tail_call("call 0x401000") is not False))

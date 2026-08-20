@@ -6,6 +6,7 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.block_reordering import BlockReorderingPass
+from tests.utils.assertions import expect
 
 
 def test_block_reordering_apply_real(tmp_path: Path) -> None:
@@ -21,6 +22,6 @@ def test_block_reordering_apply_real(tmp_path: Path) -> None:
         pass_obj = BlockReorderingPass(config={"probability": 1.0, "max_functions": 1, "preserve_fallthrough": True})
         result = pass_obj.apply(binary)
 
-    assert result["total_functions"] >= 0
-    assert result["functions_processed"] <= 1
-    assert "mutations_applied" in result
+    expect(not (result["total_functions"] < 0))
+    expect(not (result["functions_processed"] > 1))
+    expect(not ("mutations_applied" not in result))

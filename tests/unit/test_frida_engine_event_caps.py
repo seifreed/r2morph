@@ -10,6 +10,7 @@ handler driven with the message dicts Frida would deliver.
 """
 
 from r2morph.instrumentation.frida_engine import MAX_RUNTIME_EVENTS, FridaEngine
+from tests.utils.assertions import expect
 
 
 def _send(payload_type: str) -> dict:
@@ -23,7 +24,7 @@ def test_anti_analysis_events_are_capped():
     for _ in range(MAX_RUNTIME_EVENTS + overflow):
         engine._on_script_message(_send("anti_debug"), None)
 
-    assert len(engine.anti_analysis_events) == MAX_RUNTIME_EVENTS
+    expect(len(engine.anti_analysis_events) == MAX_RUNTIME_EVENTS)
 
 
 def test_api_calls_capped_but_running_total_preserved():
@@ -35,8 +36,8 @@ def test_api_calls_capped_but_running_total_preserved():
         engine._on_script_message(_send("api_call"), None)
 
     # retained sample is bounded, but the running counter keeps the true total
-    assert len(engine.api_calls) == MAX_RUNTIME_EVENTS
-    assert engine.stats["api_calls_intercepted"] == total
+    expect(len(engine.api_calls) == MAX_RUNTIME_EVENTS)
+    expect(engine.stats["api_calls_intercepted"] == total)
 
 
 def test_memory_accesses_are_capped():
@@ -45,4 +46,4 @@ def test_memory_accesses_are_capped():
     for _ in range(MAX_RUNTIME_EVENTS + 2):
         engine._on_script_message(_send("memory_operation"), None)
 
-    assert len(engine.memory_accesses) == MAX_RUNTIME_EVENTS
+    expect(len(engine.memory_accesses) == MAX_RUNTIME_EVENTS)

@@ -19,12 +19,13 @@ unchanged.
 
 from __future__ import annotations
 
-import random
 import struct
 
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_models import Region
+from tests.utils.assertions import expect
 
 _TARGET_VADDR = 0x1017
 _CAVE_VADDR = 0x500000
@@ -59,29 +60,31 @@ def _map_entry_bytes(blob: bytes) -> bytes:
         if struct.unpack_from("<I", blob, offset)[0] == 1
         and struct.unpack_from("<I", blob, offset + 12)[0] == _TARGET_BYTECODE_OFFSET
     ]
-    assert len(matches) == 1, f"expected exactly one computed-jump map, found {len(matches)}"
+    expect(len(matches) == 1, f"expected exactly one computed-jump map, found {len(matches)}")
     return blob[matches[0] + 4 : matches[0] + 4 + _MAP_ENTRY_SIZE]
 
 
 def test_ijmp_map_entry_emits_map_relative_delta_instead_of_target_address() -> None:
     """The emitted key is ``ijmp_map - target``, so the map holds no absolute address."""
     region = _ijmp_region(_TARGET_VADDR)
-    asm = _interpreter_asm(region, build_region_scheme(region, random.Random(1234)))
-    assert f"  .quad ijmp_map - {_TARGET_VADDR}\n" in asm
+    asm = _interpreter_asm(region, build_region_scheme(region, randomness.Random(1234)))
+    expect(not (f"  .quad ijmp_map - {_TARGET_VADDR}\n" not in asm))
 
 
 def test_ijmp_map_entry_bytes_unchanged_under_uniform_rebase() -> None:
     """Moving the blob and its target by one load base leaves the stored key identical."""
     at_base = _ijmp_region(_TARGET_VADDR)
     rebased = _ijmp_region(_TARGET_VADDR + _REBASE)
-    at_base_blob = build_region_blob(at_base, _CAVE_VADDR, build_region_scheme(at_base, random.Random(1234)))
-    rebased_blob = build_region_blob(rebased, _CAVE_VADDR + _REBASE, build_region_scheme(rebased, random.Random(1234)))
-    assert at_base_blob is not None and rebased_blob is not None
-    assert _map_entry_bytes(at_base_blob) == _map_entry_bytes(rebased_blob)
+    at_base_blob = build_region_blob(at_base, _CAVE_VADDR, build_region_scheme(at_base, randomness.Random(1234)))
+    rebased_blob = build_region_blob(
+        rebased, _CAVE_VADDR + _REBASE, build_region_scheme(rebased, randomness.Random(1234))
+    )
+    expect(at_base_blob is not None and rebased_blob is not None)
+    expect(_map_entry_bytes(at_base_blob) == _map_entry_bytes(rebased_blob))
 
 
 def test_ijmp_handler_normalizes_runtime_target_against_map_address() -> None:
     """The scan negates the runtime target and adds the map's runtime address."""
     region = _ijmp_region(_TARGET_VADDR)
-    asm = _interpreter_asm(region, build_region_scheme(region, random.Random(1234)))
-    assert "  lea r11, [rip+ijmp_map]\n  neg r10\n  add r10, r11\n" in asm
+    asm = _interpreter_asm(region, build_region_scheme(region, randomness.Random(1234)))
+    expect(not ("  lea r11, [rip+ijmp_map]\n  neg r10\n  add r10, r11\n" not in asm))

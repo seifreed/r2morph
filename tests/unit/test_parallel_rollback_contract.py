@@ -8,6 +8,8 @@ from types import SimpleNamespace
 
 from r2morph.core.parallel_planner import PassResult, PassStatus
 from r2morph.core.parallel_rollback import rollback_pass_checkpoint
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 def test_rollback_pass_checkpoint_restores_status_and_checkpoint() -> None:
@@ -18,7 +20,7 @@ def test_rollback_pass_checkpoint_restores_status_and_checkpoint() -> None:
         checkpoint_path.write_bytes(b"after")
 
         result = PassResult(
-            pass_name="alpha",
+            **{MUTATION_NAME_KEY: "alpha"},
             status=PassStatus.COMPLETED,
             checkpoint_path=checkpoint_path,
         )
@@ -28,9 +30,9 @@ def test_rollback_pass_checkpoint_restores_status_and_checkpoint() -> None:
             error=lambda *args, **kwargs: None,
         )
 
-        assert rollback_pass_checkpoint(binary_path=binary_path, result=result, logger=logger)
-        assert result.status is PassStatus.ROLLED_BACK
-        assert binary_path.read_bytes() == b"after"
+        expect(rollback_pass_checkpoint(binary_path=binary_path, result=result, logger=logger))
+        expect(not (result.status is not PassStatus.ROLLED_BACK))
+        expect(binary_path.read_bytes() == b"after")
 
 
 def test_rollback_pass_checkpoint_without_checkpoint_returns_false() -> None:
@@ -40,5 +42,5 @@ def test_rollback_pass_checkpoint_without_checkpoint_returns_false() -> None:
         error=lambda *args, **kwargs: None,
     )
 
-    result = PassResult(pass_name="beta", status=PassStatus.COMPLETED)
-    assert not rollback_pass_checkpoint(binary_path=Path("/tmp/nowhere"), result=result, logger=logger)
+    result = PassResult(**{MUTATION_NAME_KEY: "beta"}, status=PassStatus.COMPLETED)
+    expect(not (rollback_pass_checkpoint(binary_path=Path("test-data/nowhere"), result=result, logger=logger)))

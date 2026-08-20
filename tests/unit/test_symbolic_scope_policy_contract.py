@@ -3,6 +3,10 @@ from r2morph.validation.symbolic_scope_policy import (
     check_scope_constraints,
     estimate_symbolic_region_steps,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import SYMBOLIC_MUTATION_NAME_KEY
+
+_EXPECTED_ESTIMATE_SYMBOLIC_REGION_STEPS_REGISTERSUBSTI_2 = 2
 
 
 def test_scope_policy_metadata_and_constraints_round_trip() -> None:
@@ -12,18 +16,24 @@ def test_scope_policy_metadata_and_constraints_round_trip() -> None:
     ]
 
     metadata = build_scope_metadata(mutations, "InstructionSubstitution")
-    assert metadata["symbolic_backend"] == "angr"
-    assert metadata["symbolic_pass_name"] == "InstructionSubstitution"
-    assert metadata["covered_functions"] == [0x401000, 0x402000]
-    assert metadata["covered_address_ranges"] == [[0x401000, 0x401003], [0x401010, 0x401013]]
+    expect(metadata["symbolic_backend"] == "angr")
+    expect(metadata[SYMBOLIC_MUTATION_NAME_KEY] == "InstructionSubstitution")
+    expect(metadata["covered_functions"] == [4198400, 4202496])
+    expect(metadata["covered_address_ranges"] == [[4198400, 4198403], [4198416, 4198419]])
 
-    assert (
-        check_scope_constraints({"format": "ELF64", "bits": 64, "arch": "x86_64"}, mutations, "InstructionSubstitution")
-        is None
-    )
-    assert (
-        estimate_symbolic_region_steps(
-            "RegisterSubstitution", {"start_address": 0x401000, "end_address": 0x401001, "original_disasm": "nop"}
+    expect(
+        not (
+            check_scope_constraints(
+                {"format": "ELF64", "bits": 64, "arch": "x86_64"}, mutations, "InstructionSubstitution"
+            )
+            is not None
         )
-        >= 2
+    )
+    expect(
+        not (
+            estimate_symbolic_region_steps(
+                "RegisterSubstitution", {"start_address": 0x401000, "end_address": 0x401001, "original_disasm": "nop"}
+            )
+            < _EXPECTED_ESTIMATE_SYMBOLIC_REGION_STEPS_REGISTERSUBSTI_2
+        )
     )

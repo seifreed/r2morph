@@ -7,9 +7,10 @@ from r2morph.detection.obfuscation_detector_models import (
     ObfuscationAnalysisResult as ModelsObfuscationAnalysisResult,
 )
 from r2morph.detection.obfuscation_detector_models import ObfuscationType as ModelsObfuscationType
+from tests.utils.assertions import expect
 
 
 def test_obfuscation_models_are_reexported_from_detection_package():
-    assert PublicObfuscationAnalysisResult is ModelsObfuscationAnalysisResult
-    assert PublicObfuscationType is ModelsObfuscationType
-    assert ObfuscationDetector is not None
+    expect(not (PublicObfuscationAnalysisResult is not ModelsObfuscationAnalysisResult))
+    expect(not (PublicObfuscationType is not ModelsObfuscationType))
+    expect(ObfuscationDetector is not None)

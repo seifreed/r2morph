@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.instrumentation.frida_engine import FRIDA_AVAILABLE, FridaEngine
+from tests.utils.assertions import expect
 
 
 def test_frida_engine_spawn_with_args_and_env() -> None:
@@ -24,7 +25,7 @@ def test_frida_engine_spawn_with_args_and_env() -> None:
     env.update({k: v for k, v in os.environ.items() if k in ("PATH", "HOME")})
 
     result = engine._spawn_process(target, arguments=["1"], environment=env)
-    assert result is None or isinstance(result, int)
+    expect(result is None or isinstance(result, int))
 
 
 def test_frida_engine_find_attach_missing_process() -> None:
@@ -36,4 +37,4 @@ def test_frida_engine_find_attach_missing_process() -> None:
         pytest.skip("Frida device not available")
 
     pid = engine._find_and_attach_process("r2morph_no_such_process_12345")
-    assert pid is None
+    expect(not (pid is not None))

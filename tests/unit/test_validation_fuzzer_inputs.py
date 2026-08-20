@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from r2morph.validation.fuzzer import FuzzResult, MutationFuzzer
+from tests.utils.assertions import expect
+
+_EXPECTED_RESULT_SUCCESS_RATE_70_0 = 70.0
 
 
 def test_fuzz_result_str_and_success_rate() -> None:
@@ -13,10 +16,10 @@ def test_fuzz_result_str_and_success_rate() -> None:
         validation_results=[],
     )
 
-    assert result.success_rate == 70.0
+    expect(result.success_rate == _EXPECTED_RESULT_SUCCESS_RATE_70_0)
     text = str(result)
-    assert "Fuzz Results" in text
-    assert "Passed: 7" in text
+    expect(not ("Fuzz Results" not in text))
+    expect(not ("Passed: 7" not in text))
 
 
 def test_fuzzer_input_generators() -> None:
@@ -28,8 +31,8 @@ def test_fuzzer_input_generators() -> None:
     structured_input = fuzzer._generate_input("structured")
     unknown_input = fuzzer._generate_input("unknown")
 
-    assert isinstance(random_input, str)
-    assert isinstance(ascii_input, str)
-    assert isinstance(binary_input, str)
-    assert isinstance(structured_input, str)
-    assert unknown_input == ""
+    expect(isinstance(random_input, str))
+    expect(isinstance(ascii_input, str))
+    expect(isinstance(binary_input, str))
+    expect(isinstance(structured_input, str))
+    expect(unknown_input == "")

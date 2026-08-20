@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from r2morph.mutations.api_hashing import APIHashingPass
 from tests._doubles.in_memory_api_hashing_sparse_binary import InMemoryAPIHashingSparseBinary
+from tests.utils.assertions import expect
 
 CONFIG = {"api_list": ["MyApi"]}
 
@@ -29,8 +30,8 @@ def test_far_cave_stub_jump_is_skipped_not_overflowerror() -> None:
 
     result = p.apply(binary)  # pre-fix: raises OverflowError at jmp_off
 
-    assert result["imports_hashed"] == 0
-    assert p.get_records() == []
+    expect(result["imports_hashed"] == 0)
+    expect(p.get_records() == [])
 
 
 def test_far_call_site_offset_is_skipped_not_overflowerror() -> None:
@@ -49,8 +50,8 @@ def test_far_call_site_offset_is_skipped_not_overflowerror() -> None:
 
     result = p.apply(binary)  # pre-fix: raises OverflowError at new_off
 
-    assert result["imports_hashed"] == 0
-    assert p.get_records() == []
+    expect(result["imports_hashed"] == 0)
+    expect(p.get_records() == [])
 
 
 def test_in_range_offsets_still_hash_import() -> None:
@@ -69,5 +70,5 @@ def test_in_range_offsets_still_hash_import() -> None:
 
     result = p.apply(binary)
 
-    assert result["imports_hashed"] == 1
-    assert len(p.get_records()) == 1
+    expect(result["imports_hashed"] == 1)
+    expect(len(p.get_records()) == 1)

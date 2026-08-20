@@ -7,6 +7,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.utils.assertions import expect
+
 if importlib.util.find_spec("r2pipe") is None:
     pytest.skip("r2pipe not installed", allow_module_level=True)
 if importlib.util.find_spec("yaml") is None:
@@ -21,6 +23,11 @@ from r2morph.analysis.diff_analyzer import DiffAnalyzer
 from r2morph.analysis.invariants import InvariantDetector
 from r2morph.core.binary import Binary
 from r2morph.mutations import NopInsertionPass
+
+_EXPECTED_0_100 = 100
+_EXPECTED_BLOCK_PREDECESSORS_4080 = 0x0FF0
+_EXPECTED_BLOCK_SUCCESSORS_4112 = 0x1010
+_EXPECTED_LEN_CFG_BLOCKS_2 = 2
 
 
 class TestBinaryAnalyzerComprehensive:
@@ -41,8 +48,8 @@ class TestBinaryAnalyzerComprehensive:
             analyzer = BinaryAnalyzer(binary)
             functions = analyzer.get_functions_list()
 
-            assert isinstance(functions, list)
-            assert len(functions) > 0
+            expect(isinstance(functions, list))
+            expect(not (len(functions) <= 0))
 
     def test_get_instructions_for_function(self, ls_elf):
         """Test getting instructions for function."""
@@ -58,7 +65,7 @@ class TestBinaryAnalyzerComprehensive:
                 addr = functions[0].get("offset", 0)
                 if addr:
                     instructions = analyzer.get_instructions_for_function(addr)
-                    assert isinstance(instructions, list)
+                    expect(isinstance(instructions, list))
 
     def test_find_nop_insertion_candidates(self, ls_elf):
         """Test finding NOP insertion candidates."""
@@ -70,7 +77,7 @@ class TestBinaryAnalyzerComprehensive:
             analyzer = BinaryAnalyzer(binary)
             candidates = analyzer.find_nop_insertion_candidates()
 
-            assert isinstance(candidates, list)
+            expect(isinstance(candidates, list))
 
     def test_find_substitution_candidates(self, ls_elf):
         """Test finding substitution candidates."""
@@ -82,7 +89,7 @@ class TestBinaryAnalyzerComprehensive:
             analyzer = BinaryAnalyzer(binary)
             candidates = analyzer.find_substitution_candidates()
 
-            assert isinstance(candidates, list)
+            expect(isinstance(candidates, list))
 
     def test_get_statistics(self, ls_elf):
         """Test getting statistics."""
@@ -94,10 +101,10 @@ class TestBinaryAnalyzerComprehensive:
             analyzer = BinaryAnalyzer(binary)
             stats = analyzer.get_statistics()
 
-            assert isinstance(stats, dict)
-            assert "architecture" in stats
-            assert "total_functions" in stats
-            assert "total_instructions" in stats
+            expect(isinstance(stats, dict))
+            expect(not ("architecture" not in stats))
+            expect(not ("total_functions" not in stats))
+            expect(not ("total_instructions" not in stats))
 
     def test_identify_hot_functions(self, ls_elf):
         """Test identifying hot functions."""
@@ -109,7 +116,7 @@ class TestBinaryAnalyzerComprehensive:
             analyzer = BinaryAnalyzer(binary)
             hot_funcs = analyzer.identify_hot_functions(min_size=50)
 
-            assert isinstance(hot_funcs, list)
+            expect(isinstance(hot_funcs, list))
 
 
 class TestCFGBuilder:
@@ -137,21 +144,21 @@ class TestCFGBuilder:
                 builder = CFGBuilder(binary)
                 cfg = builder.build_cfg(addr, name)
 
-                assert isinstance(cfg, ControlFlowGraph)
-                assert cfg.function_address == addr
-                assert len(cfg.blocks) > 0
+                expect(isinstance(cfg, ControlFlowGraph))
+                expect(cfg.function_address == addr)
+                expect(not (len(cfg.blocks) <= 0))
 
     def test_basic_block_operations(self):
         """Test BasicBlock operations."""
         block = BasicBlock(address=0x1000, size=16)
 
         block.add_successor(0x1010)
-        assert 0x1010 in block.successors
+        expect(not (_EXPECTED_BLOCK_SUCCESSORS_4112 not in block.successors))
 
         block.add_predecessor(0x0FF0)
-        assert 0x0FF0 in block.predecessors
+        expect(not (_EXPECTED_BLOCK_PREDECESSORS_4080 not in block.predecessors))
 
-        assert "0x1000" in repr(block)
+        expect(not ("0x1000" not in repr(block)))
 
     def test_cfg_operations(self):
         """Test ControlFlowGraph operations."""
@@ -163,11 +170,11 @@ class TestCFGBuilder:
         cfg.add_block(block1)
         cfg.add_block(block2)
 
-        assert len(cfg.blocks) == 2
-        assert cfg.entry_block == block1
+        expect(len(cfg.blocks) == _EXPECTED_LEN_CFG_BLOCKS_2)
+        expect(cfg.entry_block == block1)
 
         cfg.add_edge(0x1000, 0x1010)
-        assert (0x1000, 0x1010) in cfg.edges
+        expect(not ((0x1000, 0x1010) not in cfg.edges))
 
 
 class TestDependencyAnalyzer:
@@ -195,7 +202,7 @@ class TestDependencyAnalyzer:
                     analyzer = DependencyAnalyzer()
                     deps = analyzer.analyze_dependencies(instructions)
 
-                    assert isinstance(deps, list)
+                    expect(isinstance(deps, list))
 
 
 class TestDiffAnalyzer:
@@ -222,7 +229,7 @@ class TestDiffAnalyzer:
         analyzer = DiffAnalyzer()
         diff = analyzer.compare(ls_elf, morphed_path)
 
-        assert diff is not None
+        expect(diff is not None)
 
     def test_get_similarity_score(self, ls_elf, tmp_path):
         """Test getting similarity score."""
@@ -241,8 +248,8 @@ class TestDiffAnalyzer:
         analyzer.compare(ls_elf, morphed_path)
         score = analyzer.get_similarity_score()
 
-        assert isinstance(score, float)
-        assert 0 <= score <= 100
+        expect(isinstance(score, float))
+        expect(0 <= score <= _EXPECTED_0_100)
 
     def test_visualize_changes(self, ls_elf, tmp_path):
         """Test visualizing changes."""
@@ -261,8 +268,8 @@ class TestDiffAnalyzer:
         analyzer.compare(ls_elf, morphed_path)
         viz = analyzer.visualize_changes()
 
-        assert isinstance(viz, str)
-        assert len(viz) > 0
+        expect(isinstance(viz, str))
+        expect(not (len(viz) <= 0))
 
     def test_generate_report(self, ls_elf, tmp_path):
         """Test generating report."""
@@ -282,7 +289,7 @@ class TestDiffAnalyzer:
         analyzer.compare(ls_elf, morphed_path)
         analyzer.generate_report(report_file)
 
-        assert report_file.exists()
+        expect(report_file.exists())
 
 
 class TestInvariantDetector:
@@ -307,7 +314,7 @@ class TestInvariantDetector:
                 addr = functions[0].get("offset", functions[0].get("addr", 0))
                 if addr:
                     invariants = detector.detect_all_invariants(addr)
-                    assert isinstance(invariants, list)
+                    expect(isinstance(invariants, list))
 
     def test_detect_invariants(self, ls_elf):
         """Test detecting stack balance invariants."""
@@ -323,4 +330,4 @@ class TestInvariantDetector:
                 addr = functions[0].get("offset", functions[0].get("addr", 0))
                 if addr:
                     invariants = detector.detect_stack_balance(addr)
-                    assert isinstance(invariants, list)
+                    expect(isinstance(invariants, list))

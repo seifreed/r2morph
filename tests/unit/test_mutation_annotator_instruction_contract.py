@@ -1,4 +1,5 @@
 from r2morph.validation.mutation_annotator_instruction import annotate_instruction_substitution_evidence
+from tests.utils.assertions import expect
 
 
 def test_instruction_substitution_evidence_populates_expected_fields() -> None:
@@ -23,7 +24,7 @@ def test_instruction_substitution_evidence_populates_expected_fields() -> None:
         },
     )
 
-    assert mutation_metadata["symbolic_semantic_hint"] == "known-equivalence-group"
-    assert mutation_metadata["symbolic_semantic_hint_supported"] is True
-    assert mutation_metadata["symbolic_observable_check_performed"] is True
-    assert mutation_metadata["symbolic_transition_check_performed"] is True
+    expect(mutation_metadata["symbolic_semantic_hint"] == "known-equivalence-group")
+    expect(not (mutation_metadata["symbolic_semantic_hint_supported"] is not True))
+    expect(not (mutation_metadata["symbolic_observable_check_performed"] is not True))
+    expect(not (mutation_metadata["symbolic_transition_check_performed"] is not True))

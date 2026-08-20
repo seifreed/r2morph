@@ -1,19 +1,20 @@
 from pathlib import Path
 
 from r2morph.platform.elf_handler_parsing import get_section_name, parse_elf_header, read_shstrtab
+from tests.utils.assertions import expect
 
 
 def test_get_section_name_contract() -> None:
-    assert get_section_name(0, b"\x00.text\x00") == ""
-    assert get_section_name(1, b"\x00.text\x00") == ".text"
+    expect(get_section_name(0, b"\x00.text\x00") == "")
+    expect(get_section_name(1, b"\x00.text\x00") == ".text")
 
 
 def test_parse_elf_header_contract() -> None:
     header, is_64bit, is_little_endian = parse_elf_header(Path("fixtures/dataset/elf_x86_64"))
-    assert header is not None
-    assert is_64bit is True
-    assert is_little_endian is True
-    assert header["e_phoff"] > 0
+    expect(header is not None)
+    expect(not (is_64bit is not True))
+    expect(not (is_little_endian is not True))
+    expect(not (header["e_phoff"] <= 0))
 
 
 def test_read_shstrtab_contract(tmp_path: Path) -> None:
@@ -30,4 +31,4 @@ def test_read_shstrtab_contract(tmp_path: Path) -> None:
     }
 
     with binary.open("rb") as f:
-        assert read_shstrtab(f, header, binary.stat().st_size) == b""
+        expect(read_shstrtab(f, header, binary.stat().st_size) == b"")

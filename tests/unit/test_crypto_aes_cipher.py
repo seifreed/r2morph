@@ -27,6 +27,10 @@ from r2morph.mutations.stack_strings import (
     generate_aes_decode_asm_x64,
     generate_aes_decode_asm_x86,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_ENC_16 = 16
+
 
 KEY = bytes(range(32))  # deterministic 32-byte key
 
@@ -35,19 +39,19 @@ def test_block_roundtrip_no_indexerror() -> None:
     for raw in (b"", b"A", b"sixteen bytes!!!", b"0123456789abcdefXYZ"):
         block = raw[:16].ljust(16, b"\x00")
         enc = aes_encrypt_block(block, KEY)
-        assert len(enc) == 16
-        assert aes_decrypt_block(enc, KEY) == block
-        assert enc != block  # keystream is non-zero for this key
+        expect(len(enc) == _EXPECTED_LEN_ENC_16)
+        expect(aes_decrypt_block(enc, KEY) == block)
+        expect(enc != block)
 
 
 def test_encrypt_string_roundtrip_and_padding() -> None:
     for plain in (b"", b"x", b"secret", b"exactly sixteen!", b"seventeen bytes!!"):
         enc, k = aes_encrypt_string(plain, KEY)
-        assert k == KEY
-        assert len(enc) % 16 == 0
+        expect(k == KEY)
+        expect(len(enc) % 16 == 0)
         padded = plain.ljust(len(enc), b"\x00")
         dec = b"".join(aes_decrypt_block(enc[i : i + 16], KEY) for i in range(0, len(enc), 16))
-        assert dec == padded
+        expect(dec == padded)
 
 
 def test_full_256_bit_key_influences_ciphertext() -> None:
@@ -56,7 +60,7 @@ def test_full_256_bit_key_influences_ciphertext() -> None:
     flipped = bytearray(KEY)
     flipped[20] ^= 0xFF  # a byte in the upper 128 bits (key[16:32])
     other, _ = aes_encrypt_string(plain, bytes(flipped))
-    assert base != other  # upper key half must affect output
+    expect(base != other)
 
 
 def _stack_key_from_asm(asm: list[str], width: int) -> bytes:
@@ -95,11 +99,11 @@ def test_emitted_x64_decode_inverts_encoder() -> None:
         enc, k = aes_encrypt_string(plain, KEY)
         asm = generate_aes_decode_asm_x64(k, len(enc), 0xABCD)
         joined = "\n".join(asm)
-        assert "movdqu xmm1, [rsp]" in joined
-        assert "movdqu xmm2, [rsp + 16]" in joined
-        assert "pxor xmm1, xmm2" in joined
-        assert "pxor xmm0, xmm1" in joined
-        assert _decode_with_emitted_keystream(asm, enc, 8) == plain.ljust(len(enc), b"\x00")
+        expect(not ("movdqu xmm1, [rsp]" not in joined))
+        expect(not ("movdqu xmm2, [rsp + 16]" not in joined))
+        expect(not ("pxor xmm1, xmm2" not in joined))
+        expect(not ("pxor xmm0, xmm1" not in joined))
+        expect(_decode_with_emitted_keystream(asm, enc, 8) == plain.ljust(len(enc), b"\x00"))
 
 
 def test_emitted_x86_decode_inverts_encoder() -> None:
@@ -107,8 +111,8 @@ def test_emitted_x86_decode_inverts_encoder() -> None:
         enc, k = aes_encrypt_string(plain, KEY)
         asm = generate_aes_decode_asm_x86(k, len(enc), 0xABCD)
         joined = "\n".join(asm)
-        assert "movq mm2, [esp]" in joined
-        assert "pxor mm2, [esp + 16]" in joined
-        assert "movq mm3, [esp + 8]" in joined
-        assert "pxor mm3, [esp + 24]" in joined
-        assert _decode_with_emitted_keystream(asm, enc, 4) == plain.ljust(len(enc), b"\x00")
+        expect(not ("movq mm2, [esp]" not in joined))
+        expect(not ("pxor mm2, [esp + 16]" not in joined))
+        expect(not ("movq mm3, [esp + 8]" not in joined))
+        expect(not ("pxor mm3, [esp + 24]" not in joined))
+        expect(_decode_with_emitted_keystream(asm, enc, 4) == plain.ljust(len(enc), b"\x00"))

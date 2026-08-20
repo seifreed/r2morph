@@ -4,6 +4,10 @@ from r2morph.devirtualization.vm_handler_analyzer import (
     VMHandlerAnalyzer,
     VMHandlerType,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_STATS_DISPATCHER_ADDRESS_8192 = 0x2000
+_EXPECTED_STATS_TOTAL_HANDLERS_2 = 2
 
 
 def test_vm_handler_classification_and_equivalent_x86():
@@ -14,7 +18,7 @@ def test_vm_handler_classification_and_equivalent_x86():
         {"disasm": "sub eax, 1"},
     ]
     handler_type = analyzer._classify_handler_type(instructions)
-    assert handler_type == VMHandlerType.ARITHMETIC
+    expect(handler_type == VMHandlerType.ARITHMETIC)
 
     handler = VMHandler(
         handler_id=1,
@@ -28,8 +32,8 @@ def test_vm_handler_classification_and_equivalent_x86():
     handler.equivalent_x86 = analyzer._generate_equivalent_x86(handler)
     confidence = analyzer._calculate_handler_confidence(handler)
 
-    assert handler.equivalent_x86 is not None
-    assert 0.0 <= confidence <= 1.0
+    expect(handler.equivalent_x86 is not None)
+    expect(0.0 <= confidence <= 1.0)
 
 
 def test_vm_handler_signature_and_statistics():
@@ -41,7 +45,7 @@ def test_vm_handler_signature_and_statistics():
         {"disasm": "pop rbp"},
     ]
     signature = analyzer._generate_semantic_signature(instructions)
-    assert signature.startswith("push")
+    expect(signature.startswith("push"))
 
     arch = VMArchitecture(
         dispatcher_address=0x2000,
@@ -53,5 +57,5 @@ def test_vm_handler_signature_and_statistics():
     analyzer.vm_architecture = arch
 
     stats = analyzer.get_handler_statistics()
-    assert stats["total_handlers"] == 2
-    assert stats["dispatcher_address"] == 0x2000
+    expect(stats["total_handlers"] == _EXPECTED_STATS_TOTAL_HANDLERS_2)
+    expect(stats["dispatcher_address"] == _EXPECTED_STATS_DISPATCHER_ADDRESS_8192)

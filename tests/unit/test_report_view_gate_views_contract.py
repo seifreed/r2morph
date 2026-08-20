@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_view_gate_views import build_gate_views
+from tests.utils.assertions import expect
 
 
 def test_build_gate_views_summarizes_failures() -> None:
@@ -22,6 +23,6 @@ def test_build_gate_views_summarizes_failures() -> None:
         normalized_pass_map={"alpha": {"role": "requested-mode"}},
     )
 
-    assert views["failed_gates_rows"][0]["role"] == "requested-mode"
-    assert views["failed_gates_compact_rows"][0]["failed"] is True
-    assert views["failed_gates_expected_severity"]["high"] == 1
+    expect(views["failed_gates_rows"][0]["role"] == "requested-mode")
+    expect(not (views["failed_gates_compact_rows"][0]["failed"] is not True))
+    expect(views["failed_gates_expected_severity"]["high"] == 1)

@@ -7,6 +7,7 @@ from r2morph.validation import DiffReport as ExportedDiffReport
 from r2morph.validation import DiffType as ExportedDiffType
 from r2morph.validation import FunctionDiff as ExportedFunctionDiff
 from r2morph.validation import SectionDiff as ExportedSectionDiff
+from tests.utils.assertions import expect
 
 
 def test_validation_package_exports_diff_models() -> None:
@@ -19,16 +20,19 @@ def test_validation_package_exports_diff_models() -> None:
         "function_address": ExportedFunctionDiff(name="func", address=1).address,
         "report_binary": ExportedDiffReport(original_binary="a", mutated_binary="b").original_binary,
     }
-    assert exported_values == {
-        "diff_type": "section_modified",
-        "severity": "medium",
-        "byte_offset": 1,
-        "section_name": ".text",
-        "function_address": 1,
-        "report_binary": "a",
-    }
+    expect(
+        exported_values
+        == {
+            "diff_type": "section_modified",
+            "severity": "medium",
+            "byte_offset": 1,
+            "section_name": ".text",
+            "function_address": 1,
+            "report_binary": "a",
+        }
+    )
 
 
 def test_validation_package_exports_binary_differ() -> None:
     """The validation package should re-export BinaryDiffer."""
-    assert ExportedBinaryDiffer is not None
+    expect(ExportedBinaryDiffer is not None)

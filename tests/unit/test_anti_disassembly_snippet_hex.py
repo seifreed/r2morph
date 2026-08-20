@@ -24,6 +24,7 @@ from r2morph.mutations.anti_disassembly import (
     SEH_BASED_X86,
     TRAMPOLINE_X64,
 )
+from tests.utils.assertions import expect
 
 
 def _all_declared_snippets() -> list:
@@ -41,18 +42,19 @@ def test_anti_disasm_snippet_bytes_hex_is_parseable(snippet) -> None:
         raise AssertionError(
             f"snippet {snippet.description!r}: bytes_hex={snippet.bytes_hex!r} " f"is not valid hex ({exc})"
         ) from exc
-    assert decoded, f"snippet {snippet.description!r} decodes to empty bytes"
+    expect(decoded, f"snippet {snippet.description!r} decodes to empty bytes")
 
 
 def test_trampoline_snippet_bytes_hex_specifically_parses() -> None:
     """Explicit regression on TRAMPOLINE_X64[0]: its bytes_hex was 37 chars
     long (odd) and crashed the injection path silently."""
-    assert len(TRAMPOLINE_X64) == 1
+    expect(len(TRAMPOLINE_X64) == 1)
     trampoline = TRAMPOLINE_X64[0]
-    assert len(trampoline.bytes_hex) % 2 == 0, (
+    expect(
+        len(trampoline.bytes_hex) % 2 == 0,
         f"TRAMPOLINE_X64 bytes_hex must be even-length (it's parsed via "
         f"bytes.fromhex); got {len(trampoline.bytes_hex)} chars: "
-        f"{trampoline.bytes_hex!r}"
+        f"{trampoline.bytes_hex!r}",
     )
     # And it must actually parse:
     bytes.fromhex(trampoline.bytes_hex)

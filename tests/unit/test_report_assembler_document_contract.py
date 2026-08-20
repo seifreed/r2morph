@@ -3,6 +3,10 @@
 from __future__ import annotations
 
 from r2morph.reporting.report_assembler_document import ReportComputation, build_report_document
+from tests.utils.assertions import expect
+
+_EXPECTED_REPORT_SUMMARY_CHANGED_BYTES_4 = 4
+_EXPECTED_REPORT_SUMMARY_PASSES_RUN_2 = 2
 
 
 def test_report_document_builder_assembles_summary_and_metadata() -> None:
@@ -85,9 +89,9 @@ def test_report_document_builder_assembles_summary_and_metadata() -> None:
 
     report = build_report_document(comp)
 
-    assert report["schema_version"] == 1
-    assert report["input"]["path"] == "input.bin"
-    assert report["summary"]["passes_run"] == 2
-    assert report["summary"]["changed_bytes"] == 4
-    assert report["report_views"] == {"sentinel": "views"}
-    assert report["metadata"]["tool"] == "r2morph"
+    expect(report["schema_version"] == 1)
+    expect(report["input"]["path"] == "input.bin")
+    expect(report["summary"]["passes_run"] == _EXPECTED_REPORT_SUMMARY_PASSES_RUN_2)
+    expect(report["summary"]["changed_bytes"] == _EXPECTED_REPORT_SUMMARY_CHANGED_BYTES_4)
+    expect(report["report_views"] == {"sentinel": "views"})
+    expect(report["metadata"]["tool"] == "r2morph")

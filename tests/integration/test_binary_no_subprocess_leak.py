@@ -27,6 +27,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.core.binary import Binary
+from tests.utils.assertions import expect
 
 
 def test_abandoned_binary_terminates_radare2_subprocess(stable_elf_binary: Path) -> None:
@@ -37,14 +38,15 @@ def test_abandoned_binary_terminates_radare2_subprocess(stable_elf_binary: Path)
     bin_obj.open()
 
     process = bin_obj.r2.process  # subprocess.Popen spawned by r2pipe
-    assert process.poll() is None, "radare2 subprocess should be running"
+    expect(not (process.poll() is not None), "radare2 subprocess should be running")
 
     # Abandon the Binary without close()/__exit__.
     del bin_obj
     gc.collect()
 
-    assert process.poll() is not None, (
-        "abandoned Binary leaked the radare2 subprocess " "(__del__ safety net did not quit it)"
+    expect(
+        process.poll() is not None,
+        "abandoned Binary leaked the radare2 subprocess " "(__del__ safety net did not quit it)",
     )
 
 
@@ -59,9 +61,10 @@ def test_reopened_binary_terminates_first_radare2_subprocess(stable_elf_binary: 
     try:
         bin_obj.open()  # what Binary.__enter__ does to an already-open Binary
 
-        assert first_process.poll() is not None, (
+        expect(
+            first_process.poll() is not None,
             "re-opening a Binary orphaned the first radare2 subprocess "
-            "(open() replaced Binary.r2 without quitting the old session)"
+            "(open() replaced Binary.r2 without quitting the old session)",
         )
     finally:
         bin_obj.close()
@@ -85,4 +88,4 @@ def test_reopened_binary_finalization_emits_no_resource_warning(stable_elf_binar
         gc.collect()
 
     resource_warnings = [str(entry.message) for entry in caught if issubclass(entry.category, ResourceWarning)]
-    assert resource_warnings == [], f"re-opened Binary leaked resources at finalization: {resource_warnings}"
+    expect(resource_warnings == [], f"re-opened Binary leaked resources at finalization: {resource_warnings}")

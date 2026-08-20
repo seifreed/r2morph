@@ -8,23 +8,24 @@ from r2morph.core.binary import Binary
 from r2morph.mutations import InstructionSubstitutionPass
 from r2morph.mutations.nop_insertion import NopInsertionPass
 from r2morph.pipeline.pipeline import Pipeline
+from tests.utils.assertions import expect
 
 
 def test_pipeline_basic_lifecycle() -> None:
     pipeline = Pipeline()
-    assert len(pipeline) == 0
-    assert pipeline.get_pass_names() == []
-    assert "Pipeline" in repr(pipeline)
+    expect(len(pipeline) == 0)
+    expect(pipeline.get_pass_names() == [])
+    expect(not ("Pipeline" not in repr(pipeline)))
 
     nop_pass = NopInsertionPass(config={"probability": 0.0})
     pipeline.add_pass(nop_pass)
-    assert len(pipeline) == 1
-    assert pipeline.get_pass_names() == [nop_pass.name]
+    expect(len(pipeline) == 1)
+    expect(pipeline.get_pass_names() == [nop_pass.name])
 
-    assert pipeline.remove_pass(nop_pass.name) is True
-    assert pipeline.remove_pass("missing") is False
+    expect(not (pipeline.remove_pass(nop_pass.name) is not True))
+    expect(not (pipeline.remove_pass("missing") is not False))
     pipeline.clear()
-    assert len(pipeline) == 0
+    expect(len(pipeline) == 0)
 
 
 def test_remove_pass_by_name_removes_all_matching() -> None:
@@ -38,8 +39,8 @@ def test_remove_pass_by_name_removes_all_matching() -> None:
 
     result = pipeline.remove_pass_by_name(first_nop.name)
 
-    assert result is None
-    assert pipeline.get_pass_names() == [other.name]
+    expect(not (result is not None))
+    expect(pipeline.get_pass_names() == [other.name])
 
 
 def test_remove_pass_by_name_no_match_is_noop() -> None:
@@ -49,7 +50,7 @@ def test_remove_pass_by_name_no_match_is_noop() -> None:
 
     pipeline.remove_pass_by_name("does-not-exist")
 
-    assert pipeline.get_pass_names() == [nop_pass.name]
+    expect(pipeline.get_pass_names() == [nop_pass.name])
 
 
 def test_pipeline_run_with_real_pass(tmp_path: Path) -> None:
@@ -68,9 +69,9 @@ def test_pipeline_run_with_real_pass(tmp_path: Path) -> None:
         binary.analyze()
         results = pipeline.run(binary)
 
-    assert results["passes_run"] == 1
-    assert "pass_results" in results
-    assert nop_pass.name in results["pass_results"]
+    expect(results["passes_run"] == 1)
+    expect(not ("pass_results" not in results))
+    expect(not (nop_pass.name not in results["pass_results"]))
 
 
 def test_pipeline_run_empty(tmp_path: Path) -> None:
@@ -86,5 +87,5 @@ def test_pipeline_run_empty(tmp_path: Path) -> None:
         binary.analyze()
         results = pipeline.run(binary)
 
-    assert results["passes_run"] == 0
-    assert results["total_mutations"] == 0
+    expect(results["passes_run"] == 0)
+    expect(results["total_mutations"] == 0)

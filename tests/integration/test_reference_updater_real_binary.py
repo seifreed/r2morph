@@ -3,6 +3,7 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.reference_updater import ReferenceUpdater
+from tests.utils.assertions import expect
 from tests.utils.platform_binaries import ensure_exists, get_platform_binary
 
 
@@ -39,43 +40,43 @@ def test_reference_updater_updates_call_jump_and_data(tmp_path):
         ref_updater = ReferenceUpdater(bin_obj)
 
         base_addr = _find_writable_code_region(bin_obj, minimum_size=12)
-        assert base_addr != 0
+        expect(base_addr != 0)
 
         call_addr = base_addr
         jmp_addr = base_addr + 5
 
         call_bytes = b"\xe8\x00\x00\x00\x00"
         jmp_bytes = b"\xe9\x00\x00\x00\x00"
-        assert bin_obj.write_bytes(call_addr, call_bytes) is True
-        assert bin_obj.write_bytes(jmp_addr, jmp_bytes) is True
+        expect(not (bin_obj.write_bytes(call_addr, call_bytes) is not True))
+        expect(not (bin_obj.write_bytes(jmp_addr, jmp_bytes) is not True))
 
         call_info = bin_obj.r2.cmdj(f"aoj 1 @ 0x{call_addr:x}") or []
         jmp_info = bin_obj.r2.cmdj(f"aoj 1 @ 0x{jmp_addr:x}") or []
-        assert call_info
-        assert jmp_info
+        expect(call_info)
+        expect(jmp_info)
 
         call_size = call_info[0].get("size", 0)
         jmp_size = jmp_info[0].get("size", 0)
-        assert call_size > 0
-        assert jmp_size > 0
+        expect(not (call_size <= 0))
+        expect(not (jmp_size <= 0))
 
         call_old = _read_bytes(bin_obj, call_addr, call_size)
         jmp_old = _read_bytes(bin_obj, jmp_addr, jmp_size)
 
         call_old_target = call_addr + call_size
         call_new_target = call_old_target + 4
-        assert ref_updater.update_call_target(call_addr, call_old_target, call_new_target) is True
-        assert call_addr in ref_updater.updated_refs
+        expect(not (ref_updater.update_call_target(call_addr, call_old_target, call_new_target) is not True))
+        expect(not (call_addr not in ref_updater.updated_refs))
 
         jmp_old_target = jmp_addr + jmp_size
         jmp_new_target = jmp_old_target + 4
-        assert ref_updater.update_jump_target(jmp_addr, jmp_old_target, jmp_new_target) is True
-        assert jmp_addr in ref_updater.updated_refs
+        expect(not (ref_updater.update_jump_target(jmp_addr, jmp_old_target, jmp_new_target) is not True))
+        expect(not (jmp_addr not in ref_updater.updated_refs))
 
         call_new = _read_bytes(bin_obj, call_addr, call_size)
         jmp_new = _read_bytes(bin_obj, jmp_addr, jmp_size)
-        assert call_new != call_old
-        assert jmp_new != jmp_old
+        expect(call_new != call_old)
+        expect(jmp_new != jmp_old)
 
         sections = bin_obj.get_sections()
         ptr_section = next(
@@ -88,8 +89,8 @@ def test_reference_updater_updates_call_jump_and_data(tmp_path):
         new_value = 0x8877665544332211
 
         bin_obj.write_bytes(ptr_addr, old_value.to_bytes(ptr_size, byteorder="little"))
-        assert ref_updater.update_data_pointer(ptr_addr, old_value, new_value) is True
-        assert ptr_addr in ref_updater.updated_refs
+        expect(not (ref_updater.update_data_pointer(ptr_addr, old_value, new_value) is not True))
+        expect(not (ptr_addr not in ref_updater.updated_refs))
 
         mismatch = ref_updater.update_data_pointer(ptr_addr, old_value, new_value)
-        assert mismatch is False
+        expect(not (mismatch is not False))

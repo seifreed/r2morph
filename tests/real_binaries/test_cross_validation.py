@@ -17,6 +17,14 @@ import pytest
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 from r2morph.core.engine_run import EngineRunOptions
+from tests.utils.assertions import expect
+from tests.utils.process import run_command
+
+_EXPECTED_LEN_PARTS_8 = 8
+_EXPECTED_LEN_PARTS_8_2 = 8
+_EXPECTED_LEN_S_4 = 4
+_EXPECTED_LEN_S_4_2 = 4
+
 
 pytestmark = pytest.mark.skipif(
     os.environ.get("SKIP_CROSS_VALIDATION_TESTS") == "1", reason="Cross-validation tests disabled"
@@ -31,7 +39,7 @@ def has_tool(tool_name: str) -> bool:
 def run_tool(tool_name: str, args: list, timeout: int = 10) -> tuple:
     """Run a tool and return (success, stdout, stderr)."""
     try:
-        result = subprocess.run(
+        result = run_command(
             [tool_name, *args],
             capture_output=True,
             timeout=timeout,
@@ -66,9 +74,7 @@ int main() {
         binary_file = temp_dir / "test"
 
         try:
-            subprocess.run(
-                ["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True
-            )
+            run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
             return binary_file
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("gcc not available")
@@ -101,9 +107,10 @@ int main() {
                     r2_mutated_count = len([line for line in stdout2.decode().strip().split("\n") if line])
 
                     # Function count should be preserved
-                    assert (
-                        r2_func_count == r2_mutated_count
-                    ), f"Function count mismatch: original={r2_func_count}, mutated={r2_mutated_count}"
+                    expect(
+                        r2_func_count == r2_mutated_count,
+                        f"Function count mismatch: original={r2_func_count}, mutated={r2_mutated_count}",
+                    )
 
     @pytest.mark.skipif(not has_tool("r2"), reason="radare2 not available")
     def test_r2_section_preservation(self, test_binary, temp_dir):
@@ -131,9 +138,10 @@ int main() {
                     mutated_sections = [line for line in stdout2.decode().strip().split("\n") if line.strip()]
 
                     # Section count should be preserved
-                    assert len(original_sections) == len(
-                        mutated_sections
-                    ), f"Section count mismatch: {len(original_sections)} vs {len(mutated_sections)}"
+                    expect(
+                        len(original_sections) == len(mutated_sections),
+                        f"Section count mismatch: {len(original_sections)} vs {len(mutated_sections)}",
+                    )
 
 
 class TestObjdumpCrossValidation:
@@ -155,9 +163,7 @@ int main() { printf("test"); return 0; }
         binary_file = temp_dir / "test"
 
         try:
-            subprocess.run(
-                ["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True
-            )
+            run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
             return binary_file
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("gcc not available")
@@ -189,9 +195,10 @@ int main() { printf("test"); return 0; }
 
                     # Mutation should not destroy instructions
                     # (may have more due to NOP insertion)
-                    assert (
-                        mutated_lines >= original_lines * 0.9
-                    ), f"Too many instructions lost: {original_lines} -> {mutated_lines}"
+                    expect(
+                        not (mutated_lines < original_lines * 0.9),
+                        f"Too many instructions lost: {original_lines} -> {mutated_lines}",
+                    )
 
 
 class TestReadelfCrossValidation:
@@ -213,9 +220,7 @@ int main() { return 42; }
         binary_file = temp_dir / "test"
 
         try:
-            subprocess.run(
-                ["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True
-            )
+            run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
             return binary_file
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("gcc not available")
@@ -255,9 +260,10 @@ int main() { return 42; }
                     for line in mutated_headers.split("\n"):
                         if "Entry point" in line:
                             mutated_entry = line
-                            assert (
-                                entry_point == mutated_entry
-                            ), f"Entry point changed: {entry_point} vs {mutated_entry}"
+                            expect(
+                                entry_point == mutated_entry,
+                                f"Entry point changed: {entry_point} vs {mutated_entry}",
+                            )
                             break
 
     @pytest.mark.skipif(not has_tool("readelf"), reason="readelf not available")
@@ -273,7 +279,7 @@ int main() { return 42; }
             for line in stdout.decode().strip().split("\n"):
                 if line.strip():
                     parts = line.split()
-                    if len(parts) >= 8:
+                    if len(parts) >= _EXPECTED_LEN_PARTS_8:
                         original_symbols.add(parts[-1])  # Symbol name
 
             config = EngineConfig.create_default()
@@ -292,13 +298,13 @@ int main() { return 42; }
                     for line in stdout2.decode().strip().split("\n"):
                         if line.strip():
                             parts = line.split()
-                            if len(parts) >= 8:
+                            if len(parts) >= _EXPECTED_LEN_PARTS_8_2:
                                 mutated_symbols.add(parts[-1])
 
                     # All original symbols should still exist
                     for sym in original_symbols:
                         if sym and not sym.startswith("_"):  # Skip internal symbols
-                            assert sym in mutated_symbols, f"Symbol {sym} lost after mutation"
+                            expect(not (sym not in mutated_symbols), f"Symbol {sym} lost after mutation")
 
 
 class TestFileCrossValidation:
@@ -317,9 +323,7 @@ class TestFileCrossValidation:
         binary_file = temp_dir / "test"
 
         try:
-            subprocess.run(
-                ["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True
-            )
+            run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
             return binary_file
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("gcc not available")
@@ -350,13 +354,11 @@ class TestFileCrossValidation:
                     mutated_type = stdout2.decode().strip()
 
                     # Key file type components should be preserved
-                    if "ELF" in original_type:
-                        assert "ELF" in mutated_type, "Lost ELF type"
+                    expect(not ("ELF" in original_type and "ELF" not in mutated_type), "Lost ELF type")
                     if platform.system() != "Windows":
                         if "executable" in original_type.lower():
-                            assert "executable" in mutated_type.lower(), "Lost executable type"
-                        if "64-bit" in original_type:
-                            assert "64-bit" in mutated_type, "Changed architecture"
+                            expect(not ("executable" not in mutated_type.lower()), "Lost executable type")
+                        expect(not ("64-bit" in original_type and "64-bit" not in mutated_type), "Changed architecture")
 
 
 class TestStringsCrossValidation:
@@ -382,9 +384,7 @@ int main() {
         binary_file = temp_dir / "strings_test"
 
         try:
-            subprocess.run(
-                ["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True
-            )
+            run_command(["gcc", "-o", str(binary_file), str(source_file), "-no-pie"], check=True, capture_output=True)
             return binary_file
         except (subprocess.CalledProcessError, FileNotFoundError):
             pytest.skip("gcc not available")
@@ -401,7 +401,7 @@ int main() {
             original_strings = set(stdout.decode().strip().split("\n"))
 
             # Filter for meaningful strings (> 4 chars, printable)
-            meaningful = {s for s in original_strings if len(s) > 4 and s.isprintable()}
+            meaningful = {s for s in original_strings if len(s) > _EXPECTED_LEN_S_4 and s.isprintable()}
 
             config = EngineConfig.create_default()
             with MorphEngine(config=config.to_dict()) as engine:
@@ -419,5 +419,7 @@ int main() {
 
                     # Key strings should be preserved
                     for s in meaningful:
-                        if s and len(s) > 4:
-                            assert s in mutated_strings, f"String '{s}' lost after mutation"
+                        expect(
+                            not (s and len(s) > _EXPECTED_LEN_S_4_2 and s not in mutated_strings),
+                            f"String '{s}' lost after mutation",
+                        )

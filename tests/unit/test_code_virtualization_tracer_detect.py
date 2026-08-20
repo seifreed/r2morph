@@ -30,6 +30,11 @@ from r2morph.mutations.code_virtualization_antidebug import (
     tracer_const_island_asm,
     tracer_detect_asm,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_FOLD_DELTA_STATUS_1000_255 = 0xFF
+_EXPECTED_FOLD_DELTA_STATUS_98765_255 = 0xFF
+
 
 _SLOT = 0x88
 _STACK_BASE = 0x300000
@@ -95,37 +100,37 @@ def _status(tracer_pid: int) -> bytes:
 
 
 def test_tracer_detect_untraced_status_folds_zero() -> None:
-    assert _fold_delta(_status(0)) == 0x00
+    expect(_fold_delta(_status(0)) == 0)
 
 
 def test_tracer_detect_traced_status_folds_ff() -> None:
-    assert _fold_delta(_status(1000)) == 0xFF
+    expect(_fold_delta(_status(1000)) == _EXPECTED_FOLD_DELTA_STATUS_1000_255)
 
 
 def test_tracer_detect_multidigit_tracer_pid_folds_ff() -> None:
     # A large tracer PID still starts with a non-'0' digit at the checked offset.
-    assert _fold_delta(_status(98765)) == 0xFF
+    expect(_fold_delta(_status(98765)) == _EXPECTED_FOLD_DELTA_STATUS_98765_255)
 
 
 def test_tracer_detect_missing_status_folds_zero() -> None:
     # openat failing (no procfs, as under a bare Unicorn run) must stay inert.
-    assert _fold_delta(None) == 0x00
+    expect(_fold_delta(None) == 0)
 
 
 def test_tracer_detect_emitted_into_the_region_interpreter() -> None:
     asm = tracer_detect_asm(slot=_SLOT)
     # The observational read (syscalls) and the branch-free fold must be present.
-    assert "syscall" in asm
-    assert _STATUS_PATH_LO.to_bytes(8, "little").decode() == "/proc/se"
-    assert f"neg cl\n  xor byte ptr [rsp+{_SLOT}], cl" in asm
+    expect(not ("syscall" not in asm))
+    expect(_STATUS_PATH_LO.to_bytes(8, "little").decode() == "/proc/se")
+    expect(not (f"neg cl\n  xor byte ptr [rsp+{_SLOT}], cl" not in asm))
 
 
 def test_tracer_detect_emits_no_plaintext_constant_immediate() -> None:
     # Neither the "/proc/se" path word nor the "TracerPi" scan tag may appear as a
     # plaintext immediate: both are loaded from the checksum-keyed island instead.
     asm = tracer_detect_asm(slot=_SLOT)
-    assert hex(_STATUS_PATH_LO) not in asm
-    assert hex(_TRACERPID_TAG) not in asm
+    expect(hex(_STATUS_PATH_LO) not in asm)
+    expect(hex(_TRACERPID_TAG) not in asm)
 
 
 def test_tracer_detect_syscall_numbers_are_not_plaintext_immediates() -> None:
@@ -134,10 +139,10 @@ def test_tracer_detect_syscall_numbers_are_not_plaintext_immediates() -> None:
     # They are de-masked from the checksum-keyed island instead, so the number in the
     # syscall register is opaque and the syscalls stay unnamed in the pseudocode.
     asm = tracer_detect_asm(slot=_SLOT)
-    assert str(_SYS_OPENAT) not in asm
-    assert "mov eax, 3" not in asm and "mov rax, 3" not in asm
+    expect(str(_SYS_OPENAT) not in asm)
+    expect("mov eax, 3" not in asm and "mov rax, 3" not in asm)
     # The AT_FDCWD dirfd (-100) is an openat tell on its own; it is masked too.
-    assert "-100" not in asm
+    expect("-100" not in asm)
 
 
 def test_tracer_detect_tracerpid_zero_compare_is_not_a_plaintext_immediate() -> None:
@@ -145,8 +150,8 @@ def test_tracer_detect_tracerpid_zero_compare_is_not_a_plaintext_immediate() -> 
     # a decompiler folds that to ``!= '0'`` and names the TracerPid check. It is
     # de-masked from the checksum-keyed island and compared register-to-register.
     asm = tracer_detect_asm(slot=_SLOT)
-    assert "0x30" not in asm
-    assert "cmp al, dil" in asm
+    expect("0x30" not in asm)
+    expect(not ("cmp al, dil" not in asm))
 
 
 def test_tracer_island_masks_constants_by_checksum() -> None:
@@ -157,5 +162,5 @@ def test_tracer_island_masks_constants_by_checksum() -> None:
     island_b = bytearray(_TRACER_ISLAND_LEN)
     patch_tracer_constants(island_a, 0, 0x11)
     patch_tracer_constants(island_b, 0, 0x22)
-    assert island_a != island_b
-    assert _STATUS_PATH_LO.to_bytes(8, "little") not in bytes(island_a)
+    expect(island_a != island_b)
+    expect(_STATUS_PATH_LO.to_bytes(8, "little") not in bytes(island_a))

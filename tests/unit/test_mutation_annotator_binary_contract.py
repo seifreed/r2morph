@@ -1,4 +1,8 @@
 from r2morph.validation.mutation_annotator_binary import annotate_binary_region_evidence
+from tests.utils.assertions import expect
+
+_EXPECTED_MUTATION_METADATA_SYMBOLIC_BINARY_REGION_EXIT_4 = 4
+_EXPECTED_MUTATION_METADATA_SYMBOLIC_BINARY_STEP_BUDGET_3 = 3
 
 
 def test_binary_region_evidence_populates_expected_fields() -> None:
@@ -25,10 +29,15 @@ def test_binary_region_evidence_populates_expected_fields() -> None:
         },
     )
 
-    assert mutation_metadata["symbolic_binary_check_performed"] is True
-    assert mutation_metadata["symbolic_binary_equivalent"] is True
-    assert mutation_metadata["symbolic_binary_step_budget"] == 3
-    assert mutation_metadata["symbolic_binary_region_exit_budget"] == 4
-    assert mutation_metadata["symbolic_binary_step_strategy"] == "region-exit"
-    assert mutation_metadata["symbolic_binary_original_trace_addresses"] == [0x401000, 0x401010]
-    assert mutation_metadata["symbolic_binary_mutated_memory_write_count"] == 0
+    expect(not (mutation_metadata["symbolic_binary_check_performed"] is not True))
+    expect(not (mutation_metadata["symbolic_binary_equivalent"] is not True))
+    expect(
+        mutation_metadata["symbolic_binary_step_budget"] == _EXPECTED_MUTATION_METADATA_SYMBOLIC_BINARY_STEP_BUDGET_3
+    )
+    expect(
+        mutation_metadata["symbolic_binary_region_exit_budget"]
+        == _EXPECTED_MUTATION_METADATA_SYMBOLIC_BINARY_REGION_EXIT_4
+    )
+    expect(mutation_metadata["symbolic_binary_step_strategy"] == "region-exit")
+    expect(mutation_metadata["symbolic_binary_original_trace_addresses"] == [4198400, 4198416])
+    expect(mutation_metadata["symbolic_binary_mutated_memory_write_count"] == 0)

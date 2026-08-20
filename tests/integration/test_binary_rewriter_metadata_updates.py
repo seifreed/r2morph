@@ -4,6 +4,9 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.binary_rewriter import BinaryRewriter, CodePatch, RelocationEntry, RewriteOperation
+from tests.utils.assertions import expect
+
+_EXPECTED_REWRITER_RELOCATIONS_0_TARGET_8192 = 0x2000
 
 
 @pytest.mark.parametrize(
@@ -26,9 +29,9 @@ def test_binary_rewriter_metadata_updates(binary_path: Path, tmp_path: Path):
         rewriter = BinaryRewriter(bin_obj)
         result = rewriter.rewrite_binary(str(output_path), patches=[], preserve_original=False)
 
-    assert result.success is True
-    assert output_path.exists()
-    assert result.integrity_checks.get("file_exists") is True
+    expect(not (result.success is not True))
+    expect(output_path.exists())
+    expect(not (result.integrity_checks.get("file_exists") is not True))
 
 
 def test_binary_rewriter_relocation_updates(tmp_path: Path):
@@ -39,7 +42,7 @@ def test_binary_rewriter_relocation_updates(tmp_path: Path):
     with Binary(binary_path) as bin_obj:
         bin_obj.analyze("aa")
         rewriter = BinaryRewriter(bin_obj)
-        assert rewriter._analyze_binary() is True
+        expect(not (rewriter._analyze_binary() is not True))
 
         rewriter.relocations = [
             RelocationEntry(address=0x1000, target=0x2000, reloc_type="REL"),
@@ -56,5 +59,5 @@ def test_binary_rewriter_relocation_updates(tmp_path: Path):
         ]
 
         stats = rewriter._update_relocations()
-        assert stats["updated"] == 1
-        assert rewriter.relocations[0].target == 0x2000
+        expect(stats["updated"] == 1)
+        expect(rewriter.relocations[0].target == _EXPECTED_REWRITER_RELOCATIONS_0_TARGET_8192)

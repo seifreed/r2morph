@@ -26,6 +26,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration import test_code_virtualization_real as vm_real
+from tests.utils.assertions import expect
 
 # An engine-path fixture: it contains a call, so the whole-function region VM
 # rejects it and the engine virtualizes the straight-line run before the call -
@@ -66,9 +67,9 @@ def seed_sweep_builds(tmp_path_factory: pytest.TempPathFactory) -> list[Path]:
         dest = tmp_path / f"mutated_{seed}"
         if _mutate(FIXTURE, dest, seed) < 1:
             continue
-        assert vm_real._has_engine_frame_signature(dest.read_bytes()), "expected the engine VM path"
+        expect(vm_real._has_engine_frame_signature(dest.read_bytes()), "expected the engine VM path")
         produced.append(dest)
-    assert produced, "no seed produced a virtualized build"
+    expect(produced, "no seed produced a virtualized build")
     return produced
 
 
@@ -76,13 +77,13 @@ def test_every_engine_build_dispatches_through_the_encrypted_table(seed_sweep_bu
     # No build may fall back to the removed compare/branch ladder: every one must
     # carry the offset-table computed goto, the shape a decompiler cannot resolve.
     missing = [b.name for b in seed_sweep_builds if _THREADED_COMPUTED_GOTO not in b.read_bytes()]
-    assert not missing, f"builds without the threaded computed goto: {missing}"
+    expect(not (missing), f"builds without the threaded computed goto: {missing}")
 
 
 def test_every_engine_build_preserves_the_exit_code(seed_sweep_builds: list[Path]) -> None:
     # The single remaining dispatch shape must run the program faithfully for every
     # seed - the per-build randomization is polymorphism, not a behaviour change.
     baseline = vm_real._emulate_exit_code(FIXTURE)
-    assert baseline is not None
+    expect(baseline is not None)
     diverged = [b.name for b in seed_sweep_builds if vm_real._emulate_exit_code(b) != baseline]
-    assert not diverged, f"builds that changed the exit code: {diverged}"
+    expect(not (diverged), f"builds that changed the exit code: {diverged}")

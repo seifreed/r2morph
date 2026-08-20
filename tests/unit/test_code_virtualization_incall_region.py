@@ -13,10 +13,10 @@ no mocks. Runtime semantic parity is covered by the integration suite.
 
 from __future__ import annotations
 
-import random
-
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
+from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
 
@@ -43,46 +43,46 @@ def _in_function_call_instructions() -> list[dict[str, object]]:
 
 def test_extract_region_lowers_in_function_call_to_vcall() -> None:
     """A direct call whose target is inside the function becomes a vcall item."""
-    region = extract_region(_in_function_call_instructions(), random.Random(1))
-    assert region is not None
-    assert any(item[0] == "vcall" for item in region.instructions)
+    region = extract_region(_in_function_call_instructions(), randomness.Random(1))
+    expect(region is not None)
+    expect(any(item[0] == "vcall" for item in region.instructions))
 
 
 def test_extract_region_leaves_no_native_call_for_an_in_function_call() -> None:
     """The in-function call is fully virtualized, so no native call bridge remains."""
-    region = extract_region(_in_function_call_instructions(), random.Random(1))
-    assert region is not None
-    assert not any(item[0] == "call" for item in region.instructions)
+    region = extract_region(_in_function_call_instructions(), randomness.Random(1))
+    expect(region is not None)
+    expect(not (any(item[0] == "call" for item in region.instructions)))
 
 
 def test_extract_region_converts_every_ret_to_vret_with_an_in_function_call() -> None:
     """With a vcall present, each ret terminator is the return-aware vret, not exit."""
-    region = extract_region(_in_function_call_instructions(), random.Random(1))
-    assert region is not None
-    assert any(item[0] == "vret" for item in region.instructions)
-    assert not any(item[0] == "exit" for item in region.instructions)
+    region = extract_region(_in_function_call_instructions(), randomness.Random(1))
+    expect(region is not None)
+    expect(any(item[0] == "vret" for item in region.instructions))
+    expect(not (any(item[0] == "exit" for item in region.instructions)))
 
 
 def test_extract_region_in_function_call_assembles_to_real_bytes() -> None:
     """The lowered region builds a full interpreter blob end to end."""
-    region = extract_region(_in_function_call_instructions(), random.Random(1))
-    assert region is not None
-    scheme = build_region_scheme(region, random.Random(1))
-    assert build_region_blob(region, _CAVE_VADDR, scheme) is not None
+    region = extract_region(_in_function_call_instructions(), randomness.Random(1))
+    expect(region is not None)
+    scheme = build_region_scheme(region, randomness.Random(1))
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)
 
 
 def test_extract_region_rejects_in_function_call_to_non_instruction_boundary() -> None:
     """A call into the middle of an instruction is unresolvable, so the region is native."""
     insns = _in_function_call_instructions()
     insns[1] = _insn(0x1002, 5, "call", "call 0x100b", jump=0x100B)  # 0x100b is mid-instruction
-    assert extract_region(insns, random.Random(1)) is None
+    expect(not (extract_region(insns, randomness.Random(1)) is not None))
 
 
 def test_extract_region_keeps_out_of_function_call_as_native_bridge() -> None:
     """A call outside the function span keeps the native call and plain exit items."""
     insns = _in_function_call_instructions()
     insns[1] = _insn(0x1002, 5, "call", "call 0x9000", jump=0x9000)  # out of function span
-    region = extract_region(insns, random.Random(1))
-    assert region is not None
-    assert any(item[0] == "call" for item in region.instructions)
-    assert not any(item[0] in ("vcall", "vret") for item in region.instructions)
+    region = extract_region(insns, randomness.Random(1))
+    expect(region is not None)
+    expect(any(item[0] == "call" for item in region.instructions))
+    expect(not (any(item[0] in ("vcall", "vret") for item in region.instructions)))

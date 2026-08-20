@@ -7,6 +7,9 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 
 from r2morph.core.parallel_pass_execution import CheckpointedPassRequest, execute_checkpointed_pass
+from tests.utils.assertions import expect
+
+_EXPECTED_RESULT_MUTATIONS_APPLIED_2 = 2
 
 
 class DummyPass:
@@ -66,8 +69,8 @@ def test_execute_checkpointed_pass_returns_completed_result() -> None:
             )
         )
 
-        assert result.status.value == "completed"
-        assert result.mutations_applied == 2
-        assert result.checkpoint_path is not None
-        assert binary.touched is True
-        assert callback_calls == [("alpha", 0.0), ("alpha", 1.0)]
+        expect(result.status.value == "completed")
+        expect(result.mutations_applied == _EXPECTED_RESULT_MUTATIONS_APPLIED_2)
+        expect(result.checkpoint_path is not None)
+        expect(not (binary.touched is not True))
+        expect(callback_calls == [("alpha", 0.0), ("alpha", 1.0)])

@@ -7,6 +7,7 @@ from r2morph.core.binary import Binary
 from r2morph.mutations.cff_jump_obfuscator import JumpObfuscator
 from r2morph.mutations.control_flow_flattening import ControlFlowFlatteningPass
 from r2morph.mutations.control_flow_flattening_strategies import insert_dead_code_with_predicate
+from tests.utils.assertions import expect
 
 
 def test_control_flow_flattening_select_candidates():
@@ -19,9 +20,8 @@ def test_control_flow_flattening_select_candidates():
         pass_obj = ControlFlowFlatteningPass(config={"min_blocks_required": 2})
         candidates = pass_obj._select_candidates(bin_obj, bin_obj.get_functions())
 
-    assert isinstance(candidates, list)
-    if candidates:
-        assert "_block_count" in candidates[0]
+    expect(isinstance(candidates, list))
+    expect(not (candidates and "_block_count" not in candidates[0]))
 
 
 def test_control_flow_flattening_obfuscate_jump_guard(tmp_path: Path):
@@ -36,13 +36,13 @@ def test_control_flow_flattening_obfuscate_jump_guard(tmp_path: Path):
         bin_obj.analyze()
         # Guard paths: too small jump or missing disasm should be False
         small_jump = {"offset": 0x1000, "size": 2, "disasm": "jmp 0x1002"}
-        assert JumpObfuscator().obfuscate_jump(bin_obj, small_jump, {}, "x86", 64) is False
+        expect(not (JumpObfuscator().obfuscate_jump(bin_obj, small_jump, {}, "x86", 64) is not False))
 
         no_disasm = {"offset": 0x1000, "size": 6, "disasm": ""}
-        assert JumpObfuscator().obfuscate_jump(bin_obj, no_disasm, {}, "x86", 64) is False
+        expect(not (JumpObfuscator().obfuscate_jump(bin_obj, no_disasm, {}, "x86", 64) is not False))
 
         bad_target = {"offset": 0x1000, "size": 6, "disasm": "jmp sym.func"}
-        assert JumpObfuscator().obfuscate_jump(bin_obj, bad_target, {}, "x86", 64) is False
+        expect(not (JumpObfuscator().obfuscate_jump(bin_obj, bad_target, {}, "x86", 64) is not False))
 
 
 def test_control_flow_flattening_dead_code_insert_guard(tmp_path: Path):
@@ -56,4 +56,4 @@ def test_control_flow_flattening_dead_code_insert_guard(tmp_path: Path):
     with Binary(temp_binary, writable=True) as bin_obj:
         bin_obj.analyze()
         # Unsupported arch should fail fast
-        assert insert_dead_code_with_predicate(bin_obj, 0x1000, 4, "mips", 32) is False
+        expect(not (insert_dead_code_with_predicate(bin_obj, 0x1000, 4, "mips", 32) is not False))

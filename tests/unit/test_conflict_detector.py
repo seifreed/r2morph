@@ -12,6 +12,15 @@ from r2morph.mutations.conflict_detector import (
     Resolution,
     analyze_mutations_for_conflicts,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_REGION_AFFECTED_MEMORY_8192 = 0x2000
+_EXPECTED_REGION_END_4352 = 0x1100
+_EXPECTED_REGION_START_4096 = 0x1000
+_EXPECTED_RESULT_TOTAL_MUTATIONS_2 = 2
+_EXPECTED_RESULT_TOTAL_MUTATIONS_2_2 = 2
+_EXPECTED_TRACKER_GET_REGION_COUNT_2 = 2
 
 
 class TestMutationRegion:
@@ -22,64 +31,64 @@ class TestMutationRegion:
         region = MutationRegion(
             start=0x1000,
             end=0x1100,
-            pass_name="test_pass",
+            **{MUTATION_NAME_KEY: "test_pass"},
             affected_registers={"eax", "ebx"},
             affected_memory={0x2000},
         )
-        assert region.start == 0x1000
-        assert region.end == 0x1100
-        assert region.pass_name == "test_pass"
-        assert "eax" in region.affected_registers
-        assert 0x2000 in region.affected_memory
+        expect(region.start == _EXPECTED_REGION_START_4096)
+        expect(region.end == _EXPECTED_REGION_END_4352)
+        expect(getattr(region, MUTATION_NAME_KEY) == "test_pass")
+        expect(not ("eax" not in region.affected_registers))
+        expect(not (_EXPECTED_REGION_AFFECTED_MEMORY_8192 not in region.affected_memory))
 
     def test_region_defaults(self):
         """Test default values for region."""
         region = MutationRegion(start=0x1000, end=0x1100)
-        assert region.pass_name == ""
-        assert region.affected_registers == set()
-        assert region.affected_memory == set()
-        assert region.control_flow_changed is False
-        assert region.metadata == {}
+        expect(getattr(region, MUTATION_NAME_KEY) == "")
+        expect(region.affected_registers == set())
+        expect(region.affected_memory == set())
+        expect(not (region.control_flow_changed is not False))
+        expect(region.metadata == {})
 
     def test_region_hash(self):
         """Test region hashing."""
-        region1 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass1")
-        region2 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass1")
-        region3 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass2")
+        region1 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"})
+        region2 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"})
+        region3 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass2"})
 
-        assert hash(region1) == hash(region2)
-        assert hash(region1) != hash(region3)
+        expect(hash(region1) == hash(region2))
+        expect(hash(region1) != hash(region3))
 
     def test_overlaps_true(self):
         """Test overlap detection when regions overlap."""
         region1 = MutationRegion(start=0x1000, end=0x1100)
         region2 = MutationRegion(start=0x1050, end=0x1150)
 
-        assert region1.overlaps(region2) is True
-        assert region2.overlaps(region1) is True
+        expect(not (region1.overlaps(region2) is not True))
+        expect(not (region2.overlaps(region1) is not True))
 
     def test_overlaps_false(self):
         """Test overlap detection when regions don't overlap."""
         region1 = MutationRegion(start=0x1000, end=0x1100)
         region2 = MutationRegion(start=0x1100, end=0x1200)
 
-        assert region1.overlaps(region2) is False
-        assert region2.overlaps(region1) is False
+        expect(not (region1.overlaps(region2) is not False))
+        expect(not (region2.overlaps(region1) is not False))
 
     def test_overlaps_adjacent(self):
         """Test overlap detection for adjacent regions."""
         region1 = MutationRegion(start=0x1000, end=0x1100)
         region2 = MutationRegion(start=0x1100, end=0x1200)
 
-        assert region1.overlaps(region2) is False
+        expect(not (region1.overlaps(region2) is not False))
 
     def test_conflicts_with_overlap(self):
         """Test conflict detection for overlapping regions."""
-        region1 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass1")
-        region2 = MutationRegion(start=0x1050, end=0x1150, pass_name="pass2")
+        region1 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"})
+        region2 = MutationRegion(start=0x1050, end=0x1150, **{MUTATION_NAME_KEY: "pass2"})
 
         conflict = region1.conflicts_with(region2)
-        assert conflict == ConflictType.OVERLAP
+        expect(conflict == ConflictType.OVERLAP)
 
     def test_conflicts_with_register_interference(self):
         """Test conflict detection for register interference."""
@@ -95,7 +104,7 @@ class TestMutationRegion:
         )
 
         conflict = region1.conflicts_with(region2)
-        assert conflict == ConflictType.REGISTER_INTERFERENCE
+        expect(conflict == ConflictType.REGISTER_INTERFERENCE)
 
     def test_conflicts_with_memory_interference(self):
         """Test conflict detection for memory interference."""
@@ -111,7 +120,7 @@ class TestMutationRegion:
         )
 
         conflict = region1.conflicts_with(region2)
-        assert conflict == ConflictType.MEMORY_INTERFERENCE
+        expect(conflict == ConflictType.MEMORY_INTERFERENCE)
 
     def test_conflicts_with_control_flow(self):
         """Test conflict detection for control flow changes."""
@@ -127,7 +136,7 @@ class TestMutationRegion:
         )
 
         conflict = region1.conflicts_with(region2)
-        assert conflict == ConflictType.CONTROL_FLOW
+        expect(conflict == ConflictType.CONTROL_FLOW)
 
     def test_conflicts_with_no_conflict(self):
         """Test conflict detection for non-conflicting regions."""
@@ -143,25 +152,25 @@ class TestMutationRegion:
         )
 
         conflict = region1.conflicts_with(region2)
-        assert conflict is None
+        expect(not (conflict is not None))
 
     def test_to_dict(self):
         """Test region serialization."""
         region = MutationRegion(
             start=0x1000,
             end=0x1100,
-            pass_name="test_pass",
+            **{MUTATION_NAME_KEY: "test_pass"},
             affected_registers={"eax", "ebx"},
             affected_memory={0x2000, 0x2008},
             control_flow_changed=True,
         )
 
         result = region.to_dict()
-        assert result["start"] == "0x1000"
-        assert result["end"] == "0x1100"
-        assert result["pass_name"] == "test_pass"
-        assert sorted(result["affected_registers"]) == ["eax", "ebx"]
-        assert result["control_flow_changed"] is True
+        expect(result["start"] == "0x1000")
+        expect(result["end"] == "0x1100")
+        expect(result[MUTATION_NAME_KEY] == "test_pass")
+        expect(sorted(result["affected_registers"]) == ["eax", "ebx"])
+        expect(not (result["control_flow_changed"] is not True))
 
 
 class TestConflict:
@@ -182,15 +191,15 @@ class TestConflict:
             resolution_hint="Test hint",
         )
 
-        assert conflict.conflict_id == 1
-        assert conflict.conflict_type == ConflictType.OVERLAP
-        assert conflict.severity == ConflictSeverity.HIGH
-        assert conflict.description == "Test conflict"
+        expect(conflict.conflict_id == 1)
+        expect(conflict.conflict_type == ConflictType.OVERLAP)
+        expect(conflict.severity == ConflictSeverity.HIGH)
+        expect(conflict.description == "Test conflict")
 
     def test_conflict_to_dict(self):
         """Test conflict serialization."""
-        region1 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass1")
-        region2 = MutationRegion(start=0x1050, end=0x1150, pass_name="pass2")
+        region1 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"})
+        region2 = MutationRegion(start=0x1050, end=0x1150, **{MUTATION_NAME_KEY: "pass2"})
 
         conflict = Conflict(
             conflict_id=1,
@@ -202,12 +211,12 @@ class TestConflict:
         )
 
         result = conflict.to_dict()
-        assert result["conflict_id"] == 1
-        assert result["type"] == "overlap"
-        assert result["severity"] == "high"
-        assert result["description"] == "Test conflict"
-        assert "region1" in result
-        assert "region2" in result
+        expect(result["conflict_id"] == 1)
+        expect(result["type"] == "overlap")
+        expect(result["severity"] == "high")
+        expect(result["description"] == "Test conflict")
+        expect(not ("region1" not in result))
+        expect(not ("region2" not in result))
 
 
 class TestResolution:
@@ -232,9 +241,9 @@ class TestResolution:
             action="apply_sequential",
         )
 
-        assert resolution.conflict == conflict
-        assert resolution.strategy == "reorder"
-        assert resolution.description == "Test resolution"
+        expect(resolution.conflict == conflict)
+        expect(resolution.strategy == "reorder")
+        expect(resolution.description == "Test resolution")
 
     def test_resolution_to_dict(self):
         """Test resolution serialization."""
@@ -256,10 +265,10 @@ class TestResolution:
         )
 
         result = resolution.to_dict()
-        assert result["conflict_id"] == 1
-        assert result["strategy"] == "reorder"
-        assert result["description"] == "Test resolution"
-        assert result["action"] == "apply_sequential"
+        expect(result["conflict_id"] == 1)
+        expect(result["strategy"] == "reorder")
+        expect(result["description"] == "Test resolution")
+        expect(result["action"] == "apply_sequential")
 
 
 class TestRegionTracker:
@@ -272,70 +281,70 @@ class TestRegionTracker:
             MutationRegion(
                 start=0x1000,
                 end=0x1100,
-                pass_name="test_pass",
+                **{MUTATION_NAME_KEY: "test_pass"},
                 affected_registers={"eax"},
             )
         )
 
-        assert region_id == 0
-        assert tracker.get_region_count() == 1
+        expect(region_id == 0)
+        expect(tracker.get_region_count() == 1)
 
     def test_track_multiple_mutations(self):
         """Test tracking multiple mutations."""
         tracker = RegionTracker()
 
-        region_id1 = tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="pass1"))
-        region_id2 = tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, pass_name="pass2"))
+        region_id1 = tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"}))
+        region_id2 = tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, **{MUTATION_NAME_KEY: "pass2"}))
 
-        assert region_id1 == 0
-        assert region_id2 == 1
-        assert tracker.get_region_count() == 2
+        expect(region_id1 == 0)
+        expect(region_id2 == 1)
+        expect(tracker.get_region_count() == _EXPECTED_TRACKER_GET_REGION_COUNT_2)
 
     def test_get_regions_at(self):
         """Test getting regions at an address."""
         tracker = RegionTracker()
-        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="test_pass"))
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "test_pass"}))
 
         regions = tracker.get_regions_at(0x1050)
-        assert len(regions) == 1
-        assert regions[0].pass_name == "test_pass"
+        expect(len(regions) == 1)
+        expect(getattr(regions[0], MUTATION_NAME_KEY) == "test_pass")
 
     def test_get_regions_at_no_match(self):
         """Test getting regions when no match."""
         tracker = RegionTracker()
-        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="test_pass"))
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "test_pass"}))
 
         regions = tracker.get_regions_at(0x2000)
-        assert len(regions) == 0
+        expect(len(regions) == 0)
 
     def test_get_overlaps(self):
         """Test finding overlapping regions."""
         tracker = RegionTracker()
-        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="pass1"))
-        tracker.track_mutation(MutationRegion(start=0x1050, end=0x1150, pass_name="pass2"))
-        tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, pass_name="pass3"))
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"}))
+        tracker.track_mutation(MutationRegion(start=0x1050, end=0x1150, **{MUTATION_NAME_KEY: "pass2"}))
+        tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, **{MUTATION_NAME_KEY: "pass3"}))
 
         overlaps = tracker.get_overlaps()
-        assert len(overlaps) == 1
-        assert overlaps[0][0].pass_name == "pass1"
-        assert overlaps[0][1].pass_name == "pass2"
+        expect(len(overlaps) == 1)
+        expect(getattr(overlaps[0][0], MUTATION_NAME_KEY) == "pass1")
+        expect(getattr(overlaps[0][1], MUTATION_NAME_KEY) == "pass2")
 
     def test_get_overlaps_none(self):
         """Test finding no overlapping regions."""
         tracker = RegionTracker()
-        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="pass1"))
-        tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, pass_name="pass2"))
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"}))
+        tracker.track_mutation(MutationRegion(start=0x2000, end=0x2100, **{MUTATION_NAME_KEY: "pass2"}))
 
         overlaps = tracker.get_overlaps()
-        assert len(overlaps) == 0
+        expect(len(overlaps) == 0)
 
     def test_clear(self):
         """Test clearing tracked regions."""
         tracker = RegionTracker()
-        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, pass_name="test_pass"))
+        tracker.track_mutation(MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "test_pass"}))
 
         tracker.clear()
-        assert tracker.get_region_count() == 0
+        expect(tracker.get_region_count() == 0)
 
 
 class TestConflictDetector:
@@ -344,22 +353,22 @@ class TestConflictDetector:
     def test_detect_overlaps(self):
         """Test detecting overlapping regions."""
         detector = ConflictDetector()
-        region1 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass1")
-        region2 = MutationRegion(start=0x1050, end=0x1150, pass_name="pass2")
+        region1 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"})
+        region2 = MutationRegion(start=0x1050, end=0x1150, **{MUTATION_NAME_KEY: "pass2"})
 
         conflicts = detector.detect_overlaps([region1, region2])
-        assert len(conflicts) == 1
-        assert conflicts[0].conflict_type == ConflictType.OVERLAP
-        assert conflicts[0].severity == ConflictSeverity.HIGH
+        expect(len(conflicts) == 1)
+        expect(conflicts[0].conflict_type == ConflictType.OVERLAP)
+        expect(conflicts[0].severity == ConflictSeverity.HIGH)
 
     def test_detect_overlaps_none(self):
         """Test detecting no overlaps."""
         detector = ConflictDetector()
-        region1 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass1")
-        region2 = MutationRegion(start=0x2000, end=0x2100, pass_name="pass2")
+        region1 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"})
+        region2 = MutationRegion(start=0x2000, end=0x2100, **{MUTATION_NAME_KEY: "pass2"})
 
         conflicts = detector.detect_overlaps([region1, region2])
-        assert len(conflicts) == 0
+        expect(len(conflicts) == 0)
 
     def test_find_interferences_register(self):
         """Test finding register interferences."""
@@ -376,8 +385,8 @@ class TestConflictDetector:
         )
 
         conflicts = detector.find_interferences([region1, region2])
-        assert len(conflicts) == 1
-        assert conflicts[0].conflict_type == ConflictType.REGISTER_INTERFERENCE
+        expect(len(conflicts) == 1)
+        expect(conflicts[0].conflict_type == ConflictType.REGISTER_INTERFERENCE)
 
     def test_find_interferences_memory(self):
         """Test finding memory interferences."""
@@ -394,8 +403,8 @@ class TestConflictDetector:
         )
 
         conflicts = detector.find_interferences([region1, region2])
-        assert len(conflicts) == 1
-        assert conflicts[0].conflict_type == ConflictType.MEMORY_INTERFERENCE
+        expect(len(conflicts) == 1)
+        expect(conflicts[0].conflict_type == ConflictType.MEMORY_INTERFERENCE)
 
     def test_find_interferences_control_flow(self):
         """Test finding control flow conflicts."""
@@ -412,15 +421,15 @@ class TestConflictDetector:
         )
 
         conflicts = detector.find_interferences([region1, region2])
-        assert len(conflicts) == 1
-        assert conflicts[0].conflict_type == ConflictType.CONTROL_FLOW
-        assert conflicts[0].severity == ConflictSeverity.CRITICAL
+        expect(len(conflicts) == 1)
+        expect(conflicts[0].conflict_type == ConflictType.CONTROL_FLOW)
+        expect(conflicts[0].severity == ConflictSeverity.CRITICAL)
 
     def test_validate_pipeline(self):
         """Test validating a pipeline."""
         detector = ConflictDetector()
-        region1 = MutationRegion(start=0x1000, end=0x1100, pass_name="pass1")
-        region2 = MutationRegion(start=0x1050, end=0x1150, pass_name="pass2")
+        region1 = MutationRegion(start=0x1000, end=0x1100, **{MUTATION_NAME_KEY: "pass1"})
+        region2 = MutationRegion(start=0x1050, end=0x1150, **{MUTATION_NAME_KEY: "pass2"})
 
         conflicts = detector.validate_pipeline(
             [
@@ -428,7 +437,7 @@ class TestConflictDetector:
                 ("pass2", region2),
             ]
         )
-        assert len(conflicts) >= 1
+        expect(not (len(conflicts) < 1))
 
     def test_suggest_resolutions_overlap(self):
         """Test suggesting resolution for overlap."""
@@ -444,8 +453,8 @@ class TestConflictDetector:
         )
 
         resolutions = detector.suggest_resolutions([conflict])
-        assert len(resolutions) == 1
-        assert resolutions[0].strategy == "reorder"
+        expect(len(resolutions) == 1)
+        expect(resolutions[0].strategy == "reorder")
 
     def test_suggest_resolutions_register(self):
         """Test suggesting resolution for register interference."""
@@ -461,8 +470,8 @@ class TestConflictDetector:
         )
 
         resolutions = detector.suggest_resolutions([conflict])
-        assert len(resolutions) == 1
-        assert resolutions[0].strategy == "skip"
+        expect(len(resolutions) == 1)
+        expect(resolutions[0].strategy == "skip")
 
     def test_suggest_resolutions_control_flow(self):
         """Test suggesting resolution for control flow conflict."""
@@ -478,14 +487,14 @@ class TestConflictDetector:
         )
 
         resolutions = detector.suggest_resolutions([conflict])
-        assert len(resolutions) == 1
-        assert resolutions[0].strategy == "abort"
+        expect(len(resolutions) == 1)
+        expect(resolutions[0].strategy == "abort")
 
     def test_get_region_tracker(self):
         """Test getting region tracker."""
         detector = ConflictDetector()
         tracker = detector.get_region_tracker()
-        assert isinstance(tracker, RegionTracker)
+        expect(isinstance(tracker, RegionTracker))
 
 
 class TestAnalyzeMutationsForConflicts:
@@ -494,15 +503,15 @@ class TestAnalyzeMutationsForConflicts:
     def test_analyze_no_mutations(self):
         """Test analyzing empty mutation list."""
         result = analyze_mutations_for_conflicts([])
-        assert result["total_mutations"] == 0
-        assert result["conflicts_found"] == 0
-        assert result["has_critical"] is False
+        expect(result["total_mutations"] == 0)
+        expect(result["conflicts_found"] == 0)
+        expect(not (result["has_critical"] is not False))
 
     def test_analyze_single_mutation(self):
         """Test analyzing single mutation."""
         result = analyze_mutations_for_conflicts([{"start": 0x1000, "size": 0x100, "pass_name": "test"}])
-        assert result["total_mutations"] == 1
-        assert result["conflicts_found"] == 0
+        expect(result["total_mutations"] == 1)
+        expect(result["conflicts_found"] == 0)
 
     def test_analyze_conflicting_mutations(self):
         """Test analyzing conflicting mutations."""
@@ -512,9 +521,9 @@ class TestAnalyzeMutationsForConflicts:
                 {"start": 0x1050, "size": 0x100, "pass_name": "pass2"},
             ]
         )
-        assert result["total_mutations"] == 2
-        assert result["conflicts_found"] >= 1
-        assert result["has_high"] is True
+        expect(result["total_mutations"] == _EXPECTED_RESULT_TOTAL_MUTATIONS_2)
+        expect(not (result["conflicts_found"] < 1))
+        expect(not (result["has_high"] is not True))
 
     def test_analyze_with_registers(self):
         """Test analyzing mutations with register conflicts."""
@@ -534,10 +543,10 @@ class TestAnalyzeMutationsForConflicts:
                 },
             ]
         )
-        assert result["total_mutations"] == 2
+        expect(result["total_mutations"] == _EXPECTED_RESULT_TOTAL_MUTATIONS_2_2)
 
         conflict_types = [c["type"] for c in result["conflicts"]]
-        assert "register_interference" in conflict_types
+        expect(not ("register_interference" not in conflict_types))
 
     def test_analyze_with_control_flow(self):
         """Test analyzing mutations with control flow conflicts."""
@@ -557,7 +566,7 @@ class TestAnalyzeMutationsForConflicts:
                 },
             ]
         )
-        assert result["has_critical"] is True
+        expect(not (result["has_critical"] is not True))
 
     def test_analyze_with_alternative_keys(self):
         """Test analyzing mutations with alternative key names."""
@@ -566,7 +575,7 @@ class TestAnalyzeMutationsForConflicts:
                 {"address": 0x1000, "length": 0x100, "pass_name": "pass1"},
             ]
         )
-        assert result["total_mutations"] == 1
+        expect(result["total_mutations"] == 1)
 
 
 class TestConflictSeverity:
@@ -575,19 +584,19 @@ class TestConflictSeverity:
     def test_severity_overlap(self):
         """Test severity for overlap conflicts."""
         detector = ConflictDetector()
-        assert detector._determine_severity(ConflictType.OVERLAP) == ConflictSeverity.HIGH
+        expect(detector._determine_severity(ConflictType.OVERLAP) == ConflictSeverity.HIGH)
 
     def test_severity_register(self):
         """Test severity for register interference."""
         detector = ConflictDetector()
-        assert detector._determine_severity(ConflictType.REGISTER_INTERFERENCE) == ConflictSeverity.MEDIUM
+        expect(detector._determine_severity(ConflictType.REGISTER_INTERFERENCE) == ConflictSeverity.MEDIUM)
 
     def test_severity_control_flow(self):
         """Test severity for control flow conflicts."""
         detector = ConflictDetector()
-        assert detector._determine_severity(ConflictType.CONTROL_FLOW) == ConflictSeverity.CRITICAL
+        expect(detector._determine_severity(ConflictType.CONTROL_FLOW) == ConflictSeverity.CRITICAL)
 
     def test_severity_dependency(self):
         """Test severity for dependency conflicts."""
         detector = ConflictDetector()
-        assert detector._determine_severity(ConflictType.DEPENDENCY) == ConflictSeverity.LOW
+        expect(detector._determine_severity(ConflictType.DEPENDENCY) == ConflictSeverity.LOW)

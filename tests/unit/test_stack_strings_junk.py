@@ -7,6 +7,7 @@ of random draws).
 
 import r2morph.core.randomness as random
 from r2morph.mutations.stack_strings import EncodingScheme, StackStringOptions, generate_stack_string_x64
+from tests.utils.assertions import expect
 
 
 def test_x64_junk_interleaving_exact_under_seed():
@@ -16,9 +17,9 @@ def test_x64_junk_interleaving_exact_under_seed():
         StackStringOptions(encoding=EncodingScheme.PLAIN, interleave_junk=True, junk_probability=1.0),
     )
 
-    assert junk == ["xor r15, r15", "push rax"]
-    assert asm == (
-        "    ; Stack string (plain): 2 bytes\n"
+    expect(junk == ["xor r15, r15", "push rax"])
+    expect(
+        asm == "    ; Stack string (plain): 2 bytes\n"
         "    sub rsp, 18\n"
         "    mov byte [rsp+0], 'H'\n"
         "    xor r15, r15  ; junk\n"

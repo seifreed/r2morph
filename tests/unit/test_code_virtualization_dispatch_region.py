@@ -13,9 +13,9 @@ no mocks.
 
 from __future__ import annotations
 
-import random
-
+from r2morph.core import randomness
 from r2morph.mutations.code_virtualization_region import extract_region
+from tests.utils.assertions import expect
 
 
 def _insn(addr: int, size: int, itype: str, opcode: str, **extra: object) -> dict[str, object]:
@@ -33,26 +33,26 @@ def _dispatch_instructions() -> list[dict[str, object]]:
 
 def test_dispatch_region_lowers_computed_jump_to_ijmp() -> None:
     """With the contract enabled, the register-indirect jump becomes an ijmp item."""
-    region = extract_region(_dispatch_instructions(), random.Random(1), allow_computed_jump=True)
-    assert region is not None
-    assert any(item[0] == "ijmp" for item in region.instructions)
+    region = extract_region(_dispatch_instructions(), randomness.Random(1), allow_computed_jump=True)
+    expect(region is not None)
+    expect(any(item[0] == "ijmp" for item in region.instructions))
 
 
 def test_dispatch_region_builds_target_map_over_body_addresses() -> None:
     """The target map covers the body instruction addresses a computed jump may hit."""
-    region = extract_region(_dispatch_instructions(), random.Random(1), allow_computed_jump=True)
-    assert region is not None
-    assert set(region.target_map) == {0x1000, 0x1003}
+    region = extract_region(_dispatch_instructions(), randomness.Random(1), allow_computed_jump=True)
+    expect(region is not None)
+    expect(set(region.target_map) == {4096, 4099})
 
 
 def test_computed_jump_rejected_without_opt_in() -> None:
     """The default straight-line contract still rejects a computed jump."""
-    assert extract_region(_dispatch_instructions(), random.Random(1)) is None
+    expect(not (extract_region(_dispatch_instructions(), randomness.Random(1)) is not None))
 
 
 def test_ordinary_region_has_empty_target_map() -> None:
     """A region with no computed jump carries no target map, even when opted in."""
     insns = [_insn(0x1000, 3, "add", "add eax, ebx"), _insn(0x1003, 1, "ret", "ret")]
-    region = extract_region(insns, random.Random(1), allow_computed_jump=True)
-    assert region is not None
-    assert region.target_map == {}
+    region = extract_region(insns, randomness.Random(1), allow_computed_jump=True)
+    expect(region is not None)
+    expect(region.target_map == {})

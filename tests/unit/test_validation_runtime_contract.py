@@ -3,6 +3,7 @@ from r2morph.validation.validator_runtime import (
     ValidationResult,
     ValidationTestCase,
 )
+from tests.utils.assertions import expect
 
 
 def test_runtime_models_round_trip() -> None:
@@ -18,6 +19,6 @@ def test_runtime_models_round_trip() -> None:
         similarity_score=100.0,
     )
 
-    assert comparison.compare_files is True
-    assert case.to_dict()["monitored_files"] == ["tmp.log"]
-    assert "PASSED" in str(result)
+    expect(not (comparison.compare_files is not True))
+    expect(case.to_dict()["monitored_files"] == ["tmp.log"])
+    expect(not ("PASSED" not in str(result)))

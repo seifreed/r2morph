@@ -9,11 +9,14 @@ from r2morph.validation.cfg_integrity_models import (
     IntegrityStatus,
     IntegrityViolation,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_SNAPSHOT_FUNCTION_ADDRESS_4096 = 0x1000
 
 
 def test_integrity_status_values() -> None:
-    assert IntegrityStatus.VALID.value == "valid"
-    assert IntegrityStatus.PLT_THUNK.value == "plt_thunk"
+    expect(IntegrityStatus.VALID.value == "valid")
+    expect(IntegrityStatus.PLT_THUNK.value == "plt_thunk")
 
 
 def test_integrity_violation_serialization() -> None:
@@ -24,7 +27,7 @@ def test_integrity_violation_serialization() -> None:
         metadata={"edge_type": "exception"},
     )
 
-    assert violation.to_dict()["status"] == "broken_edge"
+    expect(violation.to_dict()["status"] == "broken_edge")
 
 
 def test_integrity_report_and_snapshot() -> None:
@@ -34,5 +37,5 @@ def test_integrity_report_and_snapshot() -> None:
         checks_run=[IntegrityCheck(name="reachability", description="test")],
     )
 
-    assert snapshot.function_address == 0x1000
-    assert report.to_dict()["valid"] is True
+    expect(snapshot.function_address == _EXPECTED_SNAPSHOT_FUNCTION_ADDRESS_4096)
+    expect(not (report.to_dict()["valid"] is not True))

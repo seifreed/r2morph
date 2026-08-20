@@ -6,6 +6,9 @@ from r2morph.devirtualization.binary_rewriter_planning import (
     validate_instructions,
     validate_patches,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_ADDRESS_8192 = 0x2000
 
 
 class _Assembler:
@@ -32,18 +35,18 @@ def test_binary_rewriter_planning_helpers_expose_expected_contract() -> None:
     ]
 
     strategy = plan_rewrite_strategy(patches)
-    assert strategy["use_code_caves"] is True
-    assert strategy["requires_relocation_update"] is True
-    assert [p.address for p in strategy["patch_order"]] == [0x1000, 0x2000]
+    expect(not (strategy["use_code_caves"] is not True))
+    expect(not (strategy["requires_relocation_update"] is not True))
+    expect([p.address for p in strategy["patch_order"]] == [4096, 8192])
 
     shifts = calculate_address_shifts(patches)
-    assert shifts[0x1000] == 0
-    assert shifts[0x2000] == 1
+    expect(shifts[4096] == 0)
+    expect(shifts[8192] == 1)
 
-    assert is_valid_address({".text": {"vaddr": 0x1000, "vsize": 0x200}}, 0x1100) is True
-    assert is_valid_address({".text": {"vaddr": 0x1000, "vsize": 0x200}}, 0x2200) is False
+    expect(not (is_valid_address({".text": {"vaddr": 0x1000, "vsize": 0x200}}, 0x1100) is not True))
+    expect(not (is_valid_address({".text": {"vaddr": 0x1000, "vsize": 0x200}}, 0x2200) is not False))
 
-    assert validate_instructions(_Assembler(), ["nop", "ret"]) is True
+    expect(not (validate_instructions(_Assembler(), ["nop", "ret"]) is not True))
 
     result = validate_patches(
         [
@@ -63,10 +66,10 @@ def test_binary_rewriter_planning_helpers_expose_expected_contract() -> None:
                 size_change=-2000,
             ),
         ],
-        lambda address: address != 0x2000,
+        lambda address: address != _EXPECTED_ADDRESS_8192,
         lambda instructions: False,
     )
-    assert result["valid"] is False
-    assert any("Overlapping" in err for err in result["errors"])
-    assert any("Invalid address" in warning for warning in result["warnings"])
-    assert any("Large size change" in warning for warning in result["warnings"])
+    expect(not (result["valid"] is not False))
+    expect(any("Overlapping" in err for err in result["errors"]))
+    expect(any("Invalid address" in warning for warning in result["warnings"]))
+    expect(any("Large size change" in warning for warning in result["warnings"]))

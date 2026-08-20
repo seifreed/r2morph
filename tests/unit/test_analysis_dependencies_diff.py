@@ -6,6 +6,10 @@ import pytest
 
 from r2morph.analysis.dependencies import DependencyAnalyzer
 from r2morph.analysis.diff_analyzer import DiffAnalyzer
+from tests.utils.assertions import expect
+
+_EXPECTED_CHAIN_4098 = 0x1002
+_EXPECTED_DIFF_GET_SIMILARITY_SCORE_100_0 = 100.0
 
 
 def test_dependency_analyzer_basic() -> None:
@@ -16,12 +20,12 @@ def test_dependency_analyzer_basic() -> None:
         {"offset": 0x1004, "disasm": "cmp eax, ecx"},
     ]
     deps = analyzer.analyze_dependencies(instructions)
-    assert deps
-    assert analyzer.has_dependency(0x1000, 0x1002) is True
+    expect(deps)
+    expect(not (analyzer.has_dependency(0x1000, 0x1002) is not True))
     chain = analyzer.get_dependency_chain(0x1000)
-    assert 0x1002 in chain
+    expect(not (_EXPECTED_CHAIN_4098 not in chain))
     dot = analyzer.to_dot()
-    assert "Dependencies" in dot
+    expect(not ("Dependencies" not in dot))
 
 
 def test_diff_analyzer_on_modified_copy(tmp_path: Path) -> None:
@@ -38,12 +42,12 @@ def test_diff_analyzer_on_modified_copy(tmp_path: Path) -> None:
 
     diff = DiffAnalyzer()
     stats = diff.compare(orig, morph)
-    assert stats.changed_bytes >= 1
-    assert diff.get_similarity_score() < 100.0
+    expect(not (stats.changed_bytes < 1))
+    expect(not (diff.get_similarity_score() >= _EXPECTED_DIFF_GET_SIMILARITY_SCORE_100_0))
 
     viz = diff.visualize_changes()
-    assert "BINARY DIFF VISUALIZATION" in viz
+    expect(not ("BINARY DIFF VISUALIZATION" not in viz))
 
     report_path = tmp_path / "report.md"
     diff.generate_report(report_path)
-    assert report_path.exists()
+    expect(report_path.exists())

@@ -1,5 +1,9 @@
 from r2morph.analysis.symbolic.syntia_learning import learn_instruction_semantics
 from r2morph.analysis.symbolic.syntia_models import InstructionSemantics
+from tests.utils.assertions import expect
+
+_EXPECTED_SEMANTICS_ADDRESS_4096 = 0x1000
+_EXPECTED_SEMANTICS_CONFIDENCE_0_75 = 0.75
 
 
 class _LearningFramework:
@@ -24,13 +28,13 @@ def test_syntia_learning_contract_misses_and_caches() -> None:
 
     semantics = learn_instruction_semantics(framework, b"\x90", 0x1000, "nop")
 
-    assert semantics.address == 0x1000
-    assert semantics.learned_semantics == "fallback:nop"
-    assert semantics.confidence == 0.75
-    assert semantics.complexity == "simple"
-    assert framework.semantics_cache[b"\x90"] is semantics
-    assert framework.synthesis_stats["instructions_analyzed"] == 1
-    assert framework.synthesis_stats["cache_hits"] == 0
+    expect(semantics.address == _EXPECTED_SEMANTICS_ADDRESS_4096)
+    expect(semantics.learned_semantics == "fallback:nop")
+    expect(semantics.confidence == _EXPECTED_SEMANTICS_CONFIDENCE_0_75)
+    expect(semantics.complexity == "simple")
+    expect(not (framework.semantics_cache[b"\x90"] is not semantics))
+    expect(framework.synthesis_stats["instructions_analyzed"] == 1)
+    expect(framework.synthesis_stats["cache_hits"] == 0)
 
 
 def test_syntia_learning_contract_reuses_cache() -> None:
@@ -40,6 +44,6 @@ def test_syntia_learning_contract_reuses_cache() -> None:
 
     semantics = learn_instruction_semantics(framework, b"\x90", 0x1001, "mov eax, ebx")
 
-    assert semantics is cached
-    assert framework.synthesis_stats["cache_hits"] == 1
-    assert framework.synthesis_stats["instructions_analyzed"] == 0
+    expect(not (semantics is not cached))
+    expect(framework.synthesis_stats["cache_hits"] == 1)
+    expect(framework.synthesis_stats["instructions_analyzed"] == 0)

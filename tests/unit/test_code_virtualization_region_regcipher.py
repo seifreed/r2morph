@@ -1,6 +1,7 @@
 """Register-file cipher scope contract."""
 
 from r2morph.mutations.code_virtualization_region_regcipher import cipher_register_slots
+from tests.utils.assertions import expect
 
 
 def test_cipher_register_slots_transforms_only_register_file() -> None:
@@ -15,13 +16,15 @@ def test_cipher_register_slots_transforms_only_register_file() -> None:
 
     result = cipher_register_slots(source, frozenset({56, 144}))
 
-    assert all(
-        fragment in result
-        for fragment in (
-            "mov rax, qword ptr [rsp+r8*8]\n  xor rax, qword ptr [rsp+520]",
-            "xor r10, qword ptr [rsp+520]\n  mov qword ptr [rsp+r8*8], r10",
-            "mov r9, qword ptr [rsp+56]\n  xor r9, qword ptr [rsp+520]",
-            "mov r10, qword ptr [rsp+144]\n  xor r10, qword ptr [rsp+520]",
-            "mov rax, qword ptr [rsp+128]\n  mov qword ptr [rsp+r9+0x288], rax",
+    expect(
+        all(
+            fragment in result
+            for fragment in (
+                "mov rax, qword ptr [rsp+r8*8]\n  xor rax, qword ptr [rsp+520]",
+                "xor r10, qword ptr [rsp+520]\n  mov qword ptr [rsp+r8*8], r10",
+                "mov r9, qword ptr [rsp+56]\n  xor r9, qword ptr [rsp+520]",
+                "mov r10, qword ptr [rsp+144]\n  xor r10, qword ptr [rsp+520]",
+                "mov rax, qword ptr [rsp+128]\n  mov qword ptr [rsp+r9+0x288], rax",
+            )
         )
     )

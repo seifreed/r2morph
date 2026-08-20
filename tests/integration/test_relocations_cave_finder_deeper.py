@@ -3,6 +3,7 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.relocations.cave_finder import CaveFinder
+from tests.utils.assertions import expect
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:
@@ -26,11 +27,11 @@ def test_cave_finder_insertion(tmp_path: Path):
 
         finder = CaveFinder(bin_obj, min_size=8)
         caves = finder.find_caves(max_caves=10)
-        assert isinstance(caves, list)
+        expect(isinstance(caves, list))
 
         if caves:
             cave = caves[0]
             _addr, size = finder.allocate_cave(cave, min(4, cave.size))
-            assert size > 0
+            expect(not (size <= 0))
             inserted = finder.insert_code_in_cave(b"\x90\x90")
-            assert inserted is None or isinstance(inserted, int)
+            expect(inserted is None or isinstance(inserted, int))

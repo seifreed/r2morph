@@ -9,6 +9,11 @@ from r2morph.mutations.short_jump_patching import (
     detect_rip_relative_displacement,
     validate_instructions_for_rip_relative,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_RESULT_2 = 2
+_EXPECTED_PATCHER_PATCH_PROBABILITY_0_5 = 0.5
+_EXPECTED_RESULT_0_ADDRESS_4096 = 0x1000
 
 
 def patch_short_jump_exclusive(mnemonic: str) -> str | None:
@@ -24,34 +29,34 @@ class TestShortJumpExclusive:
     """Test short jump exclusive instruction detection."""
 
     def test_loop_in_list(self):
-        assert "loop" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("loop" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_loopne_in_list(self):
-        assert "loopne" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("loopne" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_loopnz_in_list(self):
-        assert "loopnz" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("loopnz" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_loope_in_list(self):
-        assert "loope" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("loope" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_loopz_in_list(self):
-        assert "loopz" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("loopz" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_jcxz_in_list(self):
-        assert "jcxz" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("jcxz" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_jecxz_in_list(self):
-        assert "jecxz" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("jecxz" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_jrcxz_in_list(self):
-        assert "jrcxz" in SHORT_JUMP_EXCLUSIVE
+        expect(not ("jrcxz" not in SHORT_JUMP_EXCLUSIVE))
 
     def test_jmp_not_in_list(self):
-        assert "jmp" not in SHORT_JUMP_EXCLUSIVE
+        expect("jmp" not in SHORT_JUMP_EXCLUSIVE)
 
     def test_jz_not_in_list(self):
-        assert "jz" not in SHORT_JUMP_EXCLUSIVE
+        expect("jz" not in SHORT_JUMP_EXCLUSIVE)
 
 
 class TestPatchShortJumpExclusive:
@@ -59,51 +64,51 @@ class TestPatchShortJumpExclusive:
 
     def test_patch_loop(self):
         result = patch_short_jump_exclusive("loop")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
     def test_patch_loopne(self):
         result = patch_short_jump_exclusive("loopne")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
     def test_patch_loopnz(self):
         result = patch_short_jump_exclusive("loopnz")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
     def test_patch_loope(self):
         result = patch_short_jump_exclusive("loope")
-        assert result == "dec rcx\njz"
+        expect(result == "dec rcx\njz")
 
     def test_patch_loopz(self):
         result = patch_short_jump_exclusive("loopz")
-        assert result == "dec rcx\njz"
+        expect(result == "dec rcx\njz")
 
     def test_patch_jcxz(self):
         result = patch_short_jump_exclusive("jcxz")
-        assert result == "test cx, cx\njz"
+        expect(result == "test cx, cx\njz")
 
     def test_patch_jecxz(self):
         result = patch_short_jump_exclusive("jecxz")
-        assert result == "test ecx, ecx\njz"
+        expect(result == "test ecx, ecx\njz")
 
     def test_patch_jrcxz(self):
         result = patch_short_jump_exclusive("jrcxz")
-        assert result == "test rcx, rcx\njz"
+        expect(result == "test rcx, rcx\njz")
 
     def test_patch_jmp_returns_none(self):
         result = patch_short_jump_exclusive("jmp")
-        assert result is None
+        expect(not (result is not None))
 
     def test_patch_jz_returns_none(self):
         result = patch_short_jump_exclusive("jz")
-        assert result is None
+        expect(not (result is not None))
 
     def test_patch_case_insensitive(self):
         result = patch_short_jump_exclusive("LOOP")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
     def test_patch_mixed_case(self):
         result = patch_short_jump_exclusive("Jrcxz")
-        assert result == "test rcx, rcx\njz"
+        expect(result == "test rcx, rcx\njz")
 
 
 class TestDetectRipRelativeDisplacement:
@@ -111,35 +116,35 @@ class TestDetectRipRelativeDisplacement:
 
     def test_detect_rip_in_disasm(self):
         insn = {"disasm": "mov rax, [rip + 0x1000]"}
-        assert detect_rip_relative_displacement(insn) is True
+        expect(not (detect_rip_relative_displacement(insn) is not True))
 
     def test_detect_rip_in_opstr(self):
         insn = {"opstr": "lea rax, [rip + 0x1000]"}
-        assert detect_rip_relative_displacement(insn) is True
+        expect(not (detect_rip_relative_displacement(insn) is not True))
 
     def test_no_rip_in_disasm(self):
         insn = {"disasm": "mov rax, [rbx + 0x10]"}
-        assert detect_rip_relative_displacement(insn) is False
+        expect(not (detect_rip_relative_displacement(insn) is not False))
 
     def test_no_rip_in_opstr(self):
         insn = {"opstr": "mov rax, rbx"}
-        assert detect_rip_relative_displacement(insn) is False
+        expect(not (detect_rip_relative_displacement(insn) is not False))
 
     def test_detect_via_type_lea(self):
         insn = {"type": "lea", "disasm": "lea rax, [rip]"}
-        assert detect_rip_relative_displacement(insn) is True
+        expect(not (detect_rip_relative_displacement(insn) is not True))
 
     def test_detect_via_type_mov(self):
         insn = {"type": "mov", "disasm": "mov rax, [rip + 0x100]"}
-        assert detect_rip_relative_displacement(insn) is True
+        expect(not (detect_rip_relative_displacement(insn) is not True))
 
     def test_empty_instruction(self):
         insn = {}
-        assert detect_rip_relative_displacement(insn) is False
+        expect(not (detect_rip_relative_displacement(insn) is not False))
 
     def test_rip_in_esil(self):
         insn = {"esil": "rip,0x1000,+,[8],rax,="}
-        assert detect_rip_relative_displacement(insn) is True
+        expect(not (detect_rip_relative_displacement(insn) is not True))
 
 
 class TestValidateInstructionsForRipRelative:
@@ -147,7 +152,7 @@ class TestValidateInstructionsForRipRelative:
 
     def test_empty_instructions(self):
         result = validate_instructions_for_rip_relative([])
-        assert result == []
+        expect(result == [])
 
     def test_no_rip_relative(self):
         instructions = [
@@ -155,16 +160,16 @@ class TestValidateInstructionsForRipRelative:
             {"addr": 0x1003, "disasm": "add rax, 10", "mnemonic": "add"},
         ]
         result = validate_instructions_for_rip_relative(instructions)
-        assert result == []
+        expect(result == [])
 
     def test_single_rip_relative(self):
         instructions = [
             {"addr": 0x1000, "disasm": "mov rax, [rip + 0x100]", "mnemonic": "mov"},
         ]
         result = validate_instructions_for_rip_relative(instructions)
-        assert len(result) == 1
-        assert result[0]["address"] == 0x1000
-        assert result[0]["reason"] == "RIP-relative addressing detected"
+        expect(len(result) == 1)
+        expect(result[0]["address"] == _EXPECTED_RESULT_0_ADDRESS_4096)
+        expect(result[0]["reason"] == "RIP-relative addressing detected")
 
     def test_multiple_rip_relative(self):
         instructions = [
@@ -173,7 +178,7 @@ class TestValidateInstructionsForRipRelative:
             {"addr": 0x100A, "disasm": "add rax, rbx", "mnemonic": "add"},
         ]
         result = validate_instructions_for_rip_relative(instructions)
-        assert len(result) == 2
+        expect(len(result) == _EXPECTED_LEN_RESULT_2)
 
 
 class TestShortJumpPatchingPass:
@@ -181,27 +186,27 @@ class TestShortJumpPatchingPass:
 
     def test_init_default_config(self):
         patcher = ShortJumpPatchingPass()
-        assert patcher.name == "ShortJumpPatching"
-        assert patcher.patch_probability == 1.0
+        expect(patcher.name == "ShortJumpPatching")
+        expect(patcher.patch_probability == 1.0)
 
     def test_init_custom_config(self):
         patcher = ShortJumpPatchingPass(config={"probability": 0.5})
-        assert patcher.patch_probability == 0.5
+        expect(patcher.patch_probability == _EXPECTED_PATCHER_PATCH_PROBABILITY_0_5)
 
     def test_get_replacement_loop(self):
         patcher = ShortJumpPatchingPass()
         result = patcher._get_replacement("loop")
-        assert result == ("dec rcx", "jnz")
+        expect(result == ("dec rcx", "jnz"))
 
     def test_get_replacement_jrcxz(self):
         patcher = ShortJumpPatchingPass()
         result = patcher._get_replacement("jrcxz")
-        assert result == ("test rcx, rcx", "jz")
+        expect(result == ("test rcx, rcx", "jz"))
 
     def test_get_replacement_invalid(self):
         patcher = ShortJumpPatchingPass()
         result = patcher._get_replacement("jmp")
-        assert result is None
+        expect(not (result is not None))
 
 
 class TestRIPRelativeValidationPass:
@@ -209,9 +214,9 @@ class TestRIPRelativeValidationPass:
 
     def test_init_default_config(self):
         validator = RIPRelativeValidationPass()
-        assert validator.name == "RIPRelativeValidation"
-        assert validator.fail_on_detect is True
+        expect(validator.name == "RIPRelativeValidation")
+        expect(not (validator.fail_on_detect is not True))
 
     def test_init_custom_config(self):
         validator = RIPRelativeValidationPass(config={"fail_on_detect": False})
-        assert validator.fail_on_detect is False
+        expect(not (validator.fail_on_detect is not False))

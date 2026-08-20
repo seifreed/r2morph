@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 from r2morph.validation.binary_region_bridges import StatePairRequest, build_state_pair, validate_binary_paths
+from tests.utils.assertions import expect
 
 
 def test_validate_binary_paths_returns_paths_for_existing_artifacts(tmp_path: Path) -> None:
@@ -17,7 +18,7 @@ def test_validate_binary_paths_returns_paths_for_existing_artifacts(tmp_path: Pa
 
     result = validate_binary_paths(SimpleNamespace(path=current_binary), {"previous_binary_path": previous_binary})
 
-    assert result == (previous_binary, current_binary)
+    expect(result == (previous_binary, current_binary))
 
 
 def test_build_state_pair_initializes_shared_registers_for_x64() -> None:
@@ -34,29 +35,28 @@ def test_build_state_pair_initializes_shared_registers_for_x64() -> None:
 
     class FakeFactory:
         def blank_state(self, *, addr: int, add_options: set[object]) -> FakeState:
-            assert addr in {0x401000, 0x401010}
-            assert add_options == {"ZERO_FILL_UNCONSTRAINED_MEMORY", "ZERO_FILL_UNCONSTRAINED_REGISTERS"}
+            expect(not (addr not in {0x401000, 0x401010}))
+            expect(add_options == {"ZERO_FILL_UNCONSTRAINED_MEMORY", "ZERO_FILL_UNCONSTRAINED_REGISTERS"})
             return FakeState()
 
     class FakeBridge:
         def __init__(self) -> None:
             self.angr_project = SimpleNamespace(factory=FakeFactory())
 
-    class FakeClaripy:
-        @staticmethod
-        def BVV(value: int, bits: int) -> tuple[str, int, int]:
-            return ("BVV", value, bits)
+    def build_value(value: int, bits: int) -> tuple[str, int, int]:
+        return ("BVV", value, bits)
 
-        @staticmethod
-        def BVS(name: str, bits: int) -> tuple[str, str, int]:
-            return ("BVS", name, bits)
+    def build_symbol(name: str, bits: int) -> tuple[str, str, int]:
+        return ("BVS", name, bits)
+
+    fake_claripy = SimpleNamespace(BVV=build_value, BVS=build_symbol)
 
     original_state, mutated_state, compared_registers, stack_reg = build_state_pair(
         StatePairRequest(
             original_bridge=FakeBridge(),
             mutated_bridge=FakeBridge(),
             original_binary=SimpleNamespace(get_arch_info=lambda: {"bits": 64}),
-            claripy=FakeClaripy,
+            claripy=fake_claripy,
             options=SimpleNamespace(
                 ZERO_FILL_UNCONSTRAINED_MEMORY="ZERO_FILL_UNCONSTRAINED_MEMORY",
                 ZERO_FILL_UNCONSTRAINED_REGISTERS="ZERO_FILL_UNCONSTRAINED_REGISTERS",
@@ -67,7 +67,7 @@ def test_build_state_pair_initializes_shared_registers_for_x64() -> None:
         )
     )
 
-    assert (
+    expect(
         stack_reg == "rsp"
         and compared_registers == ["rax", "rbx", "rcx", "rdx", "rsi", "rdi"]
         and original_state.regs.rsp == ("BVV", 0x100000, 64)

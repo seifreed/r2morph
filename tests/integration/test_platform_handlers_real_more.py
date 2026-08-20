@@ -7,6 +7,7 @@ import pytest
 from r2morph.platform.elf_handler import ELFHandler
 from r2morph.platform.macho_handler import MachOHandler
 from r2morph.platform.pe_handler import PEHandler
+from tests.utils.assertions import expect
 
 
 def test_elf_handler_parses_real_binary() -> None:
@@ -15,19 +16,19 @@ def test_elf_handler_parses_real_binary() -> None:
         pytest.skip("ELF test binary not available")
 
     handler = ELFHandler(elf_path)
-    assert handler.is_elf() is True
-    assert handler.validate() is True
+    expect(not (handler.is_elf() is not True))
+    expect(not (handler.validate() is not True))
 
     sections = handler.get_sections()
-    assert sections
+    expect(sections)
 
     entry = handler.get_entry_point()
-    assert isinstance(entry, int)
-    assert entry > 0
+    expect(isinstance(entry, int))
+    expect(not (entry <= 0))
 
     arch = handler.get_architecture()
-    assert arch["bits"] in (32, 64)
-    assert arch["machine_name"]
+    expect(not (arch["bits"] not in (32, 64)))
+    expect(arch["machine_name"])
 
 
 def test_macho_handler_parses_real_binary() -> None:
@@ -36,23 +37,23 @@ def test_macho_handler_parses_real_binary() -> None:
         pytest.skip("Mach-O test binary not available")
 
     handler = MachOHandler(macho_path)
-    assert handler.is_macho() is True
-    assert handler.validate() is True
+    expect(not (handler.is_macho() is not True))
+    expect(not (handler.validate() is not True))
 
     load_cmds = handler.get_load_commands()
     segments = handler.get_segments()
     if handler._parse_lief() is None:
-        assert isinstance(load_cmds, list)
-        assert isinstance(segments, list)
+        expect(isinstance(load_cmds, list))
+        expect(isinstance(segments, list))
     else:
-        assert load_cmds
-        assert segments
+        expect(load_cmds)
+        expect(segments)
 
     ok, message = handler.validate_integrity()
-    assert ok is True
-    assert isinstance(message, str)
+    expect(not (ok is not True))
+    expect(isinstance(message, str))
 
-    assert handler.is_fat_binary() is False
+    expect(not (handler.is_fat_binary() is not False))
 
 
 def test_pe_handler_parses_real_binary(tmp_path: Path) -> None:
@@ -64,13 +65,12 @@ def test_pe_handler_parses_real_binary(tmp_path: Path) -> None:
     work_path.write_bytes(pe_path.read_bytes())
 
     handler = PEHandler(work_path)
-    assert handler.is_pe() is True
-    assert handler.validate() is True
+    expect(not (handler.is_pe() is not True))
+    expect(not (handler.validate() is not True))
 
     sections = handler.get_sections()
     if handler._parse_lief() is None:
-        assert isinstance(sections, list)
-    else:
-        assert sections
+        expect(isinstance(sections, list))
+    expect(sections)
 
-    assert handler.fix_checksum() is True
+    expect(not (handler.fix_checksum() is not True))

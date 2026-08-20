@@ -12,6 +12,21 @@ from r2morph.analysis.dataflow import (
     Register,
     Use,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_DEFN_ADDRESS_4096 = 0x1000
+_EXPECTED_LEN_ANALYZER_RESULT_LIVE_IN_3 = 3
+_EXPECTED_LEN_ANALYZER_RESULT_LIVE_OUT_3 = 3
+_EXPECTED_LEN_ANALYZER_RESULT_REACHING_IN_3 = 3
+_EXPECTED_LEN_ANALYZER_RESULT_REACHING_OUT_3 = 3
+_EXPECTED_LEN_CHAIN_USES_2 = 2
+_EXPECTED_LEN_LIVE_AT_1000_2 = 2
+_EXPECTED_LEN_RESULT_LIVE_IN_4 = 4
+_EXPECTED_LEN_RESULT_LIVE_IN_5 = 5
+_EXPECTED_LEN_RESULT_LIVE_OUT_4 = 4
+_EXPECTED_LEN_RESULT_LIVE_OUT_5 = 5
+_EXPECTED_REG_SIZE_64 = 64
+_EXPECTED_USE_ADDRESS_4101 = 0x1005
 
 
 def create_test_cfg() -> ControlFlowGraph:
@@ -208,14 +223,14 @@ class TestRegister:
     def test_register_creation(self):
         """Test basic register creation."""
         reg = Register("rax", 64)
-        assert reg.name == "rax"
-        assert reg.size == 64
-        assert reg.is_float is False
+        expect(reg.name == "rax")
+        expect(reg.size == _EXPECTED_REG_SIZE_64)
+        expect(not (reg.is_float is not False))
 
     def test_register_repr(self):
         """Test register string representation."""
         reg = Register("eax", 32)
-        assert repr(reg) == "eax"
+        expect(repr(reg) == "eax")
 
     def test_register_hash_equality(self):
         """Test register hashing and equality."""
@@ -223,9 +238,9 @@ class TestRegister:
         reg2 = Register("rax", 64)
         reg3 = Register("eax", 32)
 
-        assert hash(reg1) == hash(reg2)
-        assert reg1 == reg2
-        assert reg1 != reg3
+        expect(hash(reg1) == hash(reg2))
+        expect(reg1 == reg2)
+        expect(reg1 != reg3)
 
     def test_register_aliases_x86_64(self):
         """Test x86-64 register alias extraction."""
@@ -233,10 +248,10 @@ class TestRegister:
         aliases = reg.aliases()
 
         alias_names = {r.name for r in aliases}
-        assert "rax" in alias_names
-        assert "eax" in alias_names
-        assert "ax" in alias_names
-        assert "al" in alias_names
+        expect(not ("rax" not in alias_names))
+        expect(not ("eax" not in alias_names))
+        expect(not ("ax" not in alias_names))
+        expect(not ("al" not in alias_names))
 
     def test_register_aliases_32bit(self):
         """Test 32-bit register aliases."""
@@ -244,10 +259,10 @@ class TestRegister:
         aliases = reg.aliases()
 
         alias_names = {r.name for r in aliases}
-        assert "rbx" in alias_names
-        assert "ebx" in alias_names
-        assert "bx" in alias_names
-        assert "bl" in alias_names
+        expect(not ("rbx" not in alias_names))
+        expect(not ("ebx" not in alias_names))
+        expect(not ("bx" not in alias_names))
+        expect(not ("bl" not in alias_names))
 
 
 class TestDefinition:
@@ -258,17 +273,17 @@ class TestDefinition:
         reg = Register("eax", 32)
         defn = Definition(address=0x1000, register=reg, instruction="mov eax, 1")
 
-        assert defn.address == 0x1000
-        assert defn.register == reg
-        assert defn.instruction == "mov eax, 1"
+        expect(defn.address == _EXPECTED_DEFN_ADDRESS_4096)
+        expect(defn.register == reg)
+        expect(defn.instruction == "mov eax, 1")
 
     def test_definition_repr(self):
         """Test definition string representation."""
         reg = Register("ebx", 32)
         defn = Definition(address=0x2000, register=reg)
 
-        assert "0x2000" in repr(defn)
-        assert "ebx" in repr(defn)
+        expect(not ("0x2000" not in repr(defn)))
+        expect(not ("ebx" not in repr(defn)))
 
     def test_definition_hash_equality(self):
         """Test definition hashing and equality."""
@@ -279,9 +294,9 @@ class TestDefinition:
         defn2 = Definition(address=0x1000, register=reg2)
         defn3 = Definition(address=0x2000, register=reg1)
 
-        assert hash(defn1) == hash(defn2)
-        assert defn1 == defn2
-        assert defn1 != defn3
+        expect(hash(defn1) == hash(defn2))
+        expect(defn1 == defn2)
+        expect(defn1 != defn3)
 
 
 class TestUse:
@@ -292,17 +307,17 @@ class TestUse:
         reg = Register("eax", 32)
         use = Use(address=0x1005, register=reg, instruction="add eax, ebx")
 
-        assert use.address == 0x1005
-        assert use.register == reg
-        assert use.instruction == "add eax, ebx"
+        expect(use.address == _EXPECTED_USE_ADDRESS_4101)
+        expect(use.register == reg)
+        expect(use.instruction == "add eax, ebx")
 
     def test_use_repr(self):
         """Test use string representation."""
         reg = Register("rdx", 64)
         use = Use(address=0x3000, register=reg)
 
-        assert "0x3000" in repr(use)
-        assert "rdx" in repr(use)
+        expect(not ("0x3000" not in repr(use)))
+        expect(not ("rdx" not in repr(use)))
 
 
 class TestDefUseChain:
@@ -317,9 +332,9 @@ class TestDefUseChain:
 
         chain = DefUseChain(definition=defn, uses=[use1, use2], register=reg)
 
-        assert chain.definition == defn
-        assert len(chain.uses) == 2
-        assert chain.register == reg
+        expect(chain.definition == defn)
+        expect(len(chain.uses) == _EXPECTED_LEN_CHAIN_USES_2)
+        expect(chain.register == reg)
 
     def test_chain_add_use(self):
         """Test adding uses to chain."""
@@ -330,8 +345,8 @@ class TestDefUseChain:
         use = Use(address=0x1010, register=reg)
         chain.add_use(use)
 
-        assert len(chain.uses) == 1
-        assert chain.uses[0] == use
+        expect(len(chain.uses) == 1)
+        expect(chain.uses[0] == use)
 
     def test_chain_live_range(self):
         """Test live range calculation."""
@@ -342,7 +357,7 @@ class TestDefUseChain:
 
         chain = DefUseChain(definition=defn, uses=[use1, use2], register=reg)
 
-        assert chain.live_range == (0x1000, 0x1050)
+        expect(chain.live_range == (4096, 4176))
 
     def test_chain_is_live_at(self):
         """Test is_live_at check."""
@@ -352,10 +367,10 @@ class TestDefUseChain:
 
         chain = DefUseChain(definition=defn, uses=[use], register=reg)
 
-        assert chain.is_live_at(0x1000) is True
-        assert chain.is_live_at(0x1010) is True
-        assert chain.is_live_at(0x1020) is True
-        assert chain.is_live_at(0x1030) is False
+        expect(not (chain.is_live_at(0x1000) is not True))
+        expect(not (chain.is_live_at(0x1010) is not True))
+        expect(not (chain.is_live_at(0x1020) is not True))
+        expect(not (chain.is_live_at(0x1030) is not False))
 
 
 class TestDataFlowResult:
@@ -365,11 +380,11 @@ class TestDataFlowResult:
         """Test result initialization."""
         result = DataFlowResult()
 
-        assert result.live_in == {}
-        assert result.live_out == {}
-        assert result.reaching_in == {}
-        assert result.reaching_out == {}
-        assert result.def_use_chains == []
+        expect(result.live_in == {})
+        expect(result.live_out == {})
+        expect(result.reaching_in == {})
+        expect(result.reaching_out == {})
+        expect(result.def_use_chains == [])
 
     def test_result_get_live_registers(self):
         """Test get_live_registers method."""
@@ -381,13 +396,13 @@ class TestDataFlowResult:
         result.live_in[0x2000] = {reg1}
 
         live_at_1000 = result.get_live_registers(0x1000)
-        assert len(live_at_1000) == 2
+        expect(len(live_at_1000) == _EXPECTED_LEN_LIVE_AT_1000_2)
 
         live_at_2000 = result.get_live_registers(0x2000)
-        assert len(live_at_2000) == 1
+        expect(len(live_at_2000) == 1)
 
         live_at_3000 = result.get_live_registers(0x3000)
-        assert len(live_at_3000) == 0
+        expect(len(live_at_3000) == 0)
 
     def test_result_is_register_live(self):
         """Test is_register_live method."""
@@ -396,8 +411,8 @@ class TestDataFlowResult:
 
         result.live_in[0x1000] = {reg}
 
-        assert result.is_register_live(0x1000, reg) is True
-        assert result.is_register_live(0x1000, Register("ebx", 32)) is False
+        expect(not (result.is_register_live(0x1000, reg) is not True))
+        expect(not (result.is_register_live(0x1000, Register("ebx", 32)) is not False))
 
     def test_result_get_reaching_definitions(self):
         """Test get_reaching_definitions method."""
@@ -408,11 +423,11 @@ class TestDataFlowResult:
         result.reaching_in[0x1010] = {defn}
 
         reaching = result.get_reaching_definitions(0x1010)
-        assert len(reaching) == 1
-        assert defn in reaching
+        expect(len(reaching) == 1)
+        expect(not (defn not in reaching))
 
         reaching_empty = result.get_reaching_definitions(0x2000)
-        assert len(reaching_empty) == 0
+        expect(len(reaching_empty) == 0)
 
 
 class TestDataFlowAnalyzer:
@@ -423,8 +438,8 @@ class TestDataFlowAnalyzer:
         cfg = create_test_cfg()
         analyzer = DataFlowAnalyzer(cfg)
 
-        assert analyzer.cfg is cfg
-        assert isinstance(analyzer._result, DataFlowResult)
+        expect(not (analyzer.cfg is not cfg))
+        expect(isinstance(analyzer._result, DataFlowResult))
 
     def test_analyze_basic(self):
         """Test basic analysis."""
@@ -432,9 +447,9 @@ class TestDataFlowAnalyzer:
         analyzer = DataFlowAnalyzer(cfg)
         result = analyzer.analyze()
 
-        assert isinstance(result, DataFlowResult)
-        assert len(result.live_in) > 0
-        assert len(result.live_out) > 0
+        expect(isinstance(result, DataFlowResult))
+        expect(not (len(result.live_in) <= 0))
+        expect(not (len(result.live_out) <= 0))
 
     def test_analyze_liveness(self):
         """Test liveness computation."""
@@ -442,8 +457,8 @@ class TestDataFlowAnalyzer:
         analyzer = DataFlowAnalyzer(cfg)
         analyzer._compute_liveness()
 
-        assert len(analyzer._result.live_in) == 3
-        assert len(analyzer._result.live_out) == 3
+        expect(len(analyzer._result.live_in) == _EXPECTED_LEN_ANALYZER_RESULT_LIVE_IN_3)
+        expect(len(analyzer._result.live_out) == _EXPECTED_LEN_ANALYZER_RESULT_LIVE_OUT_3)
 
     def test_analyze_reaching_definitions(self):
         """Test reaching definitions computation."""
@@ -451,8 +466,8 @@ class TestDataFlowAnalyzer:
         analyzer = DataFlowAnalyzer(cfg)
         analyzer._compute_reaching_definitions()
 
-        assert len(analyzer._result.reaching_in) == 3
-        assert len(analyzer._result.reaching_out) == 3
+        expect(len(analyzer._result.reaching_in) == _EXPECTED_LEN_ANALYZER_RESULT_REACHING_IN_3)
+        expect(len(analyzer._result.reaching_out) == _EXPECTED_LEN_ANALYZER_RESULT_REACHING_OUT_3)
 
     def test_get_block_use(self):
         """Test extracting registers used in block."""
@@ -462,9 +477,9 @@ class TestDataFlowAnalyzer:
         block = cfg.blocks[0x1010]
         used = analyzer._get_block_use(block)
 
-        assert len(used) > 0
+        expect(not (len(used) <= 0))
         reg_names = {r.name for r in used}
-        assert "eax" in reg_names or "ebx" in reg_names
+        expect("eax" in reg_names or "ebx" in reg_names)
 
     def test_get_block_def(self):
         """Test extracting registers defined in block."""
@@ -474,9 +489,9 @@ class TestDataFlowAnalyzer:
         block = cfg.blocks[0x1000]
         defined = analyzer._get_block_def(block)
 
-        assert len(defined) > 0
+        expect(not (len(defined) <= 0))
         reg_names = {r.name for r in defined}
-        assert "eax" in reg_names or "ebx" in reg_names
+        expect("eax" in reg_names or "ebx" in reg_names)
 
     def test_extract_registers_from_operand(self):
         """Test register extraction from operands."""
@@ -485,13 +500,13 @@ class TestDataFlowAnalyzer:
 
         regs = analyzer._extract_registers_from_operand("mov eax, ebx")
         reg_names = {r.name for r in regs}
-        assert "eax" in reg_names
-        assert "ebx" in reg_names
+        expect(not ("eax" not in reg_names))
+        expect(not ("ebx" not in reg_names))
 
         regs = analyzer._extract_registers_from_operand("add rax, r8")
         reg_names = {r.name for r in regs}
-        assert "rax" in reg_names
-        assert "r8" in reg_names
+        expect(not ("rax" not in reg_names))
+        expect(not ("r8" not in reg_names))
 
     def test_is_safe_to_mutate(self):
         """Test mutation safety check."""
@@ -500,8 +515,8 @@ class TestDataFlowAnalyzer:
         analyzer.analyze()
 
         is_safe, reason = analyzer.is_safe_to_mutate(0x1010, "register_substitution")
-        assert isinstance(is_safe, bool)
-        assert isinstance(reason, str)
+        expect(isinstance(is_safe, bool))
+        expect(isinstance(reason, str))
 
     def test_branching_cfg(self):
         """Test analysis on branching CFG."""
@@ -509,8 +524,8 @@ class TestDataFlowAnalyzer:
         analyzer = DataFlowAnalyzer(cfg)
         result = analyzer.analyze()
 
-        assert len(result.live_in) == 4
-        assert len(result.live_out) == 4
+        expect(len(result.live_in) == _EXPECTED_LEN_RESULT_LIVE_IN_4)
+        expect(len(result.live_out) == _EXPECTED_LEN_RESULT_LIVE_OUT_4)
 
     def test_loop_cfg(self):
         """Test analysis on loop CFG."""
@@ -518,8 +533,8 @@ class TestDataFlowAnalyzer:
         analyzer = DataFlowAnalyzer(cfg)
         result = analyzer.analyze()
 
-        assert len(result.live_in) == 5
-        assert len(result.live_out) == 5
+        expect(len(result.live_in) == _EXPECTED_LEN_RESULT_LIVE_IN_5)
+        expect(len(result.live_out) == _EXPECTED_LEN_RESULT_LIVE_OUT_5)
 
 
 class TestDataFlowDirection:
@@ -527,5 +542,5 @@ class TestDataFlowDirection:
 
     def test_direction_values(self):
         """Test direction enum values."""
-        assert DataFlowDirection.FORWARD.value == "forward"
-        assert DataFlowDirection.BACKWARD.value == "backward"
+        expect(DataFlowDirection.FORWARD.value == "forward")
+        expect(DataFlowDirection.BACKWARD.value == "backward")

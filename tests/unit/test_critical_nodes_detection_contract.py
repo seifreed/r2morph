@@ -8,6 +8,9 @@ from r2morph.analysis.critical_nodes_detection import (
     find_call_sites,
     find_entry_exits,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CRITICAL_NODES_4096 = 0x1000
 
 
 def _build_cfg() -> ControlFlowGraph:
@@ -40,15 +43,15 @@ def _build_cfg() -> ControlFlowGraph:
 def test_critical_nodes_detection_contract() -> None:
     cfg = _build_cfg()
 
-    assert find_branch_targets(cfg) == {0x1010}
-    assert find_call_sites(cfg) == {0x1000}
-    assert find_entry_exits(cfg) == {0x1000, 0x1010}
-    assert find_back_edges(cfg) == []
+    expect(find_branch_targets(cfg) == {4112})
+    expect(find_call_sites(cfg) == {4096})
+    expect(find_entry_exits(cfg) == {4096, 4112})
+    expect(find_back_edges(cfg) == [])
 
     critical_nodes = build_critical_nodes(cfg, default_exclusion_radius=3)
     zones = compute_exclusion_zones(cfg, critical_nodes)
     safe_regions = compute_safe_regions(cfg, zones)
 
-    assert 0x1000 in critical_nodes
-    assert zones
-    assert safe_regions == []
+    expect(not (_EXPECTED_CRITICAL_NODES_4096 not in critical_nodes))
+    expect(zones)
+    expect(safe_regions == [])

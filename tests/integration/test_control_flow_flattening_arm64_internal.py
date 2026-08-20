@@ -11,6 +11,7 @@ from r2morph.mutations.control_flow_flattening_strategies import (
     add_opaque_predicate,
     insert_dead_code_with_predicate,
 )
+from tests.utils.assertions import expect
 
 
 def test_control_flow_flattening_arm64_internal_helpers(tmp_path: Path):
@@ -49,6 +50,6 @@ def test_control_flow_flattening_arm64_internal_helpers(tmp_path: Path):
         blocks = [BasicBlock(address=0x1000, size=4), BasicBlock(address=0x2000, size=4)]
         dispatcher = DispatcherGenerator().generate(bin_obj, blocks)
 
-    assert isinstance(ok_pred, bool)
-    assert isinstance(ok_dead, bool)
-    assert isinstance(dispatcher, list)
+    expect(isinstance(ok_pred, bool))
+    expect(isinstance(ok_dead, bool))
+    expect(isinstance(dispatcher, list))

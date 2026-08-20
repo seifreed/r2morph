@@ -17,6 +17,7 @@ import pytest
 
 from r2morph.relocations.manager import RelocationManager
 from tests._doubles.scripted_r2_binary import ScriptedR2Binary
+from tests.utils.assertions import expect
 
 VALID_AOJ = '[{"size": 4}]'
 
@@ -35,14 +36,14 @@ VALID_AOJ = '[{"size": 4}]'
 )
 def test_degenerate_r2_output_returns_false_without_crash(responses: dict[str, str | None]) -> None:
     rm = RelocationManager(ScriptedR2Binary(responses))
-    assert rm.calculate_space_needed(0x1000, 8) is False
+    expect(not (rm.calculate_space_needed(0x1000, 8) is not False))
 
 
 def test_real_nop_cave_still_reports_space_available() -> None:
     rm = RelocationManager(ScriptedR2Binary({"aoj": VALID_AOJ, "p8": "90909090"}))
-    assert rm.calculate_space_needed(0x1000, 4) is True
+    expect(not (rm.calculate_space_needed(0x1000, 4) is not True))
 
 
 def test_non_padding_bytes_still_report_no_space() -> None:
     rm = RelocationManager(ScriptedR2Binary({"aoj": VALID_AOJ, "p8": "0102feff"}))
-    assert rm.calculate_space_needed(0x1000, 4) is False
+    expect(not (rm.calculate_space_needed(0x1000, 4) is not False))

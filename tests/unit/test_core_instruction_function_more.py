@@ -1,5 +1,10 @@
 from r2morph.core.function import Function
 from r2morph.core.instruction import Instruction
+from tests.utils.assertions import expect
+
+_EXPECTED_FUNC_GET_COMPLEXITY_2 = 2
+_EXPECTED_FUNC_GET_INSTRUCTIONS_COUNT_2 = 2
+_EXPECTED_INSN_GET_JUMP_TARGET_4198480 = 0x401050
 
 
 def test_instruction_helpers_and_repr():
@@ -14,11 +19,11 @@ def test_instruction_helpers_and_repr():
         }
     )
 
-    assert insn.is_jump() is True
-    assert insn.is_call() is False
-    assert insn.get_jump_target() == 0x401050
-    assert "jmp" in str(insn)
-    assert "0x401000" in repr(insn)
+    expect(not (insn.is_jump() is not True))
+    expect(not (insn.is_call() is not False))
+    expect(insn.get_jump_target() == _EXPECTED_INSN_GET_JUMP_TARGET_4198480)
+    expect(not ("jmp" not in str(insn)))
+    expect(not ("0x401000" not in repr(insn)))
 
 
 def test_function_helpers_and_repr():
@@ -26,7 +31,7 @@ def test_function_helpers_and_repr():
     func.instructions = [{"offset": 0x402000}, {"offset": 0x402002}]
     func.basic_blocks = [{"addr": 0x402000}, {"addr": 0x402010}]
 
-    assert func.get_instructions_count() == 2
-    assert func.get_complexity() == 2
-    assert func.is_leaf() is False
-    assert "sym.test" in repr(func)
+    expect(func.get_instructions_count() == _EXPECTED_FUNC_GET_INSTRUCTIONS_COUNT_2)
+    expect(func.get_complexity() == _EXPECTED_FUNC_GET_COMPLEXITY_2)
+    expect(not (func.is_leaf() is not False))
+    expect(not ("sym.test" not in repr(func)))

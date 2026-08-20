@@ -11,6 +11,7 @@ from r2morph.validation.differ_models import (
     FunctionDiff,
     SectionDiff,
 )
+from tests.utils.assertions import expect
 
 
 def test_diff_report_serialization_roundtrip(tmp_path: Path) -> None:
@@ -49,12 +50,12 @@ def test_diff_report_serialization_roundtrip(tmp_path: Path) -> None:
     )
 
     payload = report.to_dict()
-    assert payload["original_binary"] == "orig.bin"
-    assert payload["mutated_binary"] == "mut.bin"
-    assert payload["diffs"][0]["diff_type"] == "section_modified"
-    assert payload["diffs"][0]["severity"] == "medium"
-    assert payload["diffs"][0]["section_diffs"][0]["name"] == ".text"
+    expect(payload["original_binary"] == "orig.bin")
+    expect(payload["mutated_binary"] == "mut.bin")
+    expect(payload["diffs"][0]["diff_type"] == "section_modified")
+    expect(payload["diffs"][0]["severity"] == "medium")
+    expect(payload["diffs"][0]["section_diffs"][0]["name"] == ".text")
 
     output_path = tmp_path / "diff.json"
     report.write_report(output_path)
-    assert output_path.read_text().strip().startswith("{")
+    expect(output_path.read_text().strip().startswith("{"))

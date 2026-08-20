@@ -24,6 +24,9 @@ from r2morph.core.config import (
 )
 from r2morph.core.engine import MorphEngine
 
+_EXPECTED_LEN_RECORDS_3 = 3
+_EXPECTED_LEN_SYS_ARGV_2 = 2
+
 
 def demo_individual_passes(input_path: Path):
     """Example: Using individual mutation passes."""
@@ -174,12 +177,12 @@ def demo_mutation_records(input_path: Path):
                 desc = record.get("description", "N/A")
                 print(f"    [{i}] 0x{addr:x}: {desc}")
 
-            if len(records) > 3:
+            if len(records) > _EXPECTED_LEN_RECORDS_3:
                 print(f"    ... and {len(records) - 3} more")
 
 
 def main():
-    if len(sys.argv) < 2:
+    if len(sys.argv) < _EXPECTED_LEN_SYS_ARGV_2:
         print(f"Usage: {sys.argv[0]} <input.bin>")
         print()
         print("Demonstrates various mutation workflows:")

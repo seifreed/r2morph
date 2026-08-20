@@ -3,6 +3,7 @@ from r2morph.reporting.report_rendering_flow_section_helpers import (
     build_degradation_summary_lines,
     build_gate_summary_lines,
 )
+from tests.utils.assertions import expect
 
 
 def test_build_degradation_summary_lines_includes_roles_and_severity_rows() -> None:
@@ -25,16 +26,19 @@ def test_build_degradation_summary_lines_includes_roles_and_severity_rows() -> N
         ],
     )
 
-    assert lines == [
-        "[bold]Validation Mode Adjustment[/bold]: requested=symbolic, effective=runtime",
-        "  policy=fallback, reason=timeout",
-        "[bold]Degraded Passes[/bold]:",
-        "  [yellow]alpha[/yellow]: symbolic confidence=high",
-        "[bold]Degradation Roles[/bold]:",
-        "  trigger: 2",
-        "[bold]Degraded Severity Priority[/bold]:",
-        "  [cyan]alpha[/cyan]: severity=mismatch, issue_count=3, symbolic_requested=1",
-    ]
+    expect(
+        lines
+        == [
+            "[bold]Validation Mode Adjustment[/bold]: requested=symbolic, effective=runtime",
+            "  policy=fallback, reason=timeout",
+            "[bold]Degraded Passes[/bold]:",
+            "  [yellow]alpha[/yellow]: symbolic confidence=high",
+            "[bold]Degradation Roles[/bold]:",
+            "  trigger: 2",
+            "[bold]Degraded Severity Priority[/bold]:",
+            "  [cyan]alpha[/cyan]: severity=mismatch, issue_count=3, symbolic_requested=1",
+        ]
+    )
 
 
 def test_build_gate_summary_lines_includes_failures_and_counts() -> None:
@@ -75,14 +79,17 @@ def test_build_gate_summary_lines_includes_failures_and_counts() -> None:
         ],
     )
 
-    assert lines == [
-        "[bold]Gate Evaluation[/bold]: all_passed=no",
-        "  min_severity=high, passed=yes",
-        "  require_pass_severity=alpha<=medium, passed=no",
-        "  failures: alpha<=medium",
-        "[bold]Gate Failure Summary[/bold]: min_severity_failed=yes, require_pass_failures=1",
-        "  expected_severity_counts=medium:1",
-        "  expected_severity_priority=medium:1",
-        "[bold]Gate Failure By Pass[/bold]:",
-        "  [yellow]alpha[/yellow] (count=1, strictest_expected=medium): alpha<=medium",
-    ]
+    expect(
+        lines
+        == [
+            "[bold]Gate Evaluation[/bold]: all_passed=no",
+            "  min_severity=high, passed=yes",
+            "  require_pass_severity=alpha<=medium, passed=no",
+            "  failures: alpha<=medium",
+            "[bold]Gate Failure Summary[/bold]: min_severity_failed=yes, require_pass_failures=1",
+            "  expected_severity_counts=medium:1",
+            "  expected_severity_priority=medium:1",
+            "[bold]Gate Failure By Pass[/bold]:",
+            "  [yellow]alpha[/yellow] (count=1, strictest_expected=medium): alpha<=medium",
+        ]
+    )

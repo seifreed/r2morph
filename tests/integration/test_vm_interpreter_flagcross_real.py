@@ -27,6 +27,7 @@ from pathlib import Path
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration import test_code_virtualization_real as vm_real
+from tests.utils.assertions import expect
 
 FIXTURE = vm_real._DATASET / "elf_vm_interp_stack_x86_64"
 
@@ -50,8 +51,8 @@ def test_flag_crossing_interpreter_virtualizes_and_preserves_exit_code(tmp_path:
     mutated = tmp_path / "flagcross_virtualized"
     shutil.copy(FIXTURE, mutated)
     stats = _run_pass(mutated, virtualize_dispatch=True)
-    assert stats["functions_virtualized"] >= 1
-    assert vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
 
 
 def test_flag_crossing_dispatch_left_untouched_without_opt_in(tmp_path: Path) -> None:
@@ -59,5 +60,5 @@ def test_flag_crossing_dispatch_left_untouched_without_opt_in(tmp_path: Path) ->
     mutated = tmp_path / "flagcross_native"
     shutil.copy(FIXTURE, mutated)
     stats = _run_pass(mutated, virtualize_dispatch=False)
-    assert stats["functions_virtualized"] == 0
-    assert vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE
+    expect(stats["functions_virtualized"] == 0)
+    expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)

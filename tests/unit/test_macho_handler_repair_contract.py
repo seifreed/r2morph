@@ -1,5 +1,6 @@
 import r2morph.platform.macho_handler_repair as macho_repair
 from r2morph.platform.repair_aggregation import aggregate_repair_results
+from tests.utils.assertions import expect
 
 
 def test_validate_integrity_rejects_non_macho() -> None:
@@ -7,8 +8,8 @@ def test_validate_integrity_rejects_non_macho() -> None:
 
     ok, msg = macho_repair.validate_integrity(handler)
 
-    assert ok is False
-    assert msg == "Not a Mach-O binary"
+    expect(not (ok is not False))
+    expect(msg == "Not a Mach-O binary")
 
 
 def test_fix_load_commands_handles_missing_binary() -> None:
@@ -16,11 +17,11 @@ def test_fix_load_commands_handles_missing_binary() -> None:
 
     ok, fixes = macho_repair.fix_load_commands(handler)
 
-    assert ok is True
-    assert fixes == []
+    expect(not (ok is not True))
+    expect(fixes == [])
 
 
 def test_repair_aggregation_reports_failed_macho_check() -> None:
     ok, repairs = aggregate_repair_results([("load_commands", (True, ["load"])), ("bind_symbols", (False, ["bind"]))])
 
-    assert ok is False and repairs == ["load", "bind", "Warning: bind_symbols repair may have issues"]
+    expect(ok is False and repairs == ["load", "bind", "Warning: bind_symbols repair may have issues"])

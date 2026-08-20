@@ -5,6 +5,7 @@ from __future__ import annotations
 from r2morph.reporting.filtered_summary_risk_coverage_sources import (
     _resolve_filtered_summary_risk_coverage_sources,
 )
+from tests.utils.assertions import expect
 
 
 def test_resolve_filtered_summary_risk_coverage_sources_prefers_persisted_summary() -> None:
@@ -42,15 +43,18 @@ def test_resolve_filtered_summary_risk_coverage_sources_prefers_persisted_summar
         },
     )
 
-    assert resolved == {
-        "risky": ["summary-risk"],
-        "structural": ["summary-structural"],
-        "symbolic": ["summary-symbolic"],
-        "clean": ["summary-clean"],
-        "covered": ["summary-covered"],
-        "uncovered": ["summary-uncovered"],
-        "clean_only": ["summary-clean-only"],
-    }
+    expect(
+        resolved
+        == {
+            "risky": ["summary-risk"],
+            "structural": ["summary-structural"],
+            "symbolic": ["summary-symbolic"],
+            "clean": ["summary-clean"],
+            "covered": ["summary-covered"],
+            "uncovered": ["summary-uncovered"],
+            "clean_only": ["summary-clean-only"],
+        }
+    )
 
 
 def test_resolve_filtered_summary_risk_coverage_sources_falls_back_to_renderer_state() -> None:
@@ -81,12 +85,15 @@ def test_resolve_filtered_summary_risk_coverage_sources_falls_back_to_renderer_s
         },
     )
 
-    assert resolved == {
-        "risky": ["renderer-risk"],
-        "structural": ["renderer-structural"],
-        "symbolic": ["renderer-symbolic"],
-        "clean": ["renderer-clean"],
-        "covered": ["renderer-covered"],
-        "uncovered": ["renderer-uncovered"],
-        "clean_only": ["fallback-clean"],
-    }
+    expect(
+        resolved
+        == {
+            "risky": ["renderer-risk"],
+            "structural": ["renderer-structural"],
+            "symbolic": ["renderer-symbolic"],
+            "clean": ["renderer-clean"],
+            "covered": ["renderer-covered"],
+            "uncovered": ["renderer-uncovered"],
+            "clean_only": ["fallback-clean"],
+        }
+    )

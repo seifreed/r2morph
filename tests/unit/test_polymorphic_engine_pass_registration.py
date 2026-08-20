@@ -23,6 +23,7 @@ inspects the engine state ``_setup_engine`` built.
 from __future__ import annotations
 
 from r2morph.mutations.polymorphic_engine import PolymorphicEnginePass
+from tests.utils.assertions import expect
 
 
 def test_every_default_transition_has_a_registered_mutation() -> None:
@@ -36,10 +37,11 @@ def test_every_default_transition_has_a_registered_mutation() -> None:
             referenced_names.add(transition.mutation_name)
 
     missing = referenced_names - set(pass_obj.engine.mutations.keys())
-    assert not missing, (
+    expect(
+        not (missing),
         "PolymorphicEnginePass leaves transitions pointing at unregistered "
         f"mutations: {sorted(missing)!r}; engine.mutations.keys() = "
-        f"{sorted(pass_obj.engine.mutations.keys())!r}"
+        f"{sorted(pass_obj.engine.mutations.keys())!r}",
     )
 
 
@@ -64,8 +66,9 @@ def test_disabled_mutation_is_not_registered_either() -> None:
 
     # Mutation names registered must be exactly the enabled set (+NoOp).
     expected = {"InstructionSubstitution", "NoOp"}
-    assert set(pass_obj.engine.mutations.keys()) == expected, (
-        f"expected mutation registration = {expected!r}; got " f"{set(pass_obj.engine.mutations.keys())!r}"
+    expect(
+        set(pass_obj.engine.mutations.keys()) == expected,
+        f"expected mutation registration = {expected!r}; got " f"{set(pass_obj.engine.mutations.keys())!r}",
     )
 
     # And no transition can reference a name outside the registered set.
@@ -73,8 +76,9 @@ def test_disabled_mutation_is_not_registered_either() -> None:
     for state_transitions in pass_obj.engine.transitions.values():
         for transition in state_transitions:
             referenced.add(transition.mutation_name)
-    assert referenced.issubset(expected), (
-        f"transitions reference names outside the registered set: " f"{referenced - expected!r}"
+    expect(
+        referenced.issubset(expected),
+        f"transitions reference names outside the registered set: " f"{referenced - expected!r}",
     )
 
 
@@ -112,10 +116,12 @@ def test_apply_attempts_the_first_transition_with_default_config() -> None:
     pass_obj = PolymorphicEnginePass({"max_iterations": 20})
     result = pass_obj.apply(_BinaryStandIn())
 
-    assert result["iterations"] > 0, (
+    expect(
+        not (result["iterations"] <= 0),
         "PolymorphicEnginePass.apply() did not advance past the first "
-        f"transition -- mutations are likely unregistered; result={result!r}"
+        f"transition -- mutations are likely unregistered; result={result!r}",
     )
-    assert result["mutations_applied"] > 0, (
-        "PolymorphicEnginePass.apply() never reached the mutation " f"dispatcher; result={result!r}"
+    expect(
+        not (result["mutations_applied"] <= 0),
+        "PolymorphicEnginePass.apply() never reached the mutation " f"dispatcher; result={result!r}",
     )

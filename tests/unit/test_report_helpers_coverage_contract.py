@@ -1,4 +1,5 @@
 from r2morph.core.report_helpers_coverage import _summarize_pass_coverage_buckets
+from tests.utils.assertions import expect
 
 
 def test_summarize_pass_coverage_buckets_separates_clean_passes() -> None:
@@ -46,8 +47,4 @@ def test_summarize_pass_coverage_buckets_separates_clean_passes() -> None:
         }
     )
 
-    assert buckets == {
-        "covered": ["covered"],
-        "uncovered": ["uncovered"],
-        "clean_only": ["covered", "uncovered"],
-    }
+    expect(buckets == {"covered": ["covered"], "uncovered": ["uncovered"], "clean_only": ["covered", "uncovered"]})

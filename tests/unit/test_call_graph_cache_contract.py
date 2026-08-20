@@ -4,6 +4,7 @@ from pathlib import Path
 
 from r2morph.analysis.call_graph import CallGraph
 from r2morph.analysis.call_graph_cache import build_call_graph_cached
+from tests.utils.assertions import expect
 
 
 class _StubCache:
@@ -46,7 +47,7 @@ def test_build_call_graph_cached_without_cache(tmp_path) -> None:
 
     cg = build_call_graph_cached(binary, cache=None)
 
-    assert isinstance(cg, CallGraph)
+    expect(isinstance(cg, CallGraph))
 
 
 def test_build_call_graph_cached_round_trip(tmp_path) -> None:
@@ -58,6 +59,6 @@ def test_build_call_graph_cached_round_trip(tmp_path) -> None:
     cg1 = build_call_graph_cached(binary, cache=cache)
     cg2 = build_call_graph_cached(binary, cache=cache)
 
-    assert isinstance(cg1, CallGraph)
-    assert isinstance(cg2, CallGraph)
-    assert cg1.to_json() == cg2.to_json()
+    expect(isinstance(cg1, CallGraph))
+    expect(isinstance(cg2, CallGraph))
+    expect(cg1.to_json() == cg2.to_json())

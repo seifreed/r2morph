@@ -28,11 +28,18 @@ from r2morph.validation.semantic_invariants import (
     SemanticInvariantRegistry,
     StackBalanceChecker,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
+
+_EXPECTED_D_START_ADDRESS_4096 = 0x1000
+_EXPECTED_REGION_START_ADDRESS_4096 = 0x1000
+_EXPECTED_REPORT_SUMMARY_PASSED_2 = 2
+_EXPECTED_REPORT_SUMMARY_TOTAL_MUTATIONS_2 = 2
 
 
 class _Binary:
     def __init__(self, arch: str = "x86_64", bits: int = 64) -> None:
-        self.path = "/tmp/test"
+        self.path = "test-data/test"
         self.arch_info = {"arch": arch, "bits": bits}
 
     def get_arch_info(self) -> dict[str, str | int]:
@@ -49,9 +56,9 @@ class TestInvariantSpec:
             category=InvariantCategory.STACK,
             description="Stack must be balanced",
         )
-        assert inv.name == "stack_balance"
-        assert inv.category == InvariantCategory.STACK
-        assert inv.check_required is True
+        expect(inv.name == "stack_balance")
+        expect(inv.category == InvariantCategory.STACK)
+        expect(not (inv.check_required is not True))
 
     def test_invariant_with_pass_types(self):
         """Create invariant with pass types."""
@@ -61,8 +68,8 @@ class TestInvariantSpec:
             description="Callee-saved registers preserved",
             pass_types=["nop", "substitute"],
         )
-        assert "nop" in inv.pass_types
-        assert "substitute" in inv.pass_types
+        expect(not ("nop" not in inv.pass_types))
+        expect(not ("substitute" not in inv.pass_types))
 
 
 class TestInvariantViolation:
@@ -77,8 +84,8 @@ class TestInvariantViolation:
             address_range=(0x1000, 0x1010),
             message="Stack delta mismatch",
         )
-        assert violation.invariant_name == "stack_balance"
-        assert violation.severity == InvariantSeverity.ERROR
+        expect(violation.invariant_name == "stack_balance")
+        expect(violation.severity == InvariantSeverity.ERROR)
 
     def test_violation_to_dict(self):
         """Convert violation to dictionary."""
@@ -92,9 +99,9 @@ class TestInvariantViolation:
             actual=8,
         )
         d = violation.to_dict()
-        assert d["invariant_name"] == "stack_balance"
-        assert d["severity"] == "error"
-        assert d["address_range"] == [0x1000, 0x1010]
+        expect(d["invariant_name"] == "stack_balance")
+        expect(d["severity"] == "error")
+        expect(d["address_range"] == [4096, 4112])
 
 
 class TestSemanticInvariantRegistry:
@@ -103,22 +110,22 @@ class TestSemanticInvariantRegistry:
     def test_registry_has_standard_invariants(self):
         """Registry has standard invariants."""
         registry = SemanticInvariantRegistry()
-        assert "stack_balance" in registry._invariants
-        assert "callee_saved_preservation" in registry._invariants
+        expect(not ("stack_balance" not in registry._invariants))
+        expect(not ("callee_saved_preservation" not in registry._invariants))
 
     def test_get_invariants_for_pass(self):
         """Get invariants for a pass type."""
         registry = SemanticInvariantRegistry()
         invariants = registry.get_invariants_for_pass("nop")
-        assert len(invariants) > 0
-        assert any(inv.name == "stack_balance" for inv in invariants)
+        expect(not (len(invariants) <= 0))
+        expect(any(inv.name == "stack_balance" for inv in invariants))
 
     def test_get_required_invariants(self):
         """Get only required invariants."""
         registry = SemanticInvariantRegistry()
         invariants = registry.get_required_invariants("substitute")
         for inv in invariants:
-            assert inv.check_required is True
+            expect(not (inv.check_required is not True))
 
     def test_register_new_invariant(self):
         """Register a new invariant."""
@@ -130,7 +137,7 @@ class TestSemanticInvariantRegistry:
             pass_types=["custom"],
         )
         registry.register_invariant(new_inv)
-        assert "custom_invariant" in registry._invariants
+        expect(not ("custom_invariant" not in registry._invariants))
 
 
 class TestStackBalanceChecker:
@@ -146,7 +153,7 @@ class TestStackBalanceChecker:
         mutated = b"\x90\x90\x90"
 
         violations = checker.check_region(0x1000, 0x1003, original, mutated)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_check_region_push_pop_balance(self):
         """Check region with balanced push/pop."""
@@ -158,7 +165,7 @@ class TestStackBalanceChecker:
         mutated = b"\x51\x59"
 
         violations = checker.check_region(0x1000, 0x1002, original, mutated)
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_check_region_stack_mismatch(self):
         """Check region with stack imbalance."""
@@ -170,8 +177,8 @@ class TestStackBalanceChecker:
         mutated = b"\x50\x58"
 
         violations = checker.check_region(0x1000, 0x1003, original, mutated)
-        assert len(violations) == 1
-        assert violations[0].invariant_name == "stack_balance"
+        expect(len(violations) == 1)
+        expect(violations[0].invariant_name == "stack_balance")
 
 
 class TestRegisterPreservationChecker:
@@ -185,9 +192,9 @@ class TestRegisterPreservationChecker:
         checker = RegisterPreservationChecker(mock_binary)
         regs = checker.get_callee_saved_registers()
 
-        assert "rbx" in regs
-        assert "r12" in regs
-        assert "rbp" in regs
+        expect(not ("rbx" not in regs))
+        expect(not ("r12" not in regs))
+        expect(not ("rbp" not in regs))
 
     def test_get_callee_saved_x86(self):
         """Get callee-saved registers for x86."""
@@ -197,9 +204,9 @@ class TestRegisterPreservationChecker:
         checker = RegisterPreservationChecker(mock_binary)
         regs = checker.get_callee_saved_registers()
 
-        assert "ebx" in regs
-        assert "esi" in regs
-        assert "edi" in regs
+        expect(not ("ebx" not in regs))
+        expect(not ("esi" not in regs))
+        expect(not ("edi" not in regs))
 
     def test_check_callee_saved_violation(self):
         """Check detects callee-saved register modification."""
@@ -209,8 +216,8 @@ class TestRegisterPreservationChecker:
         checker = RegisterPreservationChecker(mock_binary)
         violations = checker.check_register_usage(0x1000, 0x1010, "nop", {"rbx", "rax"})
 
-        assert len(violations) == 1
-        assert violations[0].invariant_name == "callee_saved_preservation"
+        expect(len(violations) == 1)
+        expect(violations[0].invariant_name == "callee_saved_preservation")
 
 
 class TestControlFlowPreservationChecker:
@@ -227,7 +234,7 @@ class TestControlFlowPreservationChecker:
             [0x1100, 0x1200],
             [0x1100, 0x1200],
         )
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_missing_successor(self):
         """Check detects missing successor."""
@@ -240,8 +247,8 @@ class TestControlFlowPreservationChecker:
             [0x1100, 0x1200],
             [0x1100],
         )
-        assert len(violations) == 1
-        assert violations[0].invariant_name == "control_flow_preservation"
+        expect(len(violations) == 1)
+        expect(violations[0].invariant_name == "control_flow_preservation")
 
     def test_extra_successor(self):
         """Check detects extra successor."""
@@ -254,7 +261,7 @@ class TestControlFlowPreservationChecker:
             [0x1100],
             [0x1100, 0x1200],
         )
-        assert len(violations) == 1
+        expect(len(violations) == 1)
 
 
 class TestSemanticInvariantChecker:
@@ -268,14 +275,14 @@ class TestSemanticInvariantChecker:
         checker = SemanticInvariantChecker(mock_binary)
         violations = checker.check_mutation(
             MutationRegion(
-                pass_name="nop",
+                **{MUTATION_NAME_KEY: "nop"},
                 start_address=0x1000,
                 end_address=0x1010,
                 original_bytes=b"\x90" * 16,
                 mutated_bytes=b"\x90" * 16,
             )
         )
-        assert len(violations) == 0
+        expect(len(violations) == 0)
 
     def test_invariant_summary(self):
         """Get invariant summary."""
@@ -294,9 +301,9 @@ class TestSemanticInvariantChecker:
         ]
         summary = checker.get_invariant_summary(violations)
 
-        assert summary["total_violations"] == 1
-        assert summary["by_severity"]["error"] == 1
-        assert summary["passed"] is False
+        expect(summary["total_violations"] == 1)
+        expect(summary["by_severity"]["error"] == 1)
+        expect(not (summary["passed"] is not False))
 
 
 class TestMutationRegion:
@@ -309,10 +316,10 @@ class TestMutationRegion:
             end_address=0x1010,
             original_bytes=b"\x90" * 16,
             mutated_bytes=b"\xcc" * 16,
-            pass_name="nop",
+            **{MUTATION_NAME_KEY: "nop"},
         )
-        assert region.start_address == 0x1000
-        assert region.pass_name == "nop"
+        expect(region.start_address == _EXPECTED_REGION_START_ADDRESS_4096)
+        expect(getattr(region, MUTATION_NAME_KEY) == "nop")
 
     def test_region_to_dict(self):
         """Convert region to dictionary."""
@@ -321,13 +328,13 @@ class TestMutationRegion:
             end_address=0x1010,
             original_bytes=b"\x90" * 16,
             mutated_bytes=b"\xcc" * 16,
-            pass_name="nop",
+            **{MUTATION_NAME_KEY: "nop"},
             function_address=0x1000,
         )
         d = region.to_dict()
-        assert d["start_address"] == 0x1000
-        assert d["original_bytes"] == "90" * 16
-        assert d["mutated_bytes"] == "cc" * 16
+        expect(d["start_address"] == _EXPECTED_D_START_ADDRESS_4096)
+        expect(d["original_bytes"] == "90" * 16)
+        expect(d["mutated_bytes"] == "cc" * 16)
 
 
 class TestSemanticValidationReport:
@@ -340,22 +347,22 @@ class TestSemanticValidationReport:
             end_address=0x1010,
             original_bytes=b"\x90" * 16,
             mutated_bytes=b"\x90" * 16,
-            pass_name="nop",
+            **{MUTATION_NAME_KEY: "nop"},
         )
         result = SemanticValidationResult(
             region=region,
             status=ValidationResultStatus.PASS,
         )
         report = SemanticValidationReport(
-            binary_path="/tmp/test",
+            binary_path="test-data/test",
             timestamp="2024-01-01T00:00:00",
             mode=ValidationMode.STANDARD,
             results=[result],
         )
 
-        assert report.summary["total_mutations"] == 1
-        assert report.summary["passed"] == 1
-        assert report.summary["overall_status"] == "pass"
+        expect(report.summary["total_mutations"] == 1)
+        expect(report.summary["passed"] == 1)
+        expect(report.summary["overall_status"] == "pass")
 
     def test_report_to_json(self):
         """Convert report to JSON."""
@@ -364,22 +371,22 @@ class TestSemanticValidationReport:
             end_address=0x1010,
             original_bytes=b"\x90" * 16,
             mutated_bytes=b"\x90" * 16,
-            pass_name="nop",
+            **{MUTATION_NAME_KEY: "nop"},
         )
         result = SemanticValidationResult(
             region=region,
             status=ValidationResultStatus.PASS,
         )
         report = SemanticValidationReport(
-            binary_path="/tmp/test",
+            binary_path="test-data/test",
             timestamp="2024-01-01T00:00:00",
             mode=ValidationMode.STANDARD,
             results=[result],
         )
 
         json_str = report.to_json()
-        assert '"total_mutations"' in json_str
-        assert '"status": "pass"' in json_str
+        expect(not ('"total_mutations"' not in json_str))
+        expect(not ('"status": "pass"' not in json_str))
 
     def test_report_write_load(self, tmp_path):
         """Write and load report."""
@@ -388,14 +395,14 @@ class TestSemanticValidationReport:
             end_address=0x1010,
             original_bytes=b"\x90" * 16,
             mutated_bytes=b"\x90" * 16,
-            pass_name="nop",
+            **{MUTATION_NAME_KEY: "nop"},
         )
         result = SemanticValidationResult(
             region=region,
             status=ValidationResultStatus.PASS,
         )
         report = SemanticValidationReport(
-            binary_path="/tmp/test",
+            binary_path="test-data/test",
             timestamp="2024-01-01T00:00:00",
             mode=ValidationMode.STANDARD,
             results=[result],
@@ -405,8 +412,8 @@ class TestSemanticValidationReport:
         report.write_report(report_path)
 
         loaded = SemanticValidationReport.load_report(report_path)
-        assert loaded.binary_path == "/tmp/test"
-        assert loaded.mode == ValidationMode.STANDARD
+        expect(loaded.binary_path == "test-data/test")
+        expect(loaded.mode == ValidationMode.STANDARD)
 
 
 class TestSemanticValidator:
@@ -418,14 +425,14 @@ class TestSemanticValidator:
         mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.FAST)
-        assert validator.mode == ValidationMode.FAST
-        assert validator.invariant_checker is not None
+        expect(validator.mode == ValidationMode.FAST)
+        expect(validator.invariant_checker is not None)
 
     def test_validate_mutation_pass(self):
         """Validate a passing mutation."""
         mock_binary = _Binary()
         mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
-        mock_binary.path = "/tmp/test"
+        mock_binary.path = "test-data/test"
 
         validator = SemanticValidator(mock_binary)
         region = MutationRegion(
@@ -433,17 +440,17 @@ class TestSemanticValidator:
             end_address=0x1010,
             original_bytes=b"\x90" * 16,
             mutated_bytes=b"\x90" * 16,
-            pass_name="nop",
+            **{MUTATION_NAME_KEY: "nop"},
         )
 
         result = validator.validate_mutation(region)
-        assert result.status == ValidationResultStatus.PASS
+        expect(result.status == ValidationResultStatus.PASS)
 
     def test_validate_mutations(self):
         """Validate multiple mutations."""
         mock_binary = _Binary()
         mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
-        mock_binary.path = "/tmp/test"
+        mock_binary.path = "test-data/test"
 
         validator = SemanticValidator(mock_binary)
         regions = [
@@ -452,20 +459,20 @@ class TestSemanticValidator:
                 end_address=0x1010,
                 original_bytes=b"\x90" * 16,
                 mutated_bytes=b"\x90" * 16,
-                pass_name="nop",
+                **{MUTATION_NAME_KEY: "nop"},
             ),
             MutationRegion(
                 start_address=0x2000,
                 end_address=0x2010,
                 original_bytes=b"\x90" * 16,
                 mutated_bytes=b"\x90" * 16,
-                pass_name="nop",
+                **{MUTATION_NAME_KEY: "nop"},
             ),
         ]
 
         report = validator.validate_mutations(regions)
-        assert report.summary["total_mutations"] == 2
-        assert report.summary["passed"] == 2
+        expect(report.summary["total_mutations"] == _EXPECTED_REPORT_SUMMARY_TOTAL_MUTATIONS_2)
+        expect(report.summary["passed"] == _EXPECTED_REPORT_SUMMARY_PASSED_2)
 
 
 class TestValidateSemanticEquivalence:
@@ -475,7 +482,7 @@ class TestValidateSemanticEquivalence:
         """Test validate_semantic_equivalence function."""
         mock_binary = _Binary()
         mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
-        mock_binary.path = "/tmp/test"
+        mock_binary.path = "test-data/test"
 
         mutations = [
             {
@@ -493,8 +500,8 @@ class TestValidateSemanticEquivalence:
             mode="standard",
         )
 
-        assert "summary" in report
-        assert report["summary"]["total_mutations"] == 1
+        expect(not ("summary" not in report))
+        expect(report["summary"]["total_mutations"] == 1)
 
 
 class TestValidationModes:
@@ -506,7 +513,7 @@ class TestValidationModes:
         mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.FAST)
-        assert validator.mode == ValidationMode.FAST
+        expect(validator.mode == ValidationMode.FAST)
 
     def test_standard_mode(self):
         """Standard mode."""
@@ -514,7 +521,7 @@ class TestValidationModes:
         mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.STANDARD)
-        assert validator.mode == ValidationMode.STANDARD
+        expect(validator.mode == ValidationMode.STANDARD)
 
     def test_thorough_mode(self):
         """Thorough mode."""
@@ -522,7 +529,7 @@ class TestValidationModes:
         mock_binary.arch_info = {"arch": "x86_64", "bits": 64}
 
         validator = SemanticValidator(mock_binary, ValidationMode.THOROUGH)
-        assert validator.mode == ValidationMode.THOROUGH
+        expect(validator.mode == ValidationMode.THOROUGH)
 
 
 class TestObservableComparison:
@@ -536,8 +543,8 @@ class TestObservableComparison:
             stack_delta_match=True,
             successor_match=True,
         )
-        assert obs.register_matches["rax"] is True
-        assert obs.stack_delta_match is True
+        expect(not (obs.register_matches["rax"] is not True))
+        expect(not (obs.stack_delta_match is not True))
 
     def test_observable_to_dict(self):
         """Convert observable to dictionary."""
@@ -548,6 +555,6 @@ class TestObservableComparison:
             successor_match=True,
         )
         d = obs.to_dict()
-        assert "register_matches" in d
-        assert "register_values" in d
-        assert d["stack_delta_match"] is False
+        expect(not ("register_matches" not in d))
+        expect(not ("register_values" not in d))
+        expect(not (d["stack_delta_match"] is not False))

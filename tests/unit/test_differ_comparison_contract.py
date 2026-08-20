@@ -2,6 +2,9 @@ from pathlib import Path
 
 from r2morph.validation.differ_comparison import build_diff_report, compare_functions, compare_header, compare_sections
 from r2morph.validation.differ_models import ChangeSeverity, DiffType
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_HEADER_2 = 2
 
 
 class _Binary:
@@ -36,11 +39,11 @@ def test_differ_comparison_helpers_build_report_from_real_inputs() -> None:
 
     report = build_diff_report(original, mutated, context_bytes=4)
 
-    assert report.original_binary == "/bin/original"
-    assert report.mutated_binary == "/bin/mutated"
-    assert any(diff.diff_type == DiffType.SECTION_MODIFIED for diff in report.diffs)
-    assert any(diff.diff_type == DiffType.FUNCTION_MODIFIED for diff in report.diffs)
-    assert report.summary["total_changes"] == len(report.diffs)
+    expect(report.original_binary == "/bin/original")
+    expect(report.mutated_binary == "/bin/mutated")
+    expect(any(diff.diff_type == DiffType.SECTION_MODIFIED for diff in report.diffs))
+    expect(any(diff.diff_type == DiffType.FUNCTION_MODIFIED for diff in report.diffs))
+    expect(report.summary["total_changes"] == len(report.diffs))
 
 
 def test_differ_comparison_helpers_keep_expected_severities() -> None:
@@ -57,7 +60,7 @@ def test_differ_comparison_helpers_keep_expected_severities() -> None:
     functions = compare_functions(original, mutated)
     header = compare_header(original, mutated)
 
-    assert any(diff.severity == ChangeSeverity.HIGH for diff in sections if diff.diff_type == DiffType.SECTION_REMOVED)
-    assert any(diff.severity == ChangeSeverity.MEDIUM for diff in sections if diff.diff_type == DiffType.SECTION_ADDED)
-    assert any(diff.diff_type == DiffType.FUNCTION_ADDED for diff in functions)
-    assert len(header) == 2
+    expect(any(diff.severity == ChangeSeverity.HIGH for diff in sections if diff.diff_type == DiffType.SECTION_REMOVED))
+    expect(any(diff.severity == ChangeSeverity.MEDIUM for diff in sections if diff.diff_type == DiffType.SECTION_ADDED))
+    expect(any(diff.diff_type == DiffType.FUNCTION_ADDED for diff in functions))
+    expect(len(header) == _EXPECTED_LEN_HEADER_2)

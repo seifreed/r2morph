@@ -1,6 +1,7 @@
 from types import SimpleNamespace
 
 from r2morph.validation.symbolic_precheck_flow import SymbolicPrecheckHooks, run_symbolic_precheck
+from tests.utils.assertions import expect
 
 
 class _StubBridge:
@@ -44,5 +45,5 @@ def test_run_symbolic_precheck_supports_scope_and_records_steps() -> None:
         lambda _name: bridge_module,
     )
 
-    assert payload["symbolic_status"] == "bounded-step-known-equivalence"
-    assert payload["symbolic_step_count"] == 1
+    expect(payload["symbolic_status"] == "bounded-step-known-equivalence")
+    expect(payload["symbolic_step_count"] == 1)

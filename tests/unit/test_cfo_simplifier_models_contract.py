@@ -4,6 +4,7 @@ from r2morph.devirtualization.cfo_simplifier_models import (
     ControlFlowBlock,
     DispatcherInfo,
 )
+from tests.utils.assertions import expect
 
 
 def test_cfo_simplifier_models_expose_expected_contract() -> None:
@@ -16,7 +17,7 @@ def test_cfo_simplifier_models_expose_expected_contract() -> None:
         dispatcher_info=[dispatcher],
     )
 
-    assert CFOPattern.SWITCH_CASE_OBFUSCATION.value == "switch_case_obfuscation"
-    assert result.simplified_blocks[0x1000] is block
-    assert result.dispatcher_info[0] is dispatcher
-    assert block.successors == {0x2000}
+    expect(CFOPattern.SWITCH_CASE_OBFUSCATION.value == "switch_case_obfuscation")
+    expect(not (result.simplified_blocks[0x1000] is not block))
+    expect(not (result.dispatcher_info[0] is not dispatcher))
+    expect(block.successors == {8192})

@@ -3,6 +3,9 @@ from pathlib import Path
 import pytest
 
 from r2morph.analysis.diff_analyzer import DiffAnalyzer
+from tests.utils.assertions import expect
+
+_EXPECTED_ANALYZER_GET_SIMILARITY_SCORE_100_0 = 100.0
 
 
 def test_diff_analyzer_identical_files(tmp_path: Path):
@@ -18,8 +21,8 @@ def test_diff_analyzer_identical_files(tmp_path: Path):
 
     analyzer = DiffAnalyzer()
     stats = analyzer.compare(orig, morph)
-    assert stats.changed_bytes == 0
-    assert analyzer.get_similarity_score() == 100.0
+    expect(stats.changed_bytes == 0)
+    expect(analyzer.get_similarity_score() == _EXPECTED_ANALYZER_GET_SIMILARITY_SCORE_100_0)
 
 
 def test_diff_analyzer_visualization_writes_file(tmp_path: Path):
@@ -41,8 +44,8 @@ def test_diff_analyzer_visualization_writes_file(tmp_path: Path):
 
     output_file = tmp_path / "viz.txt"
     viz = analyzer.visualize_changes(output_file)
-    assert output_file.exists()
-    assert "BINARY DIFF VISUALIZATION" in viz
+    expect(output_file.exists())
+    expect(not ("BINARY DIFF VISUALIZATION" not in viz))
 
 
 def test_diff_analyzer_report_contains_sections(tmp_path: Path):
@@ -65,6 +68,6 @@ def test_diff_analyzer_report_contains_sections(tmp_path: Path):
     report = tmp_path / "report.md"
     analyzer.generate_report(report)
     content = report.read_text()
-    assert "# Binary Diff Analysis Report" in content
-    assert "## Summary" in content
-    assert "## Metrics" in content
+    expect(not ("# Binary Diff Analysis Report" not in content))
+    expect(not ("## Summary" not in content))
+    expect(not ("## Metrics" not in content))

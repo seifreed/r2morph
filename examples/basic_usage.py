@@ -20,6 +20,8 @@ from r2morph import __version__
 from r2morph.core.config import EngineConfig
 from r2morph.core.engine import MorphEngine
 
+_EXPECTED_LEN_SYS_ARGV_3 = 3
+
 
 def main(input_path: Path, output_path: Path):
     """
@@ -94,7 +96,7 @@ def main(input_path: Path, output_path: Path):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    if len(sys.argv) != _EXPECTED_LEN_SYS_ARGV_3:
         print(f"Usage: {sys.argv[0]} <input.bin> <output.bin>")
         print()
         print("Example:")

@@ -22,6 +22,7 @@ from tests._doubles.concurrency_recording_mutation_pass import (
     PathOnlyBinary,
     RecordingMutationPass,
 )
+from tests.utils.assertions import expect
 
 
 def test_parallel_engine_serializes_binary_mutation(tmp_path: Path) -> None:
@@ -43,8 +44,8 @@ def test_parallel_engine_serializes_binary_mutation(tmp_path: Path) -> None:
     )
     results = engine.execute(passes, stop_on_error=False)
 
-    assert set(results) == {"pass_a", "pass_b"}
-    assert all(r.status == PassStatus.COMPLETED for r in results.values())
+    expect(set(results) == {"pass_a", "pass_b"})
+    expect(all(r.status == PassStatus.COMPLETED for r in results.values()))
     # Both passes land in one dependency-free stage and run concurrently.
     # Without in-process serialization they overlap (max_active == 2).
-    assert recorder.max_active == 1
+    expect(recorder.max_active == 1)

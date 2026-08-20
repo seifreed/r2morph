@@ -6,6 +6,8 @@ from r2morph.reporting.sarif_result_builder_helpers import (
     build_related_locations,
     build_validation_result,
 )
+from tests.utils.assertions import expect
+from tests.utils.field_names import MUTATION_NAME_KEY
 
 
 @dataclass
@@ -34,7 +36,7 @@ def test_sarif_result_builder_helpers_cover_core_assembly_paths() -> None:
         address=0x1000,
         original_bytes=b"\x90",
         mutated_bytes=b"\x90\x90",
-        pass_name="nop-insertion",
+        **{MUTATION_NAME_KEY: "nop-insertion"},
         function="main",
         disassembly="nop",
         description="Inserted NOPs",
@@ -44,7 +46,7 @@ def test_sarif_result_builder_helpers_cover_core_assembly_paths() -> None:
         address=0x1004,
         original_bytes=b"\x90",
         mutated_bytes=b"\x90\x90",
-        pass_name="nop-insertion",
+        **{MUTATION_NAME_KEY: "nop-insertion"},
         function="main",
         disassembly="nop",
         description="Inserted NOPs",
@@ -63,9 +65,9 @@ def test_sarif_result_builder_helpers_cover_core_assembly_paths() -> None:
     mutation_result = build_mutation_result(mutation_a, "binary.exe", [validation])
     validation_result = build_validation_result(validation, "binary.exe")
 
-    assert related_locations[0].message is not None
-    assert code_flows[0].thread_flows[0].locations[0].location.message is not None
-    assert mutation_result.rule_id == "RM001"
-    assert mutation_result.related_locations[0].message is not None
-    assert validation_result.level.value == "error"
-    assert validation_result.properties["kind"] == "cfg"
+    expect(related_locations[0].message is not None)
+    expect(code_flows[0].thread_flows[0].locations[0].location.message is not None)
+    expect(mutation_result.rule_id == "RM001")
+    expect(mutation_result.related_locations[0].message is not None)
+    expect(validation_result.level.value == "error")
+    expect(validation_result.properties["kind"] == "cfg")

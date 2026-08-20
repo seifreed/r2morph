@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from r2morph.platform.elf_handler import ELFHandler
+from tests.utils.assertions import expect
 
 _HAS_LIEF = importlib.util.find_spec("lief") is not None
 
@@ -22,26 +23,29 @@ def test_get_symbol_tables_exact_real_elf64() -> None:
 
     result = handler.get_symbol_tables()
 
-    assert result == {
-        "symtab": [
-            {
-                "name": "",
-                "value": 0,
-                "size": 0,
-                "type": "NOTYPE",
-                "binding": "LOCAL",
-                "visibility": "DEFAULT",
-                "shndx": 0,
-            },
-            {
-                "name": "_start",
-                "value": 2101536,
-                "size": 0,
-                "type": "NOTYPE",
-                "binding": "GLOBAL",
-                "visibility": "DEFAULT",
-                "shndx": 1,
-            },
-        ],
-        "dynsym": [],
-    }
+    expect(
+        result
+        == {
+            "symtab": [
+                {
+                    "name": "",
+                    "value": 0,
+                    "size": 0,
+                    "type": "NOTYPE",
+                    "binding": "LOCAL",
+                    "visibility": "DEFAULT",
+                    "shndx": 0,
+                },
+                {
+                    "name": "_start",
+                    "value": 2101536,
+                    "size": 0,
+                    "type": "NOTYPE",
+                    "binding": "GLOBAL",
+                    "visibility": "DEFAULT",
+                    "shndx": 1,
+                },
+            ],
+            "dynsym": [],
+        }
+    )

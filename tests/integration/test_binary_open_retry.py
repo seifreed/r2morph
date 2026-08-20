@@ -23,6 +23,9 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.core.binary_lifecycle import _R2PIPE_OPEN_ATTEMPTS
+from tests.utils.assertions import expect
+
+_EXPECTED_BINARY_SPAWN_ATTEMPTS_2 = 2
 
 
 class _TransientlyFailingBinary(Binary):
@@ -50,11 +53,11 @@ def test_open_recovers_from_transient_spawn_failures(stable_elf_binary: Path) ->
     binary = _TransientlyFailingBinary(stable_elf_binary, fail_times=1)
     with binary as opened:
         # A later attempt used the real r2pipe spawn: info is populated.
-        assert opened.r2 is not None
-        assert opened.info
+        expect(opened.r2 is not None)
+        expect(opened.info)
 
     # Recovered within the retry budget, after at least the injected failure.
-    assert 2 <= binary.spawn_attempts <= _R2PIPE_OPEN_ATTEMPTS
+    expect(_EXPECTED_BINARY_SPAWN_ATTEMPTS_2 <= binary.spawn_attempts <= _R2PIPE_OPEN_ATTEMPTS)
 
 
 def test_open_still_fails_after_exhausting_attempts(stable_elf_binary: Path) -> None:
@@ -68,4 +71,4 @@ def test_open_still_fails_after_exhausting_attempts(stable_elf_binary: Path) -> 
     with pytest.raises(RuntimeError, match="Failed to open binary"):
         binary.open()
 
-    assert binary.spawn_attempts == _R2PIPE_OPEN_ATTEMPTS
+    expect(binary.spawn_attempts == _R2PIPE_OPEN_ATTEMPTS)

@@ -10,6 +10,10 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.integration.elf_emulator import emulate_exit_code
+from tests.utils.assertions import expect
+
+_EXPECTED_STATS_FUNCTIONS_VIRTUALIZED_2 = 2
+
 
 _FIXTURE = Path(__file__).parents[2] / "fixtures" / "dataset" / "elf_vm_redzone_x86_64"
 _EXPECTED_EXIT_CODE = 42
@@ -37,11 +41,11 @@ def test_virtualized_redzone_fixture_virtualizes_caller_and_callee(
     virtualized_redzone_fixture: tuple[Path, dict[str, int]],
 ) -> None:
     _, stats = virtualized_redzone_fixture
-    assert stats["functions_virtualized"] == 2
+    expect(stats["functions_virtualized"] == _EXPECTED_STATS_FUNCTIONS_VIRTUALIZED_2)
 
 
 def test_virtualized_redzone_fixture_preserves_exit_code(
     virtualized_redzone_fixture: tuple[Path, dict[str, int]],
 ) -> None:
     destination, _ = virtualized_redzone_fixture
-    assert emulate_exit_code(destination) == emulate_exit_code(_FIXTURE) == _EXPECTED_EXIT_CODE
+    expect(emulate_exit_code(destination) == emulate_exit_code(_FIXTURE) == _EXPECTED_EXIT_CODE)

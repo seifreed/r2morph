@@ -26,6 +26,23 @@ from r2morph.validation.cfg_integrity import (
     IntegrityStatus,
     IntegrityViolation,
 )
+from tests.utils.assertions import expect
+
+_EXPECTED_CHECKER_SNAPSHOTS_4096 = 0x1000
+_EXPECTED_D_RADIUS_16 = 16
+_EXPECTED_D_SIZE_256 = 0x100
+_EXPECTED_D_STATISTICS_TOTAL_BLOCKS_10 = 10
+_EXPECTED_LEN_JT_PATTERNS_2 = 2
+_EXPECTED_LEN_SAFE_2 = 2
+_EXPECTED_LEN_SNAPSHOT_BLOCKS_2 = 2
+_EXPECTED_MANAGER_DEFAULT_RADIUS_16 = 16
+_EXPECTED_PATTERN_SIZE_256 = 0x100
+_EXPECTED_SNAPSHOT_ENTRY_BLOCK_4096 = 0x1000
+_EXPECTED_SNAPSHOT_FUNCTION_ADDRESS_4096 = 0x1000
+_EXPECTED_S_0_2048 = 0x800
+_EXPECTED_VIOLATION_ADDRESS_4096 = 0x1000
+_EXPECTED_ZONE_EXPANDED_END_4360 = 0x1108
+_EXPECTED_ZONE_EXPANDED_START_4088 = 0x0FF8
 
 
 class MockBinary:
@@ -74,9 +91,9 @@ class TestPreservedPattern:
             source="test",
         )
 
-        assert pattern.size == 0x100
-        assert pattern.contains(0x1050)
-        assert not pattern.contains(0x1200)
+        expect(pattern.size == _EXPECTED_PATTERN_SIZE_256)
+        expect(pattern.contains(0x1050))
+        expect(not (pattern.contains(0x1200)))
 
     def test_pattern_overlaps(self):
         """Test pattern overlap detection."""
@@ -86,10 +103,10 @@ class TestPreservedPattern:
             end_address=0x1100,
         )
 
-        assert pattern.overlaps(0x1000, 0x1100)
-        assert pattern.overlaps(0x1050, 0x1150)
-        assert pattern.overlaps(0xF00, 0x1010)
-        assert not pattern.overlaps(0x1200, 0x1300)
+        expect(pattern.overlaps(0x1000, 0x1100))
+        expect(pattern.overlaps(0x1050, 0x1150))
+        expect(pattern.overlaps(0xF00, 0x1010))
+        expect(not (pattern.overlaps(0x1200, 0x1300)))
 
     def test_pattern_to_dict(self):
         """Test pattern serialization."""
@@ -102,10 +119,10 @@ class TestPreservedPattern:
         )
 
         d = pattern.to_dict()
-        assert d["type"] == "exception_handler"
-        assert d["start_address"] == "0x2000"
-        assert d["size"] == 0x100
-        assert d["criticality"] == "avoid"
+        expect(d["type"] == "exception_handler")
+        expect(d["start_address"] == "0x2000")
+        expect(d["size"] == _EXPECTED_D_SIZE_256)
+        expect(d["criticality"] == "avoid")
 
 
 class TestExclusionZone:
@@ -121,11 +138,11 @@ class TestExclusionZone:
             radius=8,
         )
 
-        assert zone.expanded_start == 0x0FF8
-        assert zone.expanded_end == 0x1108
-        assert zone.contains(0x0FF8)
-        assert zone.contains(0x1107)
-        assert not zone.contains(0x0FF7)
+        expect(zone.expanded_start == _EXPECTED_ZONE_EXPANDED_START_4088)
+        expect(zone.expanded_end == _EXPECTED_ZONE_EXPANDED_END_4360)
+        expect(zone.contains(0x0FF8))
+        expect(zone.contains(0x1107))
+        expect(not (zone.contains(0x0FF7)))
 
     def test_zone_to_dict(self):
         """Test zone serialization."""
@@ -138,8 +155,8 @@ class TestExclusionZone:
         )
 
         d = zone.to_dict()
-        assert d["pattern_type"] == "plt_thunk"
-        assert d["radius"] == 16
+        expect(d["pattern_type"] == "plt_thunk")
+        expect(d["radius"] == _EXPECTED_D_RADIUS_16)
 
 
 class TestPatternPreservationManager:
@@ -150,10 +167,10 @@ class TestPatternPreservationManager:
         binary = MockBinary()
         manager = PatternPreservationManager(binary, default_radius=16)
 
-        assert manager.binary is binary
-        assert manager.default_radius == 16
-        assert manager._patterns == []
-        assert manager._exclusion_zones == []
+        expect(not (manager.binary is not binary))
+        expect(manager.default_radius == _EXPECTED_MANAGER_DEFAULT_RADIUS_16)
+        expect(manager._patterns == [])
+        expect(manager._exclusion_zones == [])
 
     def test_analyze_empty_binary(self):
         """Test analysis on empty binary."""
@@ -163,16 +180,16 @@ class TestPatternPreservationManager:
         manager = PatternPreservationManager(binary)
         summary = manager.analyze()
 
-        assert summary["total_patterns"] == 0
-        assert summary["total_exclusion_zones"] == 0
+        expect(summary["total_patterns"] == 0)
+        expect(summary["total_exclusion_zones"] == 0)
 
     def test_should_preserve_empty(self):
         """Test should_preserve before analysis."""
         binary = MockBinary()
         manager = PatternPreservationManager(binary)
 
-        assert not manager.should_preserve(0x1000)
-        assert not manager.should_avoid(0x1000)
+        expect(not (manager.should_preserve(0x1000)))
+        expect(not (manager.should_avoid(0x1000)))
 
     def test_get_patterns_in_range(self):
         """Test getting patterns in address range."""
@@ -194,8 +211,8 @@ class TestPatternPreservationManager:
         manager._build_address_index()
 
         patterns = manager.get_patterns_in_range(0x1000, 0x1200)
-        assert len(patterns) == 1
-        assert patterns[0].type == PatternType.JUMP_TABLE
+        expect(len(patterns) == 1)
+        expect(patterns[0].type == PatternType.JUMP_TABLE)
 
     def test_get_safe_addresses(self):
         """Test getting safe addresses."""
@@ -217,8 +234,8 @@ class TestPatternPreservationManager:
 
         safe = manager.get_safe_addresses(0x800, 0x2800)
 
-        assert len(safe) >= 2
-        assert (0x800, 0x1000) in safe or any(s[0] == 0x800 for s in safe)
+        expect(not (len(safe) < _EXPECTED_LEN_SAFE_2))
+        expect((0x800, 0x1000) in safe or any(s[0] == _EXPECTED_S_0_2048 for s in safe))
 
     def test_get_patterns_by_type(self):
         """Test filtering patterns by type."""
@@ -244,10 +261,10 @@ class TestPatternPreservationManager:
         ]
 
         jt_patterns = manager.get_patterns_by_type(PatternType.JUMP_TABLE)
-        assert len(jt_patterns) == 2
+        expect(len(jt_patterns) == _EXPECTED_LEN_JT_PATTERNS_2)
 
         plt_patterns = manager.get_patterns_by_type(PatternType.PLT_THUNK)
-        assert len(plt_patterns) == 1
+        expect(len(plt_patterns) == 1)
 
     def test_report(self):
         """Test preservation report generation."""
@@ -272,9 +289,9 @@ class TestPatternPreservationManager:
 
         report = manager.report()
 
-        assert "summary" in report
-        assert "exclusion_zones" in report
-        assert report["summary"]["total_patterns"] == 1
+        expect(not ("summary" not in report))
+        expect(not ("exclusion_zones" not in report))
+        expect(report["summary"]["total_patterns"] == 1)
 
 
 class TestCFGSnapshot:
@@ -294,10 +311,10 @@ class TestCFGSnapshot:
             preserved_patterns=[],
         )
 
-        assert snapshot.function_address == 0x1000
-        assert len(snapshot.blocks) == 2
-        assert len(snapshot.edges) == 1
-        assert snapshot.entry_block == 0x1000
+        expect(snapshot.function_address == _EXPECTED_SNAPSHOT_FUNCTION_ADDRESS_4096)
+        expect(len(snapshot.blocks) == _EXPECTED_LEN_SNAPSHOT_BLOCKS_2)
+        expect(len(snapshot.edges) == 1)
+        expect(snapshot.entry_block == _EXPECTED_SNAPSHOT_ENTRY_BLOCK_4096)
 
 
 class TestIntegrityViolation:
@@ -312,8 +329,8 @@ class TestIntegrityViolation:
             severity="error",
         )
 
-        assert violation.status == IntegrityStatus.BROKEN_EDGE
-        assert violation.address == 0x1000
+        expect(violation.status == IntegrityStatus.BROKEN_EDGE)
+        expect(violation.address == _EXPECTED_VIOLATION_ADDRESS_4096)
 
     def test_violation_to_dict(self):
         """Test violation serialization."""
@@ -326,9 +343,9 @@ class TestIntegrityViolation:
         )
 
         d = violation.to_dict()
-        assert d["status"] == "unreachable"
-        assert d["address"] == "0x2000"
-        assert d["severity"] == "warning"
+        expect(d["status"] == "unreachable")
+        expect(d["address"] == "0x2000")
+        expect(d["severity"] == "warning")
 
 
 class TestIntegrityReport:
@@ -342,8 +359,8 @@ class TestIntegrityReport:
             checks_run=[],
         )
 
-        assert report.valid
-        assert len(report.violations) == 0
+        expect(report.valid)
+        expect(len(report.violations) == 0)
 
     def test_invalid_report(self):
         """Test invalid integrity report."""
@@ -358,8 +375,8 @@ class TestIntegrityReport:
             ],
         )
 
-        assert not report.valid
-        assert len(report.violations) == 1
+        expect(not (report.valid))
+        expect(len(report.violations) == 1)
 
     def test_report_to_dict(self):
         """Test report serialization."""
@@ -373,8 +390,8 @@ class TestIntegrityReport:
         )
 
         d = report.to_dict()
-        assert d["valid"]
-        assert d["statistics"]["total_blocks"] == 10
+        expect(d["valid"])
+        expect(d["statistics"]["total_blocks"] == _EXPECTED_D_STATISTICS_TOTAL_BLOCKS_10)
 
 
 class TestCFGIntegrityChecker:
@@ -385,8 +402,8 @@ class TestCFGIntegrityChecker:
         binary = MockBinary()
         checker = CFGIntegrityChecker(binary)
 
-        assert checker.binary is binary
-        assert checker._snapshots == {}
+        expect(not (checker.binary is not binary))
+        expect(checker._snapshots == {})
 
     def test_create_snapshot_empty(self):
         """Test snapshot creation on empty binary."""
@@ -397,7 +414,7 @@ class TestCFGIntegrityChecker:
         checker = CFGIntegrityChecker(binary)
 
         snapshot = checker.create_snapshot(0x1000)
-        assert snapshot is None
+        expect(not (snapshot is not None))
 
     def test_validate_without_snapshot(self):
         """Test validation without snapshot."""
@@ -406,9 +423,9 @@ class TestCFGIntegrityChecker:
 
         report = checker.validate_integrity(0x1000)
 
-        assert not report.valid
-        assert len(report.violations) == 1
-        assert report.violations[0].status == IntegrityStatus.INVALID_TARGET
+        expect(not (report.valid))
+        expect(len(report.violations) == 1)
+        expect(report.violations[0].status == IntegrityStatus.INVALID_TARGET)
 
     def test_check_reachability(self):
         """Test reachability check."""
@@ -430,7 +447,7 @@ class TestCFGIntegrityChecker:
         report = IntegrityReport(valid=True)
         checker._check_reachability(snapshot, report)
 
-        assert len(report.violations) >= 0
+        expect(not (len(report.violations) < 0))
 
     def test_clear_snapshot(self):
         """Test snapshot clearing."""
@@ -444,7 +461,7 @@ class TestCFGIntegrityChecker:
         )
 
         checker.clear_snapshot(0x1000)
-        assert 0x1000 not in checker._snapshots
+        expect(_EXPECTED_CHECKER_SNAPSHOTS_4096 not in checker._snapshots)
 
     def test_clear_all_snapshots(self):
         """Test clearing all snapshots."""
@@ -463,7 +480,7 @@ class TestCFGIntegrityChecker:
         )
 
         checker.clear_all_snapshots()
-        assert len(checker._snapshots) == 0
+        expect(len(checker._snapshots) == 0)
 
 
 class TestHardenedMutationValidator:
@@ -474,8 +491,8 @@ class TestHardenedMutationValidator:
         binary = MockBinary()
         validator = HardenedMutationValidator(binary)
 
-        assert validator.binary is binary
-        assert validator._preservation_manager is None
+        expect(not (validator.binary is not binary))
+        expect(not (validator._preservation_manager is not None))
 
     def test_pre_mutation_analysis(self):
         """Test pre-mutation analysis."""
@@ -486,8 +503,8 @@ class TestHardenedMutationValidator:
 
         result = validator.pre_mutation_analysis(0x1000)
 
-        assert "function_address" in result
-        assert "snapshot_created" in result
+        expect(not ("function_address" not in result))
+        expect(not ("snapshot_created" not in result))
 
     def test_post_mutation_validation_no_snapshot(self):
         """Test post-mutation validation without snapshot."""
@@ -496,8 +513,8 @@ class TestHardenedMutationValidator:
 
         result = validator.post_mutation_validation(0x1000)
 
-        assert "valid" in result
-        assert "violations" in result
+        expect(not ("valid" not in result))
+        expect(not ("violations" not in result))
 
     def test_get_preservation_manager(self):
         """Test getting preservation manager."""
@@ -507,8 +524,8 @@ class TestHardenedMutationValidator:
         validator = HardenedMutationValidator(binary)
         manager = validator.get_preservation_manager()
 
-        assert manager is not None
-        assert isinstance(manager, PatternPreservationManager)
+        expect(manager is not None)
+        expect(isinstance(manager, PatternPreservationManager))
 
 
 class TestPatternType:
@@ -530,7 +547,7 @@ class TestPatternType:
         ]
 
         for pt in expected_types:
-            assert isinstance(pt.value, str)
+            expect(isinstance(pt.value, str))
 
 
 class TestCriticality:
@@ -538,9 +555,9 @@ class TestCriticality:
 
     def test_criticality_levels(self):
         """Test criticality levels."""
-        assert Criticality.PRESERVE.value == "preserve"
-        assert Criticality.AVOID.value == "avoid"
-        assert Criticality.CAUTION.value == "caution"
+        expect(Criticality.PRESERVE.value == "preserve")
+        expect(Criticality.AVOID.value == "avoid")
+        expect(Criticality.CAUTION.value == "caution")
 
 
 class TestIntegrityStatus:
@@ -548,10 +565,10 @@ class TestIntegrityStatus:
 
     def test_status_values(self):
         """Test integrity status values."""
-        assert IntegrityStatus.VALID.value == "valid"
-        assert IntegrityStatus.BROKEN_EDGE.value == "broken_edge"
-        assert IntegrityStatus.UNREACHABLE.value == "unreachable"
-        assert IntegrityStatus.INVALID_TARGET.value == "invalid_target"
+        expect(IntegrityStatus.VALID.value == "valid")
+        expect(IntegrityStatus.BROKEN_EDGE.value == "broken_edge")
+        expect(IntegrityStatus.UNREACHABLE.value == "unreachable")
+        expect(IntegrityStatus.INVALID_TARGET.value == "invalid_target")
 
 
 @pytest.fixture
@@ -575,14 +592,14 @@ class TestIntegration:
 
         summary = manager.analyze()
 
-        assert "total_patterns" in summary
-        assert "total_exclusion_zones" in summary
+        expect(not ("total_patterns" not in summary))
+        expect(not ("total_exclusion_zones" not in summary))
 
         zones = manager.get_exclusion_zones()
-        assert isinstance(zones, list)
+        expect(isinstance(zones, list))
 
         report = manager.report()
-        assert "summary" in report
+        expect(not ("summary" not in report))
 
     def test_integrity_check_flow(self, mock_binary_with_patterns):
         """Test complete integrity check flow."""
@@ -592,7 +609,7 @@ class TestIntegration:
 
         if snapshot:
             report = checker.validate_integrity(0x1000)
-            assert isinstance(report, IntegrityReport)
+            expect(isinstance(report, IntegrityReport))
             checker.clear_snapshot(0x1000)
         else:
             pass
@@ -603,8 +620,8 @@ class TestIntegration:
 
         pre_result = validator.pre_mutation_analysis(0x1000)
 
-        assert "function_address" in pre_result
+        expect(not ("function_address" not in pre_result))
 
         post_result = validator.post_mutation_validation(0x1000)
 
-        assert "valid" in post_result
+        expect(not ("valid" not in post_result))

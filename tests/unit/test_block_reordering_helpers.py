@@ -6,9 +6,19 @@ dataclasses) or short_jump_patching.  The tests use simplified dict-based
 wrappers that delegate to the BlockReorderingPass helpers.
 """
 
-import random
-
+from r2morph.core import randomness
 from r2morph.mutations.short_jump_patching import SHORT_JUMP_EXCLUSIVE
+from tests.utils.assertions import expect
+
+_EXPECTED_LEN_RESULT_2 = 2
+_EXPECTED_LEN_RESULT_3 = 3
+_EXPECTED_LEN_RESULT_4 = 4
+_EXPECTED_LEN_RESULT_4_2 = 4
+_EXPECTED_RESULT_0_ADDR_4096 = 0x1000
+_EXPECTED_RESULT_0_ADDR_4096_2 = 0x1000
+_EXPECTED_RESULT_0_ADDR_4096_3 = 0x1000
+_EXPECTED_RESULT_0_ADDR_4096_4 = 0x1000
+
 
 # ---------------------------------------------------------------------------
 # Thin wrappers that match the dict-based signatures the tests expect
@@ -21,7 +31,7 @@ def shuffle_blocks(blocks: list[dict]) -> list[dict]:
         return list(blocks)
     first = blocks[0]
     rest = list(blocks[1:])
-    random.shuffle(rest)
+    randomness.shuffle(rest)
     return [first, *rest]
 
 
@@ -75,22 +85,22 @@ class TestShuffleBlocks:
 
     def test_empty_blocks(self):
         result = shuffle_blocks([])
-        assert result == []
+        expect(result == [])
 
     def test_single_block(self):
         blocks = [{"addr": 0x1000, "asm": "mov rax, rbx"}]
         result = shuffle_blocks(blocks)
-        assert len(result) == 1
-        assert result[0]["addr"] == 0x1000
+        expect(len(result) == 1)
+        expect(result[0]["addr"] == _EXPECTED_RESULT_0_ADDR_4096)
 
     def test_two_blocks_first_stays(self):
         blocks = [
             {"addr": 0x1000, "asm": "mov rax, rbx"},
             {"addr": 0x1010, "asm": "add rax, 10"},
         ]
-        random.seed(42)
+        randomness.seed(42)
         result = shuffle_blocks(blocks)
-        assert result[0]["addr"] == 0x1000
+        expect(result[0]["addr"] == _EXPECTED_RESULT_0_ADDR_4096_2)
 
     def test_multiple_blocks_first_stays(self):
         blocks = [
@@ -99,10 +109,10 @@ class TestShuffleBlocks:
             {"addr": 0x1020, "asm": "block_b:"},
             {"addr": 0x1030, "asm": "block_c:"},
         ]
-        random.seed(42)
+        randomness.seed(42)
         result = shuffle_blocks(blocks)
-        assert result[0]["addr"] == 0x1000
-        assert len(result) == 4
+        expect(result[0]["addr"] == _EXPECTED_RESULT_0_ADDR_4096_3)
+        expect(len(result) == _EXPECTED_LEN_RESULT_4)
 
     def test_first_block_preserved(self):
         """First block should always remain at index 0."""
@@ -114,8 +124,8 @@ class TestShuffleBlocks:
         ]
         for _ in range(10):
             result = shuffle_blocks(blocks.copy())
-            assert result[0]["addr"] == 0x1000
-            assert len(result) == 4
+            expect(result[0]["addr"] == _EXPECTED_RESULT_0_ADDR_4096_4)
+            expect(len(result) == _EXPECTED_LEN_RESULT_4_2)
 
 
 class TestRemoveRedundantFallthrough:
@@ -123,12 +133,12 @@ class TestRemoveRedundantFallthrough:
 
     def test_empty_blocks(self):
         result = remove_redundant_fallthrough([])
-        assert result == []
+        expect(result == [])
 
     def test_single_block(self):
         blocks = [{"addr": 0x1000, "asm": "mov rax, rbx\nret"}]
         result = remove_redundant_fallthrough(blocks)
-        assert len(result) == 1
+        expect(len(result) == 1)
 
     def test_no_redundant_jumps(self):
         blocks = [
@@ -137,7 +147,7 @@ class TestRemoveRedundantFallthrough:
             {"addr": 0x1020, "asm": "ret"},
         ]
         result = remove_redundant_fallthrough(blocks)
-        assert len(result) == 3
+        expect(len(result) == _EXPECTED_LEN_RESULT_3)
 
     def test_redundant_jmp_removed(self):
         blocks = [
@@ -145,7 +155,7 @@ class TestRemoveRedundantFallthrough:
             {"addr": 0x1010, "asm": "ret"},
         ]
         result = remove_redundant_fallthrough(blocks)
-        assert "jmp block_0x1010" not in result[0]["asm"]
+        expect("jmp block_0x1010" not in result[0]["asm"])
 
     def test_non_redundant_jmp_kept(self):
         blocks = [
@@ -155,7 +165,7 @@ class TestRemoveRedundantFallthrough:
             {"addr": 0x1030, "asm": "ret"},
         ]
         result = remove_redundant_fallthrough(blocks)
-        assert "jmp block_0x1030" in result[0]["asm"]
+        expect(not ("jmp block_0x1030" not in result[0]["asm"]))
 
     def test_multiple_blocks_sequence(self):
         blocks = [
@@ -164,8 +174,8 @@ class TestRemoveRedundantFallthrough:
             {"addr": 0x1020, "asm": "ret"},
         ]
         result = remove_redundant_fallthrough(blocks)
-        assert "jmp block_0x1010" not in result[0]["asm"]
-        assert "jmp block_0x1020" not in result[1]["asm"]
+        expect("jmp block_0x1010" not in result[0]["asm"])
+        expect("jmp block_0x1020" not in result[1]["asm"])
 
     def test_block_without_asm(self):
         blocks = [
@@ -173,7 +183,7 @@ class TestRemoveRedundantFallthrough:
             {"addr": 0x1010, "asm": "ret"},
         ]
         result = remove_redundant_fallthrough(blocks)
-        assert len(result) == 2
+        expect(len(result) == _EXPECTED_LEN_RESULT_2)
 
 
 class TestGenerateBlockAsm:
@@ -181,19 +191,19 @@ class TestGenerateBlockAsm:
 
     def test_empty_ops(self):
         result = generate_block_asm([], "test_label")
-        assert "test_label:" in result
+        expect(not ("test_label:" not in result))
 
     def test_single_instruction(self):
         ops = [{"mnemonic": "mov", "opcode": "mov rax, rbx", "bytes": "4889C0", "mutated": True}]
         result = generate_block_asm(ops, "start")
-        assert "start:" in result
-        assert "mov rax, rbx" in result
+        expect(not ("start:" not in result))
+        expect(not ("mov rax, rbx" not in result))
 
     def test_instruction_with_bytes(self):
         ops = [{"bytes": "9090", "mutated": False}]
         result = generate_block_asm(ops, "block1")
-        assert "block1:" in result
-        assert "db" in result
+        expect(not ("block1:" not in result))
+        expect(not ("db" not in result))
 
     def test_multiple_instructions(self):
         ops = [
@@ -201,9 +211,9 @@ class TestGenerateBlockAsm:
             {"opcode": "pop rbx", "mutated": True},
         ]
         result = generate_block_asm(ops, "func")
-        assert "func:" in result
-        assert "push rax" in result
-        assert "pop rbx" in result
+        expect(not ("func:" not in result))
+        expect(not ("push rax" not in result))
+        expect(not ("pop rbx" not in result))
 
 
 class TestPatchShortJumpExclusive:
@@ -211,58 +221,58 @@ class TestPatchShortJumpExclusive:
 
     def test_loop_returns_replacement(self):
         result = patch_short_jump_exclusive("loop")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
     def test_loopne_returns_replacement(self):
         result = patch_short_jump_exclusive("loopne")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
     def test_loopnz_returns_replacement(self):
         result = patch_short_jump_exclusive("loopnz")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
     def test_loope_returns_replacement(self):
         result = patch_short_jump_exclusive("loope")
-        assert result == "dec rcx\njz"
+        expect(result == "dec rcx\njz")
 
     def test_loopz_returns_replacement(self):
         result = patch_short_jump_exclusive("loopz")
-        assert result == "dec rcx\njz"
+        expect(result == "dec rcx\njz")
 
     def test_jcxz_returns_replacement(self):
         result = patch_short_jump_exclusive("jcxz")
-        assert result == "test cx, cx\njz"
+        expect(result == "test cx, cx\njz")
 
     def test_jecxz_returns_replacement(self):
         result = patch_short_jump_exclusive("jecxz")
-        assert result == "test ecx, ecx\njz"
+        expect(result == "test ecx, ecx\njz")
 
     def test_jrcxz_returns_replacement(self):
         result = patch_short_jump_exclusive("jrcxz")
-        assert result == "test rcx, rcx\njz"
+        expect(result == "test rcx, rcx\njz")
 
     def test_jmp_returns_none(self):
         result = patch_short_jump_exclusive("jmp")
-        assert result is None
+        expect(not (result is not None))
 
     def test_jz_returns_none(self):
         result = patch_short_jump_exclusive("jz")
-        assert result is None
+        expect(not (result is not None))
 
     def test_case_insensitive(self):
         result = patch_short_jump_exclusive("LOOP")
-        assert result == "dec rcx\njnz"
+        expect(result == "dec rcx\njnz")
 
         result = patch_short_jump_exclusive("jRCXz")
-        assert result == "test rcx, rcx\njz"
+        expect(result == "test rcx, rcx\njz")
 
     def test_empty_returns_none(self):
         result = patch_short_jump_exclusive("")
-        assert result is None
+        expect(not (result is not None))
 
     def test_unknown_mnemonic_returns_none(self):
         result = patch_short_jump_exclusive("call")
-        assert result is None
+        expect(not (result is not None))
 
         result = patch_short_jump_exclusive("ret")
-        assert result is None
+        expect(not (result is not None))

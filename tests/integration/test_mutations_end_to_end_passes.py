@@ -7,6 +7,7 @@ from r2morph.mutations.dead_code_injection import DeadCodeInjectionPass
 from r2morph.mutations.instruction_expansion import InstructionExpansionPass
 from r2morph.mutations.opaque_predicates import OpaquePredicatePass
 from r2morph.mutations.register_substitution import RegisterSubstitutionPass
+from tests.utils.assertions import expect
 
 
 def _copy_binary(tmp_path: Path, name: str) -> Path:
@@ -22,35 +23,35 @@ def _run_pass(tmp_path: Path, pass_cls, name: str):
         bin_obj.analyze("aa")
         mutation = pass_cls({"probability": 1.0})
         result = mutation.apply(bin_obj)
-        assert isinstance(result, dict)
+        expect(isinstance(result, dict))
         return result
 
 
 def test_control_flow_flattening_end_to_end(tmp_path: Path):
     result = _run_pass(tmp_path, ControlFlowFlatteningPass, "cff_bin")
-    assert "mutations_applied" in result
-    assert "functions_mutated" in result
+    expect(not ("mutations_applied" not in result))
+    expect(not ("functions_mutated" not in result))
 
 
 def test_register_substitution_end_to_end(tmp_path: Path):
     result = _run_pass(tmp_path, RegisterSubstitutionPass, "regsub_bin")
-    assert "mutations_applied" in result
-    assert "functions_mutated" in result
+    expect(not ("mutations_applied" not in result))
+    expect(not ("functions_mutated" not in result))
 
 
 def test_instruction_expansion_end_to_end(tmp_path: Path):
     result = _run_pass(tmp_path, InstructionExpansionPass, "expand_bin")
-    assert "mutations_applied" in result
-    assert "functions_mutated" in result
+    expect(not ("mutations_applied" not in result))
+    expect(not ("functions_mutated" not in result))
 
 
 def test_dead_code_injection_end_to_end(tmp_path: Path):
     result = _run_pass(tmp_path, DeadCodeInjectionPass, "deadcode_bin")
-    assert "mutations_applied" in result
-    assert "functions_mutated" in result
+    expect(not ("mutations_applied" not in result))
+    expect(not ("functions_mutated" not in result))
 
 
 def test_opaque_predicates_end_to_end(tmp_path: Path):
     result = _run_pass(tmp_path, OpaquePredicatePass, "opaque_bin")
-    assert "mutations_applied" in result
-    assert "functions_mutated" in result
+    expect(not ("mutations_applied" not in result))
+    expect(not ("functions_mutated" not in result))

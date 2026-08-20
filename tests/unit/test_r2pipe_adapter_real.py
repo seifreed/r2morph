@@ -4,6 +4,7 @@ import pytest
 
 from r2morph.adapters.r2pipe_adapter import R2PipeAdapter
 from r2morph.protocols import DisassemblerInterface
+from tests.utils.assertions import expect
 
 
 def test_r2pipe_adapter_open_and_commands():
@@ -11,22 +12,22 @@ def test_r2pipe_adapter_open_and_commands():
     binary_path = Path("fixtures/dataset/elf_x86_64")
 
     adapter.open(binary_path, flags=["-2"])
-    assert adapter.is_open() is True
+    expect(not (adapter.is_open() is not True))
 
     info = adapter.cmdj("ij")
-    assert isinstance(info, dict)
-    assert "bin" in info
+    expect(isinstance(info, dict))
+    expect(not ("bin" not in info))
 
     funcs = adapter.cmdj("aflj")
-    assert isinstance(funcs, list)
+    expect(isinstance(funcs, list))
 
     adapter.close()
-    assert adapter.is_open() is False
+    expect(not (adapter.is_open() is not False))
 
 
 def test_r2pipe_adapter_errors_and_protocol():
     adapter = R2PipeAdapter()
-    assert isinstance(adapter, DisassemblerInterface)
+    expect(isinstance(adapter, DisassemblerInterface))
 
     with pytest.raises(RuntimeError):
         adapter.cmd("ij")

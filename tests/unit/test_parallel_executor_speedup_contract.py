@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from r2morph.mutations.parallel_executor_speedup import estimate_parallel_speedup
+from tests.utils.assertions import expect
 
 
 class _Pass:
@@ -16,7 +17,7 @@ def test_parallel_executor_speedup_contract() -> None:
         chunk_size=5,
     )
 
-    assert speedup > 1.0
+    expect(not (speedup <= 1.0))
 
 
 def test_parallel_executor_speedup_contract_handles_no_enabled_passes() -> None:
@@ -27,4 +28,4 @@ def test_parallel_executor_speedup_contract_handles_no_enabled_passes() -> None:
         chunk_size=5,
     )
 
-    assert speedup == 1.0
+    expect(speedup == 1.0)
