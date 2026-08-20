@@ -33,9 +33,9 @@ from tests.utils.assertions import expect
 # guaranteeing the engine dispatch runs.
 FIXTURE = vm_real._DATASET / "elf_vm_engarith_x86_64"
 
-# The threaded shape's decode tail: ``movsxd rax, eax`` + ``add rax, r14`` +
-# ``jmp rax`` (the offset-table computed goto). Only a threaded build emits it.
-_THREADED_COMPUTED_GOTO = bytes.fromhex("4863C04C01F0FFE0")
+# The threaded shape's decode tail: ``movsxd rax, eax`` + ``add rax, r14`` and
+# either equivalent indirect transfer. Only a threaded build emits these bytes.
+_THREADED_COMPUTED_GOTOS = (bytes.fromhex("4863C04C01F0FFE0"), bytes.fromhex("4863C04C01F050C3"))
 
 # Enough seeds that a surviving per-build shape draw would show up with high
 # probability (a fair coin flip would miss all eight at ~1 in 256); the asm-level
@@ -76,7 +76,11 @@ def seed_sweep_builds(tmp_path_factory: pytest.TempPathFactory) -> list[Path]:
 def test_every_engine_build_dispatches_through_the_encrypted_table(seed_sweep_builds: list[Path]) -> None:
     # No build may fall back to the removed compare/branch ladder: every one must
     # carry the offset-table computed goto, the shape a decompiler cannot resolve.
-    missing = [b.name for b in seed_sweep_builds if _THREADED_COMPUTED_GOTO not in b.read_bytes()]
+    missing = [
+        b.name
+        for b in seed_sweep_builds
+        if not any(signature in b.read_bytes() for signature in _THREADED_COMPUTED_GOTOS)
+    ]
     expect(not (missing), f"builds without the threaded computed goto: {missing}")
 
 

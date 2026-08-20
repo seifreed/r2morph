@@ -23,7 +23,7 @@ def _bootstrap(seed: int = 7) -> tuple[str, str]:
 
 def test_bootstrap_entry_jumps_indirectly_before_antidebug_probes() -> None:
     code, _table = _bootstrap()
-    first_jump = code.index("jmp rax")
+    first_jump = min(position for marker in ("jmp rax", "push rax") if (position := code.find(marker)) >= 0)
 
     expect(not (first_jump >= min(code.index("rdtsc"), code.index("syscall"))))
 

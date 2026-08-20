@@ -59,6 +59,10 @@ _OPCODE_XORS = ["  xor al, 0x52\n", "  xor al, r13b\n", "  xor al, byte ptr [rsp
 _TABLE_XORS = ["  xor eax, 0x1234\n", "  movzx ecx, byte ptr [rsp+0x88]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"]
 
 
+def _without_transfer(assembly: str) -> frozenset[str]:
+    return frozenset(line for line in assembly.splitlines() if line.strip() not in {"jmp rax", "push rax", "ret"})
+
+
 def _decode(seed: int) -> str:
     return decode_block(
         opcode_xors=_OPCODE_XORS,
@@ -131,7 +135,8 @@ def test_nested_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
 def test_region_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _region_asm(0)
 
-    expect(not (asm.index("jmp rax") >= min(asm.index("rdtsc"), asm.index("syscall"))))
+    first_transfer = min(position for marker in ("jmp rax", "push rax") if (position := asm.find(marker)) >= 0)
+    expect(not (first_transfer >= min(asm.index("rdtsc"), asm.index("syscall"))))
 
 
 def test_engine_interpreter_has_no_central_dispatch_label() -> None:
@@ -164,7 +169,8 @@ def test_engine_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
 def test_engine_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _engine_asm(0)
 
-    expect(not (asm.index("jmp rax") >= min(asm.index("rdtsc"), asm.index("syscall"))))
+    first_transfer = min(position for marker in ("jmp rax", "push rax") if (position := asm.find(marker)) >= 0)
+    expect(not (first_transfer >= min(asm.index("rdtsc"), asm.index("syscall"))))
 
 
 def test_engine_interpreter_save_order_varies_across_builds() -> None:
@@ -206,11 +212,27 @@ def test_region_interpreter_never_emits_a_compare_branch_ladder() -> None:
 def test_engine_interpreter_always_dispatches_through_the_offset_table() -> None:
     # Every build routes through the XOR-encrypted offset table and its computed
     # goto, so no build ships a statically resolvable handler mapping.
-    expect(all("vm_table" in _engine_asm(seed) and "jmp rax" in _engine_asm(seed) for seed in _SEED_SWEEP))
+    expect(
+        all(
+            "vm_table" in _engine_asm(seed) and ("jmp rax" in _engine_asm(seed) or "push rax" in _engine_asm(seed))
+            for seed in _SEED_SWEEP
+        )
+    )
 
 
 def test_region_interpreter_always_dispatches_through_the_offset_table() -> None:
-    expect(all("vm_table" in _region_asm(seed) and "jmp rax" in _region_asm(seed) for seed in _SEED_SWEEP))
+    expect(
+        all(
+            "vm_table" in _region_asm(seed) and ("jmp rax" in _region_asm(seed) or "push rax" in _region_asm(seed))
+            for seed in _SEED_SWEEP
+        )
+    )
+
+
+def test_dispatch_transfer_form_varies_across_seeds() -> None:
+    forms = {"stack" if "push rax" in _decode(seed) else "jump" for seed in range(20)}
+
+    expect(forms == {"jump", "stack"})
 
 
 def test_decode_block_is_polymorphic_across_seeds() -> None:
@@ -222,10 +244,8 @@ def test_decode_block_is_polymorphic_across_seeds() -> None:
     expect(not (len({_decode(seed) for seed in range(20)}) <= 1))
 
 
-def test_decode_block_shuffle_preserves_length_and_instructions() -> None:
-    # Shuffling only reorders existing instructions, so every copy is the same byte
-    # length (keeping assembled size and the size-vs-depth invariants stable) and
-    # carries exactly the same instruction lines - only their order varies.
+def test_decode_block_shuffle_preserves_common_instructions() -> None:
+    # Shuffling and transfer polymorphism keep the decode body identical; only
+    # instruction order and the final indirect-transfer form vary.
     variants = [_decode(seed) for seed in range(20)]
-    expect(len({len(v) for v in variants}) == 1)
-    expect(len({frozenset(v.splitlines()) for v in variants}) == 1)
+    expect(len({_without_transfer(v) for v in variants}) == 1)

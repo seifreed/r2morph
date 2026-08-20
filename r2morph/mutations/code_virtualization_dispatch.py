@@ -12,13 +12,15 @@ shuffles its two order-independent instruction groups:
   combined key/position/checksum mask, so their order does not affect the result),
 * the table-entry decrypt blocks (each folds into ``eax`` independently).
 
-Shuffling only reorders existing instructions, so every copy is the same length:
-assembled size and executed instruction count are unchanged, and the per-build
-self-checksum (which scans the interpreter once) stays well within budget.
+Shuffling reorders existing instruction groups, while the transfer tail may use
+either equivalent form; the per-build self-checksum still scans the assembled
+interpreter once and stays well within budget.
 
-The decode head (position-mask setup + opcode load) and tail (sign-extend +
-indirect jump) are identical across both VMs; the caller supplies the pieces that
-differ (immediate vs frame-slot key/count/table, spacing).
+The decode head (position-mask setup + opcode load) is identical across both VMs;
+the caller supplies the pieces that differ (immediate vs frame-slot key/count/table,
+spacing). The indirect transfer uses either ``jmp rax`` or ``push rax; ret`` per
+generated copy; the latter consumes its own pushed return address and preserves the
+handler's stack contract while removing one fixed tail signature.
 
 This is the only dispatch mechanism either VM emits. A central dispatcher ending
 in a compare/branch ladder over the opcode indices was tried and removed: a
@@ -39,6 +41,12 @@ DISPATCH_BACK_JUMP = "  jmp vm_dispatch\n"
 
 _DECODE_HEAD = "  mov r13, rsi\n  sub r13, r15\n  movzx eax, byte ptr [rsi]\n"
 _DECODE_TAIL = "  movsxd rax, eax\n  add rax, r14\n  jmp rax\n"
+_STACK_TRANSFER_TAIL = "  movsxd rax, eax\n  add rax, r14\n  push rax\n  ret\n"
+
+
+def _indirect_transfer_tail(rng: random.Random) -> str:
+    """Choose an equivalent indirect transfer for one generated dispatch copy."""
+    return _STACK_TRANSFER_TAIL if rng.getrandbits(1) else _DECODE_TAIL
 
 
 def offset_jump_block(
@@ -50,7 +58,13 @@ def offset_jump_block(
     rng: random.Random,
 ) -> str:
     """Jump through one runtime-encrypted relative-offset table."""
-    return index_setup + bounds + table_load + "".join(rng.sample(table_xors, len(table_xors))) + _DECODE_TAIL
+    return (
+        index_setup
+        + bounds
+        + table_load
+        + "".join(rng.sample(table_xors, len(table_xors)))
+        + _indirect_transfer_tail(rng)
+    )
 
 
 def decode_block(
