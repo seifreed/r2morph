@@ -218,6 +218,8 @@ The previously pushed maturity loop includes `d63efec`, `f3143ea`, `4cf6106`,
 `6724082`, `1b0b761`, and `ed409e8`. Commit `c701ef3` adds the corpus baseline,
 own-adversary harness, real regression coverage, and checksum block permutation.
 Commit `08f637a` adds bounded runtime dispatch tracing and its real-fixture
-regression. It must not be described as fully green until the repository quality
+regression. Commit `c161b22` expands the IDA/Hex-Rays Tier B evidence with
+memory, flag-live, FP, PIE, and interpreter cases. It must not be described as
+fully green until the repository quality
 gate passes without the forbidden Ruff per-file exclusions; that blocker is
 recorded explicitly rather than hidden.
