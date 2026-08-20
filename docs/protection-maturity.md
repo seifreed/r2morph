@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `3a9ad18`
+Commit: `ea1d1bf`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -295,9 +295,9 @@ sequence remains observable.
 The own devirtualizer does not support the current encrypted indirect shape, so
 its negative result is not a complete adversarial benchmark. The interpreter outlier
 shows that a direct handler-table architecture remains easy for Hex-Rays. Coverage
-outside ELF x86-64 is not established. The strict repository quality gate also remains
-blocked by the pre-existing forbidden Ruff `per-file-ignores` configuration and
-the large lint backlog exposed when it is removed.
+outside ELF x86-64 is not established. The strict repository quality gate now
+passes without Ruff `per-file-ignores`; the repository-wide lint backlog was
+resolved with explicit test assertions, named constants, and real process adapters.
 
 ## 14. Fixed
 
@@ -369,12 +369,11 @@ execution-architecture change. Improving the current devirtualizer to understand
 the encrypted threaded contract is a separate tool-capability effort. Broader
 format/architecture support is outside the declared virtualization envelope.
 None should be implemented as a branch for a named sample or family. The
-quality-gate backlog must be resolved as a separate repository-wide cleanup
-without adding lint suppression.
+repository-wide quality gate is green without adding lint suppression.
 
 ### Termination assessment
 
-At code HEAD `3a9ad18`, documented by `1eaa084`, the remaining protection weaknesses require architectural
+At code HEAD `ea1d1bf`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The two-stage integrity
 contract removes one single full-span loop, but both the short bootstrap loop and
 the deferred full loop remain statically recoverable. Removing that fingerprint
@@ -465,5 +464,8 @@ Commit `400d427` randomizes the region/nested runtime state-mask slot; its
 focused and Tier A evidence is recorded in `protection-state-encoding.json`.
 Commit `d61024a` enforces runtime-observable parity in the maturity harness.
 Commit `3a9ad18` removes raw instruction count from the structural resistance
-score. The current code-level quality result remains the single forbidden
-`per-file-ignores` configuration failure described above.
+score. Commit `ea1d1bf` removes the forbidden Ruff `per-file-ignores`, replaces
+test-only lint bypasses with explicit real-test helpers, fixes symlinked driver
+and shebang process execution, and passes the complete strict gate: Black, Ruff,
+mypy, Bandit, pip-audit, and `pytest -W error` (`4867` passed, `21` skipped,
+`81.03%` coverage under Python 3.12).
