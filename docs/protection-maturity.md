@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `ea1d1bf`
+Commit: `cb41797`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -291,7 +291,10 @@ still visibly structured and the bytewise mode is simpler but no longer identica
 across builds.
 The two-stage integrity change removes the single full-span bootstrap contract,
 but both checksum loops remain statically recoverable and the handler-target
-sequence remains observable.
+sequence remains observable. Commit `cb41797` removes the uniform checksum
+broadcast from bootstrap and handler offset tables by mixing each entry with
+its index and a build-derived multiplier; the checksum loops and target sequence
+remain visible.
 The own devirtualizer does not support the current encrypted indirect shape, so
 its negative result is not a complete adversarial benchmark. The interpreter outlier
 shows that a direct handler-table architecture remains easy for Hex-Rays. Coverage
@@ -350,6 +353,14 @@ resistance score. Instruction expansion remains reported separately, while the
 score uses indirect dispatches and distinct branch targets; on the real shift
 fixture the measured score is `2.0` native versus `2970.0` virtualized despite
 the VM's `17612` disassembled instructions.
+Commit `cb41797` applies the same generic index-mixed offset-table contract to
+engine and region dispatch plus bootstrap tables. The focused real suite passed
+`144` tests, the full suite passed `4867` tests with `21` skips, and the one-seed
+Tier A campaign passed `109/109` fixtures with `0` failed runs and matching
+runtime observables. The prior ten-seed Tier A campaign remains the baseline for
+the pre-existing protection contract; this change was not represented as a new
+ten-seed campaign because its full rerun is materially more expensive than the
+validated one-seed corpus and focused seed regressions.
 An experiment that independently shuffled the three runtime-state restores in
 each threaded decode copy was rejected: the ten-seed handler survey moved mean
 nearest similarity from `0.8376` to `0.8401` and threshold matches from `1780` to
@@ -373,7 +384,7 @@ repository-wide quality gate is green without adding lint suppression.
 
 ### Termination assessment
 
-At code HEAD `ea1d1bf`, the remaining protection weaknesses require architectural
+At code HEAD `cb41797`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The two-stage integrity
 contract removes one single full-span loop, but both the short bootstrap loop and
 the deferred full loop remain statically recoverable. Removing that fingerprint
@@ -469,3 +480,8 @@ test-only lint bypasses with explicit real-test helpers, fixes symlinked driver
 and shebang process execution, and passes the complete strict gate: Black, Ruff,
 mypy, Bandit, pip-audit, and `pytest -W error` (`4867` passed, `21` skipped,
 `81.03%` coverage under Python 3.12).
+Commit `cb41797` replaces the uniform checksum broadcast used for bootstrap and
+handler offset tables with a build-derived index mix. Its one-seed Tier A result
+is `109/109` compatible fixtures and `109/109` successful runs with matching
+runtime observables; the full strict suite passed `4867` tests, skipped `21`, and
+reached `81.02%` coverage under Python 3.12.
