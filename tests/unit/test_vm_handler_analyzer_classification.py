@@ -43,3 +43,13 @@ def test_vm_handler_classification_and_semantics():
         handler.equivalent_x86 = analyzer._generate_equivalent_x86(handler)
         confidence = analyzer._calculate_handler_confidence(handler)
         assert 0.0 <= confidence <= 1.0
+
+
+def test_vm_handler_table_rejects_bytes_outside_executable_segments():
+    binary_path = Path("fixtures/dataset/elf_x86_64")
+
+    with Binary(binary_path) as bin_obj:
+        bin_obj.analyze()
+        analyzer = VMHandlerAnalyzer(bin_obj)
+
+        assert analyzer._validate_handler_table(0x50) is False

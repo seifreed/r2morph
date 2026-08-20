@@ -7,7 +7,7 @@
       "classification": "unsupported_indirect_dispatch",
       "function_size": 269,
       "handler_count": 0,
-      "handler_table_address": 80,
+      "handler_table_address": null,
       "vm_context_size": 0,
       "vm_registers": [
         "rdi"
@@ -36,5 +36,5 @@
       "vm_registers": []
     }
   ],
-  "sample": "r2morph-padding-20260820"
+  "sample": "r2morph-ida-handlers-20260820"
 }

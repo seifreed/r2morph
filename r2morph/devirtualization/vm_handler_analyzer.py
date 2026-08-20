@@ -189,12 +189,24 @@ class VMHandlerAnalyzer:
         if self.binary.r2 is None:
             raise RuntimeError("Binary disassembler is not open")
         try:
+            segments = self.binary.r2.cmdj("iSSj") or []
+            if not any(self._address_is_in_executable_segment(addr, segment) for segment in segments):
+                return False
             # Try to disassemble one instruction at this address
             disasm = self.binary.r2.cmd(f"pd 1 @ {addr}")
             return len(disasm.strip()) > 0 and "invalid" not in disasm.lower()
         except Exception as e:
             logger.debug(f"Failed to validate code address 0x{addr:x}: {e}")
             return False
+
+    @staticmethod
+    def _address_is_in_executable_segment(addr: int, segment: dict[str, Any]) -> bool:
+        """Return whether an address belongs to an executable loader segment."""
+        if "x" not in str(segment.get("perm", "")):
+            return False
+        start = segment.get("vaddr")
+        size = segment.get("vsize") or segment.get("size")
+        return isinstance(start, int) and isinstance(size, int) and size > 0 and start <= addr < start + size
 
     def _extract_table_from_block(self, block_addr: int, block_size: int) -> int | None:
         """Recover a handler-table address from a dispatch block.
