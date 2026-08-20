@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `4c40919`
+Commit: `a6ac9ed`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -131,6 +131,10 @@ remains covered by its existing real-fixture tests; the current encrypted table
 and indirect dispatch are outside that analyzer's supported contract. The
 adversary also exposed and fixed a false table candidate from non-executable ELF
 header bytes; current recovery now rejects that candidate on segment metadata.
+The separate bounded dynamic harness now supplies the missing capability
+distinction: on the same sample it correlates `32` dispatches with the live
+bytecode base, position, and handler target. Static recovery is therefore a tool
+coverage gap, while dynamic recovery is demonstrably easy for this execution.
 
 ## 8. Multi-seed
 
@@ -169,11 +173,13 @@ The bounded Unicorn trace in
 fresh bytewise checksum build in `0.335` seconds: `253,680` instructions, `35`
 indirect dispatches reaching `14` distinct targets, `256` register-state samples,
 and `50,343` reads from executable ranges. Read values are hashed and samples are
-capped. This demonstrates that a tracer can recover the handler sequence and
+capped. Of those jumps, `32` are correlated with a non-zero bytecode base, vIP,
+stream position, and handler target; the artifact keeps an eight-event bounded
+sample. This demonstrates that a tracer can recover the handler sequence and
 register state from the live process; the checksum is not an anti-tracing
-boundary. The current harness records dispatch targets and read evidence, but
-does not claim that a generic tracer cannot recover more, including the full
-decoded bytecode stream.
+boundary. The harness now records the correlation explicitly, but does not claim
+that a generic tracer cannot recover more, including the full decoded bytecode
+stream.
 
 ## 11. Performance overhead
 
@@ -204,8 +210,9 @@ spill, an obvious appended executable chain, and handler bodies that cluster at
 at or above `0.8`). The equivalent per-instance vIP advance form reduces this
 signal without adding unreachable junk. The opcode remains at record offset
 zero, although per-instance tail padding now removes the fixed record-stride
-assumption. The runtime VM's
-dispatch sequence and register state were also recovered by the bounded trace.
+assumption. The runtime VM's dispatch sequence and register state were also
+recovered by the bounded trace: `32/35` indirect jumps expose correlated
+vIP/base/position/target tuples in the current artifact.
 Immediate arithmetic now has a second generic lowering grammar for `add`, `and`,
 `or`, `sub`, and `xor`; the current IDA observation still recovered no handler
 grammar. The checksum now has two generic traversal grammars: the block mode is
@@ -228,7 +235,8 @@ uses either seeded four-byte block permutations with guarded tails or a bytewise
 walk. Each change has real
 regression coverage and was rechecked on fresh protected files. The runtime trace
 harness and its bounded real-fixture regression make dynamic exposure measurable
-without changing production protection behavior. Engine GP handlers now also use
+without changing production protection behavior. Commit `a6ac9ed` adds the
+dispatch-context correlation to that harness. Engine GP handlers now also use
 two semantically equivalent field-decode/order forms selected per instance; the
 handler-clustering artifact records the small but reproducible effect. Engine
 bytecode records now add zero-to-two checksum-encrypted tail bytes per opcode
@@ -263,7 +271,7 @@ without adding lint suppression.
 
 ### Termination assessment
 
-At HEAD `4c40919`, the remaining protection weaknesses require architectural
+At HEAD `a6ac9ed`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The bootstrap is still a
 stable, statically recoverable checksum loop; changing its register allocation,
 traversal order, or accumulator width does not remove that recovery path in
@@ -330,9 +338,9 @@ corpus, and current IDA/adversary evidence. Commit `b6159be` extends that
 decomposition to `and` and `or`, with its regression, regenerated corpus, and
 current IDA/adversary evidence. Commit `9d1a334` adds the generic bytewise checksum
 traversal and its real regression/corpus/IDA evidence. The remaining gaps above are
-architectural rather than unmeasured local variations. Commit `4c40919` records
-the bounded runtime trace, current adversary result, and this termination
-assessment. The official quality wrapper was rerun at this
+architectural rather than unmeasured local variations. Commit `a6ac9ed` records
+the correlated runtime trace and current adversary measurement without changing
+the protected binary. The official quality wrapper was rerun at this
 HEAD: 9 checks pass;
 the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
 whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).
