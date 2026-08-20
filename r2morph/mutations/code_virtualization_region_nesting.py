@@ -41,6 +41,7 @@ from r2morph.mutations.code_virtualization_bootstrap import (
     BOOTSTRAP_TABLE_SIZE,
     build_bootstrap_asm,
     encrypt_bootstrap_table,
+    table_key_mix,
 )
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import GP_REGISTERS, RSP_INDEX, gp_save_order
@@ -383,7 +384,12 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
             context.counts[layer],
             checksum_broadcast,
         )
-    encrypt_bootstrap_table(data, bootstrap_start, context.bootstrap_checksum)
+    encrypt_bootstrap_table(
+        data,
+        bootstrap_start,
+        context.bootstrap_checksum,
+        table_key_mix(context.schemes[0].junk_seed),
+    )
     patch_tracer_constants(data, island_start, context.bootstrap_checksum)
     try:
         encoded_layers = [

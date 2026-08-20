@@ -29,6 +29,8 @@ from r2morph.mutations.code_virtualization_bootstrap import (
     BOOTSTRAP_TABLE_SIZE,
     build_bootstrap_asm,
     encrypt_bootstrap_table,
+    table_entry_key,
+    table_key_mix,
 )
 from r2morph.mutations.code_virtualization_dispatch import decode_block, thread_back_jumps
 from r2morph.mutations.code_virtualization_engine import (
@@ -127,6 +129,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # shuffling only reorders instructions, so executed count and size are
     # unchanged; only the interpreter's code grows (one copy per handler).
     poly_rng = random.Random(scheme.table_key)
+    table_mix = (scheme.table_key & 0x7FFFFFFF) | 1
     handler_count = sum(len(indices) for indices in scheme.dup.values())
     # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
     # pass XORed in: a faithful interpreter cancels the checksum and a tampered one
@@ -145,16 +148,17 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             opcode_xors=opcode_xors,
             bounds=bounds,
             # Base-independent indirect dispatch: each table entry is a 32-bit signed
-            # offset from vm_table to its handler. The offsets are XOR-encrypted (not
-            # a plaintext switch a disassembler recovers) with the self-checksum
-            # broadcast to 32 bits -- a value the decompiler cannot fold, so the table
-            # decrypt renders as `eax ^ (0x1010101 * v_checksum)` rather than exposing
-            # a build-constant table key -- and tampering corrupts handler resolution.
-            table_load="  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n",
+            # offset from vm_table to its handler. The offsets use a checksum key mixed
+            # with the opcode index and a per-build multiplier.
+            table_load=(
+                "  lea r14, [rip+vm_table]\n" "  mov edx, eax\n" "  inc edx\n" "  mov eax, dword ptr [r14+rax*4]\n"
+            ),
             table_xors=[
                 (
                     f"  movzx ecx, byte ptr [rsp+{scheme.checksum_offset}]\n"
-                    f"  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n{state_decode}"
+                    f"  imul ecx, ecx, 0x1010101\n"
+                    f"  imul edx, edx, {table_mix}\n"
+                    f"  xor ecx, edx\n  xor eax, ecx\n{state_decode}"
                 ),
             ],
             rng=poly_rng,
@@ -330,16 +334,16 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
     # Expected runtime self-checksum over the interpreter code (everything up to the
     # dispatch table, so neither the table encryption nor the island patch below
     # perturbs it); the encoder folds it into the opcodes, the table is encrypted
-    # with it, and the tracer constants are masked by it. The table key is the
-    # checksum broadcast alone -- no separate build-constant key -- so the decode
-    # exposes no table-key literal (only the opaque runtime checksum).
+    # with it, and the tracer constants are masked by it. The table key also includes
+    # a build-derived index mix, so entries do not share one uniform XOR mask.
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise)
-    table_key = checksum * 0x01010101
+    table_mix = (scheme.table_key & 0x7FFFFFFF) | 1
     for entry_index in range(total):
         offset = table_start + entry_index * 4
-        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
+        entry_key = table_entry_key(checksum, entry_index, table_mix)
+        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ entry_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
-    encrypt_bootstrap_table(data, bootstrap_start, bootstrap_checksum)
+    encrypt_bootstrap_table(data, bootstrap_start, bootstrap_checksum, table_key_mix(scheme.junk_seed))
     patch_tracer_constants(data, island_start, bootstrap_checksum)
     # The bytecode is appended right after the interpreter, so its base is the
     # cave plus the interpreter's assembled length; rip-relative targets are

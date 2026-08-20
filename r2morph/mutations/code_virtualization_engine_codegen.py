@@ -101,6 +101,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         )
     )
     poly_rng = random.Random(scheme.table_key)
+    table_mix = (scheme.table_key & 0x7FFFFFFF) | 1
     # Undo the opcode byte's position mask and the runtime self-checksum the whole-blob
     # pass XORed in: a faithful interpreter cancels the checksum and a tampered one
     # misdecodes. No separate constant key term -- the byte key IS the checksum -- so
@@ -121,15 +122,17 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         return decode_block(
             opcode_xors=opcode_xors,
             bounds=bounds,
-            # The stored offsets are XOR-encrypted (not a plaintext switch) with the
-            # self-checksum broadcast to 32 bits -- a value the decompiler cannot fold,
-            # so the decrypt exposes no build-constant table key -- and tampering
-            # corrupts handler resolution, not just opcodes.
-            table_load="  lea r14, [rip + vm_table]\n  mov eax, dword ptr [r14 + rax*4]\n",
+            # The stored offsets use a checksum key mixed with the opcode index and a
+            # per-build multiplier, so the table is not one uniformly XORed stream.
+            table_load=(
+                "  lea r14, [rip + vm_table]\n" "  mov edx, eax\n" "  inc edx\n" "  mov eax, dword ptr [r14 + rax*4]\n"
+            ),
             table_xors=[
                 (
                     f"  movzx ecx, byte ptr [rsp + {layout.checksum_offset}]\n"
-                    f"  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n{state_decode}"
+                    f"  imul ecx, ecx, 0x1010101\n"
+                    f"  imul edx, edx, {table_mix}\n"
+                    f"  xor ecx, edx\n  xor eax, ecx\n{state_decode}"
                 ),
             ],
             rng=poly_rng,

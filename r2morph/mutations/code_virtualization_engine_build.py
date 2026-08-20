@@ -13,6 +13,8 @@ from r2morph.mutations.code_virtualization_antidebug import (
 from r2morph.mutations.code_virtualization_bootstrap import (
     BOOTSTRAP_TABLE_SIZE,
     encrypt_bootstrap_table,
+    table_entry_key,
+    table_key_mix,
 )
 from r2morph.mutations.code_virtualization_engine_codegen import (
     _interpreter_asm,
@@ -92,12 +94,13 @@ def build_vm_blob(
         scheme.checksum_bytewise,
     )
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise)
-    table_key = checksum * 0x01010101
+    table_mix = scheme.table_key & 0x7FFFFFFF | 1
     for entry_index in range(total):
         offset = table_start + entry_index * 4
-        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
+        entry_key = table_entry_key(checksum, entry_index, table_mix)
+        encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ entry_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
-    encrypt_bootstrap_table(data, bootstrap_start, bootstrap_checksum)
+    encrypt_bootstrap_table(data, bootstrap_start, bootstrap_checksum, table_key_mix(scheme.junk_seed))
     patch_tracer_constants(data, island_start, bootstrap_checksum)
     bytecode_base = cave_vaddr + len(data)
     try:

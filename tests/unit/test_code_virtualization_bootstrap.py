@@ -9,6 +9,8 @@ from r2morph.mutations.code_virtualization_bootstrap import (
     BOOTSTRAP_TABLE_SIZE,
     build_bootstrap_asm,
     encrypt_bootstrap_table,
+    table_entry_key,
+    table_key_mix,
 )
 from tests.utils.assertions import expect
 
@@ -44,16 +46,18 @@ def test_bootstrap_state_mapping_varies_by_seed() -> None:
     expect(not (len(tables) <= 1))
 
 
-def test_encrypt_bootstrap_table_xors_every_offset_with_checksum() -> None:
+def test_encrypt_bootstrap_table_mixes_checksum_by_entry_index() -> None:
     original = bytes(range(BOOTSTRAP_TABLE_SIZE))
     encrypted = bytearray(original)
     checksum = 0x5A
+    mix = table_key_mix(7)
 
-    encrypt_bootstrap_table(encrypted, 0, checksum)
+    encrypt_bootstrap_table(encrypted, 0, checksum, mix)
 
-    key = checksum * 0x01010101
     expected = b"".join(
-        (int.from_bytes(original[offset : offset + 4], "little") ^ key).to_bytes(4, "little")
-        for offset in range(0, BOOTSTRAP_TABLE_SIZE, 4)
+        (int.from_bytes(original[offset : offset + 4], "little") ^ table_entry_key(checksum, index, mix)).to_bytes(
+            4, "little"
+        )
+        for index, offset in enumerate(range(0, BOOTSTRAP_TABLE_SIZE, 4))
     )
     expect(bytes(encrypted) == expected)
