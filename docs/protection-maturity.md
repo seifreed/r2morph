@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `e32ad9c`
+Commit: `e078722`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -123,6 +123,17 @@ IDA on the current region build recognized two functions and four segments; its
 177-byte VM entry decompiled only to the checksum loop and opaque `jmp rax`, with
 no handler recovery. This matches the engine result: state encoding changes the
 runtime correlation without claiming that the checksum bootstrap itself is hidden.
+
+Commit `e078722` separates the live-state mask from the operand key. The engine
+frame now reserves a randomized state slot; region and nested VMs use the fixed
+state slot `0x218`. Bootstrap derives the mask from the caller's runtime stack
+address, rotates it, and mixes the checksum, while bytecode operand encoding stays
+unchanged. On the same engine fixture and seed, the protected file grew from
+`82183` to `82211` bytes and from `212586` to `212681` traced instructions, kept
+exit `42`, kept `38` indirect jumps, and retained `0/35` raw-position matches.
+The current environment had no IDA executable available for a fresh post-change
+decompilation, so no new Hex-Rays claim is made here; the existing same-shape IDA
+survey remains the static reference.
 
 Commit `9d1a334` adds a second checksum traversal selected from existing per-build
 scheme fields without shifting later randomness. On seed `20260822`, IDA saw a
@@ -320,8 +331,9 @@ requires a new placement contract that can use multiple existing executable
 regions and preserve loader invariants. Runtime traces still recover handler
 targets, and the raw target sequence remains observable; reducing that exposure
 requires a different execution model, not more static junk or another checksum
-spelling. These are separate major redesigns, so no further local change is
-accepted as a measurable improvement in this iteration.
+spelling. The loop remains active because `e078722` produced a measured runtime
+state-contract change; the checksum bootstrap and target-sequence exposure remain
+open weaknesses for the next iteration.
 
 ## 16. Comparison with commercial properties
 
@@ -389,3 +401,7 @@ rerun after this commit: 9 checks pass and the same single configuration failure
 remains. Commit `e32ad9c` extends the encoded state protocol to region and nested
 VMs; the gate was rerun again with the same `9` passes and only the forbidden
 `per-file-ignores` failure.
+Commit `e078722` separates the runtime state mask from the operand key across
+engine, region, and nested VMs; the focused protection suite passed `174` tests.
+The full gate remains blocked by environment/tooling warnings and existing
+configuration/dependency findings documented in the session ledger.

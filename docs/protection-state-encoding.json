@@ -1,5 +1,5 @@
 {
-  "commit": "e32ad9c",
+  "commit": "e078722",
   "date": "2026-08-20",
   "fixture": "elf_vm_engarithimm_x86_64",
   "seed": 20260820,
@@ -42,6 +42,28 @@
     "state_encoded_raw_state_recovery": "0/35",
     "state_encoding_detected": true,
     "payload_bytes_retained": false
+  },
+  "runtime_state_mask": {
+    "formula": "ror(original_rsp, 17) xor checksum_qword",
+    "engine_slot": "FrameLayout.state_qword_offset",
+    "region_slot": "0x218",
+    "operand_key_unchanged": true,
+    "encoder_knows_runtime_value": false,
+    "static_value": "runtime-dependent"
+  },
+  "runtime_state_masked": {
+    "fixture": "elf_vm_engarithimm_x86_64",
+    "seed": 20260820,
+    "sha256": "2a08178c40a6de1c24b79e290521a27ec5b1b58a4eb450668ab06ceb540981dc",
+    "size_bytes": 82211,
+    "generated_vm_bytes": 65827,
+    "exit_code": 42,
+    "instruction_count": 212681,
+    "indirect_jump_count": 38,
+    "correlated_dispatch_count": 35,
+    "raw_position_match_count": 0,
+    "ida_rerun": false,
+    "ida_note": "IDA executable was unavailable in this environment; prior same-shape survey remains the static reference."
   },
   "region_comparison": {
     "fixture": "elf_vm_arith_x86_64",
