@@ -1,4 +1,53 @@
 {
+  "dynamic_recovery": {
+    "correlated_dispatch_count": 32,
+    "handler_target_sequence": [
+      4224182,
+      4254133,
+      4217673,
+      4259565,
+      4238144,
+      4259565,
+      4233991,
+      4229672,
+      4217673,
+      4259565,
+      4211741,
+      4259565,
+      4211741,
+      4229672,
+      4217673,
+      4259565,
+      4260018,
+      4259565,
+      4260018,
+      4229672,
+      4217673,
+      4259565,
+      4215971,
+      4259565,
+      4215971,
+      4229672,
+      4217673,
+      4259565,
+      4233614,
+      4259565,
+      4233614,
+      4229672
+    ],
+    "observed_positive_position_deltas": [
+      1,
+      2,
+      3,
+      5,
+      10,
+      11
+    ],
+    "recovered": true,
+    "status": "completed",
+    "unique_bytecode_positions": 32,
+    "unique_handler_targets": 14
+  },
   "functions_examined": 3,
   "results": [
     {

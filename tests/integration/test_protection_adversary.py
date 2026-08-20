@@ -26,3 +26,20 @@ def test_adversary_classifies_encrypted_dispatch_as_unsupported(tmp_path: Path) 
     result = analyze(protected, limit=3)
 
     assert any(row["classification"] == "unsupported_indirect_dispatch" for row in result["results"])
+
+
+def test_adversary_recovers_live_dispatch_sequence(tmp_path: Path) -> None:
+    protected = tmp_path / "protected"
+    shutil.copyfile(_FIXTURE, protected)
+    binary = Binary(protected, writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260820}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    result = analyze(protected, limit=3)
+    dynamic = result["dynamic_recovery"]
+
+    assert isinstance(dynamic, dict) and dynamic["recovered"] is True

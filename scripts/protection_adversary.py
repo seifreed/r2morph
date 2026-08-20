@@ -5,11 +5,15 @@ from __future__ import annotations
 
 import argparse
 import json
+from itertools import pairwise
 from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.devirtualization.vm_handler_analyzer import VMHandlerAnalyzer
 from r2morph.devirtualization.vm_handler_models import VMArchitecture
+from tests.integration.elf_emulator import trace_execution
+
+_MAX_DYNAMIC_EVENTS = 256
 
 
 def _classify(binary: Binary, address: int, architecture: VMArchitecture) -> str:
@@ -20,6 +24,38 @@ def _classify(binary: Binary, address: int, architecture: VMArchitecture) -> str
     if "jmp rax" in text or "jmp [" in text:
         return "unsupported_indirect_dispatch"
     return "no_vm_candidate"
+
+
+def _dynamic_recovery(path: Path) -> dict[str, object]:
+    """Summarize bounded runtime recovery without retaining payload bytes."""
+    trace = trace_execution(path)
+    raw_jumps = trace.get("indirect_jumps", [])
+    if not isinstance(raw_jumps, list):
+        return {"status": trace.get("status"), "recovered": False}
+
+    correlated: list[dict[str, int]] = []
+    for jump in raw_jumps[:_MAX_DYNAMIC_EVENTS]:
+        if not isinstance(jump, dict):
+            continue
+        fields = ("target", "vpc", "bytecode_base", "position")
+        if not all(isinstance(jump.get(field), int) for field in fields):
+            continue
+        if jump["bytecode_base"] <= 0:
+            continue
+        correlated.append({field: int(jump[field]) for field in fields})
+
+    positions = [event["position"] for event in correlated]
+    positive_deltas = {current - previous for previous, current in pairwise(positions) if current > previous}
+    targets = [event["target"] for event in correlated]
+    return {
+        "status": trace.get("status"),
+        "recovered": bool(correlated),
+        "correlated_dispatch_count": len(correlated),
+        "unique_handler_targets": len(set(targets)),
+        "unique_bytecode_positions": len(set(positions)),
+        "observed_positive_position_deltas": sorted(positive_deltas),
+        "handler_target_sequence": targets[:_MAX_DYNAMIC_EVENTS],
+    }
 
 
 def analyze(path: Path, limit: int) -> dict[str, object]:
@@ -46,7 +82,12 @@ def analyze(path: Path, limit: int) -> dict[str, object]:
                     "vm_context_size": architecture.vm_context_size,
                 }
             )
-        return {"sample": path.name, "functions_examined": len(rows), "results": rows}
+        return {
+            "sample": path.name,
+            "functions_examined": len(rows),
+            "results": rows,
+            "dynamic_recovery": _dynamic_recovery(path),
+        }
     finally:
         binary.close()
 
