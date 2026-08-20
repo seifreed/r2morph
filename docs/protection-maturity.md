@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `8e8b3f9`
+Commit: `c6f206f`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -271,4 +271,6 @@ clustering and Tier B artifacts, and revalidates the full suite. The follow-up
 evidence commit records the regenerated 109-fixture corpus hashes and timing
 metrics from that build. Commit `8e8b3f9` is the current evidence snapshot;
 the remaining gaps above are architectural rather than unmeasured local
-variations.
+variations. The official quality wrapper was rerun at this HEAD: 9 checks pass;
+the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
+whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).
