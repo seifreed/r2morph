@@ -29,6 +29,7 @@ from r2morph.mutations.code_virtualization_engine_isa import build_engine_isa_sp
 from r2morph.mutations.code_virtualization_engine_rename import rename_body
 from r2morph.mutations.code_virtualization_fold import ARITH_VARIANT_BITS
 from r2morph.mutations.code_virtualization_region_integrity import (
+    ChecksumPrologue,
     checksum_prologue_asm,
 )
 from r2morph.mutations.code_virtualization_region_regcipher import cipher_register_slots
@@ -90,10 +91,13 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # trailing offset table (encrypted after assembly) is excluded from the span.
     lines.append(
         checksum_prologue_asm(
-            scheme.xor_key,
-            slot=layout.checksum_offset,
-            end_label="vm_table",
-            bytewise=scheme.checksum_bytewise,
+            ChecksumPrologue(
+                scheme.xor_key,
+                end_label="vm_bootstrap",
+                slot=layout.checksum_offset,
+                bytewise=scheme.checksum_bytewise,
+                label_prefix="entry_",
+            )
         )
     )
     poly_rng = random.Random(scheme.table_key)
@@ -144,7 +148,15 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
     # keeps every copy the same length, so assembled size and executed instruction
     # count are unchanged.
     key_setup = (
-        f"  movzx eax, byte ptr [rsp + {layout.checksum_offset}]\n  imul eax, eax, 0x1010101\n"
+        checksum_prologue_asm(
+            ChecksumPrologue(
+                scheme.xor_key,
+                slot=layout.checksum_offset,
+                bytewise=scheme.checksum_bytewise,
+                label_prefix="ready_",
+            )
+        )
+        + f"  movzx eax, byte ptr [rsp + {layout.checksum_offset}]\n  imul eax, eax, 0x1010101\n"
         f"  mov dword ptr [rsp + {layout.key_dword_offset}], eax\n"
         f"  movzx rax, byte ptr [rsp + {layout.checksum_offset}]\n"
         "  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
@@ -165,7 +177,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         scheme.junk_seed,
         key_setup + encrypt_slots + entry_setup + make_decode(),
     )
-    lines.append(bootstrap)
+    lines.append(f"vm_bootstrap:\n{bootstrap}")
     handler_start = len(lines)
 
     # Emit the handler instances in a per-build shuffled order rather than opcode

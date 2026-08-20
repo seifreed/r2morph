@@ -61,6 +61,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
     _CHECKSUM_OFFSET,
+    ChecksumPrologue,
     checksum_prologue_asm,
     compute_build_checksum,
 )
@@ -96,6 +97,7 @@ class _NestedEncodingContext:
     offsets: list[int]
     lengths: list[int]
     cave_vaddr: int
+    bootstrap_checksum: int
 
 
 def _branch_targets(instructions: list[tuple[Any, ...]]) -> set[int]:
@@ -381,8 +383,8 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
             context.counts[layer],
             checksum_broadcast,
         )
-    encrypt_bootstrap_table(data, bootstrap_start, checksum)
-    patch_tracer_constants(data, island_start, checksum)
+    encrypt_bootstrap_table(data, bootstrap_start, context.bootstrap_checksum)
+    patch_tracer_constants(data, island_start, context.bootstrap_checksum)
     try:
         encoded_layers = [
             encode_region(
@@ -451,7 +453,16 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     floor_cell = "  sub rax, 8\n  mov qword ptr [rax], 0\n" if has_in_function_call else ""
 
     ready = (
-        f"  movzx eax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul eax, eax, 0x1010101\n"
+        checksum_prologue_asm(
+            ChecksumPrologue(
+                schemes[0].xor_key,
+                end_label="vm_table_0",
+                slot=_CHECKSUM_OFFSET,
+                bytewise=schemes[0].checksum_bytewise,
+                label_prefix="ready_",
+            )
+        )
+        + f"  movzx eax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul eax, eax, 0x1010101\n"
         + f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
         + f"  movzx rax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  mov rcx, 0x0101010101010101\n  imul rax, rcx\n"
         + f"  mov qword ptr [rsp+{_KEY_QWORD_SLOT}], rax\n"
@@ -478,12 +489,15 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
         f"vm_entry:\n  sub rsp, {frame_size_for_seed(schemes[0].junk_seed)}\n"
         f"  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n{spill}"
         + checksum_prologue_asm(
-            schemes[0].xor_key,
-            end_label="vm_table_0",
-            slot=_CHECKSUM_OFFSET,
-            bytewise=schemes[0].checksum_bytewise,
+            ChecksumPrologue(
+                schemes[0].xor_key,
+                end_label="vm_bootstrap",
+                slot=_CHECKSUM_OFFSET,
+                bytewise=schemes[0].checksum_bytewise,
+                label_prefix="entry_",
+            )
         )
-        + bootstrap
+        + f"vm_bootstrap:\n{bootstrap}"
     )
 
     # Shared junk stream so duplicate handlers across layers stay distinct.
@@ -593,7 +607,19 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
 
     return _finalize_nested_blob(
         encoding,
-        _NestedEncodingContext(layers, schemes, counts, offsets, lens, cave_vaddr),
+        _NestedEncodingContext(
+            layers,
+            schemes,
+            counts,
+            offsets,
+            lens,
+            cave_vaddr,
+            compute_build_checksum(
+                bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
+                schemes[0].xor_key,
+                schemes[0].checksum_bytewise,
+            ),
+        ),
     )
 
 

@@ -56,6 +56,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     frame_size_for_seed,
 )
 from r2morph.mutations.code_virtualization_region_integrity import (
+    ChecksumPrologue,
     checksum_prologue_asm,
     compute_build_checksum,
 )
@@ -108,10 +109,13 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # (encrypted after assembly) is excluded from the checksummed span.
     lines.append(
         checksum_prologue_asm(
-            scheme.xor_key,
-            slot=scheme.checksum_offset,
-            end_label="vm_table",
-            bytewise=scheme.checksum_bytewise,
+            ChecksumPrologue(
+                scheme.xor_key,
+                end_label="vm_bootstrap",
+                slot=scheme.checksum_offset,
+                bytewise=scheme.checksum_bytewise,
+                label_prefix="entry_",
+            )
         )
     )
     # Direct-threaded, polymorphic dispatch: rather than a single shared dispatch
@@ -175,7 +179,15 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         "  lea rsi, [rip+bytecode]\n  mov r15, rsi\n"
     )
     key_setup = (
-        f"  movzx eax, byte ptr [rsp+{scheme.checksum_offset}]\n"
+        checksum_prologue_asm(
+            ChecksumPrologue(
+                scheme.xor_key,
+                slot=scheme.checksum_offset,
+                bytewise=scheme.checksum_bytewise,
+                label_prefix="ready_",
+            )
+        )
+        + f"  movzx eax, byte ptr [rsp+{scheme.checksum_offset}]\n"
         "  imul eax, eax, 0x1010101\n"
         f"  mov dword ptr [rsp+{_KEY_DWORD_SLOT}], eax\n"
         f"  movzx rax, byte ptr [rsp+{scheme.checksum_offset}]\n"
@@ -198,7 +210,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         scheme.junk_seed,
         key_setup + encrypt_slots + entry_setup + make_decode(),
     )
-    lines.append(bootstrap)
+    lines.append(f"vm_bootstrap:\n{bootstrap}")
 
     reload_seq = "".join(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n" for index in save_order)
     if has_fp:
@@ -293,7 +305,8 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         return None
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
-        encoding, _ = engine.asm(_interpreter_asm(region, scheme), cave_vaddr)
+        asm = _interpreter_asm(region, scheme)
+        encoding, _ = engine.asm(asm, cave_vaddr)
     except keystone.KsError as exc:
         logger.debug("Region interpreter assembly failed: %s", exc)
         return None
@@ -310,6 +323,11 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
     island_start = len(data) - _TRACER_ISLAND_LEN
     bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
     table_start = bootstrap_start - total * 4
+    bootstrap_checksum = compute_build_checksum(
+        bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
+        scheme.xor_key,
+        scheme.checksum_bytewise,
+    )
     # Expected runtime self-checksum over the interpreter code (everything up to the
     # dispatch table, so neither the table encryption nor the island patch below
     # perturbs it); the encoder folds it into the opcodes, the table is encrypted
@@ -322,8 +340,8 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
-    encrypt_bootstrap_table(data, bootstrap_start, checksum)
-    patch_tracer_constants(data, island_start, checksum)
+    encrypt_bootstrap_table(data, bootstrap_start, bootstrap_checksum)
+    patch_tracer_constants(data, island_start, bootstrap_checksum)
     # The bytecode is appended right after the interpreter, so its base is the
     # cave plus the interpreter's assembled length; rip-relative targets are
     # encoded relative to it. A target too far to express as a signed 32-bit

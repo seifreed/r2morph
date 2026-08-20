@@ -135,6 +135,15 @@ def test_engine_interpreter_inlines_the_decode_per_handler() -> None:
     assert _engine_asm(0).count(_DECODE_HEAD) > 1
 
 
+def test_engine_integrity_defers_full_checksum_until_bootstrap_ready() -> None:
+    asm = _engine_asm(0)
+
+    assert "entry_chk_loop:" in asm
+    assert "ready_chk_loop:" in asm
+    assert asm.index("entry_chk_loop:") < asm.index("vm_bootstrap:")
+    assert asm.index("ready_chk_loop:") > asm.index("vm_bootstrap:")
+
+
 def test_engine_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
     asm = _engine_asm(0)
     assert asm.count("xor rsi, qword ptr [rsp +") >= 2

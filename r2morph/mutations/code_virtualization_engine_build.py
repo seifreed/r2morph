@@ -86,14 +86,19 @@ def build_vm_blob(
     island_start = len(data) - _TRACER_ISLAND_LEN
     bootstrap_start = island_start - BOOTSTRAP_TABLE_SIZE
     table_start = bootstrap_start - total * 4
+    bootstrap_checksum = compute_build_checksum(
+        bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
+        scheme.xor_key,
+        scheme.checksum_bytewise,
+    )
     checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise)
     table_key = checksum * 0x01010101
     for entry_index in range(total):
         offset = table_start + entry_index * 4
         encrypted = int.from_bytes(data[offset : offset + 4], "little") ^ table_key
         data[offset : offset + 4] = encrypted.to_bytes(4, "little")
-    encrypt_bootstrap_table(data, bootstrap_start, checksum)
-    patch_tracer_constants(data, island_start, checksum)
+    encrypt_bootstrap_table(data, bootstrap_start, bootstrap_checksum)
+    patch_tracer_constants(data, island_start, bootstrap_checksum)
     bytecode_base = cave_vaddr + len(data)
     try:
         bytecode = encode_bytecode(ops, scheme, checksum, bytecode_base)

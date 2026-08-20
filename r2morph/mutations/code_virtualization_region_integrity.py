@@ -1,13 +1,13 @@
 """Runtime self-checksum that makes the VM's own code load-bearing.
 
-The interpreter rolls a one-byte checksum over its own machine code at entry
-and folds it into the opcode decryption. The encoder pre-biases every opcode
-byte with the *expected* checksum (computed over the finished, assembled
-interpreter), so a legitimate build decodes correctly while any post-build
-patch of an interpreter byte changes the runtime checksum, every opcode then
-misdecodes, the dispatch bounds-guard sends control to the early exit, and the
-virtualized body never runs - an observable divergence. There is no comparison
-or conditional branch to neutralize: the checksum *is* key material.
+The interpreter rolls a one-byte bootstrap checksum over its entry code, then
+replaces it with a full-code checksum after bootstrap probes finish. The encoder
+pre-biases every opcode byte with the *expected* full checksum (computed over the
+finished, assembled interpreter), so a legitimate build decodes correctly while
+any post-build patch of an interpreter byte changes the runtime checksum, every
+opcode then misdecodes, the dispatch bounds-guard sends control to the early exit,
+and the virtualized body never runs - an observable divergence. There is no
+comparison or conditional branch to neutralize: the checksum *is* key material.
 
 The checksummed range is the interpreter code only, ``[start_label,
 end_label)`` - the dispatch table and the bytecode are excluded, so the
@@ -18,6 +18,7 @@ is XOR-encrypted in place) and there is no circular dependency.
 from __future__ import annotations
 
 from collections.abc import Iterator
+from dataclasses import dataclass
 
 # A free frame slot above the captured RFLAGS (0x80) and below the preserved
 # red zone (0x100); see code_virtualization_region_handlers._FRAME_SIZE.
@@ -36,6 +37,16 @@ _CHECKSUM_PERMUTATIONS = (
     (2, 3, 1, 0),
     (3, 1, 0, 2),
 )
+
+
+@dataclass(frozen=True)
+class ChecksumPrologue:
+    variant: int
+    start_label: str = "vm_entry"
+    end_label: str = "vm_table"
+    slot: int = _CHECKSUM_OFFSET
+    bytewise: bool = False
+    label_prefix: str = ""
 
 
 def _checksum_step(variant: int) -> tuple[str, str, int]:
@@ -60,7 +71,7 @@ def _checksum_bytes(code: bytes, variant: int, bytewise: bool = False) -> Iterat
 
 
 def checksum_prologue_asm(
-    variant: int,
+    variant: int | ChecksumPrologue,
     start_label: str = "vm_entry",
     end_label: str = "vm_table",
     slot: int = _CHECKSUM_OFFSET,
@@ -68,22 +79,27 @@ def checksum_prologue_asm(
 ) -> str:
     """Assembly that computes the runtime checksum over ``[start_label, end_label)``.
 
-    Runs at ``vm_entry`` after every GP register is spilled to the frame, so it
-    is free to clobber rcx/rdx/rdi; the result is stored to the ``slot`` byte of
-    the frame, which the dispatch reads. ``variant`` selects the polymorphic mix
+    Runs after the required register spill or bootstrap transition, so it is free
+    to clobber rcx/rdx/rdi; the result is stored to the ``slot`` byte of the frame,
+    which the bootstrap or dispatch reads. ``variant`` selects the polymorphic mix
     step and traversal order; ``bytewise`` selects the alternate byte-at-a-time
     traversal.
     """
-    op, rotate, amount = _checksum_step(variant)
-    loop = "chk_loop"
-    tail = "chk_tail"
-    done = "chk_done"
-    if bytewise:
+    spec = (
+        variant
+        if isinstance(variant, ChecksumPrologue)
+        else ChecksumPrologue(variant, start_label, end_label, slot, bytewise)
+    )
+    op, rotate, amount = _checksum_step(spec.variant)
+    loop = f"{spec.label_prefix}chk_loop"
+    tail = f"{spec.label_prefix}chk_tail"
+    done = f"{spec.label_prefix}chk_done"
+    if spec.bytewise:
         return "".join(
             [
                 "  xor edx, edx\n",
-                f"  lea rdi, [rip+{start_label}]\n",
-                f"  lea rcx, [rip+{end_label}]\n",
+                f"  lea rdi, [rip+{spec.start_label}]\n",
+                f"  lea rcx, [rip+{spec.end_label}]\n",
                 "  cmp rdi, rcx\n",
                 f"  jae {done}\n",
                 f"{loop}:\n",
@@ -93,25 +109,25 @@ def checksum_prologue_asm(
                 "  cmp rdi, rcx\n",
                 f"  jb {loop}\n",
                 f"{done}:\n",
-                f"  mov byte ptr [rsp+{slot}], dl\n",
+                f"  mov byte ptr [rsp+{spec.slot}], dl\n",
             ]
         )
-    permutation = _CHECKSUM_PERMUTATIONS[(variant // 84) % len(_CHECKSUM_PERMUTATIONS)]
+    permutation = _CHECKSUM_PERMUTATIONS[(spec.variant // 84) % len(_CHECKSUM_PERMUTATIONS)]
     full_mix = "".join(f"  {op} dl, byte ptr [rdi+{index}]\n  {rotate} dl, {amount}\n" for index in permutation)
     tail_mix = "".join(
         f"  lea r8, [rdi+{index}]\n"
         f"  cmp r8, rcx\n"
-        f"  jae chk_skip_{index}\n"
+        f"  jae {spec.label_prefix}chk_skip_{index}\n"
         f"  {op} dl, byte ptr [r8]\n"
         f"  {rotate} dl, {amount}\n"
-        f"chk_skip_{index}:\n"
+        f"{spec.label_prefix}chk_skip_{index}:\n"
         for index in permutation
     )
     return "".join(
         [
             "  xor edx, edx\n",
-            f"  lea rdi, [rip+{start_label}]\n",
-            f"  lea rcx, [rip+{end_label}]\n",
+            f"  lea rdi, [rip+{spec.start_label}]\n",
+            f"  lea rcx, [rip+{spec.end_label}]\n",
             "  mov r8, rcx\n",
             "  sub r8, rdi\n",
             "  cmp r8, 4\n",
@@ -126,7 +142,7 @@ def checksum_prologue_asm(
             f"{tail}:\n",
             tail_mix,
             f"{done}:\n",
-            f"  mov byte ptr [rsp+{slot}], dl\n",
+            f"  mov byte ptr [rsp+{spec.slot}], dl\n",
         ]
     )
 
