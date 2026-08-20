@@ -26,3 +26,24 @@ def test_trace_execution_records_indirect_dispatch_for_protected_fixture(tmp_pat
     result = trace_execution(protected)
 
     assert result["indirect_jump_count"] > 0
+
+
+def test_trace_execution_correlates_dispatch_target_with_vm_context(tmp_path: Path) -> None:
+    protected = tmp_path / "protected"
+    shutil.copyfile(_FIXTURE, protected)
+    binary = Binary(protected, writable=True)
+    binary.open()
+    try:
+        CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260820}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    result = trace_execution(protected)
+    assert any(
+        isinstance(jump, dict)
+        and all(field in jump for field in ("target", "vpc", "bytecode_base", "position"))
+        and isinstance(jump["bytecode_base"], int)
+        and jump["bytecode_base"] > 0
+        for jump in result["indirect_jumps"]
+    )

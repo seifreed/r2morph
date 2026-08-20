@@ -108,7 +108,7 @@ class _TraceState:
     instruction_count: int = 0
     indirect_jump_count: int = 0
     executable_read_count: int = 0
-    indirect_jumps: list[dict[str, int]] = field(default_factory=list)
+    indirect_jumps: list[dict[str, object]] = field(default_factory=list)
     register_samples: list[dict[str, int]] = field(default_factory=list)
     executable_reads: list[dict[str, object]] = field(default_factory=list)
     captured: dict[str, int] = field(default_factory=dict)
@@ -148,9 +148,12 @@ def _code_hook(state: _TraceState, register_ids: dict[str, int]) -> Any:
             state.indirect_jump_count += 1
             if len(state.indirect_jumps) < _TRACE_EVENT_CAP:
                 register_index = opcode[1] & 7
-                jump = {"address": address, "opcode": opcode[0] << 8 | opcode[1]}
+                jump: dict[str, object] = {"address": address, "opcode": opcode[0] << 8 | opcode[1]}
                 if opcode[1] & 0xC0 == 0xC0 and register_index < 8:
                     jump["target"] = uc.reg_read(register_ids[_REGISTER_NAMES[register_index]])
+                    jump["vpc"] = uc.reg_read(register_ids["rsi"])
+                    jump["bytecode_base"] = uc.reg_read(register_ids["r15"])
+                    jump["position"] = uc.reg_read(register_ids["r13"]) & 0xFF
                 state.indirect_jumps.append(jump)
 
     return on_code

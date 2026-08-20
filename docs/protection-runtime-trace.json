@@ -1,10 +1,61 @@
 {
   "input_sha256": "967c05be2333c92c300c71760d9771a8662d19c8bbe761843630d78335d882c5",
   "sample": "r2morph-checksum-seed-20260822",
-  "schema_version": 1,
+  "schema_version": 2,
   "trace": {
     "bounded_executable_read_sample_count": 256,
     "bounded_register_sample_count": 256,
+    "correlated_dispatch_count": 32,
+    "correlated_dispatch_sample": [
+      {
+        "bytecode_base": 4262000,
+        "position": 0,
+        "target": 4224182,
+        "vpc": 4262000
+      },
+      {
+        "bytecode_base": 4262000,
+        "position": 5,
+        "target": 4254133,
+        "vpc": 4262005
+      },
+      {
+        "bytecode_base": 4262000,
+        "position": 15,
+        "target": 4217673,
+        "vpc": 4262015
+      },
+      {
+        "bytecode_base": 4262000,
+        "position": 18,
+        "target": 4259565,
+        "vpc": 4262018
+      },
+      {
+        "bytecode_base": 4262000,
+        "position": 29,
+        "target": 4238144,
+        "vpc": 4262029
+      },
+      {
+        "bytecode_base": 4262000,
+        "position": 31,
+        "target": 4259565,
+        "vpc": 4262031
+      },
+      {
+        "bytecode_base": 4262000,
+        "position": 42,
+        "target": 4233991,
+        "vpc": 4262042
+      },
+      {
+        "bytecode_base": 4262000,
+        "position": 44,
+        "target": 4229672,
+        "vpc": 4262044
+      }
+    ],
     "duration_seconds": 0.3350147500168532,
     "executable_read_count": 50343,
     "exit_code": 42,
