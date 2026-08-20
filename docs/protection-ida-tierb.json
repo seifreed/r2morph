@@ -1,0 +1,67 @@
+{
+  "analysis": "IDA Pro and Hex-Rays",
+  "schema_version": 1,
+  "seed": 20260820,
+  "samples": [
+    {
+      "sample": "elf_vm_addflaglive_x86_64",
+      "sha256": "de44b12e9aed5bba6fdb3f452885067adf4357edca0b3fadd56bab5aa00cdb5f",
+      "functions": 2,
+      "segments": 4,
+      "entry": "0x404000",
+      "entry_size": 269,
+      "hexrays": "checksum recovered; indirect jmp rax remains",
+      "handler_table_recovered": false
+    },
+    {
+      "sample": "elf_vm_cmpmem_x86_64",
+      "sha256": "ae7cb338ce8f85bfa4630964acbc068bca1cb08698103dd54301150b03640250",
+      "functions": 2,
+      "segments": 5,
+      "entry": "0x404000",
+      "entry_size": 269,
+      "hexrays": "checksum recovered; indirect jmp rax remains",
+      "handler_table_recovered": false
+    },
+    {
+      "sample": "elf_vm_fparithriprel_x86_64",
+      "sha256": "d27ef79d44c64d55b2bd1aaa30dbbc56b40ed093a2deb5c672402829a36e4ad1",
+      "functions": 2,
+      "segments": 5,
+      "entry": "0x405000",
+      "entry_size": 272,
+      "hexrays": "checksum recovered; indirect jmp rax remains",
+      "handler_table_recovered": false
+    },
+    {
+      "sample": "elf_vm_fpenginepacked_x86_64",
+      "sha256": "be10c3847cfec95f76d17ff4253d5280a460a2b281bcca0c30e054748d826b43",
+      "functions": 3,
+      "segments": 7,
+      "entry": "0x404000",
+      "entry_size": 411,
+      "hexrays": "checksum recovered; indirect jmp rax remains",
+      "handler_table_recovered": false
+    },
+    {
+      "sample": "elf_switch_pie_x86_64",
+      "sha256": "5c69259257c738cdf25aba5474f05c422178fc13608c1521d76d050f565e2f69",
+      "functions": 3,
+      "segments": 7,
+      "entry": "0x6000",
+      "entry_size": 272,
+      "hexrays": "checksum recovered; indirect jmp rax remains",
+      "handler_table_recovered": false
+    },
+    {
+      "sample": "elf_vm_interp_reg_x86_64",
+      "sha256": "7ff96a6d400ee29d6cbfc5d0a6722f5938139ca50a37b78ff329c3691e80aefe",
+      "functions": 5,
+      "segments": 3,
+      "entry": "0x1000",
+      "entry_size": 35,
+      "hexrays": "handler_table[bytecode] recovered directly",
+      "handler_table_recovered": true
+    }
+  ]
+}

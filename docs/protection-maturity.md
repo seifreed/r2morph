@@ -28,7 +28,8 @@ instruction counts, strings, imports, references, runtime artifacts, Unicorn
 exit status, and per-seed transform output hashes, sizes, timings, VM instruction
 counts, and bytecode sizes. IDA/Hex-Rays evidence is recorded separately in this
 ledger because the MCP adversary is an external analysis service rather than a
-runtime dependency of the harness.
+runtime dependency of the harness. The expanded representative evidence is in
+[`docs/protection-ida-tierb.json`](protection-ida-tierb.json).
 
 ## 3. Semantic correctness passed/failed/skipped
 
@@ -74,16 +75,19 @@ a mature commercial protector across arbitrary PE, Mach-O, and non-x86 samples.
 ## 6. IDA/Hex-Rays
 
 IDA Pro with Hex-Rays was used through the installed IDA MCP on fresh seed
-`20260820` builds for arithmetic, in-function call, absolute switch, FP engine,
-red-zone, and multi-exit shapes. Surveys consistently showed multiple adjacent
-RX loads and a generated VM entry as a leaf function. Representative entry sizes
-were 261 to 411 bytes; the checksum build used a 269-byte entry with three RX
-payload loads.
+`20260820` builds covering arithmetic, flag-live arithmetic, memory, RIP-relative
+FP, indexed/packed FP, calls, absolute and PIE switches, red-zone, multi-exit,
+and an interpreter outlier. Surveys consistently showed multiple adjacent RX
+loads and a generated VM entry as a leaf function. Protected representative entry
+sizes were 261 to 411 bytes; the interpreter outlier remained a five-function,
+three-segment ordinary handler-table binary.
 
 Hex-Rays recovered the checksum loop, its range, block size, rotate/mix operation,
 and the final partial-block permutation. It did not recover a handler table or
-bytecode semantics before the checksum-decrypted indirect transfer; the entry
-ended in `jmp rax`. This is a measured static resistance result, not proof that
+bytecode semantics before the checksum-decrypted indirect transfer; the protected
+entries ended in `jmp rax`. The interpreter outlier decompiled directly to
+`handler_table[bytecode]()` and is therefore evidence of an unsupported/no-op
+path, not protection resistance. This is a measured static result, not proof that
 the complete VM resists a determined analyst.
 
 ## 7. Devirtualization
@@ -156,8 +160,9 @@ The adversary still sees a recognizable checksum bootstrap, a large register
 spill, an obvious appended executable chain, and a runtime VM whose dispatch
 sequence and register state were recovered by the bounded trace. The own
 devirtualizer does not support the current encrypted indirect shape, so its
-negative result is not a complete adversarial benchmark. Coverage outside ELF
-x86-64 is not established. The strict repository quality gate also remains
+negative result is not a complete adversarial benchmark. The interpreter outlier
+shows that a direct handler-table architecture remains easy for Hex-Rays. Coverage
+outside ELF x86-64 is not established. The strict repository quality gate also remains
 blocked by the pre-existing forbidden Ruff `per-file-ignores` configuration and
 the large lint backlog exposed when it is removed.
 
