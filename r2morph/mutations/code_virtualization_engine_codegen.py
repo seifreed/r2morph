@@ -106,6 +106,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         f"  xor al, byte ptr [rsp + {layout.checksum_offset}]\n",
     ]
     bounds = f"  cmp al, {total}\n  jae vm_exit\n"
+    # Keep the live vPC, bytecode base, and position opaque at the indirect jump;
+    # the handler restores the raw values before it reads or advances the record.
+    state_key = f"qword ptr [rsp + {layout.key_qword_offset}]"
+    state_decode = f"  xor rsi, {state_key}\n" f"  xor r15, {state_key}\n" f"  xor r13, {state_key}\n"
 
     def make_decode() -> str:
         return decode_block(
@@ -117,7 +121,10 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             # corrupts handler resolution, not just opcodes.
             table_load="  lea r14, [rip + vm_table]\n  mov eax, dword ptr [r14 + rax*4]\n",
             table_xors=[
-                f"  movzx ecx, byte ptr [rsp + {layout.checksum_offset}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
+                (
+                    f"  movzx ecx, byte ptr [rsp + {layout.checksum_offset}]\n"
+                    f"  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n{state_decode}"
+                ),
             ],
             rng=poly_rng,
         )
@@ -188,7 +195,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
             ),
             random.Random(scheme.body_seed ^ index),
         )
-        lines.append(f"h_{index}:\n{_live_junk_asm(junk_rng, index)}{body}")
+        lines.append(f"h_{index}:\n{state_decode}{_live_junk_asm(junk_rng, index)}{body}")
 
     lines.append("vm_exit:\n")
     for index in save_order:

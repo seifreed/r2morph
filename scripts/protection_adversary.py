@@ -46,11 +46,14 @@ def _dynamic_recovery(path: Path) -> dict[str, object]:
 
     positions = [event["position"] for event in correlated]
     positive_deltas = {current - previous for previous, current in pairwise(positions) if current > previous}
+    raw_position_matches = [event for event in correlated if event["vpc"] - event["bytecode_base"] == event["position"]]
     targets = [event["target"] for event in correlated]
     return {
         "status": trace.get("status"),
-        "recovered": bool(correlated),
+        "recovered": bool(raw_position_matches),
         "correlated_dispatch_count": len(correlated),
+        "raw_position_match_count": len(raw_position_matches),
+        "state_encoding_detected": bool(correlated) and not raw_position_matches,
         "unique_handler_targets": len(set(targets)),
         "unique_bytecode_positions": len(set(positions)),
         "observed_positive_position_deltas": sorted(positive_deltas),

@@ -120,6 +120,13 @@ def test_engine_interpreter_inlines_the_decode_per_handler() -> None:
     assert _engine_asm(0).count(_DECODE_HEAD) > 1
 
 
+def test_engine_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
+    asm = _engine_asm(0)
+    assert asm.count("xor rsi, qword ptr [rsp +") >= 2
+    assert asm.count("xor r15, qword ptr [rsp +") >= 2
+    assert asm.count("xor r13, qword ptr [rsp +") >= 2
+
+
 def test_engine_interpreter_enters_bootstrap_before_antidebug_probe() -> None:
     asm = _engine_asm(0)
 
