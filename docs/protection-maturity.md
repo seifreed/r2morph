@@ -350,6 +350,10 @@ resistance score. Instruction expansion remains reported separately, while the
 score uses indirect dispatches and distinct branch targets; on the real shift
 fixture the measured score is `2.0` native versus `2970.0` virtualized despite
 the VM's `17612` disassembled instructions.
+An experiment that independently shuffled the three runtime-state restores in
+each threaded decode copy was rejected: the ten-seed handler survey moved mean
+nearest similarity from `0.8376` to `0.8401` and threshold matches from `1780` to
+`1880`. The shared decode/handler template remains the dominant static signal.
 
 ## 15. Remaining gaps
 
@@ -370,7 +374,7 @@ without adding lint suppression.
 
 ### Termination assessment
 
-At HEAD `400d427`, the remaining protection weaknesses require architectural
+At code HEAD `3a9ad18`, documented by `1eaa084`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The two-stage integrity
 contract removes one single full-span loop, but both the short bootstrap loop and
 the deferred full loop remain statically recoverable. Removing that fingerprint
@@ -439,10 +443,10 @@ current IDA/adversary evidence. Commit `9d1a334` adds the generic bytewise check
 traversal and its real regression/corpus/IDA evidence. The remaining gaps above are
 architectural rather than unmeasured local variations. Commit `c0cc5f0` integrates
 the correlated runtime recovery into the own adversary without changing the
-protected binary. The official quality wrapper was rerun at this
-HEAD: 9 checks pass;
-the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
-whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).
+protected binary. The official quality wrapper was rerun at code HEAD
+`3a9ad18`: 9 checks pass; the only failure is the pre-existing forbidden Ruff
+`per-file-ignores` block, whose removal exposes `11,865` unsuppressed findings
+(`9,632` are test assertions and `1,324` are magic-value findings).
 Commit `f5f0b35` encodes engine VM state across threaded dispatch, adds the
 raw-position adversary contract, and records same-fixture semantic, runtime,
 performance, and IDA evidence in `protection-state-encoding.json`. The gate was
@@ -457,3 +461,9 @@ configuration/dependency findings documented in the session ledger.
 Commit `b8e5638` splits bootstrap and full integrity keys across engine, region,
 and nested VMs; the focused protection suite passed `170` tests after the final
 helper refactor, and the fresh same-fixture IDA/runtime evidence is recorded above.
+Commit `400d427` randomizes the region/nested runtime state-mask slot; its
+focused and Tier A evidence is recorded in `protection-state-encoding.json`.
+Commit `d61024a` enforces runtime-observable parity in the maturity harness.
+Commit `3a9ad18` removes raw instruction count from the structural resistance
+score. The current code-level quality result remains the single forbidden
+`per-file-ignores` configuration failure described above.
