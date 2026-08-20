@@ -31,26 +31,26 @@ def test_prologue_asm_emits_the_variant_step() -> None:
     # Variant 0 -> add/rol/1; pick a variant that exercises a different branch.
     op, rotate, amount = _checksum_step(15)
     asm = checksum_prologue_asm(15)
-    assert f"  {op} dl, byte ptr [rdi]\n" in asm
+    assert f"  {op} dl, byte ptr [rdi+0]\n" in asm
     assert f"  {rotate} dl, {amount}\n" in asm
 
 
-def test_checksum_traversal_alternates_both_ends_in_variant_order() -> None:
+def test_checksum_traversal_permutates_each_block_in_variant_order() -> None:
     code = bytes(range(7))
 
     assert {
         "low_first": tuple(_checksum_bytes(code, 0)),
-        "high_first": tuple(_checksum_bytes(code, 42)),
+        "permuted": tuple(_checksum_bytes(code, 84)),
     } == {
-        "low_first": (0, 6, 1, 5, 2, 4, 3),
-        "high_first": (6, 0, 5, 1, 4, 2, 3),
+        "low_first": (0, 1, 2, 3, 4, 5, 6),
+        "permuted": (0, 2, 3, 1, 4, 6, 5),
     }
 
 
-def test_prologue_asm_reads_both_checksum_range_ends() -> None:
+def test_prologue_asm_emits_guarded_tail_for_partial_block() -> None:
     asm = checksum_prologue_asm(0)
 
-    assert "byte ptr [rdi]" in asm and "byte ptr [rcx]" in asm
+    assert "byte ptr [rdi+3]" in asm and "lea r8, [rdi+3]" in asm
 
 
 def test_compute_build_checksum_is_byte_sensitive() -> None:

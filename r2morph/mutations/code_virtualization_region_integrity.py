@@ -24,11 +24,19 @@ from collections.abc import Iterator
 _CHECKSUM_OFFSET = 0x88
 
 # The accumulate step and traversal order are polymorphic so the checksum loop is
-# not a fixed linear scan an automated devirtualizer can match and strip. Every
-# iteration alternates between the range's low and high ends, converging inward;
-# the variant selects which end is read first as well as the mix and rotate.
+# not a fixed linear scan an automated devirtualizer can match and strip. Each
+# build walks four-byte blocks in a seeded local permutation; the final partial
+# block uses guarded reads in that same order.
 _CHECKSUM_OPS = ("add", "xor", "sub")
 _CHECKSUM_ROTATES = ("rol", "ror")
+_CHECKSUM_PERMUTATIONS = (
+    (0, 1, 2, 3),
+    (0, 2, 3, 1),
+    (1, 3, 0, 2),
+    (2, 0, 3, 1),
+    (2, 3, 1, 0),
+    (3, 1, 0, 2),
+)
 
 
 def _checksum_step(variant: int) -> tuple[str, str, int]:
@@ -40,15 +48,13 @@ def _checksum_step(variant: int) -> tuple[str, str, int]:
 
 
 def _checksum_bytes(code: bytes, variant: int) -> Iterator[int]:
-    """Bytes of ``code`` in this build's alternating-ends traversal order."""
-    low, high = 0, len(code) - 1
-    high_first = bool((variant // 42) & 1)
-    while low <= high:
-        yield code[high] if high_first else code[low]
-        if low != high:
-            yield code[low] if high_first else code[high]
-        low += 1
-        high -= 1
+    """Bytes of ``code`` in this build's block-permutation traversal order."""
+    permutation = _CHECKSUM_PERMUTATIONS[(variant // 84) % len(_CHECKSUM_PERMUTATIONS)]
+    for offset in range(0, len(code), 4):
+        block = code[offset : offset + 4]
+        for index in permutation:
+            if index < len(block):
+                yield block[index]
 
 
 def checksum_prologue_asm(
@@ -68,24 +74,40 @@ def checksum_prologue_asm(
     """
     op, rotate, amount = _checksum_step(variant)
     loop = f"chk_loop{tag}"
+    tail = f"chk_tail{tag}"
     done = f"chk_done{tag}"
-    first, second = ("rcx", "rdi") if (variant // 42) & 1 else ("rdi", "rcx")
-    first_mix = f"  {op} dl, byte ptr [{first}]\n  {rotate} dl, {amount}\n"
-    second_mix = f"  {op} dl, byte ptr [{second}]\n  {rotate} dl, {amount}\n"
-    return (
-        "  xor edx, edx\n"
-        f"  lea rdi, [rip+{start_label}]\n"
-        f"  lea rcx, [rip+{end_label}]\n"
-        "  cmp rdi, rcx\n"
-        f"  jae {done}\n"
-        "  dec rcx\n"
-        f"{loop}:\n"
-        "  cmp rdi, rcx\n"
-        f"  ja {done}\n" + first_mix + "  cmp rdi, rcx\n" + f"  je {done}\n" + second_mix + "  inc rdi\n"
-        "  dec rcx\n"
-        f"  jmp {loop}\n"
-        f"{done}:\n"
-        f"  mov byte ptr [rsp+{slot}], dl\n"
+    permutation = _CHECKSUM_PERMUTATIONS[(variant // 84) % len(_CHECKSUM_PERMUTATIONS)]
+    full_mix = "".join(f"  {op} dl, byte ptr [rdi+{index}]\n  {rotate} dl, {amount}\n" for index in permutation)
+    tail_mix = "".join(
+        f"  lea r8, [rdi+{index}]\n"
+        f"  cmp r8, rcx\n"
+        f"  jae chk_skip{tag}_{index}\n"
+        f"  {op} dl, byte ptr [r8]\n"
+        f"  {rotate} dl, {amount}\n"
+        f"chk_skip{tag}_{index}:\n"
+        for index in permutation
+    )
+    return "".join(
+        [
+            "  xor edx, edx\n",
+            f"  lea rdi, [rip+{start_label}]\n",
+            f"  lea rcx, [rip+{end_label}]\n",
+            "  mov r8, rcx\n",
+            "  sub r8, rdi\n",
+            "  cmp r8, 4\n",
+            f"  jb {tail}\n",
+            f"{loop}:\n",
+            full_mix,
+            "  add rdi, 4\n",
+            "  mov r8, rcx\n",
+            "  sub r8, rdi\n",
+            "  cmp r8, 4\n",
+            f"  jae {loop}\n",
+            f"{tail}:\n",
+            tail_mix,
+            f"{done}:\n",
+            f"  mov byte ptr [rsp+{slot}], dl\n",
+        ]
     )
 
 

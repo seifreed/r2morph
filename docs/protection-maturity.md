@@ -1,130 +1,209 @@
-# Protection Maturity Ledger
+# Protection Maturity Report
 
-## 1. Scope and decision rule
+## 1. Current architecture
 
-This ledger measures the supported virtualization path, not commercial-product parity. A
-change is accepted only when it improves an adversary-visible measurement, preserves real
-fixture semantics, and remains proportionate to its implementation cost.
+The production path audited here is `CodeVirtualizationPass` for ELF x86-64. It
+has two generic lowering paths: straight-line register/FP runs and reducible or
+dispatch-shaped control-flow regions. Generated VMs use per-build opcode maps,
+duplicate handlers, direct-threaded encrypted dispatch, checksum-keyed operands,
+scattered register frames, bounded frame-size variation, nested regions, and
+fragmented executable payload loads.
 
-## 2. Repository state
+The declared support contract is narrower than the repository's broader analysis
+surface: ELF/x86-64 is the stable target; PE, Mach-O, and non-x86-64 rewriting
+remain outside this pass.
 
-The audited baseline was `3bf7ba5`. The current pushed advances are `d63efec` (fragmented
-executable-region measurement and import isolation), `f3143ea` (seed-derived register save
-order), and `4cf6106` (bounded per-build frame-size hardening).
+## 2. Dataset coverage
 
-## 3. Architecture
+`scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
+`ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
+current fixture inventory contains 109 compatible executable fixtures spanning
+arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
+PIE, red-zone, multi-exit, fallback, and nested-region shapes.
 
-The supported path is `CodeVirtualizationPass` for ELF x86-64. Region virtualization handles
-control-flow-bearing runs; the straight-line engine handles register and FP runs. Generated
-interpreters use checksum-keyed bytecode, encrypted threaded dispatch, randomized frame slots,
-handler multiplicity, and fragmented executable payload loads.
+The machine-readable artifact is
+[`docs/protection-maturity-corpus.json`](protection-maturity-corpus.json). Each
+sample records SHA-256, size, format, architecture, function/basic-block/CFG and
+instruction counts, strings, imports, references, runtime artifacts, Unicorn
+exit status, and per-seed transform output hashes, sizes, timings, VM instruction
+counts, and bytecode sizes. IDA/Hex-Rays evidence is recorded separately in this
+ledger because the MCP adversary is an external analysis service rather than a
+runtime dependency of the harness.
 
-## 4. Support matrix
+## 3. Semantic correctness passed/failed/skipped
 
-| Format | Architecture | Status | Evidence |
-|---|---|---|---|
-| ELF | x86-64 | supported path | `CodeVirtualizationPass.set_support` and real ELF fixtures |
-| PE | x86-64 | outside this pass | format support tests |
-| Mach-O | x86-64/arm64 | outside this pass | format support tests |
+Correctness is measured on the real generated ELF files, not mocks. The baseline
+runner executes each original and each transformed output with Unicorn until the
+exit syscall and compares the observed exit code. Native host execution is also
+attempted; these synthetic ELF files are not Darwin-executable, so that backend
+is recorded as an explicit `OSError` artifact rather than treated as a semantic
+failure.
 
-## 5. Fixture corpus
+The completed campaign passed `109/109` fixtures and `1090/1090` seed runs. The
+targeted current-checksum and adversary regressions pass, including real calls,
+FP, switch, red-zone, and multi-exit fixtures. No fixture is silently skipped by
+the virtualization pass; three explicit interpreter fixtures had zero
+virtualized functions for every seed and are retained as no-op coverage results.
 
-The default corpus contains ELF, PE, and Mach-O samples. Virtualization evidence uses the
-synthetic ELF x86-64 fixtures under `fixtures/dataset/`, including arithmetic, calls, branches,
-FP, red-zone, multiret, and nested-region cases. No analyst malware corpus is required.
+## 4. Obfuscation maturity technique-by-technique
 
-## 6. Reproducible baseline command
+| Technique | Evidence | Assessment |
+|---|---|---|
+| Opcode and operand polymorphism | Per-seed output hashes and bytecode sizes in corpus JSON | Effective diversity; not cryptographic secrecy |
+| Handler duplication and body variation | Generated handler counts, shuffled emission, ISA/junk seeds | Raises static clustering cost |
+| Direct-threaded dispatch | IDA ends representative entries at opaque `jmp rax` | Stronger than a plain switch; dynamic recovery remains possible |
+| Checksum-keyed state | Hex-Rays recovers the checksum but not its downstream keys | Integrity and key dependency are visible |
+| Register-frame scattering | Seed-derived slot permutation and spill order | Removes fixed frame fingerprints; frame semantics remain inferable |
+| Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
+| Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
+| Control-flow virtualization | 109-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
 
-```bash
-python -m scripts.protection_maturity_baseline \
-  fixtures/dataset/elf_vm_arith_x86_64 \
-  --output docs/protection-maturity-baseline.json
-```
+## 5. Virtualization maturity
 
-The runner records input/output SHA-256, file sizes, virtualization statistics, ten deterministic
-seeds, and real Unicorn exit-code parity.
+The pass virtualized 106 of 109 fixtures in the one-seed coverage run and records
+the exact per-build result rather than claiming that every input is transformable.
+The supported VM handles straight-line operations, branches, calls, flags,
+memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret
+regions, nested regions, and fallback paths represented by the fixture corpus.
 
-## 7. Machine-readable artifact
+The main maturity limit is not the happy path; it is the unsupported-input policy.
+The pass conservatively leaves a function unchanged when it cannot prove the
+required invariants. That is correct behavior, but it is not coverage parity with
+a mature commercial protector across arbitrary PE, Mach-O, and non-x86 samples.
 
-`docs/protection-maturity-baseline.json` is the checked-in output of the runner for the current
-ten-seed campaign. It is an evidence artifact, not a claim that all binaries share one result.
+## 6. IDA/Hex-Rays
 
-## 8. Baseline results
+IDA Pro with Hex-Rays was used through the installed IDA MCP on fresh seed
+`20260820` builds for arithmetic, in-function call, absolute switch, FP engine,
+red-zone, and multi-exit shapes. Surveys consistently showed multiple adjacent
+RX loads and a generated VM entry as a leaf function. Representative entry sizes
+were 261 to 411 bytes; the checksum build used a 269-byte entry with three RX
+payload loads.
 
-For seeds `20260820` through `20260829` on `elf_vm_arith_x86_64`, all ten builds virtualized
-one function and preserved exit code `45`. Generated bytecode sizes were distinct in all ten
-runs: `16353, 16415, 16632, 16505, 16352, 16212, 16380, 17176, 15384, 14639` bytes.
+Hex-Rays recovered the checksum loop, its range, block size, rotate/mix operation,
+and the final partial-block permutation. It did not recover a handler table or
+bytecode semantics before the checksum-decrypted indirect transfer; the entry
+ended in `jmp rax`. This is a measured static resistance result, not proof that
+the complete VM resists a determined analyst.
 
-## 9. Measurement correction
+## 7. Devirtualization
 
-The structural probe previously disassembled only the largest executable region. The injector
-can split one VM payload over adjacent executable `PT_LOAD` segments, so that metric silently
-undercounted the protected surface. It now walks all executable segments within the global byte
-budget and aggregates instructions, indirect jumps, and targets. A real fragmented-payload
-regression test pins equality with the sum of per-segment counts.
+[`scripts/protection_adversary.py`](../scripts/protection_adversary.py) runs the
+repository's own `VMHandlerAnalyzer` against the largest analyzed functions and
+classifies outcomes as recovered table, unsupported indirect dispatch, or no VM
+candidate. [`docs/protection-adversary.json`](protection-adversary.json) records
+the current result: the analyzer did not recover handlers or bytecode from the
+encrypted threaded build.
 
-## 10. IDA Pro adversary
+This failure is classified as unsupported current architecture, not as proof of
+genuine devirtualization impossibility. The analyzer's positive generic oracle
+remains covered by its existing real-fixture tests; the current encrypted table
+and indirect dispatch are outside that analyzer's supported contract.
 
-IDA Pro/Hex-Rays was used through the local IDA MCP on a fresh seed-`20260820` ELF build. It
-reported five segments, including two adjacent RX payload loads, and a 195-byte interpreter
-entry beginning with `sub rsp, 0x360`. Disassembly showed a randomized 15-register spill order
-followed by the checksum loop and a checksum-decrypted relative table; Hex-Rays decompiled only
-the checksum loop and opaque `jmp rax`, with no recovered handler table.
+## 8. Multi-seed
 
-## 11. Own devirtualizer
+The baseline command defaults to ten deterministic seeds `20260820` through
+`20260829`. It records output hashes, sizes, transform duration, post-transform
+static metrics, runtime artifacts, Unicorn exit code, virtualized instruction
+count, and bytecode bytes for every seed/sample pair. Distinct sizes and hashes
+are expected; semantic equality is the gate. The final counts are available in
+the corpus JSON summary and are not inferred from one representative fixture.
 
-The repository devirtualizer (`VMHandlerAnalyzer`) successfully recovers its positive generic
-interpreter oracle, covered by `test_vm_interpreter_devirt_real.py`. Against the fresh protected
-build it recovered zero handler-table, bytecode, and VM-register artifacts. This is a bounded
-adversary result, not proof of impossibility.
+## 9. Container fingerprintability
 
-## 12. Static leakage found
+The payload container is still easy to identify structurally: appended adjacent
+RX `PT_LOAD` ranges, a read-only metadata load, a large interpreter region, and
+an entry that spills many registers before the checksum. Fragmentation changes
+the shape and prevents a single-size signature, but it does not make the layout
+blend into an ordinary ELF. This remains a material weakness.
 
-The stable bootstrap prologue exposed a fixed register-save order and fixed frame-allocation
-immediate. The frame offsets and checksum algorithm remain visible, and the appended adjacent RX
-payload remains structurally obvious. The decompiler still identifies the checksum loop; no claim
-is made that this loop is hidden.
+## 10. Runtime analysis exposure
 
-## 13. Hardening applied
+Runtime tracing can observe the VM entry, register spills, checksum traversal,
+decoded state, handler transitions, and final restore because the design executes
+all of them in the clear at runtime. The checksum makes patching and naive static
+neutralization harder; it is not an anti-tracing boundary. No claim of resistance
+to instrumentation or full dynamic analysis is made.
 
-`gp_save_order` derives a deterministic permutation from each VM scheme. Engine, region, and
-nested interpreters reuse it for register spill, checksum ciphering, and restore. Engine and
-region interpreters also choose a conservative aligned frame size from bounded existing slack;
-the relocated program stack address is unchanged. These changes preserve register values,
-frame invariants, and control-flow semantics.
+## 11. Performance overhead
 
-## 14. Semantic regression
+The corpus artifact records transform duration, Unicorn runtime duration, and
+static-analysis duration for baseline and generated files. Across 1090 runs the
+transform duration ranged from `0.037` to `1.241` seconds, averaging `0.459`
+seconds. The checksum variant adds guarded tail handling and a four-byte block
+loop, so it increases bootstrap work and entry size. Native runtime overhead is
+unavailable on this host because the fixtures are synthetic ELF images rejected
+by the Darwin loader.
 
-The full supported test suite passed under Python 3.12 with warnings as errors: `4,837 passed`,
-`21 skipped`, total coverage `80.93%`. The ten-seed real-fixture campaign also preserved exit
-code `45` for every generated binary.
+## 12. Binary-size overhead
 
-## 15. Structural regression
+Each seed record contains original and output sizes, bytecode bytes, and output
+hashes. Across the completed campaign, output-size ratios ranged from `1.0x` to
+`63.59x`; generated bytecode ranged from `0` to `53,983` bytes. The entrypoint
+hardening increases bootstrap bytes; handler multiplicity, duplicated threaded
+decoders, frame variation, anti-debug island, and fragmented loads increase total
+image size. The size increase is an intentional tradeoff, not a claim of low
+overhead.
 
-Targeted virtualization, dispatch, fragmented-region, import-isolation, and bootstrap tests pass.
-The new save-order test checks ten deterministic seeds and verifies the generated assembly uses
-the exact scheme-derived order.
+## 13. Weaknesses discovered
 
-## 16. Quality gate
+The adversary still sees a recognizable checksum bootstrap, a large register
+spill, an obvious appended executable chain, and a runtime VM that is fully
+observable under tracing. The own devirtualizer does not support the current
+encrypted indirect shape, so its negative result is not a complete adversarial
+benchmark. Coverage outside ELF x86-64 is not established. The strict repository
+quality gate also remains blocked by the pre-existing forbidden Ruff
+`per-file-ignores` configuration and the large lint backlog exposed when it is
+removed.
 
-Black, Ruff, mypy, Bandit, and pip-audit passed. The repository gate has one pre-existing failure:
-`pyproject.toml` still contains the forbidden `[tool.ruff.lint.per-file-ignores]` section. Removing
-it exposes a large unrelated lint backlog, so this ledger does not mislabel that repository debt
-as protection evidence.
+## 14. Fixed
 
-## 17. Claims and non-claims
+The structural resistance probe now aggregates every executable segment within a
+global budget instead of measuring only the largest fragment. Symbolic analysis
+imports are lazy, avoiding optional-dependency warnings. VM register save order
+and frame allocation vary deterministically per build. The checksum traversal now
+uses seeded four-byte block permutations with guarded tails. Each change has real
+regression coverage and was rechecked on fresh protected files.
 
-The evidence supports “fragmented-load measurement is corrected,” “bootstrap spill order is no
-longer fixed across seeds,” “real semantics are preserved,” and “the bounded own devirtualizer
-does not recover the current encrypted threaded VM.” It does not support commercial parity,
-handler irrecoverability, runtime-tracing resistance, or protection against an unrestricted
-reverse engineer.
+## 15. Remaining gaps
 
-## 18. Next loop and stop criteria
+The next material redesigns are a less fingerprintable payload container, a
+runtime-analysis threat model with trace-based measurements, and broader format
+and architecture support. Improving the current devirtualizer to understand the
+encrypted threaded contract is a separate tool-capability effort. None should be
+implemented as a branch for a named sample or family. The quality-gate backlog
+must be resolved as a separate repository-wide cleanup without adding lint
+suppression.
 
-The remaining visible weaknesses are the checksum traversal and adjacent RX payload chain.
-The stop decision for this loop is deliberate: hiding either one requires a larger checksum
-construction or payload-container redesign, with materially higher semantic and loader risk than
-the bounded gains measured here. Reopen the loop only when a generic design is available that
-improves IDA/devirtualizer recovery metrics without breaking the real fixture matrix or becoming
-sample-specific.
+## 16. Comparison with commercial properties
+
+Compared with mature commercial protectors, this implementation has meaningful
+per-build polymorphism, encrypted threaded dispatch, integrity coupling, and
+real semantic validation on a broad synthetic x86-64 corpus. It remains behind
+on format/architecture breadth, payload camouflage, runtime-tracing resistance,
+devirtualizer maturity, operational hardening, and independently reproduced
+large-corpus coverage. The comparison is directional and does not assign vendor
+claims to measurements unavailable in this repository.
+
+## 17. Final scores
+
+Scores are deliberately conservative on a 0–5 scale:
+
+| Dimension | Score | Basis |
+|---|---:|---|
+| Supported-corpus semantic correctness | 5.0 | Real Unicorn exit-code parity across the measured corpus |
+| Seed diversity | 4.0 | Ten deterministic builds with per-build hashes/sizes and unchanged semantics |
+| Static resistance | 3.0 | Opaque dispatch and unrecovered handlers, visible checksum/container |
+| Own devirtualizer resistance | 2.0 | Negative result is partly unsupported-adversary capability |
+| Runtime-analysis resistance | 1.0 | VM behavior remains observable under tracing |
+| Format and architecture coverage | 1.5 | Production virtualization path is ELF x86-64 |
+| Commercial parity | 1.5 | Useful primitives, substantial maturity gaps remain |
+
+## 18. Commits
+
+The previously pushed maturity loop includes `d63efec`, `f3143ea`, `4cf6106`,
+`6724082`, `1b0b761`, and `ed409e8`. The current working advance adds the corpus
+baseline, own-adversary harness, real regression coverage, and checksum block
+permutation. It must not be described as fully green until the repository quality
+gate passes without the forbidden Ruff per-file exclusions; that blocker is
+recorded explicitly rather than hidden.
