@@ -218,6 +218,11 @@ table inside the first appended RX load, removing the standalone metadata load;
 the representative ELF load count falls from `7` to `6`. Fragmentation changes
 the shape and prevents a single-size signature, but it does not make the layout
 blend into an ordinary ELF. This remains a material weakness.
+The cave survey over all `109` compatible ELF x86-64 fixtures found `0` executable
+caves of at least `256` bytes; the largest usable cave was `0` bytes. The broader
+directory also contains sources and a PE fixture, but those do not establish an
+ELF placement contract. Hiding the payload in existing executable space therefore
+requires a new multi-region placement and relocation design.
 
 ## 10. Runtime analysis exposure
 
