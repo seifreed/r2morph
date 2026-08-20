@@ -37,6 +37,7 @@ from r2morph.mutations.code_virtualization_engine import (
 )
 from r2morph.mutations.code_virtualization_region import build_region_scheme, extract_region
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm as _region_interpreter_asm
+from r2morph.mutations.code_virtualization_region_nesting import _decode_block as _nested_decode_block
 
 # The decode block's first instruction; one copy per handler tail plus the entry,
 # so a threaded interpreter has at least two and a central one has exactly one.
@@ -101,6 +102,20 @@ def test_region_interpreter_inlines_the_decode_per_handler() -> None:
     # Threaded: the decode head appears at the entry and at every handler tail, so
     # there is more than one copy - a central dispatcher would have exactly one.
     assert _region_asm(0).count(_DECODE_HEAD) > 1
+
+
+def test_region_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
+    asm = _region_asm(0)
+    assert asm.count("xor rsi, qword ptr [rsp+520]") >= 2
+    assert asm.count("xor r15, qword ptr [rsp+520]") >= 2
+    assert asm.count("xor r13, qword ptr [rsp+520]") >= 2
+
+
+def test_nested_dispatch_encodes_live_virtual_state_at_indirect_jump() -> None:
+    asm = _nested_decode_block(random.Random(0))
+    assert asm.count("xor rsi, qword ptr [rsp+520]") == 1
+    assert asm.count("xor r15, qword ptr [rsp+520]") == 1
+    assert asm.count("xor r13, qword ptr [rsp+520]") == 1
 
 
 def test_region_interpreter_enters_bootstrap_before_antidebug_probe() -> None:

@@ -133,6 +133,8 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
         f"  xor al, byte ptr [rsp+{scheme.checksum_offset}]\n",
     ]
     bounds = f"  cmp al, {handler_count}\n  jae vm_exit\n"
+    state_key = f"qword ptr [rsp+{_KEY_QWORD_SLOT}]"
+    state_decode = f"  xor rsi, {state_key}\n" f"  xor r15, {state_key}\n" f"  xor r13, {state_key}\n"
 
     def make_decode() -> str:
         return decode_block(
@@ -146,7 +148,10 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
             # a build-constant table key -- and tampering corrupts handler resolution.
             table_load="  lea r14, [rip+vm_table]\n  mov eax, dword ptr [r14+rax*4]\n",
             table_xors=[
-                f"  movzx ecx, byte ptr [rsp+{scheme.checksum_offset}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
+                (
+                    f"  movzx ecx, byte ptr [rsp+{scheme.checksum_offset}]\n"
+                    f"  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n{state_decode}"
+                ),
             ],
             rng=poly_rng,
         )
@@ -228,6 +233,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     scheme.isa_seed,
                 ),
                 junk_rng,
+                entry_prefix=state_decode,
             ),
             frozenset(index * 8 for index in slot),
         )

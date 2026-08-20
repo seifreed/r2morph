@@ -15,6 +15,7 @@ def handler_instances_asm(
     context: HandlerContext,
     junk_rng: random.Random,
     extra: dict[str, str] | None = None,
+    entry_prefix: str = "",
 ) -> str:
     """Emit shuffled, independently diversified handler instances."""
     extra = extra or {}
@@ -35,7 +36,7 @@ def handler_instances_asm(
             spec.shift_variant,
             address,
         )
-        lines.append(f"H_{index}:\n{_live_junk_asm(junk_rng, index)}")
+        lines.append(f"H_{index}:\n{entry_prefix}{_live_junk_asm(junk_rng, index)}")
         body = extra.get(handler_key)
         if body is None:
             body = router.body(handler_key, index, variants)

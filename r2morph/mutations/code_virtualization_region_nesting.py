@@ -321,7 +321,13 @@ def _decode_block(rng: random.Random) -> str:
         # -- and tampering corrupts handler resolution in every layer. One checksum
         # covers the whole nested blob, so every layer's table shares this key.
         table_xors=[
-            f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n",
+            (
+                f"  movzx ecx, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n"
+                f"  imul ecx, ecx, 0x1010101\n  xor eax, ecx\n"
+                f"  xor rsi, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+                f"  xor r15, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+                f"  xor r13, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+            ),
         ],
         rng=rng,
     )
@@ -529,6 +535,11 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                     ),
                     junk_rng,
                     extra,
+                    entry_prefix=(
+                        f"  xor rsi, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+                        f"  xor r15, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+                        f"  xor r13, qword ptr [rsp+{_KEY_QWORD_SLOT}]\n"
+                    ),
                 ),
                 frozenset(index * 8 for index in slot),
             )
