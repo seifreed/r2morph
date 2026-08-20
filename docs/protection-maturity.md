@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `9d1a334`
+Commit: `4c40919`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -261,6 +261,22 @@ None should be implemented as a branch for a named sample or family. The
 quality-gate backlog must be resolved as a separate repository-wide cleanup
 without adding lint suppression.
 
+### Termination assessment
+
+At HEAD `4c40919`, the remaining protection weaknesses require architectural
+changes rather than another local polymorphism axis. The bootstrap is still a
+stable, statically recoverable checksum loop; changing its register allocation,
+traversal order, or accumulator width does not remove that recovery path in
+Hex-Rays. Removing that fingerprint requires distributing integrity state across
+the VM entry and threaded handlers while preserving the encoder/checksum
+contract. The appended RX chain remains an ELF-container fingerprint; hiding it
+requires a new placement contract that can use multiple existing executable
+regions and preserve loader invariants. Runtime traces recover handler targets
+and register state; reducing that exposure requires a different execution model,
+not more static junk or another checksum spelling. These are separate major
+redesigns, so no further local change is accepted as a measurable improvement in
+this iteration.
+
 ## 16. Comparison with commercial properties
 
 Compared with mature commercial protectors, this implementation has meaningful
@@ -314,7 +330,9 @@ corpus, and current IDA/adversary evidence. Commit `b6159be` extends that
 decomposition to `and` and `or`, with its regression, regenerated corpus, and
 current IDA/adversary evidence. Commit `9d1a334` adds the generic bytewise checksum
 traversal and its real regression/corpus/IDA evidence. The remaining gaps above are
-architectural rather than unmeasured local variations. The official quality wrapper was rerun at this
+architectural rather than unmeasured local variations. Commit `4c40919` records
+the bounded runtime trace, current adversary result, and this termination
+assessment. The official quality wrapper was rerun at this
 HEAD: 9 checks pass;
 the only failure is the pre-existing forbidden Ruff `per-file-ignores` block,
 whose removal exposes 11,893 unsuppressed findings (9,607 are test assertions).
