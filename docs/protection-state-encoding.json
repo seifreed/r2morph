@@ -1,5 +1,5 @@
 {
-  "commit": "e078722",
+  "commit": "b8e5638",
   "date": "2026-08-20",
   "fixture": "elf_vm_engarithimm_x86_64",
   "seed": 20260820,
@@ -54,16 +54,18 @@
   "runtime_state_masked": {
     "fixture": "elf_vm_engarithimm_x86_64",
     "seed": 20260820,
-    "sha256": "2a08178c40a6de1c24b79e290521a27ec5b1b58a4eb450668ab06ceb540981dc",
-    "size_bytes": 82211,
-    "generated_vm_bytes": 65827,
+    "sha256": "c71165e76598384b5a8ab4eccedc6f94522df9c2c8878094d8b6358b76f76b73",
+    "size_bytes": 82344,
+    "generated_vm_bytes": 65960,
     "exit_code": 42,
-    "instruction_count": 212681,
+    "instruction_count": 213899,
     "indirect_jump_count": 38,
     "correlated_dispatch_count": 35,
     "raw_position_match_count": 0,
-    "ida_rerun": false,
-    "ida_note": "IDA executable was unavailable in this environment; prior same-shape survey remains the static reference."
+    "ida_rerun": true,
+    "ida_vm_entry_size": 276,
+    "ida_second_checksum_loop": "0x404193",
+    "ida_note": "Fresh IDA survey: three functions and seven segments. Hex-Rays recovers the entry checksum and jmp rax; disassembly separately exposes the deferred full checksum loop at 0x404193 before key/state setup. No handler table or bytecode grammar recovered."
   },
   "region_comparison": {
     "fixture": "elf_vm_arith_x86_64",

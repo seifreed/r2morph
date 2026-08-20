@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `e078722`
+Commit: `b8e5638`
 Date: `2026-08-20`
 
 ## 1. Current architecture
@@ -135,6 +135,18 @@ The current environment had no IDA executable available for a fresh post-change
 decompilation, so no new Hex-Rays claim is made here; the existing same-shape IDA
 survey remains the static reference.
 
+Commit `b8e5638` separates bootstrap integrity from the full dispatch integrity
+contract. The entry computes a short key over `[vm_entry, vm_bootstrap)` for the
+bootstrap table and probes; the `ready` path then recomputes the full key over
+`[vm_entry, vm_table)` before initializing operand keys, state, and threaded
+dispatch. On the same fixture and seed, the protected file is `82344` bytes with
+`213899` traced instructions, `38` indirect jumps, exit `42`, and `0/35` raw
+position matches. Fresh IDA survey reports three functions and seven RX segments.
+Hex-Rays still decompiles the entry to the first checksum loop and `jmp rax`, but
+IDA disassembly separately exposes the second checksum loop at `0x404193` before
+key/state setup; no handler table or bytecode grammar was recovered. The exact
+artifact is recorded in [`docs/protection-state-encoding.json`](protection-state-encoding.json).
+
 Commit `9d1a334` adds a second checksum traversal selected from existing per-build
 scheme fields without shifting later randomness. On seed `20260822`, IDA saw a
 183-byte, three-block entry and Hex-Rays reduced the bootstrap to a bytewise
@@ -260,6 +272,9 @@ Immediate arithmetic now has a second generic lowering grammar for `add`, `and`,
 grammar. The checksum now has two generic traversal grammars: the block mode is
 still visibly structured and the bytewise mode is simpler but no longer identical
 across builds.
+The two-stage integrity change removes the single full-span bootstrap contract,
+but both checksum loops remain statically recoverable and the handler-target
+sequence remains observable.
 The own devirtualizer does not support the current encrypted indirect shape, so
 its negative result is not a complete adversarial benchmark. The interpreter outlier
 shows that a direct handler-table architecture remains easy for Hex-Rays. Coverage
@@ -300,6 +315,8 @@ same-fixture trace comparison, and IDA recheck are recorded in
 [`docs/protection-state-encoding.json`](protection-state-encoding.json).
 Commit `e32ad9c` extends the encoded state protocol to region and nested VMs,
 with real regressions and same-fixture trace comparisons for both paths.
+Commit `b8e5638` defers the full integrity key until bootstrap readiness and
+records the fresh two-loop IDA observation in the state-encoding artifact.
 
 ## 15. Remaining gaps
 
@@ -320,20 +337,19 @@ without adding lint suppression.
 
 ### Termination assessment
 
-At HEAD `e32ad9c`, the remaining protection weaknesses require architectural
-changes rather than another local polymorphism axis. The bootstrap is still a
-stable, statically recoverable checksum loop; changing its register allocation,
-traversal order, or accumulator width does not remove that recovery path in
-Hex-Rays. Removing that fingerprint requires distributing integrity state across
-the VM entry and threaded handlers while preserving the encoder/checksum
-contract. The appended RX chain remains an ELF-container fingerprint; hiding it
-requires a new placement contract that can use multiple existing executable
-regions and preserve loader invariants. Runtime traces still recover handler
-targets, and the raw target sequence remains observable; reducing that exposure
-requires a different execution model, not more static junk or another checksum
-spelling. The loop remains active because `e078722` produced a measured runtime
-state-contract change; the checksum bootstrap and target-sequence exposure remain
-open weaknesses for the next iteration.
+At HEAD `b8e5638`, the remaining protection weaknesses require architectural
+changes rather than another local polymorphism axis. The two-stage integrity
+contract removes one single full-span loop, but both the short bootstrap loop and
+the deferred full loop remain statically recoverable. Removing that fingerprint
+requires distributing integrity state across the VM entry and threaded handlers
+while preserving the encoder/checksum contract. The appended RX chain remains an
+ELF-container fingerprint; hiding it requires a new placement contract that can
+use multiple existing executable regions and preserve loader invariants. Runtime
+traces still recover handler targets, and the raw target sequence remains
+observable; reducing that exposure requires a different execution model, not more
+static junk or another checksum spelling. The loop remains active because
+`b8e5638` produced a measured key-lifecycle change; checksum-loop recovery,
+container fingerprinting, and target-sequence exposure remain open weaknesses.
 
 ## 16. Comparison with commercial properties
 
@@ -405,3 +421,6 @@ Commit `e078722` separates the runtime state mask from the operand key across
 engine, region, and nested VMs; the focused protection suite passed `174` tests.
 The full gate remains blocked by environment/tooling warnings and existing
 configuration/dependency findings documented in the session ledger.
+Commit `b8e5638` splits bootstrap and full integrity keys across engine, region,
+and nested VMs; the focused protection suite passed `170` tests after the final
+helper refactor, and the fresh same-fixture IDA/runtime evidence is recorded above.
