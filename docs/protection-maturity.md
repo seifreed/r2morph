@@ -251,4 +251,6 @@ recorded explicitly rather than hidden. Commit `fc9e1cc` measures cross-seed
 handler clustering, adds semantically equivalent GP handler variants, and
 regenerates the multi-seed corpus. Commit `8895156` adds per-opcode encrypted
 bytecode tail padding, its stride/grammar measurement, fresh Tier B IDA evidence,
-and the regenerated correctness corpus.
+and the regenerated correctness corpus. Commit `dba52f7` maps the relocated
+program-header table inside the first appended RX load, removes the standalone
+metadata load, and revalidates the full corpus and loader invariants.
