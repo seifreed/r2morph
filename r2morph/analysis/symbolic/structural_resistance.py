@@ -4,10 +4,10 @@ The symbolic probe (:mod:`resistance_probe`) answers "can a bounded symbolic
 adversary crack this function". Against a virtualized build it saturates at the
 maximum (the adversary never terminates within budget), so it cannot rank one VM
 build against a harder one. This module adds a complementary STATIC signal read
-straight from the produced binary: the size and dispatch density of the injected
-interpreter. It rises monotonically as more VM structure is added - more
-handlers, micro-op expansion, shape polymorphism - so it scores incremental
-hardening that the symbolic metric cannot distinguish.
+straight from the produced binary: dispatch features of the injected interpreter.
+Raw instruction count is reported separately as expansion evidence but does not
+inflate the resistance score, so code bloat alone cannot masquerade as harder
+analysis.
 
 Generic: everything is derived from the binary's own disassembly (radare2), with
 no sample-specific constants.
@@ -22,12 +22,9 @@ from r2morph.core.binary import Binary
 
 logger = logging.getLogger(__name__)
 
-# Weights combining the structural signals into one score. Register/memory-indirect
-# dispatch is the virtualization hallmark (the interpreter's computed jump into the
-# handler table, one per handler in a threaded design), so it dominates; raw size
-# and branch fan-out contribute linearly. All three grow without bound, so the
-# score never saturates the way the symbolic reach/no-reach signal does.
-_WEIGHT_INSTRUCTIONS = 1.0
+# Weights combining dispatch signals into one score. Register/memory-indirect
+# dispatch is the virtualization hallmark; branch-target diversity is supporting
+# evidence. Instruction count remains a separate expansion measurement.
 _WEIGHT_INDIRECT_DISPATCH = 10.0
 _WEIGHT_BRANCH_TARGETS = 2.0
 
@@ -103,11 +100,7 @@ class StructuralResistanceProbe:
 
         distinct_targets = len(targets)
         ratio = total / baseline_instructions if baseline_instructions else float(total)
-        score = (
-            _WEIGHT_INSTRUCTIONS * total
-            + _WEIGHT_INDIRECT_DISPATCH * indirect
-            + _WEIGHT_BRANCH_TARGETS * distinct_targets
-        )
+        score = _dispatch_score(indirect, distinct_targets)
         logger.info(
             "Structural probe: instructions=%d indirect=%d targets=%d score=%.1f",
             total,
@@ -116,3 +109,8 @@ class StructuralResistanceProbe:
             score,
         )
         return StructuralResistance(total, indirect, distinct_targets, ratio, score)
+
+
+def _dispatch_score(indirect_jumps: int, distinct_branch_targets: int) -> float:
+    """Score dispatch structure without rewarding raw instruction bloat."""
+    return _WEIGHT_INDIRECT_DISPATCH * indirect_jumps + _WEIGHT_BRANCH_TARGETS * distinct_branch_targets
