@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `bb7832e`
+Commit: `7a2c04e`
 Date: `2026-08-21`
 
 ## 1. Current architecture
@@ -128,7 +128,7 @@ recovered the checksum loop, encrypted offset-table load, and a final `retn`
 instead of the fixed `jmp rax` tail. The table and checksum remain visible, and
 no handler grammar was recovered. The real fixture retained Unicorn exit `45`.
 
-Commit `02fc9a7` adds a seed-derived reverse bytewise checksum branch across
+Commit `53e8c12` adds a seed-derived reverse bytewise checksum branch across
 engine, region, and nested VMs without consuming additional randomness. Fresh
 IDA/Hex-Rays analysis of `elf_vm_arith_x86_64`, seed `20260820`, recovered the
 reverse loop (`end - 1`, decrementing pointer) and the equivalent `push rax;
@@ -540,9 +540,9 @@ validation runs do not retain closed capture streams. Commit `868dc1f` reuses
 usable executable load tails for VM payloads and records the current IDA,
 Tier A, and full-suite evidence above.
 
-Commit `02fc9a7` adds reverse bytewise checksum traversal, its unit regressions,
+Commit `53e8c12` adds reverse bytewise checksum traversal, its unit regressions,
 the fresh IDA/Hex-Rays artifact, and the Tier A/ten-seed evidence above.
-Commit `bb7832e` removes the unused `qiling` optional dependency and its scoped
+Commit `7a2c04e` removes the unused `qiling` optional dependency and its scoped
 mypy override; a dry-run resolution of `.[devirtualization]` no longer installs
 the vulnerable `python-fx`/Pillow dependency chain. Static checks and direct
 `pip-audit` passed after the cleanup. Two subsequent full-wrapper runs reached
