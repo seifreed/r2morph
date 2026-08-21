@@ -1,6 +1,7 @@
 import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_engine_common import build_vm_scheme
 from r2morph.mutations.code_virtualization_region_integrity import (
+    ChecksumPrologue,
     checksum_prologue_asm,
     compute_build_checksum,
 )
@@ -22,6 +23,12 @@ def test_checksum_bytewise_mode_emits_linear_byte_loop() -> None:
     expect(not ("inc rdi" not in assembly))
 
 
+def test_checksum_reverse_bytewise_mode_emits_descending_byte_loop() -> None:
+    assembly = checksum_prologue_asm(ChecksumPrologue(84, bytewise=True, reverse=True))
+
+    expect("dec rdi" in assembly and "lea rdi, [rip+vm_table]" in assembly)
+
+
 def test_checksum_block_mode_emits_guarded_block_loop() -> None:
     assembly = checksum_prologue_asm(84)
 
@@ -32,3 +39,9 @@ def test_vm_scheme_checksum_mode_varies_across_seeds() -> None:
     modes = {build_vm_scheme(random.Random(seed)).checksum_bytewise for seed in range(128)}
 
     expect(modes == {False, True})
+
+
+def test_vm_scheme_checksum_direction_varies_across_seeds() -> None:
+    directions = {build_vm_scheme(random.Random(seed)).checksum_reverse for seed in range(128)}
+
+    expect(directions == {False, True})

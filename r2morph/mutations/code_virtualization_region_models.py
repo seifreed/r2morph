@@ -48,6 +48,7 @@ class RegionScheme:
     isa_seed: int = 0
     checksum_bytewise: bool = False
     state_offset: int = 0x218
+    checksum_reverse: bool = False
 
 
 @dataclass(eq=False, repr=False, slots=True)

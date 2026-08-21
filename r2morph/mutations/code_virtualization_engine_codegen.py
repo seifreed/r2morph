@@ -97,6 +97,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
                 slot=layout.checksum_offset,
                 bytewise=scheme.checksum_bytewise,
                 label_prefix="entry_",
+                reverse=scheme.checksum_reverse,
             )
         )
     )
@@ -157,6 +158,7 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
                 slot=layout.checksum_offset,
                 bytewise=scheme.checksum_bytewise,
                 label_prefix="ready_",
+                reverse=scheme.checksum_reverse,
             )
         )
         + f"  movzx eax, byte ptr [rsp + {layout.checksum_offset}]\n  imul eax, eax, 0x1010101\n"

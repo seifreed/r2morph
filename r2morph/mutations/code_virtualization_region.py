@@ -516,6 +516,7 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
     # Derive the traversal mode without consuming the caller's RNG stream: later
     # handler/junk draws must remain stable when this field is added.
     checksum_bytewise = bool((isa_seed ^ xor_key) & 1)
+    checksum_reverse = bool((isa_seed ^ table_key) & 2)
     state_offset = rng.choice(_STATE_SLOT_CANDIDATES)
     return RegionScheme(
         dup,
@@ -530,4 +531,5 @@ def build_region_scheme(region: Region, rng: random.Random) -> RegionScheme:
         isa_seed,
         checksum_bytewise,
         state_offset,
+        checksum_reverse,
     )

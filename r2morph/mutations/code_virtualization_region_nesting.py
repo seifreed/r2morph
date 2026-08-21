@@ -259,6 +259,7 @@ def _relayer_sharing_frame(schemes: list[RegionScheme], slot: tuple[int, ...]) -
             isa_seed=s.isa_seed,
             checksum_bytewise=s.checksum_bytewise,
             state_offset=schemes[0].state_offset,
+            checksum_reverse=s.checksum_reverse,
         )
         for s in schemes
     ]
@@ -375,6 +376,7 @@ def _finalize_nested_blob(encoding: list[int], context: _NestedEncodingContext) 
         bytes(data[:table_start]),
         context.schemes[0].xor_key,
         context.schemes[0].checksum_bytewise,
+        context.schemes[0].checksum_reverse,
     )
     checksum_broadcast = checksum * 0x01010101
     for layer in range(count):
@@ -466,6 +468,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                 slot=_CHECKSUM_OFFSET,
                 bytewise=schemes[0].checksum_bytewise,
                 label_prefix="ready_",
+                reverse=schemes[0].checksum_reverse,
             )
         )
         + f"  movzx eax, byte ptr [rsp+{_CHECKSUM_OFFSET}]\n  imul eax, eax, 0x1010101\n"
@@ -501,6 +504,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                 slot=_CHECKSUM_OFFSET,
                 bytewise=schemes[0].checksum_bytewise,
                 label_prefix="entry_",
+                reverse=schemes[0].checksum_reverse,
             )
         )
         + f"vm_bootstrap:\n{bootstrap}"
@@ -627,6 +631,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
                 bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
                 schemes[0].xor_key,
                 schemes[0].checksum_bytewise,
+                schemes[0].checksum_reverse,
             ),
         ),
     )

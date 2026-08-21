@@ -1,0 +1,32 @@
+{
+  "analysis": "IDA Pro and Hex-Rays observation of the seed-derived reverse bytewise checksum mode",
+  "commit_basis": "current working tree",
+  "ida": {
+    "basic_blocks": 3,
+    "entry_address": "0x401218",
+    "entry_size": 192,
+    "function_count": 2,
+    "segment_count": 3,
+    "sha256": "70ffe5fe9bd73570e5f969e87af2c279cee14ba98ccd6ea418c474f1c04a5274"
+  },
+  "observations": {
+    "decompiled_checksum": "Hex-Rays recovered a reverse byte-at-a-time loop with v1 = end - 1 and v1--.",
+    "dispatch_boundary": "The entry ends in push rax; retn, an equivalent indirect transfer form.",
+    "handler_recovery": "No handler table or bytecode grammar was recovered.",
+    "sample": "elf_vm_arith_x86_64, seed 20260820",
+    "size": 24425
+  },
+  "own_adversary": {
+    "correlated_dispatch_count": 11,
+    "raw_position_match_count": 0,
+    "status": "completed",
+    "unique_bytecode_positions": 11,
+    "unique_handler_targets": 11
+  },
+  "tier_a": {
+    "compatible_fixture_count": 109,
+    "semantic_failures": 0,
+    "successful_seed_runs": 109
+  },
+  "schema_version": 1
+}

@@ -45,6 +45,12 @@ def test_checksum_traversal_permutates_each_block_in_variant_order() -> None:
     )
 
 
+def test_checksum_reverse_bytewise_mirrors_reversed_input() -> None:
+    code = bytes(range(7))
+
+    expect(tuple(_checksum_bytes(code, 0, bytewise=True, reverse=True)) == tuple(reversed(code)))
+
+
 def test_prologue_asm_emits_guarded_tail_for_partial_block() -> None:
     asm = checksum_prologue_asm(0)
 

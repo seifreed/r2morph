@@ -116,6 +116,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                 slot=scheme.checksum_offset,
                 bytewise=scheme.checksum_bytewise,
                 label_prefix="entry_",
+                reverse=scheme.checksum_reverse,
             )
         )
     )
@@ -188,6 +189,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                 slot=scheme.checksum_offset,
                 bytewise=scheme.checksum_bytewise,
                 label_prefix="ready_",
+                reverse=scheme.checksum_reverse,
             )
         )
         + f"  movzx eax, byte ptr [rsp+{scheme.checksum_offset}]\n"
@@ -330,13 +332,16 @@ def build_region_blob(region: Region, cave_vaddr: int, scheme: RegionScheme) -> 
         bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
         scheme.xor_key,
         scheme.checksum_bytewise,
+        scheme.checksum_reverse,
     )
     # Expected runtime self-checksum over the interpreter code (everything up to the
     # dispatch table, so neither the table encryption nor the island patch below
     # perturbs it); the encoder folds it into the opcodes, the table is encrypted
     # with it, and the tracer constants are masked by it. The table key also includes
     # a build-derived index mix, so entries do not share one uniform XOR mask.
-    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise)
+    checksum = compute_build_checksum(
+        bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise, scheme.checksum_reverse
+    )
     table_mix = (scheme.table_key & 0x7FFFFFFF) | 1
     for entry_index in range(total):
         offset = table_start + entry_index * 4

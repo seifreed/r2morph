@@ -92,8 +92,11 @@ def build_vm_blob(
         bytes(engine.asm(asm[: asm.index("vm_bootstrap:") + len("vm_bootstrap:")], cave_vaddr)[0]),
         scheme.xor_key,
         scheme.checksum_bytewise,
+        scheme.checksum_reverse,
     )
-    checksum = compute_build_checksum(bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise)
+    checksum = compute_build_checksum(
+        bytes(data[:table_start]), scheme.xor_key, scheme.checksum_bytewise, scheme.checksum_reverse
+    )
     table_mix = scheme.table_key & 0x7FFFFFFF | 1
     for entry_index in range(total):
         offset = table_start + entry_index * 4
