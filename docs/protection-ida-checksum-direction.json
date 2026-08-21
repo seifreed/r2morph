@@ -1,6 +1,6 @@
 {
   "analysis": "IDA Pro and Hex-Rays observation of the seed-derived reverse bytewise checksum mode",
-  "commit_basis": "current working tree",
+  "commit_basis": "02fc9a7",
   "ida": {
     "basic_blocks": 3,
     "entry_address": "0x401218",
