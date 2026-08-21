@@ -26,7 +26,7 @@ _CHECKSUM_OFFSET = 0x88
 
 # The accumulate step and traversal order are polymorphic so the checksum loop is
 # not a fixed linear scan an automated devirtualizer can match and strip. Builds
-# select either a seeded four-byte block permutation or a byte-at-a-time walk.
+# select a block permutation or a forward/reverse byte-at-a-time walk.
 _CHECKSUM_OPS = ("add", "xor", "sub")
 _CHECKSUM_ROTATES = ("rol", "ror")
 _CHECKSUM_PERMUTATIONS = (
@@ -47,6 +47,7 @@ class ChecksumPrologue:
     slot: int = _CHECKSUM_OFFSET
     bytewise: bool = False
     label_prefix: str = ""
+    reverse: bool = False
 
 
 def _checksum_step(variant: int) -> tuple[str, str, int]:
@@ -57,10 +58,10 @@ def _checksum_step(variant: int) -> tuple[str, str, int]:
     return op, rotate, amount
 
 
-def _checksum_bytes(code: bytes, variant: int, bytewise: bool = False) -> Iterator[int]:
+def _checksum_bytes(code: bytes, variant: int, bytewise: bool = False, reverse: bool = False) -> Iterator[int]:
     """Bytes of ``code`` in this build's checksum traversal order."""
     if bytewise:
-        yield from code
+        yield from reversed(code) if reverse else code
         return
     permutation = _CHECKSUM_PERMUTATIONS[(variant // 84) % len(_CHECKSUM_PERMUTATIONS)]
     for offset in range(0, len(code), 4):
@@ -82,8 +83,8 @@ def checksum_prologue_asm(
     Runs after the required register spill or bootstrap transition, so it is free
     to clobber rcx/rdx/rdi; the result is stored to the ``slot`` byte of the frame,
     which the bootstrap or dispatch reads. ``variant`` selects the polymorphic mix
-    step and traversal order; ``bytewise`` selects the alternate byte-at-a-time
-    traversal.
+    step and traversal order; ``bytewise`` selects the byte-at-a-time traversal,
+    whose direction is carried by a ``ChecksumPrologue`` instance.
     """
     spec = (
         variant
@@ -95,6 +96,25 @@ def checksum_prologue_asm(
     tail = f"{spec.label_prefix}chk_tail"
     done = f"{spec.label_prefix}chk_done"
     if spec.bytewise:
+        if spec.reverse:
+            return "".join(
+                [
+                    "  xor edx, edx\n",
+                    f"  lea rdi, [rip+{spec.end_label}]\n",
+                    "  dec rdi\n",
+                    f"  lea rcx, [rip+{spec.start_label}]\n",
+                    "  cmp rdi, rcx\n",
+                    f"  jb {done}\n",
+                    f"{loop}:\n",
+                    f"  {op} dl, byte ptr [rdi]\n",
+                    f"  {rotate} dl, {amount}\n",
+                    "  dec rdi\n",
+                    "  cmp rdi, rcx\n",
+                    f"  jae {loop}\n",
+                    f"{done}:\n",
+                    f"  mov byte ptr [rsp+{spec.slot}], dl\n",
+                ]
+            )
         return "".join(
             [
                 "  xor edx, edx\n",
@@ -147,11 +167,11 @@ def checksum_prologue_asm(
     )
 
 
-def compute_build_checksum(code: bytes, variant: int, bytewise: bool = False) -> int:
+def compute_build_checksum(code: bytes, variant: int, bytewise: bool = False, reverse: bool = False) -> int:
     """The expected runtime checksum of ``code`` (must mirror the asm loop)."""
     op, rotate, amount = _checksum_step(variant)
     acc = 0
-    for byte in _checksum_bytes(code, variant, bytewise):
+    for byte in _checksum_bytes(code, variant, bytewise, reverse):
         if op == "add":
             acc = (acc + byte) & 0xFF
         elif op == "sub":
