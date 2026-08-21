@@ -558,3 +558,6 @@ introduced.
 The 2026-08-21 audit refreshes the clustering artifact with `0` exact normalized
 cross-seed matches and records the terminal local-variation assessment in
 [`docs/protection-audit-20260821.json`](protection-audit-20260821.json).
+The latest full wrapper run passed all static checks and the complete pytest
+suite (`4868` passed, `21` skipped, no warnings); only `pip-audit` remained
+blocked by DNS resolution for `pypi.org`.

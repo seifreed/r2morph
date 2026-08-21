@@ -21,7 +21,7 @@
   "quality_gate": {
     "static_checks": "passed",
     "pip_audit": "blocked_by_pypi_dns",
-    "pytest": "in_progress_at_snapshot"
+    "pytest": "passed"
   },
   "schema_version": 1,
   "seed_campaign": {
