@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `e50bc26`
+Commit: `bb7832e`
 Date: `2026-08-21`
 
 ## 1. Current architecture
@@ -59,7 +59,7 @@ virtualized functions for every seed and are retained as no-op coverage results.
 | Opcode and operand polymorphism | Per-seed output hashes and bytecode sizes in corpus JSON | Effective diversity; not cryptographic secrecy |
 | Handler duplication and body variation | Generated handler counts, shuffled emission, ISA/junk seeds | Raises static clustering cost |
 | Direct-threaded dispatch | IDA sees per-build indirect tails as `jmp rax` or `push rax; retn` | Stronger than a plain switch; dynamic recovery remains possible |
-| Checksum-keyed state | Hex-Rays recovers either a four-byte permutation or bytewise checksum, but not downstream keys | Integrity and key dependency are visible; traversal shape varies per build |
+| Checksum-keyed state | Hex-Rays recovers either a four-byte permutation or forward/reverse bytewise checksum, but not downstream keys | Integrity and key dependency are visible; traversal shape varies per build |
 | Register-frame scattering | Seed-derived slot permutation and spill order | Removes fixed frame fingerprints; frame semantics remain inferable |
 | Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.838`, `1,780` of `2,232` comparisons >= `0.8` | Per-instance body variants reduce similarity slightly, but generic clustering remains effective |
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
@@ -128,6 +128,15 @@ recovered the checksum loop, encrypted offset-table load, and a final `retn`
 instead of the fixed `jmp rax` tail. The table and checksum remain visible, and
 no handler grammar was recovered. The real fixture retained Unicorn exit `45`.
 
+Commit `02fc9a7` adds a seed-derived reverse bytewise checksum branch across
+engine, region, and nested VMs without consuming additional randomness. Fresh
+IDA/Hex-Rays analysis of `elf_vm_arith_x86_64`, seed `20260820`, recovered the
+reverse loop (`end - 1`, decrementing pointer) and the equivalent `push rax;
+retn` transfer, but no handler table or bytecode grammar. The protected file is
+`24,425` bytes versus `24,419` bytes for the preceding tail-reuse sample and
+still exits `45`. The versioned observation is in
+[`docs/protection-ida-checksum-direction.json`](protection-ida-checksum-direction.json).
+
 Commit `f5f0b35` keeps the engine VM's vPC, bytecode base, and position encoded
 with the runtime checksum key at each indirect dispatch. The handler decodes the
 three registers only after control arrives, so existing handler bodies and the
@@ -184,6 +193,12 @@ recovered. The prior block-mode sample recovered an 11-block, 269-byte entry wit
 four-byte permutation and guarded tail reads. The focused comparison is in
 [`docs/protection-ida-checksum-bytewise.json`](protection-ida-checksum-bytewise.json).
 
+The current reverse-direction representative also produced `11` correlated
+dispatches, `11` unique handler targets, `11` unique bytecode positions, and
+`0` raw position matches in the own adversary. Tier A remained `109/109` with
+zero semantic failures; ten deterministic seeds on the arithmetic fixture
+retained exit `45` and semantic equality.
+
 ## 7. Devirtualization
 
 [`scripts/protection_adversary.py`](../scripts/protection_adversary.py) runs the
@@ -226,8 +241,9 @@ eight fixtures. All `1090/1090` semantic checks passed. The decomposition is
 selected per build and applies only to generic associative arithmetic immediate
 micro-ops. The checksum traversal update changes `948/1090` outputs across `106`
 fixtures and changes aggregate output size by `-56,498` bytes; all semantic checks
-remain green. It selects bytewise or block traversal without consuming additional
-randomness, so unrelated handler and junk decisions remain stable.
+remain green. The current reverse-direction branch adds no randomness draw and
+changes the representative output by `+6` bytes; unrelated handler and junk
+decisions remain stable.
 
 ## 9. Container fingerprintability
 
@@ -335,8 +351,8 @@ The structural resistance probe now aggregates every executable segment within a
 global budget instead of measuring only the largest fragment. Symbolic analysis
 imports are lazy, avoiding optional-dependency warnings. VM register save order
 and frame allocation vary deterministically per build. The checksum traversal now
-uses either seeded four-byte block permutations with guarded tails or a bytewise
-walk. Each change has real
+uses either seeded four-byte block permutations with guarded tails or a forward/
+reverse bytewise walk. Each change has real
 regression coverage and was rechecked on fresh protected files. The runtime trace
 harness and its bounded real-fixture regression make dynamic exposure measurable
 without changing production protection behavior. Commit `a6ac9ed` adds the
@@ -523,3 +539,15 @@ Commit `fb3a89b` keeps logging handlers on process stdout so repeated real
 validation runs do not retain closed capture streams. Commit `868dc1f` reuses
 usable executable load tails for VM payloads and records the current IDA,
 Tier A, and full-suite evidence above.
+
+Commit `02fc9a7` adds reverse bytewise checksum traversal, its unit regressions,
+the fresh IDA/Hex-Rays artifact, and the Tier A/ten-seed evidence above.
+Commit `bb7832e` removes the unused `qiling` optional dependency and its scoped
+mypy override; a dry-run resolution of `.[devirtualization]` no longer installs
+the vulnerable `python-fx`/Pillow dependency chain. Static checks and direct
+`pip-audit` passed after the cleanup. Two subsequent full-wrapper runs reached
+clean static checks and `pip-audit` but ended with four and five real-mutation
+test failures respectively; the focused virtualization/real-analysis/
+real-mutation run passed `164` tests with `3` skips. A later wrapper retry was
+blocked by temporary PyPI DNS failure. No test or vulnerability suppression was
+introduced.
