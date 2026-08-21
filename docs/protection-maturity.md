@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `7a2c04e`
+Commit: `52b6efa`
 Date: `2026-08-21`
 
 ## 1. Current architecture
@@ -61,7 +61,7 @@ virtualized functions for every seed and are retained as no-op coverage results.
 | Direct-threaded dispatch | IDA sees per-build indirect tails as `jmp rax` or `push rax; retn` | Stronger than a plain switch; dynamic recovery remains possible |
 | Checksum-keyed state | Hex-Rays recovers either a four-byte permutation or forward/reverse bytewise checksum, but not downstream keys | Integrity and key dependency are visible; traversal shape varies per build |
 | Register-frame scattering | Seed-derived slot permutation and spill order | Removes fixed frame fingerprints; frame semantics remain inferable |
-| Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.838`, `1,780` of `2,232` comparisons >= `0.8` | Per-instance body variants reduce similarity slightly, but generic clustering remains effective |
+| Handler clustering | [`docs/protection-handler-clustering.json`](protection-handler-clustering.json): normalized nearest similarity mean `0.860`, `2,120` of `2,232` comparisons >= `0.8`, exact normalized matches `0` | The remaining similarity is shared handler structure across different operation families, not duplicate normalized bodies; changing the normalizer would be metric gaming |
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
@@ -198,6 +198,8 @@ dispatches, `11` unique handler targets, `11` unique bytecode positions, and
 `0` raw position matches in the own adversary. Tier A remained `109/109` with
 zero semantic failures; ten deterministic seeds on the arithmetic fixture
 retained exit `45` and semantic equality.
+The fresh audit snapshot is in
+[`docs/protection-audit-20260821.json`](protection-audit-20260821.json).
 
 ## 7. Devirtualization
 
@@ -308,12 +310,12 @@ overhead.
 ## 13. Weaknesses discovered
 
 The adversary still sees a recognizable checksum bootstrap, a large register
-spill, an obvious appended executable chain, and handler bodies that cluster at
-`0.838` mean normalized nearest similarity across seeds (`1780` pairings remain
-at or above `0.8`). The equivalent per-instance vIP advance form reduces this
-signal without adding unreachable junk. The opcode remains at record offset
-zero, although per-instance tail padding now removes the fixed record-stride
-assumption. The engine VM's raw vPC/base/position correlation was recovered at
+spill, an obvious appended executable chain, and handler bodies whose normalized
+nearest similarity is `0.860` across seeds (`2120/2232` pairings remain at or
+above `0.8`). Exact normalized handler matches are `0/2480`; the high nearest
+similarity is therefore shared structure, not duplicate bodies. The opcode
+remains at record offset zero, although per-instance tail padding now removes
+the fixed record-stride assumption. The engine VM's raw vPC/base/position correlation was recovered at
 `35/35` dispatches before `f5f0b35` and at `0/35` after it. The region and nested
 comparisons in the state-encoding artifact show the same `0` raw matches. The
 target sequence and handler count remain visible, so handler semantics and
@@ -432,7 +434,7 @@ repository-wide quality gate is green without adding lint suppression.
 
 ### Termination assessment
 
-At code HEAD `e50bc26`, the remaining protection weaknesses require architectural
+At code HEAD `52b6efa`, the remaining protection weaknesses require architectural
 changes rather than another local polymorphism axis. The two-stage integrity
 contract removes one single full-span loop, but both the short bootstrap loop and
 the deferred full loop remain statically recoverable. Removing that fingerprint
@@ -443,10 +445,12 @@ contract that can
 use multiple existing executable regions and preserve loader invariants. Runtime
 traces still recover handler targets, and the raw target sequence remains
 observable; reducing that exposure requires a different execution model, not more
-static junk or another checksum spelling. The loop remains active because
-`e50bc26` reduces one fixed indirect-tail signature without changing the
-bootstrap contract; checksum-loop recovery, residual container fingerprinting,
-and target-sequence exposure remain open weaknesses.
+static junk or another checksum spelling. The reverse bytewise checksum branch
+is the last measured local grammar change; fresh Hex-Rays analysis still
+recovers the loop, and the own adversary still recovers the target sequence
+while classifying the state as encoded. Further progress requires a new
+placement/execution design, so this audit records the local variation loop as
+terminal rather than adding visual complexity or unmeasured bloat.
 
 ## 16. Comparison with commercial properties
 
@@ -551,3 +555,6 @@ test failures respectively; the focused virtualization/real-analysis/
 real-mutation run passed `164` tests with `3` skips. A later wrapper retry was
 blocked by temporary PyPI DNS failure. No test or vulnerability suppression was
 introduced.
+The 2026-08-21 audit refreshes the clustering artifact with `0` exact normalized
+cross-seed matches and records the terminal local-variation assessment in
+[`docs/protection-audit-20260821.json`](protection-audit-20260821.json).

@@ -1,0 +1,34 @@
+{
+  "adversary": {
+    "correlated_dispatch_count": 11,
+    "raw_position_match_count": 0,
+    "status": "completed",
+    "unique_bytecode_positions": 11,
+    "unique_handler_targets": 11
+  },
+  "decision": {
+    "status": "terminal_local_variations_exhausted",
+    "reason": "The remaining checksum-bootstrap, executable-container, and runtime-target exposure require an execution or placement architecture change. The current local polymorphism axes do not reduce the measured adversarial signals without adding bloat or changing the support contract."
+  },
+  "ida_hex_rays": {
+    "basic_blocks": 3,
+    "entry_address": "0x401218",
+    "entry_size": 192,
+    "function_count": 2,
+    "handler_table_recovered": false,
+    "sha256": "70ffe5fe9bd73570e5f969e87af2c279cee14ba98ccd6ea418c474f1c04a5274"
+  },
+  "quality_gate": {
+    "static_checks": "passed",
+    "pip_audit": "blocked_by_pypi_dns",
+    "pytest": "in_progress_at_snapshot"
+  },
+  "schema_version": 1,
+  "seed_campaign": {
+    "compatible_fixture_count": 109,
+    "semantic_failures": 0,
+    "successful_seed_runs": 1090,
+    "seed_count": 10
+  },
+  "source_basis": "52b6efa"
+}
