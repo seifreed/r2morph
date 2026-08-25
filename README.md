@@ -72,8 +72,12 @@ pip install "r2morph[all]"           # + frida, hypothesis
 ```bash
 git clone https://github.com/seifreed/r2morph.git
 cd r2morph
-pip install -r requirements.txt
+python -m pip install --editable ".[dev]"
 ```
+
+The CI dependency manifest remains available for reproducing the extended
+analysis environment: `python -m pip install -r requirements.txt` followed by
+`python -m pip install --editable .`.
 
 ---
 

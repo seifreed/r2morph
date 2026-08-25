@@ -1,6 +1,7 @@
+---
 name: CI
 
-on:
+"on":
   push:
     branches: [main]
   pull_request:
@@ -31,6 +32,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m pip install --editable .
 
       - name: Run ruff
         run: ruff check r2morph tests
@@ -53,6 +55,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m pip install --editable .
 
       - name: Run mypy
         run: mypy r2morph
@@ -73,11 +76,13 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config
+          sudo apt-get install -y \
+            git build-essential pkg-config
 
       - name: Install radare2
         run: |
-          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+          git clone --depth 1 \
+            https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
 
@@ -85,10 +90,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m pip install --editable .
 
       - name: Run stable core tests with coverage
         run: |
-          python -m pytest -v --cov=r2morph --cov-report=xml --cov-report=term-missing \
+          python -m pytest -v --cov=r2morph \
+            --cov-report=xml --cov-report=term-missing \
             -m "stable or unit" --ignore=tests/product_smoke --ignore=tests/slow
 
       - name: Upload coverage to Codecov
@@ -115,11 +122,13 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config
+          sudo apt-get install -y \
+            git build-essential pkg-config
 
       - name: Install radare2
         run: |
-          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+          git clone --depth 1 \
+            https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
 
@@ -127,10 +136,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m pip install --editable .
 
       - name: Run unit tests
         run: |
-          python -m pytest -v tests/unit -m "not slow" --tb=short
+          python -m pytest -v tests/unit \
+            -m "not slow" --tb=short
 
   integration-tests:
     name: Integration Tests
@@ -148,11 +159,13 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config
+          sudo apt-get install -y \
+            git build-essential pkg-config
 
       - name: Install radare2
         run: |
-          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+          git clone --depth 1 \
+            https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
 
@@ -160,10 +173,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m pip install --editable .
 
       - name: Run integration tests
         run: |
-          python -m pytest -v tests/integration -m "not slow" --tb=short
+          python -m pytest -v tests/integration \
+            -m "not slow" --tb=short
 
   product-smoke-tests:
     name: Product Smoke Tests (Stable Mutations)
@@ -181,11 +196,13 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config
+          sudo apt-get install -y \
+            git build-essential pkg-config
 
       - name: Install radare2
         run: |
-          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+          git clone --depth 1 \
+            https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
 
@@ -193,10 +210,12 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m pip install --editable .
 
       - name: Run product smoke tests
         run: |
-          python -m pytest -v tests/product_smoke -m "stable" --tb=short
+          python -m pytest -v tests/product_smoke \
+            -m "stable" --tb=short
 
   cross-platform-tests:
     name: Tests (${{ matrix.os }}, Python ${{ matrix.python-version }})
@@ -221,7 +240,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config
+          sudo apt-get install -y \
+            git build-essential pkg-config
 
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
@@ -232,7 +252,8 @@ jobs:
       - name: Install radare2 (Linux/macOS)
         if: runner.os != 'Windows'
         run: |
-          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+          git clone --depth 1 \
+            https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
 
@@ -240,10 +261,13 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          python -m pip install --editable .
 
       - name: Run tests
         run: |
-          python -m pytest -v -m "not experimental and not product_smoke and not slow" --tb=short
+          python -m pytest -v \
+            -m "not experimental and not product_smoke and not slow" \
+            --tb=short
 
       - name: Upload coverage to Codecov
         if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
@@ -253,6 +277,48 @@ jobs:
           files: .coverage
           flags: cross-platform
           fail_ci_if_error: false
+
+  package-smoke:
+    name: Installed Wheel Smoke Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "build>=1.2.0"
+          python -m build
+
+      - name: Install wheel in isolated environment
+        run: |
+          python -m venv /tmp/r2morph-wheel-venv
+          /tmp/r2morph-wheel-venv/bin/python -m pip install --upgrade pip
+          /tmp/r2morph-wheel-venv/bin/python -m pip install dist/*.whl \
+            "pytest>=7.4.0" "pytest-cov>=4.1.0" \
+            "hypothesis>=6.0.0" "psutil>=5.9.0"
+
+      - name: Run tests against installed wheel
+        run: |
+          wheel_root=/tmp/r2morph-wheel-check
+          rm -rf "$wheel_root"
+          mkdir -p "$wheel_root"
+          cp -R tests fixtures pyproject.toml "$wheel_root"/
+          cd "$wheel_root"
+          /tmp/r2morph-wheel-venv/bin/python -c \
+            "import r2morph; print(r2morph.__version__)"
+          /tmp/r2morph-wheel-venv/bin/python -c \
+            "import r2morph; print(r2morph.__file__)"
+          /tmp/r2morph-wheel-venv/bin/python -m pytest \
+            tests/unit/test_circular_imports.py \
+            tests/unit/test_cli_basic_commands.py::test_cli_version_function \
+            --no-cov --tb=short
 
   coverage:
     name: Coverage Report

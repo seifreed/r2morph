@@ -1,6 +1,7 @@
+---
 name: Release
 
-on:
+"on":
   push:
     tags:
       - 'v*.*.*'
@@ -45,7 +46,8 @@ jobs:
 
           if package_version != tag_version:
               raise SystemExit(
-                  f"Tag version v{tag_version} does not match pyproject.toml version {package_version}"
+                  "Tag version does not match pyproject.toml version: "
+                  f"v{tag_version} != {package_version}"
               )
 
           print(f"Release version validated: {tag_version}")
@@ -97,11 +99,13 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y git build-essential pkg-config
+          sudo apt-get install -y \
+            git build-essential pkg-config
 
       - name: Install radare2
         run: |
-          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+          git clone --depth 1 \
+            https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
 
@@ -114,11 +118,17 @@ jobs:
       - name: Install package
         run: pip install dist/*.whl
 
+      - name: Verify installed package
+        run: |
+          python -c "import r2morph; print(r2morph.__version__)"
+          python -c "import r2morph; print(r2morph.__file__)"
+
       - name: Install test dependencies
         run: pip install pytest pytest-cov hypothesis networkx z3-solver claripy
 
       - name: Run tests
-        run: python -m pytest tests/unit -m "not slow" --tb=short
+        run: |
+          python -m pytest tests/unit -m "not slow" --tb=short
 
   publish-pypi:
     runs-on: ubuntu-latest
@@ -162,7 +172,7 @@ jobs:
       - name: Generate release checksums
         run: |
           cd dist
-          sha256sum *.tar.gz *.whl > SHA256SUMS
+          sha256sum -- *.tar.gz *.whl > SHA256SUMS
 
       - name: Generate changelog
         id: changelog
@@ -173,12 +183,13 @@ jobs:
           cat /tmp/changes.md
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
           files: dist/*
           body_path: /tmp/changes.md
           draft: false
-          prerelease: ${{ contains(needs.validate-release.outputs.version, '-') }}
+          prerelease: >-
+            ${{ contains(needs.validate-release.outputs.version, '-') }}
           generate_release_notes: true

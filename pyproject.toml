@@ -8,7 +8,7 @@ version = "0.3.0"
 description = "Metamorphic binary mutation engine with structural validation"
 readme = "README.md"
 requires-python = ">=3.12,<3.14"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Marc Rivero", email = "mriverolopez@gmail.com"}
 ]
@@ -29,7 +29,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
