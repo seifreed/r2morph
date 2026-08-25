@@ -16,10 +16,10 @@ Key Features:
 
 import logging
 import time
+from importlib import import_module
 from typing import Any
 
 import capstone
-import keystone
 
 from r2morph.core.constants import ARCH_BITS_64
 from r2morph.devirtualization.binary_rewriter_io import (
@@ -43,7 +43,13 @@ from r2morph.devirtualization.binary_rewriter_planning import (
 )
 
 CAPSTONE_AVAILABLE = True
-KEYSTONE_AVAILABLE = True
+try:
+    keystone: Any = import_module("keystone")
+except (ImportError, OSError):
+    keystone = None
+    KEYSTONE_AVAILABLE = False
+else:
+    KEYSTONE_AVAILABLE = True
 
 logger = logging.getLogger(__name__)
 
