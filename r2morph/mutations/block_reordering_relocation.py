@@ -194,7 +194,15 @@ def _fallthrough_target(
         return None
     if last_type == "cjmp":
         fail = last.get("fail")
-        return fail if isinstance(fail, int) else None
+        if isinstance(fail, int):
+            return fail
+        address = last.get("addr")
+        size = last.get("size")
+        if isinstance(address, int) and isinstance(size, int):
+            sequential = address + size
+            if any(block["addr"] == sequential for block in ordered):
+                return sequential
+        return None
     if index + 1 < len(ordered):
         return int(ordered[index + 1]["addr"])
     return None
