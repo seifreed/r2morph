@@ -203,7 +203,7 @@ class ReferenceUpdater:
                     f"Pointer value mismatch at 0x{ptr_addr:x}: expected 0x{old_value:x}, got 0x{current_value:x}"
                 )
 
-        except (ValueError, OSError, BrokenPipeError) as e:
+        except (ValueError, OverflowError, OSError, BrokenPipeError) as e:
             logger.error(f"Failed to update pointer at 0x{ptr_addr:x}: {e}")
 
         return False
