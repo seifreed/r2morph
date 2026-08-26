@@ -168,12 +168,8 @@ class SymbolicResistanceProbe:
         # The run failed to explore to natural completion when a budget bound cut it
         # short or the live-state cap discarded states - so an uncracked verdict is a
         # lower bound, not proof of resistance.
-        unconstrained_states = bool(getattr(simgr, "unconstrained", ()))
-        budget_exhausted = (
-            timed_out
-            or states_truncated
-            or (not reached and (steps >= step_budget or bool(simgr.active) or unconstrained_states))
-        )
+        unresolved_run = not reached and not bool(simgr.errored)
+        budget_exhausted = timed_out or states_truncated or unresolved_run
         # Cracked -> fraction of the budget it cost (low); uncracked -> maximal.
         score = (steps / step_budget) if reached else 1.0
         measurement = ResistanceMeasurement(
