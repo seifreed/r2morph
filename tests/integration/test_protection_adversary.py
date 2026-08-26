@@ -43,4 +43,4 @@ def test_adversary_detects_encoded_live_dispatch_state(tmp_path: Path) -> None:
     result = analyze(protected, limit=3)
     dynamic = result["dynamic_recovery"]
 
-    expect(isinstance(dynamic, dict) and dynamic["state_encoding_detected"] is True)
+    expect(isinstance(dynamic, dict) and dynamic["state_encoding_detected"] is True, f"dynamic={dynamic!r}")

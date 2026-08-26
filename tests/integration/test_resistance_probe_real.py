@@ -86,7 +86,7 @@ def test_budget_limited_virtualized_run_is_flagged_as_lower_bound(tmp_path: Path
     # the run must announce that it stopped short of natural completion.
     expect(not (virtualized.reached_terminal is not False))
     expect(virtualized.resistance_score == 1.0)
-    expect(not (virtualized.budget_exhausted is not True))
+    expect(not (virtualized.budget_exhausted is not True), f"measurement={virtualized!r}")
 
 
 def test_cracked_original_run_reports_no_budget_exhaustion(tmp_path: Path) -> None:
