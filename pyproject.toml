@@ -216,3 +216,7 @@ confidence = "LOW"
 where = ["."]
 include = ["r2morph*"]
 exclude = ["tests*", "docs*", "examples*", "scripts*"]
+
+[tool.setuptools.package-data]
+"r2morph.mutations.equivalences" = ["*_rules.yaml"]
+"r2morph.reporting" = ["report_schema.json"]

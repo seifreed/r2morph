@@ -90,5 +90,6 @@ def test_release_workflow_tests_installed_wheel_outside_checkout() -> None:
         "python -m pip install --force-reinstall dist/*.whl" in workflow
         and "Run tests against installed wheel" in workflow
         and 'cd "$test_root"' in workflow
+        and "--ignore=tests/unit/test_release_contract.py" in workflow
         and "python -W error -m pytest" in workflow
     )

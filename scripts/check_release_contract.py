@@ -115,6 +115,7 @@ def _check_release_workflow() -> None:
         "dist/*.whl",
         "python -m pip install --force-reinstall dist/*.whl",
         "Run tests against installed wheel",
+        "--ignore=tests/unit/test_release_contract.py",
         "python -W error -m pytest",
         "r2morph --version",
     ):
