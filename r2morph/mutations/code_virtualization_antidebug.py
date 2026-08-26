@@ -32,10 +32,11 @@ from __future__ import annotations
 
 import r2morph.core.randomness as random
 
-# A benign inter-read delta is a few hundred native cycles, far under ``2**16``;
-# a single-step trap (a kernel round-trip per instruction) inflates it past any of
-# these. 16-18 keeps the untraced path inert while still catching tracing.
-_SHIFT_CHOICES = (16, 17, 18)
+# A benign inter-read delta is far below ``2**24`` on native runs and under
+# instruction emulation. A single-step trap still adds a kernel round-trip per
+# instruction, leaving this margin large enough for valid emulators without
+# making the timing signal inert under tracing.
+_SHIFT_CHOICES = (24, 25, 26)
 
 # Branch-free reductions of "delta is non-zero" to ``al`` in ``{0x00, 0xFF}``.
 # After ``neg rax`` the carry flag is set iff ``rax`` was non-zero, so ``sbb X, X``
