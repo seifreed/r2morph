@@ -87,6 +87,7 @@ _TRAMPOLINE_SIZE = 5
 # Upper bound on instructions read when gathering a dispatch-shaped function
 # linearly (its analysis stops at the computed jump, so there is no function size).
 _MAX_DISPATCH_INSNS = 256
+_MAX_UNSUPPORTED_RECORDS = 256
 _COMPUTED_JUMP_TYPES = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 
 
@@ -544,11 +545,42 @@ class CodeVirtualizationPass(MutationPass):
 
     def _has_computed_jump(self, binary: Any, func: dict[str, Any]) -> bool:
         """Detect dispatch-shaped functions before the ordinary region path."""
+        return self._find_computed_jump(binary, func) is not None
+
+    def _find_computed_jump(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
+        """Return the first computed jump that blocks the default VM path."""
         try:
             ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {func['addr']}") or []
         except (ValueError, OSError, BrokenPipeError, RuntimeError):
-            return False
-        return any(op.get("type") in _COMPUTED_JUMP_TYPES for op in ops)
+            return None
+        return next((op for op in ops if op.get("type") in _COMPUTED_JUMP_TYPES), None)
+
+    @staticmethod
+    def _unsupported_record(
+        func: dict[str, Any],
+        instruction: dict[str, Any] | None,
+        capability: str,
+        reason: str,
+    ) -> dict[str, Any]:
+        """Build a stable, actionable record for a rejected function."""
+        return {
+            "function_address": int(func.get("addr", 0)),
+            "instruction_address": int((instruction or {}).get("addr", func.get("addr", 0))),
+            "capability": capability,
+            "reason": reason,
+        }
+
+    def _record_unsupported(
+        self,
+        records: list[dict[str, Any]],
+        func: dict[str, Any],
+        instruction: dict[str, Any] | None,
+        capability: str,
+        reason: str,
+    ) -> None:
+        """Keep actionable rejection evidence bounded per pass run."""
+        if len(records) < _MAX_UNSUPPORTED_RECORDS:
+            records.append(self._unsupported_record(func, instruction, capability, reason))
 
     def _build_region_payload(
         self, binary: Any, region: Any, rng: random.Random, use_nesting: bool
@@ -639,14 +671,25 @@ class CodeVirtualizationPass(MutationPass):
         skipped = 0
         total_insns = 0
         total_bytecode = 0
+        unsupported: list[dict[str, Any]] = []
+        unsupported_total = 0
 
         for func in binary.get_functions():
             if virtualized >= self.max_functions:
                 break
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
                 continue
-            if not self.virtualize_dispatch and self._has_computed_jump(binary, func):
+            computed_jump = self._find_computed_jump(binary, func)
+            if not self.virtualize_dispatch and computed_jump is not None:
                 skipped += 1
+                unsupported_total += 1
+                self._record_unsupported(
+                    unsupported,
+                    func,
+                    computed_jump,
+                    "computed_control_flow",
+                    "computed-jump virtualization is disabled",
+                )
                 continue
             if random.random() > self.probability:
                 skipped += 1
@@ -683,10 +726,21 @@ class CodeVirtualizationPass(MutationPass):
                 total_bytecode += result["bytecode"]
                 virtualized += 1
                 break
+            else:
+                unsupported_total += 1
+                self._record_unsupported(
+                    unsupported,
+                    func,
+                    None,
+                    "provable_function_shape",
+                    "no supported virtualization shape was proven",
+                )
 
         return {
             "functions_virtualized": virtualized,
             "functions_skipped": skipped,
             "total_instructions": total_insns,
             "total_bytecode_bytes": total_bytecode,
+            "unsupported_functions": unsupported,
+            "unsupported_functions_total": unsupported_total,
         }

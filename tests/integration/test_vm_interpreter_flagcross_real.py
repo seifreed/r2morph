@@ -62,3 +62,20 @@ def test_flag_crossing_dispatch_left_untouched_without_opt_in(tmp_path: Path) ->
     stats = _run_pass(mutated, virtualize_dispatch=False)
     expect(stats["functions_virtualized"] == 0)
     expect(vm_real._emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+def test_dispatch_rejection_reports_missing_capability(tmp_path: Path) -> None:
+    """A rejected computed jump identifies the function, instruction, and gap."""
+    mutated = tmp_path / "flagcross_rejected"
+    shutil.copy(FIXTURE, mutated)
+    stats = _run_pass(mutated, virtualize_dispatch=False)
+
+    records = stats["unsupported_functions"]
+    expect(
+        any(
+            record["capability"] == "computed_control_flow"
+            and record["instruction_address"] > 0
+            and record["function_address"] > 0
+            for record in records
+        )
+    )
