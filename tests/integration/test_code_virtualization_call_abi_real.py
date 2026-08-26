@@ -11,11 +11,18 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.utils.assertions import expect
+from tests.utils.platform_binaries import supports_native_elf_x86_64
 from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_varargs_x86_64"
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        not supports_native_elf_x86_64(),
+        reason="native ELF x86-64 execution requires Linux amd64",
+    ),
+]
 
 
 def test_virtualized_elf_preserves_vector_call_abi(tmp_path: Path) -> None:

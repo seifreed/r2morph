@@ -12,6 +12,7 @@ from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from r2morph.validation.mutation_fuzzer import MutationPassFuzzer
 from r2morph.validation.mutation_fuzzer_types import FuzzConfig
 from tests.utils.assertions import expect
+from tests.utils.platform_binaries import supports_native_elf_x86_64
 
 _DATASET = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset"
 _FIXTURE = _DATASET / "elf_vm_arith_x86_64"
@@ -19,7 +20,13 @@ _FUZZ_CASES = 3
 _FUZZ_SEED = 20260826
 _FUZZ_TIMEOUT_SECONDS = 2
 
-pytestmark = pytest.mark.integration
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.skipif(
+        not supports_native_elf_x86_64(),
+        reason="native ELF x86-64 execution requires Linux amd64",
+    ),
+]
 
 
 def test_mutation_fuzzer_real_campaign_preserves_transformed_fixture(tmp_path: Path) -> None:
