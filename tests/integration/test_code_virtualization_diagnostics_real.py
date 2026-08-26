@@ -50,6 +50,7 @@ def test_strict_mode_rejects_partial_function_without_mutation(tmp_path: Path) -
     expect(_FIXTURE.exists(), f"fixture missing: {_FIXTURE}")
     mutated = tmp_path / "strict_partial_rejection"
     shutil.copy(_FIXTURE, mutated)
+    original_bytes = mutated.read_bytes()
 
     binary = Binary(str(mutated), writable=True)
     binary.open()
@@ -64,6 +65,7 @@ def test_strict_mode_rejects_partial_function_without_mutation(tmp_path: Path) -
     expect(
         stats["functions_virtualized"] == 0
         and stats["partial_virtualization_total"] == 0
+        and mutated.read_bytes() == original_bytes
         and any(
             record["severity"] == "error"
             and record["instruction_address"] > 0

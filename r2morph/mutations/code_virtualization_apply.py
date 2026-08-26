@@ -39,6 +39,87 @@ def _unwind_metadata_name(binary: Any) -> str | None:
     return None
 
 
+def _transform_unsupported_function(
+    pass_instance: Any,
+    binary: Any,
+    func: dict[str, Any],
+    unsupported_instruction: dict[str, Any],
+    records: tuple[list[dict[str, Any]], list[dict[str, Any]]],
+) -> dict[str, int]:
+    """Handle a function rejected by the whole-function classifier."""
+    unsupported, partial = records
+    if pass_instance.reject_partial_virtualization:
+        pass_instance._record_unsupported_function(
+            unsupported,
+            func,
+            unsupported_instruction,
+            "whole-function virtualization was not proven; partial virtualization is disabled: ",
+        )
+        return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+    result, partial_count = pass_instance._virtualize_fallback_run(binary, func, unsupported_instruction, partial)
+    if result is not None:
+        return {
+            "skipped": 0,
+            "unsupported": 0,
+            "virtualized": 1,
+            "instructions": result["instructions"],
+            "bytecode": result["bytecode"],
+            "partial": partial_count,
+        }
+    pass_instance._record_unsupported_function(unsupported, func, unsupported_instruction)
+    return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+
+
+def _transform_function(
+    pass_instance: Any,
+    binary: Any,
+    func: dict[str, Any],
+    unsupported: list[dict[str, Any]],
+    partial: list[dict[str, Any]],
+) -> dict[str, int]:
+    """Transform one function after preflight checks have passed."""
+    unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
+    if unsupported_instruction is not None:
+        return _transform_unsupported_function(
+            pass_instance, binary, func, unsupported_instruction, (unsupported, partial)
+        )
+
+    region_result = pass_instance._virtualize_function(binary, func)
+    if region_result is None and pass_instance.virtualize_dispatch:
+        region_result = pass_instance._virtualize_dispatch_function(binary, func)
+    if region_result is not None:
+        return {
+            "skipped": 0,
+            "unsupported": 0,
+            "virtualized": 1,
+            "instructions": region_result["instructions"],
+            "bytecode": region_result["bytecode"],
+            "partial": 0,
+        }
+
+    if pass_instance.reject_partial_virtualization:
+        pass_instance._record_unsupported_function(
+            unsupported,
+            func,
+            None,
+            "whole-function virtualization was not proven; partial virtualization is disabled: ",
+        )
+        return {"skipped": 1, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+
+    result, partial_count = pass_instance._virtualize_fallback_run(binary, func, None, partial)
+    if result is not None:
+        return {
+            "skipped": 0,
+            "unsupported": 0,
+            "virtualized": 1,
+            "instructions": result["instructions"],
+            "bytecode": result["bytecode"],
+            "partial": partial_count,
+        }
+    pass_instance._record_unsupported_function(unsupported, func, None)
+    return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
+
+
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
     """Apply code virtualization using the pass instance's transformation seams."""
     pass_instance._reset_random()
@@ -85,36 +166,13 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             skipped += 1
             continue
 
-        region_result = pass_instance._virtualize_function(binary, func)
-        if region_result is None and pass_instance.virtualize_dispatch:
-            region_result = pass_instance._virtualize_dispatch_function(binary, func)
-        if region_result is not None:
-            total_insns += region_result["instructions"]
-            total_bytecode += region_result["bytecode"]
-            virtualized += 1
-            continue
-
-        unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
-        if pass_instance.reject_partial_virtualization:
-            skipped += 1
-            unsupported_total += 1
-            pass_instance._record_unsupported_function(
-                unsupported,
-                func,
-                unsupported_instruction,
-                "whole-function virtualization was not proven; partial virtualization is disabled: ",
-            )
-            continue
-
-        result, partial_count = pass_instance._virtualize_fallback_run(binary, func, unsupported_instruction, partial)
-        if result is not None:
-            total_insns += result["instructions"]
-            total_bytecode += result["bytecode"]
-            virtualized += 1
-            partial_total += partial_count
-            continue
-        unsupported_total += 1
-        pass_instance._record_unsupported_function(unsupported, func, unsupported_instruction)
+        outcome = _transform_function(pass_instance, binary, func, unsupported, partial)
+        skipped += outcome["skipped"]
+        unsupported_total += outcome["unsupported"]
+        virtualized += outcome["virtualized"]
+        total_insns += outcome["instructions"]
+        total_bytecode += outcome["bytecode"]
+        partial_total += outcome["partial"]
 
     return {
         "functions_virtualized": virtualized,
