@@ -161,6 +161,20 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             break
         if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
             continue
+        if unwind_section is not None:
+            skipped += 1
+            unsupported_total += 1
+            pass_instance._record_diagnostic(
+                unsupported,
+                func,
+                None,
+                (
+                    "error",
+                    "exceptions_and_unwinding",
+                    "exception/unwinding metadata is present but VM preservation is not proven " f"({unwind_section})",
+                ),
+            )
+            continue
         if dynamic_loader_section is not None:
             skipped += 1
             unsupported_total += 1
@@ -173,20 +187,6 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
                     "dynamic_loader_layout",
                     "dynamic-loader metadata is present but VM layout preservation is not proven "
                     f"({dynamic_loader_section})",
-                ),
-            )
-            continue
-        if unwind_section is not None:
-            skipped += 1
-            unsupported_total += 1
-            pass_instance._record_diagnostic(
-                unsupported,
-                func,
-                None,
-                (
-                    "error",
-                    "exceptions_and_unwinding",
-                    "exception/unwinding metadata is present but VM preservation is not proven " f"({unwind_section})",
                 ),
             )
             continue
