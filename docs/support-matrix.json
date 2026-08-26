@@ -223,7 +223,7 @@
         "instructions_affected": "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions produce diagnostics.",
         "false_positive_risk": "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.",
         "unit_tests": ["tests/unit/test_code_virtualization_diagnostics.py"],
-        "e2e_tests": ["tests/integration/test_code_virtualization_real.py", "tests/integration/test_protection_maturity_baseline.py"],
+        "e2e_tests": ["tests/integration/test_code_virtualization_real.py", "tests/integration/test_protection_maturity_baseline.py", "tests/integration/test_mutation_fuzzer_real.py"],
         "performance": "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.",
         "decompiler_effectiveness": "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.",
         "compatibility": "Only Linux ELF x86-64 functions satisfying the preconditions are in scope."

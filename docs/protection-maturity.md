@@ -53,6 +53,11 @@ FP, switch, red-zone, and multi-exit fixtures. No fixture is silently skipped by
 the virtualization pass; three explicit interpreter fixtures had zero
 virtualized functions for every seed and are retained as no-op coverage results.
 
+The supported Linux path also runs a bounded three-case mutation-fuzzer campaign
+against a real transformed ELF fixture. The campaign compares native exit status
+and captured output through `BinaryValidator`; failure cases are not retained by
+default in the repository workspace.
+
 ## 4. Obfuscation maturity technique-by-technique
 
 | Technique | Evidence | Assessment |
