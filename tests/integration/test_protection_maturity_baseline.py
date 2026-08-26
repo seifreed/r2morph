@@ -58,6 +58,28 @@ def test_runtime_artifacts_records_files_created_by_real_process(tmp_path: Path)
     )
 
 
+def test_runtime_artifacts_records_files_before_real_process_timeout(tmp_path: Path) -> None:
+    program = tmp_path / "program"
+    program.write_text(
+        "#!/bin/sh\nprintf started > created.txt\nwhile :; do :; done\n",
+        encoding="utf-8",
+    )
+    program.chmod(0o700)
+
+    result = _runtime_artifacts(program)
+
+    expect(
+        result["status"] == "timeout"
+        and result["created_files"]
+        == {
+            "created.txt": {
+                "sha256": "03494afd4248c42f5fa1237bf2eeebe751ab8d9c977d55405fcb17469dbd91f8",
+                "size": 7,
+            }
+        }
+    )
+
+
 def test_runtime_observables_detect_changed_created_file() -> None:
     baseline = {
         "status": "completed",
