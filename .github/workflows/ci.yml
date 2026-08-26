@@ -353,6 +353,16 @@ jobs:
           cd "$wheel_root"
           /tmp/r2morph-wheel-venv/bin/python -c \
             "import r2morph; print(r2morph.__version__)"
+          /tmp/r2morph-wheel-venv/bin/python - <<'PY'
+          import r2morph
+
+          from r2morph import Binary, MorphEngine, Pipeline
+
+          assert r2morph.__version__
+          assert Binary.__name__ == "Binary"
+          assert MorphEngine.__name__ == "MorphEngine"
+          assert Pipeline.__name__ == "Pipeline"
+          PY
           /tmp/r2morph-wheel-venv/bin/r2morph --version
           /tmp/r2morph-wheel-venv/bin/python -c \
             "import r2morph; print(r2morph.__file__)"
