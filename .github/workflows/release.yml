@@ -201,7 +201,12 @@ jobs:
         env:
           RELEASE_VERSION: ${{ needs.validate-release.outputs.version }}
         run: |
-          echo "Release $RELEASE_VERSION" > /tmp/changes.md
+          awk -v version="$RELEASE_VERSION" '
+            $0 == "## " version { found = 1; next }
+            found && /^## / { exit }
+            found { print }
+          ' CHANGELOG.md > /tmp/changes.md
+          test -s /tmp/changes.md
           cat /tmp/changes.md
 
       - name: Create Release

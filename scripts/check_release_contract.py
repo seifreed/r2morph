@@ -117,6 +117,8 @@ def _check_release_workflow() -> None:
         "Run tests against installed wheel",
         "--ignore=tests/unit/test_release_contract.py",
         "python -W error -m pytest",
+        'awk -v version="$RELEASE_VERSION"',
+        "test -s /tmp/changes.md",
         "r2morph --version",
     ):
         if fragment not in workflow:

@@ -92,4 +92,6 @@ def test_release_workflow_tests_installed_wheel_outside_checkout() -> None:
         and 'cd "$test_root"' in workflow
         and "--ignore=tests/unit/test_release_contract.py" in workflow
         and "python -W error -m pytest" in workflow
+        and 'awk -v version="$RELEASE_VERSION"' in workflow
+        and "test -s /tmp/changes.md" in workflow
     )
