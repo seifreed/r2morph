@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from scripts.protection_maturity_baseline import (
@@ -23,7 +24,7 @@ _FIXTURE = _DATASET / "elf_vm_arith_x86_64"
 def test_measure_fixture_records_real_semantic_result(tmp_path: Path) -> None:
     result = measure_fixture(_FIXTURE, range(20260820, 20260821), tmp_path)
 
-    expect(not (result["all_semantic_equal"] is not True))
+    expect(result["all_semantic_equal"] is (sys.platform == "linux"))
 
 
 def test_measure_fixture_emits_transformation_evidence(tmp_path: Path) -> None:
@@ -62,6 +63,18 @@ def test_runtime_observables_detect_changed_stdout_digest() -> None:
     changed = {**baseline, "stdout": {"sha256": "different", "size": 1}}
 
     expect(not (_runtime_observables_equal(baseline, changed) is not False))
+
+
+def test_runtime_observables_reject_matching_launch_errors() -> None:
+    failed_runtime = {
+        "status": "error",
+        "error_type": "OSError",
+        "stdout": {"sha256": "empty", "size": 0},
+        "stderr": {"sha256": "empty", "size": 0},
+        "created_files": {},
+    }
+
+    expect(not (_runtime_observables_equal(failed_runtime, failed_runtime) is not False))
 
 
 def test_runtime_artifacts_records_files_created_by_real_process(tmp_path: Path) -> None:

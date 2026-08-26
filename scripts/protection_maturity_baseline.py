@@ -220,7 +220,12 @@ def _semantic_artifacts(path: Path) -> dict[str, object]:
 
 def _runtime_observables_equal(expected: object, actual: object) -> bool:
     """Compare bounded native-runtime observables without retaining raw output."""
-    if not isinstance(expected, Mapping) or not isinstance(actual, Mapping):
+    if (
+        not isinstance(expected, Mapping)
+        or not isinstance(actual, Mapping)
+        or expected.get("status") != "completed"
+        or actual.get("status") != "completed"
+    ):
         return False
     for field in ("status", "return_code", "error_type"):
         if expected.get(field) != actual.get(field):
