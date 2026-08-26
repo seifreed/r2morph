@@ -71,32 +71,26 @@ def _validate_inventory(inventory: dict[str, object]) -> None:
     fixtures = inventory["fixtures"]
     if inventory["compatible_fixture_count"] != len(fixtures):
         raise ValueError("generated inventory count does not match fixture records")
-    successful_seed_runs = 0
-    failed_seed_runs = 0
-    semantic_passes = 0
-    semantic_failures = 0
     for fixture in fixtures:
         if fixture["all_semantic_equal"] is not True:
             raise ValueError("generated inventory contains a failed semantic comparison")
-        semantic_passes += 1
         if not fixture["runs"]:
             raise ValueError("generated inventory contains a fixture without runs")
         if fixture["baseline_runtime"]["status"] != "completed":
             raise ValueError("generated inventory baseline runtime did not complete")
         for run in fixture["runs"]:
-            successful_seed_runs += 1
             if run["runtime"]["status"] != "completed":
                 raise ValueError("generated inventory run runtime did not complete")
             if run["runtime_observable_equal"] is not True:
-                failed_seed_runs += 1
                 raise ValueError("generated inventory contains a failed runtime comparison")
     summary = inventory["summary"]
-    if summary != {
-        "failed_seed_runs": failed_seed_runs,
-        "semantic_failures": semantic_failures,
-        "semantic_passes": semantic_passes,
-        "successful_seed_runs": successful_seed_runs,
-    }:
+    expected_summary = {
+        "failed_seed_runs": 0,
+        "semantic_failures": 0,
+        "semantic_passes": len(fixtures),
+        "successful_seed_runs": sum(len(fixture["runs"]) for fixture in fixtures),
+    }
+    if summary != expected_summary:
         raise ValueError("generated inventory summary does not match fixture records")
 
 
