@@ -22,7 +22,7 @@ def _parse_instruction_list(raw_instructions: str) -> list[dict[str, Any]]:
         parsed = json.loads(raw_instructions)
     except ValueError:
         return []
-    return parsed if isinstance(parsed, list) else []
+    return [item for item in parsed if isinstance(item, dict)] if isinstance(parsed, list) else []
 
 
 def _parse_hex_bytes(raw_bytes: str) -> bytes:
