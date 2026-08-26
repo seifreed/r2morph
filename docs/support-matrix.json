@@ -41,6 +41,41 @@
       "evidence": ["tests/product_smoke", "tests/integration"]
     },
     {
+      "name": "instruction-expansion",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "block-reordering",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "dead-code-injection",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "control-flow-flattening",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "opaque-predicates",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
       "name": "code-virtualization",
       "stability": "experimental",
       "formats": ["ELF"],
@@ -48,11 +83,95 @@
       "evidence": ["docs/protection-maturity.md", "tests/integration"]
     },
     {
-      "name": "experimental-passes",
+      "name": "anti-disassembly",
       "stability": "experimental",
       "formats": ["ELF"],
       "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests"]
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "data-flow-mutation",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "short-jump-patching",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "constant-unfolding",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "code-mobility",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "function-outlining",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "api-hashing",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "import-obfuscation",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "self-modifying-code",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "stack-strings",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "string-obfuscation",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "pattern-substitution",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
+    },
+    {
+      "name": "polymorphic-engine",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests/integration"]
     }
   ],
   "evidence": {

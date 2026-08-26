@@ -25,6 +25,10 @@ promoted.
 | API hashing | Experimental | ELF x86-64 | External symbol behavior is environment-dependent | `README.md` |
 | Import obfuscation | Experimental | ELF x86-64 | Format-specific import handling | `README.md` |
 | Self-modifying code | Experimental | ELF x86-64 | Runtime validation is mandatory and limited | `README.md` |
+| Stack strings | Experimental | ELF x86-64 | String layout and ABI interactions need more corpus coverage | `README.md` |
+| String obfuscation | Experimental | ELF x86-64 | Runtime string reconstruction is environment-dependent | `README.md` |
+| Pattern substitution | Experimental | ELF x86-64 | Pattern coverage is intentionally narrow | `README.md` |
+| Polymorphic engine | Experimental | ELF x86-64 | Pipeline composition requires per-pass validation | `README.md` |
 
 The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a
