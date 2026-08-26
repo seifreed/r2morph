@@ -10,6 +10,7 @@ from scripts.protection_maturity_baseline import (
     _runtime_artifacts,
     _runtime_observables_equal,
     _semantic_run_matches,
+    _transformation_evidence,
     discover_executables,
     measure_fixture,
 )
@@ -23,6 +24,32 @@ def test_measure_fixture_records_real_semantic_result(tmp_path: Path) -> None:
     result = measure_fixture(_FIXTURE, range(20260820, 20260821), tmp_path)
 
     expect(not (result["all_semantic_equal"] is not True))
+
+
+def test_measure_fixture_emits_transformation_evidence(tmp_path: Path) -> None:
+    result = measure_fixture(_FIXTURE, range(20260820, 20260821), tmp_path)
+
+    evidence = result["runs"][0]["transformation"]
+    expect(any(value == "code-virtualization" for value in evidence.values()))
+
+
+def test_transformation_evidence_records_unsupported_capability() -> None:
+    evidence = _transformation_evidence(
+        "passed",
+        {
+            "functions_virtualized": 0,
+            "unsupported_functions": [{"capability": "thread_local_storage", "reason": "TLS addressing not proven"}],
+        },
+    )
+
+    expect(
+        evidence
+        == {
+            "pass_name": "code-virtualization",
+            "status": "omitted",
+            "reason": "thread_local_storage: TLS addressing not proven",
+        }
+    )
 
 
 def test_runtime_observables_detect_changed_stdout_digest() -> None:

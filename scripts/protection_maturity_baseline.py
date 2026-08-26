@@ -253,6 +253,40 @@ def _semantic_run_matches(baseline: object, baseline_runtime: object, run: objec
     return _runtime_observables_equal(baseline_runtime, run.get("runtime"))
 
 
+def _transformation_evidence(status: str, stats: object, error: object = None) -> dict[str, object]:
+    """Describe whether the selected pass changed the fixture and why not."""
+    if status == "error":
+        if isinstance(error, Mapping):
+            reason = error.get("error") or error.get("error_type") or "transformation failed"
+        else:
+            reason = "transformation failed"
+        return {"pass_name": "code-virtualization", "status": "error", "reason": str(reason)}
+
+    if not isinstance(stats, Mapping):
+        return {"pass_name": "code-virtualization", "status": "omitted", "reason": "no pass statistics"}
+    virtualized = stats.get("functions_virtualized")
+    if isinstance(virtualized, int) and virtualized > 0:
+        return {
+            "pass_name": "code-virtualization",
+            "status": "applied",
+            "functions_virtualized": virtualized,
+        }
+    diagnostics = stats.get("unsupported_functions")
+    if isinstance(diagnostics, list) and diagnostics and isinstance(diagnostics[0], Mapping):
+        capability = diagnostics[0].get("capability", "unsupported capability")
+        reason = diagnostics[0].get("reason", "pass precondition was not met")
+        return {
+            "pass_name": "code-virtualization",
+            "status": "omitted",
+            "reason": f"{capability}: {reason}",
+        }
+    return {
+        "pass_name": "code-virtualization",
+        "status": "omitted",
+        "reason": "no eligible function was virtualized",
+    }
+
+
 def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, object]:
     output = output_dir / f"seed-{seed}"
     shutil.copyfile(fixture, output)
@@ -275,6 +309,7 @@ def _measure_seed(fixture: Path, seed: int, output_dir: Path) -> dict[str, objec
     run: dict[str, object] = {
         "seed": seed,
         "status": status,
+        "transformation": _transformation_evidence(status, stats, error if status == "error" else None),
         "output_sha256": sha256(output),
         "output_size": output.stat().st_size,
         "transform_duration_seconds": time.perf_counter() - started,
