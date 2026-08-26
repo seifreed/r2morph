@@ -87,6 +87,7 @@ _TRAMPOLINE_SIZE = 5
 # Upper bound on instructions read when gathering a dispatch-shaped function
 # linearly (its analysis stops at the computed jump, so there is no function size).
 _MAX_DISPATCH_INSNS = 256
+_COMPUTED_JUMP_TYPES = frozenset({"ujmp", "rjmp", "ijmp", "mjmp", "irjmp"})
 
 
 _MEM_ARITH_MNEMONICS = ("add", "sub", "xor", "and", "or")
@@ -541,6 +542,14 @@ class CodeVirtualizationPass(MutationPass):
         # as a single layer.
         return self._emit_region(binary, func, region, rng, use_nesting=False)
 
+    def _has_computed_jump(self, binary: Any, func: dict[str, Any]) -> bool:
+        """Detect dispatch-shaped functions before the ordinary region path."""
+        try:
+            ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {func['addr']}") or []
+        except (ValueError, OSError, BrokenPipeError, RuntimeError):
+            return False
+        return any(op.get("type") in _COMPUTED_JUMP_TYPES for op in ops)
+
     def _build_region_payload(
         self, binary: Any, region: Any, rng: random.Random, use_nesting: bool
     ) -> tuple[int, bytes, bytes] | None:
@@ -635,6 +644,9 @@ class CodeVirtualizationPass(MutationPass):
             if virtualized >= self.max_functions:
                 break
             if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+                continue
+            if not self.virtualize_dispatch and self._has_computed_jump(binary, func):
+                skipped += 1
                 continue
             if random.random() > self.probability:
                 skipped += 1
