@@ -37,6 +37,7 @@ def _dynamic_recovery(path: Path) -> dict[str, object]:
             "instruction_count": trace.get("instruction_count"),
             "last_address": trace.get("last_address"),
             "fetch_fault_address": trace.get("fetch_fault_address"),
+            "executable_ranges": trace.get("executable_ranges"),
             "recovered": False,
         }
 
@@ -61,6 +62,7 @@ def _dynamic_recovery(path: Path) -> dict[str, object]:
         "instruction_count": trace.get("instruction_count"),
         "last_address": trace.get("last_address"),
         "fetch_fault_address": trace.get("fetch_fault_address"),
+        "executable_ranges": trace.get("executable_ranges"),
         "recovered": bool(raw_position_matches),
         "correlated_dispatch_count": len(correlated),
         "raw_position_match_count": len(raw_position_matches),

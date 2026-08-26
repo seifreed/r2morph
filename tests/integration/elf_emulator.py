@@ -218,10 +218,12 @@ def trace_execution(path: Path, *, load_bias: int = 0) -> dict[str, object]:
     mu.hook_add(_unicorn.UC_HOOK_MEM_FETCH_UNMAPPED, _fetch_fault_hook(state))
     mu.hook_add(_unicorn.UC_HOOK_MEM_READ, _read_hook(state, executable_ranges))
     mu.hook_add(_unicorn.UC_HOOK_INSN, _syscall_hook(state), None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
-    return _run_trace(mu, entry, state)
+    return _run_trace(mu, entry, state, executable_ranges)
 
 
-def _run_trace(mu: Any, entry: int, state: _TraceState) -> dict[str, object]:
+def _run_trace(
+    mu: Any, entry: int, state: _TraceState, executable_ranges: tuple[tuple[int, int], ...]
+) -> dict[str, object]:
     started = time.perf_counter()
     status = "completed"
     error: str | None = None
@@ -238,6 +240,7 @@ def _run_trace(mu: Any, entry: int, state: _TraceState) -> dict[str, object]:
         "instruction_count": state.instruction_count,
         "last_address": state.last_address,
         "fetch_fault_address": state.fetch_fault_address,
+        "executable_ranges": executable_ranges,
         "indirect_jump_count": state.indirect_jump_count,
         "executable_read_count": state.executable_read_count,
         "indirect_jumps": state.indirect_jumps,
