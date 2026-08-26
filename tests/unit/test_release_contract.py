@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from scripts.check_release_contract import main
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -63,3 +64,7 @@ def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
             for profile in set(maturity["pass_profiles"].values())
         )
     )
+
+
+def test_release_contract_current_tree_is_valid() -> None:
+    expect(main() == 0)

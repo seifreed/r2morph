@@ -8,6 +8,18 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+REQUIRED_CI_JOBS = (
+    "lint",
+    "typecheck",
+    "property-validation",
+    "stable-tests",
+    "unit-tests",
+    "integration-tests",
+    "product-smoke-tests",
+    "cross-platform-tests",
+    "package-smoke",
+)
+MINIMUM_COVERAGE_PERCENT = 75
 
 
 def _load_matrix() -> dict[str, object]:
@@ -49,10 +61,61 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
             raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
 
 
+def _check_inventory() -> None:
+    inventory = json.loads((ROOT / "docs" / "protection-maturity-corpus.json").read_text(encoding="utf-8"))
+    fixtures = inventory["fixtures"]
+    if inventory["compatible_fixture_count"] != len(fixtures):
+        raise ValueError("generated inventory count does not match fixture records")
+    for fixture in fixtures:
+        if fixture["all_semantic_equal"] is not True:
+            raise ValueError("generated inventory contains a failed semantic comparison")
+        if not fixture["runs"]:
+            raise ValueError("generated inventory contains a fixture without runs")
+
+
+def _check_ci_contract() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    for job in REQUIRED_CI_JOBS:
+        if f"\n  {job}:" not in workflow:
+            raise ValueError(f"CI is missing required job: {job}")
+    for fragment in (
+        "python -m build",
+        "dist/*.whl",
+        "import r2morph",
+        "r2morph --version",
+        "--no-cov --tb=short",
+    ):
+        if fragment not in workflow:
+            raise ValueError(f"CI is missing wheel smoke contract: {fragment}")
+
+    project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    pytest_options = project["tool"]["pytest"]["ini_options"]
+    if pytest_options["filterwarnings"] != ["error"]:
+        raise ValueError("pytest warnings must remain errors")
+    if project["tool"]["coverage"]["report"]["fail_under"] < MINIMUM_COVERAGE_PERCENT:
+        raise ValueError("coverage gate must be at least 75 percent")
+
+
+def _check_release_workflow() -> None:
+    workflow = (ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+    for fragment in (
+        "sbom.cdx.json",
+        "actions/attest-build-provenance@v2",
+        "dist/*.whl",
+        "r2morph --version",
+    ):
+        if fragment not in workflow:
+            raise ValueError(f"release workflow is missing: {fragment}")
+
+
 def main() -> int:
     try:
         package_version = _check_version()
-        _check_matrix(_load_matrix(), package_version)
+        matrix = _load_matrix()
+        _check_matrix(matrix, package_version)
+        _check_inventory()
+        _check_ci_contract()
+        _check_release_workflow()
     except (KeyError, TypeError, ValueError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
         print(f"release contract failed: {exc}", file=sys.stderr)
         return 1
