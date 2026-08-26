@@ -138,9 +138,9 @@ jobs:
           test_root=/tmp/r2morph-release-tests
           rm -rf "$test_root"
           mkdir -p "$test_root"
-          cp -R tests fixtures pyproject.toml requirements.txt "$test_root"/
+          cp -R tests fixtures docs scripts pyproject.toml requirements.txt CHANGELOG.md README.md "$test_root"/
           cd "$test_root"
-          python -W error -m pytest tests/unit -m "not slow" \
+          python -W error -m pytest --no-cov \
             --ignore=tests/unit/test_release_contract.py --tb=short
 
   publish-pypi:
