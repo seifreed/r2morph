@@ -50,6 +50,13 @@ def _unwind_metadata_name(binary: Any) -> str | None:
     for section in sections:
         raw_name = section.get("name", "")
         name = raw_name.rstrip("\x00") if isinstance(raw_name, str) else ""
+        raw_size = section.get("size")
+        if raw_size is not None:
+            try:
+                if int(raw_size) <= 0:
+                    continue
+            except (TypeError, ValueError):
+                return "unavailable"
         if name in _UNWIND_SECTION_NAMES or name.endswith((".__gcc_except_tab", ".__unwind_info")):
             return name
     return None
