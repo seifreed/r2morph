@@ -570,7 +570,7 @@ class CodeVirtualizationPass(MutationPass):
         for instruction in disasm.get("ops", []):
             if not isinstance(instruction, dict):
                 continue
-            if instruction.get("type") in ("ret", "swi", "syscall"):
+            if instruction.get("type") == "ret":
                 continue
             if classification._classify(instruction, allow_computed_jump=self.virtualize_dispatch) is None:
                 return cast(dict[str, Any], instruction)
@@ -584,14 +584,28 @@ class CodeVirtualizationPass(MutationPass):
         kind = str(instruction.get("type", ""))
         opcode = str(instruction.get("opcode", "")).lower()
         if kind in _COMPUTED_JUMP_TYPES:
-            return "computed_control_flow", "computed control flow is not enabled for this pass"
-        if kind in ("call", "rcall", "ucall") or opcode.startswith("call"):
-            return "calls", "call semantics were not proven for whole-function virtualization"
-        if "[" in opcode:
-            return "memory_operands", "memory operand semantics were not proven for whole-function virtualization"
-        if any(token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1")):
-            return "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
-        return "instruction_semantics", "instruction semantics were not proven for whole-function virtualization"
+            capability, reason = "computed_control_flow", "computed control flow is not enabled for this pass"
+        elif "fs:" in opcode or "gs:" in opcode:
+            capability, reason = "thread_local_storage", "thread-local storage addressing semantics were not proven"
+        elif opcode.startswith("lock "):
+            capability, reason = "thread_synchronization", "atomic synchronization semantics were not proven"
+        elif kind in ("swi", "syscall") or opcode.startswith(("syscall", "sysenter", "int ")):
+            capability, reason = "signals_and_system_calls", "system-call and interrupt semantics were not proven"
+        elif kind in ("call", "rcall", "ucall") or opcode.startswith("call"):
+            capability, reason = "calls", "call semantics were not proven for whole-function virtualization"
+        elif "[" in opcode:
+            capability, reason = (
+                "memory_operands",
+                "memory operand semantics were not proven for whole-function virtualization",
+            )
+        elif any(token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1")):
+            capability, reason = "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
+        else:
+            capability, reason = (
+                "instruction_semantics",
+                "instruction semantics were not proven for whole-function virtualization",
+            )
+        return capability, reason
 
     @staticmethod
     def _unsupported_record(

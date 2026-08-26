@@ -36,6 +36,7 @@ def test_straight_line_fallback_reports_partial_function_warning(tmp_path: Path)
                 "memory_operands",
                 "instruction_semantics",
                 "provable_function_shape",
+                "signals_and_system_calls",
             }
             and record["instruction_address"] > 0
             and "straight-line region was proven" in record["reason"]
