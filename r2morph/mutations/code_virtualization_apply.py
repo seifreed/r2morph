@@ -10,6 +10,34 @@ from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
 
+_UNWIND_SECTION_NAMES = frozenset(
+    {
+        ".ARM.exidx",
+        ".ARM.extab",
+        ".eh_frame",
+        ".gcc_except_table",
+        ".pdata",
+        ".xdata",
+        "__eh_frame",
+        "__unwind_info",
+    }
+)
+
+
+def _unwind_metadata_name(binary: Any) -> str | None:
+    """Return the first exception/unwinding section, failing closed on read errors."""
+    try:
+        sections = binary.get_sections()
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return "unavailable"
+
+    for section in sections:
+        raw_name = section.get("name", "")
+        name = raw_name.rstrip("\x00") if isinstance(raw_name, str) else ""
+        if name in _UNWIND_SECTION_NAMES or name.endswith((".__eh_frame", ".__gcc_except_tab", ".__unwind_info")):
+            return name
+    return None
+
 
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
     """Apply code virtualization using the pass instance's transformation seams."""
@@ -21,11 +49,26 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     unsupported: list[dict[str, Any]] = []
     partial: list[dict[str, Any]] = []
     unsupported_total = partial_total = 0
+    unwind_section = _unwind_metadata_name(binary)
 
     for func in binary.get_functions():
         if virtualized >= pass_instance.max_functions:
             break
         if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
+            continue
+        if unwind_section is not None:
+            skipped += 1
+            unsupported_total += 1
+            pass_instance._record_diagnostic(
+                unsupported,
+                func,
+                None,
+                (
+                    "error",
+                    "exceptions_and_unwinding",
+                    "exception/unwinding metadata is present but VM preservation is not proven " f"({unwind_section})",
+                ),
+            )
             continue
         computed_jump = pass_instance._find_computed_jump(binary, func)
         if not pass_instance.virtualize_dispatch and computed_jump is not None:
