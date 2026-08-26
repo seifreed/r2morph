@@ -83,6 +83,19 @@ def test_release_contract_rejects_incomplete_runtime_evidence() -> None:
     expect(rejected)
 
 
+def test_release_contract_rejects_inconsistent_inventory_summary() -> None:
+    inventory = json.loads((_ROOT / "docs" / "protection-maturity-corpus.json").read_text(encoding="utf-8"))
+    inventory["summary"]["successful_seed_runs"] += 1
+
+    rejected = False
+    try:
+        _validate_inventory(inventory)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)
+
+
 def test_release_contract_requires_versioned_changelog_heading() -> None:
     rejected = False
     try:
