@@ -7,10 +7,16 @@ from pathlib import Path
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from tests.integration.elf_emulator import trace_execution
+from tests.integration.elf_emulator import _executable_ranges, trace_execution
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
+
+
+def test_executable_ranges_cover_segment_contents() -> None:
+    raw = _FIXTURE.read_bytes()
+
+    expect(_executable_ranges(raw, 0) == ((0x401000, 0x40101B),))
 
 
 def test_trace_execution_records_indirect_dispatch_for_protected_fixture(tmp_path: Path) -> None:

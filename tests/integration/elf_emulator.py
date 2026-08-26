@@ -105,8 +105,10 @@ def _executable_ranges(raw: bytes, load_bias: int) -> tuple[tuple[int, int], ...
         offset = e_phoff + index * phentsize
         p_type, p_flags = struct.unpack_from("<II", raw, offset)
         if p_type == _PT_LOAD and p_flags & 1:
-            p_vaddr, p_filesz = struct.unpack_from("<QQ", raw, offset + 16)
-            ranges.append((p_vaddr + load_bias, p_vaddr + load_bias + p_filesz))
+            p_vaddr = struct.unpack_from("<Q", raw, offset + 16)[0]
+            p_filesz = struct.unpack_from("<Q", raw, offset + 32)[0]
+            p_memsz = struct.unpack_from("<Q", raw, offset + 40)[0]
+            ranges.append((p_vaddr + load_bias, p_vaddr + load_bias + max(p_filesz, p_memsz)))
     return tuple(ranges)
 
 
