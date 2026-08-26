@@ -39,6 +39,9 @@ jobs:
       - name: Run black (check only)
         run: black --check r2morph tests
 
+      - name: Validate release contract
+        run: python scripts/check_release_contract.py
+
   typecheck:
     runs-on: ubuntu-latest
     steps:
@@ -318,6 +321,7 @@ jobs:
           cd "$wheel_root"
           /tmp/r2morph-wheel-venv/bin/python -c \
             "import r2morph; print(r2morph.__version__)"
+          /tmp/r2morph-wheel-venv/bin/r2morph --version
           /tmp/r2morph-wheel-venv/bin/python -c \
             "import r2morph; print(r2morph.__file__)"
           /tmp/r2morph-wheel-venv/bin/python -m pytest \

@@ -10,6 +10,8 @@ from typing import Annotated, Any, get_type_hints
 
 import typer
 
+from r2morph import __version__
+
 
 class CommandCallback[T]:
     """Expose dataclass fields as a Typer signature and pass one typed value inward."""
@@ -24,6 +26,12 @@ class CommandCallback[T]:
 
     def __call__(self, **values: Any) -> None:
         self._handler(self._model(**values))
+
+
+def _show_version(value: bool) -> None:
+    if value:
+        typer.echo(f"r2morph {__version__}")
+        raise typer.Exit()
 
 
 def _model_signature(model: Any) -> inspect.Signature:
@@ -58,6 +66,10 @@ class MainCommandOptions:
     seed: Annotated[int | None, typer.Option("--seed", help="Deterministic mutation seed")] = None
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Enable verbose output")] = False
     debug: Annotated[bool, typer.Option("--debug", "-d", help="Enable debug output")] = False
+    version: Annotated[
+        bool,
+        typer.Option("--version", help="Display the installed package version.", callback=_show_version),
+    ] = False
 
 
 @dataclass(frozen=True)

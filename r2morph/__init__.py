@@ -10,7 +10,7 @@ from __future__ import annotations
 from importlib import import_module
 from typing import TYPE_CHECKING, Any
 
-__version__ = "0.3.0"
+__version__ = "0.4.0-alpha.1"
 
 __author__ = "r2morph contributors"
 __license__ = "MIT"

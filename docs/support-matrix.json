@@ -1,0 +1,63 @@
+{
+  "schema_version": 1,
+  "release": "0.4.0-alpha.1",
+  "official_target": {
+    "os": "linux",
+    "format": "ELF",
+    "architecture": "x86-64",
+    "status": "supported"
+  },
+  "formats": {
+    "ELF": "official-linux-x86-64",
+    "PE": "preview-alpha",
+    "Mach-O": "experimental"
+  },
+  "architectures": {
+    "x86-64": "official-linux-elf",
+    "x86": "experimental",
+    "AArch64": "experimental",
+    "ARM": "experimental"
+  },
+  "passes": [
+    {
+      "name": "nop",
+      "stability": "tier-1",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["tests/product_smoke", "tests/integration"]
+    },
+    {
+      "name": "substitute",
+      "stability": "tier-1",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["tests/product_smoke", "tests/integration"]
+    },
+    {
+      "name": "register",
+      "stability": "tier-1",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["tests/product_smoke", "tests/integration"]
+    },
+    {
+      "name": "code-virtualization",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["docs/protection-maturity.md", "tests/integration"]
+    },
+    {
+      "name": "experimental-passes",
+      "stability": "experimental",
+      "formats": ["ELF"],
+      "architectures": ["x86-64"],
+      "evidence": ["README.md", "tests"]
+    }
+  ],
+  "evidence": {
+    "compatibility_corpus": "https://github.com/seifreed/r2morph-corpus",
+    "maturity_report": "docs/protection-maturity.md",
+    "ci_workflow": ".github/workflows/ci.yml"
+  }
+}

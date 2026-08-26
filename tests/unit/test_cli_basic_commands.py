@@ -55,6 +55,13 @@ def test_cli_version_function() -> None:
     expect(not (result is not None))
 
 
+def test_cli_version_option_reports_installed_version() -> None:
+    runner = CliRunner()
+    result = runner.invoke(cli.app, ["--version"])
+    expect(result.exit_code == 0)
+    expect("r2morph 0.4.0-alpha.1" in result.output)
+
+
 def test_cli_warns_for_experimental_mutations(tmp_path: Path) -> None:
     source = Path("fixtures/dataset/elf_x86_64")
     if not source.exists():

@@ -26,15 +26,14 @@
 
 ## Overview
 
-**r2morph** is a metamorphic mutation engine that applies tracked binary transformations with validation, rollback, and machine-readable reports. It uses **radare2** for analysis and supports 18 mutation passes across 4 architectures.
+**r2morph** is a metamorphic mutation engine that applies tracked binary transformations with validation, rollback, and machine-readable reports. The `0.4.0-alpha.1` support contract is intentionally narrow: Linux ELF x86-64 is the official target. Other formats and architectures remain preview or experimental.
 
 ### Key Features
 
 | Feature | Description |
 |---------|-------------|
-| **18 Mutation Passes** | From stable NOP/substitute/register to experimental CFF, virtualization, and self-modifying code |
-| **4 Architectures** | x86_64, x86, ARM64, ARM32 |
-| **3 Binary Formats** | ELF (stable), PE and Mach-O (experimental, via LIEF) |
+| **Tier 1 Passes** | NOP, instruction substitution, and register substitution on the official target |
+| **Declared Support** | Linux ELF x86-64; preview and experimental targets are tracked separately |
 | **4 Validation Modes** | Structural, runtime, symbolic (angr), CFG integrity |
 | **Session Management** | Checkpoint/rollback system preserving binary state across mutation passes |
 | **SARIF 2.1.0 Reports** | OASIS SARIF with MITRE ATT&CK taxonomy, fingerprints, code flows |
@@ -48,7 +47,7 @@
 
 ### Prerequisites
 
-- Python 3.10+
+- Python 3.12 or 3.13
 - radare2 installed
 
 #### Install radare2
@@ -85,20 +84,23 @@ analysis environment: `python -m pip install -r requirements.txt` followed by
 
 ### Formats
 
-| Format | Status | Section Creation | Notes |
-|--------|--------|-----------------|-------|
-| **ELF** | Stable | Via LIEF | Full section handling, relocations, code caves |
-| **PE** | Experimental | Via LIEF | Section creation, checksum fixing |
-| **Mach-O** | Experimental | Via LIEF | Load command parsing, Fat binary support |
+| Format | Status | Notes |
+|--------|--------|-------|
+| **ELF** | Official: Linux x86-64 | Other ELF architectures are experimental |
+| **PE** | Preview/alpha | No zero-defect guarantee |
+| **Mach-O** | Experimental | No zero-defect guarantee |
 
 ### Architectures
 
 | Architecture | NOP | Substitute | Register | Expand | Block | Dead Code |
 |--------------|-----|-----------|----------|--------|-------|-----------|
-| **x86_64** | Yes | Yes | Yes | Yes | Yes | Yes |
-| **x86** | Yes | Yes | Yes | Yes | Yes | Yes |
-| **ARM64** | Yes | Yes | Yes | Yes | Yes | Yes |
-| **ARM32** | Yes | Yes | Yes | Yes | Yes | Yes |
+| **x86_64 Linux ELF** | Tier 1 | Tier 1 | Tier 1 | Experimental | Experimental | Experimental |
+| **x86** | Experimental | Experimental | Experimental | Experimental | Experimental | Experimental |
+| **AArch64/ARM** | Experimental | Experimental | Experimental | Experimental | Experimental | Experimental |
+
+The machine-readable contract is [`docs/support-matrix.json`](docs/support-matrix.json).
+The reproducible GCC/Clang corpus and its build manifest live in the public
+[`r2morph-corpus`](https://github.com/seifreed/r2morph-corpus) repository.
 
 ### Instruction Equivalence Rules
 
