@@ -35,9 +35,9 @@ sum_variadic:
 
 .globl _start
 _start:
-    movabsq $0x401000, %rax
+    movabsq $set_vectors, %rax
     call *%rax
-    movabsq $0x40101f, %rax
+    movabsq $sum_variadic, %rax
     movl $2, %eax
     call *%rax
     movl %eax, %edi
