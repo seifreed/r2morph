@@ -174,6 +174,34 @@
       "evidence": ["README.md", "tests/integration"]
     }
   ],
+  "selection": {
+    "cli_aliases": {
+      "nop": "nop",
+      "substitute": "substitute",
+      "register": "register",
+      "expand": "instruction-expansion",
+      "block": "block-reordering"
+    },
+    "engine_only_passes": [
+      "dead-code-injection",
+      "control-flow-flattening",
+      "opaque-predicates",
+      "code-virtualization",
+      "anti-disassembly",
+      "data-flow-mutation",
+      "short-jump-patching",
+      "constant-unfolding",
+      "code-mobility",
+      "function-outlining",
+      "api-hashing",
+      "import-obfuscation",
+      "self-modifying-code",
+      "stack-strings",
+      "string-obfuscation",
+      "pattern-substitution",
+      "polymorphic-engine"
+    ]
+  },
   "evidence": {
     "compatibility_corpus": "https://github.com/seifreed/r2morph-corpus",
     "generated_inventory": "docs/protection-maturity-corpus.json",

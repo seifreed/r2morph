@@ -33,3 +33,8 @@ promoted.
 The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a
 single fixture or a static disassembly result alone.
+
+The selection contract exposes only five short aliases through the CLI:
+`nop`, `substitute`, `register`, `expand`, and `block`. The remaining entries
+are engine-only capabilities until their configuration and end-to-end workflow
+are promoted into the public CLI surface.

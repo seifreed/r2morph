@@ -36,3 +36,16 @@ def test_support_matrix_enumerates_concrete_unique_passes() -> None:
         len(names) == len(set(names)) and "experimental-passes" not in names and len(names) >= _MIN_CONCRETE_PASSES,
         "support matrix must enumerate concrete passes without duplicates",
     )
+
+
+def test_support_matrix_partitions_cli_and_engine_only_passes() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    pass_names = {entry["name"] for entry in matrix["passes"]}
+    cli_aliases = matrix["selection"]["cli_aliases"]
+    engine_only = set(matrix["selection"]["engine_only_passes"])
+
+    expect(
+        set(cli_aliases.values()) | engine_only == pass_names
+        and set(cli_aliases) == {"nop", "substitute", "register", "expand", "block"}
+        and not (set(cli_aliases.values()) & engine_only)
+    )
