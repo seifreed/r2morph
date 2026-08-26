@@ -14,11 +14,9 @@ _UNWIND_SECTION_NAMES = frozenset(
     {
         ".ARM.exidx",
         ".ARM.extab",
-        ".eh_frame",
         ".gcc_except_table",
         ".pdata",
         ".xdata",
-        "__eh_frame",
         "__unwind_info",
     }
 )
@@ -34,7 +32,7 @@ def _unwind_metadata_name(binary: Any) -> str | None:
     for section in sections:
         raw_name = section.get("name", "")
         name = raw_name.rstrip("\x00") if isinstance(raw_name, str) else ""
-        if name in _UNWIND_SECTION_NAMES or name.endswith((".__eh_frame", ".__gcc_except_tab", ".__unwind_info")):
+        if name in _UNWIND_SECTION_NAMES or name.endswith((".__gcc_except_tab", ".__unwind_info")):
             return name
     return None
 

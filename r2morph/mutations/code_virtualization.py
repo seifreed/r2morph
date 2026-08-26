@@ -570,7 +570,7 @@ class CodeVirtualizationPass(MutationPass):
         for instruction in disasm.get("ops", []):
             if not isinstance(instruction, dict):
                 continue
-            if instruction.get("type") == "ret":
+            if instruction.get("type") in ("ret", "swi", "syscall"):
                 continue
             if classification._classify(instruction, allow_computed_jump=self.virtualize_dispatch) is None:
                 return cast(dict[str, Any], instruction)
