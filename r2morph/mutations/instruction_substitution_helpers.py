@@ -150,7 +150,7 @@ def flags_live_at(instructions: list[dict[str, Any]], insert_addr: int, arch: st
     """
     if arch != "x86":
         return True
-    disasms = [ins.get("disasm", ins.get("opcode", "")) for ins in instructions]
+    disasms = [ins.get("disasm") or ins.get("opcode") or "" for ins in instructions]
     idx = -1
     for j, ins in enumerate(instructions):
         if ins.get("addr", ins.get("offset", 0)) < insert_addr:
@@ -170,7 +170,7 @@ def get_equivalents(
     if arch not in pattern_to_group:
         return ("", [], None)
 
-    disasm = instruction.get("disasm", "")
+    disasm = instruction.get("disasm") or instruction.get("opcode") or ""
     normalized = normalize_instruction(disasm)
 
     if normalized in pattern_to_group[arch]:
@@ -201,7 +201,7 @@ def select_candidates(
             logger.debug(f"Failed to get disasm for {func.get('name')}: {e}")
             continue
 
-        disasms = [insn.get("disasm", "").lower() for insn in instructions]
+        disasms = [(insn.get("disasm") or insn.get("opcode") or "").lower() for insn in instructions]
         candidates = []
         for index, insn in enumerate(instructions):
             _original_pattern, equivalents, _group_idx = get_equivalents(
