@@ -122,7 +122,7 @@ jobs:
           path: dist/
 
       - name: Install package
-        run: pip install dist/*.whl
+        run: python -m pip install --force-reinstall dist/*.whl
 
       - name: Verify installed package
         run: |
@@ -133,9 +133,14 @@ jobs:
       - name: Install test dependencies
         run: pip install pytest pytest-cov hypothesis networkx z3-solver claripy
 
-      - name: Run tests
+      - name: Run tests against installed wheel
         run: |
-          python -m pytest tests/unit -m "not slow" --tb=short
+          test_root=/tmp/r2morph-release-tests
+          rm -rf "$test_root"
+          mkdir -p "$test_root"
+          cp -R tests fixtures docs scripts pyproject.toml requirements.txt CHANGELOG.md README.md "$test_root"/
+          cd "$test_root"
+          python -W error -m pytest tests/unit -m "not slow" --tb=short
 
   publish-pypi:
     runs-on: ubuntu-latest

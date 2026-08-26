@@ -81,3 +81,14 @@ def test_release_contract_rejects_incomplete_runtime_evidence() -> None:
         rejected = True
 
     expect(rejected)
+
+
+def test_release_workflow_tests_installed_wheel_outside_checkout() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    expect(
+        "python -m pip install --force-reinstall dist/*.whl" in workflow
+        and "Run tests against installed wheel" in workflow
+        and 'cd "$test_root"' in workflow
+        and "python -W error -m pytest" in workflow
+    )

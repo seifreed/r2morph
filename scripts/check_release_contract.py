@@ -113,6 +113,9 @@ def _check_release_workflow() -> None:
         "sbom.cdx.json",
         "actions/attest-build-provenance@v2",
         "dist/*.whl",
+        "python -m pip install --force-reinstall dist/*.whl",
+        "Run tests against installed wheel",
+        "python -W error -m pytest",
         "r2morph --version",
     ):
         if fragment not in workflow:
