@@ -161,6 +161,7 @@ def _virtualize(source: Path, dest: Path) -> None:
         binary.close()
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(
     sys.platform != "linux",
     reason="ptrace(PTRACE_SINGLESTEP) is Linux-only; a Linux CI job exercises this (see module docstring)",
@@ -179,6 +180,7 @@ def test_single_stepping_tracer_diverges_from_untraced_exit(tmp_path: Path) -> N
     expect(traced != untraced, "single-stepping did not trip the timing fold")
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(
     sys.platform != "linux",
     reason="ptrace is Linux-only; a Linux CI job exercises this (see module docstring)",
