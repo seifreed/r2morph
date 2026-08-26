@@ -113,6 +113,8 @@ def _executable_ranges(raw: bytes, load_bias: int) -> tuple[tuple[int, int], ...
 @dataclass
 class _TraceState:
     instruction_count: int = 0
+    last_address: int | None = None
+    fetch_fault_address: int | None = None
     indirect_jump_count: int = 0
     executable_read_count: int = 0
     indirect_jumps: list[dict[str, object]] = field(default_factory=list)
@@ -148,6 +150,7 @@ def _register_ids() -> dict[str, int]:
 def _code_hook(state: _TraceState, register_ids: dict[str, int]) -> Any:
     def on_code(uc: Any, address: int, _size: int, _user_data: object) -> None:
         state.instruction_count += 1
+        state.last_address = address
         if len(state.register_samples) < _TRACE_EVENT_CAP:
             state.register_samples.append({name: uc.reg_read(identifier) for name, identifier in register_ids.items()})
         opcode = bytes(uc.mem_read(address, 2))
@@ -168,6 +171,14 @@ def _code_hook(state: _TraceState, register_ids: dict[str, int]) -> Any:
                 state.indirect_jumps.append(jump)
 
     return on_code
+
+
+def _fetch_fault_hook(state: _TraceState) -> Any:
+    def on_fetch_fault(_uc: Any, _access: int, address: int, _size: int, _value: int, _user_data: object) -> bool:
+        state.fetch_fault_address = address
+        return False
+
+    return on_fetch_fault
 
 
 def _read_hook(state: _TraceState, executable_ranges: tuple[tuple[int, int], ...]) -> Any:
@@ -204,6 +215,7 @@ def trace_execution(path: Path, *, load_bias: int = 0) -> dict[str, object]:
     _map_pages(mu, mapped, _STACK_BASE, _STACK_SIZE)
     mu.reg_write(_x86_const.UC_X86_REG_RSP, _STACK_TOP)
     mu.hook_add(_unicorn.UC_HOOK_CODE, _code_hook(state, _register_ids()))
+    mu.hook_add(_unicorn.UC_HOOK_MEM_FETCH_UNMAPPED, _fetch_fault_hook(state))
     mu.hook_add(_unicorn.UC_HOOK_MEM_READ, _read_hook(state, executable_ranges))
     mu.hook_add(_unicorn.UC_HOOK_INSN, _syscall_hook(state), None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
     return _run_trace(mu, entry, state)
@@ -224,6 +236,8 @@ def _run_trace(mu: Any, entry: int, state: _TraceState) -> dict[str, object]:
         "status": status,
         "duration_seconds": time.perf_counter() - started,
         "instruction_count": state.instruction_count,
+        "last_address": state.last_address,
+        "fetch_fault_address": state.fetch_fault_address,
         "indirect_jump_count": state.indirect_jump_count,
         "executable_read_count": state.executable_read_count,
         "indirect_jumps": state.indirect_jumps,
