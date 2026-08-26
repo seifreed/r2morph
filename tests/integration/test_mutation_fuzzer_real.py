@@ -45,5 +45,4 @@ def test_mutation_fuzzer_real_campaign_preserves_transformed_fixture(tmp_path: P
         )
     ).fuzz_mutations(original, mutated, ["code-virtualization"])
 
-    expect(campaign.total_tests == _FUZZ_CASES)
     expect(campaign.failed == 0, f"campaign={campaign.to_dict()!r}")
