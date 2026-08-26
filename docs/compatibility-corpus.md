@@ -14,6 +14,9 @@ Each record includes the source digest, compiler command, toolchain version,
 format, architecture, transformation, omission reason when applicable, exit
 status, stdout/stderr digests, created-file manifest, elapsed time, and size
 change. Raw sample bytes and unbounded process output are not stored in reports.
+The local maturity runner stores transformation evidence as `pass_name`,
+`status` (`applied`, `omitted`, or `error`), and a bounded `reason` when the
+selected pass cannot transform the sample.
 
 The differential contract is original versus transformed execution: exit code,
 stdout, stderr, created files, and declared observable effects must match. A
