@@ -20,7 +20,7 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 109 compatible executable fixtures spanning
+current fixture inventory contains 110 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
 PIE, red-zone, multi-exit, fallback, and nested-region shapes.
 
@@ -42,12 +42,11 @@ retain only bounded summaries.
 
 Correctness is measured on the real generated ELF files, not mocks. The baseline
 runner executes each original and each transformed output with Unicorn until the
-exit syscall and compares the observed exit code. Native host execution is also
-attempted; these synthetic ELF files are not Darwin-executable, so that backend
-is recorded as an explicit `OSError` artifact rather than treated as a semantic
-failure.
+exit syscall and compares the observed exit code. Native host execution is
+recorded on the official Linux x86-64 target and compares return code, bounded
+stdout/stderr digests, and created-file manifests.
 
-The completed campaign passed `109/109` fixtures and `1090/1090` seed runs. The
+The completed campaign passed `110/110` fixtures and `1100/1100` seed runs. The
 targeted current-checksum and adversary regressions pass, including real calls,
 FP, switch, red-zone, and multi-exit fixtures. No fixture is silently skipped by
 the virtualization pass; three explicit interpreter fixtures had zero
@@ -71,11 +70,11 @@ default in the repository workspace.
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
-| Control-flow virtualization | 109-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
+| Control-flow virtualization | 110-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
 
 ## 5. Virtualization maturity
 
-The pass virtualized 106 of 109 fixtures in the one-seed coverage run and records
+The pass virtualized 107 of 110 fixtures in the one-seed coverage run and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret
@@ -263,7 +262,7 @@ still presents three analysis segments because it splits the original text
 range. Images without a suitable final load retain the fragmented fallback.
 This removes one synthetic container pattern but does not make the layout blend
 into an ordinary ELF. The remaining container signal is still material.
-The cave survey over all `109` compatible ELF x86-64 fixtures found `0` executable
+The cave survey over all `110` compatible ELF x86-64 fixtures found `0` executable
 caves of at least `256` bytes; the largest usable cave was `0` bytes. The broader
 directory also contains sources and a PE fixture, but those do not establish an
 ELF placement contract. Hiding the payload in existing executable space therefore
@@ -294,14 +293,14 @@ sequences remain observable.
 
 ## 11. Performance overhead
 
-The corpus artifact records transform duration, Unicorn runtime duration, and
-static-analysis duration for baseline and generated files. Across 1090 runs the
-transform duration ranged from `0.037` to `0.909` seconds, averaging `0.458`
-seconds. The checksum variants add either a guarded four-byte permutation loop or
-a bytewise loop; the latter is shorter in the representative IDA sample. Native
-runtime overhead is
-unavailable on this host because the fixtures are synthetic ELF images rejected
-by the Darwin loader.
+The corpus artifact records transform duration, native runtime duration, Unicorn
+runtime duration, and static-analysis duration for baseline and generated files.
+Across 1100 runs the transform duration ranged from `0.156` to `5.680` seconds,
+averaging `0.484` seconds on the official Linux x86-64 target. The checksum
+variants add either a guarded four-byte permutation loop or a bytewise loop; the
+latter is shorter in the representative IDA sample. Native runtime observables
+are complete for every baseline and transformed run; the artifact records the
+durations without treating timing as a semantic equivalence signal.
 
 ## 12. Binary-size overhead
 

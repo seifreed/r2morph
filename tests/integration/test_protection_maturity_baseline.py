@@ -15,16 +15,23 @@ from scripts.protection_maturity_baseline import (
     discover_executables,
     measure_fixture,
 )
+from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
 _DATASET = Path(__file__).resolve().parents[2] / "fixtures" / "dataset"
 _FIXTURE = _DATASET / "elf_vm_arith_x86_64"
+_VARARGS_FIXTURE = _DATASET / "elf_vm_varargs_x86_64"
+_EXPECTED_VARARGS_EXIT_CODE = 69
 
 
 def test_measure_fixture_records_real_semantic_result(tmp_path: Path) -> None:
     result = measure_fixture(_FIXTURE, range(20260820, 20260821), tmp_path)
 
     expect(result["all_semantic_equal"] is (sys.platform == "linux"))
+
+
+def test_varargs_fixture_preserves_vector_abi_exit_code() -> None:
+    expect(emulate_exit_code(_VARARGS_FIXTURE) == _EXPECTED_VARARGS_EXIT_CODE)
 
 
 def test_measure_fixture_emits_transformation_evidence(tmp_path: Path) -> None:

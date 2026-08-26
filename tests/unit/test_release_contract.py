@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from scripts.check_release_contract import main
+from scripts.check_release_contract import _validate_inventory, main
 from tests.utils.assertions import expect
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -68,3 +68,16 @@ def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
 
 def test_release_contract_current_tree_is_valid() -> None:
     expect(main() == 0)
+
+
+def test_release_contract_rejects_incomplete_runtime_evidence() -> None:
+    inventory = json.loads((_ROOT / "docs" / "protection-maturity-corpus.json").read_text(encoding="utf-8"))
+    inventory["fixtures"][0]["baseline_runtime"]["status"] = "error"
+
+    rejected = False
+    try:
+        _validate_inventory(inventory)
+    except ValueError:
+        rejected = True
+
+    expect(rejected)

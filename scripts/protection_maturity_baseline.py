@@ -204,7 +204,7 @@ def _semantic_artifacts(path: Path) -> dict[str, object]:
     started = time.perf_counter()
     try:
         exit_code = emulate_exit_code(path)
-    except (OSError, RuntimeError, ValueError, struct.error) as error:
+    except Exception as error:  # Measurement boundary records emulator failures per artifact.
         return {
             "status": "error",
             "error_type": type(error).__name__,

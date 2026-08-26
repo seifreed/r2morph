@@ -61,8 +61,7 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
             raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
 
 
-def _check_inventory() -> None:
-    inventory = json.loads((ROOT / "docs" / "protection-maturity-corpus.json").read_text(encoding="utf-8"))
+def _validate_inventory(inventory: dict[str, object]) -> None:
     fixtures = inventory["fixtures"]
     if inventory["compatible_fixture_count"] != len(fixtures):
         raise ValueError("generated inventory count does not match fixture records")
@@ -71,6 +70,18 @@ def _check_inventory() -> None:
             raise ValueError("generated inventory contains a failed semantic comparison")
         if not fixture["runs"]:
             raise ValueError("generated inventory contains a fixture without runs")
+        if fixture["baseline_runtime"]["status"] != "completed":
+            raise ValueError("generated inventory baseline runtime did not complete")
+        for run in fixture["runs"]:
+            if run["runtime"]["status"] != "completed":
+                raise ValueError("generated inventory run runtime did not complete")
+            if run["runtime_observable_equal"] is not True:
+                raise ValueError("generated inventory contains a failed runtime comparison")
+
+
+def _check_inventory() -> None:
+    inventory = json.loads((ROOT / "docs" / "protection-maturity-corpus.json").read_text(encoding="utf-8"))
+    _validate_inventory(inventory)
 
 
 def _check_ci_contract() -> None:

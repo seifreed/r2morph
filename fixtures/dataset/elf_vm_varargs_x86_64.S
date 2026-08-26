@@ -37,9 +37,9 @@ sum_variadic:
 _start:
     movabsq $set_vectors, %rax
     call *%rax
-    movabsq $sum_variadic, %rax
+    movabsq $sum_variadic, %r11
     movl $2, %eax
-    call *%rax
+    call *%r11
     movl %eax, %edi
     movl $60, %eax
     syscall
