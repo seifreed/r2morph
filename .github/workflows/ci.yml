@@ -62,6 +62,32 @@ jobs:
       - name: Run mypy
         run: mypy r2morph
 
+  property-validation:
+    name: Property and Fuzz Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Run property and fuzzer contracts
+        run: |
+          python -m pytest -v tests/property \
+            tests/unit/test_fuzzer_inputs_contract.py \
+            tests/unit/test_mutation_fuzzer_campaign_contract.py \
+            tests/unit/test_mutation_fuzzer_continuous_contract.py \
+            --no-cov --tb=short
+
   stable-tests:
     name: Stable Core Tests
     runs-on: ubuntu-latest
