@@ -46,20 +46,19 @@ def _interpret(binary: Binary, entry: int, edi_in: int) -> int:
     for _ in range(_MAX_STEPS):
         insn = binary.r2.cmdj(f"pdj 1 @ 0x{addr:x}")[0]
         disasm = insn["disasm"].split(";")[0].strip()
-        itype = insn.get("type", "")
         mnemonic = disasm.split()[0]
 
-        if itype == "jmp":
+        if mnemonic == "jmp":
             addr = insn["jump"]
             continue
-        if itype == "cjmp":
+        if mnemonic in ("je", "jz", "jne", "jnz"):
             taken = zero_flag if mnemonic in ("je", "jz") else not zero_flag
             addr = insn["jump"] if taken else addr + insn["size"]
             continue
-        if itype == "swi":  # syscall
+        if mnemonic == "syscall":
             expect(regs["eax"] == _EXPECTED_REGS_EAX_60, "fixture must exit via sys_exit (eax=60)")
             return regs["edi"] & 0xFF
-        if itype == "ret":
+        if mnemonic == "ret":
             return regs["edi"] & 0xFF
 
         operands = disasm[len(mnemonic) :].split(",")
