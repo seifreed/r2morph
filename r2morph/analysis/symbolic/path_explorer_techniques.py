@@ -12,7 +12,7 @@ else:
     try:
         import angr
         from angr.exploration_techniques import ExplorationTechnique
-    except ImportError:
+    except (ImportError, DeprecationWarning):
         angr = None
 
         class ExplorationTechnique:

@@ -24,7 +24,7 @@ try:
 
     ANGR_AVAILABLE = True
     _angr = _angr_mod
-except ImportError:
+except (ImportError, DeprecationWarning):
     ANGR_AVAILABLE = False
 
 angr = _angr

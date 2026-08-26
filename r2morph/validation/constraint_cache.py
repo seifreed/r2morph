@@ -15,7 +15,7 @@ try:
     import claripy
 
     ANGR_AVAILABLE = True
-except ImportError:
+except (ImportError, DeprecationWarning):
     ANGR_AVAILABLE = False
     angr = None
     claripy = None

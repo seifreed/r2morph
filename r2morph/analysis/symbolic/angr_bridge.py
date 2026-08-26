@@ -25,7 +25,7 @@ else:
         from angr.analyses import CFGFast
 
         ANGR_AVAILABLE = True
-    except ImportError:
+    except (ImportError, DeprecationWarning):
         ANGR_AVAILABLE = False
         angr = None
         Project = None

@@ -32,7 +32,7 @@ try:
     ANGR_AVAILABLE = True
     _angr = _angr_mod
     _claripy = _claripy_mod
-except ImportError:
+except (ImportError, DeprecationWarning):
     ANGR_AVAILABLE = False
 
 z3 = _z3
