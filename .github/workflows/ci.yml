@@ -111,7 +111,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget
+            git build-essential pkg-config wget cmake
 
       - name: Install radare2
         run: |
@@ -156,7 +156,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget
+            git build-essential pkg-config wget cmake
 
       - name: Install radare2
         run: |
@@ -193,7 +193,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget
+            git build-essential pkg-config wget cmake
 
       - name: Install radare2
         run: |
@@ -230,7 +230,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget
+            git build-essential pkg-config wget cmake
 
       - name: Install radare2
         run: |
@@ -274,7 +274,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            git build-essential pkg-config wget
+            git build-essential pkg-config wget cmake
 
       - name: Install system dependencies (macOS)
         if: runner.os == 'macOS'
