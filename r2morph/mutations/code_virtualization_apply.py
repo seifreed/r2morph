@@ -15,6 +15,8 @@ _UNWIND_SECTION_NAMES = frozenset(
         ".ARM.exidx",
         ".ARM.extab",
         ".gcc_except_table",
+        ".eh_frame",
+        ".eh_frame_hdr",
         ".pdata",
         ".xdata",
         "__unwind_info",
