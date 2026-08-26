@@ -1,7 +1,7 @@
 """Unit contracts for capability-specific virtualization diagnostics."""
 
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from r2morph.mutations.code_virtualization_apply import _unwind_metadata_name
+from r2morph.mutations.code_virtualization_apply import _dynamic_loader_metadata_name, _unwind_metadata_name
 from tests.utils.assertions import expect
 
 
@@ -34,6 +34,10 @@ def test_eh_frame_only_is_not_an_exception_table() -> None:
 
 def test_exception_table_is_rejected_before_virtualization() -> None:
     expect(_unwind_metadata_name(_SectionsBinary([".gcc_except_table"])) == ".gcc_except_table")
+
+
+def test_dynamic_loader_metadata_is_rejected_before_virtualization() -> None:
+    expect(_dynamic_loader_metadata_name(_SectionsBinary([".interp"])) == ".interp")
 
 
 def test_tls_instruction_reports_thread_local_storage_capability() -> None:
