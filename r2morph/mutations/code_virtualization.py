@@ -27,6 +27,7 @@ from typing import Any, cast
 
 import r2morph.core.randomness as random
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
+from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.base import MutationPass
 from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpArithMemOp,
@@ -297,6 +298,8 @@ class CodeVirtualizationPass(MutationPass):
         - vm_nesting_depth: VM layers per function; 2 wraps the region in a
           second, independently-keyed inner VM (default: 2, nested when a
           peelable register-op run exists, single-layer otherwise)
+        - reject_partial_virtualization: Reject a function when only a
+          straight-line region can be proven (default: False)
     """
 
     def __init__(self, config: dict[str, Any] | None = None):
@@ -304,6 +307,7 @@ class CodeVirtualizationPass(MutationPass):
         self.probability = self.config.get("probability", 0.3)
         self.max_functions = self.config.get("max_functions", 5)
         self.vm_nesting_depth = self.config.get("vm_nesting_depth", 2)
+        self.reject_partial_virtualization = self.config.get("reject_partial_virtualization", False)
         # Opt-in: also virtualize dispatch-shaped functions (a computed-goto loop
         # whose register-indirect jump becomes an ijmp re-entering the VM). Off by
         # default - the ordinary path never touches computed jumps.
@@ -555,6 +559,40 @@ class CodeVirtualizationPass(MutationPass):
             return None
         return next((op for op in ops if op.get("type") in _COMPUTED_JUMP_TYPES), None)
 
+    def _find_first_unvirtualizable_instruction(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
+        """Find the first instruction rejected by the whole-function classifier."""
+        try:
+            disasm = binary.r2.cmdj(f"pdfj @ {func['addr']}")
+        except (ValueError, OSError, BrokenPipeError, RuntimeError):
+            return None
+        if not isinstance(disasm, dict):
+            return None
+        for instruction in disasm.get("ops", []):
+            if not isinstance(instruction, dict):
+                continue
+            if instruction.get("type") in ("ret", "swi", "syscall"):
+                continue
+            if classification._classify(instruction, allow_computed_jump=self.virtualize_dispatch) is None:
+                return cast(dict[str, Any], instruction)
+        return None
+
+    @staticmethod
+    def _unsupported_instruction_diagnostic(instruction: dict[str, Any] | None) -> tuple[str, str]:
+        """Map a rejected instruction to a stable capability label and reason."""
+        if instruction is None:
+            return "provable_function_shape", "no supported virtualization shape was proven"
+        kind = str(instruction.get("type", ""))
+        opcode = str(instruction.get("opcode", "")).lower()
+        if kind in _COMPUTED_JUMP_TYPES:
+            return "computed_control_flow", "computed control flow is not enabled for this pass"
+        if kind in ("call", "rcall", "ucall") or opcode.startswith("call"):
+            return "calls", "call semantics were not proven for whole-function virtualization"
+        if "[" in opcode:
+            return "memory_operands", "memory operand semantics were not proven for whole-function virtualization"
+        if any(token in opcode for token in ("xmm", "ymm", "zmm", "st0", "st1")):
+            return "floating_point_and_simd", "floating-point or SIMD semantics were not proven"
+        return "instruction_semantics", "instruction semantics were not proven for whole-function virtualization"
+
     @staticmethod
     def _unsupported_record(
         func: dict[str, Any],
@@ -588,23 +626,63 @@ class CodeVirtualizationPass(MutationPass):
         self,
         records: list[dict[str, Any]],
         func: dict[str, Any],
-        instruction_address: int,
+        instruction: dict[str, Any] | None,
         enabled: bool,
     ) -> int:
         """Record a warning when only a straight-line region was transformed."""
         if not enabled:
             return 0
+        capability, reason = self._unsupported_instruction_diagnostic(instruction)
         self._record_diagnostic(
             records,
             func,
-            {"addr": instruction_address},
+            instruction,
             (
                 "warning",
-                "whole_function_virtualization",
-                "only a straight-line region was proven; remaining instructions stayed native",
+                capability,
+                f"only a straight-line region was proven; {reason}",
             ),
         )
         return 1
+
+    def _record_unsupported_function(
+        self,
+        records: list[dict[str, Any]],
+        func: dict[str, Any],
+        instruction: dict[str, Any] | None,
+        reason_prefix: str = "",
+    ) -> None:
+        """Record one bounded rejection with the best available capability."""
+        capability, reason = self._unsupported_instruction_diagnostic(instruction)
+        self._record_diagnostic(
+            records,
+            func,
+            instruction,
+            ("error", capability, f"{reason_prefix}{reason}"),
+        )
+
+    def _virtualize_fallback_run(
+        self,
+        binary: Any,
+        func: dict[str, Any],
+        unsupported_instruction: dict[str, Any] | None,
+        partial_records: list[dict[str, Any]],
+    ) -> tuple[dict[str, Any] | None, int]:
+        """Virtualize one proven straight-line run, if a function has one."""
+        try:
+            blocks = binary.get_basic_blocks(func["addr"])
+        except Exception as exc:
+            logger.debug("Failed to get blocks for 0x%x: %s", func["addr"], exc)
+            return None, 0
+        for block in blocks:
+            run = self._find_run(binary, block)
+            if run is None:
+                continue
+            result = self._virtualize_run(binary, run)
+            if result is not None:
+                partial = self._record_partial_virtualization(partial_records, func, unsupported_instruction, True)
+                return result, partial
+        return None, 0
 
     def _build_region_payload(
         self, binary: Any, region: Any, rng: random.Random, use_nesting: bool
@@ -730,32 +808,27 @@ class CodeVirtualizationPass(MutationPass):
                 virtualized += 1
                 continue
 
-            try:
-                blocks = binary.get_basic_blocks(func["addr"])
-            except Exception as exc:
-                logger.debug("Failed to get blocks for 0x%x: %s", func["addr"], exc)
+            unsupported_instruction = self._find_first_unvirtualizable_instruction(binary, func)
+            if self.reject_partial_virtualization:
+                skipped += 1
+                unsupported_total += 1
+                self._record_unsupported_function(
+                    unsupported,
+                    func,
+                    unsupported_instruction,
+                    "whole-function virtualization was not proven; partial virtualization is disabled: ",
+                )
                 continue
 
-            for block in blocks:
-                run = self._find_run(binary, block)
-                if run is None:
-                    continue
-                result = self._virtualize_run(binary, run)
-                if result is None:
-                    continue
+            result, partial_count = self._virtualize_fallback_run(binary, func, unsupported_instruction, partial)
+            if result is not None:
                 total_insns += result["instructions"]
                 total_bytecode += result["bytecode"]
                 virtualized += 1
-                partial_total += self._record_partial_virtualization(partial, func, run.start, region_result is None)
-                break
-            else:
-                unsupported_total += 1
-                self._record_diagnostic(
-                    unsupported,
-                    func,
-                    None,
-                    ("error", "provable_function_shape", "no supported virtualization shape was proven"),
-                )
+                partial_total += partial_count
+                continue
+            unsupported_total += 1
+            self._record_unsupported_function(unsupported, func, unsupported_instruction)
 
         return {
             "functions_virtualized": virtualized,

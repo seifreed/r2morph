@@ -30,8 +30,43 @@ def test_straight_line_fallback_reports_partial_function_warning(tmp_path: Path)
     expect(
         any(
             record["severity"] == "warning"
-            and record["capability"] == "whole_function_virtualization"
+            and record["capability"]
+            in {
+                "calls",
+                "memory_operands",
+                "instruction_semantics",
+                "provable_function_shape",
+            }
             and record["instruction_address"] > 0
+            and "straight-line region was proven" in record["reason"]
             for record in stats["partial_virtualization"]
+        )
+    )
+
+
+def test_strict_mode_rejects_partial_function_without_mutation(tmp_path: Path) -> None:
+    """Strict mode leaves a real partially-proven function untouched."""
+    expect(_FIXTURE.exists(), f"fixture missing: {_FIXTURE}")
+    mutated = tmp_path / "strict_partial_rejection"
+    shutil.copy(_FIXTURE, mutated)
+
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(
+            config={"probability": 1.0, "seed": 20260802, "reject_partial_virtualization": True}
+        ).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(
+        stats["functions_virtualized"] == 0
+        and stats["partial_virtualization_total"] == 0
+        and any(
+            record["severity"] == "error"
+            and record["instruction_address"] > 0
+            and "partial virtualization is disabled" in record["reason"]
+            for record in stats["unsupported_functions"]
         )
     )
