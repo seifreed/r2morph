@@ -34,6 +34,12 @@ The machine-readable format and evidence paths are in
 [`support-matrix.json`](support-matrix.json). A pass cannot be promoted by a
 single fixture or a static disassembly result alone.
 
+The `maturity` section assigns every pass an explicit profile covering formats,
+architectures, preconditions, invariants, affected instructions, false-positive
+risk, unit and end-to-end tests, performance, decompiler effectiveness, and
+pass-composition compatibility. Entries marked as not measured are deliberate
+release gaps, not implied support.
+
 The selection contract exposes only five short aliases through the CLI:
 `nop`, `substitute`, `register`, `expand`, and `block`. The remaining entries
 are engine-only capabilities until their configuration and end-to-end workflow

@@ -49,3 +49,17 @@ def test_support_matrix_partitions_cli_and_engine_only_passes() -> None:
         and set(cli_aliases) == {"nop", "substitute", "register", "expand", "block"}
         and not (set(cli_aliases.values()) & engine_only)
     )
+
+
+def test_support_matrix_declares_maturity_profile_for_each_pass() -> None:
+    matrix = json.loads((_ROOT / "docs" / "support-matrix.json").read_text(encoding="utf-8"))
+    pass_names = {entry["name"] for entry in matrix["passes"]}
+    maturity = matrix["maturity"]
+
+    expect(
+        set(maturity["pass_profiles"]) == pass_names
+        and all(
+            set(maturity["profiles"][profile]) == set(maturity["required_fields"])
+            for profile in set(maturity["pass_profiles"].values())
+        )
+    )

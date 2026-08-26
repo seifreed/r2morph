@@ -174,6 +174,86 @@
       "evidence": ["README.md", "tests/integration"]
     }
   ],
+  "maturity": {
+    "required_fields": [
+      "formats",
+      "architectures",
+      "preconditions",
+      "invariants",
+      "instructions_affected",
+      "false_positive_risk",
+      "unit_tests",
+      "e2e_tests",
+      "performance",
+      "decompiler_effectiveness",
+      "compatibility"
+    ],
+    "profiles": {
+      "tier-1-native": {
+        "formats": ["ELF"],
+        "architectures": ["x86-64"],
+        "preconditions": "Supported Linux ELF x86-64 input with a safe candidate region.",
+        "invariants": "Loader validity and declared runtime observables remain unchanged.",
+        "instructions_affected": "Pass-specific x86-64 rules exercised by native fixtures.",
+        "false_positive_risk": "Candidate analysis and post-mutation validation reduce but do not eliminate false positives.",
+        "unit_tests": ["tests/unit"],
+        "e2e_tests": ["tests/product_smoke", "tests/integration"],
+        "performance": "Not recorded per pass in the public corpus.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Pass combinations are not exhaustively covered."
+      },
+      "experimental": {
+        "formats": ["ELF"],
+        "architectures": ["x86-64"],
+        "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
+        "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
+        "instructions_affected": "Not exhaustively catalogued.",
+        "false_positive_risk": "Not independently measured.",
+        "unit_tests": ["tests/unit"],
+        "e2e_tests": ["tests/integration"],
+        "performance": "Not measured per pass.",
+        "decompiler_effectiveness": "Not independently measured.",
+        "compatibility": "Composition with other passes is not contractually supported."
+      },
+      "code-virtualization": {
+        "formats": ["ELF"],
+        "architectures": ["x86-64"],
+        "preconditions": "Whole-function semantics must be proven; unsupported capabilities are rejected before mutation.",
+        "invariants": "VM output retains loader validity and must match emulator and bounded runtime observables.",
+        "instructions_affected": "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions produce diagnostics.",
+        "false_positive_risk": "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.",
+        "unit_tests": ["tests/unit/test_code_virtualization_diagnostics.py"],
+        "e2e_tests": ["tests/integration/test_code_virtualization_real.py", "tests/integration/test_protection_maturity_baseline.py"],
+        "performance": "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.",
+        "decompiler_effectiveness": "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.",
+        "compatibility": "Only Linux ELF x86-64 functions satisfying the preconditions are in scope."
+      }
+    },
+    "pass_profiles": {
+      "nop": "tier-1-native",
+      "substitute": "tier-1-native",
+      "register": "tier-1-native",
+      "instruction-expansion": "experimental",
+      "block-reordering": "experimental",
+      "dead-code-injection": "experimental",
+      "control-flow-flattening": "experimental",
+      "opaque-predicates": "experimental",
+      "code-virtualization": "code-virtualization",
+      "anti-disassembly": "experimental",
+      "data-flow-mutation": "experimental",
+      "short-jump-patching": "experimental",
+      "constant-unfolding": "experimental",
+      "code-mobility": "experimental",
+      "function-outlining": "experimental",
+      "api-hashing": "experimental",
+      "import-obfuscation": "experimental",
+      "self-modifying-code": "experimental",
+      "stack-strings": "experimental",
+      "string-obfuscation": "experimental",
+      "pattern-substitution": "experimental",
+      "polymorphic-engine": "experimental"
+    }
+  },
   "selection": {
     "cli_aliases": {
       "nop": "nop",

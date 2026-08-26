@@ -36,6 +36,17 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
                 continue
             if not (ROOT / evidence).exists():
                 raise ValueError(f"missing evidence path: {evidence}")
+    maturity = matrix["maturity"]
+    profiles = maturity["profiles"]
+    required_fields = maturity["required_fields"]
+    pass_profiles = maturity["pass_profiles"]
+    pass_names = {entry["name"] for entry in matrix["passes"]}
+    if set(pass_profiles) != pass_names:
+        raise ValueError("maturity profile map must cover every pass exactly")
+    for profile_name in set(pass_profiles.values()):
+        profile = profiles[profile_name]
+        if set(profile) != set(required_fields):
+            raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
 
 
 def main() -> int:
