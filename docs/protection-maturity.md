@@ -34,8 +34,9 @@ ledger because the MCP adversary is an external analysis service rather than a
 runtime dependency of the harness. The expanded representative evidence is in
 [`docs/protection-ida-tierb.json`](protection-ida-tierb.json).
 The corpus harness now requires valid emulator completion and compares native
-runtime status, return code, and bounded stdout/stderr digests for every seed;
-stream capture hashes incrementally and retains only a 32-byte preview.
+runtime status, return code, bounded stdout/stderr digests, and created-file
+manifests for every seed; stream capture and file hashing are incremental and
+retain only bounded summaries.
 
 ## 3. Semantic correctness passed/failed/skipped
 

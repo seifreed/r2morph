@@ -7,6 +7,7 @@ from pathlib import Path
 from scripts.protection_maturity_baseline import (
     _PREVIEW_BYTES,
     _ArtifactAccumulator,
+    _runtime_artifacts,
     _runtime_observables_equal,
     _semantic_run_matches,
     discover_executables,
@@ -32,6 +33,40 @@ def test_runtime_observables_detect_changed_stdout_digest() -> None:
         "stderr": {"sha256": "empty", "size": 0},
     }
     changed = {**baseline, "stdout": {"sha256": "different", "size": 1}}
+
+    expect(not (_runtime_observables_equal(baseline, changed) is not False))
+
+
+def test_runtime_artifacts_records_files_created_by_real_process(tmp_path: Path) -> None:
+    program = tmp_path / "program"
+    program.write_text(
+        "#!/bin/sh\nprintf created > created.txt\n",
+        encoding="utf-8",
+    )
+    program.chmod(0o700)
+
+    result = _runtime_artifacts(program)
+
+    expect(
+        result["created_files"]
+        == {
+            "created.txt": {
+                "sha256": "406effb1e9c59672c66a598c2b21e331b23b16c54024e96d6df3e7c173549791",
+                "size": 7,
+            }
+        }
+    )
+
+
+def test_runtime_observables_detect_changed_created_file() -> None:
+    baseline = {
+        "status": "completed",
+        "return_code": 0,
+        "stdout": {"sha256": "empty", "size": 0},
+        "stderr": {"sha256": "empty", "size": 0},
+        "created_files": {"result.txt": {"sha256": "same", "size": 1}},
+    }
+    changed = {**baseline, "created_files": {"result.txt": {"sha256": "different", "size": 1}}}
 
     expect(not (_runtime_observables_equal(baseline, changed) is not False))
 

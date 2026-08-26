@@ -4,11 +4,10 @@
 from __future__ import annotations
 
 import argparse
-import contextlib
+import asyncio
 import hashlib
 import json
-import os
-import select
+import shlex
 import shutil
 import struct
 import tempfile
@@ -27,7 +26,6 @@ _EM_X86_64 = 62
 _ELFCLASS64 = 2
 _BITS_64 = 64
 _ELF_IDENT_HEADER_BYTES = 20
-_SIGKILL = 9
 _RUNTIME_TIMEOUT_SECONDS = 5.0
 _PREVIEW_BYTES = 32
 
@@ -56,7 +54,11 @@ class _ArtifactAccumulator:
 
 
 def sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _digest_artifact(value: bytes) -> dict[str, object]:
@@ -65,85 +67,76 @@ def _digest_artifact(value: bytes) -> dict[str, object]:
     return accumulator.result()
 
 
-def _prepare_runtime_path(path: Path) -> tuple[Path, Path | None]:
-    if os.access(path, os.X_OK):
-        return path, None
-    descriptor, staged_name = tempfile.mkstemp(prefix="r2morph-runtime-")
-    os.close(descriptor)
-    staged = Path(staged_name)
-    shutil.copyfile(path, staged)
-    staged.chmod(0o700)
-    return staged, staged
+def _snapshot_created_files(directory: Path) -> dict[str, dict[str, object]]:
+    """Return bounded hashes and sizes for files created in a runtime directory."""
+    files: dict[str, dict[str, object]] = {}
+    for path in sorted(directory.rglob("*")):
+        if path.is_file() and path.name != "program":
+            files[path.relative_to(directory).as_posix()] = {
+                "sha256": sha256(path),
+                "size": path.stat().st_size,
+            }
+    return files
 
 
-def _runtime_artifacts(path: Path) -> dict[str, object]:
-    """Run a synthetic fixture natively and retain bounded, reproducible output."""
-    started = time.perf_counter()
-    runtime_path, staged_path = _prepare_runtime_path(path)
-    stdout_read, stdout_write = os.pipe()
-    stderr_read, stderr_write = os.pipe()
+def _runtime_command(path: Path) -> list[str]:
+    with path.open("rb") as handle:
+        first_line = handle.readline(4096)
+    if not first_line.startswith(b"#!"):
+        return [str(path)]
+    interpreter = shlex.split(first_line[2:].decode("utf-8", errors="replace"))
+    return [*interpreter, str(path)] if interpreter else [str(path)]
+
+
+async def _capture_runtime_stream(stream: asyncio.StreamReader) -> dict[str, object]:
+    accumulator = _ArtifactAccumulator()
+    while chunk := await stream.read(4096):
+        accumulator.update(chunk)
+    return accumulator.result()
+
+
+async def _run_runtime(command: list[str], workdir: Path) -> dict[str, object]:
     try:
-        pid = os.posix_spawn(
-            str(runtime_path),
-            [str(runtime_path)],
-            os.environ.copy(),
-            file_actions=[
-                (os.POSIX_SPAWN_DUP2, stdout_write, 1),
-                (os.POSIX_SPAWN_DUP2, stderr_write, 2),
-                (os.POSIX_SPAWN_CLOSE, stdout_read),
-                (os.POSIX_SPAWN_CLOSE, stderr_read),
-                (os.POSIX_SPAWN_CLOSE, stdout_write),
-                (os.POSIX_SPAWN_CLOSE, stderr_write),
-            ],
+        process = await asyncio.create_subprocess_exec(
+            *command,
+            cwd=workdir,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
     except OSError as error:
-        for descriptor in (stdout_read, stdout_write, stderr_read, stderr_write):
-            os.close(descriptor)
-        if staged_path is not None:
-            staged_path.unlink()
         return {
             "status": "error",
             "error_type": type(error).__name__,
-            "duration_seconds": time.perf_counter() - started,
             "stdout": _digest_artifact(b""),
             "stderr": _digest_artifact(b""),
         }
-    os.close(stdout_write)
-    os.close(stderr_write)
+    if process.stdout is None or process.stderr is None:
+        raise RuntimeError("Runtime process did not expose captured streams")
+    stdout_task = asyncio.create_task(_capture_runtime_stream(process.stdout))
+    stderr_task = asyncio.create_task(_capture_runtime_stream(process.stderr))
+    try:
+        return_code = await asyncio.wait_for(process.wait(), _RUNTIME_TIMEOUT_SECONDS)
+    except TimeoutError:
+        process.kill()
+        await process.wait()
+        await asyncio.gather(stdout_task, stderr_task)
+        return {"status": "timeout", "stdout": stdout_task.result(), "stderr": stderr_task.result()}
+    stdout, stderr = await asyncio.gather(stdout_task, stderr_task)
+    return {"status": "completed", "return_code": return_code, "stdout": stdout, "stderr": stderr}
 
-    streams = {stdout_read: bytearray(), stderr_read: bytearray()}
-    captured = {stdout_read: _ArtifactAccumulator(), stderr_read: _ArtifactAccumulator()}
-    timed_out = False
-    deadline = time.perf_counter() + _RUNTIME_TIMEOUT_SECONDS
-    while streams:
-        ready, _, _ = select.select(list(streams), [], [], max(0.0, deadline - time.perf_counter()))
-        if not ready:
-            timed_out = True
-            with contextlib.suppress(ProcessLookupError):
-                os.kill(pid, _SIGKILL)
-            ready = list(streams)
-        for descriptor in ready:
-            chunk = os.read(descriptor, 4096)
-            if chunk:
-                captured[descriptor].update(chunk)
-            else:
-                os.close(descriptor)
-                del streams[descriptor]
-        if timed_out and streams:
-            _, _, _ = select.select(list(streams), [], [], 0.1)
 
-    wait_status = os.waitpid(pid, 0)[1]
-    result: dict[str, object] = {
-        "status": "timeout" if timed_out else "completed",
-        "duration_seconds": time.perf_counter() - started,
-        "stdout": captured[stdout_read].result(),
-        "stderr": captured[stderr_read].result(),
-    }
-    if not timed_out:
-        result["return_code"] = os.waitstatus_to_exitcode(wait_status)
-    if staged_path is not None:
-        staged_path.unlink()
-    return result
+def _runtime_artifacts(path: Path) -> dict[str, object]:
+    """Run a fixture in isolation and retain bounded, reproducible observables."""
+    started = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix="r2morph-runtime-") as temporary:
+        workdir = Path(temporary)
+        runtime_path = workdir / "program"
+        shutil.copyfile(path, runtime_path)
+        runtime_path.chmod(0o700)
+        result = asyncio.run(_run_runtime(_runtime_command(runtime_path), workdir))
+        result["duration_seconds"] = time.perf_counter() - started
+        result["created_files"] = _snapshot_created_files(workdir)
+        return result
 
 
 def _command_count(binary: Binary, command: str) -> int:
@@ -241,7 +234,7 @@ def _runtime_observables_equal(expected: object, actual: object) -> bool:
             return False
         if expected_digest.get("size") != actual_digest.get("size"):
             return False
-    return True
+    return expected.get("created_files") == actual.get("created_files")
 
 
 def _semantic_run_matches(baseline: object, baseline_runtime: object, run: object) -> bool:
