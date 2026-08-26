@@ -23,7 +23,6 @@ _EXPECTED_REGS_EAX_60 = 60
 
 _JUMPCHAIN = Path("fixtures/dataset/elf_jumpchain_x86_64")
 _BLOCKSWAP = Path("fixtures/dataset/elf_blockswap_x86_64")
-_ENTRY = 0x1000
 _MAX_STEPS = 64
 
 
@@ -79,6 +78,10 @@ def _interpret(binary: Binary, entry: int, edi_in: int) -> int:
     raise AssertionError(f"interpreter exceeded step budget (possible bad control flow): {visited[-8:]}")
 
 
+def _entry(binary: Binary) -> int:
+    return int(binary.get_functions()[0]["addr"])
+
+
 def _reorder(fixture: Path, tmp_path: Path, seed: int) -> tuple[Binary, bool]:
     temp = tmp_path / f"{fixture.name}_{seed}"
     shutil.copy(fixture, temp)
@@ -95,7 +98,7 @@ def _reference_exit(fixture: Path, tmp_path: Path, edi_in: int) -> int:
     shutil.copy(fixture, temp)
     with Binary(temp, writable=True) as binary:
         binary.analyze()
-        return _interpret(binary, _ENTRY, edi_in)
+        return _interpret(binary, _entry(binary), edi_in)
 
 
 def _assert_semantics_preserved(fixture: Path, tmp_path: Path, edi_in: int) -> int:
@@ -109,7 +112,7 @@ def _assert_semantics_preserved(fixture: Path, tmp_path: Path, edi_in: int) -> i
     for seed in range(0, 25):
         binary, reordered = _reorder(fixture, tmp_path, seed)
         try:
-            got = _interpret(binary, _ENTRY, edi_in)
+            got = _interpret(binary, _entry(binary), edi_in)
         finally:
             binary.close()
         reordered_count += int(reordered)
