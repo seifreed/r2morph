@@ -12,6 +12,7 @@ from r2morph.mutations.code_virtualization_engine import (
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _KEY_QWORD_SLOT,
+    _XMM_SAVE_OFFSET,
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _indexed_address_asm,
@@ -163,6 +164,7 @@ def _live_junk_asm(rng: random.Random, index: int) -> str:
 # bridge loads from the program's frame slots before a native call, and spills
 # back after to capture the callee's results.
 _CALL_ARG_REGISTERS: tuple[str, ...] = ("rdi", "rsi", "rdx", "rcx", "r8", "r9", "rax")
+_XMM_REGISTERS = tuple(range(16))
 
 
 def _call_bridge_asm(index: int, slot: tuple[int, ...], target_asm: str, advance: int) -> str:
@@ -184,13 +186,21 @@ def _call_bridge_asm(index: int, slot: tuple[int, ...], target_asm: str, advance
     off = {name: slot[GP_REGISTERS.index(name)] * 8 for name in _CALL_ARG_REGISTERS}
     loads = "".join(f"  mov {name}, qword ptr [rsp+{off[name]}]\n" for name in _CALL_ARG_REGISTERS)
     spills = "".join(f"  mov qword ptr [rsp+{off[name]}], {name}\n" for name in _CALL_ARG_REGISTERS)
+    xmm_loads = "".join(
+        f"  movups xmm{index}, xmmword ptr [rsp+{_XMM_SAVE_OFFSET + index * 16}]\n" for index in _XMM_REGISTERS
+    )
+    xmm_spills = "".join(
+        f"  movups xmmword ptr [rsp+{_XMM_SAVE_OFFSET + index * 16}], xmm{index}\n" for index in _XMM_REGISTERS
+    )
     return (
         target_asm
         + "  mov r12, rsp\n  mov rbx, rsi\n"
         + loads
+        + xmm_loads
         + f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n  xor rsp, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
         + f"call_resume_{index}:\n  mov rsp, r12\n"
+        + xmm_spills
         + spills
         + f"  mov rsi, rbx\n  add rsi, {advance}\n  jmp vm_dispatch\n"
     )

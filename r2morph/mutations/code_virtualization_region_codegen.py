@@ -70,6 +70,8 @@ from r2morph.mutations.code_virtualization_region_regcipher import cipher_regist
 
 logger = logging.getLogger(__name__)
 
+_XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "vcall"})
+
 
 def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # The operand cipher key is the runtime self-checksum, not a build constant: the
@@ -95,9 +97,11 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     save_order = gp_save_order(scheme.junk_seed ^ 0x51A7E)
     frame_size = frame_size_for_seed(scheme.junk_seed)
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
-    # Only regions that move scalar FP need the 16 XMM registers preserved in the
-    # frame; for everything else the spill/reload is pure overhead and is omitted.
-    has_fp = any(item[0] in ("fpload", "fpstore") for item in region.instructions)
+    # Preserve XMM state for every FP operation and every native-call bridge. Calls
+    # need the saved vector arguments and must write back caller-clobbered results.
+    has_fp = any(
+        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", *_XMM_CALL_KINDS) for item in region.instructions
+    )
     # Zero the virtual operand stack pointer; micro-op arithmetic folds through it.
     lines = [f"vm_entry:\n  sub rsp, {frame_size}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"]
     for index in save_order:
