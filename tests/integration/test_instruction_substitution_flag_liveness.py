@@ -39,9 +39,10 @@ def test_flag_live_zeroing_is_marked_live(tmp_path: Path):
     shutil.copy(_FIXTURE, temp)
     with Binary(temp, writable=True) as binary:
         binary.analyze()
+        function_disasm = binary.get_function_disasm(binary.get_functions()[0]["addr"])
         expect(
             not (_candidate_is_flag_live(binary) is not True),
-            f"function disassembly did not expose live flags: {binary.get_function_disasm(_CANDIDATE_ADDR)!r}",
+            f"function disassembly did not expose live flags: {function_disasm!r}",
         )
 
 

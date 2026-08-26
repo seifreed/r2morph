@@ -43,7 +43,9 @@ def _interpret(binary: Binary, entry: int, edi_in: int) -> int:
     regs = {"eax": 0, "ecx": 0, "edx": 0, "edi": edi_in & 0xFFFFFFFF}
     zero_flag = False
     addr = entry
+    visited: list[int] = []
     for _ in range(_MAX_STEPS):
+        visited.append(addr)
         insn = binary.r2.cmdj(f"pdj 1 @ 0x{addr:x}")[0]
         disasm = insn["disasm"].split(";")[0].strip()
         mnemonic = disasm.split()[0]
@@ -74,7 +76,7 @@ def _interpret(binary: Binary, entry: int, edi_in: int) -> int:
             zero_flag = regs[dest] == (_operand_value(operands[1], regs) & 0xFFFFFFFF)
         addr += instruction_size
 
-    raise AssertionError("interpreter exceeded step budget (possible bad control flow)")
+    raise AssertionError(f"interpreter exceeded step budget (possible bad control flow): {visited[-8:]}")
 
 
 def _reorder(fixture: Path, tmp_path: Path, seed: int) -> tuple[Binary, bool]:

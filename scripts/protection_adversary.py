@@ -31,7 +31,7 @@ def _dynamic_recovery(path: Path) -> dict[str, object]:
     trace = trace_execution(path)
     raw_jumps = trace.get("indirect_jumps", [])
     if not isinstance(raw_jumps, list):
-        return {"status": trace.get("status"), "recovered": False}
+        return {"status": trace.get("status"), "error": trace.get("error"), "recovered": False}
 
     correlated: list[dict[str, int]] = []
     for jump in raw_jumps[:_MAX_DYNAMIC_EVENTS]:
@@ -50,6 +50,7 @@ def _dynamic_recovery(path: Path) -> dict[str, object]:
     targets = [event["target"] for event in correlated]
     return {
         "status": trace.get("status"),
+        "error": trace.get("error"),
         "recovered": bool(raw_position_matches),
         "correlated_dispatch_count": len(correlated),
         "raw_position_match_count": len(raw_position_matches),
