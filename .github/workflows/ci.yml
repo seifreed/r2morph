@@ -42,6 +42,12 @@ jobs:
       - name: Validate release contract
         run: python scripts/check_release_contract.py
 
+      - name: Run Bandit
+        run: bandit -r r2morph -c pyproject.toml
+
+      - name: Run pip-audit
+        run: pip-audit
+
   typecheck:
     runs-on: ubuntu-latest
     steps:
