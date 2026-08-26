@@ -561,6 +561,7 @@ class CodeVirtualizationPass(MutationPass):
         instruction: dict[str, Any] | None,
         capability: str,
         reason: str,
+        severity: str,
     ) -> dict[str, Any]:
         """Build a stable, actionable record for a rejected function."""
         return {
@@ -568,19 +569,42 @@ class CodeVirtualizationPass(MutationPass):
             "instruction_address": int((instruction or {}).get("addr", func.get("addr", 0))),
             "capability": capability,
             "reason": reason,
+            "severity": severity,
         }
 
-    def _record_unsupported(
+    def _record_diagnostic(
         self,
         records: list[dict[str, Any]],
         func: dict[str, Any],
         instruction: dict[str, Any] | None,
-        capability: str,
-        reason: str,
+        diagnostic: tuple[str, str, str],
     ) -> None:
         """Keep actionable rejection evidence bounded per pass run."""
+        severity, capability, reason = diagnostic
         if len(records) < _MAX_UNSUPPORTED_RECORDS:
-            records.append(self._unsupported_record(func, instruction, capability, reason))
+            records.append(self._unsupported_record(func, instruction, capability, reason, severity))
+
+    def _record_partial_virtualization(
+        self,
+        records: list[dict[str, Any]],
+        func: dict[str, Any],
+        instruction_address: int,
+        enabled: bool,
+    ) -> int:
+        """Record a warning when only a straight-line region was transformed."""
+        if not enabled:
+            return 0
+        self._record_diagnostic(
+            records,
+            func,
+            {"addr": instruction_address},
+            (
+                "warning",
+                "whole_function_virtualization",
+                "only a straight-line region was proven; remaining instructions stayed native",
+            ),
+        )
+        return 1
 
     def _build_region_payload(
         self, binary: Any, region: Any, rng: random.Random, use_nesting: bool
@@ -667,12 +691,10 @@ class CodeVirtualizationPass(MutationPass):
         self._ensure_analyzed(binary)
         logger.info("Applying code virtualization")
 
-        virtualized = 0
-        skipped = 0
-        total_insns = 0
-        total_bytecode = 0
+        virtualized, skipped, total_insns, total_bytecode = 0, 0, 0, 0
         unsupported: list[dict[str, Any]] = []
-        unsupported_total = 0
+        partial: list[dict[str, Any]] = []
+        unsupported_total = partial_total = 0
 
         for func in binary.get_functions():
             if virtualized >= self.max_functions:
@@ -683,12 +705,11 @@ class CodeVirtualizationPass(MutationPass):
             if not self.virtualize_dispatch and computed_jump is not None:
                 skipped += 1
                 unsupported_total += 1
-                self._record_unsupported(
+                self._record_diagnostic(
                     unsupported,
                     func,
                     computed_jump,
-                    "computed_control_flow",
-                    "computed-jump virtualization is disabled",
+                    ("error", "computed_control_flow", "computed-jump virtualization is disabled"),
                 )
                 continue
             if random.random() > self.probability:
@@ -725,15 +746,15 @@ class CodeVirtualizationPass(MutationPass):
                 total_insns += result["instructions"]
                 total_bytecode += result["bytecode"]
                 virtualized += 1
+                partial_total += self._record_partial_virtualization(partial, func, run.start, region_result is None)
                 break
             else:
                 unsupported_total += 1
-                self._record_unsupported(
+                self._record_diagnostic(
                     unsupported,
                     func,
                     None,
-                    "provable_function_shape",
-                    "no supported virtualization shape was proven",
+                    ("error", "provable_function_shape", "no supported virtualization shape was proven"),
                 )
 
         return {
@@ -743,4 +764,6 @@ class CodeVirtualizationPass(MutationPass):
             "total_bytecode_bytes": total_bytecode,
             "unsupported_functions": unsupported,
             "unsupported_functions_total": unsupported_total,
+            "partial_virtualization": partial,
+            "partial_virtualization_total": partial_total,
         }
