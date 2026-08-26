@@ -47,13 +47,14 @@ def _interpret(binary: Binary, entry: int, edi_in: int) -> int:
         insn = binary.r2.cmdj(f"pdj 1 @ 0x{addr:x}")[0]
         disasm = insn["disasm"].split(";")[0].strip()
         mnemonic = disasm.split()[0]
+        instruction_size = len(bytes.fromhex(insn["bytes"])) if insn.get("bytes") else insn["size"]
 
         if mnemonic == "jmp":
             addr = insn["jump"]
             continue
         if mnemonic in ("je", "jz", "jne", "jnz"):
             taken = zero_flag if mnemonic in ("je", "jz") else not zero_flag
-            addr = insn["jump"] if taken else addr + insn["size"]
+            addr = insn["jump"] if taken else addr + instruction_size
             continue
         if mnemonic == "syscall":
             expect(regs["eax"] == _EXPECTED_REGS_EAX_60, "fixture must exit via sys_exit (eax=60)")
@@ -71,7 +72,7 @@ def _interpret(binary: Binary, entry: int, edi_in: int) -> int:
             regs[dest] = (regs[dest] + _operand_value(operands[1], regs)) & 0xFFFFFFFF
         elif mnemonic == "cmp":
             zero_flag = regs[dest] == (_operand_value(operands[1], regs) & 0xFFFFFFFF)
-        addr += insn["size"]
+        addr += instruction_size
 
     raise AssertionError("interpreter exceeded step budget (possible bad control flow)")
 
