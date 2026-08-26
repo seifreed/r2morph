@@ -8,7 +8,6 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_VERSION = "0.4.0-alpha.1"
 
 
 def _load_matrix() -> dict[str, object]:
@@ -16,15 +15,18 @@ def _load_matrix() -> dict[str, object]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def _check_version() -> None:
+def _check_version() -> str:
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
     package_version = project["project"]["version"]
     init_text = (ROOT / "r2morph" / "__init__.py").read_text(encoding="utf-8")
-    if package_version != EXPECTED_VERSION or f'__version__ = "{EXPECTED_VERSION}"' not in init_text:
-        raise ValueError("package and public version must be 0.4.0-alpha.1")
+    if f'__version__ = "{package_version}"' not in init_text:
+        raise ValueError("package and public version must match")
+    return package_version
 
 
-def _check_matrix(matrix: dict[str, object]) -> None:
+def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
+    if matrix["release"] != package_version:
+        raise ValueError("support matrix release must match package version")
     target = matrix["official_target"]
     if target != {"os": "linux", "format": "ELF", "architecture": "x86-64", "status": "supported"}:
         raise ValueError("official target must be Linux ELF x86-64")
@@ -38,12 +40,12 @@ def _check_matrix(matrix: dict[str, object]) -> None:
 
 def main() -> int:
     try:
-        _check_version()
-        _check_matrix(_load_matrix())
+        package_version = _check_version()
+        _check_matrix(_load_matrix(), package_version)
     except (KeyError, TypeError, ValueError, json.JSONDecodeError, tomllib.TOMLDecodeError) as exc:
         print(f"release contract failed: {exc}", file=sys.stderr)
         return 1
-    print(f"release contract valid: {EXPECTED_VERSION}")
+    print(f"release contract valid: {package_version}")
     return 0
 
 

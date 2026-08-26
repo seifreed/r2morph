@@ -57,6 +57,7 @@
   ],
   "evidence": {
     "compatibility_corpus": "https://github.com/seifreed/r2morph-corpus",
+    "generated_inventory": "docs/protection-maturity-corpus.json",
     "maturity_report": "docs/protection-maturity.md",
     "ci_workflow": ".github/workflows/ci.yml"
   }
