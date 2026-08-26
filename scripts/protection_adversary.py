@@ -53,7 +53,7 @@ def _dynamic_recovery(path: Path) -> dict[str, object]:
         "recovered": bool(raw_position_matches),
         "correlated_dispatch_count": len(correlated),
         "raw_position_match_count": len(raw_position_matches),
-        "state_encoding_detected": bool(correlated) and not raw_position_matches,
+        "state_encoding_detected": bool(correlated) and len(raw_position_matches) < len(correlated),
         "unique_handler_targets": len(set(targets)),
         "unique_bytecode_positions": len(set(positions)),
         "observed_positive_position_deltas": sorted(positive_deltas),
