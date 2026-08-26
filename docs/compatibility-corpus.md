@@ -12,10 +12,11 @@ dispatch, loops, recursion, pointers, TLS, and C++ exceptions.
 
 Each build record includes the source digest, compiler command, toolchain
 version, status, omission reason when applicable, compiler stdout/stderr
-digests, elapsed time, and output size/hash. Raw sample bytes and unbounded
-process output are not stored in reports. The local maturity runner adds the
-transformation evidence: `pass_name`, `status` (`applied`, `omitted`, or
-`error`), and a bounded `reason` when the selected pass cannot transform the
+digests, elapsed time, and output size/hash. The public CI then transforms and
+compares every built record, retaining one bounded matrix record per sample.
+Raw sample bytes and unbounded process output are not stored in reports. Each
+transformation record includes the pass name, status (`applied`, `omitted`, or
+`error`), and a bounded reason when the selected pass cannot transform the
 sample.
 
 The differential contract is original versus transformed execution: exit code,
