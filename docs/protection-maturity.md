@@ -1,7 +1,18 @@
 # Protection Maturity Report
 
-Commit: `52b6efa`
-Date: `2026-08-21`
+Commit: `8ffc0a9`
+Date: `2026-08-26`
+
+## Current verification status
+
+The supported Python 3.12 environment passed the complete repository suite with
+`4910` passed tests and `23` platform/optional-capability skips under
+`-W error`. The two native ELF x86-64 integration cases are skipped only on
+non-Linux hosts and both pass on the Linux amd64 validation container. The
+required local gates (`black`, `ruff`, `mypy`, `bandit`, and `pip-audit`) are
+clean. The public main workflow and the corpus workflow are queued on GitHub;
+this report makes no claim that either remote workflow is green until GitHub
+returns a completed successful run.
 
 ## 1. Current architecture
 
