@@ -26,9 +26,9 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 import r2morph.core.randomness as random
-from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.base import MutationPass
+from r2morph.mutations.code_virtualization_apply import apply_code_virtualization
 from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpArithMemOp,
     VirtualizedFpArithOp,
@@ -779,78 +779,4 @@ class CodeVirtualizationPass(MutationPass):
 
     def apply(self, binary: Any) -> dict[str, Any]:
         """Apply code virtualization to provable register runs."""
-        self._reset_random()
-        self._ensure_analyzed(binary)
-        logger.info("Applying code virtualization")
-
-        virtualized, skipped, total_insns, total_bytecode = 0, 0, 0, 0
-        unsupported: list[dict[str, Any]] = []
-        partial: list[dict[str, Any]] = []
-        unsupported_total = partial_total = 0
-
-        for func in binary.get_functions():
-            if virtualized >= self.max_functions:
-                break
-            if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
-                continue
-            computed_jump = self._find_computed_jump(binary, func)
-            if not self.virtualize_dispatch and computed_jump is not None:
-                skipped += 1
-                unsupported_total += 1
-                self._record_diagnostic(
-                    unsupported,
-                    func,
-                    computed_jump,
-                    ("error", "computed_control_flow", "computed-jump virtualization is disabled"),
-                )
-                continue
-            if random.random() > self.probability:
-                skipped += 1
-                continue
-
-            # Prefer whole-function control-flow virtualization; fall back to
-            # straight-line runs when the function is not fully reducible.
-            region_result = self._virtualize_function(binary, func)
-            # Opt-in: a dispatch-shaped function (rejected by the reducible path
-            # above because of its computed jump) is virtualized through the
-            # dispatch contract instead.
-            if region_result is None and self.virtualize_dispatch:
-                region_result = self._virtualize_dispatch_function(binary, func)
-            if region_result is not None:
-                total_insns += region_result["instructions"]
-                total_bytecode += region_result["bytecode"]
-                virtualized += 1
-                continue
-
-            unsupported_instruction = self._find_first_unvirtualizable_instruction(binary, func)
-            if self.reject_partial_virtualization:
-                skipped += 1
-                unsupported_total += 1
-                self._record_unsupported_function(
-                    unsupported,
-                    func,
-                    unsupported_instruction,
-                    "whole-function virtualization was not proven; partial virtualization is disabled: ",
-                )
-                continue
-
-            result, partial_count = self._virtualize_fallback_run(binary, func, unsupported_instruction, partial)
-            if result is not None:
-                total_insns += result["instructions"]
-                total_bytecode += result["bytecode"]
-                virtualized += 1
-                partial_total += partial_count
-                continue
-            unsupported_total += 1
-            self._record_unsupported_function(unsupported, func, unsupported_instruction)
-
-        return {
-            "functions_virtualized": virtualized,
-            "functions_skipped": skipped,
-            "total_instructions": total_insns,
-            "total_bytecode_bytes": total_bytecode,
-            "unsupported_functions": unsupported,
-            "unsupported_functions_total": unsupported_total,
-            "partial_virtualization": partial,
-            "partial_virtualization_total": partial_total,
-        }
+        return apply_code_virtualization(self, binary)
