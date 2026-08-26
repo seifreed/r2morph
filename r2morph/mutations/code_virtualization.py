@@ -567,11 +567,15 @@ class CodeVirtualizationPass(MutationPass):
             return None
         if not isinstance(disasm, dict):
             return None
-        for instruction in disasm.get("ops", []):
-            if not isinstance(instruction, dict):
+        instructions = [instruction for instruction in disasm.get("ops", []) if isinstance(instruction, dict)]
+        for index, instruction in enumerate(instructions):
+            kind = instruction.get("type")
+            if kind == "ret":
                 continue
-            if instruction.get("type") in ("ret", "swi", "syscall"):
-                continue
+            if kind in ("swi", "syscall"):
+                next_instruction = instructions[index + 1] if index + 1 < len(instructions) else None
+                if next_instruction is None or next_instruction.get("type") == "ret":
+                    continue
             if classification._classify(instruction, allow_computed_jump=self.virtualize_dispatch) is None:
                 return cast(dict[str, Any], instruction)
         return None

@@ -22,10 +22,33 @@ class _TerminalSyscallBinary:
     r2 = _Disassembler()
 
 
+class _NonTerminalSyscallBinary:
+    class _Disassembler:
+        @staticmethod
+        def cmdj(_command: str) -> dict[str, list[dict[str, str | int]]]:
+            return {
+                "ops": [
+                    {"type": "syscall", "addr": 0x1000, "size": 2},
+                    {"type": "mov", "opcode": "mov rax, 1", "addr": 0x1002, "size": 7},
+                    {"type": "ret", "addr": 0x1009, "size": 1},
+                ]
+            }
+
+    r2 = _Disassembler()
+
+
 def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
     expect(pass_instance._find_first_unvirtualizable_instruction(_TerminalSyscallBinary(), {"addr": 0x1000}) is None)
+
+
+def test_non_terminal_syscall_is_rejected_before_virtualization() -> None:
+    pass_instance = CodeVirtualizationPass(config={})
+
+    instruction = pass_instance._find_first_unvirtualizable_instruction(_NonTerminalSyscallBinary(), {"addr": 0x1000})
+
+    expect(instruction is not None and instruction["type"] == "syscall")
 
 
 def test_empty_eh_frame_is_not_unwind_metadata() -> None:
