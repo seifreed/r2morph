@@ -61,6 +61,12 @@ def _check_matrix(matrix: dict[str, object], package_version: str) -> None:
             raise ValueError(f"maturity profile has incomplete fields: {profile_name}")
 
 
+def _check_changelog(package_version: str) -> None:
+    changelog = (ROOT / "CHANGELOG.md").read_text(encoding="utf-8")
+    if f"## {package_version}" not in changelog:
+        raise ValueError("changelog must contain the package version heading")
+
+
 def _validate_inventory(inventory: dict[str, object]) -> None:
     fixtures = inventory["fixtures"]
     if inventory["compatible_fixture_count"] != len(fixtures):
@@ -130,6 +136,7 @@ def main() -> int:
         package_version = _check_version()
         matrix = _load_matrix()
         _check_matrix(matrix, package_version)
+        _check_changelog(package_version)
         _check_inventory()
         _check_ci_contract()
         _check_release_workflow()
