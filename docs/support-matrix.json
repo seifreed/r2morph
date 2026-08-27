@@ -22,156 +22,310 @@
     {
       "name": "nop",
       "stability": "tier-1",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["tests/product_smoke", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "tests/product_smoke",
+        "tests/integration"
+      ]
     },
     {
       "name": "substitute",
       "stability": "tier-1",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["tests/product_smoke", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "tests/product_smoke",
+        "tests/integration"
+      ]
     },
     {
       "name": "register",
       "stability": "tier-1",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["tests/product_smoke", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "tests/product_smoke",
+        "tests/integration"
+      ]
     },
     {
       "name": "instruction-expansion",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "block-reordering",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "dead-code-injection",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "control-flow-flattening",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "opaque-predicates",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "code-virtualization",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["docs/protection-maturity.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "docs/protection-maturity.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "anti-disassembly",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "data-flow-mutation",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "short-jump-patching",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "constant-unfolding",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "code-mobility",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "function-outlining",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "api-hashing",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "import-obfuscation",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "self-modifying-code",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "stack-strings",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "string-obfuscation",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "pattern-substitution",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     },
     {
       "name": "polymorphic-engine",
       "stability": "experimental",
-      "formats": ["ELF"],
-      "architectures": ["x86-64"],
-      "evidence": ["README.md", "tests/integration"]
+      "formats": [
+        "ELF"
+      ],
+      "architectures": [
+        "x86-64"
+      ],
+      "evidence": [
+        "README.md",
+        "tests/integration"
+      ]
     }
   ],
   "maturity": {
@@ -190,40 +344,68 @@
     ],
     "profiles": {
       "tier-1-native": {
-        "formats": ["ELF"],
-        "architectures": ["x86-64"],
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
         "preconditions": "Supported Linux ELF x86-64 input with a safe candidate region.",
         "invariants": "Loader validity and declared runtime observables remain unchanged.",
         "instructions_affected": "Pass-specific x86-64 rules exercised by native fixtures.",
         "false_positive_risk": "Candidate analysis and post-mutation validation reduce but do not eliminate false positives.",
-        "unit_tests": ["tests/unit"],
-        "e2e_tests": ["tests/product_smoke", "tests/integration"],
+        "unit_tests": [
+          "tests/unit"
+        ],
+        "e2e_tests": [
+          "tests/product_smoke",
+          "tests/integration"
+        ],
         "performance": "Not recorded per pass in the public corpus.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Pass combinations are not exhaustively covered."
       },
       "experimental": {
-        "formats": ["ELF"],
-        "architectures": ["x86-64"],
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
         "preconditions": "Input-specific preconditions are documented by the implementation and may reject the sample.",
         "invariants": "Structural validity is required; complete runtime parity is not yet established for every path.",
         "instructions_affected": "Not exhaustively catalogued.",
         "false_positive_risk": "Not independently measured.",
-        "unit_tests": ["tests/unit"],
-        "e2e_tests": ["tests/integration"],
+        "unit_tests": [
+          "tests/unit"
+        ],
+        "e2e_tests": [
+          "tests/integration"
+        ],
         "performance": "Not measured per pass.",
         "decompiler_effectiveness": "Not independently measured.",
         "compatibility": "Composition with other passes is not contractually supported."
       },
       "code-virtualization": {
-        "formats": ["ELF"],
-        "architectures": ["x86-64"],
+        "formats": [
+          "ELF"
+        ],
+        "architectures": [
+          "x86-64"
+        ],
         "preconditions": "Whole-function semantics must be proven; unsupported capabilities are rejected before mutation.",
         "invariants": "VM output retains loader validity and must match emulator and bounded runtime observables.",
         "instructions_affected": "Supported memory, calls, branches, flags, floating-point, SIMD, and dispatch subsets; unsupported instructions and exception/unwinding metadata produce diagnostics.",
         "false_positive_risk": "Conservative pre-transform rejection is measured by bounded diagnostics; independent false-positive rates are not available.",
-        "unit_tests": ["tests/unit/test_code_virtualization_diagnostics.py"],
-        "e2e_tests": ["tests/integration/test_code_virtualization_real.py", "tests/integration/test_code_virtualization_exception_gate_real.py", "tests/integration/test_protection_maturity_baseline.py", "tests/integration/test_mutation_fuzzer_real.py"],
+        "unit_tests": [
+          "tests/unit/test_code_virtualization_diagnostics.py"
+        ],
+        "e2e_tests": [
+          "tests/integration/test_code_virtualization_real.py",
+          "tests/integration/test_code_virtualization_exception_gate_real.py",
+          "tests/integration/test_protection_maturity_baseline.py",
+          "tests/integration/test_mutation_fuzzer_real.py"
+        ],
         "performance": "Transform and runtime durations are recorded in docs/protection-maturity-corpus.json.",
         "decompiler_effectiveness": "Evidence is recorded in docs/protection-maturity.md; independent cross-tool coverage is incomplete.",
         "compatibility": "Only Linux ELF x86-64 functions satisfying the preconditions are in scope."
@@ -287,5 +469,1961 @@
     "generated_inventory": "docs/protection-maturity-corpus.json",
     "maturity_report": "docs/protection-maturity.md",
     "ci_workflow": ".github/workflows/ci.yml"
+  },
+  "matrix": {
+    "dimensions": {
+      "passes": [
+        "nop",
+        "substitute",
+        "register",
+        "instruction-expansion",
+        "block-reordering",
+        "dead-code-injection",
+        "control-flow-flattening",
+        "opaque-predicates",
+        "code-virtualization",
+        "anti-disassembly",
+        "data-flow-mutation",
+        "short-jump-patching",
+        "constant-unfolding",
+        "code-mobility",
+        "function-outlining",
+        "api-hashing",
+        "import-obfuscation",
+        "self-modifying-code",
+        "stack-strings",
+        "string-obfuscation",
+        "pattern-substitution",
+        "polymorphic-engine"
+      ],
+      "formats": [
+        "ELF",
+        "PE",
+        "Mach-O"
+      ],
+      "architectures": [
+        "x86-64",
+        "x86",
+        "AArch64",
+        "ARM"
+      ]
+    },
+    "cell_count": 264,
+    "cells": [
+      {
+        "pass": "nop",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "nop",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "nop",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "substitute",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "substitute",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "tests/product_smoke",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "register",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "register",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "instruction-expansion",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "block-reordering",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "block-reordering",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "dead-code-injection",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "control-flow-flattening",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "opaque-predicates",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "docs/protection-maturity.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-virtualization",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "anti-disassembly",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "data-flow-mutation",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "short-jump-patching",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "constant-unfolding",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "code-mobility",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "code-mobility",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "function-outlining",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "function-outlining",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "api-hashing",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "api-hashing",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "import-obfuscation",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "self-modifying-code",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "stack-strings",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "stack-strings",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "string-obfuscation",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "pattern-substitution",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "ELF",
+        "architecture": "x86-64",
+        "status": "evidenced",
+        "evidence": [
+          "README.md",
+          "tests/integration"
+        ]
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "ELF",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "ELF",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "ELF",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "PE",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "PE",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "PE",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "PE",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "Mach-O",
+        "architecture": "x86-64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "Mach-O",
+        "architecture": "x86",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "Mach-O",
+        "architecture": "AArch64",
+        "status": "not-supported",
+        "evidence": []
+      },
+      {
+        "pass": "polymorphic-engine",
+        "format": "Mach-O",
+        "architecture": "ARM",
+        "status": "not-supported",
+        "evidence": []
+      }
+    ]
   }
 }
