@@ -126,7 +126,7 @@ check_pyproject() {
     # mypy ignore_missing_imports allowed ONLY inside [[tool.mypy.overrides]] blocks.
     # Detect any occurrence outside such a block.
     local mypy_global_ignore
-    mypy_global_ignore="$(python3 - "${PYPROJECT}" <<'PY' || true
+    if ! mypy_global_ignore="$(python3 - "${PYPROJECT}" <<'PY'
 import sys, re
 text = open(sys.argv[1]).read()
 in_override = False
@@ -143,7 +143,11 @@ for i, line in enumerate(text.splitlines(), 1):
         violations.append(f"{i}: {line}")
 print("\n".join(violations))
 PY
-)"
+ )"; then
+        fail "failed to inspect mypy configuration"
+        mypy_global_ignore=""
+        section_failed=1
+    fi
     if [[ -n "${mypy_global_ignore}" ]]; then
         fail "mypy globally ignores missing imports (only allowed inside [[tool.mypy.overrides]])"
         printf '%s\n' "${mypy_global_ignore}" | sed 's/^/          → /'
@@ -152,14 +156,18 @@ PY
 
     # ruff ignore list must be empty
     local ruff_ignore
-    ruff_ignore="$(python3 - "${PYPROJECT}" <<'PY' || true
+    if ! ruff_ignore="$(python3 - "${PYPROJECT}" <<'PY'
 import sys, re
 text = open(sys.argv[1]).read()
 m = re.search(r"\[tool\.ruff\.lint\][^\[]*?ignore\s*=\s*\[([^\]]*)\]", text, re.DOTALL)
 if m and m.group(1).strip():
     print(f"ignore = [{m.group(1).strip()}]")
 PY
-)"
+ )"; then
+        fail "failed to inspect ruff configuration"
+        ruff_ignore=""
+        section_failed=1
+    fi
     if [[ -n "${ruff_ignore}" ]]; then
         fail "ruff ignore list is non-empty"
         printf '          → %s\n' "${ruff_ignore}"
@@ -196,7 +204,7 @@ PY
     done
 
     local filterwarn_ok
-    filterwarn_ok="$(python3 - "${PYPROJECT}" <<'PY' || true
+    if ! filterwarn_ok="$(python3 - "${PYPROJECT}" <<'PY'
 import sys, re
 text = open(sys.argv[1]).read()
 m = re.search(r"filterwarnings\s*=\s*\[(.*?)\]", text, re.DOTALL)
@@ -205,7 +213,11 @@ if m:
     if items == ["error"]:
         print("OK")
 PY
-)"
+ )"; then
+        fail "failed to inspect pytest warning configuration"
+        filterwarn_ok=""
+        section_failed=1
+    fi
     if [[ "${filterwarn_ok}" != "OK" ]]; then
         fail 'pytest filterwarnings must be set to ["error"] (warnings are errors)'
         section_failed=1
@@ -269,7 +281,16 @@ check_suppressions() {
     local total_hits=0
     for pat in "${SUPPR_PATTERNS[@]}"; do
         local matches
-        matches="$(grep -RInE --include='*.py' "${pat}" "${SRC_DIR}" 2>/dev/null || true)"
+        matches=""
+        if matches="$(grep -RInE --include='*.py' "${pat}" "${SRC_DIR}" 2>/dev/null)"; then
+            :
+        else
+            local grep_status=$?
+            if [[ ${grep_status} -ne 1 ]]; then
+                fail "failed to scan source tree for pattern: ${pat}"
+                continue
+            fi
+        fi
         if [[ -n "${matches}" ]]; then
             local count
             count="$(printf '%s\n' "${matches}" | wc -l | tr -d ' ')"
@@ -320,7 +341,16 @@ check_mocks() {
     local total_hits=0
     while IFS='|' read -r pattern desc; do
         local matches
-        matches="$(grep -RInE --include='*.py' "${pattern}" "${tests_dir}" 2>/dev/null || true)"
+        matches=""
+        if matches="$(grep -RInE --include='*.py' "${pattern}" "${tests_dir}" 2>/dev/null)"; then
+            :
+        else
+            local grep_status=$?
+            if [[ ${grep_status} -ne 1 ]]; then
+                fail "failed to scan tests for pattern: ${pattern}"
+                continue
+            fi
+        fi
         if [[ -n "${matches}" ]]; then
             local count
             count="$(printf '%s\n' "${matches}" | wc -l | tr -d ' ')"
