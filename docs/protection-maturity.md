@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `b0dbd8b`
+Commit: `ae346ee`
 Date: `2026-08-27`
 
 ## Current verification status
@@ -10,8 +10,8 @@ The supported Python 3.12 environment passed the complete repository suite with
 `-W error`, with `81.02%` total coverage. The two native ELF x86-64 integration
 cases are skipped only on non-Linux hosts and both pass on the Linux amd64
 validation container. The required local gates (`black`, `ruff`, `mypy`,
-`bandit`, and `pip-audit`) are clean. GitHub Actions run `33024051587` completed
-successfully with all 14 jobs on commit `b0dbd8b`.
+`bandit`, and `pip-audit`) are clean. GitHub Actions run `33033532316` completed
+successfully with all 14 jobs on commit `ae346ee`.
 
 The public compatibility corpus is pinned to commit
 `2692223051130087bdae9f7b148d380856de91cf`. Its recorded Linux campaign passed
