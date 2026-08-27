@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `11b06be`
+Commit: `37249e7`
 Date: `2026-08-27`
 
 ## Current verification status
@@ -12,10 +12,10 @@ cases are skipped only on non-Linux hosts and both pass on the Linux amd64
 validation container. The required local gates (`black`, `ruff`, `mypy`,
 `bandit`, and `pip-audit`) are clean. GitHub Actions run `33035062905` completed
 successfully with all 14 jobs on commit `7b5c136`. The current run for
-`11b06be` is pending runner allocation.
+`37249e7` is pending runner allocation in `33044811486`.
 
 The public compatibility corpus is pinned to commit
-`69b9ee490a016da800e811156173180efc36eadd`. The preceding green Linux campaign
+`8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
 at `2692223051130087bdae9f7b148d380856de91cf` passed `160/160` built samples
 and its static-recovery benchmark measured `160/160` passed samples. A local
 macOS reproduction built `80/160` samples,
@@ -23,8 +23,10 @@ with the remaining records explicitly omitted because static linking was not
 available; all `80/80` built samples passed transformation and differential
 execution and static recovery. Decompiler effectiveness remains explicitly
 unmeasured where no licensed or public runner is available. The current corpus
-run is pending runner allocation; its new malformed-input
+run for the pinned commit is pending runner allocation; its new malformed-input
 campaign passes locally with `6/6` ELF samples rejected by the real parser.
+Each current corpus sample is also compared across five deterministic
+seed-derived command-line inputs.
 
 ## 1. Current architecture
 
