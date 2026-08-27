@@ -28,11 +28,15 @@ from tests.utils.assertions import expect
 
 
 def _open_files_for(path: str) -> list[io.IOBase]:
-    return [
-        obj
-        for obj in gc.get_objects()
-        if isinstance(obj, io.IOBase) and getattr(obj, "name", None) == path and not obj.closed
-    ]
+    open_files: list[io.IOBase] = []
+    for obj in gc.get_objects():
+        try:
+            if isinstance(obj, io.IOBase) and getattr(obj, "name", None) == path and not obj.closed:
+                open_files.append(obj)
+        except ReferenceError:
+            # A weakly referenced object can disappear while the GC list is inspected.
+            continue
+    return open_files
 
 
 def test_shared_lock_under_thread_contention_does_not_orphan_fds(tmp_path: Path) -> None:
