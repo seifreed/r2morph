@@ -1,0 +1,45 @@
+name: Adversarial Analysis Benchmark
+
+"on":
+  schedule:
+    - cron: "47 3 * * 1"
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git build-essential pkg-config wget cmake binutils
+          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+          cd /tmp/radare2
+          sys/install.sh
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Run benchmark
+        run: |
+          python scripts/adversarial_benchmark.py \
+            fixtures/dataset/elf_vm_arith_x86_64 \
+            --output adversarial-benchmark.json
+
+      - name: Upload benchmark report
+        uses: actions/upload-artifact@v4
+        with:
+          name: adversarial-benchmark
+          path: adversarial-benchmark.json

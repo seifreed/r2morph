@@ -1,0 +1,99 @@
+{
+  "original": "elf_vm_arith_x86_64",
+  "protected": "protected",
+  "schema_version": 1,
+  "tools": [
+    {
+      "changed": true,
+      "original": {
+        "functions": 1,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "protected": {
+        "functions": 3,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "radare2"
+    },
+    {
+      "changed": true,
+      "original": {
+        "instruction_lines": 6,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "protected": {
+        "instruction_lines": 13,
+        "return_code": 0,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "objdump"
+    },
+    {
+      "changed": true,
+      "original": {
+        "duration_seconds": 0.015894625044893473,
+        "functions": 2,
+        "status": "completed"
+      },
+      "protected": {
+        "duration_seconds": 0.016447167028672993,
+        "functions": 3,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "angr"
+    },
+    {
+      "changed": true,
+      "original": {
+        "duration_seconds": 0.0012799589894711971,
+        "exit_code": 45,
+        "status": "completed"
+      },
+      "protected": {
+        "duration_seconds": 0.004128667002078146,
+        "exit_code": 45,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "unicorn"
+    },
+    {
+      "reason": "module 'triton' is unavailable",
+      "status": "unavailable",
+      "tool": "triton"
+    },
+    {
+      "reason": "executable 'ida64' is unavailable",
+      "status": "unavailable",
+      "tool": "ida-pro"
+    },
+    {
+      "reason": "executable 'ghidra' is unavailable",
+      "status": "unavailable",
+      "tool": "ghidra"
+    },
+    {
+      "reason": "executable 'bndb' is unavailable",
+      "status": "unavailable",
+      "tool": "binary-ninja"
+    },
+    {
+      "original": {
+        "functions": 1,
+        "status": "completed"
+      },
+      "protected": {
+        "functions": 3,
+        "status": "completed"
+      },
+      "status": "completed",
+      "tool": "custom"
+    }
+  ]
+}
