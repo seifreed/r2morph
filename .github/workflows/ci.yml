@@ -80,6 +80,19 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            git build-essential pkg-config wget cmake
+
+      - name: Install radare2
+        run: |
+          git clone --depth 1 \
+            https://github.com/radareorg/radare2.git /tmp/radare2
+          cd /tmp/radare2
+          sys/install.sh
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
