@@ -23,8 +23,9 @@ with the remaining records explicitly omitted because static linking was not
 available; all `80/80` built samples passed transformation and differential
 execution and static recovery. Decompiler effectiveness remains explicitly
 unmeasured where no licensed or public runner is available. The current corpus
-run for the pinned commit is pending runner allocation; its new malformed-input
-campaign passes locally with `6/6` ELF samples rejected by the real parser.
+run for the pinned commit is pending runner allocation in `33045740069`; its
+new malformed-input campaign passes locally with `6/6` ELF samples rejected by
+the real parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
