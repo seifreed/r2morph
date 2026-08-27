@@ -137,6 +137,10 @@ def _check_release_workflow() -> None:
         'awk -v version="$RELEASE_VERSION"',
         "test -s /tmp/changes.md",
         "r2morph --version",
+        "Require green CI for release commit",
+        "--workflow ci.yml",
+        '--commit "$GITHUB_SHA"',
+        'test "$ci_conclusion" = "success"',
     ):
         if fragment not in workflow:
             raise ValueError(f"release workflow is missing: {fragment}")

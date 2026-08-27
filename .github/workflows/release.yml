@@ -8,6 +8,7 @@ name: Release
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: release-${{ github.ref }}
@@ -55,6 +56,19 @@ jobs:
 
       - name: Validate support contract
         run: python scripts/check_release_contract.py
+
+      - name: Require green CI for release commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ci_conclusion=$(gh run list \
+            --repo "$GITHUB_REPOSITORY" \
+            --workflow ci.yml \
+            --commit "$GITHUB_SHA" \
+            --limit 1 \
+            --json conclusion \
+            --jq '.[0].conclusion')
+          test "$ci_conclusion" = "success"
 
   build:
     runs-on: ubuntu-latest

@@ -118,3 +118,14 @@ def test_release_workflow_tests_installed_wheel_outside_checkout() -> None:
         and 'awk -v version="$RELEASE_VERSION"' in workflow
         and "test -s /tmp/changes.md" in workflow
     )
+
+
+def test_release_workflow_requires_green_ci_for_tag_commit() -> None:
+    workflow = (_ROOT / ".github" / "workflows" / "release.yml").read_text(encoding="utf-8")
+
+    expect(
+        "Require green CI for release commit" in workflow
+        and "--workflow ci.yml" in workflow
+        and '--commit "$GITHUB_SHA"' in workflow
+        and 'test "$ci_conclusion" = "success"' in workflow
+    )
