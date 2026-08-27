@@ -1,0 +1,49 @@
+name: Continuous Fuzzing
+
+"on":
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      cases:
+        description: "Number of deterministic generated inputs"
+        required: false
+        default: "5000"
+      seed:
+        description: "Campaign seed"
+        required: false
+        default: "20260827"
+
+jobs:
+  parser-and-rewriter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          python -m pip install --editable .
+
+      - name: Run deterministic fuzz campaign
+        run: |
+          cases="${{ inputs.cases || '5000' }}"
+          seed="${{ inputs.seed || '20260827' }}"
+          python scripts/continuous_fuzz.py \
+            --cases "$cases" \
+            --seed "$seed" \
+            --output fuzz-campaign.json
+
+      - name: Upload campaign report
+        uses: actions/upload-artifact@v4
+        with:
+          name: continuous-fuzz-report
+          path: fuzz-campaign.json
