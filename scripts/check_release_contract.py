@@ -113,6 +113,10 @@ def _check_ci_contract() -> None:
         "python -W error -m pytest",
         "windows-latest",
         "runner.os == 'Windows'",
+        (
+            "python -W error -m pytest -v tests/unit/test_circular_imports.py "
+            "tests/unit/test_cli_basic_commands.py::test_cli_version_function --no-cov --tb=short"
+        ),
     ):
         if fragment not in workflow:
             raise ValueError(f"CI is missing wheel smoke contract: {fragment}")

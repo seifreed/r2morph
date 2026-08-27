@@ -306,10 +306,7 @@ jobs:
       - name: Run cross-platform package smoke tests
         if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
         run: |
-          python -W error -m pytest -v \
-            tests/unit/test_circular_imports.py \
-            tests/unit/test_cli_basic_commands.py::test_cli_version_function \
-            --no-cov --tb=short
+          python -W error -m pytest -v tests/unit/test_circular_imports.py tests/unit/test_cli_basic_commands.py::test_cli_version_function --no-cov --tb=short
 
       - name: Upload cross-platform coverage artifact
         if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
