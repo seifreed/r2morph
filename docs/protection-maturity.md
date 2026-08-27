@@ -1,26 +1,30 @@
 # Protection Maturity Report
 
-Commit: `ae346ee`
+Commit: `11b06be`
 Date: `2026-08-27`
 
 ## Current verification status
 
 The supported Python 3.12 environment passed the complete repository suite with
-`4914` passed tests and `23` platform/optional-capability skips under
-`-W error`, with `81.02%` total coverage. The two native ELF x86-64 integration
+`4918` passed tests and `23` platform/optional-capability skips under
+`-W error`, with `81.01%` total coverage. The two native ELF x86-64 integration
 cases are skipped only on non-Linux hosts and both pass on the Linux amd64
 validation container. The required local gates (`black`, `ruff`, `mypy`,
-`bandit`, and `pip-audit`) are clean. GitHub Actions run `33033532316` completed
-successfully with all 14 jobs on commit `ae346ee`.
+`bandit`, and `pip-audit`) are clean. GitHub Actions run `33035062905` completed
+successfully with all 14 jobs on commit `7b5c136`. The current run for
+`11b06be` is pending runner allocation.
 
 The public compatibility corpus is pinned to commit
-`2692223051130087bdae9f7b148d380856de91cf`. Its recorded Linux campaign passed
-`160/160` built samples and its static-recovery benchmark measured `160/160`
-passed samples. A local macOS reproduction built `80/160` samples,
+`69b9ee490a016da800e811156173180efc36eadd`. The preceding green Linux campaign
+at `2692223051130087bdae9f7b148d380856de91cf` passed `160/160` built samples
+and its static-recovery benchmark measured `160/160` passed samples. A local
+macOS reproduction built `80/160` samples,
 with the remaining records explicitly omitted because static linking was not
 available; all `80/80` built samples passed transformation and differential
 execution and static recovery. Decompiler effectiveness remains explicitly
-unmeasured where no licensed or public runner is available.
+unmeasured where no licensed or public runner is available. The current corpus
+run is pending runner allocation; its new malformed-input
+campaign passes locally with `6/6` ELF samples rejected by the real parser.
 
 ## 1. Current architecture
 

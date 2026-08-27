@@ -3,7 +3,7 @@
 The public, reproducible corpus is maintained in
 [`seifreed/r2morph-corpus`](https://github.com/seifreed/r2morph-corpus), currently
 pinned to commit
-[`2692223`](https://github.com/seifreed/r2morph-corpus/commit/2692223051130087bdae9f7b148d380856de91cf).
+[`69b9ee4`](https://github.com/seifreed/r2morph-corpus/commit/69b9ee490a016da800e811156173180efc36eadd).
 It contains source programs, the build matrix, SHA-256 manifests, differential
 execution records, and static-recovery benchmark results. The project
 repository does not embed generated binaries.
@@ -32,4 +32,7 @@ basic-block, edge, instruction, and duration deltas without retaining analyzer
 output. The public run
 [`33030578544`](https://github.com/seifreed/r2morph-corpus/actions/runs/33030578544)
 passed with `160/160` measured samples. IDA Pro, Ghidra, Binary Ninja, angr, and
-Triton remain explicit omissions until public runners are configured.
+Triton remain explicit omissions until public runners are configured. The
+current workflow also generates six deterministic malformed ELF inputs and
+requires the real parser to reject all six; its current run is pending runner
+allocation.
