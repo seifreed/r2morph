@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `37249e7`
+Commit: `0eaa9f3`
 Date: `2026-08-27`
 
 ## Current verification status
@@ -12,7 +12,7 @@ cases are skipped only on non-Linux hosts and both pass on the Linux amd64
 validation container. The required local gates (`black`, `ruff`, `mypy`,
 `bandit`, and `pip-audit`) are clean. GitHub Actions run `33035062905` completed
 successfully with all 14 jobs on commit `7b5c136`. The current run for
-`37249e7` is pending runner allocation in `33044811486`.
+`0eaa9f3` is pending runner allocation in `33046044612`.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
