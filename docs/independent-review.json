@@ -1,0 +1,36 @@
+{
+  "checks": [
+    {
+      "detail": "101 fixtures, no unclassified entries",
+      "name": "virtualization_fixture_coverage",
+      "status": "passed"
+    },
+    {
+      "detail": "264 explicit cells",
+      "name": "support_matrix_consistency",
+      "status": "passed"
+    },
+    {
+      "detail": "5 completed, 4 unavailable",
+      "name": "adversarial_benchmark_evidence",
+      "status": "passed"
+    },
+    {
+      "detail": "101/101 valid ELF64 headers",
+      "name": "virtualization_fixture_headers",
+      "status": "passed"
+    },
+    {
+      "detail": "64 cases, 0 failures expected",
+      "name": "parser_rewriter_fuzz_campaign",
+      "status": "passed"
+    }
+  ],
+  "human_signoff": "not-attested",
+  "limitations": [
+    "This artifact is not a substitute for an external human review."
+  ],
+  "passed": true,
+  "review_type": "automated-independent-second-pass",
+  "schema_version": 1
+}
