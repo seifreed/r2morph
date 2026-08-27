@@ -1,18 +1,15 @@
 # Protection Maturity Report
 
-Commit: `0eaa9f3`
+Commit: `0f4ea3f`
 Date: `2026-08-27`
 
 ## Current verification status
 
-The supported Python 3.12 environment passed the complete repository suite with
-`4918` passed tests and `23` platform/optional-capability skips under
-`-W error`, with `81.01%` total coverage. The two native ELF x86-64 integration
-cases are skipped only on non-Linux hosts and both pass on the Linux amd64
-validation container. The required local gates (`black`, `ruff`, `mypy`,
-`bandit`, and `pip-audit`) are clean. GitHub Actions run `33035062905` completed
-successfully with all 14 jobs on commit `7b5c136`. The current run for
-`0eaa9f3` is pending runner allocation in `33046044612`.
+The supported Python 3.12 environment passed the required static and security
+gates. GitHub Actions run `33057629050` completed successfully with all 16 jobs
+on commit `0f4ea3f`, including the Linux/Python 3.12 suite and cross-platform
+matrix. The complete local gate was also run; binary tests were sensitive to
+concurrent host load, so the clean CI suite is the authoritative result.
 
 The public compatibility corpus is pinned to commit
 `8267a9234a61939c7c3ef5514983fbd9285d41a0`. The preceding green Linux campaign
@@ -23,11 +20,15 @@ with the remaining records explicitly omitted because static linking was not
 available; all `80/80` built samples passed transformation and differential
 execution and static recovery. Decompiler effectiveness remains explicitly
 unmeasured where no licensed or public runner is available. The current corpus
-run for the pinned commit is pending runner allocation in `33045740069`; its
-new malformed-input campaign passes locally with `6/6` ELF samples rejected by
-the real parser.
+run for the pinned commit completed successfully in `33045740069`; its
+malformed-input campaign passes with `6/6` ELF samples rejected by the real
+parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
+
+The focused virtualization inventory is recorded in
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 101 real
+fixtures cover eight capability families with no unclassified fixture.
 
 ## 1. Current architecture
 
@@ -82,6 +83,15 @@ The supported Linux path also runs a bounded three-case mutation-fuzzer campaign
 against a real transformed ELF fixture. The campaign compares native exit status
 and captured output through `BinaryValidator`; failure cases are not retained by
 default in the repository workspace.
+
+The continuous parser/rewriter campaign is implemented in
+[`scripts/continuous_fuzz.py`](../scripts/continuous_fuzz.py) and scheduled in
+GitHub Actions. The multi-analyzer evidence is in
+[`docs/protection-adversarial-benchmark.json`](protection-adversarial-benchmark.json),
+and the reproducible second-pass review is in
+[`docs/independent-review.json`](independent-review.json). An analyzer is marked
+`unavailable` when its executable or license is absent; those rows are not
+treated as passing evidence. The automated review is not human sign-off.
 
 ## 4. Obfuscation maturity technique-by-technique
 

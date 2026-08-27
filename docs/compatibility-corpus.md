@@ -31,9 +31,8 @@ The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair, recording function,
 basic-block, edge, instruction, and duration deltas without retaining analyzer
 output. The public run
-[`33030578544`](https://github.com/seifreed/r2morph-corpus/actions/runs/33030578544)
-passed with `160/160` measured samples. IDA Pro, Ghidra, Binary Ninja, angr, and
-Triton remain explicit omissions until public runners are configured. The
-current workflow also generates six deterministic malformed ELF inputs and
-requires the real parser to reject all six; its current run is pending runner
-allocation.
+[`33045740069`](https://github.com/seifreed/r2morph-corpus/actions/runs/33045740069)
+completed the transformation, differential-execution, static-recovery, and
+malformed-input checks. IDA Pro, Ghidra, Binary Ninja, angr, and Triton remain
+explicit omissions until public runners are configured. The six generated
+malformed ELF inputs were rejected by the real parser.
