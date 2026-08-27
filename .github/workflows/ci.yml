@@ -88,7 +88,7 @@ jobs:
 
       - name: Run property and fuzzer contracts
         run: |
-          python -m pytest -v tests/property \
+          python -W error -m pytest -v tests/property \
             tests/unit/test_fuzzer_inputs_contract.py \
             tests/unit/test_mutation_fuzzer_campaign_contract.py \
             tests/unit/test_mutation_fuzzer_continuous_contract.py \
@@ -128,7 +128,7 @@ jobs:
 
       - name: Run stable core tests with coverage
         run: |
-          python -m pytest -v --cov=r2morph \
+          python -W error -m pytest -v --cov=r2morph \
             --cov-report=xml --cov-report=term-missing \
             -m "not product_smoke and not slow" \
             --ignore=tests/product_smoke --ignore=tests/slow
@@ -173,7 +173,7 @@ jobs:
 
       - name: Run unit tests
         run: |
-          python -m pytest -v tests/unit \
+          python -W error -m pytest -v tests/unit \
             -m "not slow" --no-cov --tb=short
 
   integration-tests:
@@ -210,7 +210,7 @@ jobs:
 
       - name: Run integration tests
         run: |
-          python -m pytest -v tests/integration \
+          python -W error -m pytest -v tests/integration \
             -m "not slow" --no-cov --tb=short
 
   product-smoke-tests:
@@ -247,7 +247,7 @@ jobs:
 
       - name: Run product smoke tests
         run: |
-          python -m pytest -v tests/product_smoke \
+          python -W error -m pytest -v tests/product_smoke \
             -m "stable" --no-cov --tb=short
 
   cross-platform-tests:
@@ -256,7 +256,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, macos-14]
+        os: [ubuntu-latest, macos-latest, macos-14, windows-latest]
         python-version: ["3.12", "3.13"]
 
     steps:
@@ -299,14 +299,14 @@ jobs:
       - name: Run broad Linux tests with coverage
         if: runner.os == 'Linux' && matrix.python-version == '3.12'
         run: |
-          python -m pytest -v \
+          python -W error -m pytest -v \
             -m "not product_smoke and not slow" \
             --cov-report=xml --tb=short
 
       - name: Run cross-platform package smoke tests
-        if: runner.os == 'macOS' || matrix.python-version == '3.13'
+        if: runner.os == 'macOS' || runner.os == 'Windows' || matrix.python-version == '3.13'
         run: |
-          python -m pytest -v \
+          python -W error -m pytest -v \
             tests/unit/test_circular_imports.py \
             tests/unit/test_cli_basic_commands.py::test_cli_version_function \
             --no-cov --tb=short
@@ -366,7 +366,7 @@ jobs:
           /tmp/r2morph-wheel-venv/bin/r2morph --version
           /tmp/r2morph-wheel-venv/bin/python -c \
             "import r2morph; print(r2morph.__file__)"
-          /tmp/r2morph-wheel-venv/bin/python -m pytest \
+          /tmp/r2morph-wheel-venv/bin/python -W error -m pytest \
             tests/unit/test_circular_imports.py \
             tests/unit/test_cli_basic_commands.py::test_cli_version_function \
             --no-cov --tb=short

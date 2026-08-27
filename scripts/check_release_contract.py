@@ -110,6 +110,9 @@ def _check_ci_contract() -> None:
         "import r2morph",
         "r2morph --version",
         "--no-cov --tb=short",
+        "python -W error -m pytest",
+        "windows-latest",
+        "runner.os == 'Windows'",
     ):
         if fragment not in workflow:
             raise ValueError(f"CI is missing wheel smoke contract: {fragment}")
@@ -130,7 +133,6 @@ def _check_release_workflow() -> None:
         "dist/*.whl",
         "python -m pip install --force-reinstall dist/*.whl",
         "Run tests against installed wheel",
-        "--ignore=tests/unit/test_release_contract.py",
         "python -W error -m pytest --no-cov",
         'awk -v version="$RELEASE_VERSION"',
         "test -s /tmp/changes.md",
