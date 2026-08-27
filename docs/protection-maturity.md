@@ -14,12 +14,13 @@ validation container. The required local gates (`black`, `ruff`, `mypy`,
 successfully with all 14 jobs on commit `b0dbd8b`.
 
 The public compatibility corpus is pinned to commit
-`5a878ce0dfd0708178a4f01cc2a2c355a730cccf`. Its recorded Linux campaign passed
-`160/160` built samples. A local macOS reproduction built `80/160` samples,
+`2692223051130087bdae9f7b148d380856de91cf`. Its recorded Linux campaign passed
+`160/160` built samples and its static-recovery benchmark measured `160/160`
+passed samples. A local macOS reproduction built `80/160` samples,
 with the remaining records explicitly omitted because static linking was not
 available; all `80/80` built samples passed transformation and differential
-execution. Decompiler effectiveness remains explicitly unmeasured where no
-licensed or public runner is available.
+execution and static recovery. Decompiler effectiveness remains explicitly
+unmeasured where no licensed or public runner is available.
 
 ## 1. Current architecture
 
