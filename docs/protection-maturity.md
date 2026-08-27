@@ -1,18 +1,25 @@
 # Protection Maturity Report
 
-Commit: `6f598ec`
-Date: `2026-08-26`
+Commit: `b0dbd8b`
+Date: `2026-08-27`
 
 ## Current verification status
 
 The supported Python 3.12 environment passed the complete repository suite with
 `4914` passed tests and `23` platform/optional-capability skips under
-`-W error`, with `81.02%` total coverage. The two native ELF x86-64 integration cases are skipped only on
-non-Linux hosts and both pass on the Linux amd64 validation container. The
-required local gates (`black`, `ruff`, `mypy`, `bandit`, and `pip-audit`) are
-clean. The public main workflow and the corpus workflow are queued on GitHub;
-this report makes no claim that either remote workflow is green until GitHub
-returns a completed successful run.
+`-W error`, with `81.02%` total coverage. The two native ELF x86-64 integration
+cases are skipped only on non-Linux hosts and both pass on the Linux amd64
+validation container. The required local gates (`black`, `ruff`, `mypy`,
+`bandit`, and `pip-audit`) are clean. GitHub Actions run `33024051587` completed
+successfully with all 14 jobs on commit `b0dbd8b`.
+
+The public compatibility corpus is pinned to commit
+`5a878ce0dfd0708178a4f01cc2a2c355a730cccf`. Its recorded Linux campaign passed
+`160/160` built samples. A local macOS reproduction built `80/160` samples,
+with the remaining records explicitly omitted because static linking was not
+available; all `80/80` built samples passed transformation and differential
+execution. Decompiler effectiveness remains explicitly unmeasured where no
+licensed or public runner is available.
 
 ## 1. Current architecture
 
