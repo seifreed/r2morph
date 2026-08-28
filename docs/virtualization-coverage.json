@@ -163,9 +163,10 @@
       ]
     },
     "thread_runtime_boundaries": {
-      "fixture_count": 2,
+      "fixture_count": 3,
       "fixtures": [
         "elf_vm_dynamic_x86_64",
+        "elf_vm_gs_tls_x86_64",
         "elf_vm_tls_x86_64"
       ]
     },
@@ -189,7 +190,7 @@
   },
   "capability_count": 9,
   "covered_capability_count": 9,
-  "fixture_count": 108,
+  "fixture_count": 109,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []

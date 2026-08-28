@@ -35,6 +35,7 @@ _PT_LOAD = 1
 _EXIT_SYSCALL = 0x3C
 _MMAP_SYSCALL = 9
 _ARCH_PRCTL_SYSCALL = 158
+_ARCH_SET_GS = 0x1001
 _ARCH_SET_FS = 0x1002
 _SYSCALL_MAP_BASE = 0x6000_0000_0000
 _PAGE_SIZE = 0x1000
@@ -209,8 +210,15 @@ def _syscall_hook(state: _TraceState, mapped: set[int]) -> Any:
             _map_pages(uc, mapped, next_mapping, length)
             uc.reg_write(_x86_const.UC_X86_REG_RAX, next_mapping)
             next_mapping += (length + _PAGE_SIZE - 1) & ~(_PAGE_SIZE - 1)
-        elif syscall == _ARCH_PRCTL_SYSCALL and uc.reg_read(_x86_const.UC_X86_REG_RDI) == _ARCH_SET_FS:
-            uc.reg_write(_x86_const.UC_X86_REG_FS_BASE, uc.reg_read(_x86_const.UC_X86_REG_RSI))
+        elif syscall == _ARCH_PRCTL_SYSCALL:
+            selector = uc.reg_read(_x86_const.UC_X86_REG_RDI)
+            base = uc.reg_read(_x86_const.UC_X86_REG_RSI)
+            if selector == _ARCH_SET_FS:
+                uc.reg_write(_x86_const.UC_X86_REG_FS_BASE, base)
+            elif selector == _ARCH_SET_GS:
+                uc.reg_write(_x86_const.UC_X86_REG_GS_BASE, base)
+            else:
+                return
             uc.reg_write(_x86_const.UC_X86_REG_RAX, 0)
 
     return on_syscall
