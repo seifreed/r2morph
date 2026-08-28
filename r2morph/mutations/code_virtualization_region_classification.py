@@ -281,6 +281,8 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     """
     kind = insn.get("type", "")
     text = insn.get("opcode", "")
+    if kind == "syscall":
+        return ["syscall"]
     result = _first_item(
         (
             lambda: _decode_fp_convert(text),

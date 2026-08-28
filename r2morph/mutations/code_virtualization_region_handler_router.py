@@ -18,6 +18,7 @@ from r2morph.mutations.code_virtualization_region_control_handlers import (
     _jcc_handler_asm,
     _movx_reg_handler_asm,
     _setcc_handler_asm,
+    _syscall_handler_asm,
     _vcall_handler_asm,
     _vret_handler_asm,
 )
@@ -140,11 +141,12 @@ class HandlerBodyRouter:
 
     def _calls(self, key: str, index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]
+        body = None
         if key == "call":
-            return _call_handler_asm(index, self.context.key_dword, self.context.slot)
-        if key == "icall":
-            return _icall_handler_asm(index, self.context.key, self.context.slot)
-        if key in ("callmem", "callmemrip"):
+            body = _call_handler_asm(index, self.context.key_dword, self.context.slot)
+        elif key == "icall":
+            body = _icall_handler_asm(index, self.context.key, self.context.slot)
+        elif key in ("callmem", "callmemrip"):
             config = CallMemoryHandlerConfig(
                 index,
                 self.context.key,
@@ -153,8 +155,8 @@ class HandlerBodyRouter:
                 self.context.field_perm,
                 address,
             )
-            return _call_mem_handler_asm(config, key == "callmemrip")
-        if key == "callmemidx":
+            body = _call_mem_handler_asm(config, key == "callmemrip")
+        elif key == "callmemidx":
             config = CallMemoryHandlerConfig(
                 index,
                 self.context.key,
@@ -163,10 +165,12 @@ class HandlerBodyRouter:
                 self.context.field_perm,
                 address,
             )
-            return _call_mem_idx_handler_asm(config)
-        if key == "vcall":
-            return _vcall_handler_asm(self.context.retarget_target, self.context.rsp_off)
-        return None
+            body = _call_mem_idx_handler_asm(config)
+        elif key == "vcall":
+            body = _vcall_handler_asm(self.context.retarget_target, self.context.rsp_off)
+        elif key == "syscall":
+            body = _syscall_handler_asm(self.context.slot)
+        return body
 
     def _branches(self, key: str, index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]

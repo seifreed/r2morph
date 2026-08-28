@@ -1,7 +1,7 @@
 {
   "checks": [
     {
-      "detail": "109 fixtures, no unclassified entries",
+      "detail": "110 fixtures, no unclassified entries",
       "name": "virtualization_fixture_coverage",
       "status": "passed"
     },
@@ -16,12 +16,12 @@
       "status": "passed"
     },
     {
-      "detail": "118 samples, 590 completed tool runs, 0 errors",
+      "detail": "119 samples, 595 completed tool runs, 0 errors",
       "name": "adversarial_corpus_evidence",
       "status": "passed"
     },
     {
-      "detail": "109/109 valid ELF64 headers",
+      "detail": "110/110 valid ELF64 headers",
       "name": "virtualization_fixture_headers",
       "status": "passed"
     },

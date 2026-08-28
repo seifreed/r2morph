@@ -151,6 +151,12 @@
         "elf_vm_run_riprelfallback_x86_64"
       ]
     },
+    "signals_and_system_calls": {
+      "fixture_count": 1,
+      "fixtures": [
+        "elf_vm_syscall_x86_64"
+      ]
+    },
     "stack_and_abi": {
       "fixture_count": 6,
       "fixtures": [
@@ -188,9 +194,9 @@
       ]
     }
   },
-  "capability_count": 9,
-  "covered_capability_count": 9,
-  "fixture_count": 109,
+  "capability_count": 10,
+  "covered_capability_count": 10,
+  "fixture_count": 110,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []

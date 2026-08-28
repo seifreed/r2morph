@@ -224,6 +224,31 @@ def _icall_handler_asm(index: int, key: str, slot: tuple[int, ...]) -> str:
     return _call_bridge_asm(index, slot, target, 2)
 
 
+def _syscall_handler_asm(slot: tuple[int, ...]) -> str:
+    """Execute a returning Linux syscall with the program's real register state.
+
+    The VM frame and bytecode pointer stay in r12/rbx while the program stack and
+    syscall registers are restored. Linux clobbers rcx/r11 and returns in rax, so
+    those values plus post-syscall flags are captured before dispatch resumes.
+    Non-returning signal context restoration is outside this bridge's contract.
+    """
+    registers = ("rax", "rcx", "rdx", "rsi", "rdi", "r8", "r9", "r10")
+    offsets = {name: slot[GP_REGISTERS.index(name)] * 8 for name in registers}
+    loads = "".join(f"  mov {name}, qword ptr [rsp+{offsets[name]}]\n" for name in registers)
+    stores = "".join(
+        f"  mov qword ptr [rsp+{slot[GP_REGISTERS.index(name)] * 8}], {name}\n" for name in ("rax", "rcx", "r11")
+    )
+    return (
+        "  mov r12, rsp\n  mov rbx, rsi\n"
+        + loads
+        + f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n  xor rsp, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
+        + "  syscall\n  mov rsp, r12\n"
+        + f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        + stores
+        + "  mov rsi, rbx\n  add rsi, 1\n  jmp vm_dispatch\n"
+    )
+
+
 def _ijmp_handler_asm(index: int, key: str) -> str:
     """Register-indirect jump (``jmp reg``): re-enter the VM at the virtualized copy
     of the computed target. The target is the program value of a GP register (read

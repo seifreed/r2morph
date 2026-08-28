@@ -6,8 +6,9 @@ register run, this module lifts an entire function whose every instruction is a
 register op, a comparison, or a branch into a :class:`Region`. The control flow
 is lowered into VM items: comparisons capture the real RFLAGS into a private
 slot, conditional/unconditional branches retarget the bytecode pointer, and
-each terminator (``ret``/``syscall``) becomes a distinct VM exit back to native
-code (any number of terminators is supported).
+each terminator (``ret``/``swi``/terminal ``syscall``) becomes a distinct VM exit
+back to native code (any number of terminators is supported). Returning syscalls
+are bridged inside the VM so execution can continue with the next item.
 
 A function that is not fully reducible to this model (a call, a memory operand,
 an indirect or out-of-function branch, no terminator) yields ``None`` and is
@@ -96,6 +97,7 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
     special_writes = {
         "div": frozenset({_RAX_SLOT, _RDX_SLOT}),
         "cqo": frozenset({_RDX_SLOT}),
+        "syscall": frozenset({GP_REGISTERS.index("rax"), GP_REGISTERS.index("rcx"), GP_REGISTERS.index("r11")}),
     }
     return special_writes.get(kind, frozenset())
 
@@ -233,6 +235,7 @@ _FLAG_KILLER_KINDS = frozenset(
         "callmem",
         "callmemrip",
         "callmemidx",
+        "syscall",
     }
 )
 
@@ -342,7 +345,15 @@ def _build_region_items(instructions: list[dict[str, Any]], allow_computed_jump:
     if not instructions:
         return None
     exit_addrs = sorted(
-        {instruction["addr"] for instruction in instructions if instruction.get("type") in ("ret", "swi", "syscall")}
+        {
+            instruction["addr"]
+            for index, instruction in enumerate(instructions)
+            if instruction.get("type") in ("ret", "swi")
+            or (
+                instruction.get("type") == "syscall"
+                and (index + 1 == len(instructions) or instructions[index + 1].get("type") == "ret")
+            )
+        }
     )
     if not exit_addrs:
         return None

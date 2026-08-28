@@ -43,12 +43,12 @@ def test_terminal_syscall_is_preserved_as_region_exit() -> None:
     expect(pass_instance._find_first_unvirtualizable_instruction(_TerminalSyscallBinary(), {"addr": 0x1000}) is None)
 
 
-def test_non_terminal_syscall_is_rejected_before_virtualization() -> None:
+def test_non_terminal_syscall_is_classified_for_native_bridge() -> None:
     pass_instance = CodeVirtualizationPass(config={})
 
     instruction = pass_instance._find_first_unvirtualizable_instruction(_NonTerminalSyscallBinary(), {"addr": 0x1000})
 
-    expect(instruction is not None and instruction["type"] == "syscall")
+    expect(instruction is None)
 
 
 def test_empty_eh_frame_is_not_unwind_metadata() -> None:

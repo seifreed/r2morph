@@ -180,6 +180,7 @@ _IDENTITY_KEYS = {
     "nop",
     "enter_inner",
     "inner_exit",
+    "syscall",
 }
 
 
