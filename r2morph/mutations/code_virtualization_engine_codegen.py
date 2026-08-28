@@ -45,7 +45,12 @@ def encode_bytecode(
     return _encode_bytecode(ops, scheme, checksum, bytecode_base)
 
 
-def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = False) -> str:
+def _interpreter_asm(
+    continuation_vaddr: int,
+    scheme: VMScheme,
+    has_fp: bool = False,
+    vex_destinations: frozenset[int] = frozenset(),
+) -> str:
     """Generate the interpreter assembly for one virtualized run.
 
     Every byte fetched from the bytecode is XOR-decrypted with the scheme key
@@ -225,6 +230,8 @@ def _interpreter_asm(continuation_vaddr: int, scheme: VMScheme, has_fp: bool = F
         lines.append(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp + {slot[index] * 8}]\n")
     if has_fp:
         for xmm in range(16):
+            if xmm in vex_destinations:
+                lines.append(f"  vpxor ymm{xmm}, ymm{xmm}, ymm{xmm}\n")
             lines.append(f"  movups xmm{xmm}, xmmword ptr [rsp + {layout.xmm_offset + xmm * 16}]\n")
     lines.append(f"  add rsp, {frame_size}\n  jmp {hex(continuation_vaddr)}\n")
 

@@ -1,5 +1,6 @@
 .intel_syntax noprefix
 .global _start
+.global compute
 .text
 # VEX.128 packed arithmetic: the destination's upper YMM half must be cleared,
 # while the operation still computes all four 32-bit lanes in its XMM half.
@@ -7,12 +8,16 @@ _start:
     vmovaps ymm0, ymmword ptr [rip + left]
     vmovaps ymm1, ymmword ptr [rip + right]
     vmovaps ymm2, ymmword ptr [rip + offset_vec]
+    call compute
+    syscall
+
+.section .text.compute,"ax",@progbits
+.p2align 4, 0x90
+compute:
     vaddps xmm0, xmm0, xmm1
     vsubps xmm0, xmm0, xmm2
     call check_result
-    mov edi, eax
-    mov eax, 60
-    syscall
+    ret
 
 check_result:
     vextractf128 xmm3, ymm0, 1
@@ -22,13 +27,16 @@ check_result:
     vcvttss2si eax, xmm0
     cmp eax, 41
     jne .bad_value
-    mov eax, 42
+    mov edi, 42
+    mov eax, 60
     ret
 .bad_upper:
-    mov eax, 13
+    mov edi, 13
+    mov eax, 60
     ret
 .bad_value:
-    mov eax, 14
+    mov edi, 14
+    mov eax, 60
     ret
 
 .section .rodata

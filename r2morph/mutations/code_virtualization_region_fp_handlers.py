@@ -173,6 +173,19 @@ def _fp_packed_vex_arith_handler_asm(handler_key: str, key: str, field_perm: int
     )
 
 
+def _fp_vex_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Copy the lower 128 bits of a VEX.128 move into the destination slot."""
+    off = pair_offsets("dst", "src", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def _fp_packed_arith_mem_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

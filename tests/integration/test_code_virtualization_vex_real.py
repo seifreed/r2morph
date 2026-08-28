@@ -15,30 +15,34 @@ from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_x86_64"
 _EXPECTED_EXIT_CODE = 42
-_EXPECTED_VIRTUALIZED_INSTRUCTIONS = 2
+_MINIMUM_VIRTUALIZED_INSTRUCTIONS = 2
 
 
-def _mutate_fixture(tmp_path: Path) -> tuple[Path, int]:
+def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
     mutated = tmp_path / "mutated_vex128"
     shutil.copy(_FIXTURE, mutated)
     binary = Binary(str(mutated), writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.analyze()
+        compute = next(function for function in binary.get_functions() if "compute" in function["name"])
+        original_compute_prefix = binary.read_bytes(compute["addr"], 5)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 1}).apply(binary)
         binary.save()
+        mutated_compute_prefix = binary.read_bytes(compute["addr"], 5)
     finally:
         binary.close()
-    return mutated, int(stats["total_instructions"])
+    return mutated, int(stats["total_instructions"]), original_compute_prefix != mutated_compute_prefix
 
 
 def test_vex128_virtualization_clears_destination_upper_half_and_preserves_lanes(tmp_path: Path) -> None:
-    _mutated, instructions_virtualized = _mutate_fixture(tmp_path)
-    expect(instructions_virtualized == _EXPECTED_VIRTUALIZED_INSTRUCTIONS)
+    _mutated, instructions_virtualized, compute_changed = _mutate_fixture(tmp_path)
+    expect(compute_changed and instructions_virtualized >= _MINIMUM_VIRTUALIZED_INSTRUCTIONS)
 
 
 def test_vex128_mutation_preserves_native_exit_code(tmp_path: Path) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("native VEX execution requires an x86-64 host")
-    mutated, _instructions_virtualized = _mutate_fixture(tmp_path)
+    mutated, _instructions_virtualized, _compute_changed = _mutate_fixture(tmp_path)
     result = run_command([mutated])
     expect(result.returncode == _EXPECTED_EXIT_CODE)

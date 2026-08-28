@@ -62,6 +62,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_arith,
     _decode_fp_packed_mem,
     _decode_fp_riprel,
+    _decode_fp_vex_packed_arith,
 )
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_lea,
@@ -158,6 +159,11 @@ def _decode_fp_arithmetic_item(text: str, insn_addr: int, insn_size: int) -> Vir
 
 
 def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
+    vex = _decode_fp_vex_packed_arith(text)
+    if vex is not None:
+        _kind, mnemonic, destination, first_source, second_source = vex
+        if destination == first_source:
+            return VirtualizedFpPackedOp(mnemonic, destination, second_source, vex=True)
     decoded = _decode_fp_packed_arith(text)
     if decoded is not None:
         _kind, mnemonic, destination, source = decoded

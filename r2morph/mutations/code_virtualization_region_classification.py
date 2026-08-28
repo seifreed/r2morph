@@ -46,6 +46,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_riprel,
     _decode_fp_riprel,
     _decode_fp_vex_packed_arith,
+    _decode_fp_vex_packed_move,
 )
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bswap,
@@ -135,6 +136,7 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
             lambda: _decode_fp_movd(text),
             lambda: _decode_fp_move(text),
             lambda: _decode_fp_vex_packed_arith(text),
+            lambda: _decode_fp_vex_packed_move(text),
             lambda: _decode_fp_packed_arith(text),
             lambda: _decode_fp_packed_arith_mem(text),
             lambda: _decode_fp_packed_arith_riprel(text, address, size),
@@ -303,7 +305,9 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
     )
     address = insn.get("addr", 0)
     size = insn.get("size", 0)
-    if result is None and insn.get("family") == "vec":
+    opcode_lower = text.lower()
+    has_vector_operand = any(register in opcode_lower for register in ("xmm", "ymm", "zmm"))
+    if result is None and (insn.get("family") == "vec" or has_vector_operand):
         result = _classify_vector(text, address, size)
     elif result is None and kind == "nop":
         result = ["nop"]

@@ -72,7 +72,8 @@ def build_vm_blob(
         )
         for op in ops
     )
-    asm = _interpreter_asm(continuation_vaddr, scheme, has_fp)
+    vex_destinations = frozenset(op.dst_index for op in ops if isinstance(op, VirtualizedFpPackedOp) and op.vex)
+    asm = _interpreter_asm(continuation_vaddr, scheme, has_fp, vex_destinations)
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
         encoding, _ = engine.asm(asm, cave_vaddr)

@@ -51,6 +51,7 @@ _FIXED_SIZE_GROUPS = {
         "fpmov",
         "fppacked",
         "fppackedvex",
+        "fpmovvex",
         "movxreg",
         "cmov",
     ),

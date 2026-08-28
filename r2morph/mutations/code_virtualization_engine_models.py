@@ -146,12 +146,13 @@ class VirtualizedFpPackedOp:
     preserved. ``dst_index``/``src_index`` are 0-15 xmm register numbers.
     """
 
-    __slots__ = ("dst_index", "mnemonic", "src_index")
+    __slots__ = ("dst_index", "mnemonic", "src_index", "vex")
 
-    def __init__(self, mnemonic: str, dst_index: int, src_index: int) -> None:
+    def __init__(self, mnemonic: str, dst_index: int, src_index: int, vex: bool = False) -> None:
         self.mnemonic = mnemonic
         self.dst_index = dst_index
         self.src_index = src_index
+        self.vex = vex
 
 
 class VirtualizedFpPackedMemOp:

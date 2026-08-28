@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 
 _DWORD_WIDTH_BITS = 32
 _PACKED_VEX_OPERAND_COUNT = 3
+_PACKED_VEX_MOVE_OPERAND_COUNT = 2
 
 
 def _parse_xmm_operand(text: str) -> int | None:
@@ -466,6 +467,7 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vdivps": "divps",
     "vdivpd": "divpd",
 }
+_FP_VEX_PACKED_MOVE: frozenset[str] = frozenset({"vmovaps", "vmovups", "vmovapd", "vmovupd", "vmovdqa", "vmovdqu"})
 
 
 def _decode_fp_vex_packed_arith(text: str) -> tuple[str, str, int, int, int] | None:
@@ -487,6 +489,20 @@ def _decode_fp_vex_packed_arith(text: str) -> tuple[str, str, int, int, int] | N
         first_source,
         second_source,
     )
+
+
+def _decode_fp_vex_packed_move(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a register-register VEX.128 packed move."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in _FP_VEX_PACKED_MOVE:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_VEX_MOVE_OPERAND_COUNT:
+        return None
+    destination, source = (_parse_xmm_operand(operand) for operand in operands)
+    if destination is None or source is None:
+        return None
+    return ("fpmovvex", "full", destination, source)
 
 
 def _decode_fp_packed_arith(text: str) -> tuple[str, str, int, int] | None:
