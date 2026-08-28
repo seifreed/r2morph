@@ -5,6 +5,7 @@ from r2morph.mutations.code_virtualization_engine_models import VirtualizedFpPac
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_compare,
     _decode_fp_packed_arith,
+    _decode_fp_packed_mem,
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_packed_move,
 )
@@ -63,6 +64,10 @@ def test_decode_packed_integer_unpack_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("punpcklbw xmm0, xmm1") == ("fppacked", "punpcklbw", 0, 1))
 
 
+def test_decode_aligned_packed_integer_move_returns_memory_item() -> None:
+    expect(_decode_fp_packed_mem("movdqa xmm0, xmmword ptr [rax]") == ("fppload", 0, 0, 0))
+
+
 def test_decode_packed_test_returns_flag_compare_item() -> None:
     expect(_decode_fp_compare("ptest xmm0, xmm1") == ("fpcmp", "ptest", 0, 1))
 
@@ -102,3 +107,7 @@ def test_decode_vex128_float_xor_returns_three_operand_item() -> None:
 
 def test_decode_vex128_integer_xor_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vpxor xmm2, xmm0, xmm1") == ("fppackedvex", "pxor", 2, 0, 1))
+
+
+def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vpaddd xmm2, xmm0, xmm1") == ("fppackedvex", "paddd", 2, 0, 1))

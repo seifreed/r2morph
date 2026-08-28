@@ -466,7 +466,7 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
         "xorpd",
     }
 )
-_FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqu"})
+_FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqa", "movdqu"})
 _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vaddps": "addps",
     "vaddpd": "addpd",
@@ -490,6 +490,33 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpandn": "pandn",
     "vpor": "por",
     "vpxor": "pxor",
+    "vpaddd": "paddd",
+    "vpsubd": "psubd",
+    "vpaddb": "paddb",
+    "vpsubb": "psubb",
+    "vpaddw": "paddw",
+    "vpsubw": "psubw",
+    "vpaddq": "paddq",
+    "vpsubq": "psubq",
+    "vpmulld": "pmulld",
+    "vpminsd": "pminsd",
+    "vpmaxsd": "pmaxsd",
+    "vpcmpeqd": "pcmpeqd",
+    "vpcmpgtd": "pcmpgtd",
+    "vpaddusb": "paddusb",
+    "vpsubusb": "psubusb",
+    "vpaddusw": "paddusw",
+    "vpsubusw": "psubusw",
+    "vpavgb": "pavgb",
+    "vpavgw": "pavgw",
+    "vpsadbw": "psadbw",
+    "vpmaddwd": "pmaddwd",
+    "vpmulhuw": "pmulhuw",
+    "vpmulhw": "pmulhw",
+    "vpackuswb": "packuswb",
+    "vpackssdw": "packssdw",
+    "vpunpcklbw": "punpcklbw",
+    "vpunpcklwd": "punpcklwd",
 }
 _FP_VEX_PACKED_MOVE: frozenset[str] = frozenset({"vmovaps", "vmovups", "vmovapd", "vmovupd", "vmovdqa", "vmovdqu"})
 
