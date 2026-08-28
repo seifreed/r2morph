@@ -377,7 +377,22 @@ def _decode_fp_arith_idx(text: str) -> tuple[str, str, int, int, int, int, int, 
 
 
 _FP_PACKED_ARITH: frozenset[str] = frozenset(
-    {"addpd", "addps", "subpd", "subps", "mulpd", "mulps", "divpd", "divps", "pand", "pandn", "por", "pxor"}
+    {
+        "addpd",
+        "addps",
+        "subpd",
+        "subps",
+        "mulpd",
+        "mulps",
+        "divpd",
+        "divps",
+        "paddd",
+        "psubd",
+        "pand",
+        "pandn",
+        "por",
+        "pxor",
+    }
 )
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd"})
 

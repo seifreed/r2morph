@@ -13,7 +13,9 @@ from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_simdint_x86_64"
+_ARITHMETIC_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_simdintarith_x86_64"
 _EXPECTED_EXIT_CODE = 46
+_EXPECTED_ARITHMETIC_EXIT_CODE = 62
 
 pytestmark = pytest.mark.integration
 
@@ -43,3 +45,21 @@ def test_simd_integer_fixture_virtualization_applies(tmp_path: Path) -> None:
 def test_simd_integer_fixture_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     mutated, _stats = _virtualize_fixture(tmp_path)
     expect(emulate_exit_code(mutated) == _EXPECTED_EXIT_CODE)
+
+
+def test_simd_integer_arithmetic_fixture_original_has_expected_exit_code() -> None:
+    expect(emulate_exit_code(_ARITHMETIC_FIXTURE) == _EXPECTED_ARITHMETIC_EXIT_CODE)
+
+
+def test_simd_integer_arithmetic_fixture_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    mutated = tmp_path / "mutated-arithmetic"
+    shutil.copyfile(_ARITHMETIC_FIXTURE, mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260828}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    expect(stats["functions_virtualized"] >= 1)
+    expect(emulate_exit_code(mutated) == _EXPECTED_ARITHMETIC_EXIT_CODE)

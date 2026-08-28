@@ -1,7 +1,15 @@
 {
   "original": "elf_vm_arith_x86_64",
+  "passes": [
+    {
+      "functions_virtualized": 1,
+      "pass_name": "CodeVirtualization",
+      "status": "applied",
+      "unsupported_functions": 0
+    }
+  ],
   "protected": "protected",
-  "schema_version": 1,
+  "schema_version": 2,
   "tools": [
     {
       "changed": true,
@@ -36,12 +44,12 @@
     {
       "changed": true,
       "original": {
-        "duration_seconds": 0.015894625044893473,
+        "duration_seconds": 0.011401124997064471,
         "functions": 2,
         "status": "completed"
       },
       "protected": {
-        "duration_seconds": 0.016447167028672993,
+        "duration_seconds": 0.014062291011214256,
         "functions": 3,
         "status": "completed"
       },
@@ -51,12 +59,12 @@
     {
       "changed": true,
       "original": {
-        "duration_seconds": 0.0012799589894711971,
+        "duration_seconds": 0.0009184170048683882,
         "exit_code": 45,
         "status": "completed"
       },
       "protected": {
-        "duration_seconds": 0.004128667002078146,
+        "duration_seconds": 0.003610250016208738,
         "exit_code": 45,
         "status": "completed"
       },

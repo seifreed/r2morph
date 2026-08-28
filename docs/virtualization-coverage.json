@@ -49,7 +49,7 @@
       ]
     },
     "floating_point_and_simd": {
-      "fixture_count": 30,
+      "fixture_count": 31,
       "fixtures": [
         "elf_vm_fparith_x86_64",
         "elf_vm_fparithidx_x86_64",
@@ -80,11 +80,12 @@
         "elf_vm_fppackedmem_x86_64",
         "elf_vm_fppackedrip_x86_64",
         "elf_vm_fpriprel_x86_64",
-        "elf_vm_simdint_x86_64"
+        "elf_vm_simdint_x86_64",
+        "elf_vm_simdintarith_x86_64"
       ]
     },
     "gp_arithmetic": {
-      "fixture_count": 25,
+      "fixture_count": 26,
       "fixtures": [
         "elf_vm_arith32_x86_64",
         "elf_vm_arith_x86_64",
@@ -110,6 +111,7 @@
         "elf_vm_not_x86_64",
         "elf_vm_run_memarithfallback_x86_64",
         "elf_vm_run_riprelarithfallback_x86_64",
+        "elf_vm_simdintarith_x86_64",
         "elf_vm_word16_x86_64"
       ]
     },
@@ -187,7 +189,7 @@
   },
   "capability_count": 9,
   "covered_capability_count": 9,
-  "fixture_count": 107,
+  "fixture_count": 108,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []
