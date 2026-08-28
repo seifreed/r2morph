@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from r2morph.mutations.code_virtualization_region_control_handlers import (
+    CallBridgeConfig,
     CallMemoryHandlerConfig,
     VRetHandlerConfig,
     _call_handler_asm,
@@ -126,6 +127,7 @@ class HandlerContext:
     field_perm: int = 0
     body_seed: int = 0
     isa_seed: int = 0
+    flags_offset: int = 0x80
 
 
 class HandlerBodyRouter:
@@ -155,22 +157,27 @@ class HandlerBodyRouter:
 
     def _calls(self, key: str, index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]
+        stack_depth = (
+            int(key.rsplit("_", 1)[1])
+            if key.startswith(("call_", "icall_", "callmem_", "callmemrip_", "callmemidx_"))
+            else 0
+        )
         body = None
-        if key == "call":
-            body = _call_handler_asm(index, self.context.key_dword, self.context.slot)
-        elif key == "icall":
-            body = _icall_handler_asm(index, self.context.key, self.context.slot)
-        elif key in ("callmem", "callmemrip"):
-            config = CallMemoryHandlerConfig(
+        if key.startswith("call_"):
+            body = _call_handler_asm(
                 index,
-                self.context.key,
                 self.context.key_dword,
                 self.context.slot,
-                self.context.field_perm,
-                address,
+                CallBridgeConfig(self.context.frame_size, self.context.flags_offset, stack_depth),
             )
-            body = _call_mem_handler_asm(config, key == "callmemrip")
-        elif key == "callmemidx":
+        elif key.startswith("icall_"):
+            body = _icall_handler_asm(
+                index,
+                self.context.key,
+                self.context.slot,
+                CallBridgeConfig(self.context.frame_size, self.context.flags_offset, stack_depth),
+            )
+        elif key.startswith(("callmem_", "callmemrip_")):
             config = CallMemoryHandlerConfig(
                 index,
                 self.context.key,
@@ -178,6 +185,22 @@ class HandlerBodyRouter:
                 self.context.slot,
                 self.context.field_perm,
                 address,
+                self.context.frame_size,
+                self.context.flags_offset,
+                stack_depth,
+            )
+            body = _call_mem_handler_asm(config, key.startswith("callmemrip_"))
+        elif key.startswith("callmemidx_"):
+            config = CallMemoryHandlerConfig(
+                index,
+                self.context.key,
+                self.context.key_dword,
+                self.context.slot,
+                self.context.field_perm,
+                address,
+                self.context.frame_size,
+                self.context.flags_offset,
+                stack_depth,
             )
             body = _call_mem_idx_handler_asm(config)
         elif key == "vcall":

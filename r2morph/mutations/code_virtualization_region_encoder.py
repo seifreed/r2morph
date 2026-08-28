@@ -324,8 +324,10 @@ class RegionEncoder:
     def _emit_calls(self, item: RegionItem) -> bool:
         kind = item[0]
         if kind == "call":
-            self._disp(item[1] - self.bytecode_base, self._opcode(item, "call"))
-        elif kind in ("icall", "ijmp"):
+            self._disp(item[1] - self.bytecode_base, self._opcode(item))
+        elif kind == "icall":
+            self.plain.append(self.slot_of[item[1]] ^ self._opcode(item))
+        elif kind == "ijmp":
             self.plain.append(self.slot_of[item[1]] ^ self._opcode(item, kind))
         elif kind == "ijmpmem":
             _, base, index, shift, disp = item
@@ -334,13 +336,13 @@ class RegionEncoder:
             _, index, shift, disp = item
             self._idx(self._opcode(item, kind), (self.slot_of[0], None, self.slot_of[index], shift, disp))
         elif kind == "callmem":
-            _, base, disp = item
-            self._mem(self._opcode(item, kind), (self.slot_of[0], self.slot_of[base], disp))
+            base, disp = item[1], item[2]
+            self._mem(self._opcode(item), (self.slot_of[0], self.slot_of[base], disp))
         elif kind == "callmemrip":
-            self._mem(self._opcode(item, kind), (self.slot_of[0], None, item[1] - self.bytecode_base))
+            self._mem(self._opcode(item), (self.slot_of[0], None, item[1] - self.bytecode_base))
         elif kind == "callmemidx":
-            _, base, index, shift, disp = item
-            self._idx(self._opcode(item, kind), (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
+            base, index, shift, disp = item[1], item[2], item[3], item[4]
+            self._idx(self._opcode(item), (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
         else:
             return False
         return True

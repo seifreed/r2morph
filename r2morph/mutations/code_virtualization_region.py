@@ -179,7 +179,7 @@ def _stack_successors(item: list[Any], index: int) -> tuple[list[int], int | Non
     return [index + 1], None
 
 
-def _stack_balanced(items: list[list[Any]]) -> bool:
+def _stack_states(items: list[list[Any]]) -> list[tuple[int, tuple[int, int] | None] | None] | None:
     """Verify the region's virtual stack is balanced on every path.
 
     The VM force-restores the hardware rsp on exit, and the function's virtual
@@ -193,6 +193,8 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
     was overwritten meanwhile). Conflicting depths, an underflow, or a non-zero
     depth at a terminator rejects the region (left native).
     """
+    if not items:
+        return None
     # Per item: (byte depth, frame-pointer snapshot (register, depth) or None).
     state: list[tuple[int, tuple[int, int] | None] | None] = [None] * len(items)
     state[0] = (0, None)
@@ -206,17 +208,22 @@ def _stack_balanced(items: list[list[Any]]) -> bool:
         item = items[i]
         transition = _stack_transition(item, depth, snapshot)
         if transition is None:
-            return False
+            return None
         out_depth, out_snapshot = transition
         successors, call_target = _stack_successors(item, i)
         if not successors:
             continue
         if call_target is not None and not _merge_stack_state(state, work, call_target, 0, None):
-            return False
+            return None
         for nxt in successors:
             if not _merge_stack_state(state, work, nxt, out_depth, out_snapshot):
-                return False
-    return True
+                return None
+    return state
+
+
+def _stack_balanced(items: list[list[Any]]) -> bool:
+    """Return whether the region's stack dataflow has one valid state per path."""
+    return _stack_states(items) is not None
 
 
 # Items that fully overwrite every readable arithmetic flag (CF, OF, SF, ZF, PF;
@@ -437,8 +444,15 @@ def extract_region(
     if build is None or not _resolve_region_targets(build, instructions):
         return None
     items = build.items
-    if not _stack_balanced(items):
+    stack_states = _stack_states(items)
+    if stack_states is None:
         return None
+    for index, item in enumerate(items):
+        if item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx"):
+            state = stack_states[index]
+            if state is None:
+                return None
+            item.append(state[0])
 
     # Flag-liveness: an add whose flags are never read becomes an MBA handler
     # (no literal add, no flag capture). Runs before junk injection so the analysis

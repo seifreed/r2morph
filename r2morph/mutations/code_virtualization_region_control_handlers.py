@@ -11,6 +11,7 @@ from r2morph.mutations.code_virtualization_engine import (
 )
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
+    _GUARD,
     _KEY_QWORD_SLOT,
     _XMM_SAVE_OFFSET,
 )
@@ -165,48 +166,103 @@ def _live_junk_asm(rng: random.Random, index: int) -> str:
 # back after to capture the callee's results.
 _CALL_ARG_REGISTERS: tuple[str, ...] = ("rdi", "rsi", "rdx", "rcx", "r8", "r9", "rax")
 _XMM_REGISTERS = tuple(range(16))
+_CALL_VPC_OFFSET = 0x2D0
+_CALL_BASE_OFFSET = 0x2D8
+_CALL_CALLEE_SAVED_REGISTERS: tuple[str, ...] = ("rbx", "rbp", "r13", "r14", "r15", "r12")
 
 
-def _call_bridge_asm(index: int, slot: tuple[int, ...], target_asm: str, advance: int) -> str:
+@dataclass(frozen=True)
+class CallBridgeConfig:
+    frame_size: int = 0x300
+    flags_offset: int = _FLAGS_OFFSET
+    stack_depth: int = 0
+
+
+def _call_frame_load_asm(register: str, offset: int) -> str:
+    """Load one encrypted call-frame value through the stable frame base."""
+    return (
+        f"  mov r11, qword ptr [r12+{offset}]\n"
+        f"  xor r11, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
+        f"  mov {register}, r11\n"
+    )
+
+
+def _call_frame_spills_asm(slot: tuple[int, ...], flags_offset: int) -> str:
+    """Capture native call results into the encrypted VM frame after return."""
+    xmm_spills = "".join(
+        f"  movups xmmword ptr [r12+{_XMM_SAVE_OFFSET + index * 16}], xmm{index}\n" for index in _XMM_REGISTERS
+    )
+    register_spills = "".join(
+        f"  xor {name}, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
+        f"  mov qword ptr [r12+{slot[GP_REGISTERS.index(name)] * 8}], {name}\n"
+        f"  xor {name}, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
+        for name in _CALL_ARG_REGISTERS
+    )
+    return (
+        f"  pushfq\n  pop qword ptr [r12+{flags_offset}]\n"
+        + xmm_spills
+        + register_spills
+        + f"  mov rsi, qword ptr [r12+{_CALL_VPC_OFFSET}]\n"
+        + f"  mov r15, qword ptr [r12+{_CALL_BASE_OFFSET}]\n"
+        + "  mov rsp, r12\n"
+    )
+
+
+def _call_bridge_asm(
+    index: int,
+    slot: tuple[int, ...],
+    target_asm: str,
+    advance: int,
+    bridge: CallBridgeConfig | None = None,
+) -> str:
     """Bridge a virtualized call out to a native callee and back.
 
     ``target_asm`` is the prologue that leaves the absolute callee address in r10
     (the direct and register-indirect forms differ only there); ``advance`` is the
-    call item's size. Every program register lives in a frame slot, so the real
-    registers are free to set up the System V argument registers; r12/rbx
-    (callee-saved) carry the VM frame base and stream pointer across the call. The
-    program's stack is relocated below the VM frame, so the manual return-address
-    push and the callee's own frame never collide with the spilled context. Only
-    rax (the return value) and the loaded argument registers are spilled back: the
-    rest of the caller-saved set is undefined across a call by the ABI, and the
-    callee preserves the callee-saved program values still held in their slots.
+    call item's size. The VM frame and current stream pointers are saved in private
+    frame cells before all six System V callee-saved registers are restored from the
+    program context. On return, the frame base is reconstructed from the relocated
+    program stack, so no interpreter register has to remain live inside the callee.
+    The program's stack is relocated below the VM frame, so the manual return-address
+    push and the callee's own frame never collide with the spilled context. Only rax
+    and the loaded argument registers are spilled back; the rest of the caller-saved
+    set is undefined across a call by the ABI.
 
     ``index`` makes the resume label unique across duplicated handler instances.
     """
+    bridge = bridge or CallBridgeConfig()
     off = {name: slot[GP_REGISTERS.index(name)] * 8 for name in _CALL_ARG_REGISTERS}
     loads = "".join(f"  mov {name}, qword ptr [rsp+{off[name]}]\n" for name in _CALL_ARG_REGISTERS)
-    spills = "".join(f"  mov qword ptr [rsp+{off[name]}], {name}\n" for name in _CALL_ARG_REGISTERS)
     xmm_loads = "".join(
         f"  movups xmm{index}, xmmword ptr [rsp+{_XMM_SAVE_OFFSET + index * 16}]\n" for index in _XMM_REGISTERS
     )
-    xmm_spills = "".join(
-        f"  movups xmmword ptr [rsp+{_XMM_SAVE_OFFSET + index * 16}], xmm{index}\n" for index in _XMM_REGISTERS
+    callee_saved_loads = "".join(
+        _call_frame_load_asm(register, slot[GP_REGISTERS.index(register)] * 8)
+        for register in _CALL_CALLEE_SAVED_REGISTERS
     )
     return (
         target_asm
-        + "  mov r12, rsp\n  mov rbx, rsi\n"
+        + f"  mov r12, rsp\n  mov rbx, rsi\n  mov qword ptr [rsp+{_CALL_VPC_OFFSET}], rsi\n"
+        + f"  mov qword ptr [rsp+{_CALL_BASE_OFFSET}], r15\n"
         + loads
         + xmm_loads
-        + f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n  xor rsp, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
+        + f"  mov rax, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n"
+        + f"  xor rax, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
+        + callee_saved_loads
+        + "  mov rsp, rax\n"
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
-        + f"call_resume_{index}:\n  mov rsp, r12\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
-        + xmm_spills
-        + spills
-        + f"  mov rsi, rbx\n  add rsi, {advance}\n  jmp vm_dispatch\n"
+        + f"call_resume_{index}:\n  lea r12, [rsp+{_GUARD - bridge.frame_size + bridge.stack_depth}]\n"
+        + _call_frame_spills_asm(slot, bridge.flags_offset)
+        + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
     )
 
 
-def _call_handler_asm(index: int, key_dword: str, slot: tuple[int, ...]) -> str:
+def _call_handler_asm(
+    index: int,
+    key_dword: str,
+    slot: tuple[int, ...],
+    bridge: CallBridgeConfig | None = None,
+) -> str:
     """Direct ``call``: the target is a signed 32-bit offset from the bytecode
     base (r15, callee-saved so it survives the call), recomputed base-independently."""
     target = (
@@ -214,14 +270,19 @@ def _call_handler_asm(index: int, key_dword: str, slot: tuple[int, ...]) -> str:
         f"  movzx r11d, r13b\n  imul r11d, r11d, {hex(_DWORD_BROADCAST)}\n  xor eax, r11d\n"
         "  movsxd r10, eax\n  add r10, r15\n"
     )
-    return _call_bridge_asm(index, slot, target, 5)
+    return _call_bridge_asm(index, slot, target, 5, bridge)
 
 
-def _icall_handler_asm(index: int, key: str, slot: tuple[int, ...]) -> str:
+def _icall_handler_asm(
+    index: int,
+    key: str,
+    slot: tuple[int, ...],
+    bridge: CallBridgeConfig | None = None,
+) -> str:
     """Register-indirect ``call reg``: the target is the program value of a GP
     register, read from its frame slot. Base-independent (no r15), so it nests."""
     target = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n" "  mov r10, qword ptr [rsp+r8*8]\n"
-    return _call_bridge_asm(index, slot, target, 2)
+    return _call_bridge_asm(index, slot, target, 2, bridge)
 
 
 def _syscall_handler_asm(slot: tuple[int, ...]) -> str:
@@ -344,6 +405,9 @@ class CallMemoryHandlerConfig:
     slot: tuple[int, ...]
     field_perm: int
     addr_variant: int = 0
+    frame_size: int = 0x300
+    flags_offset: int = _FLAGS_OFFSET
+    stack_depth: int = 0
 
 
 def _vret_handler_asm(config: VRetHandlerConfig) -> str:
@@ -380,7 +444,13 @@ def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool) -> str:
         config.addr_variant,
     )
     target = address + "  mov r10, qword ptr [r10]\n"
-    return _call_bridge_asm(config.index, config.slot, target, advance)
+    return _call_bridge_asm(
+        config.index,
+        config.slot,
+        target,
+        advance,
+        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth),
+    )
 
 
 def _call_mem_idx_handler_asm(config: CallMemoryHandlerConfig) -> str:
@@ -395,7 +465,13 @@ def _call_mem_idx_handler_asm(config: CallMemoryHandlerConfig) -> str:
         config.addr_variant,
     )
     target = address + "  mov r10, qword ptr [r10]\n"
-    return _call_bridge_asm(config.index, config.slot, target, advance)
+    return _call_bridge_asm(
+        config.index,
+        config.slot,
+        target,
+        advance,
+        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth),
+    )
 
 
 # RFLAGS bit positions read by the conditional-branch conditions (Intel SDM Vol 1

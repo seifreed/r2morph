@@ -191,7 +191,17 @@ _IDENTITY_KEYS = {
 }
 
 
-def _op_key(item: tuple[Any, ...]) -> str | None:
+_CALL_KEY_LENGTHS = {"call": 3, "icall": 3, "callmem": 4, "callmemrip": 3, "callmemidx": 6}
+
+
+def _call_key(item: tuple[Any, ...]) -> str:
+    kind: str = item[0]
+    if len(item) >= _CALL_KEY_LENGTHS[kind]:
+        return f"{kind}_{item[-1]}"
+    return kind
+
+
+def _simple_op_key(item: tuple[Any, ...]) -> str | None:
     kind: str = item[0]
     if kind in ("op", "opmba", "opsynth"):
         operation: VirtualizedOp = item[1]
@@ -204,6 +214,17 @@ def _op_key(item: tuple[Any, ...]) -> str | None:
         return f"{item[1]}_{item[4]}"
     if kind in _IDENTITY_KEYS:
         return kind
+
+    return None
+
+
+def _op_key(item: tuple[Any, ...]) -> str | None:
+    kind: str = item[0]
+    if kind in _CALL_KEY_LENGTHS:
+        return _call_key(item)
+    simple_key = _simple_op_key(item)
+    if simple_key is not None:
+        return simple_key
 
     field_indexes = _KEY_FIELD_INDEXES.get(kind)
     if field_indexes is None:

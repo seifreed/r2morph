@@ -260,6 +260,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     scheme.field_perm,
                     scheme.body_seed,
                     scheme.isa_seed,
+                    scheme.flags_offset,
                 ),
                 junk_rng,
                 entry_prefix=state_decode,
