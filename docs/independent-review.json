@@ -21,6 +21,11 @@
       "status": "passed"
     },
     {
+      "detail": "119 samples, 238 completed analyses",
+      "name": "ghidra_corpus_evidence",
+      "status": "passed"
+    },
+    {
       "detail": "110/110 valid ELF64 headers",
       "name": "virtualization_fixture_headers",
       "status": "passed"

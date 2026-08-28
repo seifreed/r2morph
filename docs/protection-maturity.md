@@ -34,6 +34,11 @@ angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
 Binary Ninja remain unavailable in this environment. The automated second-pass
 review passes all checks and is not human sign-off.
 
+The separate [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
+campaign runs Ghidra headless over the same 119 original/protected pairs. It
+completed 238 analyses with zero errors or timeouts and records the
+`CodeVirtualization` pass summary per sample.
+
 The current report records 595 completed tool runs and 476 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in

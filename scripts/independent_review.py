@@ -125,6 +125,35 @@ def _review_corpus_benchmark(root: Path) -> dict[str, object]:
     )
 
 
+def _review_ghidra_corpus(root: Path) -> dict[str, object]:
+    path = root / "docs" / "protection-ghidra-corpus.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    samples = document.get("samples", [])
+    expected_count = document.get("sample_count")
+    rows_valid = isinstance(samples, list) and expected_count == len(samples) and expected_count > 0
+    completed = 0
+    for sample in samples if isinstance(samples, list) else []:
+        tools = sample.get("tools", []) if isinstance(sample, dict) else []
+        row = tools[0] if len(tools) == 1 and isinstance(tools[0], dict) else None
+        if row is None or row.get("tool") != "ghidra" or row.get("status") != "completed":
+            rows_valid = False
+            continue
+        original = row.get("original", {})
+        protected = row.get("protected", {})
+        if original.get("status") != "completed" or protected.get("status") != "completed":
+            rows_valid = False
+            continue
+        completed += 2
+    summary = document.get("summary", {})
+    summary_valid = summary == {
+        "completed_analysis_runs": completed,
+        "error_analysis_runs": 0,
+        "timeout_analysis_runs": 0,
+    }
+    passed = rows_valid and summary_valid
+    return _check("ghidra_corpus_evidence", passed, f"{expected_count} samples, {completed} completed analyses")
+
+
 def _review_fixtures(root: Path) -> dict[str, object]:
     dataset = root / "fixtures" / "dataset"
     candidates = sorted(dataset.glob("elf_vm_*_x86_64"))
@@ -147,6 +176,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_matrix(root),
         _review_benchmark(root),
         _review_corpus_benchmark(root),
+        _review_ghidra_corpus(root),
         _review_fixtures(root),
         _check(
             "parser_rewriter_fuzz_campaign", fuzz["failure_count"] == 0, f"{fuzz['cases']} cases, 0 failures expected"

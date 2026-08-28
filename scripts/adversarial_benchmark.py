@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import os
 import re
 import shutil
 import sys
@@ -24,16 +25,29 @@ from scripts.protection_maturity_baseline import discover_executables
 from tests.integration.elf_emulator import emulate_exit_code
 
 _COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "ida64", "ghidra": "ghidra", "binary-ninja": "bndb"}
+_COMMAND_ENVIRONMENT = {"ghidra": "GHIDRA_HEADLESS"}
 _PYTHON_MODULES = {"angr": "angr", "triton": "triton", "unicorn": "unicorn"}
 _EXPECTED_TOOLS = ("radare2", "objdump", "angr", "unicorn", "triton", "ida-pro", "ghidra", "binary-ninja")
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
+_GHIDRA_ANALYSIS_TIMEOUT_SECONDS = 60
 _PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
+_GHIDRA_SCRIPT = Path(__file__).with_name("ghidra")
+_GHIDRA_COUNT_PATTERN = re.compile(r"R2MORPH_FUNCTION_COUNT=(?:(?P<program>[^=\r\n]+)=)?(?P<count>\d+)")
+
+
+def _configured_executable(tool: str) -> str | None:
+    environment_name = _COMMAND_ENVIRONMENT.get(tool)
+    if environment_name:
+        configured = os.environ.get(environment_name)
+        if configured:
+            return configured if Path(configured).is_file() else None
+    return shutil.which(_COMMANDS[tool])
 
 
 def _availability(tool: str) -> tuple[bool, str]:
     if tool in _COMMANDS:
-        command = shutil.which(_COMMANDS[tool])
+        command = _configured_executable(tool)
         return (True, command) if command else (False, f"executable {_COMMANDS[tool]!r} is unavailable")
     module = _PYTHON_MODULES[tool]
     return (True, module) if importlib.util.find_spec(module) else (False, f"module {module!r} is unavailable")
@@ -85,6 +99,54 @@ def _unicorn_metric(path: Path) -> dict[str, object]:
     return {"status": "completed", "exit_code": exit_code, "duration_seconds": time.perf_counter() - started}
 
 
+def _parse_ghidra_function_count(output: str) -> int:
+    match = _GHIDRA_COUNT_PATTERN.search(output)
+    if match is None:
+        raise ValueError("Ghidra function count marker is missing")
+    return int(match.group("count"))
+
+
+def _parse_ghidra_function_counts(output: str) -> dict[str, int]:
+    counts = {
+        match.group("program"): int(match.group("count"))
+        for match in _GHIDRA_COUNT_PATTERN.finditer(output)
+        if match.group("program") is not None
+    }
+    if not counts:
+        raise ValueError("Ghidra function count markers are missing")
+    return counts
+
+
+def _ghidra_metric(path: Path) -> dict[str, object]:
+    executable = _configured_executable("ghidra")
+    if executable is None:
+        raise FileNotFoundError("Ghidra headless executable is unavailable")
+    started = time.perf_counter()
+    with tempfile.TemporaryDirectory(prefix="r2morph-ghidra-") as project_dir:
+        result = run_process(
+            [
+                executable,
+                project_dir,
+                "analysis",
+                "-import",
+                path,
+                "-scriptPath",
+                _GHIDRA_SCRIPT,
+                "-postscript",
+                "CountFunctions.java",
+                "-analysisTimeoutPerFile",
+                str(_GHIDRA_ANALYSIS_TIMEOUT_SECONDS),
+                "-deleteProject",
+                "-okToDelete",
+            ],
+            timeout=_COMMAND_TIMEOUT_SECONDS,
+        )
+    if result.returncode != 0:
+        raise RuntimeError(f"Ghidra headless exited with status {result.returncode}")
+    count = _parse_ghidra_function_count(result.stdout_text + result.stderr_text)
+    return {"status": "completed", "functions": count, "duration_seconds": time.perf_counter() - started}
+
+
 def _binary_metric(path: Path) -> dict[str, object]:
     with Binary(path) as binary:
         binary.analyze("aa")
@@ -96,6 +158,7 @@ _METRICS: dict[str, Callable[[Path], dict[str, object]]] = {
     "objdump": _objdump_metric,
     "angr": _angr_metric,
     "unicorn": _unicorn_metric,
+    "ghidra": _ghidra_metric,
     "custom": _binary_metric,
 }
 

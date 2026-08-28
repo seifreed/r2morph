@@ -2,11 +2,17 @@
 
 from pathlib import Path
 
-from scripts.adversarial_benchmark import benchmark_corpus, benchmark_pair
+from scripts.adversarial_benchmark import (
+    _parse_ghidra_function_count,
+    _parse_ghidra_function_counts,
+    benchmark_corpus,
+    benchmark_pair,
+)
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
 _EXPECTED_TOOL_COUNT = 9
+_EXPECTED_GHIDRA_FUNCTION_COUNT = 17
 
 
 def test_adversarial_benchmark_reports_every_tool_slot() -> None:
@@ -54,4 +60,15 @@ def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path)
             "samples": 1,
             "unsupported_functions": 0,
         }
+    )
+
+
+def test_adversarial_benchmark_parses_ghidra_function_count_marker() -> None:
+    expect(_parse_ghidra_function_count("INFO R2MORPH_FUNCTION_COUNT=sample=17") == _EXPECTED_GHIDRA_FUNCTION_COUNT)
+
+
+def test_adversarial_benchmark_parses_ghidra_function_counts_by_program() -> None:
+    expect(
+        _parse_ghidra_function_counts("R2MORPH_FUNCTION_COUNT=one=2\nR2MORPH_FUNCTION_COUNT=two=3")
+        == {"one": 2, "two": 3}
     )
