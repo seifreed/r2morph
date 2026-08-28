@@ -14,8 +14,8 @@ from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_x86_64"
-_EXPECTED_EXIT_CODE = 42
-_MINIMUM_VIRTUALIZED_INSTRUCTIONS = 4
+_EXPECTED_EXIT_CODE = 22
+_MINIMUM_VIRTUALIZED_INSTRUCTIONS = 7
 
 
 def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:

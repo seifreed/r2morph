@@ -86,3 +86,11 @@ def test_decode_engine_vex128_packed_add_uses_existing_source_as_destination() -
 
 def test_decode_engine_vex128_packed_add_rejects_non_destructive_source_form() -> None:
     expect(_decode_run_item("vaddps xmm0, xmm1, xmm2") is None)
+
+
+def test_decode_vex128_packed_minimum_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vminps xmm0, xmm0, xmm1") == ("fppackedvex", "minps", 0, 0, 1))
+
+
+def test_decode_vex128_packed_maximum_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vmaxps xmm0, xmm0, xmm1") == ("fppackedvex", "maxps", 0, 0, 1))

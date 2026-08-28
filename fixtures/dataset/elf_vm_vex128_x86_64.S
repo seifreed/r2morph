@@ -15,19 +15,22 @@ _start:
 .section .text.compute,"ax",@progbits
 .p2align 4, 0x90
 compute:
+    vmovaps xmm3, xmm0
     vaddps xmm0, xmm0, xmm1
+    vminps xmm0, xmm0, xmm1
+    vmaxps xmm0, xmm0, xmm3
     vsubps xmm0, xmm0, xmm2
     vaddps xmm0, xmm0, xmm2
-    vmovaps xmm3, xmm0
+    vmovaps xmm4, xmm0
     ret
 
 check_result:
-    vextractf128 xmm4, ymm3, 1
-    movd eax, xmm4
+    vextractf128 xmm5, ymm4, 1
+    movd eax, xmm5
     test eax, eax
     jne .bad_upper
-    vcvttss2si eax, xmm3
-    cmp eax, 42
+    vcvttss2si eax, xmm4
+    cmp eax, 22
     jne .bad_value
     mov edi, 42
     mov eax, 60
