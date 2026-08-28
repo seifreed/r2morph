@@ -11,14 +11,18 @@ from r2morph.validation.semantic_models import ObservableComparison
 angr: Any
 claripy: Any
 try:
-    import angr
     import claripy
+
+except (ImportError, DeprecationWarning):
+    claripy = None
+
+try:
+    import angr
 
     ANGR_AVAILABLE = True
 except (ImportError, DeprecationWarning):
     ANGR_AVAILABLE = False
     angr = None
-    claripy = None
 
 logger = logging.getLogger(__name__)
 
