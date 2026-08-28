@@ -16,6 +16,11 @@
       "status": "passed"
     },
     {
+      "detail": "110 samples, 550 completed tool runs, 0 errors",
+      "name": "adversarial_corpus_evidence",
+      "status": "passed"
+    },
+    {
       "detail": "101/101 valid ELF64 headers",
       "name": "virtualization_fixture_headers",
       "status": "passed"

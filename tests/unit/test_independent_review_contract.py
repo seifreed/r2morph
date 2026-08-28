@@ -12,3 +12,9 @@ def test_independent_review_passes_published_artifacts() -> None:
     report = review(_ROOT)
 
     expect(report["passed"] is True and report["human_signoff"] == "not-attested")
+
+
+def test_independent_review_includes_corpus_benchmark_check() -> None:
+    report = review(_ROOT)
+
+    expect(any(check["name"] == "adversarial_corpus_evidence" for check in report["checks"]))

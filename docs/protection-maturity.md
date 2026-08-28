@@ -88,6 +88,8 @@ The continuous parser/rewriter campaign is implemented in
 [`scripts/continuous_fuzz.py`](../scripts/continuous_fuzz.py) and scheduled in
 GitHub Actions. The multi-analyzer evidence is in
 [`docs/protection-adversarial-benchmark.json`](protection-adversarial-benchmark.json),
+the full-corpus run is in
+[`docs/protection-adversarial-corpus.json`](protection-adversarial-corpus.json),
 and the reproducible second-pass review is in
 [`docs/independent-review.json`](independent-review.json). An analyzer is marked
 `unavailable` when its executable or license is absent; those rows are not

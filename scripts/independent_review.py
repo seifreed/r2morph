@@ -65,6 +65,66 @@ def _review_benchmark(root: Path) -> dict[str, object]:
     )
 
 
+def _review_corpus_benchmark(root: Path) -> dict[str, object]:
+    path = root / "docs" / "protection-adversarial-corpus.json"
+    document = json.loads(path.read_text(encoding="utf-8"))
+    samples = document.get("samples", [])
+    expected_count = document.get("sample_count")
+    sample_valid = isinstance(samples, list) and expected_count == len(samples) and expected_count > 0
+    rows_valid = True
+    for sample in samples if isinstance(samples, list) else []:
+        if not isinstance(sample, dict):
+            rows_valid = False
+            break
+        tool_rows = sample.get("tools", [])
+        pass_rows = sample.get("passes", [])
+        tool_names = {row.get("tool") for row in tool_rows if isinstance(row, dict)}
+        pass_names = {row.get("pass_name") for row in pass_rows if isinstance(row, dict)}
+        if tool_names != _EXPECTED_BENCHMARK_TOOLS or "CodeVirtualization" not in pass_names:
+            rows_valid = False
+            break
+        if any(
+            not isinstance(row.get("status"), str) or row.get("status") not in {"completed", "unavailable", "error"}
+            for row in tool_rows
+            if isinstance(row, dict)
+        ):
+            rows_valid = False
+            break
+    summary = document.get("summary", {})
+    completed = sum(
+        1
+        for sample in samples
+        if isinstance(samples, list) and isinstance(sample, dict)
+        for row in sample.get("tools", [])
+        if isinstance(row, dict) and row.get("status") == "completed"
+    )
+    unavailable = sum(
+        1
+        for sample in samples
+        if isinstance(samples, list) and isinstance(sample, dict)
+        for row in sample.get("tools", [])
+        if isinstance(row, dict) and row.get("status") == "unavailable"
+    )
+    errors = sum(
+        1
+        for sample in samples
+        if isinstance(samples, list) and isinstance(sample, dict)
+        for row in sample.get("tools", [])
+        if isinstance(row, dict) and row.get("status") == "error"
+    )
+    summary_valid = summary == {
+        "completed_tool_runs": completed,
+        "error_tool_runs": errors,
+        "unavailable_tool_runs": unavailable,
+    }
+    passed = sample_valid and rows_valid and summary_valid and errors == 0
+    return _check(
+        "adversarial_corpus_evidence",
+        passed,
+        f"{expected_count} samples, {completed} completed tool runs, {errors} errors",
+    )
+
+
 def _review_fixtures(root: Path) -> dict[str, object]:
     dataset = root / "fixtures" / "dataset"
     candidates = sorted(dataset.glob("elf_vm_*_x86_64"))
@@ -86,6 +146,7 @@ def review(root: Path) -> dict[str, Any]:
         _review_virtualization(root),
         _review_matrix(root),
         _review_benchmark(root),
+        _review_corpus_benchmark(root),
         _review_fixtures(root),
         _check(
             "parser_rewriter_fuzz_campaign", fuzz["failure_count"] == 0, f"{fuzz['cases']} cases, 0 failures expected"
