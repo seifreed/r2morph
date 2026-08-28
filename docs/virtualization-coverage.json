@@ -23,7 +23,7 @@
       ]
     },
     "flags_and_conditions": {
-      "fixture_count": 22,
+      "fixture_count": 23,
       "fixtures": [
         "elf_vm_addflagdead_x86_64",
         "elf_vm_addflaglive_x86_64",
@@ -31,6 +31,7 @@
         "elf_vm_boolflaglive_x86_64",
         "elf_vm_bt_x86_64",
         "elf_vm_callflags_stack_x86_64",
+        "elf_vm_carry_rotate_x86_64",
         "elf_vm_cmov_x86_64",
         "elf_vm_cmp8_x86_64",
         "elf_vm_cmp8imm_x86_64",
@@ -204,7 +205,7 @@
   },
   "capability_count": 10,
   "covered_capability_count": 10,
-  "fixture_count": 117,
+  "fixture_count": 118,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []

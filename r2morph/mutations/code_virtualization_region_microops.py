@@ -517,7 +517,7 @@ def _vshiftreg_handler_asm(handler_key: str, key: str) -> str:
 def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> str:
     """Pop the top vstack cell, shift it by the carried count, capture flags, push.
 
-    Lowers a native ``shl``/``shr``/``sar reg, imm``: the shifted register value is
+    Lowers a native shift/rotate ``reg, imm``: the shifted register value is
     popped off the stack, the count byte (the only operand, at ``[rsi+1]``, un-masked
     with the key and the stream position) goes into cl, the CPU runs the real shift
     (which masks the count to the operand width, faithful to the native op), and the
@@ -528,7 +528,7 @@ def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> s
     """
     _, mnemonic, width_text = handler_key.split("_")
     width = int(width_text)
-    is_rotate = mnemonic in ("rol", "ror")
+    is_rotate = mnemonic in ("rol", "ror", "rcl", "rcr")
     body = (
         f"  mov r9, qword ptr [rsp+{_VSP}]\n"
         "  sub r9, 8\n"
@@ -537,11 +537,9 @@ def _vshift_handler_asm(handler_key: str, key: str, shift_variant: int = 0) -> s
     )
     if is_rotate:
         # Rotates leave SF/ZF/AF/PF unaffected and only define CF (and OF for count 1),
-        # so - unlike a shift, which overwrites all of them - the captured flags must
-        # merge the program's incoming flags with the rotate's CF/OF. Load the flags
-        # slot into RFLAGS before the rotate (the count decode above already clobbered
-        # the flags, but popfq discards that), run the real rotate, then capture: the
-        # result is bit-for-bit what the native rotate would leave.
+        # so the captured flags must merge the incoming flags with the rotate's flags.
+        # Through-carry rotates also consume incoming CF; restore it before the native
+        # operation so both the result and merged flags match the CPU.
         body += f"  push qword ptr [rsp+{_FLAGS_OFFSET}]\n  popfq\n"
     body += f"  {mnemonic} rax, cl\n" if width == _QWORD_WIDTH_BITS else f"  {mnemonic} eax, cl\n"
     if is_rotate:

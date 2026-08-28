@@ -218,18 +218,17 @@ def _decode_two_operand(disasm: str, mnemonic: str) -> tuple[int, int, bool, int
 
 
 def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
-    """Decode ``shl|shr|sar|rol|ror reg, imm8`` into (mnemonic, slot, count, width).
+    """Decode immediate-count shifts and rotates into (mnemonic, slot, count, width).
 
-    Rotates share the stack-shift handler: the CPU runs the real ``rol``/``ror``, so
-    the count masking and the flags match the native op bit-for-bit. ``rcl``/``rcr``
-    (rotate *through carry*) are deliberately excluded - their carry-chained result is
-    not a plain ``rol``/``ror`` and would misdecode.
+    Rotates share the stack-shift handler: the CPU runs the real instruction, so the
+    count masking and flags match the native op bit-for-bit. Through-carry rotates
+    restore the virtual incoming CF before the native operation.
     """
     parts = disasm.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
     mnemonic = parts[0].lower()
-    if mnemonic not in ("shl", "shr", "sar", "rol", "ror"):
+    if mnemonic not in ("shl", "shr", "sar", "rol", "ror", "rcl", "rcr"):
         return None
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     dst = _register_operand(left)
@@ -246,7 +245,7 @@ def _decode_shift(disasm: str) -> tuple[str, int, int, int] | None:
 
 
 def _decode_shift_reg(disasm: str) -> tuple[Any, ...] | None:
-    """Decode a variable-count ``shl|shr|sar|rol|ror reg, cl`` into a shiftreg item.
+    """Decode a variable-count shift or rotate ``reg, cl`` into a shiftreg item.
 
     x86 variable shifts and rotates take their count only in ``cl``; the handler loads
     that count from the rcx slot at runtime and runs the real shift, so the CPU's count
@@ -257,7 +256,7 @@ def _decode_shift_reg(disasm: str) -> tuple[Any, ...] | None:
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
     mnemonic = parts[0].lower()
-    if mnemonic not in ("shl", "shr", "sar", "rol", "ror"):
+    if mnemonic not in ("shl", "shr", "sar", "rol", "ror", "rcl", "rcr"):
         return None
     left, right = (token.strip().lower() for token in parts[1].split(",", 1))
     if right != "cl":

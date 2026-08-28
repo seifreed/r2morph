@@ -200,6 +200,8 @@ def _classify_simple(kind: str, text: str, address: int, size: int) -> list[Any]
         "sar": lambda: _classify_shift(text),
         "rol": lambda: _classify_shift(text),
         "ror": lambda: _classify_shift(text),
+        "rcl": lambda: _classify_shift(text),
+        "rcr": lambda: _classify_shift(text),
         "mul": lambda: _classify_mul(text),
         "not": lambda: _first_item((lambda: _decode_not(text),)),
         "div": lambda: _first_item((lambda: _decode_div(text),)),
