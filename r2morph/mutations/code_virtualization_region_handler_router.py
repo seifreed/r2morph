@@ -73,6 +73,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _op_memory_handler_asm,
     _riprel_handler_asm,
     _tls_memory_handler_asm,
+    _xchg_memory_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_microops import (
     _frestore_handler_asm,
@@ -136,6 +137,7 @@ class HandlerBodyRouter:
             self._integer_arithmetic,
             self._integer_misc,
             self._tls_memory,
+            self._atomic_memory,
             self._memory,
             self._fp,
         )
@@ -403,6 +405,17 @@ class HandlerBodyRouter:
         elif key.startswith(("load_", "store_")):
             body = _memory_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         return body
+
+    def _atomic_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
+        if not key.startswith("xchgmem_"):
+            return None
+        return _xchg_memory_handler_asm(
+            key,
+            self.context.key,
+            self.context.key_dword,
+            self.context.field_perm,
+            variants[4],
+        )
 
     def _tls_memory(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
         if not key.startswith(("tlsload_", "tlsstore_")):

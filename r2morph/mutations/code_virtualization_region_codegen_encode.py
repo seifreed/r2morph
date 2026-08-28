@@ -71,6 +71,7 @@ _FIXED_SIZE_GROUPS = {
         "opriprel",
         "learip",
         "opmemdstrip",
+        "xchgmem",
         "callmemrip",
     ),
     7: (

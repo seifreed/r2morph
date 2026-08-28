@@ -64,6 +64,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_op_memdst,
     _decode_riprel_mov,
     _decode_tls_memory_mov,
+    _decode_xchg_memory,
     _parse_indexed_operand,
     _parse_riprel_operand,
 )
@@ -289,6 +290,7 @@ def _classify(insn: dict[str, Any], allow_computed_jump: bool = False) -> list[A
         (
             lambda: _decode_fp_convert(text),
             lambda: _decode_fp_compare(text),
+            lambda: _decode_xchg_memory(text),
             lambda: _decode_bswap(text),
             lambda: _decode_cqo(text),
         )

@@ -260,6 +260,8 @@ class RegionEncoder:
         elif kind in ("opmem", "lea"):
             reg, base, disp = item[2], item[3], item[4]
             self._gp_mem(item, reg, base, disp)
+        elif kind == "xchgmem":
+            self._gp_mem(item, item[1], item[2], item[3])
         elif kind in ("opriprel", "learip"):
             reg, target = item[2], item[3]
             self._gp_rip(item, reg, target)

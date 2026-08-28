@@ -71,6 +71,33 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     return (kind, reg_slot, base_slot, disp, reg_width)
 
 
+def _decode_xchg_memory(text: str) -> tuple[str, int, int, int, int] | None:
+    """Decode an atomic ``xchg`` between a 32/64-bit GP register and memory.
+
+    An x86 exchange with a memory operand is implicitly locked, so the handler
+    must use the native instruction rather than emulate it as separate loads and
+    stores. Byte and word forms remain native because the VM only exposes full
+    register slots for this atomic operation.
+    """
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "xchg" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    mem_text, register_text = (left, right) if left_mem else (right, left)
+    memory = _parse_mem_operand(mem_text)
+    register = _register_operand(register_text.lower())
+    if memory is None or register is None or register[1] not in (32, 64):
+        return None
+    base_slot, displacement, memory_width = memory
+    register_slot, register_width = register
+    if memory_width is not None and memory_width != register_width:
+        return None
+    return ("xchgmem", register_slot, base_slot, displacement, register_width)
+
+
 def _decode_memory_mov_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | None:
     """Decode ``mov reg, [base+index*scale+disp]`` / ``mov [base+index*scale+disp], reg``.
 
