@@ -17,6 +17,7 @@ _CAPABILITY_PATTERNS: dict[str, tuple[str, ...]] = {
     "floating_point_and_simd": ("fp", "fparith", "fpmov", "fpcmp", "fppacked"),
     "stack_and_abi": ("prologue", "push", "pop", "leave", "redzone", "varargs"),
     "control_flow_and_dispatch": ("interp", "switch", "pie", "multiexit"),
+    "thread_runtime_boundaries": ("dynamic", "tls", "thread", "signal"),
     "unsupported_boundaries": ("fallback", "flaglive", "movtorsp"),
 }
 

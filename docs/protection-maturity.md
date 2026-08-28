@@ -1,7 +1,7 @@
 # Protection Maturity Report
 
-Commit: `0f4ea3f`
-Date: `2026-08-27`
+Commit: `973b454`
+Date: `2026-08-28`
 
 ## Current verification status
 
@@ -26,9 +26,16 @@ parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
+The current all-fixture adversarial campaign covers 112 executable samples and
+the `CodeVirtualization` pass. It records 560 completed tool runs, 448 explicit
+unavailable-tool rows, and zero errors. The report includes radare2, objdump,
+angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
+Binary Ninja remain unavailable in this environment. The automated second-pass
+review passes all checks and is not human sign-off.
+
 The focused virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 101 real
-fixtures cover eight capability families with no unclassified fixture.
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 103 real
+fixtures cover nine capability families with no unclassified fixture.
 
 ## 1. Current architecture
 
@@ -47,9 +54,10 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 110 compatible executable fixtures spanning
+current fixture inventory contains 112 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
-PIE, red-zone, multi-exit, fallback, and nested-region shapes.
+PIE, red-zone, multi-exit, fallback, nested-region, dynamic-loader, and
+thread-local-storage shapes.
 
 The machine-readable artifact is
 [`docs/protection-maturity-corpus.json`](protection-maturity-corpus.json). Each
