@@ -22,6 +22,8 @@ _UNWIND_SECTION_NAMES = frozenset(
         "__unwind_info",
     }
 )
+
+
 def _unwind_metadata_name(binary: Any) -> str | None:
     """Return the first exception/unwinding section, failing closed on read errors."""
     try:

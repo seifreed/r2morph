@@ -11,6 +11,7 @@ from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_dynamic_x86_64"
+_EXPECTED_EXIT_CODE = 45
 
 
 def test_virtualized_elf_with_dynamic_loader_preserves_exit_code(tmp_path: Path) -> None:
@@ -26,4 +27,4 @@ def test_virtualized_elf_with_dynamic_loader_preserves_exit_code(tmp_path: Path)
         binary.close()
 
     expect(stats["functions_virtualized"] >= 1)
-    expect(emulate_exit_code(mutated) == emulate_exit_code(_FIXTURE) == 45)
+    expect(emulate_exit_code(mutated) == emulate_exit_code(_FIXTURE) == _EXPECTED_EXIT_CODE)
