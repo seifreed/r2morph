@@ -342,6 +342,24 @@ def _register_tokens(text: str) -> list[str]:
     return list(_REGISTER_TOKEN_RE.findall(text))
 
 
+def _register_spellings(instructions: list[dict[str, Any]]) -> set[str]:
+    """Return register spellings used by the instruction window."""
+    spellings: set[str] = set()
+    for insn in instructions:
+        spellings.update(_register_tokens(insn.get("disasm", "").lower()))
+    return spellings
+
+
+def _register_bases(instructions: list[dict[str, Any]]) -> set[str]:
+    """Return physical register identities used by the instruction window."""
+    bases: set[str] = set()
+    for token in _register_spellings(instructions):
+        canonical = _CANONICAL_REGISTER.get(token)
+        if canonical is not None:
+            bases.add(canonical)
+    return bases
+
+
 def _transfer_abi(disasm: str) -> tuple[frozenset[str], frozenset[str]] | None:
     """(inputs, outputs) canonical register sets for a call/syscall, else None."""
     tokens = disasm.split()
@@ -515,13 +533,8 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
     if not register_classes:
         return []
 
-    used_registers = set()
-    for insn in instructions:
-        disasm = insn.get("disasm", "").lower()
-        for reg_class in register_classes.values():
-            for reg in reg_class:
-                if reg in disasm:
-                    used_registers.add(reg)
+    used_spellings = _register_spellings(instructions)
+    used_bases = _register_bases(instructions)
 
     # Tokens whose value a call/syscall consumes or produces, plus registers used
     # implicitly by operandless instructions (mul/div/cpuid/rep ...), are live with
@@ -529,12 +542,28 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
     abi_regs = (
         abi_live_registers(instructions) | implicit_operand_pins(instructions) | memory_operand_pins(instructions)
     )
+    abi_bases = {_CANONICAL_REGISTER.get(register, register) for register in abi_regs}
     caller_saved = set(register_classes.get("caller_saved", []))
-    unused = sorted(caller_saved - used_registers - abi_regs)
+    unused = sorted(
+        register
+        for register in caller_saved
+        if _CANONICAL_REGISTER.get(register) not in used_bases and _CANONICAL_REGISTER.get(register) not in abi_bases
+    )
     random.shuffle(unused)
 
     candidates = []
-    for i, used_reg in enumerate(sorted((used_registers & caller_saved) - abi_regs)):
+    used_registers = {
+        register
+        for register in caller_saved
+        if register in used_spellings
+        and not any(
+            spelling in used_spellings
+            for spelling in _REGISTER_FAMILY.get(_CANONICAL_REGISTER.get(register, register), set())
+            if spelling != register
+        )
+        and _CANONICAL_REGISTER.get(register) not in abi_bases
+    }
+    for i, used_reg in enumerate(sorted(used_registers)):
         if i < len(unused):
             candidates.append((used_reg, unused[i]))
     return candidates

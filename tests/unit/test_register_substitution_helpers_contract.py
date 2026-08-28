@@ -105,6 +105,28 @@ def test_find_substitution_candidates_excludes_register_mixed_with_memory_use() 
     expect("rax" not in sources)
 
 
+def test_find_substitution_candidates_excludes_register_alias_family() -> None:
+    """A register used at two widths must not be renamed at only one width."""
+    instructions = [
+        {"disasm": "mov eax, 7"},
+        {"disasm": "add rax, rbx"},
+        {"disasm": "ret"},
+    ]
+    candidates = find_substitution_candidates(instructions, "x64")
+    expect("rax" not in {original for original, _ in candidates})
+
+
+def test_find_substitution_candidates_excludes_alias_used_by_substitute() -> None:
+    """A target register is unavailable when another width already uses it."""
+    instructions = [
+        {"disasm": "mov rax, rbx"},
+        {"disasm": "mov r10d, 7"},
+        {"disasm": "ret"},
+    ]
+    candidates = find_substitution_candidates(instructions, "x64")
+    expect("r10" not in {substitute for _, substitute in candidates})
+
+
 def test_call_live_registers_empty_when_no_call_present() -> None:
     expect(abi_live_registers([{"disasm": "mov x0, x1"}, {"disasm": "ret"}]) == set())
 
