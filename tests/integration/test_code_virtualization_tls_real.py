@@ -27,8 +27,8 @@ pytestmark = [
 def test_virtualized_elf_preserves_fs_relative_access(tmp_path: Path) -> None:
     original = tmp_path / "original"
     mutated = tmp_path / "mutated"
-    shutil.copyfile(_FIXTURE, original)
-    shutil.copyfile(_FIXTURE, mutated)
+    shutil.copy2(_FIXTURE, original)
+    shutil.copy2(_FIXTURE, mutated)
 
     binary = Binary(mutated, writable=True)
     binary.open()
