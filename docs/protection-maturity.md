@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `93015a0`
+Commit: `0c20d42`
 Date: `2026-08-28`
 
 ## Current verification status
@@ -26,17 +26,17 @@ parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
-The current all-fixture adversarial campaign covers 115 executable samples and
-the `CodeVirtualization` pass. It records 575 completed tool runs, 460 explicit
+The current all-fixture adversarial campaign covers 116 executable samples and
+the `CodeVirtualization` pass. It records 580 completed tool runs, 464 explicit
 unavailable-tool rows, and zero errors. The report includes radare2, objdump,
 angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
 Binary Ninja remain unavailable in this environment. The automated second-pass
 review passes all checks and is not human sign-off.
 
-The current report records 575 completed tool runs and 460 explicit unavailable-
-tool rows after the call/flags and stack-argument regression. The focused
+The current report records 580 completed tool runs and 464 explicit unavailable-
+tool rows after the byte/word memory-width regression. The focused
 virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 106 real
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 107 real
 fixtures cover nine capability families with no unclassified fixture.
 
 ## 1. Current architecture
@@ -56,7 +56,7 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 115 compatible executable fixtures spanning
+current fixture inventory contains 116 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
 PIE, red-zone, multi-exit, fallback, nested-region, dynamic-loader, and
 thread-local-storage shapes.
@@ -83,7 +83,7 @@ exit syscall and compares the observed exit code. Native host execution is
 recorded on the official Linux x86-64 target and compares return code, bounded
 stdout/stderr digests, and created-file manifests.
 
-The completed campaign passed `110/110` fixtures and `1100/1100` seed runs. The
+The earlier completed campaign passed `110/110` fixtures and `1100/1100` seed runs. The
 targeted current-checksum and adversary regressions pass, including real calls,
 FP, switch, red-zone, and multi-exit fixtures. No fixture is silently skipped by
 the virtualization pass; three explicit interpreter fixtures had zero
@@ -122,7 +122,7 @@ treated as passing evidence. The automated review is not human sign-off.
 
 ## 5. Virtualization maturity
 
-The pass virtualized 107 of 110 fixtures in the one-seed coverage run and records
+The pass virtualized 113 of 116 fixtures in the one-seed coverage run and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret

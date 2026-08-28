@@ -114,7 +114,7 @@
       ]
     },
     "memory_addressing": {
-      "fixture_count": 30,
+      "fixture_count": 31,
       "fixtures": [
         "elf_vm_cmpmem_x86_64",
         "elf_vm_fparithmem_x86_64",
@@ -132,6 +132,7 @@
         "elf_vm_memarithsynth_x86_64",
         "elf_vm_memdst_x86_64",
         "elf_vm_memops_x86_64",
+        "elf_vm_memwidth_x86_64",
         "elf_vm_movidx_x86_64",
         "elf_vm_movx_x86_64",
         "elf_vm_movxidx_x86_64",
@@ -186,7 +187,7 @@
   },
   "capability_count": 9,
   "covered_capability_count": 9,
-  "fixture_count": 106,
+  "fixture_count": 107,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []
