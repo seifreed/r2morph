@@ -1,6 +1,6 @@
 # Protection Maturity Report
 
-Commit: `0c20d42`
+Commit: `45cb3ee`
 Date: `2026-08-28`
 
 ## Current verification status
