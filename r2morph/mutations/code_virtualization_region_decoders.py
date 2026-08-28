@@ -22,6 +22,7 @@ _INSTRUCTION_PART_COUNT = 2
 _BINARY_OPERAND_COUNT = 2
 _TERNARY_OPERAND_COUNT = 3
 _BYTE_WIDTH_BITS = 8
+_WORD_WIDTH_BITS = 16
 _QWORD_WIDTH_BITS = 64
 _MAX_SHIFT_COUNT = 63
 _REGISTER_COUNT = 16
@@ -77,6 +78,18 @@ REGISTER16_INDEX: dict[str, int] = {
     "r14w": 14,
     "r15w": 15,
 }
+
+
+def _memory_register_operand(name: str) -> tuple[int, int] | None:
+    register = _register_operand(name)
+    if register is not None:
+        return register
+    if name in REGISTER8_INDEX:
+        return REGISTER8_INDEX[name], _BYTE_WIDTH_BITS
+    if name in REGISTER16_INDEX:
+        return REGISTER16_INDEX[name], _WORD_WIDTH_BITS
+    return None
+
 
 # Memory-source size prefix -> source width in bits for movzx/movsx/movsxd. dword
 # only appears with movsxd (sign-extend dword->qword); movzx/movsx use byte/word.
@@ -460,12 +473,9 @@ def _parse_mem_operand(text: str) -> tuple[int, int, int | None] | None:
     width: int | None = None
     head = text.split(None, 1)
     if head and head[0] in ("qword", "dword", "word", "byte", "xmmword", "tbyte"):
-        if head[0] == "qword":
-            width = 64
-        elif head[0] == "dword":
-            width = 32
-        else:
-            return None  # byte/word/xmmword widths are out of scope
+        width = {"qword": 64, "dword": 32, "word": _WORD_WIDTH_BITS, "byte": _BYTE_WIDTH_BITS}.get(head[0])
+        if width is None:
+            return None
         text = head[1].strip() if len(head) > 1 else ""
     rest = text.split(None, 1)
     if rest and rest[0] == "ptr":

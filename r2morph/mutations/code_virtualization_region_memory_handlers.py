@@ -13,6 +13,7 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _DWORD_WIDTH_BITS,
     _FLAGS_OFFSET,
     _QWORD_WIDTH_BITS,
+    _WORD_WIDTH_BITS,
     _unmask_dword,
 )
 
@@ -27,6 +28,30 @@ class MemoryOperationConfig:
     arith_variant: int = 0
     compare_variant: int = 0
     addr_variant: int = 0
+
+
+def _memory_load_slot_asm(width: int) -> str:
+    if width == _QWORD_WIDTH_BITS:
+        return "  mov rax, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+    if width == _DWORD_WIDTH_BITS:
+        return "  mov eax, dword ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
+    load = "byte" if width == _BYTE_WIDTH_BITS else "word"
+    mask = -256 if width == _BYTE_WIDTH_BITS else -65536
+    return (
+        f"  movzx eax, {load} ptr [r10]\n"
+        f"  mov r11, qword ptr [rsp+r8*8]\n  and r11, {mask}\n  or rax, r11\n"
+        "  mov qword ptr [rsp+r8*8], rax\n"
+    )
+
+
+def _memory_store_slot_asm(width: int) -> str:
+    value = {
+        _BYTE_WIDTH_BITS: ("byte", "al"),
+        _WORD_WIDTH_BITS: ("word", "ax"),
+        _DWORD_WIDTH_BITS: ("dword", "eax"),
+        _QWORD_WIDTH_BITS: ("qword", "rax"),
+    }[width]
+    return f"  mov rax, qword ptr [rsp+r8*8]\n  mov {value[0]} ptr [r10], {value[1]}\n"
 
 
 def _mem_address_asm(
@@ -73,12 +98,9 @@ def _memory_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
     width = int(width_text)
     body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
     if kind == "load":
-        load = "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
-        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
-    elif width == _QWORD_WIDTH_BITS:
-        body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
+        body += _memory_load_slot_asm(width)
     else:
-        body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
+        body += _memory_store_slot_asm(width)
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -137,12 +159,9 @@ def _riprel_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
     width = int(width_text)
     body, advance = _mem_address_asm(True, key, key_dword, field_perm, addr_variant)
     if sub == "load":
-        load = "  mov rax, qword ptr [r10]\n" if width == _QWORD_WIDTH_BITS else "  mov eax, dword ptr [r10]\n"
-        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
-    elif width == _QWORD_WIDTH_BITS:
-        body += "  mov rax, qword ptr [rsp+r8*8]\n  mov qword ptr [r10], rax\n"
+        body += _memory_load_slot_asm(width)
     else:
-        body += "  mov eax, dword ptr [rsp+r8*8]\n  mov dword ptr [r10], eax\n"
+        body += _memory_store_slot_asm(width)
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 

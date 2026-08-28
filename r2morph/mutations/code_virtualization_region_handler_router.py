@@ -87,6 +87,7 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vmovx_handler_asm,
     _vmovxidx_handler_asm,
     _vpop_handler_asm,
+    _vpop_partial_handler_asm,
     _vpush_handler_asm,
     _vpushi_handler_asm,
     _vshift_handler_asm,
@@ -223,6 +224,8 @@ class HandlerBodyRouter:
             body = _vpush_handler_asm(self.context.key)
         elif key == "vpop":
             body = _vpop_handler_asm(self.context.key)
+        elif key in ("vpop8", "vpop16"):
+            body = _vpop_partial_handler_asm(key, self.context.key)
         elif key == "fsave":
             body = _fsave_handler_asm()
         elif key == "frestore":

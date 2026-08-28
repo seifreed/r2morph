@@ -5,6 +5,16 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from r2morph.mutations.code_virtualization_region_handlers import _BYTE_WIDTH_BITS, _WORD_WIDTH_BITS
+
+
+def _memory_pop_kind(width: int) -> str:
+    if width == _BYTE_WIDTH_BITS:
+        return "vpop8"
+    if width == _WORD_WIDTH_BITS:
+        return "vpop16"
+    return "vpop"
+
 
 def _lower_fold(item: list[Any], fold: str) -> list[list[Any]]:
     operation = item[1]
@@ -21,19 +31,19 @@ def _lower_memory(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
     if kind == "load":
         _, register, base, displacement, width = item
-        return [["vload", base, displacement, width], ["vpop", register]]
+        return [["vload", base, displacement, width], [_memory_pop_kind(width), register]]
     if kind == "store":
         _, register, base, displacement, width = item
         return [["vpush", register], ["vstore", base, displacement, width]]
     if kind == "loadidx":
         _, register, base, index, shift, displacement, width = item
-        return [["vloadidx", base, index, shift, displacement, width], ["vpop", register]]
+        return [["vloadidx", base, index, shift, displacement, width], [_memory_pop_kind(width), register]]
     if kind == "storeidx":
         _, register, base, index, shift, displacement, width = item
         return [["vpush", register], ["vstoreidx", base, index, shift, displacement, width]]
     if kind == "riprel_load":
         _, register, target, width = item
-        return [["vloadrip", target, width], ["vpop", register]]
+        return [["vloadrip", target, width], [_memory_pop_kind(width), register]]
     _, register, target, width = item
     return [["vpush", register], ["vstorerip", target, width]]
 

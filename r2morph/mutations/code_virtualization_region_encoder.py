@@ -109,7 +109,7 @@ class RegionEncoder:
             field = "imm" if op.is_immediate else "src"
             fields[field] = pack_immediate(op.value, op.width) if op.is_immediate else bytes([self.slot_of[op.value]])
             self._fields(position, permuted_fields(key, self.scheme.field_perm), fields)
-        elif kind in ("vpush", "vpop"):
+        elif kind in ("vpush", "vpop", "vpop8", "vpop16"):
             self._slot(item, item[1])
         elif kind == "vpushi":
             position = self._opcode(item)

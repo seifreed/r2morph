@@ -22,6 +22,8 @@ _FIXED_SIZE_GROUPS = {
     2: (
         "vpush",
         "vpop",
+        "vpop8",
+        "vpop16",
         "vshift",
         "vshiftreg",
         "not",

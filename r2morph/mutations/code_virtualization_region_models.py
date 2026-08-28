@@ -159,6 +159,8 @@ _IDENTITY_KEYS = {
     "fppstoreidx",
     "vpush",
     "vpop",
+    "vpop8",
+    "vpop16",
     "pushi",
     "movfromrsp",
     "movtorsp",

@@ -7,10 +7,13 @@ from typing import Any
 
 from r2morph.mutations.code_virtualization_engine import REGISTER32_INDEX, REGISTER_INDEX
 from r2morph.mutations.code_virtualization_region_decoders import (
+    _BYTE_WIDTH_BITS,
     _INSTRUCTION_PART_COUNT,
     _MOVX_SRC_SIZES,
+    _WORD_WIDTH_BITS,
     REGISTER8_INDEX,
     REGISTER16_INDEX,
+    _memory_register_operand,
     _parse_mem_operand,
     _parse_tls_operand,
     _register_operand,
@@ -44,8 +47,7 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``mov reg, [base+disp]`` / ``mov [base+disp], reg``.
 
     Returns ``(kind, reg_slot, base_slot, disp, width)`` where ``kind`` is
-    ``"load"`` or ``"store"``, or ``None`` for anything else (two memory
-    operands, a partial-width access, a non-GP register, etc.).
+    ``"load"`` or ``"store"``, or ``None`` for unsupported operands.
     """
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "mov" or "," not in parts[1]:
@@ -59,7 +61,7 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     else:
         kind, mem_text, reg_text = "load", right, left
     mem = _parse_mem_operand(mem_text)
-    reg = _register_operand(reg_text.lower())
+    reg = _memory_register_operand(reg_text.lower())
     if mem is None or reg is None:
         return None
     base_slot, disp, mem_width = mem
@@ -75,8 +77,7 @@ def _decode_memory_mov_indexed(text: str) -> tuple[str, int, int, int, int, int,
     Returns ``("loadidx"|"storeidx", reg_slot, base_slot, index_slot, shift, disp,
     width)`` for a scaled-index array-element access, or ``None`` for a non-indexed
     form (handled by :func:`_decode_memory_mov`), a rip-relative/segment address, two
-    memory operands, or a non-GP / partial-width register. The width follows the
-    register (32 or 64); an 8/16-bit register yields ``None`` and stays native.
+    memory operands, or a non-GP register. The width follows the register.
     """
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "mov" or "," not in parts[1]:
@@ -90,7 +91,7 @@ def _decode_memory_mov_indexed(text: str) -> tuple[str, int, int, int, int, int,
     else:
         kind, mem_text, reg_text = "loadidx", right, left
     parsed = _parse_indexed_operand(mem_text)  # base required; None for base+disp/rip/segment
-    reg = _register_operand(reg_text.lower())
+    reg = _memory_register_operand(reg_text.lower())
     if parsed is None or reg is None:
         return None
     base_slot, index_slot, shift, disp = parsed
@@ -109,11 +110,8 @@ def _parse_riprel_operand(text: str, insn_addr: int, insn_size: int) -> tuple[in
     width: int | None = None
     head = text.split(None, 1)
     if head and head[0] in ("qword", "dword", "word", "byte", "xmmword", "tbyte"):
-        if head[0] == "qword":
-            width = 64
-        elif head[0] == "dword":
-            width = 32
-        else:
+        width = {"qword": 64, "dword": 32, "word": _WORD_WIDTH_BITS, "byte": _BYTE_WIDTH_BITS}.get(head[0])
+        if width is None:
             return None
         text = head[1].strip() if len(head) > 1 else ""
     rest = text.split(None, 1)
@@ -507,7 +505,7 @@ def _parse_indexed_operand(text: str, base_optional: bool = False) -> tuple[int,
     text = text.strip().lower()
     head = text.split(None, 1)
     if head and head[0] in ("qword", "dword", "word", "byte", "xmmword", "tbyte"):
-        if head[0] not in ("qword", "dword"):
+        if head[0] not in ("qword", "dword", "word", "byte"):
             return None
         text = head[1].strip() if len(head) > 1 else ""
     rest = text.split(None, 1)
