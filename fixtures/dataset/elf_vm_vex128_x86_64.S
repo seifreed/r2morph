@@ -18,14 +18,15 @@ compute:
     vaddps xmm0, xmm0, xmm1
     vsubps xmm0, xmm0, xmm2
     vaddps xmm0, xmm0, xmm2
+    vmovaps xmm3, xmm0
     ret
 
 check_result:
-    vextractf128 xmm3, ymm0, 1
-    movd eax, xmm3
+    vextractf128 xmm4, ymm3, 1
+    movd eax, xmm4
     test eax, eax
     jne .bad_upper
-    vcvttss2si eax, xmm0
+    vcvttss2si eax, xmm3
     cmp eax, 42
     jne .bad_value
     mov edi, 42
