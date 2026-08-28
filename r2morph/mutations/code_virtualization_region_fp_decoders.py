@@ -223,7 +223,7 @@ def _decode_fp_compare_mem(text: str) -> tuple[str, str, int, int, int, int] | N
 # upper lane(s). (movsd/movss xmm,xmm preserve the high lanes, unlike the memory
 # load forms which zero them - so they get the "sd"/"ss" preserving handler.
 # movq xmm,xmm copies the low qword and clears the high qword.)
-_FP_MOVE_FULL: frozenset[str] = frozenset({"movaps", "movapd", "movups", "movupd"})
+_FP_MOVE_FULL: frozenset[str] = frozenset({"movaps", "movapd", "movups", "movupd", "movdqa", "movdqu"})
 _FP_MOVE_SCALAR: dict[str, str] = {"movsd": "sd", "movss": "ss", "movq": "q"}
 
 
@@ -454,7 +454,7 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
         "pxor",
     }
 )
-_FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd"})
+_FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqu"})
 
 
 def _decode_fp_packed_arith(text: str) -> tuple[str, str, int, int] | None:

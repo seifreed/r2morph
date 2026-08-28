@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+from r2morph.mutations.code_virtualization_region_classification import _classify
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_indexed,
     _decode_fp_mem,
     _decode_fp_movd,
     _decode_fp_move,
+    _decode_fp_packed_mem,
     _decode_fp_riprel,
 )
 from r2morph.mutations.code_virtualization_region_fp_handlers import _fp_movd_handler_asm, _fp_move_handler_asm
@@ -15,6 +17,29 @@ from tests.utils.assertions import expect
 
 def test_fp_move_decoder_movq_register_copy_uses_q_mode() -> None:
     expect(_decode_fp_move("movq xmm1, xmm2") == ("fpmov", "q", 1, 2))
+
+
+def test_fp_move_decoder_movdqa_register_copy_uses_full_mode() -> None:
+    expect(_decode_fp_move("movdqa xmm1, xmm2") == ("fpmov", "full", 1, 2))
+
+
+def test_fp_packed_memory_decoder_movdqu_uses_full_width_move() -> None:
+    expect(_decode_fp_packed_mem("movdqu xmm1, xmmword ptr [rax+8]") == ("fppload", 1, 0, 8))
+
+
+def test_vector_classifier_virtualizes_movdqu_memory_load() -> None:
+    expect(
+        _classify(
+            {
+                "type": "mov",
+                "family": "vec",
+                "opcode": "movdqu xmm1, xmmword ptr [rax+8]",
+                "addr": 0x1000,
+                "size": 8,
+            }
+        )
+        == ["fppload", 1, 0, 8]
+    )
 
 
 def test_fp_move_handler_movq_emits_low_qword_instruction() -> None:
