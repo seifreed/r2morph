@@ -26,23 +26,23 @@ parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
-The current all-fixture adversarial campaign covers 119 executable samples and
-the `CodeVirtualization` pass. It records 595 completed tool runs, 476 explicit
-unavailable-tool rows, and zero errors. Its per-pass summary records 116 applied
+The current all-fixture adversarial campaign covers 120 executable samples and
+the `CodeVirtualization` pass. It records 600 completed tool runs, 480 explicit
+unavailable-tool rows, and zero errors. Its per-pass summary records 117 applied
 samples, 3 omitted samples, and no errors. The report includes radare2, objdump,
 angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
 Binary Ninja remain unavailable in this environment. The automated second-pass
 review passes all checks and is not human sign-off.
 
 The separate [`docs/protection-ghidra-corpus.json`](protection-ghidra-corpus.json)
-campaign runs Ghidra headless over the same 119 original/protected pairs. It
-completed 238 analyses with zero errors or timeouts and records the
+campaign runs Ghidra headless over the same 120 original/protected pairs. It
+completed 240 analyses with zero errors or timeouts and records the
 `CodeVirtualization` pass summary per sample.
 
-The current report records 595 completed tool runs and 476 explicit unavailable-
+The current report records 600 completed tool runs and 480 explicit unavailable-
 tool rows after the returning-syscall bridge and coverage extension. The focused
 virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 110 real
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 111 real
 fixtures cover ten capability families with no unclassified fixture.
 
 ## 1. Current architecture
@@ -62,7 +62,7 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 119 compatible executable fixtures spanning
+current fixture inventory contains 120 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
 PIE, red-zone, multi-exit, fallback, nested-region, dynamic-loader, and
 thread-local-storage shapes.
@@ -124,11 +124,11 @@ treated as passing evidence. The automated review is not human sign-off.
 | Bytecode grammar | [`docs/protection-bytecode-grammar.json`](protection-bytecode-grammar.json): target `mov`-64 handler strides change from fixed `[3]` to `[3,4,5]`; `2,566` padding bytes across `2,480` handlers. Immediate `add`/`and`/`or`/`sub`/`xor` also select one- or two-fold decompositions per build | Removes fixed record stride and adds generic arithmetic decomposition; opcode location and semantic field families remain visible |
 | Anti-debug constants | Checksum-keyed constant island | No plaintext constants in representative entrypoints; runtime tracing still sees behavior |
 | Fragmented RX payload | IDA segment surveys show adjacent RX loads | Adds layout work but remains fingerprintable |
-| Control-flow virtualization | 119-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
+| Control-flow virtualization | 120-fixture corpus and real exit-code checks | Broad synthetic semantic coverage; production format coverage is narrow |
 
 ## 5. Virtualization maturity
 
-The current one-seed adversarial run applied the pass to 116 of 119 fixtures and records
+The current one-seed adversarial run applied the pass to 117 of 120 fixtures and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret
