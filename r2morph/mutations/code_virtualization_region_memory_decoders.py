@@ -94,8 +94,6 @@ def _decode_memory_mov_indexed(text: str) -> tuple[str, int, int, int, int, int,
     reg = _memory_register_operand(reg_text.lower())
     if parsed is None or reg is None:
         return None
-    if reg[1] not in (32, 64):
-        return None
     base_slot, index_slot, shift, disp = parsed
     return (kind, reg[0], base_slot, index_slot, shift, disp, reg[1])
 

@@ -36,9 +36,8 @@ def test_decode_indexed_mov_rejects_rip_relative() -> None:
     expect(not (_decode_memory_mov_indexed("mov eax, [rip + rdx*4]") is not None))
 
 
-def test_decode_indexed_mov_rejects_byte_register() -> None:
-    # An 8-bit destination has no 32/64-bit slot mapping here, so it stays native.
-    expect(not (_decode_memory_mov_indexed("mov al, [rcx + rdx*4]") is not None))
+def test_decode_indexed_mov_accepts_byte_register() -> None:
+    expect(_decode_memory_mov_indexed("mov al, [rcx + rdx*4]") == ("loadidx", 0, 1, 2, 2, 0, 8))
 
 
 def test_vstoreidx_item_size_matches_vloadidx() -> None:
