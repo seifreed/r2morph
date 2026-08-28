@@ -127,9 +127,14 @@ class _BytecodeEncoder:
 
     def _emit_fp_arith_memory(self, op: VirtualizedFpArithMemOp) -> None:
         if op.index_index >= 0:
-            kind = f"fparithmem{op.op}idx"
-            fields = self._indexed_fields((op.xmm_index, op.base_index, op.index_index, op.scale, op.disp))
-            order = idx_permuted_fields(False, self.field_perm)
+            if op.base_index < 0:
+                kind = f"fparithmem{op.op}idxnb"
+                fields = self._indexed_no_base_fields((op.xmm_index, op.index_index, op.scale, op.disp))
+                order = idx_permuted_fields(True, self.field_perm)
+            else:
+                kind = f"fparithmem{op.op}idx"
+                fields = self._indexed_fields((op.xmm_index, op.base_index, op.index_index, op.scale, op.disp))
+                order = idx_permuted_fields(False, self.field_perm)
         elif op.base_index < 0:
             kind = f"fparithmem{op.op}rip"
             fields = self._rip_fields(op.xmm_index, op.disp)
@@ -142,7 +147,10 @@ class _BytecodeEncoder:
 
     def _emit_fp_memory(self, op: VirtualizedFpMemOp) -> None:
         position = self._opcode(op.kind, op.width)
-        if op.kind.endswith("idx"):
+        if op.kind.endswith("idxnb"):
+            fields = self._indexed_no_base_fields((op.xmm_index, op.index_index, op.scale, op.disp))
+            order = idx_permuted_fields(True, self.field_perm)
+        elif op.kind.endswith("idx"):
             fields = self._indexed_fields((op.xmm_index, op.base_index, op.index_index, op.scale, op.disp))
             order = idx_permuted_fields(False, self.field_perm)
         elif op.kind.endswith("rip"):
@@ -215,6 +223,19 @@ class _BytecodeEncoder:
         register, base, index, scale, disp = operands
         fields = self._base_fields(register, base, disp, permute_register=permute_register)
         fields.update({"index": bytes([self.slot_of[index]]), "shift": bytes([scale])})
+        return fields
+
+    def _indexed_no_base_fields(
+        self,
+        operands: tuple[int, int, int, int],
+    ) -> dict[str, bytes]:
+        register, index, scale, disp = operands
+        fields = {
+            "reg": bytes([register]),
+            "index": bytes([self.slot_of[index]]),
+            "shift": bytes([scale]),
+            "disp": struct.pack("<i", disp),
+        }
         return fields
 
 

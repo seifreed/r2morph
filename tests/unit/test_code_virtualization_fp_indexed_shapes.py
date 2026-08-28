@@ -44,7 +44,11 @@ def test_straight_line_engine_virtualizes_the_based_fp_indexed_load() -> None:
     expect(item is not None)
 
 
-def test_straight_line_engine_leaves_the_no_base_fp_indexed_load_native() -> None:
-    # The engine's FP memory op has no no-base indexed encoding, so the shorter
-    # shape must be rejected rather than unpacked as if it carried a base slot.
-    expect(not (_decode_run_item("movsd xmm1, [rdx*8 + 16]") is not None))
+def test_straight_line_engine_virtualizes_the_no_base_fp_indexed_load() -> None:
+    expect(_decode_run_item("movsd xmm1, [rdx*8 + 16]") is not None)
+
+
+def test_straight_line_engine_virtualizes_the_no_base_fp_indexed_arithmetic() -> None:
+    item = _decode_run_item("addsd xmm1, [rdx*8 + 16]")
+
+    expect(item is not None and item.base_index < 0 and item.index_index >= 0)

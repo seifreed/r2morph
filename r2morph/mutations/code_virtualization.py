@@ -52,6 +52,7 @@ from r2morph.mutations.code_virtualization_region import (
 from r2morph.mutations.code_virtualization_region_codegen import build_region_blob
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
     FpIndexedItem,
+    FpIndexedNoBaseItem,
     _decode_fp_arith,
     _decode_fp_arith_idx,
     _decode_fp_arith_mem,
@@ -79,6 +80,7 @@ from r2morph.mutations.instruction_substitution_helpers import flags_live_after
 logger = logging.getLogger(__name__)
 
 _FP_INDEXED_TUPLE_SIZE = 7
+_FP_INDEXED_NO_BASE_TUPLE_SIZE = 6
 _BYTE_WIDTH_BITS = 8
 _MIN_NESTING_DEPTH = 2
 
@@ -123,6 +125,14 @@ def _decode_fp_memory_item(text: str, insn_addr: int, insn_size: int) -> Virtual
             kind,
             xmm_index,
             VirtualizedAddress(base_slot, disp, index_slot, shift),
+            width,
+        )
+    if indexed is not None and len(indexed) == _FP_INDEXED_NO_BASE_TUPLE_SIZE:
+        kind, xmm_index, index_slot, shift, disp, width = cast(FpIndexedNoBaseItem, indexed)
+        return VirtualizedFpMemOp(
+            kind,
+            xmm_index,
+            VirtualizedAddress(-1, disp, index_slot, shift),
             width,
         )
     return None

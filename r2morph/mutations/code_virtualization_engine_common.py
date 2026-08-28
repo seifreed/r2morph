@@ -129,7 +129,16 @@ _MEM_OP_KINDS: tuple[str, ...] = (
 # The ``*idx`` kinds address an array element ``[base+index*scale+disp]`` (a[i]);
 # the item is a 9-byte opcode+reg+base+index+scale+disp32, and the handler reuses
 # the scaled-index address prologue.
-_FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore", "fploadrip", "fpstorerip", "fploadidx", "fpstoreidx")
+_FP_MEM_KINDS: tuple[str, ...] = (
+    "fpload",
+    "fpstore",
+    "fploadrip",
+    "fpstorerip",
+    "fploadidx",
+    "fpstoreidx",
+    "fploadidxnb",
+    "fpstoreidxnb",
+)
 # Scalar-FP register-register arithmetic: addsd/subsd/mulsd/divsd (+ss). Each op
 # is its own kind so the dispatcher selects the handler without inspecting the
 # operands; the item carries two raw xmm indices (dst, src). ``fp{op}`` keys map
@@ -157,6 +166,7 @@ _FP_ARITH_MEM_KINDS: tuple[str, ...] = (
     tuple(f"fparithmem{op}" for op in _FP_ARITH_OPS)
     + tuple(f"fparithmem{op}rip" for op in _FP_ARITH_OPS)
     + tuple(f"fparithmem{op}idx" for op in _FP_ARITH_OPS)
+    + tuple(f"fparithmem{op}idxnb" for op in _FP_ARITH_OPS)
 )
 # Packed 128-bit SIMD: register-register arithmetic (addpd/addps + sub/mul/div, all
 # lanes) and 128-bit ``[base+disp]`` load/store (movaps/movups/movapd/movupd). The

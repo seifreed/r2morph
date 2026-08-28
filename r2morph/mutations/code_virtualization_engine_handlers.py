@@ -226,7 +226,22 @@ class EngineHandlerGenerator:
     def _fp_idx_addr_prologue(self) -> str:
         return self._mem_idx_prologue() + (f"  shl r8, 4\n  lea r11, [rsp + r8 + {self.layout.xmm_offset}]\n")
 
+    def _fp_idx_no_base_addr_prologue(self) -> str:
+        off = idx_offsets(True, self.scheme.field_perm)
+        return (
+            f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {self.key}\n  xor r8b, r13b\n"
+            f"  movzx r9d, byte ptr [rsi+{off['index']}]\n  xor r9b, {self.key}\n  xor r9b, r13b\n"
+            f"  movzx ecx, byte ptr [rsi+{off['shift']}]\n  xor cl, {self.key}\n  xor cl, r13b\n"
+            f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r10d, {self.key_dword}\n  xor eax, r10d\n"
+            f"  movzx r10d, r13b\n  imul r10d, r10d, {hex(_DWORD_BROADCAST)}\n  xor eax, r10d\n"
+            "  movsxd rax, eax\n  mov r10, qword ptr [rsp + r9*8]\n  shl r10, cl\n"
+            + addr_fold("rax", "r11", 0, self.isa.addr_variant)
+            + f"  shl r8, 4\n  lea r11, [rsp + r8 + {self.layout.xmm_offset}]\n"
+        )
+
     def _fp_address(self, kind: str) -> tuple[str, str, int]:
+        if kind.endswith("idxnb"):
+            return kind[: -len("idxnb")], self._fp_idx_no_base_addr_prologue(), 8
         if kind.endswith("idx"):
             return kind[: -len("idx")], self._fp_idx_addr_prologue(), 9
         if kind.endswith("rip"):

@@ -403,11 +403,12 @@ def _decode_fp_arith_idx(text: str) -> tuple[str, str, int, int, int, int, int, 
     op, width = spec
     left, right = (token.strip() for token in parts[1].split(",", 1))
     xmm_index = _parse_xmm_operand(left)
-    indexed = _parse_indexed_operand(right)
+    indexed = _parse_indexed_operand(right, base_optional=True)
     if xmm_index is None or indexed is None:
         return None
     base_slot, index_slot, shift, disp = indexed
-    return ("fparithmemidx", op, xmm_index, base_slot, index_slot, shift, disp, width)
+    kind = "fparithmemidxnb" if base_slot < 0 else "fparithmemidx"
+    return (kind, op, xmm_index, base_slot, index_slot, shift, disp, width)
 
 
 _FP_PACKED_ARITH: frozenset[str] = frozenset(
