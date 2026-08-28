@@ -132,12 +132,13 @@ def _decode_fp_convert(text: str) -> tuple[str, int, int, int, int] | None:
     return None
 
 
-_FP_COMPARE_MNEMONICS: frozenset[str] = frozenset({"ucomisd", "comisd", "ucomiss", "comiss"})
+_FP_COMPARE_MNEMONICS: frozenset[str] = frozenset({"ucomisd", "comisd", "ucomiss", "comiss", "ptest"})
 
 
 def _decode_fp_compare(text: str) -> tuple[str, str, int, int] | None:
     """Decode a scalar-FP register-register compare (``ucomisd``/``comisd`` and
-    the ``ss`` forms) into ``("fpcmp", mnemonic, left_index, right_index)``.
+    the ``ss`` forms) and ``ptest`` into ``("fpcmp", mnemonic, left_index,
+    right_index)``.
 
     Returns ``None`` for a memory operand or any other form (left native). The
     mnemonic is preserved so the handler emits the exact compare, which sets the
@@ -375,7 +376,9 @@ def _decode_fp_arith_idx(text: str) -> tuple[str, str, int, int, int, int, int, 
     return ("fparithmemidx", op, xmm_index, base_slot, index_slot, shift, disp, width)
 
 
-_FP_PACKED_ARITH: frozenset[str] = frozenset({"addpd", "addps", "subpd", "subps", "mulpd", "mulps", "divpd", "divps"})
+_FP_PACKED_ARITH: frozenset[str] = frozenset(
+    {"addpd", "addps", "subpd", "subps", "mulpd", "mulps", "divpd", "divps", "pand", "pandn", "por", "pxor"}
+)
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd"})
 
 
