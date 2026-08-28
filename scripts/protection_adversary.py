@@ -21,7 +21,7 @@ def _classify(binary: Binary, address: int, architecture: VMArchitecture) -> str
         return "recovered_handler_table"
     instructions = binary.get_function_disasm(address)
     text = " ".join(str(instruction.get("disasm", "")) for instruction in instructions).lower()
-    if "jmp rax" in text or "jmp [" in text:
+    if "jmp rax" in text or "jmp [" in text or ("push rax" in text and "ret" in text):
         return "unsupported_indirect_dispatch"
     return "no_vm_candidate"
 
