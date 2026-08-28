@@ -310,14 +310,15 @@ def _fp_compare_memory_handler_asm(
 
 
 def _fp_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
-    """Assembly body for a register-register xmm move (full 128-bit copy, or a
-    scalar movsd/movss that preserves the destination's upper lane(s)).
+    """Assembly body for a register-register xmm move (full 128-bit copy, scalar
+    movsd/movss that preserves the destination's upper lane(s), or movq that
+    clears the destination's upper qword).
 
     Both operand bytes are XMM indices, read at this build's permuted offsets. The
     full copy reads the source slot and writes it whole to the destination slot; the
     scalar copy loads the destination slot first so the real movsd/movss preserves
-    its high lanes (unlike the memory load forms, which zero them), then writes the
-    merged value back. No flags.
+    its high lanes (unlike the memory load forms, which zero them); movq uses the
+    real instruction and therefore clears the high qword. No flags.
     """
     mode = handler_key.split("_", 1)[1]
     off = pair_offsets("dst", "src", field_perm)
@@ -329,7 +330,7 @@ def _fp_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str
     if mode == "full":
         body = f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
     else:
-        instr = "movsd" if mode == "sd" else "movss"
+        instr = {"sd": "movsd", "ss": "movss", "q": "movq"}[mode]
         body = (
             f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  movups xmm1, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
             f"  {instr} xmm0, xmm1\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"

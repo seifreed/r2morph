@@ -191,9 +191,10 @@ def _decode_fp_compare_mem(text: str) -> tuple[str, str, int, int, int, int] | N
 
 # Full 128-bit xmm-xmm copies vs scalar copies that preserve the destination's
 # upper lane(s). (movsd/movss xmm,xmm preserve the high lanes, unlike the memory
-# load forms which zero them - so they get the "sd"/"ss" preserving handler.)
+# load forms which zero them - so they get the "sd"/"ss" preserving handler.
+# movq xmm,xmm copies the low qword and clears the high qword.)
 _FP_MOVE_FULL: frozenset[str] = frozenset({"movaps", "movapd", "movups", "movupd"})
-_FP_MOVE_SCALAR: dict[str, str] = {"movsd": "sd", "movss": "ss"}
+_FP_MOVE_SCALAR: dict[str, str] = {"movsd": "sd", "movss": "ss", "movq": "q"}
 
 
 def _decode_fp_move(text: str) -> tuple[str, str, int, int] | None:
@@ -201,8 +202,9 @@ def _decode_fp_move(text: str) -> tuple[str, str, int, int] | None:
 
     ``mode`` is ``"full"`` (movaps/movapd/movups/movupd, full 128-bit copy) or
     ``"sd"``/``"ss"`` (movsd/movss, low element copied, destination upper lanes
-    preserved). Returns ``None`` for a memory operand (handled as load/store) or
-    any non-move mnemonic.
+    preserved) or ``"q"`` (movq, low qword copied and upper qword cleared).
+    Returns ``None`` for a memory operand (handled as load/store) or any other
+    non-move mnemonic.
     """
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
