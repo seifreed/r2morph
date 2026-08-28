@@ -23,7 +23,7 @@
       ]
     },
     "flags_and_conditions": {
-      "fixture_count": 21,
+      "fixture_count": 22,
       "fixtures": [
         "elf_vm_addflagdead_x86_64",
         "elf_vm_addflaglive_x86_64",
@@ -45,7 +45,8 @@
         "elf_vm_shift_x86_64",
         "elf_vm_shiftmicroop_x86_64",
         "elf_vm_shiftreg_x86_64",
-        "elf_vm_subflagdead_x86_64"
+        "elf_vm_subflagdead_x86_64",
+        "elf_vm_thread_cmpxchg_x86_64"
       ]
     },
     "floating_point_and_simd": {
@@ -174,10 +175,11 @@
       ]
     },
     "thread_runtime_boundaries": {
-      "fixture_count": 4,
+      "fixture_count": 5,
       "fixtures": [
         "elf_vm_dynamic_x86_64",
         "elf_vm_gs_tls_x86_64",
+        "elf_vm_thread_cmpxchg_x86_64",
         "elf_vm_thread_xchg_x86_64",
         "elf_vm_tls_x86_64"
       ]
@@ -202,7 +204,7 @@
   },
   "capability_count": 10,
   "covered_capability_count": 10,
-  "fixture_count": 116,
+  "fixture_count": 117,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []

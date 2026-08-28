@@ -60,8 +60,10 @@ from r2morph.mutations.code_virtualization_region_handlers import (
     _shift_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_memory_handlers import (
+    AtomicMemoryOperationConfig,
     MemoryOperationConfig,
     _cmp_memory_handler_asm,
+    _cmpxchg_memory_handler_asm,
     _lea_handler_asm,
     _lea_indexed_handler_asm,
     _lea_indexed_nobase_handler_asm,
@@ -408,6 +410,29 @@ class HandlerBodyRouter:
         return body
 
     def _atomic_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
+        if key.startswith("cmpxchgmemidx_"):
+            return _cmpxchg_memory_handler_asm(
+                AtomicMemoryOperationConfig(
+                    key,
+                    self.context.key,
+                    self.context.key_dword,
+                    self.context.slot,
+                    self.context.field_perm,
+                    variants[4],
+                ),
+                indexed=True,
+            )
+        if key.startswith("cmpxchgmem_"):
+            return _cmpxchg_memory_handler_asm(
+                AtomicMemoryOperationConfig(
+                    key,
+                    self.context.key,
+                    self.context.key_dword,
+                    self.context.slot,
+                    self.context.field_perm,
+                    variants[4],
+                )
+            )
         if key.startswith("xchgmemidx_"):
             return _xchg_memory_indexed_handler_asm(
                 key,

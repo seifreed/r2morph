@@ -71,7 +71,6 @@ _FIXED_SIZE_GROUPS = {
         "opriprel",
         "learip",
         "opmemdstrip",
-        "xchgmem",
         "callmemrip",
     ),
     7: (
@@ -95,6 +94,8 @@ _FIXED_SIZE_GROUPS = {
         "opmemdst",
         "movx",
         "callmem",
+        "xchgmem",
+        "cmpxchgmem",
     ),
     8: ("vleaidxnb", "fploadidxnb", "fpstoreidxnb", "leaidxnb", "ijmpmemnb"),
     9: (
@@ -114,6 +115,7 @@ _FIXED_SIZE_GROUPS = {
         "ijmpmem",
         "callmemidx",
         "xchgmemidx",
+        "cmpxchgmemidx",
         "pushi",
     ),
 }

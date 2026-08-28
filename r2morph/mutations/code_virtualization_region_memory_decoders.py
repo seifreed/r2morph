@@ -21,6 +21,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
 )
 
 _DWORD_WIDTH_BITS = 32
+_LOCKED_INSTRUCTION_PART_COUNT = 3
 _INDEXED_MEMORY_WIDTHS = {
     "byte": _BYTE_WIDTH_BITS,
     "word": _WORD_WIDTH_BITS,
@@ -80,18 +81,23 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     return (kind, reg_slot, base_slot, disp, reg_width)
 
 
-def _decode_xchg_memory(text: str) -> tuple[Any, ...] | None:
-    """Decode an atomic ``xchg`` between a 32/64-bit GP register and memory.
-
-    An x86 exchange with a memory operand is implicitly locked, so the handler
-    must use the native instruction rather than emulate it as separate loads and
-    stores. Byte and word forms remain native because the VM only exposes full
-    register slots for this atomic operation.
-    """
+def _decode_atomic_memory_exchange(text: str, mnemonic: str, item_kind: str, locked: bool) -> tuple[Any, ...] | None:
+    """Decode a GP-register atomic exchange with a memory operand."""
     result: tuple[Any, ...] | None = None
-    parts = text.split(None, 1)
-    if len(parts) == _INSTRUCTION_PART_COUNT and parts[0].lower() == "xchg" and "," in parts[1]:
-        left, right = (token.strip() for token in parts[1].split(",", 1))
+    parts = text.split(None, 2 if locked else 1)
+    operand_text = (
+        parts[2]
+        if locked and len(parts) == _LOCKED_INSTRUCTION_PART_COUNT
+        else parts[1] if not locked and len(parts) == _INSTRUCTION_PART_COUNT else ""
+    )
+    mnemonic_index = 1 if locked else 0
+    prefix_valid = (
+        len(parts) > mnemonic_index
+        and parts[mnemonic_index].lower() == mnemonic
+        and (not locked or parts[0].lower() == "lock")
+    )
+    if prefix_valid and "," in operand_text:
+        left, right = (token.strip() for token in operand_text.split(",", 1))
         left_mem, right_mem = "[" in left, "[" in right
         if left_mem != right_mem:
             mem_text, register_text = (left, right) if left_mem else (right, left)
@@ -102,7 +108,7 @@ def _decode_xchg_memory(text: str) -> tuple[Any, ...] | None:
                 if memory is not None:
                     base_slot, displacement, memory_width = memory
                     if memory_width is None or memory_width == register_width:
-                        result = ("xchgmem", register_slot, base_slot, displacement, register_width)
+                        result = (item_kind, register_slot, base_slot, displacement, register_width)
                 else:
                     indexed = _parse_indexed_operand(mem_text)
                     if indexed is not None:
@@ -111,7 +117,7 @@ def _decode_xchg_memory(text: str) -> tuple[Any, ...] | None:
                         if memory_width is None or memory_width == register_width:
                             base_slot, index_slot, shift, displacement = indexed
                             result = (
-                                "xchgmemidx",
+                                f"{item_kind}idx",
                                 register_slot,
                                 base_slot,
                                 index_slot,
@@ -120,6 +126,22 @@ def _decode_xchg_memory(text: str) -> tuple[Any, ...] | None:
                                 register_width,
                             )
     return result
+
+
+def _decode_xchg_memory(text: str) -> tuple[Any, ...] | None:
+    """Decode an atomic ``xchg`` between a 32/64-bit GP register and memory.
+
+    An x86 exchange with a memory operand is implicitly locked, so the handler
+    must use the native instruction rather than emulate it as separate loads and
+    stores. Byte and word forms remain native because the VM only exposes full
+    register slots for this atomic operation.
+    """
+    return _decode_atomic_memory_exchange(text, "xchg", "xchgmem", False)
+
+
+def _decode_cmpxchg_memory(text: str) -> tuple[Any, ...] | None:
+    """Decode a locked ``cmpxchg`` between a 32/64-bit GP register and memory."""
+    return _decode_atomic_memory_exchange(text, "cmpxchg", "cmpxchgmem", True)
 
 
 def _decode_memory_mov_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | None:

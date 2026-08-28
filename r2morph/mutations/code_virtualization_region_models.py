@@ -119,6 +119,8 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "opmemdstrip": (1, 4),
     "xchgmem": (4,),
     "xchgmemidx": (6,),
+    "cmpxchgmem": (4,),
+    "cmpxchgmemidx": (6,),
     "vpushi": (2,),
     "vbinop": (1, 2),
     "vbinopsynth": (1, 2),

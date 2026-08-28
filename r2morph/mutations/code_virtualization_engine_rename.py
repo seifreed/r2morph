@@ -48,10 +48,11 @@ _TOKEN = re.compile(r"\b(" + "|".join(sorted(_SPELLINGS, key=len, reverse=True))
 _PINS_LEGACY_REGISTER = re.compile(r"\b(?:lahf|sahf|[abcd]h)\b")
 
 # A body that pins rax/rdx by architecture: div/idiv read the dividend from and write
-# the quotient/remainder to the fixed rdx:rax pair, and cqo/cdq sign-extend rax into
-# rdx. rax is in the rename pool, so remapping it there would divide the wrong value;
-# these bodies must be left unchanged, exactly like the legacy-register pin above.
-_PINS_FIXED_REGISTER = re.compile(r"\b(?:idiv|div|cqo|cdq)\b")
+# the quotient/remainder to the fixed rdx:rax pair, cqo/cdq sign-extend rax into rdx,
+# and cmpxchg implicitly compares against rax. rax is in the rename pool, so remapping
+# it there would use the wrong architectural operand; these bodies must be left
+# unchanged, exactly like the legacy-register pin above.
+_PINS_FIXED_REGISTER = re.compile(r"\b(?:idiv|div|cqo|cdq|cmpxchg)\b")
 
 
 def rename_body(body: str, rng: random.Random) -> str:

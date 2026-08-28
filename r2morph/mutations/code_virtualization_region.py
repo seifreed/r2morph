@@ -92,6 +92,8 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         "bswap",
     ):
         return frozenset({int(item[1])})
+    if kind in ("cmpxchgmem", "cmpxchgmemidx"):
+        return frozenset({_RAX_SLOT})
     if kind in ("shift", "shiftreg", "opmem", "opriprel", "opmemidx", "incdec", "setcc", "cmov"):
         return frozenset({int(item[2])})
     if kind in ("movx", "movxidx", "movxreg"):
@@ -237,6 +239,8 @@ _FLAG_KILLER_KINDS = frozenset(
         "callmem",
         "callmemrip",
         "callmemidx",
+        "cmpxchgmem",
+        "cmpxchgmemidx",
         "syscall",
     }
 )

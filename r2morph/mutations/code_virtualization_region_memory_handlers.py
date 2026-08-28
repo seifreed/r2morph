@@ -30,6 +30,16 @@ class MemoryOperationConfig:
     addr_variant: int = 0
 
 
+@dataclass(frozen=True)
+class AtomicMemoryOperationConfig:
+    handler_key: str
+    key: str
+    key_dword: str
+    slot: tuple[int, ...]
+    field_perm: int = 0
+    addr_variant: int = 0
+
+
 def _memory_load_slot_asm(width: int) -> str:
     if width == _QWORD_WIDTH_BITS:
         return "  mov rax, qword ptr [r10]\n  mov qword ptr [rsp+r8*8], rax\n"
@@ -134,6 +144,30 @@ def _xchg_memory_indexed_handler_asm(
         f"  mov {register}, {memory} ptr [rsp+r8*8]\n"
         f"  xchg {memory} ptr [r10], {register}\n"
         "  mov qword ptr [rsp+r8*8], rax\n"
+    )
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
+def _cmpxchg_memory_handler_asm(config: AtomicMemoryOperationConfig, indexed: bool = False) -> str:
+    """Atomically compare the accumulator with memory and conditionally store a GP value."""
+    _, width_text = config.handler_key.split("_")
+    width = int(width_text)
+    address = _indexed_address_asm if indexed else _mem_address_asm
+    address_arguments = (
+        (config.key, config.key_dword, config.field_perm, config.addr_variant)
+        if indexed
+        else (False, config.key, config.key_dword, config.field_perm, config.addr_variant)
+    )
+    body, advance = address(*address_arguments)
+    memory = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+    register = "rbx" if width == _QWORD_WIDTH_BITS else "ebx"
+    accumulator = "rax" if width == _QWORD_WIDTH_BITS else "eax"
+    body += (
+        f"  mov {register}, qword ptr [rsp+r8*8]\n"
+        f"  mov {accumulator}, qword ptr [rsp+{config.slot[0] * 8}]\n"
+        f"  lock cmpxchg {memory} ptr [r10], {register}\n"
+        f"  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
+        f"  mov qword ptr [rsp+{config.slot[0] * 8}], rax\n"
     )
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
