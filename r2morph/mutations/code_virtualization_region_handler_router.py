@@ -30,6 +30,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_convert_handler_asm,
     _fp_indexed_handler_asm,
     _fp_memory_handler_asm,
+    _fp_movd_handler_asm,
     _fp_move_handler_asm,
     _fp_packed_arith_handler_asm,
     _fp_packed_arith_mem_handler_asm,
@@ -97,6 +98,11 @@ from r2morph.mutations.code_virtualization_region_microops import (
     _vstoreidx_handler_asm,
     _vstorerip_handler_asm,
 )
+
+_FP_MOVE_HANDLERS = {
+    "fpmovd": _fp_movd_handler_asm,
+    "fpmov": _fp_move_handler_asm,
+}
 
 
 @dataclass(frozen=True)
@@ -434,6 +440,8 @@ class HandlerBodyRouter:
             body = _fp_arith_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith(("cvti2f_", "cvtf2i_")):
             body = _fp_convert_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith(("fpmovd_", "fpmov_")):
+            body = _FP_MOVE_HANDLERS[key.split("_", 1)[0]](key, self.context.key, self.context.field_perm)
         elif key.startswith(("fpcmp_", "fpcmpmem_")):
             if key.startswith("fpcmpmem_"):
                 body = _fp_compare_memory_handler_asm(
@@ -445,8 +453,6 @@ class HandlerBodyRouter:
                 )
             else:
                 body = _fp_compare_handler_asm(key, self.context.key, self.context.field_perm)
-        elif key.startswith("fpmov_"):
-            body = _fp_move_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith(("fppackedmem_", "fppackedmemrip_", "fppackedmemidx_")):
             body = _fp_packed_arith_mem_handler_asm(
                 key,

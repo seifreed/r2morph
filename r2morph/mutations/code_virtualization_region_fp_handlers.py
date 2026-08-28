@@ -268,6 +268,27 @@ def _fp_convert_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> 
     )
 
 
+def _fp_movd_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Assembly body for a 32-bit GP/XMM ``movd`` transfer."""
+    _, direction = handler_key.split("_", 1)
+    off = pair_offsets("xmm", "gp", field_perm)
+    decode = (
+        f"  movzx r8d, byte ptr [rsi+{off['xmm']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['gp']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+    )
+    if direction == "gp_to_xmm":
+        return decode + (
+            "  mov eax, dword ptr [rsp + r9*8]\n  movd xmm0, eax\n"
+            f"  shl r8, 4\n  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+            "  add rsi, 3\n  jmp vm_dispatch\n"
+        )
+    return decode + (
+        f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"
+        "  movd eax, xmm0\n  mov qword ptr [rsp + r9*8], rax\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
 def _fp_compare_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP register-register compare
     (``ucomisd``/``comisd`` and the ``ss`` forms).

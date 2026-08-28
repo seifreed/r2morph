@@ -14,7 +14,7 @@ _CAPABILITY_PATTERNS: dict[str, tuple[str, ...]] = {
     "memory_addressing": ("mem", "movidx", "movx", "lea", "riprel", "global"),
     "flags_and_conditions": ("flag", "bool", "cmp", "setcc", "cmov", "bt", "shift", "rotate", "isa"),
     "calls_and_returns": ("call", "incall", "mcall", "multiret"),
-    "floating_point_and_simd": ("fp", "simd", "fparith", "fpmov", "movq", "fpcmp", "fppacked"),
+    "floating_point_and_simd": ("fp", "simd", "fparith", "fpmov", "movq", "movd", "fpcmp", "fppacked"),
     "stack_and_abi": ("prologue", "push", "pop", "leave", "redzone", "varargs"),
     "control_flow_and_dispatch": ("interp", "switch", "pie", "multiexit"),
     "thread_runtime_boundaries": ("dynamic", "tls", "thread", "signal"),
