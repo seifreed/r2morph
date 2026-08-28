@@ -61,6 +61,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_op_mem_indexed,
     _decode_op_memdst,
     _decode_riprel_mov,
+    _decode_tls_memory_mov,
     _parse_indexed_operand,
     _parse_riprel_operand,
 )
@@ -148,6 +149,7 @@ def _classify_binary(kind: str, text: str, address: int, size: int) -> list[Any]
     if kind == "mov":
         return _first_item(
             (
+                lambda: _decode_tls_memory_mov(text),
                 lambda: _decode_mov_from_rsp(text),
                 lambda: _decode_mov_to_rsp(text),
                 lambda: _decode_memory_mov(text),

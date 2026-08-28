@@ -12,8 +12,32 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     REGISTER8_INDEX,
     REGISTER16_INDEX,
     _parse_mem_operand,
+    _parse_tls_operand,
     _register_operand,
 )
+
+
+def _decode_tls_memory_mov(text: str) -> tuple[str, int, str, int | None, int, int] | None:
+    """Decode GP loads/stores through the current thread's FS/GS base."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "mov" or "," not in parts[1]:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_tls, right_tls = _parse_tls_operand(left), _parse_tls_operand(right)
+    if left_tls is not None and right_tls is None:
+        kind, memory, register_text = "tlsstore", left_tls, right
+    elif right_tls is not None and left_tls is None:
+        kind, memory, register_text = "tlsload", right_tls, left
+    else:
+        return None
+    register = _register_operand(register_text.lower())
+    if register is None:
+        return None
+    segment, base_slot, displacement, memory_width = memory
+    register_slot, register_width = register
+    if memory_width is not None and memory_width != register_width:
+        return None
+    return kind, register_slot, segment, base_slot, displacement, register_width
 
 
 def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:

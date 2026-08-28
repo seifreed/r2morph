@@ -78,6 +78,7 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         "movfromrsp",
         "leave",
         "load",
+        "tlsload",
         "riprel_load",
         "lea",
         "learip",

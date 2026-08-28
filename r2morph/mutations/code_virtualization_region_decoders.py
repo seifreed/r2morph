@@ -408,6 +408,47 @@ def _decode_imul3(disasm: str) -> tuple[int, int, int, int] | None:
 _MEM_DISP_BOUND = 1 << 31  # displacement is encoded as a signed 32-bit value
 
 
+def _parse_tls_operand(text: str) -> tuple[str, int | None, int, int | None] | None:
+    """Parse an FS/GS address into segment, base register, displacement and width."""
+    text = text.strip().lower()
+    width: int | None = None
+    head = text.split(None, 1)
+    if head and head[0] in ("qword", "dword"):
+        width = 64 if head[0] == "qword" else 32
+        text = head[1].strip() if len(head) > 1 else ""
+    rest = text.split(None, 1)
+    if rest and rest[0] == "ptr":
+        text = rest[1].strip() if len(rest) > 1 else ""
+    if text.startswith(("fs:", "gs:")):
+        segment, expression = text[:2], text[3:]
+    elif text.startswith(("[fs:", "[gs:")) and text.endswith("]"):
+        segment, expression = text[1:3], text[4:-1]
+    else:
+        return None
+    if expression.startswith("[") and expression.endswith("]"):
+        expression = expression[1:-1]
+    base, displacement = expression.strip(), 0
+    for sign, scale in (("+", 1), ("-", -1)):
+        if sign in expression:
+            base, right = expression.split(sign, 1)
+            try:
+                displacement = scale * int(right.strip(), 0)
+            except ValueError:
+                return None
+            break
+    base = base.strip()
+    base_slot = REGISTER_INDEX.get(base) if base else None
+    if base and base_slot is None:
+        try:
+            displacement = int(base, 0)
+        except ValueError:
+            return None
+        base_slot = None
+    if not -_MEM_DISP_BOUND <= displacement < _MEM_DISP_BOUND:
+        return None
+    return segment, base_slot, displacement, width
+
+
 def _parse_mem_operand(text: str) -> tuple[int, int, int | None] | None:
     """Parse ``[base+disp]`` into (base slot, displacement, width or None).
 

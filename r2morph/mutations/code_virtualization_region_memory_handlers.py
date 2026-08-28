@@ -82,6 +82,50 @@ def _memory_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _tls_address_asm(
+    has_base: bool,
+    key: str,
+    key_dword: str,
+    field_perm: int = 0,
+) -> tuple[str, int]:
+    """Decode a TLS displacement and form its address without changing the segment base."""
+    off = mem_offsets(not has_base, field_perm)
+    body = f"  movzx r8d, byte ptr [rsi+{off['reg']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+    if has_base:
+        body += f"  movzx r9d, byte ptr [rsi+{off['base']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+    body += (
+        f"  mov eax, dword ptr [rsi+{off['disp']}]\n  mov r11d, {key_dword}\n  xor eax, r11d\n"
+        + _unmask_dword("r11")
+        + "  movsxd rax, eax\n"
+    )
+    if has_base:
+        body += "  mov r10, qword ptr [rsp+r9*8]\n  lea r10, [r10+rax]\n"
+    else:
+        body += "  mov r10, rax\n"
+    return body, 7 if has_base else 6
+
+
+def _tls_memory_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Load or store a GP value through the current thread's FS/GS base."""
+    kind, segment, base, width_text = handler_key.split("_")
+    width = int(width_text)
+    body, advance = _tls_address_asm(base != "-1", key, key_dword, field_perm)
+    address = f"{segment}:[r10]"
+    if kind == "tlsload":
+        load = (
+            f"  mov rax, qword ptr {address}\n" if width == _QWORD_WIDTH_BITS else f"  mov eax, dword ptr {address}\n"
+        )
+        body += load + "  mov qword ptr [rsp+r8*8], rax\n"
+    else:
+        body += "  mov rbx, qword ptr [rsp+r8*8]\n"
+        value = "rbx" if width == _QWORD_WIDTH_BITS else "ebx"
+        size = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+        body += f"  mov {size} ptr {address}, {value}\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _riprel_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0) -> str:
     """Assembly body for a rip-relative load/store handler.
 

@@ -85,6 +85,8 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "movxreg": (1, 2, 3),
     "load": (4,),
     "store": (4,),
+    "tlsload": (2, 3, 5),
+    "tlsstore": (2, 3, 5),
     "fpload": (4,),
     "fpstore": (4,),
     "fploadrip": (3,),

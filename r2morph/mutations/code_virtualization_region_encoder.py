@@ -239,6 +239,9 @@ class RegionEncoder:
         if kind in ("load", "store"):
             _, reg, base, disp, _width = item
             self._gp_mem(item, reg, base, disp)
+        elif kind in ("tlsload", "tlsstore"):
+            _, reg, _segment, base, disp, _width = item
+            self._mem(self._opcode(item), (self.slot_of[reg], None if base is None else self.slot_of[base], disp))
         elif kind in ("riprel_load", "riprel_store"):
             _, reg, target, _width = item
             self._gp_rip(item, reg, target)
