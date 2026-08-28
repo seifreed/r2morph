@@ -160,7 +160,7 @@ class HandlerBodyRouter:
         address = variants[4]
         stack_depth = (
             int(key.rsplit("_", 1)[1])
-            if key.startswith(("call_", "icall_", "callmem_", "callmemrip_", "callmemidx_"))
+            if key.startswith(("call_", "icall_", "callmem_", "callmemrip_", "callmemidx_", "callmemidxnb_"))
             else 0
         )
         body = None
@@ -191,7 +191,7 @@ class HandlerBodyRouter:
                 stack_depth,
             )
             body = _call_mem_handler_asm(config, key.startswith("callmemrip_"))
-        elif key.startswith("callmemidx_"):
+        elif key.startswith(("callmemidx_", "callmemidxnb_")):
             config = CallMemoryHandlerConfig(
                 index,
                 self.context.key,
@@ -203,7 +203,7 @@ class HandlerBodyRouter:
                 self.context.flags_offset,
                 stack_depth,
             )
-            body = _call_mem_idx_handler_asm(config)
+            body = _call_mem_idx_handler_asm(config, key.startswith("callmemidxnb_"))
         elif key == "vcall":
             body = _vcall_handler_asm(self.context.retarget_target, self.context.rsp_off)
         elif key == "syscall":

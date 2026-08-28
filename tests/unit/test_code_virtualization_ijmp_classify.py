@@ -22,6 +22,7 @@ from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
 _EXPECTED_ITEM_SIZE_IJMP_3_2 = 2
+_EXPECTED_ITEM_SIZE_CALLMEMIDXNB = 8
 
 
 def test_classify_register_indirect_jump_yields_ijmp_when_opted_in() -> None:
@@ -46,6 +47,17 @@ def test_classify_based_memory_indirect_jump_lowered_to_ijmpmem() -> None:
     """A based memory-indexed computed jump lowers to an ijmpmem (base + index)."""
     insn = {"type": "ujmp", "opcode": "jmp qword [rbx + rax*8]"}
     expect(_classify(insn, allow_computed_jump=True) == ["ijmpmem", 3, 0, 3, 0])
+
+
+def test_classify_no_base_memory_indirect_call_lowered_to_callmemidxnb() -> None:
+    """A no-base function-pointer table call keeps its index and displacement."""
+    insn = {"type": "ucall", "opcode": "call qword [rax*8 + 0x2000]"}
+    expect(_classify(insn) == ["callmemidxnb", 0, 3, 8192])
+
+
+def test_callmemidxnb_has_eight_byte_encoded_item() -> None:
+    """The no-base call omits the one-byte base slot from its indexed layout."""
+    expect(_item_size(("callmemidxnb", 0, 3, 8192, 0)) == _EXPECTED_ITEM_SIZE_CALLMEMIDXNB)
 
 
 def test_classify_memory_indirect_jump_requires_opt_in() -> None:

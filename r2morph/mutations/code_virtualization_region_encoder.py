@@ -345,6 +345,9 @@ class RegionEncoder:
         elif kind == "callmemidx":
             base, index, shift, disp = item[1], item[2], item[3], item[4]
             self._idx(self._opcode(item), (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind == "callmemidxnb":
+            index, shift, disp = item[1], item[2], item[3]
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
         else:
             return False
         return True

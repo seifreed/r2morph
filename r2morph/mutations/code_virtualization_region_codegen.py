@@ -71,7 +71,7 @@ from r2morph.mutations.code_virtualization_region_regcipher import cipher_regist
 
 logger = logging.getLogger(__name__)
 
-_XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "vcall"})
+_XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb", "vcall"})
 
 
 def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:

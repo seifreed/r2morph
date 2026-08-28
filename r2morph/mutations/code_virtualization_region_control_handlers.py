@@ -456,12 +456,14 @@ def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool) -> str:
     )
 
 
-def _call_mem_idx_handler_asm(config: CallMemoryHandlerConfig) -> str:
-    """Indexed memory-indirect ``call qword [base+index*scale+disp]`` (function-
-    pointer table dispatch). The shared indexed-address prologue computes the
-    pointer's address into r10; dereferencing it yields the target. The item
-    carries an unused register field so the scaled-index operand layout applies."""
-    address, advance = _indexed_address_asm(
+def _call_mem_idx_handler_asm(config: CallMemoryHandlerConfig, no_base: bool = False) -> str:
+    """Indexed memory-indirect call through a function-pointer table.
+
+    ``no_base`` selects the absolute ``index*scale+disp`` form; both forms use
+    the same native-call bridge after loading the target pointer.
+    """
+    address_builder = _indexed_address_nobase_asm if no_base else _indexed_address_asm
+    address, advance = address_builder(
         config.key,
         config.key_dword,
         config.field_perm,

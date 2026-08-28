@@ -252,10 +252,14 @@ def _classify_call(kind: str, text: str, insn: dict[str, Any]) -> list[Any] | No
             result = ["callmemrip", rip_relative[0]]
     elif kind == "ucall":
         operand = text.split(None, 1)[1] if " " in text else ""
-        indexed = _parse_indexed_operand(operand)
+        indexed = _parse_indexed_operand(operand, base_optional=True)
         if indexed is not None:
             base_slot, index_slot, scale_shift, displacement = indexed
-            result = ["callmemidx", base_slot, index_slot, scale_shift, displacement]
+            result = (
+                ["callmemidxnb", index_slot, scale_shift, displacement]
+                if base_slot < 0
+                else ["callmemidx", base_slot, index_slot, scale_shift, displacement]
+            )
     return result
 
 

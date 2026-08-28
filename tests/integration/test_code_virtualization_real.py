@@ -134,6 +134,7 @@ _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_7 = 69
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_ENGARITHIMM_42 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_ENGARITH_42 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_INCALL_45 = 45
+_EXPECTED_EMULATE_EXIT_CODE_FIXTURE_INDEXCALL_NB = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_MULTIRET_17 = 17
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_SWITCH_ABS_30 = 30
 _EXPECTED_EMULATE_EXIT_CODE_MUTATED_45 = 45
@@ -160,6 +161,9 @@ FIXTURE_SWITCH_ABS = _DATASET / "elf_switch_abs_x86_64"
 # Multi-ret jcc diamond: two independent ret blocks, no shared epilogue - the
 # multi-terminator region shape the whole-function lifter already supports.
 FIXTURE_MULTIRET = _DATASET / "elf_multiret_jccdiamond_x86_64"
+# Absolute function-pointer table call: exercises the no-base indexed indirect-call
+# bridge, which must preserve both the target load and the native ABI transition.
+FIXTURE_INDEXED_CALL_NO_BASE = _DATASET / "elf_vm_idxcallnb_x86_64"
 
 unicorn = pytest.importorskip("unicorn")
 UcError = unicorn.UcError
@@ -784,6 +788,29 @@ def test_indexed_memory_call_virtualization_preserves_exit_code(tmp_path: Path) 
 
     expect(not (stats["functions_virtualized"] < 1))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_6)
+
+
+def test_no_base_indexed_memory_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    """An absolute indexed function-pointer call must use the no-base call bridge."""
+    if not FIXTURE_INDEXED_CALL_NO_BASE.exists():
+        pytest.skip(f"fixture missing: {FIXTURE_INDEXED_CALL_NO_BASE}")
+
+    mutated = tmp_path / "mutated_idxcallnb"
+    shutil.copy(FIXTURE_INDEXED_CALL_NO_BASE, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(
+        _emulate_exit_code(FIXTURE_INDEXED_CALL_NO_BASE)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_INDEXCALL_NB
+    )
 
 
 def test_flag_synthesis_preserves_branch_decisions(tmp_path: Path) -> None:

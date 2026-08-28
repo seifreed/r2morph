@@ -246,6 +246,7 @@ _FLAG_KILLER_KINDS = frozenset(
         "callmem",
         "callmemrip",
         "callmemidx",
+        "callmemidxnb",
         "cmpxchgmem",
         "cmpxchgmemidx",
         "syscall",
@@ -448,7 +449,7 @@ def extract_region(
     if stack_states is None:
         return None
     for index, item in enumerate(items):
-        if item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx"):
+        if item[0] in ("call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb"):
             state = stack_states[index]
             if state is None:
                 return None

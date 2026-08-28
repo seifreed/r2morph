@@ -100,7 +100,14 @@ _FIXED_SIZE_GROUPS = {
         "xchgmem",
         "cmpxchgmem",
     ),
-    8: ("vleaidxnb", "fploadidxnb", "fpstoreidxnb", "leaidxnb", "ijmpmemnb"),
+    8: (
+        "vleaidxnb",
+        "fploadidxnb",
+        "fpstoreidxnb",
+        "leaidxnb",
+        "ijmpmemnb",
+        "callmemidxnb",
+    ),
     9: (
         "vloadidx",
         "vstoreidx",

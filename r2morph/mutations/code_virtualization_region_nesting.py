@@ -92,7 +92,7 @@ _RETURN_BASE = 0xB0  # first parent-bytecode-pointer return slot
 _MIN_PEEL = 2  # shortest op run worth peeling into an inner layer
 # Cap layers so the per-transition return slots stay below the red zone (0x100).
 _MAX_LAYERS = (0x100 - _RETURN_BASE) // 8
-_XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "vcall"})
+_XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb", "vcall"})
 
 
 @dataclass(frozen=True)

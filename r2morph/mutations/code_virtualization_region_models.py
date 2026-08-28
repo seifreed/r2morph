@@ -179,6 +179,7 @@ _IDENTITY_KEYS = {
     "callmem",
     "callmemrip",
     "callmemidx",
+    "callmemidxnb",
     "jmp",
     "ijmp",
     "ijmpmem",
@@ -192,7 +193,14 @@ _IDENTITY_KEYS = {
 }
 
 
-_CALL_KEY_LENGTHS = {"call": 3, "icall": 3, "callmem": 4, "callmemrip": 3, "callmemidx": 6}
+_CALL_KEY_LENGTHS = {
+    "call": 3,
+    "icall": 3,
+    "callmem": 4,
+    "callmemrip": 3,
+    "callmemidx": 6,
+    "callmemidxnb": 5,
+}
 
 
 def _call_key(item: tuple[Any, ...]) -> str:
