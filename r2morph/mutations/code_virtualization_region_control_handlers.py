@@ -239,17 +239,20 @@ def _call_bridge_asm(
     callee_saved_loads = "".join(
         _call_frame_load_asm(register, slot[GP_REGISTERS.index(register)] * 8)
         for register in _CALL_CALLEE_SAVED_REGISTERS
+        if register != "r12"
     )
+    stack_load = f"  mov r11, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n" f"  xor r11, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
+    r12_load = _call_frame_load_asm("r12", slot[GP_REGISTERS.index("r12")] * 8)
     return (
         target_asm
         + f"  mov r12, rsp\n  mov rbx, rsi\n  mov qword ptr [rsp+{_CALL_VPC_OFFSET}], rsi\n"
         + f"  mov qword ptr [rsp+{_CALL_BASE_OFFSET}], r15\n"
         + loads
         + xmm_loads
-        + f"  mov rax, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n"
-        + f"  xor rax, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
         + callee_saved_loads
-        + "  mov rsp, rax\n"
+        + stack_load
+        + "  mov rsp, r11\n"
+        + r12_load
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
         + f"call_resume_{index}:\n  lea r12, [rsp+{_GUARD - bridge.frame_size + bridge.stack_depth}]\n"
         + _call_frame_spills_asm(slot, bridge.flags_offset)

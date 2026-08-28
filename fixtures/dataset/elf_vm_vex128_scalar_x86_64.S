@@ -9,6 +9,9 @@ _start:
     vsubss xmm2, xmm2, xmm1
     vmulss xmm2, xmm2, xmm1
     vdivss xmm2, xmm2, xmm1
+    vminss xmm2, xmm2, xmm1
+    vmaxss xmm2, xmm2, xmm1
+    vminss xmm2, xmm2, xmm0
     cvttss2si eax, xmm2
     mov edi, eax
     mov eax, 60

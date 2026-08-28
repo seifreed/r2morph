@@ -10,17 +10,16 @@ import pytest
 
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
-from tests.integration.elf_emulator import emulate_exit_code
 from tests.utils.assertions import expect
 from tests.utils.process import run_command
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_vex128_scalar_x86_64"
 _EXPECTED_EXIT_CODE = 2
-_MINIMUM_VIRTUALIZED_INSTRUCTIONS = 4
+_MINIMUM_VIRTUALIZED_INSTRUCTIONS = 6
 
 
 def _mutate_fixture(destination: Path) -> dict[str, int]:
-    shutil.copyfile(_FIXTURE, destination)
+    shutil.copy(_FIXTURE, destination)
     binary = Binary(destination, writable=True)
     binary.open()
     try:
@@ -34,7 +33,8 @@ def _mutate_fixture(destination: Path) -> dict[str, int]:
 def test_vex128_scalar_fixture_original_returns_expected_code() -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
         pytest.skip("native VEX execution requires an x86-64 host")
-    expect(emulate_exit_code(_FIXTURE) == _EXPECTED_EXIT_CODE)
+    result = run_command([_FIXTURE])
+    expect(result.returncode == _EXPECTED_EXIT_CODE)
 
 
 def test_vex128_scalar_fixture_virtualization_applies(tmp_path: Path) -> None:

@@ -524,10 +524,14 @@ _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vsubss": ("sub", 32),
     "vmulss": ("mul", 32),
     "vdivss": ("div", 32),
+    "vminss": ("min", 32),
+    "vmaxss": ("max", 32),
     "vaddsd": ("add", 64),
     "vsubsd": ("sub", 64),
     "vmulsd": ("mul", 64),
     "vdivsd": ("div", 64),
+    "vminsd": ("min", 64),
+    "vmaxsd": ("max", 64),
 }
 
 

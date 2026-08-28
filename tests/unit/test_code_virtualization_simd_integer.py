@@ -116,3 +116,11 @@ def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:
 
 def test_decode_vex128_scalar_arithmetic_preserves_source_one_semantics() -> None:
     expect(_decode_fp_vex_scalar_arith("vaddss xmm2, xmm0, xmm1") == ("fparithvex", "add", 2, 0, 1, 32))
+
+
+def test_decode_vex128_scalar_min_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_scalar_arith("vminss xmm2, xmm0, xmm1") == ("fparithvex", "min", 2, 0, 1, 32))
+
+
+def test_decode_vex128_scalar_max_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_scalar_arith("vmaxsd xmm2, xmm0, xmm1") == ("fparithvex", "max", 2, 0, 1, 64))

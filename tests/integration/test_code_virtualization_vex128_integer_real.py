@@ -20,7 +20,7 @@ _MINIMUM_VIRTUALIZED_INSTRUCTIONS = 10
 
 
 def _mutate_fixture(destination: Path) -> dict[str, int]:
-    shutil.copyfile(_FIXTURE, destination)
+    shutil.copy(_FIXTURE, destination)
     binary = Binary(destination, writable=True)
     binary.open()
     try:
