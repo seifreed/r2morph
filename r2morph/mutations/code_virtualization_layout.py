@@ -110,6 +110,16 @@ def pair_offsets(first: str, second: str, field_perm: int) -> dict[str, int]:
     return _offsets(pair_permuted_fields(first, second, field_perm))
 
 
+def triple_permuted_fields(first: str, second: str, third: str, field_perm: int) -> list[Field]:
+    """Three single-byte operand fields in this build's order."""
+    return _permute([(first, 1), (second, 1), (third, 1)], field_perm)
+
+
+def triple_offsets(first: str, second: str, third: str, field_perm: int) -> dict[str, int]:
+    """Byte offsets for three single-byte operand fields."""
+    return _offsets(triple_permuted_fields(first, second, third, field_perm))
+
+
 def _mem_fields(riprel: bool) -> list[Field]:
     # Memory items shared by every handler that routes through the address
     # prologue: a register slot, the displacement, and (non-rip-relative) a base

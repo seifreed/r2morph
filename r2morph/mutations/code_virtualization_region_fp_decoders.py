@@ -14,6 +14,7 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 )
 
 _DWORD_WIDTH_BITS = 32
+_PACKED_VEX_OPERAND_COUNT = 3
 
 
 def _parse_xmm_operand(text: str) -> int | None:
@@ -455,6 +456,37 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
     }
 )
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqu"})
+_FP_VEX_PACKED_ARITH: dict[str, str] = {
+    "vaddps": "addps",
+    "vaddpd": "addpd",
+    "vsubps": "subps",
+    "vsubpd": "subpd",
+    "vmulps": "mulps",
+    "vmulpd": "mulpd",
+    "vdivps": "divps",
+    "vdivpd": "divpd",
+}
+
+
+def _decode_fp_vex_packed_arith(text: str) -> tuple[str, str, int, int, int] | None:
+    """Decode a three-operand VEX.128 packed FP arithmetic instruction."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in _FP_VEX_PACKED_ARITH:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_VEX_OPERAND_COUNT:
+        return None
+    registers = tuple(_parse_xmm_operand(operand) for operand in operands)
+    destination, first_source, second_source = registers
+    if destination is None or first_source is None or second_source is None:
+        return None
+    return (
+        "fppackedvex",
+        _FP_VEX_PACKED_ARITH[parts[0].lower()],
+        destination,
+        first_source,
+        second_source,
+    )
 
 
 def _decode_fp_packed_arith(text: str) -> tuple[str, str, int, int] | None:

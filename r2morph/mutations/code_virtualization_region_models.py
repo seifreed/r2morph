@@ -106,6 +106,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "fpmovd": (1,),
     "fpmov": (1,),
     "fppacked": (1,),
+    "fppackedvex": (1,),
     "fppackedmem": (1,),
     "fppackedmemrip": (1,),
     "fppackedmemidx": (1,),

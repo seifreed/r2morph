@@ -35,6 +35,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_arith_handler_asm,
     _fp_packed_arith_mem_handler_asm,
     _fp_packed_mem_handler_asm,
+    _fp_packed_vex_arith_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_handlers import (
     IntegerHandlerConfig,
@@ -142,6 +143,7 @@ class HandlerBodyRouter:
             self._tls_memory,
             self._atomic_memory,
             self._memory,
+            self._fp_vex,
             self._fp,
         )
         for route in routes:
@@ -519,3 +521,8 @@ class HandlerBodyRouter:
                 address,
             )
         return body
+
+    def _fp_vex(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
+        if not key.startswith("fppackedvex_"):
+            return None
+        return _fp_packed_vex_arith_handler_asm(key, self.context.key, self.context.field_perm)

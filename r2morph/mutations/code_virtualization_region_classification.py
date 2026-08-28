@@ -45,6 +45,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_mem,
     _decode_fp_packed_riprel,
     _decode_fp_riprel,
+    _decode_fp_vex_packed_arith,
 )
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_bswap,
@@ -133,6 +134,7 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
             lambda: _decode_fp_compare(text),
             lambda: _decode_fp_movd(text),
             lambda: _decode_fp_move(text),
+            lambda: _decode_fp_vex_packed_arith(text),
             lambda: _decode_fp_packed_arith(text),
             lambda: _decode_fp_packed_arith_mem(text),
             lambda: _decode_fp_packed_arith_riprel(text, address, size),

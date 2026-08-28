@@ -9,7 +9,7 @@ area - and reuse the GP module's shared address prologues and frame offsets.
 
 from __future__ import annotations
 
-from r2morph.mutations.code_virtualization_layout import pair_offsets
+from r2morph.mutations.code_virtualization_layout import pair_offsets, triple_offsets
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _QWORD_WIDTH_BITS,
@@ -31,6 +31,15 @@ def xmm_spill_asm() -> str:
 def xmm_reload_asm() -> str:
     """Reload all 16 XMM registers from their frame slots before leaving the VM."""
     return "".join(f"  movups xmm{i}, [rsp + {_XMM_SAVE_OFFSET + i * 16}]\n" for i in range(16))
+
+
+def avx128_upper_clear_asm(destinations: set[int]) -> str:
+    """Clear the YMM upper half for VEX.128 destinations after XMM reload."""
+    return "".join(
+        f"  vpxor ymm{index}, ymm{index}, ymm{index}\n"
+        f"  movups xmm{index}, [rsp + {_XMM_SAVE_OFFSET + index * 16}]\n"
+        for index in sorted(destinations)
+    )
 
 
 def _fp_memory_handler_asm(
@@ -144,6 +153,23 @@ def _fp_packed_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0
         f"  {instr} xmm0, xmm1\n"
         f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
         "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
+def _fp_packed_vex_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Run a VEX.128 packed operation while preserving unrelated YMM upper halves."""
+    instr = handler_key.split("_", 1)[1]
+    off = triple_offsets("dst", "src1", "src2", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+{off['src2']}]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
+        f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
+        f"  {instr} xmm0, xmm1\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 

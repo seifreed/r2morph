@@ -15,6 +15,7 @@ from r2morph.mutations.code_virtualization_layout import (
     pair_permuted_fields,
     permuted_fields,
     shift_permuted_fields,
+    triple_permuted_fields,
 )
 from r2morph.mutations.code_virtualization_region_models import RegionScheme, _required_key
 
@@ -76,6 +77,11 @@ class RegionEncoder:
     def _pair(self, position: int, first: int, second: int) -> None:
         values = {"a": first, "b": second}
         for name, _size in pair_permuted_fields("a", "b", self.scheme.field_perm):
+            self.plain.append(values[name] ^ position)
+
+    def _triple(self, position: int, first: int, second: int, third: int) -> None:
+        values = {"a": first, "b": second, "c": third}
+        for name, _size in triple_permuted_fields("a", "b", "c", self.scheme.field_perm):
             self.plain.append(values[name] ^ position)
 
     def _mem(self, position: int, operands: tuple[int, int | None, int]) -> None:
@@ -200,6 +206,8 @@ class RegionEncoder:
             self._pair(self._opcode(item), xmm, self.slot_of[gp])
         elif kind in ("fpcmp", "fpmov", "fppacked"):
             self._pair(self._opcode(item), item[2], item[3])
+        elif kind == "fppackedvex":
+            self._triple(self._opcode(item), item[2], item[3], item[4])
         else:
             return False
         return True
