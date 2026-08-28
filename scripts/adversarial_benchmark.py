@@ -28,6 +28,7 @@ _PYTHON_MODULES = {"angr": "angr", "triton": "triton", "unicorn": "unicorn"}
 _EXPECTED_TOOLS = ("radare2", "objdump", "angr", "unicorn", "triton", "ida-pro", "ghidra", "binary-ninja")
 _DISASSEMBLY_LINE = re.compile(r"^\s*[0-9a-f]+:\s", re.IGNORECASE)
 _COMMAND_TIMEOUT_SECONDS = 30
+_PASS_STATUS_FIELDS = {"applied": "applied", "omitted": "omitted", "no-op": "no_op", "error": "errors"}
 
 
 def _availability(tool: str) -> tuple[bool, str]:
@@ -144,6 +145,42 @@ def _pass_result(stats: dict[str, object]) -> dict[str, object]:
     }
 
 
+def _pass_summary(samples: list[dict[str, object]]) -> dict[str, dict[str, int]]:
+    summary: dict[str, dict[str, int]] = {}
+    for sample in samples:
+        rows = sample.get("passes", [])
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            pass_name = row.get("pass_name")
+            status = row.get("status")
+            if not isinstance(pass_name, str) or not isinstance(status, str):
+                continue
+            counters = summary.setdefault(
+                pass_name,
+                {
+                    "samples": 0,
+                    "applied": 0,
+                    "omitted": 0,
+                    "no_op": 0,
+                    "errors": 0,
+                    "functions_virtualized": 0,
+                    "unsupported_functions": 0,
+                },
+            )
+            counters["samples"] += 1
+            status_field = _PASS_STATUS_FIELDS.get(status)
+            if status_field is not None:
+                counters[status_field] += 1
+            for field in ("functions_virtualized", "unsupported_functions"):
+                value = row.get(field)
+                if isinstance(value, int):
+                    counters[field] += value
+    return dict(sorted(summary.items()))
+
+
 def benchmark_pair(original: Path, protected: Path | None = None) -> dict[str, object]:
     """Benchmark every configured analyzer and preserve unavailable evidence."""
     if not original.is_file():
@@ -198,6 +235,7 @@ def benchmark_corpus(dataset: Path) -> dict[str, object]:
         "corpus": dataset.name,
         "sample_count": len(samples),
         "samples": samples,
+        "pass_summary": _pass_summary(samples),
         "summary": {
             "completed_tool_runs": completed_tools,
             "unavailable_tool_runs": unavailable_tools,

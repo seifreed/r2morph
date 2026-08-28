@@ -26,17 +26,18 @@ parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
-The current all-fixture adversarial campaign covers 116 executable samples and
-the `CodeVirtualization` pass. It records 580 completed tool runs, 464 explicit
-unavailable-tool rows, and zero errors. The report includes radare2, objdump,
+The current all-fixture adversarial campaign covers 117 executable samples and
+the `CodeVirtualization` pass. It records 585 completed tool runs, 468 explicit
+unavailable-tool rows, and zero errors. Its per-pass summary records 114 applied
+samples, 3 omitted samples, and no errors. The report includes radare2, objdump,
 angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
 Binary Ninja remain unavailable in this environment. The automated second-pass
 review passes all checks and is not human sign-off.
 
-The current report records 580 completed tool runs and 464 explicit unavailable-
+The current report records 585 completed tool runs and 468 explicit unavailable-
 tool rows after the byte/word memory-width regression. The focused
 virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 107 real
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 108 real
 fixtures cover nine capability families with no unclassified fixture.
 
 ## 1. Current architecture
@@ -56,12 +57,12 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 116 compatible executable fixtures spanning
+current fixture inventory contains 117 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
 PIE, red-zone, multi-exit, fallback, nested-region, dynamic-loader, and
 thread-local-storage shapes.
 
-The machine-readable artifact is
+The historical multi-seed machine-readable artifact is
 [`docs/protection-maturity-corpus.json`](protection-maturity-corpus.json). Each
 sample records SHA-256, size, format, architecture, function/basic-block/CFG and
 instruction counts, strings, imports, references, runtime artifacts, Unicorn
@@ -122,7 +123,7 @@ treated as passing evidence. The automated review is not human sign-off.
 
 ## 5. Virtualization maturity
 
-The pass virtualized 113 of 116 fixtures in the one-seed coverage run and records
+The current one-seed adversarial run applied the pass to 114 of 117 fixtures and records
 the exact per-build result rather than claiming that every input is transformable.
 The supported VM handles straight-line operations, branches, calls, flags,
 memory forms, FP/SIMD forms, red-zone preservation, switch dispatch, multi-ret

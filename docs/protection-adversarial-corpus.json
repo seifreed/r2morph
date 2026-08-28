@@ -1,6 +1,17 @@
 {
   "corpus": "dataset",
   "measurement": "protection-adversarial-corpus",
+  "pass_summary": {
+    "CodeVirtualization": {
+      "applied": 114,
+      "errors": 0,
+      "functions_virtualized": 118,
+      "no_op": 0,
+      "omitted": 3,
+      "samples": 117,
+      "unsupported_functions": 10
+    }
+  },
   "sample_count": 117,
   "samples": [
     {
@@ -49,12 +60,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01994720898801461,
+            "duration_seconds": 0.025509250001050532,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014560249983333051,
+            "duration_seconds": 0.017652416019700468,
             "functions": 1,
             "status": "completed"
           },
@@ -64,12 +75,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0012223750236444175,
+            "duration_seconds": 0.0009729170124046504,
             "exit_code": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0037988750264048576,
+            "duration_seconds": 0.003999500011559576,
             "exit_code": 2,
             "status": "completed"
           },
@@ -156,12 +167,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01615491701522842,
+            "duration_seconds": 0.025658041005954146,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013325665961019695,
+            "duration_seconds": 0.017215042025782168,
             "functions": 3,
             "status": "completed"
           },
@@ -171,12 +182,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006130419787950814,
+            "duration_seconds": 0.0009124170173890889,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003963999974075705,
+            "duration_seconds": 0.003939457994420081,
             "exit_code": 0,
             "status": "completed"
           },
@@ -263,12 +274,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01691187499091029,
+            "duration_seconds": 0.026215707999654114,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0130393750150688,
+            "duration_seconds": 0.01928912498988211,
             "functions": 1,
             "status": "completed"
           },
@@ -278,12 +289,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007029579719528556,
+            "duration_seconds": 0.0008039590320549905,
             "exit_code": 7,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0033342499518767,
+            "duration_seconds": 0.004575999977532774,
             "exit_code": 7,
             "status": "completed"
           },
@@ -370,12 +381,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016590624989476055,
+            "duration_seconds": 0.026052167057059705,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013754458050243556,
+            "duration_seconds": 0.02452620805706829,
             "functions": 3,
             "status": "completed"
           },
@@ -385,12 +396,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005122079746797681,
+            "duration_seconds": 0.0007279159617610276,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0035713749821297824,
+            "duration_seconds": 0.0042863329872488976,
             "exit_code": 0,
             "status": "completed"
           },
@@ -477,12 +488,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015642792044673115,
+            "duration_seconds": 0.01796529203420505,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008024208014830947,
+            "duration_seconds": 0.009692207968328148,
             "functions": 1,
             "status": "completed"
           },
@@ -492,12 +503,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005169590003788471,
+            "duration_seconds": 0.0009869170025922358,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0036100419820286334,
+            "duration_seconds": 0.004801041970495135,
             "exit_code": 0,
             "status": "completed"
           },
@@ -584,12 +595,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0170302499900572,
+            "duration_seconds": 0.022783333028201014,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01449587504612282,
+            "duration_seconds": 0.01725350000197068,
             "functions": 6,
             "status": "completed"
           },
@@ -599,12 +610,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006128749810159206,
+            "duration_seconds": 0.000636290991678834,
             "exit_code": 17,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006698583019897342,
+            "duration_seconds": 0.006507750018499792,
             "exit_code": 17,
             "status": "completed"
           },
@@ -691,12 +702,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.04388233402278274,
+            "duration_seconds": 0.0519267909694463,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.5654874170431867,
+            "duration_seconds": 0.8342922920128331,
             "functions": 97,
             "status": "completed"
           },
@@ -706,12 +717,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005993340164422989,
+            "duration_seconds": 0.0010020000045187771,
             "exit_code": 30,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0029819170013070107,
+            "duration_seconds": 0.004492791020311415,
             "exit_code": 30,
             "status": "completed"
           },
@@ -798,12 +809,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.03144091699505225,
+            "duration_seconds": 0.04927729198243469,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.49449499999172986,
+            "duration_seconds": 0.9391921249916777,
             "functions": 94,
             "status": "completed"
           },
@@ -813,12 +824,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007109169964678586,
+            "duration_seconds": 0.0008460830431431532,
             "exit_code": 30,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003109375014901161,
+            "duration_seconds": 0.0033534590038470924,
             "exit_code": 30,
             "status": "completed"
           },
@@ -905,12 +916,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01737845898605883,
+            "duration_seconds": 0.022824082989245653,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008284667041152716,
+            "duration_seconds": 0.01027212495682761,
             "functions": 1,
             "status": "completed"
           },
@@ -920,12 +931,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000625459011644125,
+            "duration_seconds": 0.0007044579833745956,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0038302920293062925,
+            "duration_seconds": 0.0048491249908693135,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1012,12 +1023,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016699375002644956,
+            "duration_seconds": 0.027063082961831242,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0128086669719778,
+            "duration_seconds": 0.01659837504848838,
             "functions": 3,
             "status": "completed"
           },
@@ -1027,12 +1038,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007617080118507147,
+            "duration_seconds": 0.000849874981213361,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003414875012822449,
+            "duration_seconds": 0.0037805839674547315,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1119,12 +1130,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015029749949462712,
+            "duration_seconds": 0.021649375034030527,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.009899333992507309,
+            "duration_seconds": 0.011950334010180086,
             "functions": 1,
             "status": "completed"
           },
@@ -1134,12 +1145,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007567079737782478,
+            "duration_seconds": 0.0007632499909959733,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004302541026845574,
+            "duration_seconds": 0.004262125003151596,
             "exit_code": 45,
             "status": "completed"
           },
@@ -1226,12 +1237,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.014602749957703054,
+            "duration_seconds": 0.023009790980722755,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013080083997920156,
+            "duration_seconds": 0.01485283300280571,
             "functions": 3,
             "status": "completed"
           },
@@ -1241,12 +1252,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000706207996699959,
+            "duration_seconds": 0.0008743339567445219,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0040184580138884485,
+            "duration_seconds": 0.006147374981082976,
             "exit_code": 45,
             "status": "completed"
           },
@@ -1333,12 +1344,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018232125032227486,
+            "duration_seconds": 0.02196666703093797,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007303291989956051,
+            "duration_seconds": 0.00926241697743535,
             "functions": 1,
             "status": "completed"
           },
@@ -1348,12 +1359,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006107910303398967,
+            "duration_seconds": 0.000898707949090749,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0031383750028908253,
+            "duration_seconds": 0.003171958029270172,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1440,12 +1451,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020366333017591387,
+            "duration_seconds": 0.02197650005109608,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.024806250003166497,
+            "duration_seconds": 0.030813417048193514,
             "functions": 3,
             "status": "completed"
           },
@@ -1455,12 +1466,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007075840258039534,
+            "duration_seconds": 0.0013887499808333814,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005656125023961067,
+            "duration_seconds": 0.006873542035464197,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1547,12 +1558,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.12479550001444295,
+            "duration_seconds": 0.12763162498595193,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01679104199865833,
+            "duration_seconds": 0.017194250016473234,
             "functions": 2,
             "status": "completed"
           },
@@ -1562,12 +1573,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007178329979069531,
+            "duration_seconds": 0.000712707987986505,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00603975000558421,
+            "duration_seconds": 0.006628834002185613,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1654,12 +1665,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019216708024032414,
+            "duration_seconds": 0.021326249989215285,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02120962500339374,
+            "duration_seconds": 0.022219875012524426,
             "functions": 4,
             "status": "completed"
           },
@@ -1669,12 +1680,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0013328749919310212,
+            "duration_seconds": 0.0006437919801101089,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006423250015359372,
+            "duration_seconds": 0.00558333401568234,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1761,12 +1772,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.024333125038538128,
+            "duration_seconds": 0.024262625025585294,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015754083986394107,
+            "duration_seconds": 0.018468166992533952,
             "functions": 2,
             "status": "completed"
           },
@@ -1776,12 +1787,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008714579744264483,
+            "duration_seconds": 0.0009284589905291796,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006630541989579797,
+            "duration_seconds": 0.005468707997351885,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1868,12 +1879,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021109624998643994,
+            "duration_seconds": 0.02190416702069342,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.020925374992657453,
+            "duration_seconds": 0.019266749965026975,
             "functions": 4,
             "status": "completed"
           },
@@ -1883,12 +1894,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008971249917522073,
+            "duration_seconds": 0.0006838749977760017,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0040285830036737025,
+            "duration_seconds": 0.003962166956625879,
             "exit_code": 42,
             "status": "completed"
           },
@@ -1975,12 +1986,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02406612498452887,
+            "duration_seconds": 0.028763458016328514,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012260332994628698,
+            "duration_seconds": 0.020537792006507516,
             "functions": 2,
             "status": "completed"
           },
@@ -1990,12 +2001,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007410830003209412,
+            "duration_seconds": 0.000734790985006839,
             "exit_code": 73,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004238415975123644,
+            "duration_seconds": 0.005746332986745983,
             "exit_code": 73,
             "status": "completed"
           },
@@ -2082,12 +2093,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017865500005427748,
+            "duration_seconds": 0.022694416984450072,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.023504708020482212,
+            "duration_seconds": 0.03624095901614055,
             "functions": 4,
             "status": "completed"
           },
@@ -2097,12 +2108,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006526670185849071,
+            "duration_seconds": 0.0012649580021388829,
             "exit_code": 22,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0064645420061424375,
+            "duration_seconds": 0.007015499984845519,
             "exit_code": 22,
             "status": "completed"
           },
@@ -2189,12 +2200,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01817608397686854,
+            "duration_seconds": 0.023543375020381063,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015341499994974583,
+            "duration_seconds": 0.017049166024662554,
             "functions": 3,
             "status": "completed"
           },
@@ -2204,12 +2215,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007376249996013939,
+            "duration_seconds": 0.0007113339961506426,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004547125019598752,
+            "duration_seconds": 0.005061000003479421,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2296,12 +2307,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02490804099943489,
+            "duration_seconds": 0.03264320798916742,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010353750025387853,
+            "duration_seconds": 0.009780499967746437,
             "functions": 1,
             "status": "completed"
           },
@@ -2311,12 +2322,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007967090350575745,
+            "duration_seconds": 0.0007366670179180801,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0047072499874047935,
+            "duration_seconds": 0.0048694160068407655,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2403,12 +2414,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0176716250134632,
+            "duration_seconds": 0.02669191698078066,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013297582976520061,
+            "duration_seconds": 0.029028624994680285,
             "functions": 3,
             "status": "completed"
           },
@@ -2418,12 +2429,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005338339833542705,
+            "duration_seconds": 0.0008904169662855566,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0038626249879598618,
+            "duration_seconds": 0.006431334011722356,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2510,12 +2521,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02404279197799042,
+            "duration_seconds": 0.028414417000021785,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.020356332999654114,
+            "duration_seconds": 0.028968708007596433,
             "functions": 4,
             "status": "completed"
           },
@@ -2525,12 +2536,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006837500259280205,
+            "duration_seconds": 0.0008585419855080545,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005520833015907556,
+            "duration_seconds": 0.00475374999223277,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2617,12 +2628,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0160569169675,
+            "duration_seconds": 0.0233848339994438,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013678833958692849,
+            "duration_seconds": 0.0198147909832187,
             "functions": 3,
             "status": "completed"
           },
@@ -2632,12 +2643,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006682500243186951,
+            "duration_seconds": 0.0008068750030361116,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0049417499685660005,
+            "duration_seconds": 0.006690167007036507,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2724,12 +2735,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017882707994431257,
+            "duration_seconds": 0.023080000013578683,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011314917006529868,
+            "duration_seconds": 0.014853124972432852,
             "functions": 3,
             "status": "completed"
           },
@@ -2739,12 +2750,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005771670257672668,
+            "duration_seconds": 0.0006141670164652169,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003828041022643447,
+            "duration_seconds": 0.004582000023219734,
             "exit_code": 45,
             "status": "completed"
           },
@@ -2831,12 +2842,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01668804098153487,
+            "duration_seconds": 0.020063000032678246,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.017090166977141052,
+            "duration_seconds": 0.013468416989780962,
             "functions": 4,
             "status": "completed"
           },
@@ -2846,12 +2857,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000697416951879859,
+            "duration_seconds": 0.0006594170117750764,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00483504100702703,
+            "duration_seconds": 0.004341499996371567,
             "exit_code": 42,
             "status": "completed"
           },
@@ -2938,12 +2949,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01677208300679922,
+            "duration_seconds": 0.023228209000080824,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014473874995019287,
+            "duration_seconds": 0.014228749962057918,
             "functions": 4,
             "status": "completed"
           },
@@ -2953,12 +2964,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007280419813469052,
+            "duration_seconds": 0.0008769999840296805,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007350917032454163,
+            "duration_seconds": 0.006759541982319206,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3045,12 +3056,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019553416990675032,
+            "duration_seconds": 0.02585991600062698,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02011908299755305,
+            "duration_seconds": 0.02445183298550546,
             "functions": 2,
             "status": "completed"
           },
@@ -3060,12 +3071,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007795839919708669,
+            "duration_seconds": 0.000978750002104789,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0060932079795747995,
+            "duration_seconds": 0.006592167017515749,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3152,12 +3163,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020317249989602715,
+            "duration_seconds": 0.02503812499344349,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01457770902197808,
+            "duration_seconds": 0.022214666998479515,
             "functions": 2,
             "status": "completed"
           },
@@ -3167,12 +3178,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006186669925227761,
+            "duration_seconds": 0.000769208010751754,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005641916999593377,
+            "duration_seconds": 0.006110707996413112,
             "exit_code": 69,
             "status": "completed"
           },
@@ -3259,12 +3270,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018302915967069566,
+            "duration_seconds": 0.02249058400047943,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.023298249987419695,
+            "duration_seconds": 0.03559749998385087,
             "functions": 4,
             "status": "completed"
           },
@@ -3274,12 +3285,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0012041670270264149,
+            "duration_seconds": 0.0005923749995417893,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004589374992065132,
+            "duration_seconds": 0.0071585000259801745,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3366,12 +3377,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0183614999987185,
+            "duration_seconds": 0.02548799995565787,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0117204170092009,
+            "duration_seconds": 0.01716229203157127,
             "functions": 1,
             "status": "completed"
           },
@@ -3381,12 +3392,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007215000223368406,
+            "duration_seconds": 0.0008825840195640922,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0038155000074766576,
+            "duration_seconds": 0.004702833015471697,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3473,12 +3484,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015160541981458664,
+            "duration_seconds": 0.02516141696833074,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.3248284169822,
+            "duration_seconds": 0.5005824159597978,
             "functions": 67,
             "status": "completed"
           },
@@ -3488,12 +3499,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005455839564092457,
+            "duration_seconds": 0.0009069159859791398,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0025143339880742133,
+            "duration_seconds": 0.0032237080158665776,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3580,12 +3591,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.024741167027968913,
+            "duration_seconds": 0.0313586660195142,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014481249963864684,
+            "duration_seconds": 0.01924824999878183,
             "functions": 2,
             "status": "completed"
           },
@@ -3595,12 +3606,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006394159863702953,
+            "duration_seconds": 0.0006468750070780516,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0036258749896660447,
+            "duration_seconds": 0.004227125027682632,
             "exit_code": 42,
             "status": "completed"
           },
@@ -3687,12 +3698,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020616833004169166,
+            "duration_seconds": 0.02789695799583569,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.018093833001330495,
+            "duration_seconds": 0.026680917013436556,
             "functions": 2,
             "status": "completed"
           },
@@ -3702,12 +3713,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006096250144764781,
+            "duration_seconds": 0.0010644170106388628,
             "exit_code": 44,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004765499965287745,
+            "duration_seconds": 0.0054615839617326856,
             "exit_code": 44,
             "status": "completed"
           },
@@ -3794,12 +3805,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016225667030084878,
+            "duration_seconds": 0.025286082993261516,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.2866375839803368,
+            "duration_seconds": 0.4598035829840228,
             "functions": 59,
             "status": "completed"
           },
@@ -3809,12 +3820,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007135840132832527,
+            "duration_seconds": 0.0010537499911151826,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002705708029679954,
+            "duration_seconds": 0.003281833021901548,
             "exit_code": 0,
             "status": "completed"
           },
@@ -3901,12 +3912,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.023297709005419165,
+            "duration_seconds": 0.027661999978590757,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016247291991021484,
+            "duration_seconds": 0.01904154202202335,
             "functions": 3,
             "status": "completed"
           },
@@ -3916,12 +3927,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007576250354759395,
+            "duration_seconds": 0.0009586670203134418,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0033301670337095857,
+            "duration_seconds": 0.004451250017154962,
             "exit_code": 42,
             "status": "completed"
           },
@@ -4008,12 +4019,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016347291006240994,
+            "duration_seconds": 0.01952233404153958,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014478290977422148,
+            "duration_seconds": 0.01036695804214105,
             "functions": 4,
             "status": "completed"
           },
@@ -4023,12 +4034,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008542909636162221,
+            "duration_seconds": 0.0007252499926835299,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007151875004637986,
+            "duration_seconds": 0.005347958009224385,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4115,12 +4126,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020517584052868187,
+            "duration_seconds": 0.026971333019901067,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01351541600888595,
+            "duration_seconds": 0.019211874983739108,
             "functions": 4,
             "status": "completed"
           },
@@ -4130,12 +4141,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.00088095897808671,
+            "duration_seconds": 0.0013262080028653145,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006560166017152369,
+            "duration_seconds": 0.007711332989856601,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4222,12 +4233,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02281916595529765,
+            "duration_seconds": 0.023248541983775795,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014387666014954448,
+            "duration_seconds": 0.014764584018848836,
             "functions": 4,
             "status": "completed"
           },
@@ -4237,12 +4248,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0013012080453336239,
+            "duration_seconds": 0.0006904170149937272,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0062607500003650784,
+            "duration_seconds": 0.006073000025935471,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4329,12 +4340,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02350633405148983,
+            "duration_seconds": 0.026284915977157652,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012357792002148926,
+            "duration_seconds": 0.01712387497536838,
             "functions": 4,
             "status": "completed"
           },
@@ -4344,12 +4355,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009245409746654332,
+            "duration_seconds": 0.001716500031761825,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007901292003225535,
+            "duration_seconds": 0.007875708979554474,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4436,12 +4447,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017630625050514936,
+            "duration_seconds": 0.02063295803964138,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015813999983947724,
+            "duration_seconds": 0.026865208987146616,
             "functions": 4,
             "status": "completed"
           },
@@ -4451,12 +4462,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008515419904142618,
+            "duration_seconds": 0.0022970830323174596,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006496167043223977,
+            "duration_seconds": 0.009291916969232261,
             "exit_code": 0,
             "status": "completed"
           },
@@ -4543,12 +4554,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018180290993768722,
+            "duration_seconds": 0.022666917007882148,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01330512500135228,
+            "duration_seconds": 0.017926417000126094,
             "functions": 5,
             "status": "completed"
           },
@@ -4558,12 +4569,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000758624984882772,
+            "duration_seconds": 0.0008974999655038118,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006393500021658838,
+            "duration_seconds": 0.007799375045578927,
             "exit_code": 42,
             "status": "completed"
           },
@@ -4650,12 +4661,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015530875010881573,
+            "duration_seconds": 0.0187525000073947,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016051625018008053,
+            "duration_seconds": 0.02117787499446422,
             "functions": 4,
             "status": "completed"
           },
@@ -4665,12 +4676,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006668749847449362,
+            "duration_seconds": 0.0007704169838689268,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006392624985892326,
+            "duration_seconds": 0.006754125002771616,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4757,12 +4768,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016485708008985966,
+            "duration_seconds": 0.024361833988223225,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013421750045381486,
+            "duration_seconds": 0.012099916988518089,
             "functions": 4,
             "status": "completed"
           },
@@ -4772,12 +4783,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006267499993555248,
+            "duration_seconds": 0.0007328340434469283,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006155124981887639,
+            "duration_seconds": 0.008025792019907385,
             "exit_code": 42,
             "status": "completed"
           },
@@ -4864,12 +4875,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01661604200489819,
+            "duration_seconds": 0.02299379202304408,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01683270902140066,
+            "duration_seconds": 0.018113375001121312,
             "functions": 4,
             "status": "completed"
           },
@@ -4879,12 +4890,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007370419916696846,
+            "duration_seconds": 0.0007283330196514726,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006241832976229489,
+            "duration_seconds": 0.005285374994855374,
             "exit_code": 69,
             "status": "completed"
           },
@@ -4971,12 +4982,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017369625042192638,
+            "duration_seconds": 0.020778207981493324,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012487791012972593,
+            "duration_seconds": 0.017276083992328495,
             "functions": 4,
             "status": "completed"
           },
@@ -4986,12 +4997,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008172920206561685,
+            "duration_seconds": 0.0007999170338734984,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0062907919636927545,
+            "duration_seconds": 0.007496375008486211,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5078,12 +5089,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018414125021081418,
+            "duration_seconds": 0.023022959008812904,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.4794540830189362,
+            "duration_seconds": 0.6156714169774204,
             "functions": 12,
             "status": "completed"
           },
@@ -5093,12 +5104,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006695420015603304,
+            "duration_seconds": 0.0006674170144833624,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004037874983623624,
+            "duration_seconds": 0.003363042022101581,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5185,12 +5196,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019012459029909223,
+            "duration_seconds": 0.025111959024798125,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013431790983304381,
+            "duration_seconds": 0.020542125042993575,
             "functions": 2,
             "status": "completed"
           },
@@ -5200,12 +5211,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008067089947871864,
+            "duration_seconds": 0.0007245420129038393,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005535749951377511,
+            "duration_seconds": 0.005671875027474016,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5292,12 +5303,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01656254200497642,
+            "duration_seconds": 0.01817066699732095,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008219541981816292,
+            "duration_seconds": 0.013587708002887666,
             "functions": 1,
             "status": "completed"
           },
@@ -5307,12 +5318,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006509170052595437,
+            "duration_seconds": 0.0009542920161038637,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0032107500010170043,
+            "duration_seconds": 0.004359250015113503,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5399,12 +5410,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021624292014166713,
+            "duration_seconds": 0.02806508296635002,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01903462497284636,
+            "duration_seconds": 0.0242859169957228,
             "functions": 3,
             "status": "completed"
           },
@@ -5414,12 +5425,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007319159922190011,
+            "duration_seconds": 0.0008072920027188957,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005185957998037338,
+            "duration_seconds": 0.005402459006290883,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5506,12 +5517,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017540458007715642,
+            "duration_seconds": 0.02063525002449751,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.019389000022783875,
+            "duration_seconds": 0.022731416975148022,
             "functions": 2,
             "status": "completed"
           },
@@ -5521,12 +5532,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009014579700306058,
+            "duration_seconds": 0.000897291989531368,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005336207977961749,
+            "duration_seconds": 0.005787666013929993,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5613,12 +5624,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016935666964855045,
+            "duration_seconds": 0.023023375018965453,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0143193329568021,
+            "duration_seconds": 0.018324833014048636,
             "functions": 2,
             "status": "completed"
           },
@@ -5628,12 +5639,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007316659903153777,
+            "duration_seconds": 0.0007222910062409937,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005384957999922335,
+            "duration_seconds": 0.006853249971754849,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5720,12 +5731,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01934466598322615,
+            "duration_seconds": 0.01957591698737815,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.32515916699776426,
+            "duration_seconds": 0.39155608299188316,
             "functions": 67,
             "status": "completed"
           },
@@ -5735,12 +5746,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006974170100875199,
+            "duration_seconds": 0.0006829169578850269,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002783791976980865,
+            "duration_seconds": 0.0025058750179596245,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5827,12 +5838,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01824679202400148,
+            "duration_seconds": 0.026024167018476874,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016060874972026795,
+            "duration_seconds": 0.02889024995965883,
             "functions": 4,
             "status": "completed"
           },
@@ -5842,12 +5853,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008875000057742,
+            "duration_seconds": 0.0010671659838408232,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0054217500146478415,
+            "duration_seconds": 0.00655020895646885,
             "exit_code": 42,
             "status": "completed"
           },
@@ -5934,12 +5945,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.016690167016349733,
+            "duration_seconds": 0.021733874978963286,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0224637080100365,
+            "duration_seconds": 0.026506708993110806,
             "functions": 2,
             "status": "completed"
           },
@@ -5949,12 +5960,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006990840192884207,
+            "duration_seconds": 0.0007245829910971224,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005038082948885858,
+            "duration_seconds": 0.006588624964933842,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6041,12 +6052,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.10501029196893796,
+            "duration_seconds": 0.1366059579886496,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.29517112497705966,
+            "duration_seconds": 0.34468083298997954,
             "functions": 58,
             "status": "completed"
           },
@@ -6056,12 +6067,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007699169800616801,
+            "duration_seconds": 0.0006965000065974891,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0030074999667704105,
+            "duration_seconds": 0.0027729160501621664,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6148,12 +6159,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020131333032622933,
+            "duration_seconds": 0.02121129201259464,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.34797591698588803,
+            "duration_seconds": 0.3645352500025183,
             "functions": 60,
             "status": "completed"
           },
@@ -6163,12 +6174,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007088750135153532,
+            "duration_seconds": 0.0010360829764977098,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0028092500288039446,
+            "duration_seconds": 0.007820833008736372,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6255,12 +6266,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021217458008322865,
+            "duration_seconds": 0.024170833989046514,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.27857420803047717,
+            "duration_seconds": 0.3072807910502888,
             "functions": 59,
             "status": "completed"
           },
@@ -6270,12 +6281,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007550420123152435,
+            "duration_seconds": 0.0008554579690098763,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0025560830254107714,
+            "duration_seconds": 0.0027852500206790864,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6362,12 +6373,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018029167025815696,
+            "duration_seconds": 0.021985166997183114,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.019966583990026265,
+            "duration_seconds": 0.021657209028489888,
             "functions": 4,
             "status": "completed"
           },
@@ -6377,12 +6388,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008969170157797635,
+            "duration_seconds": 0.0007730420329608023,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003884167002979666,
+            "duration_seconds": 0.00404587498633191,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6469,12 +6480,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019594875047914684,
+            "duration_seconds": 0.02072004199726507,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.7398686669766903,
+            "duration_seconds": 0.8042124999919906,
             "functions": 106,
             "status": "completed"
           },
@@ -6484,12 +6495,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000842333014588803,
+            "duration_seconds": 0.000794457970187068,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004179375013336539,
+            "duration_seconds": 0.004872499965131283,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6576,12 +6587,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020975082996301353,
+            "duration_seconds": 0.024278375029098243,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.022470291005447507,
+            "duration_seconds": 0.026033957954496145,
             "functions": 3,
             "status": "completed"
           },
@@ -6591,12 +6602,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007951669977046549,
+            "duration_seconds": 0.0007250839844346046,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006041667016688734,
+            "duration_seconds": 0.006326249975245446,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6683,12 +6694,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02096004202030599,
+            "duration_seconds": 0.021066042012535036,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.020397333020810038,
+            "duration_seconds": 0.018247040978167206,
             "functions": 2,
             "status": "completed"
           },
@@ -6698,12 +6709,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006678749923594296,
+            "duration_seconds": 0.0011148329940624535,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007959207985550165,
+            "duration_seconds": 0.008154291950631887,
             "exit_code": 45,
             "status": "completed"
           },
@@ -6790,12 +6801,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.022951791994273663,
+            "duration_seconds": 0.023096249962691218,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01874024997232482,
+            "duration_seconds": 0.02059316699160263,
             "functions": 3,
             "status": "completed"
           },
@@ -6805,12 +6816,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006273329490795732,
+            "duration_seconds": 0.0009061250020749867,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00555504095973447,
+            "duration_seconds": 0.004882834036834538,
             "exit_code": 42,
             "status": "completed"
           },
@@ -6897,12 +6908,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0199375840020366,
+            "duration_seconds": 0.021485165983904153,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.022610916988924146,
+            "duration_seconds": 0.021332832984626293,
             "functions": 3,
             "status": "completed"
           },
@@ -6912,12 +6923,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006435419782064855,
+            "duration_seconds": 0.0007929999846965075,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0043665829580277205,
+            "duration_seconds": 0.004097625031135976,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7004,12 +7015,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019919499987736344,
+            "duration_seconds": 0.019708332954905927,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01902233302826062,
+            "duration_seconds": 0.019192042003851384,
             "functions": 3,
             "status": "completed"
           },
@@ -7019,12 +7030,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006357079837471247,
+            "duration_seconds": 0.0005969590274617076,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004832041973713785,
+            "duration_seconds": 0.0049100000178441405,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7111,12 +7122,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.050404375011567026,
+            "duration_seconds": 0.056906624988187104,
             "functions": 7,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.04004616604652256,
+            "duration_seconds": 0.03837337502045557,
             "functions": 7,
             "status": "completed"
           },
@@ -7126,12 +7137,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0011386250262148678,
+            "duration_seconds": 0.0007442500209435821,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0006970830145291984,
+            "duration_seconds": 0.000517916982062161,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7218,12 +7229,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.049919167009647936,
+            "duration_seconds": 0.04818108299514279,
             "functions": 8,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.04802791599649936,
+            "duration_seconds": 0.047709416947327554,
             "functions": 8,
             "status": "completed"
           },
@@ -7233,12 +7244,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0011033330229111016,
+            "duration_seconds": 0.0011390409781597555,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0007254580268636346,
+            "duration_seconds": 0.000589667004533112,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7325,12 +7336,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.039981207984965295,
+            "duration_seconds": 0.04820866696536541,
             "functions": 7,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.032967999984975904,
+            "duration_seconds": 0.03651741601061076,
             "functions": 7,
             "status": "completed"
           },
@@ -7340,12 +7351,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008486249716952443,
+            "duration_seconds": 0.0012905000476166606,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0005836670170538127,
+            "duration_seconds": 0.0007902919896878302,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7432,12 +7443,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.024009207962080836,
+            "duration_seconds": 0.02933991700410843,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010747459018602967,
+            "duration_seconds": 0.013964542013127357,
             "functions": 1,
             "status": "completed"
           },
@@ -7447,12 +7458,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005672920378856361,
+            "duration_seconds": 0.000822375004645437,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004838749999180436,
+            "duration_seconds": 0.005513082956895232,
             "exit_code": 45,
             "status": "completed"
           },
@@ -7539,12 +7550,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020289999956730753,
+            "duration_seconds": 0.02130470803240314,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01487154100323096,
+            "duration_seconds": 0.013525750022381544,
             "functions": 2,
             "status": "completed"
           },
@@ -7554,12 +7565,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007322500459849834,
+            "duration_seconds": 0.0006578749744221568,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006174415990244597,
+            "duration_seconds": 0.006946791952941567,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7646,12 +7657,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.11557295895181596,
+            "duration_seconds": 0.10579837503610179,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.35117429099045694,
+            "duration_seconds": 0.36618312500650063,
             "functions": 68,
             "status": "completed"
           },
@@ -7661,12 +7672,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0010085420217365026,
+            "duration_seconds": 0.0006162500358186662,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00386233301833272,
+            "duration_seconds": 0.004288916010409594,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7753,12 +7764,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01513524999609217,
+            "duration_seconds": 0.01868166698841378,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.012692874995991588,
+            "duration_seconds": 0.016253500012680888,
             "functions": 3,
             "status": "completed"
           },
@@ -7768,12 +7779,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006133330170996487,
+            "duration_seconds": 0.0006158330361358821,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0023618340492248535,
+            "duration_seconds": 0.002764791948720813,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7860,12 +7871,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.024240083002950996,
+            "duration_seconds": 0.030916250019799918,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014771000016480684,
+            "duration_seconds": 0.02286933403229341,
             "functions": 4,
             "status": "completed"
           },
@@ -7875,12 +7886,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007664170116186142,
+            "duration_seconds": 0.0010208330349996686,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00504662498133257,
+            "duration_seconds": 0.007350707950536162,
             "exit_code": 42,
             "status": "completed"
           },
@@ -7967,12 +7978,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01859408401651308,
+            "duration_seconds": 0.024653666012454778,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015674249967560172,
+            "duration_seconds": 0.02262712497031316,
             "functions": 3,
             "status": "completed"
           },
@@ -7982,12 +7993,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006371249910444021,
+            "duration_seconds": 0.0011724999640136957,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004311583004891872,
+            "duration_seconds": 0.0062032080022618175,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8074,12 +8085,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02242533303797245,
+            "duration_seconds": 0.026317832991480827,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 2.8444580000359565,
+            "duration_seconds": 4.6506083339918405,
             "functions": 150,
             "status": "completed"
           },
@@ -8089,12 +8100,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009508340153843164,
+            "duration_seconds": 0.0015262920060195029,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006056167010683566,
+            "duration_seconds": 0.006242542003747076,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8181,12 +8192,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0260048329946585,
+            "duration_seconds": 0.024761500011663884,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.8393988329917192,
+            "duration_seconds": 0.8683846670319326,
             "functions": 144,
             "status": "completed"
           },
@@ -8196,12 +8207,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009135419968515635,
+            "duration_seconds": 0.0007473329897038639,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006273457955103368,
+            "duration_seconds": 0.006703249993734062,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8288,12 +8299,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01879837497835979,
+            "duration_seconds": 0.02146116702351719,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02097879198845476,
+            "duration_seconds": 0.024148875032551587,
             "functions": 3,
             "status": "completed"
           },
@@ -8303,12 +8314,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008508340106345713,
+            "duration_seconds": 0.0006714579649269581,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004917415964882821,
+            "duration_seconds": 0.004885624977760017,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8395,12 +8406,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018031417042948306,
+            "duration_seconds": 0.0188609579927288,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.019758625014219433,
+            "duration_seconds": 0.027843959047459066,
             "functions": 3,
             "status": "completed"
           },
@@ -8410,12 +8421,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006954579730518162,
+            "duration_seconds": 0.0008012920152395964,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.002571041986811906,
+            "duration_seconds": 0.0034254579804837704,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8502,12 +8513,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02184887503972277,
+            "duration_seconds": 0.023534792009741068,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.020937042019795626,
+            "duration_seconds": 0.022047832957468927,
             "functions": 2,
             "status": "completed"
           },
@@ -8517,12 +8528,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007655000081285834,
+            "duration_seconds": 0.0007646249723620713,
             "exit_code": 80,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010002333030570298,
+            "duration_seconds": 0.010329708980862051,
             "exit_code": 80,
             "status": "completed"
           },
@@ -8609,12 +8620,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02711670898133889,
+            "duration_seconds": 0.030372959037777036,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016344500007107854,
+            "duration_seconds": 0.02062383299926296,
             "functions": 3,
             "status": "completed"
           },
@@ -8624,12 +8635,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007401250186376274,
+            "duration_seconds": 0.0008641249733045697,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004816417000256479,
+            "duration_seconds": 0.006022082990966737,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8716,12 +8727,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.022123583999928087,
+            "duration_seconds": 0.020657708984799683,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.021150290966033936,
+            "duration_seconds": 0.019035791978240013,
             "functions": 4,
             "status": "completed"
           },
@@ -8731,12 +8742,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007059159688651562,
+            "duration_seconds": 0.0006461250013671815,
             "exit_code": 35,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008526458987034857,
+            "duration_seconds": 0.0072814999730326235,
             "exit_code": 35,
             "status": "completed"
           },
@@ -8823,12 +8834,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.023673999996390194,
+            "duration_seconds": 0.03435304103186354,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.018770249967928976,
+            "duration_seconds": 0.022767708986066282,
             "functions": 3,
             "status": "completed"
           },
@@ -8838,12 +8849,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008234170381911099,
+            "duration_seconds": 0.0008063749992288649,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005375750013627112,
+            "duration_seconds": 0.005464791029226035,
             "exit_code": 42,
             "status": "completed"
           },
@@ -8930,12 +8941,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020058916008565575,
+            "duration_seconds": 0.024577499949373305,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.019213125051464885,
+            "duration_seconds": 0.01920608401997015,
             "functions": 3,
             "status": "completed"
           },
@@ -8945,12 +8956,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008968330221250653,
+            "duration_seconds": 0.0008547500474378467,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.004934250027872622,
+            "duration_seconds": 0.006168458028696477,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9037,12 +9048,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.025916584010701627,
+            "duration_seconds": 0.03939258400350809,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01697658299235627,
+            "duration_seconds": 0.02816775004612282,
             "functions": 3,
             "status": "completed"
           },
@@ -9052,12 +9063,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008544169832020998,
+            "duration_seconds": 0.0006341669941321015,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006024583999533206,
+            "duration_seconds": 0.007437541033141315,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9144,12 +9155,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.024278290977235883,
+            "duration_seconds": 0.03182779101189226,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.027885249990504235,
+            "duration_seconds": 0.03670191700803116,
             "functions": 4,
             "status": "completed"
           },
@@ -9159,12 +9170,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007100409711711109,
+            "duration_seconds": 0.0007649170001968741,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0062325409962795675,
+            "duration_seconds": 0.007750666991341859,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9251,12 +9262,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02165666699875146,
+            "duration_seconds": 0.02341604098910466,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.016590124985668808,
+            "duration_seconds": 0.01702487503644079,
             "functions": 5,
             "status": "completed"
           },
@@ -9266,12 +9277,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006212909938767552,
+            "duration_seconds": 0.0005809580325149,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.000788707984611392,
+            "duration_seconds": 0.0009739579982124269,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9358,12 +9369,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021971042035147548,
+            "duration_seconds": 0.01902095798868686,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02795579202938825,
+            "duration_seconds": 0.024665083969011903,
             "functions": 4,
             "status": "completed"
           },
@@ -9373,12 +9384,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007554579642601311,
+            "duration_seconds": 0.0007077500340528786,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005567000014707446,
+            "duration_seconds": 0.005765374982729554,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9465,12 +9476,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01906404097098857,
+            "duration_seconds": 0.016215041978284717,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.6247844999888912,
+            "duration_seconds": 0.4813423749874346,
             "functions": 102,
             "status": "completed"
           },
@@ -9480,12 +9491,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006764580029994249,
+            "duration_seconds": 0.0007232079515233636,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00458474998595193,
+            "duration_seconds": 0.004285249975509942,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9572,12 +9583,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.017919290985446423,
+            "duration_seconds": 0.014438125013839453,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02252962498459965,
+            "duration_seconds": 0.015178499976173043,
             "functions": 3,
             "status": "completed"
           },
@@ -9587,12 +9598,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0010725409956648946,
+            "duration_seconds": 0.0005760000203736126,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0051481249975040555,
+            "duration_seconds": 0.003672042046673596,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9679,12 +9690,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.026431042002514005,
+            "duration_seconds": 0.022089542006142437,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.1100198340136558,
+            "duration_seconds": 0.9895392089965753,
             "functions": 277,
             "status": "completed"
           },
@@ -9694,12 +9705,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007901669596321881,
+            "duration_seconds": 0.0007176250219345093,
             "exit_code": 73,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008266958000604063,
+            "duration_seconds": 0.00913254200713709,
             "exit_code": 73,
             "status": "completed"
           },
@@ -9786,12 +9797,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01868541701696813,
+            "duration_seconds": 0.01956375001464039,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01072166598169133,
+            "duration_seconds": 0.01198758400278166,
             "functions": 1,
             "status": "completed"
           },
@@ -9801,12 +9812,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008704169886186719,
+            "duration_seconds": 0.0006252079620026052,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005467000009957701,
+            "duration_seconds": 0.0050949580036103725,
             "exit_code": 42,
             "status": "completed"
           },
@@ -9893,12 +9904,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021376041986513883,
+            "duration_seconds": 0.019194249995052814,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02114979102043435,
+            "duration_seconds": 0.019870333024300635,
             "functions": 3,
             "status": "completed"
           },
@@ -9908,12 +9919,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0010250830091536045,
+            "duration_seconds": 0.0007457920000888407,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0051934170187450945,
+            "duration_seconds": 0.0050427920068614185,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10000,12 +10011,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021984499995596707,
+            "duration_seconds": 0.024632208980619907,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.022463000030256808,
+            "duration_seconds": 0.02361483295680955,
             "functions": 4,
             "status": "completed"
           },
@@ -10015,12 +10026,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0011370829888619483,
+            "duration_seconds": 0.0006584160146303475,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0057449169689789414,
+            "duration_seconds": 0.005583166028372943,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10107,12 +10118,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.026413042040076107,
+            "duration_seconds": 0.024644042016007006,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013555833022110164,
+            "duration_seconds": 0.01506054203491658,
             "functions": 4,
             "status": "completed"
           },
@@ -10122,12 +10133,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.00093962496612221,
+            "duration_seconds": 0.000727499951608479,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.008041083987336606,
+            "duration_seconds": 0.00788933300646022,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10214,12 +10225,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02402912499383092,
+            "duration_seconds": 0.025810541992541403,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.483095208008308,
+            "duration_seconds": 1.7742720840033144,
             "functions": 286,
             "status": "completed"
           },
@@ -10229,12 +10240,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005913750501349568,
+            "duration_seconds": 0.0006123750354163349,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005649874976370484,
+            "duration_seconds": 0.005712541984394193,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10321,12 +10332,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019755707995500416,
+            "duration_seconds": 0.026003041944932193,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.009261916042305529,
+            "duration_seconds": 0.012967416027095169,
             "functions": 1,
             "status": "completed"
           },
@@ -10336,12 +10347,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005873339832760394,
+            "duration_seconds": 0.0009397080284543335,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005066749989055097,
+            "duration_seconds": 0.005905208992771804,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10428,12 +10439,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018104624992702156,
+            "duration_seconds": 0.022858875046949834,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010001541988458484,
+            "duration_seconds": 0.01778424996882677,
             "functions": 5,
             "status": "completed"
           },
@@ -10443,12 +10454,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006379580008797348,
+            "duration_seconds": 0.0006563750212080777,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0054977499530650675,
+            "duration_seconds": 0.006897957995533943,
             "exit_code": 45,
             "status": "completed"
           },
@@ -10535,12 +10546,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01814949995605275,
+            "duration_seconds": 0.0159358749515377,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.6479526669718325,
+            "duration_seconds": 3.9160393750062212,
             "functions": 292,
             "status": "completed"
           },
@@ -10550,12 +10561,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.000792750041000545,
+            "duration_seconds": 0.0011809160350821912,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006106624961830676,
+            "duration_seconds": 0.0068630409659817815,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10642,12 +10653,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01768145797541365,
+            "duration_seconds": 0.01956058299401775,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015085334016475827,
+            "duration_seconds": 0.018714334000833333,
             "functions": 5,
             "status": "completed"
           },
@@ -10657,12 +10668,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006872499943710864,
+            "duration_seconds": 0.0009114170097745955,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005808791029267013,
+            "duration_seconds": 0.006074957957025617,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10749,12 +10760,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01398704102030024,
+            "duration_seconds": 0.018821958045009524,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010960083978716284,
+            "duration_seconds": 0.012848332989960909,
             "functions": 4,
             "status": "completed"
           },
@@ -10764,12 +10775,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006979159661568701,
+            "duration_seconds": 0.0008286249940283597,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006088458001613617,
+            "duration_seconds": 0.006694665993563831,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10856,12 +10867,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015028583002276719,
+            "duration_seconds": 0.01715245802188292,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.015738166985101998,
+            "duration_seconds": 0.0188566250144504,
             "functions": 4,
             "status": "completed"
           },
@@ -10871,12 +10882,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007980000227689743,
+            "duration_seconds": 0.0010700409766286612,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00652350002201274,
+            "duration_seconds": 0.00699512503342703,
             "exit_code": 42,
             "status": "completed"
           },
@@ -10963,12 +10974,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.019154665991663933,
+            "duration_seconds": 0.021361999970395118,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011210415977984667,
+            "duration_seconds": 0.01585662498837337,
             "functions": 4,
             "status": "completed"
           },
@@ -10978,12 +10989,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0010049170232377946,
+            "duration_seconds": 0.0009527090005576611,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005601624958217144,
+            "duration_seconds": 0.0071913329884409904,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11070,12 +11081,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.022686334035824984,
+            "duration_seconds": 0.028267291956581175,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.7071972080157138,
+            "duration_seconds": 2.89448691601865,
             "functions": 285,
             "status": "completed"
           },
@@ -11085,12 +11096,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007719999994151294,
+            "duration_seconds": 0.0013634159695357084,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006434125010855496,
+            "duration_seconds": 0.0065239579998888075,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11177,12 +11188,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01702116703381762,
+            "duration_seconds": 0.019866749993525445,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.6420685410266742,
+            "duration_seconds": 1.8545853330288082,
             "functions": 296,
             "status": "completed"
           },
@@ -11192,12 +11203,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008146670297719538,
+            "duration_seconds": 0.0006364579894579947,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006628582952544093,
+            "duration_seconds": 0.006484332960098982,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11284,12 +11295,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01857041596667841,
+            "duration_seconds": 0.020477499987464398,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 1.473063292040024,
+            "duration_seconds": 1.7785120829939842,
             "functions": 283,
             "status": "completed"
           },
@@ -11299,12 +11310,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0005985409952700138,
+            "duration_seconds": 0.0009202500223182142,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005547415988985449,
+            "duration_seconds": 0.005908958031795919,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11391,12 +11402,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.018675209023058414,
+            "duration_seconds": 0.02599345799535513,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014477791963145137,
+            "duration_seconds": 0.023290749988518655,
             "functions": 4,
             "status": "completed"
           },
@@ -11406,12 +11417,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006284170085564256,
+            "duration_seconds": 0.0008568339981138706,
             "exit_code": 171,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.005588625033851713,
+            "duration_seconds": 0.006424291990697384,
             "exit_code": 171,
             "status": "completed"
           },
@@ -11498,12 +11509,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.015326749999076128,
+            "duration_seconds": 0.02288512501399964,
             "functions": 3,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.011876915988977998,
+            "duration_seconds": 0.016777625016402453,
             "functions": 4,
             "status": "completed"
           },
@@ -11513,12 +11524,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006705829873681068,
+            "duration_seconds": 0.0010628749732859433,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006360042025335133,
+            "duration_seconds": 0.00799441704293713,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11605,12 +11616,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02127083297818899,
+            "duration_seconds": 0.018753374984953552,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.010190624976530671,
+            "duration_seconds": 0.01108262495836243,
             "functions": 1,
             "status": "completed"
           },
@@ -11620,12 +11631,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006788329919800162,
+            "duration_seconds": 0.0014843749813735485,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003009708016179502,
+            "duration_seconds": 0.0024209170369431376,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11712,12 +11723,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.020264499995391816,
+            "duration_seconds": 0.024018874973990023,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013121875002980232,
+            "duration_seconds": 0.016236499999649823,
             "functions": 2,
             "status": "completed"
           },
@@ -11727,12 +11738,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0008399999933317304,
+            "duration_seconds": 0.0009565409854985774,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006865708972327411,
+            "duration_seconds": 0.007696667045820504,
             "exit_code": 42,
             "status": "completed"
           },
@@ -11819,12 +11830,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.028013792005367577,
+            "duration_seconds": 0.029280583024956286,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.01621608395362273,
+            "duration_seconds": 0.017701915989164263,
             "functions": 3,
             "status": "completed"
           },
@@ -11834,12 +11845,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007964999531395733,
+            "duration_seconds": 0.0008763750083744526,
             "exit_code": 46,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003936124965548515,
+            "duration_seconds": 0.0040545829688198864,
             "exit_code": 46,
             "status": "completed"
           },
@@ -11926,12 +11937,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.021547249983996153,
+            "duration_seconds": 0.023149624990765005,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.02101670898264274,
+            "duration_seconds": 0.020753042015712708,
             "functions": 2,
             "status": "completed"
           },
@@ -11941,12 +11952,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006176249589771032,
+            "duration_seconds": 0.0006460830336436629,
             "exit_code": 62,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00706483400426805,
+            "duration_seconds": 0.006616124999709427,
             "exit_code": 62,
             "status": "completed"
           },
@@ -12033,12 +12044,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02519737498369068,
+            "duration_seconds": 0.019371583010070026,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.013759833003859967,
+            "duration_seconds": 0.011264457949437201,
             "functions": 1,
             "status": "completed"
           },
@@ -12048,12 +12059,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009353329660370946,
+            "duration_seconds": 0.00091029197210446,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.003815416945144534,
+            "duration_seconds": 0.004611792042851448,
             "exit_code": 42,
             "status": "completed"
           },
@@ -12140,12 +12151,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02675758395344019,
+            "duration_seconds": 0.019928083987906575,
             "functions": 4,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.16635349998250604,
+            "duration_seconds": 0.18460479099303484,
             "functions": 5,
             "status": "completed"
           },
@@ -12155,12 +12166,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009148339740931988,
+            "duration_seconds": 0.0007050830172374845,
             "exit_code": 45,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.007347333012148738,
+            "duration_seconds": 0.007517915975768119,
             "exit_code": 45,
             "status": "completed"
           },
@@ -12247,12 +12258,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02272654202533886,
+            "duration_seconds": 0.023297332983929664,
             "functions": 4,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.018314708024263382,
+            "duration_seconds": 0.020344624994322658,
             "functions": 5,
             "status": "completed"
           },
@@ -12262,12 +12273,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0007274580420926213,
+            "duration_seconds": 0.0008852079627104104,
             "exit_code": 69,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.00465491705108434,
+            "duration_seconds": 0.0049287499859929085,
             "exit_code": 69,
             "status": "completed"
           },
@@ -12354,12 +12365,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.02642091701272875,
+            "duration_seconds": 0.02472533396212384,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.028544124972540885,
+            "duration_seconds": 0.02579516702098772,
             "functions": 3,
             "status": "completed"
           },
@@ -12369,12 +12380,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0009537080186419189,
+            "duration_seconds": 0.0007377910078503191,
             "exit_code": 42,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.006733415997587144,
+            "duration_seconds": 0.005517207959201187,
             "exit_code": 42,
             "status": "completed"
           },
@@ -12461,12 +12472,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.01993816700996831,
+            "duration_seconds": 0.018908250029198825,
             "functions": 2,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.014731125032994896,
+            "duration_seconds": 0.011033624992705882,
             "functions": 3,
             "status": "completed"
           },
@@ -12476,12 +12487,12 @@
         {
           "changed": true,
           "original": {
-            "duration_seconds": 0.0006990420515649021,
+            "duration_seconds": 0.0006896659615449607,
             "exit_code": 0,
             "status": "completed"
           },
           "protected": {
-            "duration_seconds": 0.0031250829924829304,
+            "duration_seconds": 0.002305166970472783,
             "exit_code": 0,
             "status": "completed"
           },

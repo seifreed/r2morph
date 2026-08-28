@@ -34,3 +34,24 @@ def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Pat
     expect(report["sample_count"] == 1)
     sample = report["samples"][0]
     expect("CodeVirtualization" in sample["passes"][0].values())
+
+
+def test_adversarial_benchmark_corpus_aggregates_results_by_pass(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset"
+    dataset.mkdir()
+    (dataset / _FIXTURE.name).write_bytes(_FIXTURE.read_bytes())
+
+    report = benchmark_corpus(dataset)
+
+    expect(
+        report["pass_summary"]["CodeVirtualization"]
+        == {
+            "applied": 1,
+            "errors": 0,
+            "functions_virtualized": 1,
+            "no_op": 0,
+            "omitted": 0,
+            "samples": 1,
+            "unsupported_functions": 0,
+        }
+    )
