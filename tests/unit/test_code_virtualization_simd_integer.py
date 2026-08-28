@@ -8,6 +8,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_mem,
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_packed_move,
+    _decode_fp_vex_scalar_arith,
 )
 from tests.utils.assertions import expect
 
@@ -111,3 +112,7 @@ def test_decode_vex128_integer_xor_returns_three_operand_item() -> None:
 
 def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vpaddd xmm2, xmm0, xmm1") == ("fppackedvex", "paddd", 2, 0, 1))
+
+
+def test_decode_vex128_scalar_arithmetic_preserves_source_one_semantics() -> None:
+    expect(_decode_fp_vex_scalar_arith("vaddss xmm2, xmm0, xmm1") == ("fparithvex", "add", 2, 0, 1, 32))

@@ -519,6 +519,35 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpunpcklwd": "punpcklwd",
 }
 _FP_VEX_PACKED_MOVE: frozenset[str] = frozenset({"vmovaps", "vmovups", "vmovapd", "vmovupd", "vmovdqa", "vmovdqu"})
+_FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
+    "vaddss": ("add", 32),
+    "vsubss": ("sub", 32),
+    "vmulss": ("mul", 32),
+    "vdivss": ("div", 32),
+    "vaddsd": ("add", 64),
+    "vsubsd": ("sub", 64),
+    "vmulsd": ("mul", 64),
+    "vdivsd": ("div", 64),
+}
+
+
+def _decode_fp_vex_scalar_arith(text: str) -> tuple[str, str, int, int, int, int] | None:
+    """Decode three-operand VEX.128 scalar FP arithmetic."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    spec = _FP_VEX_SCALAR_ARITH.get(parts[0].lower())
+    if spec is None:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_VEX_OPERAND_COUNT:
+        return None
+    registers = tuple(_parse_xmm_operand(operand) for operand in operands)
+    destination, first_source, second_source = registers
+    if destination is None or first_source is None or second_source is None:
+        return None
+    operation, width = spec
+    return ("fparithvex", operation, destination, first_source, second_source, width)
 
 
 def _decode_fp_vex_packed_arith(text: str) -> tuple[str, str, int, int, int] | None:

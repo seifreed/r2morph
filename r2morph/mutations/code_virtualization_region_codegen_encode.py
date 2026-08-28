@@ -44,6 +44,7 @@ _FIXED_SIZE_GROUPS = {
         "cqo",
         "bt",
         "fparith",
+        "fparithvex",
         "cvti2f",
         "cvtf2i",
         "fpmovd",

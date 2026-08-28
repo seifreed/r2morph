@@ -225,7 +225,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     reload_seq = "".join(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n" for index in save_order)
     if has_fp:
         reload_seq += xmm_reload_asm()
-        vex_destinations = {int(item[2]) for item in region.instructions if item[0] in ("fppackedvex", "fpmovvex")}
+        vex_destinations = {
+            int(item[2]) for item in region.instructions if item[0] in ("fparithvex", "fppackedvex", "fpmovvex")
+        }
         reload_seq += avx128_upper_clear_asm(vex_destinations)
 
     # Each opcode index gets its own handler instance (an operation with two

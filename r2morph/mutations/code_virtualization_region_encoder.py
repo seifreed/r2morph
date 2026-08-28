@@ -197,6 +197,8 @@ class RegionEncoder:
             self._idx(self._opcode(item), (xmm, None, self.slot_of[index], shift, disp))
         elif kind == "fparith":
             self._pair(self._opcode(item), item[2], item[3])
+        elif kind == "fparithvex":
+            self._triple(self._opcode(item), item[2], item[3], item[4])
         elif kind == "cvti2f":
             self._pair(self._opcode(item), item[3], self.slot_of[item[4]])
         elif kind == "cvtf2i":
