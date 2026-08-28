@@ -9,6 +9,7 @@ _start:
     vmovaps ymm1, ymmword ptr [rip + right]
     vmovaps ymm2, ymmword ptr [rip + offset_vec]
     call compute
+    call check_result
     syscall
 
 .section .text.compute,"ax",@progbits
@@ -16,7 +17,7 @@ _start:
 compute:
     vaddps xmm0, xmm0, xmm1
     vsubps xmm0, xmm0, xmm2
-    call check_result
+    vaddps xmm0, xmm0, xmm2
     ret
 
 check_result:
@@ -25,7 +26,7 @@ check_result:
     test eax, eax
     jne .bad_upper
     vcvttss2si eax, xmm0
-    cmp eax, 41
+    cmp eax, 42
     jne .bad_value
     mov edi, 42
     mov eax, 60
