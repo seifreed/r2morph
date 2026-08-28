@@ -230,6 +230,9 @@ class RegionEncoder:
         elif kind == "fparithmemidx":
             _, _op, xmm, base, index, shift, disp, _width = item
             self._idx(self._opcode(item), (xmm, self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind == "fpcmpmem":
+            _, _mnemonic, xmm, base, disp, _width = item
+            self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
         else:
             return False
         return True

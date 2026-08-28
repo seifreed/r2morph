@@ -25,6 +25,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_arith_handler_asm,
     _fp_arith_mem_handler_asm,
     _fp_compare_handler_asm,
+    _fp_compare_memory_handler_asm,
     _fp_convert_handler_asm,
     _fp_indexed_handler_asm,
     _fp_memory_handler_asm,
@@ -426,8 +427,17 @@ class HandlerBodyRouter:
             body = _fp_arith_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith(("cvti2f_", "cvtf2i_")):
             body = _fp_convert_handler_asm(key, self.context.key, self.context.field_perm)
-        elif key.startswith("fpcmp_"):
-            body = _fp_compare_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith(("fpcmp_", "fpcmpmem_")):
+            if key.startswith("fpcmpmem_"):
+                body = _fp_compare_memory_handler_asm(
+                    key,
+                    self.context.key,
+                    self.context.key_dword,
+                    self.context.field_perm,
+                    address,
+                )
+            else:
+                body = _fp_compare_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fpmov_"):
             body = _fp_move_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith(("fppackedmem_", "fppackedmemrip_", "fppackedmemidx_")):

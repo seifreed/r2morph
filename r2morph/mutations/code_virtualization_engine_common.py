@@ -136,6 +136,9 @@ _FP_MEM_KINDS: tuple[str, ...] = ("fpload", "fpstore", "fploadrip", "fpstorerip"
 # back to the real add/sub/mul/div instruction in the handler.
 _FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div")
 _FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
+# Scalar-FP register-versus-memory compares. The width is part of the handler key
+# so the interpreter emits the exact scalar memory operand size.
+_FP_COMPARE_MEM_KINDS: tuple[str, ...] = ("fpcmpmem",)
 # Int<->float conversions: cvtsi2sd/ss (int->float) and cvttsd2si/ss (float->int).
 # The GP width is part of the kind ("cvti2f"/"cvtf2i" + "32"/"64") so the handler
 # selects eax vs rax faithfully (a 32-bit cvtsi2sd converts only the int32; a
@@ -199,6 +202,7 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple((kind, False, width) for width in (64, 32) for kind in _MEM_OP_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_KINDS)
+    + tuple((kind, False, width) for width in (64, 32) for kind in _FP_COMPARE_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_CONVERT_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_MEM_KINDS)
     + tuple((kind, False, _FP_PACKED_WIDTH) for kind in _FP_PACKED_ARITH_KINDS + _FP_PACKED_MEM_KINDS)

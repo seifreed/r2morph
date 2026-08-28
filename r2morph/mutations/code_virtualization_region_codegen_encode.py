@@ -84,6 +84,7 @@ _FIXED_SIZE_GROUPS = {
         "fppstore",
         "fppackedmem",
         "fparithmem",
+        "fpcmpmem",
         "cmpmem",
         "opmem",
         "lea",
