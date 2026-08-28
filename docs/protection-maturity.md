@@ -26,15 +26,15 @@ parser.
 Each current corpus sample is also compared across five deterministic
 seed-derived command-line inputs.
 
-The current all-fixture adversarial campaign covers 112 executable samples and
-the `CodeVirtualization` pass. It records 560 completed tool runs, 448 explicit
+The current all-fixture adversarial campaign covers 113 executable samples and
+the `CodeVirtualization` pass. It records 565 completed tool runs, 452 explicit
 unavailable-tool rows, and zero errors. The report includes radare2, objdump,
 angr, Unicorn, and the custom binary analyzer; Triton, IDA Pro, Ghidra, and
 Binary Ninja remain unavailable in this environment. The automated second-pass
 review passes all checks and is not human sign-off.
 
 The focused virtualization inventory is recorded in
-[`docs/virtualization-coverage.json`](virtualization-coverage.json): 103 real
+[`docs/virtualization-coverage.json`](virtualization-coverage.json): 104 real
 fixtures cover nine capability families with no unclassified fixture.
 
 ## 1. Current architecture
@@ -54,7 +54,7 @@ remain outside this pass.
 
 `scripts/protection_maturity_baseline.py --all` discovers ELF64 `ET_EXEC` and
 `ET_DYN` x86-64 files and excludes assembly sources and relocatable objects. The
-current fixture inventory contains 112 compatible executable fixtures spanning
+current fixture inventory contains 113 compatible executable fixtures spanning
 arithmetic, flags, calls, branches, switch tables, FP/SIMD, memory addressing,
 PIE, red-zone, multi-exit, fallback, nested-region, dynamic-loader, and
 thread-local-storage shapes.

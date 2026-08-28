@@ -22,7 +22,7 @@
       ]
     },
     "flags_and_conditions": {
-      "fixture_count": 19,
+      "fixture_count": 20,
       "fixtures": [
         "elf_vm_addflagdead_x86_64",
         "elf_vm_addflaglive_x86_64",
@@ -36,6 +36,7 @@
         "elf_vm_cmpsynth_x86_64",
         "elf_vm_flagsynth_x86_64",
         "elf_vm_fpcmp_x86_64",
+        "elf_vm_fpcmpmem_x86_64",
         "elf_vm_isa_x86_64",
         "elf_vm_rotate_x86_64",
         "elf_vm_setcc_x86_64",
@@ -46,13 +47,14 @@
       ]
     },
     "floating_point_and_simd": {
-      "fixture_count": 28,
+      "fixture_count": 29,
       "fixtures": [
         "elf_vm_fparith_x86_64",
         "elf_vm_fparithidx_x86_64",
         "elf_vm_fparithmem_x86_64",
         "elf_vm_fparithriprel_x86_64",
         "elf_vm_fpcmp_x86_64",
+        "elf_vm_fpcmpmem_x86_64",
         "elf_vm_fpconvert32_x86_64",
         "elf_vm_fpconvert_x86_64",
         "elf_vm_fpenginearith_x86_64",
@@ -109,11 +111,12 @@
       ]
     },
     "memory_addressing": {
-      "fixture_count": 29,
+      "fixture_count": 30,
       "fixtures": [
         "elf_vm_cmpmem_x86_64",
         "elf_vm_fparithmem_x86_64",
         "elf_vm_fparithriprel_x86_64",
+        "elf_vm_fpcmpmem_x86_64",
         "elf_vm_fpenginearithmem_x86_64",
         "elf_vm_fppackedmem_x86_64",
         "elf_vm_fpriprel_x86_64",
@@ -180,7 +183,7 @@
   },
   "capability_count": 9,
   "covered_capability_count": 9,
-  "fixture_count": 103,
+  "fixture_count": 104,
   "schema_version": 1,
   "scope": "elf-x86-64-virtualization-fixtures",
   "unclassified": []
