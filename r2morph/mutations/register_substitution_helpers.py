@@ -492,6 +492,23 @@ def implicit_operand_pins(instructions: list[dict[str, Any]]) -> set[str]:
     return pinned
 
 
+def memory_operand_pins(instructions: list[dict[str, Any]]) -> set[str]:
+    """Register spellings used as memory address components."""
+    bases: set[str] = set()
+    for insn in instructions:
+        disasm = insn.get("disasm", "").lower()
+        for match in re.finditer(r"\[([^]]*)\]", disasm):
+            for token in _register_tokens(match.group(1)):
+                canonical = _CANONICAL_REGISTER.get(token)
+                if canonical is not None:
+                    bases.add(canonical)
+
+    pinned: set[str] = set()
+    for base in bases:
+        pinned |= _REGISTER_FAMILY.get(base, {base})
+    return pinned
+
+
 def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) -> list[tuple[str, str]]:
     """Find valid register substitution opportunities."""
     register_classes = get_register_class(arch)
@@ -509,7 +526,9 @@ def find_substitution_candidates(instructions: list[dict[str, Any]], arch: str) 
     # Tokens whose value a call/syscall consumes or produces, plus registers used
     # implicitly by operandless instructions (mul/div/cpuid/rep ...), are live with
     # no renameable operand; never rename them and never overwrite them.
-    abi_regs = abi_live_registers(instructions) | implicit_operand_pins(instructions)
+    abi_regs = (
+        abi_live_registers(instructions) | implicit_operand_pins(instructions) | memory_operand_pins(instructions)
+    )
     caller_saved = set(register_classes.get("caller_saved", []))
     unused = sorted(caller_saved - used_registers - abi_regs)
     random.shuffle(unused)

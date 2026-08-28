@@ -93,6 +93,18 @@ def test_find_substitution_candidates_without_call_still_renames_arg_register() 
     expect(not ("x0" not in sources))
 
 
+def test_find_substitution_candidates_excludes_register_mixed_with_memory_use() -> None:
+    """A direct producer and indirect consumer must not be substituted partially."""
+    instructions = [
+        {"disasm": "mov rax, rdi"},
+        {"disasm": "add rax, 8"},
+        {"disasm": "mov rcx, qword [rax]"},
+        {"disasm": "ret"},
+    ]
+    sources = {orig for orig, _ in find_substitution_candidates(instructions, "x64")}
+    expect("rax" not in sources)
+
+
 def test_call_live_registers_empty_when_no_call_present() -> None:
     expect(abi_live_registers([{"disasm": "mov x0, x1"}, {"disasm": "ret"}]) == set())
 
