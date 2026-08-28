@@ -458,6 +458,12 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
         "pandn",
         "por",
         "pxor",
+        "andps",
+        "andpd",
+        "orps",
+        "orpd",
+        "xorps",
+        "xorpd",
     }
 )
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqu"})
@@ -474,6 +480,16 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vminpd": "minpd",
     "vmaxps": "maxps",
     "vmaxpd": "maxpd",
+    "vandps": "andps",
+    "vandpd": "andpd",
+    "vorps": "orps",
+    "vorpd": "orpd",
+    "vxorps": "xorps",
+    "vxorpd": "xorpd",
+    "vpand": "pand",
+    "vpandn": "pandn",
+    "vpor": "por",
+    "vpxor": "pxor",
 }
 _FP_VEX_PACKED_MOVE: frozenset[str] = frozenset({"vmovaps", "vmovups", "vmovapd", "vmovupd", "vmovdqa", "vmovdqu"})
 

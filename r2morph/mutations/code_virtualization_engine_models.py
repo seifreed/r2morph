@@ -139,11 +139,12 @@ class VirtualizedFpArithMemOp:
 
 
 class VirtualizedFpPackedOp:
-    """A packed 128-bit reg-reg arithmetic op: ``{add,sub,mul,div}{pd,ps} xmm, xmm``.
+    """A packed 128-bit reg-reg SIMD op, including VEX.128 lowering.
 
-    ``mnemonic`` is the full packed instruction (e.g. ``addpd``); it operates on all
-    lanes of the 128-bit register, so unlike the scalar form no upper lane is
-    preserved. ``dst_index``/``src_index`` are 0-15 xmm register numbers.
+    ``mnemonic`` is the legacy SSE spelling used by the handler (for example
+    ``addpd`` or ``xorps``). ``vex`` records that the original instruction had
+    VEX.128 zero-upper semantics; the epilogue clears the destination's YMM upper
+    half after restoring its lower 128 bits.
     """
 
     __slots__ = ("dst_index", "mnemonic", "src_index", "vex")

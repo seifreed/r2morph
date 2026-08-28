@@ -211,6 +211,12 @@ _FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
     "pandn",
     "por",
     "pxor",
+    "andps",
+    "andpd",
+    "orps",
+    "orpd",
+    "xorps",
+    "xorpd",
 )
 _FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
 # Micro-op primitives of the virtual operand stack. Reg-reg GP arithmetic lowers to

@@ -94,3 +94,11 @@ def test_decode_vex128_packed_minimum_returns_three_operand_item() -> None:
 
 def test_decode_vex128_packed_maximum_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vmaxps xmm0, xmm0, xmm1") == ("fppackedvex", "maxps", 0, 0, 1))
+
+
+def test_decode_vex128_float_xor_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vxorps xmm2, xmm0, xmm1") == ("fppackedvex", "xorps", 2, 0, 1))
+
+
+def test_decode_vex128_integer_xor_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vpxor xmm2, xmm0, xmm1") == ("fppackedvex", "pxor", 2, 0, 1))

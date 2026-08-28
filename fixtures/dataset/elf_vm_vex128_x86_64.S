@@ -22,9 +22,19 @@ compute:
     vsubps xmm0, xmm0, xmm2
     vaddps xmm0, xmm0, xmm2
     vmovaps xmm4, xmm0
+    vxorps xmm5, xmm3, xmm3
+    vorps xmm5, xmm5, xmm3
+    vandps xmm5, xmm5, xmm3
     ret
 
 check_result:
+    vextractf128 xmm6, ymm5, 1
+    movd ecx, xmm6
+    test ecx, ecx
+    jne .bad_upper
+    movd eax, xmm5
+    cmp eax, 0x41a00000
+    jne .bad_value
     vextractf128 xmm5, ymm4, 1
     movd eax, xmm5
     test eax, eax
