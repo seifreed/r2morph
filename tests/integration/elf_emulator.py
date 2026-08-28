@@ -33,6 +33,10 @@ _x86_const = pytest.importorskip("unicorn.x86_const")
 
 _PT_LOAD = 1
 _EXIT_SYSCALL = 0x3C
+_MMAP_SYSCALL = 9
+_ARCH_PRCTL_SYSCALL = 158
+_ARCH_SET_FS = 0x1002
+_SYSCALL_MAP_BASE = 0x6000_0000_0000
 _PAGE_SIZE = 0x1000
 # Keep the stack in a high canonical user-space range, clear of both ordinary
 # images and large appended VM segments. RSP starts mid-region so both pushes
@@ -83,16 +87,10 @@ def emulate_exit_code(path: Path, *, load_bias: int = 0) -> int | None:
     _map_pages(mu, mapped, _STACK_BASE, _STACK_SIZE)
     mu.reg_write(_x86_const.UC_X86_REG_RSP, _STACK_TOP)
 
-    captured: dict[str, int] = {}
-
-    def on_syscall(uc: Any, _user_data: object) -> None:
-        if uc.reg_read(_x86_const.UC_X86_REG_RAX) == _EXIT_SYSCALL:
-            captured["code"] = uc.reg_read(_x86_const.UC_X86_REG_RDI) & 0xFF
-            uc.emu_stop()
-
-    mu.hook_add(_unicorn.UC_HOOK_INSN, on_syscall, None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
+    state = _TraceState()
+    mu.hook_add(_unicorn.UC_HOOK_INSN, _syscall_hook(state, mapped), None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
     mu.emu_start(entry, 0, count=_INSTRUCTION_CAP)
-    return captured.get("code")
+    return state.captured.get("code")
 
 
 def _executable_ranges(raw: bytes, load_bias: int) -> tuple[tuple[int, int], ...]:
@@ -197,11 +195,23 @@ def _read_hook(state: _TraceState, executable_ranges: tuple[tuple[int, int], ...
     return on_read
 
 
-def _syscall_hook(state: _TraceState) -> Any:
+def _syscall_hook(state: _TraceState, mapped: set[int]) -> Any:
+    next_mapping = _SYSCALL_MAP_BASE
+
     def on_syscall(uc: Any, _user_data: object) -> None:
-        if uc.reg_read(_x86_const.UC_X86_REG_RAX) == _EXIT_SYSCALL:
+        nonlocal next_mapping
+        syscall = uc.reg_read(_x86_const.UC_X86_REG_RAX)
+        if syscall == _EXIT_SYSCALL:
             state.captured["code"] = uc.reg_read(_x86_const.UC_X86_REG_RDI) & 0xFF
             uc.emu_stop()
+        elif syscall == _MMAP_SYSCALL:
+            length = uc.reg_read(_x86_const.UC_X86_REG_RSI)
+            _map_pages(uc, mapped, next_mapping, length)
+            uc.reg_write(_x86_const.UC_X86_REG_RAX, next_mapping)
+            next_mapping += (length + _PAGE_SIZE - 1) & ~(_PAGE_SIZE - 1)
+        elif syscall == _ARCH_PRCTL_SYSCALL and uc.reg_read(_x86_const.UC_X86_REG_RDI) == _ARCH_SET_FS:
+            uc.reg_write(_x86_const.UC_X86_REG_FS_BASE, uc.reg_read(_x86_const.UC_X86_REG_RSI))
+            uc.reg_write(_x86_const.UC_X86_REG_RAX, 0)
 
     return on_syscall
 
@@ -219,7 +229,7 @@ def trace_execution(path: Path, *, load_bias: int = 0) -> dict[str, object]:
     mu.hook_add(_unicorn.UC_HOOK_CODE, _code_hook(state, _register_ids()))
     mu.hook_add(_unicorn.UC_HOOK_MEM_FETCH_UNMAPPED, _fetch_fault_hook(state))
     mu.hook_add(_unicorn.UC_HOOK_MEM_READ, _read_hook(state, executable_ranges))
-    mu.hook_add(_unicorn.UC_HOOK_INSN, _syscall_hook(state), None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
+    mu.hook_add(_unicorn.UC_HOOK_INSN, _syscall_hook(state, mapped), None, 1, 0, _x86_const.UC_X86_INS_SYSCALL)
     return _run_trace(mu, entry, state, executable_ranges)
 
 
