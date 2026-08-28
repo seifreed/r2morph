@@ -15,6 +15,7 @@ from tests.utils.assertions import expect
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_simdint_x86_64"
 _ARITHMETIC_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_simdintarith_x86_64"
 _WIDE_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_simdwide_x86_64"
+_EXTRA_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_simdextra_x86_64"
 _EXPECTED_EXIT_CODE = 46
 _EXPECTED_ARITHMETIC_EXIT_CODE = 62
 
@@ -82,3 +83,21 @@ def test_simd_integer_wide_fixture_virtualization_preserves_exit_code(tmp_path: 
         binary.close()
     expect(stats["functions_virtualized"] >= 1)
     expect(emulate_exit_code(mutated) == emulate_exit_code(_WIDE_FIXTURE))
+
+
+def test_simd_integer_extra_fixture_original_has_an_exit_code() -> None:
+    expect(emulate_exit_code(_EXTRA_FIXTURE) is not None)
+
+
+def test_simd_integer_extra_fixture_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    mutated = tmp_path / "mutated-extra"
+    shutil.copyfile(_EXTRA_FIXTURE, mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260828}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    expect(stats["functions_virtualized"] >= 1)
+    expect(emulate_exit_code(mutated) == emulate_exit_code(_EXTRA_FIXTURE))
