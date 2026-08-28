@@ -10,6 +10,7 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _BYTE_WIDTH_BITS,
     _INSTRUCTION_PART_COUNT,
     _MOVX_SRC_SIZES,
+    _QWORD_WIDTH_BITS,
     _WORD_WIDTH_BITS,
     REGISTER8_INDEX,
     REGISTER16_INDEX,
@@ -18,6 +19,14 @@ from r2morph.mutations.code_virtualization_region_decoders import (
     _parse_tls_operand,
     _register_operand,
 )
+
+_DWORD_WIDTH_BITS = 32
+_INDEXED_MEMORY_WIDTHS = {
+    "byte": _BYTE_WIDTH_BITS,
+    "word": _WORD_WIDTH_BITS,
+    "dword": _DWORD_WIDTH_BITS,
+    "qword": _QWORD_WIDTH_BITS,
+}
 
 
 def _decode_tls_memory_mov(text: str) -> tuple[str, int, str, int | None, int, int] | None:
@@ -71,7 +80,7 @@ def _decode_memory_mov(text: str) -> tuple[str, int, int, int, int] | None:
     return (kind, reg_slot, base_slot, disp, reg_width)
 
 
-def _decode_xchg_memory(text: str) -> tuple[str, int, int, int, int] | None:
+def _decode_xchg_memory(text: str) -> tuple[Any, ...] | None:
     """Decode an atomic ``xchg`` between a 32/64-bit GP register and memory.
 
     An x86 exchange with a memory operand is implicitly locked, so the handler
@@ -79,23 +88,38 @@ def _decode_xchg_memory(text: str) -> tuple[str, int, int, int, int] | None:
     stores. Byte and word forms remain native because the VM only exposes full
     register slots for this atomic operation.
     """
+    result: tuple[Any, ...] | None = None
     parts = text.split(None, 1)
-    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "xchg" or "," not in parts[1]:
-        return None
-    left, right = (token.strip() for token in parts[1].split(",", 1))
-    left_mem, right_mem = "[" in left, "[" in right
-    if left_mem == right_mem:
-        return None
-    mem_text, register_text = (left, right) if left_mem else (right, left)
-    memory = _parse_mem_operand(mem_text)
-    register = _register_operand(register_text.lower())
-    if memory is None or register is None or register[1] not in (32, 64):
-        return None
-    base_slot, displacement, memory_width = memory
-    register_slot, register_width = register
-    if memory_width is not None and memory_width != register_width:
-        return None
-    return ("xchgmem", register_slot, base_slot, displacement, register_width)
+    if len(parts) == _INSTRUCTION_PART_COUNT and parts[0].lower() == "xchg" and "," in parts[1]:
+        left, right = (token.strip() for token in parts[1].split(",", 1))
+        left_mem, right_mem = "[" in left, "[" in right
+        if left_mem != right_mem:
+            mem_text, register_text = (left, right) if left_mem else (right, left)
+            register = _register_operand(register_text.lower())
+            if register is not None and register[1] in (32, 64):
+                register_slot, register_width = register
+                memory = _parse_mem_operand(mem_text)
+                if memory is not None:
+                    base_slot, displacement, memory_width = memory
+                    if memory_width is None or memory_width == register_width:
+                        result = ("xchgmem", register_slot, base_slot, displacement, register_width)
+                else:
+                    indexed = _parse_indexed_operand(mem_text)
+                    if indexed is not None:
+                        width_name = mem_text.strip().lower().split(None, 1)[0]
+                        memory_width = _INDEXED_MEMORY_WIDTHS.get(width_name)
+                        if memory_width is None or memory_width == register_width:
+                            base_slot, index_slot, shift, displacement = indexed
+                            result = (
+                                "xchgmemidx",
+                                register_slot,
+                                base_slot,
+                                index_slot,
+                                shift,
+                                displacement,
+                                register_width,
+                            )
+    return result
 
 
 def _decode_memory_mov_indexed(text: str) -> tuple[str, int, int, int, int, int, int] | None:

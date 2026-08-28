@@ -74,6 +74,7 @@ from r2morph.mutations.code_virtualization_region_memory_handlers import (
     _riprel_handler_asm,
     _tls_memory_handler_asm,
     _xchg_memory_handler_asm,
+    _xchg_memory_indexed_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_microops import (
     _frestore_handler_asm,
@@ -407,6 +408,14 @@ class HandlerBodyRouter:
         return body
 
     def _atomic_memory(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
+        if key.startswith("xchgmemidx_"):
+            return _xchg_memory_indexed_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                self.context.field_perm,
+                variants[4],
+            )
         if not key.startswith("xchgmem_"):
             return None
         return _xchg_memory_handler_asm(

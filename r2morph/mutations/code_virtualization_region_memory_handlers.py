@@ -121,6 +121,23 @@ def _xchg_memory_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _xchg_memory_indexed_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Atomically exchange a GP slot with a scaled-index memory value."""
+    _, width_text = handler_key.split("_")
+    width = int(width_text)
+    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    memory = "qword" if width == _QWORD_WIDTH_BITS else "dword"
+    register = "rax" if width == _QWORD_WIDTH_BITS else "eax"
+    body += (
+        f"  mov {register}, {memory} ptr [rsp+r8*8]\n"
+        f"  xchg {memory} ptr [r10], {register}\n"
+        "  mov qword ptr [rsp+r8*8], rax\n"
+    )
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _tls_address_asm(
     has_base: bool,
     key: str,

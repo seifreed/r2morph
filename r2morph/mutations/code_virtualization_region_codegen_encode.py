@@ -113,6 +113,7 @@ _FIXED_SIZE_GROUPS = {
         "movxidx",
         "ijmpmem",
         "callmemidx",
+        "xchgmemidx",
         "pushi",
     ),
 }

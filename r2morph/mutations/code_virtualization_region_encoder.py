@@ -260,8 +260,8 @@ class RegionEncoder:
         elif kind in ("opmem", "lea"):
             reg, base, disp = item[2], item[3], item[4]
             self._gp_mem(item, reg, base, disp)
-        elif kind == "xchgmem":
-            self._gp_mem(item, item[1], item[2], item[3])
+        elif kind in ("xchgmem", "xchgmemidx"):
+            self._emit_xchg_memory(item)
         elif kind in ("opriprel", "learip"):
             reg, target = item[2], item[3]
             self._gp_rip(item, reg, target)
@@ -374,6 +374,13 @@ class RegionEncoder:
 
     def _gp_mem(self, item: RegionItem, register: int, base: int, disp: int) -> None:
         self._mem(self._opcode(item), (self.slot_of[register], self.slot_of[base], disp))
+
+    def _emit_xchg_memory(self, item: RegionItem) -> None:
+        if item[0] == "xchgmem":
+            self._gp_mem(item, item[1], item[2], item[3])
+            return
+        _, register, base, index, shift, disp, _width = item
+        self._gp_idx(item, (register, base, index, shift, disp))
 
     def _gp_rip(self, item: RegionItem, register: int, target: int) -> None:
         self._mem(self._opcode(item), (self.slot_of[register], None, target - self.bytecode_base))

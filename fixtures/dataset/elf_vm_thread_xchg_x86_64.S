@@ -13,6 +13,15 @@ _start:
     mov rcx, qword ptr [rbx]
     cmp rcx, 42
     jne fail
+    mov rcx, 1
+    mov rax, 84
+    xchg qword ptr [rbx + rcx*8], rax
+    mov rdx, 11
+    cmp rax, rdx
+    jne fail
+    mov rdx, qword ptr [rbx + rcx*8]
+    cmp rdx, 84
+    jne fail
     mov edi, 42
     mov eax, 60
     syscall
@@ -24,4 +33,4 @@ fail:
 .section .data
 .align 8
 shared:
-    .quad 7
+    .quad 7, 11
