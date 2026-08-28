@@ -50,6 +50,11 @@ from r2morph.mutations.code_virtualization_region_codegen_encode import (
     _item_size,
     encode_region,
 )
+from r2morph.mutations.code_virtualization_region_fp_handlers import (
+    avx128_upper_clear_asm,
+    xmm_reload_asm,
+    xmm_spill_asm,
+)
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
 from r2morph.mutations.code_virtualization_region_handlers import (
@@ -87,6 +92,7 @@ _RETURN_BASE = 0xB0  # first parent-bytecode-pointer return slot
 _MIN_PEEL = 2  # shortest op run worth peeling into an inner layer
 # Cap layers so the per-transition return slots stay below the red zone (0x100).
 _MAX_LAYERS = (0x100 - _RETURN_BASE) // 8
+_XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "vcall"})
 
 
 @dataclass(frozen=True)
@@ -289,6 +295,19 @@ def _set_layer_slots(layer: int, count: int) -> str:
     )
 
 
+def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, str]:
+    """Preserve vector state for nested regions that contain native calls."""
+    if not any(item[0] in _XMM_CALL_KINDS for item in region.instructions):
+        return "", ""
+    vex_destinations = {
+        int(item[2])
+        for layer in layers
+        for item in layer.instructions
+        if item[0] in ("fparithvex", "fppackedvex", "fpmovvex")
+    }
+    return xmm_spill_asm(), xmm_reload_asm() + avx128_upper_clear_asm(vex_destinations)
+
+
 def _enter_inner_asm(child: int, child_count: int, return_slot: int) -> str:
     """Handler that saves the resume point and transfers down to layer ``child``."""
     return (
@@ -348,6 +367,8 @@ def _build_layers(region: Region, depth: int, rng: random.Random) -> list[Region
     its parent and returns to it. Stops at ``depth`` layers or when no further run
     is peelable. Returns ``None`` if nothing peeled (use the single-layer blob).
     """
+    if any(item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i") for item in region.instructions):
+        return None
     layers: list[Region] = []
     current = region
     while len(layers) < depth - 1:
@@ -437,23 +458,28 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     layers = _build_layers(region, max(2, min(depth, _MAX_LAYERS)), rng)
     if layers is None:
         return None
-    count = len(layers)
-
     # Build a scheme per layer; all share the outermost slot permutation so every
     # layer reads and writes the same frame slots for a given logical register.
     schemes = [build_region_scheme(layer, rng) for layer in layers]
     slot = schemes[0].slot_perm
     schemes = _relayer_sharing_frame(schemes, slot)
     counts = [_scheme_count(s) for s in schemes]
-    offsets = [sum(counts[:i]) for i in range(count)]  # global handler-index base per layer
+    offsets = [sum(counts[:i]) for i in range(len(layers))]  # global handler-index base per layer
     rsp_off = slot[RSP_INDEX] * 8
-    spill = "".join(
-        f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n"
-        for index in gp_save_order(schemes[0].junk_seed ^ 0x51A7E)
+    xmm_state = _nested_xmm_state_asm(region, layers)
+    spill = (
+        "".join(
+            f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n"
+            for index in gp_save_order(schemes[0].junk_seed ^ 0x51A7E)
+        )
+        + xmm_state[0]
     )
-    reload_seq = "".join(
-        f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n"
-        for index in gp_save_order(schemes[0].junk_seed ^ 0x51A7E)
+    reload_seq = (
+        "".join(
+            f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n"
+            for index in gp_save_order(schemes[0].junk_seed ^ 0x51A7E)
+        )
+        + xmm_state[1]
     )
 
     # An in-function call (vcall, always in the outer layer) reserves a zeroed floor
@@ -530,10 +556,10 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     key_qword = f"qword ptr [rsp+{_KEY_QWORD_SLOT}]"
     key_dword = f"dword ptr [rsp+{_KEY_DWORD_SLOT}]"
     layer_bodies: list[str] = []
-    for layer in range(count):
+    for layer in range(len(layers)):
         scheme = schemes[layer]
         extra: dict[str, str] = {}
-        if layer + 1 < count:  # transfer down to the next layer
+        if layer + 1 < len(layers):  # transfer down to the next layer
             extra["enter_inner"] = _enter_inner_asm(layer + 1, counts[layer + 1], _RETURN_BASE + layer * 8)
         if layer > 0:  # return up to the parent layer
             extra["inner_exit"] = _inner_exit_asm(layer - 1, counts[layer - 1], _RETURN_BASE + (layer - 1) * 8)
@@ -583,7 +609,8 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     island = tracer_const_island_asm()
     # Reserve every layer's bytecode but the innermost (which is appended).
     reservations = (
-        "".join(f"bc_{layer}:\n  .space {lens[layer]}\n" for layer in range(count - 1)) + f"bc_{count - 1}:\n"
+        "".join(f"bc_{layer}:\n  .space {lens[layer]}\n" for layer in range(len(layers) - 1))
+        + f"bc_{len(layers) - 1}:\n"
     )
     body = (
         entry
@@ -597,7 +624,7 @@ def build_nested_region_blob(region: Region, cave_vaddr: int, rng: random.Random
     tables = "".join(
         f"vm_table_{layer}:\n"
         + "".join(f"  .long H_{offsets[layer] + j} - vm_table_{layer}\n" for j in range(counts[layer]))
-        for layer in range(count)
+        for layer in range(len(layers))
     )
     # Thread the dispatch: splice a freshly shuffled decode copy in for every back
     # jump to the (now removed) shared dispatcher - handler tails, the entry, the
