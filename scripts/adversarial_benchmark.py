@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from r2morph.adapters.process import ProcessTimeoutError, run_process
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
+from scripts.protection_maturity_baseline import discover_executables
 from tests.integration.elf_emulator import emulate_exit_code
 
 _COMMANDS = {"radare2": "r2", "objdump": "objdump", "ida-pro": "ida64", "ghidra": "ghidra", "binary-ninja": "bndb"}
@@ -113,17 +114,34 @@ def _measure_tool(tool: str, original: Path, protected: Path) -> dict[str, objec
     return {"tool": tool, "status": "completed", "original": before, "protected": after, "changed": before != after}
 
 
-def _protected_copy(original: Path, directory: Path) -> Path:
+def _protected_copy(original: Path, directory: Path) -> tuple[Path, dict[str, object]]:
     protected = directory / "protected"
     shutil.copyfile(original, protected)
     binary = Binary(protected, writable=True)
     binary.open()
     try:
-        CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260827}).apply(binary)
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260827}).apply(binary)
         binary.save()
     finally:
         binary.close()
-    return protected
+    return protected, stats
+
+
+def _pass_result(stats: dict[str, object]) -> dict[str, object]:
+    virtualized = stats.get("functions_virtualized", 0)
+    unsupported = stats.get("unsupported_functions_total", 0)
+    if isinstance(virtualized, int) and virtualized > 0:
+        status = "applied"
+    elif isinstance(unsupported, int) and unsupported > 0:
+        status = "omitted"
+    else:
+        status = "no-op"
+    return {
+        "pass_name": "CodeVirtualization",
+        "status": status,
+        "functions_virtualized": virtualized,
+        "unsupported_functions": unsupported,
+    }
 
 
 def benchmark_pair(original: Path, protected: Path | None = None) -> dict[str, object]:
@@ -131,7 +149,11 @@ def benchmark_pair(original: Path, protected: Path | None = None) -> dict[str, o
     if not original.is_file():
         raise ValueError(f"original binary does not exist: {original}")
     with tempfile.TemporaryDirectory(prefix="r2morph-adversarial-") as directory:
-        protected_path = protected or _protected_copy(original, Path(directory))
+        stats: dict[str, object] | None = None
+        if protected is None:
+            protected_path, stats = _protected_copy(original, Path(directory))
+        else:
+            protected_path = protected
         tools = [_measure_tool(tool, original, protected_path) for tool in _EXPECTED_TOOLS]
         tools.append(
             {
@@ -141,16 +163,61 @@ def benchmark_pair(original: Path, protected: Path | None = None) -> dict[str, o
                 "protected": _binary_metric(protected_path),
             }
         )
-    return {"schema_version": 1, "original": original.name, "protected": protected_path.name, "tools": tools}
+    report: dict[str, object] = {
+        "schema_version": 2,
+        "original": original.name,
+        "protected": protected_path.name,
+        "tools": tools,
+    }
+    if stats is not None:
+        report["passes"] = [_pass_result(stats)]
+    return report
+
+
+def benchmark_corpus(dataset: Path) -> dict[str, object]:
+    """Run the pair benchmark for every supported executable in the corpus."""
+    fixtures = discover_executables(dataset)
+    if not fixtures:
+        raise ValueError(f"no supported executable fixtures found in {dataset}")
+    samples = [benchmark_pair(fixture) for fixture in fixtures]
+    completed_tools = sum(
+        1
+        for sample in samples
+        for tool in sample["tools"]
+        if isinstance(tool, dict) and tool.get("status") == "completed"
+    )
+    unavailable_tools = sum(
+        1
+        for sample in samples
+        for tool in sample["tools"]
+        if isinstance(tool, dict) and tool.get("status") == "unavailable"
+    )
+    return {
+        "schema_version": 3,
+        "measurement": "protection-adversarial-corpus",
+        "corpus": dataset.name,
+        "sample_count": len(samples),
+        "samples": samples,
+        "summary": {
+            "completed_tool_runs": completed_tools,
+            "unavailable_tool_runs": unavailable_tools,
+            "error_tool_runs": len(fixtures) * (len(_EXPECTED_TOOLS) + 1) - completed_tools - unavailable_tools,
+        },
+    }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("original", type=Path)
+    selection = parser.add_mutually_exclusive_group(required=True)
+    selection.add_argument("original", type=Path, nargs="?")
+    selection.add_argument("--all", action="store_true", dest="all_fixtures")
+    parser.add_argument("--dataset", type=Path, default=Path("fixtures/dataset"))
     parser.add_argument("--protected", type=Path)
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    report = benchmark_pair(args.original, args.protected)
+    if args.all_fixtures and args.protected:
+        parser.error("--protected is valid only with one original binary")
+    report = benchmark_corpus(args.dataset) if args.all_fixtures else benchmark_pair(args.original, args.protected)
     rendered = json.dumps(report, indent=2, sort_keys=True) + "\n"
     if args.output:
         args.output.write_text(rendered, encoding="utf-8")

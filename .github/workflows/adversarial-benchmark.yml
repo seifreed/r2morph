@@ -35,7 +35,8 @@ jobs:
       - name: Run benchmark
         run: |
           python scripts/adversarial_benchmark.py \
-            fixtures/dataset/elf_vm_arith_x86_64 \
+            --all \
+            --dataset fixtures/dataset \
             --output adversarial-benchmark.json
 
       - name: Upload benchmark report

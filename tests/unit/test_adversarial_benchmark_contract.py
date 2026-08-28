@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from scripts.adversarial_benchmark import benchmark_pair
+from scripts.adversarial_benchmark import benchmark_corpus, benchmark_pair
 from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "dataset" / "elf_vm_arith_x86_64"
@@ -21,3 +21,16 @@ def test_adversarial_benchmark_marks_missing_tools_explicitly() -> None:
 
     statuses = {item["tool"]: item["status"] for item in report["tools"]}
     expect(statuses["ida-pro"] == "unavailable" or statuses["ida-pro"] == "completed")
+
+
+def test_adversarial_benchmark_corpus_reports_each_sample_and_pass(tmp_path: Path) -> None:
+    dataset = tmp_path / "dataset"
+    dataset.mkdir()
+    source = _FIXTURE.read_bytes()
+    (dataset / _FIXTURE.name).write_bytes(source)
+
+    report = benchmark_corpus(dataset)
+
+    expect(report["sample_count"] == 1)
+    sample = report["samples"][0]
+    expect("CodeVirtualization" in sample["passes"][0].values())
