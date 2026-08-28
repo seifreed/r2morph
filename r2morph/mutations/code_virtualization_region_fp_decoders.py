@@ -27,10 +27,10 @@ def _parse_xmm_operand(text: str) -> int | None:
 
 
 def _decode_fp_mem(text: str) -> tuple[str, int, int, int, int] | None:
-    """Decode ``movsd/movss xmm, [base+disp]`` / ``movsd/movss [base+disp], xmm``.
+    """Decode ``movsd/movss/movq xmm, [base+disp]`` or the store form.
 
     Returns ``(kind, xmm_index, base_slot, disp, width)`` where ``kind`` is
-    ``"fpload"`` or ``"fpstore"`` and ``width`` is 64 (movsd) or 32 (movss), or
+    ``"fpload"`` or ``"fpstore"`` and ``width`` is 64 (movsd/movq) or 32 (movss), or
     ``None`` for xmm-to-xmm moves, indexed/rip-relative addressing, or any other
     form. Only reached for ``family == "vec"`` instructions, so the no-operand
     string ``movsd`` never lands here.
@@ -38,7 +38,7 @@ def _decode_fp_mem(text: str) -> tuple[str, int, int, int, int] | None:
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
-    width = {"movsd": 64, "movss": 32}.get(parts[0].lower())
+    width = {"movsd": 64, "movss": 32, "movq": 64}.get(parts[0].lower())
     if width is None:
         return None
     left, right = (token.strip() for token in parts[1].split(",", 1))
@@ -223,18 +223,18 @@ def _decode_fp_move(text: str) -> tuple[str, str, int, int] | None:
 
 
 def _decode_fp_riprel(text: str, insn_addr: int, insn_size: int) -> tuple[str, int, int, int] | None:
-    """Decode ``movsd/movss xmm, [rip+disp]`` / ``[rip+disp], xmm`` into
+    """Decode ``movsd/movss/movq xmm, [rip+disp]`` or the store form into
     ``("fploadrip"|"fpstorerip", xmm_index, target_vaddr, width)``.
 
     FP constants and globals live in .rodata/.data and are reached rip-relative;
     the absolute target is later re-expressed relative to the bytecode base.
     Returns ``None`` for a register or base+disp operand (other paths) or any
-    non-movsd/movss mnemonic.
+    non-movsd/movss/movq mnemonic.
     """
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
-    width = {"movsd": 64, "movss": 32}.get(parts[0].lower())
+    width = {"movsd": 64, "movss": 32, "movq": 64}.get(parts[0].lower())
     if width is None:
         return None
     left, right = (token.strip() for token in parts[1].split(",", 1))
@@ -319,7 +319,7 @@ FpIndexedNoBaseItem = tuple[str, int, int, int, int, int]
 
 
 def _decode_fp_indexed(text: str) -> FpIndexedItem | FpIndexedNoBaseItem | None:
-    """Decode ``movsd/movss xmm, [base+index*scale+disp]`` / store into
+    """Decode ``movsd/movss/movq xmm, [base+index*scale+disp]`` or the store form.
     ``("fploadidx"|"fpstoreidx", xmm_index, base_slot, index_slot, shift, disp,
     width)``.
 
@@ -332,7 +332,7 @@ def _decode_fp_indexed(text: str) -> FpIndexedItem | FpIndexedNoBaseItem | None:
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
         return None
-    width = {"movsd": 64, "movss": 32}.get(parts[0].lower())
+    width = {"movsd": 64, "movss": 32, "movq": 64}.get(parts[0].lower())
     if width is None:
         return None
     left, right = (token.strip() for token in parts[1].split(",", 1))
