@@ -199,7 +199,7 @@ def _call_bridge_asm(index: int, slot: tuple[int, ...], target_asm: str, advance
         + xmm_loads
         + f"  mov rsp, qword ptr [r12+{slot[RSP_INDEX] * 8}]\n  xor rsp, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
-        + f"call_resume_{index}:\n  mov rsp, r12\n"
+        + f"call_resume_{index}:\n  mov rsp, r12\n  pushfq\n  pop qword ptr [rsp+{_FLAGS_OFFSET}]\n"
         + xmm_spills
         + spills
         + f"  mov rsi, rbx\n  add rsi, {advance}\n  jmp vm_dispatch\n"
