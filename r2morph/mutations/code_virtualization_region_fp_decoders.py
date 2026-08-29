@@ -69,20 +69,24 @@ _FP_ARITH_MNEMONICS: dict[str, tuple[str, int]] = {
     "mulsd": ("mul", 64),
     "divsd": ("div", 64),
     "sqrtsd": ("sqrt", 64),
+    "minsd": ("min", 64),
+    "maxsd": ("max", 64),
     "addss": ("add", 32),
     "subss": ("sub", 32),
     "mulss": ("mul", 32),
     "divss": ("div", 32),
     "sqrtss": ("sqrt", 32),
+    "minss": ("min", 32),
+    "maxss": ("max", 32),
 }
 
 
 def _decode_fp_arith(text: str) -> tuple[str, str, int, int, int] | None:
     """Decode scalar-FP register-register arithmetic
-    (``addsd/subsd/mulsd/divsd/sqrtsd`` and ``ss`` forms).
+    (``addsd/subsd/mulsd/divsd/sqrtsd/minsd/maxsd`` and ``ss`` forms).
 
     Returns ``(kind, op, dst_index, src_index, width)`` with ``kind == "fparith"``,
-    ``op`` one of add/sub/mul/div/sqrt, or ``None`` for a memory source (left native)
+    ``op`` one of add/sub/mul/div/sqrt/min/max, or ``None`` for a memory source (left native)
     or any other form. r2 types subsd/divsd as ``null``, so the mnemonic - not the
     instruction type - is the reliable discriminator; only reached for vec family.
     """

@@ -143,7 +143,7 @@ _FP_MEM_KINDS: tuple[str, ...] = (
 # is its own kind so the dispatcher selects the handler without inspecting the
 # operands; the item carries two raw xmm indices (dst, src). ``fp{op}`` keys map
 # back to the real add/sub/mul/div instruction in the handler.
-_FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div", "sqrt")
+_FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div", "sqrt", "min", "max")
 _FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
 # Scalar-FP register-versus-memory compares. The width is part of the handler key
 # so the interpreter emits the exact scalar memory operand size.
@@ -158,7 +158,7 @@ _FP_CONVERT_KINDS: tuple[str, ...] = tuple(
 )
 # Scalar-FP arithmetic with a memory source (``addsd xmm, [base+disp]`` and the
 # rip-relative ``addsd xmm, [rip+const]`` constant-pool form). Per op
-# (fparithmem{add,sub,mul,div}), each with a ``*rip`` counterpart; the base+disp
+# (fparithmem{add,sub,mul,div,sqrt,min,max}), each with a ``*rip`` counterpart; the base+disp
 # form is a 7-byte reg/base/disp item, the rip form a 6-byte reg/offset item. The
 # handler reuses the load/store address prologues, then issues the scalar op with
 # the memory source directly.

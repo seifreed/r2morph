@@ -78,7 +78,8 @@ def _fp_memory_handler_asm(
 
 def _fp_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for a scalar-FP register-register arithmetic handler
-    (``addsd``/``subsd``/``mulsd``/``divsd`` and their ``ss`` forms).
+    (``addsd``/``subsd``/``mulsd``/``divsd``/``sqrtsd``/``minsd``/``maxsd`` and
+    their ``ss`` forms).
 
     The two operand bytes are XMM indices (un-masked with the key and the stream
     position like every operand) read at this build's permuted offsets; both
