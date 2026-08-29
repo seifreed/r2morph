@@ -169,3 +169,11 @@ def test_decode_vex128_scalar_min_returns_three_operand_item() -> None:
 
 def test_decode_vex128_scalar_max_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_scalar_arith("vmaxsd xmm2, xmm0, xmm1") == ("fparithvex", "max", 2, 0, 1, 64))
+
+
+def test_decode_vex128_scalar_single_sqrt_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_scalar_arith("vsqrtss xmm2, xmm0, xmm1") == ("fparithvex", "sqrt", 2, 0, 1, 32))
+
+
+def test_decode_vex128_scalar_double_sqrt_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_scalar_arith("vsqrtsd xmm2, xmm0, xmm1") == ("fparithvex", "sqrt", 2, 0, 1, 64))
