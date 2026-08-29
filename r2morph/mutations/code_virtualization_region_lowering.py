@@ -31,21 +31,29 @@ def _lower_memory(item: list[Any]) -> list[list[Any]]:
     kind = item[0]
     if kind == "load":
         _, register, base, displacement, width = item
-        return [["vload", base, displacement, width], [_memory_pop_kind(width), register]]
-    if kind == "store":
+        lowered = [["vload", base, displacement, width], [_memory_pop_kind(width), register]]
+    elif kind == "store":
         _, register, base, displacement, width = item
-        return [["vpush", register], ["vstore", base, displacement, width]]
-    if kind == "loadidx":
+        lowered = [["vpush", register], ["vstore", base, displacement, width]]
+    elif kind == "loadidx":
         _, register, base, index, shift, displacement, width = item
-        return [["vloadidx", base, index, shift, displacement, width], [_memory_pop_kind(width), register]]
-    if kind == "storeidx":
+        lowered = [["vloadidx", base, index, shift, displacement, width], [_memory_pop_kind(width), register]]
+    elif kind == "storeidx":
         _, register, base, index, shift, displacement, width = item
-        return [["vpush", register], ["vstoreidx", base, index, shift, displacement, width]]
-    if kind == "riprel_load":
+        lowered = [["vpush", register], ["vstoreidx", base, index, shift, displacement, width]]
+    elif kind == "loadidxnb":
+        _, register, index, shift, displacement, width = item
+        lowered = [["vloadidxnb", index, shift, displacement, width], [_memory_pop_kind(width), register]]
+    elif kind == "storeidxnb":
+        _, register, index, shift, displacement, width = item
+        lowered = [["vpush", register], ["vstoreidxnb", index, shift, displacement, width]]
+    elif kind == "riprel_load":
         _, register, target, width = item
-        return [["vloadrip", target, width], [_memory_pop_kind(width), register]]
-    _, register, target, width = item
-    return [["vpush", register], ["vstorerip", target, width]]
+        lowered = [["vloadrip", target, width], [_memory_pop_kind(width), register]]
+    else:
+        _, register, target, width = item
+        lowered = [["vpush", register], ["vstorerip", target, width]]
+    return lowered
 
 
 def _lower_memory_arithmetic(item: list[Any]) -> list[list[Any]]:
@@ -136,7 +144,10 @@ def _lower_movx_address(item: list[Any]) -> list[list[Any]]:
 
 _Lowerer = Callable[[list[Any]], list[list[Any]]]
 _LOWERERS: dict[str, _Lowerer] = {
-    **{kind: _lower_memory for kind in ("load", "store", "loadidx", "storeidx", "riprel_load", "riprel_store")},
+    **{
+        kind: _lower_memory
+        for kind in ("load", "store", "loadidx", "storeidx", "loadidxnb", "storeidxnb", "riprel_load", "riprel_store")
+    },
     **{kind: _lower_memory_arithmetic for kind in ("opmem", "opmemidx", "opmemdst", "opriprel", "opmemdstrip")},
     **{kind: _lower_shift_compare for kind in ("shift", "shiftreg", "cmp", "test", "cmpmem", "cmpriprel")},
     **{kind: _lower_movx_address for kind in ("movx", "movxidx", "lea", "learip", "leaidx", "leaidxnb")},

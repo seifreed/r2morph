@@ -327,14 +327,18 @@ def _vstore_handler_asm(handler_key: str, key: str, key_dword: str, field_perm: 
 
 
 def _vstoreidx_handler_asm(
-    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    field_perm: int = 0,
+    addr_variant: int = 0,
 ) -> str:
-    """Pop the top vstack cell and store it to ``[base+index*scale+disp]``.
+    """Pop the top vstack cell and store it to a scaled-index address.
 
-    Mirrors :func:`_vstore_handler_asm` but computes the effective address with the
-    shared scaled-index prologue (``_indexed_address_asm``). The pop happens first,
-    into rbx (which the prologue preserves), because the prologue clobbers the vstack
-    pointer r9. A 32-bit store writes the low dword. No flags.
+    The ``idxnb`` handler key selects ``index*scale+disp``; otherwise the address
+    includes the decoded base slot. The pop happens first because the address
+    prologue clobbers the vstack pointer r9. A 32-bit store writes the low dword.
+    No flags.
     """
     width = int(handler_key.split("_")[1])
     pop = (
@@ -343,24 +347,28 @@ def _vstoreidx_handler_asm(
         f"  mov rbx, qword ptr [rsp+r9+{_VBASE}]\n  xor rbx, {_VKEY}\n"
         f"  mov qword ptr [rsp+{_VSP}], r9\n"
     )
-    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    address_builder = _indexed_address_nobase_asm if handler_key.startswith("vstoreidxnb_") else _indexed_address_asm
+    body, advance = address_builder(key, key_dword, field_perm, addr_variant)
     store = _memory_store_asm(width)
     return pop + body + store + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
 def _vloadidx_handler_asm(
-    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+    handler_key: str,
+    key: str,
+    key_dword: str,
+    field_perm: int = 0,
+    addr_variant: int = 0,
 ) -> str:
-    """Load ``[base+index*scale+disp]`` and push the value onto the vstack.
+    """Load a scaled-index address and push the value onto the vstack.
 
-    Reuses the shared MBA-folded scaled-index address prologue
-    (``_indexed_address_asm``), which decodes the operand into the effective address
-    in r10 (and clobbers the vstack pointer r9), then reads the qword/dword and pushes
-    it. The register field the prologue decodes into r8 is an unused placeholder (the
-    value goes on the stack, not into a register). A 32-bit load zero-extends. No flags.
+    The ``idxnb`` handler key selects ``index*scale+disp``; otherwise the address
+    includes the decoded base slot. The register field decoded into r8 is an unused
+    placeholder. A 32-bit load zero-extends. No flags.
     """
     width = int(handler_key.split("_")[1])
-    body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    address_builder = _indexed_address_nobase_asm if handler_key.startswith("vloadidxnb_") else _indexed_address_asm
+    body, advance = address_builder(key, key_dword, field_perm, addr_variant)
     body += _memory_load_asm(width)
     # The address prologue clobbered r9 (the base slot index), so _PUSH_RAX reloads
     # the vstack pointer from its frame slot before pushing.

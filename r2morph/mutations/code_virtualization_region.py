@@ -88,6 +88,7 @@ def _writes_register(item: tuple[Any, ...]) -> frozenset[int]:
         "leaidx",
         "leaidxnb",
         "loadidx",
+        "loadidxnb",
         "not",
         "bswap",
     ):

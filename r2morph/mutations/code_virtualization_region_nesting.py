@@ -147,6 +147,8 @@ def _peel_op_run(instructions: list[tuple[Any, ...]]) -> tuple[int, int] | None:
         "vstore",
         "vloadidx",
         "vstoreidx",
+        "vloadidxnb",
+        "vstoreidxnb",
         "vloadrip",
         "vstorerip",
         "vlea",

@@ -290,9 +290,9 @@ class HandlerBodyRouter:
         address = variants[4]
         arguments = (key, self.context.key, self.context.key_dword, self.context.field_perm, address)
         body = None
-        if key.startswith("vloadidx_"):
+        if key.startswith(("vloadidx_", "vloadidxnb_")):
             body = _vloadidx_handler_asm(*arguments)
-        elif key.startswith("vstoreidx_"):
+        elif key.startswith(("vstoreidx_", "vstoreidxnb_")):
             body = _vstoreidx_handler_asm(*arguments)
         elif key.startswith("vload_"):
             body = _vload_handler_asm(*arguments)

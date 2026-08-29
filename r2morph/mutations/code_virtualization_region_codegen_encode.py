@@ -104,6 +104,8 @@ _FIXED_SIZE_GROUPS = {
         "vleaidxnb",
         "fploadidxnb",
         "fpstoreidxnb",
+        "vloadidxnb",
+        "vstoreidxnb",
         "leaidxnb",
         "ijmpmemnb",
         "callmemidxnb",

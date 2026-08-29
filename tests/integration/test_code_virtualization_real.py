@@ -2013,6 +2013,33 @@ def test_indexed_mov_store_lowers_to_a_microop() -> None:
     expect(_region_lowers_kind(fixture, "vstoreidx"))
 
 
+def test_no_base_indexed_mov_load_store_lower_to_no_base_microops() -> None:
+    fixture = _DATASET / "elf_vm_movidxnb_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+    expect(_region_lowers_kind(fixture, "vloadidxnb"))
+    expect(_region_lowers_kind(fixture, "vstoreidxnb"))
+
+
+def test_no_base_indexed_mov_load_store_virtualization_preserves_exit_code(tmp_path: Path) -> None:
+    fixture = _DATASET / "elf_vm_movidxnb_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_movidxnb"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(not (stats["functions_virtualized"] < 1))
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_35)
+
+
 def test_indexed_mov_load_store_virtualization_preserves_exit_code(tmp_path: Path) -> None:
     # A stack int/qword array accessed via scaled-index mov: loadidx a[2]=30 stored
     # back to a[0] (storeidx), plus loadidx b[1]=5 (64-bit) -> exit 35. A wrong

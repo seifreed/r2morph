@@ -27,6 +27,14 @@ def test_decode_indexed_mov_store_returns_storeidx() -> None:
     expect(_decode_memory_mov_indexed("mov [rcx + rdx*8 + 16], rax") == ("storeidx", 0, 1, 2, 3, 16, 64))
 
 
+def test_decode_no_base_indexed_mov_load_returns_loadidxnb() -> None:
+    expect(_decode_memory_mov_indexed("mov eax, [rdx*4 + 16]") == ("loadidxnb", 0, 2, 2, 16, 32))
+
+
+def test_decode_no_base_indexed_mov_store_returns_storeidxnb() -> None:
+    expect(_decode_memory_mov_indexed("mov [rdx*8 + 16], rax") == ("storeidxnb", 0, 2, 3, 16, 64))
+
+
 def test_decode_indexed_mov_rejects_non_indexed_base_disp() -> None:
     # A plain base+disp load is not this decoder's job (the base+disp decoder owns it).
     expect(not (_decode_memory_mov_indexed("mov eax, [rcx + 4]") is not None))
@@ -57,3 +65,13 @@ def test_loadidx_lowers_to_vloadidx_then_vpop() -> None:
 def test_storeidx_lowers_to_vpush_then_vstoreidx() -> None:
     lowered = _lower_arith_to_microops([["storeidx", 0, 1, 2, 3, 16, 64]])
     expect([item[0] for item in lowered] == ["vpush", "vstoreidx"])
+
+
+def test_loadidxnb_lowers_to_vloadidxnb_then_vpop() -> None:
+    lowered = _lower_arith_to_microops([["loadidxnb", 0, 2, 2, 16, 32]])
+    expect([item[0] for item in lowered] == ["vloadidxnb", "vpop"])
+
+
+def test_storeidxnb_lowers_to_vpush_then_vstoreidxnb() -> None:
+    lowered = _lower_arith_to_microops([["storeidxnb", 0, 2, 3, 16, 64]])
+    expect([item[0] for item in lowered] == ["vpush", "vstoreidxnb"])

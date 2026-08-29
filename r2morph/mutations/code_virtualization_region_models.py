@@ -131,6 +131,8 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "vstore": (3,),
     "vloadidx": (5,),
     "vstoreidx": (5,),
+    "vloadidxnb": (4,),
+    "vstoreidxnb": (4,),
     "vloadrip": (2,),
     "vlea": (3,),
     "vlearip": (2,),

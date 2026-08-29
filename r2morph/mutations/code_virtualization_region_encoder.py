@@ -132,6 +132,9 @@ class RegionEncoder:
         elif kind in ("vloadidx", "vstoreidx", "vleaidx"):
             _, base, index, shift, disp, _width = item
             self._idx(self._opcode(item), (self.slot_of[0], self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind in ("vloadidxnb", "vstoreidxnb"):
+            _, index, shift, disp, _width = item
+            self._idx(self._opcode(item), (self.slot_of[0], None, self.slot_of[index], shift, disp))
         elif kind in ("vloadrip", "vstorerip", "vlearip"):
             _, target, _width = item
             self._mem(self._opcode(item), (self.slot_of[0], None, target - self.bytecode_base))
