@@ -479,9 +479,13 @@ class HandlerBodyRouter:
         )
 
     def _tls_memory(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
-        if not key.startswith(("tlsload_", "tlsstore_")):
+        if not key.startswith(
+            ("tlsload_", "tlsstore_", "tlsloadidx_", "tlsloadidxnb_", "tlsstoreidx_", "tlsstoreidxnb_")
+        ):
             return None
-        return _tls_memory_handler_asm(key, self.context.key, self.context.key_dword, self.context.field_perm)
+        return _tls_memory_handler_asm(
+            key, self.context.key, self.context.key_dword, self.context.field_perm, _variants[4]
+        )
 
     def _fp(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]

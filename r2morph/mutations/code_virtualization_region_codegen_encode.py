@@ -109,6 +109,8 @@ _FIXED_SIZE_GROUPS = {
         "fppackedmemidxnb",
         "fparithmemidxnb",
         "fpcmpmemidxnb",
+        "tlsloadidxnb",
+        "tlsstoreidxnb",
         "vloadidxnb",
         "vstoreidxnb",
         "leaidxnb",
@@ -127,6 +129,8 @@ _FIXED_SIZE_GROUPS = {
         "fppackedmemidx",
         "fparithmemidx",
         "fpcmpmemidx",
+        "tlsloadidx",
+        "tlsstoreidx",
         "leaidx",
         "opmemidx",
         "movxidx",
@@ -151,6 +155,8 @@ def _item_size(item: tuple[Any, ...]) -> int:
         return 3
     if kind in ("cmp", "test"):
         return (2 + item[4] // 8) if item[3] else 3
+    if kind in ("tlsload", "tlsstore"):
+        return 6 if item[3] is None else 7
     return _FIXED_ITEM_SIZES.get(kind, 1)
 
 

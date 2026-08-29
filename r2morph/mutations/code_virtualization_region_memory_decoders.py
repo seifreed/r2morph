@@ -30,12 +30,62 @@ _INDEXED_MEMORY_WIDTHS = {
 }
 
 
-def _decode_tls_memory_mov(text: str) -> tuple[str, int, str, int | None, int, int] | None:
+def _parse_tls_indexed_operand(text: str) -> tuple[str, int, int, int, int, int | None] | None:
+    """Parse an FS/GS operand with a scaled index and optional base."""
+    text = text.strip().lower()
+    width: int | None = None
+    head = text.split(None, 1)
+    if head and head[0] in _INDEXED_MEMORY_WIDTHS:
+        width = _INDEXED_MEMORY_WIDTHS[head[0]]
+        text = head[1].strip() if len(head) > 1 else ""
+    rest = text.split(None, 1)
+    if rest and rest[0] == "ptr":
+        text = rest[1].strip() if len(rest) > 1 else ""
+    if text.startswith(("fs:", "gs:")):
+        segment, expression = text[:2], text[3:]
+    elif text.startswith(("[fs:", "[gs:")) and text.endswith("]"):
+        segment, expression = text[1:3], text[4:-1]
+    else:
+        return None
+    if expression.startswith("[") and expression.endswith("]"):
+        expression = expression[1:-1]
+    indexed = _parse_indexed_operand(f"[{expression}]", base_optional=True)
+    if indexed is None:
+        return None
+    base, index, shift, displacement = indexed
+    return segment, base, index, shift, displacement, width
+
+
+def _decode_tls_indexed_memory_mov(left: str, right: str) -> tuple[Any, ...] | None:
+    left_indexed = _parse_tls_indexed_operand(left)
+    right_indexed = _parse_tls_indexed_operand(right)
+    if left_indexed is not None and right_indexed is None:
+        kind, memory, register_text = "tlsstoreidx", left_indexed, right
+    elif right_indexed is not None and left_indexed is None:
+        kind, memory, register_text = "tlsloadidx", right_indexed, left
+    else:
+        return None
+    register = _register_operand(register_text.lower())
+    if register is None:
+        return None
+    segment, base_slot, index_slot, shift, displacement, memory_width = memory
+    register_slot, register_width = register
+    if memory_width is not None and memory_width != register_width:
+        return None
+    if base_slot < 0:
+        kind += "nb"
+    return (kind, register_slot, segment, base_slot, index_slot, shift, displacement, register_width)
+
+
+def _decode_tls_memory_mov(text: str) -> tuple[Any, ...] | None:
     """Decode GP loads/stores through the current thread's FS/GS base."""
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() != "mov" or "," not in parts[1]:
         return None
     left, right = (token.strip() for token in parts[1].split(",", 1))
+    indexed = _decode_tls_indexed_memory_mov(left, right)
+    if indexed is not None:
+        return indexed
     left_tls, right_tls = _parse_tls_operand(left), _parse_tls_operand(right)
     if left_tls is not None and right_tls is None:
         kind, memory, register_text = "tlsstore", left_tls, right

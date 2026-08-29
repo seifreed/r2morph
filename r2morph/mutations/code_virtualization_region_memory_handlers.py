@@ -199,11 +199,18 @@ def _tls_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
     """Load or store a GP value through the current thread's FS/GS base."""
-    kind, segment, base, width_text = handler_key.split("_")
+    parts = handler_key.split("_")
+    kind, segment, width_text = parts[0], parts[1], parts[-1]
     width = int(width_text)
-    body, advance = _tls_address_asm(base != "-1", key, key_dword, field_perm)
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        base = parts[2]
+        body, advance = _tls_address_asm(base not in ("-1", "None"), key, key_dword, field_perm)
     address = f"{segment}:[r10]"
-    if kind == "tlsload":
+    if kind.startswith("tlsload"):
         load = (
             f"  mov rax, qword ptr {address}\n" if width == _QWORD_WIDTH_BITS else f"  mov eax, dword ptr {address}\n"
         )

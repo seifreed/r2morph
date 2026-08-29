@@ -301,9 +301,8 @@ class RegionEncoder:
         if kind in ("load", "store"):
             _, reg, base, disp, _width = item
             self._gp_mem(item, reg, base, disp)
-        elif kind in ("tlsload", "tlsstore"):
-            _, reg, _segment, base, disp, _width = item
-            self._mem(self._opcode(item), (self.slot_of[reg], None if base is None else self.slot_of[base], disp))
+        elif kind in ("tlsload", "tlsstore", "tlsloadidx", "tlsloadidxnb", "tlsstoreidx", "tlsstoreidxnb"):
+            self._emit_tls_memory(item)
         elif kind in ("riprel_load", "riprel_store"):
             _, reg, target, _width = item
             self._gp_rip(item, reg, target)
@@ -333,6 +332,25 @@ class RegionEncoder:
         else:
             return False
         return True
+
+    def _emit_tls_indexed(self, item: RegionItem) -> None:
+        kind = item[0]
+        operands: tuple[int, int | None, int, int, int]
+        if kind.endswith("nb"):
+            _, _reg, _segment, _base, index, shift, disp, _width = item
+            operands = (self.slot_of[item[1]], None, self.slot_of[index], shift, disp)
+        else:
+            _, _reg, _segment, base, index, shift, disp, _width = item
+            operands = (self.slot_of[item[1]], self.slot_of[base], self.slot_of[index], shift, disp)
+        self._idx(self._opcode(item), operands)
+
+    def _emit_tls_memory(self, item: RegionItem) -> None:
+        kind = item[0]
+        if kind.endswith("idx") or kind.endswith("idxnb"):
+            self._emit_tls_indexed(item)
+            return
+        _, reg, _segment, base, disp, _width = item
+        self._mem(self._opcode(item), (self.slot_of[reg], None if base is None else self.slot_of[base], disp))
 
     def _emit_misc(self, item: RegionItem) -> bool:
         kind = item[0]

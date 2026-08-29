@@ -14,6 +14,7 @@ from tests.utils.assertions import expect
 
 _FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_tls_x86_64"
 _GS_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_gs_tls_x86_64"
+_GS_INDEXED_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_gs_tlsidxnb_x86_64"
 _SYSCALL_FIXTURE = Path(__file__).resolve().parents[1].parent / "fixtures" / "dataset" / "elf_vm_syscall_x86_64"
 _EXPECTED_EXIT_CODE = 45
 _EXPECTED_GS_EXIT_CODE = 46
@@ -53,6 +54,20 @@ def test_elf_emulator_preserves_gs_after_virtualization(tmp_path: Path) -> None:
         binary.save()
     finally:
         binary.close()
+    expect(emulate_exit_code(mutated) == _EXPECTED_GS_EXIT_CODE)
+
+
+def test_elf_emulator_preserves_gs_no_base_indexed_access_after_virtualization(tmp_path: Path) -> None:
+    mutated = tmp_path / "mutated-gs-indexed"
+    shutil.copyfile(_GS_INDEXED_FIXTURE, mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260827}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+    expect(stats["functions_virtualized"] >= 1)
     expect(emulate_exit_code(mutated) == _EXPECTED_GS_EXIT_CODE)
 
 
