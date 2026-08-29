@@ -429,18 +429,39 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
 
 
 def _has_static_internal_indirect_call(build: _RegionBuild) -> bool:
-    """Recognize an indirect call whose target is proven by its adjacent producer."""
+    """Recognize an indirect call whose target is proven by local dataflow."""
+    boundary_kinds = frozenset(
+        {
+            "call",
+            "icall",
+            "callmem",
+            "callmemrip",
+            "callmemidx",
+            "callmemidxnb",
+            "jmp",
+            "jcc",
+            "exit",
+            "vret",
+            "syscall",
+        }
+    )
+
     for index, item in enumerate(build.items):
         if item[0] != "icall" or index == 0:
             continue
-        producer = build.items[index - 1]
         target: int | None = None
-        if producer[0] == "learip" and producer[1] == item[1]:
-            target = producer[2]
-        elif producer[0] == "op":
-            operation: VirtualizedOp = producer[1]
-            if operation.mnemonic == "mov" and operation.is_immediate and operation.dst_index == item[1]:
-                target = operation.value
+        for producer in reversed(build.items[:index]):
+            if producer[0] in boundary_kinds:
+                break
+            if item[1] not in _writes_register(tuple(producer)):
+                continue
+            if producer[0] == "learip" and producer[1] == item[1]:
+                target = producer[2]
+            elif producer[0] == "op":
+                operation: VirtualizedOp = producer[1]
+                if operation.mnemonic == "mov" and operation.is_immediate and operation.dst_index == item[1]:
+                    target = operation.value
+            break
         if target is not None and target in build.item_index_of:
             return True
     return False

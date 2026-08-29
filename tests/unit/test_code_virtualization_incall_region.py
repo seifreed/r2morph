@@ -54,6 +54,31 @@ def _in_function_indirect_call_instructions() -> list[dict[str, object]]:
     ]
 
 
+def _in_function_indirect_call_with_preserving_instruction() -> list[dict[str, object]]:
+    """A target register survives an unrelated instruction before the call."""
+    return [
+        _insn(0x1000, 7, "lea", "lea rax, [rip + 0x7]"),
+        _insn(0x1007, 2, "add", "add ecx, edx"),
+        _insn(0x1009, 2, "rcall", "call rax"),
+        _insn(0x100B, 2, "add", "add eax, ebx"),
+        _insn(0x100D, 1, "ret", "ret"),
+        _insn(0x100E, 2, "add", "add eax, ebx"),
+        _insn(0x1010, 1, "ret", "ret"),
+    ]
+
+
+def _in_function_indirect_call_with_clobbered_target() -> list[dict[str, object]]:
+    """A later write to the target register prevents a local-call proof."""
+    return [
+        _insn(0x1000, 7, "lea", "lea rax, [rip + 0x6]"),
+        _insn(0x1007, 3, "mov", "mov rax, rbx"),
+        _insn(0x100A, 2, "rcall", "call rax"),
+        _insn(0x100C, 1, "ret", "ret"),
+        _insn(0x100D, 2, "add", "add eax, ebx"),
+        _insn(0x100F, 1, "ret", "ret"),
+    ]
+
+
 def test_extract_region_lowers_in_function_call_to_vcall() -> None:
     """A direct call whose target is inside the function becomes a vcall item."""
     region = extract_region(_in_function_call_instructions(), randomness.Random(1))
@@ -121,6 +146,20 @@ def test_extract_region_keeps_unproven_indirect_call_native() -> None:
     expect(not region.has_internal_indirect_call)
     expect(region.target_map == {})
     expect(not (any(item[0] == "vret" for item in region.instructions)))
+
+
+def test_extract_region_proves_local_indirect_call_through_preserving_instruction() -> None:
+    """Unrelated instructions do not hide a still-live local call target."""
+    region = extract_region(_in_function_indirect_call_with_preserving_instruction(), randomness.Random(1))
+    expect(region is not None)
+    expect(region.has_internal_indirect_call)
+
+
+def test_extract_region_rejects_local_indirect_call_after_target_clobber() -> None:
+    """A target register write keeps an indirect call on the native ABI path."""
+    region = extract_region(_in_function_indirect_call_with_clobbered_target(), randomness.Random(1))
+    expect(region is not None)
+    expect(not region.has_internal_indirect_call)
 
 
 def test_extract_region_static_local_indirect_call_assembles() -> None:
