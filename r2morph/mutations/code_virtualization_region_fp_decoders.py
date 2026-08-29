@@ -659,11 +659,14 @@ def _decode_fp_packed_arith_riprel(text: str, insn_addr: int, insn_size: int) ->
     return ("fppackedmemrip", mnemonic, xmm_index, target)
 
 
-def _decode_fp_packed_indexed(text: str) -> tuple[str, int, int, int, int, int] | None:
+def _decode_fp_packed_indexed(
+    text: str,
+) -> tuple[str, int, int, int, int, int] | tuple[str, int, int, int, int] | None:
     """Decode a scaled-index packed 128-bit move (``movaps``/``movups`` etc.
     xmm <-> [base+index*scale+disp]) into ``("fpploadidx"|"fppstoreidx",
     xmm_index, base_slot, index_slot, shift, disp)`` - access into an array of
-    vectors. Returns ``None`` for a register, base+disp or rip-relative operand.
+    vectors. The no-base form uses an ``nb`` suffix and omits ``base_slot``.
+    Returns ``None`` for a register, base+disp or rip-relative operand.
     """
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
@@ -679,18 +682,23 @@ def _decode_fp_packed_indexed(text: str) -> tuple[str, int, int, int, int, int] 
     else:
         kind, mem_text, xmm_text = "fpploadidx", right, left
     xmm_index = _parse_xmm_operand(xmm_text)
-    indexed = _parse_indexed_operand(mem_text.lower().replace("xmmword", ""))
+    indexed = _parse_indexed_operand(mem_text.lower().replace("xmmword", ""), base_optional=True)
     if xmm_index is None or indexed is None:
         return None
     base_slot, index_slot, shift, disp = indexed
+    if base_slot < 0:
+        return (kind + "nb", xmm_index, index_slot, shift, disp)
     return (kind, xmm_index, base_slot, index_slot, shift, disp)
 
 
-def _decode_fp_packed_arith_idx(text: str) -> tuple[str, str, int, int, int, int, int] | None:
+def _decode_fp_packed_arith_idx(
+    text: str,
+) -> tuple[str, str, int, int, int, int, int] | tuple[str, str, int, int, int, int] | None:
     """Decode packed-FP arithmetic with a scaled-index source
     (``addpd xmm, [base+index*scale+disp]`` etc.) into
     ``("fppackedmemidx", mnemonic, xmm_index, base_slot, index_slot, shift, disp)``
-    - vectorized accumulation over an array of vectors. Returns ``None`` otherwise.
+    - vectorized accumulation over an array of vectors. The no-base form uses an
+    ``nb`` suffix and omits ``base_slot``. Returns ``None`` otherwise.
     """
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
@@ -702,10 +710,12 @@ def _decode_fp_packed_arith_idx(text: str) -> tuple[str, str, int, int, int, int
     xmm_index = _parse_xmm_operand(left)
     if xmm_index is None:
         return None
-    indexed = _parse_indexed_operand(right.lower().replace("xmmword", ""))
+    indexed = _parse_indexed_operand(right.lower().replace("xmmword", ""), base_optional=True)
     if indexed is None:
         return None
     base_slot, index_slot, shift, disp = indexed
+    if base_slot < 0:
+        return ("fppackedmemidxnb", mnemonic, xmm_index, index_slot, shift, disp)
     return ("fppackedmemidx", mnemonic, xmm_index, base_slot, index_slot, shift, disp)
 
 

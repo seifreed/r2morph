@@ -119,6 +119,7 @@ _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_73 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_74 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_75 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_76 = 42
+_EXPECTED_EMULATE_EXIT_CODE_FPPACKED_INDEXED_NO_BASE = 6
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_8 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_9 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45 = 45
@@ -1254,6 +1255,30 @@ def test_engine_fp_packed_simd_fallback_preserves_exit_code(tmp_path: Path) -> N
     expect(not (stats["functions_virtualized"] < 1))
     expect(_has_engine_frame_signature(mutated.read_bytes()))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_69_6)
+
+
+def test_region_fp_packed_no_base_indexed_memory_preserves_exit_code(tmp_path: Path) -> None:
+    """Packed vector loads, arithmetic, and stores preserve a no-base address."""
+    fixture = _DATASET / "elf_vm_fppackedidxnb_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fppackedidxnb"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(
+        _emulate_exit_code(fixture)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FPPACKED_INDEXED_NO_BASE
+    )
 
 
 def test_straight_line_lea_run_fallback_preserves_exit_code(tmp_path: Path) -> None:

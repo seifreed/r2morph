@@ -221,7 +221,9 @@ def _fp_packed_arith_mem_handler_asm(
     written back. No flags.
     """
     kind, instr = handler_key.split("_", 1)
-    if kind.endswith("idx"):
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind.endswith("idx"):
         body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
         body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
@@ -246,7 +248,9 @@ def _fp_packed_mem_handler_asm(
     move (movups) is used throughout: it is correct for aligned data too, and avoids
     any alignment fault from the relocated frame. No flags.
     """
-    if handler_key.endswith("idx"):
+    if handler_key.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif handler_key.endswith("idx"):
         body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
         body, advance = _mem_address_asm(handler_key.endswith("rip"), key, key_dword, field_perm, addr_variant)

@@ -527,7 +527,7 @@ class HandlerBodyRouter:
                 )
             else:
                 body = _fp_compare_handler_asm(key, self.context.key, self.context.field_perm)
-        elif key.startswith(("fppackedmem_", "fppackedmemrip_", "fppackedmemidx_")):
+        elif key.startswith(("fppackedmem_", "fppackedmemrip_", "fppackedmemidx_", "fppackedmemidxnb_")):
             body = _fp_packed_arith_mem_handler_asm(
                 key,
                 self.context.key,
@@ -537,7 +537,16 @@ class HandlerBodyRouter:
             )
         elif key.startswith("fppacked_"):
             body = _fp_packed_arith_handler_asm(key, self.context.key, self.context.field_perm)
-        elif key in ("fppload", "fppstore", "fpploadrip", "fppstorerip", "fpploadidx", "fppstoreidx"):
+        elif key in (
+            "fppload",
+            "fppstore",
+            "fpploadrip",
+            "fppstorerip",
+            "fpploadidx",
+            "fppstoreidx",
+            "fpploadidxnb",
+            "fppstoreidxnb",
+        ):
             body = _fp_packed_mem_handler_asm(
                 key,
                 self.context.key,
