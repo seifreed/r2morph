@@ -112,13 +112,14 @@ class BinaryReader:
         if self._r2 is None:
             raise RuntimeError("Binary not opened. Call open() first.")
 
-        # Use cached functions if available
         if cached is not None:
             logger.debug(f"Using cached {len(cached)} functions")
-            return cached
-
-        # Fallback to querying r2
-        functions = self._r2.cmdj("aflj") or []
+            functions = cached
+        else:
+            functions = self._r2.cmdj("aflj") or []
+        for function in functions:
+            if "addr" not in function and isinstance(function.get("offset"), int):
+                function["addr"] = function["offset"]
         logger.debug(f"Found {len(functions)} functions (uncached)")
         return functions
 

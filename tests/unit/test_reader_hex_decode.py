@@ -4,6 +4,15 @@ from r2morph.core.reader import BinaryReader, _decode_hex_bytes
 from tests._doubles.scripted_r2_binary import ScriptedR2Binary
 from tests.utils.assertions import expect
 
+_EXPECTED_FUNCTION_ADDRESS = 0x401000
+
+
+class _FunctionListDisassembler:
+    def cmdj(self, command: str) -> list[dict[str, int]]:
+        if command == "aflj":
+            return [{"offset": 0x401000}]
+        return []
+
 
 @pytest.mark.parametrize(
     ("hex_data", "expected_size", "expected"),
@@ -35,3 +44,19 @@ def test_resolve_symbolic_vars_base_pointer_variable_uses_fallback_location() ->
     reader = BinaryReader(disassembler)
 
     expect(reader.resolve_symbolic_vars("mov eax, [var_bp_20h]") == "mov eax, [rbp - 0x20]")
+
+
+def test_get_functions_normalizes_offset_to_canonical_address() -> None:
+    reader = BinaryReader(_FunctionListDisassembler())
+
+    functions = reader.get_functions()
+
+    expect(functions[0]["addr"] == _EXPECTED_FUNCTION_ADDRESS)
+
+
+def test_get_functions_normalizes_cached_offset_to_canonical_address() -> None:
+    reader = BinaryReader(_FunctionListDisassembler())
+
+    functions = reader.get_functions(cached=[{"offset": _EXPECTED_FUNCTION_ADDRESS}])
+
+    expect(functions[0]["addr"] == _EXPECTED_FUNCTION_ADDRESS)

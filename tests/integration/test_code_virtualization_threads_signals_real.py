@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 
 import pytest
@@ -10,6 +9,7 @@ import pytest
 from r2morph.core.binary import Binary
 from r2morph.mutations.code_virtualization import CodeVirtualizationPass
 from tests.utils.assertions import expect
+from tests.utils.platform_binaries import supports_native_elf_x86_64
 from tests.utils.process import run_command
 
 pytestmark = pytest.mark.integration
@@ -52,8 +52,8 @@ int main(void) {
 
 
 def test_virtualized_threads_tls_and_signal_preserve_exit_code(tmp_path: Path) -> None:
-    if sys.platform != "linux":
-        pytest.skip("the regression requires the official Linux ELF target")
+    if not supports_native_elf_x86_64():
+        pytest.skip("the regression requires Linux amd64 ELF execution")
 
     source = tmp_path / "threads_signals.c"
     original = tmp_path / "original"
@@ -81,7 +81,9 @@ def test_virtualized_threads_tls_and_signal_preserve_exit_code(tmp_path: Path) -
     binary = Binary(original, writable=True)
     binary.open()
     try:
-        stats = CodeVirtualizationPass(config={"probability": 1.0, "seed": 20260829}).apply(binary)
+        stats = CodeVirtualizationPass(
+            config={"probability": 1.0, "seed": 20260829, "virtualize_dispatch": True}
+        ).apply(binary)
         binary.save()
     finally:
         binary.close()

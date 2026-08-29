@@ -55,8 +55,8 @@ def test_empty_eh_frame_is_not_unwind_metadata() -> None:
     expect(_unwind_metadata_name(_SectionsBinary([".eh_frame"], size=0)) is None)
 
 
-def test_populated_eh_frame_is_rejected_as_unwind_metadata() -> None:
-    expect(_unwind_metadata_name(_SectionsBinary([".eh_frame"], size=16)) == ".eh_frame")
+def test_populated_eh_frame_alone_is_not_exception_metadata() -> None:
+    expect(_unwind_metadata_name(_SectionsBinary([".eh_frame"], size=16)) is None)
 
 
 def test_exception_table_is_rejected_before_virtualization() -> None:

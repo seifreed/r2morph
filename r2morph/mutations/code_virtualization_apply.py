@@ -15,8 +15,6 @@ _UNWIND_SECTION_NAMES = frozenset(
         ".ARM.exidx",
         ".ARM.extab",
         ".gcc_except_table",
-        ".eh_frame",
-        ".eh_frame_hdr",
         ".pdata",
         ".xdata",
         "__unwind_info",
@@ -25,7 +23,13 @@ _UNWIND_SECTION_NAMES = frozenset(
 
 
 def _unwind_metadata_name(binary: Any) -> str | None:
-    """Return the first exception/unwinding section, failing closed on read errors."""
+    """Return explicit exception-table metadata, failing closed on read errors.
+
+    ELF ``.eh_frame`` and ``.eh_frame_hdr`` are also emitted for ordinary C
+    functions and startup code, so their presence alone does not prove a
+    language-level exception path. The explicit landing-pad tables remain a
+    conservative gate until their relocation-aware preservation is implemented.
+    """
     try:
         sections = binary.get_sections()
     except (OSError, RuntimeError, TypeError, ValueError):
