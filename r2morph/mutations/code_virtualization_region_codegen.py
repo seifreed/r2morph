@@ -75,6 +75,29 @@ logger = logging.getLogger(__name__)
 
 _XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb", "vcall"})
 
+_YMM_HANDLER_KINDS = frozenset(
+    {
+        "fppackedvex256",
+        "fppackedvex256mem",
+        "fppackedvex256memrip",
+        "fppackedvex256memidx",
+        "fppackedvex256memidxnb",
+        "fpmovvex256",
+        "fploadvex256",
+        "fpstorevex256",
+        "fploadvex256rip",
+        "fpstorevex256rip",
+        "fploadvex256idx",
+        "fpstorevex256idx",
+        "fploadvex256idxnb",
+        "fpstorevex256idxnb",
+    }
+)
+
+
+def _region_has_ymm(region: Region) -> bool:
+    return any(item[0] in _YMM_HANDLER_KINDS for item in region.instructions)
+
 
 def _fp_state_asm(region: Region) -> tuple[str, str]:
     has_fp = any(
@@ -82,26 +105,7 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
     )
     if not has_fp:
         return "", ""
-    has_ymm = any(
-        item[0]
-        in (
-            "fppackedvex256",
-            "fppackedvex256mem",
-            "fppackedvex256memrip",
-            "fppackedvex256memidx",
-            "fppackedvex256memidxnb",
-            "fpmovvex256",
-            "fploadvex256",
-            "fpstorevex256",
-            "fploadvex256rip",
-            "fpstorevex256rip",
-            "fploadvex256idx",
-            "fpstorevex256idx",
-            "fploadvex256idxnb",
-            "fpstorevex256idxnb",
-        )
-        for item in region.instructions
-    )
+    has_ymm = _region_has_ymm(region)
     spill = xmm_spill_asm()
     reload = xmm_reload_asm()
     if has_ymm:
@@ -295,6 +299,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     scheme.body_seed,
                     scheme.isa_seed,
                     scheme.flags_offset,
+                    _region_has_ymm(region),
                 ),
                 junk_rng,
                 entry_prefix=state_decode,

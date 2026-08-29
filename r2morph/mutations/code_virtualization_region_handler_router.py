@@ -146,6 +146,7 @@ class HandlerContext:
     body_seed: int = 0
     isa_seed: int = 0
     flags_offset: int = 0x80
+    has_ymm: bool = False
 
 
 class HandlerBodyRouter:
@@ -186,14 +187,24 @@ class HandlerBodyRouter:
                 index,
                 self.context.key_dword,
                 self.context.slot,
-                CallBridgeConfig(self.context.frame_size, self.context.flags_offset, stack_depth),
+                CallBridgeConfig(
+                    self.context.frame_size,
+                    self.context.flags_offset,
+                    stack_depth,
+                    self.context.has_ymm,
+                ),
             )
         elif key.startswith("icall_"):
             body = _icall_handler_asm(
                 index,
                 self.context.key,
                 self.context.slot,
-                CallBridgeConfig(self.context.frame_size, self.context.flags_offset, stack_depth),
+                CallBridgeConfig(
+                    self.context.frame_size,
+                    self.context.flags_offset,
+                    stack_depth,
+                    self.context.has_ymm,
+                ),
             )
         elif key.startswith(("callmem_", "callmemrip_")):
             config = CallMemoryHandlerConfig(
@@ -206,6 +217,7 @@ class HandlerBodyRouter:
                 self.context.frame_size,
                 self.context.flags_offset,
                 stack_depth,
+                self.context.has_ymm,
             )
             body = _call_mem_handler_asm(config, key.startswith("callmemrip_"))
         elif key.startswith(("callmemidx_", "callmemidxnb_")):
@@ -219,6 +231,7 @@ class HandlerBodyRouter:
                 self.context.frame_size,
                 self.context.flags_offset,
                 stack_depth,
+                self.context.has_ymm,
             )
             body = _call_mem_idx_handler_asm(config, key.startswith("callmemidxnb_"))
         elif key == "vcall":

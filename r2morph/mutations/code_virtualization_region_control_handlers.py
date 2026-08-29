@@ -9,6 +9,7 @@ from r2morph.mutations.code_virtualization_engine import (
     GP_REGISTERS,
     RSP_INDEX,
 )
+from r2morph.mutations.code_virtualization_region_fp_handlers import _YMM_UPPER_SAVE_OFFSET
 from r2morph.mutations.code_virtualization_region_handlers import (
     _FLAGS_OFFSET,
     _GUARD,
@@ -176,6 +177,7 @@ class CallBridgeConfig:
     frame_size: int = 0x300
     flags_offset: int = _FLAGS_OFFSET
     stack_depth: int = 0
+    preserve_ymm: bool = False
 
 
 def _call_frame_load_asm(register: str, offset: int) -> str:
@@ -187,10 +189,19 @@ def _call_frame_load_asm(register: str, offset: int) -> str:
     )
 
 
-def _call_frame_spills_asm(slot: tuple[int, ...], flags_offset: int) -> str:
+def _call_frame_spills_asm(slot: tuple[int, ...], flags_offset: int, preserve_ymm: bool) -> str:
     """Capture native call results into the encrypted VM frame after return."""
     xmm_spills = "".join(
         f"  movups xmmword ptr [r12+{_XMM_SAVE_OFFSET + index * 16}], xmm{index}\n" for index in _XMM_REGISTERS
+    )
+    ymm_spills = (
+        "".join(
+            f"  vextractf128 xmm0, ymm{index}, 1\n"
+            f"  movups xmmword ptr [r12+{_YMM_UPPER_SAVE_OFFSET + index * 16}], xmm0\n"
+            for index in _XMM_REGISTERS
+        )
+        if preserve_ymm
+        else ""
     )
     register_spills = "".join(
         f"  xor {name}, qword ptr [r12+{_KEY_QWORD_SLOT}]\n"
@@ -201,6 +212,7 @@ def _call_frame_spills_asm(slot: tuple[int, ...], flags_offset: int) -> str:
     return (
         f"  pushfq\n  pop qword ptr [r12+{flags_offset}]\n"
         + xmm_spills
+        + ymm_spills
         + register_spills
         + f"  mov rsi, qword ptr [r12+{_CALL_VPC_OFFSET}]\n"
         + f"  mov r15, qword ptr [r12+{_CALL_BASE_OFFSET}]\n"
@@ -236,6 +248,14 @@ def _call_bridge_asm(
     xmm_loads = "".join(
         f"  movups xmm{index}, xmmword ptr [rsp+{_XMM_SAVE_OFFSET + index * 16}]\n" for index in _XMM_REGISTERS
     )
+    ymm_loads = (
+        "".join(
+            f"  vinsertf128 ymm{index}, ymm{index}, xmmword ptr [rsp+{_YMM_UPPER_SAVE_OFFSET + index * 16}], 1\n"
+            for index in _XMM_REGISTERS
+        )
+        if bridge.preserve_ymm
+        else ""
+    )
     callee_saved_loads = "".join(
         _call_frame_load_asm(register, slot[GP_REGISTERS.index(register)] * 8)
         for register in _CALL_CALLEE_SAVED_REGISTERS
@@ -249,13 +269,14 @@ def _call_bridge_asm(
         + f"  mov qword ptr [rsp+{_CALL_BASE_OFFSET}], r15\n"
         + loads
         + xmm_loads
+        + ymm_loads
         + callee_saved_loads
         + stack_load
         + "  mov rsp, r11\n"
         + r12_load
         + f"  lea r11, [rip+call_resume_{index}]\n  push r11\n  jmp r10\n"
         + f"call_resume_{index}:\n  lea r12, [rsp+{_GUARD - bridge.frame_size + bridge.stack_depth}]\n"
-        + _call_frame_spills_asm(slot, bridge.flags_offset)
+        + _call_frame_spills_asm(slot, bridge.flags_offset, bridge.preserve_ymm)
         + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
     )
 
@@ -411,6 +432,7 @@ class CallMemoryHandlerConfig:
     frame_size: int = 0x300
     flags_offset: int = _FLAGS_OFFSET
     stack_depth: int = 0
+    preserve_ymm: bool = False
 
 
 def _vret_handler_asm(config: VRetHandlerConfig) -> str:
@@ -452,7 +474,7 @@ def _call_mem_handler_asm(config: CallMemoryHandlerConfig, riprel: bool) -> str:
         config.slot,
         target,
         advance,
-        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth),
+        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth, config.preserve_ymm),
     )
 
 
@@ -475,7 +497,7 @@ def _call_mem_idx_handler_asm(config: CallMemoryHandlerConfig, no_base: bool = F
         config.slot,
         target,
         advance,
-        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth),
+        CallBridgeConfig(config.frame_size, config.flags_offset, config.stack_depth, config.preserve_ymm),
     )
 
 
