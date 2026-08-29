@@ -3,7 +3,7 @@
 The public, reproducible corpus is maintained in
 [`seifreed/r2morph-corpus`](https://github.com/seifreed/r2morph-corpus), currently
 pinned to commit
-[`5cef5d1`](https://github.com/seifreed/r2morph-corpus/commit/5cef5d1f3dbcbfde4c17d9c0711e5d94d4b160fb).
+[`078deac`](https://github.com/seifreed/r2morph-corpus/commit/078deac8bd72d37f2309ec61e5f3d84685459af4).
 It contains source programs, the build matrix, SHA-256 manifests, differential
 execution records, and static-recovery benchmark results. The project
 repository does not embed generated binaries.
@@ -34,11 +34,11 @@ release failure for the official Linux ELF x86-64 target.
 The corpus workflow also runs a bounded static-recovery benchmark with
 `radare2` over every passed original/transformed pair and pass, recording
 function, basic-block, edge, instruction, and duration deltas without retaining
-analyzer output. The previous public run
-[`33045740069`](https://github.com/seifreed/r2morph-corpus/actions/runs/33045740069)
-completed the single-pass transformation, differential-execution, static-
-recovery, and malformed-input checks. The current six-pass run is tracked in
-[`33230945688`](https://github.com/seifreed/r2morph-corpus/actions/runs/33230945688).
-IDA Pro, Ghidra, Binary Ninja, angr, and Triton remain explicit omissions until
-public runners are configured. The six generated malformed ELF inputs were
-rejected by the real parser.
+analyzer output. The current six-pass transformation, differential-execution,
+static-recovery, and malformed-input run is tracked in
+[`33259963329`](https://github.com/seifreed/r2morph-corpus/actions/runs/33259963329).
+The corresponding full Ghidra headless run is tracked in
+[`33259983358`](https://github.com/seifreed/r2morph-corpus/actions/runs/33259983358).
+IDA Pro, Binary Ninja, angr, and Triton remain explicit omissions until public
+runners are configured. Final per-pass metrics are published as workflow
+artifacts only after both runs complete.
