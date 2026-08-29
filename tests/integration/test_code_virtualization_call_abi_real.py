@@ -103,3 +103,60 @@ int main(void) {
         (original_result.returncode, mutated_result.returncode) == (42, 42),
         f"original={original_result.returncode}, mutated={mutated_result.returncode}, stats={stats}",
     )
+
+
+def test_virtualized_elf_preserves_integer_varargs_stack_abi(tmp_path: Path) -> None:
+    source = tmp_path / "integer_varargs.c"
+    original = tmp_path / "integer_varargs_original"
+    mutated = tmp_path / "integer_varargs_mutated"
+    source.write_text(r"""
+#include <stdarg.h>
+
+__attribute__((noinline)) static long sum_variadic_long(int count, ...) {
+    va_list arguments;
+    va_start(arguments, count);
+    long total = 0;
+    for (int index = 0; index < count; ++index) {
+        total += va_arg(arguments, long);
+    }
+    va_end(arguments);
+    return total;
+}
+
+int main(void) {
+    return (int)(sum_variadic_long(10, 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L) & 127L);
+}
+""")
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O0",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the integer varargs fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 2, "seed": 20260834}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    mutated_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"integer varargs function was not virtualized: {stats=}")
+    expect(
+        (original_result.returncode, mutated_result.returncode) == (55, 55),
+        f"original={original_result.returncode}, mutated={mutated_result.returncode}, stats={stats}",
+    )
