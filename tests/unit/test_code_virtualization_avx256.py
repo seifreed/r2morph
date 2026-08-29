@@ -69,6 +69,44 @@ def test_vex_256_memory_move_classification_supports_rip_and_indexed_forms() -> 
     )
 
 
+def test_vex_256_memory_arithmetic_classification_supports_base_form() -> None:
+    arithmetic = classification._classify(
+        {"type": "add", "opcode": "vaddps ymm0, ymm1, ymmword ptr [rax + 32]", "addr": 0x1000, "size": 8}
+    )
+
+    expect(arithmetic == ["fppackedvex256mem", "addps", 0, 1, 0, 32])
+
+
+def test_vex_256_memory_arithmetic_classification_supports_rip_form() -> None:
+    arithmetic = classification._classify(
+        {"type": "add", "opcode": "vaddps ymm0, ymm1, ymmword ptr [rip + 16]", "addr": 0x1000, "size": 8}
+    )
+
+    expect(arithmetic == ["fppackedvex256memrip", "addps", 0, 1, 0x1000 + 8 + 16])
+
+
+def test_vex_256_memory_arithmetic_classification_supports_indexed_forms() -> None:
+    indexed = classification._classify(
+        {"type": "add", "opcode": "vaddps ymm2, ymm3, ymmword ptr [rax + rcx*4 + 64]", "addr": 0x1000, "size": 8}
+    )
+    no_base = classification._classify(
+        {"type": "add", "opcode": "vaddps ymm2, ymm3, ymmword ptr [rcx*4 + 64]", "addr": 0x1000, "size": 8}
+    )
+
+    expect(
+        indexed == ["fppackedvex256memidx", "addps", 2, 3, 0, 1, 2, 64]
+        and no_base == ["fppackedvex256memidxnb", "addps", 2, 3, 1, 2, 64]
+    )
+
+
+def test_vex_256_memory_arithmetic_handler_loads_memory_source() -> None:
+    items = [("fppackedvex256mem", "addps", 0, 1, 2, 32), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items if _op_key(item)}, [(0x1000, 8)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(11)))
+
+    expect("vmovups ymm1, [r10]" in assembly and "vaddps ymm0, ymm0, ymm1" in assembly)
+
+
 def test_vex_256_memory_move_handlers_use_ymm_width() -> None:
     items = [
         ("fploadvex256", 0, 1, 0),

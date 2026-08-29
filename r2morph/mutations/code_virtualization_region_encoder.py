@@ -105,6 +105,24 @@ class RegionEncoder:
         for name, _size in idx_permuted_fields(base_slot is None, self.scheme.field_perm):
             self.plain.extend(byte ^ position for byte in fields[name])
 
+    def _mem_with_source(self, position: int, destination: int, source: int, base: int | None, disp: int) -> None:
+        self._mem(position, (self.slot_of[destination], None if base is None else self.slot_of[base], disp))
+        self.plain.append(self.slot_of[source] ^ position)
+
+    def _idx_with_source(self, position: int, operands: tuple[int, int | None, int, int, int], source: int) -> None:
+        destination, base, index, shift, disp = operands
+        self._idx(
+            position,
+            (
+                self.slot_of[destination],
+                None if base is None else self.slot_of[base],
+                self.slot_of[index],
+                shift,
+                disp,
+            ),
+        )
+        self.plain.append(self.slot_of[source] ^ position)
+
     def _emit_virtual(self, item: RegionItem) -> bool:
         kind = item[0]
         if kind in ("op", "opmba", "opsynth"):
@@ -224,6 +242,8 @@ class RegionEncoder:
 
     def _emit_fp_memory_move(self, item: RegionItem) -> bool:
         kind = item[0]
+        if kind.startswith("fppackedvex256mem"):
+            return self._emit_vex_256_memory_arithmetic(item)
         if kind in ("fppload", "fppstore"):
             _, xmm, base, disp = item
             self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
@@ -252,6 +272,24 @@ class RegionEncoder:
         elif kind in ("fploadvex256idxnb", "fpstorevex256idxnb"):
             _, ymm, index, shift, disp = item
             self._idx(self._opcode(item), (ymm, None, self.slot_of[index], shift, disp))
+        else:
+            return False
+        return True
+
+    def _emit_vex_256_memory_arithmetic(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind == "fppackedvex256mem":
+            _, _operation, destination, source, base, disp = item
+            self._mem_with_source(self._opcode(item), destination, source, base, disp)
+        elif kind == "fppackedvex256memrip":
+            _, _operation, destination, source, target = item
+            self._mem_with_source(self._opcode(item), destination, source, None, target - self.bytecode_base)
+        elif kind == "fppackedvex256memidx":
+            _, _operation, destination, source, base, index, shift, disp = item
+            self._idx_with_source(self._opcode(item), (destination, base, index, shift, disp), source)
+        elif kind == "fppackedvex256memidxnb":
+            _, _operation, destination, source, index, shift, disp = item
+            self._idx_with_source(self._opcode(item), (destination, None, index, shift, disp), source)
         else:
             return False
         return True

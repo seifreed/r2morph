@@ -130,6 +130,25 @@ def _fp_vex_256_memory_handler_asm(
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_256_packed_arith_mem_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Run a VEX.256 packed operation with its third operand in memory."""
+    kind, instruction = handler_key.split("_", 1)
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
+    body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n" "  shl r11, 4\n"
+    body += _load_ymm_from_frame("r11", 0)
+    body += "  vmovups ymm1, [r10]\n"
+    body += f"  v{instruction} ymm0, ymm0, ymm1\n"
+    body += _store_ymm_to_frame("r8")
+    return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
+
+
 def _fp_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

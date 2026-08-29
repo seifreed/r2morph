@@ -306,7 +306,19 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
     )
     if not has_fp:
         return "", ""
-    has_ymm = any(item[0] in ("fppackedvex256", "fpmovvex256") for layer in layers for item in layer.instructions)
+    has_ymm = any(
+        item[0]
+        in (
+            "fppackedvex256",
+            "fppackedvex256mem",
+            "fppackedvex256memrip",
+            "fppackedvex256memidx",
+            "fppackedvex256memidxnb",
+            "fpmovvex256",
+        )
+        for layer in layers
+        for item in layer.instructions
+    )
     vex_destinations = {
         int(item[2])
         for layer in layers

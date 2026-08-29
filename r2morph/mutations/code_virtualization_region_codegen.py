@@ -86,6 +86,10 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
         item[0]
         in (
             "fppackedvex256",
+            "fppackedvex256mem",
+            "fppackedvex256memrip",
+            "fppackedvex256memidx",
+            "fppackedvex256memidxnb",
             "fpmovvex256",
             "fploadvex256",
             "fpstorevex256",

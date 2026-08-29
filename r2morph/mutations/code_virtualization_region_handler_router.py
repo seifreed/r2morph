@@ -40,6 +40,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_vex_arith_handler_asm,
     _fp_vex_256_memory_handler_asm,
     _fp_vex_256_move_handler_asm,
+    _fp_vex_256_packed_arith_mem_handler_asm,
     _fp_vex_move_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
 )
@@ -588,14 +589,23 @@ class HandlerBodyRouter:
         return body
 
     def _fp_vex(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
-        if key.startswith("fppackedvex256_"):
-            return _fp_packed_vex_256_arith_handler_asm(key, self.context.key, self.context.field_perm)
-        if key.startswith("fpmovvex256_"):
-            return _fp_vex_256_move_handler_asm(key, self.context.key, self.context.field_perm)
-        if key.startswith("fparithvex_"):
-            return _fp_vex_scalar_arith_handler_asm(key, self.context.key, self.context.field_perm)
-        if key.startswith("fppackedvex_"):
-            return _fp_packed_vex_arith_handler_asm(key, self.context.key, self.context.field_perm)
-        if key.startswith("fpmovvex_"):
-            return _fp_vex_move_handler_asm(key, self.context.key, self.context.field_perm)
-        return None
+        body = None
+        if key.startswith("fppackedvex256mem"):
+            body = _fp_vex_256_packed_arith_mem_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                self.context.field_perm,
+                _variants[4],
+            )
+        elif key.startswith("fppackedvex256_"):
+            body = _fp_packed_vex_256_arith_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith("fpmovvex256_"):
+            body = _fp_vex_256_move_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith("fparithvex_"):
+            body = _fp_vex_scalar_arith_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith("fppackedvex_"):
+            body = _fp_packed_vex_arith_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith("fpmovvex_"):
+            body = _fp_vex_move_handler_asm(key, self.context.key, self.context.field_perm)
+        return body
