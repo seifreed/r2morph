@@ -50,36 +50,11 @@ def _unwind_metadata_name(binary: Any) -> str | None:
     return None
 
 
-def _unwind_safe_function(binary: Any, function: dict[str, Any]) -> bool:
-    """Allow only call-free functions while unwind metadata is present.
-
-    A VM trampoline has no unwind row for a callee's landing-pad search. A
-    call-free function cannot enter language-level unwinding during its
-    virtualized run, so its non-throwing arithmetic and register work remain
-    safe to transform. Calls stay native until relocation-aware unwind rows
-    are available for injected VM code.
-    """
-    try:
-        disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}")
-    except (OSError, RuntimeError, TypeError, ValueError):
-        return False
-    if not isinstance(disassembly, dict):
-        return False
-    for instruction in disassembly.get("ops", []):
-        if not isinstance(instruction, dict):
-            return False
-        kind = instruction.get("type", "")
-        opcode = str(instruction.get("opcode", "")).lower()
-        if kind in {"call", "rcall", "ucall", "ircall"} or opcode.startswith("call"):
-            return False
-    return True
-
-
 def _transform_unsupported_function(
     pass_instance: Any,
     binary: Any,
     func: dict[str, Any],
-    unsupported_instruction: dict[str, Any],
+    unsupported_instruction: dict[str, Any] | None,
     records: tuple[list[dict[str, Any]], list[dict[str, Any]]],
 ) -> dict[str, int]:
     """Handle a function rejected by the whole-function classifier."""
@@ -110,15 +85,14 @@ def _transform_function(
     pass_instance: Any,
     binary: Any,
     func: dict[str, Any],
-    unsupported: list[dict[str, Any]],
-    partial: list[dict[str, Any]],
+    records: tuple[list[dict[str, Any]], list[dict[str, Any]]],
+    unwind_metadata: bool,
 ) -> dict[str, int]:
     """Transform one function after preflight checks have passed."""
+    unsupported, partial = records
     unsupported_instruction = pass_instance._find_first_unvirtualizable_instruction(binary, func)
-    if unsupported_instruction is not None:
-        return _transform_unsupported_function(
-            pass_instance, binary, func, unsupported_instruction, (unsupported, partial)
-        )
+    if unwind_metadata or unsupported_instruction is not None:
+        return _transform_unsupported_function(pass_instance, binary, func, unsupported_instruction, records)
 
     region_result = pass_instance._virtualize_function(binary, func)
     if region_result is None and pass_instance.virtualize_dispatch:
@@ -173,7 +147,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             break
         if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
             continue
-        if unwind_section is not None and not _unwind_safe_function(binary, func):
+        if unwind_section == "unavailable":
             skipped += 1
             unsupported_total += 1
             pass_instance._record_diagnostic(
@@ -202,7 +176,13 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             skipped += 1
             continue
 
-        outcome = _transform_function(pass_instance, binary, func, unsupported, partial)
+        outcome = _transform_function(
+            pass_instance,
+            binary,
+            func,
+            (unsupported, partial),
+            unwind_metadata=unwind_section is not None,
+        )
         skipped += outcome["skipped"]
         unsupported_total += outcome["unsupported"]
         virtualized += outcome["virtualized"]
