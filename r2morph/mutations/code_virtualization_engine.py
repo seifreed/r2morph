@@ -58,6 +58,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpMemOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
+    VirtualizedFpScalarVexOp,
     VirtualizedMemOp,
     VirtualizedOp,
 )
@@ -82,6 +83,7 @@ def inject_junk_ops(
         | VirtualizedFpArithMemOp
         | VirtualizedFpPackedOp
         | VirtualizedFpPackedMemOp
+        | VirtualizedFpScalarVexOp
     ],
     rng: random.Random,
 ) -> list[
@@ -93,6 +95,7 @@ def inject_junk_ops(
     | VirtualizedFpArithMemOp
     | VirtualizedFpPackedOp
     | VirtualizedFpPackedMemOp
+    | VirtualizedFpScalarVexOp
 ]:
     """Sprinkle identity ``mov reg, reg`` ops through a straight-line run."""
     junk_regs = [index for index in range(len(GP_REGISTERS)) if index != RSP_INDEX]
@@ -105,6 +108,7 @@ def inject_junk_ops(
         | VirtualizedFpArithMemOp
         | VirtualizedFpPackedOp
         | VirtualizedFpPackedMemOp
+        | VirtualizedFpScalarVexOp
     ] = []
     for op in ops:
         while rng.random() < _JUNK_OP_PROBABILITY:
@@ -196,6 +200,7 @@ __all__ = [
     "VirtualizedFpMemOp",
     "VirtualizedFpPackedMemOp",
     "VirtualizedFpPackedOp",
+    "VirtualizedFpScalarVexOp",
     "VirtualizedMemOp",
     "VirtualizedOp",
     "_interpreter_asm",

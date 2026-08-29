@@ -12,6 +12,8 @@ from r2morph.mutations.code_virtualization_engine_common import (
     _FP_PACKED_MEM_KINDS,
     _FP_PACKED_VEX_ARITH_KINDS,
     _FP_PACKED_VEX_OPERATIONS,
+    _FP_SCALAR_VEX_ARITH_KINDS,
+    _FP_SCALAR_VEX_OPERATIONS,
     _MEM_OP_KINDS,
     _MICROOP_BINOP_KINDS,
     _MICROOP_IMM_KINDS,
@@ -328,6 +330,37 @@ class EngineHandlerGenerator:
             + "  jmp vm_dispatch\n"
         )
 
+    def _fp_scalar_vex_arith_handler_body(self, handler_index: int) -> str:
+        off = triple_offsets("dst", "src1", "src2", self.scheme.field_perm)
+        fields = "".join(
+            f"  movzx {register}d, byte ptr [rsi+{off[field]}]\n"
+            f"  xor {register}b, {self.key}\n"
+            f"  xor {register}b, r13b\n"
+            for register, field in (("r8", "dst"), ("r9", "src1"), ("r10", "src2"))
+        )
+        selector = "  movzx ecx, byte ptr [rsi+4]\n" f"  xor cl, {self.key}\n  xor cl, r13b\n" + "".join(
+            f"  cmp ecx, {index}\n  je fparithvex_{handler_index}_{index}\n"
+            for index, _operation in enumerate(_FP_SCALAR_VEX_OPERATIONS)
+        )
+        operation_body = "".join(
+            f"fparithvex_{handler_index}_{index}:\n"
+            f"  {_operation} xmm0, xmm0, xmm1\n"
+            f"  jmp fparithvex_done_{handler_index}\n"
+            for index, _operation in enumerate(_FP_SCALAR_VEX_OPERATIONS)
+        )
+        return (
+            fields
+            + "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
+            + f"  movups xmm0, [rsp + r9 + {self.layout.xmm_offset}]\n"
+            + f"  movups xmm1, [rsp + r10 + {self.layout.xmm_offset}]\n"
+            + selector
+            + operation_body
+            + f"fparithvex_done_{handler_index}:\n"
+            + f"  movups [rsp + r8 + {self.layout.xmm_offset}], xmm0\n"
+            + self._advance(5)
+            + "  jmp vm_dispatch\n"
+        )
+
     def _fp_packed_vex_arith_handler_body(self, handler_index: int) -> str:
         off = triple_offsets("dst", "src1", "src2", self.scheme.field_perm)
         fields = "".join(
@@ -369,7 +402,9 @@ class EngineHandlerGenerator:
 
     def _fp_handler_body(self, mnemonic: str, width: int) -> str | None:
         body = None
-        if mnemonic in _FP_PACKED_VEX_ARITH_KINDS:
+        if mnemonic in _FP_SCALAR_VEX_ARITH_KINDS:
+            body = self._fp_scalar_vex_arith_handler_body(self.handler_index)
+        elif mnemonic in _FP_PACKED_VEX_ARITH_KINDS:
             body = self._fp_packed_vex_arith_handler_body(self.handler_index)
         elif mnemonic in _FP_PACKED_ARITH_KINDS:
             body = self._fp_packed_arith_handler_body(mnemonic)

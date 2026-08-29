@@ -97,6 +97,23 @@ class VirtualizedFpArithOp:
         self.width = width
 
 
+class VirtualizedFpScalarVexOp:
+    """A three-operand VEX.128 scalar FP operation.
+
+    The first source supplies the untouched upper lanes and the second source
+    supplies the computed scalar. The interpreter clears the destination YMM
+    upper half during its VEX epilogue.
+    """
+
+    __slots__ = ("dst_index", "mnemonic", "src1_index", "src2_index")
+
+    def __init__(self, mnemonic: str, dst_index: int, src1_index: int, src2_index: int) -> None:
+        self.mnemonic = mnemonic
+        self.dst_index = dst_index
+        self.src1_index = src1_index
+        self.src2_index = src2_index
+
+
 class VirtualizedFpConvertOp:
     """An int<->float conversion: ``cvtsi2{sd,ss} xmm, r`` or ``cvtt{sd,ss}2si r, xmm``.
 

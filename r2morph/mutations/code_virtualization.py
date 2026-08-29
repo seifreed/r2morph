@@ -36,6 +36,7 @@ from r2morph.mutations.code_virtualization_engine import (
     VirtualizedFpMemOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
+    VirtualizedFpScalarVexOp,
     VirtualizedMemOp,
     VirtualizedOp,
     build_vm_blob,
@@ -64,6 +65,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_mem,
     _decode_fp_riprel,
     _decode_fp_vex_packed_arith,
+    _decode_fp_vex_scalar_arith,
 )
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_lea,
@@ -81,6 +83,7 @@ logger = logging.getLogger(__name__)
 
 _FP_INDEXED_TUPLE_SIZE = 7
 _FP_INDEXED_NO_BASE_TUPLE_SIZE = 6
+_FP_SINGLE_WIDTH_BITS = 32
 _BYTE_WIDTH_BITS = 8
 _MIN_NESTING_DEPTH = 2
 
@@ -102,6 +105,7 @@ VirtualizedRunItem = (
     | VirtualizedMemOp
     | VirtualizedFpMemOp
     | VirtualizedFpArithOp
+    | VirtualizedFpScalarVexOp
     | VirtualizedFpConvertOp
     | VirtualizedFpArithMemOp
     | VirtualizedFpPackedOp
@@ -166,6 +170,15 @@ def _decode_fp_arithmetic_item(text: str, insn_addr: int, insn_size: int) -> Vir
             width,
         )
     return None
+
+
+def _decode_fp_scalar_vex_item(text: str) -> VirtualizedFpScalarVexOp | None:
+    decoded = _decode_fp_vex_scalar_arith(text)
+    if decoded is None:
+        return None
+    _kind, operation, destination, first_source, second_source, width = decoded
+    suffix = "ss" if width == _FP_SINGLE_WIDTH_BITS else "sd"
+    return VirtualizedFpScalarVexOp(f"v{operation}{suffix}", destination, first_source, second_source)
 
 
 def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
@@ -278,6 +291,7 @@ def _decode_run_item(text: str, insn_addr: int = 0, insn_size: int = 0) -> Virtu
     mnemonic = text.split(None, 1)[0].lower() if text.strip() else ""
     decoded_items = (
         _decode_fp_memory_item(text, insn_addr, insn_size),
+        _decode_fp_scalar_vex_item(text),
         _decode_fp_arithmetic_item(text, insn_addr, insn_size),
         _decode_fp_packed_item(text),
         _decode_gp_memory_item(text, insn_addr, insn_size),

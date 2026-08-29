@@ -11,6 +11,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpMemOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
+    VirtualizedFpScalarVexOp,
     VirtualizedMemOp,
     VirtualizedOp,
 )
@@ -25,6 +26,7 @@ _VIRTUALIZED_ITEM_TYPES = (
     VirtualizedFpArithMemOp,
     VirtualizedFpPackedOp,
     VirtualizedFpPackedMemOp,
+    VirtualizedFpScalarVexOp,
 )
 
 

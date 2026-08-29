@@ -28,6 +28,7 @@ from r2morph.mutations.code_virtualization_engine_models import (
     VirtualizedFpMemOp,
     VirtualizedFpPackedMemOp,
     VirtualizedFpPackedOp,
+    VirtualizedFpScalarVexOp,
     VirtualizedMemOp,
     VirtualizedOp,
 )
@@ -46,6 +47,7 @@ def build_vm_blob(
         | VirtualizedFpArithMemOp
         | VirtualizedFpPackedOp
         | VirtualizedFpPackedMemOp
+        | VirtualizedFpScalarVexOp
     ],
     cave_vaddr: int,
     continuation_vaddr: int,
@@ -68,11 +70,16 @@ def build_vm_blob(
                 VirtualizedFpArithMemOp,
                 VirtualizedFpPackedOp,
                 VirtualizedFpPackedMemOp,
+                VirtualizedFpScalarVexOp,
             ),
         )
         for op in ops
     )
-    vex_destinations = frozenset(op.dst_index for op in ops if isinstance(op, VirtualizedFpPackedOp) and op.vex)
+    vex_destinations = frozenset(
+        op.dst_index
+        for op in ops
+        if (isinstance(op, VirtualizedFpPackedOp) and op.vex) or isinstance(op, VirtualizedFpScalarVexOp)
+    )
     asm = _interpreter_asm(continuation_vaddr, scheme, has_fp, vex_destinations)
     try:
         engine = keystone.Ks(keystone.KS_ARCH_X86, keystone.KS_MODE_64)
