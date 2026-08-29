@@ -107,6 +107,7 @@ _FIXED_SIZE_GROUPS = {
         "fpploadidxnb",
         "fppstoreidxnb",
         "fppackedmemidxnb",
+        "fparithmemidxnb",
         "vloadidxnb",
         "vstoreidxnb",
         "leaidxnb",

@@ -100,6 +100,7 @@ _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {
     "fparithmem": (1, 5),
     "fparithmemrip": (1, 4),
     "fparithmemidx": (1, 7),
+    "fparithmemidxnb": (1, 7),
     "cvti2f": (1, 2),
     "cvtf2i": (1, 2),
     "fpcmp": (1,),

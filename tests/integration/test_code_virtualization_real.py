@@ -120,6 +120,7 @@ _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_74 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_75 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_76 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FPPACKED_INDEXED_NO_BASE = 6
+_EXPECTED_EMULATE_EXIT_CODE_FPARITH_INDEXED_NO_BASE = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_8 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_9 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45 = 45
@@ -1278,6 +1279,30 @@ def test_region_fp_packed_no_base_indexed_memory_preserves_exit_code(tmp_path: P
         _emulate_exit_code(fixture)
         == _emulate_exit_code(mutated)
         == _EXPECTED_EMULATE_EXIT_CODE_FPPACKED_INDEXED_NO_BASE
+    )
+
+
+def test_region_fp_scalar_no_base_indexed_memory_preserves_exit_code(tmp_path: Path) -> None:
+    """Scalar FP arithmetic preserves an absolute no-base indexed address."""
+    fixture = _DATASET / "elf_vm_fparithidxnb_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_fparithidxnb"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(
+        _emulate_exit_code(fixture)
+        == _emulate_exit_code(mutated)
+        == _EXPECTED_EMULATE_EXIT_CODE_FPARITH_INDEXED_NO_BASE
     )
 
 

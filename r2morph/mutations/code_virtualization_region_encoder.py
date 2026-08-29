@@ -231,12 +231,8 @@ class RegionEncoder:
         elif kind == "fppackedmemrip":
             _, _mnemonic, xmm, target = item
             self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
-        elif kind in ("fpploadidx", "fppstoreidx"):
-            _, xmm, base, index, shift, disp = item
-            self._idx(self._opcode(item), (xmm, self.slot_of[base], self.slot_of[index], shift, disp))
-        elif kind in ("fpploadidxnb", "fppstoreidxnb"):
-            _, xmm, index, shift, disp = item
-            self._idx(self._opcode(item), (xmm, None, self.slot_of[index], shift, disp))
+        elif kind in ("fpploadidx", "fppstoreidx", "fpploadidxnb", "fppstoreidxnb"):
+            self._emit_fp_indexed(item)
         elif kind in ("fppackedmemidx", "fppackedmemidxnb"):
             self._emit_fp_packed_indexed(item)
         elif kind == "fparithmem":
@@ -245,9 +241,8 @@ class RegionEncoder:
         elif kind == "fparithmemrip":
             _, _op, xmm, target, _width = item
             self._mem(self._opcode(item), (xmm, None, target - self.bytecode_base))
-        elif kind == "fparithmemidx":
-            _, _op, xmm, base, index, shift, disp, _width = item
-            self._idx(self._opcode(item), (xmm, self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind in ("fparithmemidx", "fparithmemidxnb"):
+            self._emit_fp_arith_indexed(item)
         elif kind == "fpcmpmem":
             _, _mnemonic, xmm, base, disp, _width = item
             self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
@@ -263,6 +258,28 @@ class RegionEncoder:
             operands = (xmm, None, self.slot_of[index], shift, disp)
         else:
             _, _mnemonic, xmm, base, index, shift, disp = item
+            operands = (xmm, self.slot_of[base], self.slot_of[index], shift, disp)
+        self._idx(self._opcode(item), operands)
+
+    def _emit_fp_indexed(self, item: RegionItem) -> None:
+        kind = item[0]
+        operands: tuple[int, int | None, int, int, int]
+        if kind.endswith("nb"):
+            _, xmm, index, shift, disp = item
+            operands = (xmm, None, self.slot_of[index], shift, disp)
+        else:
+            _, xmm, base, index, shift, disp = item
+            operands = (xmm, self.slot_of[base], self.slot_of[index], shift, disp)
+        self._idx(self._opcode(item), operands)
+
+    def _emit_fp_arith_indexed(self, item: RegionItem) -> None:
+        kind = item[0]
+        operands: tuple[int, int | None, int, int, int]
+        if kind.endswith("nb"):
+            _, _op, xmm, _base, index, shift, disp, _width = item
+            operands = (xmm, None, self.slot_of[index], shift, disp)
+        else:
+            _, _op, xmm, base, index, shift, disp, _width = item
             operands = (xmm, self.slot_of[base], self.slot_of[index], shift, disp)
         self._idx(self._opcode(item), operands)
 

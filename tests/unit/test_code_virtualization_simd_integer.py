@@ -4,6 +4,7 @@ from r2morph.mutations.code_virtualization import _decode_run_item
 from r2morph.mutations.code_virtualization_engine_models import VirtualizedFpPackedOp
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
 from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    _decode_fp_arith_idx,
     _decode_fp_compare,
     _decode_fp_packed_arith,
     _decode_fp_packed_arith_idx,
@@ -85,14 +86,22 @@ def test_decode_packed_vector_no_base_indexed_arithmetic_returns_item() -> None:
     )
 
 
+def test_decode_scalar_fp_no_base_indexed_arithmetic_returns_item() -> None:
+    expect(
+        _decode_fp_arith_idx("addsd xmm0, qword ptr [rcx*8+0x402000]")
+        == ("fparithmemidxnb", "add", 0, -1, 1, 3, 0x402000, 64)
+    )
+
+
 def test_packed_no_base_indexed_items_use_eight_byte_encoding() -> None:
     expect(
         (
             _item_size(("fpploadidxnb", 0, 1, 3, 0x402000)),
             _item_size(("fppstoreidxnb", 0, 1, 3, 0x402000)),
             _item_size(("fppackedmemidxnb", "paddd", 0, 1, 3, 0x402000)),
+            _item_size(("fparithmemidxnb", "add", 0, -1, 1, 3, 0x402000, 64)),
         )
-        == (8, 8, 8)
+        == (8, 8, 8, 8)
     )
 
 

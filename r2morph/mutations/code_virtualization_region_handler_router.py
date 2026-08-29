@@ -502,7 +502,7 @@ class HandlerBodyRouter:
                 self.context.field_perm,
                 address,
             )
-        elif key.startswith(("fparithmem_", "fparithmemrip_", "fparithmemidx_")):
+        elif key.startswith(("fparithmem_", "fparithmemrip_", "fparithmemidx_", "fparithmemidxnb_")):
             body = _fp_arith_mem_handler_asm(
                 key,
                 self.context.key,

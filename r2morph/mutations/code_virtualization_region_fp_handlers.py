@@ -280,7 +280,9 @@ def _fp_arith_mem_handler_asm(
     width = int(width_text)
     instr = mnemonic + ("sd" if width == _QWORD_WIDTH_BITS else "ss")
     mem = "qword" if width == _QWORD_WIDTH_BITS else "dword"
-    if kind.endswith("idx"):
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind.endswith("idx"):
         body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
     else:
         body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, field_perm, addr_variant)
