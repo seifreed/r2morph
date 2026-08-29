@@ -112,6 +112,24 @@ def _fp_vex_256_move_handler_asm(handler_key: str, key: str, field_perm: int = 0
     return body + "  add rsi, 3\n  jmp vm_dispatch\n"
 
 
+def _fp_vex_256_memory_handler_asm(
+    handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
+) -> str:
+    """Move a complete VEX.256 value between memory and a YMM frame slot."""
+    if handler_key.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif handler_key.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(handler_key.endswith("rip"), key, key_dword, field_perm, addr_variant)
+    body += "  shl r8, 4\n"
+    if handler_key.startswith("fpload"):
+        body += "  vmovups ymm0, [r10]\n" + _store_ymm_to_frame("r8")
+    else:
+        body += _load_ymm_from_frame("r8", 0) + "  vmovups [r10], ymm0\n"
+    return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
+
+
 def _fp_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

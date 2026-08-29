@@ -218,6 +218,11 @@ class RegionEncoder:
         return True
 
     def _emit_fp_memory(self, item: RegionItem) -> bool:
+        if self._emit_fp_memory_move(item):
+            return True
+        return self._emit_fp_memory_arithmetic(item)
+
+    def _emit_fp_memory_move(self, item: RegionItem) -> bool:
         kind = item[0]
         if kind in ("fppload", "fppstore"):
             _, xmm, base, disp = item
@@ -235,7 +240,25 @@ class RegionEncoder:
             self._emit_fp_indexed(item)
         elif kind in ("fppackedmemidx", "fppackedmemidxnb"):
             self._emit_fp_packed_indexed(item)
-        elif kind == "fparithmem":
+        elif kind in ("fploadvex256", "fpstorevex256"):
+            _, ymm, base, disp = item
+            self._mem(self._opcode(item), (ymm, self.slot_of[base], disp))
+        elif kind in ("fploadvex256rip", "fpstorevex256rip"):
+            _, ymm, target = item
+            self._mem(self._opcode(item), (ymm, None, target - self.bytecode_base))
+        elif kind in ("fploadvex256idx", "fpstorevex256idx"):
+            _, ymm, base, index, shift, disp = item
+            self._idx(self._opcode(item), (ymm, self.slot_of[base], self.slot_of[index], shift, disp))
+        elif kind in ("fploadvex256idxnb", "fpstorevex256idxnb"):
+            _, ymm, index, shift, disp = item
+            self._idx(self._opcode(item), (ymm, None, self.slot_of[index], shift, disp))
+        else:
+            return False
+        return True
+
+    def _emit_fp_memory_arithmetic(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind == "fparithmem":
             _, _op, xmm, base, disp, _width = item
             self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
         elif kind == "fparithmemrip":

@@ -38,6 +38,7 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_mem_handler_asm,
     _fp_packed_vex_256_arith_handler_asm,
     _fp_packed_vex_arith_handler_asm,
+    _fp_vex_256_memory_handler_asm,
     _fp_vex_256_move_handler_asm,
     _fp_vex_move_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
@@ -113,6 +114,19 @@ _FP_MOVE_HANDLERS = {
     "fpmovd": _fp_movd_handler_asm,
     "fpmov": _fp_move_handler_asm,
 }
+
+_FP_VEX_256_MEMORY_KEYS = frozenset(
+    {
+        "fploadvex256",
+        "fpstorevex256",
+        "fploadvex256rip",
+        "fpstorevex256rip",
+        "fploadvex256idx",
+        "fpstorevex256idx",
+        "fploadvex256idxnb",
+        "fpstorevex256idxnb",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -491,6 +505,17 @@ class HandlerBodyRouter:
 
     def _fp(self, key: str, _index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]
+        if key in _FP_VEX_256_MEMORY_KEYS:
+            return _fp_vex_256_memory_handler_asm(
+                key,
+                self.context.key,
+                self.context.key_dword,
+                self.context.field_perm,
+                address,
+            )
+        return self._fp_standard(key, address)
+
+    def _fp_standard(self, key: str, address: int) -> str | None:
         body = None
         if key.startswith(("fpload_", "fpstore_", "fploadrip_", "fpstorerip_")):
             body = _fp_memory_handler_asm(

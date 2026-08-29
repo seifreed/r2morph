@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from r2morph.core import randomness
+from r2morph.mutations import code_virtualization_region_classification as classification
 from r2morph.mutations.code_virtualization_region import build_region_scheme
 from r2morph.mutations.code_virtualization_region_codegen import _interpreter_asm, build_region_blob
 from r2morph.mutations.code_virtualization_region_models import Region, _op_key
@@ -40,3 +41,41 @@ def test_nested_vex_256_state_preserves_upper_halves() -> None:
     spill, reload = _nested_xmm_state_asm(region, [region])
 
     expect("vextractf128 xmm0, ymm0, 1" in spill and "vinsertf128 ymm0, ymm0, xmm0, 1" in reload)
+
+
+def test_vex_256_memory_move_classification_preserves_address_shape() -> None:
+    load = classification._classify(
+        {"type": "mov", "opcode": "vmovups ymm0, ymmword ptr [rax + 32]", "addr": 0x1000, "size": 7}
+    )
+
+    expect(load == ["fploadvex256", 0, 0, 32])
+
+
+def test_vex_256_memory_move_classification_supports_rip_and_indexed_forms() -> None:
+    rip = classification._classify(
+        {"type": "mov", "opcode": "vmovups ymmword ptr [rip + 16], ymm1", "addr": 0x1000, "size": 7}
+    )
+    indexed = classification._classify(
+        {"type": "mov", "opcode": "vmovups ymm2, ymmword ptr [rax + rcx*4 + 64]", "addr": 0x1000, "size": 7}
+    )
+    no_base = classification._classify(
+        {"type": "mov", "opcode": "vmovups ymmword ptr [rcx*4 + 64], ymm2", "addr": 0x1000, "size": 7}
+    )
+
+    expect(
+        rip == ["fpstorevex256rip", 1, 0x1000 + 7 + 16]
+        and indexed == ["fploadvex256idx", 2, 0, 1, 2, 64]
+        and no_base == ["fpstorevex256idxnb", 2, 1, 2, 64]
+    )
+
+
+def test_vex_256_memory_move_handlers_use_ymm_width() -> None:
+    items = [
+        ("fploadvex256", 0, 1, 0),
+        ("fpstorevex256", 0, 1, 32),
+        ("exit", _EXIT_VADDR),
+    ]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items if _op_key(item)}, [(0x1000, 10)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(9)))
+
+    expect("vmovups ymm0, [r10]" in assembly and "vmovups [r10], ymm0" in assembly)

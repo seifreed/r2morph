@@ -82,7 +82,22 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
     )
     if not has_fp:
         return "", ""
-    has_ymm = any(item[0] in ("fppackedvex256", "fpmovvex256") for item in region.instructions)
+    has_ymm = any(
+        item[0]
+        in (
+            "fppackedvex256",
+            "fpmovvex256",
+            "fploadvex256",
+            "fpstorevex256",
+            "fploadvex256rip",
+            "fpstorevex256rip",
+            "fploadvex256idx",
+            "fpstorevex256idx",
+            "fploadvex256idxnb",
+            "fpstorevex256idxnb",
+        )
+        for item in region.instructions
+    )
     spill = xmm_spill_asm()
     reload = xmm_reload_asm()
     if has_ymm:

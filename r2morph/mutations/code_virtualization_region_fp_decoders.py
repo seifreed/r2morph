@@ -708,6 +708,57 @@ def _decode_fp_vex_256_packed_move(text: str) -> tuple[str, str, int, int] | Non
     return ("fpmovvex256", "full", destination, source)
 
 
+def _decode_fp_vex_256_packed_mem(
+    text: str, insn_addr: int, insn_size: int
+) -> (
+    tuple[str, int, int, int]
+    | tuple[str, int, int]
+    | tuple[str, int, int, int, int]
+    | tuple[str, int, int, int, int, int]
+    | None
+):
+    """Decode a VEX.256 packed move between a YMM register and memory."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in _FP_VEX_PACKED_MOVE:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    left_mem, right_mem = "[" in left, "[" in right
+    if left_mem == right_mem:
+        return None
+    if left_mem:
+        kind, mem_text, ymm_text = "fpstorevex256", left, right
+    else:
+        kind, mem_text, ymm_text = "fploadvex256", right, left
+    ymm_index = _parse_ymm_operand(ymm_text)
+    if ymm_index is None:
+        return None
+    normalized_mem = mem_text.lower().replace("ymmword", "")
+    result: (
+        tuple[str, int, int, int]
+        | tuple[str, int, int]
+        | tuple[str, int, int, int, int]
+        | tuple[str, int, int, int, int, int]
+        | None
+    ) = None
+    indexed = _parse_indexed_operand(normalized_mem, base_optional=True)
+    if indexed is not None:
+        base_slot, index_slot, shift, displacement = indexed
+        if base_slot < 0:
+            result = (kind + "idxnb", ymm_index, index_slot, shift, displacement)
+        else:
+            result = (kind + "idx", ymm_index, base_slot, index_slot, shift, displacement)
+    else:
+        parsed_rip = _parse_riprel_operand(normalized_mem, insn_addr, insn_size)
+        if parsed_rip is not None:
+            result = (kind + "rip", ymm_index, parsed_rip[0])
+        else:
+            memory = _parse_mem_operand(normalized_mem)
+            if memory is not None:
+                base_slot, displacement, _width = memory
+                result = (kind, ymm_index, base_slot, displacement)
+    return result
+
+
 def _decode_fp_packed_arith(text: str) -> tuple[str, str, int, int] | None:
     """Decode a packed-FP register-register arithmetic op (``addpd``/``addps`` and
     the sub/mul/div forms) into ``("fppacked", mnemonic, dst_index, src_index)``.
