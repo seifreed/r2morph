@@ -381,11 +381,16 @@ def _fp_compare_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> 
 def _fp_compare_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:
-    """Compare an XMM value with a scalar value at ``[base+disp]`` and save flags."""
-    _, _mnemonic, width_text = handler_key.split("_")
+    """Compare an XMM value with a scalar memory value and save flags."""
+    parts = handler_key.split("_")
+    kind, mnemonic, width_text = parts[0], parts[1], parts[-1]
     width = int(width_text)
-    mnemonic = handler_key.split("_")[1]
-    body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
+    if kind.endswith("idxnb"):
+        body, advance = _indexed_address_nobase_asm(key, key_dword, field_perm, addr_variant)
+    elif kind.endswith("idx"):
+        body, advance = _indexed_address_asm(key, key_dword, field_perm, addr_variant)
+    else:
+        body, advance = _mem_address_asm(False, key, key_dword, field_perm, addr_variant)
     memory = "qword" if width == _QWORD_WIDTH_BITS else "dword"
     body += (
         f"  shl r8, 4\n  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n"

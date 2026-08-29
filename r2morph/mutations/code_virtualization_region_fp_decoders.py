@@ -221,6 +221,31 @@ def _decode_fp_compare_mem(text: str) -> tuple[str, str, int, int, int, int] | N
     return ("fpcmpmem", mnemonic, xmm_index, base_slot, displacement, width)
 
 
+def _decode_fp_compare_idx(text: str) -> tuple[str, str, int, int, int, int, int, int] | None:
+    """Decode scalar-FP compare with a scaled-index memory source."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or "," not in parts[1]:
+        return None
+    widths = {
+        "ucomisd": 64,
+        "comisd": 64,
+        "ucomiss": 32,
+        "comiss": 32,
+    }
+    mnemonic = parts[0].lower()
+    width = widths.get(mnemonic)
+    if width is None:
+        return None
+    left, right = (token.strip() for token in parts[1].split(",", 1))
+    xmm_index = _parse_xmm_operand(left)
+    indexed = _parse_indexed_operand(right, base_optional=True)
+    if xmm_index is None or indexed is None:
+        return None
+    base_slot, index_slot, shift, displacement = indexed
+    kind = "fpcmpmemidxnb" if base_slot < 0 else "fpcmpmemidx"
+    return (kind, mnemonic, xmm_index, base_slot, index_slot, shift, displacement, width)
+
+
 # Full 128-bit xmm-xmm copies vs scalar copies that preserve the destination's
 # upper lane(s). (movsd/movss xmm,xmm preserve the high lanes, unlike the memory
 # load forms which zero them - so they get the "sd"/"ss" preserving handler.

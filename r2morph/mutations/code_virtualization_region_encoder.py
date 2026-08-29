@@ -246,6 +246,8 @@ class RegionEncoder:
         elif kind == "fpcmpmem":
             _, _mnemonic, xmm, base, disp, _width = item
             self._mem(self._opcode(item), (xmm, self.slot_of[base], disp))
+        elif kind in ("fpcmpmemidx", "fpcmpmemidxnb"):
+            self._emit_fp_compare_indexed(item)
         else:
             return False
         return True
@@ -280,6 +282,17 @@ class RegionEncoder:
             operands = (xmm, None, self.slot_of[index], shift, disp)
         else:
             _, _op, xmm, base, index, shift, disp, _width = item
+            operands = (xmm, self.slot_of[base], self.slot_of[index], shift, disp)
+        self._idx(self._opcode(item), operands)
+
+    def _emit_fp_compare_indexed(self, item: RegionItem) -> None:
+        kind = item[0]
+        operands: tuple[int, int | None, int, int, int]
+        if kind.endswith("nb"):
+            _, _mnemonic, xmm, _base, index, shift, disp, _width = item
+            operands = (xmm, None, self.slot_of[index], shift, disp)
+        else:
+            _, _mnemonic, xmm, base, index, shift, disp, _width = item
             operands = (xmm, self.slot_of[base], self.slot_of[index], shift, disp)
         self._idx(self._opcode(item), operands)
 
