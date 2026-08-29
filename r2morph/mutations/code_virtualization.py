@@ -594,7 +594,17 @@ class CodeVirtualizationPass(MutationPass):
             ops = binary.r2.cmdj(f"pdj {_MAX_DISPATCH_INSNS} @ {func['addr']}") or []
         except (ValueError, OSError, BrokenPipeError, RuntimeError):
             return None
-        return next((op for op in ops if op.get("type") in _COMPUTED_JUMP_TYPES), None)
+        start = func.get("addr")
+        size = func.get("size")
+        end = start + size if isinstance(start, int) and isinstance(size, int) and size > 0 else None
+        return next(
+            (
+                op
+                for op in ops
+                if op.get("type") in _COMPUTED_JUMP_TYPES and (end is None or start <= op.get("addr", -1) < end)
+            ),
+            None,
+        )
 
     def _find_first_unvirtualizable_instruction(self, binary: Any, func: dict[str, Any]) -> dict[str, Any] | None:
         """Find the first instruction rejected by the whole-function classifier."""

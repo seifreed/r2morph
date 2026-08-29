@@ -50,6 +50,31 @@ def _unwind_metadata_name(binary: Any) -> str | None:
     return None
 
 
+def _unwind_safe_function(binary: Any, function: dict[str, Any]) -> bool:
+    """Allow only call-free functions while unwind metadata is present.
+
+    A VM trampoline has no unwind row for a callee's landing-pad search. A
+    call-free function cannot enter language-level unwinding during its
+    virtualized run, so its non-throwing arithmetic and register work remain
+    safe to transform. Calls stay native until relocation-aware unwind rows
+    are available for injected VM code.
+    """
+    try:
+        disassembly = binary.r2.cmdj(f"pdfj @ {function['addr']}")
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return False
+    if not isinstance(disassembly, dict):
+        return False
+    for instruction in disassembly.get("ops", []):
+        if not isinstance(instruction, dict):
+            return False
+        kind = instruction.get("type", "")
+        opcode = str(instruction.get("opcode", "")).lower()
+        if kind in {"call", "rcall", "ucall", "ircall"} or opcode.startswith("call"):
+            return False
+    return True
+
+
 def _transform_unsupported_function(
     pass_instance: Any,
     binary: Any,
@@ -148,7 +173,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             break
         if func.get("size", 0) < MINIMUM_FUNCTION_SIZE:
             continue
-        if unwind_section is not None:
+        if unwind_section is not None and not _unwind_safe_function(binary, func):
             skipped += 1
             unsupported_total += 1
             pass_instance._record_diagnostic(
