@@ -78,9 +78,10 @@ class VirtualizedFpMemOp:
 
 
 class VirtualizedFpArithOp:
-    """A scalar reg-reg FP arithmetic op: ``{add,sub,mul,div}{sd,ss} xmm, xmm``.
+    """A scalar reg-reg FP arithmetic op: ``{add,sub,mul,div}{sd,ss} xmm, xmm`` or
+    ``sqrt{sd,ss} xmm, xmm``.
 
-    ``op`` is one of add/sub/mul/div; ``dst_index``/``src_index`` are 0-15 xmm
+    ``op`` is one of add/sub/mul/div/sqrt; ``dst_index``/``src_index`` are 0-15 xmm
     register numbers; ``width`` is 64 (sd) or 32 (ss). Both operands and the result
     live in the frame's xmm save area for the run's duration. There is no MBA form
     for FP arithmetic, so the handler issues the real instruction; this is the only

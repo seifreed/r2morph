@@ -143,7 +143,7 @@ _FP_MEM_KINDS: tuple[str, ...] = (
 # is its own kind so the dispatcher selects the handler without inspecting the
 # operands; the item carries two raw xmm indices (dst, src). ``fp{op}`` keys map
 # back to the real add/sub/mul/div instruction in the handler.
-_FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div")
+_FP_ARITH_OPS: tuple[str, ...] = ("add", "sub", "mul", "div", "sqrt")
 _FP_ARITH_KINDS: tuple[str, ...] = tuple(f"fp{op}" for op in _FP_ARITH_OPS)
 # Scalar-FP register-versus-memory compares. The width is part of the handler key
 # so the interpreter emits the exact scalar memory operand size.
@@ -183,6 +183,8 @@ _FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
     "mulps",
     "divpd",
     "divps",
+    "sqrtpd",
+    "sqrtps",
     "minpd",
     "minps",
     "maxpd",

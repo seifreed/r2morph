@@ -136,7 +136,7 @@ def _fp_indexed_handler_asm(
 
 def _fp_packed_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Assembly body for a packed-FP register-register op (``addpd``/``addps`` and
-    the sub/mul/div forms), operating on all lanes of the 128-bit register.
+    the sub/mul/div/sqrt forms), operating on all lanes of the 128-bit register.
 
     Both operand bytes are XMM indices, read at this build's permuted offsets. The
     operands are loaded whole from their save slots into xmm0/xmm1, the packed op
