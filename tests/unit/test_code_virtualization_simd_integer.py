@@ -9,9 +9,11 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_compare_idx,
     _decode_fp_packed_arith,
     _decode_fp_packed_arith_idx,
+    _decode_fp_packed_immediate,
     _decode_fp_packed_indexed,
     _decode_fp_packed_mem,
     _decode_fp_vex_packed_arith,
+    _decode_fp_vex_packed_immediate,
     _decode_fp_vex_packed_move,
     _decode_fp_vex_scalar_arith,
 )
@@ -58,6 +60,10 @@ def test_decode_packed_integer_compare_returns_vector_item() -> None:
 
 def test_decode_packed_integer_shift_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pslld xmm0, xmm1") == ("fppacked", "pslld", 0, 1))
+
+
+def test_decode_packed_integer_immediate_shift_returns_item() -> None:
+    expect(_decode_fp_packed_immediate("pslld xmm2, 5") == ("fppackedimm", "pslld", 2, 5))
 
 
 def test_decode_packed_integer_saturating_add_returns_vector_item() -> None:
@@ -179,6 +185,14 @@ def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:
 
 def test_decode_vex128_variable_shift_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vpslld xmm2, xmm0, xmm1") == ("fppackedvex", "pslld", 2, 0, 1))
+
+
+def test_decode_vex_immediate_shift_selects_128_bit_item() -> None:
+    expect(_decode_fp_vex_packed_immediate("vpsrad xmm2, xmm0, 7") == ("fppackedveximm", "psrad", 2, 0, 7))
+
+
+def test_decode_vex_immediate_shift_selects_256_bit_item() -> None:
+    expect(_decode_fp_vex_packed_immediate("vpsrad ymm2, ymm0, 7") == ("fppackedvex256imm", "psrad", 2, 0, 7))
 
 
 def test_decode_vex128_scalar_arithmetic_preserves_source_one_semantics() -> None:

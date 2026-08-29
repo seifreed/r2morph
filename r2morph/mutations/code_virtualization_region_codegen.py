@@ -78,6 +78,7 @@ _XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemi
 _YMM_HANDLER_KINDS = frozenset(
     {
         "fppackedvex256",
+        "fppackedvex256imm",
         "fppackedvex256mem",
         "fppackedvex256memrip",
         "fppackedvex256memidx",
@@ -112,7 +113,9 @@ def _fp_state_asm(region: Region) -> tuple[str, str]:
         spill += ymm_upper_spill_asm()
         reload += ymm_upper_reload_asm()
     vex_destinations = {
-        int(item[2]) for item in region.instructions if item[0] in ("fparithvex", "fppackedvex", "fpmovvex")
+        int(item[2])
+        for item in region.instructions
+        if item[0] in ("fparithvex", "fppackedvex", "fppackedveximm", "fpmovvex")
     }
     return spill, reload + avx128_upper_clear_asm(vex_destinations)
 

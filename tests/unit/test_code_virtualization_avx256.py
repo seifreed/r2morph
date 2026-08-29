@@ -35,6 +35,15 @@ def test_vex_256_variable_shift_assembly_uses_ymm_handler() -> None:
     expect("vpslld ymm0, ymm0, ymm1" in assembly)
 
 
+def test_vex_256_immediate_shift_assembly_uses_native_immediate() -> None:
+    items = [("fppackedvex256imm", "psrad", 0, 1, 7), ("exit", _EXIT_VADDR)]
+    op_keys = {_op_key(item) for item in items}
+    region = Region(items, _EXIT_VADDR, 0x1000, {key for key in op_keys if key is not None}, [(0x1000, 5)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(17)))
+
+    expect("vpsrad ymm0, ymm0, 7" in assembly)
+
+
 def test_vex_256_region_builds_a_real_blob() -> None:
     region = _vex_256_region()
     scheme = build_region_scheme(region, randomness.Random(7))

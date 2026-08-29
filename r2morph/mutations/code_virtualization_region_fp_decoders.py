@@ -16,6 +16,9 @@ from r2morph.mutations.code_virtualization_region_memory_decoders import (
 _DWORD_WIDTH_BITS = 32
 _PACKED_VEX_OPERAND_COUNT = 3
 _PACKED_VEX_MOVE_OPERAND_COUNT = 2
+_PACKED_OPERAND_COUNT = 2
+_PACKED_SHIFT_IMMEDIATE_COUNT = 3
+_PACKED_IMMEDIATE_MAX = 0xFF
 
 
 def _parse_xmm_operand(text: str) -> int | None:
@@ -486,6 +489,11 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
         "pslld",
         "psrld",
         "psrad",
+        "psllw",
+        "psllq",
+        "psrlw",
+        "psrlq",
+        "psraw",
         "paddusb",
         "psubusb",
         "paddusw",
@@ -511,6 +519,9 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
         "xorps",
         "xorpd",
     }
+)
+_FP_PACKED_SHIFT_IMMEDIATE: frozenset[str] = frozenset(
+    {"psllw", "pslld", "psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad"}
 )
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqa", "movdqu"})
 _FP_VEX_PACKED_ARITH: dict[str, str] = {
@@ -547,6 +558,11 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpslld": "pslld",
     "vpsrld": "psrld",
     "vpsrad": "psrad",
+    "vpsllw": "psllw",
+    "vpsllq": "psllq",
+    "vpsrlw": "psrlw",
+    "vpsrlq": "psrlq",
+    "vpsraw": "psraw",
     "vpmulld": "pmulld",
     "vpminsd": "pminsd",
     "vpmaxsd": "pmaxsd",
@@ -585,6 +601,52 @@ _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vminsd": ("min", 64),
     "vmaxsd": ("max", 64),
 }
+
+
+def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a legacy packed integer shift with an immediate count."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic not in _FP_PACKED_SHIFT_IMMEDIATE:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_OPERAND_COUNT:
+        return None
+    destination = _parse_xmm_operand(operands[0])
+    if destination is None:
+        return None
+    try:
+        immediate = int(operands[1], 0)
+    except ValueError:
+        return None
+    return ("fppackedimm", mnemonic, destination, immediate) if 0 <= immediate <= _PACKED_IMMEDIATE_MAX else None
+
+
+def _decode_fp_vex_packed_immediate(text: str) -> tuple[str, str, int, int, int] | None:
+    """Decode VEX packed integer shifts whose count is an immediate byte."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    operation = _FP_VEX_PACKED_ARITH.get(mnemonic)
+    if len(parts) != _INSTRUCTION_PART_COUNT or operation not in _FP_PACKED_SHIFT_IMMEDIATE:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_SHIFT_IMMEDIATE_COUNT:
+        return None
+    register_parser = _parse_ymm_operand if operands[0].lower().startswith("ymm") else _parse_xmm_operand
+    destination = register_parser(operands[0])
+    source = register_parser(operands[1])
+    if destination is None or source is None:
+        return None
+    try:
+        immediate = int(operands[2], 0)
+    except ValueError:
+        return None
+    kind = "fppackedvex256imm" if operands[0].lower().startswith("ymm") else "fppackedveximm"
+    return (kind, operation, destination, source, immediate) if 0 <= immediate <= _PACKED_IMMEDIATE_MAX else None
 
 
 def _decode_fp_vex_scalar_arith(text: str) -> tuple[str, str, int, int, int, int] | None:

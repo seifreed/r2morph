@@ -36,12 +36,15 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     _fp_packed_arith_handler_asm,
     _fp_packed_arith_mem_handler_asm,
     _fp_packed_mem_handler_asm,
+    _fp_packed_shift_immediate_handler_asm,
     _fp_packed_vex_256_arith_handler_asm,
     _fp_packed_vex_arith_handler_asm,
     _fp_vex_256_memory_handler_asm,
     _fp_vex_256_move_handler_asm,
     _fp_vex_256_packed_arith_mem_handler_asm,
+    _fp_vex_256_packed_shift_immediate_handler_asm,
     _fp_vex_move_handler_asm,
+    _fp_vex_packed_shift_immediate_handler_asm,
     _fp_vex_scalar_arith_handler_asm,
 )
 from r2morph.mutations.code_virtualization_region_handlers import (
@@ -165,6 +168,7 @@ class HandlerBodyRouter:
             self._tls_memory,
             self._atomic_memory,
             self._memory,
+            self._fp_immediate,
             self._fp_vex,
             self._fp,
         )
@@ -173,6 +177,11 @@ class HandlerBodyRouter:
             if body is not None:
                 return body
         return ""
+
+    def _fp_immediate(self, key: str, _index: int, _variants: tuple[int, ...]) -> str | None:
+        if key.startswith("fppackedimm_"):
+            return _fp_packed_shift_immediate_handler_asm(key, self.context.key, self.context.field_perm)
+        return None
 
     def _calls(self, key: str, index: int, variants: tuple[int, ...]) -> str | None:
         address = variants[4]
@@ -613,12 +622,16 @@ class HandlerBodyRouter:
             )
         elif key.startswith("fppackedvex256_"):
             body = _fp_packed_vex_256_arith_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith("fppackedvex256imm_"):
+            body = _fp_vex_256_packed_shift_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fpmovvex256_"):
             body = _fp_vex_256_move_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fparithvex_"):
             body = _fp_vex_scalar_arith_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fppackedvex_"):
             body = _fp_packed_vex_arith_handler_asm(key, self.context.key, self.context.field_perm)
+        elif key.startswith("fppackedveximm_"):
+            body = _fp_vex_packed_shift_immediate_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fpmovvex_"):
             body = _fp_vex_move_handler_asm(key, self.context.key, self.context.field_perm)
         return body

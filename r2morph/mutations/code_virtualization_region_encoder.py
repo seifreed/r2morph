@@ -44,6 +44,7 @@ class RegionEncoder:
         emitters = (
             self._emit_virtual,
             self._emit_integer,
+            self._emit_fp_shift_immediate,
             self._emit_fp_scalar,
             self._emit_fp_memory,
             self._emit_gp_memory,
@@ -233,6 +234,19 @@ class RegionEncoder:
             self._triple(self._opcode(item), item[2], item[3], item[4])
         else:
             return False
+        return True
+
+    def _emit_fp_shift_immediate(self, item: RegionItem) -> bool:
+        kind = item[0]
+        if kind not in ("fppackedimm", "fppackedveximm", "fppackedvex256imm"):
+            return False
+        position = self._opcode(item)
+        if kind == "fppackedimm":
+            self.plain.append(item[2] ^ position)
+            self._imm(item[3], 1, position)
+        else:
+            self._pair(position, item[2], item[3])
+            self._imm(item[4], 1, position)
         return True
 
     def _emit_fp_memory(self, item: RegionItem) -> bool:

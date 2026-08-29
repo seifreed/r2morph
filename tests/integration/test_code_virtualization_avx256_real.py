@@ -92,14 +92,18 @@ int main(void) {
 _VARIABLE_SHIFT_SOURCE = r"""
 #include <stdint.h>
 
-__attribute__((noinline)) static void shift256(const uint32_t *values, const uint32_t *counts, uint32_t *target) {
+__attribute__((noinline)) static void shift256(
+    const uint32_t *values, const uint32_t *counts, uint32_t *target, uint32_t *immediate_target
+) {
     __asm__ volatile(
         "vmovdqu (%0), %%ymm1\n"
         "vmovdqu (%1), %%ymm2\n"
         "vpslld %%ymm2, %%ymm1, %%ymm0\n"
         "vmovdqu %%ymm0, (%2)\n"
+        "vpsrad $1, %%ymm1, %%ymm0\n"
+        "vmovdqu %%ymm0, (%3)\n"
         :
-        : "r"(values), "r"(counts), "r"(target)
+        : "r"(values), "r"(counts), "r"(target), "r"(immediate_target)
         : "ymm0", "ymm1", "ymm2", "memory"
     );
 }
@@ -108,8 +112,9 @@ int main(void) {
     const uint32_t values[8] = {1, 2, 3, 4, 5, 6, 7, 8};
     const uint32_t counts[8] = {1, 1, 1, 1, 1, 1, 1, 1};
     uint32_t target[8] = {0};
-    shift256(values, counts, target);
-    return target[0] == 2 && target[7] == 16 ? 42 : 1;
+    int32_t immediate_target[8] = {0};
+    shift256(values, counts, target, (uint32_t *)immediate_target);
+    return target[0] == 2 && target[7] == 16 && immediate_target[0] == 0 && immediate_target[7] == 4 ? 42 : 1;
 }
 """
 

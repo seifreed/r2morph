@@ -310,6 +310,7 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
         item[0]
         in (
             "fppackedvex256",
+            "fppackedvex256imm",
             "fppackedvex256mem",
             "fppackedvex256memrip",
             "fppackedvex256memidx",
@@ -323,7 +324,7 @@ def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, st
         int(item[2])
         for layer in layers
         for item in layer.instructions
-        if item[0] in ("fparithvex", "fppackedvex", "fpmovvex")
+        if item[0] in ("fparithvex", "fppackedvex", "fppackedveximm", "fpmovvex")
     }
     spill = xmm_spill_asm()
     reload = xmm_reload_asm() + avx128_upper_clear_asm(vex_destinations)

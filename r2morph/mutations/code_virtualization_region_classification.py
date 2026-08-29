@@ -42,6 +42,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_packed_arith_idx,
     _decode_fp_packed_arith_mem,
     _decode_fp_packed_arith_riprel,
+    _decode_fp_packed_immediate,
     _decode_fp_packed_indexed,
     _decode_fp_packed_mem,
     _decode_fp_packed_riprel,
@@ -51,6 +52,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_256_packed_mem,
     _decode_fp_vex_256_packed_move,
     _decode_fp_vex_packed_arith,
+    _decode_fp_vex_packed_immediate,
     _decode_fp_vex_packed_move,
     _decode_fp_vex_scalar_arith,
 )
@@ -131,6 +133,7 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
     return _first_item(
         (
             lambda: _decode_fp_vex_scalar_arith(text),
+            lambda: _decode_fp_vex_packed_immediate(text),
             lambda: _decode_fp_vex_256_packed_arith(text),
             lambda: _decode_fp_vex_256_packed_arith_mem(text, address, size),
             lambda: _decode_fp_vex_256_packed_move(text),
@@ -150,6 +153,7 @@ def _classify_vector(text: str, address: int, size: int) -> list[Any] | None:
             lambda: _decode_fp_vex_packed_arith(text),
             lambda: _decode_fp_vex_packed_move(text),
             lambda: _decode_fp_packed_arith(text),
+            lambda: _decode_fp_packed_immediate(text),
             lambda: _decode_fp_packed_arith_mem(text),
             lambda: _decode_fp_packed_arith_riprel(text, address, size),
             lambda: _decode_fp_packed_arith_idx(text),

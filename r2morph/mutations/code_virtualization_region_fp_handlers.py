@@ -266,6 +266,51 @@ def _fp_packed_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0
     )
 
 
+def _fp_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Apply a legacy packed integer shift with an encrypted immediate count."""
+    _, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    off = pair_offsets("dst", "imm", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        "  shl r8, 4\n"
+        f"  movups xmm0, [rsp + r8 + {_XMM_SAVE_OFFSET}]\n  {instruction} xmm0, {immediate}\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        "  add rsi, 3\n  jmp vm_dispatch\n"
+    )
+
+
+def _fp_vex_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Apply a VEX.128 packed integer shift and clear its YMM upper half."""
+    _, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    off = pair_offsets("dst", "src", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  v{instruction} xmm0, xmm0, {immediate}\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
+        "  add rsi, 4\n  jmp vm_dispatch\n"
+    )
+
+
+def _fp_vex_256_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Apply a VEX.256 packed integer shift with one count for every lane."""
+    _, instruction, immediate_text = handler_key.split("_")
+    immediate = int(immediate_text)
+    off = pair_offsets("dst", "src", field_perm)
+    return (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+        + _load_ymm_from_frame("r9", 0)
+        + f"  v{instruction} ymm0, ymm0, {immediate}\n"
+        + _store_ymm_to_frame("r8")
+        + "  add rsi, 4\n  jmp vm_dispatch\n"
+    )
+
+
 def _fp_packed_vex_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
     """Run a VEX.128 packed operation while preserving unrelated YMM upper halves."""
     instr = handler_key.split("_", 1)[1]
