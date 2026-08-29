@@ -89,6 +89,30 @@ int main(void) {
 }
 """
 
+_VARIABLE_SHIFT_SOURCE = r"""
+#include <stdint.h>
+
+__attribute__((noinline)) static void shift256(const uint32_t *values, const uint32_t *counts, uint32_t *target) {
+    __asm__ volatile(
+        "vmovdqu (%0), %%ymm1\n"
+        "vmovdqu (%1), %%ymm2\n"
+        "vpslld %%ymm2, %%ymm1, %%ymm0\n"
+        "vmovdqu %%ymm0, (%2)\n"
+        :
+        : "r"(values), "r"(counts), "r"(target)
+        : "ymm0", "ymm1", "ymm2", "memory"
+    );
+}
+
+int main(void) {
+    const uint32_t values[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+    const uint32_t counts[8] = {1, 1, 1, 1, 1, 1, 1, 1};
+    uint32_t target[8] = {0};
+    shift256(values, counts, target);
+    return target[0] == 2 && target[7] == 16 ? 42 : 1;
+}
+"""
+
 
 def test_virtualized_vex_256_packed_add_preserves_native_result(tmp_path: Path) -> None:
     if platform.machine().lower() not in {"x86_64", "amd64"}:
@@ -132,6 +156,51 @@ def test_virtualized_vex_256_packed_add_preserves_native_result(tmp_path: Path) 
     expect(
         original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         f"VEX.256 virtualization changed the result: {stats=}",
+    )
+
+
+def test_virtualized_vex_256_variable_shift_preserves_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX2 execution requires an x86-64 host")
+
+    source = tmp_path / "vex256_variable_shift.c"
+    original = tmp_path / "original_variable_shift"
+    mutated = tmp_path / "mutated_variable_shift"
+    source.write_text(_VARIABLE_SHIFT_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx2",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.256 variable-shift fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260832}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(stats["functions_virtualized"] >= 1, f"VEX.256 variable-shift function was not virtualized: {stats=}")
+    expect(
+        original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        f"VEX.256 variable-shift virtualization changed the result: {stats=}",
     )
 
 

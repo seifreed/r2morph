@@ -27,6 +27,14 @@ def test_vex_256_region_assembly_uses_ymm_handler() -> None:
     expect("vaddps ymm0, ymm0, ymm1" in assembly)
 
 
+def test_vex_256_variable_shift_assembly_uses_ymm_handler() -> None:
+    items = [("fppackedvex256", "pslld", 0, 1, 2), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items}, [(0x1000, 5)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(8)))
+
+    expect("vpslld ymm0, ymm0, ymm1" in assembly)
+
+
 def test_vex_256_region_builds_a_real_blob() -> None:
     region = _vex_256_region()
     scheme = build_region_scheme(region, randomness.Random(7))

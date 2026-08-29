@@ -177,6 +177,10 @@ def test_decode_vex128_integer_arithmetic_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vpaddd xmm2, xmm0, xmm1") == ("fppackedvex", "paddd", 2, 0, 1))
 
 
+def test_decode_vex128_variable_shift_returns_three_operand_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vpslld xmm2, xmm0, xmm1") == ("fppackedvex", "pslld", 2, 0, 1))
+
+
 def test_decode_vex128_scalar_arithmetic_preserves_source_one_semantics() -> None:
     expect(_decode_fp_vex_scalar_arith("vaddss xmm2, xmm0, xmm1") == ("fparithvex", "add", 2, 0, 1, 32))
 
