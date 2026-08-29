@@ -77,6 +77,14 @@ def test_vex_256_memory_arithmetic_classification_supports_base_form() -> None:
     expect(arithmetic == ["fppackedvex256mem", "addps", 0, 1, 0, 32])
 
 
+def test_vex_256_memory_unary_classification_supports_sqrt() -> None:
+    arithmetic = classification._classify(
+        {"type": "sqrt", "opcode": "vsqrtps ymm0, ymmword ptr [rax + 32]", "addr": 0x1000, "size": 8}
+    )
+
+    expect(arithmetic == ["fppackedvex256mem", "sqrtps", 0, 0, 0, 32])
+
+
 def test_vex_256_memory_arithmetic_classification_supports_rip_form() -> None:
     arithmetic = classification._classify(
         {"type": "add", "opcode": "vaddps ymm0, ymm1, ymmword ptr [rip + 16]", "addr": 0x1000, "size": 8}
@@ -105,6 +113,14 @@ def test_vex_256_memory_arithmetic_handler_loads_memory_source() -> None:
     assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(11)))
 
     expect("vmovups ymm1, [r10]" in assembly and "vaddps ymm0, ymm0, ymm1" in assembly)
+
+
+def test_vex_256_memory_unary_handler_uses_unary_instruction() -> None:
+    items = [("fppackedvex256mem", "sqrtps", 0, 0, 2, 32), ("exit", _EXIT_VADDR)]
+    region = Region(items, _EXIT_VADDR, 0x1000, {_op_key(item) for item in items if _op_key(item)}, [(0x1000, 8)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(12)))
+
+    expect("vsqrtps ymm0, ymm1" in assembly)
 
 
 def test_vex_256_memory_move_handlers_use_ymm_width() -> None:

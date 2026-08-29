@@ -144,7 +144,9 @@ def _fp_vex_256_packed_arith_mem_handler_asm(
     body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n" "  shl r11, 4\n"
     body += _load_ymm_from_frame("r11", 0)
     body += "  vmovups ymm1, [r10]\n"
-    body += f"  v{instruction} ymm0, ymm0, ymm1\n"
+    body += (
+        f"  v{instruction} ymm0, ymm1\n" if instruction.startswith("sqrt") else f"  v{instruction} ymm0, ymm0, ymm1\n"
+    )
     body += _store_ymm_to_frame("r8")
     return body + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
 

@@ -707,17 +707,21 @@ def _decode_fp_vex_256_packed_arith_mem(
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT:
         return None
-    operation = _FP_VEX_PACKED_ARITH.get(parts[0].lower())
-    if operation is None:
-        return None
+    mnemonic = parts[0].lower()
+    binary_operation = _FP_VEX_PACKED_ARITH.get(mnemonic)
+    unary_operation = _FP_VEX_PACKED_UNARY_ARITH.get(mnemonic)
     operands = [token.strip() for token in parts[1].split(",")]
-    if len(operands) != _PACKED_VEX_OPERAND_COUNT or "[" not in operands[2]:
+    if len(operands) not in (_PACKED_VEX_MOVE_OPERAND_COUNT, _PACKED_VEX_OPERAND_COUNT):
+        return None
+    is_unary = len(operands) == _PACKED_VEX_MOVE_OPERAND_COUNT
+    operation = unary_operation if is_unary else binary_operation
+    if operation is None or "[" not in operands[-1]:
         return None
     destination = _parse_ymm_operand(operands[0])
-    first_source = _parse_ymm_operand(operands[1])
+    first_source = destination if is_unary else _parse_ymm_operand(operands[1])
     if destination is None or first_source is None:
         return None
-    memory = operands[2].lower().replace("ymmword", "")
+    memory = operands[-1].lower().replace("ymmword", "")
     result: (
         tuple[str, str, int, int, int, int]
         | tuple[str, str, int, int, int]
