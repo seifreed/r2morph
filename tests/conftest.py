@@ -371,15 +371,19 @@ def deterministic_register_elf(tmp_path: Path) -> Path:
         "register_fixture.elf",
         """
 .global _start
+.global work
 .text
-_start:
+work:
     mov $5, %eax
     add $2, %eax
     sub $1, %eax
     cmp $6, %eax
-    jne done
+    jne work_done
     mov $6, %eax
-done:
+work_done:
+    ret
+_start:
+    call work
     mov $60, %rax
     xor %rdi, %rdi
     syscall
