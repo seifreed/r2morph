@@ -49,12 +49,11 @@ class IntegerHandlerConfig:
 # 0x90/0xA8 cells, the captured RFLAGS and self-checksum in the remaining
 # [0x80, 0x100) cells (both relocated per build), the 16 XMM
 # save slots (16 bytes each) in [0x100, 0x200), the System V red zone in [0x200,
-# 0x280), and the interpreter's virtual operand stack in [0x280, 0x300). Nothing
-# reads the red zone by offset, so riding it below the new vstack window only
-# enlarges the reservation; every GP-slot offset (rsp + slot*8) is unchanged, so
-# the handler addressing is untouched.
-_FRAME_SIZE = 0x300
-_FRAME_SIZES = (0x300, 0x320, 0x340, 0x360)
+# 0x280), and the interpreter's virtual operand stack in [0x280, 0x300). A YMM
+# operation uses the extra [0x300, 0x400) window for upper halves; every existing
+# GP-slot offset (rsp + slot*8) remains unchanged.
+_FRAME_SIZE = 0x400
+_FRAME_SIZES = (0x400, 0x420, 0x440, 0x460)
 
 
 def frame_size_for_seed(seed: int) -> int:
@@ -78,14 +77,14 @@ _KEY_QWORD_SLOT = 0x208
 # bytes, starts 0) at _VSP_OFFSET and 8 cells from _VSTACK_BASE. Micro-op lowering
 # folds arithmetic through this stack (vpush/vbinop/vpop); peak depth is two cells
 # per op, so 8 is 4x headroom. Sits above the red zone, disjoint from the GP slots,
-# the relocated flags/checksum slots, the XMM area, and the nested dispatcher slots.
+# the relocated flags/checksum slots, the XMM/YMM areas, and the nested dispatcher slots.
 _VSP_OFFSET = 0x280
 _VSTACK_BASE = 0x288
 # The program's virtual stack is relocated this far below the VM frame so the
 # function's own push/pop traffic never collides with the spilled context. Must
 # be 16-aligned and strictly greater than _FRAME_SIZE so the relocated stack
 # stays below the frame.
-_GUARD = 0x380
+_GUARD = 0x480
 
 
 def _unmask_dword(scratch: str) -> str:

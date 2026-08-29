@@ -33,4 +33,4 @@ def test_call_bridge_restores_all_system_v_callee_saved_registers() -> None:
 def test_call_bridge_reconstructs_frame_after_native_return() -> None:
     assembly = _call_handler_asm(0, "0x12345678", tuple(range(16)), CallBridgeConfig(frame_size=0x340))
 
-    expect("call_resume_0:\n  lea r12, [rsp+64]" in assembly)
+    expect("call_resume_0:\n  lea r12, [rsp+320]" in assembly)

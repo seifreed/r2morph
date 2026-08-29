@@ -43,6 +43,75 @@ def avx128_upper_clear_asm(destinations: set[int]) -> str:
     )
 
 
+_YMM_UPPER_SAVE_OFFSET = 0x300
+
+
+def ymm_upper_spill_asm() -> str:
+    """Spill the upper 128 bits needed to preserve live YMM state."""
+    return "".join(
+        f"  vextractf128 xmm0, ymm{index}, 1\n" f"  movups [rsp + {_YMM_UPPER_SAVE_OFFSET + index * 16}], xmm0\n"
+        for index in range(16)
+    )
+
+
+def ymm_upper_reload_asm() -> str:
+    """Restore the upper 128 bits after the lower XMM slots are reloaded."""
+    return "".join(
+        f"  movups xmm0, [rsp + {_YMM_UPPER_SAVE_OFFSET + index * 16}]\n"
+        f"  vinsertf128 ymm{index}, ymm{index}, xmm0, 1\n"
+        for index in range(16)
+    )
+
+
+def _load_ymm_from_frame(offset: str, register: int) -> str:
+    return (
+        f"  movups xmm{register}, [rsp + {offset} + {_XMM_SAVE_OFFSET}]\n"
+        f"  movups xmm2, [rsp + {offset} + {_YMM_UPPER_SAVE_OFFSET}]\n"
+        f"  vinsertf128 ymm{register}, ymm{register}, xmm2, 1\n"
+    )
+
+
+def _store_ymm_to_frame(offset: str) -> str:
+    return (
+        f"  movups [rsp + {offset} + {_XMM_SAVE_OFFSET}], xmm0\n"
+        f"  vextractf128 xmm2, ymm0, 1\n"
+        f"  movups [rsp + {offset} + {_YMM_UPPER_SAVE_OFFSET}], xmm2\n"
+    )
+
+
+def _fp_packed_vex_256_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Run a VEX.256 packed operation while preserving full YMM state."""
+    instruction = handler_key.split("_", 1)[1]
+    off = triple_offsets("dst", "src1", "src2", field_perm)
+    body = (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        f"  movzx r10d, byte ptr [rsi+{off['src2']}]\n  xor r10b, {key}\n  xor r10b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n  shl r10, 4\n"
+    )
+    body += _load_ymm_from_frame("r9", 0)
+    body += _load_ymm_from_frame("r10", 1)
+    if instruction.startswith("sqrt"):
+        body += f"  v{instruction} ymm0, ymm1\n"
+    else:
+        body += f"  v{instruction} ymm0, ymm0, ymm1\n"
+    body += _store_ymm_to_frame("r8")
+    return body + "  add rsi, 4\n  jmp vm_dispatch\n"
+
+
+def _fp_vex_256_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+    """Copy a complete VEX.256 register into the destination frame slot."""
+    off = pair_offsets("dst", "src", field_perm)
+    body = (
+        f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
+        f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
+        "  shl r8, 4\n  shl r9, 4\n"
+    )
+    body += _load_ymm_from_frame("r9", 0)
+    body += _store_ymm_to_frame("r8")
+    return body + "  add rsi, 3\n  jmp vm_dispatch\n"
+
+
 def _fp_memory_handler_asm(
     handler_key: str, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> str:

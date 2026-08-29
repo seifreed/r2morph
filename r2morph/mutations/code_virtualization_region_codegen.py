@@ -47,6 +47,8 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     avx128_upper_clear_asm,
     xmm_reload_asm,
     xmm_spill_asm,
+    ymm_upper_reload_asm,
+    ymm_upper_spill_asm,
 )
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
@@ -72,6 +74,24 @@ from r2morph.mutations.code_virtualization_region_regcipher import cipher_regist
 logger = logging.getLogger(__name__)
 
 _XMM_CALL_KINDS = frozenset({"call", "icall", "callmem", "callmemrip", "callmemidx", "callmemidxnb", "vcall"})
+
+
+def _fp_state_asm(region: Region) -> tuple[str, str]:
+    has_fp = any(
+        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", *_XMM_CALL_KINDS) for item in region.instructions
+    )
+    if not has_fp:
+        return "", ""
+    has_ymm = any(item[0] in ("fppackedvex256", "fpmovvex256") for item in region.instructions)
+    spill = xmm_spill_asm()
+    reload = xmm_reload_asm()
+    if has_ymm:
+        spill += ymm_upper_spill_asm()
+        reload += ymm_upper_reload_asm()
+    vex_destinations = {
+        int(item[2]) for item in region.instructions if item[0] in ("fparithvex", "fppackedvex", "fpmovvex")
+    }
+    return spill, reload + avx128_upper_clear_asm(vex_destinations)
 
 
 def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
@@ -100,15 +120,13 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     rsp_off = slot[RSP_INDEX] * 8  # byte offset of the relocated program rsp slot
     # Preserve XMM state for every FP operation and every native-call bridge. Calls
     # need the saved vector arguments and must write back caller-clobbered results.
-    has_fp = any(
-        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", *_XMM_CALL_KINDS) for item in region.instructions
-    )
+    fp_spill, fp_reload = _fp_state_asm(region)
     # Zero the virtual operand stack pointer; micro-op arithmetic folds through it.
     lines = [f"vm_entry:\n  sub rsp, {frame_size}\n  mov qword ptr [rsp+{_VSP_OFFSET}], 0\n"]
     for index in save_order:
         lines.append(f"  mov qword ptr [rsp+{slot[index] * 8}], {GP_REGISTERS[index]}\n")
-    if has_fp:
-        lines.append(xmm_spill_asm())
+    if fp_spill:
+        lines.append(fp_spill)
     # Anti-tamper: checksum the interpreter's own code into a frame slot the
     # dispatch folds into every opcode decrypt. Runs after the spill, so the
     # scratch registers it clobbers are already saved. The trailing offset table
@@ -223,12 +241,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     lines.append(f"vm_bootstrap:\n{bootstrap}")
 
     reload_seq = "".join(f"  mov {GP_REGISTERS[index]}, qword ptr [rsp+{slot[index] * 8}]\n" for index in save_order)
-    if has_fp:
-        reload_seq += xmm_reload_asm()
-        vex_destinations = {
-            int(item[2]) for item in region.instructions if item[0] in ("fparithvex", "fppackedvex", "fpmovvex")
-        }
-        reload_seq += avx128_upper_clear_asm(vex_destinations)
+    reload_seq += fp_reload
 
     # Each opcode index gets its own handler instance (an operation with two
     # indices is emitted twice, each copy carrying different junk), so the

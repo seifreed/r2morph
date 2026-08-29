@@ -54,6 +54,8 @@ from r2morph.mutations.code_virtualization_region_fp_handlers import (
     avx128_upper_clear_asm,
     xmm_reload_asm,
     xmm_spill_asm,
+    ymm_upper_reload_asm,
+    ymm_upper_spill_asm,
 )
 from r2morph.mutations.code_virtualization_region_handler_codegen import handler_instances_asm
 from r2morph.mutations.code_virtualization_region_handler_router import HandlerContext
@@ -298,16 +300,25 @@ def _set_layer_slots(layer: int, count: int) -> str:
 
 
 def _nested_xmm_state_asm(region: Region, layers: list[Region]) -> tuple[str, str]:
-    """Preserve vector state for nested regions that contain native calls."""
-    if not any(item[0] in _XMM_CALL_KINDS for item in region.instructions):
+    """Preserve vector state for nested regions and native-call bridges."""
+    has_fp = any(
+        item[0].startswith("fp") or item[0] in ("cvti2f", "cvtf2i", *_XMM_CALL_KINDS) for item in region.instructions
+    )
+    if not has_fp:
         return "", ""
+    has_ymm = any(item[0] in ("fppackedvex256", "fpmovvex256") for layer in layers for item in layer.instructions)
     vex_destinations = {
         int(item[2])
         for layer in layers
         for item in layer.instructions
         if item[0] in ("fparithvex", "fppackedvex", "fpmovvex")
     }
-    return xmm_spill_asm(), xmm_reload_asm() + avx128_upper_clear_asm(vex_destinations)
+    spill = xmm_spill_asm()
+    reload = xmm_reload_asm() + avx128_upper_clear_asm(vex_destinations)
+    if has_ymm:
+        spill += ymm_upper_spill_asm()
+        reload += ymm_upper_reload_asm()
+    return spill, reload
 
 
 def _enter_inner_asm(child: int, child_count: int, return_slot: int) -> str:

@@ -209,9 +209,9 @@ class RegionEncoder:
         elif kind == "fpmovd":
             _, _direction, xmm, gp = item
             self._pair(self._opcode(item), xmm, self.slot_of[gp])
-        elif kind in ("fpcmp", "fpmov", "fppacked", "fpmovvex"):
+        elif kind in ("fpcmp", "fpmov", "fppacked", "fpmovvex", "fpmovvex256"):
             self._pair(self._opcode(item), item[2], item[3])
-        elif kind == "fppackedvex":
+        elif kind in ("fppackedvex", "fppackedvex256"):
             self._triple(self._opcode(item), item[2], item[3], item[4])
         else:
             return False

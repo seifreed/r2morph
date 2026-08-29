@@ -30,6 +30,18 @@ def _parse_xmm_operand(text: str) -> int | None:
     return index if 0 <= index < _REGISTER_COUNT else None
 
 
+def _parse_ymm_operand(text: str) -> int | None:
+    """Parse ``ymmN`` (0-15) into its register index, or ``None``."""
+    text = text.strip().lower()
+    if not text.startswith("ymm"):
+        return None
+    try:
+        index = int(text[3:])
+    except ValueError:
+        return None
+    return index if 0 <= index < _REGISTER_COUNT else None
+
+
 def _decode_fp_mem(text: str) -> tuple[str, int, int, int, int] | None:
     """Decode ``movsd/movss/movq xmm, [base+disp]`` or the store form.
 
@@ -646,6 +658,54 @@ def _decode_fp_vex_packed_move(text: str) -> tuple[str, str, int, int] | None:
     if destination is None or source is None:
         return None
     return ("fpmovvex", "full", destination, source)
+
+
+def _parse_ymm_operands(text: str, count: int) -> tuple[int, ...] | None:
+    operands = [token.strip() for token in text.split(",")]
+    if len(operands) != count:
+        return None
+    parsed = tuple(_parse_ymm_operand(operand) for operand in operands)
+    indices: list[int] = []
+    for value in parsed:
+        if value is None:
+            return None
+        indices.append(value)
+    return tuple(indices)
+
+
+def _decode_fp_vex_256_packed_arith(text: str) -> tuple[str, str, int, int, int] | None:
+    """Decode packed VEX.256 arithmetic into a dedicated 256-bit item shape."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic in _FP_VEX_PACKED_UNARY_ARITH:
+        unary_operation = _FP_VEX_PACKED_UNARY_ARITH[mnemonic]
+        parsed = _parse_ymm_operands(parts[1], _PACKED_VEX_MOVE_OPERAND_COUNT)
+        if parsed is None:
+            return None
+        destination, source = parsed
+        return ("fppackedvex256", unary_operation, destination, destination, source)
+    binary_operation = _FP_VEX_PACKED_ARITH.get(mnemonic)
+    parsed = _parse_ymm_operands(parts[1], _PACKED_VEX_OPERAND_COUNT)
+    if binary_operation is None or parsed is None:
+        return None
+    destination, first_source, second_source = parsed
+    return ("fppackedvex256", binary_operation, destination, first_source, second_source)
+
+
+def _decode_fp_vex_256_packed_move(text: str) -> tuple[str, str, int, int] | None:
+    """Decode a register-register VEX.256 packed move."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in _FP_VEX_PACKED_MOVE:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_VEX_MOVE_OPERAND_COUNT:
+        return None
+    destination, source = (_parse_ymm_operand(operand) for operand in operands)
+    if destination is None or source is None:
+        return None
+    return ("fpmovvex256", "full", destination, source)
 
 
 def _decode_fp_packed_arith(text: str) -> tuple[str, str, int, int] | None:

@@ -12,7 +12,11 @@ from __future__ import annotations
 
 from r2morph.mutations.code_virtualization import _decode_run_item
 from r2morph.mutations.code_virtualization_region_codegen_encode import _item_size
-from r2morph.mutations.code_virtualization_region_fp_decoders import _decode_fp_indexed
+from r2morph.mutations.code_virtualization_region_fp_decoders import (
+    _decode_fp_indexed,
+    _decode_fp_vex_256_packed_arith,
+    _decode_fp_vex_256_packed_move,
+)
 from r2morph.mutations.code_virtualization_region_models import _op_key
 from tests.utils.assertions import expect
 
@@ -52,3 +56,11 @@ def test_straight_line_engine_virtualizes_the_no_base_fp_indexed_arithmetic() ->
     item = _decode_run_item("addsd xmm1, [rdx*8 + 16]")
 
     expect(item is not None and item.base_index < 0 and item.index_index >= 0)
+
+
+def test_vex_256_packed_add_reports_a_dedicated_item_shape() -> None:
+    expect(_decode_fp_vex_256_packed_arith("vaddps ymm0, ymm1, ymm2") == ("fppackedvex256", "addps", 0, 1, 2))
+
+
+def test_vex_256_packed_move_reports_a_dedicated_item_shape() -> None:
+    expect(_decode_fp_vex_256_packed_move("vmovups ymm3, ymm4") == ("fpmovvex256", "full", 3, 4))

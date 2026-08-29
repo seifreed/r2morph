@@ -289,7 +289,7 @@ def test_virtualized_multiret_function_preserves_exit_code(tmp_path: Path) -> No
 # The interpreter's first instruction is a constant-size frame allocation
 # The injected blob is appended at end-of-file; these bounded frame encodings mark
 # vm_entry, the start of the checksummed region.
-_VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x300, 0x320, 0x340, 0x360))
+_VM_ENTRY_SIGNATURES = tuple(b"\x48\x81\xec" + size.to_bytes(4, "little") for size in (0x400, 0x420, 0x440, 0x460))
 
 
 def _find_vm_entry(data: bytes) -> int:
