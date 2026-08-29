@@ -552,6 +552,7 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpunpcklbw": "punpcklbw",
     "vpunpcklwd": "punpcklwd",
 }
+_FP_VEX_PACKED_UNARY_ARITH: dict[str, str] = {"vsqrtps": "sqrtps", "vsqrtpd": "sqrtpd"}
 _FP_VEX_PACKED_MOVE: frozenset[str] = frozenset({"vmovaps", "vmovups", "vmovapd", "vmovupd", "vmovdqa", "vmovdqu"})
 _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vaddss": ("add", 32),
@@ -591,9 +592,14 @@ def _decode_fp_vex_scalar_arith(text: str) -> tuple[str, str, int, int, int, int
 
 
 def _decode_fp_vex_packed_arith(text: str) -> tuple[str, str, int, int, int] | None:
-    """Decode a three-operand VEX.128 packed FP arithmetic instruction."""
+    """Decode VEX.128 packed FP arithmetic, including unary square roots."""
     parts = text.split(None, 1)
-    if len(parts) != _INSTRUCTION_PART_COUNT or parts[0].lower() not in _FP_VEX_PACKED_ARITH:
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    mnemonic = parts[0].lower()
+    if mnemonic in _FP_VEX_PACKED_UNARY_ARITH:
+        return _decode_fp_vex_packed_unary_arith(text)
+    if mnemonic not in _FP_VEX_PACKED_ARITH:
         return None
     operands = [token.strip() for token in parts[1].split(",")]
     if len(operands) != _PACKED_VEX_OPERAND_COUNT:
@@ -604,11 +610,28 @@ def _decode_fp_vex_packed_arith(text: str) -> tuple[str, str, int, int, int] | N
         return None
     return (
         "fppackedvex",
-        _FP_VEX_PACKED_ARITH[parts[0].lower()],
+        _FP_VEX_PACKED_ARITH[mnemonic],
         destination,
         first_source,
         second_source,
     )
+
+
+def _decode_fp_vex_packed_unary_arith(text: str) -> tuple[str, str, int, int, int] | None:
+    """Encode a unary VEX.128 operation in the shared packed handler shape."""
+    parts = text.split(None, 1)
+    if len(parts) != _INSTRUCTION_PART_COUNT:
+        return None
+    operation = _FP_VEX_PACKED_UNARY_ARITH.get(parts[0].lower())
+    if operation is None:
+        return None
+    operands = [token.strip() for token in parts[1].split(",")]
+    if len(operands) != _PACKED_VEX_MOVE_OPERAND_COUNT:
+        return None
+    destination, source = (_parse_xmm_operand(operand) for operand in operands)
+    if destination is None or source is None:
+        return None
+    return ("fppackedvex", operation, destination, destination, source)
 
 
 def _decode_fp_vex_packed_move(text: str) -> tuple[str, str, int, int] | None:

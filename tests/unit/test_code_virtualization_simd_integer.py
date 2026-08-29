@@ -147,6 +147,14 @@ def test_decode_vex128_packed_maximum_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vmaxps xmm0, xmm0, xmm1") == ("fppackedvex", "maxps", 0, 0, 1))
 
 
+def test_decode_vex128_packed_single_sqrt_returns_unary_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vsqrtps xmm2, xmm1") == ("fppackedvex", "sqrtps", 2, 2, 1))
+
+
+def test_decode_vex128_packed_double_sqrt_returns_unary_item() -> None:
+    expect(_decode_fp_vex_packed_arith("vsqrtpd xmm2, xmm1") == ("fppackedvex", "sqrtpd", 2, 2, 1))
+
+
 def test_decode_vex128_float_xor_returns_three_operand_item() -> None:
     expect(_decode_fp_vex_packed_arith("vxorps xmm2, xmm0, xmm1") == ("fppackedvex", "xorps", 2, 0, 1))
 
