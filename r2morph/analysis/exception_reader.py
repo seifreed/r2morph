@@ -34,7 +34,8 @@ _WORD_BITS = 64
 _MIN_EH_FRAME_ENTRY_LENGTH = 4
 _EXTENDED_EH_FRAME_LENGTH = 0xFFFFFFFF
 _EH_FRAME_LENGTH_FIELD_BYTES = 4
-_EH_FRAME_CONTENT_PREFIX_BYTES = 8
+_DWARF64_LENGTH_FIELD_BYTES = 12
+_DWARF64_CIE_ID_BYTES = 8
 
 
 @dataclass(frozen=True)
@@ -224,30 +225,49 @@ class ExceptionInfoReader:
                 if length == 0:
                     break
                 if length == _EXTENDED_EH_FRAME_LENGTH:
-                    logger.debug("Skipping unsupported 64-bit .eh_frame entry at offset %d", offset)
+                    if offset + _DWARF64_LENGTH_FIELD_BYTES > len(data):
+                        break
+                    length = struct.unpack_from("<Q", data, offset + _EH_FRAME_LENGTH_FIELD_BYTES)[0]
+                    length_field_bytes = _DWARF64_LENGTH_FIELD_BYTES
+                    cie_id_bytes = _DWARF64_CIE_ID_BYTES
+                else:
+                    length_field_bytes = _EH_FRAME_LENGTH_FIELD_BYTES
+                    cie_id_bytes = _EH_FRAME_LENGTH_FIELD_BYTES
+                entry_end = offset + length_field_bytes + length
+                if entry_end > len(data) or length < cie_id_bytes:
                     break
-                entry_end = offset + _EH_FRAME_LENGTH_FIELD_BYTES + length
-                if entry_end > len(data) or length < _MIN_EH_FRAME_ENTRY_LENGTH:
-                    break
-                content_start = offset + _EH_FRAME_LENGTH_FIELD_BYTES
-                cie_id = struct.unpack_from("<I", data, content_start)[0]
+                content_start = offset + length_field_bytes
+                cie_id = int.from_bytes(data[content_start : content_start + cie_id_bytes], "little")
 
                 if cie_id == 0:
-                    cie = self._parse_cie(data, entry_start, entry_end, base_addr)
+                    cie = self._parse_cie(data, content_start, cie_id_bytes, entry_end, base_addr)
                     if cie is not None:
                         self._cies[entry_start] = cie
                 else:
                     cie_start = content_start - cie_id
-                    self._parse_fde(data, entry_start, entry_end, base_addr, self._cies.get(cie_start))
+                    self._parse_fde(
+                        data,
+                        (entry_start, length_field_bytes),
+                        entry_end,
+                        base_addr,
+                        self._cies.get(cie_start),
+                    )
                 offset = entry_end
 
             except (IndexError, struct.error, ValueError) as exc:
                 logger.debug("Failed to parse eh_frame entry at offset %d: %s", offset, exc)
                 break
 
-    def _parse_cie(self, data: bytes, entry_start: int, entry_end: int, base_addr: int) -> _CieInfo | None:
+    def _parse_cie(
+        self,
+        data: bytes,
+        content_start: int,
+        cie_id_bytes: int,
+        entry_end: int,
+        base_addr: int,
+    ) -> _CieInfo | None:
         """Parse CIE augmentation fields needed by x86-64 GCC exception tables."""
-        header = self._read_cie_header(data, entry_start, entry_end)
+        header = self._read_cie_header(data, content_start, cie_id_bytes, entry_end)
         if header is None:
             return None
         cursor, augmentation = header
@@ -256,8 +276,13 @@ class ExceptionInfoReader:
         return self._parse_cie_augmentation(data, cursor, entry_end, augmentation, base_addr)
 
     @staticmethod
-    def _read_cie_header(data: bytes, entry_start: int, entry_end: int) -> tuple[int, str] | None:
-        cursor = entry_start + _EH_FRAME_CONTENT_PREFIX_BYTES
+    def _read_cie_header(
+        data: bytes,
+        content_start: int,
+        cie_id_bytes: int,
+        entry_end: int,
+    ) -> tuple[int, str] | None:
+        cursor = content_start + cie_id_bytes
         if cursor >= entry_end:
             return None
         cursor += 1
@@ -337,7 +362,7 @@ class ExceptionInfoReader:
     def _parse_fde(
         self,
         data: bytes,
-        entry_start: int,
+        entry_layout: tuple[int, int],
         entry_end: int,
         base_addr: int,
         cie: _CieInfo | None,
@@ -345,7 +370,12 @@ class ExceptionInfoReader:
         """Parse an FDE, including its augmentation pointer to an ELF LSDA."""
         pointer_size = self._pointer_size()
         cie_info = cie or _CieInfo()
-        cursor = entry_start + _EH_FRAME_CONTENT_PREFIX_BYTES
+        entry_start, length_field_bytes = entry_layout
+        cie_id_bytes = (
+            _DWARF64_CIE_ID_BYTES if length_field_bytes == _DWARF64_LENGTH_FIELD_BYTES else _EH_FRAME_LENGTH_FIELD_BYTES
+        )
+        content_start = entry_start + length_field_bytes
+        cursor = content_start + cie_id_bytes
         initial = _read_encoded_pointer(
             data,
             cursor,
