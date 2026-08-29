@@ -121,6 +121,7 @@ _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_75 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_76 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FPPACKED_INDEXED_NO_BASE = 6
 _EXPECTED_EMULATE_EXIT_CODE_FPARITH_INDEXED_NO_BASE = 42
+_EXPECTED_EMULATE_EXIT_CODE_CALL_STACK_ARGS = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_8 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_9 = 42
 _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_45 = 45
@@ -720,6 +721,26 @@ def test_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
 
     expect(not (stats["functions_virtualized"] < 1))
     expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_FIXTURE_42_3)
+
+
+def test_call_virtualization_preserves_stack_arguments(tmp_path: Path) -> None:
+    """A native callee sees stack-passed arguments after the VM bridge."""
+    fixture = _DATASET / "elf_vm_call_stack_args_x86_64"
+    if not fixture.exists():
+        pytest.skip(f"fixture missing: {fixture}")
+
+    mutated = tmp_path / "mutated_call_stack_args"
+    shutil.copy(fixture, mutated)
+    binary = Binary(str(mutated), writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    expect(stats["functions_virtualized"] >= 1)
+    expect(_emulate_exit_code(fixture) == _emulate_exit_code(mutated) == _EXPECTED_EMULATE_EXIT_CODE_CALL_STACK_ARGS)
 
 
 def test_indirect_call_virtualization_preserves_exit_code(tmp_path: Path) -> None:
