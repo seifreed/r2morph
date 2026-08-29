@@ -145,16 +145,26 @@ class VirtualizedFpPackedOp:
     ``mnemonic`` is the legacy SSE spelling used by the handler (for example
     ``addpd`` or ``xorps``). ``vex`` records that the original instruction had
     VEX.128 zero-upper semantics; the epilogue clears the destination's YMM upper
-    half after restoring its lower 128 bits.
+    half after restoring its lower 128 bits. ``src1_index`` is populated only for
+    a non-destructive VEX instruction whose first source differs from the
+    destination; legacy SSE and destructive VEX forms leave it unset.
     """
 
-    __slots__ = ("dst_index", "mnemonic", "src_index", "vex")
+    __slots__ = ("dst_index", "mnemonic", "src1_index", "src_index", "vex")
 
-    def __init__(self, mnemonic: str, dst_index: int, src_index: int, vex: bool = False) -> None:
+    def __init__(
+        self,
+        mnemonic: str,
+        dst_index: int,
+        src_index: int,
+        vex: bool = False,
+        src1_index: int | None = None,
+    ) -> None:
         self.mnemonic = mnemonic
         self.dst_index = dst_index
         self.src_index = src_index
         self.vex = vex
+        self.src1_index = src1_index
 
 
 class VirtualizedFpPackedMemOp:

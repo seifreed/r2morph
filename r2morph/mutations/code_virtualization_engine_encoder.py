@@ -6,6 +6,7 @@ import struct
 
 import r2morph.core.randomness as random
 from r2morph.mutations.code_virtualization_engine_common import (
+    _FP_PACKED_VEX_OPERATIONS,
     _FP_PACKED_WIDTH,
     VMScheme,
     pack_immediate,
@@ -31,6 +32,7 @@ from r2morph.mutations.code_virtualization_layout import (
     mem_permuted_fields,
     op_permuted_fields,
     pair_permuted_fields,
+    triple_permuted_fields,
 )
 
 EngineOp = (
@@ -102,9 +104,20 @@ class _BytecodeEncoder:
 
     def _emit_fp(self, op: object) -> bool:
         if isinstance(op, VirtualizedFpPackedOp):
-            position = self._opcode(op.mnemonic, _FP_PACKED_WIDTH)
-            fields = {"dst": bytes([op.dst_index]), "src": bytes([op.src_index])}
-            self._emit_fields(position, pair_permuted_fields("dst", "src", self.field_perm), fields)
+            if op.src1_index is None:
+                position = self._opcode(op.mnemonic, _FP_PACKED_WIDTH)
+                fields = {"dst": bytes([op.dst_index]), "src": bytes([op.src_index])}
+                order = pair_permuted_fields("dst", "src", self.field_perm)
+            else:
+                position = self._opcode("fppackedvex", _FP_PACKED_WIDTH)
+                fields = {
+                    "dst": bytes([op.dst_index]),
+                    "src1": bytes([op.src1_index]),
+                    "src2": bytes([op.src_index]),
+                    "op": bytes([_FP_PACKED_VEX_OPERATIONS.index(op.mnemonic)]),
+                }
+                order = [*triple_permuted_fields("dst", "src1", "src2", self.field_perm), ("op", 1)]
+            self._emit_fields(position, order, fields)
         elif isinstance(op, VirtualizedFpPackedMemOp):
             position = self._opcode(op.kind, _FP_PACKED_WIDTH)
             fields = self._base_fields(op.xmm_index, op.base_index, op.disp)

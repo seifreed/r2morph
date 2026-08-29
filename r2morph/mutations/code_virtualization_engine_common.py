@@ -230,6 +230,58 @@ _FP_PACKED_ARITH_KINDS: tuple[str, ...] = (
     "xorps",
     "xorpd",
 )
+_FP_PACKED_VEX_ARITH_KINDS: tuple[str, ...] = ("fppackedvex",)
+_FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
+    "vaddpd",
+    "vaddps",
+    "vsubpd",
+    "vsubps",
+    "vmulpd",
+    "vmulps",
+    "vdivpd",
+    "vdivps",
+    "vminpd",
+    "vminps",
+    "vmaxpd",
+    "vmaxps",
+    "vandpd",
+    "vandps",
+    "vorpd",
+    "vorps",
+    "vxorpd",
+    "vxorps",
+    "vpand",
+    "vpandn",
+    "vpor",
+    "vpxor",
+    "vpaddb",
+    "vpsubb",
+    "vpaddw",
+    "vpsubw",
+    "vpaddd",
+    "vpsubd",
+    "vpaddq",
+    "vpsubq",
+    "vpmulld",
+    "vpminsd",
+    "vpmaxsd",
+    "vpcmpeqd",
+    "vpcmpgtd",
+    "vpaddusb",
+    "vpsubusb",
+    "vpaddusw",
+    "vpsubusw",
+    "vpavgb",
+    "vpavgw",
+    "vpsadbw",
+    "vpmaddwd",
+    "vpmulhuw",
+    "vpmulhw",
+    "vpackuswb",
+    "vpackssdw",
+    "vpunpcklbw",
+    "vpunpcklwd",
+)
 _FP_PACKED_MEM_KINDS: tuple[str, ...] = ("fppload", "fppstore")
 # Micro-op primitives of the virtual operand stack. Reg-reg GP arithmetic lowers to
 # a push/push/binop/pop sequence over the vstack rather than one handler computing
@@ -261,7 +313,10 @@ _OP_KEYS: tuple[tuple[str, bool, int], ...] = (
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_COMPARE_MEM_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_CONVERT_KINDS)
     + tuple((kind, False, width) for width in (64, 32) for kind in _FP_ARITH_MEM_KINDS)
-    + tuple((kind, False, _FP_PACKED_WIDTH) for kind in _FP_PACKED_ARITH_KINDS + _FP_PACKED_MEM_KINDS)
+    + tuple(
+        (kind, False, _FP_PACKED_WIDTH)
+        for kind in _FP_PACKED_ARITH_KINDS + _FP_PACKED_VEX_ARITH_KINDS + _FP_PACKED_MEM_KINDS
+    )
 )
 _QWORD_BROADCAST = 0x0101010101010101
 _DWORD_BROADCAST = 0x01010101

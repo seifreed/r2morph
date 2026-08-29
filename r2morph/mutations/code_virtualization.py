@@ -174,6 +174,13 @@ def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
         _kind, mnemonic, destination, first_source, second_source = vex
         if destination == first_source:
             return VirtualizedFpPackedOp(mnemonic, destination, second_source, vex=True)
+        return VirtualizedFpPackedOp(
+            f"v{mnemonic}",
+            destination,
+            second_source,
+            vex=True,
+            src1_index=first_source,
+        )
     decoded = _decode_fp_packed_arith(text)
     if decoded is not None:
         _kind, mnemonic, destination, source = decoded

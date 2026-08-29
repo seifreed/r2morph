@@ -17,6 +17,8 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
 )
 from tests.utils.assertions import expect
 
+_EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
+
 
 def test_decode_packed_integer_xor_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("pxor xmm0, xmm1") == ("fppacked", "pxor", 0, 1))
@@ -135,8 +137,16 @@ def test_decode_engine_vex128_packed_add_uses_existing_source_as_destination() -
     expect(isinstance(item, VirtualizedFpPackedOp) and item.vex)
 
 
-def test_decode_engine_vex128_packed_add_rejects_non_destructive_source_form() -> None:
-    expect(_decode_run_item("vaddps xmm0, xmm1, xmm2") is None)
+def test_decode_engine_vex128_packed_add_preserves_non_destructive_sources() -> None:
+    item = _decode_run_item("vaddps xmm0, xmm1, xmm2")
+    expect(
+        isinstance(item, VirtualizedFpPackedOp)
+        and item.vex
+        and item.mnemonic == "vaddps"
+        and item.dst_index == 0
+        and item.src1_index == 1
+        and item.src_index == _EXPECTED_NON_DESTRUCTIVE_SOURCE
+    )
 
 
 def test_decode_vex128_packed_minimum_returns_three_operand_item() -> None:

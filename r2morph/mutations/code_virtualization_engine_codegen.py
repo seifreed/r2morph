@@ -213,6 +213,7 @@ def _interpreter_asm(
         # a per-handler scratch-register bijection makes the body itself diverge, so
         # duplicate handlers share neither junk nor register-allocation fingerprint.
         handlers.set_record_padding(scheme.record_padding[index] if scheme.record_padding else 0)
+        handlers.handler_index = index
         body = rename_body(
             handlers.handler_body(
                 mnemonic,
