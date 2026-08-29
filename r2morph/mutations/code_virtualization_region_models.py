@@ -59,10 +59,10 @@ class Region:
     of their target item. ``exit_vaddr`` is the native terminator the VM jumps
     back to. ``op_keys`` is the set of interpreter handlers the region needs.
 
-    ``target_map`` maps a native instruction address to the index of its item, for
-    the addresses a computed jump (``ijmp``) may resolve to at runtime. It is empty
-    for the straight-line contract (no computed jumps) and populated only by the
-    dispatch-region contract, so an ordinary region encodes byte-identically.
+    ``target_map`` maps native instruction addresses to item indices for computed
+    jumps and statically proven local indirect calls. The boolean below selects
+    virtual call/return handling for the latter; external indirect calls remain
+    native ABI bridges.
     """
 
     instructions: list[tuple[Any, ...]]
@@ -71,6 +71,7 @@ class Region:
     op_keys: set[str]
     body_ranges: list[tuple[int, int]]
     target_map: dict[int, int] = field(default_factory=dict)
+    has_internal_indirect_call: bool = False
 
 
 _KEY_FIELD_INDEXES: dict[str, tuple[int, ...]] = {

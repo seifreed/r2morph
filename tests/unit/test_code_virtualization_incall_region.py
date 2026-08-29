@@ -19,6 +19,7 @@ from r2morph.mutations.code_virtualization_region_codegen import build_region_bl
 from tests.utils.assertions import expect
 
 _CAVE_VADDR = 0x500000
+_INTERNAL_CALL_TARGET = 0x100C
 
 
 def _insn(addr: int, size: int, itype: str, opcode: str, **extra: object) -> dict[str, object]:
@@ -38,6 +39,18 @@ def _in_function_call_instructions() -> list[dict[str, object]]:
         _insn(0x1009, 1, "ret", "ret"),
         _insn(0x100A, 2, "add", "add ecx, edx"),
         _insn(0x100C, 1, "ret", "ret"),
+    ]
+
+
+def _in_function_indirect_call_instructions() -> list[dict[str, object]]:
+    """A register-indirect call whose RIP-relative target is a local block."""
+    return [
+        _insn(0x1000, 7, "lea", "lea rax, [rip + 0x5]"),
+        _insn(0x1007, 2, "rcall", "call rax"),
+        _insn(0x1009, 2, "add", "add eax, ebx"),
+        _insn(0x100B, 1, "ret", "ret"),
+        _insn(_INTERNAL_CALL_TARGET, 2, "add", "add eax, ebx"),
+        _insn(0x100E, 1, "ret", "ret"),
     ]
 
 
@@ -86,3 +99,33 @@ def test_extract_region_keeps_out_of_function_call_as_native_bridge() -> None:
     expect(region is not None)
     expect(any(item[0] == "call" for item in region.instructions))
     expect(not (any(item[0] in ("vcall", "vret") for item in region.instructions)))
+
+
+def test_extract_region_virtualizes_static_local_indirect_call() -> None:
+    """A statically proven local indirect target gets a virtual return path."""
+    region = extract_region(_in_function_indirect_call_instructions(), randomness.Random(1))
+    expect(region is not None)
+    expect(region.has_internal_indirect_call)
+    expect(_INTERNAL_CALL_TARGET in region.target_map)
+    expect(any(item[0] == "vret" for item in region.instructions))
+
+
+def test_extract_region_keeps_unproven_indirect_call_native() -> None:
+    """An indirect call without a local target proof keeps the native ABI path."""
+    instructions = [
+        _insn(0x1000, 2, "rcall", "call rax"),
+        _insn(0x1002, 1, "ret", "ret"),
+    ]
+    region = extract_region(instructions, randomness.Random(1))
+    expect(region is not None)
+    expect(not region.has_internal_indirect_call)
+    expect(region.target_map == {})
+    expect(not (any(item[0] == "vret" for item in region.instructions)))
+
+
+def test_extract_region_static_local_indirect_call_assembles() -> None:
+    """The local indirect-call route produces a valid interpreter blob."""
+    region = extract_region(_in_function_indirect_call_instructions(), randomness.Random(1))
+    expect(region is not None)
+    scheme = build_region_scheme(region, randomness.Random(1))
+    expect(build_region_blob(region, _CAVE_VADDR, scheme) is not None)

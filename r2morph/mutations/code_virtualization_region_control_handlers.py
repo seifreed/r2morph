@@ -302,11 +302,32 @@ def _icall_handler_asm(
     key: str,
     slot: tuple[int, ...],
     bridge: CallBridgeConfig | None = None,
+    internal_target_map: bool = False,
 ) -> str:
-    """Register-indirect ``call reg``: the target is the program value of a GP
-    register, read from its frame slot. Base-independent (no r15), so it nests."""
+    """Register-indirect ``call reg`` with native fallback and local VM re-entry."""
     target = f"  movzx r8d, byte ptr [rsi+1]\n  xor r8b, {key}\n  xor r8b, r13b\n" "  mov r10, qword ptr [rsp+r8*8]\n"
-    return _call_bridge_asm(index, slot, target, 2, bridge)
+    native = _call_bridge_asm(index, slot, target, 2, bridge)
+    if not internal_target_map:
+        return native
+    return target + _internal_call_target_asm(index, slot[RSP_INDEX] * 8) + f"icall_native_{index}:\n" + native
+
+
+def _internal_call_target_asm(index: int, rsp_off: int) -> str:
+    """Re-enter a mapped local target, otherwise branch to the native bridge."""
+    return (
+        "  lea r11, [rip+ijmp_map]\n  neg r10\n  add r10, r11\n"
+        "  mov ecx, dword ptr [r11]\n  add r11, 4\n"
+        f"icall_scan_{index}:\n  test ecx, ecx\n  jz icall_native_{index}\n"
+        f"  cmp qword ptr [r11], r10\n  je icall_internal_{index}\n"
+        f"  add r11, 12\n  dec ecx\n  jmp icall_scan_{index}\n"
+        f"icall_internal_{index}:\n  mov eax, dword ptr [r11+8]\n"
+        "  lea r9, [rip+bytecode]\n  add r9, rax\n"
+        "  lea r10, [rsi+2]\n"
+        f"  mov r11, qword ptr [rsp+{rsp_off}]\n  sub r11, 8\n"
+        "  mov qword ptr [r11], r10\n"
+        f"  mov qword ptr [rsp+{rsp_off}], r11\n"
+        "  mov rsi, r9\n  jmp vm_dispatch\n"
+    )
 
 
 def _syscall_handler_asm(slot: tuple[int, ...]) -> str:

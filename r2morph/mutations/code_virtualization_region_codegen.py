@@ -219,7 +219,9 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
     # the spilled context. rsp is only ever a memory base or a push/pop target, so
     # this constant shift stays self-consistent. r13/r14 are free scratch between
     # handlers; r15 holds the bytecode base.
-    has_in_function_call = any(item[0] == "vcall" for item in region.instructions)
+    has_in_function_call = any(
+        item[0] == "vcall" or (item[0] == "icall" and region.has_internal_indirect_call) for item in region.instructions
+    )
     # A region with an in-function call reserves one floor cell below the relocated
     # program stack and zeroes it: a vret that unwinds to the outermost frame finds
     # this non-bytecode value on top (no vcall resume is pending there) and returns
@@ -303,6 +305,7 @@ def _interpreter_asm(region: Region, scheme: RegionScheme) -> str:
                     scheme.isa_seed,
                     scheme.flags_offset,
                     _region_has_ymm(region),
+                    region.has_internal_indirect_call,
                 ),
                 junk_rng,
                 entry_prefix=state_decode,

@@ -428,6 +428,24 @@ def _resolve_region_targets(build: _RegionBuild, instructions: list[dict[str, An
     return True
 
 
+def _has_static_internal_indirect_call(build: _RegionBuild) -> bool:
+    """Recognize an indirect call whose target is proven by its adjacent producer."""
+    for index, item in enumerate(build.items):
+        if item[0] != "icall" or index == 0:
+            continue
+        producer = build.items[index - 1]
+        target: int | None = None
+        if producer[0] == "learip" and producer[1] == item[1]:
+            target = producer[2]
+        elif producer[0] == "op":
+            operation: VirtualizedOp = producer[1]
+            if operation.mnemonic == "mov" and operation.is_immediate and operation.dst_index == item[1]:
+                target = operation.value
+        if target is not None and target in build.item_index_of:
+            return True
+    return False
+
+
 def extract_region(
     instructions: list[dict[str, Any]], rng: random.Random | None = None, allow_computed_jump: bool = False
 ) -> Region | None:
@@ -445,6 +463,11 @@ def extract_region(
     build = _build_region_items(instructions, allow_computed_jump)
     if build is None or not _resolve_region_targets(build, instructions):
         return None
+    has_internal_indirect_call = _has_static_internal_indirect_call(build)
+    if has_internal_indirect_call:
+        for item in build.items:
+            if item[0] == "exit" and item[1] in build.ret_addrs:
+                item[0] = "vret"
     items = build.items
     stack_states = _stack_states(items)
     if stack_states is None:
@@ -478,7 +501,9 @@ def extract_region(
     # when the region actually contains a computed jump; otherwise the map is empty
     # and the region's blob is byte-identical to the straight-line contract's.
     has_computed_jump = any(item[0] in ("ijmp", "ijmpmem", "ijmpmemnb") for item in items)
-    target_map: dict[int, int] | None = dict(build.item_index_of) if has_computed_jump else None
+    target_map: dict[int, int] | None = (
+        dict(build.item_index_of) if has_computed_jump or has_internal_indirect_call else None
+    )
 
     items = _lower_arith_to_microops(items, target_map)
     # Junk identity movs (semantics-preserving) padding the bytecode; done after the
@@ -496,6 +521,7 @@ def extract_region(
         op_keys,
         body_ranges,
         target_map if target_map is not None else {},
+        has_internal_indirect_call,
     )
 
 

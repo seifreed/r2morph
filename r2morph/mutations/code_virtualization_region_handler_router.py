@@ -150,6 +150,7 @@ class HandlerContext:
     isa_seed: int = 0
     flags_offset: int = 0x80
     has_ymm: bool = False
+    has_internal_indirect_call: bool = False
 
 
 class HandlerBodyRouter:
@@ -214,6 +215,7 @@ class HandlerBodyRouter:
                     stack_depth,
                     self.context.has_ymm,
                 ),
+                self.context.has_internal_indirect_call,
             )
         elif key.startswith(("callmem_", "callmemrip_")):
             config = CallMemoryHandlerConfig(
