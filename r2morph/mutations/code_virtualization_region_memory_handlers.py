@@ -64,6 +64,28 @@ def _memory_store_slot_asm(width: int) -> str:
     return f"  mov rax, qword ptr [rsp+r8*8]\n  mov {value[0]} ptr [r10], {value[1]}\n"
 
 
+def _partial_result_store_asm(width: int) -> str:
+    if width == _QWORD_WIDTH_BITS:
+        return "  mov qword ptr [rsp+r8*8], r10\n"
+    if width == _DWORD_WIDTH_BITS:
+        return "  mov qword ptr [rsp+r8*8], r10d\n"
+    mask = 0xFF if width == _BYTE_WIDTH_BITS else 0xFFFF
+    return (
+        f"  and r10d, {mask}\n  mov rax, qword ptr [rsp+r8*8]\n"
+        f"  and rax, {-mask - 1}\n  or rax, r10\n  mov qword ptr [rsp+r8*8], rax\n"
+    )
+
+
+def _memory_result_store_asm(width: int, address: str) -> str:
+    if width == _QWORD_WIDTH_BITS:
+        return f"  mov qword ptr {address}, r10\n"
+    if width == _DWORD_WIDTH_BITS:
+        return f"  mov dword ptr {address}, r10d\n"
+    value = "r10b" if width == _BYTE_WIDTH_BITS else "r10w"
+    size = "byte" if width == _BYTE_WIDTH_BITS else "word"
+    return f"  mov {size} ptr {address}, {value}\n"
+
+
 def _mem_address_asm(
     riprel: bool, key: str, key_dword: str, field_perm: int = 0, addr_variant: int = 0
 ) -> tuple[str, int]:
@@ -262,8 +284,11 @@ def _cmp_memory_handler_asm(config: MemoryOperationConfig) -> str:
     # a = the register operand, b = the memory operand; compute a - b via MBA.
     if width == _QWORD_WIDTH_BITS:
         body += "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
-    else:
+    elif width == _DWORD_WIDTH_BITS:
         body += "  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+    else:
+        load = "byte" if width == _BYTE_WIDTH_BITS else "word"
+        body += f"  movzx ebx, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr [r10]\n"
     body += "  mov rbp, rax\n"
     if config.compare_variant == 0:
         body += "  neg rax\n  mov r10, rbx\n" + arith_fold("add", 0, config.arith_variant)
@@ -271,6 +296,9 @@ def _cmp_memory_handler_asm(config: MemoryOperationConfig) -> str:
         body += compare_compute("cmp", 0, config.arith_variant, config.compare_variant)
     if width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
+    elif width in (_BYTE_WIDTH_BITS, _WORD_WIDTH_BITS):
+        mask = 0xFF if width == _BYTE_WIDTH_BITS else 0xFFFF
+        body += f"  and ebx, {mask}\n  and ebp, {mask}\n  and r10d, {mask}\n"
     body += _synth_flags_asm(width, "sub", config.flag_variant)
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
@@ -297,8 +325,11 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
     body += "  mov r12, r10\n"
     if width == _QWORD_WIDTH_BITS:
         body += "  mov rbx, qword ptr [r12]\n  mov rax, qword ptr [rsp+r8*8]\n"
-    else:
+    elif width == _DWORD_WIDTH_BITS:
         body += "  mov ebx, dword ptr [r12]\n  mov eax, dword ptr [rsp+r8*8]\n"
+    else:
+        load = "byte" if width == _BYTE_WIDTH_BITS else "word"
+        body += f"  movzx ebx, {load} ptr [r12]\n  movzx eax, {load} ptr [rsp+r8*8]\n"
     body += "  mov rbp, rax\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
@@ -306,16 +337,16 @@ def _op_memdst_handler_asm(config: MemoryOperationConfig) -> str:
     body += arith_fold(mnemonic, 0, config.arith_variant)
     if width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
+    elif width in (_BYTE_WIDTH_BITS, _WORD_WIDTH_BITS):
+        mask = 0xFF if width == _BYTE_WIDTH_BITS else 0xFFFF
+        body += f"  and ebx, {mask}\n  and ebp, {mask}\n  and r10d, {mask}\n"
     body += _synth_flags_asm(
         width,
         mnemonic if mnemonic in ("add", "sub") else "logic",
         config.flag_variant,
     )
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
-    if width == _QWORD_WIDTH_BITS:
-        body += "  mov qword ptr [r12], r10\n"
-    else:
-        body += "  mov dword ptr [r12], r10d\n"
+    body += _memory_result_store_asm(width, "[r12]")
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 
@@ -464,8 +495,11 @@ def _op_mem_synth_tail(
     """
     if width == _QWORD_WIDTH_BITS:
         body = "  mov rbx, qword ptr [rsp+r8*8]\n  mov rax, qword ptr [r10]\n"
-    else:
+    elif width == _DWORD_WIDTH_BITS:
         body = "  mov ebx, dword ptr [rsp+r8*8]\n  mov eax, dword ptr [r10]\n"
+    else:
+        load = "byte" if width == _BYTE_WIDTH_BITS else "word"
+        body = f"  movzx ebx, {load} ptr [rsp+r8*8]\n  movzx eax, {load} ptr [r10]\n"
     body += "  mov rbp, rax\n"
     if mnemonic == "sub":
         body += "  neg rax\n"
@@ -473,13 +507,16 @@ def _op_mem_synth_tail(
     body += arith_fold(mnemonic, 0, config.arith_variant)
     if width == _DWORD_WIDTH_BITS:
         body += "  mov r10d, r10d\n"
+    elif width in (_BYTE_WIDTH_BITS, _WORD_WIDTH_BITS):
+        mask = 0xFF if width == _BYTE_WIDTH_BITS else 0xFFFF
+        body += f"  and ebx, {mask}\n  and ebp, {mask}\n  and r10d, {mask}\n"
     body += _synth_flags_asm(
         width,
         mnemonic if mnemonic in ("add", "sub") else "logic",
         config.flag_variant,
     )
     body += f"  mov qword ptr [rsp+{_FLAGS_OFFSET}], r11\n"
-    body += "  mov qword ptr [rsp+r8*8], r10\n"
+    body += _partial_result_store_asm(width)
     return body + f"  add rsi, {advance}\n  jmp vm_dispatch\n"
 
 

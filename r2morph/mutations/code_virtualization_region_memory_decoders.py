@@ -308,7 +308,7 @@ def _decode_reg_memory(
     memory_text, register_text = (left, right) if spec.memory_destination else (right, left)
     if "[" not in memory_text or "[" in register_text:
         return None
-    register = _register_operand(register_text.lower())
+    register = _memory_register_operand(register_text.lower())
     if register is None:
         return None
 
@@ -670,7 +670,7 @@ def _decode_op_mem_indexed(text: str, mnemonic: str) -> tuple[Any, ...] | None:
     left, right = (token.strip() for token in parts[1].split(",", 1))
     if "[" in left or "[" not in right:
         return None
-    reg = _register_operand(left.lower())
+    reg = _memory_register_operand(left.lower())
     if reg is None:
         return None
     parsed = _parse_indexed_operand(right)
