@@ -54,3 +54,43 @@ int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 4
         and runtime_result.returncode == EXPECTED_EXIT_CODE,
         "unwind-safe partial virtualization changed the executable result",
     )
+
+
+def test_code_virtualization_does_not_globally_degrade_unwind_free_function(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("the unwind-safe virtualization contract is x86-64 specific")
+    source = tmp_path / "unwind_scope.cpp"
+    executable = tmp_path / "unwind_scope"
+    source.write_text("""
+#include <stdexcept>
+
+__attribute__((noinline)) int safe_arithmetic(int value) {
+    return value * 3 + 1;
+}
+
+int protected_function(int value) {
+    try {
+        if (value < 0) {
+            throw std::runtime_error("negative");
+        }
+        return value + 1;
+    } catch (const std::runtime_error&) {
+        return 0;
+    }
+}
+
+int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 42 : 1; }
+""")
+    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    expect(result.returncode == 0, "failed to compile the scoped unwinding fixture")
+
+    with Binary(executable, writable=True) as binary:
+        safe_address = next(
+            int(function["addr"])
+            for function in binary.get_functions()
+            if "safe_arithmetic" in function.get("name", "")
+        )
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20}).apply(binary)
+
+    degraded_addresses = {record["function_address"] for record in stats["partial_virtualization"]}
+    expect(safe_address not in degraded_addresses, "unwind metadata from another function degraded safe_arithmetic")

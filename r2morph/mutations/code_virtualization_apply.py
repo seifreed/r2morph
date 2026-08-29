@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 import r2morph.core.randomness as random
+from r2morph.analysis.exception_reader import ExceptionInfoReader
 from r2morph.core.constants import MINIMUM_FUNCTION_SIZE
 
 logger = logging.getLogger(__name__)
@@ -130,6 +131,24 @@ def _transform_function(
     return {"skipped": 0, "unsupported": 1, "virtualized": 0, "instructions": 0, "bytecode": 0, "partial": 0}
 
 
+def _function_has_unwind_metadata(
+    unwind_section: str | None,
+    function_address: int,
+    exception_frames: dict[int, Any] | None,
+) -> bool:
+    """Gate only ELF functions whose parsed frame carries landing pads.
+
+    Other formats and unparsed ELF frames remain conservative until their unwind
+    records can be relocated alongside the injected interpreter.
+    """
+    if unwind_section is None:
+        return False
+    if exception_frames is None:
+        return True
+    frame = exception_frames.get(function_address)
+    return frame is None or bool(frame.landing_pads)
+
+
 def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]:
     """Apply code virtualization using the pass instance's transformation seams."""
     pass_instance._reset_random()
@@ -141,6 +160,11 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
     partial: list[dict[str, Any]] = []
     unsupported_total = partial_total = 0
     unwind_section = _unwind_metadata_name(binary)
+    exception_frames: dict[int, Any] | None = None
+    if unwind_section is not None and unwind_section != "unavailable":
+        arch_info = binary.get_arch_info()
+        if str(arch_info.get("format", "")).startswith("ELF"):
+            exception_frames = ExceptionInfoReader(binary).read_exception_frames()
 
     for func in binary.get_functions():
         if virtualized >= pass_instance.max_functions:
@@ -181,7 +205,7 @@ def apply_code_virtualization(pass_instance: Any, binary: Any) -> dict[str, Any]
             binary,
             func,
             (unsupported, partial),
-            unwind_metadata=unwind_section is not None,
+            unwind_metadata=_function_has_unwind_metadata(unwind_section, int(func["addr"]), exception_frames),
         )
         skipped += outcome["skipped"]
         unsupported_total += outcome["unsupported"]
