@@ -81,10 +81,11 @@ int protected_function(int value) {
 
 int main() { return safe_arithmetic(13) == 40 && protected_function(-1) == 0 ? 42 : 1; }
 """)
-    result = run_command(["g++", "-O0", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
+    result = run_command(["g++", "-O2", "-fno-pie", "-no-pie", "-o", executable, source], timeout=30)
     expect(result.returncode == 0, "failed to compile the scoped unwinding fixture")
 
     with Binary(executable, writable=True) as binary:
+        binary.analyze()
         safe_address = next(
             int(function["addr"])
             for function in binary.get_functions()
