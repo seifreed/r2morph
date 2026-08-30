@@ -640,11 +640,17 @@ class HandlerBodyRouter:
         elif key.startswith("fpmovvex256_"):
             body = _fp_vex_256_move_handler_asm(key, self.context.key, self.context.field_perm)
         elif key.startswith("fparithvex_"):
-            body = _fp_vex_scalar_arith_handler_asm(key, self.context.key, self.context.field_perm)
+            body = _fp_vex_scalar_arith_handler_asm(
+                key, self.context.key, self.context.field_perm, self.context.has_ymm
+            )
         elif key.startswith("fppackedvex_"):
-            body = _fp_packed_vex_arith_handler_asm(key, self.context.key, self.context.field_perm)
+            body = _fp_packed_vex_arith_handler_asm(
+                key, self.context.key, self.context.field_perm, self.context.has_ymm
+            )
         elif key.startswith("fppackedveximm_"):
-            body = _fp_vex_packed_shift_immediate_handler_asm(key, self.context.key, self.context.field_perm)
+            body = _fp_vex_packed_shift_immediate_handler_asm(
+                key, self.context.key, self.context.field_perm, self.context.has_ymm
+            )
         elif key.startswith("fpmovvex_"):
-            body = _fp_vex_move_handler_asm(key, self.context.key, self.context.field_perm)
+            body = _fp_vex_move_handler_asm(key, self.context.key, self.context.field_perm, self.context.has_ymm)
         return body

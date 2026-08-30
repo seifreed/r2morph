@@ -303,19 +303,20 @@ def _fp_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_per
     )
 
 
-def _fp_vex_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+def _fp_vex_packed_shift_immediate_handler_asm(
+    handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False
+) -> str:
     """Apply a VEX.128 packed integer operation with an immediate byte."""
     _, instruction, immediate_text = handler_key.split("_")
     immediate = int(immediate_text)
     off = pair_offsets("dst", "src", field_perm)
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
     return (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n  v{instruction} xmm0, xmm0, {immediate}\n"
-        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        + _clear_ymm_upper_slot_asm("r8")
-        + "  add rsi, 4\n  jmp vm_dispatch\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 
@@ -335,10 +336,13 @@ def _fp_vex_256_packed_shift_immediate_handler_asm(handler_key: str, key: str, f
     )
 
 
-def _fp_packed_vex_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+def _fp_packed_vex_arith_handler_asm(
+    handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False
+) -> str:
     """Run a VEX.128 packed operation while preserving unrelated YMM upper halves."""
     instr = handler_key.split("_", 1)[1]
     off = triple_offsets("dst", "src1", "src2", field_perm)
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
     return (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
@@ -347,18 +351,19 @@ def _fp_packed_vex_arith_handler_asm(handler_key: str, key: str, field_perm: int
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
         f"  {instr} xmm0, xmm1\n"
-        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        + _clear_ymm_upper_slot_asm("r8")
-        + "  add rsi, 4\n  jmp vm_dispatch\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 
-def _fp_vex_scalar_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+def _fp_vex_scalar_arith_handler_asm(
+    handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False
+) -> str:
     """Run VEX.128 scalar arithmetic with src1 upper-lane semantics."""
     _, operation, width_text = handler_key.split("_")
     width = int(width_text)
     suffix = "ss" if width == _DWORD_WIDTH_BITS else "sd"
     off = triple_offsets("dst", "src1", "src2", field_perm)
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
     return (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src1']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
@@ -367,23 +372,20 @@ def _fp_vex_scalar_arith_handler_asm(handler_key: str, key: str, field_perm: int
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
         f"  movups xmm1, [rsp + r10 + {_XMM_SAVE_OFFSET}]\n"
         f"  v{operation}{suffix} xmm0, xmm0, xmm1\n"
-        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        + _clear_ymm_upper_slot_asm("r8")
-        + "  add rsi, 4\n  jmp vm_dispatch\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 4\n  jmp vm_dispatch\n"
     )
 
 
-def _fp_vex_move_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
+def _fp_vex_move_handler_asm(handler_key: str, key: str, field_perm: int = 0, preserve_ymm: bool = False) -> str:
     """Copy the lower 128 bits of a VEX.128 move into the destination slot."""
     off = pair_offsets("dst", "src", field_perm)
+    clear_upper = _clear_ymm_upper_slot_asm("r8") if preserve_ymm else ""
     return (
         f"  movzx r8d, byte ptr [rsi+{off['dst']}]\n  xor r8b, {key}\n  xor r8b, r13b\n"
         f"  movzx r9d, byte ptr [rsi+{off['src']}]\n  xor r9b, {key}\n  xor r9b, r13b\n"
         "  shl r8, 4\n  shl r9, 4\n"
         f"  movups xmm0, [rsp + r9 + {_XMM_SAVE_OFFSET}]\n"
-        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-        + _clear_ymm_upper_slot_asm("r8")
-        + "  add rsi, 3\n  jmp vm_dispatch\n"
+        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n" + clear_upper + "  add rsi, 3\n  jmp vm_dispatch\n"
     )
 
 

@@ -55,9 +55,15 @@ def test_vex_256_immediate_shuffle_assembly_uses_native_immediate() -> None:
 
 
 def test_vex128_packed_handler_commits_zeroed_ymm_upper_slot() -> None:
-    assembly = _fp_packed_vex_arith_handler_asm("fppackedvex_paddd", "0xAA")
+    assembly = _fp_packed_vex_arith_handler_asm("fppackedvex_paddd", "0xAA", preserve_ymm=True)
 
     expect("pxor xmm2, xmm2" in assembly and "[rsp + r8 + 768]" in assembly)
+
+
+def test_vex128_packed_handler_without_ymm_state_stays_inside_frame() -> None:
+    assembly = _fp_packed_vex_arith_handler_asm("fppackedvex_paddd", "0xAA")
+
+    expect("[rsp + r8 + 768]" not in assembly)
 
 
 def test_vex_256_region_builds_a_real_blob() -> None:
