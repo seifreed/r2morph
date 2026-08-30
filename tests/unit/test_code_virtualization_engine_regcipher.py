@@ -25,7 +25,7 @@ def test_engine_register_file_uses_runtime_checksum_key() -> None:
             fragment in asm
             for fragment in (
                 f"mov rcx, qword ptr [rsp + {slot * 8}]\n"
-                "  xor rcx, rax\n"
+                f"  xor rcx, qword ptr [rsp + {layout.key_qword_offset}]\n"
                 f"  mov qword ptr [rsp + {slot * 8}], rcx",
                 f"mov rax, qword ptr [rsp + {slot * 8}]\n  xor rax, {handler_key}",
                 f"xor rax, {entry_key}\n  mov qword ptr [rsp + {rsp_slot * 8}], rax",

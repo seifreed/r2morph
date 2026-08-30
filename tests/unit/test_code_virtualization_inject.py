@@ -342,6 +342,20 @@ def test_inject_blob_relocates_phoff_inside_the_first_rx_load(tmp_path: Path) ->
     expect(owner.p_flags == _PF_R | _PF_X)
 
 
+def test_inject_blob_keeps_relocated_table_on_image_load_bias(tmp_path: Path) -> None:
+    """The relocated table must match the base plus e_phoff kernel formula."""
+    target = _copy_fixture(_FIXTURE_DYN, tmp_path)
+
+    _inject_into(target, _BLOB)
+
+    headers = program_headers(target)
+    e_phoff = struct.unpack_from("<Q", target.read_bytes(), _E_PHOFF)[0]
+    loads = [entry for entry in headers if entry.p_type == PT_LOAD]
+    table_load = next(entry for entry in loads if entry.p_offset == e_phoff)
+    image_load_bias = min(entry.p_vaddr - entry.p_offset for entry in loads)
+    expect(table_load.p_vaddr - table_load.p_offset == image_load_bias)
+
+
 def test_inject_blob_retargets_pt_phdr_at_the_relocated_table(tmp_path: Path) -> None:
     """Without this a dynamic loader computes the wrong load bias for a PIE."""
     target = _write_synthetic_elf(tmp_path / "synthetic")

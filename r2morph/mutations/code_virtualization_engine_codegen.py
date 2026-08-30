@@ -178,7 +178,7 @@ def _interpreter_asm(
     )
     encrypt_slots = "".join(
         f"  mov rcx, qword ptr [rsp + {slot[index] * 8}]\n"
-        "  xor rcx, rax\n"
+        f"  xor rcx, qword ptr [rsp + {layout.key_qword_offset}]\n"
         f"  mov qword ptr [rsp + {slot[index] * 8}], rcx\n"
         for index in save_order
     )

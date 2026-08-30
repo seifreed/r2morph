@@ -223,6 +223,11 @@ def _exec_anchor(binary: Any, loads: list[_Load]) -> tuple[int, int] | None:
     return None
 
 
+def _image_load_bias(loads: list[_Load]) -> int:
+    """Return the image-relative base shared by every congruent load."""
+    return min(load.vaddr - load.offset for load in loads)
+
+
 def _plan_placement(binary: Any) -> _Placement | None:
     """Compute where a new segment would be appended, without writing."""
     header = _read_physical(binary, 0, _ELF64_HEADER_SIZE)
@@ -274,11 +279,16 @@ def _plan_placement(binary: Any) -> _Placement | None:
         )
 
     segment_vaddr = _align_up(max(load.vaddr + load.memsz for load in loads), _SEGMENT_ALIGN)
-    blob_offset = _align_up(_align_up(file_size, _SEGMENT_ALIGN) + _PHDR_RESERVE_SIZE, _SEGMENT_ALIGN)
+    image_load_bias = _image_load_bias(loads)
+    append_offset = _align_up(
+        max(_align_up(file_size, _SEGMENT_ALIGN), segment_vaddr - image_load_bias),
+        _SEGMENT_ALIGN,
+    )
+    blob_offset = _align_up(append_offset + _PHDR_RESERVE_SIZE, _SEGMENT_ALIGN)
     blob_segment_vaddr = segment_vaddr + _PHDR_RESERVE_SIZE
     return _Placement(
         file_size=file_size,
-        append_offset=_align_up(file_size, _SEGMENT_ALIGN),
+        append_offset=append_offset,
         segment_vaddr=segment_vaddr,
         blob_offset=blob_offset,
         blob_segment_vaddr=blob_segment_vaddr,
