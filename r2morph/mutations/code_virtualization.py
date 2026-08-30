@@ -67,6 +67,7 @@ from r2morph.mutations.code_virtualization_region_fp_decoders import (
     _decode_fp_vex_packed_arith,
     _decode_fp_vex_scalar_arith,
 )
+from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _decode_fp_vex_extra
 from r2morph.mutations.code_virtualization_region_memory_decoders import (
     _decode_lea,
     _decode_lea_indexed,
@@ -181,7 +182,26 @@ def _decode_fp_scalar_vex_item(text: str) -> VirtualizedFpScalarVexOp | None:
     return VirtualizedFpScalarVexOp(f"v{operation}{suffix}", destination, first_source, second_source)
 
 
+def _decode_fp_vex_extra_item(text: str) -> VirtualizedFpPackedOp | None:
+    extra = _decode_fp_vex_extra(text)
+    if extra is None or extra[0] != "fppackedvex":
+        return None
+    _kind, mnemonic, destination, first_source, second_source = extra
+    if destination == first_source:
+        return VirtualizedFpPackedOp(mnemonic, destination, second_source, vex=True)
+    return VirtualizedFpPackedOp(
+        f"v{mnemonic}",
+        destination,
+        second_source,
+        vex=True,
+        src1_index=first_source,
+    )
+
+
 def _decode_fp_packed_item(text: str) -> VirtualizedRunItem | None:
+    extra = _decode_fp_vex_extra_item(text)
+    if extra is not None:
+        return extra
     vex = _decode_fp_vex_packed_arith(text)
     if vex is not None:
         _kind, mnemonic, destination, first_source, second_source = vex

@@ -22,6 +22,7 @@ from r2morph.mutations.code_virtualization_region_fp_extra_decoders import _deco
 from tests.utils.assertions import expect
 
 _EXPECTED_NON_DESTRUCTIVE_SOURCE = 2
+_EXPECTED_BYTE_SHUFFLE_DESTINATION = 2
 
 
 def test_decode_packed_integer_xor_returns_vector_item() -> None:
@@ -159,6 +160,22 @@ def test_decode_engine_vex128_packed_add_preserves_non_destructive_sources() -> 
         and item.src1_index == 1
         and item.src_index == _EXPECTED_NON_DESTRUCTIVE_SOURCE
     )
+
+
+def test_decode_engine_vex128_byte_shuffle_returns_packed_item() -> None:
+    item = _decode_run_item("vpshufb xmm2, xmm0, xmm1")
+    expect(
+        isinstance(item, VirtualizedFpPackedOp)
+        and item.vex
+        and item.mnemonic == "vpshufb"
+        and item.dst_index == _EXPECTED_BYTE_SHUFFLE_DESTINATION
+        and item.src1_index == 0
+        and item.src_index == 1
+    )
+
+
+def test_decode_engine_vex256_byte_shuffle_is_rejected_by_linear_engine() -> None:
+    expect(_decode_run_item("vpshufb ymm2, ymm0, ymm1") is None)
 
 
 def test_decode_vex128_packed_minimum_returns_three_operand_item() -> None:

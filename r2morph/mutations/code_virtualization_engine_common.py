@@ -284,6 +284,7 @@ _FP_PACKED_VEX_OPERATIONS: tuple[str, ...] = (
     "vpackssdw",
     "vpunpcklbw",
     "vpunpcklwd",
+    "vpshufb",
 )
 _FP_SCALAR_VEX_ARITH_KINDS: tuple[str, ...] = (
     "fparithvex",
