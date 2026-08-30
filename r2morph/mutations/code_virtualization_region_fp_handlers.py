@@ -285,7 +285,7 @@ def _fp_packed_arith_handler_asm(handler_key: str, key: str, field_perm: int = 0
 
 
 def _fp_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
-    """Apply a legacy packed integer shift with an encrypted immediate count."""
+    """Apply a legacy packed integer operation with an encrypted immediate byte."""
     _, instruction, immediate_text = handler_key.split("_")
     immediate = int(immediate_text)
     off = pair_offsets("dst", "imm", field_perm)
@@ -299,7 +299,7 @@ def _fp_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_per
 
 
 def _fp_vex_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
-    """Apply a VEX.128 packed integer shift and clear its YMM upper half."""
+    """Apply a VEX.128 packed integer operation with an immediate byte."""
     _, instruction, immediate_text = handler_key.split("_")
     immediate = int(immediate_text)
     off = pair_offsets("dst", "src", field_perm)
@@ -314,7 +314,7 @@ def _fp_vex_packed_shift_immediate_handler_asm(handler_key: str, key: str, field
 
 
 def _fp_vex_256_packed_shift_immediate_handler_asm(handler_key: str, key: str, field_perm: int = 0) -> str:
-    """Apply a VEX.256 packed integer shift with one count for every lane."""
+    """Apply a VEX.256 packed integer operation with an immediate byte."""
     _, instruction, immediate_text = handler_key.split("_")
     immediate = int(immediate_text)
     off = pair_offsets("dst", "src", field_perm)

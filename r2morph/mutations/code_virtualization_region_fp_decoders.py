@@ -520,8 +520,8 @@ _FP_PACKED_ARITH: frozenset[str] = frozenset(
         "xorpd",
     }
 )
-_FP_PACKED_SHIFT_IMMEDIATE: frozenset[str] = frozenset(
-    {"psllw", "pslld", "psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad"}
+_FP_PACKED_IMMEDIATE: frozenset[str] = frozenset(
+    {"psllw", "pslld", "psllq", "psrlw", "psrld", "psrlq", "psraw", "psrad", "pshufd"}
 )
 _FP_PACKED_MOVE: frozenset[str] = frozenset({"movaps", "movups", "movapd", "movupd", "movdqa", "movdqu"})
 _FP_VEX_PACKED_ARITH: dict[str, str] = {
@@ -563,6 +563,7 @@ _FP_VEX_PACKED_ARITH: dict[str, str] = {
     "vpsrlw": "psrlw",
     "vpsrlq": "psrlq",
     "vpsraw": "psraw",
+    "vpshufd": "pshufd",
     "vpmulld": "pmulld",
     "vpminsd": "pminsd",
     "vpmaxsd": "pmaxsd",
@@ -604,12 +605,12 @@ _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
 
 
 def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:
-    """Decode a legacy packed integer shift with an immediate count."""
+    """Decode a legacy packed integer operation with an immediate byte."""
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT:
         return None
     mnemonic = parts[0].lower()
-    if mnemonic not in _FP_PACKED_SHIFT_IMMEDIATE:
+    if mnemonic not in _FP_PACKED_IMMEDIATE:
         return None
     operands = [token.strip() for token in parts[1].split(",")]
     if len(operands) != _PACKED_OPERAND_COUNT:
@@ -625,13 +626,13 @@ def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:
 
 
 def _decode_fp_vex_packed_immediate(text: str) -> tuple[str, str, int, int, int] | None:
-    """Decode VEX packed integer shifts whose count is an immediate byte."""
+    """Decode VEX packed integer operations whose control byte is immediate."""
     parts = text.split(None, 1)
     if len(parts) != _INSTRUCTION_PART_COUNT:
         return None
     mnemonic = parts[0].lower()
     operation = _FP_VEX_PACKED_ARITH.get(mnemonic)
-    if len(parts) != _INSTRUCTION_PART_COUNT or operation not in _FP_PACKED_SHIFT_IMMEDIATE:
+    if len(parts) != _INSTRUCTION_PART_COUNT or operation not in _FP_PACKED_IMMEDIATE:
         return None
     operands = [token.strip() for token in parts[1].split(",")]
     if len(operands) != _PACKED_SHIFT_IMMEDIATE_COUNT:

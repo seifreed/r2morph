@@ -66,6 +66,10 @@ def test_decode_packed_integer_immediate_shift_returns_item() -> None:
     expect(_decode_fp_packed_immediate("pslld xmm2, 5") == ("fppackedimm", "pslld", 2, 5))
 
 
+def test_decode_packed_integer_immediate_shuffle_returns_item() -> None:
+    expect(_decode_fp_packed_immediate("pshufd xmm2, 0x1b") == ("fppackedimm", "pshufd", 2, 0x1B))
+
+
 def test_decode_packed_integer_saturating_add_returns_vector_item() -> None:
     expect(_decode_fp_packed_arith("paddusb xmm0, xmm1") == ("fppacked", "paddusb", 0, 1))
 
@@ -193,6 +197,10 @@ def test_decode_vex_immediate_shift_selects_128_bit_item() -> None:
 
 def test_decode_vex_immediate_shift_selects_256_bit_item() -> None:
     expect(_decode_fp_vex_packed_immediate("vpsrad ymm2, ymm0, 7") == ("fppackedvex256imm", "psrad", 2, 0, 7))
+
+
+def test_decode_vex_immediate_shuffle_selects_256_bit_item() -> None:
+    expect(_decode_fp_vex_packed_immediate("vpshufd ymm2, ymm0, 0x1b") == ("fppackedvex256imm", "pshufd", 2, 0, 0x1B))
 
 
 def test_decode_vex128_scalar_arithmetic_preserves_source_one_semantics() -> None:

@@ -44,6 +44,15 @@ def test_vex_256_immediate_shift_assembly_uses_native_immediate() -> None:
     expect("vpsrad ymm0, ymm0, 7" in assembly)
 
 
+def test_vex_256_immediate_shuffle_assembly_uses_native_immediate() -> None:
+    items = [("fppackedvex256imm", "pshufd", 0, 1, 0x1B), ("exit", _EXIT_VADDR)]
+    op_keys = {_op_key(item) for item in items}
+    region = Region(items, _EXIT_VADDR, 0x1000, {key for key in op_keys if key is not None}, [(0x1000, 6)])
+    assembly = _interpreter_asm(region, build_region_scheme(region, randomness.Random(18)))
+
+    expect("vpshufd ymm0, ymm0, 27" in assembly)
+
+
 def test_vex_256_region_builds_a_real_blob() -> None:
     region = _vex_256_region()
     scheme = build_region_scheme(region, randomness.Random(7))
