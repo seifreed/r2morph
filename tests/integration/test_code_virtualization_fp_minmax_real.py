@@ -16,20 +16,23 @@ _EXPECTED_EXIT_CODE = 42
 _MINIMUM_VIRTUALIZED_INSTRUCTIONS = 4
 
 _SOURCE = r"""
-__attribute__((noinline)) static double scalar_minmax(double left, double right) {
+__attribute__((noinline)) double scalar_minmax(double left, double right) {
     double result = left;
     __asm__ volatile(
         "minsd %1, %0\n\t"
-        "maxsd %2, %0"
-        : "+x"(result)
-        : "m"(right), "x"(left));
+        "maxsd %1, %0"
+        : "+&x"(result)
+        : "x"(right));
     return result;
 }
 
-__attribute__((noinline)) static float scalar_single(float left, float right) {
+__attribute__((noinline)) float scalar_single(float left, float right) {
     float result = left;
-    __asm__ volatile("minss %1, %0" : "+x"(result) : "x"(right));
-    __asm__ volatile("maxss %1, %0" : "+x"(result) : "x"(left));
+    __asm__ volatile(
+        "minss %1, %0\n\t"
+        "maxss %1, %0"
+        : "+&x"(result)
+        : "x"(right));
     return result;
 }
 
