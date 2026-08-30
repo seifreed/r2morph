@@ -22,7 +22,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git build-essential pkg-config wget cmake binutils
-          git clone --depth 1 https://github.com/radareorg/radare2.git /tmp/radare2
+git clone --depth 1 --branch 6.2.0 https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
 

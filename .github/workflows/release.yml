@@ -125,6 +125,7 @@ jobs:
       - name: Install radare2
         run: |
           git clone --depth 1 \
+            --branch 6.2.0 \
             https://github.com/radareorg/radare2.git /tmp/radare2
           cd /tmp/radare2
           sys/install.sh
