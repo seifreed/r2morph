@@ -529,12 +529,13 @@ def _fp_vex_scalar_arith_mem_handler_asm(
     else:
         body, advance = _mem_address_asm(kind.endswith("rip"), key, key_dword, config.field_perm, config.addr_variant)
     body += f"  movzx r11d, byte ptr [rsi+{advance}]\n  xor r11b, {key}\n  xor r11b, r13b\n"
-    body += (
-        f"  shl r8, 4\n  shl r11, 4\n"
-        f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n"
-        f"  v{operation}{suffix} xmm0, xmm0, {memory} ptr [r10]\n"
-        f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
-    )
+    body += "  shl r8, 4\n  shl r11, 4\n"
+    body += f"  movups xmm0, [rsp + r11 + {_XMM_SAVE_OFFSET}]\n"
+    if operation == "sqrt":
+        body += f"  sqrt{suffix} xmm1, {memory} ptr [r10]\n  mov{suffix} xmm0, xmm1\n"
+    else:
+        body += f"  v{operation}{suffix} xmm0, xmm0, {memory} ptr [r10]\n"
+    body += f"  movups [rsp + r8 + {_XMM_SAVE_OFFSET}], xmm0\n"
     clear_upper = _clear_ymm_upper_slot_asm("r8") if config.preserve_ymm else ""
     return body + clear_upper + f"  add rsi, {advance + 1}\n  jmp vm_dispatch\n"
 
