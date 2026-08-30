@@ -60,6 +60,18 @@ def test_decode_vex128_scalar_moves_preserves_zero_and_merge_forms() -> None:
     )
 
 
+def test_decode_vex128_vmovq_preserves_qword_register_and_memory_forms() -> None:
+    register = _decode_fp_vex_scalar_move("vmovq xmm0, xmm1", 0x1000, 4)
+    load = _decode_fp_vex_scalar_move("vmovq xmm2, qword ptr [rax + 8]", 0x1000, 6)
+    store = _decode_fp_vex_scalar_move("vmovq qword ptr [rax + 16], xmm2", 0x1000, 6)
+
+    expect(
+        register == ("fpmovvexscalar", 64, 0, 1)
+        and load == ("fploadvex", 2, 0, 8, 64)
+        and store == ("fpstorevex", 2, 0, 16, 64)
+    )
+
+
 def test_decode_vex128_packed_memory_arithmetic_supports_rip_relative_shape() -> None:
     item = _decode_fp_vex_packed_arith_mem("vaddps xmm0, xmm1, xmmword ptr [rip + 16]", 0x1000, 8)
 

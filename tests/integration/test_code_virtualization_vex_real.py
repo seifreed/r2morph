@@ -80,6 +80,26 @@ int main(void) {
 }
 """
 
+_VEX_QWORD_MOVE_SOURCE = r"""
+__attribute__((noinline)) static void move_qword(const unsigned long *source, unsigned long *target) {
+    __asm__ volatile(
+        "vmovq (%0), %%xmm0\n"
+        "vmovq %%xmm0, %%xmm1\n"
+        "vmovq %%xmm1, (%1)\n"
+        :
+        : "r"(source), "r"(target)
+        : "xmm0", "xmm1", "memory"
+    );
+}
+
+int main(void) {
+    const unsigned long source[1] = {0xFEDCBA9876543210UL};
+    unsigned long target[1] = {0};
+    move_qword(source, target);
+    return target[0] == source[0] ? 42 : 1;
+}
+"""
+
 
 def _mutate_fixture(tmp_path: Path) -> tuple[Path, int, bool]:
     mutated = tmp_path / "mutated_vex128"
@@ -250,5 +270,51 @@ def test_virtualized_vex128_scalar_moves_preserve_native_result(tmp_path: Path) 
         stats["functions_virtualized"] >= 1
         and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
         "VEX.128 scalar moves changed the result: "
+        f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
+    )
+
+
+def test_virtualized_vex128_qword_moves_preserve_native_result(tmp_path: Path) -> None:
+    if platform.machine().lower() not in {"x86_64", "amd64"}:
+        pytest.skip("native AVX execution requires an x86-64 host")
+
+    source = tmp_path / "vex128_qword_move.c"
+    original = tmp_path / "original_vex128_qword_move"
+    mutated = tmp_path / "mutated_vex128_qword_move"
+    source.write_text(_VEX_QWORD_MOVE_SOURCE)
+    compile_result = run_command(
+        [
+            "gcc",
+            "-O2",
+            "-mavx",
+            "-mno-vzeroupper",
+            "-fno-pie",
+            "-no-pie",
+            "-fno-unwind-tables",
+            "-fno-asynchronous-unwind-tables",
+            "-fno-stack-protector",
+            source,
+            "-o",
+            original,
+        ],
+        timeout=30,
+    )
+    expect(compile_result.returncode == 0, "failed to compile the VEX.128 qword move fixture")
+
+    original_result = run_command([original], timeout=30)
+    original.rename(mutated)
+    binary = Binary(mutated, writable=True)
+    binary.open()
+    try:
+        stats = CodeVirtualizationPass(config={"probability": 1.0, "max_functions": 20, "seed": 20260839}).apply(binary)
+        binary.save()
+    finally:
+        binary.close()
+
+    transformed_result = run_command([mutated], timeout=30)
+    expect(
+        stats["functions_virtualized"] >= 1
+        and original_result.returncode == transformed_result.returncode == _EXPECTED_EXIT_CODE,
+        "VEX.128 qword moves changed the result: "
         f"{stats=}, original={original_result.returncode}, transformed={transformed_result.returncode}",
     )

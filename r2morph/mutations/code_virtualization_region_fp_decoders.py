@@ -604,7 +604,7 @@ _FP_VEX_SCALAR_ARITH: dict[str, tuple[str, int]] = {
     "vminsd": ("min", 64),
     "vmaxsd": ("max", 64),
 }
-_FP_VEX_SCALAR_MOVE: dict[str, int] = {"vmovss": 32, "vmovsd": 64}
+_FP_VEX_SCALAR_MOVE: dict[str, int] = {"vmovq": 64, "vmovss": 32, "vmovsd": 64}
 
 
 def _decode_fp_packed_immediate(text: str) -> tuple[str, str, int, int] | None:
